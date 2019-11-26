@@ -22,9 +22,7 @@ package grakn.core.graql.reasoner.plan;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import grakn.core.graql.reasoner.atom.Atom;
-import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.graql.reasoner.query.ReasonerQueryFactory;
-import grakn.core.kb.server.Transaction;
 import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
 
 import java.util.ArrayList;
@@ -82,7 +80,7 @@ public class ResolutionQueryPlan {
                     queries.add(reasonerQueryFactory.create(nonResolvableAtoms));
                     nonResolvableAtoms.clear();
                 }
-                queries.add(ReasonerQueries.atomic(top));
+                queries.add(reasonerQueryFactory.atomic(top));
             } else {
                 nonResolvableAtoms.add(top);
                 if (atoms.isEmpty()) queries.add(reasonerQueryFactory.create(nonResolvableAtoms));

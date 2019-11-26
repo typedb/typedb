@@ -22,24 +22,21 @@ package grakn.core.graql.reasoner.state;
 import com.google.common.collect.HashMultimap;
 import grakn.core.concept.answer.AnswerUtil;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concept.util.ConceptUtils;
 import grakn.core.graql.reasoner.CacheCasting;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.cache.IndexedAnswerSet;
 import grakn.core.graql.reasoner.explanation.RuleExplanation;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
-import grakn.core.graql.reasoner.query.ReasonerQueries;
+import grakn.core.graql.reasoner.query.ReasonerQueryFactory;
 import grakn.core.graql.reasoner.rule.InferenceRule;
 import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.graql.reasoner.cache.CacheEntry;
 import grakn.core.kb.graql.reasoner.cache.QueryCache;
-import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
 import graql.lang.statement.Variable;
 
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.Set;
 
@@ -54,15 +51,18 @@ public class AtomicState extends AnswerPropagatorState<ReasonerAtomicQuery> {
     private MultiUnifier cacheUnifier = null;
     private CacheEntry<ReasonerAtomicQuery, IndexedAnswerSet> cacheEntry = null;
     final private HashMultimap<ConceptId, ConceptMap> materialised = HashMultimap.create();
+    private ReasonerQueryFactory reasonerQueryFactory;
     private QueryCache queryCache;
 
-    public AtomicState(ReasonerAtomicQuery query,
+    public AtomicState(ReasonerQueryFactory reasonerQueryFactory,
+                       ReasonerAtomicQuery query,
                        ConceptMap sub,
                        Unifier u,
                        AnswerPropagatorState parent,
                        Set<ReasonerAtomicQuery> subGoals,
                        QueryCache queryCache) {
-        super(ReasonerQueries.atomic(query, sub), sub, u, parent, subGoals);
+        super(query.withSubstitution(sub), sub, u, parent, subGoals);
+        this.reasonerQueryFactory = reasonerQueryFactory;
         this.queryCache = queryCache;
     }
 
@@ -142,7 +142,7 @@ public class AtomicState extends AnswerPropagatorState<ReasonerAtomicQuery> {
 
     private ConceptMap materialisedAnswer(ConceptMap baseAnswer, InferenceRule rule, Unifier unifier) {
         ReasonerAtomicQuery query = getQuery();
-        ReasonerAtomicQuery ruleHead = ReasonerQueries.atomic(rule.getHead(), baseAnswer);
+        ReasonerAtomicQuery ruleHead = reasonerQueryFactory.atomic(rule.getHead(), baseAnswer);
         ConceptMap sub = ruleHead.getSubstitution();
         if(materialised.get(rule.getRule().id()).contains(sub)
             && getRuleUnifier(rule).isUnique()){
@@ -164,7 +164,7 @@ public class AtomicState extends AnswerPropagatorState<ReasonerAtomicQuery> {
             Atom ruleAtom = ruleHead.getAtom();
             //if it's an implicit relation also record it as an attribute
             if (ruleAtom.isRelation() && ruleAtom.getSchemaConcept() != null && ruleAtom.getSchemaConcept().isImplicit()) {
-                ReasonerAtomicQuery attributeHead = ReasonerQueries.atomic(ruleHead.getAtom().toAttributeAtom());
+                ReasonerAtomicQuery attributeHead = reasonerQueryFactory.atomic(ruleHead.getAtom().toAttributeAtom());
                 queryCache.record(attributeHead, ruleAnswer.project(attributeHead.getVarNames()));
             }
             answer = unifier.apply(materialisedSub.project(headVars));

@@ -24,7 +24,6 @@ import grakn.core.concept.answer.AnswerUtil;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.atom.predicate.VariablePredicate;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
-import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
 
@@ -58,7 +57,7 @@ public class VariableComparisonState extends AnswerPropagatorState<ReasonerQuery
                                    Unifier u,
                                    AnswerPropagatorState parent,
                                    Set<ReasonerAtomicQuery> subGoals) {
-        super(ReasonerQueries.create(q, sub), sub, u, parent, subGoals);
+        super(q.withSubstitution(sub), sub, u, parent, subGoals);
 
         this.variablePredicates = getQuery().getAtoms(VariablePredicate.class).collect(Collectors.toSet());
         this.variablePredicateSub = AnswerUtil.joinAnswers(getQuery().getSubstitution(), sub)

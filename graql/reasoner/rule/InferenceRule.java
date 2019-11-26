@@ -21,34 +21,33 @@ package grakn.core.graql.reasoner.rule;
 
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
-import grakn.core.graql.reasoner.query.ReasonerQueryFactory;
-import grakn.core.kb.concept.api.Concept;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.kb.concept.api.Rule;
-import grakn.core.kb.concept.api.SchemaConcept;
+import grakn.core.concept.util.ConceptUtils;
 import grakn.core.graql.reasoner.atom.Atom;
-import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.graql.reasoner.atom.binary.AttributeAtom;
 import grakn.core.graql.reasoner.atom.binary.RelationAtom;
 import grakn.core.graql.reasoner.atom.binary.TypeAtom;
 import grakn.core.graql.reasoner.atom.predicate.ValuePredicate;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
-import grakn.core.graql.reasoner.query.ReasonerQueries;
+import grakn.core.graql.reasoner.query.ReasonerQueryFactory;
 import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
 import grakn.core.graql.reasoner.query.ResolvableQuery;
 import grakn.core.graql.reasoner.state.AnswerPropagatorState;
 import grakn.core.graql.reasoner.state.ResolutionState;
 import grakn.core.graql.reasoner.state.RuleState;
+import grakn.core.graql.reasoner.unifier.UnifierType;
+import grakn.core.kb.concept.api.Concept;
+import grakn.core.kb.concept.api.Rule;
+import grakn.core.kb.concept.api.SchemaConcept;
+import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
-import grakn.core.graql.reasoner.unifier.UnifierType;
-import grakn.core.concept.util.ConceptUtils;
-import grakn.core.kb.server.Transaction;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
+
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -275,7 +274,7 @@ public class InferenceRule {
                 reasonerQueryFactory.composite(rewrittenBodyConj, getBody().asComposite().getComplementQueries()) :
                 rewrittenBodyConj;
         return new InferenceRule(
-                ReasonerQueries.atomic(headAtom),
+                reasonerQueryFactory.atomic(headAtom),
                 rewrittenBody,
                 rule,
                 reasonerQueryFactory
@@ -311,7 +310,7 @@ public class InferenceRule {
     private InferenceRule rewriteHeadToRelation(Atom parentAtom){
         if (parentAtom.isRelation() && getHead().getAtom().isResource()){
             return new InferenceRule(
-                    ReasonerQueries.atomic(getHead().getAtom().toRelationAtom()),
+                    reasonerQueryFactory.atomic(getHead().getAtom().toRelationAtom()),
                     getBody(),
                     rule,
                     reasonerQueryFactory
@@ -324,7 +323,7 @@ public class InferenceRule {
         if (parentAtom.isUserDefined() || parentAtom.requiresRoleExpansion()) {
             //NB we don't have to rewrite complements as we don't allow recursion atm
             return new InferenceRule(
-                    ReasonerQueries.atomic(getHead().getAtom().rewriteToUserDefined(parentAtom)),
+                    reasonerQueryFactory.atomic(getHead().getAtom().rewriteToUserDefined(parentAtom)),
                     getBody(),
                     rule,
                     reasonerQueryFactory

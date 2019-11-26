@@ -206,7 +206,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     public ResolutionState resolutionState(ConceptMap sub, Unifier u, AnswerPropagatorState parent, Set<ReasonerAtomicQuery> subGoals){
         if (getAtom().getSchemaConcept() == null) return new AtomicStateProducer(this, sub, u, parent, subGoals);
         return !containsVariablePredicates()?
-                new AtomicState(this, sub, u, parent, subGoals, queryCache) :
+                new AtomicState(reasonerQueryFactory, this, sub, u, parent, subGoals, queryCache) :
                 new VariableComparisonState(this, sub, u, parent, subGoals);
     }
 
