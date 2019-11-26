@@ -270,6 +270,7 @@ public abstract class SemanticCache<
         boolean queryGround = query.isGround();
 
         if (match != null) {
+            //TODO simplify that
             boolean answersToGroundQuery = false;
             boolean queryDBComplete = isDBComplete(query);
             if (queryGround) {

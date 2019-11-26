@@ -118,7 +118,6 @@ public class QueryCacheIT {
     public void whenRecordingAndMatchDoesntExist_answersArePropagatedFromParents(){
         try(Transaction tx = genericSchemaSession.readTransaction()) {
             MultilevelSemanticCache cache = new MultilevelSemanticCache();
-
             Concept mConcept = tx.stream(Graql.<GraqlGet>parse("match $x has resource 'm';get;")).iterator().next().get("x");
             Concept sConcept = tx.stream(Graql.<GraqlGet>parse("match $x has resource 's';get;")).iterator().next().get("x");
 
