@@ -159,8 +159,6 @@ public class TransactionImpl implements Transaction {
         this.transactionCache = transactionCache;
         this.queryCache = queryCache;
         this.ruleCache = ruleCache;
-        // TODO remove temporal coupling
-        this.ruleCache.setTx(this);
 
         this.uncomittedStatisticsDelta = statisticsDelta;
 

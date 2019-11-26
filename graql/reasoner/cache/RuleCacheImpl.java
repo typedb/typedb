@@ -21,16 +21,14 @@ package grakn.core.graql.reasoner.cache;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.HashMultimap;
-import grakn.core.kb.concept.api.Label;
+import grakn.core.core.Schema;
+import grakn.core.graql.reasoner.query.ReasonerQueryFactory;
+import grakn.core.graql.reasoner.rule.InferenceRule;
 import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Type;
-import grakn.core.core.Schema;
 import grakn.core.kb.concept.manager.ConceptManager;
-import grakn.core.kb.server.Transaction;
-import grakn.core.graql.reasoner.rule.InferenceRule;
 import grakn.core.kb.graql.reasoner.cache.RuleCache;
-import graql.lang.Graql;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -47,7 +45,6 @@ public class RuleCacheImpl implements RuleCache {
 
     private final HashMultimap<Type, Rule> ruleMap = HashMultimap.create();
     private final Map<Rule, InferenceRule> ruleConversionMap = new HashMap<>();
-    private Transaction tx;
     private ConceptManager conceptManager;
 
     //TODO: these should be eventually stored together with statistics
@@ -55,14 +52,17 @@ public class RuleCacheImpl implements RuleCache {
     private Set<Type> checkedTypes = new HashSet<>();
     private Set<Rule> unmatchableRules = new HashSet<>();
     private Set<Rule> checkedRules = new HashSet<>();
-
-    @Override
-    public void setTx(Transaction tx) {
-        this.tx = tx;
-    }
+    private ReasonerQueryFactory reasonerQueryFactory;
 
     public RuleCacheImpl(ConceptManager conceptManager) {
         this.conceptManager = conceptManager;
+    }
+
+    /*
+    TODO remove this when circular deps are broken
+     */
+    public void setReasonerQueryFactory(ReasonerQueryFactory reasonerQueryFactory) {
+        this.reasonerQueryFactory = reasonerQueryFactory;
     }
 
     /**
@@ -187,7 +187,7 @@ public class RuleCacheImpl implements RuleCache {
         InferenceRule match = ruleConversionMap.get(rule);
         if (match != null) return match;
 
-        InferenceRule newMatch = new InferenceRule(rule, tx);
+        InferenceRule newMatch = new InferenceRule(rule, reasonerQueryFactory);
         ruleConversionMap.put(rule, newMatch);
         return newMatch;
     }
@@ -204,4 +204,6 @@ public class RuleCacheImpl implements RuleCache {
         checkedRules.clear();
         unmatchableRules.clear();
     }
+
+
 }

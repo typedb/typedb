@@ -175,13 +175,14 @@ public class SessionImpl implements Session {
         ConceptManager conceptManager = new ConceptManagerImpl(elementFactory, transactionCache, conceptNotificationChannel, graphLock);
         TraversalPlanFactory traversalPlanFactory = new TraversalPlanFactoryImpl(janusTraversalSourceProvider, conceptManager, this.config().getProperty(ConfigKey.TYPE_SHARD_THRESHOLD), keyspaceStatistics);
         ExecutorFactoryImpl executorFactory = new ExecutorFactoryImpl(conceptManager, hadoopGraph, keyspaceStatistics, traversalPlanFactory, null);
-        RuleCache ruleCache = new RuleCacheImpl(conceptManager);
+        RuleCacheImpl ruleCache = new RuleCacheImpl(conceptManager);
         MultilevelSemanticCache queryCache = new MultilevelSemanticCache(executorFactory, traversalPlanFactory);
 
         PropertyAtomicFactory propertyAtomicFactory = new PropertyAtomicFactory(conceptManager, ruleCache, queryCache, keyspaceStatistics);
         ReasonerQueryFactory reasonerQueryFactory = new ReasonerQueryFactory(conceptManager, queryCache, ruleCache, executorFactory, propertyAtomicFactory, traversalPlanFactory);
         executorFactory.setReasonerQueryFactory(reasonerQueryFactory);
         propertyAtomicFactory.setReasonerQueryFactory(reasonerQueryFactory);
+        ruleCache.setReasonerQueryFactory(reasonerQueryFactory);
 
         TransactionImpl tx = new TransactionImpl(
                 this, janusGraphTransaction, conceptManager,
