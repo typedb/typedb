@@ -24,6 +24,7 @@ filegroup(
         "appendingRPs.gql",
         "duplicateMaterialisation.gql",
         "explanations.gql",
+        "finance.gql",
         "freshEntityDerivation.gql",
         "freshEntityDerivationFromRelations.gql",
         "freshRelationDerivation.gql",

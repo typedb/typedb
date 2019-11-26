@@ -45,6 +45,8 @@ import org.slf4j.LoggerFactory;
  */
 public class MultilevelSemanticCache extends SemanticCache<Equivalence.Wrapper<ReasonerAtomicQuery>, IndexedAnswerSet> {
 
+    private static final Logger LOG = LoggerFactory.getLogger(MultilevelSemanticCache.class);
+
     @Override public UnifierType unifierType() { return UnifierType.STRUCTURAL;}
 
     @Override
@@ -67,6 +69,7 @@ public class MultilevelSemanticCache extends SemanticCache<Equivalence.Wrapper<R
 
     @Override
     protected boolean answersQuery(ReasonerAtomicQuery query) {
+        //TODO debug this
         CacheEntry<ReasonerAtomicQuery, IndexedAnswerSet> entry = getEntry(query);
         if (entry == null) return false;
         ReasonerAtomicQuery cacheQuery = entry.query();
@@ -79,8 +82,6 @@ public class MultilevelSemanticCache extends SemanticCache<Equivalence.Wrapper<R
                         answerSet.get(sub.project(cacheIndex)).stream()
                                 .anyMatch(ans -> ans.containsAll(sub)));
     }
-
-    private static final Logger LOG = LoggerFactory.getLogger(MultilevelSemanticCache.class);
 
     @Override
     protected boolean propagateAnswers(CacheEntry<ReasonerAtomicQuery, IndexedAnswerSet> parentEntry,

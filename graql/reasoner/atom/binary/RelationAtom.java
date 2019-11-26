@@ -975,6 +975,7 @@ public class RelationAtom extends IsaAtomBase {
                                 Variable childVar = crp.getPlayer().var();
                                 return unifierType.attributeCompatibility(parentAtom.getParentQuery(), this.getParentQuery(), parentVar, childVar);
                             })
+                            //TODO check substitution roleplayer connectedness
                             .forEach(compatibleRelationPlayers::add);
 
                     if (!compatibleRelationPlayers.isEmpty()) {

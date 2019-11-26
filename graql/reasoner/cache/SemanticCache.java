@@ -286,7 +286,7 @@ public abstract class SemanticCache<
             boolean queryDBComplete = isDBComplete(query);
             if (queryGround) {
                 boolean newAnswersPropagated = propagateAnswersToQuery(query, match, true);
-                if (newAnswersPropagated) answersToGroundQuery = answersQuery(query);
+                answersToGroundQuery = answersQuery(query);
             }
 
             //extra check is a quasi-completeness check if there's no parent present we have no guarantees about completeness with respect to the db.
@@ -297,10 +297,12 @@ public abstract class SemanticCache<
 
             //otherwise lookup and add inferred answers on top
             return new Pair<>(
+                    //NB: concat retains the order between elements from different streams so cache entries will come first
+                    //and any duplicates from the DB will be removed by the .distinct step
                             Stream.concat(
-                                    getDBAnswerStreamWithUnifier(query).first(),
-                                    cachePair.first().filter(ans -> ans.explanation().isRuleExplanation())
-                            ),
+                                    cachePair.first().filter(ans -> ans.explanation().isRuleExplanation()),
+                                    getDBAnswerStreamWithUnifier(query).first()
+                            ).distinct(),
                             cachePair.second());
         }
 
