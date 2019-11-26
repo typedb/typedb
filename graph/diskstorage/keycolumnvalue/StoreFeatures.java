@@ -149,12 +149,6 @@ public interface StoreFeatures {
     boolean hasStoreTTL();
 
     /**
-     * Returns true if this storage backend supports entry-level visibility by attaching a visibility or authentication
-     * token to each column-value entry in the data store and limited retrievals to "visible" entries.
-     */
-    boolean hasVisibility();
-
-    /**
      * Whether the backend supports data persistence. Return false if the backend is in-memory only.
      */
     boolean supportsPersistence();

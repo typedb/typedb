@@ -347,10 +347,6 @@ public class GraphDatabaseConfiguration {
             "Whether to include ttl in retrieved entries for storage backends that support storage and retrieval of cell level TTL",
             ConfigOption.Type.GLOBAL, false);
 
-    public static final ConfigOption<Boolean> STORE_META_VISIBILITY = new ConfigOption<>(STORE_META_NS, "visibility",
-            "Whether to include visibility in retrieved entries for storage backends that support cell level visibility",
-            ConfigOption.Type.GLOBAL, true);
-
 
     // ################ CLUSTERING ###########################
     // ################################################

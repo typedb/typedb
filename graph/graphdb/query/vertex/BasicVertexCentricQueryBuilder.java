@@ -51,7 +51,6 @@ import grakn.core.graph.graphdb.query.condition.IncidenceCondition;
 import grakn.core.graph.graphdb.query.condition.Or;
 import grakn.core.graph.graphdb.query.condition.PredicateCondition;
 import grakn.core.graph.graphdb.query.condition.RelationTypeCondition;
-import grakn.core.graph.graphdb.query.condition.VisibilityFilterCondition;
 import grakn.core.graph.graphdb.query.profile.QueryProfiler;
 import grakn.core.graph.graphdb.relations.StandardVertexProperty;
 import grakn.core.graph.graphdb.transaction.StandardJanusGraphTx;
@@ -480,10 +479,6 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
             query.getBackendQuery().setLimit(computeLimit(conditions.size(), sliceLimit));
             queries = ImmutableList.of(query);
             conditions.add(returnType);
-            conditions.add(new VisibilityFilterCondition<>(
-                    //Need this to filter out newly created invisible relations in the transaction
-                    querySystem ? VisibilityFilterCondition.Visibility.SYSTEM
-                            : VisibilityFilterCondition.Visibility.NORMAL));
         } else {
             Set<RelationType> ts = new HashSet<>(types.length);
             queries = new ArrayList<>(types.length + 2);
