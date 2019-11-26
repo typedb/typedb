@@ -24,22 +24,25 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
-import grakn.core.kb.concept.api.ConceptId;
-import grakn.core.kb.graql.gremlin.Fragment;
-import grakn.core.kb.graql.gremlin.GraqlTraversal;
-import grakn.core.kb.graql.gremlin.TraversalPlanFactory;
-import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.binary.OntologicalAtom;
 import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.reasoner.atom.predicate.ValuePredicate;
 import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
+import grakn.core.kb.concept.api.ConceptId;
+import grakn.core.kb.concept.manager.ConceptManager;
+import grakn.core.kb.graql.gremlin.Fragment;
+import grakn.core.kb.graql.gremlin.GraqlTraversal;
+import grakn.core.kb.graql.gremlin.TraversalPlanFactory;
+import grakn.core.kb.graql.reasoner.atom.Atomic;
+import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.kb.server.Transaction;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
+
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -67,8 +70,8 @@ public class GraqlTraversalPlanner {
      * @param query for which the plan should be constructed
      * @return list of atoms in order they should be resolved using a refined GraqlTraversal procedure.
      */
-    public static ImmutableList<Atom> plan(ReasonerQueryImpl query) {
-        return ImmutableList.copyOf(refinedPlan(query));
+    public static ImmutableList<Atom> plan(ConceptManager conceptManager, TraversalPlanFactory traversalPlanFactory, ReasonerQuery query) {
+        return ImmutableList.copyOf(refinedPlan(conceptManager, traversalPlanFactory, query));
     }
 
     private static long atomPredicates(Atom at, Set<IdPredicate> subs){
@@ -107,7 +110,7 @@ public class GraqlTraversalPlanner {
      * @param query top level query for which the plan is constructed
      * @return an optimally ordered list of provided atoms
      */
-    private static List<Atom> refinedPlan(ReasonerQueryImpl query){
+    private static List<Atom> refinedPlan(ConceptManager conceptManager, TraversalPlanFactory traversalPlanFactory, ReasonerQuery query){
         List<Atom> atomsToProcess = query.getAtoms(Atom.class).filter(Atomic::isSelectable).collect(Collectors.toList());
         Set<IdPredicate> subs = query.getAtoms(IdPredicate.class).collect(Collectors.toSet());
         Set<Variable> vars = atomsToProcess.stream().anyMatch(Atom::isDisconnected)? query.getVarNames() : new HashSet<>();
@@ -115,7 +118,7 @@ public class GraqlTraversalPlanner {
 
         while(!atomsToProcess.isEmpty()){
             List<Atom> candidates = getCandidates(atomsToProcess, subs, vars);
-            ImmutableList<Atom> initialPlan = planFromTraversal(atomsToProcess, atomsToPattern(atomsToProcess, subs), query.tx());
+            ImmutableList<Atom> initialPlan = planFromTraversal(atomsToProcess, atomsToPattern(atomsToProcess, subs), traversalPlanFactory);
 
             if (candidates.contains(initialPlan.get(0)) || candidates.isEmpty()) {
                 orderedAtoms.addAll(initialPlan);
@@ -129,7 +132,7 @@ public class GraqlTraversalPlanner {
                 first.getVarNames().stream()
                         .peek(vars::add)
                         .filter(v -> !subVariables.contains(v))
-                        .map(v -> IdPredicate.create(v, ConceptId.of(PLACEHOLDER_ID), query))
+                        .map(v -> IdPredicate.create(conceptManager, v, ConceptId.of(PLACEHOLDER_ID), query))
                         .forEach(subs::add);
             }
         }
@@ -159,14 +162,12 @@ public class GraqlTraversalPlanner {
      * @param queryPattern corresponding (possible augmented with subs) pattern
      * @return an optimally ordered list of provided atoms
      */
-    private static ImmutableList<Atom> planFromTraversal(List<Atom> atoms, Conjunction<?> queryPattern, Transaction tx){
+    private static ImmutableList<Atom> planFromTraversal(List<Atom> atoms, Conjunction<?> queryPattern, TraversalPlanFactory planFactory){
         Multimap<VarProperty, Atom> propertyMap = HashMultimap.create();
         atoms.stream()
                 .filter(atom -> !(atom instanceof OntologicalAtom))
                 .forEach(atom -> atom.getVarProperties().forEach(property -> propertyMap.put(property, atom)));
         Set<VarProperty> properties = propertyMap.keySet();
-
-        TraversalPlanFactory planFactory = tx.traversalPlanFactory();
 
         GraqlTraversal graqlTraversal = planFactory.createTraversal(queryPattern);
         ImmutableList<? extends Fragment> fragments = Iterables.getOnlyElement(graqlTraversal.fragments());

@@ -46,7 +46,7 @@ import java.util.Set;
  *
  *
  */
-public abstract class TypeAtom extends Binary{
+public abstract class TypeAtom extends Binary {
 
     TypeAtom(ConceptManager conceptManager, RuleCache ruleCache, Variable varName, Statement pattern, ReasonerQuery reasonerQuery, ConceptId typeId,
              Variable predicateVariable) {

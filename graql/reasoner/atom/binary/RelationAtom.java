@@ -45,10 +45,8 @@ import grakn.core.graql.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.graql.reasoner.cache.SemanticDifference;
 import grakn.core.graql.reasoner.cache.VariableDefinition;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
-import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.graql.reasoner.query.ReasonerQueryEquivalence;
 import grakn.core.graql.reasoner.query.ReasonerQueryFactory;
-import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
 import grakn.core.graql.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierType;
@@ -71,8 +69,8 @@ import grakn.core.kb.graql.reasoner.cache.RuleCache;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
-import grakn.core.kb.server.Transaction;
 import grakn.core.kb.server.exception.GraqlSemanticException;
+import grakn.core.kb.server.statistics.KeyspaceStatistics;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.property.IsaProperty;
@@ -109,7 +107,9 @@ import static graql.lang.Graql.var;
  */
 public class RelationAtom extends IsaAtomBase {
 
+    private ReasonerQueryFactory reasonerQueryFactory;
     private QueryCache queryCache;
+    private KeyspaceStatistics keyspaceStatistics;
     private final ImmutableList<RelationProperty.RolePlayer> relationPlayers;
     private final ImmutableSet<Label> roleLabels;
     private ImmutableList<Type> possibleTypes = null;
@@ -128,6 +128,7 @@ public class RelationAtom extends IsaAtomBase {
             ConceptManager conceptManager,
             RuleCache ruleCache,
             QueryCache queryCache,
+            KeyspaceStatistics keyspaceStatistics,
             Variable varName,
             Statement pattern,
             ReasonerQuery parentQuery,
@@ -136,12 +137,14 @@ public class RelationAtom extends IsaAtomBase {
             ImmutableList<RelationProperty.RolePlayer> relationPlayers,
             ImmutableSet<Label> roleLabels) {
         super(conceptManager, ruleCache, varName, pattern, parentQuery, typeId, predicateVariable);
+        this.reasonerQueryFactory = reasonerQueryFactory;
         this.queryCache = queryCache;
+        this.keyspaceStatistics = keyspaceStatistics;
         this.relationPlayers = relationPlayers;
         this.roleLabels = roleLabels;
     }
 
-    public static RelationAtom create(ConceptManager conceptManager, RuleCache ruleCache, Statement pattern, Variable predicateVar, @Nullable ConceptId predicateId, ReasonerQuery parent) {
+    public static RelationAtom create(ReasonerQueryFactory reasonerQueryFactory, ConceptManager conceptManager, RuleCache ruleCache, QueryCache queryCache, KeyspaceStatistics keyspaceStatistics, Statement pattern, Variable predicateVar, @Nullable ConceptId predicateId, ReasonerQuery parent) {
         List<RelationProperty.RolePlayer> rps = new ArrayList<>();
         pattern.getProperty(RelationProperty.class)
                 .ifPresent(prop -> prop.relationPlayers().stream().sorted(Comparator.comparing(Object::hashCode)).forEach(rps::add));
@@ -154,17 +157,20 @@ public class RelationAtom extends IsaAtomBase {
                         .flatMap(Streams::optionalToStream)
                         .map(Label::of).iterator()
         ).build();
-        return new RelationAtom(conceptManager, ruleCache, pattern.var(), pattern, parent, predicateId, predicateVar, relationPlayers, roleLabels);
+        return new RelationAtom(reasonerQueryFactory, conceptManager, ruleCache, queryCache, keyspaceStatistics, pattern.var(), pattern, parent, predicateId, predicateVar, relationPlayers, roleLabels);
     }
 
-    private static RelationAtom create(ConceptManager conceptManager, RuleCache ruleCache, Statement pattern, Variable predicateVar, @Nullable ConceptId predicateId, @Nullable ImmutableList<Type> possibleTypes, ReasonerQuery parent) {
-        RelationAtom atom = create(conceptManager, ruleCache, pattern, predicateVar, predicateId, parent);
+    private static RelationAtom create(ReasonerQueryFactory reasonerQueryFactory, ConceptManager conceptManager, RuleCache ruleCache, QueryCache queryCache, KeyspaceStatistics keyspaceStatistics, Statement pattern, Variable predicateVar, @Nullable ConceptId predicateId, @Nullable ImmutableList<Type> possibleTypes, ReasonerQuery parent) {
+        RelationAtom atom = create(reasonerQueryFactory, conceptManager, ruleCache, queryCache, keyspaceStatistics, pattern, predicateVar, predicateId, parent);
         atom.possibleTypes = possibleTypes;
         return atom;
     }
 
-    private static RelationAtom create(ConceptManager conceptManager, RuleCache ruleCache, RelationAtom a, ReasonerQuery parent) {
-        RelationAtom atom = new RelationAtom(conceptManager, ruleCache, a.getVarName(), a.getPattern(), parent, a.getTypeId(), a.getPredicateVariable(), a.getRelationPlayers(), a.getRoleLabels());
+    /**
+     * Copy constructor
+     */
+    private static RelationAtom create(RelationAtom a, ReasonerQuery parent) {
+        RelationAtom atom = new RelationAtom(a.reasonerQueryFactory, a.conceptManager, a.ruleCache, a.queryCache, a.keyspaceStatistics, a.getVarName(), a.getPattern(), parent, a.getTypeId(), a.getPredicateVariable(), a.getRelationPlayers(), a.getRoleLabels());
         atom.possibleTypes = a.possibleTypes;
         return atom;
     }
@@ -256,6 +262,7 @@ public class RelationAtom extends IsaAtomBase {
                 conceptManager,
                 ruleCache,
                 queryCache,
+                keyspaceStatistics,
                 attributeStatement,
                 attributeVariable,
                 relationVariable,
@@ -267,7 +274,7 @@ public class RelationAtom extends IsaAtomBase {
 
         Set<Statement> patterns = new HashSet<>(attributeAtom.getCombinedPattern().statements());
         this.getPredicates().map(Predicate::getPattern).forEach(patterns::add);
-        return ReasonerQueries.atomic(Graql.and(patterns), tx()).getAtom().toAttributeAtom();
+        return reasonerQueryFactory.atomic(Graql.and(patterns)).getAtom().toAttributeAtom();
     }
 
 
@@ -276,13 +283,13 @@ public class RelationAtom extends IsaAtomBase {
         IsaAtom isaAtom = IsaAtom.create(conceptManager, ruleCache, getVarName(), getPredicateVariable(), getTypeId(), false, getParentQuery());
         Set<Statement> patterns = new HashSet<>(isaAtom.getCombinedPattern().statements());
         this.getPredicates().map(Predicate::getPattern).forEach(patterns::add);
-        return ReasonerQueries.atomic(Graql.and(patterns), tx()).getAtom().toIsaAtom();
+        return reasonerQueryFactory.atomic(Graql.and(patterns)).getAtom().toIsaAtom();
     }
 
     @Override
     public Set<Atom> rewriteToAtoms() {
         return this.getRelationPlayers().stream()
-                .map(rp -> create(conceptManager, ruleCache, relationPattern(getVarName().asReturnedVar(), Sets.newHashSet(rp)), getPredicateVariable(), getTypeId(), null, this.getParentQuery()))
+                .map(rp -> create(reasonerQueryFactory, conceptManager, ruleCache, queryCache, keyspaceStatistics, relationPattern(getVarName().asReturnedVar(), Sets.newHashSet(rp)), getPredicateVariable(), getTypeId(), null, this.getParentQuery()))
                 .collect(Collectors.toSet());
     }
 
@@ -367,7 +374,7 @@ public class RelationAtom extends IsaAtomBase {
 
     @Override
     public Atomic copy(ReasonerQuery parent) {
-        return create(conceptManager, ruleCache, this, parent);
+        return create(this, parent);
     }
 
     @Override
@@ -544,7 +551,7 @@ public class RelationAtom extends IsaAtomBase {
                 .filter(vp -> vp.getType().isPresent())
                 .map(vp -> {
                     String label = vp.getType().orElse(null);
-                    return IdPredicate.create(vp.var(), conceptManager.getRole(label).id(), getParentQuery());
+                    return IdPredicate.create(conceptManager, vp.var(), conceptManager.getRole(label).id(), getParentQuery());
                 });
     }
 
@@ -620,7 +627,7 @@ public class RelationAtom extends IsaAtomBase {
     public RelationAtom addType(SchemaConcept type) {
         if (getTypeId() != null) return this;
         //NB: do not cache possible types
-        return create(conceptManager, ruleCache, this.getPattern(), this.getPredicateVariable(), type.id(), this.getParentQuery());
+        return create(reasonerQueryFactory, conceptManager, ruleCache, queryCache, keyspaceStatistics, this.getPattern(), this.getPredicateVariable(), type.id(), this.getParentQuery());
     }
 
     /**
@@ -705,7 +712,7 @@ public class RelationAtom extends IsaAtomBase {
                     //prioritise relations with number of roles equal to arity
                     .sorted(Comparator.comparing(e -> e.getKey().roles().count() != getRelationPlayers().size()))
                     //prioritise relations having more instances
-                    .sorted(Comparator.comparing(e -> -tx().getShardCount(e.getKey())))
+                    .sorted(Comparator.comparing(e -> -keyspaceStatistics.count(conceptManager, e.getKey().label())))
                     //prioritise relations with highest number of possible types played by untyped role players
                     .map(e -> {
                         if (untypedNeighbours.isEmpty()) return new Pair<>(e.getKey(), 0L);
@@ -790,7 +797,7 @@ public class RelationAtom extends IsaAtomBase {
                         .filter(vp -> vp.var().isReturned())
                         .map(vp -> new Pair<>(vp.var(), vp.getType().orElse(null)))
                         .filter(p -> Objects.nonNull(p.second()))
-                        .map(p -> IdPredicate.create(p.first(), Label.of(p.second()), getParentQuery()))
+                        .map(p -> IdPredicate.create(conceptManager, p.first(), Label.of(p.second()), getParentQuery()))
         );
     }
 
@@ -880,7 +887,7 @@ public class RelationAtom extends IsaAtomBase {
                         relationPattern.isaX(new Statement(getPredicateVariable())) :
                         relationPattern.isa(new Statement(getPredicateVariable()))
                 );
-        return create(conceptManager, ruleCache, newPattern, this.getPredicateVariable(), this.getTypeId(), this.getPossibleTypes(), this.getParentQuery());
+        return create(reasonerQueryFactory, conceptManager, ruleCache, queryCache, keyspaceStatistics, newPattern, this.getPredicateVariable(), this.getTypeId(), this.getPossibleTypes(), this.getParentQuery());
     }
 
     /**
@@ -1117,7 +1124,7 @@ public class RelationAtom extends IsaAtomBase {
     }
 
     private Relation findRelation(ConceptMap sub) {
-        ReasonerAtomicQuery query = ReasonerQueries.atomic(this).withSubstitution(sub);
+        ReasonerAtomicQuery query = reasonerQueryFactory.atomic(this).withSubstitution(sub);
         MultilevelSemanticCache queryCache = CacheCasting.queryCacheCast(this.queryCache);
         ConceptMap answer = queryCache.getAnswerStream(query).findFirst().orElse(null);
 
@@ -1190,7 +1197,7 @@ public class RelationAtom extends IsaAtomBase {
                 relVar = relVar.rel(rp.getPlayer());
             }
         }
-        return create(conceptManager, ruleCache, relVar, this.getPredicateVariable(), this.getTypeId(), this.getPossibleTypes(), this.getParentQuery());
+        return create(reasonerQueryFactory, conceptManager, ruleCache, queryCache, keyspaceStatistics, relVar, this.getPredicateVariable(), this.getTypeId(), this.getPossibleTypes(), this.getParentQuery());
     }
 
     /**
@@ -1217,12 +1224,12 @@ public class RelationAtom extends IsaAtomBase {
                 relVar = relVar.rel(c.getPlayer());
             }
         }
-        return create(conceptManager, ruleCache, relVar, this.getPredicateVariable(), this.getTypeId(), this.getPossibleTypes(), this.getParentQuery());
+        return create(reasonerQueryFactory, conceptManager, ruleCache, queryCache, keyspaceStatistics, relVar, this.getPredicateVariable(), this.getTypeId(), this.getPossibleTypes(), this.getParentQuery());
     }
 
     @Override
     public RelationAtom rewriteWithTypeVariable() {
-        return create(conceptManager, ruleCache, this.getPattern(), this.getPredicateVariable().asReturnedVar(), this.getTypeId(), this.getPossibleTypes(), this.getParentQuery());
+        return create(reasonerQueryFactory, conceptManager, ruleCache, queryCache, keyspaceStatistics, this.getPattern(), this.getPredicateVariable().asReturnedVar(), this.getTypeId(), this.getPossibleTypes(), this.getParentQuery());
     }
 
     @Override

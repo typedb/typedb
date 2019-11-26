@@ -22,9 +22,10 @@ package grakn.core.graql.reasoner.query;
 import com.google.common.collect.ImmutableSet;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.atom.Atom;
-import grakn.core.graql.reasoner.atom.AtomicFactory;
+import grakn.core.graql.reasoner.atom.PropertyAtomicFactory;
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.executor.ExecutorFactory;
+import grakn.core.kb.graql.gremlin.TraversalPlanFactory;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.kb.graql.reasoner.cache.QueryCache;
 import grakn.core.kb.graql.reasoner.cache.RuleCache;
@@ -42,15 +43,18 @@ public class ReasonerQueryFactory {
     private final QueryCache queryCache;
     private final RuleCache ruleCache;
     private ExecutorFactory executorFactory;
-    private AtomicFactory atomicFactory;
+    private PropertyAtomicFactory propertyAtomicFactory;
+    private TraversalPlanFactory traversalPlanFactory;
 
     public ReasonerQueryFactory(ConceptManager conceptManager, QueryCache queryCache, RuleCache ruleCache,
-                                ExecutorFactory executorFactory, AtomicFactory atomicFactory) {
+                                ExecutorFactory executorFactory, PropertyAtomicFactory propertyAtomicFactory,
+                                TraversalPlanFactory traversalPlanFactory) {
         this.conceptManager = conceptManager;
         this.queryCache = queryCache;
         this.ruleCache = ruleCache;
         this.executorFactory = executorFactory;
-        this.atomicFactory = atomicFactory;
+        this.propertyAtomicFactory = propertyAtomicFactory;
+        this.traversalPlanFactory = traversalPlanFactory;
     }
 
     /**
@@ -79,7 +83,7 @@ public class ReasonerQueryFactory {
     public ResolvableQuery resolvable(Conjunction<Pattern> pattern){
         CompositeQuery query = new CompositeQuery(pattern, this, executorFactory, queryCache).inferTypes();
         return query.isAtomic()?
-                new ReasonerAtomicQuery(query.getAtoms(), conceptManager, ruleCache, queryCache, executorFactory, this) :
+                new ReasonerAtomicQuery(query.getAtoms(), conceptManager, ruleCache, queryCache, executorFactory, this, traversalPlanFactory) :
                 query.isPositive()?
                         query.getConjunctiveQuery() : query;
     }
@@ -102,9 +106,10 @@ public class ReasonerQueryFactory {
      * @return
      */
     public ReasonerQueryImpl withoutRoleInference(Conjunction<Statement> pattern) {
-        ReasonerQueryImpl reasonerQuery = new ReasonerQueryImpl(conceptManager, ruleCache, queryCache, executorFactory, this);
+        ReasonerQueryImpl reasonerQuery = new ReasonerQueryImpl(conceptManager, ruleCache, queryCache, executorFactory, this, traversalPlanFactory);
+        // pass the incomplete parent query to the atom children, then set missing property
         ImmutableSet<Atomic> atomSet = ImmutableSet.<Atomic>builder()
-                .addAll(atomicFactory.createAtoms(pattern).iterator())
+                .addAll(propertyAtomicFactory.createAtoms(pattern, reasonerQuery).iterator())
                 .build();
         reasonerQuery.setAtomSet(atomSet);
         return reasonerQuery;
@@ -118,7 +123,7 @@ public class ReasonerQueryFactory {
     public ReasonerQueryImpl create(Conjunction<Statement> pattern) {
         ReasonerQueryImpl query = withoutRoleInference(pattern).inferTypes();
         return query.isAtomic()?
-                new ReasonerAtomicQuery(query.getAtoms(), conceptManager, ruleCache, queryCache, executorFactory, this) :
+                new ReasonerAtomicQuery(query.getAtoms(), conceptManager, ruleCache, queryCache, executorFactory, this, traversalPlanFactory) :
                 query;
     }
 
@@ -131,9 +136,9 @@ public class ReasonerQueryFactory {
         boolean isAtomic = as.stream().filter(Atomic::isSelectable).count() == 1;
         ReasonerQueryImpl reasonerQuery;
         if (isAtomic) {
-            reasonerQuery = new ReasonerAtomicQuery(as, conceptManager, ruleCache, queryCache, executorFactory, this).inferTypes();
+            reasonerQuery = new ReasonerAtomicQuery(as, conceptManager, ruleCache, queryCache, executorFactory, this, traversalPlanFactory).inferTypes();
         } else {
-            reasonerQuery = new ReasonerQueryImpl(as, conceptManager, ruleCache, queryCache, executorFactory, this).inferTypes();
+            reasonerQuery = new ReasonerQueryImpl(as, conceptManager, ruleCache, queryCache, executorFactory, this, traversalPlanFactory).inferTypes();
         }
         return reasonerQuery;
     }
@@ -147,8 +152,8 @@ public class ReasonerQueryFactory {
     public ReasonerQueryImpl create(List<Atom> as){
         boolean isAtomic = as.size() == 1;
         return isAtomic?
-                new ReasonerAtomicQuery(Collections.singleton(as.get(0)), conceptManager, ruleCache, queryCache, executorFactory, this).inferTypes() :
-                new ReasonerQueryImpl(as, conceptManager, ruleCache, queryCache, executorFactory, this).inferTypes();
+                new ReasonerAtomicQuery(Collections.singleton(as.get(0)), conceptManager, ruleCache, queryCache, executorFactory, this, traversalPlanFactory).inferTypes() :
+                new ReasonerQueryImpl(as, conceptManager, ruleCache, queryCache, executorFactory, this, traversalPlanFactory).inferTypes();
     }
 
     /**
@@ -166,9 +171,10 @@ public class ReasonerQueryFactory {
      * @return atomic query defined by the provided pattern with inferred types
      */
     public ReasonerAtomicQuery atomic(Conjunction<Statement> pattern){
-        ReasonerAtomicQuery reasonerAtomicQuery = new ReasonerAtomicQuery(conceptManager, ruleCache, queryCache, executorFactory, this);
+        ReasonerAtomicQuery reasonerAtomicQuery = new ReasonerAtomicQuery(conceptManager, ruleCache, queryCache, executorFactory, this, traversalPlanFactory);
+        // pass the incomplete parent query to the atom children, then set missing property
         ImmutableSet<Atomic> atomSet = ImmutableSet.<Atomic>builder()
-                .addAll(atomicFactory.createAtoms(pattern).iterator())
+                .addAll(propertyAtomicFactory.createAtoms(pattern, reasonerAtomicQuery).iterator())
                 .build();
         reasonerAtomicQuery.setAtomSet(atomSet);
 
@@ -182,7 +188,7 @@ public class ReasonerQueryFactory {
      * @return atomic query defined by the provided atom together with its constraints (types and predicates, if any)
      */
     public ReasonerAtomicQuery atomic(Atom atom){
-        return new ReasonerAtomicQuery(Collections.singleton(atom), conceptManager, ruleCache, queryCache, executorFactory, this).inferTypes();
+        return new ReasonerAtomicQuery(Collections.singleton(atom), conceptManager, ruleCache, queryCache, executorFactory, this, traversalPlanFactory).inferTypes();
     }
 
     /**
@@ -191,7 +197,7 @@ public class ReasonerQueryFactory {
      * @return reasoner query defined by the provided set of atomics
      */
     public ReasonerAtomicQuery atomic(Set<Atomic> as){
-        return new ReasonerAtomicQuery(as, conceptManager, ruleCache, queryCache, executorFactory, this).inferTypes();
+        return new ReasonerAtomicQuery(as, conceptManager, ruleCache, queryCache, executorFactory, this, traversalPlanFactory).inferTypes();
     }
 
     /**

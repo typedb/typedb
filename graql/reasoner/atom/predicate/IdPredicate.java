@@ -24,6 +24,7 @@ import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.graql.reasoner.ReasonerCheckedException;
+import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.server.exception.GraqlSemanticException;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
@@ -39,24 +40,30 @@ import graql.lang.statement.Variable;
  */
 public class IdPredicate extends Predicate<ConceptId> {
 
-    private IdPredicate(Variable varName, Statement pattern, ReasonerQuery parentQuery, ConceptId predicate) {
+    private ConceptManager conceptManager;
+
+    private IdPredicate(ConceptManager conceptManager, Variable varName, Statement pattern, ReasonerQuery parentQuery, ConceptId predicate) {
         super(varName, pattern, predicate, parentQuery);
+        this.conceptManager = conceptManager;
     }
 
-    public static IdPredicate create(Statement pattern, ReasonerQuery parent) {
-        return new IdPredicate(pattern.var(), pattern, parent, extractPredicate(pattern));
+    public static IdPredicate create(ConceptManager conceptManager, Statement pattern, ReasonerQuery parent) {
+        return new IdPredicate(conceptManager, pattern.var(), pattern, parent, extractPredicate(pattern));
     }
 
-    public static IdPredicate create(Variable varName, Label label, ReasonerQuery parent) {
-        return create(createIdVar(varName.asReturnedVar(), label, parent.tx()), parent);
+    public static IdPredicate create(ConceptManager conceptManager, Variable varName, Label label, ReasonerQuery parent) {
+        return create(conceptManager, createIdVar(varName.asReturnedVar(), label, conceptManager), parent);
     }
 
-    public static IdPredicate create(Variable varName, ConceptId id, ReasonerQuery parent) {
-        return create(createIdVar(varName.asReturnedVar(), id), parent);
+    public static IdPredicate create(ConceptManager conceptManager, Variable varName, ConceptId id, ReasonerQuery parent) {
+        return create(conceptManager, createIdVar(varName.asReturnedVar(), id), parent);
     }
 
+    /**
+     * Copy constructor
+     */
     private static IdPredicate create(IdPredicate a, ReasonerQuery parent) {
-        return create(a.getPattern(), parent);
+        return create(a.conceptManager, a.getPattern(), parent);
     }
 
     private static ConceptId extractPredicate(Statement var) {
@@ -67,8 +74,8 @@ public class IdPredicate extends Predicate<ConceptId> {
         return new Statement(varName).id(typeId.getValue());
     }
 
-    private static Statement createIdVar(Variable varName, Label label, Transaction tx) {
-        SchemaConcept schemaConcept = tx.getSchemaConcept(label);
+    private static Statement createIdVar(Variable varName, Label label, ConceptManager conceptManager) {
+        SchemaConcept schemaConcept = conceptManager.getSchemaConcept(label);
         if (schemaConcept == null) throw GraqlSemanticException.labelNotFound(label);
         return new Statement(varName).id(schemaConcept.id().getValue());
     }
@@ -102,13 +109,13 @@ public class IdPredicate extends Predicate<ConceptId> {
 
     @Override
     public Atomic copy(ReasonerQuery parent) {
-        return create(this, parent);
+        return create( this, parent);
     }
 
     @Override
     public void checkValid() {
         ConceptId conceptId = getPredicate();
-        if (tx().getConcept(conceptId) == null) {
+        if (conceptManager.getConcept(conceptId) == null) {
             throw ReasonerCheckedException.idNotFound(conceptId);
         }
     }
@@ -125,7 +132,7 @@ public class IdPredicate extends Predicate<ConceptId> {
      * @return corresponding value predicate if transformation exists (id corresponds to an attribute concept)
      */
     public ValuePredicate toValuePredicate() {
-        Concept concept = tx().getConcept(this.getPredicate());
+        Concept concept = conceptManager.getConcept(this.getPredicate());
         Object value = (concept != null && concept.isAttribute()) ? concept.asAttribute().value() : null;
 
         if (value != null) {

@@ -24,7 +24,7 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
-import grakn.core.graql.reasoner.atom.AtomicFactory;
+import grakn.core.graql.reasoner.atom.PropertyAtomicFactory;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.RelationType;
@@ -32,26 +32,21 @@ import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.core.Schema;
-import grakn.core.graql.reasoner.ReasonerException;
 import grakn.core.graql.reasoner.atom.binary.TypeAtom;
 import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.reasoner.atom.predicate.ValuePredicate;
-import grakn.core.graql.reasoner.cache.MultilevelSemanticCache;
-import grakn.core.kb.graql.reasoner.cache.QueryCache;
+import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
 import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.graql.reasoner.utils.conversion.RoleConverter;
 import grakn.core.graql.reasoner.utils.conversion.SchemaConceptConverter;
 import grakn.core.graql.reasoner.utils.conversion.TypeConverter;
-import grakn.core.kb.graql.reasoner.cache.RuleCache;
-import grakn.core.graql.reasoner.cache.RuleCacheImpl;
 import graql.lang.property.IdProperty;
 import graql.lang.property.TypeProperty;
 import graql.lang.property.ValueProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
-import grakn.core.kb.graql.executor.property.PropertyExecutorFactory;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -85,12 +80,12 @@ public class ReasonerUtils {
      * @param parent reasoner query the mapped predicate should belong to
      * @return mapped IdPredicate
      */
-    public static IdPredicate getUserDefinedIdPredicate(Variable typeVariable, Set<Statement> vars, ReasonerQuery parent){
+    public static IdPredicate getUserDefinedIdPredicate(ConceptManager conceptManager, Variable typeVariable, Set<Statement> vars, ReasonerQuery parent){
         return  vars.stream()
                 .filter(v -> v.var().equals(typeVariable))
                 .flatMap(v -> v.hasProperty(TypeProperty.class)?
-                        v.getProperties(TypeProperty.class).map(np -> IdPredicate.create(typeVariable, Label.of(np.name()), parent)) :
-                        v.getProperties(IdProperty.class).map(np -> IdPredicate.create(typeVariable, ConceptId.of(np.id()), parent)))
+                        v.getProperties(TypeProperty.class).map(np -> IdPredicate.create(conceptManager, typeVariable, Label.of(np.name()), parent)) :
+                        v.getProperties(IdProperty.class).map(np -> IdPredicate.create(conceptManager, typeVariable, ConceptId.of(np.id()), parent)))
                 .findFirst().orElse(null);
     }
 
@@ -104,14 +99,14 @@ public class ReasonerUtils {
      * @return mapped IdPredicate
      */
     @Nullable
-    public static IdPredicate getIdPredicate(Variable typeVariable, Statement typeVar, Set<Statement> vars, ReasonerQuery parent){
+    public static IdPredicate getIdPredicate(ConceptManager conceptManager, Variable typeVariable, Statement typeVar, Set<Statement> vars, ReasonerQuery parent){
         IdPredicate predicate = null;
         //look for id predicate among vars
         if(typeVar.var().isReturned()) {
-            predicate = getUserDefinedIdPredicate(typeVariable, vars, parent);
+            predicate = getUserDefinedIdPredicate(conceptManager, typeVariable, vars, parent);
         } else {
             TypeProperty nameProp = typeVar.getProperty(TypeProperty.class).orElse(null);
-            if (nameProp != null) predicate = IdPredicate.create(typeVariable, Label.of(nameProp.name()), parent);
+            if (nameProp != null) predicate = IdPredicate.create(conceptManager, typeVariable, Label.of(nameProp.name()), parent);
         }
         return predicate;
     }
@@ -155,7 +150,7 @@ public class ReasonerUtils {
      * @return set of mapped ValuePredicates
      */
     public static Set<ValuePredicate> getValuePredicates(Variable valueVariable, Statement statement, Set<Statement> fullContext,
-                                                         ReasonerQuery parent, AtomicFactory atomicFactory){
+                                                         ReasonerQuery parent, PropertyAtomicFactory propertyAtomicFactory){
         Set<Statement> context = statement.var().isReturned()?
                 fullContext.stream().filter(v -> v.var().equals(valueVariable)).collect(toSet()) :
                 Collections.singleton(statement);
@@ -163,7 +158,7 @@ public class ReasonerUtils {
         return context.stream()
                 .flatMap(s ->
                         s.getProperties(ValueProperty.class)
-                        .map(property -> atomicFactory.value(property, parent, statement, fullContext)
+                        .map(property -> propertyAtomicFactory.value(property, parent, statement, fullContext)
                 ))
                 .filter(ValuePredicate.class::isInstance)
                 .map(ValuePredicate.class::cast)

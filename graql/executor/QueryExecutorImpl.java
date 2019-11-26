@@ -32,7 +32,6 @@ import grakn.core.graql.executor.property.PropertyExecutorFactoryImpl;
 import grakn.core.graql.executor.util.LazyMergingStream;
 import grakn.core.graql.reasoner.ReasonerCheckedException;
 import grakn.core.graql.reasoner.query.ReasonerQueryFactory;
-import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.executor.ExecutorFactory;
@@ -41,6 +40,7 @@ import grakn.core.kb.graql.executor.property.PropertyExecutor;
 import grakn.core.kb.graql.executor.property.PropertyExecutorFactory;
 import grakn.core.kb.graql.gremlin.GraqlTraversal;
 import grakn.core.kb.graql.gremlin.TraversalPlanFactory;
+import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.kb.server.exception.GraknServerException;
 import grakn.core.kb.server.exception.GraqlSemanticException;
 import graql.lang.Graql;
@@ -123,7 +123,7 @@ public class QueryExecutorImpl implements QueryExecutor {
                 Stream<Conjunction<Statement>> conjunctions = matchClause.getPatterns().getDisjunctiveNormalForm().getPatterns().stream();
                 Stream<Stream<ConceptMap>> answerStreams = conjunctions
                         .map(p -> reasonerQueryFactory.create(p))
-                        .map(ReasonerQueryImpl::getPattern)
+                        .map(ReasonerQuery::getPattern)
                         .map(p -> traverse(p));
 
                 LazyMergingStream<ConceptMap> mergedStreams = new LazyMergingStream<>(answerStreams);

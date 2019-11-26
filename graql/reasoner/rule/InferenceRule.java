@@ -245,15 +245,9 @@ public class InferenceRule {
                         .collect(toSet());
                 bodyConjunctionAtoms.addAll(innerVps);
 
-                headAtom = AttributeAtom.create(
-                        resourceHead.getPattern(),
-                        resourceHead.getAttributeVariable(),
-                        resourceHead.getRelationVariable(),
-                        resourceHead.getPredicateVariable(),
-                        resourceHead.getTypeId(),
-                        innerVps,
-                        resourceHead.getParentQuery()
-                );
+                // TODO revert this to old implementation of instantiating without copy constructor
+                // or do it properly with a factory
+                headAtom = resourceHead.copy(innerVps);
             }
         }
 

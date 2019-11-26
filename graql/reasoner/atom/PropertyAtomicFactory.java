@@ -36,6 +36,7 @@ import grakn.core.graql.reasoner.atom.predicate.VariableValuePredicate;
 import grakn.core.graql.reasoner.atom.property.DataTypeAtom;
 import grakn.core.graql.reasoner.atom.property.IsAbstractAtom;
 import grakn.core.graql.reasoner.atom.property.RegexAtom;
+import grakn.core.graql.reasoner.query.ReasonerQueryFactory;
 import grakn.core.graql.reasoner.utils.ReasonerUtils;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Concept;
@@ -49,6 +50,7 @@ import grakn.core.kb.graql.reasoner.cache.RuleCache;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.kb.server.exception.GraqlQueryException;
 import grakn.core.kb.server.exception.GraqlSemanticException;
+import grakn.core.kb.server.statistics.KeyspaceStatistics;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.property.AbstractProperty;
@@ -82,18 +84,27 @@ import static grakn.core.graql.reasoner.utils.ReasonerUtils.getUserDefinedIdPred
 import static grakn.core.graql.reasoner.utils.ReasonerUtils.getValuePredicates;
 
 /**
- * Factory class for creating Atomic objects.
+ * Factory class for creating Atomic objects from Graql Patterns and Properties
  */
-public class AtomicFactory {
+public class PropertyAtomicFactory {
 
+    private ReasonerQueryFactory reasonerQueryFactory;
     private final ConceptManager conceptManager;
     private final RuleCache ruleCache;
     private final QueryCache queryCache;
+    private KeyspaceStatistics keyspaceStatistics;
 
-    public AtomicFactory(ConceptManager conceptManager, RuleCache ruleCache, QueryCache queryCache) {
+    public PropertyAtomicFactory(ConceptManager conceptManager,
+                                 RuleCache ruleCache, QueryCache queryCache, KeyspaceStatistics keyspaceStatistics) {
+        this.reasonerQueryFactory = null;
         this.conceptManager = conceptManager;
         this.ruleCache = ruleCache;
         this.queryCache = queryCache;
+        this.keyspaceStatistics = keyspaceStatistics;
+    }
+
+    public void setReasonerQueryFactory(ReasonerQueryFactory reasonerQueryFactory) {
+        this.reasonerQueryFactory = reasonerQueryFactory;
     }
 
     private Atomic createAtom(Variable var, VarProperty property, ReasonerQuery parent, Statement statement, Set<Statement> otherStatements) {
@@ -152,7 +163,7 @@ public class AtomicFactory {
     private Atomic type(Variable var, TypeProperty property, ReasonerQuery parent) {
         SchemaConcept schemaConcept = conceptManager.getSchemaConcept(Label.of(property.name()));
         if (schemaConcept == null) throw GraqlSemanticException.labelNotFound(Label.of(property.name()));
-        return IdPredicate.create(var.asReturnedVar(), Label.of(property.name()), parent);
+        return IdPredicate.create(conceptManager, var.asReturnedVar(), Label.of(property.name()), parent);
     }
 
     private Atomic when() {
@@ -164,9 +175,9 @@ public class AtomicFactory {
     }
 
     private Atomic sub(Variable var, SubProperty property, ReasonerQuery parent, Set<Statement> otherStatements) {
-        IdPredicate predicate = getIdPredicate(property.type().var(), property.type(), otherStatements, parent);
+        IdPredicate predicate = getIdPredicate(conceptManager, property.type().var(), property.type(), otherStatements, parent);
         ConceptId predicateId = predicate != null ? predicate.getPredicate() : null;
-        return SubAtom.create(var, property.type().var(), predicateId, parent);
+        return SubAtom.create(conceptManager, ruleCache, var, property.type().var(), predicateId, parent);
     }
 
 
@@ -184,7 +195,7 @@ public class AtomicFactory {
             if (rolePattern != null) {
                 Variable roleVar = rolePattern.var();
                 //look for indirect role definitions
-                IdPredicate roleId = getUserDefinedIdPredicate(roleVar, otherStatements, parent);
+                IdPredicate roleId = getUserDefinedIdPredicate(conceptManager, roleVar, otherStatements, parent);
                 if (roleId != null) {
                     Concept concept = conceptManager.getConcept(roleId.getPredicate());
                     if (concept != null) {
@@ -212,22 +223,23 @@ public class AtomicFactory {
             Statement isaVar = isaProp.type();
             String label = isaVar.getType().orElse(null);
             if (label != null) {
-                predicate = IdPredicate.create(typeVariable, Label.of(label), parent);
+                predicate = IdPredicate.create(conceptManager, typeVariable, Label.of(label), parent);
             } else {
                 typeVariable = isaVar.var();
-                predicate = getUserDefinedIdPredicate(typeVariable, otherStatements, parent);
+                predicate = getUserDefinedIdPredicate(conceptManager, typeVariable, otherStatements, parent);
             }
         }
         ConceptId predicateId = predicate != null ? predicate.getPredicate() : null;
         relVar = isaProp != null && isaProp.isExplicit() ?
                 relVar.isaX(new Statement(typeVariable.asReturnedVar())) :
                 relVar.isa(new Statement(typeVariable.asReturnedVar()));
-        return RelationAtom.create(conceptManager, ruleCache, relVar, typeVariable, predicateId, parent);
+        return RelationAtom.create(reasonerQueryFactory, conceptManager, ruleCache, queryCache, keyspaceStatistics,
+                relVar, typeVariable, predicateId, parent);
     }
 
 
     private Atomic relates(Variable var, RelatesProperty property, ReasonerQuery parent, Set<Statement> otherStatements) {
-        IdPredicate predicate = getIdPredicate(property.role().var(), property.role(), otherStatements, parent);
+        IdPredicate predicate = getIdPredicate(conceptManager, property.role().var(), property.role(), otherStatements, parent);
         ConceptId predicateId = predicate != null ? predicate.getPredicate() : null;
         return RelatesAtom.create(conceptManager, ruleCache, var, property.role().var(), predicateId, parent);
     }
@@ -237,7 +249,7 @@ public class AtomicFactory {
     }
 
     private Atomic plays(Variable var, PlaysProperty property, ReasonerQuery parent, Set<Statement> otherStatements) {
-        IdPredicate predicate = getIdPredicate(property.role().var(), property.role(), otherStatements, parent);
+        IdPredicate predicate = getIdPredicate(conceptManager, property.role().var(), property.role(), otherStatements, parent);
         ConceptId predicateId = predicate == null ? null : predicate.getPredicate();
         return PlaysAtom.create(conceptManager, ruleCache, var, property.role().var(), predicateId, parent);
     }
@@ -247,7 +259,7 @@ public class AtomicFactory {
     }
 
     private Atomic id(Variable var, IdProperty property, ReasonerQuery parent) {
-        return IdPredicate.create(var, ConceptId.of(property.id()), parent);
+        return IdPredicate.create(conceptManager, var, ConceptId.of(property.id()), parent);
     }
 
     private Atomic hasAttributeType(Variable var, HasAttributeTypeProperty property, ReasonerQuery parent, Statement statement, Set<Statement> otherStatements) {
@@ -273,14 +285,14 @@ public class AtomicFactory {
 
         IsaProperty isaProp = property.attribute().getProperties(IsaProperty.class).findFirst().orElse(null);
         Statement typeVar = isaProp != null ? isaProp.type() : null;
-        IdPredicate predicate = typeVar != null ? getIdPredicate(predicateVariable, typeVar, otherStatements, parent) : null;
+        IdPredicate predicate = typeVar != null ? getIdPredicate(conceptManager, predicateVariable, typeVar, otherStatements, parent) : null;
         ConceptId predicateId = predicate != null ? predicate.getPredicate() : null;
 
         //add resource atom
         Statement resVar = relationVariable.isReturned() ?
                 new Statement(varName).has(property.type(), new Statement(attributeVariable), new Statement(relationVariable)) :
                 new Statement(varName).has(property.type(), new Statement(attributeVariable));
-        return AttributeAtom.create(null, conceptManager, ruleCache, queryCache, resVar,
+        return AttributeAtom.create(reasonerQueryFactory, conceptManager, ruleCache, queryCache, keyspaceStatistics, resVar,
                 attributeVariable, relationVariable, predicateVariable, predicateId, predicates, parent);
     }
 
@@ -315,13 +327,13 @@ public class AtomicFactory {
         return isVariable? VariableValuePredicate.fromValuePredicate(vp) : vp;
     }
 
-    private Atomic isa(Variable var, IsaProperty property, ReasonerQuery parent, Statement statement, Set<Statement> otherStatements) {
+    public Atomic isa(Variable var, IsaProperty property, ReasonerQuery parent, Statement statement, Set<Statement> otherStatements) {
         //IsaProperty is unique within a var, so skip if this is a relation
         if (statement.hasProperty(RelationProperty.class)) return null;
 
         Variable typeVar = property.type().var();
 
-        IdPredicate predicate = getIdPredicate(typeVar, property.type(), otherStatements, parent);
+        IdPredicate predicate = getIdPredicate(conceptManager, typeVar, property.type(), otherStatements, parent);
         ConceptId predicateId = predicate != null ? predicate.getPredicate() : null;
 
         //isa part
@@ -374,20 +386,6 @@ public class AtomicFactory {
                 .map(Atomic::simplify);
     }
 
-    /**
-     * @param parent query context
-     * @return (partial) set of predicates corresponding to this answer
-     *
-     * TODO this should either not be here or not be public and definitely not static
-     */
-    @CheckReturnValue
-    public static Set<Atomic> answerToPredicates(ConceptMap answer, ReasonerQuery parent) {
-        Set<Variable> varNames = parent.getVarNames();
-        return answer.map().entrySet().stream()
-                .filter(e -> varNames.contains(e.getKey()))
-                .map(e -> IdPredicate.create(e.getKey(), e.getValue().id(), parent))
-                .collect(Collectors.toSet());
-    }
 
     /**
      *
@@ -436,5 +434,5 @@ public class AtomicFactory {
         ValueProperty.Operation operation = ValueProperty.Operation.Comparison.of(directOperation.comparator(), value);
         return ValuePredicate.create(var.asReturnedVar(), operation, parent);
     }
-}
 
+}
