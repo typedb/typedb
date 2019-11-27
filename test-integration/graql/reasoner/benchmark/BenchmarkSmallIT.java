@@ -19,8 +19,6 @@
 package grakn.core.graql.reasoner.benchmark;
 
 
-import grakn.client.GraknClient;
-import grakn.client.answer.Explanation;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.graph.DiagonalGraph;
 import grakn.core.graql.reasoner.graph.LinearTransitivityMatrixGraph;
@@ -35,16 +33,11 @@ import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.util.GraqlTestUtil;
 import graql.lang.Graql;
 import graql.lang.query.GraqlGet;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
-import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.util.List;
-import java.util.stream.Collectors;
 import org.junit.ClassRule;
 import org.junit.Test;
 
