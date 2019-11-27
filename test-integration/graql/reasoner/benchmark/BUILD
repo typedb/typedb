@@ -58,7 +58,6 @@ java_test(
         "//test-integration/graql/reasoner/graph:transitivity-chain-graph",
         "//test-integration/graql/reasoner/graph:transitivity-matrix-graph",
         "//test-integration/rule:grakn-test-server",
-        "//test-integration/util:graql-test-util",
         "@graknlabs_graql//java:graql",
     ],
 )
