@@ -192,7 +192,7 @@ public class TransactionImpl implements Transaction {
             Set<String> insertedIndices = cache().getNewAttributes().keySet().stream().map(Pair::second).collect(Collectors.toSet());
             keyLockRequired = modifiedKeyIndices.stream().anyMatch(keyIndex -> !insertedIndices.contains(keyIndex));
         }
-        return attributeLockRequired
+        boolean lockRequired = attributeLockRequired
                 || shardLockRequired
                 // In this case we need to lock, so that other concurrent Transactions
                 // that are trying to create new attributes will read an updated version of attributesCache
@@ -200,6 +200,14 @@ public class TransactionImpl implements Transaction {
                 // contains attributes that we are removing in this transaction.
                 || !cache().getRemovedAttributes().isEmpty()
                 || keyLockRequired;
+        if (lockRequired){
+            LOG.debug(txId + " needs lock: " +
+                    (attributeLockRequired? "attribute" : "") +
+                    (shardLockRequired? "shard" : "") +
+                    (keyLockRequired? "key" : "")+
+                    (!cache().getRemovedAttributes().isEmpty()? "delete" : ""));
+        }
+        return lockRequired;
     }
 
     private void commitInternal() throws InvalidKBException {
@@ -207,11 +215,11 @@ public class TransactionImpl implements Transaction {
         if (lockRequired) session.graphLock().writeLock().lock();
         try {
             createNewTypeShardsWhenThresholdReached();
-            if (!cache().getNewAttributes().isEmpty()) mergeAttributes();
+            cache().getRemovedAttributes().forEach(index -> session.attributeManager().attributesCommitted().invalidate(index));
+            Set<String> deduplicatedIndices = mergeAttributes();
             persistInternal();
-            if (cache().getNewAttributes().isEmpty()){
-                cache().getRemovedAttributes().forEach(index -> session.attributeManager().attributesCache().invalidate(index));
-            }
+            ackCommit(deduplicatedIndices);
+
         } finally {
             if (lockRequired) session.graphLock().writeLock().unlock();
         }
@@ -222,33 +230,44 @@ public class TransactionImpl implements Transaction {
         session.keyspaceStatistics().commit(conceptManager, uncomittedStatisticsDelta);
         LOG.trace("Graph is valid. Committing graph...");
         janusTransaction.commit();
-        String txId = this.janusTransaction.toString();
-
-        Set<String> newAttributeIndices = cache().getNewAttributes().keySet().stream().map(Pair::second).collect(Collectors.toSet());
-        session.shardManager().ackCommit(cache().getNewShards().keySet(), txId);
-        session.attributeManager().ackCommit(newAttributeIndices, txId);
-
         LOG.trace("Graph committed.");
+    }
+
+    private void ackCommit(Set<String> deduplicatedIndices){
+        String txId = this.janusTransaction.toString();
+        session.shardManager().ackCommit(cache().getNewShards().keySet(), txId);
+        //this should ack all inserts so that insert requests are cleared
+        Set<String> newIndices = cache().getNewAttributes().keySet().stream().map(Pair::second).collect(Collectors.toSet());
+        session.attributeManager().ackCommit(newIndices, txId);
+
+        //this should ack all inserts that weren't deduplicated so that we have correct attributes in attributesCommitted
+        cache().getNewAttributes().forEach((indexPair, conceptId) -> {
+            String index = indexPair.second();
+            if (!deduplicatedIndices.contains(index)) session.attributeManager().attributesCommitted().put(index, conceptId);
+        });
+
     }
 
     // When there are new attributes in the current transaction that is about to be committed
     // we serialise the commit by locking and merge attributes that are duplicates.
-    private void mergeAttributes() {
-        cache().getRemovedAttributes().forEach(index -> session.attributeManager().attributesCache().invalidate(index));
+    private Set<String> mergeAttributes() {
+        Set<String> deduplicatesIndices = new HashSet<>();
         cache().getNewAttributes().forEach(((labelIndexPair, conceptId) -> {
-            // If the same index is contained in attributesCache, it means
+            // If the same index is contained in attributesCommitted, it means
             // another concurrent transaction inserted the same attribute, time to merge!
-            // NOTE: we still need to rely on attributesCache instead of checking in the graph
+            // NOTE: we still need to rely on attributesCommitted instead of checking in the graph
             // if the index exists, because apparently JanusGraph does not make indexes available
             // in a Read Committed fashion
-            ConceptId targetId = session.attributeManager().attributesCache().getIfPresent(labelIndexPair.second());
+            String index = labelIndexPair.second();
+            Label label = labelIndexPair.first();
+            ConceptId targetId = session.attributeManager().attributesCommitted().getIfPresent(index);
             if (targetId != null) {
                 merge(conceptId, targetId);
-                statisticsDelta().decrementAttribute(labelIndexPair.first());
-            } else {
-                session.attributeManager().attributesCache().put(labelIndexPair.second(), conceptId);
+                deduplicatesIndices.add(index);
+                statisticsDelta().decrementAttribute(label);
             }
         }));
+        return deduplicatesIndices;
     }
 
     @VisibleForTesting
@@ -273,10 +292,10 @@ public class TransactionImpl implements Transaction {
         String txId = this.janusTransaction.toString();
         cache().getNewShards()
                 .forEach((label, count) -> {
-                    Long softCheckPoint = session.shardManager().shardCache().getIfPresent(label);
+                    Long softCheckPoint = session.shardManager().getEphemeralShardCount(label);
                     long instanceCount = session.keyspaceStatistics().count(conceptManager, label) + uncomittedStatisticsDelta.delta(label);
                     if (softCheckPoint == null || instanceCount - softCheckPoint >= typeShardThreshold) {
-                        session.shardManager().shardCache().put(label, instanceCount);
+                        session.shardManager().updateEphemeralShardCount(label, instanceCount);
                         LOG.trace(txId + " creates a shard for type: " + label + ", instance count: " + instanceCount + " ,");
                         shard(getType(label).id());
                         setShardCheckpoint(label, instanceCount);

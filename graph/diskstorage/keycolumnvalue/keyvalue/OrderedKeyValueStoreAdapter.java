@@ -57,24 +57,24 @@ import java.util.function.Predicate;
  * static, specifying that length will make the representation of a {@link KeyColumnValueStore} in a {@link OrderedKeyValueStore}
  * more concise and more efficient.
  */
-public class OrderedKeyValueStoreAdapter extends BaseKeyColumnValueAdapter {
+public class OrderedKeyValueStoreAdapter implements KeyColumnValueStore {
 
     private static final Logger log = LoggerFactory.getLogger(OrderedKeyValueStoreAdapter.class);
 
-    public static final int variableKeyLength = 0;
+    private static final int variableKeyLength = 0;
 
-    public static final int maxVariableKeyLength = Short.MAX_VALUE;
-    public static final int variableKeyLengthSize = 2;
+    private static final int maxVariableKeyLength = Short.MAX_VALUE;
+    private static final int variableKeyLengthSize = 2;
 
     private final OrderedKeyValueStore store;
     private final int keyLength;
+    private boolean isClosed = false;
 
     public OrderedKeyValueStoreAdapter(OrderedKeyValueStore store) {
         this(store, variableKeyLength);
     }
 
     public OrderedKeyValueStoreAdapter(OrderedKeyValueStore store, int keyLength) {
-        super(store);
         Preconditions.checkNotNull(store);
         Preconditions.checkArgument(keyLength >= 0);
         this.store = store;
@@ -148,6 +148,21 @@ public class OrderedKeyValueStoreAdapter extends BaseKeyColumnValueAdapter {
     @Override
     public KeyIterator getKeys(SliceQuery columnQuery, StoreTransaction txh) throws BackendException {
         throw new UnsupportedOperationException("This store has ordered keys, use getKeys(KeyRangeQuery, StoreTransaction) instead");
+    }
+
+    @Override
+    public String getName() {
+        return store.getName();
+    }
+
+    @Override
+    public void close() throws BackendException {
+        store.close();
+        isClosed = true;
+    }
+
+    public boolean isClosed() {
+        return isClosed;
     }
 
     private EntryList convert(RecordIterator<KeyValueEntry> entries) throws BackendException {

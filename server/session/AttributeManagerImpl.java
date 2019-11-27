@@ -32,24 +32,29 @@ public class AttributeManagerImpl implements AttributeManager {
     private final static int TIMEOUT_MINUTES_ATTRIBUTES_CACHE = 2;
     private final static int ATTRIBUTES_CACHE_MAX_SIZE = 10000;
 
-    private final Cache<String, ConceptId> attributesCache;
+    private final Cache<String, ConceptId> attributesCommitted;
     //we track txs that insert an attribute with given index
-    private final ConcurrentHashMap<String, Set<String>> ephemeralAttributes;
+    private final ConcurrentHashMap<String, Set<String>> attributesEphemeral;
     private final Set<String> lockCandidates;
 
     public AttributeManagerImpl(){
-        this.attributesCache = CacheBuilder.newBuilder()
+        this.attributesCommitted = CacheBuilder.newBuilder()
                 .expireAfterAccess(TIMEOUT_MINUTES_ATTRIBUTES_CACHE, TimeUnit.MINUTES)
                 .maximumSize(ATTRIBUTES_CACHE_MAX_SIZE)
                 .build();
 
-        this.ephemeralAttributes = new ConcurrentHashMap<>();
+        this.attributesEphemeral = new ConcurrentHashMap<>();
         this.lockCandidates = ConcurrentHashMap.newKeySet();
     }
 
     @Override
-    public Cache<String, ConceptId> attributesCache() {
-        return attributesCache;
+    public boolean isAttributeEphemeral(String index) {
+        return attributesEphemeral.containsKey(index);
+    }
+
+    @Override
+    public Cache<String, ConceptId> attributesCommitted() {
+        return attributesCommitted;
     }
 
     @Override
@@ -57,7 +62,7 @@ public class AttributeManagerImpl implements AttributeManager {
         //transaction of txId signals that it inserted an attribute with specific index:
         // - if we don't have the index in the cache, we create an appropriate entry
         // - if index is present in the cache, we update the entry with txId and recommend all txs in the entry to lock
-        ephemeralAttributes.compute(index, (ind, entry) -> {
+        attributesEphemeral.compute(index, (ind, entry) -> {
             if (entry == null) {
                 Set<String> txSet = ConcurrentHashMap.newKeySet();
                 txSet.add(txId);
@@ -75,7 +80,7 @@ public class AttributeManagerImpl implements AttributeManager {
         //transaction of txId signals that it deleted an attribute with specific index:
         // - we remove this txId from ephemeral attributes
         // - if the removal leads to emptying the ephemeral attribute entry, we remove the entry
-        ephemeralAttributes.merge(index, ConcurrentHashMap.newKeySet(), (existingValue, zero) -> {
+        attributesEphemeral.merge(index, ConcurrentHashMap.newKeySet(), (existingValue, zero) -> {
             existingValue.remove(txId);
             if (existingValue.size() == 0) return null;
             return existingValue;
@@ -104,6 +109,6 @@ public class AttributeManagerImpl implements AttributeManager {
 
     @Override
     public boolean ephemeralAttributesPresent() {
-        return !ephemeralAttributes.values().isEmpty();
+        return !attributesEphemeral.values().isEmpty();
     }
 }

@@ -46,8 +46,8 @@ public class VertexCache {
                     if (notification.getCause() == RemovalCause.EXPLICIT) { //Due to invalidation at the end
                         return;
                     }
-                    //Should only get evicted based on size constraint or replaced through add
-                    assert (notification.getCause() == RemovalCause.SIZE || notification.getCause() == RemovalCause.REPLACED) : "Cause: " + notification.getCause();
+                    //We get here if the entry is evicted because of size constraint or replaced through add
+                    //i.e. RemovalCause.SIZE or RemovalCause.REPLACED
                     InternalVertex v = notification.getValue();
                     if (((AbstractVertex) v).isTxOpen() && (v.isModified() || v.isRemoved())) { //move vertex to volatile map if we cannot lose track of it
                         volatileVertices.putIfAbsent(notification.getKey(), v);

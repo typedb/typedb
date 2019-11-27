@@ -172,7 +172,7 @@ public class SessionImpl implements Session {
 
 
         // Grakn elements
-        ConceptManager conceptManager = new ConceptManagerImpl(elementFactory, transactionCache, conceptNotificationChannel, graphLock);
+        ConceptManager conceptManager = new ConceptManagerImpl(elementFactory, transactionCache, conceptNotificationChannel, attributeManager);
         TraversalPlanFactory traversalPlanFactory = new TraversalPlanFactoryImpl(janusTraversalSourceProvider, conceptManager, this.config().getProperty(ConfigKey.TYPE_SHARD_THRESHOLD), keyspaceStatistics);
         ExecutorFactoryImpl executorFactory = new ExecutorFactoryImpl(conceptManager, hadoopGraph, keyspaceStatistics, traversalPlanFactory, null);
         RuleCacheImpl ruleCache = new RuleCacheImpl(conceptManager);

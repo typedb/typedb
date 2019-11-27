@@ -30,6 +30,10 @@ import grakn.core.concept.impl.RelationTypeImpl;
 import grakn.core.concept.impl.RoleImpl;
 import grakn.core.concept.impl.RuleImpl;
 import grakn.core.concept.impl.TypeImpl;
+import grakn.core.concept.structure.ElementFactory;
+import grakn.core.concept.util.attribute.Serialiser;
+import grakn.core.concept.util.attribute.ValueConverter;
+import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Concept;
@@ -47,28 +51,23 @@ import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.concept.manager.ConceptNotificationChannel;
 import grakn.core.kb.concept.structure.EdgeElement;
-import grakn.core.core.Schema;
 import grakn.core.kb.concept.structure.Shard;
 import grakn.core.kb.concept.structure.VertexElement;
-import grakn.core.concept.util.attribute.Serialiser;
+import grakn.core.kb.server.AttributeManager;
 import grakn.core.kb.server.cache.TransactionCache;
 import grakn.core.kb.server.exception.TemporaryWriteException;
 import graql.lang.pattern.Pattern;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import grakn.core.concept.structure.ElementFactory;
-import grakn.core.concept.util.attribute.ValueConverter;
 
 import javax.annotation.Nullable;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.locks.ReadWriteLock;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
-import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 
 import static grakn.core.core.Schema.BaseType.ATTRIBUTE;
 import static grakn.core.core.Schema.BaseType.ATTRIBUTE_TYPE;
@@ -96,15 +95,14 @@ public class ConceptManagerImpl implements ConceptManager {
     private ElementFactory elementFactory;
     private TransactionCache transactionCache;
     private ConceptNotificationChannel conceptNotificationChannel;
-    private ReadWriteLock graphLock;
+    private final AttributeManager attributeManager;
 
-    public ConceptManagerImpl(ElementFactory elementFactory, TransactionCache transactionCache, ConceptNotificationChannel conceptNotificationChannel, ReadWriteLock graphLock) {
+
+    public ConceptManagerImpl(ElementFactory elementFactory, TransactionCache transactionCache, ConceptNotificationChannel conceptNotificationChannel, AttributeManager attributeManager) {
         this.elementFactory = elementFactory;
         this.transactionCache = transactionCache;
         this.conceptNotificationChannel = conceptNotificationChannel;
-        this.graphLock = graphLock;
-    }
-
+        this.attributeManager = attributeManager;    }
 
     /*
 
@@ -400,19 +398,23 @@ public class ConceptManagerImpl implements ConceptManager {
 
     /**
      * This is only used when checking if attribute exists before trying to create a new one.
-     * We use a readLock as janusGraph commit does not seem to be atomic. Further investigation needed
      */
     @Override
-    public Attribute getAttributeWithLock(String index) {
+    public Attribute getAttribute(String index) {
         Attribute concept = getCachedAttribute(index);
         if (concept != null) return concept;
 
-        graphLock.readLock().lock();
-        try {
-            return getConcept(Schema.VertexProperty.INDEX, index);
-        } finally {
-            graphLock.readLock().unlock();
-        }
+        //We check committed attributes first. In certain situations (adding the same attribute in multiple txs),
+        //the ephemeral cache might be populated for a longer period of time.
+        //As a result checking ephemeral attributes first might result in locking all the time.
+        ConceptId attributeCommitted = attributeManager.attributesCommitted().getIfPresent(index);
+        if (attributeCommitted != null) return getConcept(attributeCommitted);
+
+        //check EPHA
+        if (attributeManager.isAttributeEphemeral(index)) return null;
+
+        //check graph
+        return getConcept(Schema.VertexProperty.INDEX, index);
     }
 
     @Override
@@ -538,20 +540,18 @@ public class ConceptManagerImpl implements ConceptManager {
     /**
      * This is used when assigning a type to a concept - we check the current shard.
      * The read vertex property contains the current shard vertex id.
-     * We use a readLock as janusGraph commit does not seem to be atomic - the property might get updated before the corresponding vertex is actually created.
-     * As a result, without a lock we could get a ghost vertex READ - a vertex that's partially created.
-     * Further investigation needed
      */
     public Shard getShardWithLock(String typeId) {
-        graphLock.readLock().lock();
-        Vertex shardVertex;
-        try {
-            Object currentShardId = elementFactory.getVertexWithId(typeId).property(Schema.VertexProperty.CURRENT_SHARD.name()).value();
-            shardVertex = elementFactory.getVertexWithId(currentShardId.toString());
-        } finally {
-            graphLock.readLock().unlock();
-        }
-        return elementFactory.getShard(shardVertex);
+        Object currentShardId = elementFactory.getVertexWithId(typeId).property(Schema.VertexProperty.CURRENT_SHARD.name()).value();
+
+        //Try to fetch the current shard vertex, because janus commits are not atomic, property might exists but the corresponding
+        //vertex might not yet be created. Consequently the fetch might return null.
+        Vertex shardVertex = elementFactory.getVertexWithId(currentShardId.toString());
+        if (shardVertex != null) return elementFactory.getShard(shardVertex);
+
+        //If current shard fetch fails. We pick any of the existing shards.
+        Vertex typeVertex = elementFactory.getVertexWithId(typeId);
+        return elementFactory.buildVertexElement(typeVertex).shards().findFirst().orElse(null);
     }
 
     public Rule getRule(String label) {

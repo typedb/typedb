@@ -42,7 +42,9 @@ public interface ShardManager {
     void ackShardRequest(Label type, String txId);
     void ackCommit(Set<Label> labels, String txId);
     boolean requiresLock(String txId);
-    Cache<Label, Long> shardCache();
+
+    Long getEphemeralShardCount(Label type);
+    void updateEphemeralShardCount(Label type, Long count);
 
     @VisibleForTesting
     boolean lockCandidatesPresent();

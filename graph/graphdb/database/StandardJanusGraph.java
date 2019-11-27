@@ -242,10 +242,6 @@ public class StandardJanusGraph implements JanusGraph {
         return indexSerializer;
     }
 
-    public Backend getBackend() {
-        return backend;
-    }
-
     public IDManager getIDManager() {
         return idManager;
     }

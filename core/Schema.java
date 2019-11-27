@@ -356,6 +356,7 @@ public final class Schema {
      */
     @CheckReturnValue
     public static String generateAttributeIndex(Label label, String value) {
+        //TODO trim it down in the future
         return Schema.BaseType.ATTRIBUTE.name() + "-" + label + "-" + value;
     }
 }

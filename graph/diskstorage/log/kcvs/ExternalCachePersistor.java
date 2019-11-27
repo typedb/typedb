@@ -25,7 +25,6 @@ import grakn.core.graph.diskstorage.Entry;
 import grakn.core.graph.diskstorage.StaticBuffer;
 import grakn.core.graph.diskstorage.keycolumnvalue.cache.CacheTransaction;
 import grakn.core.graph.diskstorage.keycolumnvalue.cache.KCVSCache;
-import grakn.core.graph.diskstorage.log.kcvs.ExternalPersistor;
 
 
 public class ExternalCachePersistor implements ExternalPersistor {
@@ -41,9 +40,9 @@ public class ExternalCachePersistor implements ExternalPersistor {
     @Override
     public void add(StaticBuffer key, Entry cell) {
         try {
-            kcvs.mutateEntries(key, Lists.newArrayList(cell), KCVSCache.NO_DELETIONS,tx);
+            kcvs.mutateEntries(key, Lists.newArrayList(cell), KCVSCache.NO_DELETIONS, tx);
         } catch (BackendException e) {
-            throw new JanusGraphException("Unexpected storage exception in LOG persistence against cache",e);
+            throw new JanusGraphException("Unexpected storage exception in LOG persistence against cache", e);
         }
     }
 }

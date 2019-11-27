@@ -294,10 +294,7 @@ jobs:
       - checkout
       - run: |
           bazel run @graknlabs_build_tools//ci:release-validate-deps -- \
-            graknlabs_common graknlabs_graql graknlabs_protocol
-            # TODO: add graknlabs_console once we've removed the
-            # cyclic dependency between core and client-java:
-            # https://github.com/graknlabs/grakn/issues/5272
+            graknlabs_common graknlabs_graql graknlabs_protocol graknlabs_console
 
   deploy-github:
     machine: true
@@ -459,6 +456,7 @@ workflows:
               only: master
           requires:
             - build
+            - build-checkstyle
             - build-analysis
             - test-common
             - test-server
@@ -472,6 +470,7 @@ workflows:
               only: master
           requires:
             - build
+            - build-checkstyle
             - build-analysis
             - test-common
             - test-server
@@ -485,6 +484,7 @@ workflows:
               only: master
           requires:
             - build
+            - build-checkstyle
             - build-analysis
             - test-common
             - test-server

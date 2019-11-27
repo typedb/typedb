@@ -517,7 +517,6 @@ public class TransactionOLTPIT {
     @Test
     public void whenMultipleTxsInsertAttributes_noGhostVerticesAreCreatedAndAttributeManagerIsEmptyAfterLoading() throws ExecutionException, InterruptedException {
         Session session = server.sessionWithNewKeyspace();
-
         String entityLabel = "someEntity";
         String attributeLabel = "someAttribute";
         try(Transaction tx = session.writeTransaction()){

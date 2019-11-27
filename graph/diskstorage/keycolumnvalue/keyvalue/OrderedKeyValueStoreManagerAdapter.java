@@ -31,10 +31,6 @@ import grakn.core.graph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
 import grakn.core.graph.diskstorage.keycolumnvalue.KeyRange;
 import grakn.core.graph.diskstorage.keycolumnvalue.StoreFeatures;
 import grakn.core.graph.diskstorage.keycolumnvalue.StoreTransaction;
-import grakn.core.graph.diskstorage.keycolumnvalue.keyvalue.KVMutation;
-import grakn.core.graph.diskstorage.keycolumnvalue.keyvalue.OrderedKeyValueStore;
-import grakn.core.graph.diskstorage.keycolumnvalue.keyvalue.OrderedKeyValueStoreAdapter;
-import grakn.core.graph.diskstorage.keycolumnvalue.keyvalue.OrderedKeyValueStoreManager;
 
 import java.util.HashMap;
 import java.util.List;
@@ -98,8 +94,7 @@ public class OrderedKeyValueStoreManagerAdapter implements KeyColumnValueStoreMa
     }
 
     @Override
-    public synchronized OrderedKeyValueStoreAdapter openDatabase(String name, StoreMetaData.Container metaData)
-            throws BackendException {
+    public synchronized OrderedKeyValueStoreAdapter openDatabase(String name, StoreMetaData.Container metaData) throws BackendException {
         if (!stores.containsKey(name) || stores.get(name).isClosed()) {
             OrderedKeyValueStoreAdapter store = wrapKeyValueStore(manager.openDatabase(name), keyLengths);
             stores.put(name, store);
@@ -109,7 +104,7 @@ public class OrderedKeyValueStoreManagerAdapter implements KeyColumnValueStoreMa
 
     @Override
     public void mutateMany(Map<String, Map<StaticBuffer, KCVMutation>> mutations, StoreTransaction txh) throws BackendException {
-        final Map<String, KVMutation> converted = new HashMap<>(mutations.size());
+        Map<String, KVMutation> converted = new HashMap<>(mutations.size());
         for (Map.Entry<String, Map<StaticBuffer, KCVMutation>> storeEntry : mutations.entrySet()) {
             OrderedKeyValueStoreAdapter store = openDatabase(storeEntry.getKey());
             Preconditions.checkNotNull(store);

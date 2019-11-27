@@ -61,7 +61,7 @@ public interface ConceptManager {
     Role getRole(String label);
     Rule getRule(String label);
     <D> Attribute<D> getCachedAttribute(String index);
-    <D> Attribute<D> getAttributeWithLock(String index);
+    <D> Attribute<D> getAttribute(String index);
 
     <T extends Concept> T getConcept(Schema.VertexProperty vertexProperty, Object propertyValue);
     <T extends Concept> T getConcept(ConceptId conceptId);
