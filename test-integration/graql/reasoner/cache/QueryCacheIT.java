@@ -54,6 +54,7 @@ import org.junit.Test;
 
 import static grakn.core.util.GraqlTestUtil.assertCollectionsNonTriviallyEqual;
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
+import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertNotNull;
@@ -412,7 +413,36 @@ public class QueryCacheIT {
             ReasonerAtomicQuery groundQuery = query.withSubstitution(inferredAnswer);
             assertFalse(cache.getAnswers(groundQuery).isEmpty());
             assertTrue(cache.answersQuery(groundQuery));
+        }
+    }
 
+    @Test
+    public void whenGettingAndMatchExistsAndAnswersFetchedFromDBAndCache_weDontReturnDuplicateAnswers(){
+        try(Transaction tx = genericSchemaSession.readTransaction()) {
+            MultilevelSemanticCache cache = new MultilevelSemanticCache();
+            Concept sConcept = tx.stream(Graql.<GraqlGet>parse("match $x has resource 's';get;")).iterator().next().get("x");
+            Concept fConcept = tx.stream(Graql.<GraqlGet>parse("match $x has resource 'f';get;")).iterator().next().get("x");
+
+            ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction("(subRole1: $x, subRole2: $y) isa binary;"), tx);
+
+            ConceptMap dbAnswer = new ConceptMap(ImmutableMap.of(
+                    Graql.var("x").var(), fConcept,
+                    Graql.var("y").var(), sConcept)
+            ).explain(new LookupExplanation(), query.getPattern());
+
+            //record
+            tx.execute(query.getQuery()).stream()
+                    .map(ans -> ans.explain(new LookupExplanation(), query.getPattern()))
+                    .filter(ans -> !ans.equals(dbAnswer))
+                    .forEach(ans -> cache.record(query, ans));
+
+            //mock a rule explained answer that is equal to a dbAnswer
+            ConceptMap inferredAnswer = dbAnswer.explain(new RuleExplanation(tx.getMetaRule().id()), query.getPattern());
+            cache.record(query, inferredAnswer);
+
+            //retrieve
+            List<ConceptMap> cacheAnswers = cache.getAnswerStream(query).collect(toList());
+            assertCollectionsNonTriviallyEqual(cacheAnswers, new HashSet<>(cacheAnswers));
         }
     }
 
@@ -666,7 +696,7 @@ public class QueryCacheIT {
             assertTrue(cache.isComplete(query));
             assertTrue(cache.isDBComplete(query));
 
-            query.materialise(new ConceptMap()).collect(Collectors.toList());
+            query.materialise(new ConceptMap()).collect(toList());
 
             assertTrue(cache.isComplete(query));
             assertTrue(cache.isDBComplete(query));
