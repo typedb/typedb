@@ -23,20 +23,18 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Sets;
 import grakn.common.util.Pair;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.kb.concept.api.SchemaConcept;
-import grakn.core.kb.concept.api.Type;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.reasoner.rule.RuleUtils;
-import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.graql.reasoner.unifier.MultiUnifierImpl;
-import grakn.core.graql.reasoner.unifier.UnifierType;
+import grakn.core.kb.concept.api.SchemaConcept;
+import grakn.core.kb.concept.api.Type;
+import grakn.core.kb.graql.reasoner.cache.CacheEntry;
+import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
 import graql.lang.statement.Variable;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
-
-import grakn.core.kb.graql.reasoner.cache.CacheEntry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -78,7 +76,7 @@ public abstract class SemanticCache<
     final private HashMultimap<SchemaConcept, QE> families = HashMultimap.create();
     final private HashMultimap<QE, QE> parents = HashMultimap.create();
 
-    UnifierType semanticUnifier(){ return UnifierType.RULE;}
+    private static final Logger LOG = LoggerFactory.getLogger(SemanticCache.class);
 
     @Override
     public boolean isComplete(ReasonerAtomicQuery query){
@@ -101,17 +99,9 @@ public abstract class SemanticCache<
      * @param inferred true if inferred answers should be propagated
      * @return true if new answers were found during propagation
      */
-    protected abstract boolean propagateAnswers(CacheEntry<ReasonerAtomicQuery, SE> parentEntry, CacheEntry<ReasonerAtomicQuery, SE> childEntry, boolean inferred);
+    abstract boolean propagateAnswers(CacheEntry<ReasonerAtomicQuery, SE> parentEntry, CacheEntry<ReasonerAtomicQuery, SE> childEntry, boolean inferred);
 
-    protected abstract Stream<ConceptMap> entryToAnswerStream(CacheEntry<ReasonerAtomicQuery, SE> entry);
-
-    protected abstract Pair<Stream<ConceptMap>, MultiUnifier> entryToAnswerStreamWithUnifier(ReasonerAtomicQuery query, CacheEntry<ReasonerAtomicQuery, SE> entry);
-
-    /**
-     * @param query to be checked for answers
-     * @return true if cache answers the input query
-     */
-    protected abstract boolean answersQuery(ReasonerAtomicQuery query);
+    abstract Pair<Stream<ConceptMap>, MultiUnifier> entryToAnswerStreamWithUnifier(ReasonerAtomicQuery query, CacheEntry<ReasonerAtomicQuery, SE> entry);
 
     abstract CacheEntry<ReasonerAtomicQuery, SE> createEntry(ReasonerAtomicQuery query, Set<ConceptMap> answers);
 
@@ -274,8 +264,6 @@ public abstract class SemanticCache<
         );
     }
 
-    private static final Logger LOG = LoggerFactory.getLogger(SemanticCache.class);
-
     @Override
     public Pair<Stream<ConceptMap>, MultiUnifier> getAnswerStreamWithUnifier(ReasonerAtomicQuery query) {
         CacheEntry<ReasonerAtomicQuery, SE> match = getEntry(query);
@@ -285,8 +273,8 @@ public abstract class SemanticCache<
             boolean answersToGroundQuery = false;
             boolean queryDBComplete = isDBComplete(query);
             if (queryGround) {
-                boolean newAnswersPropagated = propagateAnswersToQuery(query, match, true);
-                if (newAnswersPropagated) answersToGroundQuery = answersQuery(query);
+                propagateAnswersToQuery(query, match, true);
+                answersToGroundQuery = answersQuery(query);
             }
 
             //extra check is a quasi-completeness check if there's no parent present we have no guarantees about completeness with respect to the db.
@@ -297,10 +285,12 @@ public abstract class SemanticCache<
 
             //otherwise lookup and add inferred answers on top
             return new Pair<>(
+                    //NB: concat retains the order between elements from different streams so cache entries will come first
+                    //and any duplicates from the DB will be removed by the .distinct step
                             Stream.concat(
-                                    getDBAnswerStreamWithUnifier(query).first(),
-                                    cachePair.first().filter(ans -> ans.explanation().isRuleExplanation())
-                            ),
+                                    cachePair.first().filter(ans -> ans.explanation().isRuleExplanation()),
+                                    getDBAnswerStreamWithUnifier(query).first()
+                            ).distinct(),
                             cachePair.second());
         }
 
