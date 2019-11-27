@@ -22,7 +22,6 @@ package grakn.core.server.session;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import grakn.common.util.Pair;
-import grakn.core.common.config.ConfigKey;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.concept.answer.Answer;
 import grakn.core.concept.answer.AnswerGroup;
@@ -94,7 +93,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.CheckReturnValue;
-import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -102,6 +100,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.locks.ReadWriteLock;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -113,7 +112,7 @@ public class TransactionImpl implements Transaction {
     private final long typeShardThreshold;
 
     // Shared Variables
-    private final SessionImpl session;
+    private final Session  session;
     private final ConceptManager conceptManager;
     private final ExecutorFactory executorFactory;
 
@@ -133,20 +132,21 @@ public class TransactionImpl implements Transaction {
     // reaching across threads in a single threaded janus transaction leads to errors
     private final ThreadLocal<Boolean> createdInCurrentThread = ThreadLocal.withInitial(() -> Boolean.FALSE);
 
-    @Nullable
-    private GraphTraversalSource graphTraversalSource = null;
     private TraversalPlanFactory traversalPlanFactory;
     private JanusTraversalSourceProvider janusTraversalSourceProvider;
     private ReasonerQueryFactory reasonerQueryFactory;
+    private ReadWriteLock graphLock;
 
-    public TransactionImpl(SessionImpl session, JanusGraphTransaction janusTransaction, ConceptManager conceptManager,
+    public TransactionImpl(Session session, JanusGraphTransaction janusTransaction, ConceptManager conceptManager,
                            JanusTraversalSourceProvider janusTraversalSourceProvider, TransactionCache transactionCache,
                            MultilevelSemanticCache queryCache, RuleCache ruleCache,
                            UncomittedStatisticsDelta statisticsDelta, ExecutorFactory executorFactory,
-                           TraversalPlanFactory traversalPlanFactory, ReasonerQueryFactory reasonerQueryFactory) {
+                           TraversalPlanFactory traversalPlanFactory, ReasonerQueryFactory reasonerQueryFactory,
+                           ReadWriteLock graphLock, long typeShardThreshold) {
         createdInCurrentThread.set(true);
 
         this.session = session;
+        this.graphLock = graphLock;
 
         this.janusTransaction = janusTransaction;
         this.janusTraversalSourceProvider = janusTraversalSourceProvider;
@@ -162,7 +162,7 @@ public class TransactionImpl implements Transaction {
 
         this.uncomittedStatisticsDelta = statisticsDelta;
 
-        typeShardThreshold = this.session.config().getProperty(ConfigKey.TYPE_SHARD_THRESHOLD);
+        this.typeShardThreshold = typeShardThreshold;
     }
 
     @Override
@@ -212,7 +212,7 @@ public class TransactionImpl implements Transaction {
 
     private void commitInternal() throws InvalidKBException {
         boolean lockRequired = commitLockRequired();
-        if (lockRequired) session.graphLock().writeLock().lock();
+        if (lockRequired) graphLock.writeLock().lock();
         try {
             createNewTypeShardsWhenThresholdReached();
             cache().getRemovedAttributes().forEach(index -> session.attributeManager().attributesCommitted().invalidate(index));
@@ -221,7 +221,7 @@ public class TransactionImpl implements Transaction {
             ackCommit(deduplicatedIndices);
 
         } finally {
-            if (lockRequired) session.graphLock().writeLock().unlock();
+            if (lockRequired) graphLock.writeLock().unlock();
         }
     }
 
