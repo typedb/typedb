@@ -91,14 +91,6 @@ public class GraphDatabaseConfiguration {
                     "Must be longer than the maximum allowed write time.",
             ConfigOption.Type.GLOBAL, Duration.ofSeconds(10));
 
-
-    public static final ConfigNamespace TRANSACTION_RECOVERY_NS = new ConfigNamespace(TRANSACTION_NS, "recovery",
-            "Configuration options for transaction recovery processes");
-
-    public static final ConfigOption<Boolean> VERBOSE_TX_RECOVERY = new ConfigOption<>(TRANSACTION_RECOVERY_NS, "verbose",
-            "Whether the transaction recovery system should print recovered transactions and other activity to standard output",
-            ConfigOption.Type.MASKABLE, false);
-
     // ################ Query Processing #######################
     // ################################################
 
