@@ -450,7 +450,7 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
                 List<ConceptMap> maps = q.selectAtoms()
                         .map(ReasonerQueries::atomic)
                         .flatMap(aq -> {
-                            Stream<ConceptMap> answerStream = (Stream<ConceptMap>) tx.queryCache().getAnswerStream(aq).collect(Collectors.toList());
+                            Stream<ConceptMap> answerStream = (Stream<ConceptMap>) tx.queryCache().getAnswerStream(aq);
                             return answerStream.map(conceptMap -> conceptMap.withPattern(aq.withSubstitution(conceptMap).getPattern()));
                         })
                         .collect(Collectors.toList());
