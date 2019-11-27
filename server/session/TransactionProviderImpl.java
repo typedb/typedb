@@ -49,7 +49,6 @@ import org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph;
 import java.util.concurrent.locks.ReadWriteLock;
 
 public class TransactionProviderImpl implements TransactionProvider {
-    private final Config config;
     private final StandardJanusGraph graph;
     private final HadoopGraph hadoopGraph;
     private final KeyspaceSchemaCache keyspaceSchemaCache;
@@ -58,10 +57,9 @@ public class TransactionProviderImpl implements TransactionProvider {
     private ReadWriteLock graphLock;
     private final long typeShardThreshold;
 
-    public TransactionProviderImpl(Config config, StandardJanusGraph graph, HadoopGraph hadoopGraph,
+    public TransactionProviderImpl(StandardJanusGraph graph, HadoopGraph hadoopGraph,
                                    KeyspaceSchemaCache keyspaceSchemaCache, KeyspaceStatistics keyspaceStatistics,
                                    AttributeManager attributeManager, ReadWriteLock graphLock, long typeShardThreshold) {
-        this.config = config;
         this.graph = graph;
         this.hadoopGraph = hadoopGraph;
         this.keyspaceSchemaCache = keyspaceSchemaCache;

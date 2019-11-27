@@ -21,7 +21,10 @@ package grakn.core.graql.reasoner.query;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
+import grakn.core.common.config.Config;
+import grakn.core.common.config.ConfigKey;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.graph.graphdb.database.StandardJanusGraph;
 import grakn.core.graql.reasoner.atom.binary.RelationAtom;
 import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.reasoner.rule.InferenceRule;
@@ -35,21 +38,41 @@ import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Rule;
 import grakn.core.graql.reasoner.graph.GeoGraph;
+import grakn.core.kb.server.AttributeManager;
 import grakn.core.kb.server.Session;
+import grakn.core.kb.server.ShardManager;
 import grakn.core.kb.server.Transaction;
+import grakn.core.kb.server.TransactionProvider;
+import grakn.core.kb.server.cache.KeyspaceSchemaCache;
+import grakn.core.kb.server.keyspace.Keyspace;
+import grakn.core.kb.server.statistics.KeyspaceStatistics;
 import grakn.core.rule.GraknTestServer;
+import grakn.core.rule.TestTransactionProvider;
+import grakn.core.server.keyspace.KeyspaceImpl;
+import grakn.core.server.session.AttributeManagerImpl;
+import grakn.core.server.session.HadoopGraphFactory;
+import grakn.core.server.session.JanusGraphFactory;
+import grakn.core.server.session.SessionFactory;
+import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.ShardManagerImpl;
+import grakn.core.server.session.TransactionProviderImpl;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
+import org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 
 import static graql.lang.Graql.type;
@@ -61,13 +84,28 @@ import static org.junit.Assert.assertFalse;
 @SuppressWarnings("CheckReturnValue")
 public class QueryIT {
     @ClassRule
-    public static final GraknTestServer server = new GraknTestServer();
+    public static final GraknTestServer server = new GraknTestServer(false);
 
     private static Session geoSession;
 
     @BeforeClass
-    public static void loadContext(){
-        geoSession = server.sessionWithNewKeyspace();
+    public void setup() {
+        Config config = server.serverConfig();
+        Keyspace randomKeyspace = new KeyspaceImpl("a" + UUID.randomUUID().toString().replaceAll("-", ""));
+        JanusGraphFactory janusGraphFactory = new JanusGraphFactory(config);
+        HadoopGraphFactory hadoopGraphFactory = new HadoopGraphFactory(config);
+
+        StandardJanusGraph graph = janusGraphFactory.openGraph(randomKeyspace.name());
+        KeyspaceSchemaCache cache = new KeyspaceSchemaCache();
+        KeyspaceStatistics keyspaceStatistics = new KeyspaceStatistics();
+        AttributeManager attributeManager = new AttributeManagerImpl();
+        ShardManager shardManager = new ShardManagerImpl();
+        ReadWriteLock graphLock= new ReentrantReadWriteLock();
+        HadoopGraph hadoopGraph = hadoopGraphFactory.getGraph(randomKeyspace);
+
+        long typeShardThreshold = config.getProperty(ConfigKey.TYPE_SHARD_THRESHOLD);
+        TransactionProvider transactionProvider = new TestTransactionProvider(graph, hadoopGraph, cache, keyspaceStatistics, attributeManager, graphLock, typeShardThreshold);
+        geoSession = new SessionImpl(randomKeyspace, transactionProvider, cache, graph, keyspaceStatistics, attributeManager, shardManager, graphLock);
         GeoGraph geoGraph = new GeoGraph(geoSession);
         geoGraph.load();
     }
