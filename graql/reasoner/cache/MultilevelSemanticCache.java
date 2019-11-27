@@ -121,7 +121,6 @@ public class MultilevelSemanticCache extends SemanticCache<Equivalence.Wrapper<R
 
     @Override
     public boolean answersQuery(ReasonerAtomicQuery query) {
-        //TODO only tries direct entries
         CacheEntry<ReasonerAtomicQuery, IndexedAnswerSet> entry = getEntry(query);
         if (entry == null) return false;
         ReasonerAtomicQuery cacheQuery = entry.query();
