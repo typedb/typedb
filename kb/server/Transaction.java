@@ -26,6 +26,7 @@ import grakn.core.concept.answer.ConceptList;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.answer.ConceptSet;
 import grakn.core.concept.answer.ConceptSetMeasure;
+import grakn.core.concept.answer.Explanation;
 import grakn.core.concept.answer.Numeric;
 import grakn.core.concept.answer.Void;
 import grakn.core.core.JanusTraversalSourceProvider;
@@ -343,6 +344,9 @@ public interface Transaction extends AutoCloseable {
      */
     Rule getRule(String label);
 
+
+    Explanation explanation(Pattern queryPattern);
+
     @Override
     void close();
 
@@ -372,18 +376,9 @@ public interface Transaction extends AutoCloseable {
         return 1L;
     }
 
-    // TODO determine if this should be exposed via Tx or in other ways
-    TraversalPlanFactory traversalPlanFactory();
-
-    // TODO we may not want to expose both Executor and PlanFactory
-    ExecutorFactory executorFactory();
     QueryExecutor executor();
 
     QueryExecutor executor(boolean infer);
-    JanusTraversalSourceProvider janusTraversalSourceProvider();
-
-
-    PropertyExecutorFactory propertyExecutorFactory();
 
     long shardingThreshold();
 

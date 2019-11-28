@@ -20,6 +20,7 @@
 package grakn.core.server.session;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import grakn.common.util.Pair;
 import grakn.core.common.exception.ErrorMessage;
@@ -29,6 +30,7 @@ import grakn.core.concept.answer.ConceptList;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.answer.ConceptSet;
 import grakn.core.concept.answer.ConceptSetMeasure;
+import grakn.core.concept.answer.Explanation;
 import grakn.core.concept.answer.Numeric;
 import grakn.core.concept.answer.Void;
 import grakn.core.concept.impl.ConceptVertex;
@@ -40,8 +42,13 @@ import grakn.core.core.JanusTraversalSourceProvider;
 import grakn.core.core.Schema;
 import grakn.core.graph.core.JanusGraphTransaction;
 import grakn.core.graql.executor.property.PropertyExecutorFactoryImpl;
+import grakn.core.graql.reasoner.ReasonerException;
 import grakn.core.graql.reasoner.cache.MultilevelSemanticCache;
+import grakn.core.graql.reasoner.explanation.JoinExplanation;
+import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
+import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.graql.reasoner.query.ReasonerQueryFactory;
+import grakn.core.graql.reasoner.query.ResolvableQuery;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Concept;
@@ -72,6 +79,7 @@ import grakn.core.kb.server.exception.TransactionException;
 import grakn.core.kb.server.keyspace.Keyspace;
 import grakn.core.kb.server.statistics.UncomittedStatisticsDelta;
 import grakn.core.server.Validator;
+import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlCompute;
 import graql.lang.query.GraqlDefine;
@@ -112,30 +120,30 @@ public class TransactionImpl implements Transaction {
     private final long typeShardThreshold;
 
     // Shared Variables
-    private final Session  session;
-    private final ConceptManager conceptManager;
-    private final ExecutorFactory executorFactory;
+    protected final Session  session;
+    protected final ConceptManager conceptManager;
+    protected final ExecutorFactory executorFactory;
 
     // Caches
-    private final MultilevelSemanticCache queryCache;
-    private final RuleCache ruleCache;
-    private final TransactionCache transactionCache;
+    protected final MultilevelSemanticCache queryCache;
+    protected final RuleCache ruleCache;
+    protected final TransactionCache transactionCache;
 
     // TransactionOLTP Specific
-    private final JanusGraphTransaction janusTransaction;
-    private Type txType;
+    protected final JanusGraphTransaction janusTransaction;
+    protected Type txType;
     private String closedReason = null;
     private boolean isTxOpen;
-    private UncomittedStatisticsDelta uncomittedStatisticsDelta;
+    protected UncomittedStatisticsDelta uncomittedStatisticsDelta;
 
     // Thread-local boolean which is set to true in the constructor. Used to check if current Tx is created in current Thread because
     // reaching across threads in a single threaded janus transaction leads to errors
     private final ThreadLocal<Boolean> createdInCurrentThread = ThreadLocal.withInitial(() -> Boolean.FALSE);
 
-    private TraversalPlanFactory traversalPlanFactory;
-    private JanusTraversalSourceProvider janusTraversalSourceProvider;
-    private ReasonerQueryFactory reasonerQueryFactory;
-    private ReadWriteLock graphLock;
+    protected TraversalPlanFactory traversalPlanFactory;
+    protected JanusTraversalSourceProvider janusTraversalSourceProvider;
+    protected ReasonerQueryFactory reasonerQueryFactory;
+    protected ReadWriteLock graphLock;
 
     public TransactionImpl(Session session, JanusGraphTransaction janusTransaction, ConceptManager conceptManager,
                            JanusTraversalSourceProvider janusTraversalSourceProvider, TransactionCache transactionCache,
@@ -1097,6 +1105,37 @@ public class TransactionImpl implements Transaction {
     }
 
     @Override
+    public Explanation explanation(Pattern queryPattern) {
+        GraqlGet getQuery = Graql.match(queryPattern).get();
+        ResolvableQuery q = reasonerQueryFactory.resolvable(Iterables.getOnlyElement(getQuery.match().getPatterns().getNegationDNF().getPatterns()));
+
+        Explanation explanation;
+        if (q.isAtomic()) {
+            // If the query is atomic, looking up the query in the cache will result in retrieving the answer associated with the query
+            // we then return the answer's explanation
+            // Only atomic queries are retrievable directly from the cache
+            ReasonerAtomicQuery asAtomicQuery = reasonerQueryFactory.atomic(q.selectAtoms().findFirst().get());
+            ConceptMap originatingAnswer = queryCache.getAnswerStream(asAtomicQuery).findFirst().orElse(null);
+            if (originatingAnswer == null) { throw ReasonerException.queryCacheAnswerNotFound(getQuery); }
+            explanation = originatingAnswer.explanation();
+        } else {
+            // If the query is not atomic, we can break it down into sub queries and retrieve each component's answer
+            // these are the same components used to re-construct the explanation for our original query, which we
+            // whenever we set the pattern, we need to provide the correct variable ID substitutions as well
+            List<ConceptMap> maps = q.selectAtoms()
+                    .map(atom -> reasonerQueryFactory.atomic(atom))
+                    .flatMap(aq -> {
+                        Stream<ConceptMap> answerStream = queryCache.getAnswerStream(aq);
+                        return answerStream.map(conceptMap -> conceptMap.withPattern(aq.withSubstitution(conceptMap).getPattern()));
+                    })
+                    .collect(Collectors.toList());
+            explanation = new JoinExplanation(maps);
+        }
+
+        return explanation;
+    }
+
+    @Override
     public void close() {
         close(ErrorMessage.TX_CLOSED.getMessage(keyspace()));
     }
@@ -1268,15 +1307,10 @@ public class TransactionImpl implements Transaction {
         return conceptManager;
     }
 
-    @Override
-    public TraversalPlanFactory traversalPlanFactory() {
-        return traversalPlanFactory;
+    public ReasonerQueryFactory reasonerQueryFactory() {
+        return reasonerQueryFactory;
     }
 
-    @Override
-    public ExecutorFactory executorFactory() {
-        return executorFactory;
-    }
 
     @Override
     public final QueryExecutor executor() {
@@ -1288,14 +1322,4 @@ public class TransactionImpl implements Transaction {
         return executorFactory.transactional( infer);
     }
 
-    @Override
-    public PropertyExecutorFactory propertyExecutorFactory() {
-        return new PropertyExecutorFactoryImpl();
-    }
-
-    @Override
-    @VisibleForTesting
-    public JanusTraversalSourceProvider janusTraversalSourceProvider() {
-        return janusTraversalSourceProvider;
-    }
 }

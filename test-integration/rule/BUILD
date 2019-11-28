@@ -20,11 +20,19 @@ load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
 java_library(
     name = "grakn-test-server",
-    srcs = ["GraknTestServer.java"],
+    srcs = glob(["*.java"]),
     deps = [
         "//server:server",
         "//kb:kb",
-        "//common:common",
+        "//kb/concept/manager",
+        "//concept/manager",
+        "//concept/structure",
+        "//core",
+        "//graql",
+        "//common",
+        "//graph",
+        "//graph-hadoop",
+
         "//dependencies/maven/artifacts/junit:junit",
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
         "//dependencies/maven/artifacts/io/grpc:grpc-core",
@@ -32,6 +40,10 @@ java_library(
         "//dependencies/maven/artifacts/commons-io:commons-io",
         "//dependencies/maven/artifacts/commons-lang:commons-lang",
         "//dependencies/maven/artifacts/org/apache/cassandra:cassandra-all",
+        "//dependencies/maven/artifacts/org/apache/tinkerpop:hadoop-gremlin",
+        "//dependencies/maven/artifacts/org/apache/tinkerpop:tinkergraph-gremlin",
+
+
     ],
     data = [
         "//server:conf/grakn.properties",

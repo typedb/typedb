@@ -148,6 +148,7 @@ java_test(
         "//graql:graql",
         "//kb",
         "//kb/concept/api",
+        "//common",
         "//test-integration/graql/reasoner/graph:geo-graph",
         "//test-integration/rule:grakn-test-server",
         "@com-google-guava-guava//jar",
