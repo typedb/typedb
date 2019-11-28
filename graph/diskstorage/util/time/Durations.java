@@ -96,7 +96,7 @@ public class Durations {
          * (because it does no arithmetic) nor loss of precision from
          * long-to-integer casts (because it does not cast).
          */
-        final long length2Adj = unit1.convert(length2, unit2);
+        long length2Adj = unit1.convert(length2, unit2);
         if (length1 < length2Adj) {
             return -1;
         } else if (length2Adj < length1) {

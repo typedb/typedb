@@ -20,6 +20,9 @@ package grakn.core.graph.graphdb.types.system;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
+import org.apache.commons.lang.StringUtils;
+import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.T;
 import grakn.core.graph.core.Cardinality;
 import grakn.core.graph.core.JanusGraphProperty;
 import grakn.core.graph.core.Multiplicity;
@@ -33,9 +36,9 @@ import grakn.core.graph.graphdb.internal.InternalVertex;
 import grakn.core.graph.graphdb.internal.InternalVertexLabel;
 import grakn.core.graph.graphdb.internal.JanusGraphSchemaCategory;
 import grakn.core.graph.graphdb.internal.Token;
-import org.apache.commons.lang.StringUtils;
-import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.structure.T;
+import grakn.core.graph.graphdb.types.system.BaseRelationType;
+import grakn.core.graph.graphdb.types.system.EmptyRelationType;
+import grakn.core.graph.graphdb.types.system.SystemRelationType;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -59,12 +62,15 @@ public class ImplicitKey extends EmptyRelationType implements SystemRelationType
 
     public static final ImplicitKey TIMESTAMP = new ImplicitKey(5, Token.makeSystemName("timestamp"), Instant.class);
 
+    public static final ImplicitKey VISIBILITY = new ImplicitKey(6, Token.makeSystemName("visibility"), String.class);
+
     public static final ImplicitKey TTL = new ImplicitKey(7, Token.makeSystemName("ttl"), Duration.class);
 
 
     public static final Map<EntryMetaData, ImplicitKey> MetaData2ImplicitKey = ImmutableMap.of(
             EntryMetaData.TIMESTAMP, TIMESTAMP,
-            EntryMetaData.TTL, TTL);
+            EntryMetaData.TTL, TTL,
+            EntryMetaData.VISIBILITY, VISIBILITY);
 
     private final Class<?> datatype;
     private final String name;
@@ -91,12 +97,16 @@ public class ImplicitKey extends EmptyRelationType implements SystemRelationType
         } else if (this == VALUE) {
             if (e instanceof JanusGraphProperty) return (O) ((JanusGraphProperty) e).value();
             else return null;
-        } else if (this == TIMESTAMP) {
+        } else if (this == TIMESTAMP || this == VISIBILITY) {
             if (e instanceof InternalRelation) {
                 InternalRelation r = (InternalRelation) e;
-                Long time = r.getValueDirect(this);
-                if (time == null) return null; //there is no timestamp
-                return (O) r.tx().getConfiguration().getTimestampProvider().getTime(time);
+                if (this == VISIBILITY) {
+                    return r.getValueDirect(this);
+                } else {
+                    Long time = r.getValueDirect(this);
+                    if (time == null) return null; //there is no timestamp
+                    return (O) r.tx().getConfiguration().getTimestampProvider().getTime(time);
+                }
             } else {
                 return null;
             }

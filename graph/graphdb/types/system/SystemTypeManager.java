@@ -45,7 +45,7 @@ public abstract class SystemTypeManager {
                     BaseLabel.VertexLabelEdge, BaseLabel.SchemaDefinitionEdge,
                     ImplicitKey.ID, ImplicitKey.JANUSGRAPHID, ImplicitKey.LABEL,
                     ImplicitKey.KEY, ImplicitKey.VALUE, ImplicitKey.ADJACENT_ID,
-                    ImplicitKey.TIMESTAMP, ImplicitKey.TTL
+                    ImplicitKey.TIMESTAMP, ImplicitKey.TTL, ImplicitKey.VISIBILITY
             }) {
                 idBuilder.put(et.longId(), et);
                 nameBuilder.put(et.name(), et);
