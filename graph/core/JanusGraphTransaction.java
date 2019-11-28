@@ -24,7 +24,6 @@ import grakn.core.graph.graphdb.idmanagement.IDManager;
 import grakn.core.graph.graphdb.relations.RelationIdentifier;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.structure.Graph;
-import org.apache.tinkerpop.gremlin.structure.io.Io;
 
 /**
  * Transaction defines a transactional context for a {@link JanusGraph}. Since JanusGraph is a transactional graph
@@ -63,11 +62,6 @@ public interface JanusGraphTransaction extends Graph, SchemaManager {
     @Override
     default <C extends GraphComputer> C compute(Class<C> graphComputerClass) throws IllegalArgumentException {
         return null; // This is only implemented in HadoopGraph
-    }
-
-    @Override
-    default <I extends Io> I io(Io.Builder<I> builder) {
-        return null; // Not used
     }
 
     @Override

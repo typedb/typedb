@@ -118,14 +118,12 @@ import grakn.core.graph.graphdb.vertices.StandardVertex;
 import grakn.core.graph.util.datastructures.Retriever;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
-import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Transaction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.apache.tinkerpop.gremlin.structure.io.Io;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.slf4j.Logger;
@@ -320,21 +318,6 @@ public class StandardJanusGraphTx implements JanusGraphTransaction, TypeInspecto
     @Override
     public Configuration configuration() {
         return getGraph().configuration();
-    }
-
-    @Override
-    public <I extends Io> I io(Io.Builder<I> builder) {
-        return null; // Not used
-    }
-
-    @Override
-    public <C extends GraphComputer> C compute(Class<C> graphComputerClass) throws IllegalArgumentException {
-        return null; // This is only implemented in HadoopGraph
-    }
-
-    @Override
-    public GraphComputer compute() throws IllegalArgumentException {
-        return null; // This is only implemented in HadoopGraph
     }
 
     /**
