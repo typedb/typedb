@@ -997,8 +997,9 @@ public class AtomicQueryUnificationIT {
         ReasonerAtomicQuery child = reasonerQueryFactory.atomic(conjunction(childString));
         ReasonerAtomicQuery parent = reasonerQueryFactory.atomic(conjunction(parentString));
 
-        if (unifierType.equivalence() != null)
+        if (unifierType.equivalence() != null) {
             queryEquivalence(child, parent, unifierExists, unifierType.equivalence());
+        }
         MultiUnifier multiUnifier = child.getMultiUnifier(parent, unifierType);
 
         assertEquals("Unexpected unifier: " + multiUnifier + " between the child - parent pair:\n" + child + " :\n" + parent, unifierExists, !multiUnifier.isEmpty());
