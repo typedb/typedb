@@ -45,6 +45,8 @@ import grakn.core.kb.server.exception.InvalidKBException;
 import grakn.core.kb.server.exception.TransactionException;
 import grakn.core.kb.server.keyspace.Keyspace;
 import grakn.core.rule.GraknTestServer;
+import grakn.core.rule.SessionUtil;
+import grakn.core.rule.TestTransactionProvider;
 import grakn.core.server.util.LockManager;
 import grakn.core.util.ConceptDowncasting;
 import grakn.core.util.GraqlTestUtil;
@@ -53,6 +55,17 @@ import graql.lang.query.GraqlDefine;
 import graql.lang.query.GraqlGet;
 import graql.lang.query.GraqlInsert;
 import graql.lang.statement.Statement;
+import junit.framework.TestCase;
+import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.VerificationException;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.hamcrest.core.IsInstanceOf;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -65,16 +78,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import junit.framework.TestCase;
-import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.VerificationException;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.hamcrest.core.IsInstanceOf;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import static grakn.core.util.GraqlTestUtil.assertCollectionsNonTriviallyEqual;
 import static graql.lang.Graql.define;
@@ -95,7 +98,7 @@ import static org.junit.Assert.assertTrue;
 public class TransactionOLTPIT {
 
     @ClassRule
-    public static final GraknTestServer server = new GraknTestServer();
+    public static final GraknTestServer server = new GraknTestServer(false);
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
@@ -104,7 +107,7 @@ public class TransactionOLTPIT {
 
     @Before
     public void setUp() {
-        session = server.sessionWithNewKeyspace();
+        session = SessionUtil.serverlessSessionWithNewKeyspace(server.serverConfig());
         tx = session.writeTransaction();
     }
 
@@ -124,7 +127,7 @@ public class TransactionOLTPIT {
     public void whenAttemptingToMutateViaTraversal_Throw() {
         expectedException.expect(VerificationException.class);
         expectedException.expectMessage("not read only");
-        tx.janusTraversalSourceProvider().getTinkerTraversal().V().drop().iterate();
+        ((TestTransactionProvider.TestTransaction)tx).janusTraversalSourceProvider().getTinkerTraversal().V().drop().iterate();
     }
 
     @Test
@@ -186,7 +189,7 @@ public class TransactionOLTPIT {
     public void whenGettingTheShardingThreshold_TheCorrectValueIsReturned() {
         final long threshold = 333333L;
         server.serverConfig().setConfigProperty(ConfigKey.TYPE_SHARD_THRESHOLD, threshold);
-        try(Session session = server.sessionWithNewKeyspace()) {
+        try(Session session = SessionUtil.serverlessSessionWithNewKeyspace(server.serverConfig())) {
             try (Transaction tx = session.readTransaction()) {
                 assertEquals(threshold, tx.shardingThreshold());
             }
@@ -204,7 +207,7 @@ public class TransactionOLTPIT {
         ExecutorService pool = Executors.newSingleThreadExecutor();
 
         expectedException.expectCause(IsInstanceOf.instanceOf(TransactionException.class));
-        expectedException.expectMessage(TransactionException.transactionClosed(tx, null).getMessage());
+        expectedException.expectMessage(TransactionException.notInOriginatingThread().getMessage());
 
         Future future = pool.submit(() -> {
             tx.putEntityType("A Thing");
@@ -363,31 +366,30 @@ public class TransactionOLTPIT {
         Config config = Config.read(tmpConfig);
         config.setConfigProperty(ConfigKey.TYPE_SHARD_THRESHOLD, 1L);
         JanusGraphFactory janusGraphFactory = new JanusGraphFactory(config);
-        SessionFactory sessionFactory = new SessionFactory(new LockManager(), janusGraphFactory, new HadoopGraphFactory(config), config);
-        Keyspace keyspace = server.randomKeyspaceName();
-        try (Session session = sessionFactory.session(keyspace)) {
-            keyspace = session.keyspace();
+        Keyspace generatedKeyspace;
+        try (Session session = SessionUtil.serverlessSessionWithNewKeyspace(config, janusGraphFactory)) {
+            generatedKeyspace = session.keyspace();
             try (Transaction tx = session.writeTransaction()) {
                 tx.execute(define(type("person").sub("entity")).asDefine());
                 tx.commit();
             }
         }
         Set<Vertex> typeShards;
-        try (JanusGraph janusGraph = janusGraphFactory.openGraph(keyspace.name())) {
+        try (JanusGraph janusGraph = janusGraphFactory.openGraph(generatedKeyspace.name())) {
             JanusGraphTransaction tx = janusGraph.newTransaction();
             typeShards = tx.traversal().V().has(Schema.VertexProperty.SCHEMA_LABEL.name(), "person").in().hasLabel("SHARD").toSet();
             assertEquals(1, typeShards.size());
             tx.close();
         }
         ConceptId p1;
-        try (Session session = sessionFactory.session(keyspace)) {
+        try (Session session = SessionUtil.serverlessSession(config, janusGraphFactory, generatedKeyspace.name())) {
             try (Transaction tx = session.writeTransaction()) {
                 p1 = tx.execute(insert(var("p1").isa("person")).asInsert()).get(0).get("p1").id();
                 tx.commit();
             }
         }
         Vertex typeShardForP1;
-        try (JanusGraph janusGraph = janusGraphFactory.openGraph(keyspace.name())) {
+        try (JanusGraph janusGraph = janusGraphFactory.openGraph(generatedKeyspace.name())) {
             JanusGraphTransaction tx = janusGraph.newTransaction();
             typeShardForP1 = tx.traversal().V(p1.getValue().substring(1)).out(Schema.EdgeLabel.ISA.getLabel()).toList().get(0);
             assertEquals(typeShards.iterator().next(), typeShardForP1);
@@ -396,13 +398,13 @@ public class TransactionOLTPIT {
             tx.close();
         }
         ConceptId p2;
-        try (Session session = sessionFactory.session(keyspace)) {
+        try (Session session = SessionUtil.serverlessSession(config, janusGraphFactory, generatedKeyspace.name())) {
             try (Transaction tx = session.writeTransaction()) {
                 p2 = tx.execute(insert(var("p2").isa("person")).asInsert()).get(0).get("p2").id();
                 tx.commit();
             }
         }
-        try (JanusGraph janusGraph = janusGraphFactory.openGraph(keyspace.name())) {
+        try (JanusGraph janusGraph = janusGraphFactory.openGraph(generatedKeyspace.name())) {
             JanusGraphTransaction tx = janusGraph.newTransaction();
             Vertex typeShardForP2 = tx.traversal().V(p2.getValue().substring(1)).out(Schema.EdgeLabel.ISA.getLabel()).toSet().iterator().next();
             assertEquals(Sets.difference(typeShards, Sets.newHashSet(typeShardForP1)).iterator().next(), typeShardForP2);
@@ -461,7 +463,7 @@ public class TransactionOLTPIT {
     private void loadEntitiesConcurrentlyWithSpecificShardingThreshold(long shardingThreshold, int insertsPerCommit, long noOfEntities, int threads, double tol) throws ExecutionException, InterruptedException {
         Long oldThreshold = server.serverConfig().getProperty(ConfigKey.TYPE_SHARD_THRESHOLD);
         server.serverConfig().setConfigProperty(ConfigKey.TYPE_SHARD_THRESHOLD, shardingThreshold);
-        Session session = server.sessionWithNewKeyspace();
+        Session session = SessionUtil.serverlessSessionWithNewKeyspace(server.serverConfig());
 
         String entityLabel = "someEntity";
         try(Transaction tx = session.writeTransaction()){
@@ -516,7 +518,7 @@ public class TransactionOLTPIT {
 
     @Test
     public void whenMultipleTxsInsertAttributes_noGhostVerticesAreCreatedAndAttributeManagerIsEmptyAfterLoading() throws ExecutionException, InterruptedException {
-        Session session = server.sessionWithNewKeyspace();
+        Session session = SessionUtil.serverlessSessionWithNewKeyspace(server.serverConfig());
         String entityLabel = "someEntity";
         String attributeLabel = "someAttribute";
         try(Transaction tx = session.writeTransaction()){
@@ -549,7 +551,7 @@ public class TransactionOLTPIT {
 
     @Test
     public void whenCreatingAValidSchemaInSeparateThreads_EnsureValidationRulesHold() throws ExecutionException, InterruptedException {
-        Session localSession = server.sessionWithNewKeyspace();
+        Session localSession = SessionUtil.serverlessSessionWithNewKeyspace(server.serverConfig());
         ExecutorService executor = Executors.newCachedThreadPool();
 
         executor.submit(() -> {

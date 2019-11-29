@@ -23,18 +23,20 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import grakn.core.common.util.Streams;
 import grakn.core.core.Schema;
+import grakn.core.graql.executor.property.value.ValueOperation;
 import grakn.core.graql.gremlin.fragment.Fragments;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.EntityType;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
-import grakn.core.graql.executor.property.value.ValueOperation;
 import grakn.core.kb.graql.gremlin.Fragment;
 import grakn.core.kb.graql.gremlin.GraqlTraversal;
 import grakn.core.kb.graql.gremlin.TraversalPlanFactory;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import grakn.core.rule.GraknTestServer;
+import grakn.core.rule.SessionUtil;
+import grakn.core.rule.TestTransactionProvider;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
@@ -81,13 +83,13 @@ import static org.junit.Assert.assertTrue;
 
 public class GraqlTraversalIT {
     @ClassRule
-    public static final GraknTestServer graknServer = new GraknTestServer();
+    public static final GraknTestServer graknServer = new GraknTestServer(false );
     public static Session session;
     private static Transaction tx;
 
     @BeforeClass
     public static void newSession() {
-        session = graknServer.sessionWithNewKeyspace();
+        session = SessionUtil.serverlessSessionWithNewKeyspace(graknServer.serverConfig());
     }
 
     @AfterClass
@@ -304,8 +306,8 @@ public class GraqlTraversalIT {
     }
 
     private static GraqlTraversal semiOptimal(Pattern pattern) {
-        TraversalPlanFactory planFactory = new TraversalPlanFactoryImpl(tx.janusTraversalSourceProvider(), tx.conceptManager(), tx.shardingThreshold(), tx.session().keyspaceStatistics());
-        return planFactory.createTraversal(pattern);
+        TraversalPlanFactory traversalPlanFactory = ((TestTransactionProvider.TestTransaction)tx).traversalPlanFactory();
+        return traversalPlanFactory.createTraversal(pattern);
     }
 
     private static GraqlTraversal traversal(Fragment... fragments) {

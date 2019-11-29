@@ -20,6 +20,7 @@ package grakn.core.graql.query;
 
 import com.google.common.collect.ImmutableList;
 import grakn.core.concept.impl.TypeImpl;
+import grakn.core.core.JanusTraversalSourceProvider;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Entity;
 import grakn.core.kb.concept.api.EntityType;
@@ -30,11 +31,14 @@ import grakn.core.graql.gremlin.fragment.InIsaFragment;
 import grakn.core.graql.gremlin.fragment.LabelFragment;
 import grakn.core.graql.gremlin.fragment.NeqFragment;
 import grakn.core.graql.gremlin.fragment.OutIsaFragment;
+import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.gremlin.Fragment;
 import grakn.core.kb.graql.gremlin.TraversalPlanFactory;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
+import grakn.core.rule.SessionUtil;
+import grakn.core.rule.TestTransactionProvider;
 import grakn.core.util.ConceptDowncasting;
 import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;
@@ -76,13 +80,13 @@ public class QueryPlannerIT {
     private static final String resourceType = "resourceType";
 
     @ClassRule
-    public static GraknTestServer graknServer = new GraknTestServer();
+    public static GraknTestServer graknServer = new GraknTestServer(false);
     private static Session session;
     private Transaction tx;
 
     @BeforeClass
     public static void newSession() {
-        session = graknServer.sessionWithNewKeyspace();
+        session = SessionUtil.serverlessSessionWithNewKeyspace(graknServer.serverConfig());
         Transaction graph = session.writeTransaction();
 
         EntityType entityType0 = graph.putEntityType(thingy0);
@@ -503,7 +507,8 @@ public class QueryPlannerIT {
     }
 
     private ImmutableList<? extends Fragment> getPlan(Pattern pattern) {
-        TraversalPlanFactory traversalPlanFactory = new TraversalPlanFactoryImpl(tx.janusTraversalSourceProvider(), tx.conceptManager(), tx.shardingThreshold(), tx.session().keyspaceStatistics());
+        TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
+        TraversalPlanFactory traversalPlanFactory = testTx.traversalPlanFactory();
         return traversalPlanFactory.createTraversal(pattern).fragments().iterator().next();
     }
 }

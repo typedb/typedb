@@ -32,8 +32,10 @@ import grakn.core.server.keyspace.KeyspaceImpl;
 import grakn.core.server.session.AttributeManagerImpl;
 import grakn.core.server.session.HadoopGraphFactory;
 import grakn.core.server.session.JanusGraphFactory;
+import grakn.core.server.session.SessionFactory;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.ShardManagerImpl;
+import grakn.core.server.util.LockManager;
 import org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph;
 
 import java.util.UUID;
@@ -47,14 +49,30 @@ public class SessionUtil {
      * the SessionImpl.
      * This means tests using this method to create sessions can safely downcast transactions received
      * to `TestTransaction`, which provide access to various pieces of state required in the tests
+     *
      * @param config
      * @return
      */
     public static SessionImpl serverlessSessionWithNewKeyspace(Config config) {
-        Keyspace randomKeyspace = new KeyspaceImpl("a" + UUID.randomUUID().toString().replaceAll("-", ""));
+        String newKeyspaceName = "a" + UUID.randomUUID().toString().replaceAll("-", "");
         JanusGraphFactory janusGraphFactory = new JanusGraphFactory(config);
-        HadoopGraphFactory hadoopGraphFactory = new HadoopGraphFactory(config);
+        return serverlessSession(config, janusGraphFactory, newKeyspaceName);
+    }
 
+    /**
+     * Create a new keyspace, with an injected janusGraphFactory
+     */
+    public static SessionImpl serverlessSessionWithNewKeyspace(Config config, JanusGraphFactory janusGraphFactory) {
+        String newKeyspaceName = "a" + UUID.randomUUID().toString().replaceAll("-", "");
+        return serverlessSession(config, janusGraphFactory, newKeyspaceName);
+    }
+
+    /**
+     * Open a keyspace with specific name and janus graph factory
+     */
+    public static SessionImpl serverlessSession(Config config, JanusGraphFactory janusGraphFactory, String keyspaceName) {
+        Keyspace randomKeyspace = new KeyspaceImpl(keyspaceName);
+        HadoopGraphFactory hadoopGraphFactory = new HadoopGraphFactory(config);
         StandardJanusGraph graph = janusGraphFactory.openGraph(randomKeyspace.name());
         KeyspaceSchemaCache cache = new KeyspaceSchemaCache();
         KeyspaceStatistics keyspaceStatistics = new KeyspaceStatistics();

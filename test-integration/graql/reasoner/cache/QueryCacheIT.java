@@ -27,7 +27,6 @@ import grakn.core.graql.reasoner.atom.binary.RelationAtom;
 import grakn.core.graql.reasoner.explanation.LookupExplanation;
 import grakn.core.graql.reasoner.explanation.RuleExplanation;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
-import grakn.core.graql.reasoner.query.reasonerQueryFactory;
 import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
@@ -37,6 +36,8 @@ import grakn.core.kb.graql.reasoner.cache.CacheEntry;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import grakn.core.rule.GraknTestServer;
+import grakn.core.rule.SessionUtil;
+import grakn.core.rule.TestTransactionProvider;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.query.GraqlGet;
@@ -69,13 +70,13 @@ public class QueryCacheIT {
     private static String resourcePath = "test-integration/graql/reasoner/resources/";
 
     @ClassRule
-    public static final GraknTestServer server = new GraknTestServer();
+    public static final GraknTestServer server = new GraknTestServer(false);
 
     private static Session genericSchemaSession;
 
     @BeforeClass
     public static void loadContext() {
-        genericSchemaSession = server.sessionWithNewKeyspace();
+        genericSchemaSession = SessionUtil.serverlessSessionWithNewKeyspace(server.serverConfig());
         loadFromFileAndCommit(resourcePath, "genericSchema.gql", genericSchemaSession);
     }
 
@@ -87,9 +88,10 @@ public class QueryCacheIT {
     @Test
     public void whenRecordingAndMatchExists_entryIsUpdated(){
         try(Transaction tx = genericSchemaSession.readTransaction()) {
-            MultilevelSemanticCache cache = new MultilevelSemanticCache(tx.executorFactory(), tx.traversalPlanFactory());
+            TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
+            MultilevelSemanticCache cache = new MultilevelSemanticCache(testTx.executorFactory(), testTx.traversalPlanFactory());
 
-            ReasonerAtomicQuery query = reasonerQueryFactory.atomic(conjunction("(role: $x, role: $y) isa binary;"), tx);
+            ReasonerAtomicQuery query = testTx.reasonerQueryFactory().atomic(conjunction("(role: $x, role: $y) isa binary;"));
 
             //mock answer
             ConceptMap specificAnswer = new ConceptMap(ImmutableMap.of(
@@ -115,18 +117,19 @@ public class QueryCacheIT {
     @Test
     public void whenRecordingAndMatchDoesntExist_answersArePropagatedFromParents(){
         try(Transaction tx = genericSchemaSession.readTransaction()) {
-            MultilevelSemanticCache cache = new MultilevelSemanticCache(tx.executorFactory(), tx.traversalPlanFactory());
+            TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
+
+            MultilevelSemanticCache cache = new MultilevelSemanticCache(testTx.executorFactory(), testTx.traversalPlanFactory());
 
             Concept mConcept = tx.stream(Graql.<GraqlGet>parse("match $x has resource 'm';get;")).iterator().next().get("x");
             Concept sConcept = tx.stream(Graql.<GraqlGet>parse("match $x has resource 's';get;")).iterator().next().get("x");
 
-            ReasonerAtomicQuery childQuery = reasonerQueryFactory.atomic(conjunction(
+            ReasonerAtomicQuery childQuery = testTx.reasonerQueryFactory().atomic(conjunction(
                     "{" +
                             "(subRole1: $x, subRole2: $y) isa binary;" +
                             "$x id " + mConcept.id().getValue() + ";" +
                             "$y id " + sConcept.id().getValue() + ";" +
-                            "};"),
-                    tx);
+                            "};"));
 
             //mock a specific answer
             ConceptMap specificAnswer = new ConceptMap(ImmutableMap.of(
@@ -136,7 +139,7 @@ public class QueryCacheIT {
                     childQuery.getPattern()
             );
 
-            ReasonerAtomicQuery parentQuery = reasonerQueryFactory.atomic(conjunction("(role: $x, role: $y) isa binary;"), tx);
+            ReasonerAtomicQuery parentQuery = testTx.reasonerQueryFactory().atomic(conjunction("(role: $x, role: $y) isa binary;"));
 
             //record parent
             tx.execute(parentQuery.getQuery()).stream()
@@ -154,9 +157,11 @@ public class QueryCacheIT {
     @Test
     public void whenGettingAndMatchDoesntExist_answersFetchedFromDB(){
         try(Transaction tx = genericSchemaSession.readTransaction()) {
-            MultilevelSemanticCache cache = new MultilevelSemanticCache(tx.executorFactory(), tx.traversalPlanFactory());
+            TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
 
-            ReasonerAtomicQuery childQuery = reasonerQueryFactory.atomic(conjunction("(subRole1: $x, subRole2: $y) isa binary;"), tx);
+            MultilevelSemanticCache cache = new MultilevelSemanticCache(testTx.executorFactory(), testTx.traversalPlanFactory());
+
+            ReasonerAtomicQuery childQuery = testTx.reasonerQueryFactory().atomic(conjunction("(subRole1: $x, subRole2: $y) isa binary;"));
             Set<ConceptMap> cacheAnswers = cache.getAnswers(childQuery);
             assertEquals(tx.stream(childQuery.getQuery()).collect(toSet()), cacheAnswers);
 
@@ -167,9 +172,11 @@ public class QueryCacheIT {
     @Test
     public void whenGettingAndMatchDoesntExist_parentAvailable_answersFetchedFromParents(){
         try(Transaction tx = genericSchemaSession.readTransaction()) {
-            MultilevelSemanticCache cache = new MultilevelSemanticCache(tx.executorFactory(), tx.traversalPlanFactory());
+            TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
 
-            ReasonerAtomicQuery parentQuery = reasonerQueryFactory.atomic(conjunction("(role: $x, role: $y) isa binary;"), tx);
+            MultilevelSemanticCache cache = new MultilevelSemanticCache(testTx.executorFactory(), testTx.traversalPlanFactory());
+
+            ReasonerAtomicQuery parentQuery = testTx.reasonerQueryFactory().atomic(conjunction("(role: $x, role: $y) isa binary;"));
             //record parent
             tx.execute(parentQuery.getQuery()).stream()
                     .map(ans -> ans.explain(new LookupExplanation(), parentQuery.getPattern()))
@@ -177,7 +184,7 @@ public class QueryCacheIT {
             cache.ackDBCompleteness(parentQuery);
 
             //retrieve child
-            ReasonerAtomicQuery childQuery = reasonerQueryFactory.atomic(conjunction("(subRole1: $x, subRole2: $y) isa binary;"), tx);
+            ReasonerAtomicQuery childQuery = testTx.reasonerQueryFactory().atomic(conjunction("(subRole1: $x, subRole2: $y) isa binary;"));
             Set<ConceptMap> cacheAnswers = cache.getAnswers(childQuery);
             assertEquals(tx.stream(childQuery.getQuery()).collect(toSet()), cacheAnswers);
 
@@ -188,18 +195,18 @@ public class QueryCacheIT {
     @Test
     public void whenGettingAndMatchDoesntExist_prospectiveParentCached_childQueriesAreEquivalent_answersFetchedFromDB(){
         try(Transaction tx = genericSchemaSession.readTransaction()) {
-            MultilevelSemanticCache cache = new MultilevelSemanticCache(tx.executorFactory(), tx.traversalPlanFactory());
+            TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
+            MultilevelSemanticCache cache = new MultilevelSemanticCache(testTx.executorFactory(), testTx.traversalPlanFactory());
 
             ConceptId id = tx.getEntityType("subRoleEntity").instances().iterator().next().id();
             ConceptId dConcept = tx.stream(Graql.<GraqlGet>parse("match $d isa subSubRoleEntity, has resource 'd';get;")).iterator().next().get("d").id();
             ConceptId sConcept = tx.stream(Graql.<GraqlGet>parse("match $s isa subSubRoleEntity, has resource 's';get;")).iterator().next().get("s").id();
 
-            ReasonerAtomicQuery parentQuery = reasonerQueryFactory.atomic(conjunction(
+            ReasonerAtomicQuery parentQuery = testTx.reasonerQueryFactory().atomic(conjunction(
                     "{" +
                             "(baseRole1: $x, baseRole2: $y) isa binary;" +
                             "$y id " + dConcept.getValue() + ";" +
-                    "};"),
-                    tx);
+                    "};"));
 
             //record parent, mark the answers to be explained by a rule so that we can distinguish them
             tx.execute(parentQuery.getQuery(), false).stream()
@@ -210,13 +217,12 @@ public class QueryCacheIT {
             cache.ackDBCompleteness(parentQuery);
 
             //fetch a query that subsumes parent
-            ReasonerAtomicQuery childQuery = reasonerQueryFactory.atomic(conjunction(
+            ReasonerAtomicQuery childQuery = testTx.reasonerQueryFactory().atomic(conjunction(
                     "{" +
                             "(baseRole1: $x, baseRole2: $y) isa binary;" +
                             "$x id " + id.getValue() + ";" +
                             "$y id " + dConcept.getValue() + ";" +
-                            "};"),
-                    tx);
+                            "};"));
 
             Set<ConceptMap> childAnswers = cache.getAnswers(childQuery);
             assertEquals(tx.stream(childQuery.getQuery(), false).collect(toSet()), childAnswers);
@@ -227,13 +233,12 @@ public class QueryCacheIT {
 
             //fetch a different query, the query is structurally equivalent to the child query but
             //should have no parents in the cache so the answer needs to be fetched from the db
-            ReasonerAtomicQuery anotherChildQuery = reasonerQueryFactory.atomic(conjunction(
+            ReasonerAtomicQuery anotherChildQuery = testTx.reasonerQueryFactory().atomic(conjunction(
                     "{" +
                             "(baseRole1: $x, baseRole2: $y) isa binary;" +
                             "$x id " + id.getValue() + ";" +
                             "$y id " + sConcept.getValue() + ";" +
-                            "};"),
-                    tx);
+                            "};"));
 
             Set<ConceptMap> anotherChildAnswers = cache.getAnswers(anotherChildQuery);
             assertTrue(!anotherChildAnswers.isEmpty());
@@ -248,19 +253,20 @@ public class QueryCacheIT {
     @Test
     public void whenGettingAndMatchDoesntExist_prospectiveParentCached_childQueriesAreNotEquivalent_answersFetchedFromDB(){
         try(Transaction tx = genericSchemaSession.readTransaction()) {
-            MultilevelSemanticCache cache = new MultilevelSemanticCache(tx.executorFactory(), tx.traversalPlanFactory());
+            TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
+
+            MultilevelSemanticCache cache = new MultilevelSemanticCache(testTx.executorFactory(), testTx.traversalPlanFactory());
 
             ConceptId fConcept = tx.getEntityType("subRoleEntity").instances().iterator().next().id();
             ConceptId mConcept = tx.stream(Graql.<GraqlGet>parse("match $m isa subSubRoleEntity, has resource 'm';get;")).iterator().next().get("m").id();
             ConceptId dConcept = tx.stream(Graql.<GraqlGet>parse("match $d isa subSubRoleEntity, has resource 'd';get;")).iterator().next().get("d").id();
             ConceptId sConcept = tx.stream(Graql.<GraqlGet>parse("match $s isa subSubRoleEntity, has resource 's';get;")).iterator().next().get("s").id();
 
-            ReasonerAtomicQuery parentQuery = reasonerQueryFactory.atomic(conjunction(
+            ReasonerAtomicQuery parentQuery = testTx.reasonerQueryFactory().atomic(conjunction(
                     "{" +
                             "(baseRole1: $x, baseRole2: $y, baseRole3: $z) isa ternary;" +
                             "$z id " + dConcept.getValue() + ";" +
-                            "};"),
-                    tx);
+                            "};"));
 
             //record parent, mark the answers to be explained by a rule so that we can distinguish them
             tx.execute(parentQuery.getQuery(), false).stream()
@@ -269,13 +275,12 @@ public class QueryCacheIT {
             cache.ackDBCompleteness(parentQuery);
 
             //fetch a query that subsumes parent
-            ReasonerAtomicQuery childQuery = reasonerQueryFactory.atomic(conjunction(
+            ReasonerAtomicQuery childQuery = testTx.reasonerQueryFactory().atomic(conjunction(
                     "{" +
                             "(baseRole1: $x, baseRole2: $y, baseRole3: $z) isa ternary;" +
                             "$x id " + fConcept.getValue() + ";" +
                             "$z id " + dConcept.getValue() + ";" +
-                            "};"),
-                    tx);
+                            "};"));
 
             Set<ConceptMap> childAnswers = cache.getAnswers(childQuery);
             assertEquals(tx.stream(childQuery.getQuery(), false).collect(toSet()), childAnswers);
@@ -285,14 +290,13 @@ public class QueryCacheIT {
 
             //fetch a different query that is not structurally equivalent to the child query,
             //consequently the query should have no parents in the cache so the answer needs to be fetched from the db
-            ReasonerAtomicQuery anotherChildQuery = reasonerQueryFactory.atomic(conjunction(
+            ReasonerAtomicQuery anotherChildQuery = testTx.reasonerQueryFactory().atomic(conjunction(
                     "{" +
                             "(baseRole1: $x, baseRole2: $y, baseRole3: $z) isa ternary;" +
                             "$x id " + mConcept.getValue() + ";" +
                             "$y id " + mConcept.getValue() + ";" +
                             "$z id " + sConcept.getValue() + ";" +
-                            "};"),
-                    tx);
+                            "};"));
 
             Set<ConceptMap> anotherChildAnswers = cache.getAnswers(anotherChildQuery);
             assertTrue(!anotherChildAnswers.isEmpty());
@@ -305,19 +309,20 @@ public class QueryCacheIT {
     @Test
     public void whenGettingAndMatchDoesntExist_prospectiveParentNotComplete_childQueriesAreNotEquivalent_answersFetchedFromDB(){
         try(Transaction tx = genericSchemaSession.readTransaction()) {
-            MultilevelSemanticCache cache = new MultilevelSemanticCache(tx.executorFactory(), tx.traversalPlanFactory());
+            TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
+
+            MultilevelSemanticCache cache = new MultilevelSemanticCache(testTx.executorFactory(), testTx.traversalPlanFactory());
 
             ConceptId fConcept = tx.getEntityType("subRoleEntity").instances().iterator().next().id();
             ConceptId mConcept = tx.stream(Graql.<GraqlGet>parse("match $m isa subSubRoleEntity, has resource 'm';get;")).iterator().next().get("m").id();
             ConceptId dConcept = tx.stream(Graql.<GraqlGet>parse("match $d isa subSubRoleEntity, has resource 'd';get;")).iterator().next().get("d").id();
             ConceptId sConcept = tx.stream(Graql.<GraqlGet>parse("match $s isa subSubRoleEntity, has resource 's';get;")).iterator().next().get("s").id();
 
-            ReasonerAtomicQuery parentQuery = reasonerQueryFactory.atomic(conjunction(
+            ReasonerAtomicQuery parentQuery = testTx.reasonerQueryFactory().atomic(conjunction(
                     "{" +
                             "(baseRole1: $x, baseRole2: $y, baseRole3: $z) isa ternary;" +
                             "$z id " + dConcept.getValue() + ";" +
-                            "};"),
-                    tx);
+                            "};"));
 
             //record parent, mark the answers to be explained by a rule so that we can distinguish them
             tx.execute(parentQuery.getQuery(), false).stream()
@@ -325,13 +330,12 @@ public class QueryCacheIT {
                     .forEach(ans -> cache.record(parentQuery, ans));
 
             //fetch a query that subsumes parent
-            ReasonerAtomicQuery childQuery = reasonerQueryFactory.atomic(conjunction(
+            ReasonerAtomicQuery childQuery = testTx.reasonerQueryFactory().atomic(conjunction(
                     "{" +
                             "(baseRole1: $x, baseRole2: $y, baseRole3: $z) isa ternary;" +
                             "$x id " + fConcept.getValue() + ";" +
                             "$z id " + dConcept.getValue() + ";" +
-                            "};"),
-                    tx);
+                            "};"));
 
             Set<ConceptMap> childAnswers = cache.getAnswers(childQuery);
             assertEquals(tx.stream(childQuery.getQuery(), false).collect(toSet()), childAnswers);
@@ -343,14 +347,13 @@ public class QueryCacheIT {
             //Fetch a different query that is not structurally equivalent to the child query.
             //The query has no entry in the cache but has a parent though, and although it is not dbComplete this query is ground so answers
             //should be fetched from parent and the query should be dbComplete acked.
-            ReasonerAtomicQuery anotherChildQuery = reasonerQueryFactory.atomic(conjunction(
+            ReasonerAtomicQuery anotherChildQuery = testTx.reasonerQueryFactory().atomic(conjunction(
                     "{" +
                             "(baseRole1: $x, baseRole2: $y, baseRole3: $z) isa ternary;" +
                             "$x id " + fConcept.getValue() + ";" +
                             "$y id " + mConcept.getValue() + ";" +
                             "$z id " + dConcept.getValue() + ";" +
-                            "};"),
-                    tx);
+                            "};"));
 
             Set<ConceptMap> anotherChildAnswers = cache.getAnswers(anotherChildQuery);
             assertTrue(!anotherChildAnswers.isEmpty());
@@ -363,9 +366,11 @@ public class QueryCacheIT {
     @Test
     public void whenGettingAndMatchExists_queryNotGround_queryDBComplete_answersFetchedFromCache(){
         try(Transaction tx = genericSchemaSession.readTransaction()) {
-            MultilevelSemanticCache cache = new MultilevelSemanticCache(tx.executorFactory(), tx.traversalPlanFactory());
+            TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
 
-            ReasonerAtomicQuery query = reasonerQueryFactory.atomic(conjunction("(subRole1: $x, subRole2: $y) isa binary;"), tx);
+            MultilevelSemanticCache cache = new MultilevelSemanticCache(testTx.executorFactory(), testTx.traversalPlanFactory());
+
+            ReasonerAtomicQuery query = testTx.reasonerQueryFactory().atomic(conjunction("(subRole1: $x, subRole2: $y) isa binary;"));
             //record
             tx.execute(query.getQuery()).stream()
                     .map(ans -> ans.explain(new LookupExplanation(), query.getPattern()))
@@ -383,9 +388,11 @@ public class QueryCacheIT {
     @Test
     public void whenGettingAndMatchExists_queryNotGround_queryNotDBComplete_answersFetchedFromDBAndCache(){
         try(Transaction tx = genericSchemaSession.readTransaction()) {
-            MultilevelSemanticCache cache = new MultilevelSemanticCache(tx.executorFactory(), tx.traversalPlanFactory());
+            TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
 
-            ReasonerAtomicQuery query = reasonerQueryFactory.atomic(conjunction("(subRole1: $x, subRole2: $y) isa binary;"), tx);
+            MultilevelSemanticCache cache = new MultilevelSemanticCache(testTx.executorFactory(), testTx.traversalPlanFactory());
+
+            ReasonerAtomicQuery query = testTx.reasonerQueryFactory().atomic(conjunction("(subRole1: $x, subRole2: $y) isa binary;"));
             //record
             tx.execute(query.getQuery()).stream()
                     .map(ans -> ans.explain(new LookupExplanation(), query.getPattern()))
@@ -412,9 +419,10 @@ public class QueryCacheIT {
     @Test
     public void whenGettingAndMatchExists_queryGround_answerFound_answersFetchedFromCache(){
         try(Transaction tx = genericSchemaSession.readTransaction()) {
-            MultilevelSemanticCache cache = new MultilevelSemanticCache(tx.executorFactory(), tx.traversalPlanFactory());
+            TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
+            MultilevelSemanticCache cache = new MultilevelSemanticCache(testTx.executorFactory(), testTx.traversalPlanFactory());
 
-            ReasonerAtomicQuery parentQuery = reasonerQueryFactory.atomic(conjunction("(role: $x, role: $y) isa binary;"), tx);
+            ReasonerAtomicQuery parentQuery = testTx.reasonerQueryFactory().atomic(conjunction("(role: $x, role: $y) isa binary;"));
             //record parent
             tx.stream(parentQuery.getQuery())
                     .map(ans -> ans.explain(new LookupExplanation(), parentQuery.getPattern()))
@@ -426,25 +434,23 @@ public class QueryCacheIT {
             Concept fConcept = tx.stream(Graql.<GraqlGet>parse("match $x has resource 'f';get;")).iterator().next().get("x");
 
             //record child
-            ReasonerAtomicQuery preChildQuery = reasonerQueryFactory.atomic(conjunction(
+            ReasonerAtomicQuery preChildQuery = testTx.reasonerQueryFactory().atomic(conjunction(
                     "{" +
                             "(subRole1: $x, subRole2: $y) isa binary;" +
                             "$x id " + fConcept.id().getValue() + ";" +
                             "$y id " + sConcept.id().getValue() + ";" +
-                            "};"),
-                    tx);
+                            "};"));
             tx.stream(preChildQuery.getQuery())
                     .map(ans -> ans.explain(new LookupExplanation(), preChildQuery.getPattern()))
                     .forEach(ans -> cache.record(preChildQuery, ans));
 
             //retrieve child
-            ReasonerAtomicQuery childQuery = reasonerQueryFactory.atomic(conjunction(
+            ReasonerAtomicQuery childQuery = testTx.reasonerQueryFactory().atomic(conjunction(
                     "{" +
                     "(subRole1: $x, subRole2: $y) isa binary;" +
                                 "$x id " + mConcept.id().getValue() + ";" +
                                 "$y id " + sConcept.id().getValue() + ";" +
-                            "};"),
-                    tx);
+                            "};"));
 
             //mock a specific answer
             ConceptMap specificAnswer = new ConceptMap(ImmutableMap.of(
@@ -462,19 +468,19 @@ public class QueryCacheIT {
     @Test
     public void whenGettingAndMatchExists_queryGround_queryNotDBComplete_answerNotFound_answersFetchedFromDbAndCache(){
         try(Transaction tx = genericSchemaSession.readTransaction()) {
-            MultilevelSemanticCache cache = new MultilevelSemanticCache(tx.executorFactory(), tx.traversalPlanFactory());
+            TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
+            MultilevelSemanticCache cache = new MultilevelSemanticCache(testTx.executorFactory(), testTx.traversalPlanFactory());
 
             Concept mConcept = tx.stream(Graql.<GraqlGet>parse("match $x has resource 'm';get;")).iterator().next().get("x");
             Concept sConcept = tx.stream(Graql.<GraqlGet>parse("match $x has resource 's';get;")).iterator().next().get("x");
             Concept fConcept = tx.stream(Graql.<GraqlGet>parse("match $x has resource 'f';get;")).iterator().next().get("x");
 
             //retrieve child
-            ReasonerAtomicQuery childQuery = reasonerQueryFactory.atomic(conjunction(
+            ReasonerAtomicQuery childQuery = testTx.reasonerQueryFactory().atomic(conjunction(
                     "{" +
                             "(subRole1: $x, subRole2: $y) isa binary;" +
                             "$x id " + mConcept.id().getValue() + ";" +
-                            "};"),
-                    tx);
+                            "};"));
 
             //mock a specific answer
             ConceptMap specificAnswer = new ConceptMap(ImmutableMap.of(
@@ -492,17 +498,16 @@ public class QueryCacheIT {
             );
 
             //record child, we record child first so that answers do not get propagated
-            ReasonerAtomicQuery preChildQuery = reasonerQueryFactory.atomic(conjunction(
+            ReasonerAtomicQuery preChildQuery = testTx.reasonerQueryFactory().atomic(conjunction(
                     "{" +
                             "(subRole1: $x, subRole2: $y) isa binary;" +
                             "$x id " + fConcept.id().getValue() + ";" +
-                            "};")
-                    , tx);
+                            "};"));
             tx.stream(preChildQuery.getQuery())
                     .map(ans -> ans.explain(new LookupExplanation(), preChildQuery.getPattern()))
                     .forEach(ans -> cache.record(preChildQuery, ans));
 
-            ReasonerAtomicQuery parentQuery = reasonerQueryFactory.atomic(conjunction("(role: $x, role: $y) isa binary;"), tx);
+            ReasonerAtomicQuery parentQuery = testTx.reasonerQueryFactory().atomic(conjunction("(role: $x, role: $y) isa binary;"));
             //record parent
             tx.stream(parentQuery.getQuery())
                     .map(ans -> ans.explain(new LookupExplanation(), parentQuery.getPattern()))
@@ -527,8 +532,9 @@ public class QueryCacheIT {
     @Test
     public void whenExecutingSameQueryTwice_secondTimeWeFetchResultFromCache(){
         try(Transaction tx = genericSchemaSession.readTransaction()) {
-            MultilevelSemanticCache cache = new MultilevelSemanticCache(tx.executorFactory(), tx.traversalPlanFactory());
-            ReasonerAtomicQuery query = reasonerQueryFactory.atomic(conjunction("(role: $x, role: $y) isa binary;"), tx);
+            TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
+            MultilevelSemanticCache cache = new MultilevelSemanticCache(testTx.executorFactory(), testTx.traversalPlanFactory());
+            ReasonerAtomicQuery query = testTx.reasonerQueryFactory().atomic(conjunction("(role: $x, role: $y) isa binary;"));
             //record parent
             Set<ConceptMap> answers = tx.execute(query.getQuery()).stream()
                     .map(ans -> ans.explain(new LookupExplanation(), query.getPattern()))
@@ -546,8 +552,9 @@ public class QueryCacheIT {
     @Test
     public void whenFullyResolvingAQuery_allSubgoalsAreMarkedAsComplete(){
         try(Transaction tx = genericSchemaSession.readTransaction()) {
+            TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
             MultilevelSemanticCache cache = CacheCasting.queryCacheCast(tx.queryCache());
-            ReasonerAtomicQuery query = reasonerQueryFactory.atomic(conjunction("(role: $x, role: $y) isa baseRelation;"), tx);
+            ReasonerAtomicQuery query = testTx.reasonerQueryFactory().atomic(conjunction("(role: $x, role: $y) isa baseRelation;"));
 
             Set<ConceptMap> answers = query.resolve().collect(toSet());
             cache.queries().forEach(q -> assertEquals(cache.isDBComplete(q), cache.isComplete(q)));
@@ -557,8 +564,9 @@ public class QueryCacheIT {
     @Test
     public void whenResolvingASequenceOfQueries_onlyFullyResolvedSubgoalsAreMarkedAsComplete(){
         try(Transaction tx = genericSchemaSession.readTransaction()) {
+            TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
             MultilevelSemanticCache cache = CacheCasting.queryCacheCast(tx.queryCache());
-            ReasonerAtomicQuery query = reasonerQueryFactory.atomic(conjunction("(symmetricRole: $x, symmetricRole: $y) isa binary-symmetric;"), tx);
+            ReasonerAtomicQuery query = testTx.reasonerQueryFactory().atomic(conjunction("(symmetricRole: $x, symmetricRole: $y) isa binary-symmetric;"));
 
             Set<ConceptMap> incompleteAnswers = query.resolve().limit(3).collect(toSet());
             Set<ReasonerAtomicQuery> incompleteQueries = cache.queries();
@@ -570,7 +578,7 @@ public class QueryCacheIT {
                         assertFalse(cache.isComplete(q));
             });
 
-            query = reasonerQueryFactory.atomic(conjunction("(symmetricRole: $y, symmetricRole: $z) isa binary-trans;"), tx);
+            query = testTx.reasonerQueryFactory().atomic(conjunction("(symmetricRole: $y, symmetricRole: $z) isa binary-trans;"));
             Set<ConceptMap> answers = query.resolve().collect(toSet());
             Sets.difference(cache.queries(), Collections.singleton(query))
                     .forEach(q -> {
@@ -583,7 +591,8 @@ public class QueryCacheIT {
     @Test
     public void whenExecutingConjunctionWithPartialQueriesComplete_weExploitCache(){
         try(Transaction tx = genericSchemaSession.readTransaction()) {
-            ReasonerQueryImpl query = reasonerQueryFactory.create(conjunction(
+            TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
+            ReasonerQueryImpl query = testTx.reasonerQueryFactory().create(conjunction(
                     "{" +
                             "$x isa baseEntity;" +
                             "$link isa baseEntity;" +
@@ -592,11 +601,11 @@ public class QueryCacheIT {
                             "(symmetricRole: $y, symmetricRole: $z) isa binary-symmetric;" +
                             "(symmetricRole: $z, symmetricRole: $w) isa binary-trans;" +
                             "};"
-            ), tx);
+            ));
 
             //record all partial queries
             query.getAtoms(RelationAtom.class)
-                    .map(reasonerQueryFactory::atomic)
+                    .map(testTx.reasonerQueryFactory()::atomic)
                     .forEach(q -> q.resolve(new HashSet<>()).collect(Collectors.toSet()));
 
             Set<ConceptMap> preFetchCache = getCacheContent(tx);
@@ -610,12 +619,13 @@ public class QueryCacheIT {
     @Test
     public void whenInstancesAreInserted_weUpdateCompleteness(){
         try(Transaction tx = genericSchemaSession.readTransaction()) {
+            TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
             MultilevelSemanticCache cache = CacheCasting.queryCacheCast(tx.queryCache());
-            ReasonerAtomicQuery query = reasonerQueryFactory.atomic(conjunction(
+            ReasonerAtomicQuery query = testTx.reasonerQueryFactory().atomic(conjunction(
                     "{" +
                             "(symmetricRole: $x, symmetricRole: $y) isa binary-trans;" +
                             "};"
-            ), tx);
+            ));
 
             List<ConceptMap> answers = tx.execute(query.getQuery());
             assertTrue(cache.isComplete(query));
@@ -639,15 +649,16 @@ public class QueryCacheIT {
     @Test
     public void whenInferredInstancesAreInserted_weDoNotUpdateCompleteness(){
         try(Transaction tx = genericSchemaSession.readTransaction()) {
+            TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
             MultilevelSemanticCache cache = CacheCasting.queryCacheCast(tx.queryCache());
             Entity entity = tx.getEntityType("anotherBaseRoleEntity").instances().iterator().next();
-            ReasonerAtomicQuery query = reasonerQueryFactory.atomic(conjunction(
+            ReasonerAtomicQuery query = testTx.reasonerQueryFactory().atomic(conjunction(
                     "{" +
                             "(baseRole1: $x, baseRole2: $y) isa binary;" +
                             "$x id " + entity.id().getValue() + ";" +
                             "$y id " + entity.id().getValue() + ";" +
                             "};"
-            ), tx);
+            ));
 
             cache.ackCompleteness(query);
 
@@ -664,21 +675,22 @@ public class QueryCacheIT {
     @Test
     public void whenInstancesAreDeleted_weUpdateCompleteness(){
         try(Transaction tx = genericSchemaSession.readTransaction()) {
+            TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
             MultilevelSemanticCache cache = CacheCasting.queryCacheCast(tx.queryCache());
             Entity subRoleEntity = tx.getEntityType("subRoleEntity").instances().iterator().next();
             Entity anotherBaseRoleEntity = tx.getEntityType("anotherBaseRoleEntity").instances().iterator().next();
-            ReasonerAtomicQuery query = reasonerQueryFactory.atomic(conjunction(
+            ReasonerAtomicQuery query = testTx.reasonerQueryFactory().atomic(conjunction(
                     "{" +
                             "(symmetricRole: $x, symmetricRole: $y) isa binary-trans;" +
                             "};"
-            ), tx);
+            ));
 
-            ReasonerAtomicQuery boundedQuery = reasonerQueryFactory.atomic(conjunction(
+            ReasonerAtomicQuery boundedQuery = testTx.reasonerQueryFactory().atomic(conjunction(
                     "{" +
                             "(symmetricRole: $x, symmetricRole: $y) isa binary-trans;" +
                             "$x id " + subRoleEntity.id() + ";" +
                             "};"
-            ), tx);
+            ));
 
             Relation relation = tx.getRelationType("binary").create()
                     .assign(tx.getRole("baseRole1"), anotherBaseRoleEntity)
@@ -705,8 +717,9 @@ public class QueryCacheIT {
     @Test
     public void whenRecordingQueryWithUniqueAnswer_weAckCompleteness(){
         try(Transaction tx = genericSchemaSession.readTransaction()) {
+            TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
             MultilevelSemanticCache cache = CacheCasting.queryCacheCast(tx.queryCache());
-            ReasonerQueryImpl baseQuery = reasonerQueryFactory.create(conjunction("{$x has resource $r via $rel;};"), tx);
+            ReasonerQueryImpl baseQuery = testTx.reasonerQueryFactory().create(conjunction("{$x has resource $r via $rel;};"));
             Set<ConceptMap> answers = baseQuery.resolve().collect(toSet());
 
             ConceptMap answer = answers.iterator().next();
@@ -715,27 +728,27 @@ public class QueryCacheIT {
             Concept relation = answer.get("rel");
             Object value = attribute.asAttribute().value();
 
-            ReasonerAtomicQuery ownerMapped = reasonerQueryFactory.atomic(conjunction("{$x has resource $r;$x id " + owner.id() + ";};"), tx);
-            ReasonerAtomicQuery ownerAndValueMapped = reasonerQueryFactory.atomic(conjunction("{$x has resource '" + value + "';$x id " + owner.id() +";};"), tx);
-            ReasonerAtomicQuery ownerAndValueMappedBaseType = reasonerQueryFactory.atomic(conjunction("{$x has attribute '" + value + "';$x id " + owner.id() +";};"), tx);
-            ReasonerAtomicQuery ownerMappedWithRelVariable = reasonerQueryFactory.atomic(conjunction("{$x has resource $r via $rel;$x id " + owner.id() + ";};"), tx);
-            ReasonerAtomicQuery ownerAndValueMappedWithRelVariable = reasonerQueryFactory.atomic(conjunction("{" +
+            ReasonerAtomicQuery ownerMapped = testTx.reasonerQueryFactory().atomic(conjunction("{$x has resource $r;$x id " + owner.id() + ";};"));
+            ReasonerAtomicQuery ownerAndValueMapped = testTx.reasonerQueryFactory().atomic(conjunction("{$x has resource '" + value + "';$x id " + owner.id() +";};"));
+            ReasonerAtomicQuery ownerAndValueMappedBaseType = testTx.reasonerQueryFactory().atomic(conjunction("{$x has attribute '" + value + "';$x id " + owner.id() +";};"));
+            ReasonerAtomicQuery ownerMappedWithRelVariable = testTx.reasonerQueryFactory().atomic(conjunction("{$x has resource $r via $rel;$x id " + owner.id() + ";};"));
+            ReasonerAtomicQuery ownerAndValueMappedWithRelVariable = testTx.reasonerQueryFactory().atomic(conjunction("{" +
                     "$x has resource '" + value + "' via $rel;" +
                     "$x id " + owner.id() + ";" +
                     "};"
-            ), tx);
-            ReasonerAtomicQuery ownerAndRelationMapped = reasonerQueryFactory.atomic(conjunction("{" +
+            ));
+            ReasonerAtomicQuery ownerAndRelationMapped = testTx.reasonerQueryFactory().atomic(conjunction("{" +
                     "$x has resource $r via $rel;" +
                     "$x id " + owner.id() + ";" +
                     "$rel id " + relation.id() + ";" +
                     "};"
-            ), tx);
-            ReasonerAtomicQuery allMapped = reasonerQueryFactory.atomic(conjunction("{" +
+            ));
+            ReasonerAtomicQuery allMapped = testTx.reasonerQueryFactory().atomic(conjunction("{" +
                     "$x has resource $r;" +
                     "$x id " + owner.id() + ";" +
                     "$r id " + attribute.id() + ";" +
                     "};"
-            ), tx);
+            ));
 
             assertTrue(ownerAndValueMapped.hasUniqueAnswer());
             assertTrue(allMapped.hasUniqueAnswer());

@@ -22,6 +22,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.core.Schema;
+import grakn.core.graql.reasoner.query.ReasonerQueryFactory;
 import grakn.core.graql.reasoner.rule.InferenceRule;
 import grakn.core.graql.reasoner.rule.RuleUtils;
 import grakn.core.kb.concept.api.AttributeType;
@@ -35,6 +36,8 @@ import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import grakn.core.kb.server.exception.InvalidKBException;
 import grakn.core.rule.GraknTestServer;
+import grakn.core.rule.SessionUtil;
+import grakn.core.rule.TestTransactionProvider;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import org.junit.After;
@@ -66,13 +69,13 @@ public class RuleValidationIT {
 
 
     @ClassRule
-    public static final GraknTestServer server = new GraknTestServer();
+    public static final GraknTestServer server = new GraknTestServer(false);
 
     private Session session;
 
     @Before
     public void setUp() {
-        session = server.sessionWithNewKeyspace();
+        session = SessionUtil.serverlessSessionWithNewKeyspace(server.serverConfig());
     }
 
     @After
@@ -635,7 +638,11 @@ public class RuleValidationIT {
             tx.commit();
         }
         try (Transaction tx = session.writeTransaction()) {
-            List<Rule> rules = RuleUtils.stratifyRules(tx.ruleCache().getRules().map(rule -> new InferenceRule(rule, tx)).collect(Collectors.toSet()))
+            ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
+            List<Rule> rules = RuleUtils.stratifyRules(
+                    tx.ruleCache().getRules()
+                            .map(rule -> new InferenceRule(rule, reasonerQueryFactory))
+                            .collect(Collectors.toSet()))
                     .map(InferenceRule::getRule).collect(Collectors.toList());
             Rule Rp1 = tx.getRule("Rp1");
             Rule Rp2 = tx.getRule("Rp2");
