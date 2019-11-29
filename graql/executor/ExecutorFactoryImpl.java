@@ -37,12 +37,11 @@ public class ExecutorFactoryImpl implements ExecutorFactory {
     private TraversalPlanFactory traversalPlanFactory;
     private ReasonerQueryFactory reasonerQueryFactory;
 
-    public ExecutorFactoryImpl(ConceptManager conceptManager, HadoopGraph hadoopGraph, KeyspaceStatistics keyspaceStatistics, TraversalPlanFactory traversalPlanFactory, ReasonerQueryFactory reasonerQueryFactory) {
+    public ExecutorFactoryImpl(ConceptManager conceptManager, HadoopGraph hadoopGraph, KeyspaceStatistics keyspaceStatistics, TraversalPlanFactory traversalPlanFactory) {
         this.conceptManager = conceptManager;
         this.hadoopGraph = hadoopGraph;
         this.keyspaceStatistics = keyspaceStatistics;
         this.traversalPlanFactory = traversalPlanFactory;
-        this.reasonerQueryFactory = reasonerQueryFactory;
     }
 
     @Override
@@ -52,7 +51,7 @@ public class ExecutorFactoryImpl implements ExecutorFactory {
 
     @Override
     public QueryExecutor transactional(boolean infer) {
-        return new QueryExecutorImpl(conceptManager, this, infer, traversalPlanFactory, reasonerQueryFactory);
+        return new QueryExecutorImpl(conceptManager, this, traversalPlanFactory, reasonerQueryFactory, infer);
     }
 
     public void setReasonerQueryFactory(ReasonerQueryFactory reasonerQueryFactory) {

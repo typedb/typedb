@@ -48,6 +48,9 @@ import org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph;
 
 import java.util.concurrent.locks.ReadWriteLock;
 
+/**
+ * A component performing inversion of control, removing the creation of Transactions from the SessionImpl
+ */
 public class TransactionProviderImpl implements TransactionProvider {
     private final StandardJanusGraph graph;
     private final HadoopGraph hadoopGraph;
@@ -69,6 +72,9 @@ public class TransactionProviderImpl implements TransactionProvider {
         this.typeShardThreshold = typeShardThreshold;
     }
 
+    /*
+    TODO - this is the centralised circular hairball dependency mess
+     */
     @Override
     public Transaction newTransaction(Session session) {
 
@@ -85,7 +91,7 @@ public class TransactionProviderImpl implements TransactionProvider {
         // Grakn elements
         ConceptManager conceptManager = new ConceptManagerImpl(elementFactory, transactionCache, conceptNotificationChannel, attributeManager);
         TraversalPlanFactory traversalPlanFactory = new TraversalPlanFactoryImpl(janusTraversalSourceProvider, conceptManager, typeShardThreshold, keyspaceStatistics);
-        ExecutorFactoryImpl executorFactory = new ExecutorFactoryImpl(conceptManager, hadoopGraph, keyspaceStatistics, traversalPlanFactory, null);
+        ExecutorFactoryImpl executorFactory = new ExecutorFactoryImpl(conceptManager, hadoopGraph, keyspaceStatistics, traversalPlanFactory);
         RuleCacheImpl ruleCache = new RuleCacheImpl(conceptManager);
         MultilevelSemanticCache queryCache = new MultilevelSemanticCache(executorFactory, traversalPlanFactory);
 
@@ -102,8 +108,8 @@ public class TransactionProviderImpl implements TransactionProvider {
                 graphLock, typeShardThreshold
         );
 
-        ConceptListenerImpl conceptObserver = new ConceptListenerImpl(transactionCache, queryCache, ruleCache, statisticsDelta, attributeManager, janusGraphTransaction.toString());
-        conceptNotificationChannel.subscribe(conceptObserver);
+        ConceptListenerImpl conceptListener = new ConceptListenerImpl(transactionCache, queryCache, ruleCache, statisticsDelta, attributeManager, janusGraphTransaction.toString());
+        conceptNotificationChannel.subscribe(conceptListener);
 
         return tx;
     }

@@ -44,8 +44,6 @@ import java.util.stream.Stream;
 
 
 /**
- * TODO update
- * <p>
  * Constructs Concepts And Edges
  * This class turns Tinkerpop Vertex and Edge
  * into Grakn Concept and EdgeElement.
@@ -55,7 +53,7 @@ import java.util.stream.Stream;
  */
 public final class ElementFactory {
     private final JanusGraphTransaction janusTx;
-    private JanusTraversalSourceProvider traversalSourceProvider;
+    private final JanusTraversalSourceProvider traversalSourceProvider;
 
     public ElementFactory(JanusGraphTransaction janusTransaction, JanusTraversalSourceProvider traversalSourceProvider) {
         this.janusTx = janusTransaction;

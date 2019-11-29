@@ -35,6 +35,12 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+/**
+ * Helper Class for manipulating different types of answers
+ * Used from within reasoner, query execution, and tests -- code regions generating answers.
+ * Located with `answer` implementations to be accessible from all of these places, and because
+ * it makes sense to group answers and answer manipulation together
+ */
 public class AnswerUtil {
 
     @SuppressWarnings("unchecked") // All attribute values are comparable data types

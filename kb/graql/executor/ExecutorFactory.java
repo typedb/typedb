@@ -19,6 +19,18 @@
 
 package grakn.core.kb.graql.executor;
 
+/**
+ * Factory for retrieving executors either analytical or transactional workloads
+ * Ideally, we would further split the executors into further types:
+ * `compute` executor
+ * `read` executor
+ * `write` executor
+ * `schema` executor?
+ * (etc, very flexible what this might represent)
+ *
+ * This will force us to untangle further complicated dependencies and streamline the execution flow of a query,
+ * and reduce the dependencies that need to be injected across the board
+ */
 public interface ExecutorFactory {
     ComputeExecutor compute();
     QueryExecutor transactional(boolean infer);

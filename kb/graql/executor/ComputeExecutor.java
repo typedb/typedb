@@ -33,6 +33,9 @@ import javax.annotation.Nullable;
 import java.util.Set;
 import java.util.stream.Stream;
 
+/**
+ * Execute Compute queries
+ */
 public interface ComputeExecutor {
     Stream<Numeric> stream(GraqlCompute.Statistics query);
 

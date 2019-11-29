@@ -36,6 +36,9 @@ import grakn.core.kb.concept.structure.Casting;
 import java.util.List;
 import java.util.function.Supplier;
 
+/**
+ * Listener for concept modifications, updating corresponding caches, statistics, etc.
+ */
 public interface ConceptListener {
     void thingDeleted(Thing thing);
 

@@ -36,6 +36,15 @@ import grakn.core.kb.concept.structure.Casting;
 import java.util.List;
 import java.util.function.Supplier;
 
+/**
+ * This was created to help resolve the circular dependency between: RuleCache -> ConceptManager -> ConceptObserver --(loop)-->
+ *
+ * A publish/subscriber channel that is used to notify components of the creation/modification of Concepts
+ * Currently, the ConceptListener is the is only listener for this channel and updates its members according to what it listens to
+ * TODO: a completely generic publish/subscribe model is mostly used to register subscribers at run time
+ * TODO: Having a static line of code showing who is listening is more useful for debugging and reading code
+ * TODO: so, we should invert this component to inject listeners, and instead the publisher's channel to also break the same dependency loop
+ */
 public interface ConceptNotificationChannel {
     void subscribe(ConceptListener conceptListener);
 

@@ -62,8 +62,8 @@ public class EdgeIT {
         ElementFactory elementFactory = new ElementFactory(janusGraphTransaction);
 
         // Grakn elements
-        ConceptObserver conceptObserver = new ConceptObserver(cacheProvider, statisticsDelta, attributeManager, janusGraphTransaction.toString());
-        ConceptManagerImpl conceptManager = new ConceptManagerImpl(elementFactory, cacheProvider.getTransactionCache(), conceptObserver, new ReentrantReadWriteLock());
+        ConceptObserver conceptListener = new ConceptObserver(cacheProvider, statisticsDelta, attributeManager, janusGraphTransaction.toString());
+        ConceptManagerImpl conceptManager = new ConceptManagerImpl(elementFactory, cacheProvider.getTransactionCache(), conceptListener, new ReentrantReadWriteLock());
         TraversalPlanFactory traversalPlanFactory = new TraversalPlanFactoryImpl(conceptManager, session.config().getProperty(ConfigKey.TYPE_SHARD_THRESHOLD), session.keyspaceStatistics());
         ExecutorFactory executorFactory = new ExecutorFactory(conceptManager, null, new KeyspaceStatistics(), traversalPlanFactory);
 

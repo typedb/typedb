@@ -157,7 +157,7 @@ public class ComputeExecutorImpl implements ComputeExecutor {
                                         @Nullable Set<LabelId> scope,
                                         Boolean includesRolePlayerEdges) {
 
-        return new OLAP(hadoopGraph).compute(program, mapReduce, scope, includesRolePlayerEdges);
+        return new OLAPOperation(hadoopGraph).compute(program, mapReduce, scope, includesRolePlayerEdges);
     }
 
     @Override
@@ -165,7 +165,7 @@ public class ComputeExecutorImpl implements ComputeExecutor {
                                         @Nullable MapReduce<?, ?, ?, ?, ?> mapReduce,
                                         @Nullable Set<LabelId> scope) {
 
-        return new OLAP(hadoopGraph).compute(program, mapReduce, scope);
+        return new OLAPOperation(hadoopGraph).compute(program, mapReduce, scope);
     }
 
     /**

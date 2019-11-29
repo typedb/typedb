@@ -497,7 +497,8 @@ public class PathIT {
             TraversalPlanFactory traversalPlanFactory = testTx.traversalPlanFactory();
             ReasonerQueryFactory reasonerQueryFactory = testTx.reasonerQueryFactory();
 
-            ExecutorFactory executorFactory = new ExecutorFactoryImpl(conceptManager, null, null, traversalPlanFactory, reasonerQueryFactory);
+            ExecutorFactoryImpl executorFactory = new ExecutorFactoryImpl(conceptManager, null, null, traversalPlanFactory);
+            executorFactory.setReasonerQueryFactory(reasonerQueryFactory);
             List<ConceptList> allPaths;
 
             // Path from power3 to power3

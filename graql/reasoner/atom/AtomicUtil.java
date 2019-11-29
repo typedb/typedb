@@ -30,6 +30,9 @@ import javax.annotation.CheckReturnValue;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+/**
+ * Helpers for handling and converting to and from Atoms
+ */
 public class AtomicUtil {
     /**
      * @param parent query context

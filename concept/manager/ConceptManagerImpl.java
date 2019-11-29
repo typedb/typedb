@@ -88,7 +88,6 @@ import static grakn.core.core.Schema.BaseType.RULE;
  * 4. `Retrieve` a concept based on some unique identifier (eg. ID, attribute key, janus key/value, etc.)
  *
  * Where possible, the TransactionCache will be queried to avoid rebuilding a concept that is already built or retrieved
- *
  */
 public class ConceptManagerImpl implements ConceptManager {
 
@@ -96,7 +95,6 @@ public class ConceptManagerImpl implements ConceptManager {
     private TransactionCache transactionCache;
     private ConceptNotificationChannel conceptNotificationChannel;
     private final AttributeManager attributeManager;
-
 
     public ConceptManagerImpl(ElementFactory elementFactory, TransactionCache transactionCache, ConceptNotificationChannel conceptNotificationChannel, AttributeManager attributeManager) {
         this.elementFactory = elementFactory;

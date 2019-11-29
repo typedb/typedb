@@ -26,7 +26,8 @@ import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.Read
 import javax.annotation.Nullable;
 
 /**
- * TODO move this so a better location, temproary fix to allow progress
+ * For now, we put the provider of janus traversal source in its own class to be shared everwhere
+ * Ideally, we can merge or replace this with a TraversalPlanFactory somehow
  */
 public class JanusTraversalSourceProvider {
     private final JanusGraphTransaction janusGraphTransaction;

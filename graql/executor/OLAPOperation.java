@@ -50,13 +50,13 @@ import java.util.stream.Collectors;
  * {@link MapReduce} processed the vertices in a parallel manner by aggregating values emitted by vertices.
  * MapReduce can be executed alone or used to collect the results after executing a VertexProgram.
  */
-public class OLAP {
+public class OLAPOperation {
     private final Graph graph;
     private final Class<? extends GraphComputer> graphComputerClass;
     private GraphComputer graphComputer = null;
     private boolean filterAllEdges = false;
 
-    public OLAP(Graph graph) {
+    public OLAPOperation(Graph graph) {
         this.graph = graph;
         this.graphComputerClass = GraknSparkComputer.class;
     }

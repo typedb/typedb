@@ -97,7 +97,7 @@ public class QueryExecutorImpl implements QueryExecutor {
     private final PropertyExecutorFactory propertyExecutorFactory;
     private static final Logger LOG = LoggerFactory.getLogger(QueryExecutorImpl.class);
 
-    QueryExecutorImpl(ConceptManager conceptManager, ExecutorFactory executorFactory, boolean infer, TraversalPlanFactory traversalPlanFactory, ReasonerQueryFactory reasonerQueryFactory) {
+    QueryExecutorImpl(ConceptManager conceptManager, ExecutorFactory executorFactory, TraversalPlanFactory traversalPlanFactory, ReasonerQueryFactory reasonerQueryFactory, boolean infer) {
         this.conceptManager = conceptManager;
         this.executorFactory = executorFactory;
         this.infer = infer;

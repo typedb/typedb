@@ -50,6 +50,10 @@ import org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph;
 
 import java.util.concurrent.locks.ReadWriteLock;
 
+/**
+ * Implementation of TransactionProvider that can be relied upon to return a `TestTransaction`,
+ * which is an extension of `TransactionImpl` with further fields and getters
+ */
 public class TestTransactionProvider implements TransactionProvider {
     private final StandardJanusGraph graph;
     private final HadoopGraph hadoopGraph;
@@ -86,7 +90,7 @@ public class TestTransactionProvider implements TransactionProvider {
         // Grakn elements
         ConceptManagerImpl conceptManager = new ConceptManagerImpl(elementFactory, transactionCache, conceptNotificationChannel, attributeManager);
         TraversalPlanFactory traversalPlanFactory = new TraversalPlanFactoryImpl(janusTraversalSourceProvider, conceptManager, typeShardThreshold, keyspaceStatistics);
-        ExecutorFactoryImpl executorFactory = new ExecutorFactoryImpl(conceptManager, hadoopGraph, keyspaceStatistics, traversalPlanFactory, null);
+        ExecutorFactoryImpl executorFactory = new ExecutorFactoryImpl(conceptManager, hadoopGraph, keyspaceStatistics, traversalPlanFactory);
         RuleCacheImpl ruleCache = new RuleCacheImpl(conceptManager);
         MultilevelSemanticCache queryCache = new MultilevelSemanticCache(executorFactory, traversalPlanFactory);
 
@@ -96,15 +100,15 @@ public class TestTransactionProvider implements TransactionProvider {
         propertyAtomicFactory.setReasonerQueryFactory(reasonerQueryFactory);
         ruleCache.setReasonerQueryFactory(reasonerQueryFactory);
 
-        ConceptListener conceptObserver = new ConceptListenerImpl(transactionCache, queryCache, ruleCache, statisticsDelta, attributeManager, janusGraphTransaction.toString());
-        conceptNotificationChannel.subscribe(conceptObserver);
+        ConceptListener conceptListener = new ConceptListenerImpl(transactionCache, queryCache, ruleCache, statisticsDelta, attributeManager, janusGraphTransaction.toString());
+        conceptNotificationChannel.subscribe(conceptListener);
 
 
         return new TestTransaction(
                 session, janusGraphTransaction, conceptManager, janusTraversalSourceProvider, transactionCache,
                 queryCache, ruleCache, statisticsDelta, executorFactory, traversalPlanFactory, reasonerQueryFactory,
                 graphLock, typeShardThreshold,
-                conceptNotificationChannel, elementFactory, propertyAtomicFactory, conceptObserver
+                conceptNotificationChannel, elementFactory, propertyAtomicFactory, conceptListener
         );
     }
 
@@ -113,7 +117,7 @@ public class TestTransactionProvider implements TransactionProvider {
         private final ConceptNotificationChannel conceptNotificationChannel;
         private final ElementFactory elementFactory;
         private final PropertyAtomicFactory propertyAtomicFactory;
-        private final ConceptListener conceptObserver;
+        private final ConceptListener conceptListener;
 
         // factories, etc.
 
@@ -124,7 +128,7 @@ public class TestTransactionProvider implements TransactionProvider {
                                ExecutorFactoryImpl executorFactory, TraversalPlanFactory traversalPlanFactory,
                                ReasonerQueryFactory reasonerQueryFactory, ReadWriteLock graphLock, long typeShardThreshold,
                                ConceptNotificationChannel conceptNotificationChannel, ElementFactory elementFactory,
-                               PropertyAtomicFactory propertyAtomicFactory, ConceptListener conceptObserver) {
+                               PropertyAtomicFactory propertyAtomicFactory, ConceptListener conceptListener) {
 
             super(session, janusGraphTransaction, conceptManager, janusTraversalSourceProvider, transactionCache,
                     queryCache, ruleCache, statisticsDelta, executorFactory, traversalPlanFactory,
@@ -134,7 +138,7 @@ public class TestTransactionProvider implements TransactionProvider {
             this.conceptNotificationChannel = conceptNotificationChannel;
             this.elementFactory = elementFactory;
             this.propertyAtomicFactory = propertyAtomicFactory;
-            this.conceptObserver = conceptObserver;
+            this.conceptListener = conceptListener;
         }
 
         /*
@@ -182,8 +186,8 @@ public class TestTransactionProvider implements TransactionProvider {
             return propertyAtomicFactory;
         }
 
-        public ConceptListener conceptObserver() {
-            return conceptObserver;
+        public ConceptListener conceptListener() {
+            return conceptListener;
         }
     }
 }

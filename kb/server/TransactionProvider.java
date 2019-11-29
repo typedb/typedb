@@ -20,9 +20,8 @@
 package grakn.core.kb.server;
 
 /**
- * Interface that is either used for normal server operations
- * Or exposes a different implementation in tests. Main entry point
- * build transactions, which the Sessions then pass on
+ * This class performs effective inversion of control from SessionImpl, allowing us to inject different
+ * Transaction creation procedures for normal runtime and for testing separately
  */
 public interface TransactionProvider {
     /**
