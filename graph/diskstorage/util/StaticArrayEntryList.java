@@ -492,8 +492,6 @@ public class StaticArrayEntryList extends AbstractList<Entry> implements EntryLi
                 return IntSerializer.INSTANCE;
             case TIMESTAMP:
                 return LongSerializer.INSTANCE;
-            case VISIBILITY:
-                return ASCIIStringSerializer.INSTANCE;
             default:
                 throw new AssertionError("Unexpected meta data: " + meta);
         }
@@ -546,27 +544,6 @@ public class StaticArrayEntryList extends AbstractList<Entry> implements EntryLi
         @Override
         public Long read(byte[] data, int startPos) {
             return StaticArrayBuffer.getLong(data, startPos);
-        }
-    }
-
-    private enum ASCIIStringSerializer implements MetaDataSerializer<String> {
-
-        INSTANCE;
-
-
-        @Override
-        public int getByteLength(String value) {
-            return StringEncoding.getAsciiByteLength(value);
-        }
-
-        @Override
-        public void write(byte[] data, int startPos, String value) {
-            StringEncoding.writeAsciiString(data, startPos, value);
-        }
-
-        @Override
-        public String read(byte[] data, int startPos) {
-            return StringEncoding.readAsciiString(data, startPos);
         }
     }
 

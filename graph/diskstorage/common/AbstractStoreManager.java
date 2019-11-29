@@ -30,7 +30,6 @@ import java.util.List;
 
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.STORE_META_TIMESTAMPS;
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.STORE_META_TTL;
-import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.STORE_META_VISIBILITY;
 
 /**
  * Abstract Store Manager used as the basis for concrete StoreManager implementations.
@@ -57,9 +56,6 @@ public abstract class AbstractStoreManager implements StoreManager {
         }
         if (features.hasCellTTL() && storageConfig.get(STORE_META_TTL, storeName)) {
             schemaBuilder.add(EntryMetaData.TTL);
-        }
-        if (features.hasVisibility() && storageConfig.get(STORE_META_VISIBILITY, storeName)) {
-            schemaBuilder.add(EntryMetaData.VISIBILITY);
         }
         if (schemaBuilder.isEmpty()) {
             return StaticArrayEntry.EMPTY_SCHEMA;

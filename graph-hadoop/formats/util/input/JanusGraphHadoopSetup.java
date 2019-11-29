@@ -18,11 +18,9 @@
 
 package grakn.core.graph.hadoop.formats.util.input;
 
-import grakn.core.graph.diskstorage.keycolumnvalue.SliceQuery;
 import grakn.core.graph.graphdb.database.RelationReader;
 import grakn.core.graph.graphdb.idmanagement.IDManager;
 import grakn.core.graph.graphdb.types.TypeInspector;
-import grakn.core.graph.hadoop.formats.util.input.SystemTypeInspector;
 
 public interface JanusGraphHadoopSetup {
 
