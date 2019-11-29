@@ -42,6 +42,14 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class SessionUtil {
 
+    /**
+     * Re-create a session as a real SessionFactory instance would, but inject a TestTransactionProvider into
+     * the SessionImpl.
+     * This means tests using this method to create sessions can safely downcast transactions received
+     * to `TestTransaction`, which provide access to various pieces of state required in the tests
+     * @param config
+     * @return
+     */
     public static SessionImpl serverlessSessionWithNewKeyspace(Config config) {
         Keyspace randomKeyspace = new KeyspaceImpl("a" + UUID.randomUUID().toString().replaceAll("-", ""));
         JanusGraphFactory janusGraphFactory = new JanusGraphFactory(config);

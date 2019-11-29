@@ -180,7 +180,7 @@ public class AttributeManagerIT {
                     Graql.parse("insert $x 1337 isa someAttribute;").asInsert() :
                     Graql.parse("insert $x 1667 isa someAttribute;").asInsert();
             CompletableFuture<Void> asyncInsert = CompletableFuture.supplyAsync(() -> {
-                TransactionOLTP tx = (TransactionOLTP) session.writeTransaction();
+                TransactionImpl tx = (TransactionImpl) session.writeTransaction();
                 tx.execute(query);
                 try {
                     barrier.await();

@@ -91,8 +91,8 @@ public class AtomicQueryUnificationIT {
             Concept x1 = getConceptByResourceValue(tx, "x1");
             Concept x2 = getConceptByResourceValue(tx, "x2");
 
-            ReasonerAtomicQuery xbaseQuery = ReasonerQueries.atomic(conjunction("{ ($x1, $x2) isa binary; };"), tx);
-            ReasonerAtomicQuery ybaseQuery = ReasonerQueries.atomic(conjunction("{ ($y1, $y2) isa binary; };"), tx);
+            ReasonerAtomicQuery xbaseQuery = reasonerQueryFactory.atomic(conjunction("{ ($x1, $x2) isa binary; };"), tx);
+            ReasonerAtomicQuery ybaseQuery = reasonerQueryFactory.atomic(conjunction("{ ($y1, $y2) isa binary; };"), tx);
 
             ConceptMap xAnswer = new ConceptMap(ImmutableMap.of(new Variable("x1"), x1, new Variable("x2"), x2));
             ConceptMap flippedXAnswer = new ConceptMap(ImmutableMap.of(new Variable("x1"), x2, new Variable("x2"), x1));
@@ -100,8 +100,8 @@ public class AtomicQueryUnificationIT {
             ConceptMap yAnswer = new ConceptMap(ImmutableMap.of(new Variable("y1"), x1, new Variable("y2"), x2));
             ConceptMap flippedYAnswer = new ConceptMap(ImmutableMap.of(new Variable("y1"), x2, new Variable("y2"), x1));
 
-            ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(xbaseQuery, xAnswer);
-            ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(xbaseQuery, flippedXAnswer);
+            ReasonerAtomicQuery parentQuery = reasonerQueryFactory.atomic(xbaseQuery, xAnswer);
+            ReasonerAtomicQuery childQuery = reasonerQueryFactory.atomic(xbaseQuery, flippedXAnswer);
 
             MultiUnifier unifier = childQuery.getMultiUnifier(parentQuery, UnifierType.RULE);
             MultiUnifier correctUnifier = new MultiUnifierImpl(ImmutableMultimap.of(
@@ -110,8 +110,8 @@ public class AtomicQueryUnificationIT {
             ));
             assertEquals(correctUnifier, unifier);
 
-            ReasonerAtomicQuery yChildQuery = ReasonerQueries.atomic(ybaseQuery, yAnswer);
-            ReasonerAtomicQuery yChildQuery2 = ReasonerQueries.atomic(ybaseQuery, flippedYAnswer);
+            ReasonerAtomicQuery yChildQuery = reasonerQueryFactory.atomic(ybaseQuery, yAnswer);
+            ReasonerAtomicQuery yChildQuery2 = reasonerQueryFactory.atomic(ybaseQuery, flippedYAnswer);
 
             MultiUnifier unifier2 = yChildQuery.getMultiUnifier(parentQuery, UnifierType.RULE);
             MultiUnifier correctUnifier2 = new MultiUnifierImpl(ImmutableMultimap.of(
@@ -132,8 +132,8 @@ public class AtomicQueryUnificationIT {
     @Test //only a single unifier exists
     public void testUnification_EXACT_BinaryRelationWithTypes_SomeVarsHaveTypes_UnifierMatchesTypes(){
         try(Transaction tx = unificationWithTypesSession.readTransaction()) {
-            ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(conjunction("{ $x1 isa twoRoleEntity;($x1, $x2) isa binary; };"), tx);
-            ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(conjunction("{ $y1 isa twoRoleEntity;($y1, $y2) isa binary; };"), tx);
+            ReasonerAtomicQuery parentQuery = reasonerQueryFactory.atomic(conjunction("{ $x1 isa twoRoleEntity;($x1, $x2) isa binary; };"), tx);
+            ReasonerAtomicQuery childQuery = reasonerQueryFactory.atomic(conjunction("{ $y1 isa twoRoleEntity;($y1, $y2) isa binary; };"), tx);
 
             MultiUnifier unifier = childQuery.getMultiUnifier(parentQuery);
             MultiUnifier correctUnifier = new MultiUnifierImpl(ImmutableMultimap.of(
@@ -147,8 +147,8 @@ public class AtomicQueryUnificationIT {
     @Test //only a single unifier exists
     public void testUnification_EXACT_BinaryRelationWithTypes_AllVarsHaveTypes_UnifierMatchesTypes(){
         try(Transaction tx = unificationWithTypesSession.readTransaction()) {
-            ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(conjunction("{ $x1 isa twoRoleEntity;$x2 isa twoRoleEntity2;($x1, $x2) isa binary; };"), tx);
-            ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(conjunction("{ $y1 isa twoRoleEntity;$y2 isa twoRoleEntity2;($y1, $y2) isa binary; };"), tx);
+            ReasonerAtomicQuery parentQuery = reasonerQueryFactory.atomic(conjunction("{ $x1 isa twoRoleEntity;$x2 isa twoRoleEntity2;($x1, $x2) isa binary; };"), tx);
+            ReasonerAtomicQuery childQuery = reasonerQueryFactory.atomic(conjunction("{ $y1 isa twoRoleEntity;$y2 isa twoRoleEntity2;($y1, $y2) isa binary; };"), tx);
 
             MultiUnifier unifier = childQuery.getMultiUnifier(parentQuery);
             MultiUnifier correctUnifier = new MultiUnifierImpl(ImmutableMultimap.of(
@@ -162,11 +162,11 @@ public class AtomicQueryUnificationIT {
     @Test
     public void testUnification_EXACT_TernaryRelation_ParentRepeatsRoles(){
         try(Transaction tx = unificationWithTypesSession.readTransaction()) {
-            ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(conjunction("{ (role1: $x, role1: $y, role2: $z) isa ternary; };"), tx);
-            ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(conjunction("{ (role1: $u, role2: $v, role3: $q) isa ternary; };"), tx);
-            ReasonerAtomicQuery childQuery2 = ReasonerQueries.atomic(conjunction("{ (role1: $u, role2: $v, role2: $q) isa ternary; };"), tx);
-            ReasonerAtomicQuery childQuery3 = ReasonerQueries.atomic(conjunction("{ (role1: $u, role1: $v, role2: $q) isa ternary; };"), tx);
-            ReasonerAtomicQuery childQuery4 = ReasonerQueries.atomic(conjunction("{ (role1: $u, role1: $u, role2: $q) isa ternary; };"), tx);
+            ReasonerAtomicQuery parentQuery = reasonerQueryFactory.atomic(conjunction("{ (role1: $x, role1: $y, role2: $z) isa ternary; };"), tx);
+            ReasonerAtomicQuery childQuery = reasonerQueryFactory.atomic(conjunction("{ (role1: $u, role2: $v, role3: $q) isa ternary; };"), tx);
+            ReasonerAtomicQuery childQuery2 = reasonerQueryFactory.atomic(conjunction("{ (role1: $u, role2: $v, role2: $q) isa ternary; };"), tx);
+            ReasonerAtomicQuery childQuery3 = reasonerQueryFactory.atomic(conjunction("{ (role1: $u, role1: $v, role2: $q) isa ternary; };"), tx);
+            ReasonerAtomicQuery childQuery4 = reasonerQueryFactory.atomic(conjunction("{ (role1: $u, role1: $u, role2: $q) isa ternary; };"), tx);
 
             MultiUnifier emptyUnifier = childQuery.getMultiUnifier(parentQuery);
             MultiUnifier emptyUnifier2 = childQuery2.getMultiUnifier(parentQuery);
@@ -195,11 +195,11 @@ public class AtomicQueryUnificationIT {
     @Test
     public void testUnification_EXACT_TernaryRelation_ParentRepeatsMetaRoles_ParentRepeatsRPs(){
         try(Transaction tx = unificationWithTypesSession.readTransaction()) {
-            ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(conjunction("{ (role: $x, role: $x, role2: $y) isa ternary; };"), tx);
-            ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(conjunction("{ (role1: $u, role2: $v, role3: $q) isa ternary; };"), tx);
-            ReasonerAtomicQuery childQuery2 = ReasonerQueries.atomic(conjunction("{ (role1: $u, role2: $v, role2: $q) isa ternary; };"), tx);
-            ReasonerAtomicQuery childQuery3 = ReasonerQueries.atomic(conjunction("{ (role1: $u, role1: $v, role2: $q) isa ternary; };"), tx);
-            ReasonerAtomicQuery childQuery4 = ReasonerQueries.atomic(conjunction("{ (role1: $u, role1: $u, role2: $q) isa ternary; };"), tx);
+            ReasonerAtomicQuery parentQuery = reasonerQueryFactory.atomic(conjunction("{ (role: $x, role: $x, role2: $y) isa ternary; };"), tx);
+            ReasonerAtomicQuery childQuery = reasonerQueryFactory.atomic(conjunction("{ (role1: $u, role2: $v, role3: $q) isa ternary; };"), tx);
+            ReasonerAtomicQuery childQuery2 = reasonerQueryFactory.atomic(conjunction("{ (role1: $u, role2: $v, role2: $q) isa ternary; };"), tx);
+            ReasonerAtomicQuery childQuery3 = reasonerQueryFactory.atomic(conjunction("{ (role1: $u, role1: $v, role2: $q) isa ternary; };"), tx);
+            ReasonerAtomicQuery childQuery4 = reasonerQueryFactory.atomic(conjunction("{ (role1: $u, role1: $u, role2: $q) isa ternary; };"), tx);
 
             MultiUnifier unifier = childQuery.getMultiUnifier(parentQuery, UnifierType.RULE);
             MultiUnifier correctUnifier = new MultiUnifierImpl(
@@ -245,9 +245,9 @@ public class AtomicQueryUnificationIT {
     @Test
     public void testUnification_EXACT_TernaryRelationWithTypes_SomeVarsHaveTypes_UnifierMatchesTypes(){
         try(Transaction tx = unificationWithTypesSession.readTransaction()) {
-            ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(conjunction("{ $x1 isa threeRoleEntity;$x3 isa threeRoleEntity3;($x1, $x2, $x3) isa ternary; };"), tx);
-            ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(conjunction("{ $y3 isa threeRoleEntity3;$y1 isa threeRoleEntity;($y2, $y3, $y1) isa ternary; };"), tx);
-            ReasonerAtomicQuery childQuery2 = ReasonerQueries.atomic(conjunction("{ $y3 isa threeRoleEntity3;$y2 isa threeRoleEntity2;$y1 isa threeRoleEntity;(role2: $y2, role3: $y3, role1: $y1) isa ternary; };"), tx);
+            ReasonerAtomicQuery parentQuery = reasonerQueryFactory.atomic(conjunction("{ $x1 isa threeRoleEntity;$x3 isa threeRoleEntity3;($x1, $x2, $x3) isa ternary; };"), tx);
+            ReasonerAtomicQuery childQuery = reasonerQueryFactory.atomic(conjunction("{ $y3 isa threeRoleEntity3;$y1 isa threeRoleEntity;($y2, $y3, $y1) isa ternary; };"), tx);
+            ReasonerAtomicQuery childQuery2 = reasonerQueryFactory.atomic(conjunction("{ $y3 isa threeRoleEntity3;$y2 isa threeRoleEntity2;$y1 isa threeRoleEntity;(role2: $y2, role3: $y3, role1: $y1) isa ternary; };"), tx);
 
             MultiUnifier unifier = childQuery.getMultiUnifier(parentQuery, UnifierType.EXACT);
             MultiUnifier unifier2 = childQuery2.getMultiUnifier(parentQuery, UnifierType.EXACT);
@@ -264,11 +264,11 @@ public class AtomicQueryUnificationIT {
     @Test
     public void testUnification_RULE_TernaryRelation_ParentRepeatsMetaRoles(){
         try(Transaction tx = unificationWithTypesSession.readTransaction()) {
-            ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(conjunction("{ (role: $x, role: $y, role2: $z) isa ternary; };"), tx);
-            ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(conjunction("{ (role1: $u, role2: $v, role3: $q) isa ternary; };"), tx);
-            ReasonerAtomicQuery childQuery2 = ReasonerQueries.atomic(conjunction("{ (role1: $u, role2: $v, role2: $q) isa ternary; };"), tx);
-            ReasonerAtomicQuery childQuery3 = ReasonerQueries.atomic(conjunction("{ (role1: $u, role1: $v, role2: $q) isa ternary; };"), tx);
-            ReasonerAtomicQuery childQuery4 = ReasonerQueries.atomic(conjunction("{ (role1: $u, role1: $u, role2: $q) isa ternary; };"), tx);
+            ReasonerAtomicQuery parentQuery = reasonerQueryFactory.atomic(conjunction("{ (role: $x, role: $y, role2: $z) isa ternary; };"), tx);
+            ReasonerAtomicQuery childQuery = reasonerQueryFactory.atomic(conjunction("{ (role1: $u, role2: $v, role3: $q) isa ternary; };"), tx);
+            ReasonerAtomicQuery childQuery2 = reasonerQueryFactory.atomic(conjunction("{ (role1: $u, role2: $v, role2: $q) isa ternary; };"), tx);
+            ReasonerAtomicQuery childQuery3 = reasonerQueryFactory.atomic(conjunction("{ (role1: $u, role1: $v, role2: $q) isa ternary; };"), tx);
+            ReasonerAtomicQuery childQuery4 = reasonerQueryFactory.atomic(conjunction("{ (role1: $u, role1: $u, role2: $q) isa ternary; };"), tx);
 
             MultiUnifier unifier = childQuery.getMultiUnifier(parentQuery, UnifierType.RULE);
             MultiUnifier correctUnifier = new MultiUnifierImpl(
@@ -333,11 +333,11 @@ public class AtomicQueryUnificationIT {
     @Test
     public void testUnification_RULE_TernaryRelation_ParentRepeatsRoles_ParentRepeatsRPs(){
         try(Transaction tx = unificationWithTypesSession.readTransaction()) {
-            ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(conjunction("{ (role1: $x, role1: $x, role2: $y) isa ternary; };"), tx);
-            ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(conjunction("{ (role1: $u, role2: $v, role3: $q) isa ternary; };"), tx);
-            ReasonerAtomicQuery childQuery2 = ReasonerQueries.atomic(conjunction("{ (role1: $u, role2: $v, role2: $q) isa ternary; };"), tx);
-            ReasonerAtomicQuery childQuery3 = ReasonerQueries.atomic(conjunction("{ (role1: $u, role1: $v, role2: $q) isa ternary; };"), tx);
-            ReasonerAtomicQuery childQuery4 = ReasonerQueries.atomic(conjunction("{ (role1: $u, role1: $u, role2: $q) isa ternary; };"), tx);
+            ReasonerAtomicQuery parentQuery = reasonerQueryFactory.atomic(conjunction("{ (role1: $x, role1: $x, role2: $y) isa ternary; };"), tx);
+            ReasonerAtomicQuery childQuery = reasonerQueryFactory.atomic(conjunction("{ (role1: $u, role2: $v, role3: $q) isa ternary; };"), tx);
+            ReasonerAtomicQuery childQuery2 = reasonerQueryFactory.atomic(conjunction("{ (role1: $u, role2: $v, role2: $q) isa ternary; };"), tx);
+            ReasonerAtomicQuery childQuery3 = reasonerQueryFactory.atomic(conjunction("{ (role1: $u, role1: $v, role2: $q) isa ternary; };"), tx);
+            ReasonerAtomicQuery childQuery4 = reasonerQueryFactory.atomic(conjunction("{ (role1: $u, role1: $u, role2: $q) isa ternary; };"), tx);
 
             MultiUnifier emptyUnifier = childQuery.getMultiUnifier(parentQuery, UnifierType.RULE);
             MultiUnifier emptyUnifier2 = childQuery2.getMultiUnifier(parentQuery, UnifierType.RULE);
@@ -365,9 +365,9 @@ public class AtomicQueryUnificationIT {
     @Test
     public void testUnification_RULE_TernaryRelationWithTypes_AllVarsHaveTypes_UnifierMatchesTypes(){
         try(Transaction tx = unificationWithTypesSession.readTransaction()) {
-            ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(conjunction("{ $x1 isa threeRoleEntity;$x2 isa threeRoleEntity2; $x3 isa threeRoleEntity3;($x1, $x2, $x3) isa ternary; };"), tx);
-            ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(conjunction("{ $y3 isa threeRoleEntity3;$y2 isa threeRoleEntity2;$y1 isa threeRoleEntity;($y2, $y3, $y1) isa ternary; };"), tx);
-            ReasonerAtomicQuery childQuery2 = ReasonerQueries.atomic(conjunction("{ $y3 isa threeRoleEntity3;$y2 isa threeRoleEntity2;$y1 isa threeRoleEntity;(role2: $y2, role3: $y3, role1: $y1) isa ternary; };"), tx);
+            ReasonerAtomicQuery parentQuery = reasonerQueryFactory.atomic(conjunction("{ $x1 isa threeRoleEntity;$x2 isa threeRoleEntity2; $x3 isa threeRoleEntity3;($x1, $x2, $x3) isa ternary; };"), tx);
+            ReasonerAtomicQuery childQuery = reasonerQueryFactory.atomic(conjunction("{ $y3 isa threeRoleEntity3;$y2 isa threeRoleEntity2;$y1 isa threeRoleEntity;($y2, $y3, $y1) isa ternary; };"), tx);
+            ReasonerAtomicQuery childQuery2 = reasonerQueryFactory.atomic(conjunction("{ $y3 isa threeRoleEntity3;$y2 isa threeRoleEntity2;$y1 isa threeRoleEntity;(role2: $y2, role3: $y3, role1: $y1) isa ternary; };"), tx);
 
             MultiUnifier unifier = childQuery.getMultiUnifier(parentQuery, UnifierType.RULE);
             MultiUnifier unifier2 = childQuery2.getMultiUnifier(parentQuery, UnifierType.RULE);
@@ -384,9 +384,9 @@ public class AtomicQueryUnificationIT {
     @Test // subSubThreeRoleEntity sub subThreeRoleEntity sub threeRoleEntity3
     public void testUnification_RULE_TernaryRelationWithTypes_AllVarsHaveTypes_UnifierMatchesTypes_TypeHierarchyInvolved(){
         try(Transaction tx = unificationWithTypesSession.readTransaction()) {
-            ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(conjunction("{ $x1 isa threeRoleEntity;$x2 isa subThreeRoleEntity; $x3 isa subSubThreeRoleEntity;($x1, $x2, $x3) isa ternary; };"), tx);
-            ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(conjunction("{ $y1 isa threeRoleEntity;$y2 isa subThreeRoleEntity;$y3 isa subSubThreeRoleEntity;($y2, $y3, $y1) isa ternary; };"), tx);
-            ReasonerAtomicQuery childQuery2 = ReasonerQueries.atomic(conjunction("{ $y1 isa threeRoleEntity;$y2 isa subThreeRoleEntity;$y3 isa subSubThreeRoleEntity;(role2: $y2, role3: $y3, role1: $y1) isa ternary; };"), tx);
+            ReasonerAtomicQuery parentQuery = reasonerQueryFactory.atomic(conjunction("{ $x1 isa threeRoleEntity;$x2 isa subThreeRoleEntity; $x3 isa subSubThreeRoleEntity;($x1, $x2, $x3) isa ternary; };"), tx);
+            ReasonerAtomicQuery childQuery = reasonerQueryFactory.atomic(conjunction("{ $y1 isa threeRoleEntity;$y2 isa subThreeRoleEntity;$y3 isa subSubThreeRoleEntity;($y2, $y3, $y1) isa ternary; };"), tx);
+            ReasonerAtomicQuery childQuery2 = reasonerQueryFactory.atomic(conjunction("{ $y1 isa threeRoleEntity;$y2 isa subThreeRoleEntity;$y3 isa subSubThreeRoleEntity;(role2: $y2, role3: $y3, role1: $y1) isa ternary; };"), tx);
 
             MultiUnifier unifier = childQuery.getMultiUnifier(parentQuery, UnifierType.RULE);
             MultiUnifier unifier2 = childQuery2.getMultiUnifier(parentQuery, UnifierType.RULE);
@@ -945,8 +945,8 @@ public class AtomicQueryUnificationIT {
     }
 
     private MultiUnifier unification(String childString, String parentString, boolean unifierExists, UnifierType unifierType, Transaction tx){
-        ReasonerAtomicQuery child = ReasonerQueries.atomic(conjunction(childString), tx);
-        ReasonerAtomicQuery parent = ReasonerQueries.atomic(conjunction(parentString), tx);
+        ReasonerAtomicQuery child = reasonerQueryFactory.atomic(conjunction(childString), tx);
+        ReasonerAtomicQuery parent = reasonerQueryFactory.atomic(conjunction(parentString), tx);
 
         if (unifierType.equivalence() != null) queryEquivalence(child, parent, unifierExists, unifierType.equivalence());
         MultiUnifier multiUnifier = child.getMultiUnifier(parent, unifierType);
@@ -969,8 +969,8 @@ public class AtomicQueryUnificationIT {
      * @param checkEquality if true the parent and child answers will be checked for equality, otherwise they are checked for containment of child answers in parent
      */
     private void unificationWithResultChecks(String parentString, String childString, boolean checkInverse, boolean checkEquality, boolean ignoreTypes, UnifierType unifierType, Transaction tx){
-        ReasonerAtomicQuery child = ReasonerQueries.atomic(conjunction(childString), tx);
-        ReasonerAtomicQuery parent = ReasonerQueries.atomic(conjunction(parentString), tx);
+        ReasonerAtomicQuery child = reasonerQueryFactory.atomic(conjunction(childString), tx);
+        ReasonerAtomicQuery parent = reasonerQueryFactory.atomic(conjunction(parentString), tx);
         Unifier unifier = unification(childString, parentString, true, unifierType, tx).getUnifier();
 
         List<ConceptMap> childAnswers = tx.execute(child.getQuery(), false);

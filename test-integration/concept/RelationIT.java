@@ -22,6 +22,7 @@ package grakn.core.concept;
 import com.google.common.collect.Iterables;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.concept.answer.Void;
+import grakn.core.core.JanusTraversalSourceProvider;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.Attribute;
@@ -33,11 +34,14 @@ import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.EntityType;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
+import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.kb.server.exception.InvalidKBException;
 import grakn.core.core.Schema;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
+import grakn.core.rule.SessionUtil;
+import grakn.core.rule.TestTransactionProvider;
 import graql.lang.Graql;
 import graql.lang.query.GraqlDefine;
 import graql.lang.query.GraqlDelete;
@@ -75,7 +79,7 @@ public class RelationIT {
     private RelationType relationType;
 
     @ClassRule
-    public static final GraknTestServer server = new GraknTestServer();
+    public static final GraknTestServer server = new GraknTestServer(false);
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
@@ -84,19 +88,19 @@ public class RelationIT {
 
     @Before
     public void setUp(){
-        session = server.sessionWithNewKeyspace();
+        session = SessionUtil.serverlessSessionWithNewKeyspace(server.serverConfig());
         tx = session.writeTransaction();
-        role1 = (Role) tx.putRole("Role 1");
-        role2 = (Role) tx.putRole("Role 2");
-        role3 = (Role) tx.putRole("Role 3");
+        role1 = tx.putRole("Role 1");
+        role2 = tx.putRole("Role 2");
+        role3 = tx.putRole("Role 3");
 
         type = tx.putEntityType("Main concept Type").plays(role1).plays(role2).plays(role3);
         relationType = tx.putRelationType("Main relation type").relates(role1).relates(role2).relates(role3);
 
-        rolePlayer1 = (Thing) type.create();
-        rolePlayer2 = (Thing) type.create();
+        rolePlayer1 = type.create();
+        rolePlayer2 = type.create();
 
-        relation = (Relation) relationType.create();
+        relation = relationType.create();
 
         relation.assign(role1, rolePlayer1);
         relation.assign(role2, rolePlayer2);
@@ -130,12 +134,15 @@ public class RelationIT {
 
     @Test
     public void checkRolePlayerEdgesAreCreatedBetweenAllRolePlayers(){
+        // for this test, we need TestTransaction which we can safely downcast
+        TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction) tx);
+
         //Create the Schema
-        Role role1 = tx.putRole("Role 1");
-        Role role2 = tx.putRole("Role 2");
-        Role role3 = tx.putRole("Role 3");
-        tx.putRelationType("Rel Type").relates(role1).relates(role2).relates(role3);
-        EntityType entType = tx.putEntityType("Entity Type").plays(role1).plays(role2).plays(role3);
+        Role role1 = testTx.putRole("Role 1");
+        Role role2 = testTx.putRole("Role 2");
+        Role role3 = testTx.putRole("Role 3");
+        testTx.putRelationType("Rel Type").relates(role1).relates(role2).relates(role3);
+        EntityType entType = testTx.putEntityType("Entity Type").plays(role1).plays(role2).plays(role3);
 
         //Data
         Entity entity1r1 = (Entity) entType.create();
@@ -158,26 +165,30 @@ public class RelationIT {
         relation.assign(role3, entity6r1r2r3);
 
         //Check the structure of the NEW role-player edges
-        assertThat(followRolePlayerEdgesToNeighbours(tx, entity1r1),
+        assertThat(followRolePlayerEdgesToNeighbours(testTx, entity1r1),
                 containsInAnyOrder(entity1r1, entity2r1, entity3r2r3, entity4r3, entity5r1, entity6r1r2r3));
-        assertThat(followRolePlayerEdgesToNeighbours(tx, entity2r1),
+        assertThat(followRolePlayerEdgesToNeighbours(testTx, entity2r1),
                 containsInAnyOrder(entity2r1, entity1r1, entity3r2r3, entity4r3, entity5r1, entity6r1r2r3));
-        assertThat(followRolePlayerEdgesToNeighbours(tx, entity3r2r3),
+        assertThat(followRolePlayerEdgesToNeighbours(testTx, entity3r2r3),
                 containsInAnyOrder(entity1r1, entity2r1, entity3r2r3, entity4r3, entity5r1, entity6r1r2r3));
-        assertThat(followRolePlayerEdgesToNeighbours(tx, entity4r3),
+        assertThat(followRolePlayerEdgesToNeighbours(testTx, entity4r3),
                 containsInAnyOrder(entity1r1, entity2r1, entity3r2r3, entity4r3, entity5r1, entity6r1r2r3));
-        assertThat(followRolePlayerEdgesToNeighbours(tx, entity5r1),
+        assertThat(followRolePlayerEdgesToNeighbours(testTx, entity5r1),
                 containsInAnyOrder(entity1r1, entity2r1, entity3r2r3, entity4r3, entity5r1, entity6r1r2r3));
-        assertThat(followRolePlayerEdgesToNeighbours(tx, entity6r1r2r3),
+        assertThat(followRolePlayerEdgesToNeighbours(testTx, entity6r1r2r3),
                 containsInAnyOrder(entity1r1, entity2r1, entity3r2r3, entity4r3, entity5r1, entity6r1r2r3));
     }
-    private Set<Concept> followRolePlayerEdgesToNeighbours(Transaction tx, Thing thing) {
-        List<Vertex> vertices = tx.janusTraversalSourceProvider().getTinkerTraversal().V().
-                hasId(Schema.elementId(thing.id())).
-                in(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
-                out(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).toList();
+    private Set<Concept> followRolePlayerEdgesToNeighbours(TestTransactionProvider.TestTransaction tx, Thing thing) {
+        JanusTraversalSourceProvider janusTraversalSourceProvider = tx.janusTraversalSourceProvider();
+        ConceptManager conceptManager = tx.conceptManager();
+        List<Vertex> vertices = janusTraversalSourceProvider.getTinkerTraversal()
+                .V()
+                .hasId(Schema.elementId(thing.id()))
+                .in(Schema.EdgeLabel.ROLE_PLAYER.getLabel())
+                .out(Schema.EdgeLabel.ROLE_PLAYER.getLabel())
+                .toList();
 
-        return vertices.stream().map(vertex -> tx.conceptManager().buildConcept(vertex).asThing()).collect(Collectors.toSet());
+        return vertices.stream().map(vertex -> conceptManager.buildConcept(vertex).asThing()).collect(Collectors.toSet());
     }
 
     @Test

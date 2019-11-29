@@ -24,21 +24,23 @@ import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
-import grakn.core.kb.concept.api.Concept;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.kb.concept.api.Role;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.binary.RelationAtom;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
-import grakn.core.graql.reasoner.query.ReasonerQueries;
+import grakn.core.graql.reasoner.query.ReasonerQueryFactory;
 import grakn.core.graql.reasoner.rule.InferenceRule;
-import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
-import grakn.core.kb.graql.reasoner.unifier.Unifier;
 import grakn.core.graql.reasoner.unifier.UnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierType;
-import grakn.core.rule.GraknTestServer;
+import grakn.core.kb.concept.api.Concept;
+import grakn.core.kb.concept.api.Role;
+import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
+import grakn.core.kb.graql.reasoner.unifier.Unifier;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
+import grakn.core.rule.GraknTestServer;
+import grakn.core.rule.SessionUtil;
+import grakn.core.rule.TestTransactionProvider;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.statement.Statement;
@@ -68,15 +70,17 @@ public class AtomicUnificationIT {
     private static String resourcePath = "test-integration/graql/reasoner/resources/";
 
     @ClassRule
-    public static final GraknTestServer server = new GraknTestServer();
+    public static final GraknTestServer server = new GraknTestServer(false);
 
     private static Session genericSchemaSession;
 
     private Transaction tx;
+    // factories exposed by a test transaction, bound to the lifetime of a tx
+    private ReasonerQueryFactory reasonerQueryFactory;
 
     @BeforeClass
     public static void loadContext(){
-        genericSchemaSession = server.sessionWithNewKeyspace();
+        genericSchemaSession = SessionUtil.serverlessSessionWithNewKeyspace(server.serverConfig());
         loadFromFileAndCommit(resourcePath,"genericSchema.gql", genericSchemaSession);
     }
 
@@ -88,6 +92,8 @@ public class AtomicUnificationIT {
     @Before
     public void setUp(){
         tx = genericSchemaSession.writeTransaction();
+        TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction) tx);
+        reasonerQueryFactory = testTx.reasonerQueryFactory();
     }
 
     @After
@@ -141,7 +147,7 @@ public class AtomicUnificationIT {
         unification(parentRelation, specialisedRelation2, UnifierType.RULE,false, false, tx);
         unification(parentRelation, specialisedRelation3, UnifierType.RULE,false, false, tx);
         unification(parentRelation, specialisedRelation4, UnifierType.RULE,false, false, tx);
-        nonExistentUnifier(parentRelation, specialisedRelation5, tx);
+        nonExistentUnifier(parentRelation, specialisedRelation5);
     }
 
     @Test
@@ -158,8 +164,8 @@ public class AtomicUnificationIT {
         unification(parentRelation, specialisedRelation2, UnifierType.RULE,false, false, tx);
         unification(parentRelation, specialisedRelation3, UnifierType.RULE,false, false, tx);
         unification(parentRelation, specialisedRelation4, UnifierType.RULE,false, false, tx);
-        nonExistentUnifier(parentRelation, specialisedRelation5, tx);
-        nonExistentUnifier(parentRelation, specialisedRelation6, tx);
+        nonExistentUnifier(parentRelation, specialisedRelation5);
+        nonExistentUnifier(parentRelation, specialisedRelation6);
     }
 
     @Test
@@ -175,7 +181,7 @@ public class AtomicUnificationIT {
         unification(parentRelation, specialisedRelation2, UnifierType.RULE,false, true, tx);
         unification(parentRelation, specialisedRelation3, UnifierType.RULE,false, false, tx);
         unification(parentRelation, specialisedRelation4, UnifierType.RULE,false, false, tx);
-        nonExistentUnifier(parentRelation, specialisedRelation5, tx);
+        nonExistentUnifier(parentRelation, specialisedRelation5);
     }
 
     @Test
@@ -188,12 +194,12 @@ public class AtomicUnificationIT {
         String specialisedRelation5 = "{ (subSubRole1: $y, subRole2: $z, subSubRole3: $x); };";
         String specialisedRelation6 = "{ (subRole1: $u, subRole1: $v, subSubRole3: $q); };";
 
-        nonExistentUnifier(parentRelation, specialisedRelation, tx);
+        nonExistentUnifier(parentRelation, specialisedRelation);
         unification(parentRelation, specialisedRelation2, UnifierType.RULE,false, false, tx);
         unification(parentRelation, specialisedRelation3, UnifierType.RULE,false, false, tx);
         unification(parentRelation, specialisedRelation4, UnifierType.RULE,false, false, tx);
         unification(parentRelation, specialisedRelation5, UnifierType.RULE,false, false, tx);
-        nonExistentUnifier(parentRelation, specialisedRelation6, tx);
+        nonExistentUnifier(parentRelation, specialisedRelation6);
     }
 
     @Test
@@ -209,7 +215,7 @@ public class AtomicUnificationIT {
         unification(parentRelation, specialisedRelation2, UnifierType.RULE,false, false, tx);
         unification(parentRelation, specialisedRelation3, UnifierType.RULE, false, false, tx);
         unification(parentRelation, specialisedRelation4, UnifierType.RULE,false, false, tx);
-        nonExistentUnifier(parentRelation, specialisedRelation5, tx);
+        nonExistentUnifier(parentRelation, specialisedRelation5);
     }
 
     @Test
@@ -225,7 +231,7 @@ public class AtomicUnificationIT {
         unification(parentRelation, specialisedRelation2, UnifierType.RULE,false, false, tx);
         unification(parentRelation, specialisedRelation3, UnifierType.RULE,false, false, tx);
         unification(parentRelation, specialisedRelation4, UnifierType.RULE,false, false, tx);
-        nonExistentUnifier(parentRelation, specialisedRelation5, tx);
+        nonExistentUnifier(parentRelation, specialisedRelation5);
     }
 
     @Test
@@ -268,9 +274,9 @@ public class AtomicUnificationIT {
         String parentString = "{ (subRole1: $x) isa binary; };";
         String parentString2 = "{ (subRole2: $y) isa binary; };";
 
-        ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(conjunction(childString, tx), tx);
-        ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(conjunction(parentString, tx), tx);
-        ReasonerAtomicQuery parentQuery2 = ReasonerQueries.atomic(conjunction(parentString2, tx), tx);
+        ReasonerAtomicQuery childQuery = reasonerQueryFactory.atomic(conjunction(childString));
+        ReasonerAtomicQuery parentQuery = reasonerQueryFactory.atomic(conjunction(parentString));
+        ReasonerAtomicQuery parentQuery2 = reasonerQueryFactory.atomic(conjunction(parentString2));
 
         Atom childAtom = childQuery.getAtom();
         Atom parentAtom = parentQuery.getAtom();
@@ -307,12 +313,12 @@ public class AtomicUnificationIT {
         String resource2 = "{ $r has resource $x;$x == 'f'; };";
         String resource3 = "{ $r has resource 'f'; };";
 
-        ReasonerAtomicQuery resourceQuery = ReasonerQueries.atomic(conjunction(resource, tx), tx);
-        ReasonerAtomicQuery resourceQuery2 = ReasonerQueries.atomic(conjunction(resource2, tx), tx);
-        ReasonerAtomicQuery resourceQuery3 = ReasonerQueries.atomic(conjunction(resource3, tx), tx);
+        ReasonerAtomicQuery resourceQuery = reasonerQueryFactory.atomic(conjunction(resource));
+        ReasonerAtomicQuery resourceQuery2 = reasonerQueryFactory.atomic(conjunction(resource2));
+        ReasonerAtomicQuery resourceQuery3 = reasonerQueryFactory.atomic(conjunction(resource3));
 
         String type = "{ $x isa resource;$x id " + tx.execute(resourceQuery.getQuery(), false).iterator().next().get("r").id().getValue()  + "; };";
-        ReasonerAtomicQuery typeQuery = ReasonerQueries.atomic(conjunction(type, tx), tx);
+        ReasonerAtomicQuery typeQuery = reasonerQueryFactory.atomic(conjunction(type));
         Atom typeAtom = typeQuery.getAtom();
 
         Atom resourceAtom = resourceQuery.getAtom();
@@ -336,7 +342,7 @@ public class AtomicUnificationIT {
     @Test
     public void testRewriteAndUnification(){
         String parentString = "{ $r (subRole1: $x) isa binary; };";
-        Atom parentAtom = ReasonerQueries.atomic(conjunction(parentString, tx), tx).getAtom();
+        Atom parentAtom = reasonerQueryFactory.atomic(conjunction(parentString)).getAtom();
         Variable parentVarName = parentAtom.getVarName();
 
         String childPatternString = "(subRole1: $x, subRole2: $y) isa binary;";
@@ -344,7 +350,7 @@ public class AtomicUnificationIT {
                 tx.putRule("Checking Rewrite & Unification",
                            Graql.parsePattern(childPatternString),
                            Graql.parsePattern(childPatternString)),
-                tx)
+                reasonerQueryFactory)
                 .rewrite(parentAtom);
 
         RelationAtom headAtom = (RelationAtom) testRule.getHead().getAtom();
@@ -369,8 +375,8 @@ public class AtomicUnificationIT {
     public void testUnification_MatchAllParentAtom(){
         String parentString = "{ $r($a, $x); };";
         String childString = "{ $rel (baseRole1: $z, baseRole2: $b) isa binary; };";
-        Atom parent = ReasonerQueries.atomic(conjunction(parentString, tx), tx).getAtom();
-        Atom child = ReasonerQueries.atomic(conjunction(childString, tx), tx).getAtom();
+        Atom parent = reasonerQueryFactory.atomic(conjunction(parentString)).getAtom();
+        Atom child = reasonerQueryFactory.atomic(conjunction(childString)).getAtom();
 
         MultiUnifier multiUnifier = child.getMultiUnifier(parent, UnifierType.RULE);
         Unifier correctUnifier = new UnifierImpl(
@@ -396,19 +402,19 @@ public class AtomicUnificationIT {
                 .rel(var("baseRole2").type("subSubRole2"), var("y2"))
                 .isa("binary");
 
-        ReasonerAtomicQuery baseQuery = ReasonerQueries.atomic(Graql.and(Sets.newHashSet(basePattern)), tx);
-        ReasonerAtomicQuery childQuery = ReasonerQueries
+        ReasonerAtomicQuery baseQuery = reasonerQueryFactory.atomic(Graql.and(Sets.newHashSet(basePattern)));
+        ReasonerAtomicQuery childQuery = reasonerQueryFactory
                 .atomic(conjunction(
                         "{($r1: $x1, $r2: $x2) isa binary;" +
                                 "$r1 type subRole1;" +
                                 "$r2 type subSubRole2; };"
-                        , tx), tx);
-        ReasonerAtomicQuery parentQuery = ReasonerQueries
+                        ));
+        ReasonerAtomicQuery parentQuery = reasonerQueryFactory
                 .atomic(conjunction(
                         "{ ($R1: $x, $R2: $y) isa binary;" +
                                 "$R1 type subRole1;" +
                                 "$R2 type subSubRole2; };"
-                        , tx), tx);
+                        ));
         unification(parentQuery, childQuery, UnifierType.EXACT, true, true);
         unification(baseQuery, parentQuery, UnifierType.EXACT, true, true);
         unification(baseQuery, childQuery, UnifierType.EXACT, true, true);
@@ -420,26 +426,26 @@ public class AtomicUnificationIT {
                 .rel(var("baseRole1").type("subRole1"), var("y1"))
                 .rel(var("baseRole2").type("subSubRole2"), var("y2"));
 
-        ReasonerAtomicQuery baseQuery = ReasonerQueries.atomic(Graql.and(Sets.newHashSet(basePattern)), tx);
-        ReasonerAtomicQuery childQuery = ReasonerQueries
+        ReasonerAtomicQuery baseQuery = reasonerQueryFactory.atomic(Graql.and(Sets.newHashSet(basePattern)));
+        ReasonerAtomicQuery childQuery = reasonerQueryFactory
                 .atomic(conjunction(
                         "{ ($r1: $x1, $r2: $x2); " +
                                 "$r1 type subRole1;" +
                                 "$r2 type subSubRole2; };"
-                        , tx), tx);
-        ReasonerAtomicQuery parentQuery = ReasonerQueries
+                        ));
+        ReasonerAtomicQuery parentQuery = reasonerQueryFactory
                 .atomic(conjunction(
                         "{ ($R1: $x, $R2: $y); " +
                                 "$R1 type subRole1;" +
                                 "$R2 type subSubRole2; };"
-                        , tx), tx);
+                        ));
         unification(parentQuery, childQuery, UnifierType.EXACT, true, true);
         unification(baseQuery, parentQuery, UnifierType.EXACT, true, true);
         unification(baseQuery, childQuery, UnifierType.EXACT, true, true);
     }
 
     private void roleInference(String patternString, ImmutableSetMultimap<Role, Variable> expectedRoleMAp, Transaction tx){
-        RelationAtom atom = (RelationAtom) ReasonerQueries.atomic(conjunction(patternString, tx), tx).getAtom();
+        RelationAtom atom = (RelationAtom) reasonerQueryFactory.atomic(conjunction(patternString)).getAtom();
         Multimap<Role, Variable> roleMap = roleSetMap(atom.getRoleVarMap());
         assertEquals(expectedRoleMAp, roleMap);
 
@@ -456,10 +462,10 @@ public class AtomicUnificationIT {
         assertTrue(childAtom.getMultiUnifier(parentAtom, UnifierType.EXACT).isEmpty());
     }
 
-    private void nonExistentUnifier(String parentPatternString, String childPatternString, Transaction tx){
+    private void nonExistentUnifier(String parentPatternString, String childPatternString){
         nonExistentUnifier(
-                ReasonerQueries.atomic(conjunction(parentPatternString, tx), tx),
-                ReasonerQueries.atomic(conjunction(childPatternString, tx), tx)
+                reasonerQueryFactory.atomic(conjunction(parentPatternString)),
+                reasonerQueryFactory.atomic(conjunction(childPatternString))
         );
     }
 
@@ -507,8 +513,8 @@ public class AtomicUnificationIT {
     private void unification(String parentPatternString, String childPatternString, 
                              UnifierType unifierType, boolean checkInverse, boolean checkEquality, Transaction tx){
         unification(
-                ReasonerQueries.atomic(conjunction(parentPatternString, tx), tx),
-                ReasonerQueries.atomic(conjunction(childPatternString, tx), tx),
+                reasonerQueryFactory.atomic(conjunction(parentPatternString)),
+                reasonerQueryFactory.atomic(conjunction(childPatternString)),
                 unifierType,
                 checkInverse,
                 checkEquality);
@@ -520,7 +526,7 @@ public class AtomicUnificationIT {
         return roleMap;
     }
 
-    private Conjunction<Statement> conjunction(String patternString, Transaction tx){
+    private Conjunction<Statement> conjunction(String patternString){
         Set<Statement> vars = Graql.parsePattern(patternString)
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());

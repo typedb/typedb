@@ -25,7 +25,7 @@ import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.binary.RelationAtom;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
-import grakn.core.graql.reasoner.query.ReasonerQueries;
+import grakn.core.graql.reasoner.query.reasonerQueryFactory;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.Label;
@@ -84,10 +84,10 @@ public class TypeInferenceIT {
     public void whenCalculatingTypeMaps_typesAreCollapsedCorrectly(){
         Transaction tx = testContextSession.writeTransaction();
 
-        ReasonerQuery query = ReasonerQueries.atomic(conjunction("{($x); $x isa singleRoleEntity;$x isa twoRoleEntity;};"), tx);
+        ReasonerQuery query = reasonerQueryFactory.atomic(conjunction("{($x); $x isa singleRoleEntity;$x isa twoRoleEntity;};"), tx);
         assertEquals(tx.getEntityType("twoRoleEntity"), Iterables.getOnlyElement(query.getVarTypeMap().get(new Variable("x"))));
 
-        query = ReasonerQueries.atomic(conjunction("{($x); $x isa entity;$x isa singleRoleEntity;};"), tx);
+        query = reasonerQueryFactory.atomic(conjunction("{($x); $x isa entity;$x isa singleRoleEntity;};"), tx);
         assertEquals(tx.getType(Label.of("singleRoleEntity")), Iterables.getOnlyElement(query.getVarTypeMap().get(new Variable("x"))));
         tx.close();
     }
@@ -340,14 +340,14 @@ public class TypeInferenceIT {
                 "($z, $w); $w isa threeRoleEntity;" +
                 "};";
 
-        ReasonerQuery conjQuery = ReasonerQueries.create(conjunction(patternString), tx);
+        ReasonerQuery conjQuery = reasonerQueryFactory.create(conjunction(patternString), tx);
 
         //determination of possible rel types for ($y, $z) relation depends on its neighbours which should be preserved
         //when resolving (and separating atoms) the query
         RelationAtom XYatom = getAtom(conjQuery, RelationAtom.class, Sets.newHashSet(new Variable("x"), new Variable("y")));
         RelationAtom YZatom = getAtom(conjQuery, RelationAtom.class, Sets.newHashSet(new Variable("y"), new Variable("z")));
         RelationAtom ZWatom = getAtom(conjQuery, RelationAtom.class, Sets.newHashSet(new Variable("z"), new Variable("w")));
-        RelationAtom midAtom = (RelationAtom) ReasonerQueries.atomic(YZatom).getAtom();
+        RelationAtom midAtom = (RelationAtom) reasonerQueryFactory.atomic(YZatom).getAtom();
 
         assertEquals(midAtom.getPossibleTypes(), YZatom.getPossibleTypes());
 
@@ -369,7 +369,7 @@ public class TypeInferenceIT {
     }
 
     private void typeInference(List<Type> possibleTypes, String pattern, Transaction tx){
-        ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(pattern), tx);
+        ReasonerAtomicQuery query = reasonerQueryFactory.atomic(conjunction(pattern), tx);
         Atom atom = query.getAtom();
         List<Type> relationTypes = atom.getPossibleTypes();
 
@@ -385,8 +385,8 @@ public class TypeInferenceIT {
     }
 
     private void typeInference(List<Type> possibleTypes, String pattern, String subbedPattern, Transaction tx){
-        ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(pattern), tx);
-        ReasonerAtomicQuery subbedQuery = ReasonerQueries.atomic(conjunction(subbedPattern), tx);
+        ReasonerAtomicQuery query = reasonerQueryFactory.atomic(conjunction(pattern), tx);
+        ReasonerAtomicQuery subbedQuery = reasonerQueryFactory.atomic(conjunction(subbedPattern), tx);
         Atom atom = query.getAtom();
         Atom subbedAtom = subbedQuery.getAtom();
 
@@ -418,9 +418,9 @@ public class TypeInferenceIT {
 
     private List<ConceptMap> typedAnswers(List<Type> possibleTypes, String pattern, Transaction tx){
         List<ConceptMap> answers = new ArrayList<>();
-        ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(pattern), tx);
+        ReasonerAtomicQuery query = reasonerQueryFactory.atomic(conjunction(pattern), tx);
         for(SchemaConcept type : possibleTypes){
-            GraqlGet typedQuery = Graql.match(ReasonerQueries.atomic(query.getAtom().addType(type)).getPattern()).get();
+            GraqlGet typedQuery = Graql.match(reasonerQueryFactory.atomic(query.getAtom().addType(type)).getPattern()).get();
             tx.stream(typedQuery).filter(ans -> !answers.contains(ans)).forEach(answers::add);
         }
         return answers;

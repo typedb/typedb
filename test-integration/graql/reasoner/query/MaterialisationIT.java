@@ -28,6 +28,8 @@ import grakn.core.kb.concept.api.Relation;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import grakn.core.rule.GraknTestServer;
+import grakn.core.rule.SessionUtil;
+import grakn.core.rule.TestTransactionProvider;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
@@ -54,13 +56,13 @@ import static org.junit.Assert.assertTrue;
 public class MaterialisationIT {
 
     @ClassRule
-    public static final GraknTestServer server = new GraknTestServer();
+    public static final GraknTestServer server = new GraknTestServer(false);
 
     private static Session materialisationTestSession;
 
     @BeforeClass
     public static void loadContext() {
-        materialisationTestSession = server.sessionWithNewKeyspace();
+        materialisationTestSession = SessionUtil.serverlessSessionWithNewKeyspace(server.serverConfig());
         String resourcePath = "test-integration/graql/reasoner/resources/";
         loadFromFileAndCommit(resourcePath,"materialisationTest.gql", materialisationTestSession);
     }
@@ -73,6 +75,8 @@ public class MaterialisationIT {
     @Test
     public void whenMaterialisingRelations_newRelationsAreInsertedInTheGraph() {
         try(Transaction tx = materialisationTestSession.writeTransaction()) {
+            ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
+
             Iterator<Entity> entityIterator = tx.getMetaEntityType().instances().iterator();
             Entity entity = entityIterator.next();
             Entity anotherEntity = entityIterator.next();
@@ -85,27 +89,30 @@ public class MaterialisationIT {
                     relation,
                     Graql.var("x").id(entity.id().getValue()),
                     Graql.var("y").id(anotherEntity.id().getValue())));
-            materialiseWithoutDuplicates(pattern, tx);
+            materialiseWithoutDuplicates(pattern,reasonerQueryFactory, tx);
         }
     }
 
     @Test
     public void whenMaterialisingAttributes_newAttributesAreInsertedInTheGraph() {
         try(Transaction tx = materialisationTestSession.writeTransaction()) {
+            ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
+
             Entity entity = tx.getMetaEntityType().instances().iterator().next();
 
             Statement attribute = Graql.var("x").has("resource-string", "materialised").id(entity.id().getValue());
             Conjunction<Statement> pattern = Graql.and(Collections.singleton(attribute));
-            materialiseWithoutDuplicates(pattern, tx);
+            materialiseWithoutDuplicates(pattern,reasonerQueryFactory, tx);
         }
     }
 
     @Test
     public void whenMaterialisingEntities_newEntitiesAreInsertedInTheGraph() {
         try(Transaction tx = materialisationTestSession.writeTransaction()) {
+            ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
             Statement entity = Graql.var("x").isa("newEntity");
             Conjunction<Statement> pattern = Graql.and(Collections.singleton(entity));
-            ReasonerAtomicQuery entityQuery = ReasonerQueries.atomic(pattern, tx);
+            ReasonerAtomicQuery entityQuery = reasonerQueryFactory.atomic(pattern);
 
             Set<ConceptMap> materialised = entityQuery.materialise(new ConceptMap()).collect(toSet());
             assertTrue(tx.execute(entityQuery.getQuery()).containsAll(materialised));
@@ -115,6 +122,8 @@ public class MaterialisationIT {
     @Test
     public void whenMaterialisingRelationsThatAlreadyExist_noNewRelationsAreInsertedInTheGraph() {
         try(Transaction tx = materialisationTestSession.writeTransaction()) {
+            ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
+
             Iterator<Entity> entityIterator = tx.getMetaEntityType().instances().iterator();
             Entity entity = entityIterator.next();
             Entity anotherEntity = entityIterator.next();
@@ -127,33 +136,37 @@ public class MaterialisationIT {
                     relation,
                     Graql.var("x").id(entity.id().getValue()),
                     Graql.var("y").id(anotherEntity.id().getValue())));
-            materialiseWithoutDuplicates(pattern, tx);
+            materialiseWithoutDuplicates(pattern,reasonerQueryFactory, tx);
         }
     }
 
     @Test
     public void whenMaterialisingAttributesThatAlreadyExist_noNewAttributesAreInsertedInTheGraph() {
         try(Transaction tx = materialisationTestSession.writeTransaction()) {
+            ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
+
             Entity entity = tx.getMetaEntityType().instances().iterator().next();
 
             Statement attribute = Graql.var("x").has("resource-string", "materialised").id(entity.id().getValue());
             Conjunction<Statement> pattern = Graql.and(Collections.singleton(attribute));
-            materialiseWithoutDuplicates(pattern, tx);
+            materialiseWithoutDuplicates(pattern,reasonerQueryFactory, tx);
         }
     }
 
     @Test
     public void whenMaterialisingImplicitRelations_appropriateAttributeIsCorrectlyCreatedAndAttached() {
         try(Transaction tx = materialisationTestSession.writeTransaction()) {
+            ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
+
             Iterator<Entity> entityIterator = tx.getMetaEntityType().instances().iterator();
             Entity entity = entityIterator.next();
 
             Statement attribute = Graql.var("x").has("resource-string", "materialised").id(entity.id().getValue());
             Conjunction<Statement> pattern = Graql.and(Collections.singleton(attribute));
-            ReasonerAtomicQuery attributeQuery = ReasonerQueries.atomic(pattern, tx);
-            ReasonerAtomicQuery implicitRelationQuery = ReasonerQueries.atomic(attributeQuery.getAtom().toRelationAtom());
+            ReasonerAtomicQuery attributeQuery = reasonerQueryFactory.atomic(pattern);
+            ReasonerAtomicQuery implicitRelationQuery = reasonerQueryFactory.atomic(attributeQuery.getAtom().toRelationAtom());
 
-            List<ConceptMap> materialised = materialiseWithoutDuplicates(implicitRelationQuery.getPattern(), tx);
+            List<ConceptMap> materialised = materialiseWithoutDuplicates(implicitRelationQuery.getPattern(),reasonerQueryFactory, tx);
             assertTrue(tx.execute(attributeQuery.getQuery()).containsAll(materialised));
         }
     }
@@ -161,7 +174,8 @@ public class MaterialisationIT {
     @Test
     public void whenMaterialisingEntity_MaterialisedInformationIsCorrectlyFlaggedAsInferred() {
         try(Transaction tx = materialisationTestSession.writeTransaction()) {
-            ReasonerAtomicQuery entityQuery = ReasonerQueries.atomic(conjunction("$x isa newEntity;"), tx);
+            ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
+            ReasonerAtomicQuery entityQuery = reasonerQueryFactory.atomic(conjunction("$x isa newEntity;"));
             assertTrue(entityQuery.materialise(new ConceptMap()).findFirst().orElse(null).get("x").asEntity().isInferred());
         }
     }
@@ -169,6 +183,8 @@ public class MaterialisationIT {
     @Test
     public void whenMaterialisingAttributes_MaterialisedInformationIsCorrectlyFlaggedAsInferred() {
         try(Transaction tx = materialisationTestSession.writeTransaction()) {
+            ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
+
             Concept firstEntity = Iterables.getOnlyElement(tx.execute(Graql.parse("match $x isa someEntity; get;").asGet(), false)).get("x");
             Concept secondEntity = Iterables.getOnlyElement(tx.execute(Graql.parse("match $x isa anotherEntity; get;").asGet(), false)).get("x");
             Concept resource = Iterables.getOnlyElement(tx.execute(Graql.parse("match $x isa resource-string; get;").asGet(), false)).get("x");
@@ -181,10 +197,10 @@ public class MaterialisationIT {
                             " $r id " + resource.id().getValue() + ";" +
                             " };");
 
-            List<ConceptMap> resourceAnswers = materialiseWithoutDuplicates(resourcePattern, tx);
+            List<ConceptMap> resourceAnswers = materialiseWithoutDuplicates(resourcePattern,reasonerQueryFactory, tx);
             assertTrue(Iterables.getOnlyElement(resourceAnswers).get("r").asAttribute().isInferred());
 
-            materialiseWithoutDuplicates(reuseResourcePattern, tx);
+            materialiseWithoutDuplicates(reuseResourcePattern,reasonerQueryFactory, tx);
             assertTrue(Iterables.getOnlyElement(
                     tx.execute(Graql.parse("match" +
                             "$x has resource-string $r via $rel;" +
@@ -203,21 +219,23 @@ public class MaterialisationIT {
     @Test
     public void whenMaterialisingAttributesWithCompatibleValues_noDuplicatesAreCreated() {
         try(Transaction tx = materialisationTestSession.writeTransaction()) {
+            ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
+
             Entity entity = tx.getMetaEntityType().instances().iterator().next();
 
-            materialiseWithoutDuplicates(Graql.var("x").has("resource-string", "materialised").id(entity.id().getValue()), tx);
-            materialiseWithoutDuplicates(Graql.var("x").has("resource-boolean", true).id(entity.id().getValue()), tx);
+            materialiseWithoutDuplicates(Graql.var("x").has("resource-string", "materialised").id(entity.id().getValue()),reasonerQueryFactory, tx);
+            materialiseWithoutDuplicates(Graql.var("x").has("resource-boolean", true).id(entity.id().getValue()),reasonerQueryFactory, tx);
 
-            materialiseWithoutDuplicates(Graql.var("x").has("resource-double", 10L).id(entity.id().getValue()), tx);
-            materialiseWithoutDuplicates(Graql.var("x").has("resource-double", 10).id(entity.id().getValue()), tx);
-            materialiseWithoutDuplicates(Graql.var("x").has("resource-double", 10.0).id(entity.id().getValue()), tx);
+            materialiseWithoutDuplicates(Graql.var("x").has("resource-double", 10L).id(entity.id().getValue()),reasonerQueryFactory, tx);
+            materialiseWithoutDuplicates(Graql.var("x").has("resource-double", 10).id(entity.id().getValue()),reasonerQueryFactory, tx);
+            materialiseWithoutDuplicates(Graql.var("x").has("resource-double", 10.0).id(entity.id().getValue()),reasonerQueryFactory, tx);
 
-            materialiseWithoutDuplicates(Graql.var("x").has("resource-long", 10.0).id(entity.id().getValue()), tx);
-            materialiseWithoutDuplicates(Graql.var("x").has("resource-long", 10).id(entity.id().getValue()), tx);
-            materialiseWithoutDuplicates(Graql.var("x").has("resource-long", 10L).id(entity.id().getValue()), tx);
+            materialiseWithoutDuplicates(Graql.var("x").has("resource-long", 10.0).id(entity.id().getValue()),reasonerQueryFactory, tx);
+            materialiseWithoutDuplicates(Graql.var("x").has("resource-long", 10).id(entity.id().getValue()),reasonerQueryFactory,tx);
+            materialiseWithoutDuplicates(Graql.var("x").has("resource-long", 10L).id(entity.id().getValue()),reasonerQueryFactory, tx);
 
-            materialiseWithoutDuplicates(Graql.var("x").has("resource-date", LocalDateTime.now()).id(entity.id().getValue()), tx);
-            materialiseWithoutDuplicates(Graql.parsePattern("$x id " + entity.id().getValue() + ", has resource-date " + LocalDate.now() + ";").statements().iterator().next(), tx);
+            materialiseWithoutDuplicates(Graql.var("x").has("resource-date", LocalDateTime.now()).id(entity.id().getValue()),reasonerQueryFactory, tx);
+            materialiseWithoutDuplicates(Graql.parsePattern("$x id " + entity.id().getValue() + ", has resource-date " + LocalDate.now() + ";").statements().iterator().next(),reasonerQueryFactory, tx);
         }
     }
 
@@ -225,6 +243,8 @@ public class MaterialisationIT {
     @Test
     public void whenMaterialisingRelations_MaterialisedInformationIsCorrectlyFlaggedAsInferred() {
         try(Transaction tx = materialisationTestSession.writeTransaction()) {
+            ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
+
             Concept firstEntity = Iterables.getOnlyElement(tx.execute(Graql.parse("match $x isa someEntity; get;").asGet(), false)).get("x");
             Concept secondEntity = Iterables.getOnlyElement(tx.execute(Graql.parse("match $x isa anotherEntity; get;").asGet(), false)).get("x");
 
@@ -235,21 +255,21 @@ public class MaterialisationIT {
                             " $y id " + secondEntity.id().getValue() + ";" +
                             " };"
             );
-            Relation materialisedRelation = Iterables.getOnlyElement(materialiseWithoutDuplicates(relationConj, tx)).get("r").asRelation();
+            Relation materialisedRelation = Iterables.getOnlyElement(materialiseWithoutDuplicates(relationConj,reasonerQueryFactory, tx)).get("r").asRelation();
             assertTrue(materialisedRelation.isInferred());
         }
     }
 
-    private List<ConceptMap> materialiseWithoutDuplicates(Pattern pattern, Transaction tx){
-        return materialiseWithoutDuplicates(Graql.and(pattern.statements()), tx);
+    private List<ConceptMap> materialiseWithoutDuplicates(Pattern pattern, ReasonerQueryFactory reasonerQueryFactory, Transaction tx){
+        return materialiseWithoutDuplicates(Graql.and(pattern.statements()), reasonerQueryFactory, tx);
     }
 
-    private List<ConceptMap> materialiseWithoutDuplicates(Statement statement, Transaction tx){
-        return materialiseWithoutDuplicates(Graql.and(Collections.singleton(statement)), tx);
+    private List<ConceptMap> materialiseWithoutDuplicates(Statement statement, ReasonerQueryFactory reasonerQueryFactory, Transaction tx){
+        return materialiseWithoutDuplicates(Graql.and(Collections.singleton(statement)),reasonerQueryFactory, tx);
     }
 
-    private List<ConceptMap> materialiseWithoutDuplicates(Conjunction<Statement> statement, Transaction tx){
-        ReasonerAtomicQuery query = ReasonerQueries.atomic(statement, tx);
+    private List<ConceptMap> materialiseWithoutDuplicates(Conjunction<Statement> statement, ReasonerQueryFactory reasonerQueryFactory, Transaction tx){
+        ReasonerAtomicQuery query = reasonerQueryFactory.atomic(statement);
 
         List<ConceptMap> materialised = query.materialise(new ConceptMap()).collect(Collectors.toList());
         List<ConceptMap> answers = tx.execute(query.getQuery());

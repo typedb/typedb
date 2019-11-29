@@ -191,6 +191,7 @@ java_test(
         "//graql:graql",
         "//kb",
         "//kb/concept/api",
+        "//kb/concept/manager",
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:graql-test-util",
         "@graknlabs_graql//java:graql",

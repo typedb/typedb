@@ -105,9 +105,9 @@ public class SubsumptionIT {
     public void testSubsumption_reflexiveNonReflexiveRelationPairs() {
         try(Transaction tx = genericSchemaSession.readTransaction() ) {
             String id = tx.getEntityType("baseRoleEntity").instances().iterator().next().id().getValue();
-            ReasonerAtomicQuery child = ReasonerQueries.atomic(conjunction("(baseRole1: $x, baseRole2: $y);"), tx);
-            ReasonerAtomicQuery child2 = ReasonerQueries.atomic(conjunction("{(baseRole1: $x, baseRole2: $y); $y id " + id + ";};"), tx);
-            ReasonerAtomicQuery parent = ReasonerQueries.atomic(conjunction("(baseRole1: $x, baseRole2: $x);"), tx);
+            ReasonerAtomicQuery child = reasonerQueryFactory.atomic(conjunction("(baseRole1: $x, baseRole2: $y);"), tx);
+            ReasonerAtomicQuery child2 = reasonerQueryFactory.atomic(conjunction("{(baseRole1: $x, baseRole2: $y); $y id " + id + ";};"), tx);
+            ReasonerAtomicQuery parent = reasonerQueryFactory.atomic(conjunction("(baseRole1: $x, baseRole2: $x);"), tx);
 
             assertFalse(child.subsumes(parent));
             assertFalse(child2.subsumes(parent));
@@ -587,8 +587,8 @@ public class SubsumptionIT {
     }
 
     private void subsumption(String childString, String parentString, boolean subsumes, Transaction tx){
-        ReasonerAtomicQuery child = ReasonerQueries.atomic(conjunction(childString), tx);
-        ReasonerAtomicQuery parent = ReasonerQueries.atomic(conjunction(parentString), tx);
+        ReasonerAtomicQuery child = reasonerQueryFactory.atomic(conjunction(childString), tx);
+        ReasonerAtomicQuery parent = reasonerQueryFactory.atomic(conjunction(parentString), tx);
         UnifierType unifierType = UnifierType.SUBSUMPTIVE;
 
         assertEquals("Unexpected subsumption outcome: between the child - parent pair:\n" + child + " :\n" + parent + "\n", subsumes, child.subsumes(parent));

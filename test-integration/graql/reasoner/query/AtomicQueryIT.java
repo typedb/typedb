@@ -62,7 +62,7 @@ public class AtomicQueryIT {
     public void whenConstructingNonAtomicQuery_ExceptionIsThrown() {
         try (Transaction tx = session.writeTransaction()) {
             String patternString = "{ ($x, $y) isa binary;($y, $z) isa binary; };";
-            ReasonerAtomicQuery atomicQuery = ReasonerQueries.atomic(conjunction(patternString), tx);
+            ReasonerAtomicQuery atomicQuery = reasonerQueryFactory.atomic(conjunction(patternString), tx);
         }
     }
 
@@ -70,7 +70,7 @@ public class AtomicQueryIT {
     public void whenCreatingQueryWithNonexistentType_ExceptionIsThrown() {
         try (Transaction tx = session.writeTransaction()) {
             String patternString = "{ $x isa someType; };";
-            ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString), tx);
+            ReasonerAtomicQuery query = reasonerQueryFactory.atomic(conjunction(patternString), tx);
         }
     }
 
@@ -78,7 +78,7 @@ public class AtomicQueryIT {
     public void whenCreatingAttributeQueryWithInvalidValueType_ExceptionIsThrown() {
         try (Transaction tx = session.writeTransaction()) {
             String patternString = "{ $x has resource-double '100'; };";
-            ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString), tx);
+            ReasonerAtomicQuery query = reasonerQueryFactory.atomic(conjunction(patternString), tx);
         }
     }
 
@@ -87,7 +87,7 @@ public class AtomicQueryIT {
         try (Transaction tx = session.writeTransaction()) {
             String patternString = "{ $x isa subRoleEntity;$y isa subSubRoleEntity;($x, $y) isa binary; };";
             Conjunction<Statement> pattern = conjunction(patternString);
-            ReasonerAtomicQuery atomicQuery = ReasonerQueries.atomic(pattern, tx);
+            ReasonerAtomicQuery atomicQuery = reasonerQueryFactory.atomic(pattern, tx);
             ReasonerAtomicQuery copy = atomicQuery.copy();
             assertEquals(atomicQuery, copy);
             assertEquals(atomicQuery.hashCode(), copy.hashCode());
@@ -104,8 +104,8 @@ public class AtomicQueryIT {
             GraqlGet parentQuery = Graql.parse(parentString).asGet();
             Set<ConceptMap> answers = tx.stream(childQuery, false).collect(toSet());
             Set<ConceptMap> fullAnswers = tx.stream(parentQuery, false).collect(toSet());
-            Atom childAtom = ReasonerQueries.atomic(conjunction(childQuery.match().getPatterns()), tx).getAtom();
-            Atom parentAtom = ReasonerQueries.atomic(conjunction(parentQuery.match().getPatterns()), tx).getAtom();
+            Atom childAtom = reasonerQueryFactory.atomic(conjunction(childQuery.match().getPatterns()), tx).getAtom();
+            Atom parentAtom = reasonerQueryFactory.atomic(conjunction(parentQuery.match().getPatterns()), tx).getAtom();
 
             MultiUnifier multiUnifier = childAtom.getMultiUnifier(childAtom, UnifierType.RULE);
             Set<ConceptMap> permutedAnswers = answers.stream()
