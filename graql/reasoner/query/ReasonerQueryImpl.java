@@ -674,7 +674,7 @@ public class ReasonerQueryImpl extends ResolvableQuery {
         } else {
             dbIterator = Collections.emptyIterator();
 
-            ResolutionQueryPlan queryPlan = new ResolutionQueryPlan(this, reasonerQueryFactory);
+            ResolutionQueryPlan queryPlan = new ResolutionQueryPlan(reasonerQueryFactory, this);
             subGoalIterator = Iterators.singletonIterator(new CumulativeState(queryPlan.queries(), new ConceptMap(), parent.getUnifier(), parent, subGoals));
         }
         return Iterators.concat(dbIterator, subGoalIterator);

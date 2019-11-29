@@ -47,9 +47,9 @@ public class ResolutionQueryPlan {
     private final ImmutableList<ReasonerQueryImpl> queryPlan;
     private ReasonerQueryFactory reasonerQueryFactory;
 
-    public ResolutionQueryPlan(ReasonerQueryImpl query, ReasonerQueryFactory reasonerQueryFactory){
-        this.queryPlan = queryPlan(query);
+    public ResolutionQueryPlan(ReasonerQueryFactory reasonerQueryFactory, ReasonerQueryImpl query){
         this.reasonerQueryFactory = reasonerQueryFactory;
+        this.queryPlan = queryPlan(query);
     }
 
     @Override

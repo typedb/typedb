@@ -201,7 +201,7 @@ public class QueryIT {
                 someRelation.create().assign(fromRole, entityF).assign(toRole, entityG);
                 tx.commit();
             }
-            try (TestTransaction tx = ((TestTransaction) geoSession.writeTransaction())) {
+            try (TestTransaction tx = ((TestTransaction) session.writeTransaction())) {
                 ReasonerQueryFactory reasonerQueryFactory = tx.reasonerQueryFactory();
                 String patternString = "{ (fromRole: $x, toRole: $y) isa transRelation; };";
                 ReasonerQueryImpl query = reasonerQueryFactory.create(conjunction(patternString));
