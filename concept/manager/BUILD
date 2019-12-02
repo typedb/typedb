@@ -23,13 +23,13 @@ load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 java_library(
     name = "manager",
     srcs = glob(["**/*.java"]),
+    tags = ["maven_coordinates=io.grakn.core:grakn-concept:{pom_version}"],
     deps = [
         "//kb/concept/structure",
         "//kb/concept/api",
         "//kb",
         "//core",
         "//kb/concept/manager",
-        "//concept/util",
         "//concept/impl",
         "//concept/util/attribute",
         "//concept/structure",
@@ -43,8 +43,6 @@ java_library(
         "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
     ],
-    tags = ["maven_coordinates=io.grakn.core:grakn-concept:{pom_version}"],
-
 )
 
 checkstyle_test(

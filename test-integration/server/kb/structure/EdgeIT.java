@@ -19,62 +19,52 @@
 package grakn.core.server.kb.structure;
 
 
+import grakn.core.concept.structure.EdgeElementImpl;
+import grakn.core.concept.structure.ElementFactory;
+import grakn.core.core.JanusTraversalSourceProvider;
+import grakn.core.core.Schema;
+import grakn.core.kb.concept.api.Entity;
+import grakn.core.kb.concept.api.EntityType;
+import grakn.core.kb.concept.structure.EdgeElement;
+import grakn.core.kb.server.Transaction;
+import grakn.core.rule.GraknTestServer;
+import grakn.core.rule.SessionUtil;
+import grakn.core.rule.TestTransactionProvider;
+import grakn.core.server.session.SessionImpl;
+import grakn.core.util.ConceptDowncasting;
+import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Test;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
-/**
- *
- * TODO re-enable this with a proper structure for accessing factories required by tests
- *
- *
 public class EdgeIT {
 
     @ClassRule
-    public static final GraknTestServer server = new GraknTestServer();
+    public static final GraknTestServer server = new GraknTestServer(false);
 
     private SessionImpl session;
     private Transaction tx;
+    private JanusTraversalSourceProvider janusTraversalSourceProvider;
     private EntityType entityType;
     private Entity entity;
     private EdgeElement edge;
 
     @Before
     public void setUp(){
-        String keyspaceName = "ksp_"+UUID.randomUUID().toString().substring(0, 20).replace("-", "_");
-        Keyspace keyspace = new KeyspaceImpl(keyspaceName);
-
-        // obtain components to create sessions and transactions
-        JanusGraphFactory janusGraphFactory = server.janusGraphFactory();
-        StandardJanusGraph graph = janusGraphFactory.openGraph(keyspace.name());
-
-        // create the session
-        AttributeManager attributeManager = new AttributeManagerImpl();
-
-        session = new SessionImpl(keyspace, server.serverConfig(), new KeyspaceSchemaCache(), graph,
-                new KeyspaceStatistics(), attributeManager, new ShardManagerImpl(), new ReentrantReadWriteLock());
-
-        // create the transaction
-        CacheProviderImpl cacheProvider = new CacheProviderImpl(new KeyspaceSchemaCache());
-        UncomittedStatisticsDelta statisticsDelta = new UncomittedStatisticsDelta();
-
-        // janus elements
-        JanusGraphTransaction janusGraphTransaction = graph.newThreadBoundTransaction();
-        ElementFactory elementFactory = new ElementFactory(janusGraphTransaction);
-
-        // Grakn elements
-        ConceptObserver conceptListener = new ConceptObserver(cacheProvider, statisticsDelta, attributeManager, janusGraphTransaction.toString());
-        ConceptManagerImpl conceptManager = new ConceptManagerImpl(elementFactory, cacheProvider.getTransactionCache(), conceptListener, new ReentrantReadWriteLock());
-        TraversalPlanFactory traversalPlanFactory = new TraversalPlanFactoryImpl(conceptManager, session.config().getProperty(ConfigKey.TYPE_SHARD_THRESHOLD), session.keyspaceStatistics());
-        ExecutorFactory executorFactory = new ExecutorFactory(conceptManager, null, new KeyspaceStatistics(), traversalPlanFactory);
-
-        tx = new TransactionImpl(session, janusGraphTransaction, conceptManager, cacheProvider, statisticsDelta, executorFactory, traversalPlanFactory);
-        tx.open(Transaction.Type.WRITE);
+        session = SessionUtil.serverlessSessionWithNewKeyspace(server.serverConfig());
+        tx = session.writeTransaction();
 
         // Create Edge
         entityType = tx.putEntityType("My Entity Type");
         entity = entityType.create();
+        janusTraversalSourceProvider = ((TestTransactionProvider.TestTransaction)tx).janusTraversalSourceProvider();
+        ElementFactory elementFactory = ((TestTransactionProvider.TestTransaction)tx).elementFactory();
 
-        Edge tinkerEdge = tx.getTinkerTraversal().V().hasId(Schema.elementId(entity.id())).outE().next();
+        Edge tinkerEdge = janusTraversalSourceProvider.getTinkerTraversal().V().hasId(Schema.elementId(entity.id())).outE().next();
         edge = new EdgeElementImpl(elementFactory, tinkerEdge);
     }
 
@@ -87,7 +77,7 @@ public class EdgeIT {
     @Test
     public void checkEqualityBetweenEdgesBasedOnID() {
         Entity entity2 = entityType.create();
-        Edge tinkerEdge = tx.getTinkerTraversal().V().hasId(Schema.elementId(entity2.id())).outE().next();
+        Edge tinkerEdge = janusTraversalSourceProvider.getTinkerTraversal().V().hasId(Schema.elementId(entity2.id())).outE().next();
         EdgeElement edge2 = new EdgeElementImpl(null, tinkerEdge);
 
         assertEquals(edge, edge);
@@ -109,4 +99,3 @@ public class EdgeIT {
         assertEquals(Schema.EdgeLabel.ISA.getLabel(), edge.label());
     }
 }
- **/

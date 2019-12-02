@@ -21,41 +21,37 @@ load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 java_library(
     name = "grakn-test-server",
     srcs = glob(["*.java"]),
+    data = [
+        "//server:conf/grakn.properties",
+        "//test-integration/resources:cassandra-embedded",
+    ],
+    resources = ["//test-integration/resources:logback-test"],
+    visibility = ["//visibility:public"],
     deps = [
-        "//server:server",
-        "//kb:kb",
-        "//kb/concept/manager",
+        "//common",
         "//concept/manager",
         "//concept/structure",
         "//core",
-        "//graql",
-        "//common",
-        "//graph",
-        "//graph-hadoop",
-
-        "//dependencies/maven/artifacts/junit:junit",
-        "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
-        "//dependencies/maven/artifacts/io/grpc:grpc-core",
         "//dependencies/maven/artifacts/com/datastax/oss:java-driver-core",
-        "//dependencies/maven/artifacts/commons-io:commons-io",
-        "//dependencies/maven/artifacts/commons-lang:commons-lang",
+        "//dependencies/maven/artifacts/commons-io",
+        "//dependencies/maven/artifacts/commons-lang",
+        "//dependencies/maven/artifacts/io/grpc:grpc-core",
+        "//dependencies/maven/artifacts/junit",
         "//dependencies/maven/artifacts/org/apache/cassandra:cassandra-all",
         "//dependencies/maven/artifacts/org/apache/tinkerpop:hadoop-gremlin",
         "//dependencies/maven/artifacts/org/apache/tinkerpop:tinkergraph-gremlin",
-
-
+        "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
+        "//graph",
+        "//graql",
+        "//kb",
+        "//kb/concept/manager",
+        "//server",
     ],
-    data = [
-        "//server:conf/grakn.properties",
-        "//test-integration/resources:cassandra-embedded"
-    ],
-    visibility = ["//visibility:public"],
-    resources = ["//test-integration/resources:logback-test"]
 )
 
 checkstyle_test(
     name = "checkstyle",
     targets = [
-        ":grakn-test-server"
+        ":grakn-test-server",
     ],
 )

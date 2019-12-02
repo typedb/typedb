@@ -32,11 +32,11 @@ java_test(
 )
 
 java_test(
-    name = "transaction-oltp-it",
+    name = "transaction-it",
     size = "large",
-    srcs = ["TransactionOLTPIT.java"],
+    srcs = ["TransactionIT.java"],
     classpath_resources = ["//test-integration/resources:logback-test"],
-    test_class = "grakn.core.server.session.TransactionOLTPIT",
+    test_class = "grakn.core.server.session.TransactionIT",
     deps = [
         "//common",
         "//concept/answer",
@@ -124,7 +124,7 @@ checkstyle_test(
     name = "checkstyle",
     targets = [
         ":session-it",
-        ":transaction-oltp-it",
+        ":transaction-it",
         ":keyspace-schema-cache-it",
         ":transaction-cache-it",
         ":attribute-manager-it",

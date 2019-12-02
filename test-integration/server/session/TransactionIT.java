@@ -95,7 +95,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 @SuppressWarnings("CheckReturnValue")
-public class TransactionOLTPIT {
+public class TransactionIT {
 
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer(false);
