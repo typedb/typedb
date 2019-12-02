@@ -49,8 +49,7 @@ import java.util.function.Consumer;
  */
 public class SessionImpl implements Session {
 
-    // TODO this is probably redundant in real gRPC use cases
-    // Session can have at most 1 transaction per thread, so we keep a local reference here
+    // An explicit constraint we enforce that we can have at most 1 tx per thread, so we keep a local reference here
     private final ThreadLocal<Transaction> localOLTPTransactionContainer = new ThreadLocal<>();
 
     private final Keyspace keyspace;
@@ -185,6 +184,12 @@ public class SessionImpl implements Session {
     public void close() {
         if (isClosed) {
             return;
+        }
+
+        Transaction localTx = localOLTPTransactionContainer.get();
+        if (localTx != null) {
+            localTx.close(ErrorMessage.SESSION_CLOSED.getMessage(keyspace()));
+            localOLTPTransactionContainer.set(null);
         }
 
         if (this.onClose != null) {

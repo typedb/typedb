@@ -253,7 +253,7 @@ public abstract class FragmentImpl implements Fragment {
 
     /**
      * @param traversal the traversal to extend with this Fragment
-     * @param conceptManager        the transaction to execute the traversal on
+     * @param conceptManager
      * @param vars
      */
     abstract GraphTraversal<Vertex, ? extends Element> applyTraversalInner(

@@ -75,10 +75,10 @@ public class TraversalPlanFactoryImpl implements TraversalPlanFactory {
     private static final Logger LOG = LoggerFactory.getLogger(TraversalPlanFactoryImpl.class);
 
     private static final int MAX_STARTING_POINTS = 3;
-    private JanusTraversalSourceProvider janusTraversalSourceProvider;
-    private ConceptManager conceptManager;
-    private long shardingThreshold;
-    private KeyspaceStatistics keyspaceStatistics;
+    private final JanusTraversalSourceProvider janusTraversalSourceProvider;
+    private final ConceptManager conceptManager;
+    private final long shardingThreshold;
+    private final KeyspaceStatistics keyspaceStatistics;
 
     public TraversalPlanFactoryImpl(JanusTraversalSourceProvider janusTraversalSourceProvider, ConceptManager conceptManager, long shardingThreshold, KeyspaceStatistics keyspaceStatistics) {
         this.janusTraversalSourceProvider = janusTraversalSourceProvider;
@@ -112,10 +112,10 @@ public class TraversalPlanFactoryImpl implements TraversalPlanFactory {
      */
     private List<Fragment> planForConjunction(ConjunctionQuery query) {
         // a query plan is an ordered list of fragments
-        final List<Fragment> plan = new ArrayList<>();
+        List<Fragment> plan = new ArrayList<>();
 
         // flatten all the possible fragments from the conjunction query (these become edges in the query graph)
-        final Set<Fragment> allFragments = query.getEquivalentFragmentSets().stream()
+        Set<Fragment> allFragments = query.getEquivalentFragmentSets().stream()
                 .flatMap(EquivalentFragmentSet::stream).collect(Collectors.toSet());
 
         // if role players' types are known, we can infer the types of the relation, adding label & isa fragments
@@ -139,14 +139,14 @@ public class TraversalPlanFactoryImpl implements TraversalPlanFactory {
                 plan.addAll(subplan);
             } else {
                 // find and include all the nodes not touched in the MST in the plan
-               Set<Node> unhandledNodes = connectedFragments.stream()
+                Set<Node> unhandledNodes = connectedFragments.stream()
                         .flatMap(fragment -> fragment.getNodes().stream())
                         .map(node -> queryGraphNodes.get(node.getNodeId()))
                         .collect(Collectors.toSet());
-               if (unhandledNodes.size() != 1) {
-                   throw GraknServerException.create("Query planner exception - expected one unhandled node, found " + unhandledNodes.size());
-               }
-               plan.addAll(nodeVisitedDependenciesFragments(Iterators.getOnlyElement(unhandledNodes.iterator()), queryGraphNodes));
+                if (unhandledNodes.size() != 1) {
+                    throw GraknServerException.create("Query planner exception - expected one unhandled node, found " + unhandledNodes.size());
+                }
+                plan.addAll(nodeVisitedDependenciesFragments(Iterators.getOnlyElement(unhandledNodes.iterator()), queryGraphNodes));
             }
         }
 
@@ -163,7 +163,7 @@ public class TraversalPlanFactoryImpl implements TraversalPlanFactory {
 
 
     private Arborescence<Node> computeArborescence(Set<Fragment> connectedFragments, ImmutableMap<NodeId, Node> nodes) {
-        final Map<Node, Double> nodesWithFixedCost = new HashMap<>();
+        Map<Node, Double> nodesWithFixedCost = new HashMap<>();
 
         connectedFragments.forEach(fragment -> {
             if (fragment.hasFixedFragmentCost()) {
@@ -178,7 +178,7 @@ public class TraversalPlanFactoryImpl implements TraversalPlanFactory {
         updateFixedCostSubsReachableByIndex(nodes, nodesWithFixedCost, connectedFragments);
 
         // fragments that represent Janus edges
-        final Set<Fragment> edgeFragmentSet = new HashSet<>();
+        Set<Fragment> edgeFragmentSet = new HashSet<>();
 
         // save the fragments corresponding to edges, and updates some costs if we can via shard count
         for (Fragment fragment : connectedFragments) {
@@ -219,7 +219,7 @@ public class TraversalPlanFactoryImpl implements TraversalPlanFactory {
     private static Set<Weighted<DirectedEdge>> buildWeightedGraph(Map<NodeId, Node> allNodes,
                                                                   Set<Fragment> edgeFragmentSet) {
 
-        final Set<Weighted<DirectedEdge>> weightedGraph = new HashSet<>();
+        Set<Weighted<DirectedEdge>> weightedGraph = new HashSet<>();
         // add each edge together with its weight
         edgeFragmentSet.stream()
                 .flatMap(fragment -> fragment.directedEdges(allNodes).stream())
@@ -228,8 +228,8 @@ public class TraversalPlanFactoryImpl implements TraversalPlanFactory {
     }
 
     private Set<Node> chooseStartingNodeSet(Set<Fragment> fragmentSet, Map<NodeId, Node> allNodes, SparseWeightedGraph sparseWeightedGraph) {
-        final Set<Node> highPriorityStartingNodeSet = new HashSet<>();
-        final Set<Node> lowPriorityStartingNodeSet = new HashSet<>();
+        Set<Node> highPriorityStartingNodeSet = new HashSet<>();
+        Set<Node> lowPriorityStartingNodeSet = new HashSet<>();
 
         fragmentSet.stream()
                 .filter(Fragment::hasFixedFragmentCost)
@@ -257,7 +257,7 @@ public class TraversalPlanFactoryImpl implements TraversalPlanFactory {
             startingNodes = highPriorityStartingNodeSet;
         } else {
             // if we have no good starting points, use any valid nodes
-            startingNodes = !lowPriorityStartingNodeSet.isEmpty()?
+            startingNodes = !lowPriorityStartingNodeSet.isEmpty() ?
                     lowPriorityStartingNodeSet :
                     sparseWeightedGraph.getNodes().stream().filter(Node::isValidStartingPoint).collect(Collectors.toSet());
         }
@@ -288,9 +288,9 @@ public class TraversalPlanFactoryImpl implements TraversalPlanFactory {
     // return a collection of set, in each set, all the fragments are connected
     private static Collection<Set<Fragment>> getConnectedFragmentSets(Set<Fragment> allFragments) {
         // TODO this could be implemented in a more readable way (eg. using a graph + BFS etc.)
-        final Map<Integer, Set<Variable>> varSetMap = new HashMap<>();
-        final Map<Integer, Set<Fragment>> fragmentSetMap = new HashMap<>();
-        final int[] index = {0};
+        Map<Integer, Set<Variable>> varSetMap = new HashMap<>();
+        Map<Integer, Set<Fragment>> fragmentSetMap = new HashMap<>();
+        int[] index = {0};
         allFragments.forEach(fragment -> {
             Set<Variable> fragmentVarNameSet = Sets.newHashSet(fragment.vars());
             List<Integer> setsWithVarInCommon = new ArrayList<>();

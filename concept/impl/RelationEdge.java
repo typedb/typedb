@@ -53,7 +53,7 @@ public class RelationEdge implements RelationStructure {
 
     private final EdgeElement edgeElement;
     private final ConceptManager conceptManager;
-    private ConceptNotificationChannel conceptNotificationChannel;
+    private final ConceptNotificationChannel conceptNotificationChannel;
 
     private final ConceptCache<RelationType> relationType = new ConceptCache<>(() ->
             conceptManager().getSchemaConcept(LabelId.of(edge().property(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID))));

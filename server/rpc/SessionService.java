@@ -71,6 +71,10 @@ import java.util.stream.Stream;
 public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
     private static final Logger LOG = LoggerFactory.getLogger(SessionService.class);
     private final OpenRequest requestOpener;
+    // Each client's connection obtains a unique ID, which we map to the shared session under the hood
+    // if connecting to the same keyspace
+    // Additionally, each client's remote session maps to a set of open transactions that we close when the client closes
+    // their transaction
     private final Map<String, Session> openSessions;
     // The following map associates SessionId to a collection of TransactionListeners so that:
     //     - if the user wants to stop the server, we can forcefully close all the connections to clients using active transactions.

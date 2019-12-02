@@ -44,7 +44,6 @@ public abstract class ConceptImpl implements Concept, ConceptVertex {
     final ConceptManager conceptManager;
     final ConceptNotificationChannel conceptNotificationChannel;
 
-    //WARNING: DO not flush the current shard into the central cache. It is not safe to do so in a concurrent environment
     private final ConceptCache<Shard> currentShard;
     private final ConceptCache<Long> shardCount;
     private final ConceptCache<ConceptId> conceptId;
