@@ -115,11 +115,11 @@ public class GraknTestServer extends ExternalResource {
 
             // half of this might be good to split into cassandra rule separately
             dataDirTmp = Files.createTempDirectory("db-for-test");
+            grpcPort = findUnusedLocalPort();
             serverConfig = createTestConfig(dataDirTmp.toString());
 
             if (runGraknServer) {
                 // Start Grakn Core Server
-                grpcPort = findUnusedLocalPort();
                 System.out.println("Starting Grakn Core Server...");
                 graknServer = createServer();
                 graknServer.start();
