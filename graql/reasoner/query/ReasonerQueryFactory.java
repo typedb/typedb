@@ -188,7 +188,7 @@ public class ReasonerQueryFactory {
      * @return atomic query defined by the provided atom together with its constraints (types and predicates, if any)
      */
     public ReasonerAtomicQuery atomic(Atom atom){
-        return new ReasonerAtomicQuery(Collections.singleton(atom), conceptManager, ruleCache, queryCache, executorFactory, this, traversalPlanFactory).inferTypes();
+        return new ReasonerAtomicQuery(Collections.singletonList(atom), conceptManager, ruleCache, queryCache, executorFactory, this, traversalPlanFactory).inferTypes();
     }
 
     /**

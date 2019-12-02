@@ -383,7 +383,7 @@ public class ResolutionPlanIT {
                 "(someRole: $anotherlink, otherRole: $end) isa anotherDerivedRelation;" +
                 "};";
         ReasonerQueryImpl query = reasonerQueryFactory.create(conjunction(queryString));
-        ResolutionQueryPlan resolutionQueryPlan =new ResolutionQueryPlan(reasonerQueryFactory, query);
+        ResolutionQueryPlan resolutionQueryPlan = new ResolutionQueryPlan(reasonerQueryFactory, query);
 
         checkQueryPlanSanity(query);
         assertTrue(resolutionQueryPlan.queries().get(0).getAtoms(IdPredicate.class).findFirst().isPresent());

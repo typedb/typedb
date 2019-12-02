@@ -20,6 +20,7 @@
 package grakn.core.graql.reasoner.query;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
@@ -55,6 +56,7 @@ import grakn.core.kb.graql.reasoner.unifier.Unifier;
 
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -75,12 +77,30 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         super(conceptManager, ruleCache, queryCache, executorFactory, reasonerQueryFactory, traversalPlanFactory);
     }
 
+    /*
+    TODO this should not be needed in a better structure, is a risky split of constructor
+    TODO don't override parent
+    */
+    @Override
+    void setAtomSet(ImmutableSet<Atomic> atoms) {
+        if (atomSet != null) {
+            throw new RuntimeException("Should not re-set the atomSet once set, treating as immutable");
+        }
+        this.atomSet = atoms;
+        this.atom = Iterables.getOnlyElement(selectAtoms()::iterator);
+    }
+
     /**
      * Copy constructor
      * @param query
      */
     ReasonerAtomicQuery(ReasonerQueryImpl query) {
         super(query);
+        this.atom = Iterables.getOnlyElement(selectAtoms()::iterator);
+    }
+
+    ReasonerAtomicQuery(List<Atom> atoms, ConceptManager conceptManager, RuleCache ruleCache, QueryCache queryCache, ExecutorFactory executorFactory, ReasonerQueryFactory reasonerQueryFactory, TraversalPlanFactory traversalPlanFactory) {
+        super(atoms, conceptManager, ruleCache, queryCache, executorFactory, reasonerQueryFactory, traversalPlanFactory);
         this.atom = Iterables.getOnlyElement(selectAtoms()::iterator);
     }
 

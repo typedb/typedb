@@ -28,6 +28,7 @@ import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.reasoner.query.ReasonerQueryFactory;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
+import grakn.core.kb.concept.api.EntityType;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.SchemaConcept;
@@ -58,6 +59,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static grakn.core.util.GraqlTestUtil.assertCollectionsNonTriviallyEqual;
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
@@ -335,7 +337,7 @@ public class TypeInferenceIT {
         RelationAtom ZWatom = getAtom(conjQuery, RelationAtom.class, Sets.newHashSet(new Variable("z"), new Variable("w")));
         RelationAtom midAtom = (RelationAtom) reasonerQueryFactory.atomic(YZatom).getAtom();
 
-        assertEquals(midAtom.getPossibleTypes(), YZatom.getPossibleTypes());
+        assertCollectionsNonTriviallyEqual(midAtom.getPossibleTypes(), YZatom.getPossibleTypes());
 
         //differently prioritised options arise from using neighbour information
         List<Type> firstTypeOption = Lists.newArrayList(
@@ -421,7 +423,10 @@ public class TypeInferenceIT {
     }
 
     private ConceptId conceptId(Transaction tx, String type){
-        return tx.getEntityType(type).instances().map(Concept::id).findFirst().orElse(null);
+        return tx.getEntityType(type)
+                .instances()
+                .filter(instance -> instance.type().label().toString().equals(type))
+                .map(Concept::id).findFirst().orElse(null);
     }
 
     private Conjunction<Statement> conjunction(String patternString){

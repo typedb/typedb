@@ -101,7 +101,7 @@ public class ReasonerQueryImpl extends ResolvableQuery {
     final TraversalPlanFactory traversalPlanFactory;
     final ReasonerQueryFactory reasonerQueryFactory;
 
-    private ImmutableSet<Atomic> atomSet;
+    ImmutableSet<Atomic> atomSet;
     private ConceptMap substitution = null;
     private ImmutableSetMultimap<Variable, Type> varTypeMap = null;
     private ResolutionPlan resolutionPlan = null;
