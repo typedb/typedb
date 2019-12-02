@@ -283,12 +283,12 @@ public class QueryExecutorImpl implements QueryExecutor {
             Set<Variable> matchVars = match.getSelectedNames();
             Set<Variable> insertVars = statements.stream().map(Statement::var).collect(ImmutableSet.toImmutableSet());
 
+            // only need to keep the match vars required in the insert clause
             LinkedHashSet<Variable> projectedVars = new LinkedHashSet<>(matchVars);
             projectedVars.retainAll(insertVars);
 
-            Stream<ConceptMap> answers = executorFactory.transactional(infer).match(match);
+            Stream<ConceptMap> answers = executorFactory.transactional(infer).get(match.get(projectedVars));
             answerStream = answers
-                    .map(answer -> answer.project(projectedVars))
                     .flatMap(answer -> WriteExecutorImpl.create(conceptManager, executors.build()).write(answer))
                     .collect(toList()).stream();
         } else {

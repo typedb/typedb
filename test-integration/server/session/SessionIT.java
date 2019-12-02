@@ -101,7 +101,7 @@ public class SessionIT {
         } catch (ExecutionException e) {
             Throwable transactionException = e.getCause();
             assertThat(transactionException, instanceOf(TransactionException.class));
-            assertEquals("The transaction for keyspace [" + session.keyspace() + "] is closed. Use the session to get a new transaction for the graph.", transactionException.getMessage());
+            assertEquals("is no longer on the thread it was spawned on, this is not allowed", transactionException.getMessage());
         }
     }
 
