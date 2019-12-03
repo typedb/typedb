@@ -99,13 +99,17 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         this.atom = Iterables.getOnlyElement(selectAtoms()::iterator);
     }
 
-    ReasonerAtomicQuery(List<Atom> atoms, ConceptManager conceptManager, RuleCache ruleCache, QueryCache queryCache, ExecutorFactory executorFactory, ReasonerQueryFactory reasonerQueryFactory, TraversalPlanFactory traversalPlanFactory) {
-        super(atoms, conceptManager, ruleCache, queryCache, executorFactory, reasonerQueryFactory, traversalPlanFactory);
+    private ReasonerAtomicQuery(List<Atom> atomsToPropagate, ConceptManager conceptManager, RuleCache ruleCache, QueryCache queryCache, ExecutorFactory executorFactory, ReasonerQueryFactory reasonerQueryFactory, TraversalPlanFactory traversalPlanFactory) {
+        super(atomsToPropagate, conceptManager, ruleCache, queryCache, executorFactory, reasonerQueryFactory, traversalPlanFactory);
         this.atom = Iterables.getOnlyElement(selectAtoms()::iterator);
     }
 
-    ReasonerAtomicQuery(Set<Atomic> atoms, ConceptManager conceptManager, RuleCache ruleCache, QueryCache queryCache, ExecutorFactory executorFactory, ReasonerQueryFactory reasonerQueryFactory, TraversalPlanFactory traversalPlanFactory) {
-        super(atoms, conceptManager, ruleCache, queryCache, executorFactory, reasonerQueryFactory, traversalPlanFactory);
+    ReasonerAtomicQuery(Atom atomToPropagate, ConceptManager conceptManager, RuleCache ruleCache, QueryCache queryCache, ExecutorFactory executorFactory, ReasonerQueryFactory reasonerQueryFactory, TraversalPlanFactory traversalPlanFactory) {
+        this(Collections.singletonList(atomToPropagate), conceptManager, ruleCache, queryCache, executorFactory, reasonerQueryFactory, traversalPlanFactory);
+    }
+
+    ReasonerAtomicQuery(Set<Atomic> atomsToCopy, ConceptManager conceptManager, RuleCache ruleCache, QueryCache queryCache, ExecutorFactory executorFactory, ReasonerQueryFactory reasonerQueryFactory, TraversalPlanFactory traversalPlanFactory) {
+        super(atomsToCopy, conceptManager, ruleCache, queryCache, executorFactory, reasonerQueryFactory, traversalPlanFactory);
         this.atom = Iterables.getOnlyElement(selectAtoms()::iterator);
     }
 
@@ -232,7 +236,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
     @Override
     protected Stream<ReasonerQueryImpl> getQueryStream(ConceptMap sub){
-        return getAtom().atomOptions(sub).stream().map(atom -> new ReasonerAtomicQuery(Collections.singletonList(atom), conceptManager, ruleCache, queryCache, executorFactory, reasonerQueryFactory, traversalPlanFactory));
+        return getAtom().atomOptions(sub).stream().map(atom -> new ReasonerAtomicQuery(atom, conceptManager, ruleCache, queryCache, executorFactory, reasonerQueryFactory, traversalPlanFactory));
     }
 
     @Override

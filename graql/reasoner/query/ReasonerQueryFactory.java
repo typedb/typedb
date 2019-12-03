@@ -152,7 +152,7 @@ public class ReasonerQueryFactory {
     public ReasonerQueryImpl create(List<Atom> as){
         boolean isAtomic = as.size() == 1;
         return isAtomic?
-                new ReasonerAtomicQuery(Collections.singletonList(as.get(0)), conceptManager, ruleCache, queryCache, executorFactory, this, traversalPlanFactory).inferTypes() :
+                new ReasonerAtomicQuery(as.get(0), conceptManager, ruleCache, queryCache, executorFactory, this, traversalPlanFactory).inferTypes() :
                 new ReasonerQueryImpl(as, conceptManager, ruleCache, queryCache, executorFactory, this, traversalPlanFactory).inferTypes();
     }
 
@@ -188,7 +188,7 @@ public class ReasonerQueryFactory {
      * @return atomic query defined by the provided atom together with its constraints (types and predicates, if any)
      */
     public ReasonerAtomicQuery atomic(Atom atom){
-        return new ReasonerAtomicQuery(Collections.singletonList(atom), conceptManager, ruleCache, queryCache, executorFactory, this, traversalPlanFactory).inferTypes();
+        return new ReasonerAtomicQuery(atom, conceptManager, ruleCache, queryCache, executorFactory, this, traversalPlanFactory).inferTypes();
     }
 
     /**

@@ -134,12 +134,12 @@ public class ReasonerQueryImpl extends ResolvableQuery {
     /**
      * create a reasoner query from provided set of atomics
      **/
-    ReasonerQueryImpl(Set<Atomic> atoms, ConceptManager conceptManager, RuleCache ruleCache, QueryCache queryCache, ExecutorFactory executorFactory, ReasonerQueryFactory reasonerQueryFactory, TraversalPlanFactory traversalPlanFactory) {
+    ReasonerQueryImpl(Set<Atomic> atomsToCopy, ConceptManager conceptManager, RuleCache ruleCache, QueryCache queryCache, ExecutorFactory executorFactory, ReasonerQueryFactory reasonerQueryFactory, TraversalPlanFactory traversalPlanFactory) {
         super(executorFactory, queryCache);
         this.conceptManager = conceptManager;
         this.ruleCache = ruleCache;
         this.atomSet = ImmutableSet.<Atomic>builder()
-                .addAll(atoms.stream().map(at -> at.copy(this)).iterator())
+                .addAll(atomsToCopy.stream().map(at -> at.copy(this)).iterator())
                 .build();
         this.reasonerQueryFactory = reasonerQueryFactory;
         this.traversalPlanFactory = traversalPlanFactory;
@@ -149,12 +149,12 @@ public class ReasonerQueryImpl extends ResolvableQuery {
      * create a reasoner query from provided list of atoms
      * NB: atom constraints (types and predicates, if any) will be included in the query
      **/
-    ReasonerQueryImpl(List<Atom> atoms, ConceptManager conceptManager, RuleCache ruleCache, QueryCache queryCache, ExecutorFactory executorFactory, ReasonerQueryFactory reasonerQueryFactory, TraversalPlanFactory traversalPlanFactory) {
+    ReasonerQueryImpl(List<Atom> atomsToPropagate, ConceptManager conceptManager, RuleCache ruleCache, QueryCache queryCache, ExecutorFactory executorFactory, ReasonerQueryFactory reasonerQueryFactory, TraversalPlanFactory traversalPlanFactory) {
         super(executorFactory, queryCache);
         this.conceptManager = conceptManager;
         this.ruleCache = ruleCache;
         this.atomSet =  ImmutableSet.<Atomic>builder()
-                .addAll(atoms.stream()
+                .addAll(atomsToPropagate.stream()
                         .flatMap(at -> Stream.concat(Stream.of(at), at.getNonSelectableConstraints()))
                         .map(at -> at.copy(this)).iterator())
                 .build();
