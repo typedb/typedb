@@ -19,14 +19,12 @@
 package grakn.core.graql.gremlin.fragment;
 
 import com.google.common.collect.ImmutableSet;
-import grakn.core.kb.concept.api.Concept;
+import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.planning.spanningtree.graph.InstanceNode;
 import grakn.core.kb.graql.planning.spanningtree.graph.Node;
 import grakn.core.kb.graql.planning.spanningtree.graph.NodeId;
-import grakn.core.core.Schema;
-import grakn.core.kb.server.Transaction;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.P;

@@ -22,7 +22,6 @@ import com.google.common.collect.ImmutableSet;
 import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.manager.ConceptManager;
-import grakn.core.kb.server.Transaction;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.Pop;
