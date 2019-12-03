@@ -36,6 +36,7 @@ import grakn.core.graql.reasoner.ReasonerException;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.AtomicBase;
 import grakn.core.graql.reasoner.atom.AtomicUtil;
+import grakn.core.graql.reasoner.atom.PropertyAtomicFactory;
 import grakn.core.graql.reasoner.atom.binary.IsaAtom;
 import grakn.core.graql.reasoner.atom.binary.IsaAtomBase;
 import grakn.core.graql.reasoner.atom.binary.RelationAtom;
@@ -112,23 +113,20 @@ public class ReasonerQueryImpl extends ResolvableQuery {
      * BUILDER constructor should only be used in the ReasonerQueryFactory because it utilises
      * the setAtomSet method to work around an ordering constraint
      */
-    ReasonerQueryImpl(ConceptManager conceptManager, RuleCache ruleCache, QueryCache queryCache, ExecutorFactory executorFactory, ReasonerQueryFactory reasonerQueryFactory, TraversalPlanFactory traversalPlanFactory) {
+    ReasonerQueryImpl(Conjunction<Statement> pattern, PropertyAtomicFactory propertyAtomicFactory,
+                      ConceptManager conceptManager, RuleCache ruleCache, QueryCache queryCache,
+                      ExecutorFactory executorFactory, ReasonerQueryFactory reasonerQueryFactory,
+                      TraversalPlanFactory traversalPlanFactory) {
         super(executorFactory, queryCache);
         this.conceptManager = conceptManager;
         this.ruleCache = ruleCache;
         this.traversalPlanFactory = traversalPlanFactory;
         this.atomSet = null;
         this.reasonerQueryFactory = reasonerQueryFactory;
-    }
 
-    /*
-    TODO this should not be needed in a better structure, is a risky split of constructor
-     */
-    void setAtomSet(ImmutableSet<Atomic> atoms) {
-        if (atomSet != null) {
-            throw new RuntimeException("Should not re-set the atomSet once set, treating as immutable");
-        }
-        this.atomSet = atoms;
+        this.atomSet = ImmutableSet.<Atomic>builder()
+                .addAll(propertyAtomicFactory.createAtoms(pattern, this).iterator())
+                .build();
     }
 
     /**

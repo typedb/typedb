@@ -397,8 +397,8 @@ public class PropertyAtomicFactory {
      *
      * TODO figure out why this needs to be public
      */
-    public ValuePredicate createValuePredicate(ValueProperty property, Statement statement, Set<Statement> otherStatements,
-                                                      ReasonerQuery parent) {
+    private ValuePredicate createValuePredicate(ValueProperty property, Statement statement, Set<Statement> otherStatements,
+                                                ReasonerQuery parent) {
         HasAttributeProperty has = statement.getProperties(HasAttributeProperty.class).findFirst().orElse(null);
         Variable var = has != null? has.attribute().var() : statement.var();
         ValueProperty.Operation directOperation = property.operation();

@@ -53,6 +53,9 @@ import grakn.core.kb.graql.reasoner.cache.RuleCache;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
+import graql.lang.pattern.Conjunction;
+import graql.lang.pattern.Pattern;
+import graql.lang.statement.Statement;
 
 import java.util.Collections;
 import java.util.Iterator;
@@ -67,26 +70,17 @@ import java.util.stream.Stream;
  */
 public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
-    private Atom atom;
+    private final Atom atom;
 
     /**
      * BUILDER constructor should only be used in the ReasonerQueryFactory because it utilises
      * the setAtomSet method to work around an ordering constraint
      */
-    ReasonerAtomicQuery(ConceptManager conceptManager, RuleCache ruleCache, QueryCache queryCache, ExecutorFactory executorFactory, ReasonerQueryFactory reasonerQueryFactory, TraversalPlanFactory traversalPlanFactory) {
-        super(conceptManager, ruleCache, queryCache, executorFactory, reasonerQueryFactory, traversalPlanFactory);
-    }
-
-    /*
-    TODO this should not be needed in a better structure, is a risky split of constructor
-    TODO don't override parent
-    */
-    @Override
-    void setAtomSet(ImmutableSet<Atomic> atoms) {
-        if (atomSet != null) {
-            throw new RuntimeException("Should not re-set the atomSet once set, treating as immutable");
-        }
-        this.atomSet = atoms;
+    ReasonerAtomicQuery(Conjunction<Statement> pattern, PropertyAtomicFactory propertyAtomicFactory,
+                        ConceptManager conceptManager, RuleCache ruleCache, QueryCache queryCache,
+                        ExecutorFactory executorFactory, ReasonerQueryFactory reasonerQueryFactory,
+                        TraversalPlanFactory traversalPlanFactory) {
+        super(pattern, propertyAtomicFactory, conceptManager, ruleCache, queryCache, executorFactory, reasonerQueryFactory, traversalPlanFactory);
         this.atom = Iterables.getOnlyElement(selectAtoms()::iterator);
     }
 

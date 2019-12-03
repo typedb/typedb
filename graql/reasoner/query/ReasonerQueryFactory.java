@@ -107,12 +107,7 @@ public class ReasonerQueryFactory {
      * @return
      */
     public ReasonerQueryImpl withoutRoleInference(Conjunction<Statement> pattern) {
-        ReasonerQueryImpl reasonerQuery = new ReasonerQueryImpl(conceptManager, ruleCache, queryCache, executorFactory, this, traversalPlanFactory);
-        // pass the incomplete parent query to the atom children, then set missing property
-        ImmutableSet<Atomic> atomSet = ImmutableSet.<Atomic>builder()
-                .addAll(propertyAtomicFactory.createAtoms(pattern, reasonerQuery).iterator())
-                .build();
-        reasonerQuery.setAtomSet(atomSet);
+        ReasonerQueryImpl reasonerQuery = new ReasonerQueryImpl(pattern, propertyAtomicFactory, conceptManager, ruleCache, queryCache, executorFactory, this, traversalPlanFactory);
         return reasonerQuery;
     }
 
@@ -172,13 +167,7 @@ public class ReasonerQueryFactory {
      * @return atomic query defined by the provided pattern with inferred types
      */
     public ReasonerAtomicQuery atomic(Conjunction<Statement> pattern){
-        ReasonerAtomicQuery reasonerAtomicQuery = new ReasonerAtomicQuery(conceptManager, ruleCache, queryCache, executorFactory, this, traversalPlanFactory);
-        // pass the incomplete parent query to the atom children, then set missing property
-        ImmutableSet<Atomic> atomSet = ImmutableSet.<Atomic>builder()
-                .addAll(propertyAtomicFactory.createAtoms(pattern, reasonerAtomicQuery).iterator())
-                .build();
-        reasonerAtomicQuery.setAtomSet(atomSet);
-
+        ReasonerAtomicQuery reasonerAtomicQuery = new ReasonerAtomicQuery(pattern, propertyAtomicFactory, conceptManager, ruleCache, queryCache, executorFactory, this, traversalPlanFactory);
         return reasonerAtomicQuery.inferTypes();
     }
 
