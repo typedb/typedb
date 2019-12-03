@@ -23,7 +23,7 @@ load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 java_library(
     name = "manager",
     srcs = glob(["**/*.java"]),
-    tags = ["maven_coordinates=io.grakn.core:grakn-concept:{pom_version}"],
+    tags = ["maven_coordinates=io.grakn.core:grakn-concept-manager:{pom_version}"],
     deps = [
         "//kb/concept/structure",
         "//kb/concept/api",

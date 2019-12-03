@@ -23,7 +23,7 @@ load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 java_library(
     name = "util",
     srcs = ["ConceptUtils.java"],
-    tags = ["maven_coordinates=io.grakn.core:grakn-kb-util:{pom_version}"],
+    tags = ["maven_coordinates=io.grakn.core:grakn-concept-util:{pom_version}"],
     deps = [
         "//kb/concept/api",
         "//kb/concept/structure",

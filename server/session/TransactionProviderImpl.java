@@ -19,7 +19,6 @@
 
 package grakn.core.server.session;
 
-import grakn.core.common.config.Config;
 import grakn.core.concept.manager.ConceptListenerImpl;
 import grakn.core.concept.manager.ConceptManagerImpl;
 import grakn.core.concept.manager.ConceptNotificationChannelImpl;
