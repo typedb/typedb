@@ -120,7 +120,7 @@ public class Backend {
         config = configuration;
         storeManager = manager;
         indexes = getIndexes(configuration);
-        storeFeatures = storeManager.getFeatures();
+        storeFeatures = storeManager.getFeatures(); // features describing actual capabilities of actual backend engine
         txLogManager = new KCVSLogManager(storeManager, configuration.restrictTo(TRANSACTION_LOG)); //KCVStore where tx LOG will be persisted
         userLogManager = new KCVSLogManager(storeManager, configuration.restrictTo(USER_LOG));
         bufferSize = configuration.get(BUFFER_SIZE);

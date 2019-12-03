@@ -42,21 +42,20 @@ import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.query.GraqlGet;
 import graql.lang.statement.Statement;
-import junit.framework.TestCase;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
-
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Test;
 
 import static grakn.core.util.GraqlTestUtil.assertCollectionsNonTriviallyEqual;
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
+import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertNotNull;
@@ -110,7 +109,12 @@ public class QueryCacheIT {
             CacheEntry<ReasonerAtomicQuery, IndexedAnswerSet> cacheEntry = cache.getEntry(query);
             assertFalse(cacheEntry.cachedElement().contains(specificAnswer));
             cache.record(query, specificAnswer);
-            TestCase.assertTrue(cacheEntry.cachedElement().contains(specificAnswer));
+
+            assertTrue(cacheEntry.cachedElement().contains(specificAnswer));
+
+            ReasonerAtomicQuery groundQuery = query.withSubstitution(specificAnswer);
+            assertFalse(cache.getAnswers(groundQuery).isEmpty());
+            assertTrue(cache.answersQuery(groundQuery));
         }
     }
 
@@ -124,7 +128,7 @@ public class QueryCacheIT {
             Concept mConcept = tx.stream(Graql.<GraqlGet>parse("match $x has resource 'm';get;")).iterator().next().get("x");
             Concept sConcept = tx.stream(Graql.<GraqlGet>parse("match $x has resource 's';get;")).iterator().next().get("x");
 
-            ReasonerAtomicQuery childQuery = testTx.reasonerQueryFactory().atomic(conjunction(
+            ReasonerAtomicQuery groundChildQuery = testTx.reasonerQueryFactory().atomic(conjunction(
                     "{" +
                             "(subRole1: $x, subRole2: $y) isa binary;" +
                             "$x id " + mConcept.id().getValue() + ";" +
@@ -136,21 +140,26 @@ public class QueryCacheIT {
                     Graql.var("x").var(), mConcept,
                     Graql.var("y").var(), sConcept),
                     new LookupExplanation(),
-                    childQuery.getPattern()
+                    groundChildQuery.getPattern()
             );
 
             ReasonerAtomicQuery parentQuery = testTx.reasonerQueryFactory().atomic(conjunction("(role: $x, role: $y) isa binary;"));
 
-            //record parent
+            //record parent answers omitting specific answer
             tx.execute(parentQuery.getQuery()).stream()
                     .map(ans -> ans.explain(new LookupExplanation(), parentQuery.getPattern()))
                     .filter(ans -> !ans.equals(specificAnswer))
                     .forEach(ans -> cache.record(parentQuery, ans));
 
-            assertNull(cache.getEntry(childQuery));
-            cache.record(childQuery, specificAnswer);
-            CacheEntry<ReasonerAtomicQuery, IndexedAnswerSet> cacheEntry = cache.getEntry(childQuery);
-            TestCase.assertEquals(tx.stream(Graql.<GraqlGet>parse("match (subRole1: $x, subRole2: $y) isa binary; get;")).collect(toSet()), cacheEntry.cachedElement().getAll());
+            assertNull(cache.getEntry(groundChildQuery));
+            cache.record(groundChildQuery, specificAnswer);
+            CacheEntry<ReasonerAtomicQuery, IndexedAnswerSet> cacheEntry = cache.getEntry(groundChildQuery);
+            assertEquals(
+                    tx.stream(Graql.<GraqlGet>parse("match (subRole1: $x, subRole2: $y) isa binary; get;")).collect(toSet()),
+                    cacheEntry.cachedElement().getAll()
+            );
+            assertFalse(cache.getAnswers(groundChildQuery).isEmpty());
+            assertTrue(cache.answersQuery(groundChildQuery));
         }
     }
 
@@ -187,7 +196,6 @@ public class QueryCacheIT {
             ReasonerAtomicQuery childQuery = testTx.reasonerQueryFactory().atomic(conjunction("(subRole1: $x, subRole2: $y) isa binary;"));
             Set<ConceptMap> cacheAnswers = cache.getAnswers(childQuery);
             assertEquals(tx.stream(childQuery.getQuery()).collect(toSet()), cacheAnswers);
-
             assertEquals(cacheAnswers, cache.getEntry(childQuery).cachedElement().getAll());
         }
     }
@@ -217,35 +225,34 @@ public class QueryCacheIT {
             cache.ackDBCompleteness(parentQuery);
 
             //fetch a query that subsumes parent
-            ReasonerAtomicQuery childQuery = testTx.reasonerQueryFactory().atomic(conjunction(
+            ReasonerAtomicQuery groundChildQuery = testTx.reasonerQueryFactory().atomic(conjunction(
                     "{" +
                             "(baseRole1: $x, baseRole2: $y) isa binary;" +
                             "$x id " + id.getValue() + ";" +
                             "$y id " + dConcept.getValue() + ";" +
                             "};"));
 
-            Set<ConceptMap> childAnswers = cache.getAnswers(childQuery);
-            assertEquals(tx.stream(childQuery.getQuery(), false).collect(toSet()), childAnswers);
-
-            assertNotNull(cache.getEntry(childQuery));
+            Set<ConceptMap> childAnswers = cache.getAnswers(groundChildQuery);
+            assertEquals(tx.stream(groundChildQuery.getQuery(), false).collect(toSet()), childAnswers);
+            assertTrue(cache.answersQuery(groundChildQuery));
+            assertNotNull(cache.getEntry(groundChildQuery));
             childAnswers.forEach(ans -> assertTrue(ans.explanation().isRuleExplanation()));
-            assertTrue(cache.isDBComplete(childQuery));
+            assertTrue(cache.isDBComplete(groundChildQuery));
 
             //fetch a different query, the query is structurally equivalent to the child query but
             //should have no parents in the cache so the answer needs to be fetched from the db
-            ReasonerAtomicQuery anotherChildQuery = testTx.reasonerQueryFactory().atomic(conjunction(
+            ReasonerAtomicQuery anotherGroundChildQuery = testTx.reasonerQueryFactory().atomic(conjunction(
                     "{" +
                             "(baseRole1: $x, baseRole2: $y) isa binary;" +
                             "$x id " + id.getValue() + ";" +
                             "$y id " + sConcept.getValue() + ";" +
                             "};"));
 
-            Set<ConceptMap> anotherChildAnswers = cache.getAnswers(anotherChildQuery);
-            assertTrue(!anotherChildAnswers.isEmpty());
-            assertEquals(tx.stream(anotherChildQuery.getQuery(), false).collect(toSet()), anotherChildAnswers);
+            Set<ConceptMap> anotherChildAnswers = cache.getAnswers(anotherGroundChildQuery);
+            assertFalse(anotherChildAnswers.isEmpty());
+            assertEquals(tx.stream(anotherGroundChildQuery.getQuery(), false).collect(toSet()), anotherChildAnswers);
             //should be false cause there is no parent and we do not ack it explicitly
-            assertFalse(cache.isDBComplete(anotherChildQuery));
-
+            assertFalse(cache.isDBComplete(anotherGroundChildQuery));
             anotherChildAnswers.forEach(ans -> assertTrue(ans.explanation().isLookupExplanation()));
         }
     }
@@ -290,7 +297,7 @@ public class QueryCacheIT {
 
             //fetch a different query that is not structurally equivalent to the child query,
             //consequently the query should have no parents in the cache so the answer needs to be fetched from the db
-            ReasonerAtomicQuery anotherChildQuery = testTx.reasonerQueryFactory().atomic(conjunction(
+            ReasonerAtomicQuery groundChildQuery = testTx.reasonerQueryFactory().atomic(conjunction(
                     "{" +
                             "(baseRole1: $x, baseRole2: $y, baseRole3: $z) isa ternary;" +
                             "$x id " + mConcept.getValue() + ";" +
@@ -298,11 +305,11 @@ public class QueryCacheIT {
                             "$z id " + sConcept.getValue() + ";" +
                             "};"));
 
-            Set<ConceptMap> anotherChildAnswers = cache.getAnswers(anotherChildQuery);
-            assertTrue(!anotherChildAnswers.isEmpty());
-            assertEquals(tx.stream(anotherChildQuery.getQuery(), false).collect(toSet()), anotherChildAnswers);
-            assertNull(cache.getEntry(anotherChildQuery));
-            assertFalse(cache.isDBComplete(anotherChildQuery));
+            Set<ConceptMap> anotherChildAnswers = cache.getAnswers(groundChildQuery);
+            assertFalse(anotherChildAnswers.isEmpty());
+            assertEquals(tx.stream(groundChildQuery.getQuery(), false).collect(toSet()), anotherChildAnswers);
+            assertNull(cache.getEntry(groundChildQuery));
+            assertFalse(cache.isDBComplete(groundChildQuery));
         }
     }
 
@@ -347,7 +354,7 @@ public class QueryCacheIT {
             //Fetch a different query that is not structurally equivalent to the child query.
             //The query has no entry in the cache but has a parent though, and although it is not dbComplete this query is ground so answers
             //should be fetched from parent and the query should be dbComplete acked.
-            ReasonerAtomicQuery anotherChildQuery = testTx.reasonerQueryFactory().atomic(conjunction(
+            ReasonerAtomicQuery groundChildQuery = testTx.reasonerQueryFactory().atomic(conjunction(
                     "{" +
                             "(baseRole1: $x, baseRole2: $y, baseRole3: $z) isa ternary;" +
                             "$x id " + fConcept.getValue() + ";" +
@@ -355,11 +362,12 @@ public class QueryCacheIT {
                             "$z id " + dConcept.getValue() + ";" +
                             "};"));
 
-            Set<ConceptMap> anotherChildAnswers = cache.getAnswers(anotherChildQuery);
-            assertTrue(!anotherChildAnswers.isEmpty());
-            assertEquals(tx.stream(anotherChildQuery.getQuery(), false).collect(toSet()), anotherChildAnswers);
-            assertNotNull(cache.getEntry(anotherChildQuery));
-            assertTrue(cache.isDBComplete(anotherChildQuery));
+            Set<ConceptMap> anotherChildAnswers = cache.getAnswers(groundChildQuery);
+            assertFalse(anotherChildAnswers.isEmpty());
+            assertEquals(tx.stream(groundChildQuery.getQuery(), false).collect(toSet()), anotherChildAnswers);
+            assertNotNull(cache.getEntry(groundChildQuery));
+            assertTrue(cache.answersQuery(groundChildQuery));
+            assertTrue(cache.isDBComplete(groundChildQuery));
         }
     }
 
@@ -380,7 +388,6 @@ public class QueryCacheIT {
             //retrieve
             Set<ConceptMap> cacheAnswers = cache.getAnswers(query);
             assertEquals(tx.stream(query.getQuery()).collect(toSet()), cacheAnswers);
-
             assertEquals(cacheAnswers, cache.getEntry(query).cachedElement().getAll());
         }
     }
@@ -410,9 +417,44 @@ public class QueryCacheIT {
 
             //retrieve
             Set<ConceptMap> cacheAnswers = cache.getAnswers(query);
-            assertTrue(cacheAnswers.containsAll(tx.stream(query.getQuery()).collect(toSet())));
+            tx.stream(query.getQuery()).forEach(ans -> assertTrue(cacheAnswers.contains(ans)));
             assertTrue(cacheAnswers.contains(inferredAnswer));
             assertEquals(cacheAnswers, cache.getEntry(query).cachedElement().getAll());
+
+            ReasonerAtomicQuery groundQuery = query.withSubstitution(inferredAnswer);
+            assertFalse(cache.getAnswers(groundQuery).isEmpty());
+            assertTrue(cache.answersQuery(groundQuery));
+        }
+    }
+
+    @Test
+    public void whenGettingAndMatchExistsAndAnswersFetchedFromDBAndCache_weDontReturnDuplicateAnswers(){
+        try(Transaction tx = genericSchemaSession.readTransaction()) {
+            TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
+            MultilevelSemanticCache cache = new MultilevelSemanticCache(testTx.executorFactory(), testTx.traversalPlanFactory());
+            Concept sConcept = tx.stream(Graql.<GraqlGet>parse("match $x has resource 's';get;")).iterator().next().get("x");
+            Concept fConcept = tx.stream(Graql.<GraqlGet>parse("match $x has resource 'f';get;")).iterator().next().get("x");
+
+            ReasonerAtomicQuery query = testTx.reasonerQueryFactory().atomic(conjunction("(subRole1: $x, subRole2: $y) isa binary;"));
+
+            ConceptMap dbAnswer = new ConceptMap(ImmutableMap.of(
+                    Graql.var("x").var(), fConcept,
+                    Graql.var("y").var(), sConcept)
+            ).explain(new LookupExplanation(), query.getPattern());
+
+            //record
+            tx.execute(query.getQuery()).stream()
+                    .map(ans -> ans.explain(new LookupExplanation(), query.getPattern()))
+                    .filter(ans -> !ans.equals(dbAnswer))
+                    .forEach(ans -> cache.record(query, ans));
+
+            //mock a rule explained answer that is equal to a dbAnswer
+            ConceptMap inferredAnswer = dbAnswer.explain(new RuleExplanation(tx.getMetaRule().id()), query.getPattern());
+            cache.record(query, inferredAnswer);
+
+            //retrieve
+            List<ConceptMap> cacheAnswers = cache.getAnswerStream(query).collect(toList());
+            assertCollectionsNonTriviallyEqual(cacheAnswers, new HashSet<>(cacheAnswers));
         }
     }
 
@@ -434,18 +476,18 @@ public class QueryCacheIT {
             Concept fConcept = tx.stream(Graql.<GraqlGet>parse("match $x has resource 'f';get;")).iterator().next().get("x");
 
             //record child
-            ReasonerAtomicQuery preChildQuery = testTx.reasonerQueryFactory().atomic(conjunction(
+            ReasonerAtomicQuery preGroundChildQuery = testTx.reasonerQueryFactory().atomic(conjunction(
                     "{" +
                             "(subRole1: $x, subRole2: $y) isa binary;" +
                             "$x id " + fConcept.id().getValue() + ";" +
                             "$y id " + sConcept.id().getValue() + ";" +
                             "};"));
-            tx.stream(preChildQuery.getQuery())
-                    .map(ans -> ans.explain(new LookupExplanation(), preChildQuery.getPattern()))
-                    .forEach(ans -> cache.record(preChildQuery, ans));
+            tx.stream(preGroundChildQuery.getQuery())
+                    .map(ans -> ans.explain(new LookupExplanation(), preGroundChildQuery.getPattern()))
+                    .forEach(ans -> cache.record(preGroundChildQuery, ans));
 
             //retrieve child
-            ReasonerAtomicQuery childQuery = testTx.reasonerQueryFactory().atomic(conjunction(
+            ReasonerAtomicQuery groundChildQuery = testTx.reasonerQueryFactory().atomic(conjunction(
                     "{" +
                     "(subRole1: $x, subRole2: $y) isa binary;" +
                                 "$x id " + mConcept.id().getValue() + ";" +
@@ -457,10 +499,11 @@ public class QueryCacheIT {
                     Graql.var("x").var(), mConcept,
                     Graql.var("y").var(), sConcept),
                     new LookupExplanation(),
-                    childQuery.getPattern()
+                    groundChildQuery.getPattern()
             );
-            Set<ConceptMap> cacheAnswers = cache.getAnswers(childQuery);
-            assertEquals(tx.stream(childQuery.getQuery()).collect(toSet()), cacheAnswers);
+            Set<ConceptMap> cacheAnswers = cache.getAnswers(groundChildQuery);
+            assertEquals(tx.stream(groundChildQuery.getQuery()).collect(toSet()), cacheAnswers);
+            assertTrue(cache.answersQuery(groundChildQuery));
             assertTrue(cacheAnswers.contains(specificAnswer));
         }
     }
@@ -545,7 +588,12 @@ public class QueryCacheIT {
             CacheEntry<ReasonerAtomicQuery, IndexedAnswerSet> match = cache.getEntry(query);
 
             assertNotNull(match);
-            TestCase.assertEquals(answers, match.cachedElement().getAll());
+            assertEquals(answers, match.cachedElement().getAll());
+            answers.forEach(ans -> {
+                ReasonerAtomicQuery groundQuery = query.withSubstitution(ans);
+                assertFalse(cache.getAnswers(groundQuery).isEmpty());
+                assertTrue(cache.answersQuery(groundQuery));
+            });
         }
     }
 
@@ -556,7 +604,7 @@ public class QueryCacheIT {
             MultilevelSemanticCache cache = CacheCasting.queryCacheCast(tx.queryCache());
             ReasonerAtomicQuery query = testTx.reasonerQueryFactory().atomic(conjunction("(role: $x, role: $y) isa baseRelation;"));
 
-            Set<ConceptMap> answers = query.resolve().collect(toSet());
+            query.resolve().collect(toSet());
             cache.queries().forEach(q -> assertEquals(cache.isDBComplete(q), cache.isComplete(q)));
         }
     }
@@ -665,7 +713,7 @@ public class QueryCacheIT {
             assertTrue(cache.isComplete(query));
             assertTrue(cache.isDBComplete(query));
 
-            query.materialise(new ConceptMap()).collect(Collectors.toList());
+            query.materialise(new ConceptMap()).collect(toList());
 
             assertTrue(cache.isComplete(query));
             assertTrue(cache.isDBComplete(query));

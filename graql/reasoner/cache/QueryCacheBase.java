@@ -112,28 +112,17 @@ public abstract class QueryCacheBase<
         return cache.get(queryToKey(query));
     }
 
+    CacheEntry<Q, SE> putEntry(CacheEntry<Q, SE> cacheEntry) {
+        cache.put(queryToKey(cacheEntry.query()), cacheEntry);
+        return cacheEntry;
+    }
+
     /**
      * @param query for which the entry is to be removed
      * @return corresponding cache entry to which this map previously associated the key or null
      */
     CacheEntry<Q, SE> removeEntry(Q query) {
         return cache.remove(queryToKey(query));
-    }
-
-    /**
-     * Associates the specified answers with the specified query in this cache adding an (query) -> (answers) entry
-     *
-     * @param query   of the association
-     * @param answers of the association
-     * @return previous value if any or null
-     */
-    CacheEntry<Q, SE> putEntry(Q query, SE answers) {
-        return putEntry(new CacheEntry<>(query, answers));
-    }
-
-    CacheEntry<Q, SE> putEntry(CacheEntry<Q, SE> cacheEntry) {
-        cache.put(queryToKey(cacheEntry.query()), cacheEntry);
-        return cacheEntry;
     }
 
     static <T extends ReasonerQueryImpl> void validateAnswer(ConceptMap answer, T query, Set<Variable> expectedVars){

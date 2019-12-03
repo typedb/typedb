@@ -67,8 +67,6 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
 
     private Instant userCommitTime = null;
 
-    private final boolean forceIndexUsage;
-
     private final Configuration customOptions;
 
     private final StandardJanusGraph graph;
@@ -81,7 +79,6 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         this.graph = graph;
         this.defaultSchemaMaker = graphConfig.getDefaultSchemaMaker();
         this.assignIDsImmediately = graphConfig.hasFlushIDs();
-        this.forceIndexUsage = graphConfig.hasForceIndexUsage();
         this.logIdentifier = null;
         this.propertyPrefetching = graphConfig.hasPropertyPrefetching();
         this.customOptions = graphConfig.getConfiguration();
@@ -94,7 +91,6 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         this.graph = graph;
         this.defaultSchemaMaker = graphConfig.getDefaultSchemaMaker();
         this.assignIDsImmediately = graphConfig.hasFlushIDs();
-        this.forceIndexUsage = graphConfig.hasForceIndexUsage();
         this.logIdentifier = null;
         this.propertyPrefetching = graphConfig.hasPropertyPrefetching();
         this.customOptions = customOptions;
@@ -181,7 +177,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     @Override
     public StandardJanusGraphTx start() {
         TransactionConfiguration immutable = new ImmutableTxCfg(isReadOnly, hasEnabledBatchLoading,
-                assignIDsImmediately, forceIndexUsage, verifyExternalVertexExistence,
+                assignIDsImmediately, verifyExternalVertexExistence,
                 verifyInternalVertexExistence,
                 propertyPrefetching, singleThreaded, threadBound, getTimestampProvider(), userCommitTime,
                 indexCacheWeight, getVertexCacheSize(), getDirtyVertexSize(),
@@ -203,11 +199,6 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     @Override
     public final boolean hasAssignIDsImmediately() {
         return assignIDsImmediately;
-    }
-
-    @Override
-    public final boolean hasForceIndexUsage() {
-        return forceIndexUsage;
     }
 
     @Override
@@ -304,7 +295,6 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         private final boolean isReadOnly;
         private final boolean hasEnabledBatchLoading;
         private final boolean hasAssignIDsImmediately;
-        private final boolean hasForceIndexUsage;
         private final boolean hasVerifyExternalVertexExistence;
         private final boolean hasVerifyInternalVertexExistence;
         private final boolean hasPropertyPrefetching;
@@ -322,7 +312,6 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         ImmutableTxCfg(boolean isReadOnly,
                        boolean hasEnabledBatchLoading,
                        boolean hasAssignIDsImmediately,
-                       boolean hasForceIndexUsage,
                        boolean hasVerifyExternalVertexExistence,
                        boolean hasVerifyInternalVertexExistence,
                        boolean hasPropertyPrefetching, boolean isSingleThreaded,
@@ -334,7 +323,6 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
             this.isReadOnly = isReadOnly;
             this.hasEnabledBatchLoading = hasEnabledBatchLoading;
             this.hasAssignIDsImmediately = hasAssignIDsImmediately;
-            this.hasForceIndexUsage = hasForceIndexUsage;
             this.hasVerifyExternalVertexExistence = hasVerifyExternalVertexExistence;
             this.hasVerifyInternalVertexExistence = hasVerifyInternalVertexExistence;
             this.hasPropertyPrefetching = hasPropertyPrefetching;
@@ -365,11 +353,6 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         @Override
         public boolean hasAssignIDsImmediately() {
             return hasAssignIDsImmediately;
-        }
-
-        @Override
-        public final boolean hasForceIndexUsage() {
-            return hasForceIndexUsage;
         }
 
         @Override

@@ -22,6 +22,7 @@ import grakn.core.graph.core.schema.SchemaManager;
 import grakn.core.graph.graphdb.database.StandardJanusGraph;
 import grakn.core.graph.graphdb.idmanagement.IDManager;
 import grakn.core.graph.graphdb.relations.RelationIdentifier;
+import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 
 /**
@@ -57,6 +58,16 @@ public interface JanusGraphTransaction extends Graph, SchemaManager {
      * @return a new vertex in the graph created in the context of this transaction
      */
     JanusGraphVertex addVertex(String vertexLabel);
+
+    @Override
+    default <C extends GraphComputer> C compute(Class<C> graphComputerClass) throws IllegalArgumentException {
+        return null; // This is only implemented in HadoopGraph
+    }
+
+    @Override
+    default GraphComputer compute() throws IllegalArgumentException {
+        return null; // This is only implemented in HadoopGraph
+    }
 
     @Override
     JanusGraphVertex addVertex(Object... objects);
