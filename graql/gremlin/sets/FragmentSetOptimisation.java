@@ -39,7 +39,6 @@ public interface FragmentSetOptimisation {
      * </p>
      *
      * @param fragmentSets a mutable collection of EquivalentFragmentSets
-     * @param conceptManager the Transaction that these EquivalentFragmentSets are going to operate against
      * @return whether {@code fragmentSets} was modified
      */
     boolean apply(Collection<EquivalentFragmentSet> fragmentSets, ConceptManager conceptManager);

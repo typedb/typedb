@@ -20,6 +20,7 @@
 package grakn.core.graql.reasoner.query;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.PropertyAtomicFactory;
@@ -152,7 +153,7 @@ public class ReasonerQueryFactory {
     public ReasonerQueryImpl create(List<Atom> as){
         boolean isAtomic = as.size() == 1;
         return isAtomic?
-                new ReasonerAtomicQuery(as.get(0), conceptManager, ruleCache, queryCache, executorFactory, this, traversalPlanFactory).inferTypes() :
+                new ReasonerAtomicQuery(Iterables.getOnlyElement(as), conceptManager, ruleCache, queryCache, executorFactory, this, traversalPlanFactory).inferTypes() :
                 new ReasonerQueryImpl(as, conceptManager, ruleCache, queryCache, executorFactory, this, traversalPlanFactory).inferTypes();
     }
 

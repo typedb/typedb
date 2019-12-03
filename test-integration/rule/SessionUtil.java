@@ -68,6 +68,27 @@ public class SessionUtil {
     }
 
     /**
+     * Create a new keyspace with injected KeyspaceStatistics
+     */
+    public static SessionImpl serverlessSessionWithNewKeyspace(Config config, KeyspaceStatistics keyspaceStatistics) {
+        String newKeyspaceName = "a" + UUID.randomUUID().toString().replaceAll("-", "");
+        Keyspace randomKeyspace = new KeyspaceImpl(newKeyspaceName);
+        JanusGraphFactory janusGraphFactory = new JanusGraphFactory(config);
+
+        HadoopGraphFactory hadoopGraphFactory = new HadoopGraphFactory(config);
+        StandardJanusGraph graph = janusGraphFactory.openGraph(newKeyspaceName);
+        KeyspaceSchemaCache cache = new KeyspaceSchemaCache();
+        AttributeManager attributeManager = new AttributeManagerImpl();
+        ShardManager shardManager = new ShardManagerImpl();
+        ReadWriteLock graphLock = new ReentrantReadWriteLock();
+        HadoopGraph hadoopGraph = hadoopGraphFactory.getGraph(randomKeyspace);
+
+        long typeShardThreshold = config.getProperty(ConfigKey.TYPE_SHARD_THRESHOLD);
+        TransactionProvider transactionProvider = new TestTransactionProvider(graph, hadoopGraph, cache, keyspaceStatistics, attributeManager, graphLock, typeShardThreshold);
+        return new SessionImpl(randomKeyspace, transactionProvider, cache, graph, keyspaceStatistics, attributeManager, shardManager, graphLock);
+    }
+
+    /**
      * Open a keyspace with specific name and janus graph factory
      */
     public static SessionImpl serverlessSession(Config config, JanusGraphFactory janusGraphFactory, String keyspaceName) {

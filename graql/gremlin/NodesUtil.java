@@ -27,6 +27,7 @@ import grakn.core.kb.concept.api.Type;
 
 import grakn.core.graql.gremlin.fragment.LabelFragment;
 import grakn.core.graql.gremlin.fragment.ValueFragment;
+import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.planning.spanningtree.graph.EdgeNode;
 import grakn.core.kb.graql.planning.spanningtree.graph.InstanceNode;
 import grakn.core.kb.graql.planning.spanningtree.graph.Node;
@@ -34,6 +35,7 @@ import grakn.core.kb.graql.planning.spanningtree.graph.NodeId;
 import grakn.core.kb.graql.gremlin.Fragment;
 import grakn.core.kb.server.exception.GraknServerException;
 import grakn.core.kb.server.Transaction;
+import grakn.core.kb.server.statistics.KeyspaceStatistics;
 
 import java.util.Comparator;
 import java.util.HashMap;
@@ -219,12 +221,11 @@ public class NodesUtil {
 
     /**
      * @param label type label for which the inferred count should be estimated
-     * @param tx transaction context
      * @return estimated number of inferred instances of a given type
      */
-    public static long estimateInferredTypeCount(Label label, Transaction tx){
+    public static long estimateInferredTypeCount(Label label, ConceptManager conceptManager, KeyspaceStatistics keyspaceStatistics){
         //TODO find a lighter estimate/way to cache it efficiently
-        SchemaConcept initialType = tx.getSchemaConcept(label);
+        SchemaConcept initialType = conceptManager.getSchemaConcept(label);
         if (initialType == null || !initialType.thenRules().findFirst().isPresent()) return 0;
         long inferredEstimate = 0;
 
@@ -237,9 +238,9 @@ public class NodesUtil {
             Set<Type> dependants = type.thenRules()
                     .map(rule ->
                             rule.whenTypes()
-                                    .map(t -> t.subs().max(Comparator.comparing(t2 -> tx.session().keyspaceStatistics().count(tx.conceptManager(), t2.label()))))
+                                    .map(t -> t.subs().max(Comparator.comparing(t2 -> keyspaceStatistics.count(conceptManager, t2.label()))))
                                     .flatMap(Streams::optionalToStream)
-                                    .min(Comparator.comparing(t -> tx.session().keyspaceStatistics().count(tx.conceptManager(), t.label())))
+                                    .min(Comparator.comparing(t -> keyspaceStatistics.count(conceptManager, t.label())))
                     )
                     .flatMap(Streams::optionalToStream)
                     .collect(toSet());
@@ -254,7 +255,7 @@ public class NodesUtil {
                 //if type is a leaf - update counts
                 Set<? extends SchemaConcept> subs = type.subs().collect(toSet());
                 for (SchemaConcept sub : subs) {
-                    long labelCount = tx.session().keyspaceStatistics().count(tx.conceptManager(), sub.label());
+                    long labelCount = keyspaceStatistics.count(conceptManager, sub.label());
                     inferredEstimate += labelCount;
                 }
             }

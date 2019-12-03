@@ -35,6 +35,7 @@ import grakn.core.kb.graql.gremlin.TraversalPlanFactory;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
+import grakn.core.kb.server.statistics.KeyspaceStatistics;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.rule.SessionUtil;
 import grakn.core.rule.TestTransactionProvider;
@@ -86,6 +87,7 @@ public class ResolutionPlanIT {
     public static final GraknTestServer server = new GraknTestServer(false);
 
     private static Session planSession;
+    private static KeyspaceStatistics planKeyspaceStatistics;
     private Transaction tx;
 
     // factories tied to a tx that we can utilise directly in tests
@@ -95,7 +97,8 @@ public class ResolutionPlanIT {
 
     @BeforeClass
     public static void loadContext(){
-        planSession = SessionUtil.serverlessSessionWithNewKeyspace(server.serverConfig());
+        planKeyspaceStatistics = new KeyspaceStatistics();
+        planSession = SessionUtil.serverlessSessionWithNewKeyspace(server.serverConfig(), planKeyspaceStatistics);
         String resourcePath = "test-integration/graql/reasoner/resources/";
         loadFromFileAndCommit(resourcePath, "resolutionPlanTest.gql", planSession);
     }
@@ -679,14 +682,15 @@ public class ResolutionPlanIT {
         Label anotherRelationLabel = Label.of("anotherRelation");
         Label derivedRelationLabel = Label.of("derivedRelation");
         Label anotherDerivedRelationLabel = Label.of("anotherDerivedRelation");
+        TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
         assertEquals(
                 tx.session().keyspaceStatistics().count(tx.conceptManager(), someRelationLabel),
-                NodesUtil.estimateInferredTypeCount(derivedRelationLabel, tx)
+                NodesUtil.estimateInferredTypeCount(derivedRelationLabel, testTx.conceptManager(), planKeyspaceStatistics)
         );
 
         assertEquals(
                 tx.session().keyspaceStatistics().count(tx.conceptManager(), anotherRelationLabel),
-                NodesUtil.estimateInferredTypeCount(anotherDerivedRelationLabel, tx)
+                NodesUtil.estimateInferredTypeCount(anotherDerivedRelationLabel, testTx.conceptManager(), planKeyspaceStatistics)
         );
     }
 
@@ -694,9 +698,10 @@ public class ResolutionPlanIT {
     public void whenEstimatingInferredCountOfAnInferredRecursiveRelation_countIsDerivedFromLeafType(){
         Label someRelationLabel = Label.of("someRelation");
         Label someRelationTransLabel = Label.of("someRelationTrans");
+        TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
         assertEquals(
                 tx.session().keyspaceStatistics().count(tx.conceptManager(), someRelationLabel),
-                NodesUtil.estimateInferredTypeCount(someRelationTransLabel, tx)
+                NodesUtil.estimateInferredTypeCount(someRelationTransLabel, testTx.conceptManager(), planKeyspaceStatistics)
         );
     }
 
