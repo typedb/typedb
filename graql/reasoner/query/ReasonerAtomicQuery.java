@@ -232,7 +232,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
     @Override
     protected Stream<ReasonerQueryImpl> getQueryStream(ConceptMap sub){
-        return getAtom().atomOptions(sub).stream().map(atom -> new ReasonerAtomicQuery(Collections.singleton(atom), conceptManager, ruleCache, queryCache, executorFactory, reasonerQueryFactory, traversalPlanFactory));
+        return getAtom().atomOptions(sub).stream().map(atom -> new ReasonerAtomicQuery(Collections.singletonList(atom), conceptManager, ruleCache, queryCache, executorFactory, reasonerQueryFactory, traversalPlanFactory));
     }
 
     @Override
