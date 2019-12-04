@@ -81,14 +81,24 @@ public class GraknTestServer extends ExternalResource {
     protected int storagePort;
     protected int nativeTransportPort;
 
-    public GraknTestServer() {
-        this(DEFAULT_SERVER_CONFIG_PATH, DEFAULT_CASSANDRA_CONFIG_PATH);
+    private boolean runGraknServer;
+
+    /*
+    TODO refactor this to have a separate GraknTestCassandra rule to avoid passing booleans
+     */
+    public GraknTestServer(boolean runGraknServer) {
+        this(DEFAULT_SERVER_CONFIG_PATH, DEFAULT_CASSANDRA_CONFIG_PATH, runGraknServer);
     }
 
-    public GraknTestServer(Path serverConfigPath, Path cassandraConfigPath) {
+    public GraknTestServer() {
+        this(DEFAULT_SERVER_CONFIG_PATH, DEFAULT_CASSANDRA_CONFIG_PATH, true);
+    }
+
+    public GraknTestServer(Path serverConfigPath, Path cassandraConfigPath, boolean runGraknServer) {
         System.setProperty("java.security.manager", "nottodaypotato");
         this.serverConfigPath = serverConfigPath;
         this.originalCassandraConfigPath = cassandraConfigPath;
+        this.runGraknServer = runGraknServer;
     }
 
     @Override
@@ -103,23 +113,29 @@ public class GraknTestServer extends ExternalResource {
             GraknStorage.main(new String[]{});
             System.out.println("Grakn Storage started");
 
-            // Start Grakn Core Server
-            grpcPort = findUnusedLocalPort();
+            // half of this might be good to split into cassandra rule separately
             dataDirTmp = Files.createTempDirectory("db-for-test");
+            grpcPort = findUnusedLocalPort(); //  TODO these two lines need to be split into separate rules
             serverConfig = createTestConfig(dataDirTmp.toString());
-            System.out.println("Starting Grakn Core Server...");
-            graknServer = createServer();
-            graknServer.start();
-            System.out.println("Grakn Core Server started");
+
+            if (runGraknServer) {
+                // Start Grakn Core Server
+                System.out.println("Starting Grakn Core Server...");
+                graknServer = createServer();
+                graknServer.start();
+                System.out.println("Grakn Core Server started");
+            }
         } catch (IOException e) {
-            throw new RuntimeException("Cannot start Grakn Core Server", e);
+            throw new RuntimeException("Cannot start components", e);
         }
     }
 
     @Override
     protected void after() {
         try {
-            graknServer.close();
+            if (runGraknServer) {
+                graknServer.close();
+            }
             FileUtils.deleteDirectory(dataDirTmp.toFile());
             updatedCassandraConfigPath.delete();
         } catch (Exception e) {

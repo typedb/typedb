@@ -22,8 +22,7 @@ package grakn.core.graql.reasoner.plan;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import grakn.core.graql.reasoner.atom.Atom;
-import grakn.core.graql.reasoner.query.ReasonerQueries;
-import grakn.core.kb.server.Transaction;
+import grakn.core.graql.reasoner.query.ReasonerQueryFactory;
 import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
 
 import java.util.ArrayList;
@@ -46,8 +45,10 @@ import java.util.stream.Collectors;
 public class ResolutionQueryPlan {
 
     private final ImmutableList<ReasonerQueryImpl> queryPlan;
+    private ReasonerQueryFactory reasonerQueryFactory;
 
-    public ResolutionQueryPlan(ReasonerQueryImpl query){
+    public ResolutionQueryPlan(ReasonerQueryFactory reasonerQueryFactory, ReasonerQueryImpl query){
+        this.reasonerQueryFactory = reasonerQueryFactory;
         this.queryPlan = queryPlan(query);
     }
 
@@ -64,11 +65,10 @@ public class ResolutionQueryPlan {
      * compute the query resolution plan - list of queries ordered by their cost as computed by the graql traversal planner
      * @return list of prioritised queries
      */
-    private static ImmutableList<ReasonerQueryImpl> queryPlan(ReasonerQueryImpl query){
+    private ImmutableList<ReasonerQueryImpl> queryPlan(ReasonerQueryImpl query){
         ResolutionPlan resolutionPlan = query.resolutionPlan();
 
         ImmutableList<Atom> plan = resolutionPlan.plan();
-        Transaction tx = query.tx();
         LinkedList<Atom> atoms = new LinkedList<>(plan);
         List<ReasonerQueryImpl> queries = new LinkedList<>();
 
@@ -77,13 +77,13 @@ public class ResolutionQueryPlan {
             Atom top = atoms.remove();
             if (top.isRuleResolvable()) {
                 if (!nonResolvableAtoms.isEmpty()) {
-                    queries.add(ReasonerQueries.create(nonResolvableAtoms, tx));
+                    queries.add(reasonerQueryFactory.create(nonResolvableAtoms));
                     nonResolvableAtoms.clear();
                 }
-                queries.add(ReasonerQueries.atomic(top));
+                queries.add(reasonerQueryFactory.atomic(top));
             } else {
                 nonResolvableAtoms.add(top);
-                if (atoms.isEmpty()) queries.add(ReasonerQueries.create(nonResolvableAtoms, tx));
+                if (atoms.isEmpty()) queries.add(reasonerQueryFactory.create(nonResolvableAtoms));
             }
         }
 

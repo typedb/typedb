@@ -23,10 +23,11 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
+import grakn.core.core.JanusTraversalSourceProvider;
 import grakn.core.kb.concept.api.ConceptId;
-import grakn.core.kb.graql.planning.Fragment;
-import grakn.core.kb.graql.planning.GraqlTraversal;
-import grakn.core.kb.server.Transaction;
+import grakn.core.kb.concept.manager.ConceptManager;
+import grakn.core.kb.graql.gremlin.Fragment;
+import grakn.core.kb.graql.gremlin.GraqlTraversal;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -52,12 +53,18 @@ import static java.util.stream.Collectors.joining;
 public class GraqlTraversalImpl implements GraqlTraversal {
 
     private final ImmutableSet<ImmutableList<? extends Fragment>> fragments;
+    private JanusTraversalSourceProvider janusTraversalSourceProvider;
+    private ConceptManager conceptManager;
 
     // Just a pretend big number
     private static final long NUM_VERTICES_ESTIMATE = 10_000;
     private static final double COST_NEW_TRAVERSAL = Math.log1p(NUM_VERTICES_ESTIMATE);
 
-    GraqlTraversalImpl(Set<List<? extends Fragment>> fragments) {
+
+    GraqlTraversalImpl(JanusTraversalSourceProvider janusTraversalSourceProvider, ConceptManager conceptManager,
+                       Set<List<? extends Fragment>> fragments) {
+        this.janusTraversalSourceProvider = janusTraversalSourceProvider;
+        this.conceptManager = conceptManager;
         // copy the fragments
         this.fragments = fragments.stream().map(ImmutableList::copyOf).collect(ImmutableSet.toImmutableSet());
     }
@@ -73,20 +80,20 @@ public class GraqlTraversalImpl implements GraqlTraversal {
     @Override
     // Because 'union' accepts an array, we can't use generics
     @SuppressWarnings("unchecked")
-    public GraphTraversal<Vertex, Map<String, Element>> getGraphTraversal(Transaction tx, Set<Variable> vars) {
+    public GraphTraversal<Vertex, Map<String, Element>> getGraphTraversal(Set<Variable> vars) {
 
         if (fragments().size() == 1) {
             // If there are no disjunctions, we don't need to union them and get a performance boost
             ImmutableList<? extends Fragment> list = Iterables.getOnlyElement(fragments());
-            return getConjunctionTraversal(tx, tx.getTinkerTraversal().V(), vars, list);
+            return getConjunctionTraversal(janusTraversalSourceProvider.getTinkerTraversal().V(), vars, list);
         } else {
             Traversal[] traversals = fragments().stream()
-                    .map(list -> getConjunctionTraversal(tx, __.V(), vars, list))
+                    .map(list -> getConjunctionTraversal(__.V(), vars, list))
                     .toArray(Traversal[]::new);
 
             // This is a sneaky trick - we want to do a union but tinkerpop requires all traversals to start from
             // somewhere, so we start from a single arbitrary vertex.
-            GraphTraversal traversal = tx.getTinkerTraversal().V().limit(1).union(traversals);
+            GraphTraversal traversal = janusTraversalSourceProvider.getTinkerTraversal().V().limit(1).union(traversals);
 
             return selectVars(traversal, vars);
         }
@@ -101,21 +108,21 @@ public class GraqlTraversalImpl implements GraqlTraversal {
         ImmutableList<Fragment> fragments = ImmutableList.copyOf(
                 Iterables.getOnlyElement(fragments()).stream().map(f -> f.transform(transform)).collect(Collectors.toList())
         );
-        return new GraqlTraversalImpl(ImmutableSet.of(fragments));
+        return new GraqlTraversalImpl(janusTraversalSourceProvider, conceptManager, ImmutableSet.of(fragments));
     }
 
     /**
      * @return a gremlin traversal that represents this inner query
      */
     private GraphTraversal<Vertex, Map<String, Element>> getConjunctionTraversal(
-            Transaction tx, GraphTraversal<Vertex, Vertex> traversal, Set<Variable> vars,
+            GraphTraversal<Vertex, Vertex> traversal, Set<Variable> vars,
             ImmutableList<? extends Fragment> fragmentList) {
 
-        return applyFragments(tx, vars, fragmentList, traversal);
+        return applyFragments(vars, fragmentList, traversal);
     }
 
     private GraphTraversal<Vertex, Map<String, Element>> applyFragments(
-            Transaction tx, Set<Variable> vars, ImmutableList<? extends Fragment> fragmentList,
+            Set<Variable> vars, ImmutableList<? extends Fragment> fragmentList,
             GraphTraversal<Vertex, ? extends Element> traversal) {
         Set<Variable> foundVars = new HashSet<>();
 
@@ -124,7 +131,7 @@ public class GraqlTraversalImpl implements GraqlTraversal {
 
         for (Fragment fragment : fragmentList) {
             // Apply fragment to traversal
-            fragment.applyTraversal(traversal, tx, foundVars, currentName);
+            fragment.applyTraversal(traversal, conceptManager, foundVars, currentName);
             currentName = fragment.end() != null ? fragment.end() : fragment.start();
         }
 

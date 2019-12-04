@@ -24,14 +24,13 @@ java_library(
     name = "impl",
     srcs = glob(["**/*.java"]),
     deps = [
-        "//kb",
         "//core",
-        "//concept/structure:structureimpl",
-        "//concept/cache:conceptcache",
-        "//kb/concept/api",
-        "//kb/concept/util",
         "//kb/concept/manager",
         "//kb/concept/structure",
+        "//kb/concept/api",
+        "//concept/structure",
+        "//concept/cache:conceptcache",
+        "//concept/util/attribute",
 
         # External dependenicies from @graknlabs
         "@graknlabs_graql//java:graql",

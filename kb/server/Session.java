@@ -29,15 +29,6 @@ public interface Session extends AutoCloseable {
     Transaction writeTransaction();
 
     /**
-     * Get a new or existing TransactionOLAP.
-     *
-     * @return A new or existing Grakn graph computer
-     * @see TransactionOLAP
-     */
-    @CheckReturnValue
-    TransactionAnalytics transactionOLAP();
-
-    /**
      * Method used by SessionFactory to register a callback function that has to be triggered when closing current session.
      *
      * @param onClose callback function (this should be used to update the session references in SessionFactory)

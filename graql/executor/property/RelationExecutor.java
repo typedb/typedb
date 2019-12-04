@@ -21,23 +21,14 @@ package grakn.core.graql.executor.property;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
-import grakn.core.kb.concept.api.Concept;
-import grakn.core.kb.concept.api.ConceptId;
-import grakn.core.kb.concept.api.Label;
-import grakn.core.kb.concept.api.Relation;
-import grakn.core.kb.concept.api.Thing;
-import grakn.core.kb.concept.api.Role;
-import grakn.core.kb.server.exception.GraqlQueryException;
-import grakn.core.kb.server.exception.GraqlSemanticException;
-import grakn.core.kb.graql.executor.WriteExecutor;
-import grakn.core.kb.graql.planning.EquivalentFragmentSet;
 import grakn.core.graql.gremlin.sets.EquivalentFragmentSets;
+import grakn.core.kb.concept.api.Relation;
+import grakn.core.kb.concept.api.Role;
+import grakn.core.kb.concept.api.Thing;
+import grakn.core.kb.graql.executor.WriteExecutor;
 import grakn.core.kb.graql.executor.property.PropertyExecutor;
-import grakn.core.kb.graql.reasoner.atom.Atomic;
-import grakn.core.graql.reasoner.atom.binary.RelationAtom;
-import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
-import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
-import graql.lang.property.IsaProperty;
+import grakn.core.kb.graql.gremlin.EquivalentFragmentSet;
+import grakn.core.kb.server.exception.GraqlSemanticException;
 import graql.lang.property.RelationProperty;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Statement;
@@ -52,7 +43,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static grakn.core.graql.gremlin.sets.EquivalentFragmentSets.rolePlayer;
-import static grakn.core.graql.reasoner.utils.ReasonerUtils.getUserDefinedIdPredicate;
 
 public class RelationExecutor  implements PropertyExecutor.Insertable {
 
@@ -99,62 +89,6 @@ public class RelationExecutor  implements PropertyExecutor.Insertable {
                                         relationPlayer.getPlayer().var(),
                                         null));
         }
-    }
-
-    @Override
-    public Atomic atomic(ReasonerQuery parent, Statement statement, Set<Statement> otherStatements) {
-        //set varName as user defined if reified
-        //reified if contains more properties than the RelationProperty itself and potential IsaProperty
-        boolean isReified = statement.properties().stream()
-                .filter(prop -> !RelationProperty.class.isInstance(prop))
-                .anyMatch(prop -> !IsaProperty.class.isInstance(prop));
-        Statement relVar = isReified ? new Statement(var.asReturnedVar()) : new Statement(var);
-
-        for (RelationProperty.RolePlayer rp : property.relationPlayers()) {
-            Statement rolePattern = rp.getRole().orElse(null);
-            Statement rolePlayer = rp.getPlayer();
-            if (rolePattern != null) {
-                Variable roleVar = rolePattern.var();
-                //look for indirect role definitions
-                IdPredicate roleId = getUserDefinedIdPredicate(roleVar, otherStatements, parent);
-                if (roleId != null) {
-                    Concept concept = parent.tx().getConcept(roleId.getPredicate());
-                    if (concept != null) {
-                        if (concept.isRole()) {
-                            Label roleLabel = concept.asSchemaConcept().label();
-                            rolePattern = new Statement(roleVar).type(roleLabel.getValue());
-                        } else {
-                            throw GraqlQueryException.nonRoleIdAssignedToRoleVariable(statement);
-                        }
-                    }
-                }
-                relVar = relVar.rel(rolePattern, rolePlayer);
-            } else relVar = relVar.rel(rolePlayer);
-        }
-
-        //isa part
-        IsaProperty isaProp = statement.getProperty(IsaProperty.class).orElse(null);
-        IdPredicate predicate = null;
-
-        //if no isa property present generate type variable
-        Variable typeVariable = isaProp != null ? isaProp.type().var() : new Variable();
-
-        //Isa present
-        if (isaProp != null) {
-            Statement isaVar = isaProp.type();
-            String label = isaVar.getType().orElse(null);
-            if (label != null) {
-                predicate = IdPredicate.create(typeVariable, Label.of(label), parent);
-            } else {
-                typeVariable = isaVar.var();
-                predicate = getUserDefinedIdPredicate(typeVariable, otherStatements, parent);
-            }
-        }
-        ConceptId predicateId = predicate != null ? predicate.getPredicate() : null;
-        relVar = isaProp != null && isaProp.isExplicit() ?
-                relVar.isaX(new Statement(typeVariable.asReturnedVar())) :
-                relVar.isa(new Statement(typeVariable.asReturnedVar()));
-        return RelationAtom.create(relVar, typeVariable, predicateId, parent);
     }
 
     @Override

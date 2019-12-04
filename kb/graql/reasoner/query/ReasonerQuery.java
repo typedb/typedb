@@ -21,8 +21,8 @@ package grakn.core.kb.graql.reasoner.query;
 
 import com.google.common.collect.SetMultimap;
 import grakn.core.kb.concept.api.Label;
-import grakn.core.concept.answer.ConceptMap;
 import grakn.core.kb.concept.api.Type;
+import grakn.core.concept.answer.ConceptMap;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.kb.server.Transaction;
@@ -45,12 +45,6 @@ public interface ReasonerQuery{
      */
     @CheckReturnValue
     ReasonerQuery conjunction(ReasonerQuery q);
-
-    /**
-     * @return tx associated with this reasoner query
-     */
-    @CheckReturnValue
-    Transaction tx();
 
     /**
      * @return true if this query contains strictly non-negated atomics

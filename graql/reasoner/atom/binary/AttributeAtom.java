@@ -22,7 +22,9 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import grakn.core.common.exception.ErrorMessage;
+import grakn.core.concept.answer.AnswerUtil;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.util.attribute.ValueConverter;
 import grakn.core.core.Schema;
 import grakn.core.graql.reasoner.CacheCasting;
 import grakn.core.graql.reasoner.ReasonerException;
@@ -35,7 +37,7 @@ import grakn.core.graql.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.graql.reasoner.cache.SemanticDifference;
 import grakn.core.graql.reasoner.cache.VariableDefinition;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
-import grakn.core.graql.reasoner.query.ReasonerQueries;
+import grakn.core.graql.reasoner.query.ReasonerQueryFactory;
 import grakn.core.graql.reasoner.query.ResolvableQuery;
 import grakn.core.graql.reasoner.unifier.UnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierType;
@@ -48,13 +50,14 @@ import grakn.core.kb.concept.api.Relation;
 import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Type;
-import grakn.core.kb.concept.util.ConceptUtils;
-import grakn.core.kb.concept.util.ValueConverter;
+import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
+import grakn.core.kb.graql.reasoner.cache.QueryCache;
+import grakn.core.kb.graql.reasoner.cache.RuleCache;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
-import grakn.core.kb.server.Transaction;
 import grakn.core.kb.server.exception.GraqlSemanticException;
+import grakn.core.kb.server.statistics.KeyspaceStatistics;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.property.HasAttributeProperty;
@@ -95,9 +98,17 @@ public class AttributeAtom extends Binary{
 
     private final ImmutableSet<ValuePredicate> multiPredicate;
     private final Variable attributeVariable;
+    private ReasonerQueryFactory reasonerQueryFactory;
+    private final QueryCache queryCache;
+    private KeyspaceStatistics keyspaceStatistics;
     private final Variable relationVariable;
 
     private AttributeAtom(
+            ReasonerQueryFactory reasonerQueryFactory,
+            ConceptManager conceptManager,
+            RuleCache ruleCache,
+            QueryCache queryCache,
+            KeyspaceStatistics keyspaceStatistics,
             Variable varName,
             Statement pattern,
             ReasonerQuery parentQuery,
@@ -106,7 +117,11 @@ public class AttributeAtom extends Binary{
             Variable relationVariable,
             Variable attributeVariable,
             ImmutableSet<ValuePredicate> multiPredicate) {
-        super(varName, pattern, parentQuery, typeId, predicateVariable);
+        super(conceptManager, ruleCache, varName, pattern, parentQuery, typeId, predicateVariable);
+
+        this.reasonerQueryFactory = reasonerQueryFactory;
+        this.queryCache = queryCache;
+        this.keyspaceStatistics = keyspaceStatistics;
 
         this.relationVariable = relationVariable;
         this.attributeVariable = attributeVariable;
@@ -123,12 +138,20 @@ public class AttributeAtom extends Binary{
         return multiPredicate;
     }
 
-    public static AttributeAtom create(Statement pattern, Variable attributeVariable, Variable relationVariable, Variable predicateVariable, ConceptId predicateId, Set<ValuePredicate> ps, ReasonerQuery parent) {
-        return new AttributeAtom(pattern.var(), pattern, parent, predicateId, predicateVariable, relationVariable, attributeVariable, ImmutableSet.copyOf(ps));
+    public static AttributeAtom create(ReasonerQueryFactory reasonerQueryFactory, ConceptManager conceptManager,
+                                       RuleCache ruleCache, QueryCache queryCache, KeyspaceStatistics keyspaceStatistics,
+                                       Statement pattern, Variable attributeVariable,
+                                       Variable relationVariable, Variable predicateVariable, ConceptId predicateId,
+                                       Set<ValuePredicate> ps, ReasonerQuery parent) {
+        return new AttributeAtom(reasonerQueryFactory,conceptManager, ruleCache, queryCache, keyspaceStatistics,
+                pattern.var(), pattern, parent, predicateId, predicateVariable, relationVariable, attributeVariable, ImmutableSet.copyOf(ps));
     }
 
-    private static AttributeAtom create(AttributeAtom a, ReasonerQuery parent) {
-        return create(a.getPattern(), a.getAttributeVariable(), a.getRelationVariable(), a.getPredicateVariable(), a.getTypeId(), a.getMultiPredicate(), parent);
+    private static AttributeAtom create(ReasonerQueryFactory reasonerQueryFactory, ConceptManager conceptManager,
+                                        RuleCache ruleCache, QueryCache queryCache, KeyspaceStatistics keyspaceStatistics,
+                                        AttributeAtom a, ReasonerQuery parent) {
+        return create(reasonerQueryFactory, conceptManager, ruleCache, queryCache, keyspaceStatistics, a.getPattern(), a.getAttributeVariable(),
+                a.getRelationVariable(), a.getPredicateVariable(), a.getTypeId(), a.getMultiPredicate(), parent);
     }
 
     private AttributeAtom convertValues(){
@@ -149,11 +172,27 @@ public class AttributeAtom extends Binary{
             ValueProperty.Operation operation = ValueProperty.Operation.Comparison.of(vp.getPredicate().comparator(), convertedValue);
             return ValuePredicate.create(vp.getVarName(), operation, getParentQuery());
         }).collect(Collectors.toSet());
-        return create(getPattern(), getAttributeVariable(), getRelationVariable(), getPredicateVariable(), getTypeId(), newMultiPredicate, getParentQuery());
+        return create(reasonerQueryFactory, conceptManager, ruleCache, queryCache, keyspaceStatistics, getPattern(), getAttributeVariable(), getRelationVariable(), getPredicateVariable(), getTypeId(), newMultiPredicate, getParentQuery());
+    }
+
+
+    /**
+     * TODO remove this, short term workaround
+     * copy constructor that overrides the predicates
+     */
+    public AttributeAtom copy(Set<ValuePredicate> newPredicates) {
+        return create(reasonerQueryFactory, conceptManager, ruleCache, queryCache,
+                keyspaceStatistics, getPattern(), getAttributeVariable(),
+                getRelationVariable(),
+                getPredicateVariable(),
+                getTypeId(),
+                newPredicates,
+                getParentQuery());
     }
 
     @Override
-    public Atomic copy(ReasonerQuery parent){ return create(this, parent);}
+    public Atomic copy(ReasonerQuery parent){ return create(reasonerQueryFactory, conceptManager, ruleCache, queryCache,
+            keyspaceStatistics, this, parent);}
 
     @Override
     public Atomic simplify() {
@@ -170,23 +209,27 @@ public class AttributeAtom extends Binary{
     public RelationAtom toRelationAtom(){
         SchemaConcept type = getSchemaConcept();
         if (type == null) throw ReasonerException.illegalAtomConversion(this, RelationAtom.class);
-        Transaction tx = getParentQuery().tx();
         Label typeLabel = Schema.ImplicitType.HAS.getLabel(type.label());
 
         RelationAtom relationAtom = RelationAtom.create(
+                reasonerQueryFactory,
+                conceptManager,
+                ruleCache,
+                queryCache,
+                keyspaceStatistics,
                 Graql.var(getRelationVariable())
                         .rel(Schema.ImplicitType.HAS_OWNER.getLabel(type.label()).getValue(), new Statement(getVarName()))
                         .rel(Schema.ImplicitType.HAS_VALUE.getLabel(type.label()).getValue(), new Statement(getAttributeVariable()))
                         .isa(typeLabel.getValue()),
                 getPredicateVariable(),
-                tx.getSchemaConcept(typeLabel).id(),
+                conceptManager.getSchemaConcept(typeLabel).id(),
                 getParentQuery()
         );
 
         Set<Statement> patterns = new HashSet<>(relationAtom.getCombinedPattern().statements());
         this.getPredicates().map(Predicate::getPattern).forEach(patterns::add);
         this.getMultiPredicate().stream().map(Predicate::getPattern).forEach(patterns::add);
-        return ReasonerQueries.atomic(Graql.and(patterns), tx()).getAtom().toRelationAtom();
+        return reasonerQueryFactory.atomic(Graql.and(patterns)).getAtom().toRelationAtom();
     }
 
     /**
@@ -198,13 +241,12 @@ public class AttributeAtom extends Binary{
      * @return corresponding isa atom
      */
     @Override
-    public IsaAtom toIsaAtom(){
-        IsaAtom isaAtom = IsaAtom.create(getAttributeVariable(), getPredicateVariable(), getTypeId(), false, getParentQuery());
-
+    public IsaAtom toIsaAtom() {
+        IsaAtom isaAtom = IsaAtom.create(conceptManager, ruleCache, getAttributeVariable(), getPredicateVariable(), getTypeId(), false, getParentQuery());
         Set<Statement> patterns = new HashSet<>(isaAtom.getCombinedPattern().statements());
         this.getPredicates().map(Predicate::getPattern).forEach(patterns::add);
         this.getMultiPredicate().stream().map(Predicate::getPattern).forEach(patterns::add);
-        return ReasonerQueries.atomic(Graql.and(patterns), tx()).getAtom().toIsaAtom();
+        return reasonerQueryFactory.atomic(Graql.and(patterns)).getAtom().toIsaAtom();
     }
 
     @Override
@@ -332,7 +374,7 @@ public class AttributeAtom extends Binary{
         if(getMultiPredicate().isEmpty()) {
             Variable attrVar = getAttributeVariable();
             AttributeType.DataType<Object> dataType = getSchemaConcept().asAttributeType().dataType();
-            ResolvableQuery body = CacheCasting.ruleCacheCast(tx().ruleCache()).getRule(rule).getBody();
+            ResolvableQuery body = CacheCasting.ruleCacheCast(ruleCache).getRule(rule).getBody();
             ErrorMessage incompatibleValuesMsg = ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_COPYING_INCOMPATIBLE_ATTRIBUTE_VALUES;
             body.getAtoms(AttributeAtom.class)
                     .filter(at -> at.getAttributeVariable().equals(attrVar))
@@ -453,12 +495,12 @@ public class AttributeAtom extends Binary{
 
     private ConceptMap findAnswer(ConceptMap sub){
         //NB: we are only interested in this atom and its subs, not any other constraints
-        ReasonerAtomicQuery query = ReasonerQueries.atomic(Collections.singleton(this), tx()).withSubstitution(sub);
-        MultilevelSemanticCache queryCache = CacheCasting.queryCacheCast(tx().queryCache());
-        ConceptMap answer = queryCache.getAnswerStream(query).findFirst().orElse(null);
+        ReasonerAtomicQuery query = reasonerQueryFactory.atomic(Collections.singleton(this)).withSubstitution(sub);
+        MultilevelSemanticCache queryCacheImpl = CacheCasting.queryCacheCast(queryCache);
+        ConceptMap answer = queryCacheImpl.getAnswerStream(query).findFirst().orElse(null);
 
-        if (answer == null) queryCache.ackDBCompleteness(query);
-        else queryCache.record(query.withSubstitution(answer), answer);
+        if (answer == null) queryCacheImpl.ackDBCompleteness(query);
+        else queryCacheImpl.record(query.withSubstitution(answer), answer);
         return answer;
     }
 
@@ -512,7 +554,7 @@ public class AttributeAtom extends Binary{
             Relation relation = putImplicitRelation(answer, owner, attribute);
 
             if (getRelationVariable().isReturned()){
-                answer = ConceptUtils.joinAnswers(answer, new ConceptMap(ImmutableMap.of(getRelationVariable(), relation)));
+                answer = AnswerUtil.joinAnswers(answer, new ConceptMap(ImmutableMap.of(getRelationVariable(), relation)));
             }
             return Stream.of(answer);
         }
@@ -535,12 +577,14 @@ public class AttributeAtom extends Binary{
         Variable relationVariable = getRelationVariable().asReturnedVar();
         Statement newVar = new Statement(getVarName())
                 .has(getSchemaConcept().label().getValue(), new Statement(attributeVariable), new Statement(relationVariable));
-        return create(newVar, attributeVariable, relationVariable, getPredicateVariable(), getTypeId(), getMultiPredicate(), getParentQuery());
+        return create(reasonerQueryFactory, conceptManager, ruleCache, queryCache, keyspaceStatistics,
+                newVar, attributeVariable, relationVariable, getPredicateVariable(), getTypeId(), getMultiPredicate(), getParentQuery());
     }
 
     @Override
     public Atom rewriteWithTypeVariable() {
-        return create(getPattern(), getAttributeVariable(), getRelationVariable(), getPredicateVariable().asReturnedVar(), getTypeId(), getMultiPredicate(), getParentQuery());
+        return create(reasonerQueryFactory, conceptManager, ruleCache, queryCache, keyspaceStatistics,
+                getPattern(), getAttributeVariable(), getRelationVariable(), getPredicateVariable().asReturnedVar(), getTypeId(), getMultiPredicate(), getParentQuery());
     }
 
     @Override

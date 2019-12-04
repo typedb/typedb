@@ -23,9 +23,9 @@ import com.google.common.collect.ImmutableSet;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.Label;
-import grakn.core.kb.graql.executor.property.value.ValueOperation;
-import grakn.core.kb.graql.planning.EquivalentFragmentSet;
-import grakn.core.kb.server.Transaction;
+import grakn.core.graql.executor.property.value.ValueOperation;
+import grakn.core.kb.concept.manager.ConceptManager;
+import grakn.core.kb.graql.gremlin.EquivalentFragmentSet;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 
@@ -169,7 +169,7 @@ public class EquivalentFragmentSets {
      * This involves substituting various EquivalentFragmentSet with other EquivalentFragmentSet.
      */
     public static void optimiseFragmentSets(
-            Collection<EquivalentFragmentSet> fragmentSets, Transaction tx) {
+            Collection<EquivalentFragmentSet> fragmentSets, ConceptManager conceptManager) {
 
         // Repeatedly apply optimisations until they don't alter the query
         boolean changed = true;
@@ -177,7 +177,7 @@ public class EquivalentFragmentSets {
         while (changed) {
             changed = false;
             for (FragmentSetOptimisation optimisation : OPTIMISATIONS) {
-                changed |= optimisation.apply(fragmentSets, tx);
+                changed |= optimisation.apply(fragmentSets, conceptManager);
             }
         }
     }

@@ -24,26 +24,23 @@ import com.google.common.collect.Sets;
 import grakn.benchmark.lib.instrumentation.ServerTracing;
 import grakn.core.concept.answer.Answer;
 import grakn.core.concept.answer.AnswerGroup;
-import grakn.core.concept.answer.ConceptList;
+import grakn.core.concept.answer.AnswerUtil;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concept.answer.ConceptSet;
-import grakn.core.concept.answer.ConceptSetMeasure;
 import grakn.core.concept.answer.Numeric;
 import grakn.core.concept.answer.Void;
-import grakn.core.concept.impl.ConceptManagerImpl;
 import grakn.core.graql.executor.property.PropertyExecutorFactoryImpl;
 import grakn.core.graql.executor.util.LazyMergingStream;
-import grakn.core.graql.gremlin.TraversalPlanFactoryImpl;
 import grakn.core.graql.reasoner.ReasonerCheckedException;
-import grakn.core.graql.reasoner.query.ReasonerQueries;
-import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
+import grakn.core.graql.reasoner.query.ReasonerQueryFactory;
 import grakn.core.kb.concept.api.Concept;
+import grakn.core.kb.concept.manager.ConceptManager;
+import grakn.core.kb.graql.executor.ExecutorFactory;
 import grakn.core.kb.graql.executor.QueryExecutor;
 import grakn.core.kb.graql.executor.property.PropertyExecutor;
 import grakn.core.kb.graql.executor.property.PropertyExecutorFactory;
-import grakn.core.kb.graql.planning.GraqlTraversal;
-import grakn.core.kb.graql.planning.TraversalPlanFactory;
-import grakn.core.kb.server.Transaction;
+import grakn.core.kb.graql.gremlin.GraqlTraversal;
+import grakn.core.kb.graql.gremlin.TraversalPlanFactory;
+import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.kb.server.exception.GraknServerException;
 import grakn.core.kb.server.exception.GraqlSemanticException;
 import graql.lang.Graql;
@@ -53,14 +50,12 @@ import graql.lang.pattern.Pattern;
 import graql.lang.property.NeqProperty;
 import graql.lang.property.ValueProperty;
 import graql.lang.property.VarProperty;
-import graql.lang.query.GraqlCompute;
 import graql.lang.query.GraqlDefine;
 import graql.lang.query.GraqlDelete;
 import graql.lang.query.GraqlGet;
 import graql.lang.query.GraqlInsert;
 import graql.lang.query.GraqlUndefine;
 import graql.lang.query.MatchClause;
-import graql.lang.query.builder.Filterable;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -94,20 +89,20 @@ import static java.util.stream.Collectors.toList;
  */
 public class QueryExecutorImpl implements QueryExecutor {
 
-    private ConceptManagerImpl conceptManager;
+    private ConceptManager conceptManager;
+    private ExecutorFactory executorFactory;
     private final boolean infer;
-    private final Transaction transaction;
     private final TraversalPlanFactory traversalPlanFactory;
+    private ReasonerQueryFactory reasonerQueryFactory;
     private final PropertyExecutorFactory propertyExecutorFactory;
     private static final Logger LOG = LoggerFactory.getLogger(QueryExecutorImpl.class);
 
-    public QueryExecutorImpl(Transaction transaction, ConceptManagerImpl conceptManager, boolean infer) {
+    QueryExecutorImpl(ConceptManager conceptManager, ExecutorFactory executorFactory, TraversalPlanFactory traversalPlanFactory, ReasonerQueryFactory reasonerQueryFactory, boolean infer) {
         this.conceptManager = conceptManager;
+        this.executorFactory = executorFactory;
         this.infer = infer;
-        this.transaction = transaction;
-
-        traversalPlanFactory = new TraversalPlanFactoryImpl(transaction);
-
+        this.traversalPlanFactory = traversalPlanFactory;
+        this.reasonerQueryFactory = reasonerQueryFactory;
         propertyExecutorFactory = new PropertyExecutorFactoryImpl();
     }
 
@@ -127,8 +122,8 @@ public class QueryExecutorImpl implements QueryExecutor {
                 // custom workaround to deal with non-lazy Java 8 flatMap() functions is in LazyMergingStream
                 Stream<Conjunction<Statement>> conjunctions = matchClause.getPatterns().getDisjunctiveNormalForm().getPatterns().stream();
                 Stream<Stream<ConceptMap>> answerStreams = conjunctions
-                        .map(p -> ReasonerQueries.create(p, transaction))
-                        .map(ReasonerQueryImpl::getPattern)
+                        .map(p -> reasonerQueryFactory.create(p))
+                        .map(ReasonerQuery::getPattern)
                         .map(p -> traverse(p));
 
                 LazyMergingStream<ConceptMap> mergedStreams = new LazyMergingStream<>(answerStreams);
@@ -138,7 +133,7 @@ public class QueryExecutorImpl implements QueryExecutor {
 
                 Stream<Conjunction<Pattern>> conjunctions = matchClause.getPatterns().getNegationDNF().getPatterns().stream();
                 Stream<Stream<ConceptMap>> answerStreams = conjunctions
-                        .map(p -> ReasonerQueries.resolvable(p, transaction).rewrite())
+                        .map(p -> reasonerQueryFactory.resolvable(p).rewrite())
                         // we return an answer with the substituted IDs in the pattern
                         .map(q -> q.resolve().map(ans -> ans.withPattern(q.withSubstitution(ans).getPattern())));
 
@@ -174,7 +169,7 @@ public class QueryExecutorImpl implements QueryExecutor {
         negationDNF.getPatterns().stream()
                 .flatMap(p -> p.statements().stream())
                 .map(p -> Graql.and(Collections.singleton(p)))
-                .forEach(pattern -> ReasonerQueries.createWithoutRoleInference(pattern, transaction).checkValid());
+                .forEach(pattern -> reasonerQueryFactory.withoutRoleInference(pattern).checkValid());
         if (!infer) {
             boolean containsNegation = negationDNF.getPatterns().stream()
                     .flatMap(p -> p.getPatterns().stream())
@@ -229,7 +224,7 @@ public class QueryExecutorImpl implements QueryExecutor {
     @Override
     public Stream<ConceptMap> traverse(Conjunction<Pattern> pattern, GraqlTraversal graqlTraversal) {
         Set<Variable> vars = Sets.filter(pattern.variables(), Variable::isReturned);
-        GraphTraversal<Vertex, Map<String, Element>> traversal = graqlTraversal.getGraphTraversal(transaction, vars);
+        GraphTraversal<Vertex, Map<String, Element>> traversal = graqlTraversal.getGraphTraversal(vars);
 
         return traversal.toStream()
                 .map(elements -> createAnswer(vars, elements))
@@ -264,37 +259,6 @@ public class QueryExecutorImpl implements QueryExecutor {
     }
 
     @Override
-    public ConceptMap define(GraqlDefine query) {
-        ImmutableSet.Builder<PropertyExecutor.Writer> executors = ImmutableSet.builder();
-        List<Statement> statements = query.statements().stream()
-                .flatMap(statement -> statement.innerStatements().stream())
-                .collect(Collectors.toList());
-
-        for (Statement statement : statements) {
-            for (VarProperty property : statement.properties()) {
-                executors.addAll(propertyExecutorFactory.definable(statement.var(), property).defineExecutors());
-            }
-        }
-
-        return WriteExecutorImpl.create(transaction, executors.build()).write(new ConceptMap());
-    }
-
-    @Override
-    public ConceptMap undefine(GraqlUndefine query) {
-        ImmutableSet.Builder<PropertyExecutor.Writer> executors = ImmutableSet.builder();
-        List<Statement> statements = query.statements().stream()
-                .flatMap(statement -> statement.innerStatements().stream())
-                .collect(Collectors.toList());
-
-        for (Statement statement : statements) {
-            for (VarProperty property : statement.properties()) {
-                executors.addAll(propertyExecutorFactory.definable(statement.var(), property).undefineExecutors());
-            }
-        }
-        return WriteExecutorImpl.create(transaction, executors.build()).write(new ConceptMap());
-    }
-
-    @Override
     public Stream<ConceptMap> insert(GraqlInsert query) {
         int createExecSpanId = ServerTracing.startScopedChildSpan("QueryExecutor.insert create executors");
 
@@ -319,15 +283,16 @@ public class QueryExecutorImpl implements QueryExecutor {
             Set<Variable> matchVars = match.getSelectedNames();
             Set<Variable> insertVars = statements.stream().map(Statement::var).collect(ImmutableSet.toImmutableSet());
 
+            // only need to keep the match vars required in the insert clause
             LinkedHashSet<Variable> projectedVars = new LinkedHashSet<>(matchVars);
             projectedVars.retainAll(insertVars);
 
-            Stream<ConceptMap> answers = transaction.stream(match.get(projectedVars), infer);
+            Stream<ConceptMap> answers = executorFactory.transactional(infer).get(match.get(projectedVars));
             answerStream = answers
-                    .map(answer -> WriteExecutorImpl.create(transaction, executors.build()).write(answer))
+                    .flatMap(answer -> WriteExecutorImpl.create(conceptManager, executors.build()).write(answer))
                     .collect(toList()).stream();
         } else {
-            answerStream = Stream.of(WriteExecutorImpl.create(transaction, executors.build()).write(new ConceptMap()));
+            answerStream = WriteExecutorImpl.create(conceptManager, executors.build()).write();
         }
 
         ServerTracing.closeScopedChildSpan(answerStreamSpanId);
@@ -335,40 +300,14 @@ public class QueryExecutorImpl implements QueryExecutor {
         return answerStream;
     }
 
-    @SuppressWarnings("unchecked") // All attribute values are comparable data types
-    private Stream<ConceptMap> filter(Filterable query, Stream<ConceptMap> answers) {
-        if (query.sort().isPresent()) {
-            Variable var = query.sort().get().var();
-            Comparator<ConceptMap> comparator = (map1, map2) -> {
-                Object val1 = map1.get(var).asAttribute().value();
-                Object val2 = map2.get(var).asAttribute().value();
-
-                if (val1 instanceof String) {
-                    return ((String) val1).compareToIgnoreCase((String) val2);
-                } else {
-                    return ((Comparable<? super Comparable>) val1).compareTo((Comparable<? super Comparable>) val2);
-                }
-            };
-            comparator = (query.sort().get().order() == Graql.Token.Order.DESC) ? comparator.reversed() : comparator;
-            answers = answers.sorted(comparator);
-        }
-        if (query.offset().isPresent()) {
-            answers = answers.skip(query.offset().get());
-        }
-        if (query.limit().isPresent()) {
-            answers = answers.limit(query.limit().get());
-        }
-
-        return answers;
-    }
 
     @Override
     public Void delete(GraqlDelete query) {
-        Stream<ConceptMap> answers = transaction.stream(query.match(), infer)
+        Stream<ConceptMap> answers = executorFactory.transactional(infer).match(query.match())
                 .map(result -> result.project(query.vars()))
                 .distinct();
 
-        answers = filter(query, answers);
+        answers = AnswerUtil.filter(query, answers);
 
         // TODO: We should not need to collect toSet, once we fix ConceptId.id() to not use cache.
         List<Concept> conceptsToDelete = answers
@@ -408,11 +347,43 @@ public class QueryExecutorImpl implements QueryExecutor {
     }
 
     @Override
+    public Stream<ConceptMap> define(GraqlDefine query) {
+        ImmutableSet.Builder<PropertyExecutor.Writer> executors = ImmutableSet.builder();
+        List<Statement> statements = query.statements().stream()
+                .flatMap(statement -> statement.innerStatements().stream())
+                .collect(Collectors.toList());
+
+        for (Statement statement : statements) {
+            for (VarProperty property : statement.properties()) {
+                executors.addAll(propertyExecutorFactory.definable(statement.var(), property).defineExecutors());
+            }
+        }
+
+        return WriteExecutorImpl.create(conceptManager, executors.build()).write();
+    }
+
+    @Override
+    public Stream<ConceptMap> undefine(GraqlUndefine query) {
+        ImmutableSet.Builder<PropertyExecutor.Writer> executors = ImmutableSet.builder();
+        List<Statement> statements = query.statements().stream()
+                .flatMap(statement -> statement.innerStatements().stream())
+                .collect(Collectors.toList());
+
+        for (Statement statement : statements) {
+            for (VarProperty property : statement.properties()) {
+                executors.addAll(propertyExecutorFactory.definable(statement.var(), property).undefineExecutors());
+            }
+        }
+        return WriteExecutorImpl.create(conceptManager, executors.build()).write();
+    }
+
+
+    @Override
     public Stream<ConceptMap> get(GraqlGet query) {
         //NB: we need distinct as projection can produce duplicates
         Stream<ConceptMap> answers = match(query.match()).map(ans -> ans.project(query.vars())).distinct();
 
-        answers = filter(query, answers);
+        answers = AnswerUtil.filter(query, answers);
 
         return answers;
     }
@@ -462,29 +433,5 @@ public class QueryExecutorImpl implements QueryExecutor {
                 .forEach((key, values) -> answerGroups.add(new AnswerGroup<>(key, values)));
 
         return answerGroups;
-    }
-
-    @Override
-    public Stream<Numeric> compute(GraqlCompute.Statistics query) {
-        if (query.getException().isPresent()) throw query.getException().get();
-        return new ComputeExecutor(transaction).stream(query);
-    }
-
-    @Override
-    public Stream<ConceptList> compute(GraqlCompute.Path query) {
-        if (query.getException().isPresent()) throw query.getException().get();
-        return new ComputeExecutor(transaction).stream(query);
-    }
-
-    @Override
-    public Stream<ConceptSetMeasure> compute(GraqlCompute.Centrality query) {
-        if (query.getException().isPresent()) throw query.getException().get();
-        return new ComputeExecutor(transaction).stream(query);
-    }
-
-    @Override
-    public Stream<ConceptSet> compute(GraqlCompute.Cluster query) {
-        if (query.getException().isPresent()) throw query.getException().get();
-        return new ComputeExecutor(transaction).stream(query);
     }
 }

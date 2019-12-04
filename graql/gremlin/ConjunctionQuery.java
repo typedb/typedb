@@ -25,13 +25,13 @@ import grakn.core.graql.executor.property.PropertyExecutorFactoryImpl;
 import grakn.core.graql.gremlin.fragment.NeqFragment;
 import grakn.core.graql.gremlin.fragment.ValueFragment;
 import grakn.core.graql.gremlin.sets.EquivalentFragmentSets;
-import grakn.core.kb.graql.planning.Fragment;
-import grakn.core.kb.server.Transaction;
+import grakn.core.kb.concept.manager.ConceptManager;
+import grakn.core.kb.graql.gremlin.Fragment;
 import graql.lang.exception.GraqlException;
 import graql.lang.pattern.Conjunction;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
-import grakn.core.kb.graql.planning.EquivalentFragmentSet;
+import grakn.core.kb.graql.gremlin.EquivalentFragmentSet;
 import grakn.core.kb.graql.executor.property.PropertyExecutorFactory;
 
 import java.util.Collection;
@@ -63,7 +63,7 @@ class ConjunctionQuery {
     /**
      * @param patternConjunction a pattern containing no disjunctions to find in the graph
      */
-    ConjunctionQuery(Conjunction<Statement> patternConjunction, Transaction tx) {
+    ConjunctionQuery(Conjunction<Statement> patternConjunction, ConceptManager conceptManager) {
         statements = patternConjunction.getPatterns();
 
         if (statements.size() == 0) {
@@ -98,7 +98,7 @@ class ConjunctionQuery {
                 .collect(toSet());
 
         // Apply final optimisations
-        EquivalentFragmentSets.optimiseFragmentSets(initialEquivalentFragmentSets, tx);
+        EquivalentFragmentSets.optimiseFragmentSets(initialEquivalentFragmentSets, conceptManager);
 
         this.equivalentFragmentSets = ImmutableSet.copyOf(initialEquivalentFragmentSets);
     }

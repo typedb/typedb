@@ -33,15 +33,11 @@ import com.google.common.collect.Sets;
 import grakn.benchmark.lib.instrumentation.ServerTracing;
 import grakn.core.common.util.Partition;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concept.impl.ConceptVertex;
-import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.Concept;
-import grakn.core.kb.concept.api.Thing;
-import grakn.core.kb.concept.util.ConceptUtils;
+import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.executor.ConceptBuilder;
 import grakn.core.kb.graql.executor.WriteExecutor;
 import grakn.core.kb.graql.executor.property.PropertyExecutor.Writer;
-import grakn.core.kb.server.Transaction;
 import grakn.core.kb.server.exception.GraqlSemanticException;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Statement;
@@ -60,7 +56,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
 
@@ -72,7 +68,7 @@ public class WriteExecutorImpl implements WriteExecutor {
 
     protected final Logger LOG = LoggerFactory.getLogger(WriteExecutor.class);
 
-    private final Transaction transaction;
+    private ConceptManager conceptManager;
 
     // A mutable map associating each `Var` to the `Concept` in the graph it refers to.
     private final Map<Variable, Concept> concepts = new HashMap<>();
@@ -92,23 +88,18 @@ public class WriteExecutorImpl implements WriteExecutor {
     // A map, where `dependencies.containsEntry(x, y)` implies that `y` must be inserted before `x` is inserted.
     private final ImmutableMultimap<Writer, Writer> dependencies;
 
-    private WriteExecutorImpl(Transaction transaction,
+    private WriteExecutorImpl(ConceptManager conceptManager,
                               Set<Writer> writers,
                               Partition<Variable> equivalentVars,
                               Multimap<Writer, Writer> executorDependency
     ) {
-        this.transaction = transaction;
+        this.conceptManager = conceptManager;
         this.writers = ImmutableSet.copyOf(writers);
         this.equivalentVars = equivalentVars;
         this.dependencies = ImmutableMultimap.copyOf(executorDependency);
     }
 
-    public Transaction tx() {
-        return transaction;
-    }
-
-    static WriteExecutor create(Transaction transaction, ImmutableSet<Writer> writers) {
-        transaction.checkMutationAllowed();
+    static WriteExecutor create(ConceptManager conceptManager, ImmutableSet<Writer> writers) {
         /*
             We build several many-to-many relations, indicated by a `Multimap<X, Y>`. These are used to represent
             the dependencies between properties and variables.
@@ -197,7 +188,7 @@ public class WriteExecutorImpl implements WriteExecutor {
         Multimap<Writer, Writer> writerDependencies =
                 writerDependencies(executorToRequiredVars, varToProducingWriter);
 
-        return new WriteExecutorImpl(transaction, writers, equivalentVars, writerDependencies);
+        return new WriteExecutorImpl(conceptManager, writers, equivalentVars, writerDependencies);
     }
 
     private static Multimap<VarProperty, Variable> propertyToEquivalentVars(Set<Writer> executors) {
@@ -234,7 +225,11 @@ public class WriteExecutorImpl implements WriteExecutor {
         return dependency;
     }
 
-    public ConceptMap write(ConceptMap preExisting) {
+    public Stream<ConceptMap> write() {
+        return write(new ConceptMap());
+    }
+
+    public Stream<ConceptMap> write(ConceptMap preExisting) {
         concepts.putAll(preExisting.map());
 
         // time to execute writers for properties
@@ -258,7 +253,6 @@ public class WriteExecutorImpl implements WriteExecutor {
         ServerTracing.closeScopedChildSpan(deleteConceptsSpanId);
 
         // time to build concepts
-
         int buildConceptsSpanId = ServerTracing.startScopedChildSpan("WriteExecutor.write build concepts for answer");
 
         conceptBuilders.forEach((var, builder) -> buildConcept(var, builder));
@@ -276,32 +270,12 @@ public class WriteExecutorImpl implements WriteExecutor {
 
         Map<Variable, Concept> namedConcepts = Maps.filterKeys(allConcepts.build(), Variable::isReturned);
 
-        // mark all inferred concepts that are required for the insert for persistence explicitly
-        // can avoid this potentially expensive check if there aren't any inferred concepts to start with
-        if (tx().cache().getInferredInstances().findAny().isPresent()) {
-            markConceptsForPersistence(namedConcepts.values());
-        }
 
         ServerTracing.closeScopedChildSpan(answerAndPersistId);
 
-
-        return new ConceptMap(namedConcepts);
+        return Stream.of(new ConceptMap(namedConcepts));
     }
 
-    private void markConceptsForPersistence(Collection<Concept> concepts) {
-        Set<Thing> things = concepts.stream()
-                .filter(Concept::isThing)
-                .map(Concept::asThing)
-                .collect(Collectors.toSet());
-
-        ConceptUtils.getDependentConcepts(things)
-                .filter(Thing::isInferred)
-                .forEach(t -> {
-                    //as we are going to persist the concepts, reset the inferred flag
-                    ConceptVertex.from(t).vertex().property(Schema.VertexProperty.IS_INFERRED, false);
-                    transaction.cache().inferredInstanceToPersist(t);
-                });
-    }
 
     @Override
     public void toDelete(Concept concept) {
@@ -403,7 +377,7 @@ public class WriteExecutorImpl implements WriteExecutor {
             return Optional.of(builder);
         }
 
-        builder = ConceptBuilder.of(this, var);
+        builder = ConceptBuilderImpl.of(conceptManager, this, var);
         conceptBuilders.put(var, builder);
         return Optional.of(builder);
     }

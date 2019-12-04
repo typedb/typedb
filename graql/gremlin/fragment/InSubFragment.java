@@ -18,11 +18,11 @@
 
 package grakn.core.graql.gremlin.fragment;
 
-import grakn.core.kb.graql.planning.Fragment;
+import grakn.core.kb.concept.manager.ConceptManager;
+import grakn.core.kb.graql.gremlin.Fragment;
 import grakn.core.kb.graql.planning.spanningtree.graph.Node;
 import grakn.core.kb.graql.planning.spanningtree.graph.NodeId;
 import grakn.core.kb.graql.planning.spanningtree.graph.SchemaNode;
-import grakn.core.kb.server.Transaction;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -59,7 +59,7 @@ public class InSubFragment extends EdgeFragment {
 
     @Override
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
-            GraphTraversal<Vertex, ? extends Element> traversal, Transaction tx, Collection<Variable> vars) {
+            GraphTraversal<Vertex, ? extends Element> traversal, ConceptManager conceptManager, Collection<Variable> vars) {
         return Fragments.inSubs(Fragments.isVertex(traversal), subTraversalDepthLimit());
     }
 

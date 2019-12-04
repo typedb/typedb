@@ -24,6 +24,11 @@ import grakn.core.kb.server.Transaction;
 import grakn.core.rule.GraknTestServer;
 import graql.lang.Graql;
 import graql.lang.query.GraqlInsert;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Test;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -31,13 +36,9 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Test;
 
-import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class AttributeManagerIT {
     private Session session;
@@ -70,7 +71,7 @@ public class AttributeManagerIT {
         for (int threadNo = 0; threadNo < threads; threadNo++) {
             GraqlInsert query = Graql.parse("insert $x " + threadNo + " isa someAttribute;").asInsert();
             CompletableFuture<Void> asyncInsert = CompletableFuture.supplyAsync(() -> {
-                TransactionOLTP tx = (TransactionOLTP) session.writeTransaction();
+                TransactionImpl tx = (TransactionImpl) session.writeTransaction();
                 tx.execute(query);
                 try {
                     barrier.await();
@@ -104,7 +105,7 @@ public class AttributeManagerIT {
         for (int threadNo = 0; threadNo < threads; threadNo++) {
             GraqlInsert query = Graql.parse("insert $x " + threadNo + " isa someAttribute;").asInsert();
             CompletableFuture<Void> asyncInsert = CompletableFuture.supplyAsync(() -> {
-                TransactionOLTP tx = (TransactionOLTP) session.writeTransaction();
+                TransactionImpl tx = (TransactionImpl) session.writeTransaction();
                 tx.execute(query);
                 try {
                     barrier.await();
@@ -141,7 +142,7 @@ public class AttributeManagerIT {
                     Graql.parse("insert $x isa someEntity, has someAttribute " + threadNo + ";").asInsert() :
                     Graql.parse("insert $x isa keyEntity, has someAttribute " + threadNo + ";").asInsert() ;
             CompletableFuture<Void> asyncInsert = CompletableFuture.supplyAsync(() -> {
-                TransactionOLTP tx = (TransactionOLTP) session.writeTransaction();
+                TransactionImpl tx = (TransactionImpl) session.writeTransaction();
                 tx.execute(query);
                 try {
                     barrier.await();
@@ -179,7 +180,7 @@ public class AttributeManagerIT {
                     Graql.parse("insert $x 1337 isa someAttribute;").asInsert() :
                     Graql.parse("insert $x 1667 isa someAttribute;").asInsert();
             CompletableFuture<Void> asyncInsert = CompletableFuture.supplyAsync(() -> {
-                TransactionOLTP tx = (TransactionOLTP) session.writeTransaction();
+                TransactionImpl tx = (TransactionImpl) session.writeTransaction();
                 tx.execute(query);
                 try {
                     barrier.await();
@@ -213,7 +214,7 @@ public class AttributeManagerIT {
         for (int threadNo = 0; threadNo < threads; threadNo++) {
             GraqlInsert query = Graql.parse("insert $x 1337 isa someAttribute;").asInsert();
             CompletableFuture<Void> asyncInsert = CompletableFuture.supplyAsync(() -> {
-                TransactionOLTP tx = (TransactionOLTP) session.writeTransaction();
+                TransactionImpl tx = (TransactionImpl) session.writeTransaction();
                 tx.execute(query);
                 try {
                     barrier.await();
@@ -252,7 +253,7 @@ public class AttributeManagerIT {
                     Graql.parse("insert $x isa keyEntity, has someAttribute " + threadNo + ";").asInsert() :
                     Graql.parse("insert $x isa someEntity, has someAttribute " + (threadNo - threads/2) + ";").asInsert() ;
             CompletableFuture<Void> asyncInsert = CompletableFuture.supplyAsync(() -> {
-                TransactionOLTP tx = (TransactionOLTP) session.writeTransaction();
+                TransactionImpl tx = (TransactionImpl) session.writeTransaction();
                 tx.execute(query);
                 try {
                     barrier.await();
@@ -290,7 +291,7 @@ public class AttributeManagerIT {
         for (int threadNo = 0; threadNo < threads; threadNo++) {
             GraqlInsert query = Graql.parse("insert $x isa someEntity, has someAttribute " + threadNo + ";").asInsert();
             CompletableFuture<Void> asyncInsert = CompletableFuture.supplyAsync(() -> {
-                TransactionOLTP tx = (TransactionOLTP) session.writeTransaction();
+                TransactionImpl tx = (TransactionImpl) session.writeTransaction();
                 tx.execute(query);
                 try {
                     barrier.await();

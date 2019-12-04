@@ -22,8 +22,8 @@ package grakn.core.kb.server.exception;
 import com.google.common.base.Preconditions;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
-import grakn.core.kb.concept.api.Concept;
 import grakn.core.core.Schema;
+import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.server.Transaction;
 
 import javax.annotation.Nullable;
@@ -99,12 +99,12 @@ public class TransactionException extends GraknException {
     }
 
     /**
-     * Thrown when trying to add a Schema.VertexProperty to a Concept which does not accept that type
-     * of Schema.VertexProperty
+     * Thrown when a thread tries to do operations across thread boundaries, which is disallowed with thread bound janus transactions
      */
-    public static TransactionException invalidPropertyUse(Concept concept, Schema.VertexProperty property) {
-        return create(INVALID_PROPERTY_USE.getMessage(concept, property));
+    public static TransactionException notInOriginatingThread() {
+        return new TransactionException(ErrorMessage.TRANSACTION_CHANGED_THREAD.getMessage());
     }
+
 
     /**
      * Thrown when creating an invalid KeyspaceImpl

@@ -24,7 +24,7 @@ import grakn.core.concept.impl.AttributeTypeImpl;
 import grakn.core.concept.impl.RelationEdge;
 import grakn.core.concept.impl.RelationImpl;
 import grakn.core.concept.impl.RelationReified;
-import grakn.core.concept.impl.RelationStructure;
+import grakn.core.kb.concept.api.RelationStructure;
 import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;

@@ -19,30 +19,22 @@
 
 package grakn.core.server.session;
 
-import grakn.core.common.config.Config;
 import grakn.core.common.exception.ErrorMessage;
-import grakn.core.concept.impl.ConceptManagerImpl;
-import grakn.core.concept.impl.ConceptObserver;
-import grakn.core.concept.structure.ElementFactory;
+import grakn.core.graph.graphdb.database.StandardJanusGraph;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.server.AttributeManager;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.ShardManager;
 import grakn.core.kb.server.Transaction;
-import grakn.core.kb.server.TransactionAnalytics;
+import grakn.core.kb.server.TransactionProvider;
 import grakn.core.kb.server.cache.KeyspaceSchemaCache;
 import grakn.core.kb.server.exception.SessionException;
 import grakn.core.kb.server.exception.TransactionException;
 import grakn.core.kb.server.keyspace.Keyspace;
 import grakn.core.kb.server.statistics.KeyspaceStatistics;
-import grakn.core.kb.server.statistics.UncomittedStatisticsDelta;
-import grakn.core.server.cache.CacheProviderImpl;
+
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.function.Consumer;
-import javax.annotation.CheckReturnValue;
-import org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph;
-import grakn.core.graph.core.JanusGraphTransaction;
-import grakn.core.graph.graphdb.database.StandardJanusGraph;
 
 /**
  * This class represents a Grakn Session.
@@ -57,13 +49,10 @@ import grakn.core.graph.graphdb.database.StandardJanusGraph;
  */
 public class SessionImpl implements Session {
 
-    private final HadoopGraph hadoopGraph;
-
-    // Session can have at most 1 transaction per thread, so we keep a local reference here
+    // An explicit constraint we enforce that we can have at most 1 tx per thread, so we keep a local reference here
     private final ThreadLocal<Transaction> localOLTPTransactionContainer = new ThreadLocal<>();
 
     private final Keyspace keyspace;
-    private final Config config;
     private final StandardJanusGraph graph;
     private final KeyspaceSchemaCache keyspaceSchemaCache;
     private final KeyspaceStatistics keyspaceStatistics;
@@ -73,42 +62,27 @@ public class SessionImpl implements Session {
     private Consumer<Session> onClose;
 
     private boolean isClosed = false;
+    private final TransactionProvider transactionProvider;
 
     /**
      * Instantiates {@link SessionImpl} specific for internal use (within Grakn Server),
      * using provided Grakn configuration.
      *
      * @param keyspace to which keyspace the session should be bound to
-     * @param config   config to be used.
-     */
-    public SessionImpl(Keyspace keyspace, Config config, KeyspaceSchemaCache keyspaceSchemaCache, StandardJanusGraph graph, KeyspaceStatistics keyspaceStatistics,
-                       AttributeManager attributeManager, ShardManager shardManager, ReadWriteLock graphLock) {
-        this(keyspace, config, keyspaceSchemaCache, graph, null, keyspaceStatistics, attributeManager, shardManager, graphLock);
-    }
-
-    /**
-     * Instantiates {@link SessionImpl} specific for internal use (within Grakn Server),
-     * using provided Grakn configuration.
-     *
-     * @param keyspace to which keyspace the session should be bound to
-     * @param config   config to be used.
      */
     // NOTE: this method is used by Grakn KGMS and should be kept public
-     public SessionImpl(Keyspace keyspace, Config config, KeyspaceSchemaCache keyspaceSchemaCache, StandardJanusGraph graph,
-                        HadoopGraph hadoopGraph, KeyspaceStatistics keyspaceStatistics,
-                        AttributeManager attributeManager, ShardManager shardManager, ReadWriteLock graphLock) {
+    public SessionImpl(Keyspace keyspace, TransactionProvider transactionProvider, KeyspaceSchemaCache keyspaceSchemaCache, StandardJanusGraph graph,
+                       KeyspaceStatistics keyspaceStatistics, AttributeManager attributeManager, ShardManager shardManager, ReadWriteLock graphLock) {
         this.keyspace = keyspace;
-        this.config = config;
-        this.hadoopGraph = hadoopGraph;
+        this.transactionProvider = transactionProvider;
         this.graph = graph;
-
         this.keyspaceSchemaCache = keyspaceSchemaCache;
         this.keyspaceStatistics = keyspaceStatistics;
         this.attributeManager = attributeManager;
         this.shardManager = shardManager;
         this.graphLock = graphLock;
 
-        TransactionOLTP tx = this.transaction(Transaction.Type.WRITE);
+        Transaction tx = writeTransaction();
 
         if (!keyspaceHasBeenInitialised(tx)) {
             initialiseMetaConcepts(tx);
@@ -121,10 +95,6 @@ public class SessionImpl implements Session {
         tx.commit();
     }
 
-    ReadWriteLock graphLock() {
-        return graphLock;
-    }
-
     @Override
     public Transaction readTransaction() {
         return transaction(Transaction.Type.READ);
@@ -135,7 +105,7 @@ public class SessionImpl implements Session {
         return transaction(Transaction.Type.WRITE);
     }
 
-    TransactionOLTP transaction(Transaction.Type type) {
+    private Transaction transaction(Transaction.Type type) {
 
         // If graph is closed it means the session was already closed
         if (graph.isClosed()) {
@@ -146,19 +116,7 @@ public class SessionImpl implements Session {
         // If transaction is already open in current thread throw exception
         if (localTx != null && localTx.isOpen()) throw TransactionException.transactionOpen(localTx);
 
-        // janus elements
-        JanusGraphTransaction janusGraphTransaction = graph.newThreadBoundTransaction();
-        ElementFactory elementFactory = new ElementFactory(janusGraphTransaction);
-
-        // caches
-        CacheProviderImpl cacheProvider = new CacheProviderImpl(keyspaceSchemaCache);
-        UncomittedStatisticsDelta statisticsDelta = new UncomittedStatisticsDelta();
-        ConceptObserver conceptObserver = new ConceptObserver(cacheProvider, statisticsDelta, attributeManager(), janusGraphTransaction.toString());
-
-        // Grakn elements
-        ConceptManagerImpl conceptManager = new ConceptManagerImpl(elementFactory, cacheProvider.getTransactionCache(), conceptObserver, attributeManager());
-
-        TransactionOLTP tx = new TransactionOLTP(this, janusGraphTransaction, conceptManager, cacheProvider, statisticsDelta);
+        Transaction tx = transactionProvider.newTransaction(this);
 
         tx.open(type);
         localOLTPTransactionContainer.set(tx);
@@ -168,9 +126,13 @@ public class SessionImpl implements Session {
 
     /**
      * This creates the first meta schema in an empty keyspace which has not been initialised yet
+     * Does a lower level operation, so we cast it to the Implementation
+     * This means we don't needlessly open the interface up
+     *
+     * TODO should the `createMetaConcepts` live in SessionImpl rather than TransactionImpl?
      */
-    private void initialiseMetaConcepts(TransactionOLTP tx) {
-        tx.createMetaConcepts();
+    private void initialiseMetaConcepts(Transaction tx) {
+        ((TransactionImpl)tx).createMetaConcepts();
     }
 
     /**
@@ -195,19 +157,6 @@ public class SessionImpl implements Session {
 
 
     /**
-     * Get a new or existing TransactionOLAP.
-     *
-     * @return A new or existing Grakn graph computer
-     * @see TransactionOLAP
-     */
-    @Override
-    @CheckReturnValue
-    public TransactionAnalytics transactionOLAP() {
-        return new TransactionOLAP(hadoopGraph);
-    }
-
-
-    /**
      * Method used by SessionFactory to register a callback function that has to be triggered when closing current session.
      *
      * @param onClose callback function (this should be used to update the session references in SessionFactory)
@@ -224,11 +173,6 @@ public class SessionImpl implements Session {
      */
     @Override
     public void invalidate() {
-        Transaction localTx = localOLTPTransactionContainer.get();
-        if (localTx != null) {
-            localTx.close(ErrorMessage.SESSION_CLOSED.getMessage(keyspace()));
-            localOLTPTransactionContainer.set(null);
-        }
         isClosed = true;
     }
 
@@ -263,15 +207,6 @@ public class SessionImpl implements Session {
     @Override
     public KeyspaceStatistics keyspaceStatistics() {
         return keyspaceStatistics;
-    }
-
-    /**
-     * The config options of this {@link SessionImpl} which were passed in at the time of construction
-     *
-     * @return The config options of this {@link SessionImpl}
-     */
-    public Config config() {
-        return config;
     }
 
     @Override

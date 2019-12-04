@@ -23,9 +23,9 @@ import com.google.common.collect.Iterables;
 import grakn.core.graql.gremlin.fragment.Fragments;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Label;
-import grakn.core.kb.graql.planning.EquivalentFragmentSet;
-import grakn.core.kb.graql.planning.Fragment;
-import grakn.core.kb.server.Transaction;
+import grakn.core.kb.concept.manager.ConceptManager;
+import grakn.core.kb.graql.gremlin.EquivalentFragmentSet;
+import grakn.core.kb.graql.gremlin.Fragment;
 import graql.lang.statement.Variable;
 
 import java.util.Collection;
@@ -69,7 +69,7 @@ public class AttributeIndexFragmentSet extends EquivalentFragmentSetImpl {
         return ImmutableSet.of(Fragments.attributeIndex(varProperty(), var, label, value));
     }
 
-    static final FragmentSetOptimisation ATTRIBUTE_INDEX_OPTIMISATION = (fragmentSets, tx) -> {
+    static final FragmentSetOptimisation ATTRIBUTE_INDEX_OPTIMISATION = (fragmentSets, conceptManager) -> {
         Iterable<ValueFragmentSet> valueSets = equalsValueFragments(fragmentSets)::iterator;
 
         for (ValueFragmentSet valueSet : valueSets) {
@@ -87,7 +87,7 @@ public class AttributeIndexFragmentSet extends EquivalentFragmentSetImpl {
 
             if (labels.size() == 1) {
                 Label label = Iterables.getOnlyElement(labels);
-                optimise(tx, fragmentSets, valueSet, isaSet, label);
+                optimise(conceptManager, fragmentSets, valueSet, isaSet, label);
                 return true;
             }
         }
@@ -96,7 +96,7 @@ public class AttributeIndexFragmentSet extends EquivalentFragmentSetImpl {
     };
 
     private static void optimise(
-            Transaction tx, Collection<EquivalentFragmentSet> fragmentSets, ValueFragmentSet valueSet, IsaFragmentSet isaSet,
+            ConceptManager conceptManager, Collection<EquivalentFragmentSet> fragmentSets, ValueFragmentSet valueSet, IsaFragmentSet isaSet,
             Label label
     ) {
         // Remove fragment sets we are going to replace
@@ -112,7 +112,7 @@ public class AttributeIndexFragmentSet extends EquivalentFragmentSetImpl {
 
         Object value = valueSet.operation().value();
 
-        AttributeType.DataType<?> dataType = tx.getAttributeType(label.getValue()).dataType();
+        AttributeType.DataType<?> dataType = conceptManager.getAttributeType(label.getValue()).dataType();
         if (Number.class.isAssignableFrom(dataType.dataClass())) {
             if (dataType.dataClass() == Long.class && value instanceof Double && ((Double) value % 1 == 0)) {
                 value = ((Double) value).longValue();

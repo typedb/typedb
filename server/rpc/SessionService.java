@@ -21,15 +21,9 @@ package grakn.core.server.rpc;
 import brave.ScopedSpan;
 import brave.Span;
 import brave.propagation.TraceContext;
-import com.google.common.collect.Iterables;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import grakn.benchmark.lib.instrumentation.ServerTracing;
-import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.answer.Explanation;
-import grakn.core.graql.reasoner.ReasonerException;
-import grakn.core.graql.reasoner.explanation.JoinExplanation;
-import grakn.core.graql.reasoner.query.ReasonerQueries;
-import grakn.core.graql.reasoner.query.ResolvableQuery;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Concept;
@@ -47,7 +41,6 @@ import grakn.protocol.session.SessionProto.Transaction;
 import grakn.protocol.session.SessionServiceGrpc;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
-import graql.lang.query.GraqlGet;
 import graql.lang.query.GraqlQuery;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
@@ -59,7 +52,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -70,7 +62,6 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 
@@ -80,6 +71,10 @@ import java.util.stream.Stream;
 public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
     private static final Logger LOG = LoggerFactory.getLogger(SessionService.class);
     private final OpenRequest requestOpener;
+    // Each client's connection obtains a unique ID, which we map to the shared session under the hood
+    // if connecting to the same keyspace
+    // Additionally, each client's remote session maps to a set of open transactions that we close when the client closes
+    // their transaction
     private final Map<String, Session> openSessions;
     // The following map associates SessionId to a collection of TransactionListeners so that:
     //     - if the user wants to stop the server, we can forcefully close all the connections to clients using active transactions.
@@ -432,31 +427,7 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
             // extract and reconstruct query pattern with the required IDs
             AnswerProto.ConceptMap explainable = explanationReq.getExplainable();
             Pattern queryPattern = Graql.parsePattern(explainable.getPattern());
-            GraqlGet getQuery = Graql.match(queryPattern).get();
-            ResolvableQuery q = ReasonerQueries.resolvable(Iterables.getOnlyElement(getQuery.match().getPatterns().getNegationDNF().getPatterns()), tx);
-
-            Explanation explanation;
-            if (q.isAtomic()) {
-                // If the query is atomic, looking up the query in the cache will result in retrieving the answer associated with the query
-                // we then return the answer's explanation
-                // Only atomic queries are retrievable directly from the cache
-                ConceptMap originatingAnswer = (ConceptMap)tx.queryCache().getAnswerStream(q).findFirst().orElse(null);
-                if (originatingAnswer == null) { throw ReasonerException.queryCacheAnswerNotFound(getQuery); }
-                explanation = originatingAnswer.explanation();
-            } else {
-                // If the query is not atomic, we can break it down into sub queries and retrieve each component's answer
-                // these are the same components used to re-construct the explanation for our original query, which we
-                // whenever we set the pattern, we need to provide the correct variable ID substitutions as well
-                List<ConceptMap> maps = q.selectAtoms()
-                        .map(ReasonerQueries::atomic)
-                        .flatMap(aq -> {
-                            Stream<ConceptMap> answerStream = (Stream<ConceptMap>) tx.queryCache().getAnswerStream(aq);
-                            return answerStream.map(conceptMap -> conceptMap.withPattern(aq.withSubstitution(conceptMap).getPattern()));
-                        })
-                        .collect(Collectors.toList());
-                explanation = new JoinExplanation(maps);
-            }
-
+            Explanation explanation = tx.explanation(queryPattern);
             Transaction.Res response = ResponseBuilder.Transaction.explanation(explanation);
             onNextResponse(response);
         }

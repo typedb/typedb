@@ -73,7 +73,7 @@ public class ShardManagerIT {
         for (int threadNo = 0; threadNo < threads; threadNo++) {
             GraqlInsert query = Graql.parse("insert $x isa someEntity" + threadNo + ";").asInsert();
             CompletableFuture<Void> asyncInsert = CompletableFuture.supplyAsync(() -> {
-                TransactionOLTP tx = (TransactionOLTP) session.writeTransaction();
+                TransactionImpl tx = (TransactionImpl) session.writeTransaction();
                 for(int q = 0 ; q < shardThreshold; q++) tx.execute(query);
                 tx.computeShardCandidates();
                 try {
@@ -109,7 +109,7 @@ public class ShardManagerIT {
         for (int threadNo = 0; threadNo < threads; threadNo++) {
             GraqlInsert query = Graql.parse("insert $x isa someEntity;").asInsert();
             CompletableFuture<Void> asyncInsert = CompletableFuture.supplyAsync(() -> {
-                TransactionOLTP tx = (TransactionOLTP) session.writeTransaction();
+                TransactionImpl tx = (TransactionImpl) session.writeTransaction();
                 for(int q = 0 ; q < shardThreshold; q++) tx.execute(query);
                 tx.computeShardCandidates();
                 try {

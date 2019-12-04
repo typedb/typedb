@@ -25,6 +25,7 @@ import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.reasoner.query.ResolvableQuery;
 import grakn.core.graql.reasoner.state.ResolutionState;
 import grakn.core.graql.reasoner.unifier.UnifierImpl;
+import grakn.core.kb.graql.reasoner.cache.QueryCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,15 +49,17 @@ public class ResolutionIterator extends ReasonerQueryIterator {
     private final ResolvableQuery query;
     private final Set<ConceptMap> answers = new HashSet<>();
     private final Set<ReasonerAtomicQuery> subGoals;
+    private final QueryCache queryCache;
     private final Stack<ResolutionState> states = new Stack<>();
 
     private ConceptMap nextAnswer = null;
 
     private static final Logger LOG = LoggerFactory.getLogger(ResolutionIterator.class);
 
-    public ResolutionIterator(ResolvableQuery q, Set<ReasonerAtomicQuery> subGoals){
+    public ResolutionIterator(ResolvableQuery q, Set<ReasonerAtomicQuery> subGoals, QueryCache queryCache){
         this.query = q;
         this.subGoals = subGoals;
+        this.queryCache = queryCache;
         states.push(query.resolutionState(new ConceptMap(), new UnifierImpl(), null, subGoals));
     }
 
@@ -121,7 +124,7 @@ public class ResolutionIterator extends ReasonerQueryIterator {
             }
         }
 
-        MultilevelSemanticCache queryCache = CacheCasting.queryCacheCast(query.tx().queryCache());
+        MultilevelSemanticCache queryCache = CacheCasting.queryCacheCast(this.queryCache);
 
         subGoals.forEach(queryCache::ackCompleteness);
         queryCache.propagateAnswers();

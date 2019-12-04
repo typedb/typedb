@@ -20,7 +20,7 @@
 package grakn.core.kb.graql.planning.spanningtree.graph;
 
 import grakn.core.kb.server.Transaction;
-import grakn.core.kb.graql.planning.Fragment;
+import grakn.core.kb.graql.gremlin.Fragment;
 
 import java.util.HashSet;
 import java.util.Set;

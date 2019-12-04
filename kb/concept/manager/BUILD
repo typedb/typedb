@@ -24,8 +24,12 @@ java_library(
     name = "manager",
     srcs = glob(["*.java"]),
     deps = [
+        "//core",
         "//kb/concept/api",
         "//kb/concept/structure",
+
+        # External dependenicies from @graknlabs
+        "@graknlabs_graql//java:graql",
 
         # External dependencies from Maven
         "//dependencies/maven/artifacts/com/google/code/findbugs:jsr305",

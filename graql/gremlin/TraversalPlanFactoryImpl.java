@@ -23,23 +23,25 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
 import grakn.common.util.Pair;
+import grakn.core.core.JanusTraversalSourceProvider;
 import grakn.core.graql.gremlin.fragment.InIsaFragment;
 import grakn.core.graql.gremlin.fragment.InSubFragment;
 import grakn.core.graql.gremlin.fragment.LabelFragment;
 import grakn.core.kb.concept.api.Type;
+import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.planning.Arborescence;
 import grakn.core.kb.graql.planning.ChuLiuEdmonds;
-import grakn.core.kb.graql.planning.EquivalentFragmentSet;
-import grakn.core.kb.graql.planning.Fragment;
-import grakn.core.kb.graql.planning.GraqlTraversal;
-import grakn.core.kb.graql.planning.TraversalPlanFactory;
+import grakn.core.kb.graql.gremlin.EquivalentFragmentSet;
+import grakn.core.kb.graql.gremlin.Fragment;
+import grakn.core.kb.graql.gremlin.GraqlTraversal;
+import grakn.core.kb.graql.gremlin.TraversalPlanFactory;
 import grakn.core.kb.graql.planning.spanningtree.graph.DirectedEdge;
 import grakn.core.kb.graql.planning.spanningtree.graph.Node;
 import grakn.core.kb.graql.planning.spanningtree.graph.NodeId;
 import grakn.core.kb.graql.planning.spanningtree.graph.SparseWeightedGraph;
 import grakn.core.kb.graql.planning.spanningtree.util.Weighted;
-import grakn.core.kb.server.Transaction;
 import grakn.core.kb.server.exception.GraknServerException;
+import grakn.core.kb.server.statistics.KeyspaceStatistics;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;
@@ -63,7 +65,7 @@ import java.util.stream.Collectors;
 import static grakn.core.graql.gremlin.NodesUtil.buildNodesWithDependencies;
 import static grakn.core.graql.gremlin.NodesUtil.nodeVisitedDependenciesFragments;
 import static grakn.core.graql.gremlin.RelationTypeInference.inferRelationTypes;
-import static grakn.core.kb.graql.planning.Fragment.SHARD_LOAD_FACTOR;
+import static grakn.core.kb.graql.gremlin.Fragment.SHARD_LOAD_FACTOR;
 
 /**
  * Class for generating greedy traversal plans
@@ -73,10 +75,16 @@ public class TraversalPlanFactoryImpl implements TraversalPlanFactory {
     private static final Logger LOG = LoggerFactory.getLogger(TraversalPlanFactoryImpl.class);
 
     private static final int MAX_STARTING_POINTS = 3;
-    private Transaction tx;
+    private final JanusTraversalSourceProvider janusTraversalSourceProvider;
+    private final ConceptManager conceptManager;
+    private final long shardingThreshold;
+    private final KeyspaceStatistics keyspaceStatistics;
 
-    public TraversalPlanFactoryImpl(Transaction tx) {
-        this.tx = tx;
+    public TraversalPlanFactoryImpl(JanusTraversalSourceProvider janusTraversalSourceProvider, ConceptManager conceptManager, long shardingThreshold, KeyspaceStatistics keyspaceStatistics) {
+        this.janusTraversalSourceProvider = janusTraversalSourceProvider;
+        this.conceptManager = conceptManager;
+        this.shardingThreshold = shardingThreshold;
+        this.keyspaceStatistics = keyspaceStatistics;
     }
 
     /**
@@ -89,11 +97,11 @@ public class TraversalPlanFactoryImpl implements TraversalPlanFactory {
         Collection<Conjunction<Statement>> patterns = pattern.getDisjunctiveNormalForm().getPatterns();
 
         Set<List<? extends Fragment>> fragments = patterns.stream()
-                .map(conjunction -> new ConjunctionQuery(conjunction, tx))
-                .map((ConjunctionQuery query) -> planForConjunction(query, tx))
+                .map(conjunction -> new ConjunctionQuery(conjunction, conceptManager))
+                .map(this::planForConjunction)
                 .collect(ImmutableSet.toImmutableSet());
 
-        return new GraqlTraversalImpl(fragments);
+        return new GraqlTraversalImpl(janusTraversalSourceProvider, conceptManager, fragments);
     }
 
     /**
@@ -102,16 +110,16 @@ public class TraversalPlanFactoryImpl implements TraversalPlanFactory {
      * @param query the conjunction query to find a traversal plan
      * @return a semi-optimal traversal plan to execute the given conjunction
      */
-    private static List<Fragment> planForConjunction(ConjunctionQuery query, Transaction tx) {
+    private List<Fragment> planForConjunction(ConjunctionQuery query) {
         // a query plan is an ordered list of fragments
-        final List<Fragment> plan = new ArrayList<>();
+        List<Fragment> plan = new ArrayList<>();
 
         // flatten all the possible fragments from the conjunction query (these become edges in the query graph)
-        final Set<Fragment> allFragments = query.getEquivalentFragmentSets().stream()
+        Set<Fragment> allFragments = query.getEquivalentFragmentSets().stream()
                 .flatMap(EquivalentFragmentSet::stream).collect(Collectors.toSet());
 
         // if role players' types are known, we can infer the types of the relation, adding label & isa fragments
-        Set<Fragment> inferredFragments = inferRelationTypes(tx, allFragments);
+        Set<Fragment> inferredFragments = inferRelationTypes(conceptManager, allFragments);
         allFragments.addAll(inferredFragments);
 
         // convert fragments into nodes - some fragments create virtual middle nodes to ensure the Janus edge is traversed
@@ -123,7 +131,7 @@ public class TraversalPlanFactoryImpl implements TraversalPlanFactory {
         // build a query plan for each query subgraph separately
         for (Set<Fragment> connectedFragments : connectedFragmentSets) {
             // one of two cases - either we have a connected graph > 1 node, which is used to compute a MST, OR exactly 1 node
-            Arborescence<Node> subgraphArborescence = computeArborescence(connectedFragments, queryGraphNodes, tx);
+            Arborescence<Node> subgraphArborescence = computeArborescence(connectedFragments, queryGraphNodes);
             if (subgraphArborescence != null) {
                 // collect the mapping from directed edge back to fragments -- inverse operation of creating virtual middle nodes
                 Map<Node, Map<Node, Fragment>> middleNodeFragmentMapping = virtualMiddleNodeToFragmentMapping(connectedFragments, queryGraphNodes);
@@ -131,14 +139,14 @@ public class TraversalPlanFactoryImpl implements TraversalPlanFactory {
                 plan.addAll(subplan);
             } else {
                 // find and include all the nodes not touched in the MST in the plan
-               Set<Node> unhandledNodes = connectedFragments.stream()
+                Set<Node> unhandledNodes = connectedFragments.stream()
                         .flatMap(fragment -> fragment.getNodes().stream())
                         .map(node -> queryGraphNodes.get(node.getNodeId()))
                         .collect(Collectors.toSet());
-               if (unhandledNodes.size() != 1) {
-                   throw GraknServerException.create("Query planner exception - expected one unhandled node, found " + unhandledNodes.size());
-               }
-               plan.addAll(nodeVisitedDependenciesFragments(Iterators.getOnlyElement(unhandledNodes.iterator()), queryGraphNodes));
+                if (unhandledNodes.size() != 1) {
+                    throw GraknServerException.create("Query planner exception - expected one unhandled node, found " + unhandledNodes.size());
+                }
+                plan.addAll(nodeVisitedDependenciesFragments(Iterators.getOnlyElement(unhandledNodes.iterator()), queryGraphNodes));
             }
         }
 
@@ -154,14 +162,14 @@ public class TraversalPlanFactoryImpl implements TraversalPlanFactory {
     }
 
 
-    private static Arborescence<Node> computeArborescence(Set<Fragment> connectedFragments, ImmutableMap<NodeId, Node> nodes, Transaction tx) {
-        final Map<Node, Double> nodesWithFixedCost = new HashMap<>();
+    private Arborescence<Node> computeArborescence(Set<Fragment> connectedFragments, ImmutableMap<NodeId, Node> nodes) {
+        Map<Node, Double> nodesWithFixedCost = new HashMap<>();
 
         connectedFragments.forEach(fragment -> {
             if (fragment.hasFixedFragmentCost()) {
                 NodeId startNodeId = Iterators.getOnlyElement(fragment.getNodes().iterator()).getNodeId();
                 Node startNode = nodes.get(startNodeId);
-                nodesWithFixedCost.put(startNode, getLogInstanceCount(tx, fragment));
+                nodesWithFixedCost.put(startNode, getLogInstanceCount(fragment));
                 startNode.setFixedFragmentCost(fragment.fragmentCost());
             }
         });
@@ -170,7 +178,7 @@ public class TraversalPlanFactoryImpl implements TraversalPlanFactory {
         updateFixedCostSubsReachableByIndex(nodes, nodesWithFixedCost, connectedFragments);
 
         // fragments that represent Janus edges
-        final Set<Fragment> edgeFragmentSet = new HashSet<>();
+        Set<Fragment> edgeFragmentSet = new HashSet<>();
 
         // save the fragments corresponding to edges, and updates some costs if we can via shard count
         for (Fragment fragment : connectedFragments) {
@@ -192,7 +200,7 @@ public class TraversalPlanFactoryImpl implements TraversalPlanFactory {
         if (!weightedGraph.isEmpty()) {
             // sparse graph for better performance
             SparseWeightedGraph sparseWeightedGraph = SparseWeightedGraph.from(weightedGraph);
-            Set<Node> startingNodes = chooseStartingNodeSet(connectedFragments, nodes, sparseWeightedGraph, tx);
+            Set<Node> startingNodes = chooseStartingNodeSet(connectedFragments, nodes, sparseWeightedGraph);
 
             // find the minimum spanning tree for each root
             // then get the tree with minimum weight
@@ -211,7 +219,7 @@ public class TraversalPlanFactoryImpl implements TraversalPlanFactory {
     private static Set<Weighted<DirectedEdge>> buildWeightedGraph(Map<NodeId, Node> allNodes,
                                                                   Set<Fragment> edgeFragmentSet) {
 
-        final Set<Weighted<DirectedEdge>> weightedGraph = new HashSet<>();
+        Set<Weighted<DirectedEdge>> weightedGraph = new HashSet<>();
         // add each edge together with its weight
         edgeFragmentSet.stream()
                 .flatMap(fragment -> fragment.directedEdges(allNodes).stream())
@@ -219,19 +227,19 @@ public class TraversalPlanFactoryImpl implements TraversalPlanFactory {
         return weightedGraph;
     }
 
-    private static Set<Node> chooseStartingNodeSet(Set<Fragment> fragmentSet, Map<NodeId, Node> allNodes, SparseWeightedGraph sparseWeightedGraph, Transaction tx) {
-        final Set<Node> highPriorityStartingNodeSet = new HashSet<>();
-        final Set<Node> lowPriorityStartingNodeSet = new HashSet<>();
+    private Set<Node> chooseStartingNodeSet(Set<Fragment> fragmentSet, Map<NodeId, Node> allNodes, SparseWeightedGraph sparseWeightedGraph) {
+        Set<Node> highPriorityStartingNodeSet = new HashSet<>();
+        Set<Node> lowPriorityStartingNodeSet = new HashSet<>();
 
         fragmentSet.stream()
                 .filter(Fragment::hasFixedFragmentCost)
-                .sorted(Comparator.comparing(fragment -> fragment.estimatedCostAsStartingPoint(tx)))
+                .sorted(Comparator.comparing(fragment -> fragment.estimatedCostAsStartingPoint(conceptManager, keyspaceStatistics)))
                 .limit(MAX_STARTING_POINTS)
                 .forEach(fragment -> {
                     Node node = allNodes.get(NodeId.of(NodeId.Type.VAR, fragment.start()));
                     //TODO: this behaviour should be incorporated into the MST weight calculation
                     if (fragment instanceof LabelFragment) {
-                        Type type = tx.getType(Iterators.getOnlyElement(((LabelFragment) fragment).labels().iterator()));
+                        Type type = conceptManager.getType(Iterators.getOnlyElement(((LabelFragment) fragment).labels().iterator()));
                         if (type != null && type.isImplicit()) {
                             // implicit types have low priority because their instances may be edges
                             lowPriorityStartingNodeSet.add(node);
@@ -249,7 +257,7 @@ public class TraversalPlanFactoryImpl implements TraversalPlanFactory {
             startingNodes = highPriorityStartingNodeSet;
         } else {
             // if we have no good starting points, use any valid nodes
-            startingNodes = !lowPriorityStartingNodeSet.isEmpty()?
+            startingNodes = !lowPriorityStartingNodeSet.isEmpty() ?
                     lowPriorityStartingNodeSet :
                     sparseWeightedGraph.getNodes().stream().filter(Node::isValidStartingPoint).collect(Collectors.toSet());
         }
@@ -280,9 +288,9 @@ public class TraversalPlanFactoryImpl implements TraversalPlanFactory {
     // return a collection of set, in each set, all the fragments are connected
     private static Collection<Set<Fragment>> getConnectedFragmentSets(Set<Fragment> allFragments) {
         // TODO this could be implemented in a more readable way (eg. using a graph + BFS etc.)
-        final Map<Integer, Set<Variable>> varSetMap = new HashMap<>();
-        final Map<Integer, Set<Fragment>> fragmentSetMap = new HashMap<>();
-        final int[] index = {0};
+        Map<Integer, Set<Variable>> varSetMap = new HashMap<>();
+        Map<Integer, Set<Fragment>> fragmentSetMap = new HashMap<>();
+        int[] index = {0};
         allFragments.forEach(fragment -> {
             Set<Variable> fragmentVarNameSet = Sets.newHashSet(fragment.vars());
             List<Integer> setsWithVarInCommon = new ArrayList<>();
@@ -311,14 +319,14 @@ public class TraversalPlanFactoryImpl implements TraversalPlanFactory {
         return fragmentSetMap.values();
     }
 
-    private static double getLogInstanceCount(Transaction tx, Fragment fragment) {
+    private double getLogInstanceCount(Fragment fragment) {
         // set the weight of the node as a starting point based on log(number of this node)
         double logInstanceCount;
         if (fragment instanceof LabelFragment) {
             // only LabelFragment (corresponding to type vertices) can be sharded
-            Long shardCount = ((LabelFragment) fragment).getShardCount(tx);
+            Long shardCount = ((LabelFragment) fragment).getShardCount(conceptManager);
             logInstanceCount = Math.log(shardCount - 1D + SHARD_LOAD_FACTOR) +
-                    Math.log(tx.shardingThreshold());
+                    Math.log(shardingThreshold);
         } else {
             logInstanceCount = -1D;
         }

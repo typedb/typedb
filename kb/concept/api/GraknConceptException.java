@@ -25,6 +25,7 @@ import grakn.core.common.exception.GraknException;
 import java.util.stream.Collectors;
 
 import static grakn.core.common.exception.ErrorMessage.HAS_INVALID;
+import static grakn.core.common.exception.ErrorMessage.INVALID_PROPERTY_USE;
 import static grakn.core.common.exception.ErrorMessage.LABEL_TAKEN;
 import static grakn.core.common.exception.ErrorMessage.META_TYPE_IMMUTABLE;
 import static grakn.core.common.exception.ErrorMessage.NO_TYPE;
@@ -210,6 +211,15 @@ public class GraknConceptException extends GraknException {
      */
     public static GraknConceptException duplicateHas(Type type, AttributeType attributeType) {
         return create(ErrorMessage.CANNOT_BE_KEY_AND_ATTRIBUTE.getMessage(type.label(), attributeType.label()));
+    }
+
+
+    /**
+     * Thrown when trying to add a Schema.VertexProperty to a Concept which does not accept that type
+     * of Schema.VertexProperty
+     */
+    public static GraknConceptException invalidPropertyUse(Concept concept, String property) {
+        return create(INVALID_PROPERTY_USE.getMessage(concept, property));
     }
 
 }

@@ -22,7 +22,7 @@ package grakn.core.graql.reasoner.atom.predicate;
 import com.google.common.base.Preconditions;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.kb.concept.api.Concept;
-import grakn.core.kb.graql.executor.property.value.ValueOperation;
+import grakn.core.graql.executor.property.value.ValueOperation;
 import grakn.core.graql.reasoner.ReasonerException;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
@@ -63,7 +63,7 @@ public class VariableValuePredicate extends VariablePredicate {
         return new VariableValuePredicate(varName, predicateVar, op, pattern, parent);
     }
 
-    public static Atomic fromValuePredicate(ValuePredicate predicate){
+    public static VariableValuePredicate fromValuePredicate(ValuePredicate predicate){
         return create(predicate.getVarName(), predicate.getPredicate(), predicate.getParentQuery());
     }
 

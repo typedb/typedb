@@ -23,6 +23,8 @@ import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.GraknConceptException;
+import grakn.core.kb.concept.manager.ConceptManager;
+import grakn.core.kb.concept.manager.ConceptNotificationChannel;
 import grakn.core.kb.concept.structure.VertexElement;
 
 import javax.annotation.Nullable;
@@ -42,8 +44,8 @@ import java.util.regex.Pattern;
  *            Supported Types include: String, Long, Double, and Boolean
  */
 public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D>> implements AttributeType<D> {
-    AttributeTypeImpl(VertexElement vertexElement, ConceptManagerImpl conceptManager, ConceptObserver conceptObserver) {
-        super(vertexElement, conceptManager, conceptObserver);
+    public AttributeTypeImpl(VertexElement vertexElement, ConceptManager conceptManager, ConceptNotificationChannel conceptNotificationChannel) {
+        super(vertexElement, conceptManager, conceptNotificationChannel);
     }
 
     public static AttributeTypeImpl from(AttributeType attributeType) {
@@ -115,7 +117,7 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
         Attribute<D> instance = getAttribute(value);
         if (instance == null) {
             // create a brand new vertex and concept
-            instance = conceptManager.createAttribute( this, value, isInferred);
+            instance = conceptManager.createAttribute(this, value, isInferred);
         } else {
             if (isInferred && !instance.isInferred()) {
                 throw GraknConceptException.nonInferredThingExists(instance);
@@ -186,6 +188,6 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
 
     @Override
     void trackRolePlayers() {
-        conceptObserver.trackAttributeInstancesRolesPlayed(this);
+        conceptNotificationChannel.trackAttributeInstancesRolesPlayed(this);
     }
 }

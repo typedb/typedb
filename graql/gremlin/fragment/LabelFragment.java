@@ -20,12 +20,14 @@ package grakn.core.graql.gremlin.fragment;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
+import grakn.core.concept.impl.TypeImpl;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.SchemaConcept;
+import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.planning.spanningtree.graph.Node;
 import grakn.core.kb.graql.planning.spanningtree.graph.NodeId;
 import grakn.core.kb.graql.planning.spanningtree.graph.SchemaNode;
-import grakn.core.kb.server.Transaction;
+import grakn.core.kb.server.statistics.KeyspaceStatistics;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
@@ -62,10 +64,10 @@ public class LabelFragment extends FragmentImpl {
 
     @Override
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
-            GraphTraversal<Vertex, ? extends Element> traversal, Transaction tx, Collection<Variable> vars) {
+            GraphTraversal<Vertex, ? extends Element> traversal, ConceptManager conceptManager, Collection<Variable> vars) {
 
         Set<Integer> labelIds =
-                labels().stream().map(label -> tx.convertToId(label).getValue()).collect(toSet());
+                labels().stream().map(label -> conceptManager.convertToId(label).getValue()).collect(toSet());
 
         if (labelIds.size() == 1) {
             int labelId = Iterables.getOnlyElement(labelIds);
@@ -90,12 +92,12 @@ public class LabelFragment extends FragmentImpl {
         return true;
     }
 
-    public Long getShardCount(Transaction tx) {
+    public Long getShardCount(ConceptManager conceptManager) {
         return labels().stream()
-                .map(tx::<SchemaConcept>getSchemaConcept)
+                .map(conceptManager::<SchemaConcept>getSchemaConcept)
                 .filter(schemaConcept -> schemaConcept != null && schemaConcept.isType())
                 .flatMap(SchemaConcept::subs)
-                .mapToLong(schemaConcept -> tx.getShardCount(schemaConcept.asType()))
+                .mapToLong(schemaConcept -> TypeImpl.from(schemaConcept.asType()).shardCount())
                 .sum();
     }
 
@@ -106,12 +108,12 @@ public class LabelFragment extends FragmentImpl {
     }
 
     @Override
-    public double estimatedCostAsStartingPoint(Transaction tx) {
+    public double estimatedCostAsStartingPoint(ConceptManager conceptManager, KeyspaceStatistics statistics) {
         // there's only 1 label in this set, but sum anyway
         // estimate the total number of things that might be connected by ISA to this label as a heuristic
         long instances = labels().stream()
                 .map(label -> {
-                    long baseCount = tx.session().keyspaceStatistics().count(tx, label);
+                    long baseCount = statistics.count(conceptManager, label);
                     //TODO add a reasonably light estimate for inferred concepts
                     return baseCount;
                 })

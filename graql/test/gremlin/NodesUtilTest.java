@@ -24,7 +24,7 @@ import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.graql.planning.spanningtree.graph.EdgeNode;
 import grakn.core.kb.graql.planning.spanningtree.graph.InstanceNode;
 import grakn.core.kb.graql.planning.spanningtree.graph.Node;
-import grakn.core.kb.graql.planning.Fragment;
+import grakn.core.kb.graql.gremlin.Fragment;
 import graql.lang.statement.Variable;
 import org.junit.Test;
 

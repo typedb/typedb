@@ -20,7 +20,7 @@ package grakn.core.graql.gremlin.sets;
 
 import com.google.common.collect.ImmutableSet;
 import grakn.core.graql.gremlin.fragment.Fragments;
-import grakn.core.kb.graql.planning.Fragment;
+import grakn.core.kb.graql.gremlin.Fragment;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 
@@ -87,7 +87,7 @@ class SubFragmentSet extends EquivalentFragmentSetImpl {
      * {@link LabelFragmentSet#REDUNDANT_LABEL_ELIMINATION_OPTIMISATION} will eventually remove it if it is not.
      * </p>
      */
-    static final FragmentSetOptimisation SUB_TRAVERSAL_ELIMINATION_OPTIMISATION = (fragmentSets, tx) -> {
+    static final FragmentSetOptimisation SUB_TRAVERSAL_ELIMINATION_OPTIMISATION = (fragmentSets, conceptManager) -> {
         Iterable<SubFragmentSet> subSets = fragmentSetOfType(SubFragmentSet.class, fragmentSets)::iterator;
 
         for (SubFragmentSet subSet : subSets) {
@@ -97,7 +97,7 @@ class SubFragmentSet extends EquivalentFragmentSetImpl {
             LabelFragmentSet labelSet = labelOf(subSet.superConcept, fragmentSets);
             if (labelSet == null) continue;
 
-            LabelFragmentSet newLabelSet = labelSet.tryExpandSubs(subSet.subConcept, tx);
+            LabelFragmentSet newLabelSet = labelSet.tryExpandSubs(subSet.subConcept, conceptManager);
 
             // Disable this optimisation if there isn't exactly one possible label.
             // This is because JanusGraph doesn't optimise P.within correctly when the property is indexed.

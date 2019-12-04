@@ -25,6 +25,8 @@ import grakn.core.graql.reasoner.ReasonerException;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.AtomicBase;
 import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
+import grakn.core.kb.concept.manager.ConceptManager;
+import grakn.core.kb.graql.gremlin.TraversalPlanFactory;
 import graql.lang.statement.Variable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,9 +46,9 @@ public final class ResolutionPlan {
     private final ReasonerQueryImpl query;
     private static final Logger LOG = LoggerFactory.getLogger(ResolutionPlan.class);
 
-    public ResolutionPlan(ReasonerQueryImpl q){
+    public ResolutionPlan(ConceptManager conceptManager, TraversalPlanFactory traversalPlanFactory, ReasonerQueryImpl q){
         this.query = q;
-        this.plan = GraqlTraversalPlanner.plan(query);
+        this.plan = GraqlTraversalPlanner.plan(conceptManager, traversalPlanFactory, query);
         validatePlan();
     }
 

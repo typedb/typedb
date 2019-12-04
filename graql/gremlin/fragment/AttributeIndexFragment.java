@@ -23,7 +23,7 @@ import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.SchemaConcept;
-import grakn.core.kb.server.Transaction;
+import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.server.statistics.KeyspaceStatistics;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
@@ -51,7 +51,7 @@ public class AttributeIndexFragment extends FragmentImpl {
 
     @Override
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
-            GraphTraversal<Vertex, ? extends Element> traversal, Transaction tx, Collection<Variable> vars) {
+            GraphTraversal<Vertex, ? extends Element> traversal, ConceptManager conceptManager, Collection<Variable> vars) {
 
         return traversal.has(INDEX.name(), attributeIndex());
     }
@@ -85,26 +85,25 @@ public class AttributeIndexFragment extends FragmentImpl {
     }
 
     @Override
-    public double estimatedCostAsStartingPoint(Transaction tx) {
-        KeyspaceStatistics statistics = tx.session().keyspaceStatistics();
+    public double estimatedCostAsStartingPoint(ConceptManager conceptManager, KeyspaceStatistics statistics) {
         // here we estimate the number of owners of an attribute instance of this type
         // as this is the most common usage/expensive component of an attribute
         // given that there's only 1 attribute of a type and value at any time
         Label attributeLabel = attributeLabel();
 
-        AttributeType attributeType = tx.getSchemaConcept(attributeLabel).asAttributeType();
+        AttributeType attributeType = conceptManager.getSchemaConcept(attributeLabel).asAttributeType();
         Stream<AttributeType> attributeSubs = attributeType.subs();
 
         Label implicitAttributeType = Schema.ImplicitType.HAS.getLabel(attributeLabel);
-        SchemaConcept implicitAttributeRelationType = tx.getSchemaConcept(implicitAttributeType);
+        SchemaConcept implicitAttributeRelationType = conceptManager.getSchemaConcept(implicitAttributeType);
         double totalImplicitRels = 0.0;
         if (implicitAttributeRelationType != null) {
             RelationType implicitRelationType = implicitAttributeRelationType.asRelationType();
             Stream<RelationType> implicitSubs = implicitRelationType.subs();
-            totalImplicitRels = implicitSubs.mapToLong(t -> statistics.count(tx, t.label())).sum();
+            totalImplicitRels = implicitSubs.mapToLong(t -> statistics.count(conceptManager, t.label())).sum();
         }
 
-        double totalAttributes = attributeSubs.mapToLong(t -> statistics.count(tx, t.label())).sum();
+        double totalAttributes = attributeSubs.mapToLong(t -> statistics.count(conceptManager, t.label())).sum();
         if (totalAttributes == 0) {
             // check against division by 0 and
             // short circuit can be done quickly if starting here

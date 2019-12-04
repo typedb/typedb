@@ -21,12 +21,12 @@ package grakn.core.kb.graql.executor;
 
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.kb.server.exception.GraqlSemanticException;
-import grakn.core.kb.server.Transaction;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 import grakn.core.kb.concept.api.Concept;
 
 import java.util.Optional;
+import java.util.stream.Stream;
 
 public interface WriteExecutor {
     void toDelete(Concept concept);
@@ -62,9 +62,8 @@ public interface WriteExecutor {
      */
     Concept getConcept(Variable var);
 
-    ConceptMap write(ConceptMap preExisting);
-
-    Transaction tx();
+    Stream<ConceptMap> write(ConceptMap preExisting);
+    Stream<ConceptMap> write();
 
     boolean isConceptDefined(Variable var);
 

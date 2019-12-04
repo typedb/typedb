@@ -23,9 +23,9 @@ import com.google.common.collect.Sets;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.SchemaConcept;
-import grakn.core.kb.graql.planning.EquivalentFragmentSet;
+import grakn.core.kb.graql.gremlin.EquivalentFragmentSet;
 import grakn.core.kb.server.Transaction;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.server.session.TransactionImpl;
 import graql.lang.statement.Variable;
 import org.junit.Before;
 import org.junit.Test;
@@ -50,7 +50,7 @@ public class RolePlayerFragmentSetTest {
 
     @Before
     public void setUp(){
-        tx = mock(TransactionOLTP.class);
+        tx = mock(TransactionImpl.class);
     }
 
     @Test
@@ -84,7 +84,7 @@ public class RolePlayerFragmentSetTest {
                 authorLabelFragmentSet
         );
 
-        RolePlayerFragmentSet.ROLE_OPTIMISATION.apply(fragmentSets, tx);
+        RolePlayerFragmentSet.ROLE_OPTIMISATION.apply(fragmentSets, tx.conceptManager());
 
         HashSet<EquivalentFragmentSet> expected = Sets.newHashSet(
                 new RolePlayerFragmentSet(null, a, b, c, null, ImmutableSet.of(author, director), null),
@@ -105,7 +105,7 @@ public class RolePlayerFragmentSetTest {
 
         Collection<EquivalentFragmentSet> expected = Sets.newHashSet(fragmentSets);
 
-        RolePlayerFragmentSet.ROLE_OPTIMISATION.apply(fragmentSets, tx);
+        RolePlayerFragmentSet.ROLE_OPTIMISATION.apply(fragmentSets, tx.conceptManager());
 
         assertEquals(expected, fragmentSets);
     }
@@ -124,7 +124,7 @@ public class RolePlayerFragmentSetTest {
 
         Collection<EquivalentFragmentSet> expected = Sets.newHashSet(fragmentSets);
 
-        RolePlayerFragmentSet.ROLE_OPTIMISATION.apply(fragmentSets, tx);
+        RolePlayerFragmentSet.ROLE_OPTIMISATION.apply(fragmentSets, tx.conceptManager());
 
         assertEquals(expected, fragmentSets);
     }
@@ -144,7 +144,7 @@ public class RolePlayerFragmentSetTest {
                 authorLabelFragmentSet
         );
 
-        RolePlayerFragmentSet.ROLE_OPTIMISATION.apply(fragmentSets, tx);
+        RolePlayerFragmentSet.ROLE_OPTIMISATION.apply(fragmentSets, tx.conceptManager());
 
         HashSet<EquivalentFragmentSet> expected = Sets.newHashSet(
                 new RolePlayerFragmentSet(null, a, b, c, null, null, null),
@@ -166,7 +166,7 @@ public class RolePlayerFragmentSetTest {
 
         Collection<EquivalentFragmentSet> expected = Sets.newHashSet(fragmentSets);
 
-        RolePlayerFragmentSet.RELATION_TYPE_OPTIMISATION.apply(fragmentSets, tx);
+        RolePlayerFragmentSet.RELATION_TYPE_OPTIMISATION.apply(fragmentSets, tx.conceptManager());
 
         assertEquals(expected, fragmentSets);
     }
@@ -185,7 +185,7 @@ public class RolePlayerFragmentSetTest {
 
         Collection<EquivalentFragmentSet> expected = Sets.newHashSet(fragmentSets);
 
-        RolePlayerFragmentSet.RELATION_TYPE_OPTIMISATION.apply(fragmentSets, tx);
+        RolePlayerFragmentSet.RELATION_TYPE_OPTIMISATION.apply(fragmentSets, tx.conceptManager());
 
         assertEquals(expected, fragmentSets);
     }

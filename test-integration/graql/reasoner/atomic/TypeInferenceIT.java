@@ -21,39 +21,45 @@ package grakn.core.graql.reasoner.atomic;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import grakn.core.concept.answer.ConceptMap;
+import grakn.core.graql.reasoner.atom.Atom;
+import grakn.core.graql.reasoner.atom.binary.RelationAtom;
+import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
+import grakn.core.graql.reasoner.query.ReasonerQueryFactory;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
+import grakn.core.kb.concept.api.EntityType;
 import grakn.core.kb.concept.api.Label;
-import grakn.core.concept.answer.ConceptMap;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Type;
-import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
-import grakn.core.graql.reasoner.atom.binary.RelationAtom;
-import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
-import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
-import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
-import grakn.core.rule.GraknTestServer;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
+import grakn.core.rule.GraknTestServer;
+import grakn.core.rule.SessionUtil;
+import grakn.core.rule.TestTransactionProvider;
 import grakn.core.util.GraqlTestUtil;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.query.GraqlGet;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Test;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
 
+import static grakn.core.util.GraqlTestUtil.assertCollectionsNonTriviallyEqual;
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
@@ -65,13 +71,14 @@ public class TypeInferenceIT {
     private static String resourcePath = "test-integration/graql/reasoner/resources/";
 
     @ClassRule
-    public static final GraknTestServer server = new GraknTestServer();
+    public static final GraknTestServer server = new GraknTestServer(false);
 
     private static Session testContextSession;
+    private Transaction tx;
 
     @BeforeClass
     public static void loadContext(){
-        testContextSession = server.sessionWithNewKeyspace();
+        testContextSession = SessionUtil.serverlessSessionWithNewKeyspace(server.serverConfig());
         loadFromFileAndCommit(resourcePath,"typeInferenceTest.gql", testContextSession);
     }
 
@@ -80,22 +87,30 @@ public class TypeInferenceIT {
         testContextSession.close();
     }
 
-    @Test
-    public void whenCalculatingTypeMaps_typesAreCollapsedCorrectly(){
-        Transaction tx = testContextSession.writeTransaction();
 
-        ReasonerQuery query = ReasonerQueries.atomic(conjunction("{($x); $x isa singleRoleEntity;$x isa twoRoleEntity;};"), tx);
-        assertEquals(tx.getEntityType("twoRoleEntity"), Iterables.getOnlyElement(query.getVarTypeMap().get(new Variable("x"))));
+    @Before
+    public void setup() {
+        tx = testContextSession.writeTransaction();
+    }
 
-        query = ReasonerQueries.atomic(conjunction("{($x); $x isa entity;$x isa singleRoleEntity;};"), tx);
-        assertEquals(tx.getType(Label.of("singleRoleEntity")), Iterables.getOnlyElement(query.getVarTypeMap().get(new Variable("x"))));
+    @After
+    public void tearDown() {
         tx.close();
     }
 
     @Test
-    public void testTypeInference_singleGuard() {
-        Transaction tx = testContextSession.writeTransaction();
+    public void whenCalculatingTypeMaps_typesAreCollapsedCorrectly(){
+        ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
+        ReasonerQuery query = reasonerQueryFactory.atomic(conjunction("{($x); $x isa singleRoleEntity;$x isa twoRoleEntity;};"));
+        assertEquals(tx.getEntityType("twoRoleEntity"), Iterables.getOnlyElement(query.getVarTypeMap().get(new Variable("x"))));
+
+        query = reasonerQueryFactory.atomic(conjunction("{($x); $x isa entity;$x isa singleRoleEntity;};"));
+        assertEquals(tx.getType(Label.of("singleRoleEntity")), Iterables.getOnlyElement(query.getVarTypeMap().get(new Variable("x"))));
+    }
+
+    @Test
+    public void testTypeInference_singleGuard() {
         //parent of all roles so all relations possible
         String patternString = "{ $x isa noRoleEntity; ($x, $y); };";
         String subbedPatternString = "{ $x id " + conceptId(tx, "noRoleEntity") + ";($x, $y); };";
@@ -114,16 +129,13 @@ public class TypeInferenceIT {
                 tx.getType(Label.of("threeRoleBinary"))
         );
 
-        typeInference(allRelations(tx), patternString, subbedPatternString, tx);
-        typeInference(possibleTypes, patternString2, subbedPatternString2, tx);
-        typeInference(possibleTypes, patternString3, subbedPatternString3, tx);
-        tx.close();
+        typeInference(allRelations(tx), patternString, subbedPatternString, (TestTransactionProvider.TestTransaction)tx);
+        typeInference(possibleTypes, patternString2, subbedPatternString2, (TestTransactionProvider.TestTransaction)tx);
+        typeInference(possibleTypes, patternString3, subbedPatternString3, (TestTransactionProvider.TestTransaction)tx);
     }
 
     @Test
     public void testTypeInference_doubleGuard() {
-        Transaction tx = testContextSession.writeTransaction();
-
         //{rel2, rel3} ^ {rel1, rel2, rel3} = {rel2, rel3}
         String patternString = "{ $x isa singleRoleEntity; ($x, $y); $y isa anotherTwoRoleEntity; };";
         String subbedPatternString = "{($x, $y);" +
@@ -149,15 +161,13 @@ public class TypeInferenceIT {
 
         List<Type> possibleTypes2 = Collections.singletonList(tx.getType(Label.of("twoRoleBinary")));
 
-        typeInference(possibleTypes, patternString, subbedPatternString, tx);
-        typeInference(possibleTypes, patternString2, subbedPatternString2, tx);
-        typeInference(possibleTypes2, patternString3, subbedPatternString3, tx);
-        tx.close();
+        typeInference(possibleTypes, patternString, subbedPatternString, (TestTransactionProvider.TestTransaction)tx);
+        typeInference(possibleTypes, patternString2, subbedPatternString2, (TestTransactionProvider.TestTransaction)tx);
+        typeInference(possibleTypes2, patternString3, subbedPatternString3, (TestTransactionProvider.TestTransaction)tx);
     }
 
     @Test
     public void testTypeInference_singleRole() {
-        Transaction tx = testContextSession.writeTransaction();
         String patternString = "{ (role1: $x, $y); };";
         String patternString2 = "{ (role2: $x, $y); };";
         String patternString3 = "{ (role3: $x, $y); };";
@@ -171,20 +181,16 @@ public class TypeInferenceIT {
         typeInference(possibleTypes, patternString, tx);
         typeInference(allRelations(tx), patternString2, tx);
         typeInference(possibleTypes2, patternString3, tx);
-        tx.close();
     }
 
     @Test
     public void testTypeInference_singleRole_subType() {
-        Transaction tx = testContextSession.writeTransaction();
         String patternString = "{ (subRole2: $x, $y); };";
         typeInference(Collections.singletonList(tx.getSchemaConcept(Label.of("threeRoleBinary"))), patternString, tx);
-        tx.close();
     }
 
     @Test
     public void testTypeInference_singleRole_singleGuard() {
-        Transaction tx = testContextSession.writeTransaction();
 
         //{rel1, rel2, rel3} ^ {rel2, rel3}
         String patternString = "{ (role2: $x, $y); $y isa singleRoleEntity; };";
@@ -204,16 +210,13 @@ public class TypeInferenceIT {
                 tx.getType(Label.of("threeRoleBinary"))
         );
 
-        typeInference(possibleTypes, patternString, subbedPatternString, tx);
-        typeInference(possibleTypes, patternString2, subbedPatternString2, tx);
-        typeInference(Collections.singletonList(tx.getSchemaConcept(Label.of("twoRoleBinary"))), patternString3, subbedPatternString3, tx);
-        tx.close();
+        typeInference(possibleTypes, patternString, subbedPatternString, (TestTransactionProvider.TestTransaction)tx);
+        typeInference(possibleTypes, patternString2, subbedPatternString2, (TestTransactionProvider.TestTransaction)tx);
+        typeInference(Collections.singletonList(tx.getSchemaConcept(Label.of("twoRoleBinary"))), patternString3, subbedPatternString3, (TestTransactionProvider.TestTransaction)tx);
     }
 
     @Test
     public void testTypeInference_singleRole_singleGuard_bothConceptsAreSubConcepts() {
-        Transaction tx = testContextSession.writeTransaction();
-
         //{rel3} ^ {rel2, rel3}
         String patternString = "{ (subRole2: $x, $y); $y isa twoRoleEntity; };";
         String subbedPatternString = "{(subRole2: $x, $y);" +
@@ -223,15 +226,12 @@ public class TypeInferenceIT {
         String subbedPatternString2 = "{(subRole2: $x, $y);" +
                 "$y id " + conceptId(tx, "anotherTwoRoleEntity") + ";};";
 
-        typeInference(Collections.singletonList(tx.getSchemaConcept(Label.of("threeRoleBinary"))), patternString, subbedPatternString, tx);
-        typeInference(Collections.singletonList(tx.getSchemaConcept(Label.of("threeRoleBinary"))), patternString2, subbedPatternString2, tx);
-        tx.close();
+        typeInference(Collections.singletonList(tx.getSchemaConcept(Label.of("threeRoleBinary"))), patternString, subbedPatternString, (TestTransactionProvider.TestTransaction)tx);
+        typeInference(Collections.singletonList(tx.getSchemaConcept(Label.of("threeRoleBinary"))), patternString2, subbedPatternString2,(TestTransactionProvider.TestTransaction) tx);
     }
 
     @Test
     public void testTypeInference_singleRole_singleGuard_typeContradiction() {
-        Transaction tx = testContextSession.writeTransaction();
-
         //{rel1} ^ {rel2}
         String patternString = "{ (role1: $x, $y); $y isa singleRoleEntity; };";
         String subbedPatternString = "{(role1: $x, $y);" +
@@ -240,14 +240,12 @@ public class TypeInferenceIT {
         String subbedPatternString2 = "{(role1: $x, $y);" +
                 "$x id " + conceptId(tx, "singleRoleEntity") + ";};";
 
-        typeInference(Collections.emptyList(), patternString, subbedPatternString, tx);
-        typeInference(Collections.emptyList(), patternString2, subbedPatternString2, tx);
-        tx.close();
+        typeInference(Collections.emptyList(), patternString, subbedPatternString,(TestTransactionProvider.TestTransaction) tx);
+        typeInference(Collections.emptyList(), patternString2, subbedPatternString2,(TestTransactionProvider.TestTransaction) tx);
     }
 
     @Test
     public void testTypeInference_singleRole_doubleGuard() {
-        Transaction tx = testContextSession.writeTransaction();
         //{rel2, rel3} ^ {rel1, rel2, rel3} ^ {rel1, rel2, rel3}
         String patternString = "{ $x isa singleRoleEntity;(role2: $x, $y); $y isa anotherTwoRoleEntity; };";
         String subbedPatternString = "{(role2: $x, $y);" +
@@ -258,14 +256,11 @@ public class TypeInferenceIT {
                 tx.getType(Label.of("anotherTwoRoleBinary")),
                 tx.getType(Label.of("threeRoleBinary"))
         );
-        typeInference(possibleTypes, patternString, subbedPatternString, tx);
-        tx.close();
+        typeInference(possibleTypes, patternString, subbedPatternString,(TestTransactionProvider.TestTransaction) tx);
     }
 
     @Test
     public void testTypeInference_doubleRole_doubleGuard() {
-        Transaction tx = testContextSession.writeTransaction();
-
         //{rel1, rel2, rel3} ^ {rel3} ^ {rel2, rel3} ^ {rel1, rel2, rel3}
         String patternString = "{ $x isa threeRoleEntity;(subRole2: $x, role3: $y); $y isa threeRoleEntity; };";
         String subbedPatternString = "{(subRole2: $x, role3: $y);" +
@@ -278,20 +273,17 @@ public class TypeInferenceIT {
                 "$x id " + conceptId(tx, "threeRoleEntity") + ";" +
                 "$y id " + conceptId(tx, "anotherTwoRoleEntity") +";};";
 
-        typeInference(Collections.singletonList(tx.getSchemaConcept(Label.of("threeRoleBinary"))), patternString, subbedPatternString, tx);
+        typeInference(Collections.singletonList(tx.getSchemaConcept(Label.of("threeRoleBinary"))), patternString, subbedPatternString,(TestTransactionProvider.TestTransaction) tx);
 
         List<Type> possibleTypes = Lists.newArrayList(
                 tx.getType(Label.of("anotherTwoRoleBinary")),
                 tx.getType(Label.of("threeRoleBinary"))
         );
-        typeInference(possibleTypes, patternString2, subbedPatternString2, tx);
-        tx.close();
+        typeInference(possibleTypes, patternString2, subbedPatternString2,(TestTransactionProvider.TestTransaction) tx);
     }
 
     @Test
     public void testTypeInference_doubleRole_doubleGuard_contradiction() {
-        Transaction tx = testContextSession.writeTransaction();
-
         //{rel2, rel3} ^ {rel1} ^ {rel1, rel2, rel3} ^ {rel1, rel2, rel3}
         String patternString = "{ $x isa singleRoleEntity;(role1: $x, role2: $y); $y isa anotherTwoRoleEntity; };";
         String subbedPatternString = "{(role1: $x, role2: $y);" +
@@ -304,25 +296,20 @@ public class TypeInferenceIT {
                 "$x id " + conceptId(tx, "singleRoleEntity") + ";" +
                 "$y id " + conceptId(tx, "anotherSingleRoleEntity") +";};";
 
-        typeInference(Collections.emptyList(), patternString, subbedPatternString, tx);
-        typeInference(Collections.emptyList(), patternString2, subbedPatternString2, tx);
-        tx.close();
+        typeInference(Collections.emptyList(), patternString, subbedPatternString, (TestTransactionProvider.TestTransaction)tx);
+        typeInference(Collections.emptyList(), patternString2, subbedPatternString2, (TestTransactionProvider.TestTransaction)tx);
     }
 
     @Test
     public void testTypeInference_metaGuards() {
-        Transaction tx = testContextSession.writeTransaction();
         String patternString = "{ ($x, $y);$x isa entity; $y isa entity; };";
         typeInference(allRelations(tx), patternString, tx);
-        tx.close();
     }
 
     @Test
     public void testTypeInference_genericRelation() {
-        Transaction tx = testContextSession.writeTransaction();
         String patternString = "{ ($x, $y); };";
         typeInference(allRelations(tx), patternString, tx);
-        tx.close();
     }
 
     private <T extends Atomic> T getAtom(ReasonerQuery q, Class<T> type, Set<Variable> vars){
@@ -333,23 +320,24 @@ public class TypeInferenceIT {
 
     @Test
     public void testTypeInference_conjunctiveQuery() {
-        Transaction tx = testContextSession.writeTransaction();
         String patternString = "{" +
                 "($x, $y); $x isa anotherSingleRoleEntity;" +
                 "($y, $z); $y isa anotherTwoRoleEntity;" +
                 "($z, $w); $w isa threeRoleEntity;" +
                 "};";
 
-        ReasonerQueryImpl conjQuery = ReasonerQueries.create(conjunction(patternString), tx);
+        ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
+
+        ReasonerQuery conjQuery = reasonerQueryFactory.create(conjunction(patternString));
 
         //determination of possible rel types for ($y, $z) relation depends on its neighbours which should be preserved
         //when resolving (and separating atoms) the query
         RelationAtom XYatom = getAtom(conjQuery, RelationAtom.class, Sets.newHashSet(new Variable("x"), new Variable("y")));
         RelationAtom YZatom = getAtom(conjQuery, RelationAtom.class, Sets.newHashSet(new Variable("y"), new Variable("z")));
         RelationAtom ZWatom = getAtom(conjQuery, RelationAtom.class, Sets.newHashSet(new Variable("z"), new Variable("w")));
-        RelationAtom midAtom = (RelationAtom) ReasonerQueries.atomic(YZatom).getAtom();
+        RelationAtom midAtom = (RelationAtom) reasonerQueryFactory.atomic(YZatom).getAtom();
 
-        assertEquals(midAtom.getPossibleTypes(), YZatom.getPossibleTypes());
+        assertCollectionsNonTriviallyEqual(midAtom.getPossibleTypes(), YZatom.getPossibleTypes());
 
         //differently prioritised options arise from using neighbour information
         List<Type> firstTypeOption = Lists.newArrayList(
@@ -365,11 +353,12 @@ public class TypeInferenceIT {
         typeInference(secondTypeOption, XYatom.getCombinedPattern().toString(), tx);
         typeInference(firstTypeOption, YZatom.getCombinedPattern().toString(), tx);
         typeInference(firstTypeOption, ZWatom.getCombinedPattern().toString(), tx);
-        tx.close();
     }
 
     private void typeInference(List<Type> possibleTypes, String pattern, Transaction tx){
-        ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(pattern), tx);
+        ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
+
+        ReasonerAtomicQuery query = reasonerQueryFactory.atomic(conjunction(pattern));
         Atom atom = query.getAtom();
         List<Type> relationTypes = atom.getPossibleTypes();
 
@@ -381,12 +370,14 @@ public class TypeInferenceIT {
             assertEquals(atom.getSchemaConcept(), null);
         }
 
-        typeInferenceQueries(possibleTypes, pattern, tx);
+        typeInferenceQueries(possibleTypes, pattern, (TestTransactionProvider.TestTransaction)tx);
     }
 
-    private void typeInference(List<Type> possibleTypes, String pattern, String subbedPattern, Transaction tx){
-        ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(pattern), tx);
-        ReasonerAtomicQuery subbedQuery = ReasonerQueries.atomic(conjunction(subbedPattern), tx);
+    private void typeInference(List<Type> possibleTypes, String pattern, String subbedPattern, TestTransactionProvider.TestTransaction testTx){
+        ReasonerQueryFactory reasonerQueryFactory = testTx.reasonerQueryFactory();
+
+        ReasonerAtomicQuery query = reasonerQueryFactory.atomic(conjunction(pattern));
+        ReasonerAtomicQuery subbedQuery = reasonerQueryFactory.atomic(conjunction(subbedPattern));
         Atom atom = query.getAtom();
         Atom subbedAtom = subbedQuery.getAtom();
 
@@ -405,22 +396,22 @@ public class TypeInferenceIT {
             assertNull(subbedAtom.getSchemaConcept());
         }
 
-        typeInferenceQueries(possibleTypes, pattern, tx);
-        typeInferenceQueries(possibleTypes, subbedPattern, tx);
+        typeInferenceQueries(possibleTypes, pattern, testTx);
+        typeInferenceQueries(possibleTypes, subbedPattern, testTx);
     }
 
-    private void typeInferenceQueries(List<Type> possibleTypes, String pattern, Transaction tx) {
+    private void typeInferenceQueries(List<Type> possibleTypes, String pattern, TestTransactionProvider.TestTransaction tx) {
         List<ConceptMap> typedAnswers = typedAnswers(possibleTypes, pattern, tx);
         List<ConceptMap> unTypedAnswers = tx.execute(Graql.match(Graql.parsePattern(pattern)).get());
         assertEquals(typedAnswers.size(), unTypedAnswers.size());
         GraqlTestUtil.assertCollectionsEqual(typedAnswers, unTypedAnswers);
     }
 
-    private List<ConceptMap> typedAnswers(List<Type> possibleTypes, String pattern, Transaction tx){
+    private List<ConceptMap> typedAnswers(List<Type> possibleTypes, String pattern, TestTransactionProvider.TestTransaction tx){
         List<ConceptMap> answers = new ArrayList<>();
-        ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(pattern), tx);
+        ReasonerAtomicQuery query = tx.reasonerQueryFactory().atomic(conjunction(pattern));
         for(SchemaConcept type : possibleTypes){
-            GraqlGet typedQuery = Graql.match(ReasonerQueries.atomic(query.getAtom().addType(type)).getPattern()).get();
+            GraqlGet typedQuery = Graql.match(tx.reasonerQueryFactory().atomic(query.getAtom().addType(type)).getPattern()).get();
             tx.stream(typedQuery).filter(ans -> !answers.contains(ans)).forEach(answers::add);
         }
         return answers;
@@ -432,7 +423,10 @@ public class TypeInferenceIT {
     }
 
     private ConceptId conceptId(Transaction tx, String type){
-        return tx.getEntityType(type).instances().map(Concept::id).findFirst().orElse(null);
+        return tx.getEntityType(type)
+                .instances()
+                .filter(instance -> instance.type().label().toString().equals(type))
+                .map(Concept::id).findFirst().orElse(null);
     }
 
     private Conjunction<Statement> conjunction(String patternString){

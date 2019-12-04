@@ -39,7 +39,8 @@ import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
 import grakn.core.graql.reasoner.utils.TarjanSCC;
 import grakn.core.core.Schema;
-import grakn.core.kb.server.Transaction;
+import grakn.core.kb.concept.manager.ConceptManager;
+import grakn.core.kb.graql.reasoner.cache.QueryCache;
 import graql.lang.statement.Variable;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -77,9 +78,9 @@ public class RuleUtils {
     /**
      * @return a type graph (when->then) from possibly uncommited/invalid rules (no mapping to InferenceRule may exist).
      */
-    private static HashMultimap<Type, Type> typeGraph(Transaction tx){
+    private static HashMultimap<Type, Type> typeGraph(ConceptManager conceptManager){
         HashMultimap<Type, Type> graph = HashMultimap.create();
-        tx.getMetaRule().subs()
+        conceptManager.getMetaRule().subs()
                 .filter(rule -> !Schema.MetaSchema.isMetaLabel(rule.label()))
                 .flatMap(ruleToTypePair)
                 .forEach(p -> graph.put(p.first(), p.second()));
@@ -146,7 +147,7 @@ public class RuleUtils {
      * @param rules set of rules of interest forming a rule subgraph
      * @return true if the rule subgraph formed from provided rules contains loops AND corresponding relation instances also contain loops
      */
-    public static boolean subGraphIsCyclical(Set<InferenceRule> rules, Transaction tx){
+    public static boolean subGraphIsCyclical(Set<InferenceRule> rules, QueryCache queryCache){
         HashMultimap<Type, Type> typeSubGraph = persistedTypeSubGraph(rules);
         TarjanSCC<Type> typeSCC = new TarjanSCC<>(typeSubGraph);
         List<Set<Type>> typeCycles = typeSCC.getCycles();
@@ -154,24 +155,24 @@ public class RuleUtils {
 
         typeSCC.successorMap().entries().forEach(e -> typeTCinverse.put(e.getValue(), e.getKey()));
 
-        MultilevelSemanticCache queryCache = CacheCasting.queryCacheCast(tx.queryCache());
+        MultilevelSemanticCache queryCacheImpl = CacheCasting.queryCacheCast(queryCache);
         //for each cycle in the type dependency graph, check for cycles in the instances
         return typeCycles.stream().anyMatch(typeSet -> {
             Set<ReasonerAtomicQuery> queries = typeSet.stream()
                     .flatMap(type -> typeTCinverse.get(type).stream())
-                    .flatMap(type -> queryCache.getFamily(type).stream())
+                    .flatMap(type -> queryCacheImpl.getFamily(type).stream())
                     .map(Equivalence.Wrapper::get)
-                    .filter(q -> queryCache.getParents(q).isEmpty())
+                    .filter(q -> queryCacheImpl.getParents(q).isEmpty())
                     .filter(q -> q.getAtom().isRelation() || q.getAtom().isResource())
                     .collect(toSet());
             //if we don't have full information (query answers in cache), we assume reiteration is needed
-            if (!queries.stream().allMatch(q -> queryCache.isDBComplete(q))) return true;
+            if (!queries.stream().allMatch(q -> queryCacheImpl.isDBComplete(q))) return true;
 
             HashMultimap<Concept, Concept> conceptMap = HashMultimap.create();
             for (ReasonerAtomicQuery q : queries) {
                 RelationAtom relationAtom = q.getAtom().toRelationAtom();
                 Set<Pair<Variable, Variable>> varPairs = relationAtom.varDirectionality();
-                IndexedAnswerSet answers = queryCache.getEntry(q).cachedElement();
+                IndexedAnswerSet answers = queryCacheImpl.getEntry(q).cachedElement();
                 for (ConceptMap ans : answers) {
                     for (Pair<Variable, Variable> p : varPairs) {
                         Concept from = ans.get(p.first());
@@ -189,8 +190,8 @@ public class RuleUtils {
      *
      * @return true if the rule subgraph is stratifiable (doesn't contain cycles with negation)
      */
-    public static List<Set<Type>> negativeCycles(Transaction tx){
-        HashMultimap<Type, Type> typeGraph = typeGraph(tx);
+    public static List<Set<Type>> negativeCycles(ConceptManager conceptManager){
+        HashMultimap<Type, Type> typeGraph = typeGraph(conceptManager);
         return new TarjanSCC<>(typeGraph).getCycles().stream()
                 .filter(cycle ->
                         cycle.stream().anyMatch(type ->

@@ -22,16 +22,12 @@ package grakn.core.graql.executor.property;
 import com.google.common.collect.ImmutableSet;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.Type;
-import grakn.core.kb.server.exception.GraqlSemanticException;
 import grakn.core.kb.graql.executor.WriteExecutor;
-import grakn.core.kb.graql.planning.EquivalentFragmentSet;
 import grakn.core.kb.graql.executor.property.PropertyExecutor;
-import grakn.core.kb.graql.reasoner.atom.Atomic;
-import grakn.core.graql.reasoner.atom.property.IsAbstractAtom;
-import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
+import grakn.core.kb.graql.gremlin.EquivalentFragmentSet;
+import grakn.core.kb.server.exception.GraqlSemanticException;
 import graql.lang.property.AbstractProperty;
 import graql.lang.property.VarProperty;
-import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 
 import java.util.Set;
@@ -52,11 +48,6 @@ public class AbstractExecutor implements PropertyExecutor.Definable {
     @Override
     public Set<EquivalentFragmentSet> matchFragments() {
         return ImmutableSet.of(isAbstract(property, var));
-    }
-
-    @Override
-    public Atomic atomic(ReasonerQuery parent, Statement statement, Set<Statement> otherStatements) {
-        return IsAbstractAtom.create(var, parent);
     }
 
     @Override

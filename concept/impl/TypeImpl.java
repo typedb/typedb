@@ -29,6 +29,8 @@ import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.concept.api.Type;
+import grakn.core.kb.concept.manager.ConceptManager;
+import grakn.core.kb.concept.manager.ConceptNotificationChannel;
 import grakn.core.kb.concept.structure.Shard;
 import grakn.core.kb.concept.structure.EdgeElement;
 import grakn.core.core.Schema;
@@ -67,8 +69,8 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         return roleTypes;
     });
 
-    TypeImpl(VertexElement vertexElement, ConceptManagerImpl conceptManager, ConceptObserver conceptObserver) {
-        super(vertexElement, conceptManager, conceptObserver);
+    public TypeImpl(VertexElement vertexElement, ConceptManager conceptManager, ConceptNotificationChannel conceptNotificationChannel) {
+        super(vertexElement, conceptManager, conceptNotificationChannel);
     }
 
     public static <X extends Type, Y extends Thing> TypeImpl<X, Y> from(Type type) {
@@ -309,7 +311,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         property(Schema.VertexProperty.IS_ABSTRACT, isAbstract);
         cachedIsAbstract.set(isAbstract);
 
-        conceptObserver.conceptSetAbstract(this, isAbstract);
+        conceptNotificationChannel.conceptSetAbstract(this, isAbstract);
 
         return getThis();
     }

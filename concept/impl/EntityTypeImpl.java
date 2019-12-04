@@ -21,6 +21,8 @@ package grakn.core.concept.impl;
 
 import grakn.core.kb.concept.api.Entity;
 import grakn.core.kb.concept.api.EntityType;
+import grakn.core.kb.concept.manager.ConceptManager;
+import grakn.core.kb.concept.manager.ConceptNotificationChannel;
 import grakn.core.kb.concept.structure.VertexElement;
 
 /**
@@ -29,8 +31,8 @@ import grakn.core.kb.concept.structure.VertexElement;
  * Any instance of a EntityType is called an Entity.
  */
 public class EntityTypeImpl extends TypeImpl<EntityType, Entity> implements EntityType {
-    EntityTypeImpl(VertexElement vertexElement, ConceptManagerImpl conceptManager, ConceptObserver conceptObserver) {
-        super(vertexElement, conceptManager, conceptObserver);
+    public EntityTypeImpl(VertexElement vertexElement, ConceptManager conceptManager, ConceptNotificationChannel conceptNotificationChannel) {
+        super(vertexElement, conceptManager, conceptNotificationChannel);
     }
 
     public static EntityTypeImpl from(EntityType entityType) {
@@ -53,6 +55,6 @@ public class EntityTypeImpl extends TypeImpl<EntityType, Entity> implements Enti
 
     @Override
     void trackRolePlayers() {
-        conceptObserver.trackEntityInstancesRolesPlayed(this);
+        conceptNotificationChannel.trackEntityInstancesRolesPlayed(this);
     }
 }

@@ -20,18 +20,13 @@
 package grakn.core.graql.executor.property;
 
 import com.google.common.collect.ImmutableSet;
-import grakn.core.kb.concept.api.ConceptId;
-import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.AttributeType;
-import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Type;
-import grakn.core.kb.server.exception.GraqlSemanticException;
 import grakn.core.kb.graql.executor.WriteExecutor;
-import grakn.core.kb.graql.planning.EquivalentFragmentSet;
 import grakn.core.kb.graql.executor.property.PropertyExecutor;
-import grakn.core.kb.graql.reasoner.atom.Atomic;
-import grakn.core.graql.reasoner.atom.binary.HasAtom;
-import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
+import grakn.core.kb.graql.executor.property.PropertyExecutorFactory;
+import grakn.core.kb.graql.gremlin.EquivalentFragmentSet;
+import grakn.core.kb.server.exception.GraqlSemanticException;
 import graql.lang.Graql;
 import graql.lang.property.HasAttributeTypeProperty;
 import graql.lang.property.NeqProperty;
@@ -39,7 +34,6 @@ import graql.lang.property.PlaysProperty;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
-import grakn.core.kb.graql.executor.property.PropertyExecutorFactory;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -135,17 +129,6 @@ public class HasAttributeTypeExecutor  implements PropertyExecutor.Definable {
                         .forEach(p -> fragments.addAll(propertyExecutorFactory.create(statement.var(), p).matchFragments())));
 
         return ImmutableSet.copyOf(fragments);
-    }
-
-    @Override
-    public Atomic atomic(ReasonerQuery parent, Statement statement, Set<Statement> otherStatements) {
-        //NB: HasResourceType is a special case and it doesn't allow variables as resource types
-        String label = property.attributeType().getType().orElse(null);
-
-        Variable predicateVar = new Variable();
-        SchemaConcept attributeType = parent.tx().getSchemaConcept(Label.of(label));
-        ConceptId predicateId = attributeType != null ? attributeType.id() : null;
-        return HasAtom.create(var, predicateVar, predicateId, parent);
     }
 
     @Override

@@ -20,19 +20,13 @@
 package grakn.core.graql.executor.property;
 
 import com.google.common.collect.ImmutableSet;
-import grakn.core.kb.concept.api.Label;
-import grakn.core.kb.concept.api.SchemaConcept;
-import grakn.core.kb.server.exception.GraqlSemanticException;
-import grakn.core.kb.graql.executor.WriteExecutor;
-import grakn.core.kb.graql.planning.EquivalentFragmentSet;
 import grakn.core.graql.gremlin.sets.EquivalentFragmentSets;
+import grakn.core.kb.concept.api.Label;
+import grakn.core.kb.graql.executor.WriteExecutor;
 import grakn.core.kb.graql.executor.property.PropertyExecutor;
-import grakn.core.kb.graql.reasoner.atom.Atomic;
-import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
-import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
+import grakn.core.kb.graql.gremlin.EquivalentFragmentSet;
 import graql.lang.property.TypeProperty;
 import graql.lang.property.VarProperty;
-import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 
 import java.util.Set;
@@ -50,13 +44,6 @@ public class TypeExecutor  implements PropertyExecutor.Referrable {
     @Override
     public Set<EquivalentFragmentSet> matchFragments() {
         return ImmutableSet.of(EquivalentFragmentSets.label(property, var, ImmutableSet.of(Label.of(property.name()))));
-    }
-
-    @Override
-    public Atomic atomic(ReasonerQuery parent, Statement statement, Set<Statement> otherStatements) {
-        SchemaConcept schemaConcept = parent.tx().getSchemaConcept(Label.of(property.name()));
-        if (schemaConcept == null) throw GraqlSemanticException.labelNotFound(Label.of(property.name()));
-        return IdPredicate.create(var.asReturnedVar(), Label.of(property.name()), parent);
     }
 
     @Override

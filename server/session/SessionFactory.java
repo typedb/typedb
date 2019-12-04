@@ -19,14 +19,18 @@
 package grakn.core.server.session;
 
 import grakn.core.common.config.Config;
+import grakn.core.common.config.ConfigKey;
 import grakn.core.graph.graphdb.database.StandardJanusGraph;
 import grakn.core.kb.server.AttributeManager;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.ShardManager;
+import grakn.core.kb.server.TransactionProvider;
 import grakn.core.kb.server.cache.KeyspaceSchemaCache;
 import grakn.core.kb.server.keyspace.Keyspace;
 import grakn.core.kb.server.statistics.KeyspaceStatistics;
 import grakn.core.server.util.LockManager;
+import org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -34,7 +38,6 @@ import java.util.Map;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph;
 
 /**
  * Grakn Server's internal {@link SessionImpl} Factory
@@ -105,7 +108,9 @@ public class SessionFactory {
                 sharedKeyspaceDataMap.put(keyspace, cacheContainer);
             }
 
-            Session session = new SessionImpl(keyspace, config, cache, graph, hadoopGraph, keyspaceStatistics, attributeManager, shardManager, graphLock);
+            long typeShardThreshold = config.getProperty(ConfigKey.TYPE_SHARD_THRESHOLD);
+            TransactionProvider transactionProvider = new TransactionProviderImpl(graph, hadoopGraph, cache, keyspaceStatistics, attributeManager, graphLock, typeShardThreshold);
+            Session session = new SessionImpl(keyspace, transactionProvider, cache, graph, keyspaceStatistics, attributeManager, shardManager, graphLock);
             session.setOnClose(this::onSessionClose);
             cacheContainer.addSessionReference(session);
             return session;

@@ -117,8 +117,8 @@ public class ConceptIT {
         assertThat(superType, is(not(empty())));
         assertThat(subs, is(not(empty())));
 
-        superType.forEach(edge -> assertEquals(entityType1, tx.factory().buildConcept(edge.target())));
-        subs.forEach(edge -> assertEquals(entityType3, tx.factory().buildConcept(edge.source())));
+        superType.forEach(edge -> assertEquals(entityType1, tx.conceptManager().buildConcept(edge.target())));
+        subs.forEach(edge -> assertEquals(entityType3, tx.conceptManager().buildConcept(edge.source())));
     }
 
     @Test

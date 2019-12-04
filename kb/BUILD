@@ -32,10 +32,10 @@ java_library(
 
         "//kb/concept/api:api",
         "//kb/concept/structure:structure",
+        "//kb/concept/manager:manager",
+
         "//concept/answer:answer",
 
-        "//kb/concept/manager:manager",
-        "//kb/concept/util:util",
         # this is ONLY used for ConceptManager dependency...
         "//core:core",
 

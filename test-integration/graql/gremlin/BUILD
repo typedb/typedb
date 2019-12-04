@@ -43,7 +43,7 @@ java_test(
         "GraqlMatchers.java",
         "GraqlTraversalIT.java",
     ],
-    test_class = "grakn.core.graql.gremlin.GraqlTraversalTest",
+    test_class = "grakn.core.graql.gremlin.GraqlTraversalIT",
     deps = [
         "//common:common",
         "//core",

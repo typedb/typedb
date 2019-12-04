@@ -35,13 +35,13 @@ import grakn.core.graql.gremlin.fragment.InSubFragment;
 import grakn.core.graql.gremlin.fragment.LabelFragment;
 import grakn.core.graql.gremlin.fragment.OutRolePlayerFragment;
 import grakn.core.graql.gremlin.sets.EquivalentFragmentSets;
-import grakn.core.kb.graql.planning.Fragment;
-import grakn.core.kb.server.Transaction;
+import grakn.core.kb.concept.manager.ConceptManager;
+import grakn.core.kb.graql.gremlin.Fragment;
 import graql.lang.property.IsaProperty;
 import graql.lang.property.TypeProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
-import grakn.core.kb.graql.planning.EquivalentFragmentSet;
+import grakn.core.kb.graql.gremlin.EquivalentFragmentSet;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -55,11 +55,11 @@ import static graql.lang.Graql.var;
 public class RelationTypeInference {
     // infer type of relation type if we know the type of the role players
     // add label fragment and isa fragment if we can infer any
-    public static Set<Fragment> inferRelationTypes(Transaction tx, Set<Fragment> allFragments) {
+    public static Set<Fragment> inferRelationTypes(ConceptManager conceptManager, Set<Fragment> allFragments) {
 
         Set<Fragment> inferredFragments = new HashSet<>();
 
-        Map<Variable, Type> labelVarTypeMap = getLabelVarTypeMap(tx, allFragments);
+        Map<Variable, Type> labelVarTypeMap = getLabelVarTypeMap(conceptManager, allFragments);
         if (labelVarTypeMap.isEmpty()) return inferredFragments;
 
         Multimap<Variable, Type> instanceVarTypeMap = getInstanceVarTypeMap(allFragments, labelVarTypeMap);
@@ -124,13 +124,13 @@ public class RelationTypeInference {
     }
 
     // find all vars representing types
-    private static Map<Variable, Type> getLabelVarTypeMap(Transaction tx, Set<Fragment> allFragments) {
+    private static Map<Variable, Type> getLabelVarTypeMap(ConceptManager conceptManager, Set<Fragment> allFragments) {
         Map<Variable, Type> labelVarTypeMap = new HashMap<>();
         allFragments.stream()
                 .filter(LabelFragment.class::isInstance)
                 .forEach(fragment -> {
                     // TODO: labels() should return ONE label instead of a set
-                    SchemaConcept schemaConcept = tx.getSchemaConcept(
+                    SchemaConcept schemaConcept = conceptManager.getSchemaConcept(
                             Iterators.getOnlyElement(((LabelFragment) fragment).labels().iterator()));
                     if (schemaConcept != null && !schemaConcept.isRole() && !schemaConcept.isRule()) {
                         labelVarTypeMap.put(fragment.start(), schemaConcept.asType());

@@ -26,23 +26,25 @@ import grakn.core.concept.answer.ConceptList;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.answer.ConceptSet;
 import grakn.core.concept.answer.ConceptSetMeasure;
+import grakn.core.concept.answer.Explanation;
 import grakn.core.concept.answer.Numeric;
 import grakn.core.concept.answer.Void;
+import grakn.core.core.JanusTraversalSourceProvider;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.EntityType;
 import grakn.core.kb.concept.api.Label;
-import grakn.core.kb.concept.api.LabelId;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.manager.ConceptManager;
+import grakn.core.kb.graql.executor.ExecutorFactory;
 import grakn.core.kb.graql.executor.QueryExecutor;
 import grakn.core.kb.graql.executor.property.PropertyExecutorFactory;
-import grakn.core.kb.graql.planning.TraversalPlanFactory;
+import grakn.core.kb.graql.gremlin.TraversalPlanFactory;
 import grakn.core.kb.graql.reasoner.cache.QueryCache;
 import grakn.core.kb.graql.reasoner.cache.RuleCache;
 import grakn.core.kb.server.cache.TransactionCache;
@@ -58,7 +60,6 @@ import graql.lang.query.GraqlInsert;
 import graql.lang.query.GraqlQuery;
 import graql.lang.query.GraqlUndefine;
 import graql.lang.query.MatchClause;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Collection;
@@ -164,18 +165,7 @@ public interface Transaction extends AutoCloseable {
 
     Type type();
 
-    /**
-     * Utility function to get a read-only Tinkerpop traversal.
-     *
-     * @return A read-only Tinkerpop traversal for manually traversing the graph
-     * <p>
-     * Mostly used for tests // TODO refactor push this implementation down from Transaction itself, should not be here
-     */
-    GraphTraversalSource getTinkerTraversal();
-
     Stream<SchemaConcept> sups(SchemaConcept schemaConcept);
-
-    void checkMutationAllowed();
 
     /**
      * @param label A unique label for the EntityType
@@ -354,6 +344,9 @@ public interface Transaction extends AutoCloseable {
      */
     Rule getRule(String label);
 
+
+    Explanation explanation(Pattern queryPattern);
+
     @Override
     void close();
 
@@ -374,10 +367,8 @@ public interface Transaction extends AutoCloseable {
 
     List<ConceptMap> execute(MatchClause matchClause, boolean infer);
 
-    LabelId convertToId(Label label);
-
     @VisibleForTesting
-    ConceptManager factory();
+    ConceptManager conceptManager();
 
 
     // TODO remove this
@@ -385,15 +376,9 @@ public interface Transaction extends AutoCloseable {
         return 1L;
     }
 
-    // TODO determine if this should be exposed via Tx or in other ways
-    TraversalPlanFactory traversalPlanFactory();
-
-    // TODO we may not want to expose both Executor and PlanFactory
     QueryExecutor executor();
 
     QueryExecutor executor(boolean infer);
-
-    PropertyExecutorFactory propertyExecutorFactory();
 
     long shardingThreshold();
 

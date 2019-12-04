@@ -23,7 +23,7 @@ import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.Entity;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.server.exception.InvalidKBException;
-import grakn.core.kb.concept.util.Serialiser;
+import grakn.core.concept.util.attribute.Serialiser;
 import grakn.protocol.session.ConceptProto;
 import grakn.protocol.session.SessionProto;
 import grakn.protocol.session.SessionProto.Transaction;

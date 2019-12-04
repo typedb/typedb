@@ -109,6 +109,7 @@ java_test(
         "//graql:graql",
         "//kb",
         "//kb/concept/api",
+        "//kb/concept/manager",
         "//test-integration/rule:grakn-test-server",
         "@graknlabs_graql//java:graql",
     ],

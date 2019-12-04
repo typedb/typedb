@@ -101,7 +101,7 @@ public class SessionIT {
         } catch (ExecutionException e) {
             Throwable transactionException = e.getCause();
             assertThat(transactionException, instanceOf(TransactionException.class));
-            assertEquals("The transaction for keyspace [" + session.keyspace() + "] is closed. Use the session to get a new transaction for the graph.", transactionException.getMessage());
+            assertEquals("The transaction is no longer on the thread it was spawned on, this is not allowed", transactionException.getMessage());
         }
     }
 
@@ -202,14 +202,14 @@ public class SessionIT {
 
     @Test
     public void transactionRead_checkMutationsAllowedThrows(){
-        Transaction tx1 = session.readTransaction();
+        TransactionImpl tx1 = (TransactionImpl) session.readTransaction();
         expectedException.expect(TransactionException.class);
         tx1.checkMutationAllowed();
         tx1.close();
-        Transaction tx2 = session.writeTransaction();
+        TransactionImpl tx2 = (TransactionImpl) session.writeTransaction();
         tx2.checkMutationAllowed();
         tx2.close();
-        Transaction tx3 = session.readTransaction();
+        TransactionImpl tx3 = (TransactionImpl) session.readTransaction();
         expectedException.expect(TransactionException.class);
         tx3.checkMutationAllowed();
         tx3.close();

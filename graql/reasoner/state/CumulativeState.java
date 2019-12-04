@@ -20,13 +20,14 @@
 package grakn.core.graql.reasoner.state;
 
 import com.google.common.collect.Iterables;
+import grakn.core.concept.answer.AnswerUtil;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.answer.Explanation;
 import grakn.core.graql.reasoner.explanation.JoinExplanation;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
-import grakn.core.kb.concept.util.ConceptUtils;
+
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -71,7 +72,7 @@ public class CumulativeState extends AnswerPropagatorState<ReasonerQueryImpl> {
         ConceptMap accumulatedAnswer = getSubstitution();
         // we need to pass ID substitutions whenever we set the pattern from raw query
         ConceptMap toMerge = state.getSubstitution().withPattern(getQuery().withSubstitution(state.getSubstitution()).getPattern());
-        ConceptMap merged = ConceptUtils.joinAnswers(accumulatedAnswer, toMerge);
+        ConceptMap merged = AnswerUtil.joinAnswers(accumulatedAnswer, toMerge);
         ConceptMap answer = new ConceptMap(
                 merged.map(),
                 mergeExplanations(accumulatedAnswer, toMerge),

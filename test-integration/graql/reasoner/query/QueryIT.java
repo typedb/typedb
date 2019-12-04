@@ -21,9 +21,11 @@ package grakn.core.graql.reasoner.query;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
+import grakn.core.common.config.Config;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.atom.binary.RelationAtom;
 import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
+import grakn.core.graql.reasoner.graph.GeoGraph;
 import grakn.core.graql.reasoner.rule.InferenceRule;
 import grakn.core.graql.reasoner.rule.RuleUtils;
 import grakn.core.kb.concept.api.Attribute;
@@ -34,10 +36,11 @@ import grakn.core.kb.concept.api.EntityType;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Rule;
-import grakn.core.graql.reasoner.graph.GeoGraph;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import grakn.core.rule.GraknTestServer;
+import grakn.core.rule.SessionUtil;
+import grakn.core.rule.TestTransactionProvider.TestTransaction;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
@@ -61,82 +64,84 @@ import static org.junit.Assert.assertFalse;
 @SuppressWarnings("CheckReturnValue")
 public class QueryIT {
     @ClassRule
-    public static final GraknTestServer server = new GraknTestServer();
+    public static final GraknTestServer server = new GraknTestServer(false);
 
     private static Session geoSession;
 
     @BeforeClass
-    public static void loadContext(){
-        geoSession = server.sessionWithNewKeyspace();
+    public static void setup() {
+        Config config = server.serverConfig();
+        geoSession = SessionUtil.serverlessSessionWithNewKeyspace(config);
         GeoGraph geoGraph = new GeoGraph(geoSession);
         geoGraph.load();
     }
 
     @AfterClass
-    public static void closeSession(){
+    public static void closeSession() {
         geoSession.close();
     }
 
     @Test
     public void whenTypeDependencyGraphHasCycles_RuleBodiesHaveTypeHierarchies_weReiterate(){
-        try (Session session = server.sessionWithNewKeyspace()) {
+        try (Session session = SessionUtil.serverlessSessionWithNewKeyspace(server.serverConfig())) {
             try (Transaction tx = session.writeTransaction()) {
 
-                Role someRole = tx.putRole("someRole");
-                EntityType genericEntity = tx.putEntityType("genericEntity")
-                        .plays(someRole);
+            Role someRole = tx.putRole("someRole");
+            EntityType genericEntity = tx.putEntityType("genericEntity")
+                    .plays(someRole);
 
-                Entity entity = genericEntity.create();
-                Entity anotherEntity = genericEntity.create();
-                Entity yetAnotherEntity = genericEntity.create();
+            Entity entity = genericEntity.create();
+            Entity anotherEntity = genericEntity.create();
+            Entity yetAnotherEntity = genericEntity.create();
 
-                RelationType someRelation = tx.putRelationType("someRelation")
-                        .relates(someRole);
+            RelationType someRelation = tx.putRelationType("someRelation")
+                    .relates(someRole);
 
-                someRelation.create()
-                        .assign(someRole, entity)
-                        .assign(someRole, anotherEntity);
+            someRelation.create()
+                    .assign(someRole, entity)
+                    .assign(someRole, anotherEntity);
 
-                RelationType inferredBase = tx.putRelationType("inferredBase")
-                        .relates(someRole);
+            RelationType inferredBase = tx.putRelationType("inferredBase")
+                    .relates(someRole);
 
-                inferredBase.create()
-                        .assign(someRole, anotherEntity)
-                        .assign(someRole, yetAnotherEntity);
+            inferredBase.create()
+                    .assign(someRole, anotherEntity)
+                    .assign(someRole, yetAnotherEntity);
 
-                tx.putRelationType("inferred")
-                        .relates(someRole).sup(inferredBase);
+            tx.putRelationType("inferred")
+                    .relates(someRole).sup(inferredBase);
 
-                tx.putRule("rule1",
-                        Graql.parsePattern(
-                                "{" +
-                                        "($x, $y) isa someRelation; " +
-                                        "($y, $z) isa inferredBase;" +
-                                        "};"
-                        ),
-                        Graql.parsePattern("{ (someRole: $x, someRole: $z) isa inferred; };"));
+            tx.putRule("rule1",
+                    Graql.parsePattern(
+                            "{" +
+                                    "($x, $y) isa someRelation; " +
+                                    "($y, $z) isa inferredBase;" +
+                                    "};"
+                    ),
+                    Graql.parsePattern("{ (someRole: $x, someRole: $z) isa inferred; };"));
 
-                tx.commit();
-            }
-            try (Transaction tx = session.writeTransaction()) {
-                String patternString = "{ ($x, $y) isa inferred; };";
-                ReasonerQueryImpl query = ReasonerQueries.create(conjunction(patternString, tx), tx);
-                Set<InferenceRule> rules = tx.ruleCache().getRules().map(r -> new InferenceRule(r, tx)).collect(toSet());
+            tx.commit();
+        }
+        try (TestTransaction tx = ((TestTransaction) session.writeTransaction())) {
+            ReasonerQueryFactory reasonerQueryFactory = tx.reasonerQueryFactory();
+            String patternString = "{ ($x, $y) isa inferred; };";
+            ReasonerQueryImpl query = reasonerQueryFactory.create(conjunction(patternString));
+            Set<InferenceRule> rules = tx.ruleCache().getRules().map(r -> new InferenceRule(r, reasonerQueryFactory)).collect(toSet());
 
-                //with cache empty no loops are found
-                assertFalse(RuleUtils.subGraphIsCyclical(rules, tx));
-                assertFalse(query.requiresReiteration());
-                query.resolve().collect(Collectors.toList());
+            //with cache empty no loops are found
+            assertFalse(RuleUtils.subGraphIsCyclical(rules, tx.queryCache()));
+            assertFalse(query.requiresReiteration());
+            query.resolve().collect(Collectors.toList());
 
                 //with populated cache we find a loop
-                assertTrue(RuleUtils.subGraphIsCyclical(rules, tx));
+                assertTrue(RuleUtils.subGraphIsCyclical(rules, tx.queryCache()));
             }
         }
     }
 
     @Test
-    public void whenTypeDependencyGraphHasCycles_instancesHaveNonTrivialCycles_weReiterate(){
-        try (Session session = server.sessionWithNewKeyspace()) {
+    public void whenTypeDependencyGraphHasCycles_instancesHaveNonTrivialCycles_weReiterate() {
+        try (Session session = SessionUtil.serverlessSessionWithNewKeyspace(server.serverConfig())) {
             try (Transaction tx = session.writeTransaction()) {
                 Role fromRole = tx.putRole("fromRole");
                 Role toRole = tx.putRole("toRole");
@@ -196,26 +201,27 @@ public class QueryIT {
                 someRelation.create().assign(fromRole, entityF).assign(toRole, entityG);
                 tx.commit();
             }
-            try (Transaction tx = session.writeTransaction()) {
+            try (TestTransaction tx = ((TestTransaction) session.writeTransaction())) {
+                ReasonerQueryFactory reasonerQueryFactory = tx.reasonerQueryFactory();
                 String patternString = "{ (fromRole: $x, toRole: $y) isa transRelation; };";
-                ReasonerQueryImpl query = ReasonerQueries.create(conjunction(patternString, tx), tx);
-                Set<InferenceRule> rules = tx.ruleCache().getRules().map(r -> new InferenceRule(r, tx)).collect(toSet());
+                ReasonerQueryImpl query = reasonerQueryFactory.create(conjunction(patternString));
+                Set<InferenceRule> rules = tx.ruleCache().getRules().map(r -> new InferenceRule(r, tx.reasonerQueryFactory())).collect(toSet());
 
                 //with cache empty no loops are found
-                assertFalse(RuleUtils.subGraphIsCyclical(rules, tx));
+                assertFalse(RuleUtils.subGraphIsCyclical(rules, tx.queryCache()));
                 assertFalse(query.requiresReiteration());
                 query.resolve().collect(Collectors.toList());
 
                 //with populated cache we find a loop
-                assertTrue(RuleUtils.subGraphIsCyclical(rules, tx));
+                assertTrue(RuleUtils.subGraphIsCyclical(rules, tx.queryCache()));
             }
         }
     }
 
     @Test
-    public void whenQueryHasMultipleDisconnectedInferrableAtoms_weReiterate(){
-        try (Session session = server.sessionWithNewKeyspace()) {
-            try(Transaction tx = session.writeTransaction()) {
+    public void whenQueryHasMultipleDisconnectedInferrableAtoms_weReiterate() {
+        try (Session session = SessionUtil.serverlessSessionWithNewKeyspace(server.serverConfig())) {
+            try (Transaction tx = session.writeTransaction()) {
                 tx.execute(Graql.parse("define " +
                         "someEntity sub entity," +
                         "has derivedResource;" +
@@ -232,8 +238,9 @@ public class QueryIT {
                     Graql.var("x").has("derivedResource", Graql.var("value")),
                     Graql.var("y").has("derivedResource", Graql.var("anotherValue"))
             );
-            try (Transaction tx = session.writeTransaction()) {
-                ReasonerQueryImpl query = ReasonerQueries.create(conjunction(pattern.toString(), tx), tx);
+            try (TestTransaction tx = ((TestTransaction)session.writeTransaction())) {
+                ReasonerQueryFactory reasonerQueryFactory = tx.reasonerQueryFactory();
+                ReasonerQueryImpl query = reasonerQueryFactory.create(conjunction(pattern.toString()));
                 assertTrue(query.requiresReiteration());
             }
         }
@@ -241,8 +248,8 @@ public class QueryIT {
 
 
     @Test
-    public void whenRetrievingVariablesFromQueryWithComparisons_variablesFromValuePredicatesAreFetched(){
-        try (Session session = server.sessionWithNewKeyspace()) {
+    public void whenRetrievingVariablesFromQueryWithComparisons_variablesFromValuePredicatesAreFetched() {
+        try (Session session = SessionUtil.serverlessSessionWithNewKeyspace(server.serverConfig())) {
             try (Transaction tx = session.writeTransaction()) {
 
                 AttributeType<Long> resource = tx.putAttributeType("resource", AttributeType.DataType.LONG);
@@ -252,19 +259,20 @@ public class QueryIT {
                         .has(resource);
                 tx.commit();
             }
-            try (Transaction tx = session.writeTransaction()) {
+            try (TestTransaction tx = ((TestTransaction)session.writeTransaction())) {
+                ReasonerQueryFactory reasonerQueryFactory = tx.reasonerQueryFactory();
                 Attribute<Long> attribute = tx.getAttributesByValue(1337L).iterator().next();
                 String basePattern = "{" +
                         "$x isa someEntity;" +
                         "$x has resource $value;" +
                         "$value > $anotherValue;" +
                         "};";
-                ReasonerQueryImpl query = ReasonerQueries.create(conjunction(basePattern, tx), tx);
+                ReasonerQueryImpl query = reasonerQueryFactory.create(conjunction(basePattern));
                 assertEquals(
                         Sets.newHashSet(new Variable("x"), new Variable("value"), new Variable("anotherValue")),
                         query.getVarNames());
                 ConceptMap sub = new ConceptMap(ImmutableMap.of(new Variable("anotherValue"), attribute));
-                ReasonerQueryImpl subbedQuery = ReasonerQueries.create(query, sub);
+                ReasonerQueryImpl subbedQuery = reasonerQueryFactory.create(query, sub);
                 assertTrue(subbedQuery.getAtoms(IdPredicate.class).findAny().isPresent());
             }
         }
@@ -272,7 +280,8 @@ public class QueryIT {
 
     @Test
     public void testAlphaEquivalence_simpleChainWithAttributeAndTypeGuards() {
-        try(Transaction tx = geoSession.writeTransaction()) {
+        try (TestTransaction tx = ((TestTransaction)geoSession.writeTransaction())) {
+            ReasonerQueryFactory reasonerQueryFactory = tx.reasonerQueryFactory();
             String patternString = "{ " +
                     "$x isa city, has name 'Warsaw';" +
                     "$y isa region;" +
@@ -287,16 +296,17 @@ public class QueryIT {
                     "$r isa region;" +
                     "$ctr isa country, has name 'Poland'; };";
 
-            ReasonerQueryImpl query = ReasonerQueries.create(conjunction(patternString, tx), tx);
-            ReasonerQueryImpl query2 = ReasonerQueries.create(conjunction(patternString2, tx), tx);
+            ReasonerQueryImpl query = reasonerQueryFactory.create(conjunction(patternString));
+            ReasonerQueryImpl query2 = reasonerQueryFactory.create(conjunction(patternString2));
             queryEquivalence(query, query2, true);
         }
     }
 
-    @Ignore ("we currently do not fully support equivalence checks for non-atomic queries")
+    @Ignore("we currently do not fully support equivalence checks for non-atomic queries")
     @Test
     public void testAlphaEquivalence_chainTreeAndLoopStructure() {
-        try(Transaction tx = geoSession.writeTransaction()) {
+        try (TestTransaction tx = ((TestTransaction)geoSession.writeTransaction())) {
+            ReasonerQueryFactory reasonerQueryFactory = tx.reasonerQueryFactory();
             String chainString = "{" +
                     "($x, $y) isa is-located-in;" +
                     "($y, $z) isa is-located-in;" +
@@ -315,9 +325,9 @@ public class QueryIT {
                     "($z, $x) isa is-located-in;" +
                     "}";
 
-            ReasonerQueryImpl chainQuery = ReasonerQueries.create(conjunction(chainString, tx), tx);
-            ReasonerQueryImpl treeQuery = ReasonerQueries.create(conjunction(treeString, tx), tx);
-            ReasonerQueryImpl loopQuery = ReasonerQueries.create(conjunction(loopString, tx), tx);
+            ReasonerQueryImpl chainQuery = reasonerQueryFactory.create(conjunction(chainString));
+            ReasonerQueryImpl treeQuery = reasonerQueryFactory.create(conjunction(treeString));
+            ReasonerQueryImpl loopQuery = reasonerQueryFactory.create(conjunction(loopString));
             queryEquivalence(chainQuery, treeQuery, false);
             queryEquivalence(chainQuery, loopQuery, false);
             queryEquivalence(treeQuery, loopQuery, false);
@@ -326,7 +336,8 @@ public class QueryIT {
 
     @Test //tests various configurations of alpha-equivalence with extra type atoms present
     public void testAlphaEquivalence_nonMatchingTypes() {
-        try(Transaction tx = geoSession.writeTransaction()) {
+        try (TestTransaction tx = ((TestTransaction)geoSession.writeTransaction())) {
+            ReasonerQueryFactory reasonerQueryFactory = tx.reasonerQueryFactory();
             String polandId = getConcept(tx, "name", "Poland").id().getValue();
             String patternString = "{ $y id " + polandId + "; $y isa country; (geo-entity: $y1, entity-location: $y) isa is-located-in; };";
             String patternString2 = "{ $x1 id " + polandId + "; $y isa country; (geo-entity: $x1, entity-location: $x2) isa is-located-in; };";
@@ -334,11 +345,11 @@ public class QueryIT {
             String patternString4 = "{ $x isa city; (entity-location: $y1, geo-entity: $x) isa is-located-in; };";
             String patternString5 = "{ (geo-entity: $y1, entity-location: $y2) isa is-located-in; };";
 
-            ReasonerQueryImpl query = ReasonerQueries.create(conjunction(patternString, tx), tx);
-            ReasonerQueryImpl query2 = ReasonerQueries.create(conjunction(patternString2, tx), tx);
-            ReasonerQueryImpl query3 = ReasonerQueries.create(conjunction(patternString3, tx), tx);
-            ReasonerQueryImpl query4 = ReasonerQueries.create(conjunction(patternString4, tx), tx);
-            ReasonerQueryImpl query5 = ReasonerQueries.create(conjunction(patternString5, tx), tx);
+            ReasonerQueryImpl query = reasonerQueryFactory.create(conjunction(patternString));
+            ReasonerQueryImpl query2 = reasonerQueryFactory.create(conjunction(patternString2));
+            ReasonerQueryImpl query3 = reasonerQueryFactory.create(conjunction(patternString3));
+            ReasonerQueryImpl query4 = reasonerQueryFactory.create(conjunction(patternString4));
+            ReasonerQueryImpl query5 = reasonerQueryFactory.create(conjunction(patternString5));
 
             queryEquivalence(query, query2, false);
             queryEquivalence(query, query3, false);
@@ -352,22 +363,24 @@ public class QueryIT {
     }
 
     @Test //tests alpha-equivalence of queries with indirect types
-    public void testAlphaEquivalence_indirectTypes(){
-        try(Transaction tx = geoSession.writeTransaction()) {
+    public void testAlphaEquivalence_indirectTypes() {
+        try (TestTransaction tx = ((TestTransaction)geoSession.writeTransaction())) {
+            ReasonerQueryFactory reasonerQueryFactory = tx.reasonerQueryFactory();
             String patternString = "{ (entity-location: $x2, geo-entity: $x1) isa is-located-in;" +
                     "$x1 isa $t1; $t1 sub geoObject; };";
             String patternString2 = "{ (geo-entity: $y1, entity-location: $y2) isa is-located-in;" +
                     "$y1 isa $t2; $t2 sub geoObject; };";
 
-            ReasonerQueryImpl query = ReasonerQueries.create(conjunction(patternString, tx), tx);
-            ReasonerQueryImpl query2 = ReasonerQueries.create(conjunction(patternString2, tx), tx);
+            ReasonerQueryImpl query = reasonerQueryFactory.create(conjunction(patternString));
+            ReasonerQueryImpl query2 = reasonerQueryFactory.create(conjunction(patternString2));
             queryEquivalence(query, query2, true);
         }
     }
 
     @Test
-    public void testAlphaEquivalence_RelationsWithSubstitution(){
-        try(Transaction tx = geoSession.writeTransaction()) {
+    public void testAlphaEquivalence_RelationsWithSubstitution() {
+        try (TestTransaction tx = ((TestTransaction)geoSession.writeTransaction())) {
+            ReasonerQueryFactory reasonerQueryFactory = tx.reasonerQueryFactory();
             String patternString = "{ (role: $x, role: $y);$x id V666; };";
             String patternString2 = "{ (role: $x, role: $y);$y id V666; };";
             String patternString3 = "{ (role: $x, role: $y);$x id V666;$y id V667; };";
@@ -375,21 +388,21 @@ public class QueryIT {
             String patternString5 = "{ (entity-location: $x, geo-entity: $y);$x id V666;$y id V667; };";
             String patternString6 = "{ (entity-location: $x, geo-entity: $y);$y id V666;$x id V667; };";
             String patternString7 = "{ (role: $x, role: $y);$x id V666;$y id V666; };";
-            Conjunction<Statement> pattern = conjunction(patternString, tx);
-            Conjunction<Statement> pattern2 = conjunction(patternString2, tx);
-            Conjunction<Statement> pattern3 = conjunction(patternString3, tx);
-            Conjunction<Statement> pattern4 = conjunction(patternString4, tx);
-            Conjunction<Statement> pattern5 = conjunction(patternString5, tx);
-            Conjunction<Statement> pattern6 = conjunction(patternString6, tx);
-            Conjunction<Statement> pattern7 = conjunction(patternString7, tx);
+            Conjunction<Statement> pattern = conjunction(patternString);
+            Conjunction<Statement> pattern2 = conjunction(patternString2);
+            Conjunction<Statement> pattern3 = conjunction(patternString3);
+            Conjunction<Statement> pattern4 = conjunction(patternString4);
+            Conjunction<Statement> pattern5 = conjunction(patternString5);
+            Conjunction<Statement> pattern6 = conjunction(patternString6);
+            Conjunction<Statement> pattern7 = conjunction(patternString7);
 
-            ReasonerAtomicQuery query = ReasonerQueries.atomic(pattern, tx);
-            ReasonerAtomicQuery query2 = ReasonerQueries.atomic(pattern2, tx);
-            ReasonerAtomicQuery query3 = ReasonerQueries.atomic(pattern3, tx);
-            ReasonerAtomicQuery query4 = ReasonerQueries.atomic(pattern4, tx);
-            ReasonerAtomicQuery query5 = ReasonerQueries.atomic(pattern5, tx);
-            ReasonerAtomicQuery query6 = ReasonerQueries.atomic(pattern6, tx);
-            ReasonerAtomicQuery query7 = ReasonerQueries.atomic(pattern7, tx);
+            ReasonerAtomicQuery query = reasonerQueryFactory.atomic(pattern);
+            ReasonerAtomicQuery query2 = reasonerQueryFactory.atomic(pattern2);
+            ReasonerAtomicQuery query3 = reasonerQueryFactory.atomic(pattern3);
+            ReasonerAtomicQuery query4 = reasonerQueryFactory.atomic(pattern4);
+            ReasonerAtomicQuery query5 = reasonerQueryFactory.atomic(pattern5);
+            ReasonerAtomicQuery query6 = reasonerQueryFactory.atomic(pattern6);
+            ReasonerAtomicQuery query7 = reasonerQueryFactory.atomic(pattern7);
 
             queryEquivalence(query, query2, true);
             queryEquivalence(query, query3, false);
@@ -421,15 +434,16 @@ public class QueryIT {
     }
 
     @Test
-    public void whenReifyingRelation_extraAtomIsCreatedWithUserDefinedName(){
-        try(Transaction tx = geoSession.writeTransaction()) {
+    public void whenReifyingRelation_extraAtomIsCreatedWithUserDefinedName() {
+        try (TestTransaction tx = ((TestTransaction)geoSession.writeTransaction())) {
+            ReasonerQueryFactory reasonerQueryFactory = tx.reasonerQueryFactory();
             String patternString = "{ (geo-entity: $x, entity-location: $y) isa is-located-in; };";
             String patternString2 = "{ ($x, $y) has name 'Poland'; };";
 
-            Conjunction<Statement> pattern = conjunction(patternString, tx);
-            Conjunction<Statement> pattern2 = conjunction(patternString2, tx);
-            ReasonerQueryImpl query = ReasonerQueries.create(pattern, tx);
-            ReasonerQueryImpl query2 = ReasonerQueries.create(pattern2, tx);
+            Conjunction<Statement> pattern = conjunction(patternString);
+            Conjunction<Statement> pattern2 = conjunction(patternString2);
+            ReasonerQueryImpl query = reasonerQueryFactory.create(pattern);
+            ReasonerQueryImpl query2 = reasonerQueryFactory.create(pattern2);
             assertFalse(query.getAtoms(RelationAtom.class).findFirst().orElse(null).isUserDefined());
             assertTrue(query2.getAtoms(RelationAtom.class).findFirst().orElse(null).isUserDefined());
             assertEquals(query.getAtoms().size(), 1);
@@ -437,7 +451,7 @@ public class QueryIT {
         }
     }
 
-    private void queryEquivalence(ReasonerQueryImpl a, ReasonerQueryImpl b, boolean expectation){
+    private void queryEquivalence(ReasonerQueryImpl a, ReasonerQueryImpl b, boolean expectation) {
         assertEquals(a.toString() + " =? " + b.toString(), a.equals(b), expectation);
         assertEquals(b.toString() + " =? " + a.toString(), b.equals(a), expectation);
         //check hash additionally if need to be equal
@@ -446,14 +460,14 @@ public class QueryIT {
         }
     }
 
-    private Conjunction<Statement> conjunction(String patternString, Transaction tx){
+    private Conjunction<Statement> conjunction(String patternString) {
         Set<Statement> vars = Graql.parsePattern(patternString)
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
         return Graql.and(vars);
     }
 
-    private static Concept getConcept(Transaction tx, String typeLabel, String val){
+    private static Concept getConcept(Transaction tx, String typeLabel, String val) {
         return tx.stream(Graql.match((Pattern) Graql.var("x").has(typeLabel, val)).get("x"))
                 .map(ans -> ans.get("x")).findAny().get();
     }

@@ -22,13 +22,14 @@ import com.google.common.collect.ImmutableSet;
 import grakn.common.util.Pair;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.ConceptId;
-import grakn.core.kb.graql.planning.Fragment;
+import grakn.core.kb.concept.manager.ConceptManager;
+import grakn.core.kb.graql.gremlin.Fragment;
 import grakn.core.kb.graql.planning.spanningtree.graph.DirectedEdge;
 import grakn.core.kb.graql.planning.spanningtree.graph.InstanceNode;
 import grakn.core.kb.graql.planning.spanningtree.graph.Node;
 import grakn.core.kb.graql.planning.spanningtree.graph.NodeId;
 import grakn.core.kb.graql.planning.spanningtree.util.Weighted;
-import grakn.core.kb.server.Transaction;
+import grakn.core.kb.server.statistics.KeyspaceStatistics;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
@@ -197,11 +198,10 @@ public abstract class FragmentImpl implements Fragment {
 
     /**
      * @param traversal the traversal to extend with this Fragment
-     * @param tx        the graph to execute the traversal on
      */
     @Override
     public final GraphTraversal<Vertex, ? extends Element> applyTraversal(
-            GraphTraversal<Vertex, ? extends Element> traversal, Transaction tx,
+            GraphTraversal<Vertex, ? extends Element> traversal, ConceptManager conceptManager,
             Collection<Variable> vars, Variable currentVar) {
 
 
@@ -223,7 +223,7 @@ public abstract class FragmentImpl implements Fragment {
 
         vars.add(start());
 
-        traversal = applyTraversalInner(traversal, tx, vars);
+        traversal = applyTraversalInner(traversal, conceptManager, vars);
 
         Variable end = end();
         if (end != null) {
@@ -253,11 +253,11 @@ public abstract class FragmentImpl implements Fragment {
 
     /**
      * @param traversal the traversal to extend with this Fragment
-     * @param tx        the transaction to execute the traversal on
+     * @param conceptManager
      * @param vars
      */
     abstract GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
-            GraphTraversal<Vertex, ? extends Element> traversal, Transaction tx, Collection<Variable> vars);
+            GraphTraversal<Vertex, ? extends Element> traversal, ConceptManager conceptManager, Collection<Variable> vars);
 
 
     /**
@@ -289,9 +289,11 @@ public abstract class FragmentImpl implements Fragment {
      * These are cost heuristic proxies using statistics
      *
      * @return
+     * @param conceptManager
+     * @param keyspaceStatistics
      */
     @Override
-    public double estimatedCostAsStartingPoint(Transaction tx) {
+    public double estimatedCostAsStartingPoint(ConceptManager conceptManager, KeyspaceStatistics keyspaceStatistics) {
         throw new UnsupportedOperationException("Fragment of type " + this.getClass() + " is not a fixed cost starting point - no esimated cost as a starting point.");
     }
 

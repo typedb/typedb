@@ -22,9 +22,9 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Type;
-import grakn.core.kb.graql.planning.EquivalentFragmentSet;
+import grakn.core.kb.graql.gremlin.EquivalentFragmentSet;
 import grakn.core.kb.server.Transaction;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.server.session.TransactionImpl;
 import graql.lang.statement.Variable;
 import org.junit.Before;
 import org.junit.Test;
@@ -51,7 +51,7 @@ public class LabelFragmentSetTest {
 
     @Before
     public void setUp() {
-        tx = mock(TransactionOLTP.class);
+        tx = mock(TransactionImpl.class);
 
         when(tx.getSchemaConcept(EXISTING_LABEL)).thenReturn(mock(Type.class));
         when(tx.getSchemaConcept(NON_EXISTENT_LABEL)).thenReturn(null);
@@ -68,7 +68,7 @@ public class LabelFragmentSetTest {
 
         Collection<EquivalentFragmentSet> fragmentSets = Sets.newHashSet(originalFragmentSets);
 
-        LabelFragmentSet.REDUNDANT_LABEL_ELIMINATION_OPTIMISATION.apply(fragmentSets, tx);
+        LabelFragmentSet.REDUNDANT_LABEL_ELIMINATION_OPTIMISATION.apply(fragmentSets, tx.conceptManager());
 
         assertEquals(Sets.difference(originalFragmentSets, ImmutableSet.of(labelFragment)), fragmentSets);
     }
@@ -81,7 +81,7 @@ public class LabelFragmentSetTest {
 
         Collection<EquivalentFragmentSet> fragmentSets = Sets.newHashSet(originalFragmentSets);
 
-        LabelFragmentSet.REDUNDANT_LABEL_ELIMINATION_OPTIMISATION.apply(fragmentSets, tx);
+        LabelFragmentSet.REDUNDANT_LABEL_ELIMINATION_OPTIMISATION.apply(fragmentSets, tx.conceptManager());
 
         assertEquals(originalFragmentSets, fragmentSets);
     }
@@ -94,7 +94,7 @@ public class LabelFragmentSetTest {
 
         Collection<EquivalentFragmentSet> fragmentSets = Sets.newHashSet(originalFragmentSets);
 
-        LabelFragmentSet.REDUNDANT_LABEL_ELIMINATION_OPTIMISATION.apply(fragmentSets, tx);
+        LabelFragmentSet.REDUNDANT_LABEL_ELIMINATION_OPTIMISATION.apply(fragmentSets, tx.conceptManager());
 
         assertEquals(originalFragmentSets, fragmentSets);
     }
@@ -108,7 +108,7 @@ public class LabelFragmentSetTest {
 
         Collection<EquivalentFragmentSet> fragmentSets = Sets.newHashSet(originalFragmentSets);
 
-        LabelFragmentSet.REDUNDANT_LABEL_ELIMINATION_OPTIMISATION.apply(fragmentSets, tx);
+        LabelFragmentSet.REDUNDANT_LABEL_ELIMINATION_OPTIMISATION.apply(fragmentSets, tx.conceptManager());
 
         assertEquals(originalFragmentSets, fragmentSets);
     }
@@ -121,7 +121,7 @@ public class LabelFragmentSetTest {
 
         Collection<EquivalentFragmentSet> fragmentSets = Sets.newHashSet(originalFragmentSets);
 
-        LabelFragmentSet.REDUNDANT_LABEL_ELIMINATION_OPTIMISATION.apply(fragmentSets, tx);
+        LabelFragmentSet.REDUNDANT_LABEL_ELIMINATION_OPTIMISATION.apply(fragmentSets, tx.conceptManager());
 
         assertEquals(originalFragmentSets, fragmentSets);
     }
