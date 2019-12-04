@@ -187,8 +187,6 @@ java_test(
         "//graql:graql",
         "//kb",
         "//kb/concept/api",
-        "//kb/concept/manager",
-        "//core",
         "//common",
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:concept-downcasting",

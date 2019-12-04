@@ -100,6 +100,7 @@ public class GraknTestStorage extends ExternalResource {
         mockServerProperties.setProperty(ConfigKey.STORAGE_HOSTNAME.name(), "127.0.0.1");
         mockServerProperties.setProperty(ConfigKey.STORAGE_PORT.name(), String.valueOf(nativeTransportPort));
         mockServerProperties.setProperty("cache." + DB_CACHE.getName(), String.valueOf(false));
+        mockServerProperties.setProperty(ConfigKey.HADOOP_STORAGE_PORT.name(), String.valueOf(nativeTransportPort));
         mockServerProperties.setProperty(ConfigKey.TYPE_SHARD_THRESHOLD.name(), String.valueOf(250000));
         return Config.of(mockServerProperties);
     }
