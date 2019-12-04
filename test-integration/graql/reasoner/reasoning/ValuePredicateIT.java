@@ -20,6 +20,7 @@ package grakn.core.graql.reasoner.reasoning;
 
 import com.google.common.collect.Iterables;
 import grakn.common.util.Pair;
+import grakn.core.common.config.Config;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.atom.binary.AttributeAtom;
 import grakn.core.graql.reasoner.atom.predicate.VariableValuePredicate;
@@ -33,7 +34,7 @@ import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
-import grakn.core.rule.GraknTestServer;
+import grakn.core.rule.GraknTestStorage;
 import grakn.core.rule.SessionUtil;
 import grakn.core.rule.TestTransactionProvider;
 import graql.lang.Graql;
@@ -61,12 +62,13 @@ import static org.junit.Assert.assertNotEquals;
 public class ValuePredicateIT {
 
     @ClassRule
-    public static final GraknTestServer server = new GraknTestServer(false);
+    public static final GraknTestStorage storage = new GraknTestStorage();
 
     private static Session attributeAttachmentSession;
     @BeforeClass
     public static void loadContext(){
-        attributeAttachmentSession = SessionUtil.serverlessSessionWithNewKeyspace(server.serverConfig());
+        Config mockServerConfig = storage.createCompatibleServerConfig();
+        attributeAttachmentSession = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig);
         String resourcePath = "test-integration/graql/reasoner/stubs/";
         loadFromFileAndCommit(resourcePath, "resourceAttachment.gql", attributeAttachmentSession);
     }
@@ -78,7 +80,8 @@ public class ValuePredicateIT {
 
     @Test
     public void whenResolvingInferrableAttributesWithBounds_answersAreCalculatedCorrectly(){
-        Session session = SessionUtil.serverlessSessionWithNewKeyspace(server.serverConfig());
+        Config mockServerConfig = storage.createCompatibleServerConfig();
+        Session session = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig);
         try(Transaction tx = session.writeTransaction()) {
             tx.execute(Graql.parse("define " +
                     "someEntity sub entity," +
@@ -135,7 +138,8 @@ public class ValuePredicateIT {
 
     @Test
     public void whenResolvableAttributesHaveVariableComparisons_answersAreCalculatedCorrectly(){
-        Session session = SessionUtil.serverlessSessionWithNewKeyspace(server.serverConfig());
+        Config mockServerConfig = storage.createCompatibleServerConfig();
+        Session session = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig);
         try(Transaction tx = session.writeTransaction()) {
             tx.execute(Graql.parse("define " +
                     "someEntity sub entity," +
@@ -206,8 +210,9 @@ public class ValuePredicateIT {
     }
 
     @Test
-    public void whenResolvableAttributesHaveVariableComparisonsWithABound_answersAreCalculatedCorrectly(){
-        Session session = SessionUtil.serverlessSessionWithNewKeyspace(server.serverConfig());
+    public void whenResolvableAttributesHaveVariableComparisonsWithAoBound_answersAreCalculatedCorrectly(){
+        Config mockServerConfig = storage.createCompatibleServerConfig();
+        Session session = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig);
         try(Transaction tx = session.writeTransaction()) {
             tx.execute(Graql.parse("define " +
                     "someEntity sub entity," +

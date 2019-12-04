@@ -21,7 +21,6 @@ package grakn.core.graql.reasoner.cache;
 
 import com.google.common.collect.Sets;
 import grakn.core.graql.reasoner.CacheCasting;
-import grakn.core.graql.reasoner.cache.RuleCacheImpl;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.EntityType;
 import grakn.core.kb.concept.api.Label;

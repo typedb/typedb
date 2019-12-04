@@ -21,6 +21,7 @@ package grakn.core.graql.reasoner.cache;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
+import grakn.core.common.config.Config;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.CacheCasting;
 import grakn.core.graql.reasoner.atom.binary.RelationAtom;
@@ -35,23 +36,24 @@ import grakn.core.kb.concept.api.Relation;
 import grakn.core.kb.graql.reasoner.cache.CacheEntry;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
-import grakn.core.rule.GraknTestServer;
+import grakn.core.rule.GraknTestStorage;
 import grakn.core.rule.SessionUtil;
 import grakn.core.rule.TestTransactionProvider;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.query.GraqlGet;
 import graql.lang.statement.Statement;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Test;
+
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
 
 import static grakn.core.util.GraqlTestUtil.assertCollectionsNonTriviallyEqual;
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
@@ -69,13 +71,14 @@ public class QueryCacheIT {
     private static String resourcePath = "test-integration/graql/reasoner/resources/";
 
     @ClassRule
-    public static final GraknTestServer server = new GraknTestServer(false);
+    public static final GraknTestStorage storage = new GraknTestStorage();
 
     private static Session genericSchemaSession;
 
     @BeforeClass
     public static void loadContext() {
-        genericSchemaSession = SessionUtil.serverlessSessionWithNewKeyspace(server.serverConfig());
+        Config mockServerConfig = storage.createCompatibleServerConfig();
+        genericSchemaSession = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig);
         loadFromFileAndCommit(resourcePath, "genericSchema.gql", genericSchemaSession);
     }
 

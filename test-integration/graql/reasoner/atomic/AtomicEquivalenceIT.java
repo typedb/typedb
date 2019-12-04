@@ -21,6 +21,7 @@ package grakn.core.graql.reasoner.atomic;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import grakn.core.common.config.Config;
 import grakn.core.concept.util.attribute.ValueConverter;
 import grakn.core.graql.reasoner.atom.AtomicEquivalence;
 import grakn.core.graql.reasoner.query.ReasonerQueryFactory;
@@ -28,7 +29,7 @@ import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
-import grakn.core.rule.GraknTestServer;
+import grakn.core.rule.GraknTestStorage;
 import grakn.core.rule.SessionUtil;
 import grakn.core.rule.TestTransactionProvider;
 import graql.lang.Graql;
@@ -59,7 +60,7 @@ import static org.junit.Assert.assertNotEquals;
 public class AtomicEquivalenceIT {
 
     @ClassRule
-    public static final GraknTestServer server = new GraknTestServer(false);
+    public static final GraknTestStorage storage = new GraknTestStorage();
 
     private static Session genericSchemaSession;
 
@@ -67,7 +68,8 @@ public class AtomicEquivalenceIT {
 
     @BeforeClass
     public static void loadContext() {
-        genericSchemaSession = SessionUtil.serverlessSessionWithNewKeyspace(server.serverConfig());
+        Config mockServerConfig = storage.createCompatibleServerConfig();
+        genericSchemaSession = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig);
         String resourcePath = "test-integration/graql/reasoner/resources/";
         loadFromFileAndCommit(resourcePath, "genericSchema.gql", genericSchemaSession);
     }

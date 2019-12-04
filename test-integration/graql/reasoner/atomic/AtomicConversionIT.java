@@ -19,6 +19,7 @@
 package grakn.core.graql.reasoner.atomic;
 
 import com.google.common.collect.Sets;
+import grakn.core.common.config.Config;
 import grakn.core.core.Schema;
 import grakn.core.graql.reasoner.ReasonerException;
 import grakn.core.graql.reasoner.atom.Atom;
@@ -31,7 +32,7 @@ import grakn.core.graql.reasoner.atom.predicate.ValuePredicate;
 import grakn.core.graql.reasoner.query.ReasonerQueryFactory;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
-import grakn.core.rule.GraknTestServer;
+import grakn.core.rule.GraknTestStorage;
 import grakn.core.rule.SessionUtil;
 import grakn.core.rule.TestTransactionProvider;
 import graql.lang.Graql;
@@ -52,7 +53,7 @@ import static junit.framework.TestCase.assertTrue;
 public class AtomicConversionIT {
 
     @ClassRule
-    public static final GraknTestServer server = new GraknTestServer(false);
+    public static final GraknTestStorage storage = new GraknTestStorage();
 
     private static Session session;
 
@@ -65,7 +66,8 @@ public class AtomicConversionIT {
     @BeforeClass
     public static void loadContext(){
         final String resourcePath = "test-integration/graql/reasoner/resources/";
-        session = SessionUtil.serverlessSessionWithNewKeyspace(server.serverConfig());
+        Config mockServerConfig = storage.createCompatibleServerConfig();
+        session = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig);
         loadFromFileAndCommit(resourcePath, "genericSchema.gql", session);
 
         Statement has = Graql.var("x").has("resource", "b");

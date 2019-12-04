@@ -18,26 +18,25 @@
 
 package grakn.core.graql.query;
 
+import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.answer.Numeric;
 import grakn.core.concept.answer.Void;
+import grakn.core.core.Schema;
+import grakn.core.graql.graph.MovieGraph;
+import grakn.core.kb.concept.api.Attribute;
+import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
-import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concept.answer.ConceptSet;
-import grakn.core.concept.answer.Numeric;
-import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.Entity;
-import grakn.core.kb.concept.api.Relation;
-import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.EntityType;
+import grakn.core.kb.concept.api.Relation;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.SchemaConcept;
-import grakn.core.kb.server.exception.GraqlSemanticException;
-import grakn.core.graql.graph.MovieGraph;
-import grakn.core.rule.GraknTestServer;
-import grakn.core.core.Schema;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
+import grakn.core.kb.server.exception.GraqlSemanticException;
+import grakn.core.rule.GraknTestServer;
 import graql.lang.Graql;
 import graql.lang.exception.GraqlException;
 import graql.lang.pattern.Pattern;

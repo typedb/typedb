@@ -82,6 +82,7 @@ java_test(
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//kb",
         "//kb/concept/api",
+        "//common",
         "//test-integration/rule:grakn-test-server",
         "@graknlabs_common//:common",
         "@graknlabs_graql//java:graql",

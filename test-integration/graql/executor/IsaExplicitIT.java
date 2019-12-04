@@ -19,6 +19,7 @@
 package grakn.core.graql.executor;
 
 import com.google.common.collect.ImmutableList;
+import grakn.core.common.config.Config;
 import grakn.core.graql.gremlin.TraversalPlanFactoryImpl;
 import grakn.core.graql.gremlin.fragment.InIsaFragment;
 import grakn.core.graql.gremlin.fragment.InSubFragment;
@@ -35,7 +36,7 @@ import grakn.core.kb.graql.gremlin.Fragment;
 import grakn.core.kb.graql.gremlin.TraversalPlanFactory;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
-import grakn.core.rule.GraknTestServer;
+import grakn.core.rule.GraknTestStorage;
 import grakn.core.rule.SessionUtil;
 import grakn.core.rule.TestTransactionProvider;
 import graql.lang.Graql;
@@ -59,15 +60,16 @@ import static org.junit.Assert.assertThat;
 public class IsaExplicitIT {
 
     @ClassRule
-    public static final GraknTestServer server = new GraknTestServer(false);
+    public static final GraknTestStorage storage = new GraknTestStorage();
 
     private Transaction tx;
     private Session session;
     private TraversalPlanFactory traversalPlanFactory;
 
     @Before
-    public void loadSimpleData() {
-        session = SessionUtil.serverlessSessionWithNewKeyspace(server.serverConfig());
+    public void setUp(){
+        Config mockServerConfig = storage.createCompatibleServerConfig();
+        session = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig);
 
         TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction)session.writeTransaction();
         traversalPlanFactory = new TraversalPlanFactoryImpl(

@@ -21,13 +21,14 @@ package grakn.core.graql.reasoner.atomic;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Multimap;
+import grakn.core.common.config.Config;
 import grakn.core.core.Schema;
 import grakn.core.graql.reasoner.atom.binary.RelationAtom;
 import grakn.core.graql.reasoner.query.ReasonerQueryFactory;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
-import grakn.core.rule.GraknTestServer;
+import grakn.core.rule.GraknTestStorage;
 import grakn.core.rule.SessionUtil;
 import grakn.core.rule.TestTransactionProvider;
 import graql.lang.Graql;
@@ -50,7 +51,7 @@ import static org.junit.Assert.assertTrue;
 public class RoleInferenceIT {
 
     @ClassRule
-    public static final GraknTestServer server = new GraknTestServer(false);
+    public static final GraknTestStorage storage = new GraknTestStorage();
 
     private static Session roleInferenceSetSession;
     private static Session genericSchemaSession;
@@ -58,12 +59,13 @@ public class RoleInferenceIT {
 
     @BeforeClass
     public static void loadContext(){
+        Config compatibleServerConfig = storage.createCompatibleServerConfig();
         final String resourcePath = "test-integration/graql/reasoner/resources/";
-        roleInferenceSetSession = SessionUtil.serverlessSessionWithNewKeyspace(server.serverConfig());
+        roleInferenceSetSession = SessionUtil.serverlessSessionWithNewKeyspace(compatibleServerConfig);
         loadFromFileAndCommit(resourcePath, "roleInferenceTest.gql", roleInferenceSetSession);
-        genericSchemaSession = SessionUtil.serverlessSessionWithNewKeyspace(server.serverConfig());
+        genericSchemaSession = SessionUtil.serverlessSessionWithNewKeyspace(compatibleServerConfig);
         loadFromFileAndCommit(resourcePath, "genericSchema.gql", genericSchemaSession);
-        ruleApplicabilitySetSession = SessionUtil.serverlessSessionWithNewKeyspace(server.serverConfig());
+        ruleApplicabilitySetSession = SessionUtil.serverlessSessionWithNewKeyspace(compatibleServerConfig);
         loadFromFileAndCommit(resourcePath,"ruleApplicabilityTest.gql", ruleApplicabilitySetSession);
     }
 

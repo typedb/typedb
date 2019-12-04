@@ -37,9 +37,10 @@ import graql.lang.Graql;
 import graql.lang.query.GraqlGet;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
-import java.util.List;
 import org.junit.ClassRule;
 import org.junit.Test;
+
+import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 

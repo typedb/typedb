@@ -21,6 +21,7 @@ package grakn.core.graql.reasoner.atomic;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Multimap;
+import grakn.core.common.config.Config;
 import grakn.core.core.Schema;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.binary.AttributeAtom;
@@ -38,7 +39,7 @@ import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
-import grakn.core.rule.GraknTestServer;
+import grakn.core.rule.GraknTestStorage;
 import grakn.core.rule.SessionUtil;
 import grakn.core.rule.TestTransactionProvider;
 import graql.lang.Graql;
@@ -69,7 +70,7 @@ public class RuleApplicabilityIT {
     private static String resourcePath = "test-integration/graql/reasoner/resources/";
 
     @ClassRule
-    public static final GraknTestServer server = new GraknTestServer(false);
+    public static final GraknTestStorage storage = new GraknTestStorage();
 
     private static Session ruleApplicabilitySession;
     private static Session resourceApplicabilitySession;
@@ -88,11 +89,12 @@ public class RuleApplicabilityIT {
 
     @BeforeClass
     public static void loadContext(){
-        resourceApplicabilitySession = SessionUtil.serverlessSessionWithNewKeyspace(server.serverConfig());
+        Config mockServerConfig = storage.createCompatibleServerConfig();
+        resourceApplicabilitySession = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig);
         loadFromFileAndCommit(resourcePath,"resourceApplicabilityTest.gql", resourceApplicabilitySession);
-        reifiedResourceApplicabilitySession =  SessionUtil.serverlessSessionWithNewKeyspace(server.serverConfig());
+        reifiedResourceApplicabilitySession =  SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig);
         loadFromFileAndCommit(resourcePath,"reifiedResourceApplicabilityTest.gql", reifiedResourceApplicabilitySession);
-        ruleApplicabilitySession =  SessionUtil.serverlessSessionWithNewKeyspace(server.serverConfig());
+        ruleApplicabilitySession =  SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig);
         loadFromFileAndCommit(resourcePath,"ruleApplicabilityTest.gql", ruleApplicabilitySession);
 
         //add extra data so that all rules can be possibly triggered

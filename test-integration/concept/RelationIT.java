@@ -20,35 +20,33 @@
 package grakn.core.concept;
 
 import com.google.common.collect.Iterables;
+import grakn.core.common.config.Config;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.concept.answer.Void;
 import grakn.core.core.JanusTraversalSourceProvider;
+import grakn.core.core.Schema;
+import grakn.core.kb.concept.api.Attribute;
+import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
-import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.Entity;
+import grakn.core.kb.concept.api.EntityType;
 import grakn.core.kb.concept.api.GraknConceptException;
 import grakn.core.kb.concept.api.Relation;
-import grakn.core.kb.concept.api.Thing;
-import grakn.core.kb.concept.api.AttributeType;
-import grakn.core.kb.concept.api.EntityType;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
+import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.concept.manager.ConceptManager;
-import grakn.core.rule.GraknTestServer;
-import grakn.core.kb.server.exception.InvalidKBException;
-import grakn.core.core.Schema;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
+import grakn.core.kb.server.exception.InvalidKBException;
+import grakn.core.rule.GraknTestStorage;
 import grakn.core.rule.SessionUtil;
 import grakn.core.rule.TestTransactionProvider;
 import graql.lang.Graql;
 import graql.lang.query.GraqlDefine;
 import graql.lang.query.GraqlDelete;
 import graql.lang.query.GraqlInsert;
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.hamcrest.Matchers;
 import org.junit.After;
@@ -57,6 +55,10 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -79,7 +81,7 @@ public class RelationIT {
     private RelationType relationType;
 
     @ClassRule
-    public static final GraknTestServer server = new GraknTestServer(false);
+    public static final GraknTestStorage storage = new GraknTestStorage();
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
@@ -88,7 +90,8 @@ public class RelationIT {
 
     @Before
     public void setUp(){
-        session = SessionUtil.serverlessSessionWithNewKeyspace(server.serverConfig());
+        Config mockServerConfig = storage.createCompatibleServerConfig();
+        session = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig);
         tx = session.writeTransaction();
         role1 = tx.putRole("Role 1");
         role2 = tx.putRole("Role 2");

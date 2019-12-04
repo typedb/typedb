@@ -20,9 +20,9 @@ package grakn.core.server.session.cache;
 
 import grakn.client.GraknClient;
 import grakn.core.kb.concept.api.Role;
-import grakn.core.rule.GraknTestServer;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
+import grakn.core.rule.GraknTestServer;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;

@@ -18,8 +18,8 @@
 
 package grakn.core.graql.reasoner.graph;
 
-import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.EntityType;
+import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.server.Session;

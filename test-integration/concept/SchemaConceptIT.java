@@ -19,20 +19,20 @@
 
 package grakn.core.concept;
 
+import grakn.core.common.exception.ErrorMessage;
 import grakn.core.concept.impl.AttributeTypeImpl;
 import grakn.core.concept.impl.EntityTypeImpl;
-import grakn.core.common.exception.ErrorMessage;
-import grakn.core.kb.concept.api.Label;
+import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.EntityType;
+import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.structure.EdgeElement;
-import grakn.core.rule.GraknTestServer;
-import grakn.core.kb.server.exception.TransactionException;
-import grakn.core.core.Schema;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
+import grakn.core.kb.server.exception.TransactionException;
+import grakn.core.rule.GraknTestServer;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.junit.After;
 import org.junit.Assert;

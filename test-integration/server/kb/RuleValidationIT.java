@@ -20,6 +20,7 @@ package grakn.core.server.kb;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import grakn.core.common.config.Config;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.core.Schema;
 import grakn.core.graql.reasoner.query.ReasonerQueryFactory;
@@ -35,7 +36,7 @@ import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import grakn.core.kb.server.exception.InvalidKBException;
-import grakn.core.rule.GraknTestServer;
+import grakn.core.rule.GraknTestStorage;
 import grakn.core.rule.SessionUtil;
 import grakn.core.rule.TestTransactionProvider;
 import graql.lang.Graql;
@@ -69,13 +70,14 @@ public class RuleValidationIT {
 
 
     @ClassRule
-    public static final GraknTestServer server = new GraknTestServer(false);
+    public static final GraknTestStorage storage = new GraknTestStorage();
 
     private Session session;
 
     @Before
     public void setUp() {
-        session = SessionUtil.serverlessSessionWithNewKeyspace(server.serverConfig());
+        Config mockServerConfig = storage.createCompatibleServerConfig();
+        session = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig);
     }
 
     @After

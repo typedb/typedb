@@ -81,7 +81,7 @@ public class TransactionCacheIT {
     static final Path CASSANDRA_CONFIG_PATH = Paths.get("test-integration/resources/cassandra-embedded.yaml");
 
     @ClassRule
-    public static final GraknTestServer server = new GraknTestServer(SERVER_SMALL_TX_CACHE_CONFIG_PATH, CASSANDRA_CONFIG_PATH, false);
+    public static final GraknTestServer server = new GraknTestServer(SERVER_SMALL_TX_CACHE_CONFIG_PATH, CASSANDRA_CONFIG_PATH);
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();

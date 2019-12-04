@@ -20,7 +20,6 @@ package grakn.core.server.session;
 
 import com.google.common.collect.Sets;
 import grakn.core.common.config.Config;
-import grakn.core.common.config.ConfigKey;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.impl.TypeImpl;
@@ -43,11 +42,9 @@ import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import grakn.core.kb.server.exception.InvalidKBException;
 import grakn.core.kb.server.exception.TransactionException;
-import grakn.core.kb.server.keyspace.Keyspace;
-import grakn.core.rule.GraknTestServer;
+import grakn.core.rule.GraknTestStorage;
 import grakn.core.rule.SessionUtil;
 import grakn.core.rule.TestTransactionProvider;
-import grakn.core.server.util.LockManager;
 import grakn.core.util.ConceptDowncasting;
 import grakn.core.util.GraqlTestUtil;
 import graql.lang.Graql;
@@ -67,13 +64,12 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -98,7 +94,7 @@ import static org.junit.Assert.assertTrue;
 public class TransactionIT {
 
     @ClassRule
-    public static final GraknTestServer server = new GraknTestServer(false);
+    public static final GraknTestStorage storage = new GraknTestStorage();
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
@@ -107,7 +103,8 @@ public class TransactionIT {
 
     @Before
     public void setUp() {
-        session = SessionUtil.serverlessSessionWithNewKeyspace(server.serverConfig());
+        Config mockServerConfig = storage.createCompatibleServerConfig();
+        session = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig);
         tx = session.writeTransaction();
     }
 
@@ -188,8 +185,8 @@ public class TransactionIT {
     @Test
     public void whenGettingTheShardingThreshold_TheCorrectValueIsReturned() {
         final long threshold = 333333L;
-        server.serverConfig().setConfigProperty(ConfigKey.TYPE_SHARD_THRESHOLD, threshold);
-        try(Session session = SessionUtil.serverlessSessionWithNewKeyspace(server.serverConfig())) {
+        Config mockServerConfig = storage.createCompatibleServerConfig();
+        try(Session session = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig, threshold)) {
             try (Transaction tx = session.readTransaction()) {
                 assertEquals(threshold, tx.shardingThreshold());
             }
@@ -360,36 +357,31 @@ public class TransactionIT {
 
     @Test
     public void whenThresholdIsReachedForAGivenType_EnsureThatNewTypeShardIsCreated() throws IOException {
-        Path tmpConfig = Files.createTempFile("grakn.properties", "temporary");
-        tmpConfig.toFile().deleteOnExit();
-        server.serverConfig().write(tmpConfig.toFile());
-        Config config = Config.read(tmpConfig);
-        config.setConfigProperty(ConfigKey.TYPE_SHARD_THRESHOLD, 1L);
-        JanusGraphFactory janusGraphFactory = new JanusGraphFactory(config);
-        Keyspace generatedKeyspace;
-        try (Session session = SessionUtil.serverlessSessionWithNewKeyspace(config, janusGraphFactory)) {
-            generatedKeyspace = session.keyspace();
+        Config mockServerConfig = storage.createCompatibleServerConfig();
+        JanusGraphFactory janusGraphFactory = new JanusGraphFactory(mockServerConfig);
+        String newKeyspaceName = "a" + UUID.randomUUID().toString().replaceAll("-", "");
+        try (Session session = SessionUtil.serverlessSession(mockServerConfig,janusGraphFactory, newKeyspaceName,1L)) {
             try (Transaction tx = session.writeTransaction()) {
                 tx.execute(define(type("person").sub("entity")).asDefine());
                 tx.commit();
             }
         }
         Set<Vertex> typeShards;
-        try (JanusGraph janusGraph = janusGraphFactory.openGraph(generatedKeyspace.name())) {
+        try (JanusGraph janusGraph = janusGraphFactory.openGraph(newKeyspaceName)) {
             JanusGraphTransaction tx = janusGraph.newTransaction();
             typeShards = tx.traversal().V().has(Schema.VertexProperty.SCHEMA_LABEL.name(), "person").in().hasLabel("SHARD").toSet();
             assertEquals(1, typeShards.size());
             tx.close();
         }
         ConceptId p1;
-        try (Session session = SessionUtil.serverlessSession(config, janusGraphFactory, generatedKeyspace.name())) {
+        try (Session session = SessionUtil.serverlessSession(mockServerConfig,janusGraphFactory, newKeyspaceName,1L)) {
             try (Transaction tx = session.writeTransaction()) {
                 p1 = tx.execute(insert(var("p1").isa("person")).asInsert()).get(0).get("p1").id();
                 tx.commit();
             }
         }
         Vertex typeShardForP1;
-        try (JanusGraph janusGraph = janusGraphFactory.openGraph(generatedKeyspace.name())) {
+        try (JanusGraph janusGraph = janusGraphFactory.openGraph(newKeyspaceName)) {
             JanusGraphTransaction tx = janusGraph.newTransaction();
             typeShardForP1 = tx.traversal().V(p1.getValue().substring(1)).out(Schema.EdgeLabel.ISA.getLabel()).toList().get(0);
             assertEquals(typeShards.iterator().next(), typeShardForP1);
@@ -398,13 +390,13 @@ public class TransactionIT {
             tx.close();
         }
         ConceptId p2;
-        try (Session session = SessionUtil.serverlessSession(config, janusGraphFactory, generatedKeyspace.name())) {
+        try (Session session = SessionUtil.serverlessSession(mockServerConfig,janusGraphFactory, newKeyspaceName,1L)) {
             try (Transaction tx = session.writeTransaction()) {
                 p2 = tx.execute(insert(var("p2").isa("person")).asInsert()).get(0).get("p2").id();
                 tx.commit();
             }
         }
-        try (JanusGraph janusGraph = janusGraphFactory.openGraph(generatedKeyspace.name())) {
+        try (JanusGraph janusGraph = janusGraphFactory.openGraph(newKeyspaceName)) {
             JanusGraphTransaction tx = janusGraph.newTransaction();
             Vertex typeShardForP2 = tx.traversal().V(p2.getValue().substring(1)).out(Schema.EdgeLabel.ISA.getLabel()).toSet().iterator().next();
             assertEquals(Sets.difference(typeShards, Sets.newHashSet(typeShardForP1)).iterator().next(), typeShardForP2);
@@ -416,41 +408,35 @@ public class TransactionIT {
 
     @Test
     public void whenThresholdIsReachedForAGivenType_ensureThatTypeShardIsCreatedForThatTypeOnly() throws IOException {
-        Path tmpConfig = Files.createTempFile("grakn.properties", "temporary");
-        tmpConfig.toFile().deleteOnExit();
-        server.serverConfig().write(tmpConfig.toFile());
-        Config config = Config.read(tmpConfig);
-        config.setConfigProperty(ConfigKey.TYPE_SHARD_THRESHOLD, 1L);
-        JanusGraphFactory janusGraphFactory = new JanusGraphFactory(config);
-        SessionFactory sessionFactory = new SessionFactory(new LockManager(), janusGraphFactory, new HadoopGraphFactory(config), config);
-        Keyspace keyspace = server.randomKeyspaceName();
-        try (Session session = sessionFactory.session(keyspace)) {
-            keyspace = session.keyspace();
+        Config mockServerConfig = storage.createCompatibleServerConfig();
+        JanusGraphFactory janusGraphFactory = new JanusGraphFactory(mockServerConfig);
+        String newKeyspaceName = "a" + UUID.randomUUID().toString().replaceAll("-", "");
+        try (Session session = SessionUtil.serverlessSession(mockServerConfig,janusGraphFactory, newKeyspaceName,1L)) {
             try (Transaction tx = session.writeTransaction()) {
                 tx.execute(define(type("person").sub("entity")).asDefine());
                 tx.execute(define(type("company").sub("entity")).asDefine());
                 tx.commit();
             }
         }
-        try (Session session = sessionFactory.session(keyspace)) {
+        try (Session session = SessionUtil.serverlessSession(mockServerConfig,janusGraphFactory, newKeyspaceName,1L)) {
             try (Transaction tx = session.writeTransaction()) {
                 tx.execute(insert(var("p").isa("person")).asInsert());
                 tx.commit();
             }
         }
-        try (Session session = sessionFactory.session(keyspace)) {
+        try (Session session = SessionUtil.serverlessSession(mockServerConfig,janusGraphFactory, newKeyspaceName,1L)) {
             try (Transaction tx = session.writeTransaction()) {
                 tx.execute(insert(var("p").isa("person")).asInsert());
                 tx.commit();
             }
         }
-        try (Session session = sessionFactory.session(keyspace)) {
+        try (Session session = SessionUtil.serverlessSession(mockServerConfig,janusGraphFactory, newKeyspaceName,1L)) {
             try (Transaction tx = session.writeTransaction()) {
                 tx.execute(insert(var("c").isa("company")).asInsert());
                 tx.commit();
             }
         }
-        try (JanusGraph janusGraph = janusGraphFactory.openGraph(keyspace.name())) {
+        try (JanusGraph janusGraph = janusGraphFactory.openGraph(newKeyspaceName)) {
             JanusGraphTransaction tx = janusGraph.newTransaction();
             Set<Vertex> personTypeShards = tx.traversal().V().has(Schema.VertexProperty.SCHEMA_LABEL.name(), "person").in().hasLabel("SHARD").toSet();
             assertEquals(3, personTypeShards.size());
@@ -461,9 +447,8 @@ public class TransactionIT {
     }
 
     private void loadEntitiesConcurrentlyWithSpecificShardingThreshold(long shardingThreshold, int insertsPerCommit, long noOfEntities, int threads, double tol) throws ExecutionException, InterruptedException {
-        Long oldThreshold = server.serverConfig().getProperty(ConfigKey.TYPE_SHARD_THRESHOLD);
-        server.serverConfig().setConfigProperty(ConfigKey.TYPE_SHARD_THRESHOLD, shardingThreshold);
-        Session session = SessionUtil.serverlessSessionWithNewKeyspace(server.serverConfig());
+        Config mockServerConfig = storage.createCompatibleServerConfig();
+        Session session = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig, shardingThreshold);
 
         String entityLabel = "someEntity";
         try(Transaction tx = session.writeTransaction()){
@@ -488,7 +473,6 @@ public class TransactionIT {
         assertFalse(session.shardManager().lockCandidatesPresent());
         assertFalse(session.shardManager().shardRequestsPresent());
         session.close();
-        server.serverConfig().setConfigProperty(ConfigKey.TYPE_SHARD_THRESHOLD, oldThreshold);
     }
 
     @Test
@@ -518,7 +502,8 @@ public class TransactionIT {
 
     @Test
     public void whenMultipleTxsInsertAttributes_noGhostVerticesAreCreatedAndAttributeManagerIsEmptyAfterLoading() throws ExecutionException, InterruptedException {
-        Session session = SessionUtil.serverlessSessionWithNewKeyspace(server.serverConfig());
+        Config mockServerConfig = storage.createCompatibleServerConfig();
+        Session session = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig);
         String entityLabel = "someEntity";
         String attributeLabel = "someAttribute";
         try(Transaction tx = session.writeTransaction()){
@@ -551,7 +536,8 @@ public class TransactionIT {
 
     @Test
     public void whenCreatingAValidSchemaInSeparateThreads_EnsureValidationRulesHold() throws ExecutionException, InterruptedException {
-        Session localSession = SessionUtil.serverlessSessionWithNewKeyspace(server.serverConfig());
+        Config mockServerConfig = storage.createCompatibleServerConfig();
+        Session localSession = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig);
         ExecutorService executor = Executors.newCachedThreadPool();
 
         executor.submit(() -> {

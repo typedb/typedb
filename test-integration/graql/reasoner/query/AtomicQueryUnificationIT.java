@@ -23,6 +23,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import grakn.core.common.config.Config;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.graph.GenericSchemaGraph;
 import grakn.core.graql.reasoner.pattern.QueryPattern;
@@ -34,7 +35,7 @@ import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
-import grakn.core.rule.GraknTestServer;
+import grakn.core.rule.GraknTestStorage;
 import grakn.core.rule.SessionUtil;
 import grakn.core.rule.TestTransactionProvider;
 import graql.lang.Graql;
@@ -66,7 +67,7 @@ public class AtomicQueryUnificationIT {
     private static String resourcePath = "test-integration/graql/reasoner/resources/";
 
     @ClassRule
-    public static final GraknTestServer server = new GraknTestServer(false);
+    public static final GraknTestStorage storage = new GraknTestStorage();
 
     private static Session genericSchemaSession;
     private static Session unificationWithTypesSession;
@@ -74,9 +75,10 @@ public class AtomicQueryUnificationIT {
 
     @BeforeClass
     public static void loadContext() {
-        genericSchemaSession = SessionUtil.serverlessSessionWithNewKeyspace(server.serverConfig());
+        Config mockServerConfig = storage.createCompatibleServerConfig();
+        genericSchemaSession = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig);
         genericSchemaGraph = new GenericSchemaGraph(genericSchemaSession);
-        unificationWithTypesSession = SessionUtil.serverlessSessionWithNewKeyspace(server.serverConfig());
+        unificationWithTypesSession = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig);
         loadFromFileAndCommit(resourcePath, "unificationWithTypesTest.gql", unificationWithTypesSession);
     }
 
