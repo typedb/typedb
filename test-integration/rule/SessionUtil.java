@@ -39,6 +39,15 @@ import java.util.UUID;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+/**
+ * For testing, we sometimes ONLY start cassandra, without starting the full Grakn Server
+ * This is to enable injecting and retrieving Grakn components we wish to test.
+ * This also means we can no longer use the `GraknTestServer` to spawn new sessions.
+ * This helper class essentially behave as the test SessionFactory, allowing us to inject different collaborators
+ * and also retrieve `TestTransaction` instances in return
+ *
+ * TODO may be better of as an explicit `TestSessionFactory` or as a Builder pattern
+ */
 public class SessionUtil {
 
     /**
