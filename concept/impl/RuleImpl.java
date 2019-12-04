@@ -19,10 +19,10 @@
 
 package grakn.core.concept.impl;
 
-import grakn.core.kb.concept.api.Thing;
-import grakn.core.kb.concept.api.Rule;
-import grakn.core.kb.concept.api.Type;
 import grakn.core.core.Schema;
+import grakn.core.kb.concept.api.Rule;
+import grakn.core.kb.concept.api.Thing;
+import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.concept.manager.ConceptNotificationChannel;
 import grakn.core.kb.concept.structure.VertexElement;

@@ -21,6 +21,7 @@ package grakn.core.graql.reasoner.query;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
+import grakn.core.common.config.Config;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.ReasonerException;
 import grakn.core.graql.reasoner.graph.ReachabilityGraph;
@@ -37,7 +38,7 @@ import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import grakn.core.kb.server.exception.GraqlSemanticException;
-import grakn.core.rule.GraknTestServer;
+import grakn.core.rule.GraknTestStorage;
 import grakn.core.rule.SessionUtil;
 import grakn.core.rule.TestTransactionProvider;
 import graql.lang.Graql;
@@ -76,7 +77,7 @@ import static org.junit.Assert.assertNotEquals;
 public class NegationIT {
 
     @ClassRule
-    public static final GraknTestServer server = new GraknTestServer(false);
+    public static final GraknTestStorage storage = new GraknTestStorage();
 
     private static Session negationSession;
     private static Session recipeSession;
@@ -84,12 +85,13 @@ public class NegationIT {
 
     @BeforeClass
     public static void loadContext(){
-        negationSession = SessionUtil.serverlessSessionWithNewKeyspace(server.serverConfig());
+        Config mockServerConfig = storage.createCompatibleServerConfig();
+        negationSession = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig);
         String resourcePath = "test-integration/graql/reasoner/stubs/";
         loadFromFileAndCommit(resourcePath,"negation.gql", negationSession);
-        recipeSession = SessionUtil.serverlessSessionWithNewKeyspace(server.serverConfig());
+        recipeSession = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig);
         loadFromFileAndCommit(resourcePath,"recipeTest.gql", recipeSession);
-        reachabilitySession = SessionUtil.serverlessSessionWithNewKeyspace(server.serverConfig());
+        reachabilitySession = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig);
         ReachabilityGraph reachability = new ReachabilityGraph(reachabilitySession);
         reachability.load(3);
     }

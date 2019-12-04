@@ -19,10 +19,9 @@
 
 package grakn.core.graql.reasoner.explanation;
 
-import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.answer.Explanation;
-import graql.lang.pattern.Pattern;
+import grakn.core.kb.concept.api.ConceptId;
 
 import java.util.ArrayList;
 import java.util.Collections;

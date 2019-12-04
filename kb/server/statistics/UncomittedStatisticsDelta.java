@@ -19,14 +19,13 @@
 
 package grakn.core.kb.server.statistics;
 
+import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.EntityType;
 import grakn.core.kb.concept.api.GraknConceptException;
 import grakn.core.kb.concept.api.Label;
-import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Type;
-import grakn.core.kb.server.exception.TransactionException;
 
 import java.util.HashMap;
 

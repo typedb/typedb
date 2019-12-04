@@ -21,8 +21,8 @@ package grakn.core.kb.server;
 
 import grakn.core.kb.server.keyspace.Keyspace;
 import grakn.core.kb.server.statistics.KeyspaceStatistics;
+
 import java.util.function.Consumer;
-import javax.annotation.CheckReturnValue;
 
 public interface Session extends AutoCloseable {
     Transaction readTransaction();

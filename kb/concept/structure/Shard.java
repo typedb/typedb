@@ -20,7 +20,6 @@
 package grakn.core.kb.concept.structure;
 
 import com.google.common.annotations.VisibleForTesting;
-import grakn.core.kb.concept.structure.VertexElement;
 
 import java.util.stream.Stream;
 

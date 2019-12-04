@@ -21,6 +21,7 @@ package grakn.core.graql.gremlin;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
+import grakn.core.common.config.Config;
 import grakn.core.common.util.Streams;
 import grakn.core.core.Schema;
 import grakn.core.graql.executor.property.value.ValueOperation;
@@ -34,7 +35,7 @@ import grakn.core.kb.graql.gremlin.GraqlTraversal;
 import grakn.core.kb.graql.gremlin.TraversalPlanFactory;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
-import grakn.core.rule.GraknTestServer;
+import grakn.core.rule.GraknTestStorage;
 import grakn.core.rule.SessionUtil;
 import grakn.core.rule.TestTransactionProvider;
 import graql.lang.Graql;
@@ -83,20 +84,20 @@ import static org.junit.Assert.assertTrue;
 
 public class GraqlTraversalIT {
     @ClassRule
-    public static final GraknTestServer graknServer = new GraknTestServer(false );
+    public static final GraknTestStorage storage = new GraknTestStorage();
     public static Session session;
     private static Transaction tx;
 
     @BeforeClass
     public static void newSession() {
-        session = SessionUtil.serverlessSessionWithNewKeyspace(graknServer.serverConfig());
+        Config mockServerConfig = storage.createCompatibleServerConfig();
+        session = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig);
     }
 
     @AfterClass
     public static void closeSession() {
         session.close();
     }
-
 
     private static final Statement a = Graql.var("a");
     private static final Statement b = Graql.var("b");

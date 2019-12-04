@@ -20,7 +20,6 @@
 package grakn.core.rule;
 
 import grakn.core.common.config.Config;
-import grakn.core.common.config.ConfigKey;
 import grakn.core.graph.graphdb.database.StandardJanusGraph;
 import grakn.core.kb.server.AttributeManager;
 import grakn.core.kb.server.ShardManager;
@@ -32,16 +31,23 @@ import grakn.core.server.keyspace.KeyspaceImpl;
 import grakn.core.server.session.AttributeManagerImpl;
 import grakn.core.server.session.HadoopGraphFactory;
 import grakn.core.server.session.JanusGraphFactory;
-import grakn.core.server.session.SessionFactory;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.ShardManagerImpl;
-import grakn.core.server.util.LockManager;
 import org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph;
 
 import java.util.UUID;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+/**
+ * For testing, we sometimes ONLY start cassandra, without starting the full Grakn Server
+ * This is to enable injecting and retrieving Grakn components we wish to test.
+ * This also means we can no longer use the `GraknTestServer` to spawn new sessions.
+ * This helper class essentially behave as the test SessionFactory, allowing us to inject different collaborators
+ * and also retrieve `TestTransaction` instances in return
+ *
+ * TODO may be better of as an explicit `TestSessionFactory` or as a Builder pattern
+ */
 public class SessionUtil {
 
     /**
@@ -50,32 +56,40 @@ public class SessionUtil {
      * This means tests using this method to create sessions can safely downcast transactions received
      * to `TestTransaction`, which provide access to various pieces of state required in the tests
      *
-     * @param config
+     * @param mockServerConfig
      * @return
      */
-    public static SessionImpl serverlessSessionWithNewKeyspace(Config config) {
+    public static SessionImpl serverlessSessionWithNewKeyspace(Config mockServerConfig, long typeShardThreshold) {
         String newKeyspaceName = "a" + UUID.randomUUID().toString().replaceAll("-", "");
-        JanusGraphFactory janusGraphFactory = new JanusGraphFactory(config);
-        return serverlessSession(config, janusGraphFactory, newKeyspaceName);
+        JanusGraphFactory janusGraphFactory = new JanusGraphFactory(mockServerConfig);
+        return serverlessSession(mockServerConfig, janusGraphFactory, newKeyspaceName, typeShardThreshold);
+    }
+
+    public static SessionImpl serverlessSessionWithNewKeyspace(Config mockServerConfig) {
+        String newKeyspaceName = "a" + UUID.randomUUID().toString().replaceAll("-", "");
+        JanusGraphFactory janusGraphFactory = new JanusGraphFactory(mockServerConfig);
+        long typeShardThreshold = 250000;
+        return serverlessSession(mockServerConfig, janusGraphFactory, newKeyspaceName, typeShardThreshold);
     }
 
     /**
      * Create a new keyspace, with an injected janusGraphFactory
      */
-    public static SessionImpl serverlessSessionWithNewKeyspace(Config config, JanusGraphFactory janusGraphFactory) {
+    public static SessionImpl serverlessSessionWithNewKeyspace(Config mockServerConfig, JanusGraphFactory janusGraphFactory) {
         String newKeyspaceName = "a" + UUID.randomUUID().toString().replaceAll("-", "");
-        return serverlessSession(config, janusGraphFactory, newKeyspaceName);
+        long typeShardThreshold = 250000;
+        return serverlessSession(mockServerConfig, janusGraphFactory, newKeyspaceName, typeShardThreshold);
     }
 
     /**
      * Create a new keyspace with injected KeyspaceStatistics
      */
-    public static SessionImpl serverlessSessionWithNewKeyspace(Config config, KeyspaceStatistics keyspaceStatistics) {
+    public static SessionImpl serverlessSessionWithNewKeyspace(Config mockServerConfig, KeyspaceStatistics keyspaceStatistics) {
         String newKeyspaceName = "a" + UUID.randomUUID().toString().replaceAll("-", "");
         Keyspace randomKeyspace = new KeyspaceImpl(newKeyspaceName);
-        JanusGraphFactory janusGraphFactory = new JanusGraphFactory(config);
+        JanusGraphFactory janusGraphFactory = new JanusGraphFactory(mockServerConfig);
 
-        HadoopGraphFactory hadoopGraphFactory = new HadoopGraphFactory(config);
+        HadoopGraphFactory hadoopGraphFactory = new HadoopGraphFactory(mockServerConfig);
         StandardJanusGraph graph = janusGraphFactory.openGraph(newKeyspaceName);
         KeyspaceSchemaCache cache = new KeyspaceSchemaCache();
         AttributeManager attributeManager = new AttributeManagerImpl();
@@ -83,17 +97,17 @@ public class SessionUtil {
         ReadWriteLock graphLock = new ReentrantReadWriteLock();
         HadoopGraph hadoopGraph = hadoopGraphFactory.getGraph(randomKeyspace);
 
-        long typeShardThreshold = config.getProperty(ConfigKey.TYPE_SHARD_THRESHOLD);
+        long typeShardThreshold = 250000; // TODO decide if this belongs in the mockServerConfig or not
         TransactionProvider transactionProvider = new TestTransactionProvider(graph, hadoopGraph, cache, keyspaceStatistics, attributeManager, graphLock, typeShardThreshold);
-        return new SessionImpl(randomKeyspace, transactionProvider, cache, graph, keyspaceStatistics, attributeManager, shardManager, graphLock);
+        return new SessionImpl(randomKeyspace, transactionProvider, cache, graph, keyspaceStatistics, attributeManager, shardManager);
     }
 
     /**
      * Open a keyspace with specific name and janus graph factory
      */
-    public static SessionImpl serverlessSession(Config config, JanusGraphFactory janusGraphFactory, String keyspaceName) {
+    public static SessionImpl serverlessSession(Config mockServerConfig, JanusGraphFactory janusGraphFactory, String keyspaceName, long typeShardThreshold) {
         Keyspace randomKeyspace = new KeyspaceImpl(keyspaceName);
-        HadoopGraphFactory hadoopGraphFactory = new HadoopGraphFactory(config);
+        HadoopGraphFactory hadoopGraphFactory = new HadoopGraphFactory(mockServerConfig);
         StandardJanusGraph graph = janusGraphFactory.openGraph(randomKeyspace.name());
         KeyspaceSchemaCache cache = new KeyspaceSchemaCache();
         KeyspaceStatistics keyspaceStatistics = new KeyspaceStatistics();
@@ -102,8 +116,7 @@ public class SessionUtil {
         ReadWriteLock graphLock = new ReentrantReadWriteLock();
         HadoopGraph hadoopGraph = hadoopGraphFactory.getGraph(randomKeyspace);
 
-        long typeShardThreshold = config.getProperty(ConfigKey.TYPE_SHARD_THRESHOLD);
         TransactionProvider transactionProvider = new TestTransactionProvider(graph, hadoopGraph, cache, keyspaceStatistics, attributeManager, graphLock, typeShardThreshold);
-        return new SessionImpl(randomKeyspace, transactionProvider, cache, graph, keyspaceStatistics, attributeManager, shardManager, graphLock);
+        return new SessionImpl(randomKeyspace, transactionProvider, cache, graph, keyspaceStatistics, attributeManager, shardManager);
     }
 }

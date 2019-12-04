@@ -23,9 +23,8 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.answer.Explanation;
-import grakn.core.kb.concept.api.Concept;
 import grakn.core.graql.reasoner.graph.GeoGraph;
-import grakn.core.kb.concept.api.ConceptId;
+import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import grakn.core.rule.GraknTestServer;
@@ -43,10 +42,8 @@ import org.junit.Test;
 
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 

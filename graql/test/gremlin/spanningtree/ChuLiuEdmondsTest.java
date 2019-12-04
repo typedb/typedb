@@ -22,6 +22,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import grakn.core.graql.gremlin.spanningtree.graph.DenseWeightedGraph;
+import grakn.core.kb.graql.planning.Arborescence;
+import grakn.core.kb.graql.planning.ChuLiuEdmonds;
 import grakn.core.kb.graql.planning.spanningtree.graph.DirectedEdge;
 import grakn.core.kb.graql.planning.spanningtree.graph.InstanceNode;
 import grakn.core.kb.graql.planning.spanningtree.graph.Node;
@@ -30,8 +32,6 @@ import grakn.core.kb.graql.planning.spanningtree.graph.SparseWeightedGraph;
 import grakn.core.kb.graql.planning.spanningtree.graph.WeightedGraph;
 import grakn.core.kb.graql.planning.spanningtree.util.Weighted;
 import graql.lang.statement.Variable;
-import grakn.core.kb.graql.planning.Arborescence;
-import grakn.core.kb.graql.planning.ChuLiuEdmonds;
 import org.junit.BeforeClass;
 import org.junit.Test;
 

@@ -19,20 +19,20 @@
 package grakn.core.graql.analytics;
 
 import com.google.common.collect.Sets;
-import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.concept.answer.ConceptSet;
+import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.Attribute;
-import grakn.core.kb.concept.api.Entity;
 import grakn.core.kb.concept.api.AttributeType;
+import grakn.core.kb.concept.api.ConceptId;
+import grakn.core.kb.concept.api.Entity;
 import grakn.core.kb.concept.api.EntityType;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
-import grakn.core.kb.server.exception.GraqlSemanticException;
-import grakn.core.rule.GraknTestServer;
-import grakn.core.kb.server.exception.InvalidKBException;
-import grakn.core.core.Schema;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
+import grakn.core.kb.server.exception.GraqlSemanticException;
+import grakn.core.kb.server.exception.InvalidKBException;
+import grakn.core.rule.GraknTestServer;
 import graql.lang.Graql;
 import org.junit.After;
 import org.junit.Before;

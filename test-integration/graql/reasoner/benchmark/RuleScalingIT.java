@@ -19,17 +19,18 @@
 package grakn.core.graql.reasoner.benchmark;
 
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.rule.GraknTestServer;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
+import grakn.core.rule.GraknTestServer;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlDefine;
 import graql.lang.query.GraqlInsert;
 import graql.lang.statement.Statement;
-import java.util.List;
 import org.junit.ClassRule;
 import org.junit.Test;
+
+import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 

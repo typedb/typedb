@@ -21,13 +21,12 @@ package grakn.core.server;
 
 import grakn.core.graql.reasoner.query.ReasonerQueryFactory;
 import grakn.core.kb.concept.api.Relation;
-import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Rule;
+import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.concept.structure.Casting;
-import grakn.core.kb.server.Transaction;
 import grakn.core.kb.server.cache.TransactionCache;
 
 import java.util.ArrayList;

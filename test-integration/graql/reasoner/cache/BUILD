@@ -13,6 +13,7 @@ java_test(
         "//kb/concept/api",
         "//concept/answer:answer",
         "//graql:graql",
+        "//common",
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:graql-test-util",
         "@graknlabs_graql//java:graql",

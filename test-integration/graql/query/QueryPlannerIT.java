@@ -19,24 +19,22 @@
 package grakn.core.graql.query;
 
 import com.google.common.collect.ImmutableList;
+import grakn.core.common.config.Config;
 import grakn.core.concept.impl.TypeImpl;
-import grakn.core.core.JanusTraversalSourceProvider;
+import grakn.core.graql.gremlin.fragment.InIsaFragment;
+import grakn.core.graql.gremlin.fragment.LabelFragment;
+import grakn.core.graql.gremlin.fragment.NeqFragment;
+import grakn.core.graql.gremlin.fragment.OutIsaFragment;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Entity;
 import grakn.core.kb.concept.api.EntityType;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
-import grakn.core.graql.gremlin.TraversalPlanFactoryImpl;
-import grakn.core.graql.gremlin.fragment.InIsaFragment;
-import grakn.core.graql.gremlin.fragment.LabelFragment;
-import grakn.core.graql.gremlin.fragment.NeqFragment;
-import grakn.core.graql.gremlin.fragment.OutIsaFragment;
-import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.gremlin.Fragment;
 import grakn.core.kb.graql.gremlin.TraversalPlanFactory;
-import grakn.core.rule.GraknTestServer;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
+import grakn.core.rule.GraknTestStorage;
 import grakn.core.rule.SessionUtil;
 import grakn.core.rule.TestTransactionProvider;
 import grakn.core.util.ConceptDowncasting;
@@ -80,13 +78,14 @@ public class QueryPlannerIT {
     private static final String resourceType = "resourceType";
 
     @ClassRule
-    public static GraknTestServer graknServer = new GraknTestServer(false);
+    public static GraknTestStorage storage = new GraknTestStorage();
     private static Session session;
     private Transaction tx;
 
     @BeforeClass
     public static void newSession() {
-        session = SessionUtil.serverlessSessionWithNewKeyspace(graknServer.serverConfig());
+        Config mockServerConfig = storage.createCompatibleServerConfig();
+        session = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig);
         Transaction graph = session.writeTransaction();
 
         EntityType entityType0 = graph.putEntityType(thingy0);

@@ -20,12 +20,11 @@
 package grakn.core.kb.graql.reasoner.query;
 
 import com.google.common.collect.SetMultimap;
+import grakn.core.concept.answer.ConceptMap;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Type;
-import grakn.core.concept.answer.ConceptMap;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
-import grakn.core.kb.server.Transaction;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
 import graql.lang.statement.Variable;

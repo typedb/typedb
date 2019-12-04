@@ -19,8 +19,8 @@
 
 package grakn.core.kb.graql.planning.spanningtree.graph;
 
-import grakn.core.kb.concept.api.Label;
 import grakn.core.core.Schema;
+import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.server.Transaction;
 
 public class InstanceNode extends Node {

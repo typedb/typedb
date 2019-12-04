@@ -20,9 +20,9 @@
 package grakn.core.graql.reasoner.cache;
 
 import com.google.common.collect.Sets;
+import grakn.core.graql.reasoner.atom.predicate.ValuePredicate;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Type;
-import grakn.core.graql.reasoner.atom.predicate.ValuePredicate;
 import graql.lang.statement.Variable;
 
 import javax.annotation.Nullable;

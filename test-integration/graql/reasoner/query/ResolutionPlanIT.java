@@ -22,6 +22,7 @@ package grakn.core.graql.reasoner.query;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import com.google.common.collect.UnmodifiableIterator;
+import grakn.core.common.config.Config;
 import grakn.core.graql.gremlin.NodesUtil;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
@@ -36,7 +37,7 @@ import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import grakn.core.kb.server.statistics.KeyspaceStatistics;
-import grakn.core.rule.GraknTestServer;
+import grakn.core.rule.GraknTestStorage;
 import grakn.core.rule.SessionUtil;
 import grakn.core.rule.TestTransactionProvider;
 import graql.lang.Graql;
@@ -84,7 +85,7 @@ public class ResolutionPlanIT {
     public RepeatRule repeatRule = new RepeatRule();
 
     @ClassRule
-    public static final GraknTestServer server = new GraknTestServer(false);
+    public static final GraknTestStorage storage = new GraknTestStorage();
 
     private static Session planSession;
     private static KeyspaceStatistics planKeyspaceStatistics;
@@ -97,8 +98,9 @@ public class ResolutionPlanIT {
 
     @BeforeClass
     public static void loadContext(){
+        Config mockServerConfig = storage.createCompatibleServerConfig();
         planKeyspaceStatistics = new KeyspaceStatistics();
-        planSession = SessionUtil.serverlessSessionWithNewKeyspace(server.serverConfig(), planKeyspaceStatistics);
+        planSession = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig, planKeyspaceStatistics);
         String resourcePath = "test-integration/graql/reasoner/resources/";
         loadFromFileAndCommit(resourcePath, "resolutionPlanTest.gql", planSession);
     }

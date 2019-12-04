@@ -18,10 +18,10 @@
 
 package grakn.core.graql.analytics;
 
-import grakn.core.kb.concept.api.LabelId;
-import grakn.core.kb.concept.api.AttributeType;
-import grakn.core.kb.server.exception.GraknServerException;
 import grakn.core.core.Schema;
+import grakn.core.kb.concept.api.AttributeType;
+import grakn.core.kb.concept.api.LabelId;
+import grakn.core.kb.server.exception.GraknServerException;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.KeyValue;
 import org.apache.tinkerpop.gremlin.process.computer.MapReduce;

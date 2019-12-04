@@ -20,9 +20,9 @@ package grakn.core.graql.query;
 
 import com.google.common.collect.Sets;
 import grakn.core.graql.graph.MovieGraph;
-import grakn.core.rule.GraknTestServer;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
+import grakn.core.rule.GraknTestServer;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;

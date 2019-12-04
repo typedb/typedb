@@ -38,7 +38,7 @@ import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
-import grakn.core.rule.GraknTestServer;
+import grakn.core.rule.GraknTestStorage;
 import grakn.core.rule.SessionUtil;
 import grakn.core.rule.TestTransactionProvider.TestTransaction;
 import graql.lang.Graql;
@@ -64,14 +64,14 @@ import static org.junit.Assert.assertFalse;
 @SuppressWarnings("CheckReturnValue")
 public class QueryIT {
     @ClassRule
-    public static final GraknTestServer server = new GraknTestServer(false);
+    public static final GraknTestStorage storage = new GraknTestStorage();
 
     private static Session geoSession;
 
     @BeforeClass
     public static void setup() {
-        Config config = server.serverConfig();
-        geoSession = SessionUtil.serverlessSessionWithNewKeyspace(config);
+        Config mockServerConfig = storage.createCompatibleServerConfig();
+        geoSession = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig);
         GeoGraph geoGraph = new GeoGraph(geoSession);
         geoGraph.load();
     }
@@ -82,8 +82,9 @@ public class QueryIT {
     }
 
     @Test
-    public void whenTypeDependencyGraphHasCycles_RuleBodiesHaveTypeHierarchies_weReiterate(){
-        try (Session session = SessionUtil.serverlessSessionWithNewKeyspace(server.serverConfig())) {
+    public void whenTypeDependencyGraphHasCycles_RuleBodiesHaveTypeHierfalsearchies_weReiterate(){
+        Config mockServerConfig = storage.createCompatibleServerConfig();
+        try (Session session = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig)) {
             try (Transaction tx = session.writeTransaction()) {
 
             Role someRole = tx.putRole("someRole");
@@ -141,7 +142,8 @@ public class QueryIT {
 
     @Test
     public void whenTypeDependencyGraphHasCycles_instancesHaveNonTrivialCycles_weReiterate() {
-        try (Session session = SessionUtil.serverlessSessionWithNewKeyspace(server.serverConfig())) {
+        Config mockServerConfig = storage.createCompatibleServerConfig();
+        try (Session session = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig)) {
             try (Transaction tx = session.writeTransaction()) {
                 Role fromRole = tx.putRole("fromRole");
                 Role toRole = tx.putRole("toRole");
@@ -220,7 +222,8 @@ public class QueryIT {
 
     @Test
     public void whenQueryHasMultipleDisconnectedInferrableAtoms_weReiterate() {
-        try (Session session = SessionUtil.serverlessSessionWithNewKeyspace(server.serverConfig())) {
+        Config mockServerConfig = storage.createCompatibleServerConfig();
+        try (Session session = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig)) {
             try (Transaction tx = session.writeTransaction()) {
                 tx.execute(Graql.parse("define " +
                         "someEntity sub entity," +
@@ -249,7 +252,8 @@ public class QueryIT {
 
     @Test
     public void whenRetrievingVariablesFromQueryWithComparisons_variablesFromValuePredicatesAreFetched() {
-        try (Session session = SessionUtil.serverlessSessionWithNewKeyspace(server.serverConfig())) {
+        Config mockServerConfig = storage.createCompatibleServerConfig();
+        try (Session session = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig)) {
             try (Transaction tx = session.writeTransaction()) {
 
                 AttributeType<Long> resource = tx.putAttributeType("resource", AttributeType.DataType.LONG);

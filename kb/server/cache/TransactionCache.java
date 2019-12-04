@@ -21,6 +21,7 @@ package grakn.core.kb.server.cache;
 
 import com.google.common.annotations.VisibleForTesting;
 import grakn.common.util.Pair;
+import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
@@ -33,7 +34,6 @@ import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.concept.api.Type;
-import grakn.core.core.Schema;
 import grakn.core.kb.concept.structure.Casting;
 
 import java.util.HashMap;

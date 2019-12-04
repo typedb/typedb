@@ -31,7 +31,6 @@ import grakn.client.answer.ConceptList;
 import grakn.client.answer.ConceptMap;
 import grakn.client.answer.ConceptSet;
 import grakn.client.answer.ConceptSetMeasure;
-import grakn.client.answer.Explanation;
 import grakn.client.answer.Numeric;
 import grakn.client.concept.Attribute;
 import grakn.client.concept.AttributeType;
@@ -39,7 +38,6 @@ import grakn.client.concept.Concept;
 import grakn.client.concept.ConceptId;
 import grakn.client.concept.Entity;
 import grakn.client.concept.EntityType;
-import grakn.client.concept.EntityTypeImpl;
 import grakn.client.concept.Label;
 import grakn.client.concept.Relation;
 import grakn.client.concept.RelationType;
@@ -47,11 +45,11 @@ import grakn.client.concept.Role;
 import grakn.client.concept.SchemaConcept;
 import grakn.client.concept.Thing;
 import grakn.client.concept.Type;
-import grakn.core.kb.server.keyspace.Keyspace;
-import grakn.core.rule.GraknTestServer;
-import grakn.core.kb.server.exception.SessionException;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
+import grakn.core.kb.server.exception.SessionException;
+import grakn.core.kb.server.keyspace.Keyspace;
+import grakn.core.rule.GraknTestServer;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlDelete;
@@ -104,8 +102,7 @@ public class GraknClientIT {
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer(
             Paths.get("server/conf/grakn.properties"),
-            Paths.get("test-integration/resources/cassandra-embedded.yaml"),
-            true
+            Paths.get("test-integration/resources/cassandra-embedded.yaml")
     );
 
     private static Session localSession;

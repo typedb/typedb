@@ -20,8 +20,8 @@
 package grakn.core.graql.executor;
 
 import grakn.core.core.Schema;
-import grakn.core.kb.concept.api.LabelId;
 import grakn.core.graql.executor.computer.GraknSparkComputer;
+import grakn.core.kb.concept.api.LabelId;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.process.computer.MapReduce;

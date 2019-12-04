@@ -20,12 +20,12 @@ package grakn.core.graql.gremlin.fragment;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
+import grakn.core.core.Schema;
+import grakn.core.graql.executor.property.value.ValueOperation;
+import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.Label;
-import grakn.core.kb.concept.api.AttributeType;
-import grakn.core.graql.executor.property.value.ValueOperation;
 import grakn.core.kb.graql.gremlin.Fragment;
-import grakn.core.core.Schema;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.P;

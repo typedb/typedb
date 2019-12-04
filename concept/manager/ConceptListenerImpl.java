@@ -39,8 +39,8 @@ import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.concept.manager.ConceptListener;
 import grakn.core.kb.concept.structure.Casting;
 import grakn.core.kb.graql.reasoner.cache.QueryCache;
-import grakn.core.kb.server.AttributeManager;
 import grakn.core.kb.graql.reasoner.cache.RuleCache;
+import grakn.core.kb.server.AttributeManager;
 import grakn.core.kb.server.cache.TransactionCache;
 import grakn.core.kb.server.statistics.UncomittedStatisticsDelta;
 

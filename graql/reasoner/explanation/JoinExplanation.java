@@ -22,7 +22,6 @@ package grakn.core.graql.reasoner.explanation;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.answer.Explanation;
 import grakn.core.graql.reasoner.utils.ReasonerUtils;
-import graql.lang.pattern.Pattern;
 
 import java.util.List;
 

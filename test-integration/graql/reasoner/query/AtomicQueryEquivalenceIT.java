@@ -21,11 +21,12 @@ package grakn.core.graql.reasoner.query;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import grakn.core.common.config.Config;
 import grakn.core.graql.reasoner.atom.AtomicEquivalence;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
-import grakn.core.rule.GraknTestServer;
+import grakn.core.rule.GraknTestStorage;
 import grakn.core.rule.SessionUtil;
 import grakn.core.rule.TestTransactionProvider;
 import graql.lang.Graql;
@@ -55,7 +56,7 @@ public class AtomicQueryEquivalenceIT {
     private static String resourcePath = "test-integration/graql/reasoner/resources/";
 
     @ClassRule
-    public static final GraknTestServer server = new GraknTestServer(false);
+    public static final GraknTestStorage storage = new GraknTestStorage();
 
     private static Session genericSchemaSession;
 
@@ -65,7 +66,8 @@ public class AtomicQueryEquivalenceIT {
 
     @BeforeClass
     public static void loadContext(){
-        genericSchemaSession = SessionUtil.serverlessSessionWithNewKeyspace(server.serverConfig());
+        Config mockServerConfig = storage.createCompatibleServerConfig();
+        genericSchemaSession = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig);
         loadFromFileAndCommit(resourcePath, "genericSchema.gql", genericSchemaSession);
     }
 

@@ -24,7 +24,8 @@ package grakn.core.kb.graql.executor;
  * Ideally, we would further split the executors into further types:
  * `compute` executor
  * `read` executor
- * `write` executor
+ * `insert` executor
+ * `delete` executor
  * `schema` executor?
  * (etc, very flexible what this might represent)
  *

@@ -30,6 +30,7 @@ import graql.lang.pattern.Pattern;
 import graql.lang.property.RelationProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;

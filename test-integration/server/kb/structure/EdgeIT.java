@@ -19,6 +19,7 @@
 package grakn.core.server.kb.structure;
 
 
+import grakn.core.common.config.Config;
 import grakn.core.concept.structure.EdgeElementImpl;
 import grakn.core.concept.structure.ElementFactory;
 import grakn.core.core.JanusTraversalSourceProvider;
@@ -27,7 +28,7 @@ import grakn.core.kb.concept.api.Entity;
 import grakn.core.kb.concept.api.EntityType;
 import grakn.core.kb.concept.structure.EdgeElement;
 import grakn.core.kb.server.Transaction;
-import grakn.core.rule.GraknTestServer;
+import grakn.core.rule.GraknTestStorage;
 import grakn.core.rule.SessionUtil;
 import grakn.core.rule.TestTransactionProvider;
 import grakn.core.server.session.SessionImpl;
@@ -44,7 +45,7 @@ import static org.junit.Assert.assertNotEquals;
 public class EdgeIT {
 
     @ClassRule
-    public static final GraknTestServer server = new GraknTestServer(false);
+    public static final GraknTestStorage storage = new GraknTestStorage();
 
     private SessionImpl session;
     private Transaction tx;
@@ -55,7 +56,8 @@ public class EdgeIT {
 
     @Before
     public void setUp(){
-        session = SessionUtil.serverlessSessionWithNewKeyspace(server.serverConfig());
+        Config mockServerConfig = storage.createCompatibleServerConfig();
+        session = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig);
         tx = session.writeTransaction();
 
         // Create Edge
