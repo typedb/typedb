@@ -19,13 +19,13 @@
 
 package grakn.core.kb.concept.structure;
 
+import grakn.core.common.exception.GraknException;
+import grakn.core.core.Schema;
+import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.EntityType;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.SchemaConcept;
-import grakn.core.common.exception.GraknException;
-import grakn.core.kb.concept.api.Concept;
-import grakn.core.core.Schema;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 

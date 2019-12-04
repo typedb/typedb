@@ -20,8 +20,6 @@
 package grakn.core.graql.reasoner.atom;
 
 import com.google.common.collect.ImmutableMap;
-import grakn.core.concept.answer.ConceptMap;
-import grakn.core.graql.executor.property.PropertyExecutorFactoryImpl;
 import grakn.core.graql.reasoner.atom.binary.AttributeAtom;
 import grakn.core.graql.reasoner.atom.binary.HasAtom;
 import grakn.core.graql.reasoner.atom.binary.IsaAtom;
@@ -73,7 +71,6 @@ import graql.lang.property.WhenProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 
-import javax.annotation.CheckReturnValue;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;

@@ -19,16 +19,16 @@
 
 package grakn.core.concept.impl;
 
-import grakn.core.kb.concept.api.Label;
-import grakn.core.kb.concept.api.Attribute;
-import grakn.core.kb.concept.api.Thing;
-import grakn.core.kb.concept.api.AttributeType;
-import grakn.core.kb.concept.api.Role;
+import grakn.core.concept.util.attribute.Serialiser;
 import grakn.core.core.Schema;
+import grakn.core.kb.concept.api.Attribute;
+import grakn.core.kb.concept.api.AttributeType;
+import grakn.core.kb.concept.api.Label;
+import grakn.core.kb.concept.api.Role;
+import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.concept.manager.ConceptNotificationChannel;
 import grakn.core.kb.concept.structure.VertexElement;
-import grakn.core.concept.util.attribute.Serialiser;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.stream.Stream;

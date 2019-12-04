@@ -110,7 +110,7 @@ public class SessionFactory {
 
             long typeShardThreshold = config.getProperty(ConfigKey.TYPE_SHARD_THRESHOLD);
             TransactionProvider transactionProvider = new TransactionProviderImpl(graph, hadoopGraph, cache, keyspaceStatistics, attributeManager, graphLock, typeShardThreshold);
-            Session session = new SessionImpl(keyspace, transactionProvider, cache, graph, keyspaceStatistics, attributeManager, shardManager, graphLock);
+            Session session = new SessionImpl(keyspace, transactionProvider, cache, graph, keyspaceStatistics, attributeManager, shardManager);
             session.setOnClose(this::onSessionClose);
             cacheContainer.addSessionReference(session);
             return session;

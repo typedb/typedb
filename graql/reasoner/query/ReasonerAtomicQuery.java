@@ -20,7 +20,6 @@
 package grakn.core.graql.reasoner.query;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
@@ -54,7 +53,6 @@ import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
 import graql.lang.pattern.Conjunction;
-import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;
 
 import java.util.Collections;

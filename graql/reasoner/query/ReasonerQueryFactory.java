@@ -19,7 +19,6 @@
 
 package grakn.core.graql.reasoner.query;
 
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.atom.Atom;
@@ -34,7 +33,6 @@ import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -59,21 +57,19 @@ public class ReasonerQueryFactory {
     }
 
     /**
-     *
      * @param pattern conjunctive pattern defining the query
      * @return a composite reasoner query constructed from provided conjunctive pattern
      */
-    public CompositeQuery composite(Conjunction<Pattern> pattern){
+    public CompositeQuery composite(Conjunction<Pattern> pattern) {
         return new CompositeQuery(pattern, this, executorFactory, queryCache).inferTypes();
     }
 
     /**
-     *
      * @param conj conjunctive query corresponding to the +ve part of the composite query
      * @param comp set of queries corresponding to the -ve part of the composite query
      * @return corresponding composite query
      */
-    public CompositeQuery composite(ReasonerQueryImpl conj, Set<ResolvableQuery> comp){
+    public CompositeQuery composite(ReasonerQueryImpl conj, Set<ResolvableQuery> comp) {
         return new CompositeQuery(conj, comp, this, executorFactory, queryCache).inferTypes();
     }
 
@@ -81,20 +77,20 @@ public class ReasonerQueryFactory {
      * @param pattern conjunctive pattern defining the query
      * @return a resolvable reasoner query constructed from provided conjunctive pattern
      */
-    public ResolvableQuery resolvable(Conjunction<Pattern> pattern){
+    public ResolvableQuery resolvable(Conjunction<Pattern> pattern) {
         CompositeQuery query = new CompositeQuery(pattern, this, executorFactory, queryCache).inferTypes();
-        return query.isAtomic()?
+        return query.isAtomic() ?
                 new ReasonerAtomicQuery(query.getAtoms(), conceptManager, ruleCache, queryCache, executorFactory, this, traversalPlanFactory) :
-                query.isPositive()?
+                query.isPositive() ?
                         query.getConjunctiveQuery() : query;
     }
 
     /**
-     * @param q base query for substitution to be attached
+     * @param q   base query for substitution to be attached
      * @param sub (partial) substitution
      * @return resolvable query with the substitution contained in the query
      */
-    public ResolvableQuery resolvable(ResolvableQuery q, ConceptMap sub){
+    public ResolvableQuery resolvable(ResolvableQuery q, ConceptMap sub) {
         return q.withSubstitution(sub).inferTypes();
     }
 
@@ -103,6 +99,7 @@ public class ReasonerQueryFactory {
      * All ReasonerQueryImpl instances should be created from here to make sure the temporal
      * coupling that is necessary (for now) is respected and not broken by accident
      * TODO fix the temporal coupling between Atom and ReasonerQuery
+     *
      * @param pattern
      * @return
      */
@@ -113,22 +110,24 @@ public class ReasonerQueryFactory {
 
     /**
      * create a reasoner query from a conjunctive pattern with types inferred
+     *
      * @param pattern conjunctive pattern defining the query
      * @return reasoner query constructed from provided conjunctive pattern
      */
     public ReasonerQueryImpl create(Conjunction<Statement> pattern) {
         ReasonerQueryImpl query = withoutRoleInference(pattern).inferTypes();
-        return query.isAtomic()?
+        return query.isAtomic() ?
                 new ReasonerAtomicQuery(query.getAtoms(), conceptManager, ruleCache, queryCache, executorFactory, this, traversalPlanFactory) :
                 query;
     }
 
     /**
      * create a reasoner query from provided set of atomics
+     *
      * @param as set of atomics that define the query
      * @return reasoner query defined by the provided set of atomics
      */
-    public ReasonerQueryImpl create(Set<Atomic> as){
+    public ReasonerQueryImpl create(Set<Atomic> as) {
         boolean isAtomic = as.stream().filter(Atomic::isSelectable).count() == 1;
         ReasonerQueryImpl reasonerQuery;
         if (isAtomic) {
@@ -142,23 +141,25 @@ public class ReasonerQueryFactory {
     /**
      * create a reasoner query from provided list of atoms
      * NB: atom constraints (types and predicates, if any) will be included in the query
+     *
      * @param as list of atoms that define the query
      * @return reasoner query defined by the provided list of atoms together with their constraints (types and predicates, if any)
      */
-    public ReasonerQueryImpl create(List<Atom> as){
+    public ReasonerQueryImpl create(List<Atom> as) {
         boolean isAtomic = as.size() == 1;
-        return isAtomic?
+        return isAtomic ?
                 new ReasonerAtomicQuery(Iterables.getOnlyElement(as), conceptManager, ruleCache, queryCache, executorFactory, this, traversalPlanFactory).inferTypes() :
                 new ReasonerQueryImpl(as, conceptManager, ruleCache, queryCache, executorFactory, this, traversalPlanFactory).inferTypes();
     }
 
     /**
      * create a reasoner query by combining an existing query and a substitution
-     * @param q base query for substitution to be attached
+     *
+     * @param q   base query for substitution to be attached
      * @param sub (partial) substitution
      * @return reasoner query with the substitution contained in the query
      */
-    public ReasonerQueryImpl create(ReasonerQueryImpl q, ConceptMap sub){
+    public ReasonerQueryImpl create(ReasonerQueryImpl q, ConceptMap sub) {
         return q.withSubstitution(sub).inferTypes();
     }
 
@@ -166,7 +167,7 @@ public class ReasonerQueryFactory {
      * @param pattern conjunctive pattern defining the query
      * @return atomic query defined by the provided pattern with inferred types
      */
-    public ReasonerAtomicQuery atomic(Conjunction<Statement> pattern){
+    public ReasonerAtomicQuery atomic(Conjunction<Statement> pattern) {
         ReasonerAtomicQuery reasonerAtomicQuery = new ReasonerAtomicQuery(pattern, propertyAtomicFactory, conceptManager, ruleCache, queryCache, executorFactory, this, traversalPlanFactory);
         return reasonerAtomicQuery.inferTypes();
     }
@@ -174,29 +175,32 @@ public class ReasonerQueryFactory {
     /**
      * create an atomic query from the provided atom
      * NB: atom constraints (types and predicates, if any) will be included in the query
+     *
      * @param atom defining the query
      * @return atomic query defined by the provided atom together with its constraints (types and predicates, if any)
      */
-    public ReasonerAtomicQuery atomic(Atom atom){
+    public ReasonerAtomicQuery atomic(Atom atom) {
         return new ReasonerAtomicQuery(atom, conceptManager, ruleCache, queryCache, executorFactory, this, traversalPlanFactory).inferTypes();
     }
 
     /**
      * create a reasoner atomic query from provided set of atomics
+     *
      * @param as set of atomics that define the query
      * @return reasoner query defined by the provided set of atomics
      */
-    public ReasonerAtomicQuery atomic(Set<Atomic> as){
+    public ReasonerAtomicQuery atomic(Set<Atomic> as) {
         return new ReasonerAtomicQuery(as, conceptManager, ruleCache, queryCache, executorFactory, this, traversalPlanFactory).inferTypes();
     }
 
     /**
      * create an atomic query by combining an existing atomic query and a substitution
-     * @param q base query for substitution to be attached
+     *
+     * @param q   base query for substitution to be attached
      * @param sub (partial) substitution
      * @return atomic query with the substitution contained in the query
      */
-    public ReasonerAtomicQuery atomic(ReasonerAtomicQuery q, ConceptMap sub){
+    public ReasonerAtomicQuery atomic(ReasonerAtomicQuery q, ConceptMap sub) {
         return q.withSubstitution(sub).inferTypes();
     }
 }

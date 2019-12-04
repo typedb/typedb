@@ -28,8 +28,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static grakn.common.util.Collections.set;
 import static grakn.common.util.Collections.list;
+import static grakn.common.util.Collections.set;
 
 /**
  * An ontological element which models and categorises the various Attribute in the graph.

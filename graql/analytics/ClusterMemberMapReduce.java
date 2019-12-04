@@ -18,8 +18,8 @@
 
 package grakn.core.graql.analytics;
 
-import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.core.Schema;
+import grakn.core.kb.concept.api.ConceptId;
 import org.apache.tinkerpop.gremlin.process.computer.KeyValue;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;

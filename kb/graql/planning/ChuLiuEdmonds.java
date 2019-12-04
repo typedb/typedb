@@ -20,11 +20,11 @@
 package grakn.core.kb.graql.planning;
 
 import com.google.common.collect.ImmutableMap;
+import grakn.core.common.util.Partition;
 import grakn.core.kb.graql.planning.spanningtree.graph.DirectedEdge;
 import grakn.core.kb.graql.planning.spanningtree.graph.Node;
 import grakn.core.kb.graql.planning.spanningtree.graph.WeightedGraph;
 import grakn.core.kb.graql.planning.spanningtree.util.Weighted;
-import grakn.core.common.util.Partition;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;

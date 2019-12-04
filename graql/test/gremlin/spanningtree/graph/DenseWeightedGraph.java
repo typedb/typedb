@@ -21,10 +21,10 @@ package grakn.core.graql.gremlin.spanningtree.graph;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import grakn.core.kb.graql.planning.spanningtree.util.Weighted;
 import grakn.core.kb.graql.planning.spanningtree.graph.DirectedEdge;
 import grakn.core.kb.graql.planning.spanningtree.graph.Node;
 import grakn.core.kb.graql.planning.spanningtree.graph.WeightedGraph;
+import grakn.core.kb.graql.planning.spanningtree.util.Weighted;
 
 import java.util.ArrayList;
 import java.util.Collection;

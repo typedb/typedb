@@ -18,13 +18,13 @@
 
 package grakn.core.server.rpc;
 
+import grakn.core.kb.server.exception.GraknServerException;
+import grakn.core.kb.server.keyspace.Keyspace;
 import grakn.core.server.keyspace.KeyspaceImpl;
 import grakn.core.server.keyspace.KeyspaceManager;
 import grakn.core.server.session.JanusGraphFactory;
 import grakn.core.server.session.SessionFactory;
 import grakn.protocol.keyspace.KeyspaceProto;
-import grakn.core.kb.server.keyspace.Keyspace;
-import grakn.core.kb.server.exception.GraknServerException;
 
 import java.util.stream.Collectors;
 

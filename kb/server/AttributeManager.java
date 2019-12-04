@@ -23,6 +23,7 @@ package grakn.core.kb.server;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.cache.Cache;
 import grakn.core.kb.concept.api.ConceptId;
+
 import java.util.Set;
 
 /**

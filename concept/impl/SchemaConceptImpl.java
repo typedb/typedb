@@ -19,9 +19,6 @@
 
 package grakn.core.concept.impl;
 
-import grakn.core.kb.concept.manager.ConceptManager;
-import grakn.core.kb.concept.manager.ConceptNotificationChannel;
-import grakn.core.kb.concept.structure.PropertyNotUniqueException;
 import grakn.core.concept.cache.ConceptCache;
 import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.GraknConceptException;
@@ -29,6 +26,9 @@ import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.LabelId;
 import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.SchemaConcept;
+import grakn.core.kb.concept.manager.ConceptManager;
+import grakn.core.kb.concept.manager.ConceptNotificationChannel;
+import grakn.core.kb.concept.structure.PropertyNotUniqueException;
 import grakn.core.kb.concept.structure.VertexElement;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 

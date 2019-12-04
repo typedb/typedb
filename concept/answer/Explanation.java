@@ -19,10 +19,7 @@
 
 package grakn.core.concept.answer;
 
-import graql.lang.pattern.Pattern;
-
 import javax.annotation.CheckReturnValue;
-import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;

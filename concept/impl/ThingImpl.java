@@ -20,8 +20,8 @@
 package grakn.core.concept.impl;
 
 import com.google.common.collect.Sets;
-import grakn.core.concept.structure.CastingImpl;
 import grakn.core.concept.cache.ConceptCache;
+import grakn.core.concept.structure.CastingImpl;
 import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;

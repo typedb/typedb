@@ -18,9 +18,9 @@
 
 package grakn.core.graql.analytics;
 
-import grakn.core.kb.concept.api.LabelId;
-import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.core.Schema;
+import grakn.core.kb.concept.api.AttributeType;
+import grakn.core.kb.concept.api.LabelId;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 

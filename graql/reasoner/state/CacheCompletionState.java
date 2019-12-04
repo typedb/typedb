@@ -22,7 +22,6 @@ package grakn.core.graql.reasoner.state;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.CacheCasting;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
-import grakn.core.graql.reasoner.utils.ReasonerUtils;
 import grakn.core.kb.graql.reasoner.cache.QueryCache;
 
 /**

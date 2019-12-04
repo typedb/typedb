@@ -58,7 +58,6 @@ public class SessionImpl implements Session {
     private final KeyspaceStatistics keyspaceStatistics;
     private final AttributeManager attributeManager;
     private final ShardManager shardManager;
-    private final ReadWriteLock graphLock;
     private Consumer<Session> onClose;
 
     private boolean isClosed = false;
@@ -72,7 +71,7 @@ public class SessionImpl implements Session {
      */
     // NOTE: this method is used by Grakn KGMS and should be kept public
     public SessionImpl(Keyspace keyspace, TransactionProvider transactionProvider, KeyspaceSchemaCache keyspaceSchemaCache, StandardJanusGraph graph,
-                       KeyspaceStatistics keyspaceStatistics, AttributeManager attributeManager, ShardManager shardManager, ReadWriteLock graphLock) {
+                       KeyspaceStatistics keyspaceStatistics, AttributeManager attributeManager, ShardManager shardManager) {
         this.keyspace = keyspace;
         this.transactionProvider = transactionProvider;
         this.graph = graph;
@@ -80,7 +79,6 @@ public class SessionImpl implements Session {
         this.keyspaceStatistics = keyspaceStatistics;
         this.attributeManager = attributeManager;
         this.shardManager = shardManager;
-        this.graphLock = graphLock;
 
         Transaction tx = writeTransaction();
 

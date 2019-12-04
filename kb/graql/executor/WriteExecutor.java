@@ -20,10 +20,10 @@
 package grakn.core.kb.graql.executor;
 
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.server.exception.GraqlSemanticException;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
-import grakn.core.kb.concept.api.Concept;
 
 import java.util.Optional;
 import java.util.stream.Stream;

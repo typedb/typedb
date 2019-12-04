@@ -20,8 +20,8 @@
 package grakn.core.concept.structure;
 
 import com.google.common.annotations.VisibleForTesting;
-import grakn.core.kb.concept.structure.EdgeElement;
 import grakn.core.core.Schema;
+import grakn.core.kb.concept.structure.EdgeElement;
 import grakn.core.kb.concept.structure.Shard;
 import grakn.core.kb.concept.structure.VertexElement;
 import org.apache.tinkerpop.gremlin.structure.Direction;

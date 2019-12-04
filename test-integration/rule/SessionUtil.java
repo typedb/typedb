@@ -85,7 +85,7 @@ public class SessionUtil {
 
         long typeShardThreshold = config.getProperty(ConfigKey.TYPE_SHARD_THRESHOLD);
         TransactionProvider transactionProvider = new TestTransactionProvider(graph, hadoopGraph, cache, keyspaceStatistics, attributeManager, graphLock, typeShardThreshold);
-        return new SessionImpl(randomKeyspace, transactionProvider, cache, graph, keyspaceStatistics, attributeManager, shardManager, graphLock);
+        return new SessionImpl(randomKeyspace, transactionProvider, cache, graph, keyspaceStatistics, attributeManager, shardManager);
     }
 
     /**
@@ -104,6 +104,6 @@ public class SessionUtil {
 
         long typeShardThreshold = config.getProperty(ConfigKey.TYPE_SHARD_THRESHOLD);
         TransactionProvider transactionProvider = new TestTransactionProvider(graph, hadoopGraph, cache, keyspaceStatistics, attributeManager, graphLock, typeShardThreshold);
-        return new SessionImpl(randomKeyspace, transactionProvider, cache, graph, keyspaceStatistics, attributeManager, shardManager, graphLock);
+        return new SessionImpl(randomKeyspace, transactionProvider, cache, graph, keyspaceStatistics, attributeManager, shardManager);
     }
 }

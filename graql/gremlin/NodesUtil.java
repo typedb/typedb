@@ -21,20 +21,18 @@ package grakn.core.graql.gremlin;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterators;
 import grakn.core.common.util.Streams;
+import grakn.core.graql.gremlin.fragment.LabelFragment;
+import grakn.core.graql.gremlin.fragment.ValueFragment;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Type;
-
-import grakn.core.graql.gremlin.fragment.LabelFragment;
-import grakn.core.graql.gremlin.fragment.ValueFragment;
 import grakn.core.kb.concept.manager.ConceptManager;
+import grakn.core.kb.graql.gremlin.Fragment;
 import grakn.core.kb.graql.planning.spanningtree.graph.EdgeNode;
 import grakn.core.kb.graql.planning.spanningtree.graph.InstanceNode;
 import grakn.core.kb.graql.planning.spanningtree.graph.Node;
 import grakn.core.kb.graql.planning.spanningtree.graph.NodeId;
-import grakn.core.kb.graql.gremlin.Fragment;
 import grakn.core.kb.server.exception.GraknServerException;
-import grakn.core.kb.server.Transaction;
 import grakn.core.kb.server.statistics.KeyspaceStatistics;
 
 import java.util.Comparator;

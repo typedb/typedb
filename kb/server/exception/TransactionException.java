@@ -22,13 +22,9 @@ package grakn.core.kb.server.exception;
 import com.google.common.base.Preconditions;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
-import grakn.core.core.Schema;
-import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.server.Transaction;
 
 import javax.annotation.Nullable;
-
-import static grakn.core.common.exception.ErrorMessage.INVALID_PROPERTY_USE;
 
 /**
  * Illegal Mutation Exception

@@ -31,8 +31,8 @@ import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.concept.api.Type;
-import grakn.core.kb.concept.manager.ConceptNotificationChannel;
 import grakn.core.kb.concept.manager.ConceptListener;
+import grakn.core.kb.concept.manager.ConceptNotificationChannel;
 import grakn.core.kb.concept.structure.Casting;
 
 import java.util.List;

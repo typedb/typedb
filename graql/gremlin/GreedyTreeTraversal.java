@@ -20,10 +20,10 @@ package grakn.core.graql.gremlin;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
+import grakn.core.kb.graql.gremlin.Fragment;
 import grakn.core.kb.graql.planning.Arborescence;
 import grakn.core.kb.graql.planning.spanningtree.graph.Node;
 import grakn.core.kb.graql.planning.spanningtree.graph.NodeId;
-import grakn.core.kb.graql.gremlin.Fragment;
 
 import javax.annotation.Nullable;
 import java.util.Comparator;

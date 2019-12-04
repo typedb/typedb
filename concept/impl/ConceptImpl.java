@@ -20,15 +20,15 @@
 package grakn.core.concept.impl;
 
 import grakn.core.concept.cache.ConceptCache;
+import grakn.core.concept.structure.ElementUtils;
+import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.concept.manager.ConceptNotificationChannel;
-import grakn.core.kb.concept.structure.GraknElementException;
-import grakn.core.concept.structure.ElementUtils;
-import grakn.core.kb.concept.structure.Shard;
 import grakn.core.kb.concept.structure.EdgeElement;
-import grakn.core.core.Schema;
+import grakn.core.kb.concept.structure.GraknElementException;
+import grakn.core.kb.concept.structure.Shard;
 import grakn.core.kb.concept.structure.VertexElement;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 

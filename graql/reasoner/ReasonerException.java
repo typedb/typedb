@@ -26,7 +26,6 @@ import grakn.core.graql.reasoner.query.ResolvableQuery;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
-import grakn.core.kb.server.exception.GraqlSemanticException;
 import graql.lang.query.GraqlGet;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;

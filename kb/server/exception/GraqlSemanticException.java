@@ -21,9 +21,9 @@ package grakn.core.kb.server.exception;
 
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
+import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.Label;
-import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Type;
 import graql.lang.pattern.Pattern;
