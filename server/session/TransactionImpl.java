@@ -681,17 +681,6 @@ public class TransactionImpl implements Transaction {
         return queryCache;
     }
 
-    /**
-     * Gets the config option which determines the number of instances a grakn.core.kb.concept.api.Type must have before the grakn.core.kb.concept.api.Type
-     * if automatically sharded.
-     *
-     * @return the number of instances a grakn.core.kb.concept.api.Type must have before it is shareded
-     */
-    @Override
-    public long shardingThreshold() {
-        return typeShardThreshold;
-    }
-
     @Override
     public TransactionCache cache() {
         return transactionCache;
@@ -1247,16 +1236,6 @@ public class TransactionImpl implements Transaction {
         }
     }
 
-    /**
-     * Returns the current number of shards the provided grakn.core.kb.concept.api.Type has. This is used in creating more
-     * efficient query plans.
-     *
-     * @param concept The grakn.core.kb.concept.api.Type which may contain some shards.
-     * @return the number of Shards the grakn.core.kb.concept.api.Type currently has.
-     */
-    public long getShardCount(grakn.core.kb.concept.api.Type concept) {
-        return TypeImpl.from(concept).shardCount();
-    }
 
     @Override
     public Stream<ConceptMap> stream(MatchClause matchClause) {

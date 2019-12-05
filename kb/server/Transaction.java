@@ -363,12 +363,6 @@ public interface Transaction extends AutoCloseable {
 
     List<ConceptMap> execute(MatchClause matchClause, boolean infer);
 
-    // TODO remove this
-    default long getShardCount(grakn.core.kb.concept.api.Type t) {
-        return 1L;
-    }
-
-    long shardingThreshold();
 
     /**
      * An enum that determines the type of Grakn Transaction.

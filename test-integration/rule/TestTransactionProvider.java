@@ -19,6 +19,7 @@
 
 package grakn.core.rule;
 
+import grakn.core.concept.impl.TypeImpl;
 import grakn.core.concept.manager.ConceptListenerImpl;
 import grakn.core.concept.manager.ConceptManagerImpl;
 import grakn.core.concept.manager.ConceptNotificationChannelImpl;
@@ -141,6 +142,13 @@ public class TestTransactionProvider implements TransactionProvider {
             this.conceptListener = conceptListener;
         }
 
+        public long getShardCount(grakn.core.kb.concept.api.Type concept) {
+            return TypeImpl.from(concept).shardCount();
+        }
+
+        public long shardingThreshold() {
+            return typeShardThreshold;
+        }
         /*
             Getters for TransactionImpl state
          */
@@ -170,7 +178,7 @@ public class TestTransactionProvider implements TransactionProvider {
 //        }
 
         /*
-            Getters for  test only fields
+            State only saved in TestTransactions, and not in TransationImpl
          */
 
         public ConceptNotificationChannel conceptNotificationChannel() {
@@ -181,12 +189,5 @@ public class TestTransactionProvider implements TransactionProvider {
             return elementFactory;
         }
 
-        public PropertyAtomicFactory propertyAtomicFactory() {
-            return propertyAtomicFactory;
-        }
-
-        public ConceptListener conceptListener() {
-            return conceptListener;
-        }
     }
 }

@@ -188,7 +188,7 @@ public class TransactionIT {
         Config mockServerConfig = storage.createCompatibleServerConfig();
         try(Session session = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig, threshold)) {
             try (Transaction tx = session.readTransaction()) {
-                assertEquals(threshold, tx.shardingThreshold());
+                assertEquals(threshold, ((TestTransactionProvider.TestTransaction)tx).shardingThreshold());
             }
         }
     }
@@ -465,7 +465,8 @@ public class TransactionIT {
             TestCase.assertEquals(noOfEntities, noOfConcepts);
             //NB one extra shard comes from the fact that if we have <shardThreshold> number of instances we will have 2 shards (instance count equal to thresh triggers sharding)
             long expectedShards = noOfEntities/shardingThreshold + 1;
-            long createdShards = tx.getShardCount(tx.getType(Label.of(entityLabel)));
+            TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction) tx);
+            long createdShards = testTx.getShardCount(tx.getType(Label.of(entityLabel)));
             System.out.println("expected shards: " + expectedShards);
             System.out.println("created shards: " + createdShards);
             assertEquals(expectedShards, createdShards, tol*expectedShards);
@@ -563,10 +564,12 @@ public class TransactionIT {
     @Test
     public void whenShardingConcepts_EnsureCountsAreUpdated() {
         TypeImpl entity = ConceptDowncasting.type(tx.putEntityType("my amazing entity type"));
-        assertEquals(1L, tx.getShardCount(entity));
+        TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction) tx);
+
+        assertEquals(1L, testTx.getShardCount(entity));
 
         entity.createShard();
-        assertEquals(2L, tx.getShardCount(entity));
+        assertEquals(2L, testTx.getShardCount(entity));
     }
 
     @Test

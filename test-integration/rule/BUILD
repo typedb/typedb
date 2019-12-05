@@ -29,6 +29,8 @@ java_library(
     visibility = ["//visibility:public"],
     deps = [
         "//common",
+        "//concept/impl",
+        "//kb/concept/api",
         "//concept/manager",
         "//concept/structure",
         "//core",
