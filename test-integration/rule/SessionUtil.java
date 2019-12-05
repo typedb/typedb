@@ -119,4 +119,9 @@ public class SessionUtil {
         TransactionProvider transactionProvider = new TestTransactionProvider(graph, hadoopGraph, cache, keyspaceStatistics, attributeManager, graphLock, typeShardThreshold);
         return new SessionImpl(randomKeyspace, transactionProvider, cache, graph, keyspaceStatistics, attributeManager, shardManager);
     }
+
+    public static SessionImpl serverlessSession(Config serverConfig, String keyspaceName) {
+        JanusGraphFactory janusGraphFactory = new JanusGraphFactory(serverConfig);
+        return serverlessSession(serverConfig, janusGraphFactory, keyspaceName, 250000);
+    }
 }

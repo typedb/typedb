@@ -24,7 +24,6 @@ java_test(
     test_class = "grakn.core.graql.gremlin.sets.LabelFragmentSetTest",
     deps = [
         "//kb/concept/api:api",
-        "//server:server",
         "//graql:graql",
         "//kb:kb",
         "//kb/concept/manager",
@@ -54,7 +53,6 @@ java_test(
         "//kb/concept/api:api",
         "//kb:kb",
         "//graql:graql",
-        "//server:server",
         "//kb/concept/manager",
 
         "@graknlabs_graql//java:graql",

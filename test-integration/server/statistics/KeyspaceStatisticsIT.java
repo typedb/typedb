@@ -74,7 +74,6 @@ public class KeyspaceStatisticsIT {
         graknClient.close();
     }
 
-
     @Test
     public void newKeyspaceHasZeroCounts() {
         KeyspaceStatistics statistics = localSession.keyspaceStatistics();
@@ -91,8 +90,9 @@ public class KeyspaceStatisticsIT {
 
     @Test
     public void sessionsToSameKeyspaceShareStatistics() {
-        Session session2 = server.session(localSession.keyspace());
-        assertSame(localSession.keyspaceStatistics(), session2.keyspaceStatistics());
+        Session session2  = server.session(localSession.keyspace());
+        Session session3 = server.session(localSession.keyspace());
+        assertSame(session2.keyspaceStatistics(), session3.keyspaceStatistics());
     }
 
     @Test
@@ -124,7 +124,7 @@ public class KeyspaceStatisticsIT {
         long entityCount = localSession.keyspaceStatistics().count(testTx.conceptManager(), Label.of("entity"));
         long relationCount = localSession.keyspaceStatistics().count(testTx.conceptManager(), Label.of("relation"));
         long attributeCount = localSession.keyspaceStatistics().count(testTx.conceptManager(), Label.of("attribute"));
-        tx.close();
+        testTx.close();
 
         assertEquals(2, personCount);
         assertEquals(1, ageCount);
@@ -148,7 +148,7 @@ public class KeyspaceStatisticsIT {
         entityCount = localSession.keyspaceStatistics().count(testTx.conceptManager(), Label.of("entity"));
         relationCount = localSession.keyspaceStatistics().count(testTx.conceptManager(), Label.of("relation"));
         attributeCount = localSession.keyspaceStatistics().count(testTx.conceptManager(), Label.of("attribute"));
-        tx.close();
+        testTx.close();
 
         assertEquals(2, personCount);
         assertEquals(1, ageCount);
@@ -211,7 +211,7 @@ public class KeyspaceStatisticsIT {
         long entityCount = localSession.keyspaceStatistics().count(testTx.conceptManager(), Label.of("entity"));
         long relationCount = localSession.keyspaceStatistics().count(testTx.conceptManager(), Label.of("relation"));
         long attributeCount = localSession.keyspaceStatistics().count(testTx.conceptManager(), Label.of("attribute"));
-        tx.close();
+        testTx.close();
 
         assertEquals(0, personCount);
         assertEquals(0, ageCount);
@@ -252,13 +252,13 @@ public class KeyspaceStatisticsIT {
         long entityCount = localSession.keyspaceStatistics().count(testTx.conceptManager(), Label.of("entity"));
         long relationCount = localSession.keyspaceStatistics().count(testTx.conceptManager(), Label.of("relation"));
         long attributeCount = localSession.keyspaceStatistics().count(testTx.conceptManager(), Label.of("attribute"));
-        tx.close();
+        testTx.close();
 
         localSession.close();
         remoteSession.close();
 
         // at this point, the graph and keyspace should be deleted from Grakn server cache
-        localSession = server.session(new KeyspaceImpl(remoteSession.keyspace().name()));
+        localSession = SessionUtil.serverlessSession(server.serverConfig(), remoteSession.keyspace().name());
 
         testTx = (TestTransactionProvider.TestTransaction)localSession.writeTransaction();
         long personCountReopened = localSession.keyspaceStatistics().count(testTx.conceptManager(), Label.of("person"));
@@ -269,7 +269,7 @@ public class KeyspaceStatisticsIT {
         long entityCountReopened = localSession.keyspaceStatistics().count(testTx.conceptManager(), Label.of("entity"));
         long relationCountReopened = localSession.keyspaceStatistics().count(testTx.conceptManager(), Label.of("relation"));
         long attributeCountReopened = localSession.keyspaceStatistics().count(testTx.conceptManager(), Label.of("attribute"));
-        tx.close();
+        testTx.close();
 
         assertEquals(personCount, personCountReopened);
         assertEquals(ageCount, ageCountReopened);
@@ -306,6 +306,13 @@ public class KeyspaceStatisticsIT {
 
         CompletableFuture<Void> future1 = CompletableFuture.supplyAsync(() -> {
             GraknClient.Transaction tx1 = remoteSession.transaction().write();
+            /*
+
+            To debug this: set a breakpoint in `getSchemaConcept` in the server
+            Somehow the age isn't being looked up properly because the label is not in the schema label cache?
+
+
+             */
             grakn.client.concept.AttributeType ageT = tx1.getAttributeType("age");
             grakn.client.concept.EntityType personT = tx1.getEntityType("person");
             ageT.create(2);
