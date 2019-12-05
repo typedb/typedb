@@ -640,10 +640,10 @@ public class RuleValidationIT {
             tx.commit();
         }
         try (Transaction tx = session.writeTransaction()) {
-            ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
+            TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction) tx;
             List<Rule> rules = RuleUtils.stratifyRules(
-                    tx.ruleCache().getRules()
-                            .map(rule -> new InferenceRule(rule, reasonerQueryFactory))
+                    testTx.ruleCache().getRules()
+                            .map(rule -> new InferenceRule(rule, testTx.reasonerQueryFactory()))
                             .collect(Collectors.toSet()))
                     .map(InferenceRule::getRule).collect(Collectors.toList());
             Rule Rp1 = tx.getRule("Rp1");

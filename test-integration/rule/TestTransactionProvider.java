@@ -38,6 +38,7 @@ import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.concept.manager.ConceptNotificationChannel;
 import grakn.core.kb.graql.executor.ExecutorFactory;
 import grakn.core.kb.graql.gremlin.TraversalPlanFactory;
+import grakn.core.kb.graql.reasoner.cache.RuleCache;
 import grakn.core.kb.server.AttributeManager;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
@@ -171,6 +172,10 @@ public class TestTransactionProvider implements TransactionProvider {
 
         public ReasonerQueryFactory reasonerQueryFactory() {
             return reasonerQueryFactory;
+        }
+
+        public RuleCache ruleCache() {
+            return ruleCache;
         }
 
 //        MultilevelSemanticCache queryCache() {

@@ -35,7 +35,6 @@ import grakn.core.concept.answer.Numeric;
 import grakn.core.concept.answer.Void;
 import grakn.core.concept.impl.ConceptVertex;
 import grakn.core.concept.impl.SchemaConceptImpl;
-import grakn.core.concept.impl.TypeImpl;
 import grakn.core.concept.util.ConceptUtils;
 import grakn.core.concept.util.attribute.Serialiser;
 import grakn.core.core.JanusTraversalSourceProvider;
@@ -127,20 +126,20 @@ public class TransactionImpl implements Transaction {
     protected final TransactionCache transactionCache;
 
     // TransactionOLTP Specific
-    protected final JanusGraphTransaction janusTransaction;
-    protected Type txType;
+    private final JanusGraphTransaction janusTransaction;
+    private final UncomittedStatisticsDelta uncomittedStatisticsDelta;
+    private Type txType;
     private String closedReason = null;
     private boolean isTxOpen;
-    protected UncomittedStatisticsDelta uncomittedStatisticsDelta;
 
     // Thread-local boolean which is set to true in the constructor. Used to check if current Tx is created in current Thread because
     // reaching across threads in a single threaded janus transaction leads to errors
     private final ThreadLocal<Boolean> createdInCurrentThread = ThreadLocal.withInitial(() -> Boolean.FALSE);
 
-    protected TraversalPlanFactory traversalPlanFactory;
-    protected JanusTraversalSourceProvider janusTraversalSourceProvider;
-    protected ReasonerQueryFactory reasonerQueryFactory;
-    protected ReadWriteLock graphLock;
+    protected final TraversalPlanFactory traversalPlanFactory;
+    protected final JanusTraversalSourceProvider janusTraversalSourceProvider;
+    protected final ReasonerQueryFactory reasonerQueryFactory;
+    private final ReadWriteLock graphLock;
 
     public TransactionImpl(Session session, JanusGraphTransaction janusTransaction, ConceptManager conceptManager,
                            JanusTraversalSourceProvider janusTraversalSourceProvider, TransactionCache transactionCache,
@@ -672,11 +671,6 @@ public class TransactionImpl implements Transaction {
     }
 
     @Override
-    public RuleCache ruleCache() {
-        return ruleCache;
-    }
-
-    @Override
     public QueryCache queryCache() {
         return queryCache;
     }
@@ -1171,8 +1165,8 @@ public class TransactionImpl implements Transaction {
     private void closeTransaction(String closedReason) {
         this.closedReason = closedReason;
         this.isTxOpen = false;
-        ruleCache().clear();
-        queryCache().clear();
+        ruleCache.clear();
+        queryCache.clear();
     }
 
     private void removeInferredConcepts() {

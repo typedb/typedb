@@ -149,8 +149,6 @@ public interface Transaction extends AutoCloseable {
 
     Stream<? extends Answer> stream(GraqlQuery query, boolean infer);
 
-    RuleCache ruleCache();
-
     QueryCache queryCache();
 
     TransactionCache cache();
