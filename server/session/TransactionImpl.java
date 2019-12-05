@@ -1279,6 +1279,15 @@ public class TransactionImpl implements Transaction {
     }
 
 
+    // shortcut helpers
+    private QueryExecutor executor() {
+        return executorFactory.transactional( true);
+    }
+
+    private QueryExecutor executor(boolean infer) {
+        return executorFactory.transactional( infer);
+    }
+
     // ----------- Exposed low level methods that should not be exposed here TODO refactor
     void createMetaConcepts() {
         VertexElement type = conceptManager.addTypeVertex(Schema.MetaSchema.THING.getId(), Schema.MetaSchema.THING.getLabel(), Schema.BaseType.TYPE);
@@ -1297,26 +1306,5 @@ public class TransactionImpl implements Transaction {
         entityType.addEdge(type, Schema.EdgeLabel.SUB);
     }
 
-    @Override
-    // TODO undo accesses that aren't for testing
-    @VisibleForTesting
-    public ConceptManager conceptManager() {
-        return conceptManager;
-    }
-
-    public ReasonerQueryFactory reasonerQueryFactory() {
-        return reasonerQueryFactory;
-    }
-
-
-    @Override
-    public final QueryExecutor executor() {
-        return executorFactory.transactional( true);
-    }
-
-    @Override
-    public final QueryExecutor executor(boolean infer) {
-        return executorFactory.transactional( infer);
-    }
 
 }

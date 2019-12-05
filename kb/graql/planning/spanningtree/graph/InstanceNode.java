@@ -21,7 +21,8 @@ package grakn.core.kb.graql.planning.spanningtree.graph;
 
 import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.Label;
-import grakn.core.kb.server.Transaction;
+import grakn.core.kb.concept.manager.ConceptManager;
+import grakn.core.kb.server.statistics.KeyspaceStatistics;
 
 public class InstanceNode extends Node {
 
@@ -34,11 +35,11 @@ public class InstanceNode extends Node {
     }
 
     @Override
-    public long matchingElementsEstimate(Transaction tx) {
+    public long matchingElementsEstimate(ConceptManager conceptManager, KeyspaceStatistics statistics) {
         if (instanceTypeLabel == null) {
-            return tx.session().keyspaceStatistics().count(tx.conceptManager(), Schema.MetaSchema.THING.getLabel());
+            return statistics.count(conceptManager, Schema.MetaSchema.THING.getLabel());
         } else {
-            return tx.session().keyspaceStatistics().count(tx.conceptManager(), instanceTypeLabel);
+            return statistics.count(conceptManager, instanceTypeLabel);
         }
     }
 

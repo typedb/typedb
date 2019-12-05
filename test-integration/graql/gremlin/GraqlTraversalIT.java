@@ -30,6 +30,7 @@ import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.EntityType;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
+import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.gremlin.Fragment;
 import grakn.core.kb.graql.gremlin.GraqlTraversal;
 import grakn.core.kb.graql.gremlin.TraversalPlanFactory;
@@ -324,8 +325,9 @@ public class GraqlTraversalIT {
     private static Stream<GraqlTraversal> allGraqlTraversals(Pattern pattern) {
         Collection<Conjunction<Statement>> patterns = pattern.getDisjunctiveNormalForm().getPatterns();
 
+        ConceptManager conceptManager = ((TestTransactionProvider.TestTransaction)tx).conceptManager();
         List<Set<List<Fragment>>> collect = patterns.stream()
-                .map(conjunction -> new ConjunctionQuery(conjunction, tx.conceptManager()))
+                .map(conjunction -> new ConjunctionQuery(conjunction, conceptManager))
                 .map(ConjunctionQuery::allFragmentOrders)
                 .collect(toList());
 

@@ -19,7 +19,8 @@
 
 package grakn.core.kb.graql.planning.spanningtree.graph;
 
-import grakn.core.kb.server.Transaction;
+import grakn.core.kb.concept.manager.ConceptManager;
+import grakn.core.kb.server.statistics.KeyspaceStatistics;
 
 public class SchemaNode extends Node {
 
@@ -30,7 +31,7 @@ public class SchemaNode extends Node {
     }
 
     @Override
-    public long matchingElementsEstimate(Transaction tx) {
+    public long matchingElementsEstimate(ConceptManager conceptManager, KeyspaceStatistics statistics) {
         // only 1 node ever matches a schema node
         return 1;
     }

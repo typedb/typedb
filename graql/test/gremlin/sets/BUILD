@@ -27,6 +27,7 @@ java_test(
         "//server:server",
         "//graql:graql",
         "//kb:kb",
+        "//kb/concept/manager",
 
         "@graknlabs_graql//java:graql",
 
@@ -54,6 +55,7 @@ java_test(
         "//kb:kb",
         "//graql:graql",
         "//server:server",
+        "//kb/concept/manager",
 
         "@graknlabs_graql//java:graql",
 

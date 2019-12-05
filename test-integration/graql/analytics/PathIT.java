@@ -494,7 +494,7 @@ public class PathIT {
 
         try (Transaction tx = session.readTransaction()) {
             TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
-            ConceptManager conceptManager =testTx.conceptManager();
+            ConceptManager conceptManager = testTx.conceptManager();
             TraversalPlanFactory traversalPlanFactory = testTx.traversalPlanFactory();
             ReasonerQueryFactory reasonerQueryFactory = testTx.reasonerQueryFactory();
 
@@ -504,8 +504,8 @@ public class PathIT {
 
             // Path from power3 to power3
             pathPerson3Power3.add(idPerson3);
-            if (null != getResourceEdgeId(tx.conceptManager(), executorFactory, idPower3, idPerson3)) {
-                pathPerson3Power3.add(getResourceEdgeId(tx.conceptManager(), executorFactory, idPower3, idPerson3));
+            if (null != getResourceEdgeId(conceptManager, executorFactory, idPower3, idPerson3)) {
+                pathPerson3Power3.add(getResourceEdgeId(conceptManager, executorFactory, idPower3, idPerson3));
             }
             pathPerson3Power3.add(idPower3);
             allPaths = tx.execute(Graql.compute().path().from(idPerson3.getValue()).to(idPower3.getValue()).attributes(true));
@@ -516,8 +516,8 @@ public class PathIT {
             pathPerson2Power1.add(idPerson2);
             pathPerson2Power1.add(idRelationPerson2Power2);
             pathPerson2Power1.add(idPower2);
-            if (null != getResourceEdgeId(tx.conceptManager(), executorFactory, idPerson1, idPower2)) {
-                pathPerson2Power1.add(getResourceEdgeId(tx.conceptManager(), executorFactory, idPerson1, idPower2));
+            if (null != getResourceEdgeId(conceptManager, executorFactory, idPerson1, idPower2)) {
+                pathPerson2Power1.add(getResourceEdgeId(conceptManager, executorFactory, idPerson1, idPower2));
             }
             pathPerson2Power1.add(idPerson1);
             pathPerson2Power1.add(idRelationPerson1Power1);
@@ -529,8 +529,8 @@ public class PathIT {
 
             // Path from power3 to power1
             pathPower3Power1.add(idPower3);
-            if (null != getResourceEdgeId(tx.conceptManager(), executorFactory, idPower3, idPerson3)) {
-                pathPower3Power1.add(getResourceEdgeId(tx.conceptManager(), executorFactory, idPower3, idPerson3));
+            if (null != getResourceEdgeId(conceptManager, executorFactory, idPower3, idPerson3)) {
+                pathPower3Power1.add(getResourceEdgeId(conceptManager, executorFactory, idPower3, idPerson3));
             }
             pathPower3Power1.add(idPerson3);
             pathPower3Power1.add(idRelationPerson1Person3);

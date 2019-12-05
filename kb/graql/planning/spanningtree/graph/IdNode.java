@@ -19,7 +19,8 @@
 
 package grakn.core.kb.graql.planning.spanningtree.graph;
 
-import grakn.core.kb.server.Transaction;
+import grakn.core.kb.concept.manager.ConceptManager;
+import grakn.core.kb.server.statistics.KeyspaceStatistics;
 
 public class IdNode extends Node {
     private static final int ID_NODE_PRIORITY = 0;
@@ -29,7 +30,7 @@ public class IdNode extends Node {
     }
 
     @Override
-    public long matchingElementsEstimate(Transaction tx) {
+    public long matchingElementsEstimate(ConceptManager conceptManager, KeyspaceStatistics statistics) {
         // only 1 node matches a node with an ID
         return 1;
     }

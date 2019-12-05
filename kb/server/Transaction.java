@@ -363,18 +363,10 @@ public interface Transaction extends AutoCloseable {
 
     List<ConceptMap> execute(MatchClause matchClause, boolean infer);
 
-    @VisibleForTesting
-    ConceptManager conceptManager();
-
-
     // TODO remove this
     default long getShardCount(grakn.core.kb.concept.api.Type t) {
         return 1L;
     }
-
-    QueryExecutor executor();
-
-    QueryExecutor executor(boolean infer);
 
     long shardingThreshold();
 

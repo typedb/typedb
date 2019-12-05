@@ -196,7 +196,7 @@ public class TransactionIT {
     @Test
     public void whenBuildingAConceptFromAVertex_ReturnConcept() {
         EntityType et = tx.putEntityType("Sample Entity Type");
-        assertEquals(et, tx.conceptManager().buildConcept(ConceptDowncasting.concept(et).vertex()));
+        assertEquals(et, ((TestTransactionProvider.TestTransaction)tx).conceptManager().buildConcept(ConceptDowncasting.concept(et).vertex()));
     }
 
     @Test

@@ -686,12 +686,12 @@ public class ResolutionPlanIT {
         Label anotherDerivedRelationLabel = Label.of("anotherDerivedRelation");
         TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
         assertEquals(
-                tx.session().keyspaceStatistics().count(tx.conceptManager(), someRelationLabel),
+                tx.session().keyspaceStatistics().count(testTx.conceptManager(), someRelationLabel),
                 NodesUtil.estimateInferredTypeCount(derivedRelationLabel, testTx.conceptManager(), planKeyspaceStatistics)
         );
 
         assertEquals(
-                tx.session().keyspaceStatistics().count(tx.conceptManager(), anotherRelationLabel),
+                tx.session().keyspaceStatistics().count(testTx.conceptManager(), anotherRelationLabel),
                 NodesUtil.estimateInferredTypeCount(anotherDerivedRelationLabel, testTx.conceptManager(), planKeyspaceStatistics)
         );
     }
@@ -702,7 +702,7 @@ public class ResolutionPlanIT {
         Label someRelationTransLabel = Label.of("someRelationTrans");
         TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
         assertEquals(
-                tx.session().keyspaceStatistics().count(tx.conceptManager(), someRelationLabel),
+                tx.session().keyspaceStatistics().count(testTx.conceptManager(), someRelationLabel),
                 NodesUtil.estimateInferredTypeCount(someRelationTransLabel, testTx.conceptManager(), planKeyspaceStatistics)
         );
     }

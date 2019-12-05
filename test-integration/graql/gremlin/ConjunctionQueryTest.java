@@ -19,8 +19,10 @@
 package grakn.core.graql.gremlin;
 
 import grakn.core.graql.gremlin.fragment.Fragments;
+import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Type;
+import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.gremlin.Fragment;
 import grakn.core.kb.server.Transaction;
 import grakn.core.server.session.TransactionImpl;
@@ -55,26 +57,30 @@ public class ConjunctionQueryTest {
     private Statement resourceTypeWithoutSubTypes = Graql.type(resourceTypeWithoutSubTypesLabel.getValue());
     private Statement resourceTypeWithSubTypes = Graql.type(resourceTypeWithSubTypesLabel.getValue());
     private String literalValue = "Bob";
-    private Transaction tx;
+    private ConceptManager conceptManager;
     private Statement x = Graql.var("x");
     private Statement y = Graql.var("y");
 
     @SuppressWarnings("ResultOfMethodCallIgnored") // Mockito confuses IntelliJ
     @Before
     public void setUp() {
-        tx = mock(TransactionImpl.class);
+        conceptManager = mock(ConceptManager.class);
 
-        Type resourceTypeWithoutSubTypesMock = mock(Type.class);
+        AttributeType resourceTypeWithoutSubTypesMock = mock(AttributeType.class);
         doAnswer((answer) -> Stream.of(resourceTypeWithoutSubTypesMock)).when(resourceTypeWithoutSubTypesMock).subs();
         when(resourceTypeWithoutSubTypesMock.label()).thenReturn(resourceTypeWithoutSubTypesLabel);
+        when(resourceTypeWithoutSubTypesMock.dataType()).thenReturn(AttributeType.DataType.STRING);
 
-        Type resourceTypeWithSubTypesMock = mock(Type.class);
+        AttributeType resourceTypeWithSubTypesMock = mock(AttributeType.class);
         doAnswer((answer) -> Stream.of(resourceTypeWithoutSubTypesMock, resourceTypeWithSubTypesMock))
                 .when(resourceTypeWithSubTypesMock).subs();
         when(resourceTypeWithSubTypesMock.label()).thenReturn(resourceTypeWithSubTypesLabel);
+        when(resourceTypeWithSubTypesMock.dataType()).thenReturn(AttributeType.DataType.STRING);
 
-        when(tx.getSchemaConcept(resourceTypeWithoutSubTypesLabel)).thenReturn(resourceTypeWithoutSubTypesMock);
-        when(tx.getSchemaConcept(resourceTypeWithSubTypesLabel)).thenReturn(resourceTypeWithSubTypesMock);
+        when(conceptManager.getAttributeType(resourceTypeWithoutSubTypesLabel.getValue())).thenReturn(resourceTypeWithoutSubTypesMock);
+        when(conceptManager.getSchemaConcept(resourceTypeWithoutSubTypesLabel)).thenReturn(resourceTypeWithoutSubTypesMock);
+        when(conceptManager.getAttributeType(resourceTypeWithSubTypesLabel.getValue())).thenReturn(resourceTypeWithSubTypesMock);
+        when(conceptManager.getSchemaConcept(resourceTypeWithSubTypesLabel)).thenReturn(resourceTypeWithSubTypesMock);
     }
 
     @Test
@@ -155,7 +161,7 @@ public class ConjunctionQueryTest {
 
         return feature(hasItem(contains(resourceIndexFragment)), "fragment sets", pattern -> {
             Conjunction<Statement> conjunction = pattern.getDisjunctiveNormalForm().getPatterns().iterator().next();
-            return new ConjunctionQuery(conjunction, tx.conceptManager()).getEquivalentFragmentSets();
+            return new ConjunctionQuery(conjunction, conceptManager).getEquivalentFragmentSets();
         });
     }
 }

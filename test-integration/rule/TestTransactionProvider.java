@@ -161,11 +161,10 @@ public class TestTransactionProvider implements TransactionProvider {
             return conceptManager;
         }
 
+        public ReasonerQueryFactory reasonerQueryFactory() {
+            return reasonerQueryFactory;
+        }
 
-        // TODO expose these here when removed from Transaction's actual accesses
-//        public ReasonerQueryFactory reasonerQueryFactory() {
-//            return reasonerQueryFactory;
-//        }
 //        MultilevelSemanticCache queryCache() {
 //            return queryCache;
 //        }
