@@ -302,6 +302,10 @@ public class KeyspaceStatisticsIT {
         long ageCountStart = localSession.keyspaceStatistics().count(testTx.conceptManager(), Label.of("age"));
         testTx.commit();
 
+        // TODO fix the schema label cache to be a read-through, meanwhile close and reopen session
+        remoteSession.close();
+        remoteSession = graknClient.session(localSession.keyspace().toString());
+
         ExecutorService parallelExecutor = Executors.newFixedThreadPool(2);
 
         CompletableFuture<Void> future1 = CompletableFuture.supplyAsync(() -> {
@@ -338,6 +342,8 @@ public class KeyspaceStatisticsIT {
         parallelExecutor.shutdownNow();
         parallelExecutor.awaitTermination(5, TimeUnit.SECONDS);
 
+        // because we haven't solved statistics beyond a single node, refresh the session here to clear cached counts
+        localSession = SessionUtil.serverlessSession(server.serverConfig(), localSession.keyspace().name());
         testTx = (TestTransactionProvider.TestTransaction)localSession.writeTransaction();
         long personCount = localSession.keyspaceStatistics().count(testTx.conceptManager(), Label.of("person"));
         long ageCount = localSession.keyspaceStatistics().count(testTx.conceptManager(), Label.of("age"));
