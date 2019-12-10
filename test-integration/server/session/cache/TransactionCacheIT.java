@@ -33,11 +33,9 @@ import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.server.Session;
-import grakn.core.kb.server.Transaction;
 import grakn.core.kb.server.cache.TransactionCache;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.rule.SessionUtil;
-import grakn.core.rule.TestTransactionProvider;
 import grakn.core.rule.TestTransactionProvider.TestTransaction;
 import graql.lang.Graql;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -85,13 +83,14 @@ public class TransactionCacheIT {
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
-    private Transaction tx;
+    private TestTransaction tx;
     private Session session;
 
     @Before
     public void setUp() {
+        // disconnected session?
         session = SessionUtil.serverlessSessionWithNewKeyspace(server.serverConfig());
-        tx = session.writeTransaction();
+        tx = (TestTransaction) session.writeTransaction();
     }
 
     @After
@@ -122,7 +121,7 @@ public class TransactionCacheIT {
         tx.commit();
 
         // examine new transaction's cache
-        tx = session.readTransaction();
+        tx = (TestTransaction)session.readTransaction();
         EntityType retrievedPerson = tx.getEntityType("person");
         Entity retrievedPersonInstance = retrievedPerson.instances().collect(Collectors.toList()).get(0);
 
@@ -141,7 +140,7 @@ public class TransactionCacheIT {
         tx.commit();
 
         // examine new transaction's cache
-        tx = session.readTransaction();
+        tx = (TestTransaction)session.readTransaction();
         tx.getEntityType("person");
 
         TransactionCache transactionCache = tx.cache();
@@ -232,7 +231,7 @@ public class TransactionCacheIT {
         tx.commit();
 
 
-        tx = session.writeTransaction();
+        tx = (TestTransaction)session.writeTransaction();
         tx.execute(Graql.insert(var("x").isa(testAttributeLabel).val(testAttributeValue)));
         tx.execute(Graql.match(var("x").isa(testAttributeLabel).val(testAttributeValue)).delete());
         assertFalse(tx.cache().getNewAttributes().containsKey(new Pair<>(Label.of(testAttributeLabel), index)));
@@ -266,7 +265,7 @@ public class TransactionCacheIT {
         aRelation.has(aProvenance);
 
         tx.commit();
-        tx = session.writeTransaction();
+        tx = (TestTransaction)session.writeTransaction();
 
         // retrieve the vertex as a concept
         aRelation = tx.getConcept(relationId);
@@ -276,7 +275,7 @@ public class TransactionCacheIT {
         Attribute<String> newProvenance = provenance.create("bye");
         aRelation.has(newProvenance);
 
-        JanusTraversalSourceProvider janusTraversalSourceProvider = ((TestTransactionProvider.TestTransaction) tx).janusTraversalSourceProvider();
+        JanusTraversalSourceProvider janusTraversalSourceProvider = tx.janusTraversalSourceProvider();
 
         // retireve the specific janus vertex
         Vertex relationVertex = janusTraversalSourceProvider.getTinkerTraversal().V(Schema.elementId(relationId)).next();
@@ -326,9 +325,9 @@ public class TransactionCacheIT {
             fillerJanusVertices.add(Schema.elementId(person.create().id()));
         }
         tx.commit();
-        tx = session.writeTransaction();
+        tx = (TestTransaction)session.writeTransaction();
 
-        JanusTraversalSourceProvider janusTraversalSourceProvider = ((TestTransaction) tx).janusTraversalSourceProvider();
+        JanusTraversalSourceProvider janusTraversalSourceProvider = tx.janusTraversalSourceProvider();
 
         // retrieve the vertex as a concept
         aRelation = tx.getConcept(relationId);

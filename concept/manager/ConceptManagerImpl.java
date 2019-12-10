@@ -100,7 +100,8 @@ public class ConceptManagerImpl implements ConceptManager {
         this.elementFactory = elementFactory;
         this.transactionCache = transactionCache;
         this.conceptNotificationChannel = conceptNotificationChannel;
-        this.attributeManager = attributeManager;    }
+        this.attributeManager = attributeManager;
+    }
 
     /*
 

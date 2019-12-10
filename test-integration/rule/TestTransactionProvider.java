@@ -183,6 +183,10 @@ public class TestTransactionProvider implements TransactionProvider {
             return uncomittedStatisticsDelta;
         }
 
+        public TransactionCache cache() {
+            return transactionCache;
+        }
+
 //        MultilevelSemanticCache queryCache() {
 //            return queryCache;
 //        }

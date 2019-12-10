@@ -191,9 +191,9 @@ public class TransactionImpl implements Transaction {
         boolean attributeLockRequired = session.attributeManager().requiresLock(txId);
         boolean shardLockRequired = session.shardManager().requiresLock(txId);
         boolean keyLockRequired = false;
-        Set<String> modifiedKeyIndices = cache().getModifiedKeyIndices();
+        Set<String> modifiedKeyIndices = transactionCache.getModifiedKeyIndices();
         if (!modifiedKeyIndices.isEmpty()){
-            Set<String> insertedIndices = cache().getNewAttributes().keySet().stream().map(Pair::second).collect(Collectors.toSet());
+            Set<String> insertedIndices = transactionCache.getNewAttributes().keySet().stream().map(Pair::second).collect(Collectors.toSet());
             keyLockRequired = modifiedKeyIndices.stream().anyMatch(keyIndex -> !insertedIndices.contains(keyIndex));
         }
         boolean lockRequired = attributeLockRequired
@@ -202,14 +202,14 @@ public class TransactionImpl implements Transaction {
                 // that are trying to create new attributes will read an updated version of attributesCache
                 // Not locking here might lead to concurrent transactions reading the attributesCache that still
                 // contains attributes that we are removing in this transaction.
-                || !cache().getRemovedAttributes().isEmpty()
+                || !transactionCache.getRemovedAttributes().isEmpty()
                 || keyLockRequired;
         if (lockRequired){
             LOG.debug(txId + " needs lock: " +
                     (attributeLockRequired? "attribute" : "") +
                     (shardLockRequired? "shard" : "") +
                     (keyLockRequired? "key" : "")+
-                    (!cache().getRemovedAttributes().isEmpty()? "delete" : ""));
+                    (!transactionCache.getRemovedAttributes().isEmpty()? "delete" : ""));
         }
         return lockRequired;
     }
@@ -219,7 +219,7 @@ public class TransactionImpl implements Transaction {
         if (lockRequired) graphLock.writeLock().lock();
         try {
             createNewTypeShardsWhenThresholdReached();
-            cache().getRemovedAttributes().forEach(index -> session.attributeManager().attributesCommitted().invalidate(index));
+            transactionCache.getRemovedAttributes().forEach(index -> session.attributeManager().attributesCommitted().invalidate(index));
             Set<String> deduplicatedIndices = mergeAttributes();
             persistInternal();
             ackCommit(deduplicatedIndices);
@@ -239,13 +239,13 @@ public class TransactionImpl implements Transaction {
 
     private void ackCommit(Set<String> deduplicatedIndices){
         String txId = this.janusTransaction.toString();
-        session.shardManager().ackCommit(cache().getNewShards().keySet(), txId);
+        session.shardManager().ackCommit(transactionCache.getNewShards().keySet(), txId);
         //this should ack all inserts so that insert requests are cleared
-        Set<String> newIndices = cache().getNewAttributes().keySet().stream().map(Pair::second).collect(Collectors.toSet());
+        Set<String> newIndices = transactionCache.getNewAttributes().keySet().stream().map(Pair::second).collect(Collectors.toSet());
         session.attributeManager().ackCommit(newIndices, txId);
 
         //this should ack all inserts that weren't deduplicated so that we have correct attributes in attributesCommitted
-        cache().getNewAttributes().forEach((indexPair, conceptId) -> {
+        transactionCache.getNewAttributes().forEach((indexPair, conceptId) -> {
             String index = indexPair.second();
             if (!deduplicatedIndices.contains(index)) session.attributeManager().attributesCommitted().put(index, conceptId);
         });
@@ -256,7 +256,7 @@ public class TransactionImpl implements Transaction {
     // we serialise the commit by locking and merge attributes that are duplicates.
     private Set<String> mergeAttributes() {
         Set<String> deduplicatesIndices = new HashSet<>();
-        cache().getNewAttributes().forEach(((labelIndexPair, conceptId) -> {
+        transactionCache.getNewAttributes().forEach(((labelIndexPair, conceptId) -> {
             // If the same index is contained in attributesCommitted, it means
             // another concurrent transaction inserted the same attribute, time to merge!
             // NOTE: we still need to rely on attributesCommitted instead of checking in the graph
@@ -287,14 +287,14 @@ public class TransactionImpl implements Transaction {
             if (instanceCount - hardCheckpoint >= typeShardThreshold) {
                 session().shardManager().ackShardRequest(label, txId);
                 //update cache to signal fulfillment of shard request later at commit time
-                cache().getNewShards().put(label, instanceCount);
+                transactionCache.getNewShards().put(label, instanceCount);
             }
         });
     }
 
     private void createNewTypeShardsWhenThresholdReached() {
         String txId = this.janusTransaction.toString();
-        cache().getNewShards()
+        transactionCache.getNewShards()
                 .forEach((label, count) -> {
                     Long softCheckPoint = session.shardManager().getEphemeralShardCount(label);
                     long instanceCount = session.keyspaceStatistics().count(conceptManager, label) + uncomittedStatisticsDelta.delta(label);
@@ -423,7 +423,7 @@ public class TransactionImpl implements Transaction {
         Stream<ConceptMap> explicitlyPersisted = inserted.peek(conceptMap -> {
             // mark all inferred concepts that are required for the insert for persistence explicitly
             // can avoid this potentially expensive check if there aren't any inferred concepts to start with
-            if (cache().getInferredInstances().findAny().isPresent()) {
+            if (transactionCache.getInferredInstances().findAny().isPresent()) {
                 markConceptsForPersistence(conceptMap.concepts());
             }
         });
@@ -449,7 +449,7 @@ public class TransactionImpl implements Transaction {
                 .forEach(t -> {
                     //as we are going to persist the concepts, reset the inferred flag
                     ConceptVertex.from(t).vertex().property(Schema.VertexProperty.IS_INFERRED, false);
-                   cache().inferredInstanceToPersist(t);
+                   transactionCache.inferredInstanceToPersist(t);
                 });
     }
 
@@ -673,11 +673,6 @@ public class TransactionImpl implements Transaction {
     @Override
     public QueryCache queryCache() {
         return queryCache;
-    }
-
-    @Override
-    public TransactionCache cache() {
-        return transactionCache;
     }
 
     @Override
@@ -1165,8 +1160,8 @@ public class TransactionImpl implements Transaction {
     }
 
     private void removeInferredConcepts() {
-        Set<Thing> inferredThingsToDiscard = cache().getInferredInstancesToDiscard().collect(Collectors.toSet());
-        inferredThingsToDiscard.forEach(inferred -> cache().remove(inferred));
+        Set<Thing> inferredThingsToDiscard = transactionCache.getInferredInstancesToDiscard().collect(Collectors.toSet());
+        inferredThingsToDiscard.forEach(inferred -> transactionCache.remove(inferred));
         inferredThingsToDiscard.forEach(Concept::delete);
     }
 

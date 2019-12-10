@@ -41,7 +41,6 @@ import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.structure.GraknElementException;
 import grakn.core.kb.concept.structure.PropertyNotUniqueException;
 import grakn.core.kb.graql.reasoner.cache.QueryCache;
-import grakn.core.kb.server.cache.TransactionCache;
 import grakn.core.kb.server.exception.InvalidKBException;
 import grakn.core.kb.server.exception.TransactionException;
 import grakn.core.kb.server.keyspace.Keyspace;
@@ -148,8 +147,6 @@ public interface Transaction extends AutoCloseable {
     Stream<? extends Answer> stream(GraqlQuery query, boolean infer);
 
     QueryCache queryCache();
-
-    TransactionCache cache();
 
     boolean isOpen();
 
