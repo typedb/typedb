@@ -19,10 +19,10 @@
 load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
 java_test(
-    name = "uncomitted-statistics-delta-it",
+    name = "statistics-delta-it",
     srcs = ["StatisticsDeltaIT.java"],
     classpath_resources = ["//test-integration/resources:logback-test"],
-    test_class = "grakn.core.server.statistics.UncomittedStatisticsDeltaIT",
+    test_class = "grakn.core.server.statistics.StatisticsDeltaIT",
     deps = [
         "//kb/concept/api",
         "//kb/keyspace",
@@ -52,7 +52,7 @@ java_test(
 checkstyle_test(
     name = "checkstyle",
     targets = [
-        ":uncomitted-statistics-delta-it",
+        ":statistics-delta-it",
         ":keyspace-statistics-it",
     ],
 )

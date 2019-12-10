@@ -31,7 +31,6 @@ java_library(
     deps = [
         # Internal dependencies
         "//kb/concept/api",
-        "//kb/concept/structure",
         "//kb/concept/manager",
         "//kb/keyspace",
 

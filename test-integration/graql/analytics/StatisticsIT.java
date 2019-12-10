@@ -31,7 +31,7 @@ import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
-import grakn.core.kb.graql.GraqlSemanticException;
+import grakn.core.kb.graql.exception.GraqlSemanticException;
 import grakn.core.kb.server.exception.InvalidKBException;
 import grakn.core.rule.GraknTestServer;
 import graql.lang.Graql;

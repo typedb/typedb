@@ -26,7 +26,7 @@ import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
-import grakn.core.kb.graql.GraqlSemanticException;
+import grakn.core.kb.graql.exception.GraqlSemanticException;
 import grakn.core.rule.GraknTestStorage;
 import grakn.core.rule.SessionUtil;
 import grakn.core.rule.TestTransactionProvider;

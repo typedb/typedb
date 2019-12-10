@@ -48,7 +48,7 @@ import grakn.core.kb.graql.reasoner.cache.RuleCache;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.kb.keyspace.KeyspaceStatistics;
 import grakn.core.kb.server.exception.GraqlQueryException;
-import grakn.core.kb.graql.GraqlSemanticException;
+import grakn.core.kb.graql.exception.GraqlSemanticException;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.property.AbstractProperty;

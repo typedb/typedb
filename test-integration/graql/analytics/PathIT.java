@@ -36,7 +36,7 @@ import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.gremlin.TraversalPlanFactory;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
-import grakn.core.kb.graql.GraqlSemanticException;
+import grakn.core.kb.graql.exception.GraqlSemanticException;
 import grakn.core.kb.server.exception.InvalidKBException;
 import grakn.core.rule.GraknTestStorage;
 import grakn.core.rule.SessionUtil;
