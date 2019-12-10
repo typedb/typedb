@@ -21,34 +21,33 @@ package(default_visibility = ["//visibility:public"])
 load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
 java_library(
-    name = "manager",
-    srcs = glob(["**/*.java"]),
-    tags = ["maven_coordinates=io.grakn.core:grakn-concept-manager:{pom_version}"],
+    name = "keyspace",
+    srcs = glob([
+        "*.java",
+        "cache/*.java",
+        "exception/*.java",
+        "keyspace/*.java",
+    ]),
     deps = [
-        "//kb/concept/structure",
+        # Internal dependencies
         "//kb/concept/api",
-        "//kb/server",
-        "//core",
         "//kb/concept/manager",
-        "//kb/graql",
         "//kb/keyspace",
-        "//concept/impl",
-        "//concept/structure",
 
-        # External dependenicies from @graknlabs
-        "@graknlabs_graql//java:graql",
+        "//core",
 
         # External dependencies from Maven
         "//dependencies/maven/artifacts/com/google/code/findbugs:jsr305",
-        "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
+        "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
     ],
+    tags = ["maven_coordinates=io.grakn.core:grakn-keyspace:{pom_version}"],
 )
 
 checkstyle_test(
     name = "checkstyle",
     targets = [
-        ":manager",
+        ":keyspace",
     ],
 )

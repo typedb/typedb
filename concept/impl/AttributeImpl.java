@@ -19,7 +19,6 @@
 
 package grakn.core.concept.impl;
 
-import grakn.core.concept.util.attribute.Serialiser;
 import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
@@ -77,7 +76,7 @@ public class AttributeImpl<D> extends ThingImpl<Attribute<D>, AttributeType<D>> 
      */
     @Override
     public D value() {
-        return Serialiser.of(dataType()).deserialise(
+        return AttributeSerialiser.of(dataType()).deserialise(
                 vertex().property(Schema.VertexProperty.ofDataType(dataType()))
         );
     }

@@ -155,6 +155,7 @@ public class GraknTestServer extends ExternalResource {
 
         Config config = Config.read(testConfig);
         //Override gRPC port with a random free port
+        config.setConfigProperty(ConfigKey.STORAGE_HOSTNAME, "127.0.0.1");
         config.setConfigProperty(ConfigKey.GRPC_PORT, grpcPort);
         //Override Storage Port used by Janus to communicate with Cassandra Backend
         config.setConfigProperty(ConfigKey.STORAGE_PORT, graknTestStorage.nativeTransportPort());

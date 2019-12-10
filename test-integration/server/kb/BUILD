@@ -9,7 +9,7 @@ java_test(
     deps = [
         "//common:common",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
-        "//kb",
+        "//kb/server",
         "//kb/concept/api",
         "//test-integration/rule:grakn-test-server",
         "@graknlabs_graql//java:graql",
@@ -24,7 +24,7 @@ java_test(
     test_class = "grakn.core.server.kb.ValidateGlobalRulesIT",
     deps = [
         "//concept/impl:impl",
-        "//kb",
+        "//kb/server",
         "//kb/concept/api",
         "//kb/concept/structure",
         "//server",
@@ -45,7 +45,7 @@ java_test(
         "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//graql:graql",
-        "//kb",
+        "//kb/server",
         "//kb/concept/api",
         "//test-integration/rule:grakn-test-server",
         "@graknlabs_graql//java:graql",

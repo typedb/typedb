@@ -22,18 +22,17 @@ package grakn.core.server.session;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.graph.graphdb.database.StandardJanusGraph;
 import grakn.core.kb.concept.api.SchemaConcept;
-import grakn.core.kb.server.AttributeManager;
+import grakn.core.kb.keyspace.AttributeManager;
+import grakn.core.kb.keyspace.KeyspaceStatistics;
 import grakn.core.kb.server.Session;
-import grakn.core.kb.server.ShardManager;
+import grakn.core.kb.keyspace.ShardManager;
 import grakn.core.kb.server.Transaction;
 import grakn.core.kb.server.TransactionProvider;
-import grakn.core.kb.server.cache.KeyspaceSchemaCache;
+import grakn.core.kb.keyspace.KeyspaceSchemaCache;
 import grakn.core.kb.server.exception.SessionException;
 import grakn.core.kb.server.exception.TransactionException;
 import grakn.core.kb.server.keyspace.Keyspace;
-import grakn.core.kb.server.statistics.KeyspaceStatistics;
 
-import java.util.concurrent.locks.ReadWriteLock;
 import java.util.function.Consumer;
 
 /**

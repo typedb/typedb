@@ -17,7 +17,7 @@
  *
  */
 
-package grakn.core.kb.server;
+package grakn.core.kb.keyspace;
 
 import com.google.common.annotations.VisibleForTesting;
 import grakn.core.kb.concept.api.Label;

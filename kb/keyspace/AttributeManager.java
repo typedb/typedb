@@ -18,7 +18,7 @@
  */
 
 
-package grakn.core.kb.server;
+package grakn.core.kb.keyspace;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.cache.Cache;

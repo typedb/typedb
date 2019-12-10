@@ -23,9 +23,8 @@ import com.google.common.collect.Sets;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.SchemaConcept;
+import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.gremlin.EquivalentFragmentSet;
-import grakn.core.kb.server.Transaction;
-import grakn.core.server.session.TransactionImpl;
 import graql.lang.statement.Variable;
 import org.junit.Before;
 import org.junit.Test;
@@ -46,11 +45,11 @@ public class RolePlayerFragmentSetTest {
     private final Variable b = new Variable("b");
     private final Variable c = new Variable("c");
     private final Variable d = new Variable("d");
-    private Transaction tx;
+    private ConceptManager conceptManager;
 
     @Before
     public void setUp(){
-        tx = mock(TransactionImpl.class);
+        conceptManager = mock(ConceptManager.class);
     }
 
     @Test
@@ -73,8 +72,8 @@ public class RolePlayerFragmentSetTest {
         when(directorConcept.asRole()).thenReturn(directorConcept);
         Mockito.doReturn(Stream.of(directorConcept)).when(directorConcept).subs();
 
-        when(tx.getSchemaConcept(author)).thenReturn(authorConcept);
-        when(tx.getSchemaConcept(director)).thenReturn(directorConcept);
+        when(conceptManager.getSchemaConcept(author)).thenReturn(authorConcept);
+        when(conceptManager.getSchemaConcept(director)).thenReturn(directorConcept);
 
 
         EquivalentFragmentSet authorLabelFragmentSet = EquivalentFragmentSets.label(null, d, ImmutableSet.of(author));
@@ -84,7 +83,7 @@ public class RolePlayerFragmentSetTest {
                 authorLabelFragmentSet
         );
 
-        RolePlayerFragmentSet.ROLE_OPTIMISATION.apply(fragmentSets, tx.conceptManager());
+        RolePlayerFragmentSet.ROLE_OPTIMISATION.apply(fragmentSets, conceptManager);
 
         HashSet<EquivalentFragmentSet> expected = Sets.newHashSet(
                 new RolePlayerFragmentSet(null, a, b, c, null, ImmutableSet.of(author, director), null),
@@ -105,7 +104,7 @@ public class RolePlayerFragmentSetTest {
 
         Collection<EquivalentFragmentSet> expected = Sets.newHashSet(fragmentSets);
 
-        RolePlayerFragmentSet.ROLE_OPTIMISATION.apply(fragmentSets, tx.conceptManager());
+        RolePlayerFragmentSet.ROLE_OPTIMISATION.apply(fragmentSets, conceptManager);
 
         assertEquals(expected, fragmentSets);
     }
@@ -115,7 +114,7 @@ public class RolePlayerFragmentSetTest {
         Label movie = Label.of("movie");
         SchemaConcept movieConcept = mock(SchemaConcept.class);
         when(movieConcept.isRole()).thenReturn(false);
-        when(tx.getSchemaConcept(movie)).thenReturn(movieConcept);
+        when(conceptManager.getSchemaConcept(movie)).thenReturn(movieConcept);
 
         Collection<EquivalentFragmentSet> fragmentSets = Sets.newHashSet(
                 EquivalentFragmentSets.rolePlayer(null, a, b, c, d),
@@ -124,7 +123,7 @@ public class RolePlayerFragmentSetTest {
 
         Collection<EquivalentFragmentSet> expected = Sets.newHashSet(fragmentSets);
 
-        RolePlayerFragmentSet.ROLE_OPTIMISATION.apply(fragmentSets, tx.conceptManager());
+        RolePlayerFragmentSet.ROLE_OPTIMISATION.apply(fragmentSets, conceptManager);
 
         assertEquals(expected, fragmentSets);
     }
@@ -134,7 +133,7 @@ public class RolePlayerFragmentSetTest {
         Label role = Label.of("role");
         SchemaConcept metaRole = mock(SchemaConcept.class);
         when(metaRole.label()).thenReturn(role);
-        when(tx.getSchemaConcept(role)).thenReturn(metaRole);
+        when(conceptManager.getSchemaConcept(role)).thenReturn(metaRole);
 
 
         EquivalentFragmentSet authorLabelFragmentSet = EquivalentFragmentSets.label(null, d, ImmutableSet.of(role));
@@ -144,7 +143,7 @@ public class RolePlayerFragmentSetTest {
                 authorLabelFragmentSet
         );
 
-        RolePlayerFragmentSet.ROLE_OPTIMISATION.apply(fragmentSets, tx.conceptManager());
+        RolePlayerFragmentSet.ROLE_OPTIMISATION.apply(fragmentSets, conceptManager);
 
         HashSet<EquivalentFragmentSet> expected = Sets.newHashSet(
                 new RolePlayerFragmentSet(null, a, b, c, null, null, null),
@@ -166,7 +165,7 @@ public class RolePlayerFragmentSetTest {
 
         Collection<EquivalentFragmentSet> expected = Sets.newHashSet(fragmentSets);
 
-        RolePlayerFragmentSet.RELATION_TYPE_OPTIMISATION.apply(fragmentSets, tx.conceptManager());
+        RolePlayerFragmentSet.RELATION_TYPE_OPTIMISATION.apply(fragmentSets, conceptManager);
 
         assertEquals(expected, fragmentSets);
     }
@@ -176,7 +175,7 @@ public class RolePlayerFragmentSetTest {
         Label movie = Label.of("movie");
         SchemaConcept movieConcept = mock(SchemaConcept.class);
         when(movieConcept.isRelationType()).thenReturn(false);
-        when(tx.getSchemaConcept(movie)).thenReturn(movieConcept);
+        when(conceptManager.getSchemaConcept(movie)).thenReturn(movieConcept);
         Collection<EquivalentFragmentSet> fragmentSets = Sets.newHashSet(
                 EquivalentFragmentSets.rolePlayer(null, a, b, c, null),
                 EquivalentFragmentSets.isa(null, a, d, true),
@@ -185,7 +184,7 @@ public class RolePlayerFragmentSetTest {
 
         Collection<EquivalentFragmentSet> expected = Sets.newHashSet(fragmentSets);
 
-        RolePlayerFragmentSet.RELATION_TYPE_OPTIMISATION.apply(fragmentSets, tx.conceptManager());
+        RolePlayerFragmentSet.RELATION_TYPE_OPTIMISATION.apply(fragmentSets, conceptManager);
 
         assertEquals(expected, fragmentSets);
     }

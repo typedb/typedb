@@ -15,34 +15,27 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
-#
-package(default_visibility = ["//visibility:public"])
 
 load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
-java_library(
-    name = "attribute",
-    srcs = glob(["*.java"]),
+java_test(
+    name = "concept-map-test",
+    size = "small",
+    srcs = ["ConceptMapTest.java"],
+    test_class = "grakn.core.graql.answer.ConceptMapTest",
     deps = [
-        "//kb/concept/api:api",
-
-        # External Graknlabs dependencies
-        "@graknlabs_common//:common",
-
-        # External dependencies from Maven
-        "//dependencies/maven/artifacts/com/google/code/findbugs:jsr305",
-        "//dependencies/maven/artifacts/com/google/guava:guava",
-        "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core"
+        "//concept/answer",
+        "//dependencies/maven/artifacts/com/google/guava",
+        "//dependencies/maven/artifacts/org/mockito:mockito-core",
+        "//kb/concept/api",
+        "//graql",
+        "@graknlabs_graql//java:graql",
     ],
-    tags = ["maven_coordinates=io.grakn.core:grakn-kb-util:{pom_version}"],
-
 )
-
-
 
 checkstyle_test(
     name = "checkstyle",
     targets = [
-        ":attribute"
+        ":concept-map-test",
     ],
 )

@@ -24,7 +24,7 @@ java_test(
     srcs = ["KeyspacesTest.java"],
     deps = [
         "//server:server",
-        "//kb:kb"
+        "//kb/server",
     ],
     size = "small"
 )

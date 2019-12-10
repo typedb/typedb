@@ -17,12 +17,14 @@
  *
  */
 
-package grakn.core.kb.server.statistics;
+package grakn.core.keyspace;
 
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.concept.manager.ConceptManager;
+import grakn.core.kb.keyspace.KeyspaceStatistics;
+import grakn.core.kb.keyspace.StatisticsDelta;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -43,21 +45,23 @@ import java.util.concurrent.ConcurrentHashMap;
  * concept types. Note that this is different from the other instance counts as it DOES include counts of all subtypes. The
  * other counts on user-defined schema concepts are for for that concrete type only
  */
-public class KeyspaceStatistics {
+public class KeyspaceStatisticsImpl implements KeyspaceStatistics {
 
     private ConcurrentHashMap<Label, Long> instanceCountsCache;
 
-    public KeyspaceStatistics() {
+    public KeyspaceStatisticsImpl() {
         instanceCountsCache = new ConcurrentHashMap<>();
     }
 
+    @Override
     public long count(ConceptManager conceptManager, Label label) {
         // return count if cached, else cache miss and retrieve from Janus
         instanceCountsCache.computeIfAbsent(label, l -> retrieveCountFromVertex(conceptManager, l));
         return instanceCountsCache.get(label);
     }
 
-    public void commit(ConceptManager conceptManager, UncomittedStatisticsDelta statisticsDelta) {
+    @Override
+    public void commit(ConceptManager conceptManager, StatisticsDelta statisticsDelta) {
         HashMap<Label, Long> deltaMap = statisticsDelta.instanceDeltas();
 
         // merge each delta into the cache, then flush the cache to Janus

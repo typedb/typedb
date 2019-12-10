@@ -25,7 +25,6 @@ java_library(
     name = "answer",
     srcs = glob(["*.java"]),
     deps = [
-        "//concept/util:util",
         "//kb/concept/api:api",
 
         # External dependenicies from @graknlabs
@@ -36,7 +35,6 @@ java_library(
         "//dependencies/maven/artifacts/com/google/code/findbugs:jsr305",
     ],
     tags = ["maven_coordinates=io.grakn.core:grakn-answer:{pom_version}"],
-
 )
 
 

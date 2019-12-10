@@ -17,44 +17,53 @@
  *
  */
 
-package grakn.core.server.session;
+
+package grakn.core.keyspace;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import grakn.core.kb.concept.api.Label;
-import grakn.core.kb.server.ShardManager;
+import grakn.core.kb.concept.api.ConceptId;
+import grakn.core.kb.keyspace.AttributeManager;
 
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
-public class ShardManagerImpl implements ShardManager {
+public class AttributeManagerImpl implements AttributeManager {
     private final static int TIMEOUT_MINUTES_ATTRIBUTES_CACHE = 2;
     private final static int ATTRIBUTES_CACHE_MAX_SIZE = 10000;
 
-    private final Cache<Label, Long> shardsEphemeral;
-    private final ConcurrentHashMap<Label, Set<String>> shardRequests;
+    private final Cache<String, ConceptId> attributesCommitted;
+    //we track txs that insert an attribute with given index
+    private final ConcurrentHashMap<String, Set<String>> attributesEphemeral;
     private final Set<String> lockCandidates;
 
-    public ShardManagerImpl(){
-        this.shardsEphemeral = CacheBuilder.newBuilder()
+    public AttributeManagerImpl(){
+        this.attributesCommitted = CacheBuilder.newBuilder()
                 .expireAfterAccess(TIMEOUT_MINUTES_ATTRIBUTES_CACHE, TimeUnit.MINUTES)
                 .maximumSize(ATTRIBUTES_CACHE_MAX_SIZE)
                 .build();
-        this.shardRequests = new ConcurrentHashMap<>();
+
+        this.attributesEphemeral = new ConcurrentHashMap<>();
         this.lockCandidates = ConcurrentHashMap.newKeySet();
     }
 
-
-    public Long getEphemeralShardCount(Label type){ return shardsEphemeral.getIfPresent(type);}
-    public void updateEphemeralShardCount(Label type, Long count){ shardsEphemeral.put(type, count);}
+    @Override
+    public boolean isAttributeEphemeral(String index) {
+        return attributesEphemeral.containsKey(index);
+    }
 
     @Override
-    public void ackShardRequest(Label type, String txId) {
-        //transaction of txId signals that it needs to create a shard for a specific label:
-        // - if we don't have the label in the cache, we create an appropriate entry
-        // - if label is present in the cache, we update the entry with this txId and recommend all txs in the entry to lock
-        shardRequests.compute(type, (ind, entry) -> {
+    public Cache<String, ConceptId> attributesCommitted() {
+        return attributesCommitted;
+    }
+
+    @Override
+    public void ackAttributeInsert(String index, String txId) {
+        //transaction of txId signals that it inserted an attribute with specific index:
+        // - if we don't have the index in the cache, we create an appropriate entry
+        // - if index is present in the cache, we update the entry with txId and recommend all txs in the entry to lock
+        attributesEphemeral.compute(index, (ind, entry) -> {
             if (entry == null) {
                 Set<String> txSet = ConcurrentHashMap.newKeySet();
                 txSet.add(txId);
@@ -67,20 +76,25 @@ public class ShardManagerImpl implements ShardManager {
         });
     }
 
-    private void ackShardCommit(Label type, String txId) {
-        //transaction of txId signals that it commited a shard for a specific label:
-        // - we remove this txId from shard requests
-        // - if the removal leads to emptying the entry of the shard requests, we remove the entry
-        shardRequests.merge(type, ConcurrentHashMap.newKeySet(), (existingValue, newValue) -> {
+    @Override
+    public void ackAttributeDelete(String index, String txId) {
+        //transaction of txId signals that it deleted an attribute with specific index:
+        // - we remove this txId from ephemeral attributes
+        // - if the removal leads to emptying the ephemeral attribute entry, we remove the entry
+        attributesEphemeral.merge(index, ConcurrentHashMap.newKeySet(), (existingValue, zero) -> {
             existingValue.remove(txId);
             if (existingValue.size() == 0) return null;
             return existingValue;
         });
     }
+    
+    private void ackAttributeCommit(String index, String txId) {
+        ackAttributeDelete(index, txId);
+    }
 
     @Override
-    public void ackCommit(Set<Label> labels, String txId) {
-        labels.forEach(label -> ackShardCommit(label, txId));
+    public void ackCommit(Set<String> indices, String txId) {
+        indices.forEach(index -> ackAttributeCommit(index, txId));
         lockCandidates.remove(txId);
     }
 
@@ -90,13 +104,12 @@ public class ShardManagerImpl implements ShardManager {
     }
 
     @Override
-    public boolean lockCandidatesPresent(){
+    public boolean lockCandidatesPresent() {
         return !lockCandidates.isEmpty();
     }
 
     @Override
-    public boolean shardRequestsPresent() {
-        return !shardRequests.values().isEmpty();
+    public boolean ephemeralAttributesPresent() {
+        return !attributesEphemeral.values().isEmpty();
     }
-
 }

@@ -19,8 +19,10 @@
 
 package grakn.core.kb.server;
 
+import grakn.core.kb.keyspace.AttributeManager;
+import grakn.core.kb.keyspace.KeyspaceStatistics;
+import grakn.core.kb.keyspace.ShardManager;
 import grakn.core.kb.server.keyspace.Keyspace;
-import grakn.core.kb.server.statistics.KeyspaceStatistics;
 
 import java.util.function.Consumer;
 

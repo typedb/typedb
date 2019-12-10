@@ -35,14 +35,14 @@ import grakn.core.graql.reasoner.query.ReasonerQueryFactory;
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.concept.manager.ConceptNotificationChannel;
 import grakn.core.kb.graql.gremlin.TraversalPlanFactory;
-import grakn.core.kb.server.AttributeManager;
+import grakn.core.kb.keyspace.AttributeManager;
+import grakn.core.kb.keyspace.KeyspaceStatistics;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import grakn.core.kb.server.TransactionProvider;
-import grakn.core.kb.server.cache.KeyspaceSchemaCache;
+import grakn.core.kb.keyspace.KeyspaceSchemaCache;
 import grakn.core.kb.server.cache.TransactionCache;
-import grakn.core.kb.server.statistics.KeyspaceStatistics;
-import grakn.core.kb.server.statistics.UncomittedStatisticsDelta;
+import grakn.core.keyspace.StatisticsDeltaImpl;
 import org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph;
 
 import java.util.concurrent.locks.ReadWriteLock;
@@ -80,7 +80,7 @@ public class TransactionProviderImpl implements TransactionProvider {
         // Data structures
         ConceptNotificationChannel conceptNotificationChannel = new ConceptNotificationChannelImpl();
         TransactionCache transactionCache = new TransactionCache(keyspaceSchemaCache);
-        UncomittedStatisticsDelta statisticsDelta = new UncomittedStatisticsDelta();
+        StatisticsDeltaImpl statisticsDelta = new StatisticsDeltaImpl();
 
         // Janus elements
         JanusGraphTransaction janusGraphTransaction = graph.newThreadBoundTransaction();

@@ -15,26 +15,47 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
+#
+package(default_visibility = ["//visibility:public"])
 
 load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
-java_test(
-    name = "concept-map-test",
-    size = "small",
-    srcs = ["ConceptMapTest.java"],
-    test_class = "grakn.core.graql.answer.ConceptMapTest",
+java_library(
+    name = "graql",
+    srcs = glob([
+        "**/*.java",
+    ]),
     deps = [
+        # Internal dependencies
+        "//common:common",
+
         "//concept/answer",
-        "//dependencies/maven/artifacts/com/google/guava",
-        "//dependencies/maven/artifacts/org/mockito:mockito-core",
-        "//kb/concept/api",
+        "//kb/concept/api:api",
+        "//kb/concept/manager:manager",
+
+        "//kb/keyspace", # used for nodes & planning, TODO remove
+
+        # this is ONLY used for ConceptManager dependency...
+        "//core:core",
+
+        # External dependenicies from @graknlabs
         "@graknlabs_graql//java:graql",
+        "@graknlabs_common//:common",
+
+        # External dependencies from Maven
+        "//dependencies/maven/artifacts/com/google/code/findbugs:jsr305",
+        "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
+        "//dependencies/maven/artifacts/com/google/guava:guava",
+        "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
     ],
+    tags = ["maven_coordinates=io.grakn.core:grakn-kb-graql:{pom_version}"],
+
 )
+
 
 checkstyle_test(
     name = "checkstyle",
     targets = [
-        ":concept-map-test",
+        ":graql"
     ],
 )

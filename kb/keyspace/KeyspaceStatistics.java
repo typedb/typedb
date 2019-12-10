@@ -17,27 +17,15 @@
  *
  */
 
-package grakn.core.kb.graql.planning.spanningtree.graph;
+package grakn.core.kb.keyspace;
 
+import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.manager.ConceptManager;
-import grakn.core.kb.keyspace.KeyspaceStatistics;
 
-public class SchemaNode extends Node {
-
-    private static final int SCHEMA_NODE_PRIORITY = 1;
-
-    public SchemaNode(NodeId nodeId) {
-        super(nodeId);
-    }
-
-    @Override
-    public long matchingElementsEstimate(ConceptManager conceptManager, KeyspaceStatistics statistics) {
-        // only 1 node ever matches a schema node
-        return 1;
-    }
-
-    @Override
-    public int getNodeTypePriority() {
-        return SCHEMA_NODE_PRIORITY;
-    }
+/**
+ * Store a shared map of statistics attached to each type
+ */
+public interface KeyspaceStatistics {
+    long count(ConceptManager conceptManager, Label label);
+    void commit(ConceptManager conceptManager, StatisticsDelta statisticsDelta);
 }

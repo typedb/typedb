@@ -26,7 +26,7 @@ import grakn.core.graql.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.kb.graql.executor.WriteExecutor;
 import grakn.core.kb.graql.executor.property.PropertyExecutor;
 import grakn.core.kb.graql.gremlin.EquivalentFragmentSet;
-import grakn.core.kb.server.exception.GraqlSemanticException;
+import grakn.core.kb.graql.exception.GraqlSemanticException;
 import graql.lang.property.ValueProperty;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;

@@ -17,7 +17,7 @@
  *
  */
 
-package grakn.core.concept.util.attribute;
+package grakn.core.concept.impl;
 
 import grakn.core.kb.concept.api.AttributeType;
 
@@ -29,23 +29,23 @@ import java.util.Map;
 import static grakn.common.util.Collections.map;
 import static grakn.common.util.Collections.pair;
 
-public abstract class Serialiser<DESERIALISED, SERIALISED> {
+public abstract class AttributeSerialiser<DESERIALISED, SERIALISED> {
 
-    public static final Serialiser<Boolean, Boolean> BOOLEAN = new Default<>();
-    public static final Serialiser<Float, Float> FLOAT = new Default<>();
-    public static final Serialiser<Double, Double> DOUBLE = new Default<>();
-    public static final Serialiser<Integer, Integer> INTEGER = new Default<>();
-    public static final Serialiser<Long, Long> LONG = new Default<>();
-    public static final Serialiser<String, String> STRING = new Default<>();
-    public static final Serialiser<LocalDateTime, Long> DATE = new Serialiser.Date();
+    public static final AttributeSerialiser<Boolean, Boolean> BOOLEAN = new Default<>();
+    public static final AttributeSerialiser<Float, Float> FLOAT = new Default<>();
+    public static final AttributeSerialiser<Double, Double> DOUBLE = new Default<>();
+    public static final AttributeSerialiser<Integer, Integer> INTEGER = new Default<>();
+    public static final AttributeSerialiser<Long, Long> LONG = new Default<>();
+    public static final AttributeSerialiser<String, String> STRING = new Default<>();
+    public static final AttributeSerialiser<LocalDateTime, Long> DATE = new AttributeSerialiser.Date();
 
-    Serialiser() {}
+    AttributeSerialiser() {}
 
     public abstract SERIALISED serialise(DESERIALISED value);
 
     public abstract DESERIALISED deserialise(SERIALISED value);
 
-    private static Map<AttributeType.DataType<?>, Serialiser<?, ?>> serialisers = map(
+    private static Map<AttributeType.DataType<?>, AttributeSerialiser<?, ?>> serialisers = map(
             pair(AttributeType.DataType.BOOLEAN, BOOLEAN),
             pair(AttributeType.DataType.DATE, DATE),
             pair(AttributeType.DataType.DOUBLE, DOUBLE),
@@ -58,16 +58,16 @@ public abstract class Serialiser<DESERIALISED, SERIALISED> {
 
     // TODO: This method should not be needed if all usage of this class is
     //       accessed via the constant properties defined above.
-    public static <DESERIALISED> Serialiser<DESERIALISED, ?> of(AttributeType.DataType<DESERIALISED> dataType) {
-        Serialiser<?, ?> serialiser = serialisers.get(dataType);
-        if (serialiser == null){
+    public static <DESERIALISED> AttributeSerialiser<DESERIALISED, ?> of(AttributeType.DataType<DESERIALISED> dataType) {
+        AttributeSerialiser<?, ?> attributeSerialiser = serialisers.get(dataType);
+        if (attributeSerialiser == null){
             throw new UnsupportedOperationException("Unsupported DataType: " + dataType.toString());
         }
-        return (Serialiser<DESERIALISED, ?>) serialiser;
+        return (AttributeSerialiser<DESERIALISED, ?>) attributeSerialiser;
 
     }
 
-    public static class Default<VALUE> extends Serialiser<VALUE, VALUE> {
+    public static class Default<VALUE> extends AttributeSerialiser<VALUE, VALUE> {
 
         @Override
         public VALUE serialise(VALUE value) {
@@ -80,7 +80,7 @@ public abstract class Serialiser<DESERIALISED, SERIALISED> {
         }
     }
 
-    public static class Date extends Serialiser<java.time.LocalDateTime, Long> {
+    public static class Date extends AttributeSerialiser<LocalDateTime, Long> {
 
         @Override
         public java.lang.Long serialise(LocalDateTime value) {

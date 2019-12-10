@@ -18,7 +18,7 @@
 
 package grakn.core.server.rpc;
 
-import grakn.core.concept.util.attribute.Serialiser;
+import grakn.core.concept.impl.AttributeSerialiser;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.Entity;
@@ -626,19 +626,19 @@ public class ConceptMethod {
             private Transaction.Res create(ConceptProto.ValueObject protoValue) {
                 switch (protoValue.getValueCase()) {
                     case BOOLEAN:
-                        return create(Serialiser.BOOLEAN.deserialise(protoValue.getBoolean()));
+                        return create(AttributeSerialiser.BOOLEAN.deserialise(protoValue.getBoolean()));
                     case DATE:
-                        return create(Serialiser.DATE.deserialise(protoValue.getDate()));
+                        return create(AttributeSerialiser.DATE.deserialise(protoValue.getDate()));
                     case DOUBLE:
-                        return create(Serialiser.DOUBLE.deserialise(protoValue.getDouble()));
+                        return create(AttributeSerialiser.DOUBLE.deserialise(protoValue.getDouble()));
                     case FLOAT:
-                        return create(Serialiser.FLOAT.deserialise(protoValue.getFloat()));
+                        return create(AttributeSerialiser.FLOAT.deserialise(protoValue.getFloat()));
                     case INTEGER:
-                        return create(Serialiser.INTEGER.deserialise(protoValue.getInteger()));
+                        return create(AttributeSerialiser.INTEGER.deserialise(protoValue.getInteger()));
                     case LONG:
-                        return create(Serialiser.LONG.deserialise(protoValue.getLong()));
+                        return create(AttributeSerialiser.LONG.deserialise(protoValue.getLong()));
                     case STRING:
-                        return create(Serialiser.STRING.deserialise(protoValue.getString()));
+                        return create(AttributeSerialiser.STRING.deserialise(protoValue.getString()));
                     default:
                         return null;
                 }

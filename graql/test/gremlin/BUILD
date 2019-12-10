@@ -20,21 +20,21 @@ load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
 java_test(
     name = "nodes-util-test",
+    size = "small",
     srcs = ["NodesUtilTest.java"],
     test_class = "grakn.core.graql.gremlin.NodesUtilTest",
     deps = [
-        "//kb:kb",
-        "//graql:graql",
-        "//kb/concept/api:api",
+        "//dependencies/maven/artifacts/com/google/guava",
+        "//graql",
+        "//kb/concept/api",
+        "//kb/graql",
         "@graknlabs_graql//java:graql",
-        "//dependencies/maven/artifacts/com/google/guava:guava",
     ],
-    size = "small"
 )
 
 checkstyle_test(
     name = "checkstyle",
     targets = [
-        ":nodes-util-test"
+        ":nodes-util-test",
     ],
 )

@@ -34,9 +34,10 @@ import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.gremlin.TraversalPlanFactory;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
+import grakn.core.kb.keyspace.KeyspaceStatistics;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
-import grakn.core.kb.server.statistics.KeyspaceStatistics;
+import grakn.core.keyspace.KeyspaceStatisticsImpl;
 import grakn.core.rule.GraknTestStorage;
 import grakn.core.rule.SessionUtil;
 import grakn.core.rule.TestTransactionProvider;
@@ -99,7 +100,7 @@ public class ResolutionPlanIT {
     @BeforeClass
     public static void loadContext(){
         Config mockServerConfig = storage.createCompatibleServerConfig();
-        planKeyspaceStatistics = new KeyspaceStatistics();
+        planKeyspaceStatistics = new KeyspaceStatisticsImpl();
         planSession = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig, planKeyspaceStatistics);
         String resourcePath = "test-integration/graql/reasoner/resources/";
         loadFromFileAndCommit(resourcePath, "resolutionPlanTest.gql", planSession);
@@ -686,12 +687,12 @@ public class ResolutionPlanIT {
         Label anotherDerivedRelationLabel = Label.of("anotherDerivedRelation");
         TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
         assertEquals(
-                tx.session().keyspaceStatistics().count(tx.conceptManager(), someRelationLabel),
+                tx.session().keyspaceStatistics().count(testTx.conceptManager(), someRelationLabel),
                 NodesUtil.estimateInferredTypeCount(derivedRelationLabel, testTx.conceptManager(), planKeyspaceStatistics)
         );
 
         assertEquals(
-                tx.session().keyspaceStatistics().count(tx.conceptManager(), anotherRelationLabel),
+                tx.session().keyspaceStatistics().count(testTx.conceptManager(), anotherRelationLabel),
                 NodesUtil.estimateInferredTypeCount(anotherDerivedRelationLabel, testTx.conceptManager(), planKeyspaceStatistics)
         );
     }
@@ -702,7 +703,7 @@ public class ResolutionPlanIT {
         Label someRelationTransLabel = Label.of("someRelationTrans");
         TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
         assertEquals(
-                tx.session().keyspaceStatistics().count(tx.conceptManager(), someRelationLabel),
+                tx.session().keyspaceStatistics().count(testTx.conceptManager(), someRelationLabel),
                 NodesUtil.estimateInferredTypeCount(someRelationTransLabel, testTx.conceptManager(), planKeyspaceStatistics)
         );
     }

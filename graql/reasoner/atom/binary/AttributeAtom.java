@@ -22,9 +22,8 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import grakn.core.common.exception.ErrorMessage;
-import grakn.core.concept.answer.AnswerUtil;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concept.util.attribute.ValueConverter;
+import grakn.core.concept.impl.AttributeValueConverter;
 import grakn.core.core.Schema;
 import grakn.core.graql.reasoner.CacheCasting;
 import grakn.core.graql.reasoner.ReasonerException;
@@ -41,6 +40,7 @@ import grakn.core.graql.reasoner.query.ReasonerQueryFactory;
 import grakn.core.graql.reasoner.query.ResolvableQuery;
 import grakn.core.graql.reasoner.unifier.UnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierType;
+import grakn.core.graql.reasoner.utils.AnswerUtil;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Concept;
@@ -56,8 +56,8 @@ import grakn.core.kb.graql.reasoner.cache.QueryCache;
 import grakn.core.kb.graql.reasoner.cache.RuleCache;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
-import grakn.core.kb.server.exception.GraqlSemanticException;
-import grakn.core.kb.server.statistics.KeyspaceStatistics;
+import grakn.core.kb.graql.exception.GraqlSemanticException;
+import grakn.core.kb.keyspace.KeyspaceStatistics;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.property.HasAttributeProperty;
@@ -165,7 +165,7 @@ public class AttributeAtom extends Binary{
             if (value == null) return vp;
             Object convertedValue;
             try {
-                convertedValue = ValueConverter.of(dataType).convert(value);
+                convertedValue = AttributeValueConverter.of(dataType).convert(value);
             } catch (ClassCastException e){
                 throw GraqlSemanticException.incompatibleAttributeValue(dataType, value);
             }
@@ -529,7 +529,7 @@ public class AttributeAtom extends Binary{
         if(this.isValueEquality()){
             ValuePredicate vp = Iterables.getOnlyElement(getMultiPredicate());
             Object value = vp.getPredicate().value();
-            Object persistedValue = ValueConverter.of(attributeType.dataType()).convert(value);
+            Object persistedValue = AttributeValueConverter.of(attributeType.dataType()).convert(value);
             Attribute existingAttribute = attributeType.attribute(persistedValue);
             attribute = existingAttribute == null? attributeType.putAttributeInferred(persistedValue) : existingAttribute;
         } else {

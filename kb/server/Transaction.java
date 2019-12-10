@@ -19,7 +19,6 @@
 
 package grakn.core.kb.server;
 
-import com.google.common.annotations.VisibleForTesting;
 import grakn.core.concept.answer.Answer;
 import grakn.core.concept.answer.AnswerGroup;
 import grakn.core.concept.answer.ConceptList;
@@ -39,14 +38,12 @@ import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.SchemaConcept;
-import grakn.core.kb.concept.manager.ConceptManager;
-import grakn.core.kb.graql.executor.QueryExecutor;
+import grakn.core.kb.concept.structure.GraknElementException;
+import grakn.core.kb.concept.structure.PropertyNotUniqueException;
 import grakn.core.kb.graql.reasoner.cache.QueryCache;
-import grakn.core.kb.graql.reasoner.cache.RuleCache;
-import grakn.core.kb.server.cache.TransactionCache;
 import grakn.core.kb.server.exception.InvalidKBException;
+import grakn.core.kb.server.exception.TransactionException;
 import grakn.core.kb.server.keyspace.Keyspace;
-import grakn.core.kb.server.statistics.UncomittedStatisticsDelta;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlCompute;
 import graql.lang.query.GraqlDefine;
@@ -149,13 +146,7 @@ public interface Transaction extends AutoCloseable {
 
     Stream<? extends Answer> stream(GraqlQuery query, boolean infer);
 
-    RuleCache ruleCache();
-
     QueryCache queryCache();
-
-    TransactionCache cache();
-
-    UncomittedStatisticsDelta statisticsDelta();
 
     boolean isOpen();
 
@@ -201,7 +192,7 @@ public interface Transaction extends AutoCloseable {
      * @return A new or existing AttributeType with the provided label and data type.
      * @throws TransactionException       if the graph is closed
      * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-AttributeType.
-     * @throws TransactionException       if the {@param label} is already in use by an existing AttributeType which is
+     * @throws GraknElementException if the {@param label} is already in use by an existing AttributeType which is
      *                                    unique or has a different datatype.
      */
     @SuppressWarnings("unchecked")
@@ -340,7 +331,6 @@ public interface Transaction extends AutoCloseable {
      */
     Rule getRule(String label);
 
-
     Explanation explanation(Pattern queryPattern);
 
     @Override
@@ -363,20 +353,6 @@ public interface Transaction extends AutoCloseable {
 
     List<ConceptMap> execute(MatchClause matchClause, boolean infer);
 
-    @VisibleForTesting
-    ConceptManager conceptManager();
-
-
-    // TODO remove this
-    default long getShardCount(grakn.core.kb.concept.api.Type t) {
-        return 1L;
-    }
-
-    QueryExecutor executor();
-
-    QueryExecutor executor(boolean infer);
-
-    long shardingThreshold();
 
     /**
      * An enum that determines the type of Grakn Transaction.

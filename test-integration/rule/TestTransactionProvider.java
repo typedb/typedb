@@ -19,6 +19,7 @@
 
 package grakn.core.rule;
 
+import grakn.core.concept.impl.TypeImpl;
 import grakn.core.concept.manager.ConceptListenerImpl;
 import grakn.core.concept.manager.ConceptManagerImpl;
 import grakn.core.concept.manager.ConceptNotificationChannelImpl;
@@ -37,14 +38,16 @@ import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.concept.manager.ConceptNotificationChannel;
 import grakn.core.kb.graql.executor.ExecutorFactory;
 import grakn.core.kb.graql.gremlin.TraversalPlanFactory;
-import grakn.core.kb.server.AttributeManager;
+import grakn.core.kb.graql.reasoner.cache.RuleCache;
+import grakn.core.kb.keyspace.AttributeManager;
+import grakn.core.kb.keyspace.KeyspaceStatistics;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import grakn.core.kb.server.TransactionProvider;
-import grakn.core.kb.server.cache.KeyspaceSchemaCache;
+import grakn.core.kb.keyspace.KeyspaceSchemaCache;
 import grakn.core.kb.server.cache.TransactionCache;
-import grakn.core.kb.server.statistics.KeyspaceStatistics;
-import grakn.core.kb.server.statistics.UncomittedStatisticsDelta;
+import grakn.core.kb.keyspace.StatisticsDelta;
+import grakn.core.keyspace.StatisticsDeltaImpl;
 import grakn.core.server.session.TransactionImpl;
 import org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph;
 
@@ -80,7 +83,7 @@ public class TestTransactionProvider implements TransactionProvider {
         // Data structures
         ConceptNotificationChannel conceptNotificationChannel = new ConceptNotificationChannelImpl();
         TransactionCache transactionCache = new TransactionCache(keyspaceSchemaCache);
-        UncomittedStatisticsDelta statisticsDelta = new UncomittedStatisticsDelta();
+        StatisticsDeltaImpl statisticsDelta = new StatisticsDeltaImpl();
 
         // Janus elements
         StandardJanusGraphTx janusGraphTransaction = graph.newThreadBoundTransaction();
@@ -124,7 +127,7 @@ public class TestTransactionProvider implements TransactionProvider {
         public TestTransaction(Session session, StandardJanusGraphTx janusGraphTransaction,
                                ConceptManagerImpl conceptManager, JanusTraversalSourceProvider janusTraversalSourceProvider,
                                TransactionCache transactionCache, MultilevelSemanticCache queryCache,
-                               RuleCacheImpl ruleCache, UncomittedStatisticsDelta statisticsDelta,
+                               RuleCacheImpl ruleCache, StatisticsDeltaImpl statisticsDelta,
                                ExecutorFactoryImpl executorFactory, TraversalPlanFactory traversalPlanFactory,
                                ReasonerQueryFactory reasonerQueryFactory, ReadWriteLock graphLock, long typeShardThreshold,
                                ConceptNotificationChannel conceptNotificationChannel, ElementFactory elementFactory,
@@ -141,6 +144,13 @@ public class TestTransactionProvider implements TransactionProvider {
             this.conceptListener = conceptListener;
         }
 
+        public long getShardCount(grakn.core.kb.concept.api.Type concept) {
+            return TypeImpl.from(concept).shardCount();
+        }
+
+        public long shardingThreshold() {
+            return typeShardThreshold;
+        }
         /*
             Getters for TransactionImpl state
          */
@@ -161,17 +171,28 @@ public class TestTransactionProvider implements TransactionProvider {
             return conceptManager;
         }
 
+        public ReasonerQueryFactory reasonerQueryFactory() {
+            return reasonerQueryFactory;
+        }
 
-        // TODO expose these here when removed from Transaction's actual accesses
-//        public ReasonerQueryFactory reasonerQueryFactory() {
-//            return reasonerQueryFactory;
-//        }
+        public RuleCache ruleCache() {
+            return ruleCache;
+        }
+
+        public StatisticsDelta uncomittedStatisticsDelta() {
+            return uncomittedStatisticsDelta;
+        }
+
+        public TransactionCache cache() {
+            return transactionCache;
+        }
+
 //        MultilevelSemanticCache queryCache() {
 //            return queryCache;
 //        }
 
         /*
-            Getters for  test only fields
+            State only saved in TestTransactions, and not in TransationImpl
          */
 
         public ConceptNotificationChannel conceptNotificationChannel() {
@@ -182,12 +203,5 @@ public class TestTransactionProvider implements TransactionProvider {
             return elementFactory;
         }
 
-        public PropertyAtomicFactory propertyAtomicFactory() {
-            return propertyAtomicFactory;
-        }
-
-        public ConceptListener conceptListener() {
-            return conceptListener;
-        }
     }
 }

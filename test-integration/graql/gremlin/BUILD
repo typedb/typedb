@@ -29,15 +29,17 @@ java_test(
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//dependencies/maven/artifacts/org/mockito:mockito-core",
         "//graql:graql",
-        "//kb",
+        "//kb/server",
         "//kb/concept/api",
+        "//kb/concept/manager",
+        "//kb/graql",
         "//server",
         "@graknlabs_graql//java:graql",
     ],
 )
 
 java_test(
-    name = "graql-traversal-test",
+    name = "graql-traversal-it",
     size = "small",
     srcs = [
         "GraqlMatchers.java",
@@ -50,8 +52,10 @@ java_test(
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//dependencies/maven/artifacts/org/mockito:mockito-core",
         "//graql:graql",
-        "//kb",
+        "//kb/server",
+        "//kb/graql",
         "//kb/concept/api",
+        "//kb/concept/manager",
         "//common",
         "//test-integration/rule:grakn-test-server",
         "@graknlabs_graql//java:graql",
@@ -61,7 +65,7 @@ java_test(
 checkstyle_test(
     name = "checkstyle",
     targets = [
-        ":graql-traversal-test",
+        ":graql-traversal-it",
         ":conjunction-query-test",
     ],
 )

@@ -32,8 +32,8 @@ import grakn.core.kb.graql.planning.spanningtree.graph.EdgeNode;
 import grakn.core.kb.graql.planning.spanningtree.graph.InstanceNode;
 import grakn.core.kb.graql.planning.spanningtree.graph.Node;
 import grakn.core.kb.graql.planning.spanningtree.graph.NodeId;
+import grakn.core.kb.keyspace.KeyspaceStatistics;
 import grakn.core.kb.server.exception.GraknServerException;
-import grakn.core.kb.server.statistics.KeyspaceStatistics;
 
 import java.util.Comparator;
 import java.util.HashMap;

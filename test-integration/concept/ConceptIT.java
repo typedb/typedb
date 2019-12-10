@@ -30,6 +30,9 @@ import grakn.core.kb.concept.structure.EdgeElement;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import grakn.core.rule.GraknTestServer;
+import grakn.core.rule.GraknTestStorage;
+import grakn.core.rule.SessionUtil;
+import grakn.core.rule.TestTransactionProvider;
 import grakn.core.util.ConceptDowncasting;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.junit.After;
@@ -55,17 +58,17 @@ import static org.junit.Assert.assertTrue;
 public class ConceptIT {
 
     @ClassRule
-    public static final GraknTestServer server = new GraknTestServer();
+    public static final GraknTestStorage storage = new GraknTestStorage();
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
-    private Transaction tx;
+    private TestTransactionProvider.TestTransaction tx;
     private Session session;
 
     @Before
     public void setUp() {
-        session = server.sessionWithNewKeyspace();
-        tx = session.writeTransaction();
+        session = SessionUtil.serverlessSessionWithNewKeyspace(storage.createCompatibleServerConfig());
+        tx = (TestTransactionProvider.TestTransaction)session.writeTransaction();
     }
 
     @After

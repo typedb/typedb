@@ -21,18 +21,19 @@ package grakn.core.rule;
 
 import grakn.core.common.config.Config;
 import grakn.core.graph.graphdb.database.StandardJanusGraph;
-import grakn.core.kb.server.AttributeManager;
-import grakn.core.kb.server.ShardManager;
+import grakn.core.kb.keyspace.AttributeManager;
+import grakn.core.kb.keyspace.KeyspaceStatistics;
+import grakn.core.kb.keyspace.ShardManager;
 import grakn.core.kb.server.TransactionProvider;
-import grakn.core.kb.server.cache.KeyspaceSchemaCache;
+import grakn.core.kb.keyspace.KeyspaceSchemaCache;
 import grakn.core.kb.server.keyspace.Keyspace;
-import grakn.core.kb.server.statistics.KeyspaceStatistics;
+import grakn.core.keyspace.KeyspaceStatisticsImpl;
 import grakn.core.server.keyspace.KeyspaceImpl;
-import grakn.core.server.session.AttributeManagerImpl;
+import grakn.core.keyspace.AttributeManagerImpl;
 import grakn.core.server.session.HadoopGraphFactory;
 import grakn.core.server.session.JanusGraphFactory;
 import grakn.core.server.session.SessionImpl;
-import grakn.core.server.session.ShardManagerImpl;
+import grakn.core.keyspace.ShardManagerImpl;
 import org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph;
 
 import java.util.UUID;
@@ -110,7 +111,7 @@ public class SessionUtil {
         HadoopGraphFactory hadoopGraphFactory = new HadoopGraphFactory(mockServerConfig);
         StandardJanusGraph graph = janusGraphFactory.openGraph(randomKeyspace.name());
         KeyspaceSchemaCache cache = new KeyspaceSchemaCache();
-        KeyspaceStatistics keyspaceStatistics = new KeyspaceStatistics();
+        KeyspaceStatistics keyspaceStatistics = new KeyspaceStatisticsImpl();
         AttributeManager attributeManager = new AttributeManagerImpl();
         ShardManager shardManager = new ShardManagerImpl();
         ReadWriteLock graphLock = new ReentrantReadWriteLock();
@@ -118,5 +119,10 @@ public class SessionUtil {
 
         TransactionProvider transactionProvider = new TestTransactionProvider(graph, hadoopGraph, cache, keyspaceStatistics, attributeManager, graphLock, typeShardThreshold);
         return new SessionImpl(randomKeyspace, transactionProvider, cache, graph, keyspaceStatistics, attributeManager, shardManager);
+    }
+
+    public static SessionImpl serverlessSession(Config serverConfig, String keyspaceName) {
+        JanusGraphFactory janusGraphFactory = new JanusGraphFactory(serverConfig);
+        return serverlessSession(serverConfig, janusGraphFactory, keyspaceName, 250000);
     }
 }

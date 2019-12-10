@@ -30,10 +30,10 @@ java_library(
         "//kb/concept/api",
         "//concept/structure",
         "//concept/cache:conceptcache",
-        "//concept/util/attribute",
 
         # External dependenicies from @graknlabs
         "@graknlabs_graql//java:graql",
+        "@graknlabs_common//:common",
 
         # External dependencies from Maven
         "//dependencies/maven/artifacts/com/google/code/findbugs:jsr305",

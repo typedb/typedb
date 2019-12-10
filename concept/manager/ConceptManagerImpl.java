@@ -31,8 +31,8 @@ import grakn.core.concept.impl.RoleImpl;
 import grakn.core.concept.impl.RuleImpl;
 import grakn.core.concept.impl.TypeImpl;
 import grakn.core.concept.structure.ElementFactory;
-import grakn.core.concept.util.attribute.Serialiser;
-import grakn.core.concept.util.attribute.ValueConverter;
+import grakn.core.concept.impl.AttributeSerialiser;
+import grakn.core.concept.impl.AttributeValueConverter;
 import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
@@ -53,7 +53,7 @@ import grakn.core.kb.concept.manager.ConceptNotificationChannel;
 import grakn.core.kb.concept.structure.EdgeElement;
 import grakn.core.kb.concept.structure.Shard;
 import grakn.core.kb.concept.structure.VertexElement;
-import grakn.core.kb.server.AttributeManager;
+import grakn.core.kb.keyspace.AttributeManager;
 import grakn.core.kb.server.cache.TransactionCache;
 import grakn.core.kb.server.exception.TemporaryWriteException;
 import graql.lang.pattern.Pattern;
@@ -100,7 +100,8 @@ public class ConceptManagerImpl implements ConceptManager {
         this.elementFactory = elementFactory;
         this.transactionCache = transactionCache;
         this.conceptNotificationChannel = conceptNotificationChannel;
-        this.attributeManager = attributeManager;    }
+        this.attributeManager = attributeManager;
+    }
 
     /*
 
@@ -265,13 +266,13 @@ public class ConceptManagerImpl implements ConceptManager {
 
         V convertedValue;
         try {
-            convertedValue = ValueConverter.of(type.dataType()).convert(value);
+            convertedValue = AttributeValueConverter.of(type.dataType()).convert(value);
         } catch (ClassCastException e){
             throw GraknConceptException.invalidAttributeValue(value, dataType);
         }
 
         // set persisted value
-        Object valueToPersist = Serialiser.of(dataType).serialise(convertedValue);
+        Object valueToPersist = AttributeSerialiser.of(dataType).serialise(convertedValue);
         Schema.VertexProperty property = Schema.VertexProperty.ofDataType(dataType);
         vertex.propertyImmutable(property, valueToPersist, null);
 

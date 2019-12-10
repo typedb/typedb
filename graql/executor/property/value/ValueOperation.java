@@ -20,7 +20,7 @@
 package grakn.core.graql.executor.property.value;
 
 import com.google.common.collect.Iterables;
-import grakn.core.concept.util.attribute.Serialiser;
+import grakn.core.concept.impl.AttributeSerialiser;
 import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.AttributeType;
 import graql.lang.Graql;
@@ -94,7 +94,7 @@ public abstract class ValueOperation<T, U> {
         if (this.value().getClass().isInstance(otherValue)) {
             // TODO: Remove this forced casting
             AttributeType.DataType<T> dataType = (AttributeType.DataType<T>) AttributeType.DataType.of(value().getClass());
-            return predicate().test((U) Serialiser.of(dataType).serialise((T) otherValue));
+            return predicate().test((U) AttributeSerialiser.of(dataType).serialise((T) otherValue));
         } else {
             return false;
         }

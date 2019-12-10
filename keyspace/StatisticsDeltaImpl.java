@@ -17,7 +17,7 @@
  *
  */
 
-package grakn.core.kb.server.statistics;
+package grakn.core.keyspace;
 
 import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.AttributeType;
@@ -26,6 +26,7 @@ import grakn.core.kb.concept.api.GraknConceptException;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Type;
+import grakn.core.kb.keyspace.StatisticsDelta;
 
 import java.util.HashMap;
 
@@ -35,7 +36,7 @@ import java.util.HashMap;
  *
  * Written into `KeyspaceStatistics` on commit
  */
-public class UncomittedStatisticsDelta {
+public class StatisticsDeltaImpl implements StatisticsDelta {
 
     private HashMap<Label, Long> instanceDeltas;
     // keep these outside of the hashmap to avoid a large number of hash() method calls
@@ -44,14 +45,16 @@ public class UncomittedStatisticsDelta {
     private long relationCount = 0;
     private long attributeCount = 0;
 
-    public UncomittedStatisticsDelta() {
+    public StatisticsDeltaImpl() {
         instanceDeltas = new HashMap<>();
     }
 
+    @Override
     public long delta(Label label) {
         return instanceDeltas.getOrDefault(label, 0L);
     }
 
+    @Override
     public void increment(Type type) {
         Label label = type.label();
         Long currentCount = instanceDeltas.getOrDefault(label, 0L);
@@ -68,6 +71,7 @@ public class UncomittedStatisticsDelta {
         }
     }
 
+    @Override
     public void decrement(Type type) {
         Label label = type.label();
         Long currentCount = instanceDeltas.getOrDefault(label, 0L);
@@ -88,6 +92,7 @@ public class UncomittedStatisticsDelta {
      * Special case decrement for attribute deduplication
      * @param label
      */
+    @Override
     public void decrementAttribute(Label label) {
         Long currentCount = instanceDeltas.getOrDefault(label, 0L);
         instanceDeltas.put(label, currentCount - 1);
@@ -95,6 +100,7 @@ public class UncomittedStatisticsDelta {
         attributeCount--;
     }
 
+    @Override
     public HashMap<Label, Long> instanceDeltas() {
         // copy the meta type counts into the map on retrieval
         if (thingCount != 0) {

@@ -20,21 +20,19 @@ load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
 java_test(
     name = "label-fragment-set-test",
+    size = "small",
     srcs = ["LabelFragmentSetTest.java"],
     test_class = "grakn.core.graql.gremlin.sets.LabelFragmentSetTest",
     deps = [
-        "//kb/concept/api:api",
-        "//server:server",
-        "//graql:graql",
-        "//kb:kb",
-
-        "@graknlabs_graql//java:graql",
-
+        "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
-        "//dependencies/maven/artifacts/com/google/guava:guava",
-        "//dependencies/maven/artifacts/org/mockito:mockito-core"
-        ],
-    size = "small"
+        "//dependencies/maven/artifacts/org/mockito:mockito-core",
+        "//graql",
+        "//kb/concept/api",
+        "//kb/concept/manager",
+        "//kb/graql",
+        "@graknlabs_graql//java:graql",
+    ],
 )
 
 checkstyle_test(
@@ -47,19 +45,17 @@ checkstyle_test(
 
 java_test(
     name = "roleplayer-fragment-set-test",
-    test_class = "grakn.core.graql.gremlin.sets.RolePlayerFragmentSetTest",
+    size = "small",
     srcs = ["RolePlayerFragmentSetTest.java"],
+    test_class = "grakn.core.graql.gremlin.sets.RolePlayerFragmentSetTest",
     deps = [
-        "//kb/concept/api:api",
-        "//kb:kb",
-        "//graql:graql",
-        "//server:server",
-
-        "@graknlabs_graql//java:graql",
-
+        "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
-        "//dependencies/maven/artifacts/com/google/guava:guava",
         "//dependencies/maven/artifacts/org/mockito:mockito-core",
+        "//graql",
+        "//kb/concept/api",
+        "//kb/concept/manager",
+        "//kb/graql",
+        "@graknlabs_graql//java:graql",
     ],
-    size = "small"
 )

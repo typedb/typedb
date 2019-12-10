@@ -29,7 +29,9 @@ import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
-import grakn.core.rule.GraknTestServer;
+import grakn.core.rule.GraknTestStorage;
+import grakn.core.rule.SessionUtil;
+import grakn.core.rule.TestTransactionProvider;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import org.junit.AfterClass;
@@ -54,13 +56,13 @@ public class RuleCacheIT {
     private static String resourcePath = "test-integration/graql/reasoner/resources/";
 
     @ClassRule
-    public static final GraknTestServer server = new GraknTestServer();
+    public static final GraknTestStorage storage = new GraknTestStorage();
 
     private static Session ruleApplicabilitySession;
 
     @BeforeClass
     public static void loadContext() {
-        ruleApplicabilitySession = server.sessionWithNewKeyspace();
+        ruleApplicabilitySession = SessionUtil.serverlessSessionWithNewKeyspace(storage.createCompatibleServerConfig());
         loadFromFileAndCommit(resourcePath, "ruleApplicabilityTest.gql", ruleApplicabilitySession);
     }
 
@@ -72,7 +74,8 @@ public class RuleCacheIT {
     @Test
     public void whenGettingRulesWithType_correctRulesAreObtained(){
         try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
-            RuleCacheImpl ruleCache = CacheCasting.ruleCacheCast(tx.ruleCache());
+            TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction)tx;
+            RuleCacheImpl ruleCache = CacheCasting.ruleCacheCast(testTx.ruleCache());
 
             Type reifyingRelation = tx.getType(Label.of("reifying-relation"));
             Type ternary = tx.getType(Label.of("ternary"));
@@ -99,7 +102,9 @@ public class RuleCacheIT {
             Rule dummyRule = tx.putRule("dummyRule", when, then);
 
             Type binary = tx.getType(Label.of("binary"));
-            Set<Rule> cachedRules = tx.ruleCache().getRulesWithType(binary).collect(Collectors.toSet());
+
+            TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction)tx;
+            Set<Rule> cachedRules = testTx.ruleCache().getRulesWithType(binary).collect(Collectors.toSet());
             assertTrue(cachedRules.contains(dummyRule));
         }
     }
@@ -114,7 +119,9 @@ public class RuleCacheIT {
 
             Type binary = tx.getType(Label.of("binary"));
             Set<Rule> commitedRules = binary.thenRules().collect(Collectors.toSet());
-            Set<Rule> cachedRules = tx.ruleCache().getRulesWithType(binary).collect(toSet());
+
+            TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction)tx;
+            Set<Rule> cachedRules = testTx.ruleCache().getRulesWithType(binary).collect(toSet());
             assertEquals(Sets.union(commitedRules, Sets.newHashSet(dummyRule)), cachedRules);
         }
     }
@@ -126,8 +133,10 @@ public class RuleCacheIT {
             tx.commit();
         }
         try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
+            TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction)tx;
+
             Type binary = tx.getType(Label.of("binary"));
-            Set<Rule> rules = tx.ruleCache().getRulesWithType(binary).collect(Collectors.toSet());
+            Set<Rule> rules = testTx.ruleCache().getRulesWithType(binary).collect(Collectors.toSet());
             assertTrue(rules.isEmpty());
         }
     }
@@ -135,67 +144,79 @@ public class RuleCacheIT {
     @Test
     public void whenFetchingRules_fruitlessRulesAreNotReturned(){
         try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
+            TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction)tx;
+
             Type description = tx.getType(Label.of("description"));
             Set<Rule> rulesWithInstances = description.thenRules()
                     .filter(r -> tx.stream(Graql.match(r.when())).findFirst().isPresent())
                     .collect(Collectors.toSet());
-            Set<Rule> fetchedRules = tx.ruleCache().getRulesWithType(description).collect(Collectors.toSet());
+            Set<Rule> fetchedRules = testTx.ruleCache().getRulesWithType(description).collect(Collectors.toSet());
             //NB:db lookup filters more aggressively, hence we check for containment
             assertTrue(fetchedRules.containsAll(rulesWithInstances));
 
             //even though rules are filtered, the type has instances
             assertFalse(fetchedRules.isEmpty());
-            assertFalse(tx.ruleCache().absentTypes(Collections.singleton(description)));
+            assertFalse(testTx.ruleCache().absentTypes(Collections.singleton(description)));
         }
     }
 
     @Test
     public void whenTypeHasDirectInstances_itIsNotAbsent(){
         try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
+            TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction)tx;
+
             EntityType anotherNoRoleEntity = tx.getEntityType("anotherNoRoleEntity");
-            assertFalse(tx.ruleCache().absentTypes(Collections.singleton(anotherNoRoleEntity)));
+            assertFalse(testTx.ruleCache().absentTypes(Collections.singleton(anotherNoRoleEntity)));
         }
     }
 
     @Test
     public void whenTypeHasIndirectInstances_itIsNotAbsent(){
         try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
+            TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction)tx;
+
             //no direct instances present, however anotherTwoRoleEntity subs anotherSingleRoleEntity and has instances
             EntityType anotherSingleRoleEntity = tx.getEntityType("anotherSingleRoleEntity");
-            assertFalse(tx.ruleCache().absentTypes(Collections.singleton(anotherSingleRoleEntity)));
+            assertFalse(testTx.ruleCache().absentTypes(Collections.singleton(anotherSingleRoleEntity)));
         }
     }
 
     @Test
     public void whenTypeHasFruitfulRulesButNotDirectInstances_itIsNotAbsent(){
         try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
+            TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction)tx;
+
             Type description = tx.getType(Label.of("description"));
             assertFalse(description.instances().findFirst().isPresent());
-            assertFalse(tx.ruleCache().absentTypes(Collections.singleton(description)));
+            assertFalse(testTx.ruleCache().absentTypes(Collections.singleton(description)));
         }
     }
 
     @Test
     public void whenTypeSubTypeHasFruitfulRulesButNotDirectInstances_itIsNotAbsent(){
         try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
+            TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction)tx;
+
             RelationType binary = tx.getRelationType("binary");
             binary.instances().forEach(Concept::delete);
 
             RelationType reifiableRelation = tx.getRelationType("reifiable-relation");
             assertFalse(reifiableRelation.instances().findFirst().isPresent());
-            assertFalse(tx.ruleCache().absentTypes(Collections.singleton(reifiableRelation)));
+            assertFalse(testTx.ruleCache().absentTypes(Collections.singleton(reifiableRelation)));
         }
     }
 
     @Test
     public void whenInsertHappensDuringTransaction_extraInstanceIsAcknowledged(){
         try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
+            TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction)tx;
+
             EntityType singleRoleEntity = tx.getEntityType("singleRoleEntity");
             singleRoleEntity.instances().forEach(Concept::delete);
-            assertTrue(tx.ruleCache().absentTypes(Collections.singleton(singleRoleEntity)));
+            assertTrue(testTx.ruleCache().absentTypes(Collections.singleton(singleRoleEntity)));
 
             singleRoleEntity.create();
-            assertFalse(tx.ruleCache().absentTypes(Collections.singleton(singleRoleEntity)));
+            assertFalse(testTx.ruleCache().absentTypes(Collections.singleton(singleRoleEntity)));
         }
     }
 }

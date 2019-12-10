@@ -33,9 +33,10 @@ java_library(
         "//kb/concept/manager",
         "//concept/answer",
         "//concept/impl:impl",
-        "//concept/util/attribute",
         "//concept/util",
-        "//kb",
+        "//kb/server",
+        "//kb/graql",
+        "//kb/keyspace",
         "//core",
 
         # External dependencies from @graknlabs

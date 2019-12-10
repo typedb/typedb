@@ -17,7 +17,7 @@
  *
  */
 
-package grakn.core.kb.server.cache;
+package grakn.core.kb.keyspace;
 
 import com.google.common.collect.ImmutableMap;
 import grakn.core.kb.concept.api.Label;
@@ -42,19 +42,8 @@ public class KeyspaceSchemaCache {
         cachedLabels = new ConcurrentHashMap<>();
     }
 
-    /**
-     * Copy the contents of the Keyspace cache into a TransactionOLTP Cache
-     *
-     * @param transactionCache
-     */
-    void populateSchemaTxCache(TransactionCache transactionCache) {
-        try {
-            lock.writeLock().lock();
-            Map<Label, LabelId> cachedLabelsSnapshot = getCachedLabels();
-            cachedLabelsSnapshot.forEach(transactionCache::cacheLabel);
-        } finally {
-            lock.writeLock().unlock();
-        }
+    public ReentrantReadWriteLock concurrentUpdateLock() {
+        return lock;
     }
 
     /**
@@ -68,23 +57,19 @@ public class KeyspaceSchemaCache {
         cachedLabels.put(label, id);
     }
 
+
     /**
      * Reads the SchemaConcept labels currently in the transaction cache
      * into the keyspace cache. This happens when a commit occurs and allows us to track schema
      * mutations without having to read the graph.
-     *
-     * @param transactionCache The transaction cache
      */
-    void readTxCache(TransactionCache transactionCache) {
-        //Check if the schema has been changed and should be flushed into this cache
-        if (!cachedLabels.equals(transactionCache.getLabelCache())) {
-            try {
-                lock.writeLock().lock();
-                cachedLabels.clear();
-                cachedLabels.putAll(transactionCache.getLabelCache());
-            } finally {
-                lock.writeLock().unlock();
-            }
+    public void overwriteCache(Map<Label, LabelId> modifiedLabelCache) {
+        try {
+            lock.writeLock().lock();
+            cachedLabels.clear();
+            cachedLabels.putAll(modifiedLabelCache);
+        } finally {
+            lock.writeLock().unlock();
         }
     }
 
@@ -93,12 +78,16 @@ public class KeyspaceSchemaCache {
      *
      * @return an immutable copy of the cached labels.
      */
-    private Map<Label, LabelId> getCachedLabels() {
+    public Map<Label, LabelId> labelCacheCopy() {
         return ImmutableMap.copyOf(cachedLabels);
     }
 
 
     public boolean isEmpty(){
         return cachedLabels.isEmpty();
+    }
+
+    public boolean cacheMatches(Map<Label, LabelId> cache) {
+        return cachedLabels.equals(cache);
     }
 }

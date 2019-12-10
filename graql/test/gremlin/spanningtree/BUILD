@@ -20,30 +20,39 @@ load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
 java_test(
     name = "chu-liu-edmonds-test",
-    test_class = "grakn.core.graql.gremlin.spanningtree.ChuLiuEdmondsTest",
-    srcs = ["ChuLiuEdmondsTest.java", "graph/DenseWeightedGraph.java"],
-    deps = [
-        "@graknlabs_graql//java:graql",
-        "//kb:kb",
-        "//dependencies/maven/artifacts/com/google/guava:guava"
+    size = "small",
+    srcs = [
+        "ChuLiuEdmondsTest.java",
+        "graph/DenseWeightedGraph.java",
     ],
-    size = "small"
+    test_class = "grakn.core.graql.gremlin.spanningtree.ChuLiuEdmondsTest",
+    deps = [
+        "//dependencies/maven/artifacts/com/google/guava",
+        "//kb/graql",
+        "@graknlabs_graql//java:graql",
+    ],
 )
 
 java_test(
     name = "fibonacci-heap-test",
-    test_class = "grakn.core.graql.gremlin.spanningtree.datastructure.FibonacciHeapTest",
+    size = "small",
     srcs = ["datastructure/FibonacciHeapTest.java"],
-    deps = ["//kb:kb", "//dependencies/maven/artifacts/com/google/guava:guava"],
-    size = "small"
+    test_class = "grakn.core.graql.gremlin.spanningtree.datastructure.FibonacciHeapTest",
+    deps = [
+        "//dependencies/maven/artifacts/com/google/guava",
+        "//kb/graql",
+    ],
 )
 
 java_test(
     name = "fibonacci-queue-test",
-    test_class = "grakn.core.graql.gremlin.spanningtree.datastructure.FibonacciQueueTest",
+    size = "small",
     srcs = ["datastructure/FibonacciQueueTest.java"],
-    deps = ["//kb:kb", "//dependencies/maven/artifacts/com/google/guava:guava"],
-    size = "small"
+    test_class = "grakn.core.graql.gremlin.spanningtree.datastructure.FibonacciQueueTest",
+    deps = [
+        "//dependencies/maven/artifacts/com/google/guava",
+        "//kb/graql",
+    ],
 )
 
 checkstyle_test(
@@ -51,6 +60,6 @@ checkstyle_test(
     targets = [
         ":chu-liu-edmonds-test",
         ":fibonacci-heap-test",
-        ":fibonacci-queue-test"
-    ]
+        ":fibonacci-queue-test",
+    ],
 )

@@ -35,11 +35,13 @@ import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.concept.structure.Casting;
+import grakn.core.kb.keyspace.KeyspaceSchemaCache;
 
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Stream;
 
 /**
@@ -87,8 +89,10 @@ public class TransactionCache {
     }
 
     public void flushSchemaLabelIdsToCache() {
-        // This method is used to actually flush to the keyspace cache
-        keyspaceSchemaCache.readTxCache(this);
+        //Check if the schema has been changed and should be flushed into this cache
+        if (!keyspaceSchemaCache.cacheMatches(labelCache)) {
+            keyspaceSchemaCache.overwriteCache(labelCache);
+        }
     }
 
     /**
@@ -97,7 +101,14 @@ public class TransactionCache {
      * do not accidentally break the central schema cache.
      */
     public void updateSchemaCacheFromKeyspaceCache() {
-        keyspaceSchemaCache.populateSchemaTxCache(this);
+        ReentrantReadWriteLock schemaCacheLock = keyspaceSchemaCache.concurrentUpdateLock();
+        try {
+            schemaCacheLock.writeLock().lock();
+            Map<Label, LabelId> cachedLabelsSnapshot = keyspaceSchemaCache.labelCacheCopy();
+            cachedLabelsSnapshot.forEach(this::cacheLabel);
+        } finally {
+            schemaCacheLock.writeLock().unlock();
+        }
     }
 
     /**
@@ -128,7 +139,7 @@ public class TransactionCache {
     /**
      * @return All the types labels currently cached in the transaction.
      */
-    Map<Label, LabelId> getLabelCache() {
+    public Map<Label, LabelId> getLabelCache() {
         return labelCache;
     }
 
@@ -198,7 +209,7 @@ public class TransactionCache {
      * @param label The type label to cache
      * @param id    Its equivalent id which can be looked up quickly in the graph
      */
-    void cacheLabel(Label label, LabelId id) {
+    public void cacheLabel(Label label, LabelId id) {
         labelCache.put(label, id);
     }
 
