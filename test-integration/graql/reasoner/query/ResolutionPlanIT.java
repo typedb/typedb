@@ -34,9 +34,10 @@ import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.gremlin.TraversalPlanFactory;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
+import grakn.core.kb.keyspace.KeyspaceStatistics;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
-import grakn.core.kb.keyspace.KeyspaceStatisticsImpl;
+import grakn.core.keyspace.KeyspaceStatisticsImpl;
 import grakn.core.rule.GraknTestStorage;
 import grakn.core.rule.SessionUtil;
 import grakn.core.rule.TestTransactionProvider;
@@ -88,7 +89,7 @@ public class ResolutionPlanIT {
     public static final GraknTestStorage storage = new GraknTestStorage();
 
     private static Session planSession;
-    private static KeyspaceStatisticsImpl planKeyspaceStatistics;
+    private static KeyspaceStatistics planKeyspaceStatistics;
     private Transaction tx;
 
     // factories tied to a tx that we can utilise directly in tests

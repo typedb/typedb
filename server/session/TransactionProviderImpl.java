@@ -36,13 +36,13 @@ import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.concept.manager.ConceptNotificationChannel;
 import grakn.core.kb.graql.gremlin.TraversalPlanFactory;
 import grakn.core.kb.keyspace.AttributeManager;
+import grakn.core.kb.keyspace.KeyspaceStatistics;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import grakn.core.kb.server.TransactionProvider;
 import grakn.core.kb.keyspace.KeyspaceSchemaCache;
 import grakn.core.kb.server.cache.TransactionCache;
-import grakn.core.kb.keyspace.KeyspaceStatisticsImpl;
-import grakn.core.kb.server.statistics.StatisticsDeltaImpl;
+import grakn.core.keyspace.StatisticsDeltaImpl;
 import org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph;
 
 import java.util.concurrent.locks.ReadWriteLock;
@@ -54,13 +54,13 @@ public class TransactionProviderImpl implements TransactionProvider {
     private final StandardJanusGraph graph;
     private final HadoopGraph hadoopGraph;
     private final KeyspaceSchemaCache keyspaceSchemaCache;
-    private final KeyspaceStatisticsImpl keyspaceStatistics;
+    private final KeyspaceStatistics keyspaceStatistics;
     private final AttributeManager attributeManager;
     private ReadWriteLock graphLock;
     private final long typeShardThreshold;
 
     public TransactionProviderImpl(StandardJanusGraph graph, HadoopGraph hadoopGraph,
-                                   KeyspaceSchemaCache keyspaceSchemaCache, KeyspaceStatisticsImpl keyspaceStatistics,
+                                   KeyspaceSchemaCache keyspaceSchemaCache, KeyspaceStatistics keyspaceStatistics,
                                    AttributeManager attributeManager, ReadWriteLock graphLock, long typeShardThreshold) {
         this.graph = graph;
         this.hadoopGraph = hadoopGraph;

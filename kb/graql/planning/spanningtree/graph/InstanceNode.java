@@ -22,7 +22,7 @@ package grakn.core.kb.graql.planning.spanningtree.graph;
 import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.manager.ConceptManager;
-import grakn.core.kb.keyspace.KeyspaceStatisticsImpl;
+import grakn.core.kb.keyspace.KeyspaceStatistics;
 
 public class InstanceNode extends Node {
 
@@ -35,7 +35,7 @@ public class InstanceNode extends Node {
     }
 
     @Override
-    public long matchingElementsEstimate(ConceptManager conceptManager, KeyspaceStatisticsImpl statistics) {
+    public long matchingElementsEstimate(ConceptManager conceptManager, KeyspaceStatistics statistics) {
         if (instanceTypeLabel == null) {
             return statistics.count(conceptManager, Schema.MetaSchema.THING.getLabel());
         } else {

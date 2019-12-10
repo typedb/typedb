@@ -40,8 +40,8 @@ import grakn.core.kb.graql.planning.spanningtree.graph.Node;
 import grakn.core.kb.graql.planning.spanningtree.graph.NodeId;
 import grakn.core.kb.graql.planning.spanningtree.graph.SparseWeightedGraph;
 import grakn.core.kb.graql.planning.spanningtree.util.Weighted;
+import grakn.core.kb.keyspace.KeyspaceStatistics;
 import grakn.core.kb.server.exception.GraknServerException;
-import grakn.core.kb.keyspace.KeyspaceStatisticsImpl;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;
@@ -78,9 +78,9 @@ public class TraversalPlanFactoryImpl implements TraversalPlanFactory {
     private final JanusTraversalSourceProvider janusTraversalSourceProvider;
     private final ConceptManager conceptManager;
     private final long shardingThreshold;
-    private final KeyspaceStatisticsImpl keyspaceStatistics;
+    private final KeyspaceStatistics keyspaceStatistics;
 
-    public TraversalPlanFactoryImpl(JanusTraversalSourceProvider janusTraversalSourceProvider, ConceptManager conceptManager, long shardingThreshold, KeyspaceStatisticsImpl keyspaceStatistics) {
+    public TraversalPlanFactoryImpl(JanusTraversalSourceProvider janusTraversalSourceProvider, ConceptManager conceptManager, long shardingThreshold, KeyspaceStatistics keyspaceStatistics) {
         this.janusTraversalSourceProvider = janusTraversalSourceProvider;
         this.conceptManager = conceptManager;
         this.shardingThreshold = shardingThreshold;

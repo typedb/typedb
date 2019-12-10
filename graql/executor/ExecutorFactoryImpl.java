@@ -25,18 +25,18 @@ import grakn.core.kb.graql.executor.ComputeExecutor;
 import grakn.core.kb.graql.executor.ExecutorFactory;
 import grakn.core.kb.graql.executor.QueryExecutor;
 import grakn.core.kb.graql.gremlin.TraversalPlanFactory;
-import grakn.core.kb.keyspace.KeyspaceStatisticsImpl;
+import grakn.core.kb.keyspace.KeyspaceStatistics;
 import org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph;
 
 public class ExecutorFactoryImpl implements ExecutorFactory {
 
     private final ConceptManager conceptManager;
     private HadoopGraph hadoopGraph;
-    private KeyspaceStatisticsImpl keyspaceStatistics;
+    private KeyspaceStatistics keyspaceStatistics;
     private TraversalPlanFactory traversalPlanFactory;
     private ReasonerQueryFactory reasonerQueryFactory;
 
-    public ExecutorFactoryImpl(ConceptManager conceptManager, HadoopGraph hadoopGraph, KeyspaceStatisticsImpl keyspaceStatistics, TraversalPlanFactory traversalPlanFactory) {
+    public ExecutorFactoryImpl(ConceptManager conceptManager, HadoopGraph hadoopGraph, KeyspaceStatistics keyspaceStatistics, TraversalPlanFactory traversalPlanFactory) {
         this.conceptManager = conceptManager;
         this.hadoopGraph = hadoopGraph;
         this.keyspaceStatistics = keyspaceStatistics;

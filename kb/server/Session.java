@@ -20,9 +20,9 @@
 package grakn.core.kb.server;
 
 import grakn.core.kb.keyspace.AttributeManager;
+import grakn.core.kb.keyspace.KeyspaceStatistics;
 import grakn.core.kb.keyspace.ShardManager;
 import grakn.core.kb.server.keyspace.Keyspace;
-import grakn.core.kb.keyspace.KeyspaceStatisticsImpl;
 
 import java.util.function.Consumer;
 
@@ -48,7 +48,7 @@ public interface Session extends AutoCloseable {
 
     Keyspace keyspace();
 
-    KeyspaceStatisticsImpl keyspaceStatistics();
+    KeyspaceStatistics keyspaceStatistics();
 
     AttributeManager attributeManager();
 

@@ -57,7 +57,7 @@ import grakn.core.kb.graql.reasoner.cache.RuleCache;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
 import grakn.core.kb.graql.GraqlSemanticException;
-import grakn.core.kb.keyspace.KeyspaceStatisticsImpl;
+import grakn.core.kb.keyspace.KeyspaceStatistics;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.property.HasAttributeProperty;
@@ -100,7 +100,7 @@ public class AttributeAtom extends Binary{
     private final Variable attributeVariable;
     private ReasonerQueryFactory reasonerQueryFactory;
     private final QueryCache queryCache;
-    private KeyspaceStatisticsImpl keyspaceStatistics;
+    private KeyspaceStatistics keyspaceStatistics;
     private final Variable relationVariable;
 
     private AttributeAtom(
@@ -108,7 +108,7 @@ public class AttributeAtom extends Binary{
             ConceptManager conceptManager,
             RuleCache ruleCache,
             QueryCache queryCache,
-            KeyspaceStatisticsImpl keyspaceStatistics,
+            KeyspaceStatistics keyspaceStatistics,
             Variable varName,
             Statement pattern,
             ReasonerQuery parentQuery,
@@ -139,7 +139,7 @@ public class AttributeAtom extends Binary{
     }
 
     public static AttributeAtom create(ReasonerQueryFactory reasonerQueryFactory, ConceptManager conceptManager,
-                                       RuleCache ruleCache, QueryCache queryCache, KeyspaceStatisticsImpl keyspaceStatistics,
+                                       RuleCache ruleCache, QueryCache queryCache, KeyspaceStatistics keyspaceStatistics,
                                        Statement pattern, Variable attributeVariable,
                                        Variable relationVariable, Variable predicateVariable, ConceptId predicateId,
                                        Set<ValuePredicate> ps, ReasonerQuery parent) {
@@ -148,7 +148,7 @@ public class AttributeAtom extends Binary{
     }
 
     private static AttributeAtom create(ReasonerQueryFactory reasonerQueryFactory, ConceptManager conceptManager,
-                                        RuleCache ruleCache, QueryCache queryCache, KeyspaceStatisticsImpl keyspaceStatistics,
+                                        RuleCache ruleCache, QueryCache queryCache, KeyspaceStatistics keyspaceStatistics,
                                         AttributeAtom a, ReasonerQuery parent) {
         return create(reasonerQueryFactory, conceptManager, ruleCache, queryCache, keyspaceStatistics, a.getPattern(), a.getAttributeVariable(),
                 a.getRelationVariable(), a.getPredicateVariable(), a.getTypeId(), a.getMultiPredicate(), parent);

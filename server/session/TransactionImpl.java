@@ -73,7 +73,7 @@ import grakn.core.kb.server.cache.TransactionCache;
 import grakn.core.kb.server.exception.InvalidKBException;
 import grakn.core.kb.server.exception.TransactionException;
 import grakn.core.kb.server.keyspace.Keyspace;
-import grakn.core.kb.server.statistics.StatisticsDeltaImpl;
+import grakn.core.keyspace.StatisticsDeltaImpl;
 import grakn.core.server.Validator;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;

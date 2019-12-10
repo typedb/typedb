@@ -63,7 +63,7 @@ import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.executor.ComputeExecutor;
 import grakn.core.kb.graql.executor.ExecutorFactory;
 import grakn.core.kb.graql.GraqlSemanticException;
-import grakn.core.kb.keyspace.KeyspaceStatisticsImpl;
+import grakn.core.kb.keyspace.KeyspaceStatistics;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlCompute;
@@ -111,9 +111,9 @@ public class ComputeExecutorImpl implements ComputeExecutor {
     private ConceptManager conceptManager;
     private ExecutorFactory executorFactory;
     private HadoopGraph hadoopGraph;
-    private KeyspaceStatisticsImpl keyspaceStatistics;
+    private KeyspaceStatistics keyspaceStatistics;
 
-    ComputeExecutorImpl(ConceptManager conceptManager, ExecutorFactory executorFactory, HadoopGraph hadoopGraph, KeyspaceStatisticsImpl keyspaceStatistics) {
+    ComputeExecutorImpl(ConceptManager conceptManager, ExecutorFactory executorFactory, HadoopGraph hadoopGraph, KeyspaceStatistics keyspaceStatistics) {
         this.conceptManager = conceptManager;
         this.executorFactory = executorFactory;
         this.hadoopGraph = hadoopGraph;

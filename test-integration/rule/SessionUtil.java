@@ -22,17 +22,18 @@ package grakn.core.rule;
 import grakn.core.common.config.Config;
 import grakn.core.graph.graphdb.database.StandardJanusGraph;
 import grakn.core.kb.keyspace.AttributeManager;
+import grakn.core.kb.keyspace.KeyspaceStatistics;
 import grakn.core.kb.keyspace.ShardManager;
 import grakn.core.kb.server.TransactionProvider;
 import grakn.core.kb.keyspace.KeyspaceSchemaCache;
 import grakn.core.kb.server.keyspace.Keyspace;
-import grakn.core.kb.keyspace.KeyspaceStatisticsImpl;
+import grakn.core.keyspace.KeyspaceStatisticsImpl;
 import grakn.core.server.keyspace.KeyspaceImpl;
-import grakn.core.server.session.AttributeManagerImpl;
+import grakn.core.keyspace.AttributeManagerImpl;
 import grakn.core.server.session.HadoopGraphFactory;
 import grakn.core.server.session.JanusGraphFactory;
 import grakn.core.server.session.SessionImpl;
-import grakn.core.server.session.ShardManagerImpl;
+import grakn.core.keyspace.ShardManagerImpl;
 import org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph;
 
 import java.util.UUID;
@@ -84,7 +85,7 @@ public class SessionUtil {
     /**
      * Create a new keyspace with injected KeyspaceStatistics
      */
-    public static SessionImpl serverlessSessionWithNewKeyspace(Config mockServerConfig, KeyspaceStatisticsImpl keyspaceStatistics) {
+    public static SessionImpl serverlessSessionWithNewKeyspace(Config mockServerConfig, KeyspaceStatistics keyspaceStatistics) {
         String newKeyspaceName = "a" + UUID.randomUUID().toString().replaceAll("-", "");
         Keyspace randomKeyspace = new KeyspaceImpl(newKeyspaceName);
         JanusGraphFactory janusGraphFactory = new JanusGraphFactory(mockServerConfig);
@@ -110,7 +111,7 @@ public class SessionUtil {
         HadoopGraphFactory hadoopGraphFactory = new HadoopGraphFactory(mockServerConfig);
         StandardJanusGraph graph = janusGraphFactory.openGraph(randomKeyspace.name());
         KeyspaceSchemaCache cache = new KeyspaceSchemaCache();
-        KeyspaceStatisticsImpl keyspaceStatistics = new KeyspaceStatisticsImpl();
+        KeyspaceStatistics keyspaceStatistics = new KeyspaceStatisticsImpl();
         AttributeManager attributeManager = new AttributeManagerImpl();
         ShardManager shardManager = new ShardManagerImpl();
         ReadWriteLock graphLock = new ReentrantReadWriteLock();

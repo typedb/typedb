@@ -24,7 +24,7 @@ import grakn.core.graql.executor.property.value.ValueOperation;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.manager.ConceptManager;
-import grakn.core.kb.keyspace.KeyspaceStatisticsImpl;
+import grakn.core.kb.keyspace.KeyspaceStatistics;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -91,7 +91,7 @@ public class ValueFragment extends FragmentImpl {
     }
 
     @Override
-    public double estimatedCostAsStartingPoint(ConceptManager conceptManager, KeyspaceStatisticsImpl statistics) {
+    public double estimatedCostAsStartingPoint(ConceptManager conceptManager, KeyspaceStatistics statistics) {
         // compute the sum of all @has-attribute implicit relations
         // and the sum of all attribute instances
         // then compute some mean number of owners per attribute

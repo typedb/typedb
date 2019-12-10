@@ -22,12 +22,15 @@ import grakn.core.common.config.Config;
 import grakn.core.common.config.ConfigKey;
 import grakn.core.graph.graphdb.database.StandardJanusGraph;
 import grakn.core.kb.keyspace.AttributeManager;
+import grakn.core.kb.keyspace.KeyspaceStatistics;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.keyspace.ShardManager;
 import grakn.core.kb.server.TransactionProvider;
 import grakn.core.kb.keyspace.KeyspaceSchemaCache;
 import grakn.core.kb.server.keyspace.Keyspace;
-import grakn.core.kb.keyspace.KeyspaceStatisticsImpl;
+import grakn.core.keyspace.KeyspaceStatisticsImpl;
+import grakn.core.keyspace.AttributeManagerImpl;
+import grakn.core.keyspace.ShardManagerImpl;
 import grakn.core.server.util.LockManager;
 import org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph;
 
@@ -75,7 +78,7 @@ public class SessionFactory {
         SharedKeyspaceData cacheContainer;
         StandardJanusGraph graph;
         KeyspaceSchemaCache cache;
-        KeyspaceStatisticsImpl keyspaceStatistics;
+        KeyspaceStatistics keyspaceStatistics;
         AttributeManager attributeManager;
         ShardManager shardManager;
         ReadWriteLock graphLock;
@@ -184,7 +187,7 @@ public class SessionFactory {
         private final List<Session> sessions;
 
         // Shared keyspace statistics
-        private final KeyspaceStatisticsImpl keyspaceStatistics;
+        private final KeyspaceStatistics keyspaceStatistics;
 
         // Map<AttributeIndex, ConceptId> used to map an attribute index to a unique id
         // so that concurrent transactions can merge the same attribute indexes using a unique id
@@ -195,7 +198,7 @@ public class SessionFactory {
         private final ReadWriteLock graphLock;
 
         // Keep visibility to public as this is used by KGMS
-        public SharedKeyspaceData(KeyspaceSchemaCache keyspaceSchemaCache, StandardJanusGraph graph, KeyspaceStatisticsImpl keyspaceStatistics,
+        public SharedKeyspaceData(KeyspaceSchemaCache keyspaceSchemaCache, StandardJanusGraph graph, KeyspaceStatistics keyspaceStatistics,
                                   AttributeManager attributeManager, ShardManager shardManager, ReadWriteLock graphLock, HadoopGraph hadoopGraph) {
             this.keyspaceSchemaCache = keyspaceSchemaCache;
             this.graph = graph;
@@ -242,7 +245,7 @@ public class SessionFactory {
         }
 
         // Keep visibility to public as this is used by KGMS
-        public KeyspaceStatisticsImpl keyspaceStatistics() {
+        public KeyspaceStatistics keyspaceStatistics() {
             return keyspaceStatistics;
         }
 

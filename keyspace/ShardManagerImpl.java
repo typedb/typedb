@@ -17,7 +17,7 @@
  *
  */
 
-package grakn.core.server.session;
+package grakn.core.keyspace;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;

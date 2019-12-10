@@ -204,6 +204,7 @@ java_test(
         "//kb/graql",
         "//kb/keyspace",
         "//kb/server",
+        "//keyspace",
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:graql-test-util",
         "@graknlabs_graql//java:graql",

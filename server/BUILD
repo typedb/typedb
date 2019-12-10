@@ -58,6 +58,7 @@ java_library(
         "//kb/server",
         "//kb/graql",
         "//kb/keyspace",
+        "//keyspace",
         "//core",
         "//graql",
         "//graph",

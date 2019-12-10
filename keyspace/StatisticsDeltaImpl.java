@@ -17,7 +17,7 @@
  *
  */
 
-package grakn.core.kb.server.statistics;
+package grakn.core.keyspace;
 
 import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.AttributeType;

@@ -35,6 +35,7 @@ java_library(
         "//kb/graql",
         "//concept/manager",
         "//concept/structure",
+        "//keyspace",
         "//core",
         "//dependencies/maven/artifacts/com/datastax/oss:java-driver-core",
         "//dependencies/maven/artifacts/commons-io",

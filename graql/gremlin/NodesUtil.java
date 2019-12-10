@@ -32,8 +32,8 @@ import grakn.core.kb.graql.planning.spanningtree.graph.EdgeNode;
 import grakn.core.kb.graql.planning.spanningtree.graph.InstanceNode;
 import grakn.core.kb.graql.planning.spanningtree.graph.Node;
 import grakn.core.kb.graql.planning.spanningtree.graph.NodeId;
+import grakn.core.kb.keyspace.KeyspaceStatistics;
 import grakn.core.kb.server.exception.GraknServerException;
-import grakn.core.kb.keyspace.KeyspaceStatisticsImpl;
 
 import java.util.Comparator;
 import java.util.HashMap;
@@ -221,7 +221,7 @@ public class NodesUtil {
      * @param label type label for which the inferred count should be estimated
      * @return estimated number of inferred instances of a given type
      */
-    public static long estimateInferredTypeCount(Label label, ConceptManager conceptManager, KeyspaceStatisticsImpl keyspaceStatistics){
+    public static long estimateInferredTypeCount(Label label, ConceptManager conceptManager, KeyspaceStatistics keyspaceStatistics){
         //TODO find a lighter estimate/way to cache it efficiently
         SchemaConcept initialType = conceptManager.getSchemaConcept(label);
         if (initialType == null || !initialType.thenRules().findFirst().isPresent()) return 0;

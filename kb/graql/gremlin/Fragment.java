@@ -26,7 +26,7 @@ import grakn.core.kb.graql.planning.spanningtree.graph.DirectedEdge;
 import grakn.core.kb.graql.planning.spanningtree.graph.Node;
 import grakn.core.kb.graql.planning.spanningtree.graph.NodeId;
 import grakn.core.kb.graql.planning.spanningtree.util.Weighted;
-import grakn.core.kb.keyspace.KeyspaceStatisticsImpl;
+import grakn.core.kb.keyspace.KeyspaceStatistics;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -139,7 +139,7 @@ public interface Fragment {
      * @param conceptManager
      * @param keyspaceStatistics
      */
-    double estimatedCostAsStartingPoint(ConceptManager conceptManager, KeyspaceStatisticsImpl keyspaceStatistics);
+    double estimatedCostAsStartingPoint(ConceptManager conceptManager, KeyspaceStatistics keyspaceStatistics);
 
     /**
      * If a fragment has fixed cost, the traversal is done using index. This makes the fragment a good starting point.

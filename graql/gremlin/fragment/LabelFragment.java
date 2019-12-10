@@ -27,7 +27,7 @@ import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.planning.spanningtree.graph.Node;
 import grakn.core.kb.graql.planning.spanningtree.graph.NodeId;
 import grakn.core.kb.graql.planning.spanningtree.graph.SchemaNode;
-import grakn.core.kb.keyspace.KeyspaceStatisticsImpl;
+import grakn.core.kb.keyspace.KeyspaceStatistics;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
@@ -108,7 +108,7 @@ public class LabelFragment extends FragmentImpl {
     }
 
     @Override
-    public double estimatedCostAsStartingPoint(ConceptManager conceptManager, KeyspaceStatisticsImpl statistics) {
+    public double estimatedCostAsStartingPoint(ConceptManager conceptManager, KeyspaceStatistics statistics) {
         // there's only 1 label in this set, but sum anyway
         // estimate the total number of things that might be connected by ISA to this label as a heuristic
         long instances = labels().stream()

@@ -28,9 +28,9 @@ import grakn.core.kb.concept.api.EntityType;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
+import grakn.core.kb.keyspace.KeyspaceStatistics;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
-import grakn.core.kb.keyspace.KeyspaceStatisticsImpl;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.rule.SessionUtil;
 import grakn.core.rule.TestTransactionProvider;
@@ -75,7 +75,7 @@ public class KeyspaceStatisticsIT {
 
     @Test
     public void newKeyspaceHasZeroCounts() {
-        KeyspaceStatisticsImpl statistics = localSession.keyspaceStatistics();
+        KeyspaceStatistics statistics = localSession.keyspaceStatistics();
         TestTransactionProvider.TestTransaction tx = (TestTransactionProvider.TestTransaction)localSession.writeTransaction();
         long entityCount = statistics.count(tx.conceptManager(), Label.of("entity"));
         long relationCount = statistics.count(tx.conceptManager(), Label.of("relation"));

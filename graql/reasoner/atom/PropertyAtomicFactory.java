@@ -46,9 +46,9 @@ import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.kb.graql.reasoner.cache.QueryCache;
 import grakn.core.kb.graql.reasoner.cache.RuleCache;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
+import grakn.core.kb.keyspace.KeyspaceStatistics;
 import grakn.core.kb.server.exception.GraqlQueryException;
 import grakn.core.kb.graql.GraqlSemanticException;
-import grakn.core.kb.keyspace.KeyspaceStatisticsImpl;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.property.AbstractProperty;
@@ -89,10 +89,10 @@ public class PropertyAtomicFactory {
     private final ConceptManager conceptManager;
     private final RuleCache ruleCache;
     private final QueryCache queryCache;
-    private KeyspaceStatisticsImpl keyspaceStatistics;
+    private KeyspaceStatistics keyspaceStatistics;
 
     public PropertyAtomicFactory(ConceptManager conceptManager,
-                                 RuleCache ruleCache, QueryCache queryCache, KeyspaceStatisticsImpl keyspaceStatistics) {
+                                 RuleCache ruleCache, QueryCache queryCache, KeyspaceStatistics keyspaceStatistics) {
         this.reasonerQueryFactory = null;
         this.conceptManager = conceptManager;
         this.ruleCache = ruleCache;

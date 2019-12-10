@@ -70,7 +70,7 @@ import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
 import grakn.core.kb.graql.GraqlSemanticException;
-import grakn.core.kb.keyspace.KeyspaceStatisticsImpl;
+import grakn.core.kb.keyspace.KeyspaceStatistics;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.property.IsaProperty;
@@ -109,7 +109,7 @@ public class RelationAtom extends IsaAtomBase {
 
     private ReasonerQueryFactory reasonerQueryFactory;
     private QueryCache queryCache;
-    private KeyspaceStatisticsImpl keyspaceStatistics;
+    private KeyspaceStatistics keyspaceStatistics;
     private final ImmutableList<RelationProperty.RolePlayer> relationPlayers;
     private final ImmutableSet<Label> roleLabels;
     private ImmutableList<Type> possibleTypes = null;
@@ -128,7 +128,7 @@ public class RelationAtom extends IsaAtomBase {
             ConceptManager conceptManager,
             RuleCache ruleCache,
             QueryCache queryCache,
-            KeyspaceStatisticsImpl keyspaceStatistics,
+            KeyspaceStatistics keyspaceStatistics,
             Variable varName,
             Statement pattern,
             ReasonerQuery parentQuery,
@@ -144,7 +144,7 @@ public class RelationAtom extends IsaAtomBase {
         this.roleLabels = roleLabels;
     }
 
-    public static RelationAtom create(ReasonerQueryFactory reasonerQueryFactory, ConceptManager conceptManager, RuleCache ruleCache, QueryCache queryCache, KeyspaceStatisticsImpl keyspaceStatistics, Statement pattern, Variable predicateVar, @Nullable ConceptId predicateId, ReasonerQuery parent) {
+    public static RelationAtom create(ReasonerQueryFactory reasonerQueryFactory, ConceptManager conceptManager, RuleCache ruleCache, QueryCache queryCache, KeyspaceStatistics keyspaceStatistics, Statement pattern, Variable predicateVar, @Nullable ConceptId predicateId, ReasonerQuery parent) {
         List<RelationProperty.RolePlayer> rps = new ArrayList<>();
         pattern.getProperty(RelationProperty.class)
                 .ifPresent(prop -> prop.relationPlayers().stream().sorted(Comparator.comparing(Object::hashCode)).forEach(rps::add));
@@ -160,7 +160,7 @@ public class RelationAtom extends IsaAtomBase {
         return new RelationAtom(reasonerQueryFactory, conceptManager, ruleCache, queryCache, keyspaceStatistics, pattern.var(), pattern, parent, predicateId, predicateVar, relationPlayers, roleLabels);
     }
 
-    private static RelationAtom create(ReasonerQueryFactory reasonerQueryFactory, ConceptManager conceptManager, RuleCache ruleCache, QueryCache queryCache, KeyspaceStatisticsImpl keyspaceStatistics, Statement pattern, Variable predicateVar, @Nullable ConceptId predicateId, @Nullable ImmutableList<Type> possibleTypes, ReasonerQuery parent) {
+    private static RelationAtom create(ReasonerQueryFactory reasonerQueryFactory, ConceptManager conceptManager, RuleCache ruleCache, QueryCache queryCache, KeyspaceStatistics keyspaceStatistics, Statement pattern, Variable predicateVar, @Nullable ConceptId predicateId, @Nullable ImmutableList<Type> possibleTypes, ReasonerQuery parent) {
         RelationAtom atom = create(reasonerQueryFactory, conceptManager, ruleCache, queryCache, keyspaceStatistics, pattern, predicateVar, predicateId, parent);
         atom.possibleTypes = possibleTypes;
         return atom;

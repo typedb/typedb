@@ -24,7 +24,7 @@ import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.manager.ConceptManager;
-import grakn.core.kb.keyspace.KeyspaceStatisticsImpl;
+import grakn.core.kb.keyspace.KeyspaceStatistics;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -85,7 +85,7 @@ public class AttributeIndexFragment extends FragmentImpl {
     }
 
     @Override
-    public double estimatedCostAsStartingPoint(ConceptManager conceptManager, KeyspaceStatisticsImpl statistics) {
+    public double estimatedCostAsStartingPoint(ConceptManager conceptManager, KeyspaceStatistics statistics) {
         // here we estimate the number of owners of an attribute instance of this type
         // as this is the most common usage/expensive component of an attribute
         // given that there's only 1 attribute of a type and value at any time
