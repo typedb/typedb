@@ -20,12 +20,12 @@
 package grakn.core.graql.reasoner.state;
 
 import com.google.common.collect.Iterables;
-import grakn.core.concept.answer.AnswerUtil;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.answer.Explanation;
 import grakn.core.graql.reasoner.explanation.JoinExplanation;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
+import grakn.core.graql.reasoner.utils.AnswerUtil;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
 
 import java.util.ArrayList;

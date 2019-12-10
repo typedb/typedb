@@ -20,7 +20,6 @@
 package grakn.core.graql.reasoner.state;
 
 import com.google.common.collect.HashMultimap;
-import grakn.core.concept.answer.AnswerUtil;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.CacheCasting;
 import grakn.core.graql.reasoner.atom.Atom;
@@ -30,6 +29,7 @@ import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.reasoner.query.ReasonerQueryFactory;
 import grakn.core.graql.reasoner.rule.InferenceRule;
 import grakn.core.graql.reasoner.unifier.UnifierType;
+import grakn.core.graql.reasoner.utils.AnswerUtil;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.graql.reasoner.cache.CacheEntry;
 import grakn.core.kb.graql.reasoner.cache.QueryCache;

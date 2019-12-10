@@ -24,7 +24,6 @@ import com.google.common.collect.Sets;
 import grakn.benchmark.lib.instrumentation.ServerTracing;
 import grakn.core.concept.answer.Answer;
 import grakn.core.concept.answer.AnswerGroup;
-import grakn.core.concept.answer.AnswerUtil;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.answer.Numeric;
 import grakn.core.concept.answer.Void;
@@ -56,6 +55,7 @@ import graql.lang.query.GraqlGet;
 import graql.lang.query.GraqlInsert;
 import graql.lang.query.GraqlUndefine;
 import graql.lang.query.MatchClause;
+import graql.lang.query.builder.Filterable;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -307,7 +307,7 @@ public class QueryExecutorImpl implements QueryExecutor {
                 .map(result -> result.project(query.vars()))
                 .distinct();
 
-        answers = AnswerUtil.filter(query, answers);
+        answers = filter(query, answers);
 
         // TODO: We should not need to collect toSet, once we fix ConceptId.id() to not use cache.
         List<Concept> conceptsToDelete = answers
@@ -383,7 +383,7 @@ public class QueryExecutorImpl implements QueryExecutor {
         //NB: we need distinct as projection can produce duplicates
         Stream<ConceptMap> answers = match(query.match()).map(ans -> ans.project(query.vars())).distinct();
 
-        answers = AnswerUtil.filter(query, answers);
+        answers = filter(query, answers);
 
         return answers;
     }
@@ -433,5 +433,31 @@ public class QueryExecutorImpl implements QueryExecutor {
                 .forEach((key, values) -> answerGroups.add(new AnswerGroup<>(key, values)));
 
         return answerGroups;
+    }
+
+    @SuppressWarnings("unchecked") // All attribute values are comparable data types
+    private Stream<ConceptMap> filter(Filterable query, Stream<ConceptMap> answers) {
+        if (query.sort().isPresent()) {
+            Variable var = query.sort().get().var();
+            Comparator<ConceptMap> comparator = (map1, map2) -> {
+                Object val1 = map1.get(var).asAttribute().value();
+                Object val2 = map2.get(var).asAttribute().value();
+
+                if (val1 instanceof String) {
+                    return ((String) val1).compareToIgnoreCase((String) val2);
+                } else {
+                    return ((Comparable<? super Comparable>) val1).compareTo((Comparable<? super Comparable>) val2);
+                }
+            };
+            comparator = (query.sort().get().order() == Graql.Token.Order.DESC) ? comparator.reversed() : comparator;
+            answers = answers.sorted(comparator);
+        }
+        if (query.offset().isPresent()) {
+            answers = answers.skip(query.offset().get());
+        }
+        if (query.limit().isPresent()) {
+            answers = answers.limit(query.limit().get());
+        }
+        return answers;
     }
 }
