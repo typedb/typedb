@@ -52,7 +52,6 @@ java_library(
         "//concept/structure",
         "//concept/impl",
         "//concept/answer",
-        "//concept/util/attribute",
         "//concept/util",
         "//concept/manager",
         "//kb/server",

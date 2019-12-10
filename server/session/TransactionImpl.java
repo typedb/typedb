@@ -36,7 +36,7 @@ import grakn.core.concept.answer.Void;
 import grakn.core.concept.impl.ConceptVertex;
 import grakn.core.concept.impl.SchemaConceptImpl;
 import grakn.core.concept.util.ConceptUtils;
-import grakn.core.concept.util.attribute.Serialiser;
+import grakn.core.concept.impl.AttributeSerialiser;
 import grakn.core.core.JanusTraversalSourceProvider;
 import grakn.core.core.Schema;
 import grakn.core.graph.core.JanusGraphTransaction;
@@ -987,7 +987,7 @@ public class TransactionImpl implements Transaction {
         }
 
         HashSet<Attribute<V>> attributes = new HashSet<>();
-        conceptManager.getConcepts(Schema.VertexProperty.ofDataType(dataType), Serialiser.of(dataType).serialise(value))
+        conceptManager.getConcepts(Schema.VertexProperty.ofDataType(dataType), AttributeSerialiser.of(dataType).serialise(value))
                 .forEach(concept -> {
                     if (concept != null && concept.isAttribute()) {
                         attributes.add(concept.asAttribute());

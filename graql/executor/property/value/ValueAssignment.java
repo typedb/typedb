@@ -19,7 +19,7 @@
 
 package grakn.core.graql.executor.property.value;
 
-import grakn.core.concept.util.attribute.Serialiser;
+import grakn.core.concept.impl.AttributeSerialiser;
 import graql.lang.Graql;
 import graql.lang.property.ValueProperty;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
@@ -63,7 +63,7 @@ public abstract class ValueAssignment<T, U> extends ValueOperation<T, U> {
 
         @Override
         public N valueSerialised() {
-            return new Serialiser.Default<N>().serialise(value());
+            return new AttributeSerialiser.Default<N>().serialise(value());
         }
     }
 
@@ -75,7 +75,7 @@ public abstract class ValueAssignment<T, U> extends ValueOperation<T, U> {
 
         @Override
         public java.lang.Boolean valueSerialised() {
-            return Serialiser.BOOLEAN.serialise(value());
+            return AttributeSerialiser.BOOLEAN.serialise(value());
         }
     }
 
@@ -87,7 +87,7 @@ public abstract class ValueAssignment<T, U> extends ValueOperation<T, U> {
 
         @Override
         public Long valueSerialised() {
-            return Serialiser.DATE.serialise(value());
+            return AttributeSerialiser.DATE.serialise(value());
         }
     }
 
@@ -99,7 +99,7 @@ public abstract class ValueAssignment<T, U> extends ValueOperation<T, U> {
 
         @Override
         public java.lang.String valueSerialised() {
-            return Serialiser.STRING.serialise(value());
+            return AttributeSerialiser.STRING.serialise(value());
         }
     }
 }

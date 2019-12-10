@@ -33,7 +33,6 @@ java_library(
         "//kb/graql",
         "//kb/keyspace",
         "//concept/impl",
-        "//concept/util/attribute",
         "//concept/structure",
 
         # External dependenicies from @graknlabs

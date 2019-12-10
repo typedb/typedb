@@ -19,7 +19,7 @@
 
 package grakn.core.graql.executor.property.value;
 
-import grakn.core.concept.util.attribute.Serialiser;
+import grakn.core.concept.impl.AttributeSerialiser;
 import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.AttributeType;
 import graql.lang.Graql;
@@ -125,7 +125,7 @@ public abstract class ValueComparison<T, U> extends ValueOperation<T, U> {
 
         @Override
         public N valueSerialised() {
-            return new Serialiser.Default<N>().serialise(value());
+            return new AttributeSerialiser.Default<N>().serialise(value());
         }
     }
 
@@ -137,7 +137,7 @@ public abstract class ValueComparison<T, U> extends ValueOperation<T, U> {
 
         @Override
         public java.lang.Boolean valueSerialised() {
-            return Serialiser.BOOLEAN.serialise(value());
+            return AttributeSerialiser.BOOLEAN.serialise(value());
         }
     }
 
@@ -149,7 +149,7 @@ public abstract class ValueComparison<T, U> extends ValueOperation<T, U> {
 
         @Override
         public Long valueSerialised() {
-            return Serialiser.DATE.serialise(value());
+            return AttributeSerialiser.DATE.serialise(value());
         }
     }
 
@@ -163,7 +163,7 @@ public abstract class ValueComparison<T, U> extends ValueOperation<T, U> {
 
         @Override
         public java.lang.String valueSerialised() {
-            return Serialiser.STRING.serialise(value());
+            return AttributeSerialiser.STRING.serialise(value());
         }
 
         private static Map<Graql.Token.Comparator, Function<java.lang.String, P<java.lang.String>>> stringPredicates() {

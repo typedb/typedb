@@ -25,7 +25,6 @@ java_library(
     name = "answer",
     srcs = glob(["*.java"]),
     deps = [
-        "//concept/util:util",
         "//kb/concept/api:api",
 
         # External dependenicies from @graknlabs

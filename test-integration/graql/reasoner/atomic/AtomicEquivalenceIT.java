@@ -22,7 +22,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import grakn.core.common.config.Config;
-import grakn.core.concept.util.attribute.ValueConverter;
+import grakn.core.concept.impl.AttributeValueConverter;
 import grakn.core.graql.reasoner.atom.AtomicEquivalence;
 import grakn.core.graql.reasoner.query.ReasonerQueryFactory;
 import grakn.core.kb.concept.api.AttributeType;
@@ -175,7 +175,7 @@ public class AtomicEquivalenceIT {
 
                         Pattern basePattern = Graql.parsePattern("$x has " + attributeType.label().getValue() + " " + value + ";");
                         dataType.comparableDataTypes().forEach(comparableDataType -> {
-                            ValueConverter<Object, ?> converter = ValueConverter.of(comparableDataType);
+                            AttributeValueConverter<Object, ?> converter = AttributeValueConverter.of(comparableDataType);
                             Pattern convertedPattern = Graql.parsePattern("$x has " + attributeType.label().getValue() + " " + converter.convert(value) + ";");
                             atomicEquivalence(basePattern.toString(), convertedPattern.toString(), true, AtomicEquivalence.AlphaEquivalence, reasonerQueryFactory);
                             atomicEquivalence(basePattern.toString(), convertedPattern.toString(), true, AtomicEquivalence.StructuralEquivalence, reasonerQueryFactory);

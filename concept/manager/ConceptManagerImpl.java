@@ -31,8 +31,8 @@ import grakn.core.concept.impl.RoleImpl;
 import grakn.core.concept.impl.RuleImpl;
 import grakn.core.concept.impl.TypeImpl;
 import grakn.core.concept.structure.ElementFactory;
-import grakn.core.concept.util.attribute.Serialiser;
-import grakn.core.concept.util.attribute.ValueConverter;
+import grakn.core.concept.impl.AttributeSerialiser;
+import grakn.core.concept.impl.AttributeValueConverter;
 import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
@@ -265,13 +265,13 @@ public class ConceptManagerImpl implements ConceptManager {
 
         V convertedValue;
         try {
-            convertedValue = ValueConverter.of(type.dataType()).convert(value);
+            convertedValue = AttributeValueConverter.of(type.dataType()).convert(value);
         } catch (ClassCastException e){
             throw GraknConceptException.invalidAttributeValue(value, dataType);
         }
 
         // set persisted value
-        Object valueToPersist = Serialiser.of(dataType).serialise(convertedValue);
+        Object valueToPersist = AttributeSerialiser.of(dataType).serialise(convertedValue);
         Schema.VertexProperty property = Schema.VertexProperty.ofDataType(dataType);
         vertex.propertyImmutable(property, valueToPersist, null);
 

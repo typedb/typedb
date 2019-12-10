@@ -23,7 +23,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concept.util.attribute.ValueConverter;
+import grakn.core.concept.impl.AttributeValueConverter;
 import grakn.core.core.Schema;
 import grakn.core.graql.reasoner.CacheCasting;
 import grakn.core.graql.reasoner.ReasonerException;
@@ -165,7 +165,7 @@ public class AttributeAtom extends Binary{
             if (value == null) return vp;
             Object convertedValue;
             try {
-                convertedValue = ValueConverter.of(dataType).convert(value);
+                convertedValue = AttributeValueConverter.of(dataType).convert(value);
             } catch (ClassCastException e){
                 throw GraqlSemanticException.incompatibleAttributeValue(dataType, value);
             }
@@ -529,7 +529,7 @@ public class AttributeAtom extends Binary{
         if(this.isValueEquality()){
             ValuePredicate vp = Iterables.getOnlyElement(getMultiPredicate());
             Object value = vp.getPredicate().value();
-            Object persistedValue = ValueConverter.of(attributeType.dataType()).convert(value);
+            Object persistedValue = AttributeValueConverter.of(attributeType.dataType()).convert(value);
             Attribute existingAttribute = attributeType.attribute(persistedValue);
             attribute = existingAttribute == null? attributeType.putAttributeInferred(persistedValue) : existingAttribute;
         } else {

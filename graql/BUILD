@@ -33,7 +33,6 @@ java_library(
         "//kb/concept/manager",
         "//concept/answer",
         "//concept/impl:impl",
-        "//concept/util/attribute",
         "//concept/util",
         "//kb/server",
         "//kb/graql",
