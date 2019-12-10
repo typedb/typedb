@@ -60,4 +60,3 @@ grakn-test/test-integration/benchmarks/
 
 # Python cache #
 __pycache__
-/local_scripts/
