@@ -38,7 +38,7 @@ import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.executor.ConceptBuilder;
 import grakn.core.kb.graql.executor.WriteExecutor;
 import grakn.core.kb.graql.executor.property.PropertyExecutor.Writer;
-import grakn.core.kb.server.exception.GraqlSemanticException;
+import grakn.core.kb.graql.GraqlSemanticException;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;

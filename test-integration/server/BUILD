@@ -28,7 +28,7 @@ java_test(
         "//concept/answer",
         "//core",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
-        "//kb",
+        "//kb/server",
         "//kb/concept/api",
         "//test-integration/rule:grakn-test-server",
         "@graknlabs_graql//java:graql",
@@ -51,7 +51,7 @@ java_test(
         "@graknlabs_client_java//:client-java",
 
         # Internal dependencies
-        "//kb",
+        "//kb/server",
         "//kb/concept/api",
         "//test-integration/rule:grakn-test-server",
 

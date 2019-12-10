@@ -20,7 +20,7 @@ package grakn.core.graql.query;
 
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
-import grakn.core.kb.server.exception.GraqlSemanticException;
+import grakn.core.kb.graql.GraqlSemanticException;
 import grakn.core.rule.GraknTestServer;
 import graql.lang.Graql;
 import graql.lang.exception.GraqlException;

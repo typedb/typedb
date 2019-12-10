@@ -24,7 +24,7 @@ java_library(
     resources = ["//test-integration/graql/reasoner/resources:diagonal-test"],
     visibility = ["//test-integration:__subpackages__"],
     deps = [
-        "//kb",
+        "//kb/server",
         "//kb/concept/api",
         "//test-integration/util:graql-test-util",
     ],
@@ -36,7 +36,7 @@ java_library(
     resources = ["//test-integration/graql/reasoner/resources:dual-linear-transitivity"],
     visibility = ["//test-integration:__subpackages__"],
     deps = [
-        "//kb",
+        "//kb/server",
         "//kb/concept/api",
         "//test-integration/util:graql-test-util",
     ],
@@ -49,7 +49,7 @@ java_library(
     visibility = ["//test-integration:__subpackages__"],
     deps = [
         "//dependencies/maven/artifacts/com/google/guava",
-        "//kb",
+        "//kb/server",
         "//kb/concept/api",
         "//test-integration/graql/reasoner/pattern:query-pattern",
         "//test-integration/graql/reasoner/pattern:relation-pattern",
@@ -65,7 +65,7 @@ java_library(
     srcs = ["GeoGraph.java"],
     visibility = ["//test-integration:__subpackages__"],
     deps = [
-        "//kb",
+        "//kb/server",
         "//kb/concept/api",
         "@graknlabs_graql//java:graql",
     ],
@@ -77,7 +77,7 @@ java_library(
     resources = ["//test-integration/graql/reasoner/resources:linear-transivity"],
     visibility = ["//test-integration:__subpackages__"],
     deps = [
-        "//kb",
+        "//kb/server",
         "//kb/concept/api",
         "//test-integration/util:graql-test-util",
     ],
@@ -90,7 +90,7 @@ java_library(
     visibility = ["//test-integration:__subpackages__"],
     deps = [
         "//dependencies/maven/artifacts/com/google/guava",
-        "//kb",
+        "//kb/server",
         "//kb/concept/api",
         "//test-integration/util:graql-test-util",
     ],
@@ -103,7 +103,7 @@ java_library(
     visibility = ["//test-integration:__subpackages__"],
     deps = [
         "//dependencies/maven/artifacts/com/google/guava",
-        "//kb",
+        "//kb/server",
         "//kb/concept/api",
         "//test-integration/util:graql-test-util",
     ],
@@ -116,7 +116,7 @@ java_library(
     visibility = ["//test-integration:__subpackages__"],
     deps = [
         "//dependencies/maven/artifacts/com/google/guava",
-        "//kb",
+        "//kb/server",
         "//kb/concept/api",
         "//test-integration/util:graql-test-util",
     ],
@@ -132,7 +132,7 @@ java_library(
     visibility = ["//test-integration:__subpackages__"],
     deps = [
         "//dependencies/maven/artifacts/com/google/guava",
-        "//kb",
+        "//kb/server",
         "//kb/concept/api",
         "//test-integration/util:graql-test-util",
     ],
@@ -147,7 +147,7 @@ java_library(
     visibility = ["//test-integration:__subpackages__"],
     deps = [
         "//dependencies/maven/artifacts/com/google/guava",
-        "//kb",
+        "//kb/server",
         "//kb/concept/api",
         "//test-integration/util:graql-test-util",
     ],
@@ -160,7 +160,7 @@ java_library(
     visibility = ["//test-integration:__subpackages__"],
     deps = [
         "//dependencies/maven/artifacts/com/google/guava",
-        "//kb",
+        "//kb/server",
         "//kb/concept/api",
         "//test-integration/util:graql-test-util",
     ],
@@ -172,7 +172,7 @@ java_library(
     resources = ["//test-integration/graql/reasoner/resources:quadratic-transitivity"],
     visibility = ["//test-integration:__subpackages__"],
     deps = [
-        "//kb",
+        "//kb/server",
         "//kb/concept/api",
         "//test-integration/util:graql-test-util",
     ],
@@ -184,7 +184,7 @@ java_library(
     resources = ["//test-integration/graql/reasoner/resources:quadratic-transitivity"],
     visibility = ["//test-integration:__subpackages__"],
     deps = [
-        "//kb",
+        "//kb/server",
         "//kb/concept/api",
         "//test-integration/util:graql-test-util",
     ],

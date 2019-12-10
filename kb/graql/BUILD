@@ -21,20 +21,19 @@ package(default_visibility = ["//visibility:public"])
 load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
 java_library(
-    name = "kb",
+    name = "graql",
     srcs = glob([
-        "graql/**/*.java",
-        "server/**/*.java",
+        "**/*.java",
     ]),
     deps = [
         # Internal dependencies
         "//common:common",
 
+        "//concept/answer",
         "//kb/concept/api:api",
-        "//kb/concept/structure:structure",
         "//kb/concept/manager:manager",
 
-        "//concept/answer:answer",
+        "//kb/keyspace", # used for nodes & planning, TODO remove
 
         # this is ONLY used for ConceptManager dependency...
         "//core:core",
@@ -49,7 +48,7 @@ java_library(
         "//dependencies/maven/artifacts/com/google/guava:guava",
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
     ],
-    tags = ["maven_coordinates=io.grakn.core:grakn-kb:{pom_version}"],
+    tags = ["maven_coordinates=io.grakn.core:grakn-kb-graql:{pom_version}"],
 
 )
 
@@ -57,6 +56,6 @@ java_library(
 checkstyle_test(
     name = "checkstyle",
     targets = [
-        ":kb"
+        ":graql"
     ],
 )

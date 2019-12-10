@@ -20,12 +20,13 @@ load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
 java_test(
     name = "uncomitted-statistics-delta-it",
-    srcs = ["UncomittedStatisticsDeltaIT.java"],
+    srcs = ["StatisticsDeltaIT.java"],
     classpath_resources = ["//test-integration/resources:logback-test"],
     test_class = "grakn.core.server.statistics.UncomittedStatisticsDeltaIT",
     deps = [
-        "//kb",
         "//kb/concept/api",
+        "//kb/keyspace",
+        "//kb/server",
         "//test-integration/rule:grakn-test-server",
         "@graknlabs_graql//java:graql",
     ],
@@ -39,9 +40,9 @@ java_test(
     deps = [
         "//concept/answer",
         "//core",
-        "//kb",
         "//kb/concept/api",
-        "//server",
+        "//kb/keyspace",
+        "//kb/server",
         "//test-integration/rule:grakn-test-server",
         "@graknlabs_client_java//:client-java",
         "@graknlabs_graql//java:graql",

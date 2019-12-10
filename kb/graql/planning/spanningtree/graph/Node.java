@@ -21,7 +21,7 @@ package grakn.core.kb.graql.planning.spanningtree.graph;
 
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.gremlin.Fragment;
-import grakn.core.kb.server.statistics.KeyspaceStatistics;
+import grakn.core.kb.keyspace.KeyspaceStatisticsImpl;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -109,7 +109,7 @@ public abstract class Node {
      *
      * @return estimated number nodes in the graph that may match this node (aiming for an upper bound)
      */
-    public abstract long matchingElementsEstimate(ConceptManager conceptManager, KeyspaceStatistics statistics);
+    public abstract long matchingElementsEstimate(ConceptManager conceptManager, KeyspaceStatisticsImpl statistics);
 
     /**
      * Lower is a more specific and therefore a more desirable node type

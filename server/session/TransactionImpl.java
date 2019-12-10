@@ -73,7 +73,7 @@ import grakn.core.kb.server.cache.TransactionCache;
 import grakn.core.kb.server.exception.InvalidKBException;
 import grakn.core.kb.server.exception.TransactionException;
 import grakn.core.kb.server.keyspace.Keyspace;
-import grakn.core.kb.server.statistics.UncomittedStatisticsDelta;
+import grakn.core.kb.server.statistics.StatisticsDeltaImpl;
 import grakn.core.server.Validator;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
@@ -127,7 +127,7 @@ public class TransactionImpl implements Transaction {
 
     // TransactionOLTP Specific
     private final JanusGraphTransaction janusTransaction;
-    private final UncomittedStatisticsDelta uncomittedStatisticsDelta;
+    protected final StatisticsDeltaImpl uncomittedStatisticsDelta;
     private Type txType;
     private String closedReason = null;
     private boolean isTxOpen;
@@ -144,7 +144,7 @@ public class TransactionImpl implements Transaction {
     public TransactionImpl(Session session, JanusGraphTransaction janusTransaction, ConceptManager conceptManager,
                            JanusTraversalSourceProvider janusTraversalSourceProvider, TransactionCache transactionCache,
                            MultilevelSemanticCache queryCache, RuleCache ruleCache,
-                           UncomittedStatisticsDelta statisticsDelta, ExecutorFactory executorFactory,
+                           StatisticsDeltaImpl statisticsDelta, ExecutorFactory executorFactory,
                            TraversalPlanFactory traversalPlanFactory, ReasonerQueryFactory reasonerQueryFactory,
                            ReadWriteLock graphLock, long typeShardThreshold) {
         createdInCurrentThread.set(true);
@@ -268,7 +268,7 @@ public class TransactionImpl implements Transaction {
             if (targetId != null) {
                 merge(conceptId, targetId);
                 deduplicatesIndices.add(index);
-                statisticsDelta().decrementAttribute(label);
+                uncomittedStatisticsDelta.decrementAttribute(label);
             }
         }));
         return deduplicatesIndices;
@@ -681,11 +681,6 @@ public class TransactionImpl implements Transaction {
     }
 
     @Override
-    public UncomittedStatisticsDelta statisticsDelta() {
-        return uncomittedStatisticsDelta;
-    }
-
-    @Override
     public boolean isOpen() {
         return isTxOpen;
     }
@@ -816,7 +811,7 @@ public class TransactionImpl implements Transaction {
      * @return A new or existing AttributeType with the provided label and data type.
      * @throws TransactionException       if the graph is closed
      * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-AttributeType.
-     * @throws TransactionException       if the {@param label} is already in use by an existing AttributeType which is
+     * @throws GraknElementException       if the {@param label} is already in use by an existing AttributeType which is
      *                                    unique or has a different datatype.
      */
     @Override

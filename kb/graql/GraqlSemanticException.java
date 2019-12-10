@@ -17,7 +17,7 @@
  *
  */
 
-package grakn.core.kb.server.exception;
+package grakn.core.kb.graql;
 
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;

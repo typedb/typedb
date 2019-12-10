@@ -53,7 +53,7 @@ import grakn.core.kb.concept.manager.ConceptNotificationChannel;
 import grakn.core.kb.concept.structure.EdgeElement;
 import grakn.core.kb.concept.structure.Shard;
 import grakn.core.kb.concept.structure.VertexElement;
-import grakn.core.kb.server.AttributeManager;
+import grakn.core.kb.keyspace.AttributeManager;
 import grakn.core.kb.server.cache.TransactionCache;
 import grakn.core.kb.server.exception.TemporaryWriteException;
 import graql.lang.pattern.Pattern;

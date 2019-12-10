@@ -21,12 +21,12 @@ package grakn.core.rule;
 
 import grakn.core.common.config.Config;
 import grakn.core.graph.graphdb.database.StandardJanusGraph;
-import grakn.core.kb.server.AttributeManager;
-import grakn.core.kb.server.ShardManager;
+import grakn.core.kb.keyspace.AttributeManager;
+import grakn.core.kb.keyspace.ShardManager;
 import grakn.core.kb.server.TransactionProvider;
-import grakn.core.kb.server.cache.KeyspaceSchemaCache;
+import grakn.core.kb.keyspace.KeyspaceSchemaCache;
 import grakn.core.kb.server.keyspace.Keyspace;
-import grakn.core.kb.server.statistics.KeyspaceStatistics;
+import grakn.core.kb.keyspace.KeyspaceStatisticsImpl;
 import grakn.core.server.keyspace.KeyspaceImpl;
 import grakn.core.server.session.AttributeManagerImpl;
 import grakn.core.server.session.HadoopGraphFactory;
@@ -84,7 +84,7 @@ public class SessionUtil {
     /**
      * Create a new keyspace with injected KeyspaceStatistics
      */
-    public static SessionImpl serverlessSessionWithNewKeyspace(Config mockServerConfig, KeyspaceStatistics keyspaceStatistics) {
+    public static SessionImpl serverlessSessionWithNewKeyspace(Config mockServerConfig, KeyspaceStatisticsImpl keyspaceStatistics) {
         String newKeyspaceName = "a" + UUID.randomUUID().toString().replaceAll("-", "");
         Keyspace randomKeyspace = new KeyspaceImpl(newKeyspaceName);
         JanusGraphFactory janusGraphFactory = new JanusGraphFactory(mockServerConfig);
@@ -110,7 +110,7 @@ public class SessionUtil {
         HadoopGraphFactory hadoopGraphFactory = new HadoopGraphFactory(mockServerConfig);
         StandardJanusGraph graph = janusGraphFactory.openGraph(randomKeyspace.name());
         KeyspaceSchemaCache cache = new KeyspaceSchemaCache();
-        KeyspaceStatistics keyspaceStatistics = new KeyspaceStatistics();
+        KeyspaceStatisticsImpl keyspaceStatistics = new KeyspaceStatisticsImpl();
         AttributeManager attributeManager = new AttributeManagerImpl();
         ShardManager shardManager = new ShardManagerImpl();
         ReadWriteLock graphLock = new ReentrantReadWriteLock();

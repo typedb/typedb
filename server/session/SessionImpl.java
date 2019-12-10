@@ -22,18 +22,17 @@ package grakn.core.server.session;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.graph.graphdb.database.StandardJanusGraph;
 import grakn.core.kb.concept.api.SchemaConcept;
-import grakn.core.kb.server.AttributeManager;
+import grakn.core.kb.keyspace.AttributeManager;
 import grakn.core.kb.server.Session;
-import grakn.core.kb.server.ShardManager;
+import grakn.core.kb.keyspace.ShardManager;
 import grakn.core.kb.server.Transaction;
 import grakn.core.kb.server.TransactionProvider;
-import grakn.core.kb.server.cache.KeyspaceSchemaCache;
+import grakn.core.kb.keyspace.KeyspaceSchemaCache;
 import grakn.core.kb.server.exception.SessionException;
 import grakn.core.kb.server.exception.TransactionException;
 import grakn.core.kb.server.keyspace.Keyspace;
-import grakn.core.kb.server.statistics.KeyspaceStatistics;
+import grakn.core.kb.keyspace.KeyspaceStatisticsImpl;
 
-import java.util.concurrent.locks.ReadWriteLock;
 import java.util.function.Consumer;
 
 /**
@@ -55,7 +54,7 @@ public class SessionImpl implements Session {
     private final Keyspace keyspace;
     private final StandardJanusGraph graph;
     private final KeyspaceSchemaCache keyspaceSchemaCache;
-    private final KeyspaceStatistics keyspaceStatistics;
+    private final KeyspaceStatisticsImpl keyspaceStatistics;
     private final AttributeManager attributeManager;
     private final ShardManager shardManager;
     private Consumer<Session> onClose;
@@ -71,7 +70,7 @@ public class SessionImpl implements Session {
      */
     // NOTE: this method is used by Grakn KGMS and should be kept public
     public SessionImpl(Keyspace keyspace, TransactionProvider transactionProvider, KeyspaceSchemaCache keyspaceSchemaCache, StandardJanusGraph graph,
-                       KeyspaceStatistics keyspaceStatistics, AttributeManager attributeManager, ShardManager shardManager) {
+                       KeyspaceStatisticsImpl keyspaceStatistics, AttributeManager attributeManager, ShardManager shardManager) {
         this.keyspace = keyspace;
         this.transactionProvider = transactionProvider;
         this.graph = graph;
@@ -203,7 +202,7 @@ public class SessionImpl implements Session {
     }
 
     @Override
-    public KeyspaceStatistics keyspaceStatistics() {
+    public KeyspaceStatisticsImpl keyspaceStatistics() {
         return keyspaceStatistics;
     }
 

@@ -15,23 +15,32 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
+#
+package(default_visibility = ["//visibility:public"])
 
 load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
-java_test(
-    name = "keyspace-test",
-    test_class = "grakn.core.server.keyspace.KeyspacesTest",
-    srcs = ["KeyspacesTest.java"],
+java_library(
+    name = "keyspace",
+    srcs = glob([
+        "*.java",
+    ]),
+    tags = ["maven_coordinates=io.grakn.core:grakn-kb-keyspace:{pom_version}"],
     deps = [
-        "//server:server",
-        "//kb/server",
+        "//kb/concept/api",
+        "//kb/concept/manager",
+
+        # External dependencies from Maven
+        "//dependencies/maven/artifacts/com/google/code/findbugs:jsr305",
+        "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
+        "//dependencies/maven/artifacts/com/google/guava",
+        "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
     ],
-    size = "small"
 )
 
 checkstyle_test(
     name = "checkstyle",
     targets = [
-        ":keyspace-test"
+        ":keyspace",
     ],
 )

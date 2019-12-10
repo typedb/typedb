@@ -29,8 +29,10 @@ import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
-import grakn.core.kb.server.statistics.UncomittedStatisticsDelta;
-import grakn.core.rule.GraknTestServer;
+import grakn.core.kb.keyspace.StatisticsDelta;
+import grakn.core.rule.GraknTestStorage;
+import grakn.core.rule.SessionUtil;
+import grakn.core.rule.TestTransactionProvider;
 import graql.lang.Graql;
 import org.junit.After;
 import org.junit.Before;
@@ -39,16 +41,16 @@ import org.junit.Test;
 
 import static junit.framework.TestCase.assertEquals;
 
-public class UncomittedStatisticsDeltaIT {
+public class StatisticsDeltaIT {
     private Session session;
     private Transaction tx;
 
     @ClassRule
-    public static final GraknTestServer server = new GraknTestServer();
+    public static final GraknTestStorage storage = new GraknTestStorage();
 
     @Before
     public void setUp() {
-        session = server.sessionWithNewKeyspace();
+        session = SessionUtil.serverlessSessionWithNewKeyspace(storage.createCompatibleServerConfig());
         tx = session.writeTransaction();
         AttributeType age = tx.putAttributeType("age", AttributeType.DataType.LONG);
         Role friend = tx.putRole("friend");
@@ -66,7 +68,8 @@ public class UncomittedStatisticsDeltaIT {
 
     @Test
     public void newTransactionsInitialisedWithEmptyStatsDelta() {
-        UncomittedStatisticsDelta statisticsDelta = tx.statisticsDelta();
+        TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
+        StatisticsDelta statisticsDelta = testTx.uncomittedStatisticsDelta();
 
         long entityDelta = statisticsDelta.delta(Label.of("entity"));
         long relationDelta = statisticsDelta.delta(Label.of("relationDelta"));
@@ -80,6 +83,9 @@ public class UncomittedStatisticsDeltaIT {
 
     @Test
     public void addingEntitiesIncrementsCorrectly() {
+        TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
+        StatisticsDelta statisticsDelta = testTx.uncomittedStatisticsDelta();
+
         // test concept API insertion
         EntityType personType = tx.getEntityType("person");
         personType.create();
@@ -87,7 +93,6 @@ public class UncomittedStatisticsDeltaIT {
         // test Graql insertion
         tx.execute(Graql.parse("insert $x isa person;").asInsert());
 
-        UncomittedStatisticsDelta statisticsDelta = tx.statisticsDelta();
         long personDelta = statisticsDelta.delta(Label.of("person"));
         assertEquals(2, personDelta);
         tx.close();
@@ -95,6 +100,9 @@ public class UncomittedStatisticsDeltaIT {
 
     @Test
     public void addingRelationsIncrementsCorrectly() {
+        TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
+        StatisticsDelta statisticsDelta = testTx.uncomittedStatisticsDelta();
+
         EntityType personType = tx.getEntityType("person");
         Entity person1 = personType.create();
         Entity person2 = personType.create();
@@ -109,7 +117,6 @@ public class UncomittedStatisticsDeltaIT {
         tx.execute(Graql.parse("match $x id " + person1.id() + "; $y id " + person2.id() + "; $z id " + person3.id() + ";" +
                 "insert $r (friend: $x, friend: $y, friend: $z) isa friendship;").asInsert());
 
-        UncomittedStatisticsDelta statisticsDelta = tx.statisticsDelta();
         long friendshipDelta = statisticsDelta.delta(Label.of("friendship"));
         assertEquals(2, friendshipDelta);
         tx.close();
@@ -117,6 +124,9 @@ public class UncomittedStatisticsDeltaIT {
 
     @Test
     public void addingAttributeValuesIncrementsCorrectly() {
+        TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
+        StatisticsDelta statisticsDelta = testTx.uncomittedStatisticsDelta();
+
         // test concept API insertion
         AttributeType age = tx.getAttributeType("age");
         age.create(1);
@@ -125,7 +135,6 @@ public class UncomittedStatisticsDeltaIT {
         tx.execute(Graql.parse("insert $a 99 isa age;").asInsert());
         tx.execute(Graql.parse("insert $a 1 isa age;").asInsert());
 
-        UncomittedStatisticsDelta statisticsDelta = tx.statisticsDelta();
         long ageDelta = statisticsDelta.delta(Label.of("age"));
         assertEquals(2, ageDelta);
         tx.close();
@@ -133,6 +142,9 @@ public class UncomittedStatisticsDeltaIT {
 
     @Test
     public void addingAttributeOwnersIncrementsImplicitRelations() {
+        TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
+        StatisticsDelta statisticsDelta = testTx.uncomittedStatisticsDelta();
+
         // test concept API insertion
         AttributeType ageType = tx.getAttributeType("age");
         Attribute age = ageType.create(1);
@@ -142,7 +154,6 @@ public class UncomittedStatisticsDeltaIT {
         // test Graql insertion with two ages, one of which is shared
         tx.execute(Graql.parse("insert $x isa person, has age 99, has age 1;").asInsert());
 
-        UncomittedStatisticsDelta statisticsDelta = tx.statisticsDelta();
         long ageDelta = statisticsDelta.delta(Label.of("age"));
         assertEquals(2, ageDelta);
         long personDelta = statisticsDelta.delta(Label.of("person"));
@@ -163,13 +174,15 @@ public class UncomittedStatisticsDeltaIT {
         tx.commit();
 
         tx = session.writeTransaction();
+        TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
+        StatisticsDelta statisticsDelta = testTx.uncomittedStatisticsDelta();
+
         // test concept API deletion
         tx.getConcept(id1).delete();
 
         // test Graql deletion
         tx.execute(Graql.parse("match $x id " + id2 + "; delete $x;").asDelete());
 
-        UncomittedStatisticsDelta statisticsDelta = tx.statisticsDelta();
         long personDelta = statisticsDelta.delta(Label.of("person"));
         assertEquals(-2, personDelta);
         tx.close();
@@ -190,6 +203,10 @@ public class UncomittedStatisticsDeltaIT {
         tx.commit();
 
         tx = session.writeTransaction();
+        TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
+        StatisticsDelta statisticsDelta = testTx.uncomittedStatisticsDelta();
+
+
         // test concept API deletion
         tx.getConcept(id1).delete();
 
@@ -197,7 +214,6 @@ public class UncomittedStatisticsDeltaIT {
         tx.execute(Graql.parse("match $x id " + id2 + "; delete $x;").asDelete());
         tx.execute(Graql.parse("match $x id " + id3 + "; delete $x;").asDelete());
 
-        UncomittedStatisticsDelta statisticsDelta = tx.statisticsDelta();
         long friendshipDelta = statisticsDelta.delta(Label.of("friendship"));
         assertEquals(-3, friendshipDelta);
     }
@@ -212,13 +228,15 @@ public class UncomittedStatisticsDeltaIT {
         tx.commit();
 
         tx = session.writeTransaction();
+        TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
+        StatisticsDelta statisticsDelta = testTx.uncomittedStatisticsDelta();
+
         // test ConceptAPI deletion
         tx.getConcept(lastAttributeId).delete();
 
         // test Graql deletion
         tx.execute(Graql.parse("match $x 50 isa age; $y 51 isa age; $z 52 isa age; delete $x, $y, $z;").asDelete());
 
-        UncomittedStatisticsDelta statisticsDelta = tx.statisticsDelta();
         long ageDelta = statisticsDelta.delta(Label.of("age"));
         assertEquals(-4, ageDelta);
         tx.close();
@@ -226,6 +244,7 @@ public class UncomittedStatisticsDeltaIT {
 
     @Test
     public void deletingAttributeDecrementsImplicitRelsAndAttribute() {
+
         // test concept API insertion
         AttributeType ageType = tx.getAttributeType("age");
         Attribute age1 = ageType.create(1);
@@ -239,6 +258,8 @@ public class UncomittedStatisticsDeltaIT {
         tx.commit();
 
         tx = session.writeTransaction();
+        TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
+        StatisticsDelta statisticsDelta = testTx.uncomittedStatisticsDelta();
 
         // test ConceptAPI deletion
         tx.getConcept(age2Id).delete();
@@ -246,7 +267,6 @@ public class UncomittedStatisticsDeltaIT {
         // test deletion
         tx.execute(Graql.parse("match $x 1 isa age; delete $x;").asDelete());
 
-        UncomittedStatisticsDelta statisticsDelta = tx.statisticsDelta();
         long ageDelta = statisticsDelta.delta(Label.of("age"));
         assertEquals(-2, ageDelta);
         long personDelta = statisticsDelta.delta(Label.of("person"));
@@ -259,6 +279,9 @@ public class UncomittedStatisticsDeltaIT {
 
     @Test
     public void whenAttributeAndOwnerIsCreatedAndDeleted_countIsUnaffected() {
+        TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
+        StatisticsDelta statisticsDelta = testTx.uncomittedStatisticsDelta();
+
         // test concept API insertion
         AttributeType ageType = tx.getAttributeType("age");
         Attribute age1 = ageType.create(1);
@@ -267,7 +290,6 @@ public class UncomittedStatisticsDeltaIT {
         Entity person = personType.create();
         person.has(age1);
 
-        UncomittedStatisticsDelta statisticsDelta = tx.statisticsDelta();
         long ageDelta = statisticsDelta.delta(Label.of("age"));
         assertEquals(1, ageDelta);
         long implicitAgeRelation = statisticsDelta.delta(Label.of("@has-age"));
@@ -277,7 +299,6 @@ public class UncomittedStatisticsDeltaIT {
         age1.delete();
         person.delete();
 
-        statisticsDelta = tx.statisticsDelta();
         long personDeltaAfter = statisticsDelta.delta(Label.of("person"));
         assertEquals(0, personDeltaAfter);
         long ageDeltaAfter = statisticsDelta.delta(Label.of("age"));
@@ -290,6 +311,9 @@ public class UncomittedStatisticsDeltaIT {
 
     @Test
     public void whenRelationWithRolePlayersIsCreatedAndDeleted_countIsUnaffected() {
+        TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
+        StatisticsDelta statisticsDelta = testTx.uncomittedStatisticsDelta();
+
         // test concept API insertion
         Role someRole = tx.putRole("someRole");
         Role anotherRole = tx.putRole("anotherRole");
@@ -308,7 +332,6 @@ public class UncomittedStatisticsDeltaIT {
         person.delete();
         anotherPerson.delete();
 
-        UncomittedStatisticsDelta statisticsDelta = tx.statisticsDelta();
         long personDelta = statisticsDelta.delta(Label.of("person"));
         long relationDelta = statisticsDelta.delta(Label.of("someRelation"));
         assertEquals(0, personDelta);

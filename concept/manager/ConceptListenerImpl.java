@@ -40,9 +40,9 @@ import grakn.core.kb.concept.manager.ConceptListener;
 import grakn.core.kb.concept.structure.Casting;
 import grakn.core.kb.graql.reasoner.cache.QueryCache;
 import grakn.core.kb.graql.reasoner.cache.RuleCache;
-import grakn.core.kb.server.AttributeManager;
+import grakn.core.kb.keyspace.AttributeManager;
 import grakn.core.kb.server.cache.TransactionCache;
-import grakn.core.kb.server.statistics.UncomittedStatisticsDelta;
+import grakn.core.kb.keyspace.StatisticsDelta;
 
 import java.util.List;
 import java.util.function.Supplier;
@@ -59,11 +59,11 @@ public class ConceptListenerImpl implements ConceptListener {
     private final TransactionCache transactionCache;
     private final QueryCache queryCache;
     private final RuleCache ruleCache;
-    private final UncomittedStatisticsDelta statistics;
+    private final StatisticsDelta statistics;
     private final AttributeManager attributeManager;
     private final String txId;
 
-    public ConceptListenerImpl(TransactionCache transactionCache, QueryCache queryCache, RuleCache ruleCache, UncomittedStatisticsDelta statistics, AttributeManager attributeManager, String txId) {
+    public ConceptListenerImpl(TransactionCache transactionCache, QueryCache queryCache, RuleCache ruleCache, StatisticsDelta statistics, AttributeManager attributeManager, String txId) {
         this.transactionCache = transactionCache;
         this.queryCache = queryCache;
         this.ruleCache = ruleCache;

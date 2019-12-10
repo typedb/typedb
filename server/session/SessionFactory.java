@@ -21,13 +21,13 @@ package grakn.core.server.session;
 import grakn.core.common.config.Config;
 import grakn.core.common.config.ConfigKey;
 import grakn.core.graph.graphdb.database.StandardJanusGraph;
-import grakn.core.kb.server.AttributeManager;
+import grakn.core.kb.keyspace.AttributeManager;
 import grakn.core.kb.server.Session;
-import grakn.core.kb.server.ShardManager;
+import grakn.core.kb.keyspace.ShardManager;
 import grakn.core.kb.server.TransactionProvider;
-import grakn.core.kb.server.cache.KeyspaceSchemaCache;
+import grakn.core.kb.keyspace.KeyspaceSchemaCache;
 import grakn.core.kb.server.keyspace.Keyspace;
-import grakn.core.kb.server.statistics.KeyspaceStatistics;
+import grakn.core.kb.keyspace.KeyspaceStatisticsImpl;
 import grakn.core.server.util.LockManager;
 import org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph;
 
@@ -75,7 +75,7 @@ public class SessionFactory {
         SharedKeyspaceData cacheContainer;
         StandardJanusGraph graph;
         KeyspaceSchemaCache cache;
-        KeyspaceStatistics keyspaceStatistics;
+        KeyspaceStatisticsImpl keyspaceStatistics;
         AttributeManager attributeManager;
         ShardManager shardManager;
         ReadWriteLock graphLock;
@@ -100,7 +100,7 @@ public class SessionFactory {
                 graph = janusGraphFactory.openGraph(keyspace.name());
                 hadoopGraph = hadoopGraphFactory.getGraph(keyspace);
                 cache = new KeyspaceSchemaCache();
-                keyspaceStatistics = new KeyspaceStatistics();
+                keyspaceStatistics = new KeyspaceStatisticsImpl();
                 attributeManager = new AttributeManagerImpl();
                 shardManager = new ShardManagerImpl();
                 graphLock = new ReentrantReadWriteLock();
@@ -184,7 +184,7 @@ public class SessionFactory {
         private final List<Session> sessions;
 
         // Shared keyspace statistics
-        private final KeyspaceStatistics keyspaceStatistics;
+        private final KeyspaceStatisticsImpl keyspaceStatistics;
 
         // Map<AttributeIndex, ConceptId> used to map an attribute index to a unique id
         // so that concurrent transactions can merge the same attribute indexes using a unique id
@@ -195,7 +195,7 @@ public class SessionFactory {
         private final ReadWriteLock graphLock;
 
         // Keep visibility to public as this is used by KGMS
-        public SharedKeyspaceData(KeyspaceSchemaCache keyspaceSchemaCache, StandardJanusGraph graph, KeyspaceStatistics keyspaceStatistics,
+        public SharedKeyspaceData(KeyspaceSchemaCache keyspaceSchemaCache, StandardJanusGraph graph, KeyspaceStatisticsImpl keyspaceStatistics,
                                   AttributeManager attributeManager, ShardManager shardManager, ReadWriteLock graphLock, HadoopGraph hadoopGraph) {
             this.keyspaceSchemaCache = keyspaceSchemaCache;
             this.graph = graph;
@@ -242,7 +242,7 @@ public class SessionFactory {
         }
 
         // Keep visibility to public as this is used by KGMS
-        public KeyspaceStatistics keyspaceStatistics() {
+        public KeyspaceStatisticsImpl keyspaceStatistics() {
             return keyspaceStatistics;
         }
 

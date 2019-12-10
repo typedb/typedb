@@ -42,7 +42,7 @@ import grakn.core.kb.graql.gremlin.GraqlTraversal;
 import grakn.core.kb.graql.gremlin.TraversalPlanFactory;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.kb.server.exception.GraknServerException;
-import grakn.core.kb.server.exception.GraqlSemanticException;
+import grakn.core.kb.graql.GraqlSemanticException;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Disjunction;

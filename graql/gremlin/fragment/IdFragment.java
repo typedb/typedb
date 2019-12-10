@@ -25,7 +25,7 @@ import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.planning.spanningtree.graph.IdNode;
 import grakn.core.kb.graql.planning.spanningtree.graph.Node;
 import grakn.core.kb.graql.planning.spanningtree.graph.NodeId;
-import grakn.core.kb.server.statistics.KeyspaceStatistics;
+import grakn.core.kb.keyspace.KeyspaceStatisticsImpl;
 import graql.lang.property.IdProperty;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
@@ -129,7 +129,7 @@ class IdFragment extends FragmentImpl {
     }
 
     @Override
-    public double estimatedCostAsStartingPoint(ConceptManager conceptManager, KeyspaceStatistics keyspaceStatistics) {
+    public double estimatedCostAsStartingPoint(ConceptManager conceptManager, KeyspaceStatisticsImpl keyspaceStatistics) {
         // only ever 1 matching concept for an ID - a good starting point
         return 1.0;
     }

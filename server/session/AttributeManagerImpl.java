@@ -23,7 +23,7 @@ package grakn.core.server.session;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import grakn.core.kb.concept.api.ConceptId;
-import grakn.core.kb.server.AttributeManager;
+import grakn.core.kb.keyspace.AttributeManager;
 
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;

@@ -15,47 +15,47 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
+#
+package(default_visibility = ["//visibility:public"])
 
 load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
 java_library(
-    name = "grakn-test-server",
-    srcs = glob(["*.java"]),
-    data = [
-        "//server:conf/grakn.properties",
-        "//test-integration/resources:cassandra-embedded",
-    ],
-    resources = ["//test-integration/resources:logback-test"],
-    visibility = ["//visibility:public"],
+    name = "server",
+    srcs = glob([
+        "*.java",
+        "cache/*.java",
+        "exception/*.java",
+        "keyspace/*.java",
+    ]),
+    tags = ["maven_coordinates=io.grakn.core:grakn-kb-server:{pom_version}"],
     deps = [
+        # Internal dependencies
         "//common",
-        "//concept/impl",
         "//kb/concept/api",
+        "//kb/concept/structure",
         "//kb/keyspace",
         "//kb/graql",
-        "//concept/manager",
-        "//concept/structure",
+        "//concept/answer",
+
+        # this is ONLY used for ConceptManager dependency...
         "//core",
-        "//dependencies/maven/artifacts/com/datastax/oss:java-driver-core",
-        "//dependencies/maven/artifacts/commons-io",
-        "//dependencies/maven/artifacts/commons-lang",
-        "//dependencies/maven/artifacts/io/grpc:grpc-core",
-        "//dependencies/maven/artifacts/junit",
-        "//dependencies/maven/artifacts/org/apache/cassandra:cassandra-all",
-        "//dependencies/maven/artifacts/org/apache/tinkerpop:hadoop-gremlin",
-        "//dependencies/maven/artifacts/org/apache/tinkerpop:tinkergraph-gremlin",
+
+        # External dependenicies from @graknlabs
+        "@graknlabs_graql//java:graql",
+        "@graknlabs_common//:common",
+
+        # External dependencies from Maven
+        "//dependencies/maven/artifacts/com/google/code/findbugs:jsr305",
+        "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
+        "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
-        "//graph",
-        "//graql",
-        "//kb/server",
-        "//kb/concept/manager",
-        "//server",
     ],
 )
 
 checkstyle_test(
     name = "checkstyle",
     targets = [
-        ":grakn-test-server",
+        ":server",
     ],
 )

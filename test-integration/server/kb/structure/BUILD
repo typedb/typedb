@@ -9,7 +9,7 @@ java_test(
     deps = [
         "//concept/impl",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
-        "//kb",
+        "//kb/server",
         "//kb/concept/api",
         "//kb/concept/structure",
         "//test-integration/rule:grakn-test-server",
@@ -29,7 +29,7 @@ java_test(
         "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
         "//dependencies/maven/artifacts/org/mockito:mockito-core",
-        "//kb",
+        "//kb/server",
         "//kb/concept/api",
         "//kb/concept/structure",
         "//server",

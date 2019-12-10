@@ -27,9 +27,11 @@ java_library(
     deps = [
         "//kb/concept/structure",
         "//kb/concept/api",
-        "//kb",
+        "//kb/server",
         "//core",
         "//kb/concept/manager",
+        "//kb/graql",
+        "//kb/keyspace",
         "//concept/impl",
         "//concept/util/attribute",
         "//concept/structure",

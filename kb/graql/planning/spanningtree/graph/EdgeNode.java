@@ -20,7 +20,7 @@
 package grakn.core.kb.graql.planning.spanningtree.graph;
 
 import grakn.core.kb.concept.manager.ConceptManager;
-import grakn.core.kb.server.statistics.KeyspaceStatistics;
+import grakn.core.kb.keyspace.KeyspaceStatisticsImpl;
 
 public class EdgeNode extends Node {
     private static final int EDGE_NODE_PRIORITY = 2;
@@ -30,7 +30,7 @@ public class EdgeNode extends Node {
     }
 
     @Override
-    public long matchingElementsEstimate(ConceptManager conceptManager, KeyspaceStatistics statistics) {
+    public long matchingElementsEstimate(ConceptManager conceptManager, KeyspaceStatisticsImpl statistics) {
         // edge nodes for now return 1 so we don't affect the multiplication of other vertices' counts
         return 1;
     }

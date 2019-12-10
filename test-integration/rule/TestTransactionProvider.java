@@ -39,14 +39,15 @@ import grakn.core.kb.concept.manager.ConceptNotificationChannel;
 import grakn.core.kb.graql.executor.ExecutorFactory;
 import grakn.core.kb.graql.gremlin.TraversalPlanFactory;
 import grakn.core.kb.graql.reasoner.cache.RuleCache;
-import grakn.core.kb.server.AttributeManager;
+import grakn.core.kb.keyspace.AttributeManager;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import grakn.core.kb.server.TransactionProvider;
-import grakn.core.kb.server.cache.KeyspaceSchemaCache;
+import grakn.core.kb.keyspace.KeyspaceSchemaCache;
 import grakn.core.kb.server.cache.TransactionCache;
-import grakn.core.kb.server.statistics.KeyspaceStatistics;
-import grakn.core.kb.server.statistics.UncomittedStatisticsDelta;
+import grakn.core.kb.keyspace.KeyspaceStatisticsImpl;
+import grakn.core.kb.keyspace.StatisticsDelta;
+import grakn.core.kb.server.statistics.StatisticsDeltaImpl;
 import grakn.core.server.session.TransactionImpl;
 import org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph;
 
@@ -60,13 +61,13 @@ public class TestTransactionProvider implements TransactionProvider {
     private final StandardJanusGraph graph;
     private final HadoopGraph hadoopGraph;
     private final KeyspaceSchemaCache keyspaceSchemaCache;
-    private final KeyspaceStatistics keyspaceStatistics;
+    private final KeyspaceStatisticsImpl keyspaceStatistics;
     private final AttributeManager attributeManager;
     private ReadWriteLock graphLock;
     private final long typeShardThreshold;
 
     public TestTransactionProvider(StandardJanusGraph graph, HadoopGraph hadoopGraph,
-                                   KeyspaceSchemaCache keyspaceSchemaCache, KeyspaceStatistics keyspaceStatistics,
+                                   KeyspaceSchemaCache keyspaceSchemaCache, KeyspaceStatisticsImpl keyspaceStatistics,
                                    AttributeManager attributeManager, ReadWriteLock graphLock, long typeShardThreshold) {
         this.graph = graph;
         this.hadoopGraph = hadoopGraph;
@@ -82,7 +83,7 @@ public class TestTransactionProvider implements TransactionProvider {
         // Data structures
         ConceptNotificationChannel conceptNotificationChannel = new ConceptNotificationChannelImpl();
         TransactionCache transactionCache = new TransactionCache(keyspaceSchemaCache);
-        UncomittedStatisticsDelta statisticsDelta = new UncomittedStatisticsDelta();
+        StatisticsDeltaImpl statisticsDelta = new StatisticsDeltaImpl();
 
         // Janus elements
         StandardJanusGraphTx janusGraphTransaction = graph.newThreadBoundTransaction();
@@ -126,7 +127,7 @@ public class TestTransactionProvider implements TransactionProvider {
         public TestTransaction(Session session, StandardJanusGraphTx janusGraphTransaction,
                                ConceptManagerImpl conceptManager, JanusTraversalSourceProvider janusTraversalSourceProvider,
                                TransactionCache transactionCache, MultilevelSemanticCache queryCache,
-                               RuleCacheImpl ruleCache, UncomittedStatisticsDelta statisticsDelta,
+                               RuleCacheImpl ruleCache, StatisticsDeltaImpl statisticsDelta,
                                ExecutorFactoryImpl executorFactory, TraversalPlanFactory traversalPlanFactory,
                                ReasonerQueryFactory reasonerQueryFactory, ReadWriteLock graphLock, long typeShardThreshold,
                                ConceptNotificationChannel conceptNotificationChannel, ElementFactory elementFactory,
@@ -176,6 +177,10 @@ public class TestTransactionProvider implements TransactionProvider {
 
         public RuleCache ruleCache() {
             return ruleCache;
+        }
+
+        public StatisticsDelta uncomittedStatisticsDelta() {
+            return uncomittedStatisticsDelta;
         }
 
 //        MultilevelSemanticCache queryCache() {

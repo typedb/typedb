@@ -7,7 +7,7 @@ java_library(
     deps = [
         "//dependencies/maven/artifacts/commons-collections",
         "//dependencies/maven/artifacts/junit",
-        "//kb",
+        "//kb/server",
         "//kb/concept/api",
         "@graknlabs_graql//java:graql",
     ],

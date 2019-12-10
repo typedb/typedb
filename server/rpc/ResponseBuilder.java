@@ -31,7 +31,7 @@ import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.structure.PropertyNotUniqueException;
 import grakn.core.kb.server.exception.GraknServerException;
-import grakn.core.kb.server.exception.GraqlSemanticException;
+import grakn.core.kb.graql.GraqlSemanticException;
 import grakn.core.kb.server.exception.InvalidKBException;
 import grakn.core.kb.server.exception.TemporaryWriteException;
 import grakn.core.kb.server.exception.TransactionException;
