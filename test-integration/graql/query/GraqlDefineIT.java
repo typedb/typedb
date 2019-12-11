@@ -25,6 +25,7 @@ import grakn.core.graql.graph.MovieGraph;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.EntityType;
+import grakn.core.kb.concept.api.GraknConceptException;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
@@ -359,7 +360,7 @@ public class GraqlDefineIT {
 
     @Test
     public void whenDefiningMetaType_Throw() {
-        exception.expect(InvalidKBException.class);
+        exception.expect(GraknConceptException.class);
         exception.expectMessage(ErrorMessage.INVALID_SUPER_TYPE.getMessage("my-metatype", Graql.Token.Type.THING));
         tx.execute(Graql.define(type("my-metatype").sub(Graql.Token.Type.THING)));
     }
