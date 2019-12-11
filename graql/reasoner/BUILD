@@ -23,21 +23,21 @@ load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 java_library(
     name = "reasoner",
     srcs = glob([
-        "**/*.java"
+        "**/*.java",
     ]),
+    tags = ["maven_coordinates=io.grakn.core:grakn-graql-reasoner:{pom_version}"],
     deps = [
         # Internal dependencies
-        "//common:common",
+        "//common",
         "//kb/concept/api",
         "//kb/concept/manager",
-        "//kb/server",
         "//kb/graql/reasoner",
         "//kb/graql/executor",
         "//kb/graql/exception",
         "//kb/graql/planning",
         "//kb/keyspace",
         "//concept/answer",
-        "//concept/impl:impl",
+        "//concept/impl",
         "//concept/util",
         "//graql/planning",
         "//core",
@@ -45,7 +45,6 @@ java_library(
         # External dependencies from @graknlabs
         "@graknlabs_graql//java:graql",
         "@graknlabs_common//:common",
-        "@graknlabs_benchmark//lib:server-instrumentation",
 
         # External dependencies from Maven
         "//dependencies/maven/artifacts/com/google/code/findbugs:jsr305",
@@ -70,8 +69,6 @@ java_library(
         "//dependencies/maven/artifacts/org/scala-lang:scala-library",
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
     ],
-    tags = ["maven_coordinates=io.grakn.core:grakn-graql-reasoner:{pom_version}"],
-
 )
 
 checkstyle_test(

@@ -186,7 +186,7 @@ public class TransactionImpl implements Transaction {
      * @return true if graph lock need to be acquired for commit
      */
     @VisibleForTesting
-    boolean commitLockRequired(){
+    public boolean commitLockRequired(){
         String txId = this.janusTransaction.toString();
         boolean attributeLockRequired = session.attributeManager().requiresLock(txId);
         boolean shardLockRequired = session.shardManager().requiresLock(txId);
@@ -275,7 +275,7 @@ public class TransactionImpl implements Transaction {
     }
 
     @VisibleForTesting
-    void computeShardCandidates() {
+    public void computeShardCandidates() {
         String txId = this.janusTransaction.toString();
         uncomittedStatisticsDelta.instanceDeltas().entrySet().stream()
                 .filter(e -> !Schema.MetaSchema.isMetaLabel(e.getKey()))

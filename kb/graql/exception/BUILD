@@ -25,36 +25,26 @@ java_library(
     srcs = glob([
         "*.java",
     ]),
+    tags = ["maven_coordinates=io.grakn.core:grakn-graql-exception:{pom_version}"],
     deps = [
         # Internal dependencies
-        "//common:common",
-
-        "//concept/answer",
-        "//kb/concept/api:api",
-        "//kb/concept/manager:manager",
-
-        "//kb/keyspace", # used for nodes & planning, TODO remove
-
-        "//core:core",
+        "//common",
+        "//kb/concept/api",
 
         # External dependenicies from @graknlabs
         "@graknlabs_graql//java:graql",
-        "@graknlabs_common//:common",
 
         # External dependencies from Maven
         "//dependencies/maven/artifacts/com/google/code/findbugs:jsr305",
         "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
-        "//dependencies/maven/artifacts/com/google/guava:guava",
+        "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
     ],
-    tags = ["maven_coordinates=io.grakn.core:grakn-graql-exception:{pom_version}"],
-
 )
-
 
 checkstyle_test(
     name = "checkstyle",
     targets = [
-        ":exception"
+        ":exception",
     ],
 )

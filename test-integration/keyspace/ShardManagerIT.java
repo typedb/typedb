@@ -14,14 +14,16 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
  */
 
-package grakn.core.server.session;
+package grakn.core.keyspace;
 
 import grakn.core.common.config.ConfigKey;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import grakn.core.rule.GraknTestServer;
+import grakn.core.server.session.TransactionImpl;
 import graql.lang.Graql;
 import graql.lang.query.GraqlInsert;
 import org.junit.After;

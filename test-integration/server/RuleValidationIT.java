@@ -14,16 +14,16 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
  */
 
-package grakn.core.server.kb;
+package grakn.core.server;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import grakn.core.common.config.Config;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.core.Schema;
-import grakn.core.graql.reasoner.query.ReasonerQueryFactory;
 import grakn.core.graql.reasoner.rule.InferenceRule;
 import grakn.core.graql.reasoner.rule.RuleUtils;
 import grakn.core.kb.concept.api.AttributeType;
