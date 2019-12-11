@@ -33,6 +33,7 @@ import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.executor.property.PropertyExecutorFactory;
 import grakn.core.kb.graql.planning.Arborescence;
 import grakn.core.kb.graql.planning.ChuLiuEdmonds;
+import grakn.core.kb.graql.planning.GraknQueryPlannerException;
 import grakn.core.kb.graql.planning.gremlin.EquivalentFragmentSet;
 import grakn.core.kb.graql.planning.gremlin.Fragment;
 import grakn.core.kb.graql.planning.gremlin.GraqlTraversal;
@@ -43,7 +44,6 @@ import grakn.core.kb.graql.planning.spanningtree.graph.NodeId;
 import grakn.core.kb.graql.planning.spanningtree.graph.SparseWeightedGraph;
 import grakn.core.kb.graql.planning.spanningtree.util.Weighted;
 import grakn.core.kb.keyspace.KeyspaceStatistics;
-import grakn.core.kb.server.exception.GraknServerException;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;
@@ -150,7 +150,7 @@ public class TraversalPlanFactoryImpl implements TraversalPlanFactory {
                         .map(node -> queryGraphNodes.get(node.getNodeId()))
                         .collect(Collectors.toSet());
                 if (unhandledNodes.size() != 1) {
-                    throw GraknServerException.create("Query planner exception - expected one unhandled node, found " + unhandledNodes.size());
+                    throw GraknQueryPlannerException.create("Query planner exception - expected one unhandled node, found " + unhandledNodes.size());
                 }
                 plan.addAll(nodeVisitedDependenciesFragments(Iterators.getOnlyElement(unhandledNodes.iterator()), queryGraphNodes));
             }

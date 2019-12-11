@@ -31,7 +31,6 @@ java_library(
         "//common",
         "//kb/concept/api",
         "//kb/concept/manager",
-        "//kb/server",
         "//kb/graql/executor",
         "//kb/graql/planning",
         "//kb/keyspace",
