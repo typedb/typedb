@@ -27,7 +27,7 @@ java_test(
         "//core",
         "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
-        "//graql:graql",
+        "//graql/planning",
         "@graknlabs_graql//java:graql",
     ],
 )
@@ -50,7 +50,7 @@ java_test(
         "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
 
-        "//graql:graql",
+        "//graql/planning",
         "@graknlabs_graql//java:graql",
     ],
 )

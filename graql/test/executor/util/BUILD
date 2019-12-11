@@ -22,7 +22,7 @@ java_test(
     name = "lazy-merging-stream-test",
     srcs = ["LazyMergingStreamTest.java"],
     deps = [
-        "//graql:graql",
+        "//graql/executor",
         "//dependencies/maven/artifacts/org/mockito:mockito-core"
     ],
     test_class = "grakn.core.common.util.LazyMergingStreamTest",

@@ -26,7 +26,7 @@ java_test(
     deps = [
         "//concept/answer",
         "//dependencies/maven/artifacts/com/google/guava",
-        "//graql:graql",
+        "//graql/reasoner",
         "//kb/server",
         "//kb/concept/api",
         "//common",

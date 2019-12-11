@@ -16,12 +16,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.server.kb.structure;
+package grakn.core.concept.structure;
 
 
 import grakn.core.common.config.Config;
-import grakn.core.concept.structure.EdgeElementImpl;
-import grakn.core.concept.structure.ElementFactory;
 import grakn.core.core.JanusTraversalSourceProvider;
 import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.Entity;

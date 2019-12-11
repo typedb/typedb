@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.server.kb.structure;
+package grakn.core.concept.structure;
 
 import grakn.core.concept.impl.RelationImpl;
 import grakn.core.kb.concept.api.Entity;

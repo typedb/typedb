@@ -11,7 +11,7 @@ java_test(
         "//common",
         "//concept/answer",
         "//dependencies/maven/artifacts/com/google/guava",
-        "//graql",
+        "//graql/reasoner",
         "//kb/concept/api",
         "//kb/graql/reasoner",
         "//kb/server",
@@ -30,7 +30,7 @@ java_test(
     test_class = "grakn.core.graql.reasoner.cache.RuleCacheIT",
     deps = [
         "//dependencies/maven/artifacts/com/google/guava",
-        "//graql",
+        "//graql/reasoner",
         "//kb/concept/api",
         "//kb/server",
         "//test-integration/rule:grakn-test-server",

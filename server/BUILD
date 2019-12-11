@@ -62,7 +62,9 @@ java_library(
         "//kb/graql/exception",
         "//keyspace",
         "//core",
-        "//graql",
+        "//graql/executor",
+        "//graql/planning",
+        "//graql/reasoner",
         "//graph",
 
 

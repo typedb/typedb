@@ -21,11 +21,9 @@ package(default_visibility = ["//visibility:public"])
 load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
 java_library(
-    name = "graql",
+    name = "planning",
     srcs = glob([
-        "executor/**/*.java",
-        "planning/**/*.java",
-        "reasoner/**/*.java",
+        "**/*.java"
     ]),
     deps = [
         # Internal dependencies
@@ -72,13 +70,13 @@ java_library(
         "//dependencies/maven/artifacts/org/scala-lang:scala-library",
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
     ],
-    tags = ["maven_coordinates=io.grakn.core:grakn-graql:{pom_version}"],
+    tags = ["maven_coordinates=io.grakn.core:grakn-graql-planning:{pom_version}"],
 
 )
 
 checkstyle_test(
     name = "checkstyle",
     targets = [
-        ":graql",
+        ":planning",
     ],
 )
