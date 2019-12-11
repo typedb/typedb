@@ -20,6 +20,7 @@
 package grakn.core.graql.reasoner.cache;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import grakn.core.common.config.Config;
 import grakn.core.concept.answer.ConceptMap;
@@ -882,6 +883,68 @@ public class QueryCacheIT {
             assertTrue(cache.isDBComplete(allMapped));
         }
 
+    }
+
+    @Test
+    public void whenParentQueryIsComplete_onlyChildrenThatStrictlySubsumeParentAreComplete(){
+        try(Transaction tx = genericSchemaSession.readTransaction()) {
+            TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction) tx);
+            MultilevelSemanticCache cache = CacheCasting.queryCacheCast(tx.queryCache());
+
+            List<Entity> entities = tx.getEntityType("baseEntity").instances().collect(toList());
+            for(Entity entity : entities){
+                ReasonerAtomicQuery parentQuery = testTx.reasonerQueryFactory().atomic(conjunction(
+                        "{" +
+                                "(symmetricRole: $x, symmetricRole: $y) isa binary-trans;" +
+                                "$x id " + entity.id().getValue() + ";" +
+                                "};"
+                ));
+
+                List<List<Entity>> CP = Lists.cartesianProduct(entities, entities);
+
+                //we flush cache on each query family so that we control interference from previously executed queries
+                int chunkSize = CP.size() / entities.size();
+                for(int index = 0; index < CP.size() ; index = index+chunkSize) {
+                    List<List<Entity>> subCP = CP.subList(index, index + chunkSize);
+
+                    List<ConceptMap> parentAnswers = tx.execute(parentQuery.getQuery());
+                    assertTrue(cache.isDBComplete(parentQuery));
+                    assertTrue(cache.isComplete(parentQuery));
+
+                    for (List<Entity> pair : subCP) {
+                        Entity xEntity = pair.get(0);
+                        Entity yEntity = pair.get(1);
+                        ReasonerAtomicQuery childQuery = testTx.reasonerQueryFactory().atomic(conjunction(
+                                "{" +
+                                        "(symmetricRole: $x, symmetricRole: $y) isa binary-trans;" +
+                                        "$x id " + xEntity.id().getValue() + ";" +
+                                        "$y id " + yEntity.id().getValue() + ";" +
+                                        "};"
+                        ));
+
+                        boolean subsumes = xEntity.equals(entity) || yEntity.equals(entity);
+                        boolean strictlySubsumes = xEntity.equals(entity);
+
+                        //cache will only contain entries and families if there are answers
+                        assertEquals(
+                                "invalid completion outcome between parent:\n " + parentQuery + "\n and child:\n" + childQuery,
+                                subsumes && !parentAnswers.isEmpty(), cache.isComplete(childQuery)
+                        );
+                        if (strictlySubsumes) {
+                            List<ConceptMap> childAnswers = tx.execute(childQuery.getQuery());
+                            assertTrue(cache.isDBComplete(childQuery));
+                            assertTrue(cache.isComplete(childQuery));
+                            assertTrue(
+                                    "invalid containment outcome between parent:\n " + parentQuery + "\n and child:\n" + childQuery,
+                                    parentAnswers.containsAll(childAnswers)
+                            );
+                        }
+
+                    }
+                    cache.clear();
+                }
+            }
+        }
     }
 
     private Set<ConceptMap> getCacheContent(Transaction tx){

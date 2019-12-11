@@ -183,13 +183,7 @@ public abstract class SemanticCache<
     private void updateFamily(ReasonerAtomicQuery query){
         SchemaConcept schemaConcept = query.getAtom().getSchemaConcept();
         if (schemaConcept != null){
-            Set<QE> familyEntry = families.get(schemaConcept);
-            QE familyQuery = queryToKey(query);
-            if (familyEntry != null){
-                familyEntry.add(familyQuery);
-            } else {
-                families.put(schemaConcept, familyQuery);
-            }
+            families.put(schemaConcept, queryToKey(query));
         }
     }
 
