@@ -80,13 +80,17 @@ public class RecursionIT {
                 String explicitQuery = "match $Y isa person, has name $name;" +
                         "{$name == 'aaa';} or {$name == 'aab';} or {$name == 'aaaa';};get $Y, $name;";
 
-                GraqlTestUtil.assertCollectionsNonTriviallyEqual(tx.execute(Graql.parse(explicitQuery).asGet(), false), tx.execute(Graql.parse(query).asGet()));
+                GraqlTestUtil.assertCollectionsNonTriviallyEqual(
+                        tx.execute(Graql.parse(explicitQuery).asGet(), false),
+                        tx.execute(Graql.parse(query).asGet()));
 
                 String noRoleQuery = "match ($X, $Y) isa Ancestor;$X has name 'aa'; get $Y;";
                 String explicitQuery2 = "match $Y isa person, has name $name;" +
                         "{$name == 'a';} or {$name == 'aaa';} or {$name == 'aab';} or {$name == 'aaaa';};get $Y;";
 
-                GraqlTestUtil.assertCollectionsNonTriviallyEqual(tx.execute(Graql.parse(explicitQuery2).asGet(), false), tx.execute(Graql.parse(noRoleQuery).asGet()));
+                GraqlTestUtil.assertCollectionsNonTriviallyEqual(
+                        tx.execute(Graql.parse(explicitQuery2).asGet(), false),
+                        tx.execute(Graql.parse(noRoleQuery).asGet()));
 
                 String closure = "match (ancestor: $X, descendant: $Y) isa Ancestor; get;";
                 String explicitClosure = "match $Y isa person, has name $nameY; $X isa person, has name $nameX;" +
@@ -96,7 +100,9 @@ public class RecursionIT {
                         "{$nameX == 'aa';$nameY == 'aab';} or {$nameX == 'aa';$nameY == 'aaaa';} or " +
                         "{$nameX == 'aaa';$nameY == 'aaaa';} or {$nameX == 'c';$nameY == 'ca';}; get $X, $Y;";
 
-                GraqlTestUtil.assertCollectionsNonTriviallyEqual(tx.execute(Graql.parse(explicitClosure).asGet(), false), tx.execute(Graql.parse(closure).asGet()));
+                GraqlTestUtil.assertCollectionsNonTriviallyEqual(
+                        tx.execute(Graql.parse(explicitClosure).asGet(), false),
+                        tx.execute(Graql.parse(closure).asGet()));
 
                 String noRoleClosure = "match ($X, $Y) isa Ancestor; get;";
                 String explicitNoRoleClosure = "match $Y isa person, has name $nameY; $X isa person, has name $nameX;" +
@@ -117,7 +123,9 @@ public class RecursionIT {
                         +
                         "{$nameX == 'c';$nameY == 'ca';} or " +
                         "{$nameY == 'c';$nameX == 'ca';}; get $X, $Y;";
-                GraqlTestUtil.assertCollectionsNonTriviallyEqual(tx.execute(Graql.parse(explicitNoRoleClosure).asGet(), false), tx.execute(Graql.parse(noRoleClosure).asGet()));
+                GraqlTestUtil.assertCollectionsNonTriviallyEqual(
+                        tx.execute(Graql.parse(explicitNoRoleClosure).asGet(), false),
+                        tx.execute(Graql.parse(noRoleClosure).asGet()));
             }
         }
     }
@@ -132,18 +140,26 @@ public class RecursionIT {
             try (Transaction tx = session.writeTransaction()) {
                 String ancestorVariant = "match (ancestor: $X, ancestor-friend: $Y) isa Ancestor-friend;$X has name 'a'; $Y has name $name; get $Y;";
                 String explicitAncestorQuery = "match $Y has name $name;{$name == 'd';} or {$name == 'g';}; get $Y;";
-                GraqlTestUtil.assertCollectionsNonTriviallyEqual(tx.execute(Graql.parse(explicitAncestorQuery).asGet(), false), tx.execute(Graql.parse(ancestorVariant).asGet()));
+                GraqlTestUtil.assertCollectionsNonTriviallyEqual(
+                        tx.execute(Graql.parse(explicitAncestorQuery).asGet(), false),
+                        tx.execute(Graql.parse(ancestorVariant).asGet()));
 
                 String noRoleAncestorQuery = "match ($X, $Y) isa Ancestor-friend;$X has name 'a'; get $Y;";
-                GraqlTestUtil.assertCollectionsNonTriviallyEqual(tx.execute(Graql.parse(explicitAncestorQuery).asGet(), false), tx.execute(Graql.parse(noRoleAncestorQuery).asGet()));
+                GraqlTestUtil.assertCollectionsNonTriviallyEqual(
+                        tx.execute(Graql.parse(explicitAncestorQuery).asGet(), false),
+                        tx.execute(Graql.parse(noRoleAncestorQuery).asGet()));
 
                 String ancestorFriendVariant = "match (ancestor: $X, ancestor-friend: $Y) isa Ancestor-friend;$Y has name 'd'; get $X;";
                 String explicitAncestorFriendQuery = "match $X has name $name;" +
                         "{$name == 'a';} or {$name == 'b';} or {$name == 'c';}; get $X;";
-                GraqlTestUtil.assertCollectionsNonTriviallyEqual(tx.execute(Graql.parse(explicitAncestorFriendQuery).asGet(), false), tx.execute(Graql.parse(ancestorFriendVariant).asGet()));
+                GraqlTestUtil.assertCollectionsNonTriviallyEqual(
+                        tx.execute(Graql.parse(explicitAncestorFriendQuery).asGet(), false),
+                        tx.execute(Graql.parse(ancestorFriendVariant).asGet()));
 
                 String noRoleAncestorFriendQuery = "match ($X, $Y) isa Ancestor-friend;$Y has name 'd'; get $X;";
-                GraqlTestUtil.assertCollectionsNonTriviallyEqual(tx.execute(Graql.parse(explicitAncestorFriendQuery).asGet(), false), tx.execute(Graql.parse(noRoleAncestorFriendQuery).asGet()));
+                GraqlTestUtil.assertCollectionsNonTriviallyEqual(
+                        tx.execute(Graql.parse(explicitAncestorFriendQuery).asGet(), false),
+                        tx.execute(Graql.parse(noRoleAncestorFriendQuery).asGet()));
             }
         }
     }
@@ -159,7 +175,9 @@ public class RecursionIT {
                 String queryString = "match ($x, $y) isa SameGen; $x has name 'a'; get $y;";
                 String explicitQuery = "match $y has name $name;{$name == 'f';} or {$name == 'a';};get $y;";
 
-                GraqlTestUtil.assertCollectionsNonTriviallyEqual(tx.execute(Graql.parse(explicitQuery).asGet(), false), tx.execute(Graql.parse(queryString).asGet()));
+                GraqlTestUtil.assertCollectionsNonTriviallyEqual(
+                        tx.execute(Graql.parse(explicitQuery).asGet(), false),
+                        tx.execute(Graql.parse(queryString).asGet()));
             }
         }
     }

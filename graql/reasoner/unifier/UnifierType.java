@@ -321,5 +321,55 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
             return childRes.values().stream()
                     .allMatch(r -> !parentRes.containsKey(r.getSchemaConcept()) || r.isUnifiableWith(parentRes.get(r.getSchemaConcept())));
         }
+    },
+
+    /**
+     *
+     */
+    STRUCTURAL_SUBSUMPTIVE {
+        @Override public ReasonerQueryEquivalence equivalence() { return SUBSUMPTIVE.equivalence(); }
+
+        @Override public boolean inferTypes() { return SUBSUMPTIVE.inferTypes(); }
+
+        @Override public boolean inferValues() { return SUBSUMPTIVE.inferValues(); }
+
+        @Override public boolean allowsNonInjectiveMappings() { return SUBSUMPTIVE.allowsNonInjectiveMappings(); }
+
+        @Override public boolean typeDirectednessCompatibility(Atomic parent, Atomic child) { return SUBSUMPTIVE.typeDirectednessCompatibility(parent, child); }
+
+        @Override public boolean roleCompatibility(Role parent, Role child) { return SUBSUMPTIVE.roleCompatibility(parent, child); }
+
+        @Override public boolean typePlayability(ReasonerQuery query, Variable var, Type type) { return SUBSUMPTIVE.typePlayability(query, var, type); }
+
+        @Override
+        public boolean typeCompatibility(Set<? extends SchemaConcept> parentTypes, Set<? extends SchemaConcept> childTypes) {
+            return SUBSUMPTIVE.typeCompatibility(parentTypes, childTypes);
+        }
+
+        @Override
+        public boolean valueCompatibility(Atomic parent, Atomic child) {
+            return SUBSUMPTIVE.valueCompatibility(parent, child);
+        }
+
+        @Override
+        public boolean predicateCompatibility(Set<Atomic> parent, Set<Atomic> child, BiFunction<Atomic, Atomic, Boolean> comparison) {
+            return SUBSUMPTIVE.predicateCompatibility(parent, child, comparison);
+        }
+
+        @Override
+        public boolean attributeCompatibility(ReasonerQuery parent, ReasonerQuery child, Variable parentVar, Variable childVar) {
+            return SUBSUMPTIVE.attributeCompatibility(parent, child, parentVar, childVar);
+        }
+
+        @Override
+        public boolean idCompatibility(Atomic parent, Atomic child) {
+            return parent == null || child != null;
+        }
+
+        @Override
+        public boolean idCompatibility(Set<Atomic> parent, Set<Atomic> child){
+            return parent.isEmpty()
+                    || isEquivalentCollection(parent, child, this::idCompatibility);
+        }
     }
 }

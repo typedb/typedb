@@ -128,6 +128,24 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     public boolean hasUniqueAnswer(){ return getAtom().hasUniqueAnswer();}
 
     /**
+     * TODO
+     * @param parent
+     * @return
+     */
+    public boolean subsumes(ReasonerAtomicQuery parent){
+        return subsumes(parent, UnifierType.SUBSUMPTIVE);
+    }
+
+    /**
+     * TODO
+     * @param parent
+     * @return
+     */
+    public boolean subsumesStructurally(ReasonerAtomicQuery parent){
+        return subsumes(parent, UnifierType.STRUCTURAL_SUBSUMPTIVE);
+    }
+
+    /**
      * Determines whether the subsumption relation between this (C) and provided query (P) holds,
      * i. e. determines if:
      *
@@ -142,8 +160,8 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
      * @param parent query to compare with
      * @return true if this query subsumes the provided query
      */
-    public boolean subsumes(ReasonerAtomicQuery parent){
-        MultiUnifier multiUnifier = this.getMultiUnifier(parent, UnifierType.SUBSUMPTIVE);
+    private boolean subsumes(ReasonerAtomicQuery parent, UnifierType unifierType){
+        MultiUnifier multiUnifier = this.getMultiUnifier(parent, unifierType);
         if (multiUnifier.isEmpty()) return false;
         MultiUnifier inverse = multiUnifier.inverse();
 
@@ -151,8 +169,8 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         boolean propagatedAnswersComplete = !inverse.isEmpty() &&
                 inverse.stream().allMatch(u -> u.values().containsAll(this.getVarNames()));
         return propagatedAnswersComplete
-                        && !parent.getAtoms(VariablePredicate.class).findFirst().isPresent()
-                        && !this.getAtoms(VariablePredicate.class).findFirst().isPresent();
+                && !parent.getAtoms(VariablePredicate.class).findFirst().isPresent()
+                && !this.getAtoms(VariablePredicate.class).findFirst().isPresent();
     }
 
     /**
@@ -197,7 +215,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
      * @return pair of: a parent->child unifier and a parent->child semantic difference between
      */
     public Set<Pair<Unifier, SemanticDifference>> getMultiUnifierWithSemanticDiff(ReasonerAtomicQuery child){
-        MultiUnifier unifier = child.getMultiUnifier(this, UnifierType.SUBSUMPTIVE);
+        MultiUnifier unifier = child.getMultiUnifier(this, UnifierType.STRUCTURAL_SUBSUMPTIVE);
         return unifier.stream()
                 .map(childParentUnifier -> {
                     Unifier inverse = childParentUnifier.inverse();
