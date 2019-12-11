@@ -28,6 +28,7 @@ import grakn.core.core.JanusTraversalSourceProvider;
 import grakn.core.graph.graphdb.database.StandardJanusGraph;
 import grakn.core.graph.graphdb.transaction.StandardJanusGraphTx;
 import grakn.core.graql.executor.ExecutorFactoryImpl;
+import grakn.core.graql.executor.property.PropertyExecutorFactoryImpl;
 import grakn.core.graql.planning.TraversalPlanFactoryImpl;
 import grakn.core.graql.reasoner.atom.PropertyAtomicFactory;
 import grakn.core.graql.reasoner.cache.MultilevelSemanticCache;
@@ -37,16 +38,17 @@ import grakn.core.kb.concept.manager.ConceptListener;
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.concept.manager.ConceptNotificationChannel;
 import grakn.core.kb.graql.executor.ExecutorFactory;
+import grakn.core.kb.graql.executor.property.PropertyExecutorFactory;
 import grakn.core.kb.graql.planning.gremlin.TraversalPlanFactory;
 import grakn.core.kb.graql.reasoner.cache.RuleCache;
 import grakn.core.kb.keyspace.AttributeManager;
+import grakn.core.kb.keyspace.KeyspaceSchemaCache;
 import grakn.core.kb.keyspace.KeyspaceStatistics;
+import grakn.core.kb.keyspace.StatisticsDelta;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import grakn.core.kb.server.TransactionProvider;
-import grakn.core.kb.keyspace.KeyspaceSchemaCache;
 import grakn.core.kb.server.cache.TransactionCache;
-import grakn.core.kb.keyspace.StatisticsDelta;
 import grakn.core.keyspace.StatisticsDeltaImpl;
 import grakn.core.server.session.TransactionImpl;
 import org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph;
@@ -91,8 +93,9 @@ public class TestTransactionProvider implements TransactionProvider {
         ElementFactory elementFactory = new ElementFactory(janusGraphTransaction, janusTraversalSourceProvider);
 
         // Grakn elements
+        PropertyExecutorFactory propertyExecutorFactory = new PropertyExecutorFactoryImpl();
         ConceptManagerImpl conceptManager = new ConceptManagerImpl(elementFactory, transactionCache, conceptNotificationChannel, attributeManager);
-        TraversalPlanFactory traversalPlanFactory = new TraversalPlanFactoryImpl(janusTraversalSourceProvider, conceptManager, typeShardThreshold, keyspaceStatistics);
+        TraversalPlanFactory traversalPlanFactory = new TraversalPlanFactoryImpl(janusTraversalSourceProvider, conceptManager, propertyExecutorFactory, typeShardThreshold, keyspaceStatistics);
         ExecutorFactoryImpl executorFactory = new ExecutorFactoryImpl(conceptManager, hadoopGraph, keyspaceStatistics, traversalPlanFactory);
         RuleCacheImpl ruleCache = new RuleCacheImpl(conceptManager);
         MultilevelSemanticCache queryCache = new MultilevelSemanticCache(executorFactory, traversalPlanFactory);
@@ -111,7 +114,7 @@ public class TestTransactionProvider implements TransactionProvider {
                 session, janusGraphTransaction, conceptManager, janusTraversalSourceProvider, transactionCache,
                 queryCache, ruleCache, statisticsDelta, executorFactory, traversalPlanFactory, reasonerQueryFactory,
                 graphLock, typeShardThreshold,
-                conceptNotificationChannel, elementFactory, propertyAtomicFactory, conceptListener
+                conceptNotificationChannel, elementFactory, propertyAtomicFactory, conceptListener, propertyExecutorFactory
         );
     }
 
@@ -121,6 +124,7 @@ public class TestTransactionProvider implements TransactionProvider {
         private final ElementFactory elementFactory;
         private final PropertyAtomicFactory propertyAtomicFactory;
         private final ConceptListener conceptListener;
+        private PropertyExecutorFactory propertyExecutorFactory;
 
         // factories, etc.
 
@@ -131,7 +135,8 @@ public class TestTransactionProvider implements TransactionProvider {
                                ExecutorFactoryImpl executorFactory, TraversalPlanFactory traversalPlanFactory,
                                ReasonerQueryFactory reasonerQueryFactory, ReadWriteLock graphLock, long typeShardThreshold,
                                ConceptNotificationChannel conceptNotificationChannel, ElementFactory elementFactory,
-                               PropertyAtomicFactory propertyAtomicFactory, ConceptListener conceptListener) {
+                               PropertyAtomicFactory propertyAtomicFactory, ConceptListener conceptListener,
+                               PropertyExecutorFactory propertyExecutorFactory) {
 
             super(session, janusGraphTransaction, conceptManager, janusTraversalSourceProvider, transactionCache,
                     queryCache, ruleCache, statisticsDelta, executorFactory, traversalPlanFactory,
@@ -142,6 +147,7 @@ public class TestTransactionProvider implements TransactionProvider {
             this.elementFactory = elementFactory;
             this.propertyAtomicFactory = propertyAtomicFactory;
             this.conceptListener = conceptListener;
+            this.propertyExecutorFactory = propertyExecutorFactory;
         }
 
         public long getShardCount(grakn.core.kb.concept.api.Type concept) {
@@ -187,6 +193,7 @@ public class TestTransactionProvider implements TransactionProvider {
             return transactionCache;
         }
 
+
 //        MultilevelSemanticCache queryCache() {
 //            return queryCache;
 //        }
@@ -201,6 +208,10 @@ public class TestTransactionProvider implements TransactionProvider {
 
         public ElementFactory elementFactory() {
             return elementFactory;
+        }
+
+        public PropertyExecutorFactory propertyExecutorFactory() {
+            return propertyExecutorFactory;
         }
 
     }

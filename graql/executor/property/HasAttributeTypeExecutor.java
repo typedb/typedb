@@ -56,7 +56,7 @@ public class HasAttributeTypeExecutor  implements PropertyExecutor.Definable {
     private final Statement relationOwner;
     private final Statement relationValue;
 
-    HasAttributeTypeExecutor(Variable var, HasAttributeTypeProperty property) {
+    HasAttributeTypeExecutor(Variable var, HasAttributeTypeProperty property, PropertyExecutorFactory propertyExecutorFactory) {
         this.var = var;
         this.property = property;
         this.attributeType = property.attributeType();

@@ -75,6 +75,7 @@ public class IsaExplicitIT {
         traversalPlanFactory = new TraversalPlanFactoryImpl(
                 testTx.janusTraversalSourceProvider(),
                 testTx.conceptManager(),
+                testTx.propertyExecutorFactory(),
                 testTx.shardingThreshold(),
                 testTx.session().keyspaceStatistics()
         );

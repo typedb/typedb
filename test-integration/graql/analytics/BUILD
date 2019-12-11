@@ -116,6 +116,8 @@ java_test(
         "//kb/concept/manager",
         "//kb/graql/exception",
         "//kb/graql/planning",
+        "//kb/graql/executor",
+        "//graql/analytics",
         "//kb/server",
         "//test-integration/rule:grakn-test-server",
         "@graknlabs_graql//java:graql",

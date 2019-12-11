@@ -14,7 +14,6 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
- *
  */
 
 package grakn.core.graql.planning;
@@ -25,6 +24,7 @@ import com.google.common.collect.Sets;
 import grakn.core.common.config.Config;
 import grakn.core.common.util.Streams;
 import grakn.core.core.Schema;
+import grakn.core.graql.executor.property.PropertyExecutorFactoryImpl;
 import grakn.core.graql.executor.property.value.ValueOperation;
 import grakn.core.graql.planning.gremlin.fragment.Fragments;
 import grakn.core.kb.concept.api.ConceptId;
@@ -328,7 +328,7 @@ public class GraqlTraversalIT {
 
         ConceptManager conceptManager = ((TestTransactionProvider.TestTransaction)tx).conceptManager();
         List<Set<List<Fragment>>> collect = patterns.stream()
-                .map(conjunction -> new ConjunctionQuery(conjunction, conceptManager))
+                .map(conjunction -> new ConjunctionQuery(conjunction, conceptManager, new PropertyExecutorFactoryImpl()))
                 .map(ConjunctionQuery::allFragmentOrders)
                 .collect(toList());
 

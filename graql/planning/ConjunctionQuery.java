@@ -22,7 +22,6 @@ package grakn.core.graql.planning;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
-import grakn.core.graql.executor.property.PropertyExecutorFactoryImpl;
 import grakn.core.graql.planning.gremlin.fragment.NeqFragment;
 import grakn.core.graql.planning.gremlin.fragment.ValueFragment;
 import grakn.core.graql.planning.gremlin.sets.EquivalentFragmentSets;
@@ -58,14 +57,16 @@ import static java.util.stream.Collectors.toSet;
 class ConjunctionQuery {
 
     private final Set<Statement> statements;
+    private PropertyExecutorFactory propertyExecutorFactory;
 
     private final ImmutableSet<EquivalentFragmentSet> equivalentFragmentSets;
 
     /**
      * @param patternConjunction a pattern containing no disjunctions to find in the graph
      */
-    ConjunctionQuery(Conjunction<Statement> patternConjunction, ConceptManager conceptManager) {
+    ConjunctionQuery(Conjunction<Statement> patternConjunction, ConceptManager conceptManager, PropertyExecutorFactory propertyExecutorFactory) {
         statements = patternConjunction.getPatterns();
+        this.propertyExecutorFactory = propertyExecutorFactory;
 
         if (statements.size() == 0) {
             throw GraqlException.noPatterns();
@@ -113,10 +114,10 @@ class ConjunctionQuery {
      */
     Set<List<Fragment>> allFragmentOrders() {
         Collection<List<EquivalentFragmentSet>> fragmentSetPermutations = Collections2.permutations(equivalentFragmentSets);
-        return fragmentSetPermutations.stream().flatMap(ConjunctionQuery::cartesianProduct).collect(toSet());
+        return fragmentSetPermutations.stream().flatMap(this::cartesianProduct).collect(toSet());
     }
 
-    private static Stream<List<Fragment>> cartesianProduct(List<EquivalentFragmentSet> fragmentSets) {
+    private Stream<List<Fragment>> cartesianProduct(List<EquivalentFragmentSet> fragmentSets) {
         // Get fragments in each set
         List<Set<Fragment>> fragments = fragmentSets.stream()
                 .map(EquivalentFragmentSet::fragments)
@@ -124,14 +125,13 @@ class ConjunctionQuery {
         return Sets.cartesianProduct(fragments).stream();
     }
 
-    private static Stream<EquivalentFragmentSet> equivalentFragmentSetsRecursive(Statement statement) {
+    private Stream<EquivalentFragmentSet> equivalentFragmentSetsRecursive(Statement statement) {
         return statement.innerStatements().stream().flatMap(s -> equivalentFragmentSets(s));
     }
 
-    private static Stream<EquivalentFragmentSet> equivalentFragmentSets(Statement statement) {
+    private Stream<EquivalentFragmentSet> equivalentFragmentSets(Statement statement) {
         Collection<EquivalentFragmentSet> traversals = new HashSet<>();
 
-        PropertyExecutorFactory propertyExecutorFactory = new PropertyExecutorFactoryImpl();
         Variable start = statement.var();
 
         statement.properties().stream().forEach(property -> {

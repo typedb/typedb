@@ -21,7 +21,6 @@ package grakn.core.graql.analytics;
 import com.google.common.collect.Sets;
 import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.LabelId;
-import grakn.core.kb.server.exception.GraknServerException;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
 import org.apache.tinkerpop.gremlin.process.computer.MessageScope;
 import org.apache.tinkerpop.gremlin.process.computer.Messenger;
@@ -61,7 +60,7 @@ public class DegreeStatisticsVertexProgram extends DegreeVertexProgram {
                 degreeStatisticsStepResource(vertex, messenger, ofLabelIds);
                 break;
             default:
-                throw GraknServerException.unreachableStatement("Exceeded expected maximum number of iterations");
+                throw GraknAnalyticsException.unreachableStatement("Exceeded expected maximum number of iterations");
         }
     }
 

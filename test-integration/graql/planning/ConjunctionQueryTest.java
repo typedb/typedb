@@ -19,6 +19,7 @@
 
 package grakn.core.graql.planning;
 
+import grakn.core.graql.executor.property.PropertyExecutorFactoryImpl;
 import grakn.core.graql.planning.gremlin.fragment.Fragments;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Label;
@@ -159,7 +160,7 @@ public class ConjunctionQueryTest {
 
         return feature(hasItem(contains(resourceIndexFragment)), "fragment sets", pattern -> {
             Conjunction<Statement> conjunction = pattern.getDisjunctiveNormalForm().getPatterns().iterator().next();
-            return new ConjunctionQuery(conjunction, conceptManager).getEquivalentFragmentSets();
+            return new ConjunctionQuery(conjunction, conceptManager, new PropertyExecutorFactoryImpl()).getEquivalentFragmentSets();
         });
     }
 }

@@ -26,6 +26,7 @@ import grakn.core.graql.executor.ExecutorFactoryImpl;
 import grakn.core.graql.reasoner.query.ReasonerQueryFactory;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
+import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.Entity;
 import grakn.core.kb.concept.api.EntityType;
@@ -33,10 +34,11 @@ import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.manager.ConceptManager;
+import grakn.core.kb.graql.exception.GraqlSemanticException;
+import grakn.core.kb.graql.executor.ExecutorFactory;
 import grakn.core.kb.graql.planning.gremlin.TraversalPlanFactory;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
-import grakn.core.kb.graql.exception.GraqlSemanticException;
 import grakn.core.kb.server.exception.InvalidKBException;
 import grakn.core.rule.GraknTestStorage;
 import grakn.core.rule.SessionUtil;
@@ -51,10 +53,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static grakn.core.graql.analytics.Utility.getResourceEdgeId;
+import static graql.lang.Graql.var;
 import static org.junit.Assert.assertEquals;
 
 @SuppressWarnings({"CheckReturnValue", "Duplicates"})
@@ -596,5 +599,24 @@ public class PathIT {
 
             tx.commit();
         }
+    }
+
+    /**
+     * Get the resource edge id if there is one. Return null if not.
+     */
+    private static ConceptId getResourceEdgeId(ConceptManager conceptManager, ExecutorFactory executorFactory, ConceptId conceptId1, ConceptId conceptId2) {
+        if (Utility.mayHaveResourceEdge(conceptManager, conceptId1, conceptId2)) {
+            Optional<Concept> firstConcept = executorFactory.transactional(true).match(
+                    Graql.match(
+                            var("x").id(conceptId1.getValue()),
+                            var("y").id(conceptId2.getValue()),
+                            var("z").rel(var("x")).rel(var("y"))))
+                    .map(answer -> answer.get("z"))
+                    .findFirst();
+            if (firstConcept.isPresent()) {
+                return firstConcept.get().id();
+            }
+        }
+        return null;
     }
 }

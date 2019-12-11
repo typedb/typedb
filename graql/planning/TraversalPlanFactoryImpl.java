@@ -30,6 +30,7 @@ import grakn.core.graql.planning.gremlin.fragment.InSubFragment;
 import grakn.core.graql.planning.gremlin.fragment.LabelFragment;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.concept.manager.ConceptManager;
+import grakn.core.kb.graql.executor.property.PropertyExecutorFactory;
 import grakn.core.kb.graql.planning.gremlin.EquivalentFragmentSet;
 import grakn.core.kb.graql.planning.gremlin.Fragment;
 import grakn.core.kb.graql.planning.gremlin.GraqlTraversal;
@@ -78,12 +79,16 @@ public class TraversalPlanFactoryImpl implements TraversalPlanFactory {
     private static final int MAX_STARTING_POINTS = 3;
     private final JanusTraversalSourceProvider janusTraversalSourceProvider;
     private final ConceptManager conceptManager;
+    private PropertyExecutorFactory propertyExecutorFactory;
     private final long shardingThreshold;
     private final KeyspaceStatistics keyspaceStatistics;
 
-    public TraversalPlanFactoryImpl(JanusTraversalSourceProvider janusTraversalSourceProvider, ConceptManager conceptManager, long shardingThreshold, KeyspaceStatistics keyspaceStatistics) {
+    public TraversalPlanFactoryImpl(JanusTraversalSourceProvider janusTraversalSourceProvider, ConceptManager conceptManager,
+                                    PropertyExecutorFactory propertyExecutorFactory, long shardingThreshold,
+                                    KeyspaceStatistics keyspaceStatistics) {
         this.janusTraversalSourceProvider = janusTraversalSourceProvider;
         this.conceptManager = conceptManager;
+        this.propertyExecutorFactory = propertyExecutorFactory;
         this.shardingThreshold = shardingThreshold;
         this.keyspaceStatistics = keyspaceStatistics;
     }
@@ -98,7 +103,7 @@ public class TraversalPlanFactoryImpl implements TraversalPlanFactory {
         Collection<Conjunction<Statement>> patterns = pattern.getDisjunctiveNormalForm().getPatterns();
 
         Set<List<? extends Fragment>> fragments = patterns.stream()
-                .map(conjunction -> new ConjunctionQuery(conjunction, conceptManager))
+                .map(conjunction -> new ConjunctionQuery(conjunction, conceptManager, propertyExecutorFactory))
                 .map(this::planForConjunction)
                 .collect(ImmutableSet.toImmutableSet());
 
