@@ -25,7 +25,7 @@ java_library(
     srcs = glob([
         "**/*.java",
     ]),
-    tags = ["maven_coordinates=io.grakn.core:grakn-graql-reasoner:{pom_version}"],
+    tags = ["maven_coordinates=io.grakn.core:grakn-kb-graql-reasoner:{pom_version}"],
     deps = [
         "//concept/answer",
         "//kb/concept/api",

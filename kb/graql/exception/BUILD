@@ -25,7 +25,7 @@ java_library(
     srcs = glob([
         "*.java",
     ]),
-    tags = ["maven_coordinates=io.grakn.core:grakn-graql-exception:{pom_version}"],
+    tags = ["maven_coordinates=io.grakn.core:grakn-kb-graql-exception:{pom_version}"],
     deps = [
         # Internal dependencies
         "//common",
