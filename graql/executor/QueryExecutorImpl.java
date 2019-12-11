@@ -29,19 +29,19 @@ import grakn.core.concept.answer.Numeric;
 import grakn.core.concept.answer.Void;
 import grakn.core.graql.executor.property.PropertyExecutorFactoryImpl;
 import grakn.core.graql.executor.util.LazyMergingStream;
-import grakn.core.graql.reasoner.ReasonerCheckedException;
 import grakn.core.graql.reasoner.query.ReasonerQueryFactory;
 import grakn.core.kb.concept.api.Concept;
+import grakn.core.kb.concept.api.GraknConceptException;
 import grakn.core.kb.concept.manager.ConceptManager;
+import grakn.core.kb.graql.exception.GraqlSemanticException;
 import grakn.core.kb.graql.executor.ExecutorFactory;
 import grakn.core.kb.graql.executor.QueryExecutor;
 import grakn.core.kb.graql.executor.property.PropertyExecutor;
 import grakn.core.kb.graql.executor.property.PropertyExecutorFactory;
 import grakn.core.kb.graql.planning.gremlin.GraqlTraversal;
 import grakn.core.kb.graql.planning.gremlin.TraversalPlanFactory;
+import grakn.core.kb.graql.reasoner.ReasonerCheckedException;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
-import grakn.core.kb.server.exception.GraknServerException;
-import grakn.core.kb.graql.exception.GraqlSemanticException;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Disjunction;
@@ -338,7 +338,7 @@ public class QueryExecutorImpl implements QueryExecutor {
                     }
                 }
             } else {
-                throw GraknServerException.create("Unhandled concept type isn't a schema concept or a thing");
+                throw GraknConceptException.unhandledConceptDeletion(concept);
             }
         });
 

@@ -22,8 +22,8 @@ import grakn.core.concept.impl.AttributeSerialiser;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.Entity;
+import grakn.core.kb.concept.api.GraknConceptException;
 import grakn.core.kb.concept.api.Label;
-import grakn.core.kb.server.exception.InvalidKBException;
 import grakn.protocol.session.ConceptProto;
 import grakn.protocol.session.SessionProto;
 import grakn.protocol.session.SessionProto.Transaction;
@@ -294,7 +294,7 @@ public class ConceptMethod {
 
             private Transaction.Res sup(ConceptProto.Concept superConcept) {
                 // Make the second argument the super of the first argument
-                // @throws GraqlQueryException if the types are different, or setting the super to be a meta-type
+                // @throws GraknConceptException if the types are different, or setting the super to be a meta-type
 
                 grakn.core.kb.concept.api.SchemaConcept sup = convert(superConcept).asSchemaConcept();
                 grakn.core.kb.concept.api.SchemaConcept sub = concept.asSchemaConcept();
@@ -310,7 +310,7 @@ public class ConceptMethod {
                 } else if (sup.isRule()) {
                     sub.asRule().sup(sup.asRule());
                 } else {
-                    throw InvalidKBException.insertMetaType(sub.label(), sup);
+                    throw GraknConceptException.invalidSuperType(sub.label(), sup);
                 }
 
                 return null;

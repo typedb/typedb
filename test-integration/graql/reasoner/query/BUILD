@@ -109,6 +109,7 @@ java_test(
         "//graql/reasoner",
         "//kb/concept/api",
         "//kb/graql/exception",
+        "//kb/graql/reasoner",
         "//kb/server",
         "//test-integration/graql/reasoner/graph:reachability-graph",
         "//test-integration/rule:grakn-test-server",

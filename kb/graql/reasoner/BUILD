@@ -27,6 +27,7 @@ java_library(
     ]),
     tags = ["maven_coordinates=io.grakn.core:grakn-kb-graql-reasoner:{pom_version}"],
     deps = [
+        "//common",
         "//concept/answer",
         "//kb/concept/api",
 

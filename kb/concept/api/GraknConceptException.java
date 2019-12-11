@@ -222,4 +222,18 @@ public class GraknConceptException extends GraknException {
         return create(INVALID_PROPERTY_USE.getMessage(concept, property));
     }
 
+    /**
+     * Thrown when trying to set an invalid super type
+     */
+    public static GraknConceptException invalidSuperType(Label label, SchemaConcept superType) {
+        return new GraknConceptException(ErrorMessage.INVALID_SUPER_TYPE.getMessage(label, superType.label()));
+    }
+
+    /**
+     * Thrown when trying to delete a concept that is not handled
+     */
+    public static GraknConceptException unhandledConceptDeletion(Concept concept) {
+        return new GraknConceptException(ErrorMessage.UNHANDLED_CONCEPT_DELETION.getMessage(concept.toString()));
+    }
+
 }

@@ -21,7 +21,7 @@ package grakn.core.graql.reasoner.atom.predicate;
 
 import grakn.core.graql.planning.gremlin.value.ValueComparison;
 import grakn.core.graql.planning.gremlin.value.ValueOperation;
-import grakn.core.graql.reasoner.ReasonerException;
+import grakn.core.kb.graql.reasoner.ReasonerException;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;

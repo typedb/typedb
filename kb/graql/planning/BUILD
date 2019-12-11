@@ -31,7 +31,7 @@ java_library(
         "//common",
         "//kb/concept/api",
         "//kb/concept/manager",
-        "//kb/keyspace",  # used for nodes & planning, TODO remove
+        "//kb/keyspace",  # used for nodes & planning, TODO remove at some point
         "//core",
 
         # External dependenicies from @graknlabs

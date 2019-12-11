@@ -21,8 +21,8 @@ package grakn.core.graql.planning;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
-import grakn.core.kb.graql.planning.gremlin.Fragment;
 import grakn.core.kb.graql.planning.Arborescence;
+import grakn.core.kb.graql.planning.gremlin.Fragment;
 import grakn.core.kb.graql.planning.spanningtree.graph.Node;
 import grakn.core.kb.graql.planning.spanningtree.graph.NodeId;
 

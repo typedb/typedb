@@ -17,12 +17,11 @@
  *
  */
 
-package grakn.core.graql.reasoner;
+package grakn.core.kb.graql.reasoner;
 
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.graql.reasoner.query.ResolvableQuery;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
@@ -92,7 +91,7 @@ public class ReasonerException extends GraknException {
         return new ReasonerException(ErrorMessage.INVALID_VARIABLE_PREDICATE_STATE.getMessage(vp.toString(), ans.toString()));
     }
 
-    public static ReasonerException unsafeNegationBlock(ResolvableQuery query) {
+    public static ReasonerException unsafeNegationBlock(ReasonerQuery query) {
         return new ReasonerException(ErrorMessage.UNSAFE_NEGATION_BLOCK.getMessage(query));
     }
 }

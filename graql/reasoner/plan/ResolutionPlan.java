@@ -21,12 +21,12 @@ package grakn.core.graql.reasoner.plan;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
-import grakn.core.graql.reasoner.ReasonerException;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.AtomicBase;
 import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.planning.gremlin.TraversalPlanFactory;
+import grakn.core.kb.graql.reasoner.ReasonerException;
 import graql.lang.statement.Variable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

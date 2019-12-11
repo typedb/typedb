@@ -167,7 +167,7 @@ public enum ErrorMessage {
     INSERT_UNDEFINED_VARIABLE("%s doesn't have an 'isa', a 'sub' or an 'id'"),
     INSERT_PREDICATE("cannot insert a concept with a predicate"),
     INSERT_RELATION_WITHOUT_ISA("cannot insert a relation without an isa edge"),
-    INSERT_METATYPE("'%s' cannot be a subtype of '%s'"),
+    INVALID_SUPER_TYPE("'%s' cannot be a subtype of '%s'"),
     INSERT_RECURSIVE("%s should not refer to itself"),
     INSERT_ABSTRACT_NOT_TYPE("the concept [%s] is not a type and cannot be set to abstract"),
     INSERT_RELATION_WITHOUT_ROLE_TYPE("attempted to insert a relation without all role types specified"),
@@ -175,7 +175,7 @@ public enum ErrorMessage {
     INVALID_STATEMENT("Value [%s] not of type [%s] in data [%s]"),
 
     NOT_A_TYPE("Concept with id [%s] is not a concept type and has base type [%s]."),
-
+    UNHANDLED_CONCEPT_DELETION("Deletion of concept [%s] is not handled."),
 
     //Templating
 
@@ -207,7 +207,6 @@ public enum ErrorMessage {
     K_SMALLER_THAN_TWO("k can't be smaller than 2."),
     INSTANCE_DOES_NOT_EXIST("Instance does not exist in the subgraph."),
     MAX_ITERATION_REACHED("Max iteration of [%s] reached.");
-
 
     private final String message;
 

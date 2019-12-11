@@ -19,9 +19,9 @@
 
 package grakn.core.graql.executor.property;
 
+import grakn.core.kb.graql.exception.GraqlSemanticException;
 import grakn.core.kb.graql.executor.property.PropertyExecutor;
 import grakn.core.kb.graql.executor.property.PropertyExecutorFactory;
-import grakn.core.kb.graql.exception.GraqlSemanticException;
 import graql.lang.property.AbstractProperty;
 import graql.lang.property.DataTypeProperty;
 import graql.lang.property.HasAttributeProperty;

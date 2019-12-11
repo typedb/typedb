@@ -17,7 +17,7 @@
  *
  */
 
-package grakn.core.graql.reasoner;
+package grakn.core.kb.graql.reasoner;
 
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.kb.concept.api.ConceptId;

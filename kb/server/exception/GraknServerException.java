@@ -21,12 +21,9 @@ package grakn.core.kb.server.exception;
 
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
-import grakn.core.kb.server.keyspace.Keyspace;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
-
-import static grakn.core.common.exception.ErrorMessage.INITIALIZATION_EXCEPTION;
 
 /**
  * Backend Grakn Exception

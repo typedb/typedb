@@ -28,9 +28,9 @@ import grakn.core.kb.concept.api.EntityType;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
+import grakn.core.kb.graql.exception.GraqlSemanticException;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
-import grakn.core.kb.graql.exception.GraqlSemanticException;
 import grakn.core.kb.server.exception.InvalidKBException;
 import grakn.core.rule.GraknTestServer;
 import graql.lang.Graql;
@@ -360,7 +360,7 @@ public class GraqlDefineIT {
     @Test
     public void whenDefiningMetaType_Throw() {
         exception.expect(InvalidKBException.class);
-        exception.expectMessage(ErrorMessage.INSERT_METATYPE.getMessage("my-metatype", Graql.Token.Type.THING));
+        exception.expectMessage(ErrorMessage.INVALID_SUPER_TYPE.getMessage("my-metatype", Graql.Token.Type.THING));
         tx.execute(Graql.define(type("my-metatype").sub(Graql.Token.Type.THING)));
     }
 
