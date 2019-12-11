@@ -128,18 +128,16 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     public boolean hasUniqueAnswer(){ return getAtom().hasUniqueAnswer();}
 
     /**
-     * TODO
-     * @param parent
-     * @return
+     * @param parent query to compare with
+     * @return true if this query subsumes the provided query
      */
     public boolean subsumes(ReasonerAtomicQuery parent){
         return subsumes(parent, UnifierType.SUBSUMPTIVE);
     }
 
     /**
-     * TODO
-     * @param parent
-     * @return
+     * @param parent query to compare with
+     * @return true if this query structurally subsumes the provided query
      */
     public boolean subsumesStructurally(ReasonerAtomicQuery parent){
         return subsumes(parent, UnifierType.STRUCTURAL_SUBSUMPTIVE);
@@ -158,6 +156,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
      * i. e. the set of answers of C is a subset of the set of answers of P
      *
      * @param parent query to compare with
+     * @param unifierType unifier type specifying subsumption type
      * @return true if this query subsumes the provided query
      */
     private boolean subsumes(ReasonerAtomicQuery parent, UnifierType unifierType){

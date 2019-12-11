@@ -285,7 +285,6 @@ public abstract class SemanticCache<
             );
 
             if (!fetchFromParent){
-                LOG.trace("Query Cache miss: {} with fetch from DB", query);
                 return getDBAnswerStreamWithUnifier(query);
             }
 
@@ -304,7 +303,6 @@ public abstract class SemanticCache<
             return cachePair;
         }
 
-        //LOG.trace("Incomplete cache fetch: {}", query);
         //otherwise lookup and add inferred answers on top
         return new Pair<>(
                 //NB: concat retains the order between elements from different streams so cache entries will come first

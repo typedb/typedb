@@ -71,8 +71,6 @@ import static org.junit.Assert.assertFalse;
 @SuppressWarnings("CheckReturnValue")
 public class QueryCacheIT {
 
-    private static String resourcePath = "test-integration/graql/reasoner/resources/";
-
     @ClassRule
     public static final GraknTestStorage storage = new GraknTestStorage();
 
@@ -82,6 +80,7 @@ public class QueryCacheIT {
     public static void loadContext() {
         Config mockServerConfig = storage.createCompatibleServerConfig();
         genericSchemaSession = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig);
+        String resourcePath = "test-integration/graql/reasoner/resources/";
         loadFromFileAndCommit(resourcePath, "genericSchema.gql", genericSchemaSession);
     }
 
@@ -302,7 +301,7 @@ public class QueryCacheIT {
 
             //fetch a different query that is not structurally equivalent to the child query,
             //consequently the query should have no parents in the cache so the answer needs to be fetched from the db
-            ReasonerAtomicQuery groundIndirectChildQuery = testTx.reasonerQueryFactory().atomic(conjunction(
+            ReasonerAtomicQuery indirectGroundChildQuery = testTx.reasonerQueryFactory().atomic(conjunction(
                     "{" +
                             "(baseRole1: $x, baseRole2: $y, baseRole3: $z) isa ternary;" +
                             "$x id " + mConcept.getValue() + ";" +
@@ -310,12 +309,12 @@ public class QueryCacheIT {
                             "$z id " + sConcept.getValue() + ";" +
                             "};"));
 
-            Set<ConceptMap> groundChildAnswers = cache.getAnswers(groundIndirectChildQuery);
+            Set<ConceptMap> groundChildAnswers = cache.getAnswers(indirectGroundChildQuery);
 
             assertFalse(groundChildAnswers.isEmpty());
-            assertEquals(tx.stream(groundIndirectChildQuery.getQuery(), false).collect(toSet()), groundChildAnswers);
-            assertNotNull(cache.getEntry(groundIndirectChildQuery));
-            assertFalse(cache.isDBComplete(groundIndirectChildQuery));
+            assertEquals(tx.stream(indirectGroundChildQuery.getQuery(), false).collect(toSet()), groundChildAnswers);
+            assertNotNull(cache.getEntry(indirectGroundChildQuery));
+            assertFalse(cache.isDBComplete(indirectGroundChildQuery));
         }
     }
 
@@ -352,28 +351,28 @@ public class QueryCacheIT {
             );
             cache.record(parentQuery, inferredAnswer);
 
-            ReasonerAtomicQuery initialChildQuery = testTx.reasonerQueryFactory().atomic(conjunction(
+            ReasonerAtomicQuery childQuery = testTx.reasonerQueryFactory().atomic(conjunction(
                     "{" +
                             "(subRole1: $x1, subRole2: $y1) isa binary;" +
                             "$x1 id " + mConcept.id().getValue() + ";" +
                             "$y1 id " + sConcept.id().getValue() + ";" +
                             "};"));
-            ReasonerAtomicQuery childQuery = testTx.reasonerQueryFactory().atomic(conjunction(
+            ReasonerAtomicQuery indirectChildQuery = testTx.reasonerQueryFactory().atomic(conjunction(
                     "{" +
                             "(subRole1: $x2, subRole2: $y2) isa binary;" +
                             "$x2 id " + mConcept.id().getValue() + ";" +
                             "$y2 id " + fConcept.id().getValue() + ";" +
                             "};"));
 
-            tx.stream(initialChildQuery.getQuery(), false)
-                    .map(ans -> ans.explain(new LookupExplanation(), initialChildQuery.getPattern()))
-                    .forEach(ans -> cache.record(initialChildQuery, ans));
+            tx.stream(childQuery.getQuery(), false)
+                    .map(ans -> ans.explain(new LookupExplanation(), childQuery.getPattern()))
+                    .forEach(ans -> cache.record(childQuery, ans));
 
-            cache.ackDBCompleteness(initialChildQuery);
             cache.ackDBCompleteness(childQuery);
+            cache.ackDBCompleteness(indirectChildQuery);
 
-            Set<ConceptMap> answers = cache.getAnswers(childQuery);
-            MultiUnifier childToParentUnifier = childQuery.getMultiUnifier(parentQuery, UnifierType.STRUCTURAL_SUBSUMPTIVE);
+            Set<ConceptMap> answers = cache.getAnswers(indirectChildQuery);
+            MultiUnifier childToParentUnifier = indirectChildQuery.getMultiUnifier(parentQuery, UnifierType.STRUCTURAL_SUBSUMPTIVE);
             assertTrue(answers.stream().flatMap(childToParentUnifier::apply).anyMatch(ans -> ans.equals(inferredAnswer)));
         }
     }

@@ -324,8 +324,10 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
     },
 
     /**
+     * Unifier type used to determine whether two queries are in a subsumption relation up to structural equivalence.
+     * Consequently two queries that are structurally equivalent are structurally subsumptive.
      *
-     */
+     * */
     STRUCTURAL_SUBSUMPTIVE {
         @Override public ReasonerQueryEquivalence equivalence() { return SUBSUMPTIVE.equivalence(); }
 
