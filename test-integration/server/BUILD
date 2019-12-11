@@ -72,7 +72,7 @@ java_test(
     size = "medium",
     srcs = ["ValidatorIT.java"],
     classpath_resources = ["//test-integration/resources:logback-test"],
-    test_class = "grakn.core.server.kb.ValidatorIT",
+    test_class = "grakn.core.server.ValidatorIT",
     deps = [
         "//common:common",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
@@ -88,7 +88,7 @@ java_test(
     size = "medium",
     srcs = ["ValidateGlobalRulesIT.java"],
     classpath_resources = ["//test-integration/resources:logback-test"],
-    test_class = "grakn.core.server.kb.ValidateGlobalRulesIT",
+    test_class = "grakn.core.server.ValidateGlobalRulesIT",
     deps = [
         "//concept/impl:impl",
         "//kb/server",
@@ -105,7 +105,7 @@ java_test(
     size = "large",
     srcs = ["RuleValidationIT.java"],
     classpath_resources = ["//test-integration/resources:logback-test"],
-    test_class = "grakn.core.server.kb.RuleValidationIT",
+    test_class = "grakn.core.server.RuleValidationIT",
     deps = [
         "//common:common",
         "//core",
