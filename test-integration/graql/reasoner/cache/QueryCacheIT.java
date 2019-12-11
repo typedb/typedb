@@ -333,7 +333,7 @@ public class QueryCacheIT {
                     "{" +
                             "(subRole1: $x, subRole2: $y) isa binary;" +
                             "$y id " + sConcept.id().getValue() + ";" +
-                            "};");
+                            "};"));
 
             tx.stream(genericQuery.getQuery(), false)
                     .filter(ans -> ans.get("y").equals(sConcept))
