@@ -20,8 +20,8 @@
 package grakn.core.graql.executor.property;
 
 import com.google.common.collect.ImmutableSet;
-import grakn.core.graql.executor.property.value.ValueAssignment;
-import grakn.core.graql.executor.property.value.ValueOperation;
+import grakn.core.graql.planning.gremlin.value.ValueAssignment;
+import grakn.core.graql.planning.gremlin.value.ValueOperation;
 import grakn.core.graql.planning.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.kb.graql.executor.WriteExecutor;
 import grakn.core.kb.graql.executor.property.PropertyExecutor;

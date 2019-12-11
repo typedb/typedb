@@ -20,7 +20,7 @@ package grakn.core.graql.planning.gremlin.sets;
 
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableSet;
-import grakn.core.graql.executor.property.value.ValueOperation;
+import grakn.core.graql.planning.gremlin.value.ValueOperation;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.Label;

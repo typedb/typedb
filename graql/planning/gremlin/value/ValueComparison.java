@@ -17,7 +17,7 @@
  *
  */
 
-package grakn.core.graql.executor.property.value;
+package grakn.core.graql.planning.gremlin.value;
 
 import grakn.core.concept.impl.AttributeSerialiser;
 import grakn.core.core.Schema;

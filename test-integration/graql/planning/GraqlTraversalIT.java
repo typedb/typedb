@@ -25,7 +25,7 @@ import grakn.core.common.config.Config;
 import grakn.core.common.util.Streams;
 import grakn.core.core.Schema;
 import grakn.core.graql.executor.property.PropertyExecutorFactoryImpl;
-import grakn.core.graql.executor.property.value.ValueOperation;
+import grakn.core.graql.planning.gremlin.value.ValueOperation;
 import grakn.core.graql.planning.gremlin.fragment.Fragments;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.EntityType;

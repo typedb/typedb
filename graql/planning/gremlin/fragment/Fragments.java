@@ -21,7 +21,7 @@ package grakn.core.graql.planning.gremlin.fragment;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import grakn.core.core.Schema;
-import grakn.core.graql.executor.property.value.ValueOperation;
+import grakn.core.graql.planning.gremlin.value.ValueOperation;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.Label;
