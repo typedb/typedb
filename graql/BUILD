@@ -35,7 +35,10 @@ java_library(
         "//concept/impl:impl",
         "//concept/util",
         "//kb/server",
-        "//kb/graql",
+        "//kb/graql/reasoner",
+        "//kb/graql/executor",
+        "//kb/graql/exception",
+        "//kb/graql/planning",
         "//kb/keyspace",
         "//core",
 

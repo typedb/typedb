@@ -24,7 +24,7 @@ import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.graql.executor.WriteExecutor;
 import grakn.core.kb.graql.executor.property.PropertyExecutor;
-import grakn.core.kb.graql.gremlin.EquivalentFragmentSet;
+import grakn.core.kb.graql.planning.gremlin.EquivalentFragmentSet;
 import graql.lang.property.RelatesProperty;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Statement;
@@ -34,8 +34,8 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-import static grakn.core.graql.gremlin.sets.EquivalentFragmentSets.relates;
-import static grakn.core.graql.gremlin.sets.EquivalentFragmentSets.sub;
+import static grakn.core.graql.planning.gremlin.sets.EquivalentFragmentSets.relates;
+import static grakn.core.graql.planning.gremlin.sets.EquivalentFragmentSets.sub;
 
 public class RelatesExecutor  implements PropertyExecutor.Definable {
 

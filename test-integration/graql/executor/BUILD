@@ -29,7 +29,7 @@ java_test(
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//graql:graql",
         "//kb/server",
-        "//kb/graql",
+        "//kb/graql/planning",
         "//kb/concept/api",
         "//common",
         "//test-integration/rule:grakn-test-server",

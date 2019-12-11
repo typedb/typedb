@@ -20,9 +20,9 @@
 package grakn.core.graql.executor.property;
 
 import com.google.common.collect.Sets;
-import grakn.core.graql.gremlin.sets.EquivalentFragmentSets;
+import grakn.core.graql.planning.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.kb.graql.executor.property.PropertyExecutor;
-import grakn.core.kb.graql.gremlin.EquivalentFragmentSet;
+import grakn.core.kb.graql.planning.gremlin.EquivalentFragmentSet;
 import graql.lang.property.NeqProperty;
 import graql.lang.statement.Variable;
 

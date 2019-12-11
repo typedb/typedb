@@ -20,7 +20,7 @@
 package grakn.core.kb.graql.planning.spanningtree.graph;
 
 import grakn.core.kb.concept.manager.ConceptManager;
-import grakn.core.kb.graql.gremlin.Fragment;
+import grakn.core.kb.graql.planning.gremlin.Fragment;
 import grakn.core.kb.keyspace.KeyspaceStatistics;
 
 import java.util.HashSet;

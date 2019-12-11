@@ -27,7 +27,7 @@ import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.graql.executor.WriteExecutor;
 import grakn.core.kb.graql.executor.property.PropertyExecutor;
-import grakn.core.kb.graql.gremlin.EquivalentFragmentSet;
+import grakn.core.kb.graql.planning.gremlin.EquivalentFragmentSet;
 import graql.lang.property.HasAttributeProperty;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
@@ -36,8 +36,8 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-import static grakn.core.graql.gremlin.sets.EquivalentFragmentSets.neq;
-import static grakn.core.graql.gremlin.sets.EquivalentFragmentSets.rolePlayer;
+import static grakn.core.graql.planning.gremlin.sets.EquivalentFragmentSets.neq;
+import static grakn.core.graql.planning.gremlin.sets.EquivalentFragmentSets.rolePlayer;
 
 public class HasAttributeExecutor  implements PropertyExecutor.Insertable {
 

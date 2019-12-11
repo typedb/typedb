@@ -21,13 +21,13 @@ package grakn.core.graql.executor.property;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
-import grakn.core.graql.gremlin.sets.EquivalentFragmentSets;
+import grakn.core.graql.planning.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.kb.concept.api.Relation;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.graql.executor.WriteExecutor;
 import grakn.core.kb.graql.executor.property.PropertyExecutor;
-import grakn.core.kb.graql.gremlin.EquivalentFragmentSet;
+import grakn.core.kb.graql.planning.gremlin.EquivalentFragmentSet;
 import grakn.core.kb.graql.exception.GraqlSemanticException;
 import graql.lang.property.RelationProperty;
 import graql.lang.property.VarProperty;
@@ -42,7 +42,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static grakn.core.graql.gremlin.sets.EquivalentFragmentSets.rolePlayer;
+import static grakn.core.graql.planning.gremlin.sets.EquivalentFragmentSets.rolePlayer;
 
 public class RelationExecutor  implements PropertyExecutor.Insertable {
 

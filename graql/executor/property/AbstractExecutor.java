@@ -24,7 +24,7 @@ import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.graql.executor.WriteExecutor;
 import grakn.core.kb.graql.executor.property.PropertyExecutor;
-import grakn.core.kb.graql.gremlin.EquivalentFragmentSet;
+import grakn.core.kb.graql.planning.gremlin.EquivalentFragmentSet;
 import grakn.core.kb.graql.exception.GraqlSemanticException;
 import graql.lang.property.AbstractProperty;
 import graql.lang.property.VarProperty;
@@ -32,7 +32,7 @@ import graql.lang.statement.Variable;
 
 import java.util.Set;
 
-import static grakn.core.graql.gremlin.sets.EquivalentFragmentSets.isAbstract;
+import static grakn.core.graql.planning.gremlin.sets.EquivalentFragmentSets.isAbstract;
 
 
 public class AbstractExecutor implements PropertyExecutor.Definable {

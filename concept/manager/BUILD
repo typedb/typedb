@@ -30,7 +30,7 @@ java_library(
         "//kb/server",
         "//core",
         "//kb/concept/manager",
-        "//kb/graql",
+        "//kb/graql/reasoner",
         "//kb/keyspace",
         "//concept/impl",
         "//concept/structure",

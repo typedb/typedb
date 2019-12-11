@@ -13,7 +13,7 @@ java_test(
         "//dependencies/maven/artifacts/com/google/guava",
         "//graql",
         "//kb/concept/api",
-        "//kb/graql",
+        "//kb/graql/reasoner",
         "//kb/server",
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:graql-test-util",
