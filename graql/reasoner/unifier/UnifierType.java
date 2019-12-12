@@ -245,7 +245,7 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
      *
      * C <= P,
      *
-     * i.e. C specialises P (C isSubsumedBy P) and A(C) is a subset of A(P).
+     * i.e. C specialises P (C isSubsumedBy P, P subsumes C) and A(C) is a subset of A(P).
      *
      * As a result, to relate it with the RULE unifier. We can say that if there exists a RULE unifier between child and
      * parent, i. e. C >= P holds, then there exists a SUBSUMPTIVE unifier between parent and child.
