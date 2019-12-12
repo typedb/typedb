@@ -158,8 +158,12 @@ public class RuleCacheImpl implements RuleCache {
     }
 
     private boolean instancePresent(Type type){
-        return type.subs()
+        boolean instanceCountPresent = type.subs()
                 .anyMatch(t -> keyspaceStatistics.count(conceptManager, t.label()) != 0);
+        if (instanceCountPresent) return true;
+
+        //NB: this is a defensive check, it stat count shows 0 (no instances) we additionally check the DB
+        return type.instances().findFirst().isPresent();
     }
 
     private boolean typeHasInstances(Type type){
