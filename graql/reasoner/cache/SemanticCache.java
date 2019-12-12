@@ -199,6 +199,7 @@ public abstract class SemanticCache<
     }
 
     /**
+     * TODO we might want to consider horizontal propagation (between compatible children) in addtion to the vertical parent->child one
      * NB: uses getEntry
      * NB: target and childMatch.query() are in general not the same hence explicit arguments
      * @param target query we want propagate the answers to
