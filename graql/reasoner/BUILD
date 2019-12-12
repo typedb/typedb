@@ -37,7 +37,6 @@ java_library(
         "//kb/graql/planning",
         "//kb/keyspace",
         "//concept/answer",
-        "//concept/impl",
         "//concept/util",
         "//graql/planning",
         "//core",

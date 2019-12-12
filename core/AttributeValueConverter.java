@@ -17,7 +17,7 @@
  *
  */
 
-package grakn.core.concept.impl;
+package grakn.core.core;
 
 import com.google.common.collect.ImmutableMap;
 import grakn.core.kb.concept.api.AttributeType;
@@ -26,6 +26,10 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Map;
 
+/**
+ * Convert Attribute Values obtained from Graql and stored in Properties, and convert
+ * them to native java data instances
+ */
 public abstract class AttributeValueConverter<SOURCE, TARGET>{
 
     private static Map<AttributeType.DataType<?>, AttributeValueConverter<?, ?>> converters = ImmutableMap.<AttributeType.DataType<?>, AttributeValueConverter<?, ?>>builder()

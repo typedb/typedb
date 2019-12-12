@@ -23,7 +23,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import grakn.core.common.config.Config;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.graql.reasoner.CacheCasting;
 import grakn.core.graql.reasoner.atom.binary.RelationAtom;
 import grakn.core.graql.reasoner.explanation.LookupExplanation;
 import grakn.core.graql.reasoner.explanation.RuleExplanation;
@@ -821,7 +820,6 @@ public class QueryCacheIT {
             assertTrue(cache.isComplete(allMapped));
             assertTrue(cache.isDBComplete(allMapped));
         }
-
     }
 
     private Set<ConceptMap> getCacheContent(TestTransactionProvider.TestTransaction testTx){

@@ -19,7 +19,7 @@
 
 package grakn.core.graql.planning.gremlin.value;
 
-import grakn.core.concept.impl.AttributeSerialiser;
+import grakn.core.core.AttributeSerialiser;
 import graql.lang.Graql;
 import graql.lang.property.ValueProperty;
 import org.apache.tinkerpop.gremlin.process.traversal.P;

@@ -25,6 +25,10 @@ import grakn.core.kb.graql.reasoner.ReasonerException;
 import grakn.core.kb.graql.reasoner.cache.QueryCache;
 import grakn.core.kb.graql.reasoner.cache.RuleCache;
 
+/**
+ * Downcasting interfaces that are injected into reasoner into more specific instances
+ * THat reasoner is already allowed to access and instantiate
+ */
 public class CacheCasting {
 
     // ---------- TODO these casts should be removed when the architecture is improved ---------

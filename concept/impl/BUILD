@@ -23,6 +23,7 @@ load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 java_library(
     name = "impl",
     srcs = glob(["**/*.java"]),
+    tags = ["maven_coordinates=io.grakn.core:grakn-concept:{pom_version}"],
     deps = [
         "//core",
         "//kb/concept/manager",
@@ -33,7 +34,6 @@ java_library(
 
         # External dependenicies from @graknlabs
         "@graknlabs_graql//java:graql",
-        "@graknlabs_common//:common",
 
         # External dependencies from Maven
         "//dependencies/maven/artifacts/com/google/code/findbugs:jsr305",
@@ -41,8 +41,6 @@ java_library(
         "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
     ],
-    tags = ["maven_coordinates=io.grakn.core:grakn-concept:{pom_version}"],
-
 )
 
 checkstyle_test(

@@ -18,7 +18,7 @@
 
 package grakn.core.server.rpc;
 
-import grakn.core.concept.impl.AttributeSerialiser;
+import grakn.core.core.AttributeSerialiser;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.Entity;

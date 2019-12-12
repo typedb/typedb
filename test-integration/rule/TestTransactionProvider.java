@@ -182,8 +182,8 @@ public class TestTransactionProvider implements TransactionProvider {
             return reasonerQueryFactory;
         }
 
-        public RuleCache ruleCache() {
-            return ruleCache;
+        public RuleCacheImpl ruleCache() {
+            return (RuleCacheImpl)ruleCache;
         }
 
         public StatisticsDelta uncomittedStatisticsDelta() {

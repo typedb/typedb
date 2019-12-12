@@ -19,7 +19,7 @@
 
 package grakn.core.graql.planning.gremlin.value;
 
-import grakn.core.concept.impl.AttributeSerialiser;
+import grakn.core.core.AttributeSerialiser;
 import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.AttributeType;
 import graql.lang.Graql;
