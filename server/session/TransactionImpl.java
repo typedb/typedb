@@ -671,11 +671,6 @@ public class TransactionImpl implements Transaction {
     }
 
     @Override
-    public QueryCache queryCache() {
-        return queryCache;
-    }
-
-    @Override
     public boolean isOpen() {
         return isTxOpen;
     }

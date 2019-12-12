@@ -157,6 +157,7 @@ public class TestTransactionProvider implements TransactionProvider {
         public long shardingThreshold() {
             return typeShardThreshold;
         }
+
         /*
             Getters for TransactionImpl state
          */
@@ -194,24 +195,24 @@ public class TestTransactionProvider implements TransactionProvider {
         }
 
 
-//        MultilevelSemanticCache queryCache() {
-//            return queryCache;
-//        }
+        public MultilevelSemanticCache queryCache() {
+            return queryCache;
+        }
 
         /*
             State only saved in TestTransactions, and not in TransationImpl
          */
 
         public ConceptNotificationChannel conceptNotificationChannel() {
-            return conceptNotificationChannel;
+            return this.conceptNotificationChannel;
         }
 
         public ElementFactory elementFactory() {
-            return elementFactory;
+            return this.elementFactory;
         }
 
         public PropertyExecutorFactory propertyExecutorFactory() {
-            return propertyExecutorFactory;
+            return this.propertyExecutorFactory;
         }
 
     }
