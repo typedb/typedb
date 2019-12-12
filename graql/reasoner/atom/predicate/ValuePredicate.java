@@ -114,13 +114,13 @@ public class ValuePredicate extends Predicate<ValueProperty.Operation> {
     }
 
     @Override
-    public boolean subsumes(Atomic atomic){
+    public boolean isSubsumedBy(Atomic atomic){
         if (this.isAlphaEquivalent(atomic)) return true;
         if (atomic == null || this.getClass() != atomic.getClass()) return false;
         if (atomic == this) return true;
         ValuePredicate that = (ValuePredicate) atomic;
         return ValueOperation.of(this.getPredicate())
-                .subsumes(ValueOperation.of(that.getPredicate()));
+                .isSubsumedBy(ValueOperation.of(that.getPredicate()));
     }
 
     @Override

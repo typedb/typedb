@@ -110,10 +110,10 @@ public abstract class Atom extends AtomicBase {
      * i. e. the set of answers of A is a subset of the set of answers of B
      *
      * @param atomic to compare with
-     * @return true if this atom subsumes the provided atom
+     * @return true if this atom isSubsumedBy the provided atom
      */
     @Override
-    public boolean subsumes(Atomic atomic) {
+    public boolean isSubsumedBy(Atomic atomic) {
         if (!atomic.isAtom()) return false;
         Atom parent = (Atom) atomic;
         MultiUnifier multiUnifier = this.getMultiUnifier(parent, UnifierType.SUBSUMPTIVE);

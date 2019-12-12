@@ -62,7 +62,7 @@ public abstract class OntologicalAtom extends TypeAtom {
     }
 
     @Override
-    public boolean subsumes(Atomic atom) { return this.isAlphaEquivalent(atom); }
+    public boolean isSubsumedBy(Atomic atom) { return this.isAlphaEquivalent(atom); }
 
     @Override
     public Stream<Rule> getPotentialRules(){ return Stream.empty();}

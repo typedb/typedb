@@ -121,10 +121,10 @@ public interface Atomic {
      * i. e. the set of answers of A is a subset of the set of answers of B
      *
      * @param atom to compare with
-     * @return true if this atom subsumes the provided atom
+     * @return true if this atom isSubsumedBy the provided atom
      */
     @CheckReturnValue
-    boolean subsumes(Atomic atom);
+    boolean isSubsumedBy(Atomic atom);
 
     /**
      * @return alpha-equivalence hash code
