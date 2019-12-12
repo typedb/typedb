@@ -45,6 +45,7 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.List;
@@ -398,6 +399,11 @@ public class QueryPlannerIT {
                 .filter(fragment -> fragment instanceof OutIsaFragment || fragment instanceof InIsaFragment).count());
     }
 
+    /**
+     * We no longer rely on shard count to order query plan starting points, using instance counts directly
+     * Whether we want to delete this test is not yet clear, or just keep a similar one
+     */
+    @Ignore
     @Test @SuppressWarnings("Duplicates")
     public void shardCountIsUsed() {
         // force the concept to get a new shard
