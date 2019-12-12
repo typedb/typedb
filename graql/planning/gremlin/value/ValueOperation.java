@@ -172,7 +172,7 @@ public abstract class ValueOperation<T, U> {
                 (this.predicate().test(that.valueSerialised()) || ((that.predicate()).test(this.valueSerialised())));
     }
 
-    public boolean subsumes(ValueOperation<?, ?> other) {
+    public boolean isSubsumedBy(ValueOperation<?, ?> other) {
         if (this.comparator().equals(Graql.Token.Comparator.LIKE)) {
             return isCompatibleWithRegex(other);
         } else if (other.comparator().equals(Graql.Token.Comparator.LIKE)) {

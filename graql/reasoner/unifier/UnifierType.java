@@ -245,7 +245,7 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
      *
      * C <= P,
      *
-     * i.e. C specialises P (C subsumes P) and A(C) is a subset of A(P).
+     * i.e. C specialises P (C isSubsumedBy P, P isSubsumedBy C) and A(C) is a subset of A(P).
      *
      * As a result, to relate it with the RULE unifier. We can say that if there exists a RULE unifier between child and
      * parent, i. e. C >= P holds, then there exists a SUBSUMPTIVE unifier between parent and child.
@@ -293,19 +293,19 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
         @Override
         public boolean idCompatibility(Atomic parent, Atomic child) {
             return parent == null
-                    || child != null && child.subsumes(parent);
+                    || child != null && child.isSubsumedBy(parent);
         }
 
         @Override
         public boolean valueCompatibility(Atomic parent, Atomic child) {
             return parent == null
-                    || child != null && child.subsumes(parent);
+                    || child != null && child.isSubsumedBy(parent);
         }
 
         @Override
         public boolean predicateCompatibility(Set<Atomic> parent, Set<Atomic> child, BiFunction<Atomic, Atomic, Boolean> comparison) {
             //check both ways to eliminate contradictions
-            boolean parentToChild = parent.stream().allMatch(pp -> child.stream().anyMatch(cp -> cp.subsumes(pp)));
+            boolean parentToChild = parent.stream().allMatch(pp -> child.stream().anyMatch(cp -> cp.isSubsumedBy(pp)));
             boolean childToParent = child.stream().allMatch(cp -> parent.stream().anyMatch(pp -> cp.isCompatibleWith(pp)));
             return super.predicateCompatibility(parent, child, comparison)
                     && (parent.isEmpty()
@@ -320,6 +320,58 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
             child.getAtoms(AttributeAtom.class).filter(at -> at.getVarName().equals(childVar)).forEach(r -> childRes.put(r.getSchemaConcept(), r));
             return childRes.values().stream()
                     .allMatch(r -> !parentRes.containsKey(r.getSchemaConcept()) || r.isUnifiableWith(parentRes.get(r.getSchemaConcept())));
+        }
+    },
+
+    /**
+     * Unifier type used to determine whether two queries are in a subsumption relation up to structural equivalence.
+     * Consequently two queries that are structurally equivalent are structurally subsumptive.
+     *
+     * */
+    STRUCTURAL_SUBSUMPTIVE {
+        @Override public ReasonerQueryEquivalence equivalence() { return SUBSUMPTIVE.equivalence(); }
+
+        @Override public boolean inferTypes() { return SUBSUMPTIVE.inferTypes(); }
+
+        @Override public boolean inferValues() { return SUBSUMPTIVE.inferValues(); }
+
+        @Override public boolean allowsNonInjectiveMappings() { return SUBSUMPTIVE.allowsNonInjectiveMappings(); }
+
+        @Override public boolean typeDirectednessCompatibility(Atomic parent, Atomic child) { return SUBSUMPTIVE.typeDirectednessCompatibility(parent, child); }
+
+        @Override public boolean roleCompatibility(Role parent, Role child) { return SUBSUMPTIVE.roleCompatibility(parent, child); }
+
+        @Override public boolean typePlayability(ReasonerQuery query, Variable var, Type type) { return SUBSUMPTIVE.typePlayability(query, var, type); }
+
+        @Override
+        public boolean typeCompatibility(Set<? extends SchemaConcept> parentTypes, Set<? extends SchemaConcept> childTypes) {
+            return SUBSUMPTIVE.typeCompatibility(parentTypes, childTypes);
+        }
+
+        @Override
+        public boolean valueCompatibility(Atomic parent, Atomic child) {
+            return SUBSUMPTIVE.valueCompatibility(parent, child);
+        }
+
+        @Override
+        public boolean predicateCompatibility(Set<Atomic> parent, Set<Atomic> child, BiFunction<Atomic, Atomic, Boolean> comparison) {
+            return SUBSUMPTIVE.predicateCompatibility(parent, child, comparison);
+        }
+
+        @Override
+        public boolean attributeCompatibility(ReasonerQuery parent, ReasonerQuery child, Variable parentVar, Variable childVar) {
+            return SUBSUMPTIVE.attributeCompatibility(parent, child, parentVar, childVar);
+        }
+
+        @Override
+        public boolean idCompatibility(Atomic parent, Atomic child) {
+            return parent == null || child != null;
+        }
+
+        @Override
+        public boolean idCompatibility(Set<Atomic> parent, Set<Atomic> child){
+            return parent.isEmpty()
+                    || isEquivalentCollection(parent, child, this::idCompatibility);
         }
     }
 }

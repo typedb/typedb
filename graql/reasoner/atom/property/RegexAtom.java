@@ -78,5 +78,5 @@ public class RegexAtom extends AtomicBase {
     public int structuralEquivalenceHashCode() { return alphaEquivalenceHashCode();}
 
     @Override
-    public boolean subsumes(Atomic atom) { return this.isAlphaEquivalent(atom); }
+    public boolean isSubsumedBy(Atomic atom) { return this.isAlphaEquivalent(atom); }
 }

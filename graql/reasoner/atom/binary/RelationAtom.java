@@ -942,9 +942,8 @@ public class RelationAtom extends IsaAtomBase {
         parentAtom.getRelationPlayers()
                 .forEach(prp -> {
                     Statement parentRolePattern = prp.getRole().orElse(null);
-                    if (parentRolePattern == null) {
-                        throw ReasonerException.rolePatternAbsent(parentAtom);
-                    }
+                    if (parentRolePattern == null) throw ReasonerException.rolePatternAbsent(parentAtom);
+
                     String parentRoleLabel = parentRolePattern.getType().isPresent() ? parentRolePattern.getType().get() : null;
                     Role parentRole = parentRoleLabel != null ? conceptManager.getRole(parentRoleLabel) : null;
                     Variable parentRolePlayer = prp.getPlayer().var();
@@ -955,9 +954,8 @@ public class RelationAtom extends IsaAtomBase {
                             //check for role compatibility
                             .filter(crp -> {
                                 Statement childRolePattern = crp.getRole().orElse(null);
-                                if (childRolePattern == null) {
-                                    throw ReasonerException.rolePatternAbsent(this);
-                                }
+                                if (childRolePattern == null) throw ReasonerException.rolePatternAbsent(this);
+
                                 String childRoleLabel = childRolePattern.getType().isPresent() ? childRolePattern.getType().get() : null;
                                 Role childRole = childRoleLabel != null ? conceptManager.getRole(childRoleLabel) : null;
 
@@ -1151,12 +1149,7 @@ public class RelationAtom extends IsaAtomBase {
             relation = substitution.get(getVarName()).asRelation();
         } else {
             Relation foundRelation = findRelation(substitution);
-            if (foundRelation == null) {
-                Relation insertedRelation = relationType.addRelationInferred();
-                relation = insertedRelation;
-            } else {
-                relation = foundRelation;
-            }
+            relation = foundRelation != null? foundRelation : relationType.addRelationInferred();
 
         }
 
@@ -1206,12 +1199,13 @@ public class RelationAtom extends IsaAtomBase {
      * @return new relation atom with user defined name if necessary or this
      */
     private RelationAtom rewriteWithRelationVariable(Atom parentAtom) {
-        if (this.getVarName().isReturned() || !parentAtom.getVarName().isReturned()) return this;
+        if (!parentAtom.getVarName().isReturned()) return this;
         return rewriteWithRelationVariable();
     }
 
     @Override
     public RelationAtom rewriteWithRelationVariable() {
+        if (this.getVarName().isReturned()) return this;
         StatementInstance newVar = new StatementThing(new Variable().asReturnedVar());
         Statement relVar = getPattern().getProperty(IsaProperty.class)
                 .map(prop -> newVar.isa(prop.type()))

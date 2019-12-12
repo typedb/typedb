@@ -114,10 +114,10 @@ public class SubsumptionIT {
             ReasonerAtomicQuery child2 = reasonerQueryFactory.atomic(conjunction("{(baseRole1: $x, baseRole2: $y); $y id " + id + ";};"));
             ReasonerAtomicQuery parent = reasonerQueryFactory.atomic(conjunction("(baseRole1: $x, baseRole2: $x);"));
 
-            assertFalse(child.subsumes(parent));
-            assertFalse(child2.subsumes(parent));
-            assertFalse(child.subsumes(parent));
-            assertFalse(child2.subsumes(parent));
+            assertFalse(child.isSubsumedBy(parent));
+            assertFalse(child2.isSubsumedBy(parent));
+            assertFalse(child.isSubsumedBy(parent));
+            assertFalse(child2.isSubsumedBy(parent));
         }
     }
 
@@ -591,17 +591,17 @@ public class SubsumptionIT {
         }
     }
 
-    private void subsumption(String childString, String parentString, boolean subsumes, TestTransactionProvider.TestTransaction tx) {
+    private void subsumption(String childString, String parentString, boolean isSubsumedBy, TestTransactionProvider.TestTransaction tx) {
         ReasonerQueryFactory reasonerQueryFactory = tx.reasonerQueryFactory();
         ReasonerAtomicQuery child = reasonerQueryFactory.atomic(conjunction(childString));
         ReasonerAtomicQuery parent = reasonerQueryFactory.atomic(conjunction(parentString));
         UnifierType unifierType = UnifierType.SUBSUMPTIVE;
 
-        assertEquals("Unexpected subsumption outcome: between the child - parent pair:\n" + child + " :\n" + parent + "\n", subsumes, child.subsumes(parent));
+        assertEquals("Unexpected subsumption outcome: between the child - parent pair:\n" + child + " :\n" + parent + "\n", isSubsumedBy, child.isSubsumedBy(parent));
         MultiUnifier multiUnifier = child.getMultiUnifier(parent, unifierType);
-        if (subsumes) {
+        if (isSubsumedBy) {
             boolean queriesEquivalent = child.isEquivalent(parent);
-            assertEquals("Unexpected inverse subsumption outcome: between the child - parent pair:\n" + parent + " :\n" + child + "\n", queriesEquivalent, parent.subsumes(child));
+            assertEquals("Unexpected inverse subsumption outcome: between the child - parent pair:\n" + parent + " :\n" + child + "\n", queriesEquivalent, parent.isSubsumedBy(child));
             MultiUnifier multiUnifierInverse = parent.getMultiUnifier(child, unifierType);
             if (queriesEquivalent) assertEquals(multiUnifierInverse, multiUnifier.inverse());
         }
