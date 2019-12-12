@@ -20,6 +20,10 @@ package(default_visibility = ["//visibility:public"])
 
 load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
+# This package is currently a bit of a catch-all for thing sa lot of different packages depend on
+# Over time hopefully it will emerge what it should be named or how it should be split up
+# TODO definitely not in a final state, goal is to properly name or delete it!
+
 java_library(
     name = "core",
     srcs = glob(["*.java"]),
@@ -42,7 +46,6 @@ java_library(
         "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core"
     ],
     tags = ["maven_coordinates=io.grakn.core:grakn-core:{pom_version}"],
-
 )
 
 

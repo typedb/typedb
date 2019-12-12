@@ -603,6 +603,8 @@ public class PathIT {
 
     /**
      * Get the resource edge id if there is one. Return null if not.
+     * This is a duplicate from Executor to avoid having redundant static helpers
+     * If we need it elsewhere too, we can consider finding a common home for it
      */
     private static ConceptId getResourceEdgeId(ConceptManager conceptManager, ExecutorFactory executorFactory, ConceptId conceptId1, ConceptId conceptId2) {
         if (Utility.mayHaveResourceEdge(conceptManager, conceptId1, conceptId2)) {
