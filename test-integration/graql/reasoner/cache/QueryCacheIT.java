@@ -886,7 +886,7 @@ public class QueryCacheIT {
     public void whenParentQueryIsComplete_onlyChildrenThatStrictlySubsumeParentAreComplete(){
         try(Transaction tx = genericSchemaSession.readTransaction()) {
             TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction) tx);
-            MultilevelSemanticCache cache = CacheCasting.queryCacheCast(tx.queryCache());
+            MultilevelSemanticCache cache = testTx.queryCache();
 
             List<Entity> entities = tx.getEntityType("baseEntity").instances().collect(toList());
             for(Entity entity : entities){
@@ -950,7 +950,6 @@ public class QueryCacheIT {
                 .flatMap(e -> e.cachedElement().getAll().stream())
                 .collect(toSet());
     }
-}
 
     private Conjunction<Statement> conjunction(String patternString) {
         Set<Statement> vars = Graql.parsePattern(patternString)
