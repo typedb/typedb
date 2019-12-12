@@ -28,6 +28,7 @@ import grakn.core.core.JanusTraversalSourceProvider;
 import grakn.core.graql.planning.gremlin.fragment.InIsaFragment;
 import grakn.core.graql.planning.gremlin.fragment.InSubFragment;
 import grakn.core.graql.planning.gremlin.fragment.LabelFragment;
+import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.executor.property.PropertyExecutorFactory;
@@ -67,7 +68,6 @@ import java.util.stream.Collectors;
 import static grakn.core.graql.planning.NodesUtil.buildNodesWithDependencies;
 import static grakn.core.graql.planning.NodesUtil.nodeVisitedDependenciesFragments;
 import static grakn.core.graql.planning.RelationTypeInference.inferRelationTypes;
-import static grakn.core.kb.graql.planning.gremlin.Fragment.SHARD_LOAD_FACTOR;
 
 /**
  * Class for generating greedy traversal plans
@@ -330,9 +330,12 @@ public class TraversalPlanFactoryImpl implements TraversalPlanFactory {
         double logInstanceCount;
         if (fragment instanceof LabelFragment) {
             // only LabelFragment (corresponding to type vertices) can be sharded
-            Long shardCount = ((LabelFragment) fragment).getShardCount(conceptManager);
-            logInstanceCount = Math.log(shardCount - 1D + SHARD_LOAD_FACTOR) +
-                    Math.log(shardingThreshold);
+            LabelFragment labelFragment = (LabelFragment)fragment;
+            Label label = Iterators.getOnlyElement(labelFragment.labels().iterator());
+            long instanceCount = conceptManager.getSchemaConcept(label).subs()
+                    .mapToLong(schemaConcept -> keyspaceStatistics.count(conceptManager, schemaConcept.label()))
+                    .sum();
+            logInstanceCount = Math.log(instanceCount);
         } else {
             logInstanceCount = -1D;
         }

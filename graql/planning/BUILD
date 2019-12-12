@@ -34,7 +34,6 @@ java_library(
         "//kb/graql/executor",
         "//kb/graql/planning",
         "//kb/keyspace",
-        "//concept/impl",
         "//core",
 
         # External dependencies from @graknlabs

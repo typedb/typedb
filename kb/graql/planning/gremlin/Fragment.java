@@ -39,8 +39,6 @@ import java.util.Map;
 import java.util.Set;
 
 public interface Fragment {
-    // By default we assume the latest shard is 25% full
-    double SHARD_LOAD_FACTOR = 0.25;
 
     /**
      * @param transform map defining id transform var -> new id
