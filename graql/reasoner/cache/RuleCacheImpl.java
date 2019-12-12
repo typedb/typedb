@@ -163,6 +163,7 @@ public class RuleCacheImpl implements RuleCache {
         if (instanceCountPresent) return true;
 
         //NB: this is a defensive check, it stat count shows 0 (no instances) we additionally check the DB
+        //also, if we have ephemeral instances (inserted but not committed), we will catch them by doing the DB check
         return type.instances().findFirst().isPresent();
     }
 
