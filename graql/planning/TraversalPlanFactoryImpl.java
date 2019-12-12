@@ -328,13 +328,19 @@ public class TraversalPlanFactoryImpl implements TraversalPlanFactory {
     private double getLogInstanceCount(Fragment fragment) {
         // set the weight of the node as a starting point based on log(number of this node)
         double logInstanceCount;
+
+        //this is to make sure we don't end up with log(0)
+        double shardLoadFactor = 0.25;
         if (fragment instanceof LabelFragment) {
             // only LabelFragment (corresponding to type vertices) can be sharded
             LabelFragment labelFragment = (LabelFragment)fragment;
             Label label = Iterators.getOnlyElement(labelFragment.labels().iterator());
-            long instanceCount = conceptManager.getSchemaConcept(label).subs()
+
+            //TODO: this manipulation is to retain the previous behaviour, we need to update the query planner
+            //to remove the sharding threshold dependency and make this more granular
+            double instanceCount = (conceptManager.getSchemaConcept(label).subs()
                     .mapToLong(schemaConcept -> keyspaceStatistics.count(conceptManager, schemaConcept.label()))
-                    .sum();
+                    .sum() / shardingThreshold + shardLoadFactor ) * shardingThreshold;
             logInstanceCount = Math.log(instanceCount);
         } else {
             logInstanceCount = -1D;
