@@ -30,6 +30,7 @@ import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.reasoner.cache.RuleCache;
 
+import grakn.core.kb.keyspace.KeyspaceStatistics;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -45,7 +46,8 @@ public class RuleCacheImpl implements RuleCache {
 
     private final HashMultimap<Type, Rule> ruleMap = HashMultimap.create();
     private final Map<Rule, InferenceRule> ruleConversionMap = new HashMap<>();
-    private ConceptManager conceptManager;
+    private final ConceptManager conceptManager;
+    private final KeyspaceStatistics keyspaceStatistics;
 
     //TODO: these should be eventually stored together with statistics
     private Set<Type> absentTypes = new HashSet<>();
@@ -54,8 +56,9 @@ public class RuleCacheImpl implements RuleCache {
     private Set<Rule> checkedRules = new HashSet<>();
     private ReasonerQueryFactory reasonerQueryFactory;
 
-    public RuleCacheImpl(ConceptManager conceptManager) {
+    public RuleCacheImpl(ConceptManager conceptManager, KeyspaceStatistics keyspaceStatistics) {
         this.conceptManager = conceptManager;
+        this.keyspaceStatistics = keyspaceStatistics;
     }
 
     /*
@@ -154,10 +157,20 @@ public class RuleCacheImpl implements RuleCache {
         return match.stream();
     }
 
+    private boolean instancePresent(Type type){
+        boolean instanceCountPresent = type.subs()
+                .anyMatch(t -> keyspaceStatistics.count(conceptManager, t.label()) != 0);
+        if (instanceCountPresent) return true;
+
+        //NB: this is a defensive check, it stat count shows 0 (no instances) we additionally check the DB
+        //also, if we have ephemeral instances (inserted but not committed), we will catch them by doing the DB check
+        return type.instances().findFirst().isPresent();
+    }
+
     private boolean typeHasInstances(Type type){
         if (checkedTypes.contains(type)) return !absentTypes.contains(type);
         checkedTypes.add(type);
-        boolean instancePresent = type.instances().findFirst().isPresent()
+        boolean instancePresent =instancePresent(type)
                 || type.subs().flatMap(SchemaConcept::thenRules).anyMatch(this::isRuleMatchable);
         if (!instancePresent){
             absentTypes.add(type);
