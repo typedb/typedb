@@ -144,7 +144,7 @@ public class VariableValuePredicate extends VariablePredicate {
         if (atomic == this) return true;
         VariableValuePredicate that = (VariableValuePredicate) atomic;
         return ValueOperation.of(this.operation())
-                .subsumes(ValueOperation.of(that.operation()));
+                .isSubsumedBy(ValueOperation.of(that.operation()));
     }
 
     @Override

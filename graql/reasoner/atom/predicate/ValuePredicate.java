@@ -120,7 +120,7 @@ public class ValuePredicate extends Predicate<ValueProperty.Operation> {
         if (atomic == this) return true;
         ValuePredicate that = (ValuePredicate) atomic;
         return ValueOperation.of(this.getPredicate())
-                .subsumes(ValueOperation.of(that.getPredicate()));
+                .isSubsumedBy(ValueOperation.of(that.getPredicate()));
     }
 
     @Override

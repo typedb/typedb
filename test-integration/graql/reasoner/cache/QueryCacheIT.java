@@ -921,13 +921,13 @@ public class QueryCacheIT {
                                         "};"
                         ));
 
-                        boolean subsumes = xEntity.equals(entity) || yEntity.equals(entity);
+                        boolean isSubsumedBy = xEntity.equals(entity) || yEntity.equals(entity);
                         boolean strictlySubsumes = xEntity.equals(entity);
 
                         //cache will only contain entries and families if there are answers
                         assertEquals(
                                 "invalid completion outcome between parent:\n " + parentQuery + "\n and child:\n" + childQuery,
-                                subsumes && !parentAnswers.isEmpty(), cache.isComplete(childQuery)
+                                isSubsumedBy && !parentAnswers.isEmpty(), cache.isComplete(childQuery)
                         );
                         if (strictlySubsumes) {
                             List<ConceptMap> childAnswers = tx.execute(childQuery.getQuery());
