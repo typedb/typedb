@@ -229,7 +229,7 @@ public class QueryCacheIT {
             //NB: WE ACK COMPLETENESS
             cache.ackDBCompleteness(parentQuery);
 
-            //fetch a query that subsumes parent
+            //fetch a query that isSubsumedBy parent
             ReasonerAtomicQuery groundChildQuery = testTx.reasonerQueryFactory().atomic(conjunction(
                     "{" +
                             "(baseRole1: $x, baseRole2: $y) isa binary;" +
@@ -244,7 +244,7 @@ public class QueryCacheIT {
             childAnswers.forEach(ans -> assertTrue(ans.explanation().isRuleExplanation()));
             assertTrue(cache.isDBComplete(groundChildQuery));
 
-            //fetch a different query, the query is subsumes the parent structurally
+            //fetch a different query, the query is isSubsumedBy the parent structurally
             //although parent is present, the answer is not in the cache so it needs to be fetched from the db
             ReasonerAtomicQuery indirectGroundChildQuery = testTx.reasonerQueryFactory().atomic(conjunction(
                     "{" +
@@ -285,7 +285,7 @@ public class QueryCacheIT {
                     .forEach(ans -> cache.record(parentQuery, ans));
             cache.ackDBCompleteness(parentQuery);
 
-            //fetch a query that subsumes parent
+            //fetch a query that isSubsumedBy parent
             ReasonerAtomicQuery childQuery = testTx.reasonerQueryFactory().atomic(conjunction(
                     "{" +
                             "(baseRole1: $x, baseRole2: $y, baseRole3: $z) isa ternary;" +
@@ -400,7 +400,7 @@ public class QueryCacheIT {
                     .map(ans -> ans.explain(new LookupExplanation(), parentQuery.getPattern()))
                     .forEach(ans -> cache.record(parentQuery, ans));
 
-            //fetch a query that subsumes parent
+            //fetch a query that isSubsumedBy parent
             ReasonerAtomicQuery childQuery = testTx.reasonerQueryFactory().atomic(conjunction(
                     "{" +
                             "(baseRole1: $x, baseRole2: $y, baseRole3: $z) isa ternary;" +

@@ -49,7 +49,7 @@ import static java.util.stream.Collectors.toSet;
  * and subsequently reusing their answer sets.
  *
  * Relies on the following concepts:
- * - Query Subsumption {@link ReasonerAtomicQuery#subsumes(ReasonerAtomicQuery)}
+ * - Query Subsumption {@link ReasonerAtomicQuery#isSubsumedBy(ReasonerAtomicQuery)} )}
  * Subsumption relation between a query C (child) and a provided query P (parent) holds if:
  *
  * C <= P,
@@ -89,7 +89,7 @@ public abstract class SemanticCache<
     public boolean isComplete(ReasonerAtomicQuery query){
         if (super.isComplete(query)) return true;
         return getParents(query).stream()
-                .filter(q -> query.subsumes(keyToQuery(q)))
+                .filter(q -> query.isSubsumedBy(keyToQuery(q)))
                 .anyMatch(q -> super.isComplete(keyToQuery(q)));
     }
 
@@ -191,7 +191,7 @@ public abstract class SemanticCache<
         Set<QE> computedParents = new HashSet<>();
         getFamily(child)
                 .map(this::keyToQuery)
-                .filter(child::subsumesStructurally)
+                .filter(child::isSubsumedStructurallyBy)
                 .map(this::queryToKey)
                 .peek(computedParents::add)
                 .forEach(parent -> parents.put(queryToKey(child), parent));
@@ -222,7 +222,7 @@ public abstract class SemanticCache<
                         boolean newAnswers = propagateAnswers(parentMatch, childMatch, propagateInferred);
                         newAnswersFound[0] = newAnswersFound[0] || newAnswers;
 
-                        boolean targetSubsumesParent = target.subsumes(keyToQuery(parent));
+                        boolean targetSubsumesParent = target.isSubsumedBy(keyToQuery(parent));
                         //since we compare queries structurally, freshly propagated answer might not necessarily answer
                         //the target query - hence this check
                         if(childGround && newAnswers && answersQuery(target)) ackCompleteness(target);

@@ -129,18 +129,18 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
     /**
      * @param parent query to compare with
-     * @return true if this query subsumes the provided query
+     * @return true if this query is subsumed by the provided query
      */
-    public boolean subsumes(ReasonerAtomicQuery parent){
-        return subsumes(parent, UnifierType.SUBSUMPTIVE);
+    public boolean isSubsumedBy(ReasonerAtomicQuery parent){
+        return isSubsumedBy(parent, UnifierType.SUBSUMPTIVE);
     }
 
     /**
      * @param parent query to compare with
-     * @return true if this query structurally subsumes the provided query
+     * @return true if this query is structurally subsumed by the provided query
      */
-    public boolean subsumesStructurally(ReasonerAtomicQuery parent){
-        return subsumes(parent, UnifierType.STRUCTURAL_SUBSUMPTIVE);
+    public boolean isSubsumedStructurallyBy(ReasonerAtomicQuery parent){
+        return isSubsumedBy(parent, UnifierType.STRUCTURAL_SUBSUMPTIVE);
     }
 
     /**
@@ -157,9 +157,9 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
      *
      * @param parent query to compare with
      * @param unifierType unifier type specifying subsumption type
-     * @return true if this query subsumes the provided query
+     * @return true if this query is subsumed by the provided query
      */
-    private boolean subsumes(ReasonerAtomicQuery parent, UnifierType unifierType){
+    private boolean isSubsumedBy(ReasonerAtomicQuery parent, UnifierType unifierType){
         MultiUnifier multiUnifier = this.getMultiUnifier(parent, unifierType);
         if (multiUnifier.isEmpty()) return false;
         MultiUnifier inverse = multiUnifier.inverse();

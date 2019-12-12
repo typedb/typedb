@@ -245,7 +245,7 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
      *
      * C <= P,
      *
-     * i.e. C specialises P (C subsumes P) and A(C) is a subset of A(P).
+     * i.e. C specialises P (C isSubsumedBy P) and A(C) is a subset of A(P).
      *
      * As a result, to relate it with the RULE unifier. We can say that if there exists a RULE unifier between child and
      * parent, i. e. C >= P holds, then there exists a SUBSUMPTIVE unifier between parent and child.
@@ -293,19 +293,19 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
         @Override
         public boolean idCompatibility(Atomic parent, Atomic child) {
             return parent == null
-                    || child != null && child.subsumes(parent);
+                    || child != null && child.isSubsumedBy(parent);
         }
 
         @Override
         public boolean valueCompatibility(Atomic parent, Atomic child) {
             return parent == null
-                    || child != null && child.subsumes(parent);
+                    || child != null && child.isSubsumedBy(parent);
         }
 
         @Override
         public boolean predicateCompatibility(Set<Atomic> parent, Set<Atomic> child, BiFunction<Atomic, Atomic, Boolean> comparison) {
             //check both ways to eliminate contradictions
-            boolean parentToChild = parent.stream().allMatch(pp -> child.stream().anyMatch(cp -> cp.subsumes(pp)));
+            boolean parentToChild = parent.stream().allMatch(pp -> child.stream().anyMatch(cp -> cp.isSubsumedBy(pp)));
             boolean childToParent = child.stream().allMatch(cp -> parent.stream().anyMatch(pp -> cp.isCompatibleWith(pp)));
             return super.predicateCompatibility(parent, child, comparison)
                     && (parent.isEmpty()
