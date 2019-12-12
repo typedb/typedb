@@ -23,7 +23,7 @@ import grakn.core.concept.answer.AnswerGroup;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.answer.Numeric;
 import grakn.core.concept.answer.Void;
-import grakn.core.kb.graql.gremlin.GraqlTraversal;
+import grakn.core.kb.graql.planning.gremlin.GraqlTraversal;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlDefine;

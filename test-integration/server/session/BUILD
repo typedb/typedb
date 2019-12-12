@@ -58,19 +58,6 @@ java_test(
 )
 
 java_test(
-    name = "keyspace-schema-cache-it",
-    srcs = ["cache/KeyspaceSchemaCacheIT.java"],
-    classpath_resources = ["//test-integration/resources:logback-test"],
-    test_class = "grakn.core.server.session.cache.KeyspaceSchemaCacheIT",
-    deps = [
-        "//kb/server",
-        "//kb/concept/api",
-        "//test-integration/rule:grakn-test-server",
-        "@graknlabs_client_java//:client-java",
-    ],
-)
-
-java_test(
     name = "transaction-cache-it",
     srcs = ["cache/TransactionCacheIT.java"],
     classpath_resources = ["//test-integration/resources:logback-test"],
@@ -88,46 +75,12 @@ java_test(
     ],
 )
 
-java_test(
-    name = "attribute-manager-it",
-    srcs = ["AttributeManagerIT.java"],
-    classpath_resources = ["//test-integration/resources:logback-test"],
-    test_class = "grakn.core.server.session.AttributeManagerIT",
-    deps = [
-        "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
-        "//kb/server",
-        "//kb/concept/api",
-        "//server",
-        "//test-integration/rule:grakn-test-server",
-        "@graknlabs_graql//java:graql",
-    ],
-)
-
-java_test(
-    name = "shard-manager-it",
-    srcs = ["ShardManagerIT.java"],
-    classpath_resources = ["//test-integration/resources:logback-test"],
-    test_class = "grakn.core.server.session.ShardManagerIT",
-    deps = [
-        "//common",
-        "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
-        "//kb/server",
-        "//server",
-        "//test-integration/rule:grakn-test-server",
-        "@graknlabs_graql//java:graql",
-    ],
-)
 
 checkstyle_test(
     name = "checkstyle",
     targets = [
         ":session-it",
         ":transaction-it",
-        ":keyspace-schema-cache-it",
         ":transaction-cache-it",
-        ":attribute-manager-it",
-        ":shard-manager-it",
     ],
 )

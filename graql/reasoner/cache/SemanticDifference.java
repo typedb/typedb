@@ -22,7 +22,7 @@ package grakn.core.graql.reasoner.cache;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.graql.executor.property.value.ValueOperation;
+import grakn.core.graql.planning.gremlin.value.ValueOperation;
 import grakn.core.graql.reasoner.atom.predicate.ValuePredicate;
 import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.graql.reasoner.utils.AnswerUtil;

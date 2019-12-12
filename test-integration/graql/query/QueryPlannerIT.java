@@ -21,17 +21,17 @@ package grakn.core.graql.query;
 import com.google.common.collect.ImmutableList;
 import grakn.core.common.config.Config;
 import grakn.core.concept.impl.TypeImpl;
-import grakn.core.graql.gremlin.fragment.InIsaFragment;
-import grakn.core.graql.gremlin.fragment.LabelFragment;
-import grakn.core.graql.gremlin.fragment.NeqFragment;
-import grakn.core.graql.gremlin.fragment.OutIsaFragment;
+import grakn.core.graql.planning.gremlin.fragment.InIsaFragment;
+import grakn.core.graql.planning.gremlin.fragment.LabelFragment;
+import grakn.core.graql.planning.gremlin.fragment.NeqFragment;
+import grakn.core.graql.planning.gremlin.fragment.OutIsaFragment;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Entity;
 import grakn.core.kb.concept.api.EntityType;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
-import grakn.core.kb.graql.gremlin.Fragment;
-import grakn.core.kb.graql.gremlin.TraversalPlanFactory;
+import grakn.core.kb.graql.planning.gremlin.Fragment;
+import grakn.core.kb.graql.planning.gremlin.TraversalPlanFactory;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import grakn.core.rule.GraknTestStorage;
@@ -45,6 +45,7 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.List;
@@ -396,113 +397,6 @@ public class QueryPlannerIT {
         // 5 isa fragments: x, y, z, relation between x and y, relation between z and y
         assertEquals(5L, plan.stream()
                 .filter(fragment -> fragment instanceof OutIsaFragment || fragment instanceof InIsaFragment).count());
-    }
-
-    @Test @SuppressWarnings("Duplicates")
-    public void shardCountIsUsed() {
-        // force the concept to get a new shard
-        // shards of thing = 2 (thing = 1 and thing itself)
-        // thing 2 = 4, thing3 = 7
-        TypeImpl<?,?> entityType2 = ConceptDowncasting.type(tx.getEntityType(thingy2));
-        entityType2.createShard();
-        entityType2.createShard();
-        entityType2.createShard();
-
-        TypeImpl<?,?> entityType3 = ConceptDowncasting.type(tx.getEntityType(thingy3));
-        entityType3.createShard();
-        entityType3.createShard();
-        entityType3.createShard();
-        entityType3.createShard();
-        entityType3.createShard();
-        entityType3.createShard();
-
-        Pattern pattern;
-        ImmutableList<? extends Fragment> plan;
-
-        pattern = and(
-                x.isa(thingy1),
-                y.isa(thingy2),
-                z.isa(thingy3),
-                var().rel(x).rel(y).rel(z));
-        plan = getPlan(pattern);
-        assertEquals(x.var(), plan.get(3).end());
-        assertEquals(3L, plan.stream().filter(fragment -> fragment instanceof NeqFragment).count());
-
-        //TODO: should uncomment the following after updating cost of out-isa fragment
-//        varName = plan.get(7).end().value();
-//        assertEquals(y.value(), varName);
-//
-//        varName = plan.get(11).end().value();
-//        assertEquals(y.value(), varName);
-
-        pattern = and(
-                x.isa(thingy),
-                y.isa(thingy2),
-                var().rel(x).rel(y));
-        plan = getPlan(pattern);
-        assertEquals(x.var(), plan.get(3).end());
-
-        pattern = and(
-                x.isa(thingy),
-                y.isa(thingy2),
-                z.isa(thingy3),
-                var().rel(x).rel(y).rel(z));
-        plan = getPlan(pattern);
-        assertEquals(x.var(), plan.get(4).end());
-
-        pattern = and(
-                x.isa(superType),
-                superType.type(thingy),
-                y.isa(thingy2),
-                subType.sub(superType),
-                z.isa(subType),
-                var().rel(x).rel(y));
-        plan = getPlan(pattern);
-        assertEquals(z.var(), plan.get(10).end());
-
-        TypeImpl<?, ?> thingy1Impl = ConceptDowncasting.type(tx.getEntityType(thingy1));
-        thingy1Impl.createShard();
-        thingy1Impl.createShard();
-
-        TypeImpl<?, ?> thingyImpl = ConceptDowncasting.type(tx.getEntityType(thingy));
-        thingyImpl.createShard();
-        // now thing = 5, thing1 = 3
-
-        pattern = and(
-                x.isa(thingy),
-                y.isa(thingy2),
-                z.isa(thingy3),
-                var().rel(x).rel(y).rel(z));
-        plan = getPlan(pattern);
-        assertEquals(y.var(), plan.get(3).end());
-
-        pattern = and(
-                x.isa(thingy1),
-                y.isa(thingy2),
-                z.isa(thingy3),
-                var().rel(x).rel(y).rel(z));
-        plan = getPlan(pattern);
-        assertEquals(x.var(), plan.get(3).end());
-
-        thingy1Impl.createShard();
-        thingy1Impl.createShard();
-        // now thing = 7, thing1 = 5
-
-        pattern = and(
-                x.isa(thingy),
-                y.isa(thingy2),
-                z.isa(thingy3),
-                var().rel(x).rel(y).rel(z));
-        plan = getPlan(pattern);
-        assertEquals(y.var(), plan.get(3).end());
-
-        pattern = and(
-                x.isa(thingy1),
-                y.isa(thingy2),
-                z.isa(thingy3),
-                var().rel(x).rel(y).rel(z));
-        plan = getPlan(pattern);
-        assertEquals(y.var(), plan.get(3).end());
     }
 
     private ImmutableList<? extends Fragment> getPlan(Pattern pattern) {

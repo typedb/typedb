@@ -22,11 +22,11 @@ package grakn.core.graql.executor.property;
 import com.google.common.collect.ImmutableSet;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Type;
+import grakn.core.kb.graql.exception.GraqlSemanticException;
 import grakn.core.kb.graql.executor.WriteExecutor;
 import grakn.core.kb.graql.executor.property.PropertyExecutor;
 import grakn.core.kb.graql.executor.property.PropertyExecutorFactory;
-import grakn.core.kb.graql.gremlin.EquivalentFragmentSet;
-import grakn.core.kb.graql.exception.GraqlSemanticException;
+import grakn.core.kb.graql.planning.gremlin.EquivalentFragmentSet;
 import graql.lang.Graql;
 import graql.lang.property.HasAttributeTypeProperty;
 import graql.lang.property.NeqProperty;
@@ -56,7 +56,7 @@ public class HasAttributeTypeExecutor  implements PropertyExecutor.Definable {
     private final Statement relationOwner;
     private final Statement relationValue;
 
-    HasAttributeTypeExecutor(Variable var, HasAttributeTypeProperty property) {
+    HasAttributeTypeExecutor(Variable var, HasAttributeTypeProperty property, PropertyExecutorFactory propertyExecutorFactory) {
         this.var = var;
         this.property = property;
         this.attributeType = property.attributeType();

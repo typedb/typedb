@@ -60,9 +60,9 @@ import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.concept.manager.ConceptManager;
+import grakn.core.kb.graql.exception.GraqlSemanticException;
 import grakn.core.kb.graql.executor.ComputeExecutor;
 import grakn.core.kb.graql.executor.ExecutorFactory;
-import grakn.core.kb.graql.exception.GraqlSemanticException;
 import grakn.core.kb.keyspace.KeyspaceStatistics;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
@@ -86,6 +86,7 @@ import java.util.Deque;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.stream.Stream;
@@ -100,6 +101,7 @@ import static graql.lang.Graql.Token.Compute.Method.MEDIAN;
 import static graql.lang.Graql.Token.Compute.Method.MIN;
 import static graql.lang.Graql.Token.Compute.Method.STD;
 import static graql.lang.Graql.Token.Compute.Method.SUM;
+import static graql.lang.Graql.var;
 import static java.util.stream.Collectors.toSet;
 
 /**
@@ -654,7 +656,7 @@ public class ComputeExecutorImpl implements ComputeExecutor {
             int numExtension = 0; // record the number of extensions needed for the current path
             for (int j = 0; j < currentPath.size() - 1; j++) {
                 extendedPath.add(currentPath.get(j));
-                ConceptId resourceRelationId = Utility.getResourceEdgeId(conceptManager, executorFactory, currentPath.get(j), currentPath.get(j + 1));
+                ConceptId resourceRelationId = getResourceEdgeId(currentPath.get(j), currentPath.get(j + 1));
                 if (resourceRelationId != null) {
                     numExtension++;
                     if (numExtension > numExtensionAllowed) break;
@@ -689,6 +691,25 @@ public class ComputeExecutorImpl implements ComputeExecutor {
                 .flatMap(Role::players)
                 .map(SchemaConcept::label)
                 .collect(toSet());
+    }
+
+    /**
+     * Get the resource edge id if there is one. Return null if not.
+     */
+    private ConceptId getResourceEdgeId(ConceptId conceptId1, ConceptId conceptId2) {
+        if (Utility.mayHaveResourceEdge(conceptManager, conceptId1, conceptId2)) {
+            Optional<Concept> firstConcept = executorFactory.transactional(true).match(
+                    Graql.match(
+                            var("x").id(conceptId1.getValue()),
+                            var("y").id(conceptId2.getValue()),
+                            var("z").rel(var("x")).rel(var("y"))))
+                    .map(answer -> answer.get("z"))
+                    .findFirst();
+            if (firstConcept.isPresent()) {
+                return firstConcept.get().id();
+            }
+        }
+        return null;
     }
 
     /**

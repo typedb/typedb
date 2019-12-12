@@ -25,7 +25,7 @@ import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.PropertyAtomicFactory;
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.executor.ExecutorFactory;
-import grakn.core.kb.graql.gremlin.TraversalPlanFactory;
+import grakn.core.kb.graql.planning.gremlin.TraversalPlanFactory;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.kb.graql.reasoner.cache.QueryCache;
 import grakn.core.kb.graql.reasoner.cache.RuleCache;

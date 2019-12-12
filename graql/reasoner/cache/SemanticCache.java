@@ -29,7 +29,7 @@ import grakn.core.graql.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.graql.executor.ExecutorFactory;
-import grakn.core.kb.graql.gremlin.TraversalPlanFactory;
+import grakn.core.kb.graql.planning.gremlin.TraversalPlanFactory;
 import grakn.core.kb.graql.reasoner.cache.CacheEntry;
 import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
 import graql.lang.statement.Variable;

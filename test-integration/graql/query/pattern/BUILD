@@ -27,7 +27,7 @@ java_test(
         "//concept/answer",
         "//dependencies/maven/artifacts/com/google/guava",
         "//kb/server",
-        "//kb/graql",
+        "//kb/graql/exception",
         "//kb/concept/api",
         "//test-integration/graql/graph:movie-graph",
         "//test-integration/rule:grakn-test-server",

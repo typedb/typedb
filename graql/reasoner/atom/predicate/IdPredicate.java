@@ -19,15 +19,15 @@
 
 package grakn.core.graql.reasoner.atom.predicate;
 
-import grakn.core.graql.reasoner.ReasonerCheckedException;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.manager.ConceptManager;
+import grakn.core.kb.graql.exception.GraqlSemanticException;
+import grakn.core.kb.graql.reasoner.ReasonerCheckedException;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
-import grakn.core.kb.graql.exception.GraqlSemanticException;
 import graql.lang.Graql;
 import graql.lang.property.IdProperty;
 import graql.lang.property.ValueProperty;

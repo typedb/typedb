@@ -21,12 +21,9 @@ package grakn.core.kb.server.exception;
 
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
-import grakn.core.kb.server.keyspace.Keyspace;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
-
-import static grakn.core.common.exception.ErrorMessage.INITIALIZATION_EXCEPTION;
 
 /**
  * Backend Grakn Exception
@@ -46,11 +43,6 @@ public class GraknServerException extends GraknException {
     }
 
     @CheckReturnValue
-    public static GraknServerException unreachableStatement(Exception cause) {
-        return unreachableStatement(null, cause);
-    }
-
-    @CheckReturnValue
     public static GraknServerException unreachableStatement(String message) {
         return unreachableStatement(message, null);
     }
@@ -67,10 +59,6 @@ public class GraknServerException extends GraknException {
 
     public static GraknServerException create(String error) {
         return new GraknServerException(error);
-    }
-
-    public static GraknServerException initializationException(Keyspace keyspace) {
-        return create(INITIALIZATION_EXCEPTION.getMessage(keyspace));
     }
 
     public static GraknServerException invalidPIDException(String pid) {

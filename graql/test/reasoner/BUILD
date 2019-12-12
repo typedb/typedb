@@ -28,7 +28,7 @@ java_test(
         "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/org/mockito:mockito-core",
         "//kb/concept/api",
-        "//graql",
+        "//graql/reasoner",
         "@graknlabs_graql//java:graql",
     ],
 )

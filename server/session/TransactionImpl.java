@@ -33,14 +33,13 @@ import grakn.core.concept.answer.ConceptSetMeasure;
 import grakn.core.concept.answer.Explanation;
 import grakn.core.concept.answer.Numeric;
 import grakn.core.concept.answer.Void;
+import grakn.core.core.AttributeSerialiser;
 import grakn.core.concept.impl.ConceptVertex;
 import grakn.core.concept.impl.SchemaConceptImpl;
 import grakn.core.concept.util.ConceptUtils;
-import grakn.core.concept.impl.AttributeSerialiser;
 import grakn.core.core.JanusTraversalSourceProvider;
 import grakn.core.core.Schema;
 import grakn.core.graph.core.JanusGraphTransaction;
-import grakn.core.graql.reasoner.ReasonerException;
 import grakn.core.graql.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.graql.reasoner.explanation.JoinExplanation;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
@@ -64,8 +63,8 @@ import grakn.core.kb.concept.structure.PropertyNotUniqueException;
 import grakn.core.kb.concept.structure.VertexElement;
 import grakn.core.kb.graql.executor.ExecutorFactory;
 import grakn.core.kb.graql.executor.QueryExecutor;
-import grakn.core.kb.graql.gremlin.TraversalPlanFactory;
-import grakn.core.kb.graql.reasoner.cache.QueryCache;
+import grakn.core.kb.graql.planning.gremlin.TraversalPlanFactory;
+import grakn.core.kb.graql.reasoner.ReasonerException;
 import grakn.core.kb.graql.reasoner.cache.RuleCache;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
@@ -186,7 +185,7 @@ public class TransactionImpl implements Transaction {
      * @return true if graph lock need to be acquired for commit
      */
     @VisibleForTesting
-    boolean commitLockRequired(){
+    public boolean commitLockRequired(){
         String txId = this.janusTransaction.toString();
         boolean attributeLockRequired = session.attributeManager().requiresLock(txId);
         boolean shardLockRequired = session.shardManager().requiresLock(txId);
@@ -275,7 +274,7 @@ public class TransactionImpl implements Transaction {
     }
 
     @VisibleForTesting
-    void computeShardCandidates() {
+    public void computeShardCandidates() {
         String txId = this.janusTransaction.toString();
         uncomittedStatisticsDelta.instanceDeltas().entrySet().stream()
                 .filter(e -> !Schema.MetaSchema.isMetaLabel(e.getKey()))
@@ -668,11 +667,6 @@ public class TransactionImpl implements Transaction {
         } else {
             throw new IllegalArgumentException("Unrecognised Query object");
         }
-    }
-
-    @Override
-    public QueryCache queryCache() {
-        return queryCache;
     }
 
     @Override

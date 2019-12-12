@@ -24,7 +24,7 @@ import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.executor.ComputeExecutor;
 import grakn.core.kb.graql.executor.ExecutorFactory;
 import grakn.core.kb.graql.executor.QueryExecutor;
-import grakn.core.kb.graql.gremlin.TraversalPlanFactory;
+import grakn.core.kb.graql.planning.gremlin.TraversalPlanFactory;
 import grakn.core.kb.keyspace.KeyspaceStatistics;
 import org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph;
 

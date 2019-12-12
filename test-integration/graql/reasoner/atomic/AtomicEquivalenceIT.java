@@ -22,7 +22,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import grakn.core.common.config.Config;
-import grakn.core.concept.impl.AttributeValueConverter;
+import grakn.core.core.AttributeValueConverter;
 import grakn.core.graql.reasoner.atom.AtomicEquivalence;
 import grakn.core.graql.reasoner.query.ReasonerQueryFactory;
 import grakn.core.kb.concept.api.AttributeType;

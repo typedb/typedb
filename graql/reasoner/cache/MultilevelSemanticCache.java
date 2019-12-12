@@ -27,7 +27,7 @@ import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.reasoner.query.ReasonerQueryEquivalence;
 import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.kb.graql.executor.ExecutorFactory;
-import grakn.core.kb.graql.gremlin.TraversalPlanFactory;
+import grakn.core.kb.graql.planning.gremlin.TraversalPlanFactory;
 import grakn.core.kb.graql.reasoner.cache.CacheEntry;
 import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;

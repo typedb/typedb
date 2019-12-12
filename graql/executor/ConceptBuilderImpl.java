@@ -25,6 +25,7 @@ import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.EntityType;
+import grakn.core.kb.concept.api.GraknConceptException;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
@@ -33,11 +34,10 @@ import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.concept.manager.ConceptManager;
+import grakn.core.kb.graql.exception.GraqlQueryException;
+import grakn.core.kb.graql.exception.GraqlSemanticException;
 import grakn.core.kb.graql.executor.ConceptBuilder;
 import grakn.core.kb.graql.executor.WriteExecutor;
-import grakn.core.kb.server.exception.GraqlQueryException;
-import grakn.core.kb.graql.exception.GraqlSemanticException;
-import grakn.core.kb.server.exception.InvalidKBException;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;
@@ -400,7 +400,7 @@ public class ConceptBuilderImpl implements ConceptBuilder {
         } else if (superConcept.isRule()) {
             concept = putSchemaConcept(label, () -> conceptManager.createRule(label, use(WHEN), use(THEN), superConcept.asRule()), Rule.class);
         } else {
-            throw InvalidKBException.insertMetaType(label, superConcept);
+            throw GraknConceptException.invalidSuperType(label, superConcept);
         }
 
         setSuper(concept, superConcept);
@@ -447,7 +447,7 @@ public class ConceptBuilderImpl implements ConceptBuilder {
         } else if (superConcept.isRule()) {
             subConcept.asRule().sup(superConcept.asRule());
         } else {
-            throw InvalidKBException.insertMetaType(subConcept.label(), superConcept);
+            throw GraknConceptException.invalidSuperType(subConcept.label(), superConcept);
         }
     }
 

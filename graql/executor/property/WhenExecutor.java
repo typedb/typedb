@@ -20,10 +20,10 @@
 package grakn.core.graql.executor.property;
 
 import com.google.common.collect.ImmutableSet;
+import grakn.core.kb.graql.exception.GraqlSemanticException;
 import grakn.core.kb.graql.executor.WriteExecutor;
 import grakn.core.kb.graql.executor.property.PropertyExecutor;
-import grakn.core.kb.graql.gremlin.EquivalentFragmentSet;
-import grakn.core.kb.graql.exception.GraqlSemanticException;
+import grakn.core.kb.graql.planning.gremlin.EquivalentFragmentSet;
 import graql.lang.property.VarProperty;
 import graql.lang.property.WhenProperty;
 import graql.lang.statement.Variable;

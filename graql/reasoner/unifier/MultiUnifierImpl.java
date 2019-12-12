@@ -24,7 +24,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.UnmodifiableIterator;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.graql.reasoner.ReasonerException;
+import grakn.core.kb.graql.reasoner.ReasonerException;
 import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
 import graql.lang.statement.Variable;

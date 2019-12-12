@@ -19,6 +19,7 @@
 
 package grakn.core.concept.impl;
 
+import grakn.core.core.AttributeSerialiser;
 import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;

@@ -55,11 +55,16 @@ java_library(
         "//concept/util",
         "//concept/manager",
         "//kb/server",
-        "//kb/graql",
         "//kb/keyspace",
+        "//kb/graql/reasoner",
+        "//kb/graql/executor",
+        "//kb/graql/planning",
+        "//kb/graql/exception",
         "//keyspace",
         "//core",
-        "//graql",
+        "//graql/executor",
+        "//graql/planning",
+        "//graql/reasoner",
         "//graph",
 
 

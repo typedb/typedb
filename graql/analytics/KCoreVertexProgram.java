@@ -20,7 +20,7 @@ package grakn.core.graql.analytics;
 
 import com.google.common.collect.Iterators;
 import grakn.core.core.Schema;
-import grakn.core.kb.server.exception.GraqlQueryException;
+import grakn.core.kb.graql.exception.GraqlQueryException;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
 import org.apache.tinkerpop.gremlin.process.computer.MemoryComputeKey;
 import org.apache.tinkerpop.gremlin.process.computer.Messenger;
