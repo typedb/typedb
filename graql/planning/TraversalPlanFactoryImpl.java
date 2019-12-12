@@ -328,6 +328,8 @@ public class TraversalPlanFactoryImpl implements TraversalPlanFactory {
     private double getLogInstanceCount(Fragment fragment) {
         // set the weight of the node as a starting point based on log(number of this node)
         double logInstanceCount;
+
+        //this is to make sure we don't end up with log(0)
         double shardLoadFactor = 0.25;
         if (fragment instanceof LabelFragment) {
             // only LabelFragment (corresponding to type vertices) can be sharded
