@@ -52,7 +52,7 @@ import grakn.core.graql.reasoner.rule.RuleUtils;
 import grakn.core.graql.reasoner.state.AnswerPropagatorState;
 import grakn.core.graql.reasoner.state.AnswerState;
 import grakn.core.graql.reasoner.state.ConjunctiveState;
-import grakn.core.graql.reasoner.state.CumulativeState;
+import grakn.core.graql.reasoner.state.JoinState;
 import grakn.core.graql.reasoner.state.ResolutionState;
 import grakn.core.graql.reasoner.state.VariableComparisonState;
 import grakn.core.graql.reasoner.unifier.UnifierType;
@@ -673,7 +673,7 @@ public class ReasonerQueryImpl extends ResolvableQuery {
             dbIterator = Collections.emptyIterator();
 
             ResolutionQueryPlan queryPlan = new ResolutionQueryPlan(reasonerQueryFactory, this);
-            subGoalIterator = Iterators.singletonIterator(new CumulativeState(queryPlan.queries(), new ConceptMap(), parent.getUnifier(), parent, subGoals));
+            subGoalIterator = Iterators.singletonIterator(new JoinState(queryPlan.queries(), new ConceptMap(), parent.getUnifier(), parent, subGoals));
         }
         return Iterators.concat(dbIterator, subGoalIterator);
     }

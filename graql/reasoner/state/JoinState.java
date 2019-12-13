@@ -38,15 +38,15 @@ import java.util.stream.Collectors;
 /**
  * Query state corresponding to a an intermediate state obtained from decomposing a conjunctive query (ReasonerQueryImpl) in the resolution tree.
  */
-public class CumulativeState extends AnswerPropagatorState<ReasonerQueryImpl> {
+public class JoinState extends AnswerPropagatorState<ReasonerQueryImpl> {
 
     private final LinkedList<ReasonerQueryImpl> subQueries;
 
-    public CumulativeState(List<ReasonerQueryImpl> qs,
-                           ConceptMap sub,
-                           Unifier u,
-                           AnswerPropagatorState parent,
-                           Set<ReasonerAtomicQuery> subGoals) {
+    public JoinState(List<ReasonerQueryImpl> qs,
+                     ConceptMap sub,
+                     Unifier u,
+                     AnswerPropagatorState parent,
+                     Set<ReasonerAtomicQuery> subGoals) {
         super(Iterables.getFirst(qs, null), sub, u, parent, subGoals);
         this.subQueries = new LinkedList<>(qs);
         subQueries.removeFirst();
@@ -80,7 +80,7 @@ public class CumulativeState extends AnswerPropagatorState<ReasonerQueryImpl> {
 
         if (answer.isEmpty()) return null;
         if (subQueries.isEmpty()) return new AnswerState(answer, getUnifier(), getParentState());
-        return new CumulativeState(subQueries, answer, getUnifier(), getParentState(), getVisitedSubGoals());
+        return new JoinState(subQueries, answer, getUnifier(), getParentState(), getVisitedSubGoals());
     }
 
     @Override
