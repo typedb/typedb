@@ -1,0 +1,52 @@
+define
+idr sub attribute, datatype string;
+run sub attribute, datatype long;
+latest sub attribute, datatype boolean;
+ownership sub relation, abstract,
+  relates ownership_owner,
+  relates ownership_owned;
+siblingship sub relation,
+  relates sibling;
+siblingship-rule sub rule,
+  when {
+    (ownership_owned: $x, ownership_owner: $o);
+    (ownership_owned: $y, ownership_owner: $o);
+    $x != $y;
+  },
+  then {
+    (sibling: $x, sibling: $y) isa siblingship;
+  };
+
+ownership-owned-latest-rule sub rule,
+  when {
+    $x has run $x-run;
+    not {(sibling: $x, sibling: $y); $y has run $y-run; $y-run > $x-run;};
+  },
+  then {
+    $x has latest true;
+  };
+
+workflow sub entity,
+    key idr,
+    has run, # atomic
+    has latest,
+    plays workflow-analysis_workflow;
+
+workflow-analysis sub ownership,
+    relates workflow-analysis_workflow as ownership_owner,
+    relates workflow-analysis_analysis as ownership_owned;
+
+analysis sub entity,
+    key idr,
+    has run, # atomic
+    has latest,
+    plays sibling,
+    plays workflow-analysis_analysis;
+
+insert
+
+$o isa workflow, has idr "o";
+$a isa analysis, has idr "a", has run 1;
+$b isa analysis, has idr "b", has run 2;
+(workflow-analysis_analysis: $a, workflow-analysis_workflow: $o) isa workflow-analysis;
+(workflow-analysis_analysis: $b, workflow-analysis_workflow: $o) isa workflow-analysis;

@@ -240,7 +240,7 @@ public class RuleApplicabilityIT {
     }
 
     @Test
-    public void nonSpecificattributeBoundRelationPlayers(){
+    public void nonSpecificAttributeBoundRelationPlayers(){
         try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
             TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction)tx;
             ReasonerQueryFactory reasonerQueryFactory = testTx.reasonerQueryFactory();

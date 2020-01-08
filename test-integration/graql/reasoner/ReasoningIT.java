@@ -63,6 +63,85 @@ public class ReasoningIT {
 
     private static String resourcePath = "test-integration/graql/reasoner/stubs/";
 
+    @Test
+    public void debug(){
+        try(Session session = server.sessionWithNewKeyspace()){
+            loadFromFileAndCommit(resourcePath, "debug.gql", session);
+
+            try( Transaction tx = session.writeTransaction()){
+                List<ConceptMap> answers = tx.execute(Graql.parse(
+                        "match " +
+                                "$x has run $x-run;" +
+                                "not {" +
+                                    "(sibling: $x, sibling: $y);" +
+                                    "$y has run $y-run;" +
+                                    "$y-run > $x-run;" +
+                                "};" +
+                                        "get;").asGet());
+                System.out.println();
+                assertEquals(1, answers.size());
+            }
+            try (Transaction tx = session.writeTransaction()) {
+                //should return 1, returns 2
+                List<ConceptMap> answers = tx.execute(Graql.parse(
+                        "match " +
+                                "$x has latest true;" +
+                                "get;")
+                        .asGet());
+                System.out.println();
+            }
+            try (Transaction tx = session.writeTransaction()) {
+                String aId = tx.getEntityType("analysis").instances().iterator().next().id().getValue();
+                List<ConceptMap> answers = tx.execute(Graql.parse("match " +
+                        "(sibling: $x, sibling: $y) isa siblingship;" +
+                        "$x id " + aId + ";" +
+                        "get;").asGet());
+                System.out.println();
+            }
+            try (Transaction tx = session.writeTransaction()) {
+                List<ConceptMap> answers = tx.execute(Graql.parse("match " +
+                        "(sibling: $x, sibling: $y) isa siblingship;" +
+                        "$x has run $x-run;" +
+                        "$y has run $y-run;" +
+                        "get;").asGet());
+                System.out.println();
+            }
+
+
+            try (Transaction tx = session.writeTransaction()) {
+                //should return 1, returns 2
+                List<ConceptMap> answers = tx.execute(Graql.parse(
+                        "match " +
+                                "$x has latest true;" +
+                                "get;")
+                        .asGet());
+                System.out.println();
+                assertEquals(1, answers.size());
+            }
+            try (Transaction tx = session.writeTransaction()) {
+                //should return 1, returns 2
+                List<ConceptMap> answers = tx.execute(Graql.parse(
+                        "match " +
+                                "$x has run $r, has latest true;" +
+                                "get;")
+                        .asGet());
+                System.out.println();
+                assertEquals(1, answers.size());
+            }
+            try (Transaction tx = session.writeTransaction()) {
+                //should return 1, returns 0
+                List<ConceptMap> answers = tx.execute(Graql.parse(
+                        "match " +
+                                "$x isa analysis, has idr $id, has latest true;" +
+                                "get;")
+                        .asGet());
+                System.out.println();
+                assertEquals(1, answers.size());
+            }
+
+        }
+    }
+
     //The tests validate the correctness of the rule reasoning implementation w.r.t. the intended semantics of rules.
     //The ignored tests reveal some bugs in the reasoning algorithm, as they don't return the expected results,
     //as specified in the respective comments below.
