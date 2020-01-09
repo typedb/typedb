@@ -307,13 +307,13 @@ public class ReasonerQueryImpl extends ResolvableQuery {
     /**
      * @param typedVar variable of interest
      * @param parentType to be checked
-     * @return true if typing the typeVar with type is compatible with role configuration of this query
+     * @return true if typing the typeVar with type is compatible with role configuration of this query, i.e. can return
+     * any results when queried
      */
     @Override
     public boolean isTypeRoleCompatible(Variable typedVar, Type parentType){
         if (parentType == null || Schema.MetaSchema.isMetaLabel(parentType.label())) return true;
 
-        Set<Type> parentTypes = parentType.subs().collect(Collectors.toSet());
         List<Role> roleRequirements = getAtoms(RelationAtom.class)
                 .filter(ra -> ra.getVarNames().contains(typedVar))
                 .flatMap(ra -> ra.getRoleVarMap().entries().stream())
@@ -324,6 +324,26 @@ public class ReasonerQueryImpl extends ResolvableQuery {
 
         if (roleRequirements.isEmpty()) return true;
 
+        /**
+         * NB: we pull in both the subs of the parentType as well as subs of the required roles
+         * to conform to the current MATCH semantics of roles.
+         * Examples:
+         *
+         * 1*
+         * child query (this): (baseRole: $x, subRole: $y)
+         * parent Query: ($x, $y), parentType($x), parentType($y) where strictly: type plays baseRole;
+         *
+         * -> even though type doesn't play baseRole, its subtypes might, se we pull them in
+         *
+         * 2*
+         * child query: (baseRole: $x, baseRole: $y)
+         * Q: ($x, $y), parentType($x), parentType($y) where strictly: type plays subRole;
+         *
+         * -> even though type doesn't play subRole, instances of the relation with specialised (sub) roles might exist,
+         * so we pull the role subtypes in
+         */
+
+        Set<Type> parentTypes = parentType.subs().collect(Collectors.toSet());
         return roleRequirements.stream()
                 .filter(role -> !Schema.MetaSchema.isMetaLabel(role.label()))
                 //include sub roles

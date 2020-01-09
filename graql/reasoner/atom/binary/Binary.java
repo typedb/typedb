@@ -183,7 +183,7 @@ public abstract class Binary extends Atom {
                 parentType != null? Collections.singleton(parentType) : Collections.emptySet(),
                 childType != null? Collections.singleton(childType) : Collections.emptySet())
                 || !unifierType.typeCompatibility(parentTypes, childTypes)
-                || !parentTypes.stream().allMatch(pType -> unifierType.typePlayability(this.getParentQuery(), this.getVarName(), pType))
+                || !unifierType.typePlayabilityWithInsertSemantics(this, this.getVarName(), parentTypes)
                 || !unifierType.typeDirectednessCompatibility(parentAtom, this)){
                      return UnifierImpl.nonExistent();
         }

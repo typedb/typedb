@@ -386,9 +386,24 @@ public class AtomicQueryUnificationIT {
         try (Transaction tx = unificationWithTypesSession.readTransaction()) {
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction) tx).reasonerQueryFactory();
 
-            ReasonerAtomicQuery parentQuery = reasonerQueryFactory.atomic(conjunction("{ $x1 isa threeRoleEntity;$x2 isa threeRoleEntity2; $x3 isa threeRoleEntity3;($x1, $x2, $x3) isa ternary; };"));
-            ReasonerAtomicQuery childQuery = reasonerQueryFactory.atomic(conjunction("{ $y3 isa threeRoleEntity3;$y2 isa threeRoleEntity2;$y1 isa threeRoleEntity;($y2, $y3, $y1) isa ternary; };"));
-            ReasonerAtomicQuery childQuery2 = reasonerQueryFactory.atomic(conjunction("{ $y3 isa threeRoleEntity3;$y2 isa threeRoleEntity2;$y1 isa threeRoleEntity;(role2: $y2, role3: $y3, role1: $y1) isa ternary; };"));
+            ReasonerAtomicQuery parentQuery = reasonerQueryFactory.atomic(conjunction(
+                    "{" +
+                            "$x1 isa threeRoleEntity;" +
+                            "$x2 isa threeRoleEntity2;" +
+                            "$x3 isa threeRoleEntity3;" +
+                            "($x1, $x2, $x3) isa ternary; };"));
+            ReasonerAtomicQuery childQuery = reasonerQueryFactory.atomic(conjunction(
+                    "{" +
+                            "$y1 isa threeRoleEntity;" +
+                            "$y2 isa threeRoleEntity2;" +
+                            "$y3 isa threeRoleEntity3;" +
+                            "($y1, $y2, $y3) isa ternary; };"));
+            ReasonerAtomicQuery childQuery2 = reasonerQueryFactory.atomic(conjunction(
+                    "{" +
+                            "$y3 isa threeRoleEntity3;" +
+                            "$y2 isa threeRoleEntity2;" +
+                            "$y1 isa threeRoleEntity;" +
+                            "(role1: $y1, role2: $y2, role3: $y3) isa ternary; };"));
 
             MultiUnifier unifier = childQuery.getMultiUnifier(parentQuery, UnifierType.RULE);
             MultiUnifier unifier2 = childQuery2.getMultiUnifier(parentQuery, UnifierType.RULE);

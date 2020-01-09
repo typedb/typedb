@@ -71,11 +71,6 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
         }
 
         @Override
-        public boolean typePlayability(ReasonerQuery query, Variable var, Type type) {
-            return true;
-        }
-
-        @Override
         public boolean typeCompatibility(Set<? extends SchemaConcept> parentTypes, Set<? extends SchemaConcept> childTypes) {
             return super.typeCompatibility(parentTypes, childTypes)
                     && parentTypes.equals(childTypes);
@@ -126,11 +121,6 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
         public boolean roleCompatibility(Role parent, Role child) {
             return parent == null && child == null
                     || parent != null && parent.equals(child);
-        }
-
-        @Override
-        public boolean typePlayability(ReasonerQuery query, Variable var, Type type) {
-            return true;
         }
 
         @Override
@@ -195,8 +185,13 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
         }
 
         @Override
-        public boolean typePlayability(ReasonerQuery query, Variable var, Type type) {
-            return query.isTypeRoleCompatible(var, type);
+        public boolean typePlayabilityWithMatchSemantics(Atomic child, Variable var, Set<Type> types) {
+            return child.typesRoleCompatibleWithMatchSemantics(var, types);
+        }
+
+        @Override
+        public boolean typePlayabilityWithInsertSemantics(Atomic child, Variable var, Set<Type> types) {
+            return child.typesRoleCompatibleWithInsertSemantics(var, types);
         }
 
         @Override
@@ -279,8 +274,13 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
         }
 
         @Override
-        public boolean typePlayability(ReasonerQuery query, Variable var, Type type) {
-            return query.isTypeRoleCompatible(var, type);
+        public boolean typePlayabilityWithMatchSemantics(Atomic child, Variable var, Set<Type> types) {
+            return child.typesRoleCompatibleWithMatchSemantics(var, types);
+        }
+
+        @Override
+        public boolean typePlayabilityWithInsertSemantics(Atomic child, Variable var, Set<Type> types) {
+            return child.typesRoleCompatibleWithInsertSemantics(var, types);
         }
 
         @Override
@@ -341,7 +341,15 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
 
         @Override public boolean roleCompatibility(Role parent, Role child) { return SUBSUMPTIVE.roleCompatibility(parent, child); }
 
-        @Override public boolean typePlayability(ReasonerQuery query, Variable var, Type type) { return SUBSUMPTIVE.typePlayability(query, var, type); }
+        @Override
+        public boolean typePlayabilityWithMatchSemantics(Atomic child, Variable var, Set<Type> types) {
+            return SUBSUMPTIVE.typePlayabilityWithMatchSemantics(child, var, types);
+        }
+
+        @Override
+        public boolean typePlayabilityWithInsertSemantics(Atomic child, Variable var, Set<Type> types) {
+            return SUBSUMPTIVE.typePlayabilityWithInsertSemantics(child, var, types);
+        }
 
         @Override
         public boolean typeCompatibility(Set<? extends SchemaConcept> parentTypes, Set<? extends SchemaConcept> childTypes) {

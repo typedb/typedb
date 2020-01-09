@@ -502,6 +502,7 @@ public class RuleApplicabilityIT {
                     tx.getRole("role"), new Variable("x"),
                     tx.getRole("role"), new Variable("y"),
                     tx.getRole("role"), new Variable("z"));
+
             assertEquals(roleMap, roleSetMap(relation.getRoleVarMap()));
             assertThat(relation.getApplicableRules().collect(toSet()), empty());
         }

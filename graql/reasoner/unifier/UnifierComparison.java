@@ -20,6 +20,7 @@
 package grakn.core.graql.reasoner.unifier;
 
 import grakn.core.concept.util.ConceptUtils;
+import grakn.core.graql.reasoner.atom.binary.RelationAtom;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Type;
@@ -27,8 +28,11 @@ import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import graql.lang.statement.Variable;
 
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
+import java.util.stream.Collectors;
 
 /**
  * Interface for defining unifier comparisons.
@@ -121,11 +125,16 @@ public interface UnifierComparison {
 
     /**
      * @param query to be checked
-     * @param var   variable of interest
+     * @param typedVar   variable of interest
      * @param type  which playability is toto be checked
      * @return true if typing the typeVar with type is compatible with role configuration of the provided query
      */
-    boolean typePlayability(ReasonerQuery query, Variable var, Type type);
+
+    //TODO
+    //only relevant for RULE unifier
+    default boolean typePlayabilityWithMatchSemantics(Atomic child, Variable var, Set<Type> types){ return true;}
+
+    default boolean typePlayabilityWithInsertSemantics(Atomic child, Variable var, Set<Type> types){ return true;}
 
     /**
      * @param parent    Atomic query
