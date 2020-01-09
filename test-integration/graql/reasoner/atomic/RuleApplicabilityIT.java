@@ -178,9 +178,15 @@ public class RuleApplicabilityIT {
             Set<InferenceRule> binaryRules = rules.stream().filter(rule -> rule.getHead().getAtom().getSchemaConcept().equals(binaryType)).collect(toSet());
             Set<InferenceRule> reifyingRules = rules.stream().filter(rule -> rule.getHead().getAtom().getSchemaConcept().equals(reifyingType)).collect(toSet());
 
-            assertEquals(reifyingRules, reifyingAtom.getApplicableRules().collect(toSet()));
-            assertEquals(ternaryRules, ternaryAtom.getApplicableRules().collect(toSet()));
-            assertEquals(binaryRules, binaryAtom.getApplicableRules().collect(toSet()));
+            assertEquals(
+                    reifyingRules.stream().map(InferenceRule::getRule).collect(toSet()),
+                    reifyingAtom.getApplicableRules().map(InferenceRule::getRule).collect(toSet()));
+            assertEquals(
+                    ternaryRules.stream().map(InferenceRule::getRule).collect(toSet()),
+                    ternaryAtom.getApplicableRules().map(InferenceRule::getRule).collect(toSet()));
+            assertEquals(
+                    binaryRules.stream().map(InferenceRule::getRule).collect(toSet()),
+                    binaryAtom.getApplicableRules().map(InferenceRule::getRule).collect(toSet()));
         }
     }
 
