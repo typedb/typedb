@@ -20,6 +20,7 @@ package grakn.core.graql.reasoner.atomic;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableSetMultimap;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 import grakn.core.common.config.Config;
 import grakn.core.core.Schema;
@@ -36,6 +37,7 @@ import grakn.core.kb.concept.api.EntityType;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Relation;
 import grakn.core.kb.concept.api.Role;
+import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.server.Session;
@@ -573,9 +575,13 @@ public class RuleApplicabilityIT {
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
             String relationString = "{ $y isa singleRoleEntity;(someRole:$x, role:$y, anotherRole: $z) isa ternary; };";
+
             String relationString2 = "{ $y isa twoRoleEntity;(someRole:$x, subRole:$y, anotherRole: $z) isa ternary; };";
+
             String relationString3 = "{ $y isa anotherTwoRoleEntity;(someRole:$x, subRole:$y, anotherRole: $z) isa ternary; };";
+
             String relationString4 = "{ $y isa noRoleEntity;(someRole:$x, subRole:$y, anotherRole: $z) isa ternary; };";
+
             String relationString5 = "{ $y isa entity;(someRole:$x, subRole:$y, anotherRole: $z) isa ternary; };";
             Atom relation = reasonerQueryFactory.atomic(conjunction(relationString)).getAtom();
             Atom relation2 = reasonerQueryFactory.atomic(conjunction(relationString2)).getAtom();
@@ -583,11 +589,12 @@ public class RuleApplicabilityIT {
             Atom relation4 = reasonerQueryFactory.atomic(conjunction(relationString4)).getAtom();
             Atom relation5 = reasonerQueryFactory.atomic(conjunction(relationString5)).getAtom();
 
-            assertEquals(1, relation.getApplicableRules().count());
-            assertThat(relation2.getApplicableRules().collect(toSet()), empty());
-            assertEquals(1, relation3.getApplicableRules().count());
-            assertEquals(1, relation4.getApplicableRules().count());
-            assertEquals(1, relation5.getApplicableRules().count());
+            Rule ternaryRule = tx.getRule("ternary-rule");
+            assertEquals(ternaryRule, Iterables.getOnlyElement(relation.getApplicableRules().collect(toSet())).getRule());
+            assertEquals(ternaryRule, Iterables.getOnlyElement(relation2.getApplicableRules().collect(toSet())).getRule());
+            assertEquals(ternaryRule, Iterables.getOnlyElement(relation3.getApplicableRules().collect(toSet())).getRule());
+            assertEquals(ternaryRule, Iterables.getOnlyElement(relation4.getApplicableRules().collect(toSet())).getRule());
+            assertEquals(ternaryRule, Iterables.getOnlyElement(relation5.getApplicableRules().collect(toSet())).getRule());
         }
     }
 
