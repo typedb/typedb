@@ -20,19 +20,14 @@
 package grakn.core.graql.reasoner.unifier;
 
 import grakn.core.concept.util.ConceptUtils;
-import grakn.core.graql.reasoner.atom.binary.RelationAtom;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import graql.lang.statement.Variable;
-
-import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
-import java.util.stream.Collectors;
 
 /**
  * Interface for defining unifier comparisons.
@@ -124,19 +119,41 @@ public interface UnifierComparison {
     }
 
     /**
-     * @param query to be checked
-     * @param typedVar   variable of interest
-     * @param type  which playability is toto be checked
-     * @return true if typing the typeVar with type is compatible with role configuration of the provided query
+     * NB:
+     * Relevant only for RULE and SUBSUMPTIVE unification.
+     * We differentiate two types of playability checks having different semantics:
+     *
+     * - MATCH (queries in general, rule bodies) -> include type hierarchies
+     * - INSERT (only rule heads) -> follow from the fact that rule heads need to be insertable.
+     *   INSERT semantics impose stricter type compatibility and playability criteria.
+     *
+     *
+     * Examples:
+     *
+     * MATCH semantics:
+     * child: (baseRole: $x, subRole: $y)
+     * parent: ($x, $y), parentType($x), parentType($y) where: parentType plays baseRole;
+     *
+     * RESULT: compatible -> even though type doesn't play baseRole, its subtypes might, so they are taken into account.
+     *
+     * INSERT semantics:
+     * child: (baseRole: $x, baseRole: $y)
+     * parent: ($x, $y), parentType($x), parentType($y) where : parentType plays subRole;
+     *
+     * RESULT: incompatible -> (baseRole: $x, baseRole: $y), parentType($x), parentType($y) is not a valid insert statement
+     * as it doesn't conform to the schema (parentType plays subRole)
+     *
+     * @param child atom to be checked
+     * @param var   variable of interest
+     * @param types which role playability is to be checked
+     * @return true if typing the typeVar with type is compatible with role configuration of the provided atom
      */
-
-    //TODO
-    //only relevant for RULE unifier
     default boolean typePlayabilityWithMatchSemantics(Atomic child, Variable var, Set<Type> types){ return true;}
 
     default boolean typePlayabilityWithInsertSemantics(Atomic child, Variable var, Set<Type> types){ return true;}
 
     /**
+     *
      * @param parent    Atomic query
      * @param child     Atomic query
      * @param parentVar variable of interest in the parent query

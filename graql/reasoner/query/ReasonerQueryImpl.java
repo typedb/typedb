@@ -304,54 +304,6 @@ public class ReasonerQueryImpl extends ResolvableQuery {
         return atomSet.stream().filter(Atomic::isSelectable).count() == 1;
     }
 
-    /**
-     * @param typedVar variable of interest
-     * @param parentType to be checked
-     * @return true if typing the typeVar with type is compatible with role configuration of this query, i.e. can return
-     * any results when queried
-     */
-    @Override
-    public boolean isTypeRoleCompatible(Variable typedVar, Type parentType){
-        if (parentType == null || Schema.MetaSchema.isMetaLabel(parentType.label())) return true;
-
-        List<Role> roleRequirements = getAtoms(RelationAtom.class)
-                .filter(ra -> ra.getVarNames().contains(typedVar))
-                .flatMap(ra -> ra.getRoleVarMap().entries().stream())
-                //get roles this type needs to play
-                .filter(e -> e.getValue().equals(typedVar))
-                .map(Map.Entry::getKey)
-                .collect(Collectors.toList());
-
-        if (roleRequirements.isEmpty()) return true;
-
-        /**
-         * NB: we pull in both the subs of the parentType as well as subs of the required roles
-         * to conform to the current MATCH semantics of roles.
-         * Examples:
-         *
-         * 1*
-         * child query (this): (baseRole: $x, subRole: $y)
-         * parent Query: ($x, $y), parentType($x), parentType($y) where strictly: type plays baseRole;
-         *
-         * -> even though type doesn't play baseRole, its subtypes might, se we pull them in
-         *
-         * 2*
-         * child query: (baseRole: $x, baseRole: $y)
-         * Q: ($x, $y), parentType($x), parentType($y) where strictly: type plays subRole;
-         *
-         * -> even though type doesn't play subRole, instances of the relation with specialised (sub) roles might exist,
-         * so we pull the role subtypes in
-         */
-
-        Set<Type> parentTypes = parentType.subs().collect(Collectors.toSet());
-        return roleRequirements.stream()
-                .filter(role -> !Schema.MetaSchema.isMetaLabel(role.label()))
-                //include sub roles
-                .flatMap(Role::subs)
-                //check if it can play it
-                .flatMap(Role::players)
-                .anyMatch(parentTypes::contains);
-    }
 
     @Override
     public boolean isEquivalent(ResolvableQuery q) {
