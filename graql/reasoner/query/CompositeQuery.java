@@ -334,11 +334,6 @@ public class CompositeQuery extends ResolvableQuery {
     }
 
     @Override
-    public boolean isTypeRoleCompatible(Variable typedVar, Type parentType) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public MultiUnifier getMultiUnifier(ReasonerQuery parent) {
         throw new UnsupportedOperationException();
     }
