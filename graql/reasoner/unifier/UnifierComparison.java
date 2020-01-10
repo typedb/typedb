@@ -128,20 +128,23 @@ public interface UnifierComparison {
      *   INSERT semantics impose stricter type compatibility and playability criteria.
      *
      *
-     * Examples:
+     * Example:
+     *
+     * child: (baseRole: $x, baseRole: $y)
+     * parent: ($x, $y), parentType($x), parentType($y)
+     * where:
+     * subRole sub baseRole;
+     * parentType plays subRole;
      *
      * MATCH semantics:
-     * child: (baseRole: $x, subRole: $y)
-     * parent: ($x, $y), parentType($x), parentType($y) where: parentType plays baseRole;
      *
-     * RESULT: compatible -> even though type doesn't play baseRole, its subtypes might, so they are taken into account.
+     * RESULT: compatible -> even though type doesn't play the baseRole, its subtypes might, so they need to be taken into account.
+     * MATCHing (baseRole: $x, baseRole: $y), parentType($x), parentType($y) can potentially return results
+     * as matching baseRole will return relation instances with subRole as well.
      *
      * INSERT semantics:
-     * child: (baseRole: $x, baseRole: $y)
-     * parent: ($x, $y), parentType($x), parentType($y) where : parentType plays subRole;
-     *
-     * RESULT: incompatible -> (baseRole: $x, baseRole: $y), parentType($x), parentType($y) is not a valid insert statement
-     * as it doesn't conform to the schema (parentType plays subRole)
+     * RESULT: incompatible -> (baseRole: $x, baseRole: $y), parentType($x), parentType($y) is not a valid INSERT statement
+     * as it doesn't conform to the schema (parentType can't play baseRole)
      *
      * @param child atom to be checked
      * @param var   variable of interest
