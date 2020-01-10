@@ -128,7 +128,7 @@ public class RuleCacheIT {
     @Test
     public void whenDeletingARule_cacheContainsUpdatedEntry(){
         try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
-            tx.execute(Graql.undefine(type("rule-0").sub("rule")));
+            tx.execute(Graql.undefine(type("binary-transitivity").sub("rule")));
             tx.commit();
         }
         try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
