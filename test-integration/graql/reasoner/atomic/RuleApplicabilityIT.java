@@ -22,6 +22,7 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
+import com.google.common.collect.Sets;
 import grakn.core.common.config.Config;
 import grakn.core.core.Schema;
 import grakn.core.graql.reasoner.atom.Atom;
@@ -342,26 +343,31 @@ public class RuleApplicabilityIT {
     }
 
     @Test
-    public void relationWithUnspecifiedRoles_typedRoleplayers(){
+    public void relationWithUnspecifiedRoles_typedRoleplayers_rolePlayabilityDeterminesApplicability(){
         try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
-            ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
+            TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
+            ReasonerQueryFactory reasonerQueryFactory = testTx.reasonerQueryFactory();
 
-            //inferred relation (role {role2, role3} : $x, role {role1, role2} : $y)
+            //inferred relation (role {subRole, anotherRole} : $x, role {subRole, symmetricRole} : $y)
             String relationString = "{ ($x, $y);$x isa twoRoleEntity; $y isa anotherTwoRoleEntity; };";
 
-            //inferred relation: (role1: $x, role1: $y)
+            //inferred relation: (someRole: $x, someRole: $y)
+            //won't match any rules because of IS: singleRoleEntity can't play subRole or anotherRole needed in rule heads
             String relationString2 = "{ ($x, $y);$x isa singleRoleEntity; $y isa singleRoleEntity; };";
 
-            //inferred relation: (role1: $x, role {role1, role2}: $y)
+            //inferred relation: (someRole: $x, role {subRole, symmetricRole}: $y)
             String relationString3 = "{ ($x, $y);$x isa singleRoleEntity; $y isa anotherTwoRoleEntity; };";
 
-            //inferred relation: (role1: $x, role {role1, role2, role3}: $y)
+            //inferred relation: (someRole: $x, role {someRole, subRole, anotherRole}: $y)
             String relationString4 = "{ ($x, $y);$x isa singleRoleEntity; $y isa threeRoleEntity; };";
 
-            //inferred relation: (role {role2, role3}: $x, role {role2, role3}: $y)
+            //inferred relation: (role {subRole, anotherRole}: $x, role {subRole, anotherRole}: $y)
             String relationString5 = "{ ($x, $y);$x isa twoRoleEntity; $y isa twoRoleEntity; };";
 
-            //inferred relation: (role {role1, role2}: $x, role {role1, role2}: $y)
+            //won't match any rules because of IS: 3 twoRoleEntity roleplayers can't play any combination of roles specified in rule heads
+            String relationString5b = "{ ($x, $y, $z);$x isa twoRoleEntity; $y isa twoRoleEntity; $z isa twoRoleEntity;};";
+
+            //inferred relation: (role {subRole, symmetricRole}: $x, role {subRole, symmetricRole}: $y)
             String relationString6 = "{ ($x, $y);$x isa anotherTwoRoleEntity; $y isa anotherTwoRoleEntity; };";
 
             Atom relation = reasonerQueryFactory.atomic(conjunction(relationString)).getAtom();
@@ -369,13 +375,21 @@ public class RuleApplicabilityIT {
             Atom relation3 = reasonerQueryFactory.atomic(conjunction(relationString3)).getAtom();
             Atom relation4 = reasonerQueryFactory.atomic(conjunction(relationString4)).getAtom();
             Atom relation5 = reasonerQueryFactory.atomic(conjunction(relationString5)).getAtom();
+            Atom relation5b = reasonerQueryFactory.atomic(conjunction(relationString5b)).getAtom();
             Atom relation6 = reasonerQueryFactory.atomic(conjunction(relationString6)).getAtom();
 
             assertEquals(6, relation.getApplicableRules().count());
             assertThat(relation2.getApplicableRules().collect(toSet()), empty());
             assertEquals(6, relation3.getApplicableRules().count());
             assertEquals(3, relation4.getApplicableRules().count());
-            assertThat(relation5.getApplicableRules().collect(toSet()), empty());
+
+            assertEquals(
+                    Sets.newHashSet(
+                            testTx.getRule("ternary-rule"),
+                            testTx.getRule("alternative-ternary-rule")),
+                    relation5.getApplicableRules().map(InferenceRule::getRule).collect(toSet()));
+            assertThat(relation5b.getApplicableRules().collect(toSet()), empty());
+
             assertEquals(4, relation6.getApplicableRules().count());
         }
     }
