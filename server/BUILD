@@ -84,6 +84,7 @@ java_library(
         "//dependencies/maven/artifacts/io/grpc:grpc-core",
         "//dependencies/maven/artifacts/io/grpc:grpc-netty",
         "//dependencies/maven/artifacts/io/grpc:grpc-stub",
+        "//dependencies/maven/artifacts/io/grpc:grpc-api",
         "//dependencies/maven/artifacts/io/netty:netty-all",
         "//dependencies/maven/artifacts/io/zipkin/brave:brave",
         "//dependencies/maven/artifacts/org/apache/cassandra:cassandra-all",
