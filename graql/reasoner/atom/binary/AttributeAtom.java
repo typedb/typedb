@@ -567,7 +567,7 @@ public class AttributeAtom extends Binary{
      * @return rewritten atom
      */
     private AttributeAtom rewriteWithRelationVariable(Atom parentAtom){
-        if (parentAtom.isResource() && ((AttributeAtom) parentAtom).getRelationVariable().isReturned()) return rewriteWithRelationVariable();
+        if (parentAtom.isResource() && parentAtom.toAttributeAtom().getRelationVariable().isReturned()) return rewriteWithRelationVariable();
         return this;
     }
 

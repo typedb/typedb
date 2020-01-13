@@ -51,6 +51,7 @@ import graql.lang.statement.Variable;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toSet;
 
@@ -322,9 +323,16 @@ public class InferenceRule {
     private InferenceRule rewriteVariables(Atom parentAtom){
         if (parentAtom.isUserDefined() || parentAtom.requiresRoleExpansion()) {
             //NB we don't have to rewrite complements as we don't allow recursion atm
+
+            ReasonerAtomicQuery rewrittenHead = reasonerQueryFactory.atomic(getHead().getAtom().rewriteToUserDefined(parentAtom));
+            ReasonerQueryImpl rewrittenBody = reasonerQueryFactory.create(
+                    getBody().getAtoms(Atom.class)
+                            .map(Atom::rewriteWithPatternVariable)
+                            .collect(Collectors.toList())
+            );
             return new InferenceRule(
-                    reasonerQueryFactory.atomic(getHead().getAtom().rewriteToUserDefined(parentAtom)),
-                    getBody(),
+                    rewrittenHead,
+                    rewrittenBody,
                     rule,
                     reasonerQueryFactory
             );

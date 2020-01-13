@@ -1087,7 +1087,7 @@ public class TransactionImpl implements Transaction {
             // these are the same components used to re-construct the explanation for our original query, which we
             // whenever we set the pattern, we need to provide the correct variable ID substitutions as well
             List<ConceptMap> maps = q.selectAtoms()
-                    .map(atom -> reasonerQueryFactory.atomic(atom))
+                    .map(reasonerQueryFactory::atomic)
                     .flatMap(aq -> {
                         Stream<ConceptMap> answerStream = queryCache.getAnswerStream(aq);
                         return answerStream.map(conceptMap -> conceptMap.withPattern(aq.withSubstitution(conceptMap).getPattern()));

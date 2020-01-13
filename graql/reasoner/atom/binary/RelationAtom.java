@@ -1219,12 +1219,19 @@ public class RelationAtom extends IsaAtomBase {
                 relVar = relVar.rel(c.getPlayer());
             }
         }
-        return create(reasonerQueryFactory, conceptManager, ruleCache, queryCache, keyspaceStatistics, relVar, this.getPredicateVariable(), this.getTypeId(), this.getPossibleTypes(), this.getParentQuery());
+        return create(reasonerQueryFactory, conceptManager, ruleCache, queryCache, keyspaceStatistics,
+                relVar, this.getPredicateVariable(), this.getTypeId(), this.getPossibleTypes(), this.getParentQuery());
+    }
+
+    @Override
+    public RelationAtom rewriteWithPatternVariable() {
+        return rewriteWithRelationVariable();
     }
 
     @Override
     public RelationAtom rewriteWithTypeVariable() {
-        return create(reasonerQueryFactory, conceptManager, ruleCache, queryCache, keyspaceStatistics, this.getPattern(), this.getPredicateVariable().asReturnedVar(), this.getTypeId(), this.getPossibleTypes(), this.getParentQuery());
+        return create(reasonerQueryFactory, conceptManager, ruleCache, queryCache, keyspaceStatistics,
+                this.getPattern(), this.getPredicateVariable().asReturnedVar(), this.getTypeId(), this.getPossibleTypes(), this.getParentQuery());
     }
 
     @Override

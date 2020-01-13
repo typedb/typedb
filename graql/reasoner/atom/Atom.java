@@ -415,6 +415,8 @@ public abstract class Atom extends AtomicBase {
 
     public abstract Atom rewriteWithTypeVariable();
 
+    public Atom rewriteWithPatternVariable(){ return this;}
+
     /**
      * rewrites the atom to one with user defined relation variable
      *
