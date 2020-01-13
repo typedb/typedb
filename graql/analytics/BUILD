@@ -37,6 +37,7 @@ java_library(
         "//dependencies/maven/artifacts/commons-configuration",
         "//dependencies/maven/artifacts/commons-lang",
         "//dependencies/maven/artifacts/io/grpc:grpc-core",
+        "//dependencies/maven/artifacts/io/grpc:grpc-api",
         "//dependencies/maven/artifacts/io/grpc:grpc-stub",
         "//dependencies/maven/artifacts/io/zipkin/brave",
         "//dependencies/maven/artifacts/org/apache/cassandra:cassandra-all",

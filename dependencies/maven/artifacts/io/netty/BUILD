@@ -48,7 +48,11 @@ java_library(
         "//external:jar/io/netty/netty-codec-http"
     ],
     runtime_deps = [
-        ":netty-codec"
+        ":netty-buffer",
+        ":netty-codec",
+        ":netty-common",
+        ":netty-handler",
+        ":netty-transport"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"
@@ -63,8 +67,12 @@ java_library(
         "//external:jar/io/netty/netty-codec-http2"
     ],
     runtime_deps = [
+        ":netty-buffer",
+        ":netty-codec",
         ":netty-codec-http",
-        ":netty-handler"
+        ":netty-common",
+        ":netty-handler",
+        ":netty-transport"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"
@@ -79,7 +87,10 @@ java_library(
         "//external:jar/io/netty/netty-codec-socks"
     ],
     runtime_deps = [
-        ":netty-codec"
+        ":netty-buffer",
+        ":netty-codec",
+        ":netty-common",
+        ":netty-transport"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"
@@ -124,8 +135,11 @@ java_library(
         "//external:jar/io/netty/netty-handler-proxy"
     ],
     runtime_deps = [
+        ":netty-buffer",
+        ":netty-codec",
         ":netty-codec-http",
         ":netty-codec-socks",
+        ":netty-common",
         ":netty-transport"
     ],
     visibility = [
