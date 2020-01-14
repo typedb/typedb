@@ -70,8 +70,7 @@ public class ConceptMap extends Answer {
      * @return Copy of this concept map with a new pattern set
      */
     public ConceptMap withPattern(Pattern pattern) {
-        ConceptMap copy = new ConceptMap(map(), explanation(), pattern);
-        return copy;
+        return new ConceptMap(map(), explanation(), pattern);
     }
 
     /**
@@ -92,7 +91,7 @@ public class ConceptMap extends Answer {
         if (this.explanation() == null) return Collections.emptySet();
         Set<Explanation> explanations = new HashSet<>();
         explanations.add(this.explanation());
-        this.explanation().getAnswers().stream().forEach(conceptMap -> explanations.addAll(conceptMap.explanations()));
+        this.explanation().getAnswers().forEach(conceptMap -> explanations.addAll(conceptMap.explanations()));
         return explanations;
     }
 

@@ -25,27 +25,28 @@ import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.answer.Explanation;
 import grakn.core.graql.reasoner.graph.GeoGraph;
 import grakn.core.kb.concept.api.Concept;
+import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import grakn.core.rule.GraknTestServer;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.property.IdProperty;
+import graql.lang.property.IsaProperty;
 import graql.lang.query.GraqlGet;
 import graql.lang.statement.Variable;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Ignore;
-import org.junit.Test;
-
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.junit.AfterClass;
+import org.junit.Assert;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Ignore;
+import org.junit.Test;
 
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
 import static graql.lang.Graql.var;
@@ -200,7 +201,7 @@ public class ExplanationIT {
 
             GraqlGet query = Graql.parse(queryString);
             List<ConceptMap> answers = tx.execute(query);
-            assertEquals(answers.size(), 1);
+            assertEquals(1, answers.size());
 
             ConceptMap answer = answers.iterator().next();
             assertTrue(answer.explanation().isRuleExplanation());
@@ -225,7 +226,7 @@ public class ExplanationIT {
 
             GraqlGet query = Graql.parse(queryString);
             List<ConceptMap> answers = tx.execute(query);
-            assertEquals(answers.size(), 1);
+            assertEquals(1, answers.size());
             testExplanation(answers);
         }
     }
@@ -259,9 +260,35 @@ public class ExplanationIT {
                     .filter(ans -> ans.explanations().stream().anyMatch(Explanation::isRuleExplanation))
                     .forEach(inferredAnswer -> {
                         Set<Explanation> explanations = inferredAnswer.explanations();
-                        assertEquals(explanations.stream().filter(Explanation::isRuleExplanation).count(), 2);
-                        assertEquals(explanations.stream().filter(Explanation::isLookupExplanation).count(), 4);
+                        assertEquals(2, explanations.stream().filter(Explanation::isRuleExplanation).count());
+                        assertEquals(4, explanations.stream().filter(Explanation::isLookupExplanation).count());
                     });
+        }
+    }
+
+    @Test
+    public void whenExplainingQueriesWithRelations_answersContainRelationConceptsWhenRelationIsPresent() {
+        try (Transaction tx = explanationSession.readTransaction()) {
+            String queryString = "match " +
+                    "$rel (object: $obj, subject: $sub) isa carried-relation;" +
+                    "get;";
+
+            GraqlGet query = Graql.parse(queryString);
+            List<ConceptMap> answers = tx.execute(query);
+            testExplanation(answers);
+
+            List<ConceptMap> answersWithRelationStatement = answers.stream()
+                    .flatMap(ans -> ans.explanations().stream())
+                    .flatMap(exp -> exp.getAnswers().stream())
+                    .filter(ans -> ans.getPattern().statements().stream()
+                            .anyMatch(st -> {
+                                IsaProperty isaProperty = st.getProperty(IsaProperty.class).orElse(null);
+                                if (isaProperty == null) return false;
+                                String type = isaProperty.type().getType().orElse(null);
+                                return type != null && tx.getSchemaConcept(Label.of(type)).isRelationType();
+                            })
+                    ).collect(Collectors.toList());
+            answersWithRelationStatement.forEach(ans -> assertTrue(ans.concepts().stream().anyMatch(Concept::isRelation)));
         }
     }
 
@@ -277,8 +304,8 @@ public class ExplanationIT {
                     .filter(ans -> ans.explanations().stream().anyMatch(Explanation::isRuleExplanation))
                     .forEach(inferredAnswer -> {
                         Set<Explanation> explanations = inferredAnswer.explanations();
-                        assertEquals(explanations.stream().filter(Explanation::isRuleExplanation).count(), 1);
-                        assertEquals(explanations.stream().filter(Explanation::isLookupExplanation).count(), 3);
+                        assertEquals(1, explanations.stream().filter(Explanation::isRuleExplanation).count());
+                        assertEquals(3, explanations.stream().filter(Explanation::isLookupExplanation).count());
                     });
         }
     }

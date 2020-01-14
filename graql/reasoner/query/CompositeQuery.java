@@ -88,7 +88,7 @@ public class CompositeQuery extends ResolvableQuery {
         Set<Conjunction<Pattern>> complementPattern = complementPattern(pattern);
         this.conjunctiveQuery = this.queryFactory.create(positiveConj);
         this.complementQueries = complementPattern.stream()
-                .map(comp -> this.queryFactory.resolvable(comp))
+                .map(queryFactory::resolvable)
                 .collect(Collectors.toSet());
 
         if (!isNegationSafe()){
