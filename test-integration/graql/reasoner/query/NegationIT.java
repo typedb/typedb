@@ -211,7 +211,7 @@ public class NegationIT {
                     ).get());
 
             List<ConceptMap> explicitAnswers = tx.execute(match(var("x").isa("someType")).get());
-            assertCollectionsNonTriviallyEqual(explicitAnswers,answers);
+            assertCollectionsNonTriviallyEqual(explicitAnswers, answers);
         }
     }
 

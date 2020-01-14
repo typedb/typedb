@@ -133,7 +133,7 @@ public class QueryExecutorImpl implements QueryExecutor {
 
                 Stream<Conjunction<Pattern>> conjunctions = matchClause.getPatterns().getNegationDNF().getPatterns().stream();
                 Stream<Stream<ConceptMap>> answerStreams = conjunctions
-                        .map(p -> reasonerQueryFactory.resolvable(p).rewrite())
+                        .map(p -> reasonerQueryFactory.resolvable(p).rewriteAtoms())
                         // we return an answer with the substituted IDs in the pattern
                         .map(q -> q.resolve().map(ans -> ans.withPattern(q.withSubstitution(ans).getPattern())));
 

@@ -325,11 +325,7 @@ public class InferenceRule {
             //NB we don't have to rewrite complements as we don't allow recursion atm
 
             ReasonerAtomicQuery rewrittenHead = reasonerQueryFactory.atomic(getHead().getAtom().rewriteToUserDefined(parentAtom));
-            ReasonerQueryImpl rewrittenBody = reasonerQueryFactory.create(
-                    getBody().getAtoms(Atom.class)
-                            .map(Atom::rewriteWithPatternVariable)
-                            .collect(Collectors.toList())
-            );
+            ResolvableQuery rewrittenBody = this.getBody().rewriteWithUserDefinedPatterns();
             return new InferenceRule(
                     rewrittenHead,
                     rewrittenBody,
@@ -342,7 +338,7 @@ public class InferenceRule {
 
     private InferenceRule rewriteBodyAtoms(){
         if (getBody().requiresDecomposition()) {
-            return new InferenceRule(getHead(), getBody().rewrite(), rule, reasonerQueryFactory);
+            return new InferenceRule(getHead(), getBody().rewriteAtoms(), rule, reasonerQueryFactory);
         }
         return this;
     }

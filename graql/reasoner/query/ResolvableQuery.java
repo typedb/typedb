@@ -116,7 +116,13 @@ public abstract class ResolvableQuery implements ReasonerQuery {
      * @return rewritten (decomposed) version of the query
      */
     @CheckReturnValue
-    public abstract ResolvableQuery rewrite();
+    public abstract ResolvableQuery rewriteAtoms();
+
+    /**
+     * @return rewritten query with its atoms defined with a user defined pattern variable
+     */
+    @CheckReturnValue
+    public abstract ResolvableQuery rewriteWithUserDefinedPatterns();
 
     /**
      * resolves the query

@@ -554,11 +554,8 @@ public class ReasonerQueryImpl extends ResolvableQuery {
         return this.selectAtoms().anyMatch(Atom::requiresDecomposition);
     }
 
-    /**
-     * @return rewritten (decomposed) version of the query
-     */
     @Override
-    public ReasonerQueryImpl rewrite(){
+    public ReasonerQueryImpl rewriteAtoms(){
         if (!requiresDecomposition()) return this;
         return new ReasonerQueryImpl(
                 this.selectAtoms()
@@ -570,6 +567,15 @@ public class ReasonerQueryImpl extends ResolvableQuery {
                 executorFactory,
                 reasonerQueryFactory,
                 traversalPlanFactory
+        );
+    }
+
+    @Override
+    public ReasonerQueryImpl rewriteWithUserDefinedPatterns() {
+        return reasonerQueryFactory.create(
+                this.getAtoms(Atom.class)
+                        .map(Atom::rewriteWithPatternVariable)
+                        .collect(Collectors.toList())
         );
     }
 

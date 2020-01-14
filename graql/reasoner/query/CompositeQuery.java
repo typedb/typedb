@@ -374,12 +374,21 @@ public class CompositeQuery extends ResolvableQuery {
     }
 
     @Override
-    public CompositeQuery rewrite(){
+    public CompositeQuery rewriteAtoms(){
         return new CompositeQuery(
-                getConjunctiveQuery().rewrite(),
-                getComplementQueries().isEmpty()?
-                        getComplementQueries() :
-                        getComplementQueries().stream().map(ResolvableQuery::rewrite).collect(Collectors.toSet()),
+                getConjunctiveQuery().rewriteAtoms(),
+                getComplementQueries().stream().map(ResolvableQuery::rewriteAtoms).collect(Collectors.toSet()),
+                queryFactory,
+                executorFactory,
+                queryCache
+        );
+    }
+
+    @Override
+    public ResolvableQuery rewriteWithUserDefinedPatterns() {
+        return new CompositeQuery(
+                getConjunctiveQuery().rewriteWithUserDefinedPatterns(),
+                getComplementQueries().stream().map(ResolvableQuery::rewriteWithUserDefinedPatterns).collect(Collectors.toSet()),
                 queryFactory,
                 executorFactory,
                 queryCache
