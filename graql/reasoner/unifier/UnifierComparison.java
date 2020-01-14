@@ -121,30 +121,57 @@ public interface UnifierComparison {
     /**
      * NB:
      * Relevant only for RULE and SUBSUMPTIVE unification.
-     * We differentiate two types of playability checks having different semantics:
      *
-     * - MATCH (queries in general, rule bodies) -> include type hierarchies
-     * - INSERT (only rule heads) -> follow from the fact that rule heads need to be insertable.
-     *   INSERT semantics impose stricter type compatibility and playability criteria.
-     *
+     * We differentiate two types of checks having the different semantics:
+     *  - MATCH (queries in general, rule bodies)
+     * MATCH semantics include type hierarchies. We use them to check if a query can actually return any answers 
+     * by looking at the conjunction of the input query and the `when` part of the rule.
+     *  - INSERT (only rule heads)
+     * INSERT semantics impose stricter type compatibility and playability criteria. They follow from the fact that 
+     * rule conclusions need to be insertable - the asserted facts need to be well-defined and unambiguous (checked at commit-time). 
+     * For a rule to be matched to a query, the rule head needs to be a specialisation of the input query 
+     * (you cannot resolve a query when the `then` is a more general query than the user's input clause).
      *
      * Example:
      *
-     * child: (baseRole: $x, baseRole: $y)
-     * parent: ($x, $y), parentType($x), parentType($y)
-     * where:
+     * Let's define a simple rule:
+     * when: (baseRole: $x, baseRole: $y) isa baseRelation;
+     * then: (baseRole: $x, baseRole: $y) isa derivedRelation;
+     *
+     * with a user query:
+     * query: ($x, $y), parentType($x), parentType($y) 
+     * where: 
+     * baseRelation relates baseRole, subRole;
+     * derivedRelation relates baseRole, subRole;
      * subRole sub baseRole;
      * parentType plays subRole;
      *
-     * MATCH semantics:
+     * Now we will consider whether the rule can be matched against the query following different semantics.
      *
-     * RESULT: compatible -> even though type doesn't play the baseRole, its subtypes might, so they need to be taken into account.
-     * MATCHing (baseRole: $x, baseRole: $y), parentType($x), parentType($y) can potentially return results
-     * as matching baseRole will return relation instances with subRole as well.
+     * MATCH semantics
+     * We consider the rule body, hence we check whether the
+     * when:  `(baseRole: $x, baseRole: $y) isa baseRelation;`
+     * and
+     * query:  `($x, $y), parentType($x), parentType($y)` 
+     *
+     * are compatible.
+     *
+     * RESULT: compatible -> 
+     * Even though parentType doesn't play the baseRole, its subtypes might, so they need to be taken into account:
+     * MATCHing (baseRole: $x, baseRole: $y) isa baseRelation, parentType($x), parentType($y) can potentially 
+     * return results as matching baseRole will return relation instances with subRole as well.
      *
      * INSERT semantics:
-     * RESULT: incompatible -> (baseRole: $x, baseRole: $y), parentType($x), parentType($y) is not a valid INSERT statement
-     * as it doesn't conform to the schema (parentType can't play baseRole)
+     * We consider the rule head, hence we check whether the
+     * then: `(baseRole: $x, baseRole: $y) isa derivedRelation;`
+     * and
+     * query:  `($x, $y), parentType($x), parentType($y)` 
+     *
+     * are compatible.
+     *
+     * RESULT: incompatible ->
+     * Query: (baseRole: $x, baseRole: $y) isa derivedRelation, parentType($x), parentType($y)
+     * is not a valid INSERT statement as it doesn't conform to the schema (parentType can't play baseRole)
      *
      * @param child atom to be checked
      * @param var   variable of interest
