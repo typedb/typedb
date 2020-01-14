@@ -543,6 +543,35 @@ public class RelationAtom extends IsaAtomBase {
         return errors;
     }
 
+    public boolean typesRoleCompatibleWithMatchSemantics(Variable typedVar, Set<Type> parentTypes){
+        return parentTypes.stream().allMatch(parentType -> isTypeRoleCompatible(typedVar, parentType, true));
+    }
+
+    public boolean typesRoleCompatibleWithInsertSemantics(Variable typedVar, Set<Type> parentTypes){
+        return parentTypes.stream().allMatch(parentType -> isTypeRoleCompatible(typedVar, parentType, false));
+    }
+
+    private boolean isTypeRoleCompatible(Variable typedVar, Type parentType, boolean includeRoleHierarchy){
+        if (parentType == null || Schema.MetaSchema.isMetaLabel(parentType.label())) return true;
+
+        List<Role> roleRequirements = getRoleVarMap().entries().stream()
+                //get roles this type needs to play
+                .filter(e -> e.getValue().equals(typedVar))
+                .map(Map.Entry::getKey)
+                .filter(role -> !Schema.MetaSchema.isMetaLabel(role.label()))
+                .collect(Collectors.toList());
+
+        if (roleRequirements.isEmpty()) return true;
+
+        Set<Type> parentTypes = parentType.subs().collect(Collectors.toSet());
+        return roleRequirements.stream()
+                //include sub roles
+                .flatMap(role -> includeRoleHierarchy? role.subs() : Stream.of(role))
+                //check if it can play it
+                .flatMap(Role::players)
+                .anyMatch(parentTypes::contains);
+    }
+
     public Stream<IdPredicate> getRolePredicates() {
         return getRelationPlayers().stream()
                 .map(RelationProperty.RolePlayer::getRole)
@@ -934,10 +963,14 @@ public class RelationAtom extends IsaAtomBase {
         SetMultimap<Variable, Type> childVarTypeMap = this.getParentQuery().getVarTypeMap(unifierType.inferTypes());
         SetMultimap<Variable, Type> parentVarTypeMap = parentAtom.getParentQuery().getVarTypeMap(unifierType.inferTypes());
 
+        //TODO:: consider checking consistency wrt the schema (type compatibility, playability, etc)
+        //TODO:: of the (atom+parent) conjunction similarly to what we do at commit-time validation
+
         //establish compatible castings for each parent casting
         List<Set<Pair<RelationProperty.RolePlayer, RelationProperty.RolePlayer>>> compatibleMappingsPerParentRP = new ArrayList<>();
         if (parentAtom.getRelationPlayers().size() > this.getRelationPlayers().size()) return new HashSet<>();
 
+        //child query is rule body + head here
         ReasonerQuery childQuery = getParentQuery();
         parentAtom.getRelationPlayers()
                 .forEach(prp -> {
@@ -968,7 +1001,14 @@ public class RelationAtom extends IsaAtomBase {
                                 Variable childVar = crp.getPlayer().var();
                                 Set<Type> childTypes = childVarTypeMap.get(childVar);
                                 return unifierType.typeCompatibility(parentTypes, childTypes)
-                                        && parentTypes.stream().allMatch(parentType -> unifierType.typePlayability(childQuery, childVar, parentType));
+                                        && unifierType.typePlayabilityWithInsertSemantics(this, childVar, parentTypes);
+                            })
+                            //rule body playability - match semantics
+                            .filter(crp -> {
+                                Variable childVar = crp.getPlayer().var();
+                                return childQuery.getAtoms(RelationAtom.class)
+                                        .filter(at -> !at.equals(this))
+                                        .allMatch(at -> unifierType.typePlayabilityWithMatchSemantics(this, childVar, parentTypes));
                             })
                             //check for substitution compatibility
                             .filter(crp -> {

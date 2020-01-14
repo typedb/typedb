@@ -136,6 +136,7 @@ public abstract class ResolvableQuery implements ReasonerQuery {
     public Stream<ConceptMap> resolve(Set<ReasonerAtomicQuery> subGoals){
         boolean doNotResolve = getAtoms().isEmpty() || (isPositive() && !isRuleResolvable());
         if (doNotResolve) {
+            //NB: the flag actually doesn't affect the traverse method which doesn't use reasoning
             return executorFactory.transactional(true).traverse(getPattern());
         } else {
             return new ResolutionIterator(this, subGoals, queryCache).hasStream();

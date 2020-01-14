@@ -20,7 +20,9 @@ package grakn.core.graql.reasoner.atomic;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableSetMultimap;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
+import com.google.common.collect.Sets;
 import grakn.core.common.config.Config;
 import grakn.core.core.Schema;
 import grakn.core.graql.reasoner.atom.Atom;
@@ -36,7 +38,9 @@ import grakn.core.kb.concept.api.EntityType;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Relation;
 import grakn.core.kb.concept.api.Role;
+import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.Thing;
+import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import grakn.core.rule.GraknTestStorage;
@@ -47,14 +51,13 @@ import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
-
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
 import static graql.lang.Graql.var;
@@ -66,8 +69,6 @@ import static org.junit.Assert.assertTrue;
 
 @SuppressWarnings("CheckReturnValue")
 public class RuleApplicabilityIT {
-
-    private static String resourcePath = "test-integration/graql/reasoner/resources/";
 
     @ClassRule
     public static final GraknTestStorage storage = new GraknTestStorage();
@@ -91,6 +92,7 @@ public class RuleApplicabilityIT {
     public static void loadContext(){
         Config mockServerConfig = storage.createCompatibleServerConfig();
         resourceApplicabilitySession = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig);
+        String resourcePath = "test-integration/graql/reasoner/resources/";
         loadFromFileAndCommit(resourcePath,"resourceApplicabilityTest.gql", resourceApplicabilitySession);
         reifiedResourceApplicabilitySession =  SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig);
         loadFromFileAndCommit(resourcePath,"reifiedResourceApplicabilityTest.gql", reifiedResourceApplicabilitySession);
@@ -99,7 +101,6 @@ public class RuleApplicabilityIT {
 
         //add extra data so that all rules can be possibly triggered
         try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
-
             EntityType singleRoleEntity = tx.getEntityType("singleRoleEntity");
             EntityType twoRoleEntity = tx.getEntityType("twoRoleEntity");
             Thing x = putEntityWithResource(tx, singleRoleEntity, Label.of("resource-string"), "someValue");
@@ -124,7 +125,7 @@ public class RuleApplicabilityIT {
     }
 
     @Test
-    public void metaImplicitRelation(){
+    public void metaImplicitRelationMatchesAllAttributeRules(){
         try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
             TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction)tx;
             ReasonerQueryFactory reasonerQueryFactory = testTx.reasonerQueryFactory();
@@ -138,14 +139,16 @@ public class RuleApplicabilityIT {
     }
 
     @Test
-    public void OntologicalAtomsDoNotMatchAnyRules(){
+    public void ontologicalAtomsDoNotMatchAnyRules(){
         try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
-            Atom subAtom = reasonerQueryFactory.atomic(conjunction("{ $x sub relation; };")).getAtom();
+
+            Atom subAtom = reasonerQueryFactory.atomic(conjunction("{ $x sub " + Schema.MetaSchema.RELATION.getLabel() + "; };")).getAtom();
             Atom hasAtom = reasonerQueryFactory.atomic(conjunction("{ $x has description; };")).getAtom();
             Atom relatesAtom = reasonerQueryFactory.atomic(conjunction("{ reifiable-relation relates $x; };")).getAtom();
             Atom relatesAtom2 = reasonerQueryFactory.atomic(conjunction("{ $x relates someRole; };")).getAtom();
             Atom playsAtom = reasonerQueryFactory.atomic(conjunction("{ $x plays someRole; };")).getAtom();
+
             assertThat(subAtom.getApplicableRules().collect(toSet()), empty());
             assertThat(hasAtom.getApplicableRules().collect(toSet()), empty());
             assertThat(relatesAtom.getApplicableRules().collect(toSet()), empty());
@@ -155,7 +158,60 @@ public class RuleApplicabilityIT {
     }
 
     @Test
-    public void AmbiguousRoleMapping(){
+    public void typeRelationMatchesAllRulesWithCorrespondingRelationType(){
+        try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
+            TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction)tx;
+            ReasonerQueryFactory reasonerQueryFactory = testTx.reasonerQueryFactory();
+
+            String typeString = "{ $x isa reifying-relation; };";
+            String typeString2 = "{ $x isa ternary; };";
+            String typeString3 = "{ $x isa binary; };";
+            Atom reifyingAtom = reasonerQueryFactory.atomic(conjunction(typeString)).getAtom();
+            Atom ternaryAtom = reasonerQueryFactory.atomic(conjunction(typeString2)).getAtom();
+            Atom binaryAtom = reasonerQueryFactory.atomic(conjunction(typeString3)).getAtom();
+
+            Type ternaryType = testTx.getRelationType("ternary");
+            Type binaryType = testTx.getRelationType("binary");
+            Type reifyingType = testTx.getRelationType("reifying-relation");
+
+            Set<InferenceRule> rules = testTx.ruleCache().getRules().map(r -> new InferenceRule(r, reasonerQueryFactory)).collect(Collectors.toSet());
+            Set<InferenceRule> ternaryRules = rules.stream().filter(rule -> rule.getHead().getAtom().getSchemaConcept().equals(ternaryType)).collect(toSet());
+            Set<InferenceRule> binaryRules = rules.stream().filter(rule -> rule.getHead().getAtom().getSchemaConcept().equals(binaryType)).collect(toSet());
+            Set<InferenceRule> reifyingRules = rules.stream().filter(rule -> rule.getHead().getAtom().getSchemaConcept().equals(reifyingType)).collect(toSet());
+
+            assertEquals(
+                    reifyingRules.stream().map(InferenceRule::getRule).collect(toSet()),
+                    reifyingAtom.getApplicableRules().map(InferenceRule::getRule).collect(toSet()));
+            assertEquals(
+                    ternaryRules.stream().map(InferenceRule::getRule).collect(toSet()),
+                    ternaryAtom.getApplicableRules().map(InferenceRule::getRule).collect(toSet()));
+            assertEquals(
+                    binaryRules.stream().map(InferenceRule::getRule).collect(toSet()),
+                    binaryAtom.getApplicableRules().map(InferenceRule::getRule).collect(toSet()));
+        }
+    }
+
+    @Test
+    public void typeAttributeMatchesAllRulesWithCorrespondingAttributeType(){
+        try(Transaction tx = resourceApplicabilitySession.writeTransaction()) {
+            TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction)tx;
+            ReasonerQueryFactory reasonerQueryFactory = testTx.reasonerQueryFactory();
+
+            String typeString = "{ $x isa resource; };";
+            Atom resourceAtom = reasonerQueryFactory.atomic(conjunction(typeString)).getAtom();
+            Type resourceType = testTx.getAttributeType("resource");
+
+            Set<InferenceRule> resourceRules = testTx.ruleCache().getRules()
+                    .map(r -> new InferenceRule(r, reasonerQueryFactory))
+                    .filter(rule -> rule.getHead().getAtom().getSchemaConcept().equals(resourceType))
+                    .collect(Collectors.toSet());
+
+            assertEquals(resourceRules, resourceAtom.getApplicableRules().collect(toSet()));
+        }
+    }
+
+    @Test
+    public void relationWithUnspecifiedRoles_typedRoleplayers_ambiguousRoleMapping(){
         try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
@@ -172,7 +228,7 @@ public class RuleApplicabilityIT {
     }
 
     @Test
-    public void AmbiguousRoleMapping_RolePlayerTypeMismatch(){
+    public void relationWithUnspecifiedRoles_typedRoleplayers_rolePlayerTypeMismatch(){
         try(Transaction tx = ruleApplicabilitySession.writeTransaction()){
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
@@ -189,7 +245,7 @@ public class RuleApplicabilityIT {
     }
 
     @Test //threeRoleEntity subs twoRoleEntity -> (role, role, role)
-    public void AmbiguousRoleMapping_TypeHierarchyEnablesExtraRule(){
+    public void relationWithUnspecifiedRoles_typedRoleplayers_typeHierarchyEnablesExtraRule(){
         try(Transaction tx = ruleApplicabilitySession.writeTransaction()){
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
@@ -201,7 +257,7 @@ public class RuleApplicabilityIT {
     }
 
     @Test
-    public void attributeBoundRelationPlayers(){
+    public void relationWithUnspecifiedRoles_roleplayersBoundByAttributes(){
         try(Transaction tx = ruleApplicabilitySession.writeTransaction()){
             TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction)tx;
             ReasonerQueryFactory reasonerQueryFactory = testTx.reasonerQueryFactory();
@@ -240,7 +296,7 @@ public class RuleApplicabilityIT {
     }
 
     @Test
-    public void nonSpecificattributeBoundRelationPlayers(){
+    public void relationWithUnspecifiedRoles_roleplayersBoundByAttributes2(){
         try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
             TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction)tx;
             ReasonerQueryFactory reasonerQueryFactory = testTx.reasonerQueryFactory();
@@ -285,63 +341,7 @@ public class RuleApplicabilityIT {
     }
 
     @Test
-    public void MissingRelationPlayers(){
-        try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
-            ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
-
-            //inferred relation (role {role2, role3} : $x, role {role1, role2} : $y)
-            String relationString = "{ ($x, $y);$x isa twoRoleEntity; $y isa anotherTwoRoleEntity; };";
-
-            //inferred relation: (role1: $x, role1: $y)
-            String relationString2 = "{ ($x, $y);$x isa singleRoleEntity; $y isa singleRoleEntity; };";
-
-            //inferred relation: (role1: $x, role {role1, role2}: $y)
-            String relationString3 = "{ ($x, $y);$x isa singleRoleEntity; $y isa anotherTwoRoleEntity; };";
-
-            //inferred relation: (role1: $x, role {role1, role2, role3}: $y)
-            String relationString4 = "{ ($x, $y);$x isa singleRoleEntity; $y isa threeRoleEntity; };";
-
-            //inferred relation: (role {role2, role3}: $x, role {role2, role3}: $y)
-            String relationString5 = "{ ($x, $y);$x isa twoRoleEntity; $y isa twoRoleEntity; };";
-
-            //inferred relation: (role {role1, role2}: $x, role {role1, role2}: $y)
-            String relationString6 = "{ ($x, $y);$x isa anotherTwoRoleEntity; $y isa anotherTwoRoleEntity; };";
-
-            Atom relation = reasonerQueryFactory.atomic(conjunction(relationString)).getAtom();
-            Atom relation2 = reasonerQueryFactory.atomic(conjunction(relationString2)).getAtom();
-            Atom relation3 = reasonerQueryFactory.atomic(conjunction(relationString3)).getAtom();
-            Atom relation4 = reasonerQueryFactory.atomic(conjunction(relationString4)).getAtom();
-            Atom relation5 = reasonerQueryFactory.atomic(conjunction(relationString5)).getAtom();
-            Atom relation6 = reasonerQueryFactory.atomic(conjunction(relationString6)).getAtom();
-
-            assertEquals(6, relation.getApplicableRules().count());
-            assertThat(relation2.getApplicableRules().collect(toSet()), empty());
-            assertEquals(6, relation3.getApplicableRules().count());
-            assertEquals(3, relation4.getApplicableRules().count());
-            assertThat(relation5.getApplicableRules().collect(toSet()), empty());
-            assertEquals(4, relation6.getApplicableRules().count());
-        }
-    }
-
-    @Test //should assign (role : $x, role1: $y, role: $z) which is compatible with 3 ternary rules
-    public void WithWildcard(){
-        try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
-            ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
-
-            //although singleRoleEntity plays only one role it can also play an implicit role of the resource so mapping ambiguous
-            String relationString = "{ ($x, $y, $z);$y isa singleRoleEntity; $z isa twoRoleEntity; };";
-            RelationAtom relation = (RelationAtom) reasonerQueryFactory.atomic(conjunction(relationString)).getAtom();
-            ImmutableSetMultimap<Role, Variable> roleMap = ImmutableSetMultimap.of(
-                    tx.getRole("role"), new Variable("x"),
-                    tx.getRole("role"), new Variable("y"),
-                    tx.getRole("role"), new Variable("z"));
-            assertEquals(roleMap, roleSetMap(relation.getRoleVarMap()));
-            assertEquals(5, relation.getApplicableRules().count());
-        }
-    }
-
-    @Test
-    public void TypedResources(){
+    public void typedAttributes(){
         try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
@@ -358,7 +358,7 @@ public class RuleApplicabilityIT {
     }
 
     @Test
-    public void DerivedTypes(){
+    public void derivedTypes(){
         try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
             TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction)tx;
             ReasonerQueryFactory reasonerQueryFactory = testTx.reasonerQueryFactory();
@@ -399,7 +399,7 @@ public class RuleApplicabilityIT {
     }
 
     @Test
-    public void genericType(){
+    public void genericTypeWithPossibleBounds(){
         try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
             TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction)tx;
             ReasonerQueryFactory reasonerQueryFactory = testTx.reasonerQueryFactory();
@@ -435,23 +435,25 @@ public class RuleApplicabilityIT {
         }
     }
 
-    @Test
-    public void genericTypeWithBounds(){
+    @Test //should assign (role : $x, role1: $y, role: $z) which is compatible with 3 ternary rules
+    public void relationWithUnspecifiedRoles_someRoleplayersTyped(){
         try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
-            TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction)tx;
-            ReasonerQueryFactory reasonerQueryFactory = testTx.reasonerQueryFactory();
+            ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
-            String relationString = "{ $x isa $type; };";
-            Atom relation = reasonerQueryFactory.atomic(conjunction(relationString)).getAtom();
-            assertEquals(
-                    testTx.ruleCache().getRules().count(),
-                    relation.getApplicableRules().count()
-            );
+            //although singleRoleEntity plays only one role it can also play an implicit role of the resource so mapping ambiguous
+            String relationString = "{ ($x, $y, $z);$y isa singleRoleEntity; $z isa twoRoleEntity; };";
+            RelationAtom relation = (RelationAtom) reasonerQueryFactory.atomic(conjunction(relationString)).getAtom();
+            ImmutableSetMultimap<Role, Variable> roleMap = ImmutableSetMultimap.of(
+                    tx.getRole("role"), new Variable("x"),
+                    tx.getRole("role"), new Variable("y"),
+                    tx.getRole("role"), new Variable("z"));
+            assertEquals(roleMap, roleSetMap(relation.getRoleVarMap()));
+            assertEquals(5, relation.getApplicableRules().count());
         }
     }
 
     @Test
-    public void WithWildcard_MissingMappings(){
+    public void relationWithUnspecifiedRoles_someRoleplayersTypes_missingMappings(){
         try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
@@ -462,13 +464,14 @@ public class RuleApplicabilityIT {
                     tx.getRole("role"), new Variable("x"),
                     tx.getRole("role"), new Variable("y"),
                     tx.getRole("role"), new Variable("z"));
+
             assertEquals(roleMap, roleSetMap(relation.getRoleVarMap()));
             assertThat(relation.getApplicableRules().collect(toSet()), empty());
         }
     }
 
-    @Test //NB: role2 sub role1
-    public void RepeatingRoleTypesWithHierarchy(){
+    @Test //NB: subRole sub someRole
+    public void relationWithRepeatingRoles_roleHierarchy(){
         try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
@@ -485,7 +488,7 @@ public class RuleApplicabilityIT {
     }
 
     @Test
-    public void genericRelationWithGenericType(){
+    public void genericRelationWithGenericallyTypedRolePlayer(){
         try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
             TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction)tx;
             ReasonerQueryFactory reasonerQueryFactory = testTx.reasonerQueryFactory();
@@ -501,12 +504,12 @@ public class RuleApplicabilityIT {
             assertEquals(testTx.ruleCache().getRules().filter(r -> r.thenTypes().allMatch(Concept::isRelationType)).count(), relation2.getApplicableRules().count());
 
             //TODO not filtered correctly
-            //assertEquals(tx.ruleCache().getRules().filter(r -> r.thenTypes().allMatch(Concept::isAttributeType)).count(), relation3.getApplicableRules().count());
+            //assertEquals(testTx.ruleCache().getRules().filter(r -> r.thenTypes().allMatch(Concept::isAttributeType)).count(), relation3.getApplicableRules().count());
         }
     }
 
     @Test
-    public void ReifiedRelationsWithType(){
+    public void reifiedRelationsWithTypedRolePlayer(){
         try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
@@ -527,14 +530,70 @@ public class RuleApplicabilityIT {
     }
 
     @Test
-    public void TypePlayabilityDeterminesApplicability(){
+    public void relationWithUnspecifiedRoles_typedRoleplayers_typePlayabilityDeterminesApplicability(){
+        try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
+            TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
+            ReasonerQueryFactory reasonerQueryFactory = testTx.reasonerQueryFactory();
+
+            //inferred relation (role {subRole, anotherRole} : $x, role {subRole, symmetricRole} : $y)
+            String relationString = "{ ($x, $y);$x isa twoRoleEntity; $y isa anotherTwoRoleEntity; };";
+
+            //inferred relation: (someRole: $x, someRole: $y)
+            //won't match any rules because of IS: singleRoleEntity can't play subRole or anotherRole needed in rule heads
+            String relationString2 = "{ ($x, $y);$x isa singleRoleEntity; $y isa singleRoleEntity; };";
+
+            //inferred relation: (someRole: $x, role {subRole, symmetricRole}: $y)
+            String relationString3 = "{ ($x, $y);$x isa singleRoleEntity; $y isa anotherTwoRoleEntity; };";
+
+            //inferred relation: (someRole: $x, role {someRole, subRole, anotherRole}: $y)
+            String relationString4 = "{ ($x, $y);$x isa singleRoleEntity; $y isa threeRoleEntity; };";
+
+            //inferred relation: (role {subRole, anotherRole}: $x, role {subRole, anotherRole}: $y)
+            String relationString5 = "{ ($x, $y);$x isa twoRoleEntity; $y isa twoRoleEntity; };";
+
+            //won't match any rules because of IS: 3 twoRoleEntity roleplayers can't play any combination of roles specified in rule heads
+            String relationString5b = "{ ($x, $y, $z);$x isa twoRoleEntity; $y isa twoRoleEntity; $z isa twoRoleEntity;};";
+
+            //inferred relation: (role {subRole, symmetricRole}: $x, role {subRole, symmetricRole}: $y)
+            String relationString6 = "{ ($x, $y);$x isa anotherTwoRoleEntity; $y isa anotherTwoRoleEntity; };";
+
+            Atom relation = reasonerQueryFactory.atomic(conjunction(relationString)).getAtom();
+            Atom relation2 = reasonerQueryFactory.atomic(conjunction(relationString2)).getAtom();
+            Atom relation3 = reasonerQueryFactory.atomic(conjunction(relationString3)).getAtom();
+            Atom relation4 = reasonerQueryFactory.atomic(conjunction(relationString4)).getAtom();
+            Atom relation5 = reasonerQueryFactory.atomic(conjunction(relationString5)).getAtom();
+            Atom relation5b = reasonerQueryFactory.atomic(conjunction(relationString5b)).getAtom();
+            Atom relation6 = reasonerQueryFactory.atomic(conjunction(relationString6)).getAtom();
+
+            assertEquals(6, relation.getApplicableRules().count());
+            assertThat(relation2.getApplicableRules().collect(toSet()), empty());
+            assertEquals(6, relation3.getApplicableRules().count());
+            assertEquals(3, relation4.getApplicableRules().count());
+
+            assertEquals(
+                    Sets.newHashSet(
+                            testTx.getRule("ternary-rule"),
+                            testTx.getRule("alternative-ternary-rule")),
+                    relation5.getApplicableRules().map(InferenceRule::getRule).collect(toSet()));
+            assertThat(relation5b.getApplicableRules().collect(toSet()), empty());
+
+            assertEquals(4, relation6.getApplicableRules().count());
+        }
+    }
+
+    @Test
+    public void typePlayabilityDeterminesRuleApplicability(){
         try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
             String relationString = "{ $y isa singleRoleEntity;(someRole:$x, role:$y, anotherRole: $z) isa ternary; };";
+
             String relationString2 = "{ $y isa twoRoleEntity;(someRole:$x, subRole:$y, anotherRole: $z) isa ternary; };";
+
             String relationString3 = "{ $y isa anotherTwoRoleEntity;(someRole:$x, subRole:$y, anotherRole: $z) isa ternary; };";
+
             String relationString4 = "{ $y isa noRoleEntity;(someRole:$x, subRole:$y, anotherRole: $z) isa ternary; };";
+
             String relationString5 = "{ $y isa entity;(someRole:$x, subRole:$y, anotherRole: $z) isa ternary; };";
             Atom relation = reasonerQueryFactory.atomic(conjunction(relationString)).getAtom();
             Atom relation2 = reasonerQueryFactory.atomic(conjunction(relationString2)).getAtom();
@@ -542,53 +601,63 @@ public class RuleApplicabilityIT {
             Atom relation4 = reasonerQueryFactory.atomic(conjunction(relationString4)).getAtom();
             Atom relation5 = reasonerQueryFactory.atomic(conjunction(relationString5)).getAtom();
 
-            assertEquals(1, relation.getApplicableRules().count());
-            assertThat(relation2.getApplicableRules().collect(toSet()), empty());
-            assertEquals(1, relation3.getApplicableRules().count());
-            assertEquals(1, relation4.getApplicableRules().count());
-            assertEquals(1, relation5.getApplicableRules().count());
+            Rule ternaryRule = tx.getRule("ternary-rule");
+            assertEquals(ternaryRule, Iterables.getOnlyElement(relation.getApplicableRules().collect(toSet())).getRule());
+            assertEquals(ternaryRule, Iterables.getOnlyElement(relation2.getApplicableRules().collect(toSet())).getRule());
+            assertEquals(ternaryRule, Iterables.getOnlyElement(relation3.getApplicableRules().collect(toSet())).getRule());
+            assertEquals(ternaryRule, Iterables.getOnlyElement(relation4.getApplicableRules().collect(toSet())).getRule());
+            assertEquals(ternaryRule, Iterables.getOnlyElement(relation5.getApplicableRules().collect(toSet())).getRule());
         }
     }
 
     @Test
-    public void TypeRelation(){
-        try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
+    public void typePlayabilityDeterminesRuleApplicability_matchSemantics() {
+        Session session = SessionUtil.serverlessSessionWithNewKeyspace(storage.createCompatibleServerConfig());
+        try (Transaction tx = session.writeTransaction()) {
+            String schema = "define " +
+                    "sourceEntity sub entity, plays sourceSubRole, plays symmetricRole;" +
+                    "targetEntity sub entity, plays targetSubRole;" +
+                    "baseRelation sub relation, relates sourceBaseRole, relates targetBaseRole;" +
+                    "specialisedRelation sub baseRelation, relates sourceSubRole as sourceBaseRole, relates targetSubRole as targetBaseRole;" +
+                    "derivedRelation sub relation, relates symmetricRole;" +
+                    "someRule sub rule," +
+                    "when {" +
+                    "    (sourceBaseRole: $x, targetBaseRole: $o);" +
+                    "    (sourceBaseRole: $y, targetBaseRole: $o);" +
+                    "    $x != $y;" +
+                    "}," +
+                    "then {" +
+                    "    (symmetricRole: $x, symmetricRole: $y) isa derivedRelation;" +
+                    "};";
+            String data = "insert " +
+                    "$o isa targetEntity;" +
+                    "$a isa sourceEntity;" +
+                    "$b isa sourceEntity;" +
+                    "(sourceSubRole: $a, targetSubRole: $o) isa specialisedRelation;" +
+                    "(sourceSubRole: $b, targetSubRole: $o) isa specialisedRelation;";
+            tx.execute(Graql.parse(schema).asDefine());
+            tx.execute(Graql.parse(data).asInsert());
+            tx.commit();
+        }
+        try (Transaction tx = session.writeTransaction()) {
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
+            String id = tx.getEntityType("sourceEntity").instances().iterator().next().id().getValue();
+            String basePattern = "{ (symmetricRole: $x, symmetricRole: $y) isa derivedRelation; };";
+            String typedPattern = "{ $x isa sourceEntity; (symmetricRole: $x, symmetricRole: $y) isa derivedRelation; };";
+            String subbedPattern = "{ $x id " + id + "; (symmetricRole: $x, symmetricRole: $y) isa derivedRelation; };";
+            Atom relation = reasonerQueryFactory.atomic(conjunction(basePattern)).getAtom();
+            Atom typedRelation = reasonerQueryFactory.atomic(conjunction(typedPattern)).getAtom();
+            Atom subbedRelation = reasonerQueryFactory.atomic(conjunction(subbedPattern)).getAtom();
 
-            String typeString = "{ $x isa reifying-relation; };";
-            String typeString2 = "{ $x isa ternary; };";
-            String typeString3 = "{ $x isa binary; };";
-            Atom type = reasonerQueryFactory.atomic(conjunction(typeString)).getAtom();
-            Atom type2 = reasonerQueryFactory.atomic(conjunction(typeString2)).getAtom();
-            Atom type3 = reasonerQueryFactory.atomic(conjunction(typeString3)).getAtom();
-            assertEquals(2, type.getApplicableRules().count());
-            assertEquals(2, type2.getApplicableRules().count());
-            assertEquals(1, type3.getApplicableRules().count());
+            Rule rule = tx.getRule("someRule");
+            assertEquals(rule, Iterables.getOnlyElement(relation.getApplicableRules().collect(toSet())).getRule());
+            assertEquals(rule, Iterables.getOnlyElement(typedRelation.getApplicableRules().collect(toSet())).getRule());
+            assertEquals(rule, Iterables.getOnlyElement(subbedRelation.getApplicableRules().collect(toSet())).getRule());
         }
     }
 
     @Test
-    public void OntologicalTypes(){
-        try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
-            ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
-
-            String typeString = "{ $x sub " + Schema.MetaSchema.RELATION.getLabel() + "; };";
-            String typeString2 = "{ $x relates someRole; };";
-            String typeString3 = "{ $x plays someRole; };";
-            String typeString4 = "{ $x has name; };";
-            Atom type = reasonerQueryFactory.atomic(conjunction(typeString)).getAtom();
-            Atom type2 = reasonerQueryFactory.atomic(conjunction(typeString2)).getAtom();
-            Atom type3 = reasonerQueryFactory.atomic(conjunction(typeString3)).getAtom();
-            Atom type4 = reasonerQueryFactory.atomic(conjunction(typeString4)).getAtom();
-            assertThat(type.getApplicableRules().collect(toSet()), empty());
-            assertThat(type2.getApplicableRules().collect(toSet()), empty());
-            assertThat(type3.getApplicableRules().collect(toSet()), empty());
-            assertThat(type4.getApplicableRules().collect(toSet()), empty());
-        }
-    }
-
-    @Test
-    public void InstancesMakeRuleInapplicable_NoRoleTypes(){
+    public void relationWithUnspecifiedRoles_specifyingRolePlayerMakesRuleInapplicable(){
         try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
@@ -603,7 +672,7 @@ public class RuleApplicabilityIT {
     }
 
     @Test
-    public void InstancesMakeRuleInapplicable_NoRoleTypes_NoRelationType(){
+    public void relationWithUnspecifiedRoles_specifyingRolePlayerMakesRuleInapplicable_noRelationType(){
         try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
@@ -619,7 +688,7 @@ public class RuleApplicabilityIT {
     }
 
     @Test
-    public void ResourceDouble(){
+    public void whenMatchingDoubleAttributesWithDifferentValueRanges_rulesWithCompatibleRangesAreMatched(){
         try(Transaction tx = resourceApplicabilitySession.writeTransaction()) {
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
@@ -653,7 +722,7 @@ public class RuleApplicabilityIT {
     }
 
     @Test
-    public void ResourceLong(){
+    public void whenMatchingLongAttributesWithDifferentValueRanges_rulesWithCompatibleRangesAreMatched(){
         try(Transaction tx = resourceApplicabilitySession.writeTransaction()) {
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
@@ -687,7 +756,7 @@ public class RuleApplicabilityIT {
     }
 
     @Test
-    public void ResourceString(){
+    public void whenMatchingStringAttributesWithDifferentValueDefinitions_rulesWithCompatibleValuesAreMatched(){
         try(Transaction tx = resourceApplicabilitySession.writeTransaction()) {
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
@@ -709,7 +778,7 @@ public class RuleApplicabilityIT {
     }
 
     @Test
-    public void ResourceBoolean(){
+    public void whenMatchingBooleanAttributes_rulesWithCompatibleValuesAreMatched(){
         try(Transaction tx = resourceApplicabilitySession.writeTransaction()) {
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
@@ -725,18 +794,7 @@ public class RuleApplicabilityIT {
     }
 
     @Test
-    public void TypeResource(){
-        try(Transaction tx = resourceApplicabilitySession.writeTransaction()) {
-            ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
-
-            String typeString = "{ $x isa resource; };";
-            Atom type = reasonerQueryFactory.atomic(conjunction(typeString)).getAtom();
-            assertEquals(1, type.getApplicableRules().count());
-        }
-    }
-
-    @Test
-    public void Resource_TypeMismatch(){
+    public void whenMatchingTypesWithIllegalAttributes_noRulesAreMatched(){
         try(Transaction tx = resourceApplicabilitySession.writeTransaction()) {
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
@@ -755,7 +813,7 @@ public class RuleApplicabilityIT {
     }
 
     @Test
-    public void ReifiedResourceDouble(){
+    public void whenMatchingRelationsWithDoubleAttributeRolePlayers_rulesWithCompatibleValuesAreMatched(){
         try(Transaction tx = reifiedResourceApplicabilitySession.writeTransaction()) {
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
@@ -789,7 +847,7 @@ public class RuleApplicabilityIT {
     }
 
     @Test
-    public void ReifiedResourceLong(){
+    public void whenMatchingRelationsWithLongAttributeRolePlayers_rulesWithCompatibleValuesAreMatched(){
         try(Transaction tx = reifiedResourceApplicabilitySession.writeTransaction()) {
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
@@ -823,7 +881,7 @@ public class RuleApplicabilityIT {
     }
 
     @Test
-    public void ReifiedResourceString(){
+    public void whenMatchingRelationsWithStringAttributeRolePlayers_rulesWithCompatibleValuesAreMatched(){
         try(Transaction tx = reifiedResourceApplicabilitySession.writeTransaction()) {
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
@@ -845,7 +903,7 @@ public class RuleApplicabilityIT {
     }
 
     @Test
-    public void ReifiedResourceBoolean() {
+    public void whenMatchingRelationsWithBooleanAttributeRolePlayers_rulesWithCompatibleValuesAreMatched() {
         try(Transaction tx = reifiedResourceApplicabilitySession.writeTransaction()) {
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 

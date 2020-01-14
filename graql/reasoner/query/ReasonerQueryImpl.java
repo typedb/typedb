@@ -59,6 +59,7 @@ import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.Label;
+import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.executor.ExecutorFactory;
@@ -102,7 +103,7 @@ public class ReasonerQueryImpl extends ResolvableQuery {
     final TraversalPlanFactory traversalPlanFactory;
     final ReasonerQueryFactory reasonerQueryFactory;
 
-    ImmutableSet<Atomic> atomSet;
+    private ImmutableSet<Atomic> atomSet;
     private ConceptMap substitution = null;
     private ImmutableSetMultimap<Variable, Type> varTypeMap = null;
     private ResolutionPlan resolutionPlan = null;
@@ -303,25 +304,6 @@ public class ReasonerQueryImpl extends ResolvableQuery {
         return atomSet.stream().filter(Atomic::isSelectable).count() == 1;
     }
 
-    /**
-     * @param typedVar variable of interest
-     * @param parentType to be checked
-     * @return true if typing the typeVar with type is compatible with role configuration of this query
-     */
-    @Override
-    public boolean isTypeRoleCompatible(Variable typedVar, Type parentType){
-        if (parentType == null || Schema.MetaSchema.isMetaLabel(parentType.label())) return true;
-
-        Set<Type> parentTypes = parentType.subs().collect(Collectors.toSet());
-        return getAtoms(RelationAtom.class)
-                .filter(ra -> ra.getVarNames().contains(typedVar))
-                .noneMatch(ra -> ra.getRoleVarMap().entries().stream()
-                        //get roles this type needs to play
-                        .filter(e -> e.getValue().equals(typedVar))
-                        .filter(e -> !Schema.MetaSchema.isMetaLabel(e.getKey().label()))
-                        //check if it can play it
-                        .anyMatch(e -> e.getKey().players().noneMatch(parentTypes::contains)));
-    }
 
     @Override
     public boolean isEquivalent(ResolvableQuery q) {

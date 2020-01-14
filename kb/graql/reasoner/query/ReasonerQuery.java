@@ -112,14 +112,6 @@ public interface ReasonerQuery{
     boolean isRuleResolvable();
 
     /**
-     * @param typedVar variable of interest
-     * @param parentType which playability in this query is to be checked
-     * @return true if typing the typeVar with type is compatible with role configuration of this query
-     */
-    @CheckReturnValue
-    boolean isTypeRoleCompatible(Variable typedVar, Type parentType);
-
-    /**
      * @param parent query we want to unify this query with
      * @return corresponding multiunifier
      */

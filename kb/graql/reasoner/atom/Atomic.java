@@ -21,6 +21,7 @@ package grakn.core.kb.graql.reasoner.atom;
 
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Rule;
+import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;
@@ -107,6 +108,12 @@ public interface Atomic {
      */
     @CheckReturnValue
     default boolean isCompatibleWith(Object obj){return isAlphaEquivalent(obj);}
+
+    @CheckReturnValue
+    default boolean typesRoleCompatibleWithMatchSemantics(Variable typedVar, Set<Type> parentTypes){ return true;}
+
+    @CheckReturnValue
+    default boolean typesRoleCompatibleWithInsertSemantics(Variable typedVar, Set<Type> parentTypes){ return true;}
 
     /**
      * Determines whether the subsumption relation between this (A) and provided atom (B) holds,
