@@ -963,6 +963,9 @@ public class RelationAtom extends IsaAtomBase {
         SetMultimap<Variable, Type> childVarTypeMap = this.getParentQuery().getVarTypeMap(unifierType.inferTypes());
         SetMultimap<Variable, Type> parentVarTypeMap = parentAtom.getParentQuery().getVarTypeMap(unifierType.inferTypes());
 
+        //TODO:: consider checking consistency wrt the schema (type compatibility, playability, etc)
+        //TODO:: of the (atom+parent) conjunction similarly to what we do at commit-time validation
+
         //establish compatible castings for each parent casting
         List<Set<Pair<RelationProperty.RolePlayer, RelationProperty.RolePlayer>>> compatibleMappingsPerParentRP = new ArrayList<>();
         if (parentAtom.getRelationPlayers().size() > this.getRelationPlayers().size()) return new HashSet<>();
