@@ -49,6 +49,7 @@ import static junit.framework.TestCase.assertEquals;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
@@ -86,12 +87,16 @@ public class SchemaConceptIT {
         //Change The Label
         entityType.label(newLabel);
 
-        //Check the label is changes
-        assertEquals(newLabel, entityType.label());
-        assertEquals(entityType, tx.getType(newLabel));
-
         //Check old label is dead
         assertNull(tx.getType(originalLabel));
+
+        // check new label is not dead
+        assertNotNull(tx.getSchemaConcept(newLabel));
+        assertEquals(entityType, tx.getType(newLabel));
+
+        //Check the label is changes
+        assertEquals(newLabel, entityType.label());
+
     }
 
     @Test

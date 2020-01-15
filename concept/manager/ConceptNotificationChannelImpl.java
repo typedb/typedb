@@ -69,7 +69,7 @@ public class ConceptNotificationChannelImpl implements ConceptNotificationChanne
 
     @Override
     public void labelAdded(SchemaConcept schemaConcept) {
-        conceptListener.labelRemoved(schemaConcept);
+        conceptListener.labelAdded(schemaConcept);
     }
 
     @Override
