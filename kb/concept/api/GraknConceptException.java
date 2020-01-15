@@ -46,6 +46,11 @@ public class GraknConceptException extends GraknException {
         return GraknConceptException.create(ErrorMessage.NOT_A_TYPE.getMessage(concept.id(), concept.getClass()));
     }
 
+    public static GraknConceptException illegalConceptId(ConceptId conceptId) {
+        return GraknConceptException.create(ErrorMessage.INVALID_CONCEPT_ID_FORMAT.getMessage(conceptId))
+        ;
+    }
+
     @Override
     public String getName() {
         return this.getClass().getName();

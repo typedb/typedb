@@ -434,6 +434,8 @@ public class ConceptManagerImpl implements ConceptManager {
 
     @Override
     public <T extends Concept> T getConcept(ConceptId conceptId) {
+        Schema.validateConceptId(conceptId);
+
         if (transactionCache.isConceptCached(conceptId)) {
             return transactionCache.getCachedConcept(conceptId);
         }

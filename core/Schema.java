@@ -23,6 +23,7 @@ import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.Entity;
 import grakn.core.kb.concept.api.EntityType;
+import grakn.core.kb.concept.api.GraknConceptException;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.LabelId;
 import grakn.core.kb.concept.api.Relation;
@@ -68,6 +69,14 @@ public final class Schema {
 
     public static String elementId(ConceptId conceptId){
         return conceptId.getValue().substring(1);
+    }
+
+    public static void validateConceptId(ConceptId conceptId) throws GraknConceptException {
+        try {
+            Long.parseLong(elementId(conceptId));
+        } catch (NumberFormatException e) {
+            throw GraknConceptException.illegalConceptId(conceptId);
+        }
     }
 
     public static boolean isEdgeId(ConceptId conceptId){
