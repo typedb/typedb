@@ -73,7 +73,9 @@ public final class Schema {
 
     public static void validateConceptId(ConceptId conceptId) throws GraknConceptException {
         try {
-            Long.parseLong(elementId(conceptId));
+            if (!isEdgeId(conceptId)) {
+                Long.parseLong(elementId(conceptId));
+            }
         } catch (NumberFormatException e) {
             throw GraknConceptException.illegalConceptId(conceptId);
         }
