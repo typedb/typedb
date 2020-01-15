@@ -268,7 +268,7 @@ public class ConceptManagerImpl implements ConceptManager {
         try {
             convertedValue = AttributeValueConverter.of(type.dataType()).convert(value);
         } catch (ClassCastException e){
-            throw GraknConceptException.invalidAttributeValue(value, dataType);
+            throw GraknConceptException.invalidAttributeValue(type, value, dataType);
         }
 
         // set persisted value

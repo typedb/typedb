@@ -117,8 +117,8 @@ public class GraknConceptException extends GraknException {
     /**
      * Thrown when creating an Attribute whose value Object does not match attribute data type
      */
-    public static GraknConceptException invalidAttributeValue(Object object, AttributeType.DataType dataType) {
-        return create(ErrorMessage.INVALID_DATATYPE.getMessage(object, object.getClass().getSimpleName(), dataType.name()));
+    public static GraknConceptException invalidAttributeValue(AttributeType attributeType, Object object, AttributeType.DataType dataType) {
+        return create(ErrorMessage.INVALID_DATATYPE.getMessage(object, object.getClass().getSimpleName(), dataType.name(), attributeType.label()));
     }
 
     /**

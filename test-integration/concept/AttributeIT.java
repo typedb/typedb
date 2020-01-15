@@ -177,7 +177,7 @@ public class AttributeIT {
         String invalidThing = "Invalid Thing";
         AttributeType longAttributeType = tx.putAttributeType("long", AttributeType.DataType.LONG);
         expectedException.expect(GraknConceptException.class);
-        expectedException.expectMessage(GraknConceptException.invalidAttributeValue(invalidThing, AttributeType.DataType.LONG).getMessage());
+        expectedException.expectMessage(GraknConceptException.invalidAttributeValue(longAttributeType, invalidThing, AttributeType.DataType.LONG).getMessage());
         longAttributeType.create(invalidThing);
     }
 
@@ -186,10 +186,10 @@ public class AttributeIT {
     @Test
     public void whenCreatingResourceWithAnInvalidDataTypeOnADate_Throw() {
         String invalidThing = "Invalid Thing";
-        AttributeType longAttributeType = tx.putAttributeType("date", AttributeType.DataType.DATE);
+        AttributeType dateAttributeType = tx.putAttributeType("date", AttributeType.DataType.DATE);
         expectedException.expect(GraknConceptException.class);
-        expectedException.expectMessage(GraknConceptException.invalidAttributeValue(invalidThing, AttributeType.DataType.DATE).getMessage());
-        longAttributeType.create(invalidThing);
+        expectedException.expectMessage(GraknConceptException.invalidAttributeValue(dateAttributeType, invalidThing, AttributeType.DataType.DATE).getMessage());
+        dateAttributeType.create(invalidThing);
     }
 
     // this is deliberately an incorrect type for the test
