@@ -58,30 +58,31 @@ public final class Schema {
         throw new UnsupportedOperationException();
     }
 
-    public static ConceptId conceptIdFromVertexId(Object vertexId){
+    public static ConceptId conceptIdFromVertexId(Object vertexId) {
         return ConceptId.of(PREFIX_VERTEX + vertexId);
     }
 
-    public static ConceptId conceptId(Element element){
-        String prefix = element instanceof Edge? PREFIX_EDGE : PREFIX_VERTEX;
+    public static ConceptId conceptId(Element element) {
+        String prefix = element instanceof Edge ? PREFIX_EDGE : PREFIX_VERTEX;
         return ConceptId.of(prefix + element.id().toString());
     }
 
-    public static String elementId(ConceptId conceptId){
+    public static String elementId(ConceptId conceptId) {
         return conceptId.getValue().substring(1);
     }
 
-    public static void validateConceptId(ConceptId conceptId) throws GraknConceptException {
+    public static boolean validateConceptId(ConceptId conceptId) throws GraknConceptException {
         try {
             if (!isEdgeId(conceptId)) {
                 Long.parseLong(elementId(conceptId));
             }
         } catch (NumberFormatException e) {
-            throw GraknConceptException.illegalConceptId(conceptId);
+            return false;
         }
+        return true;
     }
 
-    public static boolean isEdgeId(ConceptId conceptId){
+    public static boolean isEdgeId(ConceptId conceptId) {
         return conceptId.getValue().startsWith(Schema.PREFIX_EDGE);
     }
 

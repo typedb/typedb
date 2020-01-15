@@ -122,11 +122,8 @@ public class TransactionIT {
     }
 
     @Test
-    public void whenGettingConceptWithInvalidId_Throw() {
-        expectedException.expect(GraknConceptException.class);
-        expectedException.expectMessage("Concept Id");
-        expectedException.expectMessage("is invalid");
-        tx.getConcept(ConceptId.of("not_valid_id"));
+    public void whenGettingConceptWithInvalidId_Null() {
+        assertNull(tx.getConcept(ConceptId.of("not_valid_id")));
     }
 
     @Test
