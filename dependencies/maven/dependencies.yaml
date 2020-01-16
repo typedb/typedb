@@ -24,7 +24,7 @@ options:
       type: default
       url: https://repo.maven.apache.org/maven2/
     - id: mavengraknai
-      url: http://maven.grakn.ai/nexus/content/repositories/snapshots/
+      url: https://maven.grakn.ai/nexus/content/repositories/snapshots/
     - id: repograknai
       type: default
       url: https://repo.grakn.ai/repository/maven-snapshot/
