@@ -18,11 +18,12 @@
 
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 
+# TODO: merge '56abcbf0d4784cc6f1e2a0a31d223cc75ad62bc3' to master
 def graknlabs_build_tools():
     git_repository(
         name = "graknlabs_build_tools",
         remote = "https://github.com/graknlabs/build-tools",
-        commit = "65af6e1cabcf4edbd3e38fce877015cd2b3f349d", # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_build_tools
+        commit = "56abcbf0d4784cc6f1e2a0a31d223cc75ad62bc3", # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_build_tools
     )
 
 def graknlabs_common():
@@ -36,7 +37,7 @@ def graknlabs_graql():
      git_repository(
          name = "graknlabs_graql",
          remote = "https://github.com/graknlabs/graql",
-         tag = "1.0.4", # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_graql
+         commit = "11d374b157efc00145851e0b8125d65a716b4bd8", # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_graql
      )
 
 def graknlabs_protocol():
