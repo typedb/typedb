@@ -32,6 +32,7 @@ import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.Entity;
 import grakn.core.kb.concept.api.EntityType;
+import grakn.core.kb.concept.api.GraknConceptException;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
@@ -118,6 +119,11 @@ public class TransactionIT {
     public void whenGettingConceptById_ReturnTheConcept() {
         EntityType entityType = tx.putEntityType("test-name");
         assertEquals(entityType, tx.getConcept(entityType.id()));
+    }
+
+    @Test
+    public void whenGettingConceptWithInvalidId_Null() {
+        assertNull(tx.getConcept(ConceptId.of("not_valid_id")));
     }
 
     @Test
