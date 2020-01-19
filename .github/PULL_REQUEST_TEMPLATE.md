@@ -9,4 +9,9 @@ Please replace every line in curly brackets ( { like this } ) with an appropriat
 
 ## What are the changes implemented in this PR?
 
-{ Please explain what you implemented, why your changes are the best way to achieve the goal(s) above, and reference the GitHub issues to be automatically closed, such like 'closes #number'. }
+{ Please explain what you implemented, why your changes are the best way to achieve the goal(s) above. Please describe every method, class and package, by explaining:
+  - its responsibility, 
+  - how it's expected to behave, and 
+  - how it relates to the adjacent methods/classes/packages it interacts with. 
+
+This would allow the reviewer to understand your intentions in the code much better. If you're adding new classes, make sure these explanations are also included in the class header comments. Last but not least, please reference the GitHub issues to be automatically closed, such like 'closes #number'. }
