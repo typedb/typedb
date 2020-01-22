@@ -93,8 +93,6 @@ public class RuleCacheImpl implements RuleCache {
                 .filter(Objects::nonNull)
                 .filter(Concept::isType)
                 .map(Concept::asType)
-                //NB: we only update visited entries
-                //.filter(type -> Objects.nonNull())
                 .forEach(type -> {
                     Set<Rule> match = ruleMap.get(type);
                     if (match == null) {
