@@ -20,6 +20,7 @@
 package grakn.core.graql.reasoner.cache;
 
 import com.google.common.collect.Sets;
+import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.EntityType;
 import grakn.core.kb.concept.api.Label;
@@ -52,8 +53,6 @@ import static org.junit.Assert.assertTrue;
 @SuppressWarnings("CheckReturnValue")
 public class RuleCacheIT {
 
-    private static String resourcePath = "test-integration/graql/reasoner/resources/";
-
     @ClassRule
     public static final GraknTestStorage storage = new GraknTestStorage();
 
@@ -62,6 +61,7 @@ public class RuleCacheIT {
     @BeforeClass
     public static void loadContext() {
         ruleApplicabilitySession = SessionUtil.serverlessSessionWithNewKeyspace(storage.createCompatibleServerConfig());
+        String resourcePath = "test-integration/graql/reasoner/resources/";
         loadFromFileAndCommit(resourcePath, "ruleApplicabilityTest.gql", ruleApplicabilitySession);
     }
 
@@ -216,6 +216,46 @@ public class RuleCacheIT {
 
             singleRoleEntity.create();
             assertFalse(testTx.ruleCache().absentTypes(Collections.singleton(singleRoleEntity)));
+        }
+    }
+
+    @Test
+    public void whenRulesWithPositiveAndNegativePremiseArePresent_lackOfInstancesOnlyPrunesOne(){
+        Session session = SessionUtil.serverlessSessionWithNewKeyspace(storage.createCompatibleServerConfig());
+        try (Transaction tx = session.writeTransaction()){
+            AttributeType<String> resource = tx.putAttributeType("resource", AttributeType.DataType.STRING);
+            AttributeType<String> derivedResource = tx.putAttributeType("derivedResource", AttributeType.DataType.STRING);
+            tx.putEntityType("someEntity").has(resource).has(derivedResource);
+            tx.putEntityType("derivedEntity");
+            tx.putRule("positiveRule",
+                    Graql.and(
+                            Graql.var("x").has("resource", Graql.var("r")),
+                            Graql.var("x").isa("someEntity")),
+                    Graql.var("x").has("derivedResource", Graql.var("r"))
+            );
+            tx.putRule("negativeRule",
+                    Graql.and(
+                            Graql.var("x").has("resource", Graql.var("r")),
+                            Graql.not(Graql.var("x").isa("someEntity"))),
+                    Graql.var("x").has("derivedResource", Graql.var("r"))
+            );
+
+            resource.create("banana");
+            tx.commit();
+        }
+        try(Transaction tx = session.readTransaction()) {
+            TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction)tx;
+
+            EntityType someEntity = tx.getEntityType("someEntity");
+            AttributeType derivedResource = tx.getAttributeType("derivedResource");
+            assertTrue(testTx.ruleCache().absentTypes(Collections.singleton(someEntity)));
+
+            Rule positiveRule = tx.getRule("positiveRule");
+            Rule negativeRule = tx.getRule("negativeRule");
+
+            Set<Rule> rules = testTx.ruleCache().getRulesWithType(derivedResource).collect(toSet());
+            assertTrue(rules.contains(negativeRule));
+            assertFalse(rules.contains(positiveRule));
         }
     }
 }

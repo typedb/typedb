@@ -849,17 +849,7 @@ public class TransactionImpl implements Transaction {
             ConceptUtils.validateBaseType(SchemaConceptImpl.from(rule), Schema.BaseType.RULE);
         }
 
-        //NB: thenTypes() will be empty as type edges added on commit
-        //NB: this will cache also non-committed rules
-        if (rule.then() != null) {
-            rule.then().statements().stream()
-                    .flatMap(v -> v.getTypes().stream())
-                    .map(type -> this.<SchemaConcept>getSchemaConcept(Label.of(type)))
-                    .filter(Objects::nonNull)
-                    .filter(Concept::isType)
-                    .map(Concept::asType)
-                    .forEach(type -> ruleCache.updateRules(type, rule));
-        }
+        ruleCache.ackRuleInsertion(rule);
         return rule;
     }
 
@@ -1155,7 +1145,7 @@ public class TransactionImpl implements Transaction {
 
     private void removeInferredConcepts() {
         Set<Thing> inferredThingsToDiscard = transactionCache.getInferredInstancesToDiscard().collect(Collectors.toSet());
-        inferredThingsToDiscard.forEach(inferred -> transactionCache.remove(inferred));
+        inferredThingsToDiscard.forEach(transactionCache::remove);
         inferredThingsToDiscard.forEach(Concept::delete);
     }
 

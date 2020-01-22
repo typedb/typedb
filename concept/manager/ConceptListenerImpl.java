@@ -113,7 +113,7 @@ public class ConceptListenerImpl implements ConceptListener {
      */
     private void thingCreated(Thing thing, boolean isInferred) {
         Type thingType = thing.type();
-        ruleCache.ackTypeInstance(thingType);
+        ruleCache.ackTypeInstanceInsertion(thingType);
         statistics.increment(thingType);
 
         if (isInferred) {

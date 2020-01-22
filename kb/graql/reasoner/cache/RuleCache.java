@@ -37,12 +37,6 @@ public interface RuleCache {
     Stream<Rule> getRules();
 
     /**
-     * @param type rule head's type
-     * @param rule to be appended
-     */
-    void updateRules(Type type, Rule rule);
-
-    /**
      * @param type for which rules containing it in the head are sought
      * @return rules containing specified type in the head
      */
@@ -56,10 +50,15 @@ public interface RuleCache {
     boolean absentTypes(Set<Type> types);
 
     /**
+     * @param rule whose insertion we want to acknowledge
+     */
+    void ackRuleInsertion(Rule rule);
+
+    /**
      * acknowledge addition of an instance of a specific type
      * @param type to be acked
      */
-    void ackTypeInstance(Type type);
+    void ackTypeInstanceInsertion(Type type);
 
     /**
      * @param type   for which rules containing it in the head are sought

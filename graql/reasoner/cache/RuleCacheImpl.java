@@ -20,17 +20,18 @@
 package grakn.core.graql.reasoner.cache;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.HashMultimap;
 import grakn.core.core.Schema;
 import grakn.core.graql.reasoner.query.ReasonerQueryFactory;
 import grakn.core.graql.reasoner.rule.InferenceRule;
+import grakn.core.kb.concept.api.Concept;
+import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.reasoner.cache.RuleCache;
-
 import grakn.core.kb.keyspace.KeyspaceStatistics;
+import graql.lang.pattern.Pattern;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -44,12 +45,12 @@ import java.util.stream.Stream;
  */
 public class RuleCacheImpl implements RuleCache {
 
-    private final HashMultimap<Type, Rule> ruleMap = HashMultimap.create();
+    //NB: we specifically use map to differentiate between type with no rules (empty set) and unchecked type (null)
+    private final Map<Type, Set<Rule>> ruleMap = new HashMap<>();
     private final Map<Rule, InferenceRule> ruleConversionMap = new HashMap<>();
     private final ConceptManager conceptManager;
     private final KeyspaceStatistics keyspaceStatistics;
 
-    //TODO: these should be eventually stored together with statistics
     private Set<Type> absentTypes = new HashSet<>();
     private Set<Type> checkedTypes = new HashSet<>();
     private Set<Rule> unmatchableRules = new HashSet<>();
@@ -78,18 +79,33 @@ public class RuleCacheImpl implements RuleCache {
     }
 
     /**
-     * @param type rule head's type
      * @param rule to be appended
      */
     @Override
-    public void updateRules(Type type, Rule rule) {
-        Set<Rule> match = ruleMap.get(type);
-        if (match.isEmpty()) {
-            getTypes(type, false)
-                    .flatMap(SchemaConcept::thenRules)
-                    .forEach(r -> ruleMap.put(type, r));
-        }
-        ruleMap.put(type, rule);
+    public void ackRuleInsertion(Rule rule) {
+        Pattern thenPattern = rule.then();
+        if (thenPattern == null) return;
+        //NB: thenTypes() will be empty as type edges added on commit
+        //NB: this will cache also non-committed rules
+        thenPattern.statements().stream()
+                .flatMap(v -> v.getTypes().stream())
+                .map(type -> conceptManager.<SchemaConcept>getSchemaConcept(Label.of(type)))
+                .filter(Objects::nonNull)
+                .filter(Concept::isType)
+                .map(Concept::asType)
+                .forEach(type -> {
+                    Set<Rule> match = ruleMap.get(type);
+                    if (match == null) {
+                        Set<Rule> rules = new HashSet<>();
+                        rules.add(rule);
+                        getTypes(type, false)
+                                .flatMap(SchemaConcept::thenRules)
+                                .forEach(rules::add);
+                        ruleMap.put(type, rules);
+                    } else {
+                        match.add(rule);
+                    }
+                });
     }
 
     /**
@@ -132,7 +148,7 @@ public class RuleCacheImpl implements RuleCache {
      * @param type to be acked
      */
     @Override
-    public void ackTypeInstance(Type type){
+    public void ackTypeInstanceInsertion(Type type){
         checkedTypes.add(type);
         absentTypes.remove(type);
     }
@@ -147,14 +163,16 @@ public class RuleCacheImpl implements RuleCache {
         if (type == null) return getRules();
 
         Set<Rule> match = ruleMap.get(type);
-        if (!match.isEmpty()) return match.stream();
+        if (match != null) return match.stream();
 
+        Set<Rule> rules = new HashSet<>();
         getTypes(type, direct)
                 .flatMap(SchemaConcept::thenRules)
                 .filter(this::isRuleMatchable)
-                .forEach(rule -> ruleMap.put(type, rule));
+                .forEach(rules::add);
+        ruleMap.put(type, rules);
 
-        return match.stream();
+        return rules.stream();
     }
 
     private boolean instancePresent(Type type){
@@ -174,7 +192,9 @@ public class RuleCacheImpl implements RuleCache {
                 || type.subs().flatMap(SchemaConcept::thenRules).anyMatch(this::isRuleMatchable);
         if (!instancePresent){
             absentTypes.add(type);
-            type.whenRules().forEach(r -> unmatchableRules.add(r));
+            type.whenRules()
+                    .filter(rule -> rule.whenPositiveTypes().anyMatch(pt -> pt.equals(type)))
+                    .forEach(r -> unmatchableRules.add(r));
         }
         return instancePresent;
     }
