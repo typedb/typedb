@@ -161,7 +161,7 @@ public interface Atomic {
      * @return error messages indicating ontological inconsistencies of this atomic
      */
     @CheckReturnValue
-    default Set<String> validateAsRuleBody(Label ruleLabel){ return new HashSet<>();}
+    default Set<String> validateOntologically(Label ruleLabel){ return new HashSet<>();}
 
     /**
      * @return the base pattern combined with possible predicate patterns

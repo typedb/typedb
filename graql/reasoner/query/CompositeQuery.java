@@ -88,7 +88,7 @@ public class CompositeQuery extends ResolvableQuery {
         Set<Conjunction<Pattern>> complementPattern = complementPattern(pattern);
         this.conjunctiveQuery = this.queryFactory.create(positiveConj);
         this.complementQueries = complementPattern.stream()
-                .map(comp -> this.queryFactory.resolvable(comp))
+                .map(this.queryFactory::resolvable)
                 .collect(Collectors.toSet());
 
         if (!isNegationSafe()){
@@ -319,7 +319,10 @@ public class CompositeQuery extends ResolvableQuery {
     @Override
     public Conjunction<Pattern> getPattern() {
         Set<Pattern> pattern = Sets.newHashSet(getConjunctiveQuery().getPattern());
-        getComplementQueries().stream().map(ResolvableQuery::getPattern).forEach(pattern::add);
+        getComplementQueries().stream()
+                .map(ResolvableQuery::getPattern)
+                .map(Graql::not)
+                .forEach(pattern::add);
         return Graql.and(pattern);
     }
 

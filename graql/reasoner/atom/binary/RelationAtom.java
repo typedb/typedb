@@ -512,7 +512,7 @@ public class RelationAtom extends IsaAtomBase {
     }
 
     @Override
-    public Set<String> validateAsRuleBody(Label ruleLabel) {
+    public Set<String> validateOntologically(Label ruleLabel) {
         Set<String> errors = new HashSet<>();
         SchemaConcept type = getSchemaConcept();
         if (type != null && !type.isRelationType()) {

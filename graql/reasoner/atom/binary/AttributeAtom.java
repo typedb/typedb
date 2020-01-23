@@ -388,7 +388,7 @@ public class AttributeAtom extends Binary{
     }
 
     @Override
-    public Set<String> validateAsRuleBody(Label ruleLabel) {
+    public Set<String> validateOntologically(Label ruleLabel) {
         SchemaConcept type = getSchemaConcept();
         Set<String> errors = new HashSet<>();
         if (type == null) return errors;

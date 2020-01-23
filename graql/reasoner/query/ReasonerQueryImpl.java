@@ -29,7 +29,6 @@ import com.google.common.collect.Sets;
 import grakn.common.util.Pair;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.util.ConceptUtils;
-import grakn.core.core.Schema;
 import grakn.core.graql.reasoner.CacheCasting;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.AtomicBase;
@@ -59,7 +58,6 @@ import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.Label;
-import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.executor.ExecutorFactory;
@@ -287,7 +285,7 @@ public class ReasonerQueryImpl extends ResolvableQuery {
     @Override
     public Set<String> validateOntologically(Label ruleLabel) {
         return getAtoms().stream()
-                .flatMap(at -> at.validateAsRuleBody(ruleLabel).stream())
+                .flatMap(at -> at.validateOntologically(ruleLabel).stream())
                 .collect(Collectors.toSet());
     }
 

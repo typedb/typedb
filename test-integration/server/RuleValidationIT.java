@@ -387,6 +387,14 @@ public class RuleValidationIT {
                 "someRole", "anotherRelation"
         );
         validateOntologicallyIllegalRule(
+                Graql.parsePattern("" +
+                        "(singleRole: $x, singleRole: $y) isa anotherRelation;" +
+                        "not {(someRole: $x, singleRole: $y) isa anotherRelation;};"),
+                Graql.parsePattern("(someRole: $x, anotherRole: $y) isa someRelation;"),
+                ErrorMessage.VALIDATION_RULE_ROLE_CANNOT_BE_PLAYED,
+                "someRole", "anotherRelation"
+        );
+        validateOntologicallyIllegalRule(
                 Graql.parsePattern("(someRole: $x, anotherRole: $y) isa someRelation;"),
                 Graql.parsePattern("(someRole: $x, singleRole: $y) isa anotherRelation;"),
                 ErrorMessage.VALIDATION_RULE_ROLE_CANNOT_BE_PLAYED,
@@ -417,7 +425,33 @@ public class RuleValidationIT {
     }
 
     @Test
-    public void whenAddingRuleInvalidOntologically_EntityCantHaveResource_Throw() throws InvalidKBException {
+    public void whenARuleHasTypeThatCantPlayRoleButIsNegated_doNotThrow(){
+        try (Transaction tx = session.writeTransaction()) {
+            initTx(tx);
+            tx.putRule(UUID.randomUUID().toString(),
+                    Graql.parsePattern("{" +
+                            "$x has someAttribute $r;" +
+                            "not {$x isa noRoleEntity;};" +
+                    "};"),
+                    Graql.parsePattern("(singleRole: $x) isa anotherRelation;")
+            );
+            tx.commit();
+        }
+        try (Transaction tx = session.writeTransaction()) {
+            initTx(tx);
+            tx.putRule(UUID.randomUUID().toString(),
+                    Graql.parsePattern("{" +
+                            "(singleRole: $x) isa anotherRelation;" +
+                            "not {$x isa noRoleEntity;};" +
+                            "};"),
+                    Graql.parsePattern("$x has someAttribute 1337;")
+            );
+            tx.commit();
+        }
+    }
+
+    @Test
+    public void whenAddingRuleInvalidOntologically_EntityCantHaveAttribute_Throw() throws InvalidKBException {
         validateOntologicallyIllegalRule(
                 Graql.parsePattern("$x isa someRelation;"),
                 Graql.parsePattern("$x has someAttribute 1337;"),
@@ -439,6 +473,32 @@ public class RuleValidationIT {
     }
 
     @Test
+    public void whenARuleHasTypeThatHaveAttributeRoleButIsNegated_doNotThrow(){
+        try (Transaction tx = session.writeTransaction()) {
+            initTx(tx);
+            tx.putRule(UUID.randomUUID().toString(),
+                    Graql.parsePattern("{" +
+                            "$x has someAttribute $r;" +
+                            "not {$x isa someRelation;};" +
+                            "};"),
+                    Graql.parsePattern("(singleRole: $x) isa anotherRelation;")
+            );
+            tx.commit();
+        }
+        try (Transaction tx = session.writeTransaction()) {
+            initTx(tx);
+            tx.putRule(UUID.randomUUID().toString(),
+                    Graql.parsePattern("{" +
+                            "(singleRole: $x) isa anotherRelation;" +
+                            "not {$x isa someRelation;};" +
+                            "};"),
+                    Graql.parsePattern("$x has someAttribute 1337;")
+            );
+            tx.commit();
+        }
+    }
+
+    @Test
     public void whenAddingRuleInvalidOntologically_RelationWithInvalidType_Throw() throws InvalidKBException {
         validateOntologicallyIllegalRule(
                 Graql.parsePattern("(someRole: $x, singleRole: $y) isa someAttribute;"),
@@ -457,13 +517,13 @@ public class RuleValidationIT {
     @Test
     public void whenAddingRuleInvalidOntologically_ResourceWithInvalidType_Throw() throws InvalidKBException {
         validateOntologicallyIllegalRule(
-                Graql.parsePattern("$x has someRelation $r;"),
+                Graql.parsePattern("{$x has someRelation $r;($x, $y);};"),
                 Graql.parsePattern("(someRole: $x, anotherRole: $y) isa someRelation;"),
                 ErrorMessage.VALIDATION_RULE_INVALID_ATTRIBUTE_TYPE,
                 "someRelation"
         );
         validateOntologicallyIllegalRule(
-                Graql.parsePattern("{$r isa attribute; (someRole: $x, anotherRole: $y) isa someRelation;}"),
+                Graql.parsePattern("{$r isa attribute; (someRole: $x, anotherRole: $y) isa someRelation;};"),
                 Graql.parsePattern("$x has someRelation $r;"),
                 ErrorMessage.VALIDATION_RULE_INVALID_ATTRIBUTE_TYPE,
                 "someRelation"
@@ -707,8 +767,7 @@ public class RuleValidationIT {
                             "$x isa entity;" +
                             "($x, $y) isa someRelation;" +
                             "not {" +
-                            "{$y isa someRelation;} or " +
-                            "{$y isa attribute;};" +
+                            "{$y isa someRelation;} or {$y isa attribute;};" +
                             "};" +
                             "};");
             Pattern then = Graql.parsePattern("$x isa someEntity;");
@@ -934,6 +993,9 @@ public class RuleValidationIT {
                 .has(stringAttribute)
                 .plays(someRole)
                 .plays(anotherRole);
+
+        tx.putEntityType("noRoleEntity")
+                .has(someAttribute);
 
         tx.putRelationType("someRelation")
                 .relates(someRole)

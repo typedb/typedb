@@ -312,9 +312,16 @@ public class ValidateGlobalRules {
      * @return a combined conjunction created from statements from both the body and the head of the rule
      */
     private static ReasonerQuery combinedRuleQuery(ReasonerQueryFactory reasonerQueryFactory, Rule rule) {
-        ReasonerQuery bodyQuery = reasonerQueryFactory.create(Graql.and(rule.when().getDisjunctiveNormalForm().getPatterns().stream().flatMap(conj -> conj.getPatterns().stream()).collect(Collectors.toSet())));
-        ReasonerQuery headQuery = reasonerQueryFactory.create(Graql.and(rule.then().getDisjunctiveNormalForm().getPatterns().stream().flatMap(conj -> conj.getPatterns().stream()).collect(Collectors.toSet())));
-        return headQuery.conjunction(bodyQuery);
+        Conjunction<Pattern> bodyConj = Iterables.getOnlyElement(rule.when().getNegationDNF().getPatterns());
+
+        Conjunction<Statement> headConj = Graql.and(
+                rule.then().getDisjunctiveNormalForm().getPatterns().stream()
+                        .flatMap(conj -> conj.getPatterns().stream())
+                        .collect(Collectors.toSet())
+        );
+        ReasonerQuery bodyQuery = reasonerQueryFactory.composite(bodyConj);
+        ReasonerQuery headQuery = reasonerQueryFactory.create(headConj);
+        return bodyQuery.conjunction(headQuery);
     }
 
     /**
@@ -323,7 +330,7 @@ public class ValidateGlobalRules {
      * @param rule  the rule to be validated ontologically
      * @return Error messages if the rule has ontological inconsistencies
      */
-    public static Set<String> validateRuleOntologically(ReasonerQueryFactory reasonerQueryFactory, Rule rule) {
+    static Set<String> validateRuleOntologically(ReasonerQueryFactory reasonerQueryFactory, Rule rule) {
         Set<String> errors = new HashSet<>();
 
         //both body and head refer to the same graph and have to be valid with respect to the schema that governs it

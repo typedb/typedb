@@ -78,7 +78,7 @@ public class Validator {
         transactionCache.getModifiedRelationTypes().forEach(this::validateRelationType);
 
         //Validate Rules
-        transactionCache.getModifiedRules().forEach(rule -> validateRule(rule));
+        transactionCache.getModifiedRules().forEach(this::validateRule);
 
         //Validate rule type graph
         if (!transactionCache.getModifiedRules().isEmpty()) {
@@ -99,10 +99,10 @@ public class Validator {
         Set<String> labelErrors = ValidateGlobalRules.validateRuleSchemaConceptExist(conceptManager, rule);
         errorsFound.addAll(labelErrors);
         if (labelErrors.isEmpty()) {
-            Set<String> ontologicalErrors = ValidateGlobalRules.validateRuleOntologically(reasonerQueryFactory, rule);
-            errorsFound.addAll(ontologicalErrors);
-            if (ontologicalErrors.isEmpty()) {
-                errorsFound.addAll(ValidateGlobalRules.validateRuleIsValidClause(reasonerQueryFactory, rule));
+            Set<String> clauseErrors = ValidateGlobalRules.validateRuleIsValidClause(reasonerQueryFactory, rule);
+            errorsFound.addAll(clauseErrors);
+            if (clauseErrors.isEmpty()) {
+                errorsFound.addAll(ValidateGlobalRules.validateRuleOntologically(reasonerQueryFactory, rule));
             }
         }
     }
