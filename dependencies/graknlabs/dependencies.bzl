@@ -66,3 +66,14 @@ def graknlabs_benchmark():
         remote = "https://github.com/graknlabs/benchmark.git",
         commit = "78869c68a2b6073917f7d6ee085ffd0b0d6a29b0" # keep in sync with protocol changes
     )
+
+def graknlabs_simulation():
+#    git_repository(
+#        name = "graknlabs_simulation",
+#        remote = "https://github.com/graknlabs/simulation",
+#        commit = "8f30aa7646177b4afce45584104191a7e4d99219",
+#    )
+    native.local_repository(
+        name = "graknlabs_simulation",
+        path = "../simulation",
+    )
