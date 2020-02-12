@@ -64,17 +64,16 @@ jobs:
           command: bazel run @graknlabs_build_tools//unused_deps -- list
           no_output_timeout: 30m
 
-  # TODO: restore when graknlabs/grakn#5551 is fixed
-  # build-analysis:
-  #   machine: true
-  #   working_directory: ~/grakn
-  #   steps:
-  #     - install-bazel-linux-rbe
-  #     - checkout
-  #     - run: |
-  #         SONARCLOUD_CODE_ANALYSIS_CREDENTIAL=$SONARCLOUD_CREDENTIAL \
-  #           bazel run @graknlabs_build_tools//sonarcloud:code-analysis -- \
-  #           --project-key graknlabs_grakn_core --commit-id=$CIRCLE_SHA1 --branch=$CIRCLE_BRANCH
+  build-analysis:
+    machine: true
+    working_directory: ~/grakn
+    steps:
+      - install-bazel-linux-rbe
+      - checkout
+      - run: |
+          SONARCLOUD_CODE_ANALYSIS_CREDENTIAL=$SONARCLOUD_CREDENTIAL \
+            bazel run @graknlabs_build_tools//sonarcloud:code-analysis -- \
+            --project-key graknlabs_grakn_core --commit-id=$CIRCLE_SHA1 --branch=$CIRCLE_BRANCH
   
   test-common:
     machine: true
@@ -409,10 +408,10 @@ workflows:
           filters:
             branches:
               ignore: grakn-release-branch
-      # - build-analysis:
-      #     filters:
-      #       branches:
-      #         only: master
+      - build-analysis:
+          filters:
+            branches:
+              only: master
       - test-common:
           filters:
             branches:
@@ -444,7 +443,7 @@ workflows:
           requires:
             - build
             - build-checkstyle
-            # - build-analysis
+            - build-analysis
             - test-common
             - test-server
             - test-integration
@@ -458,7 +457,7 @@ workflows:
           requires:
             - build
             - build-checkstyle
-            # - build-analysis
+            - build-analysis
             - test-common
             - test-server
             - test-integration
@@ -472,7 +471,7 @@ workflows:
           requires:
             - build
             - build-checkstyle
-            # - build-analysis
+            - build-analysis
             - test-common
             - test-server
             - test-integration
@@ -486,7 +485,7 @@ workflows:
           requires:
             - build
             - build-checkstyle
-            # - build-analysis
+            - build-analysis
             - test-common
             - test-server
             - test-integration
