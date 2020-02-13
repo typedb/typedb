@@ -16,7 +16,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-package(default_visibility = ["//test-integration/graql/reasoner:__subpackages__", "//test-integration/graql/reasoner/cache:__subpackages__"])
+package(default_visibility = [
+    "//test-integration/graql/reasoner:__subpackages__",
+    "//test-integration/graql/reasoner/cache:__subpackages__",
+])
 
 filegroup(
     name = "generic-schema",
@@ -101,4 +104,9 @@ filegroup(
 filegroup(
     name = "resolution-plan",
     srcs = ["resolutionPlanTest.gql"],
+)
+
+filegroup(
+    name = "generated-subsumption-pairs",
+    srcs = ["generatedSubsumptionPairs"],
 )
