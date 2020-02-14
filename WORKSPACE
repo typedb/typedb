@@ -31,7 +31,8 @@ load(
     "graknlabs_protocol",
     "graknlabs_client_java",
     "graknlabs_console",
-    "graknlabs_benchmark"
+    "graknlabs_benchmark",
+    "graknlabs_simulation",
 )
 graknlabs_build_tools()
 graknlabs_common()
@@ -40,6 +41,7 @@ graknlabs_protocol()
 graknlabs_client_java()
 graknlabs_console()
 graknlabs_benchmark()
+graknlabs_simulation()
 
 load("@graknlabs_build_tools//distribution:dependencies.bzl", "graknlabs_bazel_distribution")
 graknlabs_bazel_distribution()
@@ -158,6 +160,19 @@ container_pull(
   repository = "library/openjdk",
   tag = "8"
 )
+
+
+################################
+# Load Simulation dependencies #
+################################
+
+load("@graknlabs_simulation//dependencies/maven:dependencies.bzl",
+graknlabs_simulation_dependencies = "maven_dependencies")
+graknlabs_simulation_dependencies()
+
+load("@graknlabs_simulation//dependencies/graknlabs:dependencies.bzl", "graknlabs_grabl_tracing")
+graknlabs_grabl_tracing()
+
 
 #####################################
 # Load Bazel common workspace rules #

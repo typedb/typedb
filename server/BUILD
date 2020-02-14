@@ -133,6 +133,26 @@ java_binary(
     visibility = ["//:__pkg__"],
 )
 
+java_binary(
+    name = "server-core-binary",
+    main_class = "grakn.core.server.Grakn",
+    runtime_deps = [
+        "//server:server"
+    ],
+    tags = ["maven_coordinates=io.grakn.core:grakn-server-bin:{pom_version}"],
+    visibility = ["//:__pkg__"],
+)
+
+java_binary(
+    name = "server-storage-binary",
+    main_class = "grakn.core.server.GraknStorage",
+    runtime_deps = [
+        "//server:server"
+    ],
+    tags = ["maven_coordinates=io.grakn.core:grakn-server-bin:{pom_version}"],
+    visibility = ["//:__pkg__"],
+)
+
 java_deps(
     name = "server-deps",
     target = ":server-binary",
