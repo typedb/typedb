@@ -4,6 +4,7 @@ import grakn.common.util.Pair;
 import grakn.core.common.config.Config;
 import grakn.core.graql.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierType;
+import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import grakn.core.rule.GraknTestStorage;
@@ -16,6 +17,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -27,6 +29,7 @@ import org.junit.Test;
 
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
 import static java.util.stream.Collectors.toSet;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class GenerativeSubsumptionIT {
@@ -53,6 +56,7 @@ public class GenerativeSubsumptionIT {
     private static List<Pair<String, String>> readPairs() {
         String path = "test-integration/graql/reasoner/resources/";
         String fileName = "generatedSubsumptionPairs";
+        //String fileName = "generatedSubsumptionPairsFull";
         String delim = " -> ";
 
         List<Pair<String, String>> pairs = new ArrayList<>();
@@ -82,6 +86,8 @@ public class GenerativeSubsumptionIT {
             String subId = tx.getEntityType("subRoleEntity").instances().iterator().next().id().getValue();
 
             boolean pass = true;
+            int failures = 0;
+            int processed = 0;
             for(Pair<String, String> pair : pairs){
                 Pair<String, String> cPair = contextualiseIds(pair, id, subId);
 
@@ -93,15 +99,20 @@ public class GenerativeSubsumptionIT {
                     ReasonerAtomicQuery child = reasonerQueryFactory.atomic(cQuery.getAtoms());
 
                     if(!parent.isSubsumedBy(child)){
-                        System.out.println("Subsumption failure comparing : " + parent + " ?=< " + child);
+                        //System.out.println("Subsumption failure comparing : " + parent + " ?=< " + child);
                         pass = false;
+                        //failures++;
                     }
                     if(parent.getMultiUnifier(child, UnifierType.RULE).equals(MultiUnifierImpl.nonExistent())){
-                        System.out.println("Unifier failure comparing : " + parent + " ?=< " + child);
+                        //System.out.println("Unifier failure comparing : " + parent + " ?=< " + child);
                         pass = false;
+                        failures++;
                     }
                 }
+                processed++;
+                if (processed % 5000 == 0) System.out.println("failures: " + failures + "/" + processed);
             }
+            System.out.println("failures: " + failures);
             assertTrue(pass);
         }
     }

@@ -246,6 +246,7 @@ java_test(
     classpath_resources = ["//test-integration/resources:logback-test"],
     resources = [
         "//test-integration/graql/reasoner/resources:generated-subsumption-pairs",
+        "//test-integration/graql/reasoner/resources:generated-subsumption-pairs-full",
         "//test-integration/graql/reasoner/resources:generic-schema",
     ],
     test_class = "grakn.core.graql.reasoner.query.GenerativeSubsumptionIT",

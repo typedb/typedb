@@ -566,6 +566,54 @@ public class AtomicQueryUnificationIT {
     }
 
     @Test
+    public void testUnification_typeComparisons() {
+        try (Transaction tx = genericSchemaSession.readTransaction()) {
+            TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction) tx);
+            List<String> queries = Lists.newArrayList(
+                    "{ $x isa $type;};",
+                    "{$x isa entity;};",
+                    "{$x isa baseEntity;};",
+                    "{$x isa subRoleEntity;}"
+            );
+            String potentialEquivalent = "{ ($role: $u, baseRole2: $v);$role type baseRole1;};";
+
+            unification(query, potentialEquivalent, false, UnifierType.EXACT, testTx);
+            unification(potentialEquivalent, query, false, UnifierType.EXACT, testTx);
+
+            unification(query, potentialEquivalent, false, UnifierType.STRUCTURAL, testTx);
+            unification(potentialEquivalent, query, false, UnifierType.STRUCTURAL, testTx);
+
+            unification(query, potentialEquivalent, true, UnifierType.RULE, testTx);
+            unification(potentialEquivalent, query, true, UnifierType.RULE, testTx);
+
+            unification(query, potentialEquivalent, true, UnifierType.SUBSUMPTIVE, testTx);
+            unification(potentialEquivalent, query, true, UnifierType.SUBSUMPTIVE, testTx);
+        }
+    }
+
+    /**
+     * Subsumption failure comparing : ($y)($ytype) ?=< ($y)($ytype)
+     * Subsumption failure comparing : subRoleEntity($y) ?=< subRoleEntity($y)
+     * Subsumption failure comparing : baseEntity($x) ?=< baseEntity($x)
+     * Subsumption failure comparing : entity($x) ?=< entity($x)
+     * Subsumption failure comparing : entity($y) ?=< entity($y)
+     * Subsumption failure comparing : subRoleEntity($x) ?=< subRoleEntity($x)
+     * Subsumption failure comparing : baseEntity($y) ?=< baseEntity($y)
+     * Subsumption failure comparing : ($x)($xtype) ?=< ($x)($xtype)
+     * Subsumption failure comparing : subRoleEntity($y), $r binary[$xrole: $x, subRole2: $y][$x/V61528] ?=< $r binary[subRole2: $y], subRoleEntity($y)
+     * Subsumption failure comparing : $r binary[baseRole2: $y], baseEntity($y) ?=< entity($y), $r binary[baseRole2: $y]
+     * Subsumption failure comparing : $r binary[subRole2: $y], subRoleEntity($y) ?=< subRoleEntity($y), $r baseRelation[subRole2: $y]
+     * Subsumption failure comparing : baseEntity($y) ?=< entity($y)
+     * Subsumption failure comparing : $r baseRelation[role: $y], baseEntity($y) ?=< entity($y), $r baseRelation[role: $y]
+     * Subsumption failure comparing : $r relation[$yrole: $y], baseEntity($y) ?=< $r relation[$yrole: $y], entity($y)
+     * Subsumption failure comparing : $r binary[baseRole1: $x], baseEntity($x) ?=< entity($x), $r binary[baseRole1: $x]
+     * Subsumption failure comparing : $r baseRelation[role: $y], baseEntity($y) ?=< $r relation[role: $y], baseEntity($y)
+     * Subsumption failure comparing : $r binary[baseRole1: $x], baseEntity($x) ?=< $r baseRelation[baseRole1: $x], baseEntity($x)
+     * Subsumption failure comparing : $r baseRelation[role: $x], baseEntity($x) ?=< $r relation[role: $x], baseEntity($x)
+     * Subsumption failure comparing : $r relation[role: $x], baseEntity($x) ?=< $r relation[$xrole: $x], baseEntity($x)
+     */
+
+    @Test
     public void testUnification_differentRelationVariants_EXACT() {
         try (Transaction tx = genericSchemaSession.readTransaction()) {
             unification(
