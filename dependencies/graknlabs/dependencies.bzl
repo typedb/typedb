@@ -68,12 +68,8 @@ def graknlabs_benchmark():
     )
 
 def graknlabs_simulation():
-#    git_repository(
-#        name = "graknlabs_simulation",
-#        remote = "https://github.com/graknlabs/simulation",
-#        commit = "8f30aa7646177b4afce45584104191a7e4d99219",
-#    )
-    native.local_repository(
+    git_repository(
         name = "graknlabs_simulation",
-        path = "../simulation",
+        remote = "https://github.com/graknlabs/simulation",
+        commit = "c9a40339ca314b7ae46a1f20e268fd6b3a40e026", # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_simulation
     )
