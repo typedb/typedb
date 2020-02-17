@@ -240,17 +240,17 @@ java_test(
 )
 
 java_test(
-    name = "generative-subsumption-it",
+    name = "generative-operational-it",
     size = "medium",
     srcs = [
-        "GenerativeSubsumptionIT.java",
+        "GenerativeOperationalIT.java",
         "TransactionContext.java",
     ],
     classpath_resources = ["//test-integration/resources:logback-test"],
     resources = [
         "//test-integration/graql/reasoner/resources:generic-schema",
     ],
-    test_class = "grakn.core.graql.reasoner.query.GenerativeSubsumptionIT",
+    test_class = "grakn.core.graql.reasoner.query.GenerativeOperationalIT",
     deps = [
         "//common",
         "//core",
@@ -259,7 +259,6 @@ java_test(
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//graql/reasoner",
         "//kb/concept/api",
-        "//kb/graql/reasoner",
         "//kb/server",
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:graql-test-util",
@@ -307,6 +306,6 @@ checkstyle_test(
         ":resolution-plan-it",
         ":semantic-difference-it",
         ":subsumption-it",
-        ":generative-subsumption-it",
+        ":generative-operational-it",
     ],
 )

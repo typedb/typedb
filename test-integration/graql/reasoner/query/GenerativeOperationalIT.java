@@ -51,7 +51,7 @@ import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
 import static graql.lang.Graql.and;
 import static graql.lang.Graql.var;
 
-public class GenerativeSubsumptionIT {
+public class GenerativeOperationalIT {
 
     @ClassRule
     public static final GraknTestStorage storage = new GraknTestStorage();
