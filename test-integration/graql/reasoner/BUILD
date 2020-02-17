@@ -68,7 +68,7 @@ java_test(
     size = "small",
     srcs = [
         "MockTypeContext.java",
-        "OperatorTest.java",
+        "OperatorIT.java",
     ],
     test_class = "grakn.core.graql.reasoner.OperatorTest",
     visibility = ["//visibility:public"],
@@ -84,6 +84,7 @@ checkstyle_test(
     targets = [
         ":reasoning-it",
         ":geo-inference-it",
+        ":operator-it",
         ":operator",
         ":pattern",
     ],

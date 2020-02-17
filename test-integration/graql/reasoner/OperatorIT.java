@@ -39,7 +39,7 @@ import static graql.lang.Graql.var;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
 
-public class OperatorTest {
+public class OperatorIT {
 
     private static TypeContext ctx = new MockTypeContext();
 
