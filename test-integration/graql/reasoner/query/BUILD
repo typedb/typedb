@@ -306,6 +306,7 @@ checkstyle_test(
         ":ontological-query-it",
         ":resolution-plan-it",
         ":semantic-difference-it",
-        "//test-integration/graql/reasoner/query:subsumption-it",
+        ":subsumption-it",
+        ":generative-subsumption-it",
     ],
 )
