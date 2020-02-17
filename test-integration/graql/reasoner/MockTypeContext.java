@@ -17,47 +17,48 @@
  *
  */
 
-package grakn.core.graql.reasoner.query;
+package grakn.core.graql.reasoner;
 
-import grakn.core.core.Schema;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import grakn.core.graql.reasoner.operator.TypeContext;
-import grakn.core.kb.concept.api.Label;
-import grakn.core.kb.concept.api.SchemaConcept;
-import grakn.core.kb.server.Transaction;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Stream;
 
-class TransactionContext implements TypeContext {
-    private final Transaction tx;
+public class MockTypeContext implements TypeContext {
 
-    TransactionContext(Transaction tx){
-        this.tx = tx;
-    }
+    private final Map<String, String> sups = ImmutableMap.<String, String>builder()
+            .put("baseEntity", "entity")
+            .put("baseRelation", "relation")
+            .put("subEntity","baseEntity")
+            .put("subRelation", "baseRelation")
+            .put("baseRole", "role")
+            .put("subRole", "baseRole")
+            .build();
+
+    private final Set<String> metaTypes = ImmutableSet.<String>builder()
+            .add("role").add("thing")
+            .add("entity").add("relation")
+            .build();
 
     @Override
     public boolean isMetaType(String label) {
-        return Schema.MetaSchema.isMetaLabel(Label.of(label));
+        return metaTypes.contains(label);
     }
 
     @Override
     public String sup(String label) {
-        SchemaConcept type = tx.getSchemaConcept(Label.of(label));
-        if (type == null) return null;
-        SchemaConcept sup = type.sup();
-        if (sup == null) return null;
-        return sup.label().getValue();
+        return sups.get(label);
     }
 
     @Override
     public Stream<String> sups(String label) {
-        SchemaConcept type = tx.getSchemaConcept(Label.of(label));
-        if (type == null) return Stream.empty();
-        return tx.sups(type).map(t -> t.label().getValue());
+        return Stream.empty();
     }
 
     @Override
     public Stream<String> subs(String label) {
-        SchemaConcept type = tx.getSchemaConcept(Label.of(label));
-        if (type == null) return Stream.empty();
-        return type.subs().map(t -> t.label().getValue());
+        return Stream.empty();
     }
 }
