@@ -70,7 +70,7 @@ java_test(
         "MockTypeContext.java",
         "OperatorIT.java",
     ],
-    test_class = "grakn.core.graql.reasoner.OperatorTest",
+    test_class = "grakn.core.graql.reasoner.OperatorIT",
     visibility = ["//visibility:public"],
     deps = [
         "//dependencies/maven/artifacts/com/google/guava",
