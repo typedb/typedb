@@ -105,13 +105,3 @@ filegroup(
     name = "resolution-plan",
     srcs = ["resolutionPlanTest.gql"],
 )
-
-filegroup(
-    name = "generated-subsumption-pairs",
-    srcs = ["generatedSubsumptionPairs"],
-)
-
-filegroup(
-    name = "generated-subsumption-pairs-full",
-    srcs = ["generatedSubsumptionPairsFull"],
-)

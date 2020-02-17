@@ -242,28 +242,30 @@ java_test(
 java_test(
     name = "generative-subsumption-it",
     size = "medium",
-    srcs = ["GenerativeSubsumptionIT.java"],
+    srcs = [
+        "GenerativeSubsumptionIT.java",
+        "TransactionContext.java",
+    ],
     classpath_resources = ["//test-integration/resources:logback-test"],
     resources = [
-        "//test-integration/graql/reasoner/resources:generated-subsumption-pairs",
-        "//test-integration/graql/reasoner/resources:generated-subsumption-pairs-full",
         "//test-integration/graql/reasoner/resources:generic-schema",
     ],
     test_class = "grakn.core.graql.reasoner.query.GenerativeSubsumptionIT",
     deps = [
         "//common",
+        "//core",
         "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/commons-collections",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//graql/reasoner",
+        "//kb/concept/api",
         "//kb/graql/reasoner",
         "//kb/server",
-        "//test-integration/graql/reasoner/graph:generic-schema-graph",
-        "//test-integration/graql/reasoner/pattern:query-pattern",
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:graql-test-util",
         "@graknlabs_common//:common",
         "@graknlabs_graql//java:graql",
+        "@graknlabs_theory//tools:operator",
     ],
 )
 
