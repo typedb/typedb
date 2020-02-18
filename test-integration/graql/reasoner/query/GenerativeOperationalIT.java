@@ -125,8 +125,8 @@ public class GenerativeOperationalIT {
                 ReasonerQueryImpl cQuery = reasonerQueryFactory.create(conjunction(pair.second()));
 
                 if (pQuery.isAtomic() && cQuery.isAtomic()) {
-                    ReasonerAtomicQuery parent = reasonerQueryFactory.atomic(pQuery.selectAtoms().findFirst().orElse(null));
-                    ReasonerAtomicQuery child = reasonerQueryFactory.atomic(cQuery.selectAtoms().findFirst().orElse(null));
+                    ReasonerAtomicQuery parent = reasonerQueryFactory.atomic(pQuery.getAtoms());
+                    ReasonerAtomicQuery child = reasonerQueryFactory.atomic(cQuery.getAtoms());
 
                     if(parent.getMultiUnifier(child, UnifierType.RULE).equals(MultiUnifierImpl.nonExistent())){
                         System.out.println("Rule unifier failure comparing : " + parent + " ?=< " + child);
