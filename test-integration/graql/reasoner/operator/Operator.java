@@ -22,12 +22,19 @@ package grakn.core.graql.reasoner.operator;
 import graql.lang.pattern.Pattern;
 import java.util.stream.Stream;
 
+/**
+ * Interface for defining Pattern operators. The application of an operator O on an input pattern P
+ * results in a pattern P' such that:
+ *
+ * P' = O P
+ *
+ */
 public interface Operator {
 
     /**
      * exhaustive operator application
      * @param src pattern to be transformed
-     * @ctx type context for patterns
+     * @param ctx type context for patterns
      * @return set of patterns resulting from operator application
      */
     Stream<Pattern> apply(Pattern src, TypeContext ctx);
