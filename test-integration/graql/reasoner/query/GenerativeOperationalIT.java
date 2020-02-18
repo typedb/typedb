@@ -50,6 +50,7 @@ import org.junit.Test;
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
 import static graql.lang.Graql.and;
 import static graql.lang.Graql.var;
+import static org.junit.Assert.assertTrue;
 
 public class GenerativeOperationalIT {
 
@@ -124,16 +125,21 @@ public class GenerativeOperationalIT {
                 ReasonerQueryImpl cQuery = reasonerQueryFactory.create(conjunction(pair.second()));
 
                 if (pQuery.isAtomic() && cQuery.isAtomic()) {
-                    ReasonerAtomicQuery parent = reasonerQueryFactory.atomic(pQuery.getAtoms());
-                    ReasonerAtomicQuery child = reasonerQueryFactory.atomic(cQuery.getAtoms());
+                    ReasonerAtomicQuery parent = reasonerQueryFactory.atomic(pQuery.selectAtoms().findFirst().orElse(null));
+                    ReasonerAtomicQuery child = reasonerQueryFactory.atomic(cQuery.selectAtoms().findFirst().orElse(null));
 
-                    if(!parent.isSubsumedBy(child)){
-                        System.out.println("Subsumption failure comparing : " + parent + " ?=< " + child);
+                    if(parent.getMultiUnifier(child, UnifierType.RULE).equals(MultiUnifierImpl.nonExistent())){
+                        System.out.println("Rule unifier failure comparing : " + parent + " ?=< " + child);
                         pass = false;
                         failures++;
                     }
-                    if(parent.getMultiUnifier(child, UnifierType.RULE).equals(MultiUnifierImpl.nonExistent())){
-                        System.out.println("Unifier failure comparing : " + parent + " ?=< " + child);
+                    if(parent.getMultiUnifier(child, UnifierType.SUBSUMPTIVE).equals(MultiUnifierImpl.nonExistent())){
+                        System.out.println("Subsumptive unifier failure comparing : " + parent + " ?=< " + child);
+                        pass = false;
+                        failures++;
+                    }
+                    if(parent.getMultiUnifier(child, UnifierType.STRUCTURAL_SUBSUMPTIVE).equals(MultiUnifierImpl.nonExistent())){
+                        System.out.println("Structural-subsumptive unifier failure comparing : " + parent + " ?=< " + child);
                         pass = false;
                         failures++;
                     }
@@ -141,8 +147,7 @@ public class GenerativeOperationalIT {
                 processed++;
             }
             System.out.println("failures: " + failures + "/" + processed);
-            //TODO currently we are having failures, uncomment when bugs are fixed
-            //assertTrue(pass);
+            assertTrue(pass);
         }
     }
 
