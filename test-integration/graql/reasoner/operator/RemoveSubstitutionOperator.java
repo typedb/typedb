@@ -33,7 +33,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * Generates a set of generalised patterns by removing existing substutions (ids).
+ * Generates a set of generalised patterns by removing existing substitutions (ids).
  * The set is computed from a Cartesian product of sets of statements each containing a single substitution removal.
  *
  * Example:

@@ -37,6 +37,11 @@ import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toSet;
 
+/**
+ * Generates a set of generalised patterns by removing existing roleplayers.
+ * The set is computed from a Cartesian product of sets of statements each containing a single roleplayer removal
+ * - the set is computed in analogous fashion to RemoveSubstitutionOperator for substitution removal.
+ */
 public class RemoveRoleplayerOperator implements Operator {
 
     @Override

@@ -24,9 +24,9 @@ import java.util.stream.Stream;
 
 /**
  * Interface for defining Pattern operators. The application of an operator O on an input pattern P
- * results in a pattern P' such that:
+ * results in a set of patterns P' such that:
  *
- * P' = O P
+ * {P'} = O P
  *
  */
 public interface Operator {

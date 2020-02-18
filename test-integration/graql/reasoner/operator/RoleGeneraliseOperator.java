@@ -33,6 +33,10 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+/**
+ * Generates a set of generalised patterns by removing generalising roles within relations.
+ * The set is computed from a Cartesian product of sets of statements each containing a single role generalisation.
+ */
 public class RoleGeneraliseOperator implements Operator {
 
     private static String TYPE_POSTFIX = "role";

@@ -22,6 +22,12 @@ package grakn.core.graql.reasoner.operator;
 import graql.lang.pattern.Pattern;
 import java.util.stream.Stream;
 
+/**
+ * Defines a trivial operator such that:
+ *
+ * {P'} = O P = P
+ *
+ */
 public class IdentityOperator implements Operator {
 
     @Override

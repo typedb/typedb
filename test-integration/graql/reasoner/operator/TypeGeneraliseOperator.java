@@ -30,6 +30,11 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.stream.Stream;
 
+/**
+ * Defines a type generalisation operator. Type generalisation is performed by generalising types contained
+ * in IsaProperty properties. As each statement contains at most one IsaProperty, we do not need to
+ * compute a Cartesian product in order to obtain the transformed patterns.
+ */
 public class TypeGeneraliseOperator implements Operator {
 
     private static String TYPE_POSTFIX = "type";
