@@ -52,6 +52,18 @@ import static graql.lang.Graql.and;
 import static graql.lang.Graql.var;
 import static org.junit.Assert.assertTrue;
 
+/**
+ * Using our subsumption Operators, starting with a specific pattern, we generate large number of query pattern pairs
+ * by continuous application of generalisation operations defined by the Operators.
+ * As a result, we produce query pairs such that each pair is in a subsumption relationship (one pattern generifies the other).
+ * Knowing that this property holds between the pairs, we can then test our query subsumption and query unification algorithms
+ * as their output is known based on the subsumption relationship.
+ *
+ * Consequently for each `(parent, child)` query pattern pair we test whether:
+ * - there exists a `RULE` unifier between the parent and the child
+ * - there exists a `SUBSUMPTIVE` unifier between the parent and the child (child subsumes parent)
+ * - there exists a `STRUCTURAL_SUBSUMPTIVE` unifier between the parent and the child
+ */
 public class GenerativeOperationalIT {
 
     @ClassRule
