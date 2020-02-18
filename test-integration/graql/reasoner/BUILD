@@ -1,5 +1,27 @@
 load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
+java_library(
+    name = "operator",
+    srcs = glob(["operator/*.java"]),
+    visibility = ["//visibility:public"],
+    deps = [
+        "//dependencies/maven/artifacts/com/google/guava",
+        "@graknlabs_graql//java:graql",
+    ],
+)
+
+java_library(
+    name = "pattern",
+    srcs = glob(["pattern/*.java"]),
+    visibility = ["//visibility:public"],
+    deps = [
+        "//dependencies/maven/artifacts/com/google/guava",
+        "//kb/concept/api",
+        "@graknlabs_common//:common",
+        "@graknlabs_graql//java:graql",
+    ],
+)
+
 java_test(
     name = "reasoning-it",
     size = "large",
@@ -14,8 +36,8 @@ java_test(
         "//dependencies/maven/artifacts/commons-collections",
         "//dependencies/maven/artifacts/org/apache/commons:commons-math3",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
-        "//kb/server",
         "//kb/concept/api",
+        "//kb/server",
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:graql-test-util",
         "@graknlabs_graql//java:graql",
@@ -33,10 +55,26 @@ java_test(
         "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/commons-collections",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
-        "//kb/server",
         "//kb/concept/api",
+        "//kb/server",
         "//test-integration/graql/reasoner/graph:geo-graph",
         "//test-integration/rule:grakn-test-server",
+        "@graknlabs_graql//java:graql",
+    ],
+)
+
+java_test(
+    name = "operator-it",
+    size = "small",
+    srcs = [
+        "MockTypeContext.java",
+        "OperatorIT.java",
+    ],
+    test_class = "grakn.core.graql.reasoner.OperatorIT",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//dependencies/maven/artifacts/com/google/guava",
+        "//test-integration/graql/reasoner:operator",
         "@graknlabs_graql//java:graql",
     ],
 )
@@ -46,5 +84,8 @@ checkstyle_test(
     targets = [
         ":reasoning-it",
         ":geo-inference-it",
+        ":operator-it",
+        ":operator",
+        ":pattern",
     ],
 )

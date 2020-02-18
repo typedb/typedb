@@ -140,8 +140,8 @@ java_test(
         "//kb/concept/api",
         "//kb/graql/reasoner",
         "//kb/server",
+        "//test-integration/graql/reasoner:pattern",
         "//test-integration/graql/reasoner/graph:generic-schema-graph",
-        "//test-integration/graql/reasoner/pattern:query-pattern",
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:graql-test-util",
         "@graknlabs_graql//java:graql",
@@ -240,6 +240,35 @@ java_test(
 )
 
 java_test(
+    name = "generative-operational-it",
+    size = "medium",
+    srcs = [
+        "GenerativeOperationalIT.java",
+        "TransactionContext.java",
+    ],
+    classpath_resources = ["//test-integration/resources:logback-test"],
+    resources = [
+        "//test-integration/graql/reasoner/resources:generic-schema",
+    ],
+    test_class = "grakn.core.graql.reasoner.query.GenerativeOperationalIT",
+    deps = [
+        "//common",
+        "//core",
+        "//dependencies/maven/artifacts/com/google/guava",
+        "//dependencies/maven/artifacts/commons-collections",
+        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+        "//graql/reasoner",
+        "//kb/concept/api",
+        "//kb/server",
+        "//test-integration/graql/reasoner:operator",
+        "//test-integration/rule:grakn-test-server",
+        "//test-integration/util:graql-test-util",
+        "@graknlabs_common//:common",
+        "@graknlabs_graql//java:graql",
+    ],
+)
+
+java_test(
     name = "subsumption-it",
     size = "medium",
     srcs = ["SubsumptionIT.java"],
@@ -256,8 +285,8 @@ java_test(
         "//graql/reasoner",
         "//kb/graql/reasoner",
         "//kb/server",
+        "//test-integration/graql/reasoner:pattern",
         "//test-integration/graql/reasoner/graph:generic-schema-graph",
-        "//test-integration/graql/reasoner/pattern:query-pattern",
         "//test-integration/rule:grakn-test-server",
         "@graknlabs_graql//java:graql",
     ],
@@ -276,6 +305,7 @@ checkstyle_test(
         ":ontological-query-it",
         ":resolution-plan-it",
         ":semantic-difference-it",
-        "//test-integration/graql/reasoner/query:subsumption-it",
+        ":subsumption-it",
+        ":generative-operational-it",
     ],
 )
