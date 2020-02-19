@@ -260,11 +260,11 @@ java_test(
         "//graql/reasoner",
         "//kb/concept/api",
         "//kb/server",
-        "//test-integration/graql/reasoner:operator",
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:graql-test-util",
         "@graknlabs_common//:common",
         "@graknlabs_graql//java:graql",
+        "@graknlabs_theory//tools:operator",
     ],
 )
 

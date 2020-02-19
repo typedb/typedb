@@ -1,16 +1,6 @@
 load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
 java_library(
-    name = "operator",
-    srcs = glob(["operator/*.java"]),
-    visibility = ["//visibility:public"],
-    deps = [
-        "//dependencies/maven/artifacts/com/google/guava",
-        "@graknlabs_graql//java:graql",
-    ],
-)
-
-java_library(
     name = "pattern",
     srcs = glob(["pattern/*.java"]),
     visibility = ["//visibility:public"],
@@ -63,29 +53,11 @@ java_test(
     ],
 )
 
-java_test(
-    name = "operator-it",
-    size = "small",
-    srcs = [
-        "MockTypeContext.java",
-        "OperatorIT.java",
-    ],
-    test_class = "grakn.core.graql.reasoner.OperatorIT",
-    visibility = ["//visibility:public"],
-    deps = [
-        "//dependencies/maven/artifacts/com/google/guava",
-        "//test-integration/graql/reasoner:operator",
-        "@graknlabs_graql//java:graql",
-    ],
-)
-
 checkstyle_test(
     name = "checkstyle",
     targets = [
         ":reasoning-it",
         ":geo-inference-it",
-        ":operator-it",
-        ":operator",
         ":pattern",
     ],
 )

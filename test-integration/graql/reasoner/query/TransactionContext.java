@@ -20,10 +20,10 @@
 package grakn.core.graql.reasoner.query;
 
 import grakn.core.core.Schema;
-import grakn.core.graql.reasoner.operator.TypeContext;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.server.Transaction;
+import grakn.theory.tools.operator.TypeContext;
 import java.util.stream.Stream;
 
 class TransactionContext implements TypeContext {
