@@ -102,6 +102,12 @@ public class GenerativeOperationalIT {
         genericSchemaSession.close();
     }
 
+    /**
+     * Generates a tree of patterns where such that each child is a generalisation of its parent pattern.
+     * @param basePattern starting specific pattern
+     * @param ctx schema(type) context
+     * @return map containing parent->{children} mappings
+     */
     private static HashMultimap<Pattern, Pattern> generatePatternTree(Pattern basePattern, TransactionContext ctx){
         HashMultimap<Pattern, Pattern> patternTree = HashMultimap.create();
 
@@ -118,6 +124,11 @@ public class GenerativeOperationalIT {
         return patternTree;
     }
 
+    /**
+     * Generates pattern pairs to test from the pregenerated pattern tree.
+     * @param exhaustive whether to compute full transitive closure of the parent-child relation.
+     * @return stream of test case pattern pairs
+     */
     private static Stream<Pair<Pattern, Pattern>> generateTestPairs(boolean exhaustive){
         //non-exhaustive option returns only the direct parent-child pairs
         //instead of full transitive closure of the parent-child relation
