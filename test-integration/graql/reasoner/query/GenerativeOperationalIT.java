@@ -50,6 +50,7 @@ import org.junit.Test;
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
 import static graql.lang.Graql.and;
 import static graql.lang.Graql.var;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -70,6 +71,7 @@ public class GenerativeOperationalIT {
     public static final GraknTestStorage storage = new GraknTestStorage();
 
     private static Session genericSchemaSession;
+    private static HashMultimap<Pattern, Pattern> relationPatternTree;
 
     @BeforeClass
     public static void loadContext() {
@@ -77,6 +79,22 @@ public class GenerativeOperationalIT {
         genericSchemaSession = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig);
         String resourcePath = "test-integration/graql/reasoner/resources/";
         loadFromFileAndCommit(resourcePath, "genericSchema.gql", genericSchemaSession);
+
+        try(Transaction tx = genericSchemaSession.readTransaction()) {
+            String id = tx.getEntityType("baseRoleEntity").instances().iterator().next().id().getValue();
+            String subId = tx.getEntityType("subRoleEntity").instances().iterator().next().id().getValue();
+            Pattern basePattern = and(
+                    var("r")
+                            .rel("subRole1", var("x"))
+                            .rel("subRole2", var("y"))
+                            .isa("binary"),
+                    var("x").isa("subRoleEntity"),
+                    var("x").id(id),
+                    var("y").isa("subRoleEntity"),
+                    var("y").id(subId)
+            );
+            relationPatternTree = generatePatternTree(basePattern, new TransactionContext(tx));
+        }
     }
 
     @AfterClass
@@ -84,7 +102,7 @@ public class GenerativeOperationalIT {
         genericSchemaSession.close();
     }
 
-    private Stream<Pair<Pattern, Pattern>> generateTestPairs(Pattern basePattern, TransactionContext ctx, boolean exhaustive){
+    private static HashMultimap<Pattern, Pattern> generatePatternTree(Pattern basePattern, TransactionContext ctx){
         HashMultimap<Pattern, Pattern> patternTree = HashMultimap.create();
 
         Set<Pattern> output = Operators.removeSubstitution().apply(basePattern, ctx).collect(Collectors.toSet());
@@ -97,35 +115,25 @@ public class GenerativeOperationalIT {
             }
             output = pstream.collect(Collectors.toSet());
         }
+        return patternTree;
+    }
 
+    private static Stream<Pair<Pattern, Pattern>> generateTestPairs(boolean exhaustive){
         //non-exhaustive option returns only the direct parent-child pairs
         //instead of full transitive closure of the parent-child relation
         if (!exhaustive){
-            return patternTree.entries().stream().map(e -> new Pair<>(e.getKey(), e.getValue()));
+            return relationPatternTree.entries().stream().map(e -> new Pair<>(e.getKey(), e.getValue()));
         }
 
-        TarjanSCC<Pattern> tarjan = new TarjanSCC<>(patternTree);
+        TarjanSCC<Pattern> tarjan = new TarjanSCC<>(relationPatternTree);
         return tarjan.successorMap().entries().stream().map(e -> new Pair<>(e.getKey(), e.getValue()));
     }
 
     @Test
-    public void testSubsumptionRelationHoldsBetweenGeneratedPairs(){
+    public void whenComparingSubsumptivePairs_SubsumptionRelationHolds(){
         try (Transaction tx = genericSchemaSession.readTransaction()) {
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction) tx).reasonerQueryFactory();
-            String id = tx.getEntityType("baseRoleEntity").instances().iterator().next().id().getValue();
-            String subId = tx.getEntityType("subRoleEntity").instances().iterator().next().id().getValue();
-
-            Pattern basePattern = and(
-                    var("r")
-                            .rel("subRole1", var("x"))
-                            .rel("subRole2", var("y"))
-                            .isa("binary"),
-                    var("x").isa("subRoleEntity"),
-                    var("x").id(id),
-                    var("y").isa("subRoleEntity"),
-                    var("y").id(subId)
-            );
-            Iterator<Pair<Pattern, Pattern>> pairIterator = generateTestPairs(basePattern, new TransactionContext(tx), false).iterator();
+            Iterator<Pair<Pattern, Pattern>> pairIterator = generateTestPairs(false).iterator();
 
             boolean pass = true;
             int failures = 0;
@@ -137,8 +145,8 @@ public class GenerativeOperationalIT {
                 ReasonerQueryImpl cQuery = reasonerQueryFactory.create(conjunction(pair.second()));
 
                 if (pQuery.isAtomic() && cQuery.isAtomic()) {
-                    ReasonerAtomicQuery parent = reasonerQueryFactory.atomic(pQuery.getAtoms());
-                    ReasonerAtomicQuery child = reasonerQueryFactory.atomic(cQuery.getAtoms());
+                    ReasonerAtomicQuery parent = (ReasonerAtomicQuery) pQuery;
+                    ReasonerAtomicQuery child = (ReasonerAtomicQuery) cQuery;
 
                     if(parent.getMultiUnifier(child, UnifierType.RULE).equals(MultiUnifierImpl.nonExistent())){
                         System.out.println("Rule unifier failure comparing : " + parent + " ?=< " + child);
@@ -160,6 +168,51 @@ public class GenerativeOperationalIT {
             }
             System.out.println("failures: " + failures + "/" + processed);
             assertTrue(pass);
+        }
+    }
+
+    @Test
+    public void whenFuzzyingVariablesWithBindingsPreserved_AlphaEquivalenceIsNotAffected(){
+        try (Transaction tx = genericSchemaSession.readTransaction()) {
+            ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction) tx).reasonerQueryFactory();
+            TransactionContext txCtx = new TransactionContext(tx);
+            Set<Pattern> patterns = relationPatternTree.keySet();
+            Operator fuzzer = Operators.fuzzVariables();
+            for(Pattern pattern : patterns){
+                List<Pattern> fuzzedPatterns = Stream.concat(Stream.of(pattern), fuzzer.apply(pattern, txCtx))
+                        .flatMap(p -> Stream.concat(Stream.of(p), fuzzer.apply(p, txCtx)))
+                        .collect(Collectors.toList());
+                int N = fuzzedPatterns.size();
+                for (int i = 0 ; i < N ;i++) {
+                    Pattern p = fuzzedPatterns.get(i);
+                    fuzzedPatterns.subList(i, N).forEach(p2 -> {
+                        ReasonerQueryImpl pQuery = reasonerQueryFactory.create(conjunction(p));
+                        ReasonerQueryImpl cQuery = reasonerQueryFactory.create(conjunction(p2));
+
+                        if (pQuery.isAtomic() && cQuery.isAtomic()) {
+                            ReasonerAtomicQuery queryA = (ReasonerAtomicQuery) pQuery;
+                            ReasonerAtomicQuery queryB = (ReasonerAtomicQuery) cQuery;
+                            queryEquivalence(queryA, queryB, true, ReasonerQueryEquivalence.AlphaEquivalence);
+                        }
+                    });
+                }
+            }
+        }
+    }
+
+    private void queryEquivalence(ReasonerAtomicQuery a, ReasonerAtomicQuery b, boolean queryExpectation, ReasonerQueryEquivalence equiv){
+        singleQueryEquivalence(a, a, true, equiv);
+        singleQueryEquivalence(b, b, true, equiv);
+        singleQueryEquivalence(a, b, queryExpectation, equiv);
+        singleQueryEquivalence(b, a, queryExpectation, equiv);
+    }
+
+    private void singleQueryEquivalence(ReasonerAtomicQuery a, ReasonerAtomicQuery b, boolean queryExpectation, ReasonerQueryEquivalence equiv){
+        assertEquals(equiv.name() + " - Query:\n" + a + "\n=?\n" + b, queryExpectation, equiv.equivalent(a, b));
+
+        //check hash additionally if need to be equal
+        if (queryExpectation) {
+            assertTrue(equiv.name() + ":\n" + a + "\nhash=?\n" + b, equiv.hash(a) == equiv.hash(b));
         }
     }
 
