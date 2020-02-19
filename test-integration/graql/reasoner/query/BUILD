@@ -1,9 +1,25 @@
 load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
+java_library(
+    name = "query-test-util",
+    srcs = glob(["QueryTestUtil.java"]),
+    visibility = ["//visibility:public"],
+    deps = [
+        "//common",
+        "//dependencies/maven/artifacts/com/google/guava",
+        "//dependencies/maven/artifacts/junit",
+        "//graql/reasoner",
+        "//kb/graql/reasoner",
+        "@graknlabs_graql//java:graql",
+    ],
+)
+
 java_test(
     name = "query-equivalence-it",
     size = "medium",
-    srcs = ["AtomicQueryEquivalenceIT.java"],
+    srcs = [
+        "AtomicQueryEquivalenceIT.java",
+    ],
     classpath_resources = ["//test-integration/resources:logback-test"],
     resources = ["//test-integration/graql/reasoner/resources:generic-schema"],
     test_class = "grakn.core.graql.reasoner.query.AtomicQueryEquivalenceIT",
@@ -14,6 +30,7 @@ java_test(
         "//graql/reasoner",
         "//kb/graql/reasoner",
         "//kb/server",
+        "//test-integration/graql/reasoner/query:query-test-util",
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:graql-test-util",
         "@graknlabs_graql//java:graql",
@@ -142,6 +159,7 @@ java_test(
         "//kb/server",
         "//test-integration/graql/reasoner:pattern",
         "//test-integration/graql/reasoner/graph:generic-schema-graph",
+        "//test-integration/graql/reasoner/query:query-test-util",
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:graql-test-util",
         "@graknlabs_graql//java:graql",
@@ -260,6 +278,7 @@ java_test(
         "//graql/reasoner",
         "//kb/concept/api",
         "//kb/server",
+        "//test-integration/graql/reasoner/query:query-test-util",
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:graql-test-util",
         "@graknlabs_common//:common",

@@ -23,7 +23,6 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Lists;
 import grakn.common.util.Pair;
 import grakn.core.common.config.Config;
-import grakn.core.graql.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.graql.reasoner.utils.TarjanSCC;
 import grakn.core.kb.server.Session;
@@ -50,8 +49,6 @@ import org.junit.Test;
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
 import static graql.lang.Graql.and;
 import static graql.lang.Graql.var;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 /**
  * Using our subsumption Operators, starting with a specific pattern, we generate large number of query pattern pairs
@@ -135,9 +132,6 @@ public class GenerativeOperationalIT {
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction) tx).reasonerQueryFactory();
             Iterator<Pair<Pattern, Pattern>> pairIterator = generateTestPairs(false).iterator();
 
-            boolean pass = true;
-            int failures = 0;
-            int processed = 0;
             while(pairIterator.hasNext()){
                 Pair<Pattern, Pattern> pair = pairIterator.next();
 
@@ -148,33 +142,19 @@ public class GenerativeOperationalIT {
                     ReasonerAtomicQuery parent = (ReasonerAtomicQuery) pQuery;
                     ReasonerAtomicQuery child = (ReasonerAtomicQuery) cQuery;
 
-                    if(parent.getMultiUnifier(child, UnifierType.RULE).equals(MultiUnifierImpl.nonExistent())){
-                        System.out.println("Rule unifier failure comparing : " + parent + " ?=< " + child);
-                        pass = false;
-                        failures++;
-                    }
-                    if(parent.getMultiUnifier(child, UnifierType.SUBSUMPTIVE).equals(MultiUnifierImpl.nonExistent())){
-                        System.out.println("Subsumptive unifier failure comparing : " + parent + " ?=< " + child);
-                        pass = false;
-                        failures++;
-                    }
-                    if(parent.getMultiUnifier(child, UnifierType.STRUCTURAL_SUBSUMPTIVE).equals(MultiUnifierImpl.nonExistent())){
-                        System.out.println("Structural-subsumptive unifier failure comparing : " + parent + " ?=< " + child);
-                        pass = false;
-                        failures++;
-                    }
+                    QueryTestUtil.unification(parent, child,true, UnifierType.RULE);
+                    QueryTestUtil.unification(parent, child,true, UnifierType.SUBSUMPTIVE);
+                    QueryTestUtil.unification(parent, child,true, UnifierType.STRUCTURAL_SUBSUMPTIVE);
                 }
-                processed++;
             }
-            System.out.println("failures: " + failures + "/" + processed);
-            assertTrue(pass);
         }
     }
 
     @Test
     public void whenFuzzyingVariablesWithBindingsPreserved_AlphaEquivalenceIsNotAffected(){
         try (Transaction tx = genericSchemaSession.readTransaction()) {
-            ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction) tx).reasonerQueryFactory();
+            TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction) tx;
+            ReasonerQueryFactory reasonerQueryFactory = testTx.reasonerQueryFactory();
             TransactionContext txCtx = new TransactionContext(tx);
             Set<Pattern> patterns = relationPatternTree.keySet();
             Operator fuzzer = Operators.fuzzVariables();
@@ -192,27 +172,11 @@ public class GenerativeOperationalIT {
                         if (pQuery.isAtomic() && cQuery.isAtomic()) {
                             ReasonerAtomicQuery queryA = (ReasonerAtomicQuery) pQuery;
                             ReasonerAtomicQuery queryB = (ReasonerAtomicQuery) cQuery;
-                            queryEquivalence(queryA, queryB, true, ReasonerQueryEquivalence.AlphaEquivalence);
+                            QueryTestUtil.unification(queryA, queryB,true, UnifierType.EXACT);
                         }
                     });
                 }
             }
-        }
-    }
-
-    private void queryEquivalence(ReasonerAtomicQuery a, ReasonerAtomicQuery b, boolean queryExpectation, ReasonerQueryEquivalence equiv){
-        singleQueryEquivalence(a, a, true, equiv);
-        singleQueryEquivalence(b, b, true, equiv);
-        singleQueryEquivalence(a, b, queryExpectation, equiv);
-        singleQueryEquivalence(b, a, queryExpectation, equiv);
-    }
-
-    private void singleQueryEquivalence(ReasonerAtomicQuery a, ReasonerAtomicQuery b, boolean queryExpectation, ReasonerQueryEquivalence equiv){
-        assertEquals(equiv.name() + " - Query:\n" + a + "\n=?\n" + b, queryExpectation, equiv.equivalent(a, b));
-
-        //check hash additionally if need to be equal
-        if (queryExpectation) {
-            assertTrue(equiv.name() + ":\n" + a + "\nhash=?\n" + b, equiv.hash(a) == equiv.hash(b));
         }
     }
 

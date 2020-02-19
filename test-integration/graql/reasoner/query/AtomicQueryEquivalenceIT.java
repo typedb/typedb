@@ -22,16 +22,16 @@ package grakn.core.graql.reasoner.query;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import grakn.core.common.config.Config;
-import grakn.core.graql.reasoner.atom.AtomicEquivalence;
-import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import grakn.core.rule.GraknTestStorage;
 import grakn.core.rule.SessionUtil;
 import grakn.core.rule.TestTransactionProvider;
 import graql.lang.Graql;
-import graql.lang.pattern.Conjunction;
-import graql.lang.statement.Statement;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -39,16 +39,10 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
+import static grakn.core.graql.reasoner.query.QueryTestUtil.atomicEquivalence;
+import static grakn.core.graql.reasoner.query.QueryTestUtil.conjunction;
+import static grakn.core.graql.reasoner.query.QueryTestUtil.queryEquivalence;
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
-import static java.util.stream.Collectors.toSet;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 @SuppressWarnings("CheckReturnValue")
 public class AtomicQueryEquivalenceIT {
@@ -393,45 +387,6 @@ public class AtomicQueryEquivalenceIT {
         ReasonerAtomicQuery b = reasonerQueryFactory.atomic(conjunction(patternB));
         queryEquivalence(a, b, expectation, equiv);
         atomicEquivalence(a.getAtom(), b.getAtom(), expectation, equiv.atomicEquivalence());
-    }
-
-    private void queryEquivalence(ReasonerAtomicQuery a, ReasonerAtomicQuery b, boolean queryExpectation, ReasonerQueryEquivalence equiv){
-        singleQueryEquivalence(a, a, true, equiv);
-        singleQueryEquivalence(b, b, true, equiv);
-        singleQueryEquivalence(a, b, queryExpectation, equiv);
-        singleQueryEquivalence(b, a, queryExpectation, equiv);
-    }
-
-    private void atomicEquivalence(Atomic a, Atomic b, boolean expectation, AtomicEquivalence equiv){
-        singleAtomicEquivalence(a, a, true, equiv);
-        singleAtomicEquivalence(b, b, true, equiv);
-        singleAtomicEquivalence(a, b, expectation, equiv);
-        singleAtomicEquivalence(b, a, expectation, equiv);
-    }
-
-    private void singleQueryEquivalence(ReasonerAtomicQuery a, ReasonerAtomicQuery b, boolean queryExpectation, ReasonerQueryEquivalence equiv){
-        assertEquals(equiv.name() + " - Query:\n" + a + "\n=?\n" + b, queryExpectation, equiv.equivalent(a, b));
-
-        //check hash additionally if need to be equal
-        if (queryExpectation) {
-            assertTrue(equiv.name() + ":\n" + a + "\nhash=?\n" + b, equiv.hash(a) == equiv.hash(b));
-        }
-    }
-
-    private void singleAtomicEquivalence(Atomic a, Atomic b, boolean expectation, AtomicEquivalence equivalence){
-        assertEquals(equivalence.name() + " - Atom:\n" + a + "\n=?\n" + b, expectation,  equivalence.equivalent(a, b));
-
-        //check hash additionally if need to be equal
-        if (expectation) {
-            assertTrue(equivalence.name() + ":\n" + a + "\nhash=?\n" + b, equivalence.hash(a) == equivalence.hash(b));
-        }
-    }
-
-    private Conjunction<Statement> conjunction(String patternString){
-        Set<Statement> vars = Graql.parsePattern(patternString)
-                .getDisjunctiveNormalForm().getPatterns()
-                .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
-        return Graql.and(vars);
     }
 
 }
