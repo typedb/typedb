@@ -388,5 +388,4 @@ public class AtomicQueryEquivalenceIT {
         queryEquivalence(a, b, expectation, equiv);
         atomicEquivalence(a.getAtom(), b.getAtom(), expectation, equiv.atomicEquivalence());
     }
-
 }

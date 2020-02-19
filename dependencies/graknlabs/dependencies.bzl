@@ -76,7 +76,7 @@ def graknlabs_simulation():
 
 def graknlabs_theory():
     git_repository(
-        name = "graknlabs_theory",
-        remote = "git@github.com:graknlabs/theory.git",
-        commit = "7cb3a92011cf8f790bace3face161108f4bbc701",  # keep in sync with protocol changes
+        name = "graknlabs_verification",
+        remote = "git@github.com:graknlabs/verification.git",
+        commit = "bfba07563cc493951a37890d99339737b6641dfc",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_verification
     )

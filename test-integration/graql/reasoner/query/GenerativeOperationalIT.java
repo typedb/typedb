@@ -30,8 +30,8 @@ import grakn.core.kb.server.Transaction;
 import grakn.core.rule.GraknTestStorage;
 import grakn.core.rule.SessionUtil;
 import grakn.core.rule.TestTransactionProvider;
-import grakn.theory.tools.operator.Operator;
-import grakn.theory.tools.operator.Operators;
+import grakn.verification.tools.operator.Operator;
+import grakn.verification.tools.operator.Operators;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
@@ -99,6 +99,12 @@ public class GenerativeOperationalIT {
         genericSchemaSession.close();
     }
 
+    /**
+     * Generates a tree of patterns where such that each child is a generalisation of its parent pattern.
+     * @param basePattern starting specific pattern
+     * @param ctx schema(type) context
+     * @return map containing parent->{children} mappings
+     */
     private static HashMultimap<Pattern, Pattern> generatePatternTree(Pattern basePattern, TransactionContext ctx){
         HashMultimap<Pattern, Pattern> patternTree = HashMultimap.create();
 
@@ -115,6 +121,11 @@ public class GenerativeOperationalIT {
         return patternTree;
     }
 
+    /**
+     * Generates pattern pairs to test from the pregenerated pattern tree.
+     * @param exhaustive whether to compute full transitive closure of the parent-child relation.
+     * @return stream of test case pattern pairs
+     */
     private static Stream<Pair<Pattern, Pattern>> generateTestPairs(boolean exhaustive){
         //non-exhaustive option returns only the direct parent-child pairs
         //instead of full transitive closure of the parent-child relation
