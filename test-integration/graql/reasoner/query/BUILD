@@ -314,6 +314,7 @@ java_test(
 checkstyle_test(
     name = "checkstyle",
     targets = [
+        ":query-test-util",
         ":atomic-query-it",
         ":query-equivalence-it",
         ":explanation-it",
