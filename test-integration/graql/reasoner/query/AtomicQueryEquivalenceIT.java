@@ -395,7 +395,6 @@ public class AtomicQueryEquivalenceIT {
         atomicEquivalence(a.getAtom(), b.getAtom(), expectation, equiv.atomicEquivalence());
     }
 
-
     private void queryEquivalence(ReasonerAtomicQuery a, ReasonerAtomicQuery b, boolean queryExpectation, ReasonerQueryEquivalence equiv){
         singleQueryEquivalence(a, a, true, equiv);
         singleQueryEquivalence(b, b, true, equiv);
