@@ -264,7 +264,7 @@ java_test(
         "//test-integration/util:graql-test-util",
         "@graknlabs_common//:common",
         "@graknlabs_graql//java:graql",
-        "@graknlabs_theory//tools:operator",
+        "@graknlabs_verification//tools:operator",
     ],
 )
 
