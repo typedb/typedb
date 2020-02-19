@@ -38,26 +38,21 @@ import grakn.core.kb.server.Transaction;
 import grakn.core.rule.GraknTestStorage;
 import grakn.core.rule.SessionUtil;
 import grakn.core.rule.TestTransactionProvider;
-import graql.lang.Graql;
-import graql.lang.pattern.Conjunction;
-import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
-
 import static grakn.core.graql.reasoner.pattern.QueryPattern.subListExcludingElements;
+import static grakn.core.graql.reasoner.query.QueryTestUtil.conjunction;
+import static grakn.core.util.GraqlTestUtil.assertCollectionsNonTriviallyEqual;
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
-import static java.util.stream.Collectors.toSet;
-import static org.apache.commons.collections.CollectionUtils.isEqualCollection;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -1009,23 +1004,11 @@ public class AtomicQueryUnificationIT {
         unification(child, queries, queriesWithUnifier, UnifierType.EXACT, tx);
     }
 
-    private MultiUnifier unification(String childString, String parentString, boolean unifierExists, UnifierType unifierType, TestTransactionProvider.TestTransaction tx) {
+    public MultiUnifier unification(String childString, String parentString, boolean unifierExists, UnifierType unifierType, TestTransactionProvider.TestTransaction tx) {
         ReasonerQueryFactory reasonerQueryFactory = tx.reasonerQueryFactory();
         ReasonerAtomicQuery child = reasonerQueryFactory.atomic(conjunction(childString));
         ReasonerAtomicQuery parent = reasonerQueryFactory.atomic(conjunction(parentString));
-
-        if (unifierType.equivalence() != null) {
-            queryEquivalence(child, parent, unifierExists, unifierType.equivalence());
-        }
-        MultiUnifier multiUnifier = child.getMultiUnifier(parent, unifierType);
-
-        assertEquals("Unexpected unifier: " + multiUnifier + " between the child - parent pair:\n" + child + " :\n" + parent, unifierExists, !multiUnifier.isEmpty());
-        if (unifierExists && unifierType.equivalence() != null) {
-            MultiUnifier multiUnifierInverse = parent.getMultiUnifier(child, unifierType);
-            assertEquals("Unexpected unifier inverse: " + multiUnifier + " of type " + unifierType.name() + " between the child - parent pair:\n" + parent + " :\n" + child, unifierExists, !multiUnifierInverse.isEmpty());
-            assertEquals(multiUnifierInverse, multiUnifier.inverse());
-        }
-        return multiUnifier;
+        return QueryTestUtil.unification(child, parent, unifierExists, unifierType);
     }
 
     /**
@@ -1041,7 +1024,7 @@ public class AtomicQueryUnificationIT {
         ReasonerQueryFactory reasonerQueryFactory = tx.reasonerQueryFactory();
         ReasonerAtomicQuery child = reasonerQueryFactory.atomic(conjunction(childString));
         ReasonerAtomicQuery parent = reasonerQueryFactory.atomic(conjunction(parentString));
-        Unifier unifier = unification(childString, parentString, true, unifierType, tx).getUnifier();
+        Unifier unifier = QueryTestUtil.unification(child, parent, true, unifierType).getUnifier();
 
         List<ConceptMap> childAnswers = tx.execute(child.getQuery(), false);
         List<ConceptMap> unifiedAnswers = childAnswers.stream()
@@ -1092,26 +1075,6 @@ public class AtomicQueryUnificationIT {
         }
     }
 
-    private static <T> void assertCollectionsNonTriviallyEqual(Collection<T> c1, Collection<T> c2) {
-        assertTrue(isEqualCollection(c1, c2));
-    }
-
-    private void queryEquivalence(ReasonerAtomicQuery a, ReasonerAtomicQuery b, boolean queryExpectation, ReasonerQueryEquivalence equiv) {
-        singleQueryEquivalence(a, a, true, equiv);
-        singleQueryEquivalence(b, b, true, equiv);
-        singleQueryEquivalence(a, b, queryExpectation, equiv);
-        singleQueryEquivalence(b, a, queryExpectation, equiv);
-    }
-
-    private void singleQueryEquivalence(ReasonerAtomicQuery a, ReasonerAtomicQuery b, boolean queryExpectation, ReasonerQueryEquivalence equiv) {
-        assertEquals(equiv.name() + " - Queries:\n" + a.toString() + "\n=?\n" + b.toString(), queryExpectation, equiv.equivalent(a, b));
-
-        //check hash additionally if need to be equal
-        if (queryExpectation) {
-            assertEquals(equiv.name() + ": " + a.toString() + " hash=? " + b.toString(), equiv.hash(a), equiv.hash(b));
-        }
-    }
-
     private Concept getConceptByResourceValue(Transaction tx, String id) {
         Set<Concept> instances = tx.getAttributesByValue(id)
                 .stream().flatMap(Attribute::owners).collect(Collectors.toSet());
@@ -1119,12 +1082,5 @@ public class AtomicQueryUnificationIT {
             throw new IllegalStateException("Something wrong, multiple instances with given res value");
         }
         return instances.iterator().next();
-    }
-
-    private Conjunction<Statement> conjunction(String patternString) {
-        Set<Statement> vars = Graql.parsePattern(patternString)
-                .getDisjunctiveNormalForm().getPatterns()
-                .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
-        return Graql.and(vars);
     }
 }
