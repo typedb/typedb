@@ -252,7 +252,7 @@ public class ValidateGlobalRules {
 
                     // Assert there is a relation for this type
                     if (!Streams.containsOnly(thing.relations(role), 1)) {
-                        return Optional.of(VALIDATION_NOT_EXACTLY_ONE_KEY.getMessage(thing.id(), attributeLabel));
+                        return Optional.of(VALIDATION_NOT_EXACTLY_ONE_KEY.getMessage(thing.id(), thing.type().label().getValue(), attributeLabel));
                     }
 
                     Optional<String> uniquenessViolation = validateKeyUniqueness(conceptManager, thing, role, type, attributeLabel);
