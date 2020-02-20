@@ -5,7 +5,6 @@ java_library(
     srcs = glob(["QueryTestUtil.java"]),
     visibility = ["//visibility:public"],
     deps = [
-        "//common",
         "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/junit",
         "//graql/reasoner",
@@ -28,7 +27,6 @@ java_test(
         "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//graql/reasoner",
-        "//kb/graql/reasoner",
         "//kb/server",
         "//test-integration/graql/reasoner/query:query-test-util",
         "//test-integration/rule:grakn-test-server",
