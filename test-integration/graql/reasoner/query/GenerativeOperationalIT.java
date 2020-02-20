@@ -21,6 +21,7 @@ package grakn.core.graql.reasoner.query;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import grakn.common.util.Pair;
 import grakn.core.common.config.Config;
 import grakn.core.graql.reasoner.unifier.UnifierType;
@@ -36,6 +37,7 @@ import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
@@ -90,7 +92,12 @@ public class GenerativeOperationalIT {
                     var("y").isa("subRoleEntity"),
                     var("y").id(subId)
             );
-            relationPatternTree = generatePatternTree(basePattern, new TransactionContext(tx));
+            relationPatternTree = generatePatternTree(
+                    basePattern,
+                    new TransactionContext(tx),
+                    Lists.newArrayList(Operators.typeGeneralise(), Operators.roleGeneralise()),
+                    Integer.MAX_VALUE)
+            ;
         }
     }
 
@@ -105,18 +112,19 @@ public class GenerativeOperationalIT {
      * @param ctx schema(type) context
      * @return map containing parent->{children} mappings
      */
-    private static HashMultimap<Pattern, Pattern> generatePatternTree(Pattern basePattern, TransactionContext ctx){
+    private static HashMultimap<Pattern, Pattern> generatePatternTree(Pattern basePattern, TransactionContext ctx, List<Operator> ops, int maxOps){
         HashMultimap<Pattern, Pattern> patternTree = HashMultimap.create();
 
         Set<Pattern> output = Operators.removeSubstitution().apply(basePattern, ctx).collect(Collectors.toSet());
-        List<Operator> ops = Lists.newArrayList(Operators.typeGeneralise(), Operators.roleGeneralise());
 
-        while (!output.isEmpty()){
+        int applications = 0;
+        while (!(output.isEmpty() || applications > maxOps)){
             Stream<Pattern> pstream = output.stream();
             for(Operator op : ops){
                 pstream = pstream.flatMap(parent -> op.apply(parent, ctx).peek(child -> patternTree.put(parent, child)));
             }
             output = pstream.collect(Collectors.toSet());
+            applications++;
         }
         return patternTree;
     }
@@ -158,6 +166,66 @@ public class GenerativeOperationalIT {
                     QueryTestUtil.unification(parent, child,true, UnifierType.STRUCTURAL_SUBSUMPTIVE);
                 }
             }
+        }
+    }
+
+
+    @Test
+    public void test(){
+        int depth = 10;
+        try (Transaction tx = genericSchemaSession.readTransaction()) {
+            ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction) tx).reasonerQueryFactory();
+            TransactionContext ctx = new TransactionContext(tx);
+
+            Pattern input = Graql.var("x").has("resource-double", 16.0);
+            Pattern input2 = Graql.var("x").has("resource-double", -16.0);
+
+            List<Operator> ops = Lists.newArrayList(Operators.generaliseAttribute());
+
+            HashMultimap<Pattern, Pattern> firstTree = new TarjanSCC<>(generatePatternTree(input, ctx, ops, depth)).successorMap();
+            HashMultimap<Pattern, Pattern> secondTree = new TarjanSCC<>(generatePatternTree(input2, ctx, ops, depth)).successorMap();
+
+            firstTree.entries().forEach(e -> {
+                ReasonerAtomicQuery parent = reasonerQueryFactory.atomic(conjunction(e.getKey()));
+                ReasonerAtomicQuery child = reasonerQueryFactory.atomic(conjunction(e.getValue()));
+                System.out.println(parent + " <= " + child);
+                QueryTestUtil.unification(parent, child,true, UnifierType.RULE);
+                QueryTestUtil.unification(parent, child,true, UnifierType.SUBSUMPTIVE);
+                QueryTestUtil.unification(parent, child,true, UnifierType.STRUCTURAL_SUBSUMPTIVE);
+
+                //if (!parent.getAtom().toAttributeAtom().isValueEquality()) {
+                    secondTree.keySet().forEach(p -> {
+                        ReasonerAtomicQuery unrelated = reasonerQueryFactory.atomic(conjunction(p));
+                        if (!unrelated.getAtom().toAttributeAtom().isValueEquality()) {
+                            System.out.println(parent + " !<= " + unrelated);
+                            QueryTestUtil.unification(parent, unrelated, false, UnifierType.RULE);
+                            QueryTestUtil.unification(parent, unrelated, false, UnifierType.SUBSUMPTIVE);
+                            QueryTestUtil.unification(parent, unrelated, false, UnifierType.STRUCTURAL_SUBSUMPTIVE);
+                            QueryTestUtil.unification(unrelated, parent, false, UnifierType.RULE);
+                            QueryTestUtil.unification(unrelated, parent, false, UnifierType.SUBSUMPTIVE);
+                            QueryTestUtil.unification(unrelated, parent, false, UnifierType.STRUCTURAL_SUBSUMPTIVE);
+                        }
+                    });
+                //}
+            });
+
+            /*
+            while(pairIterator.hasNext()){
+                Pair<Pattern, Pattern> pair = pairIterator.next();
+
+                ReasonerQueryImpl pQuery = reasonerQueryFactory.create(conjunction(pair.first()));
+                ReasonerQueryImpl cQuery = reasonerQueryFactory.create(conjunction(pair.second()));
+
+                if (pQuery.isAtomic() && cQuery.isAtomic()) {
+                    ReasonerAtomicQuery parent = (ReasonerAtomicQuery) pQuery;
+                    ReasonerAtomicQuery child = (ReasonerAtomicQuery) cQuery;
+
+                    QueryTestUtil.unification(parent, child,true, UnifierType.RULE);
+                    QueryTestUtil.unification(parent, child,true, UnifierType.SUBSUMPTIVE);
+                    QueryTestUtil.unification(parent, child,true, UnifierType.STRUCTURAL_SUBSUMPTIVE);
+                }
+            }
+             */
         }
     }
 
