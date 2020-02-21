@@ -90,7 +90,12 @@ public class GenerativeOperationalIT {
                     var("y").isa("subRoleEntity"),
                     var("y").id(subId)
             );
-            relationPatternTree = generatePatternTree(basePattern, new TransactionContext(tx));
+            relationPatternTree = generatePatternTree(
+                    basePattern,
+                    new TransactionContext(tx),
+                    Lists.newArrayList(Operators.typeGeneralise(), Operators.roleGeneralise()),
+                    Integer.MAX_VALUE)
+            ;
         }
     }
 
@@ -105,18 +110,19 @@ public class GenerativeOperationalIT {
      * @param ctx schema(type) context
      * @return map containing parent->{children} mappings
      */
-    private static HashMultimap<Pattern, Pattern> generatePatternTree(Pattern basePattern, TransactionContext ctx){
+    private static HashMultimap<Pattern, Pattern> generatePatternTree(Pattern basePattern, TransactionContext ctx, List<Operator> ops, int maxOps){
         HashMultimap<Pattern, Pattern> patternTree = HashMultimap.create();
 
         Set<Pattern> output = Operators.removeSubstitution().apply(basePattern, ctx).collect(Collectors.toSet());
-        List<Operator> ops = Lists.newArrayList(Operators.typeGeneralise(), Operators.roleGeneralise());
 
-        while (!output.isEmpty()){
+        int applications = 0;
+        while (!(output.isEmpty() || applications > maxOps)){
             Stream<Pattern> pstream = output.stream();
             for(Operator op : ops){
                 pstream = pstream.flatMap(parent -> op.apply(parent, ctx).peek(child -> patternTree.put(parent, child)));
             }
             output = pstream.collect(Collectors.toSet());
+            applications++;
         }
         return patternTree;
     }
@@ -158,6 +164,53 @@ public class GenerativeOperationalIT {
                     QueryTestUtil.unification(parent, child,true, UnifierType.STRUCTURAL_SUBSUMPTIVE);
                 }
             }
+        }
+    }
+
+    @Test
+    public void whenGeneralisingAttributes_SubsumptionRelationHoldsBetweenPairs(){
+        int depth = 10;
+        try (Transaction tx = genericSchemaSession.readTransaction()) {
+            ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction) tx).reasonerQueryFactory();
+            TransactionContext ctx = new TransactionContext(tx);
+
+            Pattern input = Graql.var("x").has("resource-double", 16.0);
+            Pattern input2 = Graql.var("x").has("resource-double", -16.0);
+
+            List<Operator> ops = Lists.newArrayList(Operators.generaliseAttribute());
+
+            HashMultimap<Pattern, Pattern> firstTree = new TarjanSCC<>(generatePatternTree(input, ctx, ops, depth)).successorMap();
+            HashMultimap<Pattern, Pattern> secondTree = new TarjanSCC<>(generatePatternTree(input2, ctx, ops, depth)).successorMap();
+
+            firstTree.entries().forEach(e -> {
+                ReasonerAtomicQuery parent = reasonerQueryFactory.atomic(conjunction(e.getKey()));
+                ReasonerAtomicQuery child = reasonerQueryFactory.atomic(conjunction(e.getValue()));
+                System.out.println(parent + " <= " + child);
+                QueryTestUtil.unification(parent, child,true, UnifierType.RULE);
+                QueryTestUtil.unification(parent, child,true, UnifierType.SUBSUMPTIVE);
+                QueryTestUtil.unification(parent, child,true, UnifierType.STRUCTURAL_SUBSUMPTIVE);
+
+                secondTree.keySet().forEach(p -> {
+                    ReasonerAtomicQuery unrelated = reasonerQueryFactory.atomic(conjunction(p));
+                    if (!unrelated.getAtom().toAttributeAtom().isValueEquality()) {
+                        QueryTestUtil.unification(parent, unrelated, false, UnifierType.RULE);
+                        QueryTestUtil.unification(parent, unrelated, false, UnifierType.SUBSUMPTIVE);
+                        QueryTestUtil.unification(parent, unrelated, false, UnifierType.STRUCTURAL_SUBSUMPTIVE);
+                        QueryTestUtil.unification(unrelated, parent, false, UnifierType.RULE);
+                        QueryTestUtil.unification(unrelated, parent, false, UnifierType.SUBSUMPTIVE);
+                        QueryTestUtil.unification(unrelated, parent, false, UnifierType.STRUCTURAL_SUBSUMPTIVE);
+
+                        QueryTestUtil.unification(child, unrelated, false, UnifierType.RULE);
+                        QueryTestUtil.unification(child, unrelated, false, UnifierType.SUBSUMPTIVE);
+                        QueryTestUtil.unification(child, unrelated, false, UnifierType.STRUCTURAL_SUBSUMPTIVE);
+                        QueryTestUtil.unification(unrelated, child, false, UnifierType.RULE);
+                        QueryTestUtil.unification(unrelated, child, false, UnifierType.SUBSUMPTIVE);
+                        QueryTestUtil.unification(unrelated, child, false, UnifierType.STRUCTURAL_SUBSUMPTIVE);
+                    }
+                });
+
+            });
+
         }
     }
 
