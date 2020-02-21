@@ -167,7 +167,6 @@ public class GenerativeOperationalIT {
         }
     }
 
-
     @Test
     public void whenGeneralisingAttributes_SubsumptionRelationHoldsBetweenPairs(){
         int depth = 10;
@@ -194,7 +193,6 @@ public class GenerativeOperationalIT {
                 secondTree.keySet().forEach(p -> {
                     ReasonerAtomicQuery unrelated = reasonerQueryFactory.atomic(conjunction(p));
                     if (!unrelated.getAtom().toAttributeAtom().isValueEquality()) {
-                        System.out.println(parent + " !<= " + unrelated);
                         QueryTestUtil.unification(parent, unrelated, false, UnifierType.RULE);
                         QueryTestUtil.unification(parent, unrelated, false, UnifierType.SUBSUMPTIVE);
                         QueryTestUtil.unification(parent, unrelated, false, UnifierType.STRUCTURAL_SUBSUMPTIVE);

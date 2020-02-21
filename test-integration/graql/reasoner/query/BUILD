@@ -28,7 +28,6 @@ java_test(
         "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//graql/reasoner",
-        "//kb/graql/reasoner",
         "//kb/server",
         "//test-integration/graql/reasoner/query:query-test-util",
         "//test-integration/rule:grakn-test-server",
