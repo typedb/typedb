@@ -23,7 +23,6 @@ import grakn.core.common.config.Config;
 import grakn.core.graql.reasoner.graph.GenericSchemaGraph;
 import grakn.core.graql.reasoner.pattern.QueryPattern;
 import grakn.core.graql.reasoner.unifier.UnifierType;
-import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
@@ -33,20 +32,16 @@ import grakn.core.rule.TestTransactionProvider;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.statement.Statement;
-import java.util.Arrays;
-import java.util.Collections;
+import java.util.List;
+import java.util.Set;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import java.util.List;
-import java.util.Set;
-
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 
 
 public class SubsumptionIT {
@@ -580,91 +575,6 @@ public class SubsumptionIT {
                     (TestTransactionProvider.TestTransaction) tx
             );
         }
-    }
-
-    @Test
-    public void testSubsumption_DifferentNonVariablePredicateVariantsWithNumbers(){
-        Statement value = Graql.var("value");
-        final long bound = 1667L;
-        try(Transaction tx = genericSchemaSession.readTransaction() ) {
-            Statement eq = value.eq(bound);
-            Statement gte = value.gte(bound);
-            Statement gt = value.gt(bound);
-            Statement lte = value.lte(bound);
-            Statement lt = value.lt(bound);
-            Statement neq = value.neq(bound);
-
-            subsumption(eq, Arrays.asList(gte, lte), Arrays.asList(neq, gt, lt), tx);
-            subsumption(gte, Collections.emptyList(), Arrays.asList(eq, gt, lte, lt, neq), tx);
-            subsumption(gt, Collections.singletonList(gte), Arrays.asList(eq, lte, lt, neq), tx);
-            subsumption(lte, Collections.emptyList(), Arrays.asList(eq, gte, gt, lt, neq), tx);
-            subsumption(lt, Collections.singletonList(lte), Arrays.asList(eq, gte, gt, neq), tx);
-            subsumption(neq, Collections.emptyList(), Arrays.asList(eq, gte, gt, lte, lt), tx);
-        }
-    }
-/*
-    @Test
-    public void testSubsumption_DifferentNonVariablePredicateVariantsWithStrings(){
-        Statement value = Graql.var("value");
-        final String bound = "value";
-        try(TransactionOLTP tx = genericSchemaSession.transaction().read() ) {
-            Statement eq = value.eq(bound);
-            Statement gte = value.gte(bound);
-            Statement gt = value.gt(bound);
-            Statement lte = value.lte(bound);
-            Statement lt = value.lt(bound);
-            Statement neq = value.neq(bound);
-            Statement contains = value.contains(bound);
-
-            subsumption(eq, Arrays.asList(gte, lte, contains), Arrays.asList(gt, lt, neq), tx);
-
-            subsumption(gte, Collections.emptyList(), Arrays.asList(eq, gt, lte, lt, neq), tx);
-            subsumption(gt, Collections.singletonList(gte), Arrays.asList(eq, lte, lt, neq), tx);
-            subsumption(lte, Collections.emptyList(), Arrays.asList(eq, gte, gt, lt, neq), tx);
-            subsumption(lt, Collections.singletonList(lte), Arrays.asList(eq, gte, gt, neq), tx);
-            subsumption(neq, Collections.emptyList(), Arrays.asList(eq, gte, gt, lte, lt), tx);
-        }
-    }
-
-    @Test
-    public void testSubsumption_DifferentVariablePredicateVariants(){
-        Statement value = Graql.var("value");
-        Statement anotherValue = Graql.var("anotherValue");
-        try(Transaction tx = genericSchemaSession.transaction().read() ) {
-            Statement eq = value.eq(anotherValue);
-            Statement gte = value.gte(anotherValue);
-            Statement gt = value.gt(anotherValue);
-            Statement lte = value.lte(anotherValue);
-            Statement lt = value.lt(anotherValue);
-            Statement neq = value.neq(anotherValue);
-
-            subsumption(eq, Collections.emptyList(), Arrays.asList(gte, gt, lte, lt, neq), tx);
-            subsumption(gte, Collections.emptyList(), Arrays.asList(eq, gt, lte, lt, neq), tx);
-            subsumption(gt, Collections.emptyList(), Arrays.asList(eq, gte, lte, lt, neq), tx);
-            subsumption(lte, Collections.emptyList(), Arrays.asList(eq, gte, gt, lt, neq), tx);
-            subsumption(lt, Collections.emptyList(), Arrays.asList(eq, gte, gt, lte, neq), tx);
-            subsumption(neq, Collections.emptyList(), Arrays.asList(eq, gte, gt, lte, lt), tx);
-        }
-    }
-*/
-    private void subsumption(Statement childStatement, List<Statement> subsumes, List<Statement> doesntSubsume, Transaction tx){
-        TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction) tx;
-        ReasonerQueryFactory reasonerQueryFactory = testTx.reasonerQueryFactory();
-        Conjunction<Statement> conj = (Conjunction<Statement>) Graql.and(childStatement);
-        Atomic child = reasonerQueryFactory.create(conj).getAtoms().stream().findFirst().orElse(null);
-        Atomic childCopy = child.copy(child.getParentQuery());
-        assertTrue("Unexpected subsumption outcome: between the child - parent pair:\n" + child + " :\n" + childCopy + "\n", child.isSubsumedBy(childCopy));
-
-        subsumes.forEach(parentStatement -> {
-            Conjunction<Statement> conj2 = (Conjunction<Statement>) Graql.and(parentStatement);
-            Atomic parent = reasonerQueryFactory.create(conj2).getAtoms().stream().findFirst().orElse(null);
-            assertTrue("Unexpected subsumption outcome: between the child - parent pair:\n" + child + " :\n" + parent + "\n", child.isSubsumedBy(parent));
-        });
-        doesntSubsume.forEach(parentStatement -> {
-            Conjunction<Statement> conj2 = (Conjunction<Statement>) Graql.and(parentStatement);
-            Atomic parent = reasonerQueryFactory.create(conj2).getAtoms().stream().findFirst().orElse(null);
-            assertFalse("Unexpected subsumption outcome: between the child - parent pair:\n" + child + " :\n" + parent + "\n", child.isSubsumedBy(parent));
-        });
     }
 
     private void subsumption(List<String> children, List<String> parents, int[][] resultMatrix, TestTransactionProvider.TestTransaction tx) {

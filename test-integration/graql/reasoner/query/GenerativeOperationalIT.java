@@ -21,7 +21,6 @@ package grakn.core.graql.reasoner.query;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 import grakn.common.util.Pair;
 import grakn.core.common.config.Config;
 import grakn.core.graql.reasoner.unifier.UnifierType;
@@ -37,7 +36,6 @@ import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
@@ -171,7 +169,7 @@ public class GenerativeOperationalIT {
 
 
     @Test
-    public void test(){
+    public void whenGeneralisingAttributes_SubsumptionRelationHoldsBetweenPairs(){
         int depth = 10;
         try (Transaction tx = genericSchemaSession.readTransaction()) {
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction) tx).reasonerQueryFactory();
@@ -193,39 +191,28 @@ public class GenerativeOperationalIT {
                 QueryTestUtil.unification(parent, child,true, UnifierType.SUBSUMPTIVE);
                 QueryTestUtil.unification(parent, child,true, UnifierType.STRUCTURAL_SUBSUMPTIVE);
 
-                //if (!parent.getAtom().toAttributeAtom().isValueEquality()) {
-                    secondTree.keySet().forEach(p -> {
-                        ReasonerAtomicQuery unrelated = reasonerQueryFactory.atomic(conjunction(p));
-                        if (!unrelated.getAtom().toAttributeAtom().isValueEquality()) {
-                            System.out.println(parent + " !<= " + unrelated);
-                            QueryTestUtil.unification(parent, unrelated, false, UnifierType.RULE);
-                            QueryTestUtil.unification(parent, unrelated, false, UnifierType.SUBSUMPTIVE);
-                            QueryTestUtil.unification(parent, unrelated, false, UnifierType.STRUCTURAL_SUBSUMPTIVE);
-                            QueryTestUtil.unification(unrelated, parent, false, UnifierType.RULE);
-                            QueryTestUtil.unification(unrelated, parent, false, UnifierType.SUBSUMPTIVE);
-                            QueryTestUtil.unification(unrelated, parent, false, UnifierType.STRUCTURAL_SUBSUMPTIVE);
-                        }
-                    });
-                //}
+                secondTree.keySet().forEach(p -> {
+                    ReasonerAtomicQuery unrelated = reasonerQueryFactory.atomic(conjunction(p));
+                    if (!unrelated.getAtom().toAttributeAtom().isValueEquality()) {
+                        System.out.println(parent + " !<= " + unrelated);
+                        QueryTestUtil.unification(parent, unrelated, false, UnifierType.RULE);
+                        QueryTestUtil.unification(parent, unrelated, false, UnifierType.SUBSUMPTIVE);
+                        QueryTestUtil.unification(parent, unrelated, false, UnifierType.STRUCTURAL_SUBSUMPTIVE);
+                        QueryTestUtil.unification(unrelated, parent, false, UnifierType.RULE);
+                        QueryTestUtil.unification(unrelated, parent, false, UnifierType.SUBSUMPTIVE);
+                        QueryTestUtil.unification(unrelated, parent, false, UnifierType.STRUCTURAL_SUBSUMPTIVE);
+
+                        QueryTestUtil.unification(child, unrelated, false, UnifierType.RULE);
+                        QueryTestUtil.unification(child, unrelated, false, UnifierType.SUBSUMPTIVE);
+                        QueryTestUtil.unification(child, unrelated, false, UnifierType.STRUCTURAL_SUBSUMPTIVE);
+                        QueryTestUtil.unification(unrelated, child, false, UnifierType.RULE);
+                        QueryTestUtil.unification(unrelated, child, false, UnifierType.SUBSUMPTIVE);
+                        QueryTestUtil.unification(unrelated, child, false, UnifierType.STRUCTURAL_SUBSUMPTIVE);
+                    }
+                });
+
             });
 
-            /*
-            while(pairIterator.hasNext()){
-                Pair<Pattern, Pattern> pair = pairIterator.next();
-
-                ReasonerQueryImpl pQuery = reasonerQueryFactory.create(conjunction(pair.first()));
-                ReasonerQueryImpl cQuery = reasonerQueryFactory.create(conjunction(pair.second()));
-
-                if (pQuery.isAtomic() && cQuery.isAtomic()) {
-                    ReasonerAtomicQuery parent = (ReasonerAtomicQuery) pQuery;
-                    ReasonerAtomicQuery child = (ReasonerAtomicQuery) cQuery;
-
-                    QueryTestUtil.unification(parent, child,true, UnifierType.RULE);
-                    QueryTestUtil.unification(parent, child,true, UnifierType.SUBSUMPTIVE);
-                    QueryTestUtil.unification(parent, child,true, UnifierType.STRUCTURAL_SUBSUMPTIVE);
-                }
-            }
-             */
         }
     }
 
