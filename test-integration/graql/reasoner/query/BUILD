@@ -5,7 +5,6 @@ java_library(
     srcs = glob(["QueryTestUtil.java"]),
     visibility = ["//visibility:public"],
     deps = [
-        "//common",
         "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/junit",
         "//graql/reasoner",
