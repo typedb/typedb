@@ -20,6 +20,7 @@
 package grakn.core.graql.reasoner.query;
 
 import grakn.core.graql.reasoner.atom.AtomicEquivalence;
+import grakn.core.graql.reasoner.atom.binary.IsaAtom;
 import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
