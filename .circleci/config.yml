@@ -73,9 +73,9 @@ jobs:
       - run: |
           SONARCLOUD_CODE_ANALYSIS_CREDENTIAL=$SONARCLOUD_CREDENTIAL \
             bazel run @graknlabs_build_tools//sonarcloud:code-analysis -- \
-            --organisation=$SONARCLOUD_ORGANISATION
-            --project-key=$SONARCLOUD_PROJECT_KEY
-            --commit-id=$CIRCLE_SHA1
+            --organisation=$SONARCLOUD_ORGANISATION \
+            --project-key=$SONARCLOUD_PROJECT_KEY \
+            --commit-id=$CIRCLE_SHA1 \
             --branch=$CIRCLE_BRANCH
   
   test-common:
