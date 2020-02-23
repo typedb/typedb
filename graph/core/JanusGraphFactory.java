@@ -22,6 +22,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import grakn.core.graph.diskstorage.Backend;
 import grakn.core.graph.diskstorage.BackendException;
+import grakn.core.graph.diskstorage.PermanentBackendException;
 import grakn.core.graph.diskstorage.configuration.BasicConfiguration;
 import grakn.core.graph.diskstorage.configuration.Configuration;
 import grakn.core.graph.diskstorage.configuration.MergedConfiguration;
@@ -30,6 +31,7 @@ import grakn.core.graph.diskstorage.configuration.WriteConfiguration;
 import grakn.core.graph.diskstorage.configuration.backend.CommonsConfiguration;
 import grakn.core.graph.diskstorage.configuration.backend.builder.KCVSConfigurationBuilder;
 import grakn.core.graph.diskstorage.configuration.builder.ReadConfigurationBuilder;
+import grakn.core.graph.diskstorage.cql.CQLStoreManager;
 import grakn.core.graph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
 import grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration;
 import grakn.core.graph.graphdb.configuration.builder.MergedConfigurationBuilder;
@@ -141,26 +143,10 @@ public class JanusGraphFactory {
 
     @VisibleForTesting
     public static KeyColumnValueStoreManager getStoreManager(Configuration configuration) {
-        String className;
-        String backendName = configuration.get(STORAGE_BACKEND);
-        switch (backendName) {
-            case "cql":
-                className = "grakn.core.graph.diskstorage.cql.CQLStoreManager";
-                break;
-            default:
-                throw new IllegalArgumentException("Could not find implementation class for backend: " + backendName);
-        }
-
         try {
-            Class clazz = Class.forName(className);
-            Constructor constructor = clazz.getConstructor(Configuration.class);
-            return (KeyColumnValueStoreManager) constructor.newInstance(new Object[]{configuration});
-        } catch (ClassNotFoundException e) {
-            throw new IllegalArgumentException("Could instantiate StoreManager class: " + className, e);
-        } catch (NoSuchMethodException e) {
-            throw new IllegalArgumentException("StoreManager class does not have required constructor: " + className, e);
-        } catch (InstantiationException | IllegalAccessException | InvocationTargetException | ClassCastException e) {
-            throw new IllegalArgumentException("Could not instantiate StoreManager class: " + className, e);
+            return new CQLStoreManager(configuration);
+        } catch (PermanentBackendException e) {
+            throw new IllegalArgumentException("Could instantiate StoreManager class: " + e);
         }
     }
 
