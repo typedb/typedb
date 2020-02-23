@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.server.templates;
+package grakn.core.server;
 
 /**
  * Class for storing the Grakn Version.
