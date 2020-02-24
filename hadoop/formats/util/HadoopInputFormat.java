@@ -21,7 +21,6 @@ package grakn.core.hadoop.formats.util;
 import com.google.common.base.Preconditions;
 import grakn.core.graph.diskstorage.Entry;
 import grakn.core.graph.diskstorage.StaticBuffer;
-import grakn.core.hadoop.formats.util.input.JanusGraphHadoopSetupImpl;
 import org.apache.hadoop.conf.Configurable;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;
@@ -42,10 +41,10 @@ import java.util.function.Function;
 public abstract class HadoopInputFormat extends InputFormat<NullWritable, VertexWritable> implements Configurable, GraphFilterAware {
 
     private final InputFormat<StaticBuffer, Iterable<Entry>> inputFormat;
-    private static final RefCountedCloseable<JanusGraphVertexDeserializer> refCounter;
+    private static final RefCountedCloseable<VertexDeserializer> refCounter;
 
     static {
-        refCounter = new RefCountedCloseable<>((conf) -> new JanusGraphVertexDeserializer(new JanusGraphHadoopSetupImpl(conf)));
+        refCounter = new RefCountedCloseable<>(VertexDeserializer::new);
     }
 
     public HadoopInputFormat(InputFormat<StaticBuffer, Iterable<Entry>> inputFormat) {

@@ -40,11 +40,11 @@ public class HadoopRecordReader extends RecordReader<NullWritable, VertexWritabl
 
     private final RecordReader<StaticBuffer, Iterable<Entry>> reader;
     private final HadoopInputFormat.RefCountedCloseable countedDeserializer;
-    private JanusGraphVertexDeserializer deserializer;
+    private VertexDeserializer deserializer;
     private VertexWritable vertex;
     private GraphFilter graphFilter;
 
-    public HadoopRecordReader(HadoopInputFormat.RefCountedCloseable<JanusGraphVertexDeserializer> countedDeserializer, RecordReader<StaticBuffer, Iterable<Entry>> reader) {
+    public HadoopRecordReader(HadoopInputFormat.RefCountedCloseable<VertexDeserializer> countedDeserializer, RecordReader<StaticBuffer, Iterable<Entry>> reader) {
         this.countedDeserializer = countedDeserializer;
         this.reader = reader;
         this.deserializer = countedDeserializer.acquire();

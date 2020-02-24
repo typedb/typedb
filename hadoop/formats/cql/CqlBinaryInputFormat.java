@@ -21,10 +21,11 @@ package grakn.core.hadoop.formats.cql;
 import grakn.core.graph.diskstorage.Entry;
 import grakn.core.graph.diskstorage.StaticBuffer;
 import grakn.core.graph.diskstorage.cql.CQLConfigOptions;
+import grakn.core.graph.diskstorage.keycolumnvalue.SliceQuery;
+import grakn.core.graph.diskstorage.util.StaticArrayBuffer;
 import grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration;
 import grakn.core.hadoop.config.JanusGraphHadoopConfiguration;
 import grakn.core.hadoop.formats.util.AbstractBinaryInputFormat;
-import grakn.core.hadoop.formats.util.input.JanusGraphHadoopSetupImpl;
 import org.apache.cassandra.hadoop.ConfigHelper;
 import org.apache.cassandra.thrift.SlicePredicate;
 import org.apache.cassandra.thrift.SliceRange;
@@ -46,6 +47,8 @@ public class CqlBinaryInputFormat extends AbstractBinaryInputFormat {
     // Copied these private constants from Cassandra's ConfigHelper circa 2.0.9
     private static final String INPUT_WIDEROWS_CONFIG = "cassandra.input.widerows";
     private static final String RANGE_BATCH_SIZE_CONFIG = "cassandra.range.batch.size";
+    private static final StaticBuffer DEFAULT_COLUMN = StaticArrayBuffer.of(new byte[0]);
+    public static final SliceQuery DEFAULT_SLICE_QUERY = new SliceQuery(DEFAULT_COLUMN, DEFAULT_COLUMN);
 
     private final GraknInputFormat cqlInputFormat = new GraknInputFormat();
 
@@ -71,8 +74,8 @@ public class CqlBinaryInputFormat extends AbstractBinaryInputFormat {
         }
         if (janusgraphConf.has(GraphDatabaseConfiguration.AUTH_USERNAME) && janusgraphConf.has(GraphDatabaseConfiguration.AUTH_PASSWORD)) {
             GraknCqlConfigHelper.setUserNameAndPassword(config,
-                    janusgraphConf.get(GraphDatabaseConfiguration.AUTH_PASSWORD),
-                    janusgraphConf.get(GraphDatabaseConfiguration.AUTH_USERNAME));
+                                                        janusgraphConf.get(GraphDatabaseConfiguration.AUTH_PASSWORD),
+                                                        janusgraphConf.get(GraphDatabaseConfiguration.AUTH_USERNAME));
         }
         // Copy keyspace, force the CF setting to edgestore, honor widerows when set
         boolean wideRows = config.getBoolean(INPUT_WIDEROWS_CONFIG, false);
@@ -90,9 +93,9 @@ public class CqlBinaryInputFormat extends AbstractBinaryInputFormat {
 
     private SliceRange getSliceRange(int limit) {
         SliceRange sliceRange = new SliceRange();
-        sliceRange.setStart(JanusGraphHadoopSetupImpl.DEFAULT_SLICE_QUERY.getSliceStart().asByteBuffer());
-        sliceRange.setFinish(JanusGraphHadoopSetupImpl.DEFAULT_SLICE_QUERY.getSliceEnd().asByteBuffer());
-        sliceRange.setCount(Math.min(limit, JanusGraphHadoopSetupImpl.DEFAULT_SLICE_QUERY.getLimit()));
+        sliceRange.setStart(DEFAULT_SLICE_QUERY.getSliceStart().asByteBuffer());
+        sliceRange.setFinish(DEFAULT_SLICE_QUERY.getSliceEnd().asByteBuffer());
+        sliceRange.setCount(Math.min(limit, DEFAULT_SLICE_QUERY.getLimit()));
         return sliceRange;
     }
 }

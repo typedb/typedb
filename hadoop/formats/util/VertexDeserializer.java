@@ -19,18 +19,31 @@
 package grakn.core.hadoop.formats.util;
 
 import com.google.common.base.Preconditions;
+import grakn.core.graph.core.JanusGraphFactory;
+import grakn.core.graph.core.JanusGraphVertex;
 import grakn.core.graph.core.PropertyKey;
 import grakn.core.graph.core.RelationType;
 import grakn.core.graph.core.VertexLabel;
 import grakn.core.graph.diskstorage.Entry;
 import grakn.core.graph.diskstorage.StaticBuffer;
+import grakn.core.graph.diskstorage.configuration.BasicConfiguration;
 import grakn.core.graph.graphdb.database.RelationReader;
+import grakn.core.graph.graphdb.database.StandardJanusGraph;
 import grakn.core.graph.graphdb.idmanagement.IDManager;
 import grakn.core.graph.graphdb.internal.InternalRelationType;
+import grakn.core.graph.graphdb.internal.JanusGraphSchemaCategory;
+import grakn.core.graph.graphdb.query.QueryUtil;
 import grakn.core.graph.graphdb.relations.RelationCache;
+import grakn.core.graph.graphdb.transaction.StandardJanusGraphTx;
+import grakn.core.graph.graphdb.types.TypeDefinitionCategory;
+import grakn.core.graph.graphdb.types.TypeDefinitionMap;
 import grakn.core.graph.graphdb.types.TypeInspector;
-import grakn.core.hadoop.formats.util.input.JanusGraphHadoopSetup;
-import grakn.core.hadoop.formats.util.input.SystemTypeInspector;
+import grakn.core.graph.graphdb.types.system.BaseKey;
+import grakn.core.graph.graphdb.types.system.BaseLabel;
+import grakn.core.graph.graphdb.types.vertices.JanusGraphSchemaVertex;
+import grakn.core.hadoop.config.JanusGraphHadoopConfiguration;
+import grakn.core.hadoop.config.ModifiableHadoopConfiguration;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -45,17 +58,17 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
-public class JanusGraphVertexDeserializer implements AutoCloseable {
+public class VertexDeserializer implements AutoCloseable {
 
-    private final JanusGraphHadoopSetup setup;
+    private final JanusHadoopSetup setup;
     private final TypeInspector typeManager;
     private final SystemTypeInspector systemTypes;
     private final IDManager idManager;
 
-    private static final Logger LOG = LoggerFactory.getLogger(JanusGraphVertexDeserializer.class);
+    private static final Logger LOG = LoggerFactory.getLogger(VertexDeserializer.class);
 
-    public JanusGraphVertexDeserializer(JanusGraphHadoopSetup setup) {
-        this.setup = setup;
+    public VertexDeserializer(Configuration conf) {
+        this.setup = new JanusHadoopSetup(conf);
         this.typeManager = setup.getTypeInspector();
         this.systemTypes = setup.getSystemTypeInspector();
         this.idManager = setup.getIDManager();
@@ -228,5 +241,94 @@ public class JanusGraphVertexDeserializer implements AutoCloseable {
 
     public void close() {
         setup.close();
+    }
+
+    public static class JanusHadoopSetup {
+
+        private final ModifiableHadoopConfiguration scanConf;
+        private final StandardJanusGraph graph;
+        private final StandardJanusGraphTx tx;
+
+        public JanusHadoopSetup(Configuration config) {
+            scanConf = ModifiableHadoopConfiguration.of(JanusGraphHadoopConfiguration.MAPRED_NS, config);
+            BasicConfiguration bc = scanConf.getJanusGraphConf();
+            graph = JanusGraphFactory.open(bc.getConfiguration());
+            tx = graph.buildTransaction().readOnly().vertexCacheSize(200).start();
+        }
+
+        public TypeInspector getTypeInspector() {
+            //Pre-load schema
+            for (JanusGraphSchemaCategory sc : JanusGraphSchemaCategory.values()) {
+                for (JanusGraphVertex k : QueryUtil.getVertices(tx, BaseKey.SchemaCategory, sc)) {
+                    JanusGraphSchemaVertex s = (JanusGraphSchemaVertex) k;
+                    if (sc.hasName()) {
+                        String name = s.name();
+                        Preconditions.checkNotNull(name);
+                    }
+                    TypeDefinitionMap dm = s.getDefinition();
+                    Preconditions.checkNotNull(dm);
+                    s.getRelated(TypeDefinitionCategory.TYPE_MODIFIER, Direction.OUT);
+                    s.getRelated(TypeDefinitionCategory.TYPE_MODIFIER, Direction.IN);
+                }
+            }
+            return tx;
+        }
+
+        public SystemTypeInspector getSystemTypeInspector() {
+            return new SystemTypeInspector() {
+                @Override
+                public boolean isSystemType(long typeId) {
+                    return IDManager.isSystemRelationTypeId(typeId);
+                }
+
+                @Override
+                public boolean isVertexExistsSystemType(long typeId) {
+                    return typeId == BaseKey.VertexExists.longId();
+                }
+
+                @Override
+                public boolean isVertexLabelSystemType(long typeId) {
+                    return typeId == BaseLabel.VertexLabelEdge.longId();
+                }
+
+                @Override
+                public boolean isTypeSystemType(long typeId) {
+                    return typeId == BaseKey.SchemaCategory.longId() ||
+                            typeId == BaseKey.SchemaDefinitionProperty.longId() ||
+                            typeId == BaseKey.SchemaDefinitionDesc.longId() ||
+                            typeId == BaseKey.SchemaName.longId() ||
+                            typeId == BaseLabel.SchemaDefinitionEdge.longId();
+                }
+            };
+        }
+
+        public IDManager getIDManager() {
+            return graph.getIDManager();
+        }
+
+        public RelationReader getRelationReader() {
+            return graph.getEdgeSerializer();
+        }
+
+        public void close() {
+            tx.rollback();
+            graph.close();
+        }
+
+        public boolean getFilterPartitionedVertices() {
+            return scanConf.get(JanusGraphHadoopConfiguration.FILTER_PARTITIONED_VERTICES);
+        }
+    }
+
+    public static interface SystemTypeInspector {
+
+        boolean isSystemType(long typeId);
+
+        boolean isVertexExistsSystemType(long typeId);
+
+        boolean isVertexLabelSystemType(long typeId);
+
+        boolean isTypeSystemType(long typeId);
+
     }
 }
