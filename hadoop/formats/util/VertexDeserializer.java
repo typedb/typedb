@@ -60,17 +60,15 @@ import java.util.NoSuchElementException;
 
 public class VertexDeserializer implements AutoCloseable {
 
-    private final JanusHadoopSetup setup;
+    private final HadoopSetup setup;
     private final TypeInspector typeManager;
-    private final SystemTypeInspector systemTypes;
     private final IDManager idManager;
 
     private static final Logger LOG = LoggerFactory.getLogger(VertexDeserializer.class);
 
-    public VertexDeserializer(Configuration conf) {
-        this.setup = new JanusHadoopSetup(conf);
+    VertexDeserializer(Configuration conf) {
+        this.setup = new HadoopSetup(conf);
         this.typeManager = setup.getTypeInspector();
-        this.systemTypes = setup.getSystemTypeInspector();
         this.idManager = setup.getIDManager();
     }
 
@@ -90,7 +88,7 @@ public class VertexDeserializer implements AutoCloseable {
 
     // Read a single row from the edgestore and create a TinkerVertex corresponding to the row
     // The neighboring vertices are represented by DetachedVertex instances
-    public TinkerVertex readHadoopVertex(StaticBuffer key, Iterable<Entry> entries) {
+    TinkerVertex readHadoopVertex(StaticBuffer key, Iterable<Entry> entries) {
 
         // Convert key to a vertex ID
         long vertexId = idManager.getKeyID(key);
@@ -99,7 +97,7 @@ public class VertexDeserializer implements AutoCloseable {
         // Partitioned vertex handling
         if (idManager.isPartitionedVertex(vertexId)) {
             Preconditions.checkState(setup.getFilterPartitionedVertices(),
-                    "Read partitioned vertex (ID=%s), but partitioned vertex filtering is disabled.", vertexId);
+                                     "Read partitioned vertex (ID=%s), but partitioned vertex filtering is disabled.", vertexId);
             LOG.debug("Skipping partitioned vertex with ID {}", vertexId);
             return null;
         }
@@ -113,7 +111,7 @@ public class VertexDeserializer implements AutoCloseable {
         for (Entry data : entries) {
             RelationReader relationReader = setup.getRelationReader();
             RelationCache relation = relationReader.parseRelation(data, false, typeManager);
-            if (systemTypes.isVertexLabelSystemType(relation.typeId)) {
+            if (relation.typeId == BaseLabel.VertexLabelEdge.longId()) {
                 // Found vertex Label
                 long vertexLabelId = relation.getOtherVertexId();
                 VertexLabel vl = typeManager.getExistingVertexLabel(vertexLabelId);
@@ -135,7 +133,7 @@ public class VertexDeserializer implements AutoCloseable {
                 RelationReader relationReader = setup.getRelationReader();
                 RelationCache relation = relationReader.parseRelation(data, false, typeManager);
 
-                if (systemTypes.isSystemType(relation.typeId)) continue; //Ignore system types
+                if (IDManager.isSystemRelationTypeId(relation.typeId)) continue; //Ignore system types
                 RelationType type = typeManager.getExistingRelationType(relation.typeId);
                 if (((InternalRelationType) type).isInvisibleType()) continue; //Ignore hidden types
 
@@ -150,11 +148,11 @@ public class VertexDeserializer implements AutoCloseable {
                     // Partitioned vertex handling
                     if (idManager.isPartitionedVertex(relation.getOtherVertexId())) {
                         Preconditions.checkState(setup.getFilterPartitionedVertices(),
-                                "Read edge incident on a partitioned vertex, but partitioned vertex filtering is disabled.  " +
-                                        "Relation ID: %s.  This vertex ID: %s.  Other vertex ID: %s.  Edge label: %s.",
-                                relation.relationId, vertexId, relation.getOtherVertexId(), type.name());
+                                                 "Read edge incident on a partitioned vertex, but partitioned vertex filtering is disabled.  " +
+                                                         "Relation ID: %s.  This vertex ID: %s.  Other vertex ID: %s.  Edge label: %s.",
+                                                 relation.relationId, vertexId, relation.getOtherVertexId(), type.name());
                         LOG.debug("Skipping edge with ID {} incident on partitioned vertex with ID {} (and nonpartitioned vertex with ID {})",
-                                relation.relationId, relation.getOtherVertexId(), vertexId);
+                                  relation.relationId, relation.getOtherVertexId(), vertexId);
                         continue;
                     }
 
@@ -243,20 +241,20 @@ public class VertexDeserializer implements AutoCloseable {
         setup.close();
     }
 
-    public static class JanusHadoopSetup {
+    public static class HadoopSetup {
 
         private final ModifiableHadoopConfiguration scanConf;
         private final StandardJanusGraph graph;
         private final StandardJanusGraphTx tx;
 
-        public JanusHadoopSetup(Configuration config) {
+        HadoopSetup(Configuration config) {
             scanConf = ModifiableHadoopConfiguration.of(JanusGraphHadoopConfiguration.MAPRED_NS, config);
             BasicConfiguration bc = scanConf.getJanusGraphConf();
             graph = JanusGraphFactory.open(bc.getConfiguration());
             tx = graph.buildTransaction().readOnly().vertexCacheSize(200).start();
         }
 
-        public TypeInspector getTypeInspector() {
+        TypeInspector getTypeInspector() {
             //Pre-load schema
             for (JanusGraphSchemaCategory sc : JanusGraphSchemaCategory.values()) {
                 for (JanusGraphVertex k : QueryUtil.getVertices(tx, BaseKey.SchemaCategory, sc)) {
@@ -274,39 +272,11 @@ public class VertexDeserializer implements AutoCloseable {
             return tx;
         }
 
-        public SystemTypeInspector getSystemTypeInspector() {
-            return new SystemTypeInspector() {
-                @Override
-                public boolean isSystemType(long typeId) {
-                    return IDManager.isSystemRelationTypeId(typeId);
-                }
-
-                @Override
-                public boolean isVertexExistsSystemType(long typeId) {
-                    return typeId == BaseKey.VertexExists.longId();
-                }
-
-                @Override
-                public boolean isVertexLabelSystemType(long typeId) {
-                    return typeId == BaseLabel.VertexLabelEdge.longId();
-                }
-
-                @Override
-                public boolean isTypeSystemType(long typeId) {
-                    return typeId == BaseKey.SchemaCategory.longId() ||
-                            typeId == BaseKey.SchemaDefinitionProperty.longId() ||
-                            typeId == BaseKey.SchemaDefinitionDesc.longId() ||
-                            typeId == BaseKey.SchemaName.longId() ||
-                            typeId == BaseLabel.SchemaDefinitionEdge.longId();
-                }
-            };
-        }
-
         public IDManager getIDManager() {
             return graph.getIDManager();
         }
 
-        public RelationReader getRelationReader() {
+        RelationReader getRelationReader() {
             return graph.getEdgeSerializer();
         }
 
@@ -315,20 +285,8 @@ public class VertexDeserializer implements AutoCloseable {
             graph.close();
         }
 
-        public boolean getFilterPartitionedVertices() {
+        boolean getFilterPartitionedVertices() {
             return scanConf.get(JanusGraphHadoopConfiguration.FILTER_PARTITIONED_VERTICES);
         }
-    }
-
-    public static interface SystemTypeInspector {
-
-        boolean isSystemType(long typeId);
-
-        boolean isVertexExistsSystemType(long typeId);
-
-        boolean isVertexLabelSystemType(long typeId);
-
-        boolean isTypeSystemType(long typeId);
-
     }
 }
