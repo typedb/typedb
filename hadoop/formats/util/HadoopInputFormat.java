@@ -29,12 +29,18 @@ import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.JobContext;
 import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
+import org.apache.tinkerpop.gremlin.hadoop.Constants;
 import org.apache.tinkerpop.gremlin.hadoop.structure.io.GraphFilterAware;
 import org.apache.tinkerpop.gremlin.hadoop.structure.io.VertexWritable;
+import org.apache.tinkerpop.gremlin.hadoop.structure.util.ConfUtil;
 import org.apache.tinkerpop.gremlin.process.computer.GraphFilter;
+import org.apache.tinkerpop.gremlin.process.computer.util.VertexProgramHelper;
+import org.apache.tinkerpop.gremlin.structure.util.star.StarGraph;
+import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerVertex;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Function;
 
 
@@ -115,6 +121,79 @@ public abstract class HadoopInputFormat extends InputFormat<NullWritable, Vertex
                 current.close();
                 current = null;
             }
+        }
+    }
+
+    public static class HadoopRecordReader extends RecordReader<NullWritable, VertexWritable> {
+
+        private final RecordReader<StaticBuffer, Iterable<Entry>> reader;
+        private final RefCountedCloseable countedDeserializer;
+        private VertexDeserializer deserializer;
+        private VertexWritable vertex;
+        private GraphFilter graphFilter;
+
+        HadoopRecordReader(RefCountedCloseable<VertexDeserializer> countedDeserializer, RecordReader<StaticBuffer, Iterable<Entry>> reader) {
+            this.countedDeserializer = countedDeserializer;
+            this.reader = reader;
+            this.deserializer = countedDeserializer.acquire();
+        }
+
+        @Override
+        public void initialize(InputSplit inputSplit, TaskAttemptContext taskAttemptContext) throws IOException, InterruptedException {
+            reader.initialize(inputSplit, taskAttemptContext);
+
+            Configuration conf = taskAttemptContext.getConfiguration();
+            if (conf.get(Constants.GREMLIN_HADOOP_GRAPH_FILTER, null) != null) {
+                graphFilter = VertexProgramHelper.deserialize(ConfUtil.makeApacheConfiguration(conf),
+                                                              Constants.GREMLIN_HADOOP_GRAPH_FILTER);
+            }
+        }
+
+        @Override
+        public boolean nextKeyValue() throws IOException, InterruptedException {
+            while (reader.nextKeyValue()) {
+                // TODO janusgraph05 integration -- the duplicate() call may be unnecessary
+                TinkerVertex maybeNullTinkerVertex = deserializer.readHadoopVertex(reader.getCurrentKey(), reader.getCurrentValue());
+                if (null != maybeNullTinkerVertex) {
+                    vertex = new VertexWritable(maybeNullTinkerVertex);
+                    if (graphFilter == null) {
+                        return true;
+                    } else {
+                        final Optional<StarGraph.StarVertex> vertexWritable = vertex.get().applyGraphFilter(graphFilter);
+                        if (vertexWritable.isPresent()) {
+                            vertex.set(vertexWritable.get());
+                            return true;
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
+        @Override
+        public NullWritable getCurrentKey() {
+            return NullWritable.get();
+        }
+
+        @Override
+        public VertexWritable getCurrentValue() {
+            return vertex;
+        }
+
+        @Override
+        public void close() throws IOException {
+            try {
+                deserializer = null;
+                countedDeserializer.release();
+            } catch (Exception e) {
+                throw new IOException(e);
+            }
+            reader.close();
+        }
+
+        @Override
+        public float getProgress() throws IOException, InterruptedException {
+            return reader.getProgress();
         }
     }
 }
