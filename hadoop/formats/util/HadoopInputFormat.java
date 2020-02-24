@@ -16,12 +16,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graph.hadoop.formats.util;
+package grakn.core.hadoop.formats.util;
 
 import com.google.common.base.Preconditions;
 import grakn.core.graph.diskstorage.Entry;
 import grakn.core.graph.diskstorage.StaticBuffer;
-import grakn.core.graph.hadoop.formats.util.input.JanusGraphHadoopSetupImpl;
+import grakn.core.hadoop.formats.util.input.JanusGraphHadoopSetupImpl;
 import org.apache.hadoop.conf.Configurable;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;

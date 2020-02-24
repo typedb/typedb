@@ -16,12 +16,24 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graph.hadoop.formats.cql;
+package grakn.core.hadoop.formats.util.input;
 
-import grakn.core.graph.hadoop.formats.util.HadoopInputFormat;
+import grakn.core.graph.graphdb.database.RelationReader;
+import grakn.core.graph.graphdb.idmanagement.IDManager;
+import grakn.core.graph.graphdb.types.TypeInspector;
 
-public class CqlInputFormat extends HadoopInputFormat {
-    public CqlInputFormat() {
-        super(new CqlBinaryInputFormat());
-    }
+public interface JanusGraphHadoopSetup {
+
+    TypeInspector getTypeInspector();
+
+    SystemTypeInspector getSystemTypeInspector();
+
+    RelationReader getRelationReader();
+
+    IDManager getIDManager();
+
+    void close();
+
+    boolean getFilterPartitionedVertices();
+
 }

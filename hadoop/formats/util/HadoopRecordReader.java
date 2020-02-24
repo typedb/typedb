@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graph.hadoop.formats.util;
+package grakn.core.hadoop.formats.util;
 
 import grakn.core.graph.diskstorage.Entry;
 import grakn.core.graph.diskstorage.StaticBuffer;
@@ -32,10 +32,6 @@ import org.apache.tinkerpop.gremlin.process.computer.GraphFilter;
 import org.apache.tinkerpop.gremlin.process.computer.util.VertexProgramHelper;
 import org.apache.tinkerpop.gremlin.structure.util.star.StarGraph;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerVertex;
-import grakn.core.graph.diskstorage.Entry;
-import grakn.core.graph.diskstorage.StaticBuffer;
-import grakn.core.graph.hadoop.formats.util.HadoopInputFormat;
-import grakn.core.graph.hadoop.formats.util.JanusGraphVertexDeserializer;
 
 import java.io.IOException;
 import java.util.Optional;

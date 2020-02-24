@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graph.hadoop.formats.cql;
+package grakn.core.hadoop.formats.cql;
 
 import com.datastax.oss.driver.internal.core.auth.PlainTextAuthProvider;
 import org.apache.commons.lang3.StringUtils;

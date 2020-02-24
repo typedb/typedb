@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graph.hadoop.formats.util.input;
+package grakn.core.hadoop.formats.util.input;
 
 import com.google.common.base.Preconditions;
 import grakn.core.graph.core.JanusGraphFactory;
@@ -37,8 +37,8 @@ import grakn.core.graph.graphdb.types.TypeInspector;
 import grakn.core.graph.graphdb.types.system.BaseKey;
 import grakn.core.graph.graphdb.types.system.BaseLabel;
 import grakn.core.graph.graphdb.types.vertices.JanusGraphSchemaVertex;
-import grakn.core.graph.hadoop.config.JanusGraphHadoopConfiguration;
-import grakn.core.graph.hadoop.config.ModifiableHadoopConfiguration;
+import grakn.core.hadoop.config.JanusGraphHadoopConfiguration;
+import grakn.core.hadoop.config.ModifiableHadoopConfiguration;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 

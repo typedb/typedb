@@ -16,13 +16,13 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graph.hadoop.formats.util;
+package grakn.core.hadoop.formats.util;
 
 import grakn.core.graph.diskstorage.Entry;
 import grakn.core.graph.diskstorage.StaticBuffer;
 import grakn.core.graph.diskstorage.configuration.BasicConfiguration;
-import grakn.core.graph.hadoop.config.JanusGraphHadoopConfiguration;
-import grakn.core.graph.hadoop.config.ModifiableHadoopConfiguration;
+import grakn.core.hadoop.config.JanusGraphHadoopConfiguration;
+import grakn.core.hadoop.config.ModifiableHadoopConfiguration;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.InputFormat;
 import org.apache.tinkerpop.gremlin.hadoop.structure.io.HadoopPoolsConfigurable;

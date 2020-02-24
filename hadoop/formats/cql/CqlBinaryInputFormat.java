@@ -16,15 +16,15 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graph.hadoop.formats.cql;
+package grakn.core.hadoop.formats.cql;
 
 import grakn.core.graph.diskstorage.Entry;
 import grakn.core.graph.diskstorage.StaticBuffer;
 import grakn.core.graph.diskstorage.cql.CQLConfigOptions;
 import grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration;
-import grakn.core.graph.hadoop.config.JanusGraphHadoopConfiguration;
-import grakn.core.graph.hadoop.formats.util.AbstractBinaryInputFormat;
-import grakn.core.graph.hadoop.formats.util.input.JanusGraphHadoopSetupImpl;
+import grakn.core.hadoop.config.JanusGraphHadoopConfiguration;
+import grakn.core.hadoop.formats.util.AbstractBinaryInputFormat;
+import grakn.core.hadoop.formats.util.input.JanusGraphHadoopSetupImpl;
 import org.apache.cassandra.hadoop.ConfigHelper;
 import org.apache.cassandra.thrift.SlicePredicate;
 import org.apache.cassandra.thrift.SliceRange;
@@ -78,7 +78,7 @@ public class CqlBinaryInputFormat extends AbstractBinaryInputFormat {
         boolean wideRows = config.getBoolean(INPUT_WIDEROWS_CONFIG, false);
         // Use the setInputColumnFamily overload that includes a widerows argument; using the overload without this argument forces it false
         ConfigHelper.setInputColumnFamily(config, janusgraphConf.get(CQLConfigOptions.KEYSPACE),
-                mrConf.get(JanusGraphHadoopConfiguration.COLUMN_FAMILY_NAME), wideRows);
+                                          mrConf.get(JanusGraphHadoopConfiguration.COLUMN_FAMILY_NAME), wideRows);
         LOG.debug("Set keyspace: {}", janusgraphConf.get(CQLConfigOptions.KEYSPACE));
 
         // Set the column slice bounds via Faunus' vertex query filter
