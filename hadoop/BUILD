@@ -20,7 +20,7 @@ package(default_visibility = ["//visibility:public"])
 load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
 java_library(
-    name = "graph-hadoop",
+    name = "hadoop",
     srcs = glob(
         ["**/*.java"],
         exclude = ["test/**"],
@@ -56,6 +56,6 @@ java_library(
 checkstyle_test(
     name = "checkstyle",
     targets = [
-        ":graph-hadoop"
+        ":hadoop"
     ],
 )
