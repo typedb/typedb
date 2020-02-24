@@ -257,7 +257,7 @@ java_test(
 
 java_test(
     name = "generative-operational-it",
-    size = "medium",
+    size = "large",
     srcs = [
         "GenerativeOperationalIT.java",
         "TransactionContext.java",
