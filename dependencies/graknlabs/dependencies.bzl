@@ -78,5 +78,5 @@ def graknlabs_theory():
     git_repository(
         name = "graknlabs_verification",
         remote = "git@github.com:graknlabs/verification.git",
-        commit = "f71bc2043303d44947cba42b39594fe8be7b32fd",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_verification
+        commit = "1f3e6a81230ce1329b16877accc944f5f1c1b857",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_verification
     )

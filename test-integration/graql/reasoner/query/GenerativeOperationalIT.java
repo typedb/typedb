@@ -72,7 +72,8 @@ public class GenerativeOperationalIT {
     public static final GraknTestStorage storage = new GraknTestStorage();
 
     private static Session genericSchemaSession;
-    private static HashMultimap<Pattern, Pattern> relationPatternTree;
+    private static HashMultimap<Pattern, Pattern> binaryRelationPatternTree;
+    private static HashMultimap<Pattern, Pattern> ternaryRelationPatternTree;
 
     @BeforeClass
     public static void loadContext() {
@@ -83,21 +84,42 @@ public class GenerativeOperationalIT {
 
         try(Transaction tx = genericSchemaSession.readTransaction()) {
             String id = tx.getEntityType("baseRoleEntity").instances().iterator().next().id().getValue();
+            String subId = tx.getEntityType("subRoleEntity").instances().iterator().next().id().getValue();
             String subSubId = tx.getEntityType("subSubRoleEntity").instances().iterator().next().id().getValue();
-            Pattern basePattern = and(
+            Pattern baseBinaryPattern = and(
                     var("r")
                             .rel("subRole1", var("x"))
-                            .rel("subSubRole2", var("y"))
-                            //NB: we duplicate the role as if we pick the third role type inference will always infer the type to be ternary
-                            //.rel("subSubRole2", var("z"))
+                            .rel("subRole2", var("y"))
                             .isa("binary"),
                     var("x").isa("subRoleEntity"),
                     var("x").id(id),
-                    var("y").isa("subSubRoleEntity"),
-                    var("y").id(subSubId)
+                    var("y").isa("subRoleEntity"),
+                    var("y").id(subId)//,
             );
-            relationPatternTree = generatePatternTree(
-                    basePattern,
+
+            Pattern baseTernaryPattern = and(
+                    var("r")
+                            .rel("subRole1", var("x"))
+                            .rel("subRole2", var("y"))
+                            //NB: we duplicate the role as if we pick the third role type inference will always infer the type to be ternary
+                            .rel("subSubRole2", var("z"))
+                            .isa("ternary"),
+                    var("x").isa("subRoleEntity"),
+                    var("x").id(id),
+                    var("y").isa("subRoleEntity"),
+                    var("y").id(subId),
+                    var("z").isa("subSubRoleEntity"),
+                    var("z").id(subSubId)
+            );
+            binaryRelationPatternTree = generatePatternTree(
+                    baseBinaryPattern,
+                    new TransactionContext(tx),
+                    Lists.newArrayList(Operators.typeGeneralise(), Operators.roleGeneralise()),
+                    Integer.MAX_VALUE)
+            ;
+
+            ternaryRelationPatternTree = generatePatternTree(
+                    baseTernaryPattern,
                     new TransactionContext(tx),
                     Lists.newArrayList(Operators.typeGeneralise(), Operators.roleGeneralise()),
                     Integer.MAX_VALUE)
@@ -137,61 +159,25 @@ public class GenerativeOperationalIT {
      * @param exhaustive whether to compute full transitive closure of the parent-child relation.
      * @return stream of test case pattern pairs
      */
-    private static Stream<Pair<Pattern, Pattern>> generateTestPairs(boolean exhaustive){
+    private static Stream<Pair<Pattern, Pattern>> generateTestPairs(HashMultimap<Pattern, Pattern> tree, boolean exhaustive){
         //non-exhaustive option returns only the direct parent-child pairs
         //instead of full transitive closure of the parent-child relation
         if (!exhaustive){
-            return relationPatternTree.entries().stream().map(e -> new Pair<>(e.getKey(), e.getValue()));
+            return tree.entries().stream().map(e -> new Pair<>(e.getKey(), e.getValue()));
         }
 
-        System.out.println("generated pattern tree");
-        TarjanSCC<Pattern> tarjan = new TarjanSCC<>(relationPatternTree);
+        TarjanSCC<Pattern> tarjan = new TarjanSCC<>(tree);
         return tarjan.successorMap().entries().stream().map(e -> new Pair<>(e.getKey(), e.getValue()));
     }
 
     @Test
-    public void whenComparingSubsumptivePairs_SubsumptionRelationHolds() throws ExecutionException, InterruptedException {
-        List<Pair<Pattern, Pattern>> testPairs = generateTestPairs(true).collect(Collectors.toList());
-        System.out.println("Pairs to test: " + testPairs.size());
+    public void whenComparingSubsumptivePairs_binaryRelationBase_SubsumptionRelationHolds() throws ExecutionException, InterruptedException {
+        testSubsumptionRelationHoldsBetweenPatternPairs(generateTestPairs(binaryRelationPatternTree, true).collect(Collectors.toList()), 4);
+    }
 
-        int threads = 4;
-        ExecutorService executorService = Executors.newFixedThreadPool(threads);
-        int listSize = testPairs.size();
-        int listChunk = listSize / threads + 1;
-
-        List<CompletableFuture<Void>> testChunks = new ArrayList<>();
-        for (int threadNo = 0; threadNo < threads; threadNo++) {
-            boolean lastChunk = threadNo == threads - 1;
-            final int startIndex = threadNo * listChunk;
-            int endIndex = (threadNo + 1) * listChunk;
-            if (endIndex > listSize && lastChunk) endIndex = listSize;
-
-            List<Pair<Pattern, Pattern>> subList = testPairs.subList(startIndex, endIndex);
-            System.out.println("Subset to test: " + subList.size());
-            CompletableFuture<Void> testChunk = CompletableFuture.supplyAsync(() -> {
-                try (Transaction tx = genericSchemaSession.readTransaction()) {
-                    ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction) tx).reasonerQueryFactory();
-
-                    for (Pair<Pattern, Pattern> pair : subList) {
-                        ReasonerQueryImpl pQuery = reasonerQueryFactory.create(conjunction(pair.first()));
-                        ReasonerQueryImpl cQuery = reasonerQueryFactory.create(conjunction(pair.second()));
-
-                        if (pQuery.isAtomic() && cQuery.isAtomic()) {
-                            ReasonerAtomicQuery parent = (ReasonerAtomicQuery) pQuery;
-                            ReasonerAtomicQuery child = (ReasonerAtomicQuery) cQuery;
-
-                            QueryTestUtil.unification(parent, child, true, UnifierType.RULE);
-                            QueryTestUtil.unification(parent, child, true, UnifierType.SUBSUMPTIVE);
-                            QueryTestUtil.unification(parent, child, true, UnifierType.STRUCTURAL_SUBSUMPTIVE);
-                        }
-                    }
-                }
-                return null;
-            }, executorService);
-            testChunks.add(testChunk);
-        }
-        CompletableFuture.allOf(testChunks.toArray(new CompletableFuture[]{})).get();
-        executorService.shutdown();
+    @Test
+    public void whenComparingSubsumptivePairs_ternaryRelationBase_SubsumptionRelationHolds() throws ExecutionException, InterruptedException {
+        testSubsumptionRelationHoldsBetweenPatternPairs(generateTestPairs(ternaryRelationPatternTree, false).collect(Collectors.toList()), 4);
     }
 
     @Test
@@ -245,7 +231,7 @@ public class GenerativeOperationalIT {
             TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction) tx;
             ReasonerQueryFactory reasonerQueryFactory = testTx.reasonerQueryFactory();
             TransactionContext txCtx = new TransactionContext(tx);
-            Set<Pattern> patterns = relationPatternTree.keySet();
+            Set<Pattern> patterns = binaryRelationPatternTree.keySet();
             Operator fuzzer = Operators.fuzzVariables();
             for(Pattern pattern : patterns){
                 List<Pattern> fuzzedPatterns = Stream.concat(Stream.of(pattern), fuzzer.apply(pattern, txCtx))
@@ -267,6 +253,46 @@ public class GenerativeOperationalIT {
                 }
             }
         }
+    }
+
+    private void testSubsumptionRelationHoldsBetweenPatternPairs(List<Pair<Pattern, Pattern>> testPairs, int threads) throws ExecutionException, InterruptedException {
+        ExecutorService executorService = Executors.newFixedThreadPool(threads);
+        int listSize = testPairs.size();
+        int listChunk = listSize / threads + 1;
+
+        List<CompletableFuture<Void>> testChunks = new ArrayList<>();
+        for (int threadNo = 0; threadNo < threads; threadNo++) {
+            boolean lastChunk = threadNo == threads - 1;
+            final int startIndex = threadNo * listChunk;
+            int endIndex = (threadNo + 1) * listChunk;
+            if (endIndex > listSize && lastChunk) endIndex = listSize;
+
+            List<Pair<Pattern, Pattern>> subList = testPairs.subList(startIndex, endIndex);
+            System.out.println("Subset to test: " + subList.size());
+            CompletableFuture<Void> testChunk = CompletableFuture.supplyAsync(() -> {
+                try (Transaction tx = genericSchemaSession.readTransaction()) {
+                    ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction) tx).reasonerQueryFactory();
+
+                    for (Pair<Pattern, Pattern> pair : subList) {
+                        ReasonerQueryImpl pQuery = reasonerQueryFactory.create(conjunction(pair.first()));
+                        ReasonerQueryImpl cQuery = reasonerQueryFactory.create(conjunction(pair.second()));
+
+                        if (pQuery.isAtomic() && cQuery.isAtomic()) {
+                            ReasonerAtomicQuery parent = (ReasonerAtomicQuery) pQuery;
+                            ReasonerAtomicQuery child = (ReasonerAtomicQuery) cQuery;
+
+                            QueryTestUtil.unification(parent, child, true, UnifierType.RULE);
+                            QueryTestUtil.unification(parent, child, true, UnifierType.SUBSUMPTIVE);
+                            QueryTestUtil.unification(parent, child, true, UnifierType.STRUCTURAL_SUBSUMPTIVE);
+                        }
+                    }
+                }
+                return null;
+            }, executorService);
+            testChunks.add(testChunk);
+        }
+        CompletableFuture.allOf(testChunks.toArray(new CompletableFuture[]{})).get();
+        executorService.shutdown();
     }
 
     private Conjunction<Statement> conjunction(Pattern pattern) {
