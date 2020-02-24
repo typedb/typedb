@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.hadoop.formats.util;
+package grakn.core.hadoop.cql;
 
 import com.google.common.base.Preconditions;
 import grakn.core.graph.core.JanusGraphFactory;

@@ -16,9 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.hadoop.formats.cql;
-
-import grakn.core.hadoop.formats.util.HadoopInputFormat;
+package grakn.core.hadoop.cql;
 
 public class CqlInputFormat extends HadoopInputFormat {
     public CqlInputFormat() {
