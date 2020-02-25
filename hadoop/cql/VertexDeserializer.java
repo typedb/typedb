@@ -42,7 +42,7 @@ import grakn.core.graph.graphdb.types.system.BaseKey;
 import grakn.core.graph.graphdb.types.system.BaseLabel;
 import grakn.core.graph.graphdb.types.vertices.JanusGraphSchemaVertex;
 import grakn.core.hadoop.config.JanusGraphHadoopConfiguration;
-import grakn.core.hadoop.config.ModifiableHadoopConfiguration;
+import grakn.core.hadoop.config.HadoopConfiguration;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.T;
@@ -243,12 +243,12 @@ public class VertexDeserializer implements AutoCloseable {
 
     public static class HadoopSetup {
 
-        private final ModifiableHadoopConfiguration scanConf;
+        private final HadoopConfiguration scanConf;
         private final StandardJanusGraph graph;
         private final StandardJanusGraphTx tx;
 
         HadoopSetup(Configuration config) {
-            scanConf = ModifiableHadoopConfiguration.of(JanusGraphHadoopConfiguration.MAPRED_NS, config);
+            scanConf = HadoopConfiguration.of(JanusGraphHadoopConfiguration.MAPRED_NS, config);
             BasicConfiguration bc = scanConf.getJanusGraphConf();
             graph = JanusGraphFactory.open(bc.getConfiguration());
             tx = graph.buildTransaction().readOnly().vertexCacheSize(200).start();

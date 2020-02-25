@@ -27,7 +27,7 @@ import grakn.core.graph.diskstorage.keycolumnvalue.SliceQuery;
 import grakn.core.graph.diskstorage.util.StaticArrayBuffer;
 import grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration;
 import grakn.core.hadoop.config.JanusGraphHadoopConfiguration;
-import grakn.core.hadoop.config.ModifiableHadoopConfiguration;
+import grakn.core.hadoop.config.HadoopConfiguration;
 import org.apache.cassandra.hadoop.ConfigHelper;
 import org.apache.cassandra.thrift.SlicePredicate;
 import org.apache.cassandra.thrift.SliceRange;
@@ -76,7 +76,7 @@ public class CqlBinaryInputFormat extends InputFormat<StaticBuffer, Iterable<Ent
     public void setConf(Configuration config) {
         this.hadoopConf = config;
         HadoopPoolsConfigurable.super.setConf(config);
-        ModifiableHadoopConfiguration mrConf = ModifiableHadoopConfiguration.of(JanusGraphHadoopConfiguration.MAPRED_NS, config);
+        HadoopConfiguration mrConf = HadoopConfiguration.of(JanusGraphHadoopConfiguration.MAPRED_NS, config);
         BasicConfiguration janusgraphConf = mrConf.getJanusGraphConf();
 
         // Copy some JanusGraph configuration keys to the Hadoop Configuration keys used by Cassandra's ColumnFamilyInputFormat
