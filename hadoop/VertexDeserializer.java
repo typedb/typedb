@@ -239,7 +239,7 @@ public class VertexDeserializer implements AutoCloseable {
         setup.close();
     }
 
-    public static class HadoopSetup {
+    private static class HadoopSetup {
 
         private final ModifiableConfigurationHadoop scanConf;
         private final StandardJanusGraph graph;

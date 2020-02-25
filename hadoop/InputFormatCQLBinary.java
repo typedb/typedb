@@ -121,7 +121,7 @@ public class InputFormatCQLBinary extends InputFormat<StaticBuffer, Iterable<Ent
         return hadoopConf;
     }
 
-    public static class RecordReaderCQLBinary extends RecordReader<StaticBuffer, Iterable<Entry>> {
+    private static class RecordReaderCQLBinary extends RecordReader<StaticBuffer, Iterable<Entry>> {
         private KV currentKV;
         private KV incompleteKV;
 

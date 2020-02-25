@@ -47,11 +47,7 @@ import java.util.function.Function;
 public class InputFormatHadoop extends InputFormat<NullWritable, VertexWritable> implements Configurable, GraphFilterAware {
 
     private final InputFormat<StaticBuffer, Iterable<Entry>> inputFormat;
-    private static final RefCountedCloseable<VertexDeserializer> refCounter;
-
-    static {
-        refCounter = new RefCountedCloseable<>(VertexDeserializer::new);
-    }
+    private static final RefCountedCloseable<VertexDeserializer> refCounter = new RefCountedCloseable<>(VertexDeserializer::new);
 
     public InputFormatHadoop() {
         this.inputFormat = new InputFormatCQLBinary();
@@ -85,22 +81,22 @@ public class InputFormatHadoop extends InputFormat<NullWritable, VertexWritable>
         // do nothing -- loaded via configuration
     }
 
-    public static class RefCountedCloseable<T extends AutoCloseable> {
+    private static class RefCountedCloseable<T extends AutoCloseable> {
 
         private T current;
         private long refCount;
         private final Function<Configuration, T> builder;
         private Configuration configuration;
 
-        public RefCountedCloseable(Function<Configuration, T> builder) {
+        RefCountedCloseable(Function<Configuration, T> builder) {
             this.builder = builder;
         }
 
-        public synchronized void setBuilderConfiguration(Configuration configuration) {
+        synchronized void setBuilderConfiguration(Configuration configuration) {
             this.configuration = configuration;
         }
 
-        public synchronized T acquire() {
+        synchronized T acquire() {
             if (null == current) {
                 Preconditions.checkState(0 == refCount);
                 current = builder.apply(configuration);
@@ -124,7 +120,7 @@ public class InputFormatHadoop extends InputFormat<NullWritable, VertexWritable>
         }
     }
 
-    public static class RecordReaderHadoop extends RecordReader<NullWritable, VertexWritable> {
+    private static class RecordReaderHadoop extends RecordReader<NullWritable, VertexWritable> {
 
         private final RecordReader<StaticBuffer, Iterable<Entry>> reader;
         private final RefCountedCloseable countedDeserializer;

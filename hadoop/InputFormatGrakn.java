@@ -308,7 +308,7 @@ public class InputFormatGrakn extends org.apache.hadoop.mapreduce.InputFormat<Lo
      * Gets a token tokenRange and splits it up according to the suggested
      * size into input splits that Hadoop can use.
      */
-    class SplitCallable implements Callable<List<org.apache.hadoop.mapreduce.InputSplit>> {
+    private class SplitCallable implements Callable<List<org.apache.hadoop.mapreduce.InputSplit>> {
 
         private final TokenRange tokenRange;
         private final Set<Node> hosts;

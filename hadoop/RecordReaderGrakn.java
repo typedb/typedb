@@ -232,9 +232,9 @@ public class RecordReaderGrakn extends RecordReader<Long, Row> implements org.ap
      */
     private class RowIterator extends AbstractIterator<Pair<Long, Row>> {
         private long keyId = 0L;
-        protected int totalRead = 0; // total number of cf rows read
-        protected Iterator<Row> rows;
         private Map<String, ByteBuffer> previousRowKey = new HashMap<>(); // previous CF row key
+        int totalRead = 0; // total number of cf rows read
+        Iterator<Row> rows;
 
         public RowIterator() {
             AbstractType type = partitioner.getTokenValidator();

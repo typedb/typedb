@@ -63,7 +63,7 @@ public class ModifiableConfigurationHadoop extends ModifiableConfiguration {
     private final Configuration conf;
 
     private ModifiableConfigurationHadoop(ConfigNamespace root, Configuration c) {
-        super(root, new HadoopWriteConfiguration(c));
+        super(root, new WriteConfigurationHadoop(c));
         this.conf = c;
     }
 
@@ -73,7 +73,7 @@ public class ModifiableConfigurationHadoop extends ModifiableConfiguration {
     }
 
     private static ModifiableConfiguration prefixView(ModifiableConfigurationHadoop mc) {
-        HadoopWriteConfiguration prefixConf = new HadoopWriteConfiguration(mc.conf,
+        WriteConfigurationHadoop prefixConf = new WriteConfigurationHadoop(mc.conf,
                                                                            ConfigElement.getPath(GRAPH_CONFIG_KEYS, true) + ".");
         return new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS, prefixConf);
     }
@@ -82,18 +82,18 @@ public class ModifiableConfigurationHadoop extends ModifiableConfiguration {
         return prefixView(this);
     }
 
-    public static class HadoopWriteConfiguration implements WriteConfiguration {
+    private static class WriteConfigurationHadoop implements WriteConfiguration {
 
-        private static final Logger LOG = LoggerFactory.getLogger(HadoopWriteConfiguration.class);
+        private static final Logger LOG = LoggerFactory.getLogger(WriteConfigurationHadoop.class);
 
         private final Configuration config;
         private final String prefix;
 
-        HadoopWriteConfiguration(Configuration config) {
+        WriteConfigurationHadoop(Configuration config) {
             this(config, null);
         }
 
-        HadoopWriteConfiguration(Configuration config, String prefix) {
+        WriteConfigurationHadoop(Configuration config, String prefix) {
             this.config = config;
             this.prefix = prefix;
         }
