@@ -21,10 +21,10 @@ package grakn.core.graql.reasoner.atom.binary;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Sets;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concept.util.ConceptUtils;
 import grakn.core.graql.reasoner.atom.Atom;
+import grakn.core.graql.reasoner.atom.inference.IsaTypeReasoner;
+import grakn.core.graql.reasoner.atom.inference.TypeReasoner;
 import grakn.core.graql.reasoner.atom.predicate.Predicate;
 import grakn.core.graql.reasoner.unifier.UnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierType;
@@ -45,20 +45,19 @@ import graql.lang.property.IsaProperty;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
-
-import javax.annotation.Nullable;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 /**
  * TypeAtom corresponding to graql a IsaProperty property.
  */
 public class IsaAtom extends IsaAtomBase {
+
+    private final TypeReasoner<IsaAtom> typeReasoner;
 
     private int hashCode;
     private boolean hashCodeMemoised;
@@ -66,6 +65,7 @@ public class IsaAtom extends IsaAtomBase {
     IsaAtom(ConceptManager conceptManager, RuleCache ruleCache, Variable varName, Statement pattern, ReasonerQuery reasonerQuery, ConceptId typeId,
             Variable predicateVariable) {
         super(conceptManager, ruleCache, varName, pattern, reasonerQuery, typeId, predicateVariable);
+        this.typeReasoner = new IsaTypeReasoner(conceptManager);
     }
 
     public static IsaAtom create(ConceptManager conceptManager, RuleCache ruleCache, Variable var, Variable predicateVar, Statement pattern, @Nullable ConceptId predicateId, ReasonerQuery parent) {
@@ -158,56 +158,19 @@ public class IsaAtom extends IsaAtomBase {
         return create(conceptManager, ruleCache, getVarName(), getPredicateVariable(), type.id(), this.isDirect(), this.getParentQuery());
     }
 
-    private IsaAtom inferEntityType(ConceptMap sub){
-        if (getTypePredicate() != null) return this;
-        if (sub.containsVar(getPredicateVariable())) return addType(sub.get(getPredicateVariable()).asType());
-        return this;
-    }
-
-    private ImmutableList<Type> inferPossibleTypes(ConceptMap sub){
-        if (getSchemaConcept() != null) return ImmutableList.of(getSchemaConcept().asType());
-        if (sub.containsVar(getPredicateVariable())) return ImmutableList.of(sub.get(getPredicateVariable()).asType());
-
-        //determine compatible types from played roles
-        Set<Type> typesFromRoles = getParentQuery().getAtoms(RelationAtom.class)
-                .filter(r -> r.getVarNames().contains(getVarName()))
-                .flatMap(r -> r.getRoleVarMap().entries().stream()
-                        .filter(e -> e.getValue().equals(getVarName()))
-                        .map(Map.Entry::getKey))
-                .map(role -> role.players().collect(Collectors.toSet()))
-                .reduce(Sets::intersection)
-                .orElse(Sets.newHashSet());
-
-        Set<Type> typesFromTypes = getParentQuery().getAtoms(IsaAtom.class)
-                .filter(at -> at.getVarNames().contains(getVarName()))
-                .filter(at -> at != this)
-                .map(Binary::getSchemaConcept)
-                .filter(Objects::nonNull)
-                .filter(Concept::isType)
-                .map(Concept::asType)
-                .collect(Collectors.toSet());
-
-        Set<Type> types = typesFromTypes.isEmpty()?
-                typesFromRoles :
-                typesFromRoles.isEmpty()? typesFromTypes: Sets.intersection(typesFromRoles, typesFromTypes);
-
-        return !types.isEmpty()?
-                ImmutableList.copyOf(ConceptUtils.top(types)) :
-                conceptManager.getMetaConcept().subs().collect(ImmutableList.toImmutableList());
-    }
-
     @Override
     public IsaAtom inferTypes(ConceptMap sub) {
-        return this
-                .inferEntityType(sub);
+        return typeReasoner.inferTypes(this, sub);
     }
 
     @Override
-    public ImmutableList<Type> getPossibleTypes() { return inferPossibleTypes(new ConceptMap()); }
+    public ImmutableList<Type> getPossibleTypes() {
+        return typeReasoner.inferPossibleTypes(this, new ConceptMap());
+    }
 
     @Override
     public List<Atom> atomOptions(ConceptMap sub) {
-        return this.inferPossibleTypes(sub).stream()
+        return typeReasoner.inferPossibleTypes(this, sub).stream()
                 .map(this::addType)
                 .sorted(Comparator.comparing(Atom::isRuleResolvable))
                 .collect(Collectors.toList());
