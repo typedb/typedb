@@ -31,6 +31,7 @@ import grakn.core.graql.reasoner.atom.AtomicEquivalence;
 import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.reasoner.atom.predicate.Predicate;
 import grakn.core.graql.reasoner.atom.predicate.ValuePredicate;
+import grakn.core.graql.reasoner.atom.processor.AttributeSemanticProcessor;
 import grakn.core.graql.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.graql.reasoner.cache.SemanticDifference;
 import grakn.core.graql.reasoner.cache.VariableDefinition;
@@ -418,59 +419,17 @@ public class AttributeAtom extends Binary{
 
     @Override
     public Unifier getUnifier(Atom parentAtom, UnifierType unifierType) {
-        if (!(parentAtom instanceof AttributeAtom)) {
-            // in general this >= parent, hence for rule unifiers we can potentially specialise child to match parent
-            if (unifierType.equals(UnifierType.RULE)) {
-                if (parentAtom instanceof IsaAtom) return this.toIsaAtom().getUnifier(parentAtom, unifierType);
-                else if (parentAtom instanceof RelationAtom){
-                    return this.toRelationAtom().getUnifier(parentAtom, unifierType);
-                }
-            }
-            return UnifierImpl.nonExistent();
-        }
+        return new AttributeSemanticProcessor().getUnifier(this, parentAtom, unifierType);
+    }
 
-        AttributeAtom parent = (AttributeAtom) parentAtom;
-        Unifier unifier = super.getUnifier(parentAtom, unifierType);
-        if (unifier == null) return UnifierImpl.nonExistent();
-
-        //unify attribute vars
-        Variable childAttributeVarName = this.getAttributeVariable();
-        Variable parentAttributeVarName = parent.getAttributeVariable();
-        if (parentAttributeVarName.isReturned()){
-            unifier = unifier.merge(new UnifierImpl(ImmutableMap.of(childAttributeVarName, parentAttributeVarName)));
-        }
-
-        //unify relation vars
-        Variable childRelationVarName = this.getRelationVariable();
-        Variable parentRelationVarName = parent.getRelationVariable();
-        if (parentRelationVarName.isReturned()){
-            unifier = unifier.merge(new UnifierImpl(ImmutableMap.of(childRelationVarName, parentRelationVarName)));
-        }
-
-        return isPredicateCompatible(parentAtom, unifier, unifierType)?
-                unifier : UnifierImpl.nonExistent();
+    @Override
+    public SemanticDifference semanticDifference(Atom child, Unifier unifier) {
+        return new AttributeSemanticProcessor().semanticDifference(this, child, unifier);
     }
 
     @Override
     public Stream<Predicate> getInnerPredicates(){
         return Stream.concat(super.getInnerPredicates(), getMultiPredicate().stream());
-    }
-
-    @Override
-    public SemanticDifference semanticDifference(Atom child, Unifier unifier) {
-        SemanticDifference baseDiff = super.semanticDifference(child, unifier);
-        if (!child.isResource()) return baseDiff;
-        AttributeAtom childAtom = (AttributeAtom) child;
-        Set<VariableDefinition> diff = new HashSet<>();
-
-        Variable parentVar = this.getAttributeVariable();
-        Unifier unifierInverse = unifier.inverse();
-        Set<ValuePredicate> predicatesToSatisfy = childAtom.getMultiPredicate().stream()
-                .flatMap(vp -> vp.unify(unifierInverse).stream()).collect(toSet());
-        this.getMultiPredicate().forEach(predicatesToSatisfy::remove);
-
-        diff.add(new VariableDefinition(parentVar, null, null, new HashSet<>(), predicatesToSatisfy));
-        return baseDiff.merge(new SemanticDifference(diff));
     }
 
     /**

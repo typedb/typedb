@@ -19,18 +19,15 @@
 
 package grakn.core.graql.reasoner.atom.binary;
 
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.reasoner.atom.predicate.Predicate;
+import grakn.core.graql.reasoner.atom.processor.BinarySemanticProcessor;
 import grakn.core.graql.reasoner.unifier.MultiUnifierImpl;
-import grakn.core.graql.reasoner.unifier.UnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.SchemaConcept;
-import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.reasoner.ReasonerCheckedException;
 import grakn.core.kb.graql.reasoner.cache.RuleCache;
@@ -41,13 +38,11 @@ import graql.lang.pattern.Pattern;
 import graql.lang.property.IsaProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
-
-import javax.annotation.Nullable;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 /**
  *
@@ -167,38 +162,6 @@ public abstract class Binary extends Atom {
 
     @Override
     public Unifier getUnifier(Atom parentAtom, UnifierType unifierType) {
-        boolean inferTypes = unifierType.inferTypes();
-        Variable childVarName = this.getVarName();
-        Variable parentVarName = parentAtom.getVarName();
-        Variable childPredicateVarName = this.getPredicateVariable();
-        Variable parentPredicateVarName = parentAtom.getPredicateVariable();
-        Set<Type> parentTypes = parentAtom.getParentQuery().getVarTypeMap(inferTypes).get(parentAtom.getVarName());
-        Set<Type> childTypes = this.getParentQuery().getVarTypeMap(inferTypes).get(this.getVarName());
-
-        SchemaConcept parentType = parentAtom.getSchemaConcept();
-        SchemaConcept childType = this.getSchemaConcept();
-
-        //check for incompatibilities
-        if( !unifierType.typeCompatibility(
-                parentType != null? Collections.singleton(parentType) : Collections.emptySet(),
-                childType != null? Collections.singleton(childType) : Collections.emptySet())
-                || !unifierType.typeCompatibility(parentTypes, childTypes)
-                || !unifierType.typePlayabilityWithInsertSemantics(this, this.getVarName(), parentTypes)
-                || !unifierType.typeDirectednessCompatibility(parentAtom, this)){
-                     return UnifierImpl.nonExistent();
-        }
-
-        Multimap<Variable, Variable> varMappings = HashMultimap.create();
-
-        if (parentVarName.isReturned()) {
-            varMappings.put(childVarName, parentVarName);
-        }
-        if (parentPredicateVarName.isReturned()) {
-            varMappings.put(childPredicateVarName, parentPredicateVarName);
-        }
-
-        UnifierImpl unifier = new UnifierImpl(varMappings);
-        return isPredicateCompatible(parentAtom, unifier, unifierType)?
-                unifier : UnifierImpl.nonExistent();
+        return new BinarySemanticProcessor().getUnifier(this, parentAtom, unifierType);
     }
 }
