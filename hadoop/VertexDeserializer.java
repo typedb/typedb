@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.hadoop.cql;
+package grakn.core.hadoop;
 
 import com.google.common.base.Preconditions;
 import grakn.core.graph.core.JanusGraphFactory;
@@ -41,7 +41,6 @@ import grakn.core.graph.graphdb.types.TypeInspector;
 import grakn.core.graph.graphdb.types.system.BaseKey;
 import grakn.core.graph.graphdb.types.system.BaseLabel;
 import grakn.core.graph.graphdb.types.vertices.JanusGraphSchemaVertex;
-import grakn.core.hadoop.config.HadoopConfiguration;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.T;

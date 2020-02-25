@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.hadoop.cql;
+package grakn.core.hadoop;
 
 import com.datastax.oss.driver.internal.core.auth.PlainTextAuthProvider;
 import grakn.core.graph.diskstorage.Entry;
@@ -26,7 +26,6 @@ import grakn.core.graph.diskstorage.cql.CQLConfigOptions;
 import grakn.core.graph.diskstorage.keycolumnvalue.SliceQuery;
 import grakn.core.graph.diskstorage.util.StaticArrayBuffer;
 import grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration;
-import grakn.core.hadoop.config.HadoopConfiguration;
 import org.apache.cassandra.hadoop.ConfigHelper;
 import org.apache.cassandra.thrift.SlicePredicate;
 import org.apache.cassandra.thrift.SliceRange;
@@ -66,7 +65,7 @@ public class CqlBinaryInputFormat extends InputFormat<StaticBuffer, Iterable<Ent
     }
 
     @Override
-    public RecordReader<StaticBuffer, Iterable<Entry>> createRecordReader(InputSplit inputSplit, TaskAttemptContext taskAttemptContext) throws IOException, InterruptedException {
+    public RecordReader<StaticBuffer, Iterable<Entry>> createRecordReader(InputSplit inputSplit, TaskAttemptContext taskAttemptContext) {
         GraknCqlRecordReader recordReader = (GraknCqlRecordReader) cqlInputFormat.createRecordReader(inputSplit, taskAttemptContext);
         return new CqlBinaryRecordReader(recordReader);
     }

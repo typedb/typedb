@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.hadoop.cql;
+package grakn.core.hadoop;
 
 import com.datastax.oss.driver.api.core.cql.Row;
 import grakn.core.graph.diskstorage.Entry;
@@ -37,7 +37,7 @@ public class CqlBinaryRecordReader extends RecordReader<StaticBuffer, Iterable<E
 
     private final GraknCqlRecordReader reader;
 
-    public CqlBinaryRecordReader(GraknCqlRecordReader reader) {
+    CqlBinaryRecordReader(GraknCqlRecordReader reader) {
         this.reader = reader;
     }
 

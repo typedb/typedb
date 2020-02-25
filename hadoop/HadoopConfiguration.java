@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.hadoop.config;
+package grakn.core.hadoop;
 
 import com.google.common.base.Preconditions;
 import grakn.core.graph.diskstorage.Backend;
