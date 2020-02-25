@@ -44,15 +44,10 @@ public class IsaTypeReasoner implements TypeReasoner<IsaAtom> {
     }
 
     @Override
-    public IsaAtom inferType(IsaAtom atom, ConceptMap sub) {
+    public IsaAtom inferTypes(IsaAtom atom, ConceptMap sub) {
         if (atom.getTypePredicate() != null) return atom;
         if (sub.containsVar(atom.getPredicateVariable())) return atom.addType(sub.get(atom.getPredicateVariable()).asType());
         return atom;
-    }
-
-    @Override
-    public IsaAtom inferTypes(IsaAtom atom, ConceptMap sub) {
-        return inferType(atom, sub);
     }
 
     @Override

@@ -84,21 +84,6 @@ public class RelationTypeReasoner implements TypeReasoner<RelationAtom> {
     }
 
     /**
-     * attempt to infer the relation type of this relation
-     *
-     * @param sub extra instance information to aid entity type inference
-     * @return either this if relation type can't be inferred or a fresh relation with inferred relation type
-     */
-    @Override
-    public RelationAtom inferType(RelationAtom atom, ConceptMap sub) {
-        if (atom.getTypePredicate() != null) return atom;
-        if (sub.containsVar(atom.getPredicateVariable())) return atom.addType(sub.get(atom.getPredicateVariable()).asType());
-        List<Type> relationTypes = inferPossibleTypes(atom, sub);
-        if (relationTypes.size() == 1) return atom.addType(Iterables.getOnlyElement(relationTypes));
-        return atom;
-    }
-
-    /**
      * infer RelationTypes that this RelationAtom can potentially have
      * NB: EntityTypes and link Roles are treated separately as they behave differently:
      * NB: Not using Memoized as memoized methods can't have parameters
@@ -201,6 +186,20 @@ public class RelationTypeReasoner implements TypeReasoner<RelationAtom> {
             compatibleTypes = ReasonerUtils.multimapIntersection(compatibleTypesFromTypes, compatibleTypesFromRoles);
         }
         return compatibleTypes;
+    }
+
+    /**
+     * attempt to infer the relation type of this relation
+     *
+     * @param sub extra instance information to aid entity type inference
+     * @return either this if relation type can't be inferred or a fresh relation with inferred relation type
+     */
+    private RelationAtom inferType(RelationAtom atom, ConceptMap sub) {
+        if (atom.getTypePredicate() != null) return atom;
+        if (sub.containsVar(atom.getPredicateVariable())) return atom.addType(sub.get(atom.getPredicateVariable()).asType());
+        List<Type> relationTypes = inferPossibleTypes(atom, sub);
+        if (relationTypes.size() == 1) return atom.addType(Iterables.getOnlyElement(relationTypes));
+        return atom;
     }
 
     /**
