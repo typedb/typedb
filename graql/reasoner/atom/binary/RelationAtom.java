@@ -370,7 +370,7 @@ public class RelationAtom extends IsaAtomBase {
                 .collect(Collectors.toSet());
     }
 
-    private ConceptMap getRoleSubstitution() {
+    public ConceptMap getRoleSubstitution() {
         Map<Variable, Concept> roleSub = new HashMap<>();
         getRolePredicates().forEach(p -> roleSub.put(p.getVarName(), conceptManager.getConcept(p.getPredicate())));
         return new ConceptMap(roleSub);
@@ -951,51 +951,6 @@ public class RelationAtom extends IsaAtomBase {
             diff.add(new VariableDefinition(parentVar, null, requiredRole, playedRoles, new HashSet<>()));
         });
         return baseDiff.merge(new SemanticDifference(diff));
-    }
-
-    private Relation findRelation(ConceptMap sub) {
-        ReasonerAtomicQuery query = reasonerQueryFactory.atomic(this).withSubstitution(sub);
-        MultilevelSemanticCache queryCache = CacheCasting.queryCacheCast(this.queryCache);
-        ConceptMap answer = queryCache.getAnswerStream(query).findFirst().orElse(null);
-
-        if (answer == null) queryCache.ackDBCompleteness(query);
-        return answer != null ? answer.get(getVarName()).asRelation() : null;
-    }
-
-    @Override
-    public Stream<ConceptMap> materialise() {
-        RelationType relationType = getSchemaConcept().asRelationType();
-        //in case the roles are variable, we wouldn't have enough information if converted to attribute
-        if (relationType.isImplicit()) {
-            ConceptMap roleSub = getRoleSubstitution();
-            return this.toAttributeAtom().materialise().map(ans -> AnswerUtil.joinAnswers(ans, roleSub));
-        }
-        Multimap<Role, Variable> roleVarMap = getRoleVarMap();
-        ConceptMap substitution = getParentQuery().getSubstitution();
-
-        //NB: if the relation is implicit, it will be created as a reified relation
-        //if the relation already exists, only assign roleplayers, otherwise create a new relation
-        Relation relation;
-        if (substitution.containsVar(getVarName())) {
-            relation = substitution.get(getVarName()).asRelation();
-        } else {
-            Relation foundRelation = findRelation(substitution);
-            relation = foundRelation != null? foundRelation : relationType.addRelationInferred();
-        }
-
-        //NB: this will potentially reify existing implicit relationships
-        roleVarMap.asMap()
-                .forEach((key, value) -> value.forEach(var -> relation.assign(key, substitution.get(var).asThing())));
-
-        ConceptMap relationSub = AnswerUtil.joinAnswers(
-                getRoleSubstitution(),
-                getVarName().isReturned() ?
-                        new ConceptMap(ImmutableMap.of(getVarName(), relation)) :
-                        new ConceptMap()
-        );
-
-        ConceptMap answer = AnswerUtil.joinAnswers(substitution, relationSub);
-        return Stream.of(answer);
     }
 
     /**

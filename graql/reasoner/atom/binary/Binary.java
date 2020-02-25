@@ -62,8 +62,11 @@ import java.util.stream.Stream;
  */
 public abstract class Binary extends Atom {
 
-    final ConceptManager conceptManager;
+    private final ConceptManager conceptManager;
     private final Variable predicateVariable;
+
+    private SchemaConcept type = null;
+    private IdPredicate typePredicate = null;
 
     Binary(ConceptManager conceptManager, RuleCache ruleCache, Variable varName, Statement pattern, ReasonerQuery reasonerQuery, ConceptId typeId,
            Variable predicateVariable) {
@@ -75,10 +78,6 @@ public abstract class Binary extends Atom {
     public Variable getPredicateVariable() {
         return predicateVariable;
     }
-
-
-    private SchemaConcept type = null;
-    private IdPredicate typePredicate = null;
 
     @Nullable
     public IdPredicate getTypePredicate(){

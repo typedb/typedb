@@ -20,7 +20,6 @@ package grakn.core.graql.reasoner.atom.binary;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.core.AttributeValueConverter;
@@ -31,21 +30,15 @@ import grakn.core.graql.reasoner.atom.AtomicEquivalence;
 import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.reasoner.atom.predicate.Predicate;
 import grakn.core.graql.reasoner.atom.predicate.ValuePredicate;
-import grakn.core.graql.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.graql.reasoner.cache.SemanticDifference;
 import grakn.core.graql.reasoner.cache.VariableDefinition;
-import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.reasoner.query.ReasonerQueryFactory;
 import grakn.core.graql.reasoner.query.ResolvableQuery;
 import grakn.core.graql.reasoner.unifier.UnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierType;
-import grakn.core.graql.reasoner.utils.AnswerUtil;
-import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
-import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.Label;
-import grakn.core.kb.concept.api.Relation;
 import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Type;
@@ -65,14 +58,12 @@ import graql.lang.property.ValueProperty;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
-
-import javax.annotation.Nullable;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 import static grakn.core.graql.reasoner.utils.ReasonerUtils.isEquivalentCollection;
 import static java.util.stream.Collectors.toSet;
@@ -98,9 +89,11 @@ public class AttributeAtom extends Binary{
 
     private final ImmutableSet<ValuePredicate> multiPredicate;
     private final Variable attributeVariable;
+
     private ReasonerQueryFactory reasonerQueryFactory;
     private final QueryCache queryCache;
     private KeyspaceStatistics keyspaceStatistics;
+
     private final Variable relationVariable;
 
     private AttributeAtom(
@@ -471,94 +464,6 @@ public class AttributeAtom extends Binary{
 
         diff.add(new VariableDefinition(parentVar, null, null, new HashSet<>(), predicatesToSatisfy));
         return baseDiff.merge(new SemanticDifference(diff));
-    }
-
-    /**
-     * @param owner attribute owner
-     * @param attribute attribute itself
-     * @return implicit relation of the attribute
-     */
-    private Relation attachAttribute(Concept owner, Attribute attribute){
-        //NB: this inserts the implicit relation based on the type of the attribute.
-        //We can have cases when we want to specialise the relation while retaining the existing attribute.
-        //In such cases at the moment we still insert the attribute type relation whilst retaining an appropriate cache entry.
-        Relation relation = null;
-        if (owner.isEntity()) {
-            relation = owner.asEntity().attributeInferred(attribute);
-        } else if (owner.isRelation()) {
-            relation = owner.asRelation().attributeInferred(attribute);
-        } else if (owner.isAttribute()) {
-            relation = owner.asAttribute().attributeInferred(attribute);
-        }
-        return relation;
-    }
-
-    private ConceptMap findAnswer(ConceptMap sub){
-        //NB: we are only interested in this atom and its subs, not any other constraints
-        ReasonerAtomicQuery query = reasonerQueryFactory.atomic(Collections.singleton(this)).withSubstitution(sub);
-        MultilevelSemanticCache queryCacheImpl = CacheCasting.queryCacheCast(queryCache);
-        ConceptMap answer = queryCacheImpl.getAnswerStream(query).findFirst().orElse(null);
-
-        if (answer == null) queryCacheImpl.ackDBCompleteness(query);
-        else queryCacheImpl.record(query.withSubstitution(answer), answer);
-        return answer;
-    }
-
-    /**
-     * @param sub partial substitution
-     * @param owner attribute owner
-     * @param attribute attribute concept
-     * @return inserted implicit relation if didn't exist, null otherwise
-     */
-    private Relation putImplicitRelation(ConceptMap sub, Concept owner, Attribute attribute){
-        ConceptMap answer = findAnswer(sub);
-        if (answer == null) return attachAttribute(owner, attribute);
-        return getRelationVariable().isReturned()? answer.get(getRelationVariable()).asRelation() : null;
-    }
-
-    @Override
-    public Stream<ConceptMap> materialise(){
-        ConceptMap substitution = getParentQuery().getSubstitution();
-        AttributeType<Object> attributeType = getSchemaConcept().asAttributeType();
-
-        Concept owner = substitution.get(getVarName());
-        Variable resourceVariable = getAttributeVariable();
-
-        //if the attribute already exists, only attach a new link to the owner, otherwise create a new attribute
-        Attribute attribute = null;
-        if(this.isValueEquality()){
-            ValuePredicate vp = Iterables.getOnlyElement(getMultiPredicate());
-            Object value = vp.getPredicate().value();
-            Object persistedValue = AttributeValueConverter.of(attributeType.dataType()).convert(value);
-            Attribute existingAttribute = attributeType.attribute(persistedValue);
-            attribute = existingAttribute == null? attributeType.putAttributeInferred(persistedValue) : existingAttribute;
-        } else {
-            Attribute existingAttribute = substitution.containsVar(resourceVariable)? substitution.get(resourceVariable).asAttribute() : null;
-            //even if the attribute exists but is of different type (supertype for instance) we create a new one
-            //to make sure the attribute index will be different
-            if (existingAttribute != null){
-                Object value = existingAttribute.value();
-                attribute = existingAttribute;
-                if (!existingAttribute.type().equals(attributeType)){
-                    existingAttribute = attributeType.attribute(value);
-                    attribute = existingAttribute == null? attributeType.putAttributeInferred(value) : existingAttribute;
-                }
-            }
-        }
-
-        if (attribute != null) {
-            ConceptMap answer = new ConceptMap(ImmutableMap.of(
-                    getVarName(), substitution.get(getVarName()),
-                    resourceVariable, attribute));
-
-            Relation relation = putImplicitRelation(answer, owner, attribute);
-
-            if (getRelationVariable().isReturned()){
-                answer = AnswerUtil.joinAnswers(answer, new ConceptMap(ImmutableMap.of(getRelationVariable(), relation)));
-            }
-            return Stream.of(answer);
-        }
-        return Stream.empty();
     }
 
     /**

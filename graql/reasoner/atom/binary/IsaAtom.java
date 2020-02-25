@@ -20,7 +20,6 @@
 package grakn.core.graql.reasoner.atom.binary;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.inference.IsaTypeReasoner;
@@ -28,10 +27,7 @@ import grakn.core.graql.reasoner.atom.inference.TypeReasoner;
 import grakn.core.graql.reasoner.atom.predicate.Predicate;
 import grakn.core.graql.reasoner.unifier.UnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierType;
-import grakn.core.graql.reasoner.utils.AnswerUtil;
-import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
-import grakn.core.kb.concept.api.EntityType;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.concept.manager.ConceptManager;
@@ -49,7 +45,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
 /**
@@ -174,20 +169,6 @@ public class IsaAtom extends IsaAtomBase {
                 .map(this::addType)
                 .sorted(Comparator.comparing(Atom::isRuleResolvable))
                 .collect(Collectors.toList());
-    }
-
-    @Override
-    public Stream<ConceptMap> materialise(){
-        ConceptMap substitution = getParentQuery().getSubstitution();
-        EntityType entityType = getSchemaConcept().asEntityType();
-
-        Concept foundConcept = substitution.containsVar(getVarName())? substitution.get(getVarName()) : null;
-        if (foundConcept != null) return Stream.of(substitution);
-
-        Concept concept = entityType.addEntityInferred();
-        return Stream.of(
-                AnswerUtil.joinAnswers(substitution, new ConceptMap(ImmutableMap.of(getVarName(), concept))
-        ));
     }
 
     @Override

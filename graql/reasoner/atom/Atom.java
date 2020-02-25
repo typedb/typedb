@@ -29,6 +29,7 @@ import grakn.core.graql.reasoner.atom.binary.IsaAtom;
 import grakn.core.graql.reasoner.atom.binary.OntologicalAtom;
 import grakn.core.graql.reasoner.atom.binary.RelationAtom;
 import grakn.core.graql.reasoner.atom.binary.TypeAtom;
+import grakn.core.graql.reasoner.atom.materialise.MaterialiserFactory;
 import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.reasoner.atom.predicate.Predicate;
 import grakn.core.graql.reasoner.atom.predicate.ValuePredicate;
@@ -52,14 +53,13 @@ import graql.lang.property.IsaProperty;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
-
-import javax.annotation.Nullable;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 import static java.util.stream.Collectors.toSet;
 
@@ -69,6 +69,7 @@ import static java.util.stream.Collectors.toSet;
 public abstract class Atom extends AtomicBase {
 
     private Set<InferenceRule> applicableRules = null;
+
     protected final RuleCache ruleCache;
     private final ConceptId typeId;
 
@@ -382,7 +383,9 @@ public abstract class Atom extends AtomicBase {
      *
      * @return materialised answer to this atom
      */
-    public Stream<ConceptMap> materialise() { return Stream.empty();}
+    public Stream<ConceptMap> materialise() {
+        return MaterialiserFactory.create().materialise(this);
+    }
 
     /**
      * @return set of atoms this atom can be decomposed to
