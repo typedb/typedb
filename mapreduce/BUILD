@@ -57,5 +57,5 @@ checkstyle_test(
     name = "checkstyle",
     targets = [
         ":mapreduce"
-    ],
+    ]
 )
