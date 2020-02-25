@@ -331,7 +331,7 @@ public abstract class Atom extends AtomicBase {
      * @param <T>  the type of neighbour Atomic to return
      * @return neighbours of this atoms, i.e. atoms connected to this atom via shared variable
      */
-    protected <T extends Atomic> Stream<T> getNeighbours(Class<T> type) {
+    public <T extends Atomic> Stream<T> getNeighbours(Class<T> type) {
         return getParentQuery().getAtoms(type)
                 .filter(atom -> atom != this)
                 .filter(atom -> !Sets.intersection(this.getVarNames(), atom.getVarNames()).isEmpty());
