@@ -44,7 +44,7 @@ import java.util.Optional;
 import java.util.function.Function;
 
 
-public class HadoopInputFormat extends InputFormat<NullWritable, VertexWritable> implements Configurable, GraphFilterAware {
+public class InputFormatHadoop extends InputFormat<NullWritable, VertexWritable> implements Configurable, GraphFilterAware {
 
     private final InputFormat<StaticBuffer, Iterable<Entry>> inputFormat;
     private static final RefCountedCloseable<VertexDeserializer> refCounter;
@@ -53,8 +53,8 @@ public class HadoopInputFormat extends InputFormat<NullWritable, VertexWritable>
         refCounter = new RefCountedCloseable<>(VertexDeserializer::new);
     }
 
-    public HadoopInputFormat() {
-        this.inputFormat = new CqlBinaryInputFormat();
+    public InputFormatHadoop() {
+        this.inputFormat = new InputFormatCQLBinary();
         Preconditions.checkState(Configurable.class.isAssignableFrom(inputFormat.getClass()));
     }
 
@@ -65,7 +65,7 @@ public class HadoopInputFormat extends InputFormat<NullWritable, VertexWritable>
 
     @Override
     public RecordReader<NullWritable, VertexWritable> createRecordReader(InputSplit split, TaskAttemptContext context) throws IOException, InterruptedException {
-        return new HadoopRecordReader(refCounter, inputFormat.createRecordReader(split, context));
+        return new RecordReaderHadoop(refCounter, inputFormat.createRecordReader(split, context));
     }
 
     @Override
@@ -124,7 +124,7 @@ public class HadoopInputFormat extends InputFormat<NullWritable, VertexWritable>
         }
     }
 
-    public static class HadoopRecordReader extends RecordReader<NullWritable, VertexWritable> {
+    public static class RecordReaderHadoop extends RecordReader<NullWritable, VertexWritable> {
 
         private final RecordReader<StaticBuffer, Iterable<Entry>> reader;
         private final RefCountedCloseable countedDeserializer;
@@ -132,7 +132,7 @@ public class HadoopInputFormat extends InputFormat<NullWritable, VertexWritable>
         private VertexWritable vertex;
         private GraphFilter graphFilter;
 
-        HadoopRecordReader(RefCountedCloseable<VertexDeserializer> countedDeserializer, RecordReader<StaticBuffer, Iterable<Entry>> reader) {
+        RecordReaderHadoop(RefCountedCloseable<VertexDeserializer> countedDeserializer, RecordReader<StaticBuffer, Iterable<Entry>> reader) {
             this.countedDeserializer = countedDeserializer;
             this.reader = reader;
             this.deserializer = countedDeserializer.acquire();

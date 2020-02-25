@@ -241,12 +241,12 @@ public class VertexDeserializer implements AutoCloseable {
 
     public static class HadoopSetup {
 
-        private final HadoopConfiguration scanConf;
+        private final ModifiableConfigurationHadoop scanConf;
         private final StandardJanusGraph graph;
         private final StandardJanusGraphTx tx;
 
         HadoopSetup(Configuration config) {
-            scanConf = HadoopConfiguration.of(HadoopConfiguration.MAPRED_NS, config);
+            scanConf = ModifiableConfigurationHadoop.of(ModifiableConfigurationHadoop.MAPRED_NS, config);
             BasicConfiguration bc = scanConf.getJanusGraphConf();
             graph = JanusGraphFactory.open(bc.getConfiguration());
             tx = graph.buildTransaction().readOnly().vertexCacheSize(200).start();
@@ -284,7 +284,7 @@ public class VertexDeserializer implements AutoCloseable {
         }
 
         boolean getFilterPartitionedVertices() {
-            return scanConf.get(HadoopConfiguration.FILTER_PARTITIONED_VERTICES);
+            return scanConf.get(ModifiableConfigurationHadoop.FILTER_PARTITIONED_VERTICES);
         }
     }
 }

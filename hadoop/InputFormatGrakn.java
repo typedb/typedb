@@ -93,9 +93,9 @@ import static java.util.stream.Collectors.toMap;
  * other native protocol connection parameters in CqlConfigHelper
  */
 
-public class GraknInputFormat extends org.apache.hadoop.mapreduce.InputFormat<Long, Row> implements org.apache.hadoop.mapred.InputFormat<Long, Row> {
+public class InputFormatGrakn extends org.apache.hadoop.mapreduce.InputFormat<Long, Row> implements org.apache.hadoop.mapred.InputFormat<Long, Row> {
     private static final String MAPRED_TASK_ID = "mapred.task.id";
-    private static final Logger LOG = LoggerFactory.getLogger(GraknInputFormat.class);
+    private static final Logger LOG = LoggerFactory.getLogger(InputFormatGrakn.class);
 
     private String keyspace;
     private String cfName;
@@ -112,14 +112,14 @@ public class GraknInputFormat extends org.apache.hadoop.mapreduce.InputFormat<Lo
                 null);
 
 
-        GraknRecordReader recordReader = new GraknRecordReader();
+        RecordReaderGrakn recordReader = new RecordReaderGrakn();
         recordReader.initialize((org.apache.hadoop.mapreduce.InputSplit) split, tac);
         return recordReader;
     }
 
     @Override
     public org.apache.hadoop.mapreduce.RecordReader<Long, Row> createRecordReader(org.apache.hadoop.mapreduce.InputSplit arg0, TaskAttemptContext arg1) {
-        return new GraknRecordReader();
+        return new RecordReaderGrakn();
     }
 
     private void validateConfiguration(Configuration conf) {

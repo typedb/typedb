@@ -75,8 +75,8 @@ import java.util.Map;
  * token(partition_key1, ... , partition_keyn) <= ?  (in the right order)
  * }
  */
-public class GraknRecordReader extends RecordReader<Long, Row> implements org.apache.hadoop.mapred.RecordReader<Long, Row>, AutoCloseable {
-    private static final Logger LOG = LoggerFactory.getLogger(GraknRecordReader.class);
+public class RecordReaderGrakn extends RecordReader<Long, Row> implements org.apache.hadoop.mapred.RecordReader<Long, Row>, AutoCloseable {
+    private static final Logger LOG = LoggerFactory.getLogger(RecordReaderGrakn.class);
     private static final String INPUT_CQL_COLUMNS_CONFIG = "cassandra.input.columnfamily.columns";
     private static final String INPUT_CQL_WHERE_CLAUSE_CONFIG = "cassandra.input.where.clause";
     private static final String INPUT_CQL = "cassandra.input.cql";
@@ -100,7 +100,7 @@ public class GraknRecordReader extends RecordReader<Long, Row> implements org.ap
     private LinkedHashMap<String, Boolean> partitionBoundColumns = Maps.newLinkedHashMap();
     private int nativeProtocolVersion = 1;
 
-    GraknRecordReader() {
+    RecordReaderGrakn() {
         super();
     }
 
@@ -120,7 +120,7 @@ public class GraknRecordReader extends RecordReader<Long, Row> implements org.ap
 
             // create a Cluster instance
             String[] locations = split.getLocations();
-            session = GraknInputFormat.getInputSession(locations, conf);
+            session = InputFormatGrakn.getInputSession(locations, conf);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

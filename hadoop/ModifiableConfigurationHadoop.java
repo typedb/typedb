@@ -39,7 +39,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-public class HadoopConfiguration extends ModifiableConfiguration {
+public class ModifiableConfigurationHadoop extends ModifiableConfiguration {
 
     // JanusGraph Hadoop I/O format configuration
 
@@ -62,17 +62,17 @@ public class HadoopConfiguration extends ModifiableConfiguration {
                     ConfigOption.Type.LOCAL, false);
     private final Configuration conf;
 
-    private HadoopConfiguration(ConfigNamespace root, Configuration c) {
+    private ModifiableConfigurationHadoop(ConfigNamespace root, Configuration c) {
         super(root, new HadoopWriteConfiguration(c));
         this.conf = c;
     }
 
-    public static HadoopConfiguration of(ConfigNamespace root, Configuration c) {
+    public static ModifiableConfigurationHadoop of(ConfigNamespace root, Configuration c) {
         Preconditions.checkNotNull(c);
-        return new HadoopConfiguration(root, c);
+        return new ModifiableConfigurationHadoop(root, c);
     }
 
-    private static ModifiableConfiguration prefixView(HadoopConfiguration mc) {
+    private static ModifiableConfiguration prefixView(ModifiableConfigurationHadoop mc) {
         HadoopWriteConfiguration prefixConf = new HadoopWriteConfiguration(mc.conf,
                                                                            ConfigElement.getPath(GRAPH_CONFIG_KEYS, true) + ".");
         return new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS, prefixConf);

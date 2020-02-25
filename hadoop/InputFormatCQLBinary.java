@@ -47,9 +47,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class CqlBinaryInputFormat extends InputFormat<StaticBuffer, Iterable<Entry>> implements HadoopPoolsConfigurable {
+public class InputFormatCQLBinary extends InputFormat<StaticBuffer, Iterable<Entry>> implements HadoopPoolsConfigurable {
 
-    private static final Logger LOG = LoggerFactory.getLogger(CqlBinaryInputFormat.class);
+    private static final Logger LOG = LoggerFactory.getLogger(InputFormatCQLBinary.class);
 
     // Copied these private constants from Cassandra's ConfigHelper circa 2.0.9
     private static final String INPUT_WIDEROWS_CONFIG = "cassandra.input.widerows";
@@ -60,7 +60,7 @@ public class CqlBinaryInputFormat extends InputFormat<StaticBuffer, Iterable<Ent
     private static final String USERNAME = "cassandra.username";
     private static final String PASSWORD = "cassandra.password";
 
-    private final GraknInputFormat cqlInputFormat = new GraknInputFormat();
+    private final InputFormatGrakn cqlInputFormat = new InputFormatGrakn();
     private Configuration hadoopConf;
 
     @Override
@@ -70,15 +70,15 @@ public class CqlBinaryInputFormat extends InputFormat<StaticBuffer, Iterable<Ent
 
     @Override
     public RecordReader<StaticBuffer, Iterable<Entry>> createRecordReader(InputSplit inputSplit, TaskAttemptContext taskAttemptContext) {
-        GraknRecordReader recordReader = (GraknRecordReader) cqlInputFormat.createRecordReader(inputSplit, taskAttemptContext);
-        return new CqlBinaryRecordReader(recordReader);
+        RecordReaderGrakn recordReader = (RecordReaderGrakn) cqlInputFormat.createRecordReader(inputSplit, taskAttemptContext);
+        return new RecordReaderCQLBinary(recordReader);
     }
 
     @Override
     public void setConf(Configuration config) {
         this.hadoopConf = config;
         HadoopPoolsConfigurable.super.setConf(config);
-        HadoopConfiguration mrConf = HadoopConfiguration.of(HadoopConfiguration.MAPRED_NS, config);
+        ModifiableConfigurationHadoop mrConf = ModifiableConfigurationHadoop.of(ModifiableConfigurationHadoop.MAPRED_NS, config);
         BasicConfiguration janusgraphConf = mrConf.getJanusGraphConf();
 
         // Copy some JanusGraph configuration keys to the Hadoop Configuration keys used by Cassandra's ColumnFamilyInputFormat
@@ -98,7 +98,7 @@ public class CqlBinaryInputFormat extends InputFormat<StaticBuffer, Iterable<Ent
         boolean wideRows = config.getBoolean(INPUT_WIDEROWS_CONFIG, false);
         // Use the setInputColumnFamily overload that includes a widerows argument; using the overload without this argument forces it false
         ConfigHelper.setInputColumnFamily(config, janusgraphConf.get(CQLConfigOptions.KEYSPACE),
-                                          mrConf.get(HadoopConfiguration.COLUMN_FAMILY_NAME), wideRows);
+                                          mrConf.get(ModifiableConfigurationHadoop.COLUMN_FAMILY_NAME), wideRows);
         LOG.debug("Set keyspace: {}", janusgraphConf.get(CQLConfigOptions.KEYSPACE));
 
         // Set the column slice bounds via Faunus' vertex query filter
@@ -121,13 +121,13 @@ public class CqlBinaryInputFormat extends InputFormat<StaticBuffer, Iterable<Ent
         return hadoopConf;
     }
 
-    public static class CqlBinaryRecordReader extends RecordReader<StaticBuffer, Iterable<Entry>> {
+    public static class RecordReaderCQLBinary extends RecordReader<StaticBuffer, Iterable<Entry>> {
         private KV currentKV;
         private KV incompleteKV;
 
-        private final GraknRecordReader reader;
+        private final RecordReaderGrakn reader;
 
-        CqlBinaryRecordReader(GraknRecordReader reader) {
+        RecordReaderCQLBinary(RecordReaderGrakn reader) {
             this.reader = reader;
         }
 
