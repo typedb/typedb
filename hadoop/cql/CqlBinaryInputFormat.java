@@ -18,6 +18,7 @@
 
 package grakn.core.hadoop.cql;
 
+import com.datastax.oss.driver.internal.core.auth.PlainTextAuthProvider;
 import grakn.core.graph.diskstorage.Entry;
 import grakn.core.graph.diskstorage.StaticBuffer;
 import grakn.core.graph.diskstorage.configuration.BasicConfiguration;
@@ -30,6 +31,7 @@ import grakn.core.hadoop.config.ModifiableHadoopConfiguration;
 import org.apache.cassandra.hadoop.ConfigHelper;
 import org.apache.cassandra.thrift.SlicePredicate;
 import org.apache.cassandra.thrift.SliceRange;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.InputFormat;
 import org.apache.hadoop.mapreduce.InputSplit;
@@ -52,6 +54,9 @@ public class CqlBinaryInputFormat extends InputFormat<StaticBuffer, Iterable<Ent
     private static final String RANGE_BATCH_SIZE_CONFIG = "cassandra.range.batch.size";
     private static final StaticBuffer DEFAULT_COLUMN = StaticArrayBuffer.of(new byte[0]);
     private static final SliceQuery DEFAULT_SLICE_QUERY = new SliceQuery(DEFAULT_COLUMN, DEFAULT_COLUMN);
+    private static final String INPUT_NATIVE_AUTH_PROVIDER = "cassandra.input.native.auth.provider";
+    private static final String USERNAME = "cassandra.username";
+    private static final String PASSWORD = "cassandra.password";
 
     private final GraknInputFormat cqlInputFormat = new GraknInputFormat();
     private Configuration hadoopConf;
@@ -80,9 +85,12 @@ public class CqlBinaryInputFormat extends InputFormat<StaticBuffer, Iterable<Ent
             ConfigHelper.setInputRpcPort(config, String.valueOf(janusgraphConf.get(GraphDatabaseConfiguration.STORAGE_PORT)));
         }
         if (janusgraphConf.has(GraphDatabaseConfiguration.AUTH_USERNAME) && janusgraphConf.has(GraphDatabaseConfiguration.AUTH_PASSWORD)) {
-            GraknCqlConfigHelper.setUserNameAndPassword(config,
-                                                        janusgraphConf.get(GraphDatabaseConfiguration.AUTH_PASSWORD),
-                                                        janusgraphConf.get(GraphDatabaseConfiguration.AUTH_USERNAME));
+            String username = janusgraphConf.get(GraphDatabaseConfiguration.AUTH_PASSWORD);
+            if (StringUtils.isNotBlank(username)) {
+                config.set(INPUT_NATIVE_AUTH_PROVIDER, PlainTextAuthProvider.class.getName());
+                config.set(USERNAME, username);
+                config.set(PASSWORD, janusgraphConf.get(GraphDatabaseConfiguration.AUTH_USERNAME));
+            }
         }
         // Copy keyspace, force the CF setting to edgestore, honor widerows when set
         boolean wideRows = config.getBoolean(INPUT_WIDEROWS_CONFIG, false);

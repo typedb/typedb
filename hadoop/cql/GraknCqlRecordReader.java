@@ -77,6 +77,9 @@ import java.util.Map;
  */
 public class GraknCqlRecordReader extends RecordReader<Long, Row> implements org.apache.hadoop.mapred.RecordReader<Long, Row>, AutoCloseable {
     private static final Logger LOG = LoggerFactory.getLogger(GraknCqlRecordReader.class);
+    private static final String INPUT_CQL_COLUMNS_CONFIG = "cassandra.input.columnfamily.columns";
+    private static final String INPUT_CQL_WHERE_CLAUSE_CONFIG = "cassandra.input.where.clause";
+    private static final String INPUT_CQL = "cassandra.input.cql";
 
     private ColumnFamilySplit split;
     private RowIterator rowIterator;
@@ -110,8 +113,8 @@ public class GraknCqlRecordReader extends RecordReader<Long, Row> implements org
         cfName = ConfigHelper.getInputColumnFamily(conf);
         keyspace = ConfigHelper.getInputKeyspace(conf);
         partitioner = ConfigHelper.getInputPartitioner(conf);
-        inputColumns = GraknCqlConfigHelper.getInputcolumns(conf);
-        userDefinedWhereClauses = GraknCqlConfigHelper.getInputWhereClauses(conf);
+        inputColumns = conf.get(INPUT_CQL_COLUMNS_CONFIG);
+        userDefinedWhereClauses = conf.get(INPUT_CQL_WHERE_CLAUSE_CONFIG);
 
         try {
 
@@ -129,7 +132,7 @@ public class GraknCqlRecordReader extends RecordReader<Long, Row> implements org
         // otherwise we will fall back to building a query using the:
         //   inputColumns
         //   whereClauses
-        cqlQuery = GraknCqlConfigHelper.getInputCql(conf);
+        cqlQuery = conf.get(INPUT_CQL);
         // validate that the user hasn't tried to give us a custom query along with input columns
         // and where clauses
         if (StringUtils.isNotEmpty(cqlQuery) && (StringUtils.isNotEmpty(inputColumns) || StringUtils.isNotEmpty(userDefinedWhereClauses))) {
