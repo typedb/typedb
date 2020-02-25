@@ -50,7 +50,7 @@ public class InputFormatHadoop extends InputFormat<NullWritable, VertexWritable>
     private static final RefCountedCloseable<VertexDeserializer> refCounter = new RefCountedCloseable<>(VertexDeserializer::new);
 
     public InputFormatHadoop() {
-        this.inputFormat = new InputFormatCQLBinary();
+        this.inputFormat = new InputFormatCQL();
         Preconditions.checkState(Configurable.class.isAssignableFrom(inputFormat.getClass()));
     }
 

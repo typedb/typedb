@@ -45,7 +45,7 @@ java_library(
         "//dependencies/maven/artifacts/org/apache/cassandra:cassandra-all",
         "//dependencies/maven/artifacts/com/datastax/oss:java-driver-core",
 
-#        The following 2 dependencies should be removed once GraknInputFormat and CqlBinaryInputFormat stop depending on old Thrift trickery
+#        The following 2 dependencies should be removed once GraknInputFormat and InputFormatCQL stop depending on old Thrift trickery
         "//dependencies/maven/artifacts/org/apache/cassandra:cassandra-thrift",
         "//dependencies/maven/artifacts/org/apache/thrift:libthrift"
     ],

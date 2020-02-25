@@ -47,9 +47,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class InputFormatCQLBinary extends InputFormat<StaticBuffer, Iterable<Entry>> implements HadoopPoolsConfigurable {
+public class InputFormatCQL extends InputFormat<StaticBuffer, Iterable<Entry>> implements HadoopPoolsConfigurable {
 
-    private static final Logger LOG = LoggerFactory.getLogger(InputFormatCQLBinary.class);
+    private static final Logger LOG = LoggerFactory.getLogger(InputFormatCQL.class);
 
     // Copied these private constants from Cassandra's ConfigHelper circa 2.0.9
     private static final String INPUT_WIDEROWS_CONFIG = "cassandra.input.widerows";
@@ -70,8 +70,8 @@ public class InputFormatCQLBinary extends InputFormat<StaticBuffer, Iterable<Ent
 
     @Override
     public RecordReader<StaticBuffer, Iterable<Entry>> createRecordReader(InputSplit inputSplit, TaskAttemptContext taskAttemptContext) {
-        RecordReaderGrakn recordReader = (RecordReaderGrakn) cqlInputFormat.createRecordReader(inputSplit, taskAttemptContext);
-        return new RecordReaderCQLBinary(recordReader);
+        InputFormatGrakn.RecordReaderGrakn recordReader = (InputFormatGrakn.RecordReaderGrakn) cqlInputFormat.createRecordReader(inputSplit, taskAttemptContext);
+        return new RecordReaderCQL(recordReader);
     }
 
     @Override
@@ -121,13 +121,13 @@ public class InputFormatCQLBinary extends InputFormat<StaticBuffer, Iterable<Ent
         return hadoopConf;
     }
 
-    private static class RecordReaderCQLBinary extends RecordReader<StaticBuffer, Iterable<Entry>> {
+    private static class RecordReaderCQL extends RecordReader<StaticBuffer, Iterable<Entry>> {
         private KV currentKV;
         private KV incompleteKV;
 
-        private final RecordReaderGrakn reader;
+        private final InputFormatGrakn.RecordReaderGrakn reader;
 
-        RecordReaderCQLBinary(RecordReaderGrakn reader) {
+        RecordReaderCQL(InputFormatGrakn.RecordReaderGrakn reader) {
             this.reader = reader;
         }
 
