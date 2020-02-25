@@ -20,17 +20,29 @@
 package grakn.core.graql.reasoner.query;
 
 import grakn.core.core.Schema;
+import grakn.core.kb.concept.api.Concept;
+import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.SchemaConcept;
+import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.server.Transaction;
 import grakn.verification.tools.operator.TypeContext;
+import java.util.List;
+import java.util.Random;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 class TransactionContext implements TypeContext {
     private final Transaction tx;
+    private final List<ConceptId> ids;
+    private final Random rand = new Random();
 
     TransactionContext(Transaction tx){
         this.tx = tx;
+        this.ids = tx.getMetaConcept().instances()
+                .map(Thing::asThing)
+                .map(Concept::id)
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -59,5 +71,10 @@ class TransactionContext implements TypeContext {
         SchemaConcept type = tx.getSchemaConcept(Label.of(label));
         if (type == null) return Stream.empty();
         return type.subs().map(t -> t.label().getValue());
+    }
+
+    @Override
+    public String instanceId() {
+        return ids.get(rand.nextInt(ids.size())).getValue();
     }
 }
