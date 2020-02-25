@@ -26,7 +26,6 @@ import grakn.core.graph.diskstorage.cql.CQLConfigOptions;
 import grakn.core.graph.diskstorage.keycolumnvalue.SliceQuery;
 import grakn.core.graph.diskstorage.util.StaticArrayBuffer;
 import grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration;
-import grakn.core.hadoop.config.JanusGraphHadoopConfiguration;
 import grakn.core.hadoop.config.HadoopConfiguration;
 import org.apache.cassandra.hadoop.ConfigHelper;
 import org.apache.cassandra.thrift.SlicePredicate;
@@ -76,7 +75,7 @@ public class CqlBinaryInputFormat extends InputFormat<StaticBuffer, Iterable<Ent
     public void setConf(Configuration config) {
         this.hadoopConf = config;
         HadoopPoolsConfigurable.super.setConf(config);
-        HadoopConfiguration mrConf = HadoopConfiguration.of(JanusGraphHadoopConfiguration.MAPRED_NS, config);
+        HadoopConfiguration mrConf = HadoopConfiguration.of(HadoopConfiguration.MAPRED_NS, config);
         BasicConfiguration janusgraphConf = mrConf.getJanusGraphConf();
 
         // Copy some JanusGraph configuration keys to the Hadoop Configuration keys used by Cassandra's ColumnFamilyInputFormat
@@ -96,7 +95,7 @@ public class CqlBinaryInputFormat extends InputFormat<StaticBuffer, Iterable<Ent
         boolean wideRows = config.getBoolean(INPUT_WIDEROWS_CONFIG, false);
         // Use the setInputColumnFamily overload that includes a widerows argument; using the overload without this argument forces it false
         ConfigHelper.setInputColumnFamily(config, janusgraphConf.get(CQLConfigOptions.KEYSPACE),
-                                          mrConf.get(JanusGraphHadoopConfiguration.COLUMN_FAMILY_NAME), wideRows);
+                                          mrConf.get(HadoopConfiguration.COLUMN_FAMILY_NAME), wideRows);
         LOG.debug("Set keyspace: {}", janusgraphConf.get(CQLConfigOptions.KEYSPACE));
 
         // Set the column slice bounds via Faunus' vertex query filter

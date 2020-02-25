@@ -41,7 +41,6 @@ import grakn.core.graph.graphdb.types.TypeInspector;
 import grakn.core.graph.graphdb.types.system.BaseKey;
 import grakn.core.graph.graphdb.types.system.BaseLabel;
 import grakn.core.graph.graphdb.types.vertices.JanusGraphSchemaVertex;
-import grakn.core.hadoop.config.JanusGraphHadoopConfiguration;
 import grakn.core.hadoop.config.HadoopConfiguration;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -248,7 +247,7 @@ public class VertexDeserializer implements AutoCloseable {
         private final StandardJanusGraphTx tx;
 
         HadoopSetup(Configuration config) {
-            scanConf = HadoopConfiguration.of(JanusGraphHadoopConfiguration.MAPRED_NS, config);
+            scanConf = HadoopConfiguration.of(HadoopConfiguration.MAPRED_NS, config);
             BasicConfiguration bc = scanConf.getJanusGraphConf();
             graph = JanusGraphFactory.open(bc.getConfiguration());
             tx = graph.buildTransaction().readOnly().vertexCacheSize(200).start();
@@ -286,7 +285,7 @@ public class VertexDeserializer implements AutoCloseable {
         }
 
         boolean getFilterPartitionedVertices() {
-            return scanConf.get(JanusGraphHadoopConfiguration.FILTER_PARTITIONED_VERTICES);
+            return scanConf.get(HadoopConfiguration.FILTER_PARTITIONED_VERTICES);
         }
     }
 }
