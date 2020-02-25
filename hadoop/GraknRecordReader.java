@@ -75,8 +75,8 @@ import java.util.Map;
  * token(partition_key1, ... , partition_keyn) <= ?  (in the right order)
  * }
  */
-public class GraknCqlRecordReader extends RecordReader<Long, Row> implements org.apache.hadoop.mapred.RecordReader<Long, Row>, AutoCloseable {
-    private static final Logger LOG = LoggerFactory.getLogger(GraknCqlRecordReader.class);
+public class GraknRecordReader extends RecordReader<Long, Row> implements org.apache.hadoop.mapred.RecordReader<Long, Row>, AutoCloseable {
+    private static final Logger LOG = LoggerFactory.getLogger(GraknRecordReader.class);
     private static final String INPUT_CQL_COLUMNS_CONFIG = "cassandra.input.columnfamily.columns";
     private static final String INPUT_CQL_WHERE_CLAUSE_CONFIG = "cassandra.input.where.clause";
     private static final String INPUT_CQL = "cassandra.input.cql";
@@ -100,7 +100,7 @@ public class GraknCqlRecordReader extends RecordReader<Long, Row> implements org
     private LinkedHashMap<String, Boolean> partitionBoundColumns = Maps.newLinkedHashMap();
     private int nativeProtocolVersion = 1;
 
-    GraknCqlRecordReader() {
+    GraknRecordReader() {
         super();
     }
 
@@ -202,7 +202,7 @@ public class GraknCqlRecordReader extends RecordReader<Long, Row> implements org
         return false;
     }
 
-    public long getPos() throws IOException {
+    public long getPos() {
         return rowIterator.totalRead;
     }
 

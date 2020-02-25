@@ -43,17 +43,17 @@ public class HadoopConfiguration extends ModifiableConfiguration {
 
     // JanusGraph Hadoop I/O format configuration
 
-    public static final ConfigNamespace MAPRED_NS =
+    static final ConfigNamespace MAPRED_NS =
             new ConfigNamespace(null, "janusgraphmr", "JanusGraph MapReduce configuration root");
     private static final ConfigNamespace IOFORMAT_NS =
             new ConfigNamespace(MAPRED_NS, "ioformat", "JanusGraph input configuration");
     private static final ConfigNamespace GRAPH_CONFIG_KEYS =
             new ConfigNamespace(IOFORMAT_NS, "conf", "Settings to be passed to JanusGraphFactory.open");
-    public static final ConfigOption<String> COLUMN_FAMILY_NAME =
+    static final ConfigOption<String> COLUMN_FAMILY_NAME =
             new ConfigOption<>(IOFORMAT_NS, "cf-name",
                                "The name of the column family from which the Hadoop input format should read.  " +
                             "Usually edgestore or graphindex.", ConfigOption.Type.LOCAL, Backend.EDGESTORE_NAME);
-    public static final ConfigOption<Boolean> FILTER_PARTITIONED_VERTICES =
+    static final ConfigOption<Boolean> FILTER_PARTITIONED_VERTICES =
             new ConfigOption<>(IOFORMAT_NS, "filter-partitioned-vertices",
                     "True to drop partitioned vertices and relations incident on partitioned vertices when reading " +
                             "from JanusGraph.  This currently must be true when partitioned vertices are present in the " +
@@ -78,7 +78,7 @@ public class HadoopConfiguration extends ModifiableConfiguration {
         return new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS, prefixConf);
     }
 
-    public ModifiableConfiguration getJanusGraphConf() {
+    ModifiableConfiguration getJanusGraphConf() {
         return prefixView(this);
     }
 

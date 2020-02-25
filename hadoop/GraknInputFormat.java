@@ -112,14 +112,14 @@ public class GraknInputFormat extends org.apache.hadoop.mapreduce.InputFormat<Lo
                 null);
 
 
-        GraknCqlRecordReader recordReader = new GraknCqlRecordReader();
+        GraknRecordReader recordReader = new GraknRecordReader();
         recordReader.initialize((org.apache.hadoop.mapreduce.InputSplit) split, tac);
         return recordReader;
     }
 
     @Override
     public org.apache.hadoop.mapreduce.RecordReader<Long, Row> createRecordReader(org.apache.hadoop.mapreduce.InputSplit arg0, TaskAttemptContext arg1) {
-        return new GraknCqlRecordReader();
+        return new GraknRecordReader();
     }
 
     private void validateConfiguration(Configuration conf) {
@@ -282,7 +282,7 @@ public class GraknInputFormat extends org.apache.hadoop.mapreduce.InputFormat<Lo
         return oldInputSplits;
     }
 
-    public static CqlSession getInputSession(String[] hosts, Configuration conf) {
+    static CqlSession getInputSession(String[] hosts, Configuration conf) {
         int port = getInputNativePort(conf);
         return getSession(hosts, conf, port);
     }
@@ -315,7 +315,7 @@ public class GraknInputFormat extends org.apache.hadoop.mapreduce.InputFormat<Lo
         private final Configuration conf;
         private final CqlSession session;
 
-        public SplitCallable(TokenRange tr, Set<Node> hosts, Configuration conf, CqlSession session) {
+        SplitCallable(TokenRange tr, Set<Node> hosts, Configuration conf, CqlSession session) {
             this.tokenRange = tr;
             this.hosts = hosts;
             this.conf = conf;
