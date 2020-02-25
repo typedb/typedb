@@ -26,6 +26,8 @@ import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.inference.IsaTypeReasoner;
 import grakn.core.graql.reasoner.atom.inference.TypeReasoner;
 import grakn.core.graql.reasoner.atom.predicate.Predicate;
+import grakn.core.graql.reasoner.unifier.UnifierImpl;
+import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.graql.reasoner.utils.AnswerUtil;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
@@ -37,6 +39,7 @@ import grakn.core.kb.graql.exception.GraqlSemanticException;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.kb.graql.reasoner.cache.RuleCache;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
+import grakn.core.kb.graql.reasoner.unifier.Unifier;
 import graql.lang.pattern.Pattern;
 import graql.lang.property.IsaProperty;
 import graql.lang.property.VarProperty;
@@ -171,6 +174,13 @@ public class IsaAtom extends IsaAtomBase {
                 .map(this::addType)
                 .sorted(Comparator.comparing(Atom::isRuleResolvable))
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public Unifier getUnifier(Atom parentAtom, UnifierType unifierType) {
+        //in general this <= parent, so no specialisation viable
+        if (this.getClass() != parentAtom.getClass()) return UnifierImpl.nonExistent();
+        return super.getUnifier(parentAtom, unifierType);
     }
 
     @Override
