@@ -146,7 +146,7 @@ public class JanusGraphFactory {
         try {
             return new CQLStoreManager(configuration);
         } catch (PermanentBackendException e) {
-            throw new IllegalArgumentException("Could instantiate StoreManager class: " + e);
+            throw new IllegalArgumentException("Could not instantiate StoreManager class: " + e);
         }
     }
 

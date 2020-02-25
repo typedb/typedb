@@ -95,9 +95,9 @@ public class GraknCqlRecordReader extends RecordReader<Long, Row> implements org
 
     // partition keys -- key aliases
     private LinkedHashMap<String, Boolean> partitionBoundColumns = Maps.newLinkedHashMap();
-    protected int nativeProtocolVersion = 1;
+    private int nativeProtocolVersion = 1;
 
-    public GraknCqlRecordReader() {
+    GraknCqlRecordReader() {
         super();
     }
 

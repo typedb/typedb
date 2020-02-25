@@ -95,7 +95,7 @@ import static java.util.stream.Collectors.toMap;
 
 public class GraknInputFormat extends org.apache.hadoop.mapreduce.InputFormat<Long, Row> implements org.apache.hadoop.mapred.InputFormat<Long, Row> {
     public static final String MAPRED_TASK_ID = "mapred.task.id";
-    private static final Logger LOG = LoggerFactory.getLogger(CqlInputFormat.class);
+    private static final Logger LOG = LoggerFactory.getLogger(GraknInputFormat.class);
 
     private String keyspace;
     private String cfName;

@@ -44,7 +44,7 @@ import java.util.Optional;
 import java.util.function.Function;
 
 
-public abstract class HadoopInputFormat extends InputFormat<NullWritable, VertexWritable> implements Configurable, GraphFilterAware {
+public class HadoopInputFormat extends InputFormat<NullWritable, VertexWritable> implements Configurable, GraphFilterAware {
 
     private final InputFormat<StaticBuffer, Iterable<Entry>> inputFormat;
     private static final RefCountedCloseable<VertexDeserializer> refCounter;
@@ -53,8 +53,8 @@ public abstract class HadoopInputFormat extends InputFormat<NullWritable, Vertex
         refCounter = new RefCountedCloseable<>(VertexDeserializer::new);
     }
 
-    public HadoopInputFormat(InputFormat<StaticBuffer, Iterable<Entry>> inputFormat) {
-        this.inputFormat = inputFormat;
+    public HadoopInputFormat() {
+        this.inputFormat = new CqlBinaryInputFormat();
         Preconditions.checkState(Configurable.class.isAssignableFrom(inputFormat.getClass()));
     }
 
