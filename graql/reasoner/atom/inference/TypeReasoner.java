@@ -27,17 +27,18 @@ import grakn.core.kb.concept.api.Type;
 public interface TypeReasoner<T extends Atom>  {
 
     /**
-     * Attempts to infer all the types of the provided atom (including roles).
-     * @param atom target atom
-     * @param sub additional substitution information
-     * @return a new corresponding atom with possible types inferred
+     * Attempts to infer all unambiguous types of the provided atom (including roles) and returns a new atom with
+     * that information.
+     * @param atom the source atom from which to create a new atom with newly inferred types
+     * @param sub a concept map containing Ids for concepts that may be used during the inference process
+     * @return a new atom with unambiguous types inferred
      */
     T inferTypes(T atom, ConceptMap sub);
 
     /**
-     *
-     * @param atom target atom
-     * @param sub additional substitution information
+     * Attempts to infer all possible types associated with the atom. At least one must be the correct type of the atom.
+     * @param atom the source atom from which to find possible types
+     * @param sub a concept map containing Ids for concepts that may be used during the inference process
      * @return list of semantically possible types that the provided atom can have
      */
     ImmutableList<Type> inferPossibleTypes(T atom, ConceptMap sub);
