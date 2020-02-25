@@ -255,6 +255,32 @@ public class GenerativeOperationalIT {
         }
     }
 
+    @Test
+    public void whenFuzzyingIdsWithBindingsPreserved_StructuralEquivalenceIsNotAffected(){
+        try (Transaction tx = genericSchemaSession.readTransaction()) {
+            TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction) tx;
+            ReasonerQueryFactory reasonerQueryFactory = testTx.reasonerQueryFactory();
+            TransactionContext txCtx = new TransactionContext(tx);
+            Set<Pattern> patterns = binaryRelationPatternTree.keySet();
+            Operator fuzzer = Operators.fuzzIds();
+            for(Pattern pattern : patterns){
+                ReasonerQueryImpl pQuery = reasonerQueryFactory.create(conjunction(pattern));
+                Stream.concat(Stream.of(pattern), fuzzer.apply(pattern, txCtx))
+                        .flatMap(p -> Stream.concat(Stream.of(p), fuzzer.apply(p, txCtx)))
+                        .forEach(fuzzedPattern -> {
+                            ReasonerQueryImpl cQuery = reasonerQueryFactory.create(conjunction(fuzzedPattern));
+
+                            if (pQuery.isAtomic() && cQuery.isAtomic()) {
+                                ReasonerAtomicQuery queryA = (ReasonerAtomicQuery) pQuery;
+                                ReasonerAtomicQuery queryB = (ReasonerAtomicQuery) cQuery;
+                                QueryTestUtil.unification(queryA, queryB,true, UnifierType.STRUCTURAL);
+                                QueryTestUtil.unification(queryA, queryB,true, UnifierType.STRUCTURAL_SUBSUMPTIVE);
+                            }
+                        });
+                }
+            }
+    }
+
     private void testSubsumptionRelationHoldsBetweenPatternPairs(List<Pair<Pattern, Pattern>> testPairs, int threads) throws ExecutionException, InterruptedException {
         ExecutorService executorService = Executors.newFixedThreadPool(threads);
         int listSize = testPairs.size();
