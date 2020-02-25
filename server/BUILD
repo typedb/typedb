@@ -105,7 +105,7 @@ java_library(
         "//dependencies/maven/artifacts/ch/qos/logback:logback-classic",
         "//dependencies/maven/artifacts/ch/qos/logback:logback-core",
         "//dependencies/maven/artifacts/javax/servlet:javax-servlet-api",
-        "//hadoop:hadoop"
+        "//mapreduce:mapreduce"
     ],
     resources = ["LICENSE"] + glob(["resources/*"]),
     resource_strip_prefix = "server",
