@@ -36,6 +36,7 @@ import grakn.core.graql.reasoner.atom.predicate.ValuePredicate;
 import grakn.core.graql.reasoner.atom.predicate.VariablePredicate;
 import grakn.core.graql.reasoner.cache.SemanticDifference;
 import grakn.core.graql.reasoner.cache.VariableDefinition;
+import grakn.core.graql.reasoner.query.ReasonerQueryFactory;
 import grakn.core.graql.reasoner.rule.InferenceRule;
 import grakn.core.graql.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierType;
@@ -43,8 +44,10 @@ import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Type;
+import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.reasoner.ReasonerException;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
+import grakn.core.kb.graql.reasoner.cache.QueryCache;
 import grakn.core.kb.graql.reasoner.cache.RuleCache;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
@@ -70,13 +73,21 @@ public abstract class Atom extends AtomicBase {
 
     private Set<InferenceRule> applicableRules = null;
 
+    protected final ReasonerQueryFactory queryFactory;
+    protected final ConceptManager conceptManager;
+    protected final QueryCache queryCache;
     protected final RuleCache ruleCache;
+
     private final ConceptId typeId;
 
-    public Atom(RuleCache ruleCache, ReasonerQuery reasonerQuery, Variable varName, Statement pattern, ConceptId typeId) {
+    public Atom(ReasonerQuery reasonerQuery, Variable varName, Statement pattern, ConceptId typeId,
+                ReasonerQueryFactory queryFactory, ConceptManager conceptManager, QueryCache queryCache, RuleCache ruleCache) {
         super(reasonerQuery, varName, pattern);
-        this.ruleCache = ruleCache;
         this.typeId = typeId;
+        this.queryFactory = queryFactory;
+        this.conceptManager = conceptManager;
+        this.queryCache = queryCache;
+        this.ruleCache = ruleCache;
     }
 
     /**
@@ -384,7 +395,7 @@ public abstract class Atom extends AtomicBase {
      * @return materialised answer to this atom
      */
     public Stream<ConceptMap> materialise() {
-        return MaterialiserFactory.create().materialise(this);
+        return MaterialiserFactory.create(this.getClass(), queryFactory, queryCache).materialise(this);
     }
 
     /**
@@ -414,7 +425,6 @@ public abstract class Atom extends AtomicBase {
      * @return rewritten atom
      */
     public abstract Atom rewriteToUserDefined(Atom parentAtom);
-
 
     public abstract Atom rewriteWithTypeVariable();
 

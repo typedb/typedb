@@ -19,8 +19,10 @@
 
 package grakn.core.graql.reasoner.atom.binary;
 
+import grakn.core.graql.reasoner.query.ReasonerQueryFactory;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.manager.ConceptManager;
+import grakn.core.kb.graql.reasoner.cache.QueryCache;
 import grakn.core.kb.graql.reasoner.cache.RuleCache;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
@@ -37,9 +39,10 @@ import java.util.stream.Collectors;
  */
 public abstract class IsaAtomBase extends TypeAtom{
 
-    IsaAtomBase(ConceptManager conceptManager, RuleCache ruleCache, Variable varName, Statement pattern, ReasonerQuery reasonerQuery, ConceptId typeId,
-                Variable predicateVariable) {
-        super(conceptManager, ruleCache, varName, pattern, reasonerQuery, typeId, predicateVariable);
+    IsaAtomBase(Variable varName, Statement pattern, ReasonerQuery reasonerQuery, ConceptId typeId, Variable predicateVariable,
+                ReasonerQueryFactory queryFactory, ConceptManager conceptManager, QueryCache queryCache, RuleCache ruleCache) {
+        super(varName, pattern, reasonerQuery, typeId, predicateVariable,
+                queryFactory, conceptManager, queryCache, ruleCache);
     }
 
     @Override
@@ -47,6 +50,9 @@ public abstract class IsaAtomBase extends TypeAtom{
         Collection<Variable> vars = u.get(getVarName());
         return vars.isEmpty()?
                 Collections.singleton(this) :
-                vars.stream().map(v -> IsaAtom.create(conceptManager, ruleCache, v, getPredicateVariable(), getTypeId(), this.isDirect(), this.getParentQuery())).collect(Collectors.toSet());
+                vars.stream().map(v ->
+                        IsaAtom.create(v, getPredicateVariable(), getTypeId(), this.isDirect(), this.getParentQuery(),
+                                queryFactory, conceptManager, queryCache, ruleCache))
+                        .collect(Collectors.toSet());
     }
 }

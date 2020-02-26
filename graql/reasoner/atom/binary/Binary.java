@@ -25,6 +25,7 @@ import com.google.common.collect.Sets;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.reasoner.atom.predicate.Predicate;
+import grakn.core.graql.reasoner.query.ReasonerQueryFactory;
 import grakn.core.graql.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierType;
@@ -33,6 +34,7 @@ import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.reasoner.ReasonerCheckedException;
+import grakn.core.kb.graql.reasoner.cache.QueryCache;
 import grakn.core.kb.graql.reasoner.cache.RuleCache;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
@@ -61,17 +63,14 @@ import java.util.stream.Stream;
  *
  */
 public abstract class Binary extends Atom {
-
-    private final ConceptManager conceptManager;
     private final Variable predicateVariable;
 
     private SchemaConcept type = null;
     private IdPredicate typePredicate = null;
 
-    Binary(ConceptManager conceptManager, RuleCache ruleCache, Variable varName, Statement pattern, ReasonerQuery reasonerQuery, ConceptId typeId,
-           Variable predicateVariable) {
-        super(ruleCache, reasonerQuery, varName, pattern, typeId);
-        this.conceptManager = conceptManager;
+    Binary(Variable varName, Statement pattern, ReasonerQuery reasonerQuery, ConceptId typeId, Variable predicateVariable,
+           ReasonerQueryFactory queryFactory, ConceptManager conceptManager, QueryCache queryCache, RuleCache ruleCache) {
+        super(reasonerQuery, varName, pattern, typeId, queryFactory, conceptManager, queryCache, ruleCache);
         this.predicateVariable = predicateVariable;
     }
 

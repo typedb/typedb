@@ -1,7 +1,6 @@
 package grakn.core.graql.reasoner.atom.materialise;
 
 import com.google.common.collect.ImmutableMap;
-import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.binary.AttributeAtom;
 import grakn.core.graql.reasoner.atom.binary.IsaAtom;
 import grakn.core.graql.reasoner.atom.binary.RelationAtom;
@@ -18,7 +17,7 @@ public class MaterialiserFactory {
             AttributeAtom.class, AttributeMaterialiser::new
     );
 
-    static AtomMaterialiser create(Class type, ReasonerQueryFactory queryFactory, QueryCache queryCache){
+    public static AtomMaterialiser create(Class type, ReasonerQueryFactory queryFactory, QueryCache queryCache){
         BiFunction<ReasonerQueryFactory, QueryCache, AtomMaterialiser> match = materialisers.get(type);
         if (match == null) throw new IllegalArgumentException();
         return match.apply(queryFactory, queryCache);

@@ -174,7 +174,8 @@ public class PropertyAtomicFactory {
     private Atomic sub(Variable var, SubProperty property, ReasonerQuery parent, Set<Statement> otherStatements) {
         IdPredicate predicate = getIdPredicate(conceptManager, property.type().var(), property.type(), otherStatements, parent);
         ConceptId predicateId = predicate != null ? predicate.getPredicate() : null;
-        return SubAtom.create(conceptManager, ruleCache, var, property.type().var(), predicateId, parent);
+        return SubAtom.create(var, property.type().var(), predicateId, parent,
+                reasonerQueryFactory, conceptManager, queryCache, ruleCache);
     }
 
 
@@ -230,15 +231,16 @@ public class PropertyAtomicFactory {
         relVar = isaProp != null && isaProp.isExplicit() ?
                 relVar.isaX(new Statement(typeVariable.asReturnedVar())) :
                 relVar.isa(new Statement(typeVariable.asReturnedVar()));
-        return RelationAtom.create(reasonerQueryFactory, conceptManager, ruleCache, queryCache, keyspaceStatistics,
-                relVar, typeVariable, predicateId, parent);
+        return RelationAtom.create(relVar, typeVariable, predicateId, parent,
+                reasonerQueryFactory, conceptManager, queryCache, ruleCache, keyspaceStatistics);
     }
 
 
     private Atomic relates(Variable var, RelatesProperty property, ReasonerQuery parent, Set<Statement> otherStatements) {
         IdPredicate predicate = getIdPredicate(conceptManager, property.role().var(), property.role(), otherStatements, parent);
         ConceptId predicateId = predicate != null ? predicate.getPredicate() : null;
-        return RelatesAtom.create(conceptManager, ruleCache, var, property.role().var(), predicateId, parent);
+        return RelatesAtom.create(var, property.role().var(), predicateId, parent,
+                reasonerQueryFactory, conceptManager, queryCache, ruleCache);
     }
 
     private Atomic regex(Variable var, RegexProperty property, ReasonerQuery parent) {
@@ -248,7 +250,8 @@ public class PropertyAtomicFactory {
     private Atomic plays(Variable var, PlaysProperty property, ReasonerQuery parent, Set<Statement> otherStatements) {
         IdPredicate predicate = getIdPredicate(conceptManager, property.role().var(), property.role(), otherStatements, parent);
         ConceptId predicateId = predicate == null ? null : predicate.getPredicate();
-        return PlaysAtom.create(conceptManager, ruleCache, var, property.role().var(), predicateId, parent);
+        return PlaysAtom.create(var, property.role().var(), predicateId, parent,
+                reasonerQueryFactory, conceptManager, queryCache, ruleCache);
     }
 
     private Atomic neq(Variable var, NeqProperty property, ReasonerQuery parent) {
@@ -266,7 +269,8 @@ public class PropertyAtomicFactory {
         Variable predicateVar = new Variable();
         SchemaConcept attributeType = conceptManager.getSchemaConcept(Label.of(label));
         ConceptId predicateId = attributeType != null ? attributeType.id() : null;
-        return HasAtom.create(conceptManager, ruleCache, var, predicateVar, predicateId, parent);
+        return HasAtom.create(var, predicateVar, predicateId, parent,
+                reasonerQueryFactory, conceptManager, queryCache, ruleCache);
     }
 
     private Atomic hasAttribute(Variable var, HasAttributeProperty property, ReasonerQuery parent, Set<Statement> otherStatements) {
@@ -289,8 +293,8 @@ public class PropertyAtomicFactory {
         Statement resVar = relationVariable.isReturned() ?
                 new Statement(varName).has(property.type(), new Statement(attributeVariable), new Statement(relationVariable)) :
                 new Statement(varName).has(property.type(), new Statement(attributeVariable));
-        return AttributeAtom.create(reasonerQueryFactory, conceptManager, ruleCache, queryCache, keyspaceStatistics, resVar,
-                attributeVariable, relationVariable, predicateVariable, predicateId, predicates, parent);
+        return AttributeAtom.create(resVar, attributeVariable, relationVariable, predicateVariable, predicateId, predicates, parent,
+                reasonerQueryFactory, conceptManager, queryCache, ruleCache, keyspaceStatistics);
     }
 
 
@@ -342,7 +346,8 @@ public class PropertyAtomicFactory {
             isaVar = new Statement(var).isa(new Statement(typeVar));
         }
 
-        return IsaAtom.create(conceptManager, ruleCache, var, typeVar, isaVar, predicateId, parent);
+        return IsaAtom.create(var, typeVar, isaVar, predicateId, parent,
+                reasonerQueryFactory, conceptManager, queryCache, ruleCache);
     }
 
 
@@ -391,8 +396,6 @@ public class PropertyAtomicFactory {
      * @param otherStatements other statements providing necessary context
      * @param parent query the VP should be part of
      * @return value predicate corresponding to the provided property
-     *
-     * TODO figure out why this needs to be public
      */
     private ValuePredicate createValuePredicate(ValueProperty property, Statement statement, Set<Statement> otherStatements,
                                                 ReasonerQuery parent) {

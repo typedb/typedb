@@ -19,8 +19,10 @@
 package grakn.core.graql.reasoner.atom.binary;
 
 import grakn.core.graql.reasoner.atom.Atom;
+import grakn.core.graql.reasoner.query.ReasonerQueryFactory;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.manager.ConceptManager;
+import grakn.core.kb.graql.reasoner.cache.QueryCache;
 import grakn.core.kb.graql.reasoner.cache.RuleCache;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
@@ -48,9 +50,9 @@ import java.util.Set;
  */
 public abstract class TypeAtom extends Binary {
 
-    TypeAtom(ConceptManager conceptManager, RuleCache ruleCache, Variable varName, Statement pattern, ReasonerQuery reasonerQuery, ConceptId typeId,
-             Variable predicateVariable) {
-        super(conceptManager, ruleCache, varName, pattern, reasonerQuery, typeId, predicateVariable);
+    TypeAtom(Variable varName, Statement pattern, ReasonerQuery reasonerQuery, ConceptId typeId, Variable predicateVariable,
+             ReasonerQueryFactory queryFactory, ConceptManager conceptManager, QueryCache queryCache, RuleCache ruleCache) {
+        super(varName, pattern, reasonerQuery, typeId, predicateVariable, queryFactory, conceptManager, queryCache, ruleCache);
     }
 
 
