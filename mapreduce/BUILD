@@ -20,7 +20,7 @@ package(default_visibility = ["//visibility:public"])
 load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
 java_library(
-    name = "graph-cql",
+    name = "mapreduce",
     srcs = glob(
         ["**/*.java"],
         exclude = ["test/**"],
@@ -28,23 +28,34 @@ java_library(
     deps = [
         # Internal dependencies
         "//graph",
-
+        "//common",
         # External dependencies from @graknlabs
 
         # External dependencies from Maven
-        "//dependencies/maven/artifacts/com/datastax/oss:java-driver-core",
-        "//dependencies/maven/artifacts/com/datastax/oss:java-driver-query-builder",
-        "//dependencies/maven/artifacts/io/vavr:vavr",
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
         "//dependencies/maven/artifacts/com/google/guava:guava",
+        "//dependencies/maven/artifacts/org/apache/hadoop:hadoop-mapreduce-client-core",
+        "//dependencies/maven/artifacts/org/apache/hadoop:hadoop-common",
+        "//dependencies/maven/artifacts/org/apache/hadoop:hadoop-annotations",
+        "//dependencies/maven/artifacts/org/apache/tinkerpop:hadoop-gremlin",
+        "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
+        "//dependencies/maven/artifacts/org/apache/tinkerpop:tinkergraph-gremlin",
+        "//dependencies/maven/artifacts/commons-configuration:commons-configuration",
+        "//dependencies/maven/artifacts/org/apache/commons:commons-lang3",
+        "//dependencies/maven/artifacts/org/apache/cassandra:cassandra-all",
+        "//dependencies/maven/artifacts/com/datastax/oss:java-driver-core",
+
+#        The following 2 dependencies should be removed once GraknInputFormat and InputFormatCQL stop depending on old Thrift trickery
+        "//dependencies/maven/artifacts/org/apache/cassandra:cassandra-thrift",
+        "//dependencies/maven/artifacts/org/apache/thrift:libthrift"
     ],
-    tags = ["maven_coordinates=io.grakn.core:grakn-graph-cql:{pom_version}"],
+    tags = ["maven_coordinates=io.grakn.core:grakn-graph-hadoop:{pom_version}"],
 
 )
 
 checkstyle_test(
     name = "checkstyle",
     targets = [
-        ":graph-cql"
-    ],
+        ":mapreduce"
+    ]
 )
