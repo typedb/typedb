@@ -22,10 +22,10 @@ package grakn.core.graql.reasoner.query;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.ResolutionIterator;
 import grakn.core.graql.reasoner.atom.Atom;
+import grakn.core.graql.reasoner.ReasoningContext;
 import grakn.core.graql.reasoner.state.AnswerPropagatorState;
 import grakn.core.graql.reasoner.state.ResolutionState;
 import grakn.core.kb.graql.executor.ExecutorFactory;
-import grakn.core.kb.graql.reasoner.cache.QueryCache;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
 import graql.lang.Graql;
@@ -44,12 +44,12 @@ import java.util.stream.Stream;
  */
 public abstract class ResolvableQuery implements ReasonerQuery {
 
-    final ExecutorFactory executorFactory;
-    final QueryCache queryCache;
+    private final ReasoningContext ctx;
+    protected final ExecutorFactory executorFactory;
 
-    ResolvableQuery(ExecutorFactory executorFactory, QueryCache queryCache) {
+    ResolvableQuery(ExecutorFactory executorFactory, ReasoningContext ctx) {
         this.executorFactory = executorFactory;
-        this.queryCache = queryCache;
+        this.ctx = ctx;
     }
 
     @CheckReturnValue
@@ -57,6 +57,9 @@ public abstract class ResolvableQuery implements ReasonerQuery {
 
     @CheckReturnValue
     public abstract Stream<Atom> selectAtoms();
+
+    @CheckReturnValue
+    public ReasoningContext context(){ return ctx;}
 
     /**
      * @return this query in the composite form
@@ -139,7 +142,7 @@ public abstract class ResolvableQuery implements ReasonerQuery {
             //NB: the flag actually doesn't affect the traverse method which doesn't use reasoning
             return executorFactory.transactional(true).traverse(getPattern());
         } else {
-            return new ResolutionIterator(this, subGoals, queryCache).hasStream();
+            return new ResolutionIterator(this, subGoals, ctx.queryCache()).hasStream();
         }
     }
 

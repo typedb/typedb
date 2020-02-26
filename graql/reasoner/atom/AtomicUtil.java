@@ -39,11 +39,11 @@ public class AtomicUtil {
      * @return (partial) set of predicates corresponding to this answer
      */
     @CheckReturnValue
-    public static Set<Atomic> answerToPredicates(ConceptManager conceptManager, ConceptMap answer, ReasonerQuery parent) {
+    public static Set<Atomic> answerToPredicates(ConceptMap answer, ReasonerQuery parent, ConceptManager conceptManager) {
         Set<Variable> varNames = parent.getVarNames();
         return answer.map().entrySet().stream()
                 .filter(e -> varNames.contains(e.getKey()))
-                .map(e -> IdPredicate.create(conceptManager, e.getKey(), e.getValue().id(), parent))
+                .map(e -> IdPredicate.create(e.getKey(), e.getValue().id(), parent, conceptManager))
                 .collect(Collectors.toSet());
     }
 

@@ -22,17 +22,15 @@ package grakn.core.graql.reasoner.atom.binary;
 import com.google.common.collect.Sets;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.graql.reasoner.atom.Atom;
+import grakn.core.graql.reasoner.ReasoningContext;
 import grakn.core.graql.reasoner.rule.InferenceRule;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.Rule;
-import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
-import grakn.core.kb.graql.reasoner.cache.RuleCache;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
-
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
@@ -44,9 +42,9 @@ import java.util.stream.Stream;
  */
 public abstract class OntologicalAtom extends TypeAtom {
 
-    OntologicalAtom(ConceptManager conceptManager, RuleCache ruleCache, Variable varName, Statement pattern, ReasonerQuery reasonerQuery, ConceptId typeId,
-                    Variable predicateVariable) {
-        super(conceptManager, ruleCache, varName, pattern, reasonerQuery, typeId, predicateVariable);
+    OntologicalAtom(Variable varName, Statement pattern, ReasonerQuery reasonerQuery, ConceptId typeId,
+                    Variable predicateVariable, ReasoningContext ctx) {
+        super(varName, pattern, reasonerQuery, typeId, predicateVariable, ctx);
     }
 
     abstract OntologicalAtom createSelf(Variable var, Variable predicateVar, ConceptId predicateId, ReasonerQuery parent);

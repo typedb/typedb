@@ -29,12 +29,12 @@ import com.google.common.collect.Sets;
 import grakn.common.util.Pair;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.util.ConceptUtils;
-import grakn.core.core.Schema;
 import grakn.core.graql.reasoner.CacheCasting;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.AtomicBase;
 import grakn.core.graql.reasoner.atom.AtomicUtil;
 import grakn.core.graql.reasoner.atom.PropertyAtomicFactory;
+import grakn.core.graql.reasoner.ReasoningContext;
 import grakn.core.graql.reasoner.atom.binary.IsaAtom;
 import grakn.core.graql.reasoner.atom.binary.IsaAtomBase;
 import grakn.core.graql.reasoner.atom.binary.RelationAtom;
@@ -59,7 +59,6 @@ import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.Label;
-import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.executor.ExecutorFactory;
@@ -67,8 +66,6 @@ import grakn.core.kb.graql.planning.gremlin.TraversalPlanFactory;
 import grakn.core.kb.graql.reasoner.ReasonerCheckedException;
 import grakn.core.kb.graql.reasoner.ReasonerException;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
-import grakn.core.kb.graql.reasoner.cache.QueryCache;
-import grakn.core.kb.graql.reasoner.cache.RuleCache;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
@@ -77,8 +74,6 @@ import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
-
-import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -90,6 +85,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 /**
  *
@@ -98,10 +94,7 @@ import java.util.stream.Stream;
  */
 public class ReasonerQueryImpl extends ResolvableQuery {
 
-    final ConceptManager conceptManager;
-    final RuleCache ruleCache;
-    final TraversalPlanFactory traversalPlanFactory;
-    final ReasonerQueryFactory reasonerQueryFactory;
+    protected final TraversalPlanFactory traversalPlanFactory;
 
     private ImmutableSet<Atomic> atomSet;
     private ConceptMap substitution = null;
@@ -114,16 +107,14 @@ public class ReasonerQueryImpl extends ResolvableQuery {
      * BUILDER constructor should only be used in the ReasonerQueryFactory because it utilises
      * the setAtomSet method to work around an ordering constraint
      */
-    ReasonerQueryImpl(Conjunction<Statement> pattern, PropertyAtomicFactory propertyAtomicFactory,
-                      ConceptManager conceptManager, RuleCache ruleCache, QueryCache queryCache,
-                      ExecutorFactory executorFactory, ReasonerQueryFactory reasonerQueryFactory,
-                      TraversalPlanFactory traversalPlanFactory) {
-        super(executorFactory, queryCache);
-        this.conceptManager = conceptManager;
-        this.ruleCache = ruleCache;
+    ReasonerQueryImpl(Conjunction<Statement> pattern,
+                      PropertyAtomicFactory propertyAtomicFactory,
+                      ExecutorFactory executorFactory,
+                      TraversalPlanFactory traversalPlanFactory,
+                      ReasoningContext ctx) {
+        super(executorFactory, ctx);
         this.traversalPlanFactory = traversalPlanFactory;
         this.atomSet = null;
-        this.reasonerQueryFactory = reasonerQueryFactory;
 
         this.atomSet = ImmutableSet.<Atomic>builder()
                 .addAll(propertyAtomicFactory.createAtoms(pattern, this).iterator())
@@ -133,14 +124,11 @@ public class ReasonerQueryImpl extends ResolvableQuery {
     /**
      * create a reasoner query from provided set of atomics
      **/
-    ReasonerQueryImpl(Set<Atomic> atomsToCopy, ConceptManager conceptManager, RuleCache ruleCache, QueryCache queryCache, ExecutorFactory executorFactory, ReasonerQueryFactory reasonerQueryFactory, TraversalPlanFactory traversalPlanFactory) {
-        super(executorFactory, queryCache);
-        this.conceptManager = conceptManager;
-        this.ruleCache = ruleCache;
+    ReasonerQueryImpl(Set<Atomic> atomsToCopy,  ExecutorFactory executorFactory, TraversalPlanFactory traversalPlanFactory, ReasoningContext ctx) {
+        super(executorFactory, ctx);
         this.atomSet = ImmutableSet.<Atomic>builder()
                 .addAll(atomsToCopy.stream().map(at -> at.copy(this)).iterator())
                 .build();
-        this.reasonerQueryFactory = reasonerQueryFactory;
         this.traversalPlanFactory = traversalPlanFactory;
     }
 
@@ -148,24 +136,18 @@ public class ReasonerQueryImpl extends ResolvableQuery {
      * create a reasoner query from provided list of atoms
      * NB: atom constraints (types and predicates, if any) will be included in the query
      **/
-    ReasonerQueryImpl(List<Atom> atomsToPropagate, ConceptManager conceptManager, RuleCache ruleCache, QueryCache queryCache, ExecutorFactory executorFactory, ReasonerQueryFactory reasonerQueryFactory, TraversalPlanFactory traversalPlanFactory) {
-        super(executorFactory, queryCache);
-        this.conceptManager = conceptManager;
-        this.ruleCache = ruleCache;
+    ReasonerQueryImpl(List<Atom> atomsToPropagate, ExecutorFactory executorFactory, TraversalPlanFactory traversalPlanFactory, ReasoningContext ctx) {
+        super(executorFactory, ctx);
         this.atomSet =  ImmutableSet.<Atomic>builder()
                 .addAll(atomsToPropagate.stream()
                         .flatMap(at -> Stream.concat(Stream.of(at), at.getNonSelectableConstraints()))
                         .map(at -> at.copy(this)).iterator())
                 .build();
-        this.reasonerQueryFactory = reasonerQueryFactory;
         this.traversalPlanFactory = traversalPlanFactory;
     }
 
     ReasonerQueryImpl(ReasonerQueryImpl q) {
-        super(q.executorFactory, q.queryCache);
-        this.conceptManager = q.conceptManager;
-        this.ruleCache = q.ruleCache;
-        this.reasonerQueryFactory = q.reasonerQueryFactory;
+        super(q.executorFactory, q.context());
         this.traversalPlanFactory = q.traversalPlanFactory;
         this.atomSet =  ImmutableSet.<Atomic>builder()
                 .addAll(q.getAtoms().stream().map(at -> at.copy(this)).iterator())
@@ -176,46 +158,38 @@ public class ReasonerQueryImpl extends ResolvableQuery {
     public ReasonerQuery conjunction(ReasonerQuery q) {
         return new ReasonerQueryImpl(
                 Sets.union(getAtoms(), q.getAtoms()),
-                conceptManager,
-                ruleCache,
-                queryCache,
                 executorFactory,
-                reasonerQueryFactory,
-                traversalPlanFactory
+                traversalPlanFactory,
+                context()
         );
     }
 
     @Override
     public CompositeQuery asComposite() {
-        return new CompositeQuery(getPattern(), reasonerQueryFactory, executorFactory, queryCache);
+        return new CompositeQuery(getPattern(), executorFactory, context());
     }
 
     @Override
     public ReasonerQueryImpl withSubstitution(ConceptMap sub){
         return new ReasonerQueryImpl(Sets.union(this.getAtoms(),
-                AtomicUtil.answerToPredicates(conceptManager, sub,this)),
-                conceptManager,
-                ruleCache,
-                queryCache,
+                AtomicUtil.answerToPredicates(sub,this, context().conceptManager())),
                 executorFactory,
-                reasonerQueryFactory,
-                traversalPlanFactory);
+                traversalPlanFactory,
+                context());
     }
 
     @Override
     public ReasonerQueryImpl inferTypes() {
-        return new ReasonerQueryImpl(getAtoms().stream().map(Atomic::inferTypes).collect(Collectors.toSet()),
-                conceptManager,
-                ruleCache,
-                queryCache,
+        return new ReasonerQueryImpl(
+                getAtoms().stream().map(Atomic::inferTypes).collect(Collectors.toSet()),
                 executorFactory,
-                reasonerQueryFactory,
-                traversalPlanFactory);
+                traversalPlanFactory,
+                context());
     }
 
     @Override
     public ReasonerQueryImpl constantValuePredicateQuery(){
-        return reasonerQueryFactory.create(
+        return context().queryFactory().create(
                 getAtoms().stream()
                         .filter(at -> !(at instanceof VariablePredicate))
                         .collect(Collectors.toSet()));
@@ -235,11 +209,11 @@ public class ReasonerQueryImpl extends ResolvableQuery {
     public ReasonerQueryImpl transformIds(Map<Variable, ConceptId> transform){
         Set<Atomic> atoms = this.getAtoms(IdPredicate.class).map(p -> {
             ConceptId conceptId = transform.get(p.getVarName());
-            if (conceptId != null) return IdPredicate.create(conceptManager, p.getVarName(), conceptId, p.getParentQuery());
+            if (conceptId != null) return IdPredicate.create(p.getVarName(), conceptId, p.getParentQuery(), context().conceptManager());
             return p;
         }).collect(Collectors.toSet());
         getAtoms().stream().filter(at -> !(at instanceof IdPredicate)).forEach(atoms::add);
-        return new ReasonerQueryImpl(atoms, conceptManager, ruleCache, queryCache, executorFactory, reasonerQueryFactory, traversalPlanFactory);
+        return new ReasonerQueryImpl(atoms, executorFactory, traversalPlanFactory, context());
     }
 
     @Override
@@ -366,16 +340,16 @@ public class ReasonerQueryImpl extends ResolvableQuery {
 
     private Stream<IsaAtom> inferEntityTypes(ConceptMap sub) {
         Set<Variable> typedVars = getAtoms(IsaAtomBase.class).map(AtomicBase::getVarName).collect(Collectors.toSet());
+        ConceptManager conceptManager = context().conceptManager();
         return Stream.concat(
                 getAtoms(IdPredicate.class),
-                AtomicUtil.answerToPredicates(conceptManager, sub, this).stream()
+                AtomicUtil.answerToPredicates(sub, this, conceptManager).stream()
                 .map(IdPredicate.class::cast))
                 .filter(p -> !typedVars.contains(p.getVarName()))
                 .map(p -> new Pair<>(p, conceptManager.<Concept>getConcept(p.getPredicate())))
                 .filter(p -> Objects.nonNull(p.second()))
                 .filter(p -> p.second().isEntity())
-                .map(p -> IsaAtom.create(conceptManager, ruleCache, p.first().getVarName(), new Variable(),
-                        p.second().asEntity().type(), false,this));
+                .map(p -> IsaAtom.create(p.first().getVarName(), new Variable(), p.second().asEntity().type(), false, this, context()));
     }
 
     private Multimap<Variable, Type> getVarTypeMap(Stream<IsaAtomBase> isas){
@@ -452,7 +426,7 @@ public class ReasonerQueryImpl extends ResolvableQuery {
      */
     public ResolutionPlan resolutionPlan(){
         if (resolutionPlan == null){
-            resolutionPlan = new ResolutionPlan(conceptManager, traversalPlanFactory, this);
+            resolutionPlan = new ResolutionPlan(context().conceptManager(), traversalPlanFactory, this);
         }
         return resolutionPlan;
     }
@@ -492,6 +466,7 @@ public class ReasonerQueryImpl extends ResolvableQuery {
      */
     public ConceptMap getSubstitution(){
         if (substitution == null) {
+            ConceptManager conceptManager = context().conceptManager();
             Set<Variable> varNames = getVarNames();
             Set<IdPredicate> predicates = getAtoms(IsaAtomBase.class)
                     .map(IsaAtomBase::getTypePredicate)
@@ -513,6 +488,7 @@ public class ReasonerQueryImpl extends ResolvableQuery {
 
     public ConceptMap getRoleSubstitution(){
         Map<Variable, Concept> roleSub = new HashMap<>();
+        ConceptManager conceptManager = context().conceptManager();
         getAtoms(RelationAtom.class)
                 .flatMap(RelationAtom::getRolePredicates)
                 .forEach(p -> {
@@ -546,12 +522,9 @@ public class ReasonerQueryImpl extends ResolvableQuery {
                 this.selectAtoms()
                         .flatMap(at -> at.rewriteToAtoms().stream())
                         .collect(Collectors.toList()),
-                conceptManager,
-                ruleCache,
-                queryCache,
                 executorFactory,
-                reasonerQueryFactory,
-                traversalPlanFactory
+                traversalPlanFactory,
+                context()
         );
     }
 
@@ -561,9 +534,11 @@ public class ReasonerQueryImpl extends ResolvableQuery {
      * @return true if this query has complete entries in the cache
      */
     public boolean isCacheComplete(){
-        MultilevelSemanticCache queryCacheImpl = CacheCasting.queryCacheCast(queryCache);
+        MultilevelSemanticCache queryCache = CacheCasting.queryCacheCast(context().queryCache());
+        ReasonerQueryFactory reasonerQueryFactory = context().queryFactory();
+        ConceptManager conceptManager = context().conceptManager();
         if (selectAtoms().count() == 0) return false;
-        if (isAtomic()) return queryCacheImpl.isComplete(reasonerQueryFactory.atomic(selectAtoms().iterator().next()));
+        if (isAtomic()) return queryCache.isComplete(reasonerQueryFactory.atomic(selectAtoms().iterator().next()));
         List<ReasonerAtomicQuery> queries = resolutionPlan().plan().stream().map(reasonerQueryFactory::atomic).collect(Collectors.toList());
         Set<IdPredicate> subs = new HashSet<>();
         Map<ReasonerAtomicQuery, ReasonerAtomicQuery> queryMap = new HashMap<>();
@@ -581,14 +556,14 @@ public class ReasonerQueryImpl extends ResolvableQuery {
             queryMap.put(query, reasonerQueryFactory.atomic(conjunction));
             query.getVarNames().stream()
                     .filter(v -> subs.stream().noneMatch(s -> s.getVarName().equals(v)))
-                    .map(v -> IdPredicate.create(conceptManager, v, ConceptId.of(PLACEHOLDER_ID), query))
+                    .map(v -> IdPredicate.create(v, ConceptId.of(PLACEHOLDER_ID), query, conceptManager))
                     .forEach(subs::add);
         }
         return queryMap.entrySet().stream()
                 .filter(e -> e.getKey().isRuleResolvable())
                 .allMatch(e ->
                         Objects.nonNull(e.getKey().getAtom().getSchemaConcept())
-                                && queryCacheImpl.isComplete(e.getValue())
+                                && queryCache.isComplete(e.getValue())
                 );
     }
 
@@ -596,7 +571,7 @@ public class ReasonerQueryImpl extends ResolvableQuery {
     public boolean requiresReiteration() {
         if (isCacheComplete()) return false;
         Set<InferenceRule> dependentRules = RuleUtils.getDependentRules(this);
-        return RuleUtils.subGraphIsCyclical(dependentRules, queryCache)
+        return RuleUtils.subGraphIsCyclical(dependentRules, context().queryCache())
                 || RuleUtils.subGraphHasRulesWithHeadSatisfyingBody(dependentRules)
                 || selectAtoms().filter(Atom::isDisconnected).filter(Atom::isRuleResolvable).count() > 1;
     }
@@ -628,7 +603,8 @@ public class ReasonerQueryImpl extends ResolvableQuery {
     }
 
     private List<ConceptMap> splitToPartialAnswers(ConceptMap mergedAnswer){
-         return this.selectAtoms()
+        ReasonerQueryFactory reasonerQueryFactory = context().queryFactory();
+        return this.selectAtoms()
             .map(at -> at.inferTypes(mergedAnswer.project(at.getVarNames())))
             .map(reasonerQueryFactory::atomic)
                 .map(aq -> mergedAnswer.project(aq.getVarNames()).explain(new LookupExplanation(), aq.withSubstitution(mergedAnswer).getPattern()))
@@ -642,7 +618,7 @@ public class ReasonerQueryImpl extends ResolvableQuery {
 
         if(!this.isRuleResolvable()) {
             Set<Type> queryTypes = new HashSet<>(this.getVarTypeMap().values());
-            boolean fruitless = ruleCache.absentTypes(queryTypes);
+            boolean fruitless = context().ruleCache().absentTypes(queryTypes);
             if (fruitless) dbIterator = Collections.emptyIterator();
             else {
                 dbIterator = executorFactory.transactional( true).traverse(getPattern())
@@ -654,7 +630,7 @@ public class ReasonerQueryImpl extends ResolvableQuery {
         } else {
             dbIterator = Collections.emptyIterator();
 
-            ResolutionQueryPlan queryPlan = new ResolutionQueryPlan(reasonerQueryFactory, this);
+            ResolutionQueryPlan queryPlan = new ResolutionQueryPlan(context().queryFactory(), this);
             subGoalIterator = Iterators.singletonIterator(new JoinState(queryPlan.queries(), new ConceptMap(), parent.getUnifier(), parent, subGoals));
         }
         return Iterators.concat(dbIterator, subGoalIterator);

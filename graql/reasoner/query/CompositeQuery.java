@@ -26,6 +26,7 @@ import com.google.common.collect.Sets;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.atom.Atom;
+import grakn.core.graql.reasoner.ReasoningContext;
 import grakn.core.graql.reasoner.state.AnswerPropagatorState;
 import grakn.core.graql.reasoner.state.CompositeState;
 import grakn.core.graql.reasoner.state.ResolutionState;
@@ -36,7 +37,6 @@ import grakn.core.kb.graql.exception.GraqlSemanticException;
 import grakn.core.kb.graql.executor.ExecutorFactory;
 import grakn.core.kb.graql.reasoner.ReasonerException;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
-import grakn.core.kb.graql.reasoner.cache.QueryCache;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
@@ -73,11 +73,10 @@ public class CompositeQuery extends ResolvableQuery {
 
     final private ReasonerQueryImpl conjunctiveQuery;
     final private Set<ResolvableQuery> complementQueries;
-    final private ReasonerQueryFactory queryFactory;
 
-    CompositeQuery(Conjunction<Pattern> pattern, ReasonerQueryFactory queryFactory, ExecutorFactory executorFactory, QueryCache queryCache) throws ReasonerException {
-        super(executorFactory, queryCache);
-        this.queryFactory = queryFactory;
+    CompositeQuery(Conjunction<Pattern> pattern, ExecutorFactory executorFactory, ReasoningContext ctx) throws ReasonerException {
+        super(executorFactory, ctx);
+        ReasonerQueryFactory queryFactory = context().queryFactory();
         Conjunction<Statement> positiveConj = Graql.and(
                 pattern.getPatterns().stream()
                         .filter(p -> !p.isNegation())
@@ -86,9 +85,9 @@ public class CompositeQuery extends ResolvableQuery {
         );
         //conjunction of negation patterns
         Set<Conjunction<Pattern>> complementPattern = complementPattern(pattern);
-        this.conjunctiveQuery = this.queryFactory.create(positiveConj);
+        this.conjunctiveQuery = queryFactory.create(positiveConj);
         this.complementQueries = complementPattern.stream()
-                .map(comp -> this.queryFactory.resolvable(comp))
+                .map(queryFactory::resolvable)
                 .collect(Collectors.toSet());
 
         if (!isNegationSafe()){
@@ -96,11 +95,10 @@ public class CompositeQuery extends ResolvableQuery {
         }
     }
 
-    CompositeQuery(ReasonerQueryImpl conj, Set<ResolvableQuery> comp, ReasonerQueryFactory queryFactory, ExecutorFactory executorFactory, QueryCache queryCache) {
-        super(executorFactory, queryCache);
+    CompositeQuery(ReasonerQueryImpl conj, Set<ResolvableQuery> comp, ExecutorFactory executorFactory, ReasoningContext ctx) {
+        super(executorFactory, ctx);
         this.conjunctiveQuery = conj;
         this.complementQueries = comp;
-        this.queryFactory = queryFactory;
     }
 
     @Override
@@ -212,15 +210,14 @@ public class CompositeQuery extends ResolvableQuery {
         return new CompositeQuery(
                 getConjunctiveQuery().withSubstitution(sub),
                 getComplementQueries().stream().map(q -> q.withSubstitution(sub)).collect(Collectors.toSet()),
-                queryFactory,
                 executorFactory,
-                queryCache
+                context()
         );
     }
 
     @Override
     public CompositeQuery inferTypes() {
-        return new CompositeQuery(getConjunctiveQuery().inferTypes(), getComplementQueries(), queryFactory, executorFactory, queryCache);
+        return new CompositeQuery(getConjunctiveQuery().inferTypes(), getComplementQueries(), executorFactory, context());
     }
 
     @Override
@@ -228,9 +225,8 @@ public class CompositeQuery extends ResolvableQuery {
         return new CompositeQuery(
                 getConjunctiveQuery().constantValuePredicateQuery(),
                 getComplementQueries(),
-                queryFactory,
                 executorFactory,
-                queryCache);
+                context());
     }
 
     public ReasonerQueryImpl getConjunctiveQuery() {
@@ -246,9 +242,8 @@ public class CompositeQuery extends ResolvableQuery {
         return new CompositeQuery(
                 getConjunctiveQuery().copy(),
                 getComplementQueries().stream().map(ResolvableQuery::copy).collect(Collectors.toSet()),
-                queryFactory,
                 executorFactory,
-                queryCache
+                context()
         );
     }
 
@@ -290,9 +285,8 @@ public class CompositeQuery extends ResolvableQuery {
                                 this.getPattern().getPatterns(),
                                 q.getPattern().getPatterns()
                         )),
-                queryFactory,
                 executorFactory,
-                queryCache
+                context()
         );
     }
 
@@ -375,9 +369,8 @@ public class CompositeQuery extends ResolvableQuery {
                 getComplementQueries().isEmpty()?
                         getComplementQueries() :
                         getComplementQueries().stream().map(ResolvableQuery::rewrite).collect(Collectors.toSet()),
-                queryFactory,
                 executorFactory,
-                queryCache
+                context()
         );
     }
 
