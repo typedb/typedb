@@ -19,11 +19,10 @@
 
 package grakn.core.graql.reasoner.atom.binary;
 
+import grakn.core.graql.reasoner.ReasoningContext;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.Label;
-import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
-import grakn.core.kb.graql.reasoner.cache.RuleCache;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import graql.lang.Graql;
 import graql.lang.property.HasAttributeTypeProperty;
@@ -38,34 +37,33 @@ import javax.annotation.Nullable;
  */
 public class HasAtom extends OntologicalAtom {
 
-    HasAtom(ConceptManager conceptManager,
-            RuleCache ruleCache,
-            Variable varName,
-            Statement pattern,
-            ReasonerQuery parentQuery,
-            @Nullable ConceptId typeId,
-            Variable predicateVariable) {
-        super(conceptManager, ruleCache, varName, pattern, parentQuery, typeId, predicateVariable);
+    private HasAtom(Variable varName,
+                    Statement pattern,
+                    ReasonerQuery parentQuery,
+                    @Nullable ConceptId typeId,
+                    Variable predicateVariable,
+                    ReasoningContext ctx) {
+        super(varName, pattern, parentQuery, typeId, predicateVariable, ctx);
     }
 
-    public static HasAtom create(ConceptManager conceptManager, RuleCache ruleCache, Variable var, Variable pVar, ConceptId predicateId, ReasonerQuery parent) {
+    public static HasAtom create(Variable var, Variable pVar, ConceptId predicateId, ReasonerQuery parent, ReasoningContext ctx) {
         Variable varName = var.asReturnedVar();
         Variable predicateVar = pVar.asReturnedVar();
-        Label label = conceptManager.getConcept(predicateId).asType().label();
-        return new HasAtom(conceptManager, ruleCache, varName, new Statement(varName).has(Graql.type(label.getValue())), parent, predicateId, predicateVar);
+        Label label = ctx.conceptManager().getConcept(predicateId).asType().label();
+        return new HasAtom(varName, new Statement(varName).has(Graql.type(label.getValue())), parent, predicateId, predicateVar, ctx);
     }
 
-    private static HasAtom create(ConceptManager conceptManager, RuleCache ruleCache, TypeAtom a, ReasonerQuery parent) {
-        return create(conceptManager, ruleCache, a.getVarName(), a.getPredicateVariable(), a.getTypeId(), parent);
+    private static HasAtom create(TypeAtom a, ReasonerQuery parent) {
+        return create(a.getVarName(), a.getPredicateVariable(), a.getTypeId(), parent, a.context());
     }
 
     @Override
     OntologicalAtom createSelf(Variable var, Variable predicateVar, ConceptId predicateId, ReasonerQuery parent) {
-        return HasAtom.create(conceptManager, ruleCache, var, predicateVar, predicateId, parent);
+        return HasAtom.create(var, predicateVar, predicateId, parent, context());
     }
 
     @Override
-    public Atomic copy(ReasonerQuery parent){ return create(conceptManager, ruleCache, this, parent); }
+    public Atomic copy(ReasonerQuery parent){ return create(this, parent); }
 
     @Override
     public Class<? extends VarProperty> getVarPropertyClass() { return HasAttributeTypeProperty.class;}

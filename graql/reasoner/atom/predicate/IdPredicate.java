@@ -41,28 +41,28 @@ public class IdPredicate extends Predicate<ConceptId> {
 
     private ConceptManager conceptManager;
 
-    private IdPredicate(ConceptManager conceptManager, Variable varName, Statement pattern, ReasonerQuery parentQuery, ConceptId predicate) {
+    private IdPredicate(Variable varName, Statement pattern, ReasonerQuery parentQuery, ConceptId predicate, ConceptManager conceptManager) {
         super(varName, pattern, predicate, parentQuery);
         this.conceptManager = conceptManager;
     }
 
-    public static IdPredicate create(ConceptManager conceptManager, Statement pattern, ReasonerQuery parent) {
-        return new IdPredicate(conceptManager, pattern.var(), pattern, parent, extractPredicate(pattern));
+    public static IdPredicate create(Statement pattern, ReasonerQuery parent, ConceptManager conceptManager) {
+        return new IdPredicate(pattern.var(), pattern, parent, extractPredicate(pattern), conceptManager);
     }
 
-    public static IdPredicate create(ConceptManager conceptManager, Variable varName, Label label, ReasonerQuery parent) {
-        return create(conceptManager, createIdVar(varName.asReturnedVar(), label, conceptManager), parent);
+    public static IdPredicate create(Variable varName, Label label, ReasonerQuery parent, ConceptManager conceptManager) {
+        return create(createIdVar(varName.asReturnedVar(), label, conceptManager), parent, conceptManager);
     }
 
-    public static IdPredicate create(ConceptManager conceptManager, Variable varName, ConceptId id, ReasonerQuery parent) {
-        return create(conceptManager, createIdVar(varName.asReturnedVar(), id), parent);
+    public static IdPredicate create(Variable varName, ConceptId id, ReasonerQuery parent, ConceptManager conceptManager) {
+        return create(createIdVar(varName.asReturnedVar(), id), parent, conceptManager);
     }
 
     /**
      * Copy constructor
      */
     private static IdPredicate create(IdPredicate a, ReasonerQuery parent) {
-        return create(a.conceptManager, a.getPattern(), parent);
+        return create(a.getPattern(), parent, a.conceptManager);
     }
 
     private static ConceptId extractPredicate(Statement var) {

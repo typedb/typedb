@@ -54,12 +54,12 @@ public class AtomicState extends AnswerPropagatorState<ReasonerAtomicQuery> {
     private ReasonerQueryFactory reasonerQueryFactory;
     private QueryCache queryCache;
 
-    public AtomicState(ReasonerQueryFactory reasonerQueryFactory,
-                       ReasonerAtomicQuery query,
+    public AtomicState(ReasonerAtomicQuery query,
                        ConceptMap sub,
                        Unifier u,
                        AnswerPropagatorState parent,
                        Set<ReasonerAtomicQuery> subGoals,
+                       ReasonerQueryFactory reasonerQueryFactory,
                        QueryCache queryCache) {
         super(query.withSubstitution(sub), sub, u, parent, subGoals);
         this.reasonerQueryFactory = reasonerQueryFactory;

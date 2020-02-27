@@ -24,6 +24,7 @@ import com.google.common.collect.Sets;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.CacheCasting;
+import grakn.core.graql.reasoner.ReasoningContext;
 import grakn.core.graql.reasoner.atom.binary.AttributeAtom;
 import grakn.core.graql.reasoner.atom.binary.IsaAtom;
 import grakn.core.graql.reasoner.atom.binary.OntologicalAtom;
@@ -52,14 +53,13 @@ import graql.lang.property.IsaProperty;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
-
-import javax.annotation.Nullable;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 import static java.util.stream.Collectors.toSet;
 
@@ -68,13 +68,13 @@ import static java.util.stream.Collectors.toSet;
  */
 public abstract class Atom extends AtomicBase {
 
+    private final ReasoningContext ctx;
     private Set<InferenceRule> applicableRules = null;
-    protected final RuleCache ruleCache;
     private final ConceptId typeId;
 
-    public Atom(RuleCache ruleCache, ReasonerQuery reasonerQuery, Variable varName, Statement pattern, ConceptId typeId) {
+    public Atom(ReasonerQuery reasonerQuery, Variable varName, Statement pattern, ConceptId typeId, ReasoningContext ctx) {
         super(reasonerQuery, varName, pattern);
-        this.ruleCache = ruleCache;
+        this.ctx = ctx;
         this.typeId = typeId;
     }
 
@@ -86,6 +86,7 @@ public abstract class Atom extends AtomicBase {
         return typeId;
     }
 
+    public ReasoningContext context(){ return ctx;}
 
     public RelationAtom toRelationAtom() {
         throw ReasonerException.illegalAtomConversion(this, RelationAtom.class);
@@ -242,6 +243,7 @@ public abstract class Atom extends AtomicBase {
         boolean isDirect = getPattern().getProperties(IsaProperty.class).findFirst()
                 .map(IsaProperty::isExplicit).orElse(false);
 
+        RuleCache ruleCache = ctx.ruleCache();
         return getPossibleTypes().stream()
                 .flatMap(type -> ruleCache.getRulesWithType(type, isDirect))
                 .distinct();
@@ -253,6 +255,7 @@ public abstract class Atom extends AtomicBase {
     public Stream<InferenceRule> getApplicableRules() {
         if (applicableRules == null) {
             applicableRules = new HashSet<>();
+            RuleCache ruleCache = ctx.ruleCache();
             getPotentialRules()
                     .map(rule -> CacheCasting.ruleCacheCast(ruleCache).getRule(rule))
                     .filter(this::isRuleApplicable)
@@ -276,6 +279,7 @@ public abstract class Atom extends AtomicBase {
      * @return if this atom requires decomposition into a set of atoms
      */
     public boolean requiresDecomposition() {
+        RuleCache ruleCache = ctx.ruleCache();
         return this.getPotentialRules()
                 .map(r -> CacheCasting.ruleCacheCast(ruleCache).getRule(r))
                 .anyMatch(InferenceRule::appendsRolePlayers);

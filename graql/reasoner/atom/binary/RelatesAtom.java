@@ -19,10 +19,9 @@
 
 package grakn.core.graql.reasoner.atom.binary;
 
+import grakn.core.graql.reasoner.ReasoningContext;
 import grakn.core.kb.concept.api.ConceptId;
-import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
-import grakn.core.kb.graql.reasoner.cache.RuleCache;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import graql.lang.property.RelatesProperty;
 import graql.lang.property.VarProperty;
@@ -35,29 +34,29 @@ import graql.lang.statement.Variable;
  */
 public class RelatesAtom extends OntologicalAtom {
 
-    RelatesAtom(ConceptManager conceptManager, RuleCache ruleCache, Variable varName, Statement pattern, ReasonerQuery reasonerQuery, ConceptId typeId,
-                Variable predicateVariable) {
-        super(conceptManager, ruleCache, varName, pattern, reasonerQuery, typeId, predicateVariable);
+    private RelatesAtom(Variable varName, Statement pattern, ReasonerQuery reasonerQuery, ConceptId typeId,
+                        Variable predicateVariable, ReasoningContext ctx) {
+        super(varName, pattern, reasonerQuery, typeId, predicateVariable, ctx);
     }
 
-    public static RelatesAtom create(ConceptManager conceptManager, RuleCache ruleCache,Variable var, Variable pVar, ConceptId predicateId, ReasonerQuery parent) {
+    public static RelatesAtom create(Variable var, Variable pVar, ConceptId predicateId, ReasonerQuery parent, ReasoningContext ctx) {
         Variable varName = var.asReturnedVar();
         Variable predicateVar = pVar.asReturnedVar();
-        return new RelatesAtom(conceptManager, ruleCache, varName, new Statement(varName).relates(new Statement(predicateVar)), parent, predicateId, predicateVar);
+        return new RelatesAtom(varName, new Statement(varName).relates(new Statement(predicateVar)), parent, predicateId, predicateVar, ctx);
     }
 
-    private static RelatesAtom create(ConceptManager conceptManager, RuleCache ruleCache,RelatesAtom a, ReasonerQuery parent) {
-        return create(conceptManager, ruleCache, a.getVarName(), a.getPredicateVariable(), a.getTypeId(), parent);
+    private static RelatesAtom create(RelatesAtom a, ReasonerQuery parent) {
+        return create(a.getVarName(), a.getPredicateVariable(), a.getTypeId(), parent, a.context());
     }
 
     @Override
     OntologicalAtom createSelf(Variable var, Variable predicateVar, ConceptId predicateId, ReasonerQuery parent) {
-        return RelatesAtom.create(conceptManager, ruleCache, var, predicateVar, predicateId, parent);
+        return RelatesAtom.create(var, predicateVar, predicateId, parent, context());
     }
 
     @Override
     public Atomic copy(ReasonerQuery parent) {
-        return create(conceptManager, ruleCache, this, parent);
+        return create(this, parent);
     }
 
     @Override
