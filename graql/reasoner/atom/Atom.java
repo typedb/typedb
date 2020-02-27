@@ -45,6 +45,7 @@ import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.graql.reasoner.ReasonerException;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
+import grakn.core.kb.graql.reasoner.cache.RuleCache;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
@@ -86,7 +87,6 @@ public abstract class Atom extends AtomicBase {
     }
 
     public ReasoningContext context(){ return ctx;}
-
 
     public RelationAtom toRelationAtom() {
         throw ReasonerException.illegalAtomConversion(this, RelationAtom.class);
@@ -243,8 +243,9 @@ public abstract class Atom extends AtomicBase {
         boolean isDirect = getPattern().getProperties(IsaProperty.class).findFirst()
                 .map(IsaProperty::isExplicit).orElse(false);
 
+        RuleCache ruleCache = ctx.ruleCache();
         return getPossibleTypes().stream()
-                .flatMap(type -> ctx.ruleCache().getRulesWithType(type, isDirect))
+                .flatMap(type -> ruleCache.getRulesWithType(type, isDirect))
                 .distinct();
     }
 
@@ -254,8 +255,9 @@ public abstract class Atom extends AtomicBase {
     public Stream<InferenceRule> getApplicableRules() {
         if (applicableRules == null) {
             applicableRules = new HashSet<>();
+            RuleCache ruleCache = ctx.ruleCache();
             getPotentialRules()
-                    .map(rule -> CacheCasting.ruleCacheCast(ctx.ruleCache()).getRule(rule))
+                    .map(rule -> CacheCasting.ruleCacheCast(ruleCache).getRule(rule))
                     .filter(this::isRuleApplicable)
                     .map(r -> r.rewrite(this))
                     .forEach(applicableRules::add);
@@ -277,8 +279,9 @@ public abstract class Atom extends AtomicBase {
      * @return if this atom requires decomposition into a set of atoms
      */
     public boolean requiresDecomposition() {
+        RuleCache ruleCache = ctx.ruleCache();
         return this.getPotentialRules()
-                .map(r -> CacheCasting.ruleCacheCast(ctx.ruleCache()).getRule(r))
+                .map(r -> CacheCasting.ruleCacheCast(ruleCache).getRule(r))
                 .anyMatch(InferenceRule::appendsRolePlayers);
     }
 
