@@ -17,7 +17,7 @@
  *
  */
 
-package grakn.core.graql.reasoner.atom.task.inference;
+package grakn.core.graql.reasoner.atom.task.infer;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
