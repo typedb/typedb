@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
  */
-package grakn.core.graql.reasoner.atom.materialise;
+package grakn.core.graql.reasoner.atom.task.materialise;
 
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.atom.Atom;

@@ -18,7 +18,6 @@
  */
 package grakn.core.graql.reasoner.atom.binary;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.concept.answer.ConceptMap;
@@ -28,14 +27,14 @@ import grakn.core.graql.reasoner.CacheCasting;
 import grakn.core.graql.reasoner.ReasoningContext;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.AtomicEquivalence;
-import grakn.core.graql.reasoner.atom.materialise.AttributeMaterialiser;
+import grakn.core.graql.reasoner.atom.task.materialise.AttributeMaterialiser;
 import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.reasoner.atom.predicate.Predicate;
 import grakn.core.graql.reasoner.atom.predicate.ValuePredicate;
+import grakn.core.graql.reasoner.atom.task.processor.AttributeSemanticProcessor;
+import grakn.core.graql.reasoner.atom.task.processor.SemanticProcessor;
 import grakn.core.graql.reasoner.cache.SemanticDifference;
-import grakn.core.graql.reasoner.cache.VariableDefinition;
 import grakn.core.graql.reasoner.query.ResolvableQuery;
-import grakn.core.graql.reasoner.unifier.UnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.ConceptId;
@@ -63,7 +62,6 @@ import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
 import static grakn.core.graql.reasoner.utils.ReasonerUtils.isEquivalentCollection;
-import static java.util.stream.Collectors.toSet;
 
 /**
  *
@@ -88,6 +86,8 @@ public class AttributeAtom extends Binary{
     private final Variable attributeVariable;
     private final Variable relationVariable;
 
+    private final SemanticProcessor<AttributeAtom> semanticProcessor;
+
     private AttributeAtom(
             Variable varName,
             Statement pattern,
@@ -102,6 +102,7 @@ public class AttributeAtom extends Binary{
         this.relationVariable = relationVariable;
         this.attributeVariable = attributeVariable;
         this.multiPredicate = multiPredicate;
+        this.semanticProcessor = new AttributeSemanticProcessor();
     }
 
     public Variable getRelationVariable() {
@@ -391,59 +392,17 @@ public class AttributeAtom extends Binary{
 
     @Override
     public Unifier getUnifier(Atom parentAtom, UnifierType unifierType) {
-        if (!(parentAtom instanceof AttributeAtom)) {
-            // in general this >= parent, hence for rule unifiers we can potentially specialise child to match parent
-            if (unifierType.equals(UnifierType.RULE)) {
-                if (parentAtom instanceof IsaAtom) return this.toIsaAtom().getUnifier(parentAtom, unifierType);
-                else if (parentAtom instanceof RelationAtom){
-                    return this.toRelationAtom().getUnifier(parentAtom, unifierType);
-                }
-            }
-            return UnifierImpl.nonExistent();
-        }
+        return semanticProcessor.getUnifier(this, parentAtom, unifierType);
+    }
 
-        AttributeAtom parent = (AttributeAtom) parentAtom;
-        Unifier unifier = super.getUnifier(parentAtom, unifierType);
-        if (unifier == null) return UnifierImpl.nonExistent();
-
-        //unify attribute vars
-        Variable childAttributeVarName = this.getAttributeVariable();
-        Variable parentAttributeVarName = parent.getAttributeVariable();
-        if (parentAttributeVarName.isReturned()){
-            unifier = unifier.merge(new UnifierImpl(ImmutableMap.of(childAttributeVarName, parentAttributeVarName)));
-        }
-
-        //unify relation vars
-        Variable childRelationVarName = this.getRelationVariable();
-        Variable parentRelationVarName = parent.getRelationVariable();
-        if (parentRelationVarName.isReturned()){
-            unifier = unifier.merge(new UnifierImpl(ImmutableMap.of(childRelationVarName, parentRelationVarName)));
-        }
-
-        return isPredicateCompatible(parentAtom, unifier, unifierType)?
-                unifier : UnifierImpl.nonExistent();
+    @Override
+    public SemanticDifference computeSemanticDifference(Atom child, Unifier unifier) {
+        return semanticProcessor.computeSemanticDifference(this, child, unifier);
     }
 
     @Override
     public Stream<Predicate> getInnerPredicates(){
         return Stream.concat(super.getInnerPredicates(), getMultiPredicate().stream());
-    }
-
-    @Override
-    public SemanticDifference semanticDifference(Atom child, Unifier unifier) {
-        SemanticDifference baseDiff = super.semanticDifference(child, unifier);
-        if (!child.isResource()) return baseDiff;
-        AttributeAtom childAtom = (AttributeAtom) child;
-        Set<VariableDefinition> diff = new HashSet<>();
-
-        Variable parentVar = this.getAttributeVariable();
-        Unifier unifierInverse = unifier.inverse();
-        Set<ValuePredicate> predicatesToSatisfy = childAtom.getMultiPredicate().stream()
-                .flatMap(vp -> vp.unify(unifierInverse).stream()).collect(toSet());
-        this.getMultiPredicate().forEach(predicatesToSatisfy::remove);
-
-        diff.add(new VariableDefinition(parentVar, null, null, new HashSet<>(), predicatesToSatisfy));
-        return baseDiff.merge(new SemanticDifference(diff));
     }
 
     /**

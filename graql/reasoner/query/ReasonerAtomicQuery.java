@@ -215,7 +215,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         return unifier.stream()
                 .map(childParentUnifier -> {
                     Unifier inverse = childParentUnifier.inverse();
-                    return new Pair<>(inverse, this.getAtom().semanticDifference(child.getAtom(), inverse));
+                    return new Pair<>(inverse, this.getAtom().computeSemanticDifference(child.getAtom(), inverse));
                 })
                 .collect(Collectors.toSet());
     }

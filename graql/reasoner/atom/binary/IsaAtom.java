@@ -21,11 +21,11 @@ package grakn.core.graql.reasoner.atom.binary;
 
 import com.google.common.collect.ImmutableList;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.ReasoningContext;
-import grakn.core.graql.reasoner.atom.inference.IsaTypeReasoner;
-import grakn.core.graql.reasoner.atom.inference.TypeReasoner;
-import grakn.core.graql.reasoner.atom.materialise.IsaMaterialiser;
+import grakn.core.graql.reasoner.atom.Atom;
+import grakn.core.graql.reasoner.atom.task.inference.IsaTypeReasoner;
+import grakn.core.graql.reasoner.atom.task.inference.TypeReasoner;
+import grakn.core.graql.reasoner.atom.task.materialise.IsaMaterialiser;
 import grakn.core.graql.reasoner.atom.predicate.Predicate;
 import grakn.core.graql.reasoner.unifier.UnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierType;

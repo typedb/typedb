@@ -16,17 +16,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
  */
-package grakn.core.graql.reasoner.atom.materialise;
+package grakn.core.graql.reasoner.atom.task.materialise;
 
 import com.google.common.collect.ImmutableMap;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.graql.reasoner.ReasoningContext;
 import grakn.core.graql.reasoner.atom.binary.IsaAtom;
-import grakn.core.graql.reasoner.query.ReasonerQueryFactory;
 import grakn.core.graql.reasoner.utils.AnswerUtil;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.EntityType;
-import grakn.core.kb.graql.reasoner.cache.QueryCache;
 import graql.lang.statement.Variable;
 import java.util.stream.Stream;
 

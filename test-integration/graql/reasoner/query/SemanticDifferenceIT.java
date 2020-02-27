@@ -165,7 +165,7 @@ public class SemanticDifferenceIT {
 
             MultiUnifier multiUnifier = parent.getMultiUnifier(child, UnifierType.SUBSUMPTIVE);
             multiUnifier.stream()
-                    .map(u -> child.getAtom().semanticDifference(parent.getAtom(), u))
+                    .map(u -> child.getAtom().computeSemanticDifference(parent.getAtom(), u))
                     .forEach(sd -> assertTrue(sd.isTrivial()));
         }
     }
@@ -248,7 +248,7 @@ public class SemanticDifferenceIT {
             ReasonerAtomicQuery child = reasonerQueryFactory.atomic(conjunction(childPattern));
 
             Unifier unifier = parent.getMultiUnifier(child, UnifierType.SUBSUMPTIVE).getUnifier();
-            assertTrue(parent.getAtom().semanticDifference(child.getAtom(), unifier).isTrivial());
+            assertTrue(parent.getAtom().computeSemanticDifference(child.getAtom(), unifier).isTrivial());
         }
     }
 
@@ -346,7 +346,7 @@ public class SemanticDifferenceIT {
 
             MultiUnifier multiUnifier = parent.getMultiUnifier(child, UnifierType.SUBSUMPTIVE);
             multiUnifier.stream()
-                    .map(u -> parent.getAtom().semanticDifference(child.getAtom(), u))
+                    .map(u -> parent.getAtom().computeSemanticDifference(child.getAtom(), u))
                     .forEach(semDiff -> assertTrue(semDiff.isTrivial()));
         }
     }
@@ -484,7 +484,7 @@ public class SemanticDifferenceIT {
 
             MultiUnifier multiUnifier = parent.getMultiUnifier(child, UnifierType.SUBSUMPTIVE);
             multiUnifier.stream()
-                    .map(u -> parent.getAtom().semanticDifference(child.getAtom(), u))
+                    .map(u -> parent.getAtom().computeSemanticDifference(child.getAtom(), u))
                     .forEach(sd -> assertTrue(sd.isTrivial()));
         }
     }
