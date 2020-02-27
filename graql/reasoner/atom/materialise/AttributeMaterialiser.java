@@ -24,6 +24,7 @@ import com.google.common.collect.Iterables;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.core.AttributeValueConverter;
 import grakn.core.graql.reasoner.CacheCasting;
+import grakn.core.graql.reasoner.ReasoningContext;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.binary.AttributeAtom;
 import grakn.core.graql.reasoner.atom.predicate.ValuePredicate;
@@ -42,18 +43,16 @@ import java.util.stream.Stream;
 
 public class AttributeMaterialiser implements AtomMaterialiser<AttributeAtom> {
 
-    private final ReasonerQueryFactory queryFactory;
-    private final QueryCache queryCache;
+    private final ReasoningContext ctx;
 
-    AttributeMaterialiser(ReasonerQueryFactory queryFactory, QueryCache queryCache){
-        this.queryFactory = queryFactory;
-        this.queryCache = queryCache;
+    public AttributeMaterialiser(ReasoningContext ctx){
+        this.ctx = ctx;
     }
 
     private ConceptMap findAnswer(Atom atom, ConceptMap sub) {
         //NB: we are only interested in this atom and its subs, not any other constraints
-        ReasonerAtomicQuery query = queryFactory.atomic(Collections.singleton(atom)).withSubstitution(sub);
-        MultilevelSemanticCache queryCacheImpl = CacheCasting.queryCacheCast(queryCache);
+        ReasonerAtomicQuery query = ctx.queryFactory().atomic(Collections.singleton(atom)).withSubstitution(sub);
+        MultilevelSemanticCache queryCacheImpl = CacheCasting.queryCacheCast(ctx.queryCache());
         ConceptMap answer = queryCacheImpl.getAnswerStream(query).findFirst().orElse(null);
 
         if (answer == null) queryCacheImpl.ackDBCompleteness(query);

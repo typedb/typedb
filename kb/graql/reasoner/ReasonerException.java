@@ -47,8 +47,8 @@ public class ReasonerException extends GraknException {
         return new ReasonerException(ErrorMessage.QUERY_CACHE_ANSWER_NOT_FOUND.getMessage(getQuery));
     }
 
-    public static ReasonerException maxIterationsReached(Class<?> clazz) {
-        return new ReasonerException(ErrorMessage.MAX_ITERATION_REACHED.getMessage(clazz.toString()));
+    public static ReasonerException atomNotMaterialisable(Atomic atom) {
+        return new ReasonerException(ErrorMessage.ATOM_NOT_MATERIALISABLE.getMessage(atom));
     }
 
     public static ReasonerException ambiguousType(Variable var, Set<Type> types) {

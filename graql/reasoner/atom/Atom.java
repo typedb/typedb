@@ -24,19 +24,18 @@ import com.google.common.collect.Sets;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.CacheCasting;
+import grakn.core.graql.reasoner.ReasoningContext;
 import grakn.core.graql.reasoner.atom.binary.AttributeAtom;
 import grakn.core.graql.reasoner.atom.binary.IsaAtom;
 import grakn.core.graql.reasoner.atom.binary.OntologicalAtom;
 import grakn.core.graql.reasoner.atom.binary.RelationAtom;
 import grakn.core.graql.reasoner.atom.binary.TypeAtom;
-import grakn.core.graql.reasoner.atom.materialise.MaterialiserFactory;
 import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.reasoner.atom.predicate.Predicate;
 import grakn.core.graql.reasoner.atom.predicate.ValuePredicate;
 import grakn.core.graql.reasoner.atom.predicate.VariablePredicate;
 import grakn.core.graql.reasoner.cache.SemanticDifference;
 import grakn.core.graql.reasoner.cache.VariableDefinition;
-import grakn.core.graql.reasoner.query.ReasonerQueryFactory;
 import grakn.core.graql.reasoner.rule.InferenceRule;
 import grakn.core.graql.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierType;
@@ -44,10 +43,8 @@ import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Type;
-import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.reasoner.ReasonerException;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
-import grakn.core.kb.graql.reasoner.cache.QueryCache;
 import grakn.core.kb.graql.reasoner.cache.RuleCache;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
@@ -71,23 +68,15 @@ import static java.util.stream.Collectors.toSet;
  */
 public abstract class Atom extends AtomicBase {
 
+    private final ReasoningContext ctx;
     private Set<InferenceRule> applicableRules = null;
-
-    protected final ReasonerQueryFactory queryFactory;
-    protected final ConceptManager conceptManager;
-    protected final QueryCache queryCache;
-    protected final RuleCache ruleCache;
 
     private final ConceptId typeId;
 
-    public Atom(ReasonerQuery reasonerQuery, Variable varName, Statement pattern, ConceptId typeId,
-                ReasonerQueryFactory queryFactory, ConceptManager conceptManager, QueryCache queryCache, RuleCache ruleCache) {
+    public Atom(ReasonerQuery reasonerQuery, Variable varName, Statement pattern, ConceptId typeId, ReasoningContext ctx) {
         super(reasonerQuery, varName, pattern);
+        this.ctx = ctx;
         this.typeId = typeId;
-        this.queryFactory = queryFactory;
-        this.conceptManager = conceptManager;
-        this.queryCache = queryCache;
-        this.ruleCache = ruleCache;
     }
 
     /**
@@ -98,6 +87,7 @@ public abstract class Atom extends AtomicBase {
         return typeId;
     }
 
+    public ReasoningContext context(){ return ctx;}
 
     public RelationAtom toRelationAtom() {
         throw ReasonerException.illegalAtomConversion(this, RelationAtom.class);
@@ -254,6 +244,7 @@ public abstract class Atom extends AtomicBase {
         boolean isDirect = getPattern().getProperties(IsaProperty.class).findFirst()
                 .map(IsaProperty::isExplicit).orElse(false);
 
+        RuleCache ruleCache = ctx.ruleCache();
         return getPossibleTypes().stream()
                 .flatMap(type -> ruleCache.getRulesWithType(type, isDirect))
                 .distinct();
@@ -265,6 +256,7 @@ public abstract class Atom extends AtomicBase {
     public Stream<InferenceRule> getApplicableRules() {
         if (applicableRules == null) {
             applicableRules = new HashSet<>();
+            RuleCache ruleCache = ctx.ruleCache();
             getPotentialRules()
                     .map(rule -> CacheCasting.ruleCacheCast(ruleCache).getRule(rule))
                     .filter(this::isRuleApplicable)
@@ -288,6 +280,7 @@ public abstract class Atom extends AtomicBase {
      * @return if this atom requires decomposition into a set of atoms
      */
     public boolean requiresDecomposition() {
+        RuleCache ruleCache = ctx.ruleCache();
         return this.getPotentialRules()
                 .map(r -> CacheCasting.ruleCacheCast(ruleCache).getRule(r))
                 .anyMatch(InferenceRule::appendsRolePlayers);
@@ -395,7 +388,7 @@ public abstract class Atom extends AtomicBase {
      * @return materialised answer to this atom
      */
     public Stream<ConceptMap> materialise() {
-        return MaterialiserFactory.create(this.getClass(), queryFactory, queryCache).materialise(this);
+        throw ReasonerException.atomNotMaterialisable(this);
     }
 
     /**

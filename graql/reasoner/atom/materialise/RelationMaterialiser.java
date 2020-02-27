@@ -23,6 +23,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Multimap;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.CacheCasting;
+import grakn.core.graql.reasoner.ReasoningContext;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.binary.RelationAtom;
 import grakn.core.graql.reasoner.cache.MultilevelSemanticCache;
@@ -38,17 +39,15 @@ import java.util.stream.Stream;
 
 public class RelationMaterialiser implements AtomMaterialiser<RelationAtom> {
 
-    private final ReasonerQueryFactory queryFactory;
-    private final QueryCache queryCache;
+    private final ReasoningContext ctx;
 
-    RelationMaterialiser(ReasonerQueryFactory queryFactory, QueryCache queryCache){
-        this.queryFactory = queryFactory;
-        this.queryCache = queryCache;
+    public RelationMaterialiser(ReasoningContext ctx){
+        this.ctx = ctx;
     }
 
     private Relation findRelation(RelationAtom atom, ConceptMap sub) {
-        ReasonerAtomicQuery query = queryFactory.atomic(atom).withSubstitution(sub);
-        MultilevelSemanticCache queryCache = CacheCasting.queryCacheCast(this.queryCache);
+        ReasonerAtomicQuery query = ctx.queryFactory().atomic(atom).withSubstitution(sub);
+        MultilevelSemanticCache queryCache = CacheCasting.queryCacheCast(ctx.queryCache());
         ConceptMap answer = queryCache.getAnswerStream(query).findFirst().orElse(null);
 
         if (answer == null) queryCache.ackDBCompleteness(query);

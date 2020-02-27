@@ -29,8 +29,8 @@ import grakn.common.util.Pair;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.util.ConceptUtils;
 import grakn.core.core.Schema;
+import grakn.core.graql.reasoner.ReasoningContext;
 import grakn.core.graql.reasoner.atom.binary.RelationAtom;
-import grakn.core.graql.reasoner.query.ReasonerQueryFactory;
 import grakn.core.graql.reasoner.utils.ReasonerUtils;
 import grakn.core.graql.reasoner.utils.conversion.RoleConverter;
 import grakn.core.graql.reasoner.utils.conversion.TypeConverter;
@@ -41,8 +41,6 @@ import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.concept.manager.ConceptManager;
-import grakn.core.kb.graql.reasoner.cache.QueryCache;
-import grakn.core.kb.graql.reasoner.cache.RuleCache;
 import grakn.core.kb.keyspace.KeyspaceStatistics;
 import graql.lang.property.RelationProperty;
 import graql.lang.statement.Statement;
@@ -61,20 +59,10 @@ import static graql.lang.Graql.var;
 
 public class RelationTypeReasoner implements TypeReasoner<RelationAtom> {
 
-    private final ReasonerQueryFactory reasonerQueryFactory;
-    private final QueryCache queryCache;
-    private final KeyspaceStatistics keyspaceStatistics;
-    private final ConceptManager conceptManager;
-    private final RuleCache ruleCache;
+    private final ReasoningContext ctx;
 
-    public RelationTypeReasoner(ReasonerQueryFactory queryFactory,
-                         QueryCache queryCache, RuleCache ruleCache,
-                         ConceptManager conceptManger, KeyspaceStatistics stats){
-        this.reasonerQueryFactory = queryFactory;
-        this.queryCache = queryCache;
-        this.ruleCache = ruleCache;
-        this.conceptManager = conceptManger;
-        this.keyspaceStatistics = stats;
+    public RelationTypeReasoner(ReasoningContext ctx){
+        this.ctx = ctx;
     }
 
     @Override
@@ -95,46 +83,49 @@ public class RelationTypeReasoner implements TypeReasoner<RelationAtom> {
     public ImmutableList<Type> inferPossibleTypes(RelationAtom atom, ConceptMap sub) {
         if (atom.getSchemaConcept() != null) return ImmutableList.of(atom.getSchemaConcept().asType());
 
+
+        KeyspaceStatistics keyspaceStatistics = ctx.keyspaceStatistics();
+        ConceptManager conceptManager = ctx.conceptManager();
         Multimap<RelationType, Role> compatibleConfigurations = inferPossibleRelationConfigurations(atom, sub);
         Set<Variable> untypedRoleplayers = Sets.difference(atom.getRolePlayers(), atom.getParentQuery().getVarTypeMap().keySet());
         Set<RelationAtom> untypedNeighbours = atom.getNeighbours(RelationAtom.class)
                 .filter(at -> !Sets.intersection(at.getVarNames(), untypedRoleplayers).isEmpty())
                 .collect(Collectors.toSet());
 
-            ImmutableList.Builder<Type> builder = ImmutableList.builder();
-            //prioritise relations with higher chance of yielding answers
-            compatibleConfigurations.asMap().entrySet().stream()
-                    //prioritise relations with more allowed roles
-                    .sorted(Comparator.comparing(e -> -e.getValue().size()))
-                    //prioritise relations with number of roles equal to arity
-                    .sorted(Comparator.comparing(e -> e.getKey().roles().count() != atom.getRelationPlayers().size()))
-                    //prioritise relations having more instances
-                    .sorted(Comparator.comparing(e -> -keyspaceStatistics.count(conceptManager, e.getKey().label())))
-                    //prioritise relations with highest number of possible types played by untyped role players
-                    .map(e -> {
-                        if (untypedNeighbours.isEmpty()) return new Pair<>(e.getKey(), 0L);
+        ImmutableList.Builder<Type> builder = ImmutableList.builder();
+        //prioritise relations with higher chance of yielding answers
+        compatibleConfigurations.asMap().entrySet().stream()
+                //prioritise relations with more allowed roles
+                .sorted(Comparator.comparing(e -> -e.getValue().size()))
+                //prioritise relations with number of roles equal to arity
+                .sorted(Comparator.comparing(e -> e.getKey().roles().count() != atom.getRelationPlayers().size()))
+                //prioritise relations having more instances
+                .sorted(Comparator.comparing(e -> -keyspaceStatistics.count(conceptManager, e.getKey().label())))
+                //prioritise relations with highest number of possible types played by untyped role players
+                .map(e -> {
+                    if (untypedNeighbours.isEmpty()) return new Pair<>(e.getKey(), 0L);
 
-                        Iterator<RelationAtom> neighbourIterator = untypedNeighbours.iterator();
-                        Set<Type> typesFromNeighbour = inferPossibleEntityTypePlayers(neighbourIterator.next(), sub);
-                        while (neighbourIterator.hasNext()) {
-                            typesFromNeighbour = Sets.intersection(typesFromNeighbour, inferPossibleEntityTypePlayers(neighbourIterator.next(), sub));
-                        }
+                    Iterator<RelationAtom> neighbourIterator = untypedNeighbours.iterator();
+                    Set<Type> typesFromNeighbour = inferPossibleEntityTypePlayers(neighbourIterator.next(), sub);
+                    while (neighbourIterator.hasNext()) {
+                        typesFromNeighbour = Sets.intersection(typesFromNeighbour, inferPossibleEntityTypePlayers(neighbourIterator.next(), sub));
+                    }
 
-                        Set<Role> rs = e.getKey().roles().collect(Collectors.toSet());
-                        rs.removeAll(e.getValue());
-                        return new Pair<>(
-                                e.getKey(),
-                                rs.stream().flatMap(Role::players).filter(typesFromNeighbour::contains).count()
-                        );
-                    })
-                    .sorted(Comparator.comparing(p -> -p.second()))
-                    //prioritise non-implicit relations
-                    .sorted(Comparator.comparing(e -> e.first().isImplicit()))
-                    .map(Pair::first)
-                    //retain super types only
-                    .filter(t -> Sets.intersection(ConceptUtils.nonMetaSups(t), compatibleConfigurations.keySet()).isEmpty())
-                    .forEach(builder::add);
-            //TODO need to add THING and meta relation type as well to make it complete
+                    Set<Role> rs = e.getKey().roles().collect(Collectors.toSet());
+                    rs.removeAll(e.getValue());
+                    return new Pair<>(
+                            e.getKey(),
+                            rs.stream().flatMap(Role::players).filter(typesFromNeighbour::contains).count()
+                    );
+                })
+                .sorted(Comparator.comparing(p -> -p.second()))
+                //prioritise non-implicit relations
+                .sorted(Comparator.comparing(e -> e.first().isImplicit()))
+                .map(Pair::first)
+                //retain super types only
+                .filter(t -> Sets.intersection(ConceptUtils.nonMetaSups(t), compatibleConfigurations.keySet()).isEmpty())
+                .forEach(builder::add);
+        //TODO need to add THING and meta relation type as well to make it complete
         return builder.build();
     }
 
@@ -162,6 +153,7 @@ public class RelationTypeReasoner implements TypeReasoner<RelationAtom> {
         SetMultimap<Variable, Type> varTypeMap = atom.getParentQuery().getVarTypeMap(sub);
         Set<Type> types = atom.getRolePlayers().stream().filter(varTypeMap::containsKey).flatMap(v -> varTypeMap.get(v).stream()).collect(Collectors.toSet());
 
+        ConceptManager conceptManager = ctx.conceptManager();
         if (roles.isEmpty() && types.isEmpty()) {
             RelationType metaRelationType = conceptManager.getMetaRelationType();
             Multimap<RelationType, Role> compatibleTypes = HashMultimap.create();
@@ -215,7 +207,7 @@ public class RelationTypeReasoner implements TypeReasoner<RelationAtom> {
         boolean roleRecomputationViable = allRolesMeta && (!sub.isEmpty() || !Sets.intersection(varTypeMap.keySet(), atom.getRolePlayers()).isEmpty());
         if (explicitRoles.size() == atom.getRelationPlayers().size() && !roleRecomputationViable) return atom;
 
-        Role metaRole = conceptManager.getMetaRole();
+        Role metaRole = ctx.conceptManager().getMetaRole();
         List<RelationProperty.RolePlayer> allocatedRelationPlayers = new ArrayList<>();
         SchemaConcept schemaConcept = atom.getSchemaConcept();
         RelationType relType = null;
@@ -288,7 +280,11 @@ public class RelationTypeReasoner implements TypeReasoner<RelationAtom> {
                         relationPattern.isaX(new Statement(atom.getPredicateVariable())) :
                         relationPattern.isa(new Statement(atom.getPredicateVariable()))
                 );
+<<<<<<< HEAD
         return RelationAtom.create(newPattern, atom.getPredicateVariable(), atom.getTypeId(), atom.getPossibleTypes(), atom.getParentQuery(),
                 reasonerQueryFactory, conceptManager, queryCache, ruleCache, keyspaceStatistics);
+=======
+        return RelationAtom.create(newPattern, atom.getPredicateVariable(), atom.getTypeId(), atom.getPossibleTypes(), atom.getParentQuery(), atom.context());
+>>>>>>> 7e4c739a35e431a0d76d4b1e2e2e62d2bd2a0529
     }
 }

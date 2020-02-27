@@ -20,6 +20,7 @@ package grakn.core.graql.reasoner.atom.materialise;
 
 import com.google.common.collect.ImmutableMap;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.graql.reasoner.ReasoningContext;
 import grakn.core.graql.reasoner.atom.binary.IsaAtom;
 import grakn.core.graql.reasoner.query.ReasonerQueryFactory;
 import grakn.core.graql.reasoner.utils.AnswerUtil;
@@ -30,8 +31,6 @@ import graql.lang.statement.Variable;
 import java.util.stream.Stream;
 
 public class IsaMaterialiser implements AtomMaterialiser<IsaAtom>{
-
-    IsaMaterialiser(ReasonerQueryFactory queryFactory, QueryCache queryCache){}
 
     @Override
     public Stream<ConceptMap> materialise(IsaAtom atom){

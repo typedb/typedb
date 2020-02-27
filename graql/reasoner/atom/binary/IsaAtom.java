@@ -22,8 +22,10 @@ package grakn.core.graql.reasoner.atom.binary;
 import com.google.common.collect.ImmutableList;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.atom.Atom;
+import grakn.core.graql.reasoner.ReasoningContext;
 import grakn.core.graql.reasoner.atom.inference.IsaTypeReasoner;
 import grakn.core.graql.reasoner.atom.inference.TypeReasoner;
+import grakn.core.graql.reasoner.atom.materialise.IsaMaterialiser;
 import grakn.core.graql.reasoner.atom.predicate.Predicate;
 import grakn.core.graql.reasoner.query.ReasonerQueryFactory;
 import grakn.core.graql.reasoner.unifier.UnifierImpl;
@@ -31,11 +33,8 @@ import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Type;
-import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.exception.GraqlSemanticException;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
-import grakn.core.kb.graql.reasoner.cache.QueryCache;
-import grakn.core.kb.graql.reasoner.cache.RuleCache;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
 import graql.lang.pattern.Pattern;
@@ -47,6 +46,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
 /**
@@ -59,37 +59,32 @@ public class IsaAtom extends IsaAtomBase {
     private int hashCode;
     private boolean hashCodeMemoised;
 
-    private IsaAtom(Variable varName, Statement pattern, ReasonerQuery reasonerQuery, ConceptId typeId, Variable predicateVariable,
-                    ReasonerQueryFactory queryFactory, ConceptManager conceptManager, QueryCache queryCache, RuleCache ruleCache) {
-        super(varName, pattern, reasonerQuery, typeId, predicateVariable, queryFactory, conceptManager, queryCache, ruleCache);
-        this.typeReasoner = new IsaTypeReasoner(conceptManager);
+    private IsaAtom(Variable varName, Statement pattern, ReasonerQuery reasonerQuery, ConceptId typeId,
+                    Variable predicateVariable, ReasoningContext ctx) {
+        super(varName, pattern, reasonerQuery, typeId, predicateVariable, ctx);
+        this.typeReasoner = new IsaTypeReasoner(ctx.conceptManager());
     }
 
-    public static IsaAtom create(Variable var, Variable predicateVar, Statement pattern, @Nullable ConceptId predicateId, ReasonerQuery parent,
-                                 ReasonerQueryFactory queryFactory, ConceptManager conceptManager, QueryCache queryCache, RuleCache ruleCache) {
-        return new IsaAtom(var.asReturnedVar(), pattern, parent, predicateId, predicateVar, queryFactory, conceptManager, queryCache, ruleCache);
+    public static IsaAtom create(Variable var, Variable predicateVar, Statement pattern, @Nullable ConceptId predicateId, ReasonerQuery parent, ReasoningContext ctx) {
+        return new IsaAtom(var.asReturnedVar(), pattern, parent, predicateId, predicateVar, ctx);
     }
 
-    public static IsaAtom create(Variable var, Variable predicateVar, @Nullable ConceptId predicateId, boolean isDirect, ReasonerQuery parent,
-                                 ReasonerQueryFactory queryFactory, ConceptManager conceptManager, QueryCache queryCache, RuleCache ruleCache) {
+    public static IsaAtom create(Variable var, Variable predicateVar, @Nullable ConceptId predicateId, boolean isDirect, ReasonerQuery parent, ReasoningContext ctx) {
         Statement pattern = isDirect ?
                 new Statement(var).isaX(new Statement(predicateVar)) :
                 new Statement(var).isa(new Statement(predicateVar));
-
-        return new IsaAtom(var, pattern, parent, predicateId, predicateVar, queryFactory, conceptManager, queryCache, ruleCache);
+        return new IsaAtom(var, pattern, parent, predicateId, predicateVar, ctx);
     }
 
-    public static IsaAtom create(Variable var, Variable predicateVar, SchemaConcept type, boolean isDirect, ReasonerQuery parent,
-                                 ReasonerQueryFactory queryFactory, ConceptManager conceptManager, QueryCache queryCache, RuleCache ruleCache) {
+    public static IsaAtom create( Variable var, Variable predicateVar, SchemaConcept type, boolean isDirect, ReasonerQuery parent, ReasoningContext ctx) {
         Statement pattern = isDirect ?
                 new Statement(var).isaX(new Statement(predicateVar)) :
                 new Statement(var).isa(new Statement(predicateVar));
-        return new IsaAtom(var, pattern, parent, type.id(), predicateVar, queryFactory, conceptManager, queryCache, ruleCache);
+        return new IsaAtom(var, pattern, parent, type.id(), predicateVar, ctx);
     }
 
     private static IsaAtom create(IsaAtom a, ReasonerQuery parent) {
-        return create(a.getVarName(), a.getPredicateVariable(), a.getPattern(), a.getTypeId(), parent,
-                a.queryFactory, a.conceptManager, a.queryCache, a.ruleCache);
+        return create(a.getVarName(), a.getPredicateVariable(), a.getPattern(), a.getTypeId(), parent, a.context());
     }
 
     @Override
@@ -156,8 +151,7 @@ public class IsaAtom extends IsaAtomBase {
     @Override
     public IsaAtom addType(SchemaConcept type) {
         if (getTypeId() != null) return this;
-        return create(getVarName(), getPredicateVariable(), type.id(), this.isDirect(), this.getParentQuery(),
-                queryFactory, conceptManager, queryCache, ruleCache);
+        return create(getVarName(), getPredicateVariable(), type.id(), this.isDirect(), this.getParentQuery(), this.context());
     }
 
     @Override
@@ -171,6 +165,11 @@ public class IsaAtom extends IsaAtomBase {
     }
 
     @Override
+    public Stream<ConceptMap> materialise() {
+        return new IsaMaterialiser().materialise(this);
+    }
+
+    @Override
     public List<Atom> atomOptions(ConceptMap sub) {
         return typeReasoner.inferPossibleTypes(this, sub).stream()
                 .map(this::addType)
@@ -180,8 +179,7 @@ public class IsaAtom extends IsaAtomBase {
 
     @Override
     public Atom rewriteWithTypeVariable() {
-        return create(getVarName(), getPredicateVariable().asReturnedVar(), getTypeId(), this.isDirect(), getParentQuery(),
-                queryFactory, conceptManager, queryCache, ruleCache);
+        return create(getVarName(), getPredicateVariable().asReturnedVar(), getTypeId(), this.isDirect(), getParentQuery(), context());
     }
 
     @Override

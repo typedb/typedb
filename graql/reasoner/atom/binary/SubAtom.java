@@ -19,13 +19,10 @@
 
 package grakn.core.graql.reasoner.atom.binary;
 
+import grakn.core.graql.reasoner.ReasoningContext;
 import grakn.core.graql.reasoner.atom.predicate.Predicate;
-import grakn.core.graql.reasoner.query.ReasonerQueryFactory;
 import grakn.core.kb.concept.api.ConceptId;
-import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
-import grakn.core.kb.graql.reasoner.cache.QueryCache;
-import grakn.core.kb.graql.reasoner.cache.RuleCache;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import graql.lang.property.SubProperty;
 import graql.lang.property.VarProperty;
@@ -50,30 +47,25 @@ public class SubAtom extends OntologicalAtom {
                     ReasonerQuery parentQuery,
                     @Nullable ConceptId typeId,
                     Variable predicateVariable,
-                    ReasonerQueryFactory queryFactory, ConceptManager conceptManager, QueryCache queryCache, RuleCache ruleCache) {
-        super(varName, pattern, parentQuery, typeId, predicateVariable, queryFactory, conceptManager, queryCache, ruleCache);
+                    ReasoningContext ctx) {
+        super(varName, pattern, parentQuery, typeId, predicateVariable, ctx);
     }
 
-
-    public static SubAtom create(Variable var, Variable pVar, ConceptId predicateId, ReasonerQuery parent,
-                                 ReasonerQueryFactory queryFactory, ConceptManager conceptManager, QueryCache queryCache, RuleCache ruleCache) {
+    public static SubAtom create(Variable var, Variable pVar, ConceptId predicateId, ReasonerQuery parent, ReasoningContext ctx) {
         Variable varName = var.asReturnedVar();
         Variable predicateVar = pVar.asReturnedVar();
-        return new SubAtom(varName, new Statement(varName).sub(new Statement(predicateVar)), parent, predicateId, predicateVar,
-                queryFactory, conceptManager, queryCache, ruleCache);
+        return new SubAtom(varName, new Statement(varName).sub(new Statement(predicateVar)), parent, predicateId, predicateVar, ctx);
     }
     /**
      * copy constructor
      */
     private static SubAtom create(SubAtom a, ReasonerQuery parent) {
-        return create(a.getVarName(), a.getPredicateVariable(), a.getTypeId(), parent,
-                a.queryFactory, a.conceptManager, a.queryCache, a.ruleCache);
+        return create(a.getVarName(), a.getPredicateVariable(), a.getTypeId(), parent, a.context());
     }
 
     @Override
     OntologicalAtom createSelf(Variable var, Variable predicateVar, ConceptId predicateId, ReasonerQuery parent) {
-        return create(var, predicateVar, predicateId, parent,
-                queryFactory, conceptManager, queryCache, ruleCache);
+        return create(var, predicateVar, predicateId, parent, context());
     }
 
     @Override

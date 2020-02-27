@@ -25,14 +25,15 @@ import grakn.core.concept.answer.ConceptMap;
 import grakn.core.core.AttributeValueConverter;
 import grakn.core.core.Schema;
 import grakn.core.graql.reasoner.CacheCasting;
+import grakn.core.graql.reasoner.ReasoningContext;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.AtomicEquivalence;
+import grakn.core.graql.reasoner.atom.materialise.AttributeMaterialiser;
 import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.reasoner.atom.predicate.Predicate;
 import grakn.core.graql.reasoner.atom.predicate.ValuePredicate;
 import grakn.core.graql.reasoner.cache.SemanticDifference;
 import grakn.core.graql.reasoner.cache.VariableDefinition;
-import grakn.core.graql.reasoner.query.ReasonerQueryFactory;
 import grakn.core.graql.reasoner.query.ResolvableQuery;
 import grakn.core.graql.reasoner.unifier.UnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierType;
@@ -42,15 +43,11 @@ import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Type;
-import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.exception.GraqlSemanticException;
 import grakn.core.kb.graql.reasoner.ReasonerException;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
-import grakn.core.kb.graql.reasoner.cache.QueryCache;
-import grakn.core.kb.graql.reasoner.cache.RuleCache;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
-import grakn.core.kb.keyspace.KeyspaceStatistics;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.property.HasAttributeProperty;
@@ -89,9 +86,6 @@ public class AttributeAtom extends Binary{
 
     private final ImmutableSet<ValuePredicate> multiPredicate;
     private final Variable attributeVariable;
-
-    private KeyspaceStatistics keyspaceStatistics;
-
     private final Variable relationVariable;
 
     private AttributeAtom(
@@ -103,14 +97,8 @@ public class AttributeAtom extends Binary{
             Variable relationVariable,
             Variable attributeVariable,
             ImmutableSet<ValuePredicate> multiPredicate,
-            ReasonerQueryFactory reasonerQueryFactory,
-            ConceptManager conceptManager,
-            RuleCache ruleCache,
-            QueryCache queryCache,
-            KeyspaceStatistics keyspaceStatistics) {
-        super(varName, pattern, parentQuery, typeId, predicateVariable, reasonerQueryFactory, conceptManager, queryCache, ruleCache);
-        this.keyspaceStatistics = keyspaceStatistics;
-
+            ReasoningContext ctx) {
+        super(varName, pattern, parentQuery, typeId, predicateVariable, ctx);
         this.relationVariable = relationVariable;
         this.attributeVariable = attributeVariable;
         this.multiPredicate = multiPredicate;
@@ -128,18 +116,14 @@ public class AttributeAtom extends Binary{
 
     public static AttributeAtom create(Statement pattern, Variable attributeVariable,
                                        Variable relationVariable, Variable predicateVariable, ConceptId predicateId,
-                                       Set<ValuePredicate> ps, ReasonerQuery parent,
-                                       ReasonerQueryFactory reasonerQueryFactory, ConceptManager conceptManager,
-                                       QueryCache queryCache, RuleCache ruleCache, KeyspaceStatistics keyspaceStatistics) {
-        return new AttributeAtom(
-                pattern.var(), pattern, parent, predicateId, predicateVariable, relationVariable, attributeVariable, ImmutableSet.copyOf(ps),
-                reasonerQueryFactory,conceptManager, ruleCache, queryCache, keyspaceStatistics);
+                                       Set<ValuePredicate> ps, ReasonerQuery parent, ReasoningContext ctx) {
+        return new AttributeAtom(pattern.var(), pattern, parent, predicateId, predicateVariable, relationVariable,
+                attributeVariable, ImmutableSet.copyOf(ps), ctx);
     }
 
     private static AttributeAtom create(AttributeAtom a, ReasonerQuery parent) {
-        return create(a.getPattern(), a.getAttributeVariable(),
-                a.getRelationVariable(), a.getPredicateVariable(), a.getTypeId(), a.getMultiPredicate(), parent,
-                a.queryFactory, a.conceptManager, a.queryCache, a.ruleCache, a.keyspaceStatistics);
+        return create(a.getPattern(), a.getAttributeVariable(), a.getRelationVariable(), a.getPredicateVariable(),
+                a.getTypeId(), a.getMultiPredicate(), parent, a.context());
     }
 
     private AttributeAtom convertValues(){
@@ -160,9 +144,8 @@ public class AttributeAtom extends Binary{
             ValueProperty.Operation operation = ValueProperty.Operation.Comparison.of(vp.getPredicate().comparator(), convertedValue);
             return ValuePredicate.create(vp.getVarName(), operation, getParentQuery());
         }).collect(Collectors.toSet());
-        return create(
-                getPattern(), getAttributeVariable(), getRelationVariable(), getPredicateVariable(), getTypeId(), newMultiPredicate, getParentQuery(),
-                queryFactory, conceptManager, queryCache, ruleCache, keyspaceStatistics);
+        return create(getPattern(), getAttributeVariable(), getRelationVariable(), getPredicateVariable(),
+                getTypeId(), newMultiPredicate, getParentQuery(), context());
     }
 
 
@@ -177,7 +160,7 @@ public class AttributeAtom extends Binary{
                 getTypeId(),
                 newPredicates,
                 getParentQuery(),
-                queryFactory, conceptManager, queryCache, ruleCache, keyspaceStatistics);
+                context());
     }
 
     @Override
@@ -206,15 +189,15 @@ public class AttributeAtom extends Binary{
                         .rel(Schema.ImplicitType.HAS_VALUE.getLabel(type.label()).getValue(), new Statement(getAttributeVariable()))
                         .isa(typeLabel.getValue()),
                 getPredicateVariable(),
-                conceptManager.getSchemaConcept(typeLabel).id(),
+                context().conceptManager().getSchemaConcept(typeLabel).id(),
                 getParentQuery(),
-                queryFactory, conceptManager, queryCache, ruleCache, keyspaceStatistics
+                context()
         );
 
         Set<Statement> patterns = new HashSet<>(relationAtom.getCombinedPattern().statements());
         this.getPredicates().map(Predicate::getPattern).forEach(patterns::add);
         this.getMultiPredicate().stream().map(Predicate::getPattern).forEach(patterns::add);
-        return queryFactory.atomic(Graql.and(patterns)).getAtom().toRelationAtom();
+        return context().queryFactory().atomic(Graql.and(patterns)).getAtom().toRelationAtom();
     }
 
     /**
@@ -227,12 +210,11 @@ public class AttributeAtom extends Binary{
      */
     @Override
     public IsaAtom toIsaAtom() {
-        IsaAtom isaAtom = IsaAtom.create(getAttributeVariable(), getPredicateVariable(), getTypeId(), false, getParentQuery(),
-                queryFactory, conceptManager, queryCache, ruleCache);
+        IsaAtom isaAtom = IsaAtom.create(getAttributeVariable(), getPredicateVariable(), getTypeId(), false, getParentQuery(), context());
         Set<Statement> patterns = new HashSet<>(isaAtom.getCombinedPattern().statements());
         this.getPredicates().map(Predicate::getPattern).forEach(patterns::add);
         this.getMultiPredicate().stream().map(Predicate::getPattern).forEach(patterns::add);
-        return queryFactory.atomic(Graql.and(patterns)).getAtom().toIsaAtom();
+        return context().queryFactory().atomic(Graql.and(patterns)).getAtom().toIsaAtom();
     }
 
     @Override
@@ -360,7 +342,7 @@ public class AttributeAtom extends Binary{
         if(getMultiPredicate().isEmpty()) {
             Variable attrVar = getAttributeVariable();
             AttributeType.DataType<Object> dataType = getSchemaConcept().asAttributeType().dataType();
-            ResolvableQuery body = CacheCasting.ruleCacheCast(ruleCache).getRule(rule).getBody();
+            ResolvableQuery body = CacheCasting.ruleCacheCast(context().ruleCache()).getRule(rule).getBody();
             ErrorMessage incompatibleValuesMsg = ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_COPYING_INCOMPATIBLE_ATTRIBUTE_VALUES;
             body.getAtoms(AttributeAtom.class)
                     .filter(at -> at.getAttributeVariable().equals(attrVar))
@@ -400,6 +382,11 @@ public class AttributeAtom extends Binary{
         if (getRelationVariable().isReturned()) varNames.add(getRelationVariable());
         getMultiPredicate().forEach(p -> varNames.addAll(p.getVarNames()));
         return varNames;
+    }
+
+    @Override
+    public Stream<ConceptMap> materialise() {
+        return new AttributeMaterialiser(context()).materialise(this);
     }
 
     @Override
@@ -475,16 +462,12 @@ public class AttributeAtom extends Binary{
         Variable relationVariable = getRelationVariable().asReturnedVar();
         Statement newVar = new Statement(getVarName())
                 .has(getSchemaConcept().label().getValue(), new Statement(attributeVariable), new Statement(relationVariable));
-        return create(newVar, attributeVariable, relationVariable, getPredicateVariable(), getTypeId(),
-                getMultiPredicate(), getParentQuery(),
-                queryFactory, conceptManager, queryCache, ruleCache, keyspaceStatistics);
+        return create(newVar, attributeVariable, relationVariable, getPredicateVariable(), getTypeId(), getMultiPredicate(), getParentQuery(), context());
     }
 
     @Override
     public Atom rewriteWithTypeVariable() {
-        return create(getPattern(), getAttributeVariable(), getRelationVariable(),
-                getPredicateVariable().asReturnedVar(), getTypeId(), getMultiPredicate(), getParentQuery(),
-                queryFactory, conceptManager, queryCache, ruleCache, keyspaceStatistics);
+        return create(getPattern(), getAttributeVariable(), getRelationVariable(), getPredicateVariable().asReturnedVar(), getTypeId(), getMultiPredicate(), getParentQuery(), context());
     }
 
     @Override

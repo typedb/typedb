@@ -84,8 +84,8 @@ public class ReasonerUtils {
         return  vars.stream()
                 .filter(v -> v.var().equals(typeVariable))
                 .flatMap(v -> v.hasProperty(TypeProperty.class)?
-                        v.getProperties(TypeProperty.class).map(np -> IdPredicate.create(conceptManager, typeVariable, Label.of(np.name()), parent)) :
-                        v.getProperties(IdProperty.class).map(np -> IdPredicate.create(conceptManager, typeVariable, ConceptId.of(np.id()), parent)))
+                        v.getProperties(TypeProperty.class).map(np -> IdPredicate.create(typeVariable, Label.of(np.name()), parent, conceptManager)) :
+                        v.getProperties(IdProperty.class).map(np -> IdPredicate.create(typeVariable, ConceptId.of(np.id()), parent, conceptManager)))
                 .findFirst().orElse(null);
     }
 
@@ -99,14 +99,14 @@ public class ReasonerUtils {
      * @return mapped IdPredicate
      */
     @Nullable
-    public static IdPredicate getIdPredicate(ConceptManager conceptManager, Variable typeVariable, Statement typeVar, Set<Statement> vars, ReasonerQuery parent){
+    public static IdPredicate getIdPredicate(Variable typeVariable, Statement typeVar, Set<Statement> vars, ReasonerQuery parent, ConceptManager conceptManager){
         IdPredicate predicate = null;
         //look for id predicate among vars
         if(typeVar.var().isReturned()) {
             predicate = getUserDefinedIdPredicate(conceptManager, typeVariable, vars, parent);
         } else {
             TypeProperty nameProp = typeVar.getProperty(TypeProperty.class).orElse(null);
-            if (nameProp != null) predicate = IdPredicate.create(conceptManager, typeVariable, Label.of(nameProp.name()), parent);
+            if (nameProp != null) predicate = IdPredicate.create(typeVariable, Label.of(nameProp.name()), parent, conceptManager);
         }
         return predicate;
     }

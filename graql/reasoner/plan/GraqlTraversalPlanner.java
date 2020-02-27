@@ -130,7 +130,7 @@ public class GraqlTraversalPlanner {
                 first.getVarNames().stream()
                         .peek(vars::add)
                         .filter(v -> !subVariables.contains(v))
-                        .map(v -> IdPredicate.create(conceptManager, v, ConceptId.of(PLACEHOLDER_ID), query))
+                        .map(v -> IdPredicate.create(v, ConceptId.of(PLACEHOLDER_ID), query, conceptManager))
                         .forEach(subs::add);
             }
         }
