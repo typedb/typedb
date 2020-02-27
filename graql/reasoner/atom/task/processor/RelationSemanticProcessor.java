@@ -17,7 +17,7 @@
  *
  */
 
-package grakn.core.graql.reasoner.atom.processor;
+package grakn.core.graql.reasoner.atom.task.processor;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Iterables;

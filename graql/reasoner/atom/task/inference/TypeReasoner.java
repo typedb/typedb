@@ -17,7 +17,7 @@
  *
  */
 
-package grakn.core.graql.reasoner.atom.inference;
+package grakn.core.graql.reasoner.atom.task.inference;
 
 import com.google.common.collect.ImmutableList;
 import grakn.core.concept.answer.ConceptMap;

@@ -32,7 +32,7 @@ import grakn.core.graql.reasoner.atom.binary.RelationAtom;
 import grakn.core.graql.reasoner.atom.binary.TypeAtom;
 import grakn.core.graql.reasoner.atom.predicate.Predicate;
 import grakn.core.graql.reasoner.atom.predicate.VariablePredicate;
-import grakn.core.graql.reasoner.atom.processor.BasicSemanticProcessor;
+import grakn.core.graql.reasoner.atom.task.processor.BasicSemanticProcessor;
 import grakn.core.graql.reasoner.cache.SemanticDifference;
 import grakn.core.graql.reasoner.rule.InferenceRule;
 import grakn.core.graql.reasoner.unifier.MultiUnifierImpl;

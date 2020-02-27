@@ -17,7 +17,7 @@
  *
  */
 
-package grakn.core.graql.reasoner.atom.processor;
+package grakn.core.graql.reasoner.atom.task.processor;
 
 import com.google.common.collect.ImmutableMap;
 import grakn.core.graql.reasoner.atom.Atom;

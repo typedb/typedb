@@ -17,7 +17,7 @@
  *
  */
 
-package grakn.core.graql.reasoner.atom.materialise;
+package grakn.core.graql.reasoner.atom.task.materialise;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
@@ -30,13 +30,11 @@ import grakn.core.graql.reasoner.atom.binary.AttributeAtom;
 import grakn.core.graql.reasoner.atom.predicate.ValuePredicate;
 import grakn.core.graql.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
-import grakn.core.graql.reasoner.query.ReasonerQueryFactory;
 import grakn.core.graql.reasoner.utils.AnswerUtil;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.Relation;
-import grakn.core.kb.graql.reasoner.cache.QueryCache;
 import graql.lang.statement.Variable;
 import java.util.Collections;
 import java.util.stream.Stream;
