@@ -49,50 +49,6 @@ public class AttributeMaterialiser implements AtomMaterialiser<AttributeAtom> {
         this.ctx = ctx;
     }
 
-    private ConceptMap findAnswer(Atom atom, ConceptMap sub) {
-        //NB: we are only interested in this atom and its subs, not any other constraints
-        ReasonerAtomicQuery query = ctx.queryFactory().atomic(Collections.singleton(atom)).withSubstitution(sub);
-        MultilevelSemanticCache queryCacheImpl = CacheCasting.queryCacheCast(ctx.queryCache());
-        ConceptMap answer = queryCacheImpl.getAnswerStream(query).findFirst().orElse(null);
-
-        if (answer == null) queryCacheImpl.ackDBCompleteness(query);
-        else queryCacheImpl.record(query.withSubstitution(answer), answer);
-        return answer;
-    }
-
-    /**
-     * @param owner     attribute owner
-     * @param attribute attribute itself
-     * @return implicit relation of the attribute
-     */
-    private Relation attachAttribute(Concept owner, Attribute attribute) {
-        //NB: this inserts the implicit relation based on the type of the attribute.
-        //We can have cases when we want to specialise the relation while retaining the existing attribute.
-        //In such cases at the moment we still insert the attribute type relation whilst retaining an appropriate cache entry.
-        Relation relation = null;
-        if (owner.isEntity()) {
-            relation = owner.asEntity().attributeInferred(attribute);
-        } else if (owner.isRelation()) {
-            relation = owner.asRelation().attributeInferred(attribute);
-        } else if (owner.isAttribute()) {
-            relation = owner.asAttribute().attributeInferred(attribute);
-        }
-        return relation;
-    }
-
-    /**
-     * @param sub       partial substitution
-     * @param owner     attribute owner
-     * @param attribute attribute concept
-     * @return inserted implicit relation if didn't exist, null otherwise
-     */
-    private Relation putImplicitRelation(AttributeAtom atom, ConceptMap sub, Concept owner, Attribute attribute) {
-        ConceptMap answer = findAnswer(atom, sub);
-        if (answer == null) return attachAttribute(owner, attribute);
-        Variable relationVariable = atom.getRelationVariable();
-        return relationVariable.isReturned() ? answer.get(relationVariable).asRelation() : null;
-    }
-
     @Override
     public Stream<ConceptMap> materialise(AttributeAtom atom) {
         ConceptMap substitution = atom.getParentQuery().getSubstitution();
@@ -137,5 +93,49 @@ public class AttributeMaterialiser implements AtomMaterialiser<AttributeAtom> {
             return Stream.of(answer);
         }
         return Stream.empty();
+    }
+
+    private ConceptMap findAnswer(Atom atom, ConceptMap sub) {
+        //NB: we are only interested in this atom and its subs, not any other constraints
+        ReasonerAtomicQuery query = ctx.queryFactory().atomic(Collections.singleton(atom)).withSubstitution(sub);
+        MultilevelSemanticCache queryCacheImpl = CacheCasting.queryCacheCast(ctx.queryCache());
+        ConceptMap answer = queryCacheImpl.getAnswerStream(query).findFirst().orElse(null);
+
+        if (answer == null) queryCacheImpl.ackDBCompleteness(query);
+        else queryCacheImpl.record(query.withSubstitution(answer), answer);
+        return answer;
+    }
+
+    /**
+     * @param owner     attribute owner
+     * @param attribute attribute itself
+     * @return implicit relation of the attribute
+     */
+    private Relation attachAttribute(Concept owner, Attribute attribute) {
+        //NB: this inserts the implicit relation based on the type of the attribute.
+        //We can have cases when we want to specialise the relation while retaining the existing attribute.
+        //In such cases at the moment we still insert the attribute type relation whilst retaining an appropriate cache entry.
+        Relation relation = null;
+        if (owner.isEntity()) {
+            relation = owner.asEntity().attributeInferred(attribute);
+        } else if (owner.isRelation()) {
+            relation = owner.asRelation().attributeInferred(attribute);
+        } else if (owner.isAttribute()) {
+            relation = owner.asAttribute().attributeInferred(attribute);
+        }
+        return relation;
+    }
+
+    /**
+     * @param sub       partial substitution
+     * @param owner     attribute owner
+     * @param attribute attribute concept
+     * @return inserted implicit relation if didn't exist, null otherwise
+     */
+    private Relation putImplicitRelation(AttributeAtom atom, ConceptMap sub, Concept owner, Attribute attribute) {
+        ConceptMap answer = findAnswer(atom, sub);
+        if (answer == null) return attachAttribute(owner, attribute);
+        Variable relationVariable = atom.getRelationVariable();
+        return relationVariable.isReturned() ? answer.get(relationVariable).asRelation() : null;
     }
 }

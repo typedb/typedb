@@ -23,6 +23,12 @@ import grakn.core.graql.reasoner.atom.Atom;
 import java.util.stream.Stream;
 
 public interface AtomMaterialiser<T extends Atom> {
-
+    
+    /**
+     * Materialises the provided atom - does an insert of the corresponding pattern.
+     * Exhibits PUT behaviour - if things are already present, nothing is inserted.
+     *
+     * @return materialised answer to this atom
+     */
     Stream<ConceptMap> materialise(T toMaterialise);
 }
