@@ -85,7 +85,7 @@ public class AttributeAtom extends Binary{
     private final Variable relationVariable;
 
     private final SemanticProcessor<AttributeAtom> semanticProcessor;
-    private final AtomValidator<AttributeAtom> validator = new AttributeAtomValidator();
+    private final AtomValidator<AttributeAtom> validator;
 
     private AttributeAtom(
             Variable varName,
@@ -102,6 +102,7 @@ public class AttributeAtom extends Binary{
         this.attributeVariable = attributeVariable;
         this.multiPredicate = multiPredicate;
         this.semanticProcessor = new AttributeSemanticProcessor();
+        this.validator = new AttributeAtomValidator(ctx.ruleCache());
     }
 
     public Variable getRelationVariable() {

@@ -20,6 +20,12 @@ import java.util.Set;
 
 public class RelationAtomValidator implements AtomValidator<RelationAtom> {
 
+    private final ConceptManager conceptManager;
+
+    public RelationAtomValidator(ConceptManager conceptManager){
+        this.conceptManager = conceptManager;
+    }
+
     @Override
     public Set<String> validateAsRuleHead(RelationAtom atom, Rule rule) {
         //can form a rule head if type is specified, type is not implicit and all relation players are insertable
@@ -60,7 +66,6 @@ public class RelationAtomValidator implements AtomValidator<RelationAtom> {
 
     private Set<String> validateRelationPlayers(RelationAtom atom, Rule rule) {
         Set<String> errors = new HashSet<>();
-        ConceptManager conceptManager = atom.context().conceptManager();
         atom.getRelationPlayers().forEach(rp -> {
             Statement role = rp.getRole().orElse(null);
             if (role == null) {

@@ -93,7 +93,7 @@ public class RelationAtom extends IsaAtomBase {
 
     private final TypeReasoner<RelationAtom> typeReasoner;
     private final SemanticProcessor<RelationAtom> semanticProcessor;
-    private final AtomValidator<RelationAtom> validator = new RelationAtomValidator();
+    private final AtomValidator<RelationAtom> validator;
 
     private ImmutableList<Type> possibleTypes = null;
 
@@ -120,6 +120,7 @@ public class RelationAtom extends IsaAtomBase {
         this.roleLabels = roleLabels;
         this.typeReasoner = new RelationTypeReasoner(ctx);
         this.semanticProcessor = new RelationSemanticProcessor(ctx.conceptManager());
+        this.validator = new RelationAtomValidator(ctx.conceptManager());
     }
 
     public static RelationAtom create(Statement pattern, Variable predicateVar, @Nullable ConceptId predicateId, ReasonerQuery parent, ReasoningContext ctx) {
