@@ -19,12 +19,9 @@
 
 package grakn.core.graql.reasoner.atom.binary;
 
-import grakn.core.graql.reasoner.query.ReasonerQueryFactory;
 import grakn.core.graql.reasoner.ReasoningContext;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
-import grakn.core.kb.graql.reasoner.cache.QueryCache;
-import grakn.core.kb.graql.reasoner.cache.RuleCache;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import graql.lang.property.PlaysProperty;
 import graql.lang.property.VarProperty;

@@ -27,7 +27,6 @@ import grakn.core.graql.reasoner.atom.inference.IsaTypeReasoner;
 import grakn.core.graql.reasoner.atom.inference.TypeReasoner;
 import grakn.core.graql.reasoner.atom.materialise.IsaMaterialiser;
 import grakn.core.graql.reasoner.atom.predicate.Predicate;
-import grakn.core.graql.reasoner.query.ReasonerQueryFactory;
 import grakn.core.graql.reasoner.unifier.UnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.kb.concept.api.ConceptId;

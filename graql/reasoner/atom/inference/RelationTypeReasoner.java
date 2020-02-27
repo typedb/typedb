@@ -281,10 +281,14 @@ public class RelationTypeReasoner implements TypeReasoner<RelationAtom> {
                         relationPattern.isa(new Statement(atom.getPredicateVariable()))
                 );
 <<<<<<< HEAD
+<<<<<<< HEAD
         return RelationAtom.create(newPattern, atom.getPredicateVariable(), atom.getTypeId(), atom.getPossibleTypes(), atom.getParentQuery(),
                 reasonerQueryFactory, conceptManager, queryCache, ruleCache, keyspaceStatistics);
 =======
         return RelationAtom.create(newPattern, atom.getPredicateVariable(), atom.getTypeId(), atom.getPossibleTypes(), atom.getParentQuery(), atom.context());
 >>>>>>> 7e4c739a35e431a0d76d4b1e2e2e62d2bd2a0529
+=======
+        return RelationAtom.create(newPattern, atom.getPredicateVariable(), atom.getTypeId(), atom.getPossibleTypes(), atom.getParentQuery(), atom.context());
+>>>>>>> 5c6df04c0fddf4ccd052e656c93062a7a6260bf3
     }
 }

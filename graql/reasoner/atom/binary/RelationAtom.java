@@ -35,7 +35,6 @@ import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.ReasoningContext;
 import grakn.core.graql.reasoner.atom.inference.RelationTypeReasoner;
 import grakn.core.graql.reasoner.atom.inference.TypeReasoner;
-import grakn.core.graql.reasoner.atom.materialise.IsaMaterialiser;
 import grakn.core.graql.reasoner.atom.materialise.RelationMaterialiser;
 import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.reasoner.atom.predicate.Predicate;

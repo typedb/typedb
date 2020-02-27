@@ -19,8 +19,8 @@
 package grakn.core.graql.reasoner.atom.binary;
 
 import grakn.core.graql.reasoner.atom.Atom;
-import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.graql.reasoner.ReasoningContext;
+import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
 import graql.lang.statement.Statement;
