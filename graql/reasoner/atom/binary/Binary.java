@@ -60,6 +60,9 @@ public abstract class Binary extends Atom {
     private final Variable predicateVariable;
     private final SemanticProcessor<Binary> semanticProcessor;
 
+    private SchemaConcept type = null;
+    private IdPredicate typePredicate = null;
+
     Binary(Variable varName, Statement pattern, ReasonerQuery reasonerQuery, ConceptId typeId,
            Variable predicateVariable, ReasoningContext ctx) {
         super(reasonerQuery, varName, pattern, typeId, ctx);
@@ -70,10 +73,6 @@ public abstract class Binary extends Atom {
     public Variable getPredicateVariable() {
         return predicateVariable;
     }
-
-
-    private SchemaConcept type = null;
-    private IdPredicate typePredicate = null;
 
     @Nullable
     public IdPredicate getTypePredicate(){

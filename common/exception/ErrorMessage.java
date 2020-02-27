@@ -207,7 +207,8 @@ public enum ErrorMessage {
     ATTRIBUTE_TYPE_NOT_SPECIFIED("No attribute type provided for compute query."),
     K_SMALLER_THAN_TWO("k can't be smaller than 2."),
     INSTANCE_DOES_NOT_EXIST("Instance does not exist in the subgraph."),
-    MAX_ITERATION_REACHED("Max iteration of [%s] reached.");
+    MAX_ITERATION_REACHED("Max iteration of [%s] reached."),
+    ATOM_NOT_MATERIALISABLE("Attempted materialisation of an atom [%s] that is not materialisable.");
     private final String message;
 
     ErrorMessage(String message) {

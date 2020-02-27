@@ -20,7 +20,6 @@ package grakn.core.graql.reasoner.atom.binary;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
@@ -32,25 +31,20 @@ import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.util.Streams;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.core.Schema;
-import grakn.core.graql.reasoner.CacheCasting;
-import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.ReasoningContext;
+import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.inference.RelationTypeReasoner;
 import grakn.core.graql.reasoner.atom.inference.TypeReasoner;
+import grakn.core.graql.reasoner.atom.materialise.RelationMaterialiser;
 import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.reasoner.atom.predicate.Predicate;
 import grakn.core.graql.reasoner.atom.processor.RelationSemanticProcessor;
 import grakn.core.graql.reasoner.atom.processor.SemanticProcessor;
-import grakn.core.graql.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.graql.reasoner.cache.SemanticDifference;
-import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.reasoner.unifier.UnifierType;
-import grakn.core.graql.reasoner.utils.AnswerUtil;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.Label;
-import grakn.core.kb.concept.api.Relation;
-import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.SchemaConcept;
@@ -123,7 +117,7 @@ public class RelationAtom extends IsaAtomBase {
         this.relationPlayers = relationPlayers;
         this.roleLabels = roleLabels;
         this.typeReasoner = new RelationTypeReasoner(ctx);
-        this. semanticProcessor = new RelationSemanticProcessor(ctx.conceptManager());
+        this.semanticProcessor = new RelationSemanticProcessor(ctx.conceptManager());
     }
 
     public static RelationAtom create(Statement pattern, Variable predicateVar, @Nullable ConceptId predicateId, ReasonerQuery parent, ReasoningContext ctx) {
@@ -352,7 +346,7 @@ public class RelationAtom extends IsaAtomBase {
                 .collect(Collectors.toSet());
     }
 
-    private ConceptMap getRoleSubstitution() {
+    public ConceptMap getRoleSubstitution() {
         Map<Variable, Concept> roleSub = new HashMap<>();
         ConceptManager conceptManager = context().conceptManager();
         getRolePredicates().forEach(p -> roleSub.put(p.getVarName(), conceptManager.getConcept(p.getPredicate())));
@@ -660,6 +654,11 @@ public class RelationAtom extends IsaAtomBase {
     }
 
     @Override
+    public Stream<ConceptMap> materialise() {
+        return new RelationMaterialiser(context()).materialise(this);
+    }
+
+    @Override
     public List<Atom> atomOptions(ConceptMap sub) {
         return typeReasoner.inferPossibleTypes(this, sub).stream()
                 .map(this::addType)
@@ -753,51 +752,6 @@ public class RelationAtom extends IsaAtomBase {
         return map;
     }
 
-    private Relation findRelation(ConceptMap sub) {
-        ReasonerAtomicQuery query = context().queryFactory().atomic(this).withSubstitution(sub);
-        MultilevelSemanticCache queryCache = CacheCasting.queryCacheCast(context().queryCache());
-        ConceptMap answer = queryCache.getAnswerStream(query).findFirst().orElse(null);
-
-        if (answer == null) queryCache.ackDBCompleteness(query);
-        return answer != null ? answer.get(getVarName()).asRelation() : null;
-    }
-
-    @Override
-    public Stream<ConceptMap> materialise() {
-        RelationType relationType = getSchemaConcept().asRelationType();
-        //in case the roles are variable, we wouldn't have enough information if converted to attribute
-        if (relationType.isImplicit()) {
-            ConceptMap roleSub = getRoleSubstitution();
-            return this.toAttributeAtom().materialise().map(ans -> AnswerUtil.joinAnswers(ans, roleSub));
-        }
-        Multimap<Role, Variable> roleVarMap = getRoleVarMap();
-        ConceptMap substitution = getParentQuery().getSubstitution();
-
-        //NB: if the relation is implicit, it will be created as a reified relation
-        //if the relation already exists, only assign roleplayers, otherwise create a new relation
-        Relation relation;
-        if (substitution.containsVar(getVarName())) {
-            relation = substitution.get(getVarName()).asRelation();
-        } else {
-            Relation foundRelation = findRelation(substitution);
-            relation = foundRelation != null? foundRelation : relationType.addRelationInferred();
-        }
-
-        //NB: this will potentially reify existing implicit relationships
-        roleVarMap.asMap()
-                .forEach((key, value) -> value.forEach(var -> relation.assign(key, substitution.get(var).asThing())));
-
-        ConceptMap relationSub = AnswerUtil.joinAnswers(
-                getRoleSubstitution(),
-                getVarName().isReturned() ?
-                        new ConceptMap(ImmutableMap.of(getVarName(), relation)) :
-                        new ConceptMap()
-        );
-
-        ConceptMap answer = AnswerUtil.joinAnswers(substitution, relationSub);
-        return Stream.of(answer);
-    }
-
     /**
      * if any Role variable of the parent is user defined rewrite ALL Role variables to user defined (otherwise unification is problematic)
      *
@@ -864,5 +818,4 @@ public class RelationAtom extends IsaAtomBase {
                 .rewriteWithVariableRoles(parentAtom)
                 .rewriteWithTypeVariable(parentAtom);
     }
-
 }
