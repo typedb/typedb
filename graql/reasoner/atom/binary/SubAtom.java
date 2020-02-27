@@ -68,7 +68,6 @@ public class SubAtom extends OntologicalAtom {
         return create(var, predicateVar, predicateId, parent, context());
     }
 
-
     @Override
     public Atomic copy(ReasonerQuery parent){
         return create(this, parent);

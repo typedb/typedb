@@ -52,7 +52,6 @@ public abstract class TypeAtom extends Binary {
         super(varName, pattern, reasonerQuery, typeId, predicateVariable, ctx);
     }
 
-
     @Override
     public boolean isType(){ return true;}
 

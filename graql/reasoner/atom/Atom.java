@@ -70,6 +70,7 @@ public abstract class Atom extends AtomicBase {
 
     private final ReasoningContext ctx;
     private Set<InferenceRule> applicableRules = null;
+
     private final ConceptId typeId;
 
     public Atom(ReasonerQuery reasonerQuery, Variable varName, Statement pattern, ConceptId typeId, ReasoningContext ctx) {
@@ -386,7 +387,9 @@ public abstract class Atom extends AtomicBase {
      *
      * @return materialised answer to this atom
      */
-    public Stream<ConceptMap> materialise() { return Stream.empty();}
+    public Stream<ConceptMap> materialise() {
+        throw ReasonerException.atomNotMaterialisable(this);
+    }
 
     /**
      * @return set of atoms this atom can be decomposed to
@@ -415,7 +418,6 @@ public abstract class Atom extends AtomicBase {
      * @return rewritten atom
      */
     public abstract Atom rewriteToUserDefined(Atom parentAtom);
-
 
     public abstract Atom rewriteWithTypeVariable();
 

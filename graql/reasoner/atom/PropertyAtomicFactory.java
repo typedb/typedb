@@ -376,7 +376,6 @@ public class PropertyAtomicFactory {
                 .map(Atomic::simplify);
     }
 
-
     /**
      *
      * @param property value property we are interested in
@@ -384,8 +383,6 @@ public class PropertyAtomicFactory {
      * @param otherStatements other statements providing necessary context
      * @param parent query the VP should be part of
      * @return value predicate corresponding to the provided property
-     *
-     * TODO figure out why this needs to be public
      */
     private ValuePredicate createValuePredicate(ValueProperty property, Statement statement, Set<Statement> otherStatements,
                                                 ReasonerQuery parent) {
