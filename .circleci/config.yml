@@ -73,7 +73,10 @@ jobs:
       - run: |
           SONARCLOUD_CODE_ANALYSIS_CREDENTIAL=$SONARCLOUD_CREDENTIAL \
             bazel run @graknlabs_build_tools//sonarcloud:code-analysis -- \
-            --project-key graknlabs_grakn_core --commit-id=$CIRCLE_SHA1 --branch=$CIRCLE_BRANCH
+            --organisation=$SONARCLOUD_ORGANISATION \
+            --project-key=$SONARCLOUD_PROJECT_KEY \
+            --commit-id=$CIRCLE_SHA1 \
+            --branch=$CIRCLE_BRANCH
   
   test-common:
     machine: true
@@ -411,7 +414,9 @@ workflows:
       - build-analysis:
           filters:
             branches:
-              only: master
+              only:
+                - master
+                - rewrite
       - test-common:
           filters:
             branches:
@@ -439,7 +444,9 @@ workflows:
       - test-assembly-mac-zip:
           filters:
             branches:
-              only: master
+              only:
+                - master
+                - rewrite
           requires:
             - build
             - build-checkstyle
@@ -453,7 +460,9 @@ workflows:
       - test-assembly-windows-zip:
           filters:
             branches:
-              only: master
+              only:
+                - master
+                - rewrite
           requires:
             - build
             - build-checkstyle
@@ -467,7 +476,9 @@ workflows:
       - test-assembly-linux-targz:
           filters:
             branches:
-              only: master
+              only:
+                - master
+                - rewrite
           requires:
             - build
             - build-checkstyle
@@ -481,7 +492,9 @@ workflows:
       - test-assembly-docker:
           filters:
             branches:
-              only: master
+              only:
+                - master
+                - rewrite
           requires:
             - build
             - build-checkstyle
@@ -495,7 +508,9 @@ workflows:
       - deploy-apt-snapshot:
           filters:
             branches:
-              only: master
+              only:
+                - master
+                - rewrite
           requires:
             - test-assembly-mac-zip
             - test-assembly-windows-zip
@@ -504,7 +519,9 @@ workflows:
       - deploy-rpm-snapshot:
           filters:
             branches:
-              only: master
+              only:
+                - master
+                - rewrite
           requires:
             - test-assembly-mac-zip
             - test-assembly-windows-zip
@@ -513,13 +530,17 @@ workflows:
       - test-deployment-linux-apt:
           filters:
             branches:
-              only: master
+              only:
+                - master
+                - rewrite
           requires:
             - deploy-apt-snapshot
       - test-deployment-linux-rpm:
           filters:
             branches:
-              only: master
+              only:
+                - master
+                - rewrite
           requires:
             - deploy-rpm-snapshot
       - sync-dependencies-snapshot:

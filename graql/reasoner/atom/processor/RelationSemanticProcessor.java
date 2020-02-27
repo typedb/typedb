@@ -231,8 +231,8 @@ public class RelationSemanticProcessor implements SemanticProcessor<RelationAtom
     }
 
     @Override
-    public SemanticDifference semanticDifference(RelationAtom parent, Atom child, Unifier unifier) {
-        SemanticDifference baseDiff = new BinarySemanticProcessor().semanticDifference(parent, child, unifier);
+    public SemanticDifference computeSemanticDifference(RelationAtom parent, Atom child, Unifier unifier) {
+        SemanticDifference baseDiff = new BinarySemanticProcessor().computeSemanticDifference(parent, child, unifier);
 
         if (!child.isRelation()) return baseDiff;
         RelationAtom childAtom = (RelationAtom) child;

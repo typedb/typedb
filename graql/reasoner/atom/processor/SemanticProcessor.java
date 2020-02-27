@@ -39,6 +39,6 @@ public interface SemanticProcessor<T extends Atom> {
      * @param unifier    parent->child unifier
      * @return semantic difference between this and child defined in terms of this variables
      */
-    SemanticDifference semanticDifference(T parentAtom, Atom childAtom, Unifier unifier);
+    SemanticDifference computeSemanticDifference(T parentAtom, Atom childAtom, Unifier unifier);
 
 }

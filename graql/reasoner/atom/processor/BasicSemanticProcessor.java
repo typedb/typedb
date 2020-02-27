@@ -58,7 +58,7 @@ public class BasicSemanticProcessor implements SemanticProcessor<Atom>{
      * @return semantic difference between this and child defined in terms of this variables
      */
     @Override
-    public SemanticDifference semanticDifference(Atom parentAtom, Atom childAtom, Unifier unifier){
+    public SemanticDifference computeSemanticDifference(Atom parentAtom, Atom childAtom, Unifier unifier){
         Set<VariableDefinition> diff = new HashSet<>();
         Unifier unifierInverse = unifier.inverse();
 

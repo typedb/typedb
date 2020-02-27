@@ -101,7 +101,7 @@ public class TestTransactionProvider implements TransactionProvider {
         MultilevelSemanticCache queryCache = new MultilevelSemanticCache(executorFactory, traversalPlanFactory);
 
         PropertyAtomicFactory propertyAtomicFactory = new PropertyAtomicFactory(conceptManager, ruleCache, queryCache, keyspaceStatistics);
-        ReasonerQueryFactory reasonerQueryFactory = new ReasonerQueryFactory(conceptManager, queryCache, ruleCache, executorFactory, propertyAtomicFactory, traversalPlanFactory);
+        ReasonerQueryFactory reasonerQueryFactory = new ReasonerQueryFactory(conceptManager, queryCache, ruleCache, keyspaceStatistics, executorFactory, propertyAtomicFactory, traversalPlanFactory);
         executorFactory.setReasonerQueryFactory(reasonerQueryFactory);
         propertyAtomicFactory.setReasonerQueryFactory(reasonerQueryFactory);
         ruleCache.setReasonerQueryFactory(reasonerQueryFactory);

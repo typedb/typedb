@@ -79,7 +79,7 @@ public class BinarySemanticProcessor implements SemanticProcessor<Binary> {
     }
 
     @Override
-    public SemanticDifference semanticDifference(Binary parentAtom, Atom childAtom, Unifier unifier) {
-        return new BasicSemanticProcessor().semanticDifference(parentAtom, childAtom, unifier);
+    public SemanticDifference computeSemanticDifference(Binary parentAtom, Atom childAtom, Unifier unifier) {
+        return new BasicSemanticProcessor().computeSemanticDifference(parentAtom, childAtom, unifier);
     }
 }
