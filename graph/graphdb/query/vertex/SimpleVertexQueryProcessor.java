@@ -46,7 +46,7 @@ import java.util.stream.StreamSupport;
  * in memory filtering). Under these assumptions we can remove a lot of the steps in {@link grakn.core.graph.graphdb.query.QueryProcessor}:
  * merging of result sets, in-memory filtering and the object instantiation required for in-memory filtering.
  * <p>
- * With those complexities removed, the query processor can be much simpler which makes it a lot faster and less
+ * With those complexities removed, the query relate can be much simpler which makes it a lot faster and less
  * memory intense.
  * <p>
  * IMPORTANT: This Iterable is not thread-safe.

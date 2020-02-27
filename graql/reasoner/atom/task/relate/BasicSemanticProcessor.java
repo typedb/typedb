@@ -17,7 +17,7 @@
  *
  */
 
-package grakn.core.graql.reasoner.atom.task.processor;
+package grakn.core.graql.reasoner.atom.task.relate;
 
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.predicate.IdPredicate;

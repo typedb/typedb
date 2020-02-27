@@ -36,7 +36,7 @@ import java.util.Objects;
 
 /**
  * A component/sub-query of a {@link GraphCentricQuery} that gets executed against an indexing backend or the index store
- * by the query processor of the enclosing transaction.
+ * by the query relate of the enclosing transaction.
  * <p>
  * This query itself can contain multiple sub-queries which are individually executed by the {@link IndexSerializer}
  * and the result sets merged.

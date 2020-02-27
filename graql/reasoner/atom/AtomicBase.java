@@ -24,6 +24,7 @@ import grakn.core.common.exception.ErrorMessage;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.reasoner.atom.predicate.Predicate;
+import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
@@ -31,6 +32,7 @@ import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 
+import java.util.HashSet;
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
 import java.util.Collections;
@@ -74,6 +76,11 @@ public abstract class AtomicBase implements Atomic {
     @Override
     public Set<String> validateAsRuleHead(Rule rule) {
         return Sets.newHashSet(ErrorMessage.VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD.getMessage(rule.then(), rule.label()));
+    }
+
+    @Override
+    public Set<String> validateAsRuleBody(Label ruleLabel) {
+        return new HashSet<>();
     }
 
     @Override

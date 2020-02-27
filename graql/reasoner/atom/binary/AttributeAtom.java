@@ -19,29 +19,27 @@
 package grakn.core.graql.reasoner.atom.binary;
 
 import com.google.common.collect.ImmutableSet;
-import grakn.core.common.exception.ErrorMessage;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.core.AttributeValueConverter;
 import grakn.core.core.Schema;
-import grakn.core.graql.reasoner.CacheCasting;
 import grakn.core.graql.reasoner.ReasoningContext;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.AtomicEquivalence;
-import grakn.core.graql.reasoner.atom.task.materialise.AttributeMaterialiser;
 import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.reasoner.atom.predicate.Predicate;
 import grakn.core.graql.reasoner.atom.predicate.ValuePredicate;
-import grakn.core.graql.reasoner.atom.task.processor.AttributeSemanticProcessor;
-import grakn.core.graql.reasoner.atom.task.processor.SemanticProcessor;
+import grakn.core.graql.reasoner.atom.task.materialise.AttributeMaterialiser;
+import grakn.core.graql.reasoner.atom.task.relate.AttributeSemanticProcessor;
+import grakn.core.graql.reasoner.atom.task.relate.SemanticProcessor;
+import grakn.core.graql.reasoner.atom.task.validate.AtomValidator;
+import grakn.core.graql.reasoner.atom.task.validate.AttributeAtomValidator;
 import grakn.core.graql.reasoner.cache.SemanticDifference;
-import grakn.core.graql.reasoner.query.ResolvableQuery;
 import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.SchemaConcept;
-import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.graql.exception.GraqlSemanticException;
 import grakn.core.kb.graql.reasoner.ReasonerException;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
@@ -87,6 +85,7 @@ public class AttributeAtom extends Binary{
     private final Variable relationVariable;
 
     private final SemanticProcessor<AttributeAtom> semanticProcessor;
+    private final AtomValidator<AttributeAtom> validator = new AttributeAtomValidator();
 
     private AttributeAtom(
             Variable varName,
@@ -321,59 +320,12 @@ public class AttributeAtom extends Binary{
 
     @Override
     public Set<String> validateAsRuleHead(Rule rule){
-        Set<String> errors = super.validateAsRuleHead(rule);
-        if (getSchemaConcept() == null || getMultiPredicate().size() > 1){
-            errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_ATTRIBUTE_WITH_AMBIGUOUS_PREDICATES.getMessage(rule.then(), rule.label()));
-        }
-        if (getMultiPredicate().isEmpty()){
-            boolean predicateBound = getParentQuery().getAtoms(Atom.class)
-                    .filter(at -> !at.equals(this))
-                    .anyMatch(at -> at.getVarNames().contains(getAttributeVariable()));
-            if (!predicateBound) {
-                errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_ATOM_WITH_UNBOUND_VARIABLE.getMessage(rule.then(), rule.label()));
-            }
-        }
-
-        getMultiPredicate().stream()
-                .filter(p -> !p.getPredicate().isValueEquality())
-                .forEach( p ->
-                        errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_ATTRIBUTE_WITH_NONSPECIFIC_PREDICATE.getMessage(rule.then(), rule.label()))
-                );
-
-        if(getMultiPredicate().isEmpty()) {
-            Variable attrVar = getAttributeVariable();
-            AttributeType.DataType<Object> dataType = getSchemaConcept().asAttributeType().dataType();
-            ResolvableQuery body = CacheCasting.ruleCacheCast(context().ruleCache()).getRule(rule).getBody();
-            ErrorMessage incompatibleValuesMsg = ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_COPYING_INCOMPATIBLE_ATTRIBUTE_VALUES;
-            body.getAtoms(AttributeAtom.class)
-                    .filter(at -> at.getAttributeVariable().equals(attrVar))
-                    .map(Binary::getSchemaConcept)
-                    .filter(type -> !type.asAttributeType().dataType().equals(dataType))
-                    .forEach(type ->
-                            errors.add(incompatibleValuesMsg.getMessage(getSchemaConcept().label(), rule.label(), type.label()))
-                    );
-        }
-        return errors;
+        return validator.validateAsRuleHead(this, rule);
     }
 
     @Override
     public Set<String> validateAsRuleBody(Label ruleLabel) {
-        SchemaConcept type = getSchemaConcept();
-        Set<String> errors = new HashSet<>();
-        if (type == null) return errors;
-
-        if (!type.isAttributeType()){
-            errors.add(ErrorMessage.VALIDATION_RULE_INVALID_ATTRIBUTE_TYPE.getMessage(ruleLabel, type.label()));
-            return errors;
-        }
-
-        Type ownerType = getParentQuery().getUnambiguousType(getVarName(), false);
-
-        if (ownerType != null
-                && ownerType.attributes().noneMatch(rt -> rt.equals(type.asAttributeType()))){
-            errors.add(ErrorMessage.VALIDATION_RULE_ATTRIBUTE_OWNER_CANNOT_HAVE_ATTRIBUTE.getMessage(ruleLabel, type.label(), ownerType.label()));
-        }
-        return errors;
+        return validator.validateAsRuleBody(this, ruleLabel);
     }
 
     @Override

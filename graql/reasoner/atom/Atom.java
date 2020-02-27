@@ -21,7 +21,6 @@ package grakn.core.graql.reasoner.atom;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import grakn.core.common.exception.ErrorMessage;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.CacheCasting;
 import grakn.core.graql.reasoner.ReasoningContext;
@@ -32,12 +31,15 @@ import grakn.core.graql.reasoner.atom.binary.RelationAtom;
 import grakn.core.graql.reasoner.atom.binary.TypeAtom;
 import grakn.core.graql.reasoner.atom.predicate.Predicate;
 import grakn.core.graql.reasoner.atom.predicate.VariablePredicate;
-import grakn.core.graql.reasoner.atom.task.processor.BasicSemanticProcessor;
+import grakn.core.graql.reasoner.atom.task.relate.BasicSemanticProcessor;
+import grakn.core.graql.reasoner.atom.task.validate.AtomValidator;
+import grakn.core.graql.reasoner.atom.task.validate.BasicAtomValidator;
 import grakn.core.graql.reasoner.cache.SemanticDifference;
 import grakn.core.graql.reasoner.rule.InferenceRule;
 import grakn.core.graql.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.kb.concept.api.ConceptId;
+import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Type;
@@ -65,6 +67,7 @@ import static java.util.stream.Collectors.toSet;
 public abstract class Atom extends AtomicBase {
 
     private final ReasoningContext ctx;
+    private final AtomValidator<Atom> validator = new BasicAtomValidator();
     private Set<InferenceRule> applicableRules = null;
 
     private final ConceptId typeId;
@@ -186,25 +189,12 @@ public abstract class Atom extends AtomicBase {
 
     @Override
     public Set<String> validateAsRuleHead(Rule rule) {
-        Set<String> errors = new HashSet<>();
-        Set<Atomic> parentAtoms = getParentQuery().getAtoms(Atomic.class).filter(at -> !at.equals(this)).collect(toSet());
-        Set<Variable> varNames = Sets.difference(
-                getVarNames(),
-                this.getInnerPredicates().map(Atomic::getVarName).collect(toSet())
-        );
-        boolean unboundVariables = varNames.stream()
-                .anyMatch(var -> parentAtoms.stream().noneMatch(at -> at.getVarNames().contains(var)));
-        if (unboundVariables) {
-            errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_ATOM_WITH_UNBOUND_VARIABLE.getMessage(rule.then(), rule.label()));
-        }
+        return validator.validateAsRuleHead(this, rule);
+    }
 
-        SchemaConcept schemaConcept = getSchemaConcept();
-        if (schemaConcept == null) {
-            errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_ATOM_WITH_AMBIGUOUS_SCHEMA_CONCEPT.getMessage(rule.then(), rule.label()));
-        } else if (schemaConcept.isImplicit()) {
-            errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_ATOM_WITH_IMPLICIT_SCHEMA_CONCEPT.getMessage(rule.then(), rule.label()));
-        }
-        return errors;
+    @Override
+    public Set<String> validateAsRuleBody(Label ruleLabel) {
+        return validator.validateAsRuleBody(this, ruleLabel);
     }
 
     /**
