@@ -55,7 +55,7 @@ public interface KeyColumnValueStore {
     EntryList getSlice(KeySliceQuery query, StoreTransaction txh) throws BackendException;
 
     /**
-     * Retrieves the list of entries (i.e. column-value pairs) as specified by the given {@link SliceQuery} for all
+     * Retrieves the list of entries (i.e. column-value pairs) as specified by the given SliceQuery for all
      * of the given keys together.
      *
      * @param keys  List of keys
@@ -83,15 +83,15 @@ public interface KeyColumnValueStore {
     void mutate(StaticBuffer key, List<Entry> additions, List<StaticBuffer> deletions, StoreTransaction txh) throws BackendException;
 
     /**
-     * Returns a {@link KeyIterator} over all keys that fall within the key-range specified by the given query and have one or more columns matching the column-range.
-     * Calling {@link KeyIterator#getEntries()} returns the list of all entries that match the column-range specified by the given query.
+     * Returns a KeyIterator over all keys that fall within the key-range specified by the given query and have one or more columns matching the column-range.
+     * Calling KeyIterator#getEntries() returns the list of all entries that match the column-range specified by the given query.
      * <p>
      * This method is only supported by stores which keep keys in byte-order.
      */
     KeyIterator getKeys(KeyRangeQuery query, StoreTransaction txh) throws BackendException;
 
     /**
-     * Returns a {@link KeyIterator} over all keys in the store that have one or more columns matching the column-range. Calling {@link KeyIterator#getEntries()}
+     * Returns a KeyIterator over all keys in the store that have one or more columns matching the column-range. Calling KeyIterator#getEntries()
      * returns the list of all entries that match the column-range specified by the given query.
      * <p>
      * This method is only supported by stores which do not keep keys in byte-order.

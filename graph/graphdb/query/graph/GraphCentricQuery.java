@@ -37,9 +37,9 @@ import java.util.Comparator;
 import java.util.Objects;
 
 /**
- * An executable {@link ElementQuery} for {@link JanusGraphQuery}. This query contains
- * the condition, and only one sub-query {@link JointIndexQuery}.
- * It also maintains the ordering for the query result which is needed by the {@link QueryProcessor}
+ * An executable ElementQuery for JanusGraphQuery. This query contains
+ * the condition, and only one sub-query JointIndexQuery.
+ * It also maintains the ordering for the query result which is needed by the QueryProcessor
  * to correctly order the result.
  */
 public class GraphCentricQuery extends BaseQuery implements ElementQuery<JanusGraphElement, JointIndexQuery>, ProfileObservable {
@@ -50,7 +50,7 @@ public class GraphCentricQuery extends BaseQuery implements ElementQuery<JanusGr
      */
     private final Condition<JanusGraphElement> condition;
     /**
-     * The {@link JointIndexQuery} to execute against the indexing backends and index store.
+     * The JointIndexQuery to execute against the indexing backends and index store.
      */
     private final BackendQueryHolder<JointIndexQuery> indexQuery;
     /**

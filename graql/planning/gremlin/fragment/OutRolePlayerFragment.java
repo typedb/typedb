@@ -43,7 +43,7 @@ import static grakn.core.core.Schema.EdgeProperty.RELATION_TYPE_LABEL_ID;
 import static grakn.core.core.Schema.EdgeProperty.ROLE_LABEL_ID;
 
 /**
- * A fragment representing traversing a {@link Schema.EdgeLabel#ROLE_PLAYER} edge from the relation to the
+ * A fragment representing traversing a Schema.EdgeLabel#ROLE_PLAYER edge from the relation to the
  * role-player.
  * <p>
  * Part of a EquivalentFragmentSet, along with InRolePlayerFragment.

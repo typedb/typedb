@@ -28,10 +28,10 @@ public interface JanusGraph extends AutoCloseable{
      */
 
     /**
-     * Opens a new thread-independent {@link JanusGraphTransaction}.
+     * Opens a new thread-independent JanusGraphTransaction.
      * <p>
-     * The transaction is open when it is returned but MUST be explicitly closed by calling {@link JanusGraphTransaction#commit()}
-     * or {@link JanusGraphTransaction#rollback()} when it is no longer needed.
+     * The transaction is open when it is returned but MUST be explicitly closed by calling JanusGraphTransaction#commit()
+     * or JanusGraphTransaction#rollback() when it is no longer needed.
      * <p>
      * Note, that this returns a thread independent transaction object. It is not necessary to call this method
      * to use Blueprint's standard transaction framework which will automatically start a transaction with the first
@@ -42,7 +42,7 @@ public interface JanusGraph extends AutoCloseable{
     JanusGraphTransaction newTransaction();
 
     /**
-     * Returns a {@link TransactionBuilder} to construct a new thread-independent {@link JanusGraphTransaction}.
+     * Returns a TransactionBuilder to construct a new thread-independent JanusGraphTransaction.
      *
      * @return a new TransactionBuilder
      * @see TransactionBuilder

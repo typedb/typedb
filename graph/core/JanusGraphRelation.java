@@ -26,10 +26,10 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
  * JanusGraphRelation is the most abstract form of a relation between a vertex and some other entity, where
  * relation is understood in its mathematical sense. It generalizes the notion of an edge and a property.
  * <br>
- * A JanusGraphRelation extends {@link JanusGraphElement} which means it is an entity in its own right. This means, a JanusGraphRelation
+ * A JanusGraphRelation extends JanusGraphElement which means it is an entity in its own right. This means, a JanusGraphRelation
  * can have properties and unidirectional edges connecting it to other vertices.
  * <br>
- * A JanusGraphRelation is an abstract concept. A JanusGraphRelation is either a {@link JanusGraphVertexProperty} or a {@link JanusGraphEdge}.
+ * A JanusGraphRelation is an abstract concept. A JanusGraphRelation is either a JanusGraphVertexProperty or a JanusGraphEdge.
  * A JanusGraphRelation has a type which is either a label or key depending on the implementation.
  * <br>
  * A JanusGraphRelation is either directed, or unidirected. Properties are always directed (connecting a vertex
@@ -55,7 +55,7 @@ public interface JanusGraphRelation extends JanusGraphElement {
     /**
      * Returns the type of this relation.
      * <p>
-     * The type is either a label ({@link EdgeLabel} if this relation is an edge or a key ({@link PropertyKey}) if this
+     * The type is either a label (EdgeLabel if this relation is an edge or a key (PropertyKey) if this
      * relation is a property.
      *
      * @return Type of this relation

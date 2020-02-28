@@ -73,7 +73,7 @@ public interface SchemaInspector {
      * Returns the property key with the given name. If automatic type making is enabled, it will make the property key
      * using the configured default type maker if a key with the given name does not exist.
      * <p>
-     * The default implementation simply calls the {@link #getOrCreatePropertyKey(String name) getOrCreatePropertyKey} method
+     * The default implementation simply calls the #getOrCreatePropertyKey(String name) getOrCreatePropertyKey method
      *
      * @param name  name of the property key to return
      * @param value the value of the property key. This param is not used by the default
@@ -129,7 +129,7 @@ public interface SchemaInspector {
 
     /**
      * Returns the vertex label with the given name. If a vertex label with this name does not exist, the label is
-     * automatically created through the registered {@link DefaultSchemaMaker}.
+     * automatically created through the registered DefaultSchemaMaker.
      * <p>
      * Attempting to automatically create a vertex label might cause an exception depending on the configuration.
      */

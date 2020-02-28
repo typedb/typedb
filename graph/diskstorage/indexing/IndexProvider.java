@@ -36,7 +36,7 @@ import java.util.stream.Stream;
 
 public interface IndexProvider extends IndexInformation {
     /*
-     * An obscure unicode character (•) provided as a convenience for implementations of {@link #mapKey2Field}, for
+     * An obscure unicode character (•) provided as a convenience for implementations of #mapKey2Field, for
      * instance to replace spaces in property keys. See #777.
      */
     char REPLACEMENT_CHAR = '•';
@@ -64,8 +64,8 @@ public interface IndexProvider extends IndexInformation {
      * Mutates the index (adds and removes fields or entire documents)
      *
      * @param mutations   Updates to the index. First map contains all the mutations for each store. The inner map contains
-     *                    all changes for each document in an {@link IndexMutation}.
-     * @param information Information on the keys used in the mutation accessible through {@link KeyInformation.IndexRetriever}.
+     *                    all changes for each document in an IndexMutation.
+     * @param information Information on the keys used in the mutation accessible through KeyInformation.IndexRetriever.
      * @param tx          Enclosing transaction
      * @see IndexMutation
      */
@@ -73,12 +73,12 @@ public interface IndexProvider extends IndexInformation {
 
     /**
      * Restores the index to the state of the primary data store as given in the {@code documents} variable. When this method returns, the index records
-     * for the given documents exactly matches the provided data. Unlike {@link #mutate(Map, KeyInformation.IndexRetriever, BaseTransaction)}
+     * for the given documents exactly matches the provided data. Unlike #mutate(Map, KeyInformation.IndexRetriever, BaseTransaction)
      * this method does not do a delta-update, but entirely replaces the documents with the provided data or deletes them if the document content is empty.
      *
      * @param documents   The outer map maps stores to documents, the inner contains the documents mapping document ids to the document content which is a
-     *                    list of {@link IndexEntry}. If that list is empty, that means this document should not exist and ought to be deleted.
-     * @param information Information on the keys used in the mutation accessible through {@link KeyInformation.IndexRetriever}.
+     *                    list of IndexEntry. If that list is empty, that means this document should not exist and ought to be deleted.
+     * @param information Information on the keys used in the mutation accessible through KeyInformation.IndexRetriever.
      * @param tx          Enclosing transaction
      */
     void restore(Map<String, Map<String, List<IndexEntry>>> documents, KeyInformation.IndexRetriever information, BaseTransaction tx) throws BackendException;
@@ -87,7 +87,7 @@ public interface IndexProvider extends IndexInformation {
      * Executes the given query against the index.
      *
      * @param query       Query to execute
-     * @param information Information on the keys used in the query accessible through {@link KeyInformation.IndexRetriever}.
+     * @param information Information on the keys used in the query accessible through KeyInformation.IndexRetriever.
      * @param tx          Enclosing transaction
      * @return The ids of all matching documents
      * @see IndexQuery
@@ -98,7 +98,7 @@ public interface IndexProvider extends IndexInformation {
      * Executes the given raw query against the index
      *
      * @param query       Query to execute
-     * @param information Information on the keys used in the query accessible through {@link KeyInformation.IndexRetriever}.
+     * @param information Information on the keys used in the query accessible through KeyInformation.IndexRetriever.
      * @param tx          Enclosing transaction
      * @return Results objects for all matching documents (i.e. document id and score)
      * @see RawQuery
@@ -109,7 +109,7 @@ public interface IndexProvider extends IndexInformation {
      * Executes the given raw query against the index and returns the total hits. e.g. limit=0
      *
      * @param query       Query to execute
-     * @param information Information on the keys used in the query accessible through {@link KeyInformation.IndexRetriever}.
+     * @param information Information on the keys used in the query accessible through KeyInformation.IndexRetriever.
      * @param tx          Enclosing transaction
      * @return Long total hits for query
      * @see RawQuery

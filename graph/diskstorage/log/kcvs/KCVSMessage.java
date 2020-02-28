@@ -25,7 +25,7 @@ import grakn.core.graph.diskstorage.log.util.AbstractMessage;
 import java.time.Instant;
 
 /**
- * Implementation of {@link AbstractMessage} for {@link KCVSLog}.
+ * Implementation of AbstractMessage for KCVSLog.
  *
  */
 public class KCVSMessage extends AbstractMessage {

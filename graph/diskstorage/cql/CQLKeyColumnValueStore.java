@@ -87,7 +87,7 @@ import static io.vavr.API.Match;
 import static io.vavr.Predicates.instanceOf;
 
 /**
- * An implementation of {@link KeyColumnValueStore} which stores the data in a CQL connected backend.
+ * An implementation of KeyColumnValueStore which stores the data in a CQL connected backend.
  */
 public class CQLKeyColumnValueStore implements KeyColumnValueStore {
 
@@ -130,9 +130,9 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
     private final int pageSize;
 
     /**
-     * Creates an instance of the {@link KeyColumnValueStore} that stores the data in a CQL backed table.
+     * Creates an instance of the KeyColumnValueStore that stores the data in a CQL backed table.
      *
-     * @param storeManager  the {@link CQLStoreManager} that maintains the list of {@link CQLKeyColumnValueStore}s
+     * @param storeManager  the CQLStoreManager that maintains the list of CQLKeyColumnValueStores
      * @param tableName     the name of the database table for storing the key/column/values
      * @param configuration data used in creating this store
      * @param closer        callback used to clean up references to this store in the store manager

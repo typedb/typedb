@@ -29,7 +29,7 @@ import java.io.InputStream;
 import static junit.framework.TestCase.assertNotNull;
 
 /**
- * Testing the {@link Config} class
+ * Testing the Config class
  *
  */
 public class ConfigTest {

@@ -23,7 +23,7 @@ import grakn.core.graph.core.schema.DefaultSchemaMaker;
 import grakn.core.graph.diskstorage.BaseTransactionConfig;
 
 /**
- * Provides configuration options for {@link JanusGraphTransaction}.
+ * Provides configuration options for JanusGraphTransaction.
  *
  * @see JanusGraphTransaction
  */
@@ -66,7 +66,7 @@ public interface TransactionConfiguration extends BaseTransactionConfig {
      * longer existing vertices. Use this setting with caution as it introduces additional overhead entailed by checking
      * the existence.
      * <p>
-     * Unlike {@link #hasVerifyExternalVertexExistence()} this is about internally verifying ids.
+     * Unlike #hasVerifyExternalVertexExistence() this is about internally verifying ids.
      *
      * @return True, if vertex existence is verified, else false
      */

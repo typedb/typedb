@@ -73,8 +73,8 @@ import java.util.Set;
 import java.util.stream.StreamSupport;
 
 /**
- * Builds a {@link JanusGraphQuery}, optimizes the query and compiles the result into a {@link GraphCentricQuery} which
- * is then executed through a {@link QueryProcessor}.
+ * Builds a JanusGraphQuery, optimizes the query and compiles the result into a GraphCentricQuery which
+ * is then executed through a QueryProcessor.
  *
  */
 public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQueryBuilder> {

@@ -67,8 +67,8 @@ public class TTLKCVSManager implements KeyColumnValueStoreManager {
      * Returns true if the parameter supports at least one of the following:
      *
      * <ul>
-     * <li>cell-level TTL {@link StoreFeatures#hasCellTTL()}</li>
-     * <li>store-level TTL {@link StoreFeatures#hasStoreTTL()}</li>
+     * <li>cell-level TTL StoreFeatures#hasCellTTL()</li>
+     * <li>store-level TTL StoreFeatures#hasStoreTTL()</li>
      * </ul>
      *
      * @param features an arbitrary {@code StoreFeatures} instance

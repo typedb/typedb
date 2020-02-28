@@ -31,7 +31,7 @@ import org.apache.tinkerpop.gremlin.structure.Direction;
  * The SchemaCache speeds up two types of lookups:
  * <ul>
  *     <li>Retrieving a type by its name (index lookup)</li>
- *     <li>Retrieving the relations of a schema vertex for predefined {@link SystemRelationType}s</li>
+ *     <li>Retrieving the relations of a schema vertex for predefined SystemRelationTypes</li>
  * </ul>
  */
 public interface SchemaCache {

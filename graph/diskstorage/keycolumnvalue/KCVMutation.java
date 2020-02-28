@@ -27,7 +27,7 @@ import grakn.core.graph.diskstorage.keycolumnvalue.cache.KCVEntryMutation;
 import java.util.List;
 
 /**
- * {@link Mutation} type for {@link KeyColumnValueStore}.
+ * Mutation type for KeyColumnValueStore.
  *
  */
 

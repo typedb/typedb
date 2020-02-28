@@ -32,7 +32,7 @@ import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.TIMESTAMP_PROVIDER;
 
 /**
- * Builder to build {@link KCVSConfiguration} instances:
+ * Builder to build KCVSConfiguration instances:
  * <p>
  * All KCVSConfigurations read from 'system_properties' Store
  */

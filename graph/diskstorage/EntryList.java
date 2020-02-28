@@ -25,10 +25,10 @@ import java.util.List;
 public interface EntryList extends List<Entry> {
 
     /**
-     * Returns the same iterator as {@link #iterator()} with the only difference
-     * that it reuses {@link Entry} objects when calling {@link Iterator#next()}.
-     * Hence, this method should only be used if references to {@link Entry} objects are only
-     * kept and accessed until the next {@link Iterator#next()} call.
+     * Returns the same iterator as #iterator() with the only difference
+     * that it reuses Entry objects when calling Iterator#next().
+     * Hence, this method should only be used if references to Entry objects are only
+     * kept and accessed until the next Iterator#next() call.
      */
     Iterator<Entry> reuseIterator();
 

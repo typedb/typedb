@@ -29,7 +29,7 @@ import org.apache.commons.lang3.SerializationUtils;
 import java.io.Serializable;
 
 /**
- * Serializes {@link Serializable} objects.
+ * Serializes Serializable objects.
  * @param <T> Serializable type
  */
 public class SerializableSerializer<T extends Serializable> implements AttributeSerializer<T>, SerializerInjected {

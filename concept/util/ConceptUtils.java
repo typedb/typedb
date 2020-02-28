@@ -38,8 +38,8 @@ import static java.util.stream.Collectors.toSet;
 public class ConceptUtils {
 
     /**
-     * @param schemaConcepts entry {@link SchemaConcept} set
-     * @return top (most general) non-meta {@link SchemaConcept}s from within the provided set
+     * @param schemaConcepts entry SchemaConcept set
+     * @return top (most general) non-meta SchemaConcepts from within the provided set
      */
     public static <T extends SchemaConcept> Set<T> top(Set<T> schemaConcepts) {
         return schemaConcepts.stream()
@@ -48,8 +48,8 @@ public class ConceptUtils {
     }
 
     /**
-     * @param schemaConcepts entry {@link SchemaConcept} set
-     * @return bottom (most specific) non-meta {@link SchemaConcept}s from within the provided set
+     * @param schemaConcepts entry SchemaConcept set
+     * @return bottom (most specific) non-meta SchemaConcepts from within the provided set
      */
     public static <T extends SchemaConcept> Set<T> bottom(Set<T> schemaConcepts) {
         return schemaConcepts.stream()
@@ -58,8 +58,8 @@ public class ConceptUtils {
     }
 
     /**
-     * @param schemaConcepts entry {@link SchemaConcept} set
-     * @return top {@link SchemaConcept}s from within the provided set or meta concept if it exists
+     * @param schemaConcepts entry SchemaConcept set
+     * @return top SchemaConcepts from within the provided set or meta concept if it exists
      */
     public static <T extends SchemaConcept> Set<T> topOrMeta(Set<T> schemaConcepts) {
         Set<T> concepts = top(schemaConcepts);
@@ -117,8 +117,8 @@ public class ConceptUtils {
     /**
      * determines disjointness of parent-child types, parent defines the bound on the child
      *
-     * @param parent {@link SchemaConcept}
-     * @param child  {@link SchemaConcept}
+     * @param parent SchemaConcept
+     * @param child  SchemaConcept
      * @param direct flag indicating whether only direct types should be considered
      * @return true if types do not belong to the same type hierarchy, also:
      * - true if parent is null and

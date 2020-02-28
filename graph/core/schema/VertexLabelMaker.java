@@ -21,7 +21,7 @@ package grakn.core.graph.core.schema;
 import grakn.core.graph.core.VertexLabel;
 
 /**
- * A builder to create new {@link VertexLabel}s.
+ * A builder to create new VertexLabels.
  *
  * A vertex label is defined by its name and additional properties such as:
  * <ul>
@@ -56,7 +56,7 @@ public interface VertexLabelMaker {
     VertexLabelMaker setStatic();
 
     /**
-     * Creates a {@link VertexLabel} according to the specifications of this builder.
+     * Creates a VertexLabel according to the specifications of this builder.
      *
      * @return the created vertex label
      */

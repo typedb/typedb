@@ -48,7 +48,7 @@ public class AttributeUtil {
     }
 
     /**
-     * Compares the two elements like {@link java.util.Comparator#compare(Object, Object)} but returns
+     * Compares the two elements like java.util.Comparator#compare(Object, Object) but returns
      * null in case the two elements are not comparable.
      */
     public static Integer compare(Object a, Object b) {

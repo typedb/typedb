@@ -139,7 +139,7 @@ public class JanusGraphSchemaVertex extends CacheVertex implements SchemaSource 
 
     /**
      * Resets the internal caches used to speed up lookups on this index type.
-     * This is needed when the type gets modified in the {@link ManagementSystem}.
+     * This is needed when the type gets modified in the ManagementSystem.
      */
     @Override
     public void resetCache() {

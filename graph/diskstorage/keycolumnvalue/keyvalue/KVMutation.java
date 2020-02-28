@@ -26,7 +26,7 @@ import grakn.core.graph.diskstorage.StaticBuffer;
 import javax.annotation.Nullable;
 
 /**
- * {@link Mutation} for {@link KeyValueStore}.
+ * Mutation for KeyValueStore.
  */
 public class KVMutation extends Mutation<KeyValueEntry, StaticBuffer> {
 

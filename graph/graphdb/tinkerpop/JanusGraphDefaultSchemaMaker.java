@@ -27,7 +27,7 @@ import java.util.Date;
 import java.util.UUID;
 
 /**
- * {@link DefaultSchemaMaker} implementation for Janus graphs
+ * DefaultSchemaMaker implementation for Janus graphs
  */
 public class JanusGraphDefaultSchemaMaker implements DefaultSchemaMaker {
 

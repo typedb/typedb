@@ -24,7 +24,7 @@ import grakn.core.graph.diskstorage.StaticBuffer;
 import java.util.function.Predicate;
 
 /**
- * A {@link KeySelector} utility that can be generated out of a given {@link KVQuery}
+ * A KeySelector utility that can be generated out of a given KVQuery
  */
 public class KeySelector {
 

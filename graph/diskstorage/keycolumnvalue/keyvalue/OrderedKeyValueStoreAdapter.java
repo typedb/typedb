@@ -50,11 +50,11 @@ import java.util.NoSuchElementException;
 import java.util.function.Predicate;
 
 /**
- * Wraps a {@link OrderedKeyValueStore} and exposes it as a {@link KeyColumnValueStore}.
+ * Wraps a OrderedKeyValueStore and exposes it as a KeyColumnValueStore.
  * <p>
  * An optional key length parameter can be specified if it is known and guaranteed that all keys
- * passed into and read through the {@link KeyColumnValueStore} have that length. If this length is
- * static, specifying that length will make the representation of a {@link KeyColumnValueStore} in a {@link OrderedKeyValueStore}
+ * passed into and read through the KeyColumnValueStore have that length. If this length is
+ * static, specifying that length will make the representation of a KeyColumnValueStore in a OrderedKeyValueStore
  * more concise and more efficient.
  */
 public class OrderedKeyValueStoreAdapter implements KeyColumnValueStore {

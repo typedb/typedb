@@ -32,7 +32,7 @@ import java.nio.ByteBuffer;
 import java.util.Map;
 
 /**
- * Utility methods for dealing with {@link ByteBuffer}.
+ * Utility methods for dealing with ByteBuffer.
  */
 public class BufferUtil {
 

@@ -27,16 +27,16 @@ import java.util.Collection;
 import java.util.Map;
 
 /**
- * A MultiVertexQuery is identical to a {@link JanusGraphVertexQuery} but executed against a set of vertices simultaneously.
- * In other words, {@link JanusGraphMultiVertexQuery} allows identical {@link JanusGraphVertexQuery} executed against a non-trivial set
+ * A MultiVertexQuery is identical to a JanusGraphVertexQuery but executed against a set of vertices simultaneously.
+ * In other words, JanusGraphMultiVertexQuery allows identical JanusGraphVertexQuery executed against a non-trivial set
  * of vertices to be executed in one batch which can significantly reduce the query latency.
  * <p>
- * The query specification methods are identical to {@link JanusGraphVertexQuery}. The result set method return Maps from the specified
+ * The query specification methods are identical to JanusGraphVertexQuery. The result set method return Maps from the specified
  * set of anchor vertices to their respective individual result sets.
  * <p>
  * Call JanusGraphTransaction#multiQuery() to construct a multi query in the enclosing transaction.
  * <p>
- * Note, that the {@link #limit(int)} constraint applies to each individual result set.
+ * Note, that the #limit(int) constraint applies to each individual result set.
  *
  * @see JanusGraphVertexQuery
 

@@ -25,7 +25,7 @@ import grakn.core.graph.diskstorage.StaticBuffer;
 import java.nio.ByteBuffer;
 
 /**
- * Implementation of {@link StaticBuffer} against byte array.
+ * Implementation of StaticBuffer against byte array.
  * <p>
  * The byte to primitive conversion code was copied from / is inspired by Kryo's Input class:
  * <a href="https://code.google.com/p/kryo/source/browse/trunk/src/com/esotericsoftware/kryo/io/Input.java">https://code.google.com/p/kryo/source/browse/trunk/src/com/esotericsoftware/kryo/io/Input.java</a>

@@ -28,8 +28,8 @@ import java.util.Iterator;
 import java.util.List;
 
 /**
- * A JanusGraphEdge connects two {@link JanusGraphVertex}. It extends the functionality provided by Blueprint's {@link Edge} and
- * is a special case of a {@link JanusGraphRelation}.
+ * A JanusGraphEdge connects two JanusGraphVertex. It extends the functionality provided by Blueprint's Edge and
+ * is a special case of a JanusGraphRelation.
  *
  * @see Edge
  * @see JanusGraphRelation

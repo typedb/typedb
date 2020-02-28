@@ -45,7 +45,7 @@ import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.
 public class JanusGraphFactory {
 
     /**
-     * Opens a {@link JanusGraph} database configured according to the provided configuration.
+     * Opens a JanusGraph database configured according to the provided configuration.
      *
      * @param configuration Configuration for the graph database
      * @return JanusGraph graph database
@@ -102,10 +102,10 @@ public class JanusGraphFactory {
     }
 
     /**
-     * Returns a {@link Builder} that allows to set the configuration options for opening a JanusGraph graph database.
+     * Returns a Builder that allows to set the configuration options for opening a JanusGraph graph database.
      * <p>
      * In the builder, the configuration options for the graph can be set individually. Once all options are configured,
-     * the graph can be opened with {@link JanusGraphFactory.Builder#open()}.
+     * the graph can be opened with JanusGraphFactory.Builder#open().
      */
     public static Builder build() {
         return new Builder();

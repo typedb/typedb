@@ -22,7 +22,7 @@ import grakn.core.graph.diskstorage.configuration.Configuration;
 import grakn.core.graph.diskstorage.util.time.TimestampProviders;
 
 /**
- * Immutable, {@link Builder}-customizable implementation of StoreFeatures.
+ * Immutable, Builder-customizable implementation of StoreFeatures.
  */
 public class StandardStoreFeatures implements StoreFeatures {
 
@@ -147,7 +147,7 @@ public class StandardStoreFeatures implements StoreFeatures {
     }
 
     /**
-     * The only way to instantiate {@link StandardStoreFeatures}.
+     * The only way to instantiate StandardStoreFeatures.
      */
     public static class Builder {
 

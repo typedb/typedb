@@ -24,7 +24,7 @@ import grakn.core.graph.diskstorage.keycolumnvalue.StoreTransaction;
 import java.util.Map;
 
 /**
- * A {@link KeyValueStoreManager} where the stores maintain keys in their natural order.
+ * A KeyValueStoreManager where the stores maintain keys in their natural order.
  */
 public interface OrderedKeyValueStoreManager extends KeyValueStoreManager {
 
@@ -42,9 +42,9 @@ public interface OrderedKeyValueStoreManager extends KeyValueStoreManager {
 
     /**
      * Executes multiple mutations at once. Each store (identified by a string name) in the mutations map is associated
-     * with a {@link KVMutation} that contains all the mutations for that particular store.
+     * with a KVMutation that contains all the mutations for that particular store.
      * <p>
-     * This is an optional operation. Check {@link #getFeatures()} if it is supported by a particular implementation.
+     * This is an optional operation. Check #getFeatures() if it is supported by a particular implementation.
      */
     void mutateMany(Map<String, KVMutation> mutations, StoreTransaction txh) throws BackendException;
 

@@ -89,7 +89,7 @@ public interface StoreManager {
      * @return A list of local key ranges
      * @throws UnsupportedOperationException
      *             if the underlying store does not support this operation.
-     *             Check {@link StoreFeatures#hasLocalKeyPartition()} first.
+     *             Check StoreFeatures#hasLocalKeyPartition() first.
      */
     List<KeyRange> getLocalKeyPartition() throws BackendException;
 

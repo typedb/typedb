@@ -19,7 +19,7 @@
 package grakn.core.graph.core.schema;
 
 /**
- * Designates the status of a {@link Index} in a graph.
+ * Designates the status of a Index in a graph.
  *
  */
 public enum SchemaStatus {

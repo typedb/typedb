@@ -33,7 +33,7 @@ import grakn.core.graph.graphdb.database.StandardJanusGraph;
 import java.time.Instant;
 
 /**
- * Used to configure a {@link JanusGraphTransaction}.
+ * Used to configure a JanusGraphTransaction.
  */
 public class StandardTransactionBuilder implements TransactionConfiguration, TransactionBuilder {
 

@@ -19,7 +19,7 @@
 package grakn.core.graph.diskstorage;
 
 /**
- * A Buffer that allows simple writes and returns the result as a {@link StaticBuffer}.
+ * A Buffer that allows simple writes and returns the result as a StaticBuffer.
  *
  */
 

@@ -37,7 +37,7 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * A JanusGraphEdgeVertexStep is identical to a {@link EdgeVertexStep}. The only difference
+ * A JanusGraphEdgeVertexStep is identical to a EdgeVertexStep. The only difference
  * being that it can use multiQuery to pre-fetch the vertex properties prior to the execution
  * of any subsequent has steps and so eliminate the need for a network trip for each vertex.
  * It implements the optimisation enabled via the query.batch-property-prefetch config option.

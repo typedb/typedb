@@ -558,8 +558,8 @@ public class IDManager {
     }
 
     /**
-     * Converts a user provided long id into a JanusGraph vertex id. The id must be positive and less than {@link #getVertexCountBound()}.
-     * This method is useful when providing ids during vertex creation via {@link org.apache.tinkerpop.gremlin.structure.Graph#addVertex(Object...)}.
+     * Converts a user provided long id into a JanusGraph vertex id. The id must be positive and less than #getVertexCountBound().
+     * This method is useful when providing ids during vertex creation via org.apache.tinkerpop.gremlin.structure.Graph#addVertex(Object...).
      *
      * @param id long id
      * @return a corresponding JanusGraph vertex id

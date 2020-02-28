@@ -27,7 +27,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.Order;
  * that match all conditions.
  * <p>
  * Finding matching elements efficiently using this query mechanism requires that appropriate index structures have
- * been defined for the keys. See {@link JanusGraphManagement} for more information
+ * been defined for the keys. See JanusGraphManagement for more information
  * on how to define index structures in JanusGraph.
  *
  * @since 0.3.0

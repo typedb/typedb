@@ -36,7 +36,7 @@ public interface BaseTransactionConfig {
 
     /**
      * Sets the commit time of this transaction. If a commit time has already been set, this method throws
-     * an exception. Use {@link #hasCommitTime()} to check prior to setting.
+     * an exception. Use #hasCommitTime() to check prior to setting.
      */
     void setCommitTime(Instant time);
 

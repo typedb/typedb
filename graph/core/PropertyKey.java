@@ -20,7 +20,7 @@
 package grakn.core.graph.core;
 
 /**
- * PropertyKey is an extension of {@link RelationType} for properties. Each property in JanusGraph has a key.
+ * PropertyKey is an extension of RelationType for properties. Each property in JanusGraph has a key.
  * <p>
  * A property key defines the following characteristics of a property:
  * <ul>
@@ -43,7 +43,7 @@ public interface PropertyKey extends RelationType {
     Class<?> dataType();
 
     /**
-     * The {@link Cardinality} of this property key.
+     * The Cardinality of this property key.
      */
     Cardinality cardinality();
 

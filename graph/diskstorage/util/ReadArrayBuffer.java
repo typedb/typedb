@@ -21,7 +21,7 @@ package grakn.core.graph.diskstorage.util;
 import grakn.core.graph.diskstorage.ReadBuffer;
 
 /**
- * Implementation of {@link ReadBuffer} against a byte array.
+ * Implementation of ReadBuffer against a byte array.
  * <p>
  * Note, that the position does not impact the state of the object. Meaning, equals, hashcode,
  * and compare ignore the position.

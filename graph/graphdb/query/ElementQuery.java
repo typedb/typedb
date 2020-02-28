@@ -23,7 +23,7 @@ import grakn.core.graph.core.JanusGraphElement;
 import java.util.Comparator;
 
 /**
- * A query that returns {@link JanusGraphElement}s. This query can consist of multiple sub-queries that together
+ * A query that returns JanusGraphElements. This query can consist of multiple sub-queries that together
  * form the desired result set.
  *
  */
@@ -77,7 +77,7 @@ public interface ElementQuery<R extends JanusGraphElement,B extends BackendQuery
     boolean isSorted();
 
     /**
-     * Returns the expected sort order of this query if any was specified. Check {@link #isSorted()} first.
+     * Returns the expected sort order of this query if any was specified. Check #isSorted() first.
      * @return
      */
     Comparator<R> getSortOrder();

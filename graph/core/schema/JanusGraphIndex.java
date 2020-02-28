@@ -24,10 +24,10 @@ import org.apache.tinkerpop.gremlin.structure.Element;
 /**
  * A JanusGraphIndex is an index installed on the graph in order to be able to efficiently retrieve graph elements
  * by their properties.
- * A JanusGraphIndex may either be a composite or mixed index and is created via {@link JanusGraphManagement#buildIndex(String, Class)}.
+ * A JanusGraphIndex may either be a composite or mixed index and is created via JanusGraphManagement#buildIndex(String, Class).
  * <p>
  * This interface allows introspecting an existing graph index. Existing graph indexes can be retrieved via
- * {@link JanusGraphManagement#getGraphIndex(String)} or {@link JanusGraphManagement#getGraphIndexes(Class)}.
+ * JanusGraphManagement#getGraphIndex(String) or JanusGraphManagement#getGraphIndexes(Class).
  *
  */
 public interface JanusGraphIndex extends Index {
@@ -79,7 +79,7 @@ public interface JanusGraphIndex extends Index {
     boolean isUnique();
 
     /**
-     * Returns the status of this index with respect to the provided {@link PropertyKey}.
+     * Returns the status of this index with respect to the provided PropertyKey.
      * For composite indexes, the key is ignored and the status of the index as a whole is returned.
      * For mixed indexes, the status of that particular key within the index is returned.
      *

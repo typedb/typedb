@@ -31,9 +31,9 @@ public interface KeyIterator extends RecordIterator<StaticBuffer> {
      * <p>
      * Closing the returned sub-iterator has no effect on this iterator.
      *
-     * Calling {@link #next()} might close previously returned RecordIterators
+     * Calling #next() might close previously returned RecordIterators
      * depending on the implementation, hence it is important to iterate over
-     * (and close) the RecordIterator before calling {@link #next()} or {@link #hasNext()}.
+     * (and close) the RecordIterator before calling #next() or #hasNext().
      *
      */
     RecordIterator<Entry> getEntries();

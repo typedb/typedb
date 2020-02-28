@@ -27,9 +27,9 @@ import java.time.Instant;
 import java.util.Objects;
 
 /**
- * Abstract implementation of {@link Message} which exposes the timestamp, sender, and payload
+ * Abstract implementation of Message which exposes the timestamp, sender, and payload
  * of a message.
- * Particular {@link Log} implementations can extend this class.
+ * Particular Log implementations can extend this class.
  */
 public abstract class AbstractMessage implements Message {
 

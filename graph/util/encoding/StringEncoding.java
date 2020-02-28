@@ -38,7 +38,7 @@ public class StringEncoding {
         return true;
     }
 
-    //Similar to {@link StringSerializer}
+    //Similar to StringSerializer
     public static int writeAsciiString(byte[] array, int startPos, String attribute) {
         Preconditions.checkArgument(isAsciiString(attribute));
         if (attribute.length() == 0) {

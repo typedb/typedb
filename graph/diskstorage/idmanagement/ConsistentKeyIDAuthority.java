@@ -67,7 +67,7 @@ import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.
 import static grakn.core.graph.util.encoding.StringEncoding.UTF8_CHARSET;
 
 /**
- * {@link IDAuthority} implementation
+ * IDAuthority implementation
  * assuming that the backing store supports consistent key operations.
  * <p>
  * ID blocks are allocated by first applying for an id block, waiting for a
@@ -189,7 +189,7 @@ public class ConsistentKeyIDAuthority implements BackendOperation.TransactionalP
     }
 
     /**
-     * Returns the block size of the specified partition as determined by the configured {@link IDBlockSizer}.
+     * Returns the block size of the specified partition as determined by the configured IDBlockSizer.
      */
     private long getBlockSize(int idNamespace) {
         long blockSize = blockSizer.getBlockSize(idNamespace);

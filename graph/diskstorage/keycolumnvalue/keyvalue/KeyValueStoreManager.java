@@ -22,7 +22,7 @@ import grakn.core.graph.diskstorage.BackendException;
 import grakn.core.graph.diskstorage.keycolumnvalue.StoreManager;
 
 /**
- * {@link StoreManager} for {@link KeyValueStore}.
+ * StoreManager for KeyValueStore.
  *
  */
 public interface KeyValueStoreManager extends StoreManager {

@@ -48,7 +48,7 @@ public interface IndexType {
 
     /**
      * Resets the internal caches used to speed up lookups on this index.
-     * This is needed when the index gets modified in {@link ManagementSystem}.
+     * This is needed when the index gets modified in ManagementSystem.
      */
     void resetCache();
 

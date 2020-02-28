@@ -77,7 +77,7 @@ public class RolePlayerFragmentSet extends EquivalentFragmentSetImpl {
     }
 
     /**
-     * A query can use the role-type labels on a {@link Schema.EdgeLabel#ROLE_PLAYER} edge when the following criteria are met:
+     * A query can use the role-type labels on a Schema.EdgeLabel#ROLE_PLAYER edge when the following criteria are met:
      * <ol>
      *     <li>There is a RolePlayerFragmentSet {@code $r-[role-player:$e role:$R ...]->$p}
      *     <li>There is a LabelFragmentSet {@code $R[label:foo,bar]}
@@ -89,7 +89,7 @@ public class RolePlayerFragmentSet extends EquivalentFragmentSetImpl {
      * {@code $r-[role-player:$e roles:foo,bar ...]->$p}
      * <p>
      * In the special case where the role is specified as the meta {@code role}, no labels are added and the Role
-     * variable is detached from the {@link Schema.EdgeLabel#ROLE_PLAYER} edge.
+     * variable is detached from the Schema.EdgeLabel#ROLE_PLAYER edge.
      * <p>
      * However, we must still retain the LabelFragmentSet because it is possible it is selected as a result or
      * referred to elsewhere in the query.
@@ -178,7 +178,7 @@ public class RolePlayerFragmentSet extends EquivalentFragmentSetImpl {
     };
 
     /**
-     * A query can use the RelationType Labels on a {@link Schema.EdgeLabel#ROLE_PLAYER} edge when the following criteria are met:
+     * A query can use the RelationType Labels on a Schema.EdgeLabel#ROLE_PLAYER edge when the following criteria are met:
      * <ol>
      *     <li>There is a RolePlayerFragmentSet {@code $r-[role-player:$e ...]->$p}
      *         without any RelationType Labels specified

@@ -25,8 +25,8 @@ import grakn.core.graph.core.VertexLabel;
 
 /**
  * When a graph is configured to automatically create vertex/edge labels and property keys when they are first used,
- * a DefaultTypeMaker implementation is used to define them by invoking the {@link #makeVertexLabel(VertexLabelMaker)},
- * {@link #makeEdgeLabel(EdgeLabelMaker)}, or {@link #makePropertyKey(PropertyKeyMaker)} methods respectively.
+ * a DefaultTypeMaker implementation is used to define them by invoking the #makeVertexLabel(VertexLabelMaker),
+ * #makeEdgeLabel(EdgeLabelMaker), or #makePropertyKey(PropertyKeyMaker) methods respectively.
  * <br>
  * By providing a custom DefaultTypeMaker implementation, one can specify how these types should be defined by default.
  * A DefaultTypeMaker implementation is specified in the graph configuration using the full path which means the
@@ -37,7 +37,7 @@ import grakn.core.graph.core.VertexLabel;
 public interface DefaultSchemaMaker {
 
     /**
-     * Creates a new edge label with default settings against the provided {@link EdgeLabelMaker}.
+     * Creates a new edge label with default settings against the provided EdgeLabelMaker.
      *
      * @param factory EdgeLabelMaker through which the edge label is created
      * @return A new edge label
@@ -53,7 +53,7 @@ public interface DefaultSchemaMaker {
     Cardinality defaultPropertyCardinality(String key);
 
     /**
-     * Creates a new property key with default settings against the provided {@link PropertyKeyMaker}.
+     * Creates a new property key with default settings against the provided PropertyKeyMaker.
      *
      * @param factory PropertyKeyMaker through which the property key is created
      * @return A new property key
@@ -64,7 +64,7 @@ public interface DefaultSchemaMaker {
     }
 
     /**
-     * Creates a new property key with default settings against the provided {@link PropertyKeyMaker} and value.
+     * Creates a new property key with default settings against the provided PropertyKeyMaker and value.
      *
      * @param factory PropertyKeyMaker through which the property key is created
      * @param value   the value of the property. The default implementation does not use this parameter.
@@ -76,7 +76,7 @@ public interface DefaultSchemaMaker {
     }
 
     /**
-     * Creates a new vertex label with the default settings against the provided {@link VertexLabelMaker}.
+     * Creates a new vertex label with the default settings against the provided VertexLabelMaker.
      *
      * @param factory VertexLabelMaker through which the vertex label is created
      * @return A new vertex label
@@ -89,9 +89,9 @@ public interface DefaultSchemaMaker {
     /**
      * Whether to ignore undefined types occurring in a query.
      * <p>
-     * If this method returns true, then undefined types referred to in a {@link JanusGraphVertexQuery} will be silently
+     * If this method returns true, then undefined types referred to in a JanusGraphVertexQuery will be silently
      * ignored and an empty result set will be returned. If this method returns false, then usage of undefined types
-     * in queries results in an {@link IllegalArgumentException}.
+     * in queries results in an IllegalArgumentException.
      */
     boolean ignoreUndefinedQueryTypes();
 

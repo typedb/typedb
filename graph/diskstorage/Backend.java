@@ -74,7 +74,7 @@ import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.
 
 /**
  * Orchestrates and configures all backend systems:
- * The primary backend storage ({@link KeyColumnValueStore}) and all external indexing providers ({@link IndexProvider}).
+ * The primary backend storage (KeyColumnValueStore) and all external indexing providers (IndexProvider).
  */
 public class Backend {
 
@@ -184,7 +184,7 @@ public class Backend {
     }
 
     /**
-     * Get information about all registered {@link IndexProvider}s.
+     * Get information about all registered IndexProviders.
      */
     public Map<String, IndexInformation> getIndexInformation() {
         ImmutableMap.Builder<String, IndexInformation> copy = ImmutableMap.builder();
@@ -260,7 +260,7 @@ public class Backend {
     }
 
     /**
-     * Opens a new transaction against all registered backend system wrapped in one {@link BackendTransaction}.
+     * Opens a new transaction against all registered backend system wrapped in one BackendTransaction.
      */
     public BackendTransaction beginTransaction(TransactionConfiguration configuration, KeyInformation.Retriever indexKeyRetriever) throws BackendException {
         StoreTransaction tx = storeManager.beginTransaction(configuration);

@@ -37,11 +37,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * The base implementation for {@link VertexCentricQuery} which does not yet contain a reference to the
- * base vertex of the query. This query is constructed by {@link BasicVertexCentricQueryBuilder#constructQuery(RelationCategory)}
+ * The base implementation for VertexCentricQuery which does not yet contain a reference to the
+ * base vertex of the query. This query is constructed by BasicVertexCentricQueryBuilder#constructQuery(RelationCategory)
  * and then later extended by single or multi-vertex query which add the vertex to the query.
  * <p>
- * This class override many methods in {@link ElementQuery} - check there
+ * This class override many methods in ElementQuery - check there
  * for a description.
  */
 public class BaseVertexCentricQuery extends BaseQuery implements ProfileObservable {
@@ -51,7 +51,7 @@ public class BaseVertexCentricQuery extends BaseQuery implements ProfileObservab
      */
     protected final Condition<JanusGraphRelation> condition;
     /**
-     * The individual component {@link SliceQuery} of this query. This query is considered an OR
+     * The individual component SliceQuery of this query. This query is considered an OR
      * of the individual components (possibly filtered by the condition if not fitted).
      */
     protected final List<BackendQueryHolder<SliceQuery>> queries;

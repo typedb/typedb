@@ -60,7 +60,7 @@ public interface KeyColumnValueStoreManager extends StoreManager {
      * Executes multiple mutations at once. For each store (identified by a string name) there is a map of (key,mutation) pairs
      * that specifies all the mutations to execute against the particular store for that key.
      *
-     * This is an optional operation. Check {@link #getFeatures()} if it is supported by a particular implementation.
+     * This is an optional operation. Check #getFeatures() if it is supported by a particular implementation.
      */
     void mutateMany(Map<String, Map<StaticBuffer, KCVMutation>> mutations, StoreTransaction txh) throws BackendException;
 

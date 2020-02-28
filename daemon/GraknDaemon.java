@@ -52,7 +52,7 @@ public class GraknDaemon {
     private final Server serverExecutor;
 
     /**
-     * Main function of the {@link GraknDaemon}. It is meant to be invoked by the 'grakn' bash script.
+     * Main function of the GraknDaemon. It is meant to be invoked by the 'grakn' bash script.
      * You should have 'grakn.dir' and 'grakn.conf' Java properties set.
      *
      * @param args arguments such as 'server start', 'server stop', 'clean', and so on

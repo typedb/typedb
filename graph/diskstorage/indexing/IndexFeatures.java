@@ -28,7 +28,7 @@ import java.util.Arrays;
 import java.util.Set;
 
 /**
- * Characterizes the features that a particular {@link IndexProvider} implementation supports
+ * Characterizes the features that a particular IndexProvider implementation supports
  */
 public class IndexFeatures {
 

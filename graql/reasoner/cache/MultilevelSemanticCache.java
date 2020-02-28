@@ -41,7 +41,7 @@ import java.util.stream.Stream;
 
 /**
  *
- * Implementation of SemanticCache using {@link ReasonerQueryEquivalence#StructuralEquivalence}
+ * Implementation of SemanticCache using ReasonerQueryEquivalence#StructuralEquivalence
  * for query equivalence checks and IndexedAnswerSets for storing query answer sets.
  *
  */

@@ -25,10 +25,10 @@ import grakn.core.graph.graphdb.types.ParameterType;
 
 /**
  * Used to change the default mapping of an indexed key by providing the mapping explicitly as a parameter to
- * {@link JanusGraphManagement#addIndexKey(JanusGraphIndex, PropertyKey, Parameter[])}.
+ * JanusGraphManagement#addIndexKey(JanusGraphIndex, PropertyKey, Parameter[]).
  * <p>
  * This applies mostly to string data types of keys, where the mapping specifies whether the string value is tokenized
- * ({@link #TEXT}) or indexed as a whole ({@link #STRING}), or both ({@link #TEXTSTRING}).
+ * (#TEXT) or indexed as a whole (#STRING), or both (#TEXTSTRING).
  */
 public enum Mapping {
 
@@ -39,7 +39,7 @@ public enum Mapping {
     PREFIX_TREE;
 
     /**
-     * Returns the mapping as a parameter so that it can be passed to {@link JanusGraphManagement#addIndexKey(JanusGraphIndex, PropertyKey, Parameter[])}
+     * Returns the mapping as a parameter so that it can be passed to JanusGraphManagement#addIndexKey(JanusGraphIndex, PropertyKey, Parameter[])
      */
     public Parameter asParameter() {
         return ParameterType.MAPPING.getParameter(this);

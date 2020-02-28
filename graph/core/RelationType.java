@@ -23,14 +23,14 @@ import grakn.core.graph.core.schema.JanusGraphSchemaType;
 import grakn.core.graph.core.schema.RelationTypeMaker;
 
 /**
- * RelationType defines the schema for {@link JanusGraphRelation}. RelationType can be configured through {@link RelationTypeMaker} to
+ * RelationType defines the schema for JanusGraphRelation. RelationType can be configured through RelationTypeMaker to
  * provide data verification, better storage efficiency, and higher retrieval performance.
  * <br>
- * Each {@link JanusGraphRelation} has a unique type which defines many important characteristics of that relation.
+ * Each JanusGraphRelation has a unique type which defines many important characteristics of that relation.
  * <br>
- * RelationTypes are constructed through {@link RelationTypeMaker} which is accessed in the context of a {@link JanusGraphTransaction}
- * via {@link JanusGraphTransaction#makePropertyKey(String)} for property keys or {@link JanusGraphTransaction#makeEdgeLabel(String)}
- * for edge labels. Identical methods exist on {@link JanusGraph}.
+ * RelationTypes are constructed through RelationTypeMaker which is accessed in the context of a JanusGraphTransaction
+ * via JanusGraphTransaction#makePropertyKey(String) for property keys or JanusGraphTransaction#makeEdgeLabel(String)
+ * for edge labels. Identical methods exist on JanusGraph.
  * Note, relation types will only be visible once the transaction in which they were created has been committed.
  * <br>
  * RelationType names must be unique in a graph database. Many methods allow the name of the type as an argument

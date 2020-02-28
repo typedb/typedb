@@ -35,10 +35,10 @@ import io.vavr.collection.Iterator;
 import java.io.IOException;
 
 /**
- * {@link SliceQuery} iterator that handles CQL result sets that may have more
- * data returned in each column than the {@link SliceQuery} has configured as
+ * SliceQuery iterator that handles CQL result sets that may have more
+ * data returned in each column than the SliceQuery has configured as
  * it's limit. I.e. the iterator only returns the number of entries for each Key
- * to the number of Columns specified in the {@link SliceQuery}s limit.
+ * to the number of Columns specified in the SliceQuerys limit.
  */
 class CQLResultSetKeyIterator extends AbstractIterator<StaticBuffer> implements KeyIterator {
 

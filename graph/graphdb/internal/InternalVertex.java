@@ -60,7 +60,7 @@ public interface InternalVertex extends JanusGraphVertex, InternalElement {
 
     /**
      * Returns all relations that match the given query. If these matching relations are not currently
-     * held in memory, it uses the given {@link Retriever} to retrieve the edges from backend storage.
+     * held in memory, it uses the given Retriever to retrieve the edges from backend storage.
      */
     EntryList loadRelations(SliceQuery query, Retriever<SliceQuery, EntryList> lookup);
 

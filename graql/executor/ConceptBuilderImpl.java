@@ -86,10 +86,10 @@ public class ConceptBuilderImpl implements ConceptBuilder {
     private final Map<BuilderParam<?>, Object> preProvidedParams = new HashMap<>();
 
     /**
-     * A set of parameters that were used for building the concept. Modified while executing {@link #build()}.
-     * This set starts empty. Every time {@link #use(BuilderParam)} or {@link #useOrDefault(BuilderParam, Object)}
+     * A set of parameters that were used for building the concept. Modified while executing #build().
+     * This set starts empty. Every time #use(BuilderParam) or #useOrDefault(BuilderParam, Object)
      * is called, the parameter is added to this set. After the concept is built, any parameter not in this set is
-     * considered "unexpected". If it is present in the field {@link #preProvidedParams}, then an error is thrown.
+     * considered "unexpected". If it is present in the field #preProvidedParams, then an error is thrown.
      * Simplified example of how this operates:
      * <pre>
      * // preProvidedParams = {LABEL: actor, SUPER_CONCEPT: role, VALUE: "Bob"}
@@ -306,7 +306,7 @@ public class ConceptBuilderImpl implements ConceptBuilder {
     }
 
     /**
-     * Called during {@link #build()} whenever a particular parameter is expected in order to build the Concept.
+     * Called during #build() whenever a particular parameter is expected in order to build the Concept.
      * This method will return the parameter, if present and also record that it was expected, so that we can later
      * check for any unexpected properties.
      *
@@ -486,7 +486,7 @@ public class ConceptBuilderImpl implements ConceptBuilder {
 
     /**
      * Class with no fields and exactly one instance.
-     * Similar in use to Void, but the single instance is {@link Unit#INSTANCE} instead of {@code null}. Useful
+     * Similar in use to Void, but the single instance is Unit#INSTANCE instead of {@code null}. Useful
      * when {@code null} is not allowed.
      * @see <a href=https://en.wikipedia.org/wiki/Unit_type>Wikipedia</a>
      */

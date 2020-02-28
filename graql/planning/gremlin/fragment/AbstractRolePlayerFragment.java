@@ -39,7 +39,7 @@ import static grakn.core.graql.planning.gremlin.fragment.Fragments.displayOption
 import static java.util.stream.Collectors.toSet;
 
 /**
- * Abstract class for the fragments that traverse {@link Schema.EdgeLabel#ROLE_PLAYER} edges: InRolePlayerFragment and
+ * Abstract class for the fragments that traverse Schema.EdgeLabel#ROLE_PLAYER edges: InRolePlayerFragment and
  * OutRolePlayerFragment.
  */
 abstract class AbstractRolePlayerFragment extends EdgeFragment {
@@ -109,9 +109,9 @@ abstract class AbstractRolePlayerFragment extends EdgeFragment {
     }
 
     /**
-     * Optionally traverse from a {@link Schema.EdgeLabel#ROLE_PLAYER} edge to the Role it mentions, plus any super-types.
+     * Optionally traverse from a Schema.EdgeLabel#ROLE_PLAYER edge to the Role it mentions, plus any super-types.
      *
-     * @param traversal the traversal, starting from the {@link Schema.EdgeLabel#ROLE_PLAYER}  edge
+     * @param traversal the traversal, starting from the Schema.EdgeLabel#ROLE_PLAYER  edge
      * @param role the variable to assign to the role. If not present, do nothing
      * @param edgeProperty the edge property to look up the role label ID
      */

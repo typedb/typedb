@@ -31,7 +31,7 @@ import java.util.List;
  * </p>
  *
  * <p>
- *     This exception is thrown on {@link Transaction#commit()} when the graph does not comply with the grakn
+ *     This exception is thrown on Transaction#commit() when the graph does not comply with the grakn
  *     validation rules. For a complete list of these rules please refer to the documentation
  * </p>
  *

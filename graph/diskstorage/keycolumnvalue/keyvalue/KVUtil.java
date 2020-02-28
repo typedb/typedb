@@ -31,7 +31,7 @@ import grakn.core.graph.diskstorage.util.StaticArrayEntryList;
 import java.io.IOException;
 
 /**
- * Utility methods for interacting with {@link KeyValueStore}.
+ * Utility methods for interacting with KeyValueStore.
  */
 public class KVUtil {
 

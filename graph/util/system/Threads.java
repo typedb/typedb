@@ -19,7 +19,7 @@
 package grakn.core.graph.util.system;
 
 /**
- * Utility class for dealing with {@link Thread}
+ * Utility class for dealing with Thread
  */
 public class Threads {
 

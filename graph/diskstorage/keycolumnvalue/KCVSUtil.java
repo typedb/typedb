@@ -28,7 +28,7 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 
 /**
- * Contains static utility methods for operating on {@link KeyColumnValueStore}.
+ * Contains static utility methods for operating on KeyColumnValueStore.
  */
 
 public class KCVSUtil {

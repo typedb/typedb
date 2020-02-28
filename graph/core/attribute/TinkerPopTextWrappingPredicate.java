@@ -24,10 +24,10 @@ import org.apache.tinkerpop.gremlin.process.traversal.Text;
 
 
 /**
- * A {@link JanusGraphPredicate} that just wraps a TinkerPop {@link Text} predicate.
+ * A JanusGraphPredicate that just wraps a TinkerPop Text predicate.
  * <p>
- * This enables JanusGraph to use TinkerPop {@link Text} predicates in places where it expects a
- * {@link JanusGraphPredicate}.
+ * This enables JanusGraph to use TinkerPop Text predicates in places where it expects a
+ * JanusGraphPredicate.
  */
 public class TinkerPopTextWrappingPredicate implements JanusGraphPredicate {
     private Text internalPredicate;

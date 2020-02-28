@@ -29,15 +29,15 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 /**
- * Provides {@link Matcher} implementations used by Graql tests in calls to {@link Assert#assertThat}.
+ * Provides Matcher implementations used by Graql tests in calls to Assert#assertThat.
  *
  */
 public class GraqlMatchers {
 
     /**
-     * Create a {@link Matcher} that checks that something satisfies the given {@link Predicate}.
+     * Create a Matcher that checks that something satisfies the given Predicate.
      * <p>
-     * Useful for describing more complicated {@link Matcher} classes, or for one-off tests.
+     * Useful for describing more complicated Matcher classes, or for one-off tests.
      * <p>
      * Example:
      * <pre>
@@ -47,7 +47,7 @@ public class GraqlMatchers {
      *
      * @param predicate the predicate to test against
      * @param <T> the type of the object being tested
-     * @return a {@link Matcher} that checks that something satisfies the given {@link Predicate}
+     * @return a Matcher that checks that something satisfies the given Predicate
      */
     public static <T> Matcher<T> satisfies(Predicate<T> predicate) {
         return new TypeSafeDiagnosingMatcher<T>() {
@@ -64,7 +64,7 @@ public class GraqlMatchers {
     }
 
     /**
-     * Create a {@link Matcher} that extracts a feature from an object, then applies a {@link Matcher} to that feature.
+     * Create a Matcher that extracts a feature from an object, then applies a Matcher to that feature.
      * <p>
      * This is useful when there is a field or method on an object that must be tested against.
      * <p>
@@ -74,12 +74,12 @@ public class GraqlMatchers {
      * assertThat(Lists.newArrayList("1", "2", "Graql"), stringReprMentionsGraql);
      * </pre>
      *
-     * @param subMatcher a {@link Matcher} to apply to the extracted feature
+     * @param subMatcher a Matcher to apply to the extracted feature
      * @param name the name of the resulting matcher
-     * @param extractor a {@link Function} to extract a feature from the the object
+     * @param extractor a Function to extract a feature from the the object
      * @param <T> the type of the object being tested
      * @param <U> the type of the extracted feature
-     * @return a {@link Matcher} that extracts a feature from an object, then applies a {@link Matcher} to that feature
+     * @return a Matcher that extracts a feature from an object, then applies a Matcher to that feature
      */
     public static <T, U> Matcher<T> feature(Matcher<? super U> subMatcher, String name, Function<T, U> extractor) {
         return new FeatureMatcher<T, U>(subMatcher, name, name) {

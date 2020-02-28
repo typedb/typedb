@@ -44,7 +44,7 @@ import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID;
 
 /**
- * Builder for {@link GraphDatabaseConfiguration}
+ * Builder for GraphDatabaseConfiguration
  */
 public class MergedConfigurationBuilder {
 
