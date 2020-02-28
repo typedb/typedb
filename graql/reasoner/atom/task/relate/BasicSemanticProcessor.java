@@ -26,6 +26,7 @@ import grakn.core.graql.reasoner.cache.SemanticDifference;
 import grakn.core.graql.reasoner.cache.VariableDefinition;
 import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.kb.concept.api.Type;
+import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
@@ -90,7 +91,7 @@ public class BasicSemanticProcessor implements SemanticProcessor<Atom>{
      * @param unifierType unifier type in question
      * @return true if predicates between this (child) and parent are compatible based on the mappings provided by unifier
      */
-    static boolean isPredicateCompatible(Atom childAtom, Atom parentAtom, Unifier unifier, UnifierType unifierType){
+    boolean isPredicateCompatible(Atom childAtom, Atom parentAtom, Unifier unifier, UnifierType unifierType, ConceptManager conceptManager){
         //check value predicates compatibility
         return unifier.mappings().stream().allMatch(mapping -> {
             Variable childVar = mapping.getKey();
@@ -103,12 +104,12 @@ public class BasicSemanticProcessor implements SemanticProcessor<Atom>{
             if (unifierType.inferValues()) {
                 parentAtom.getParentQuery().getAtoms(IdPredicate.class)
                         .filter(id -> id.getVarName().equals(parentVar))
-                        .map(IdPredicate::toValuePredicate)
+                        .map(id -> id.toValuePredicate(conceptManager))
                         .filter(Objects::nonNull)
                         .forEach(parentValuePredicates::add);
                 childAtom.getParentQuery().getAtoms(IdPredicate.class)
                         .filter(id -> id.getVarName().equals(childVar))
-                        .map(IdPredicate::toValuePredicate)
+                        .map(id -> id.toValuePredicate(conceptManager))
                         .filter(Objects::nonNull)
                         .forEach(childValuePredicates::add);
             }

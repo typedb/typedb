@@ -233,7 +233,7 @@ public class ResolutionPlanIT {
                 "};";
         ReasonerQueryImpl query = reasonerQueryFactory.create(conjunction(queryString));
         checkPlanSanity(query);
-        assertTrue(!new ResolutionPlan(conceptManager, traversalPlanFactory, query).plan().get(0).isRuleResolvable());
+        assertTrue(!new ResolutionPlan(query, traversalPlanFactory).plan().get(0).isRuleResolvable());
     }
 
     @Test
@@ -306,7 +306,7 @@ public class ResolutionPlanIT {
                 "$y has resource $yr;" +
                 "};";
         ReasonerQueryImpl query = reasonerQueryFactory.create(conjunction(queryString));
-        assertEquals(new ResolutionPlan(conceptManager, traversalPlanFactory, query).plan().get(0), getAtomOfType(query, "derivedRelation", tx));
+        assertEquals(new ResolutionPlan(query, traversalPlanFactory).plan().get(0), getAtomOfType(query, "derivedRelation", tx));
         checkPlanSanity(query);
     }
 
@@ -415,7 +415,7 @@ public class ResolutionPlanIT {
                 "$y != $x;" +
                 "};";
         ReasonerQueryImpl query = reasonerQueryFactory.create(conjunction(queryString));
-        checkAtomPlanComplete(query, new ResolutionPlan(conceptManager, traversalPlanFactory, query));
+        checkAtomPlanComplete(query, new ResolutionPlan(query, traversalPlanFactory));
         checkQueryPlanComplete(query,new ResolutionQueryPlan(reasonerQueryFactory, query));
     }
 
@@ -443,8 +443,8 @@ public class ResolutionPlanIT {
         checkPlanSanity(queryX);
         checkPlanSanity(queryY);
 
-        ImmutableList<Atom> xPlan = new ResolutionPlan(conceptManager, traversalPlanFactory, queryX).plan();
-        ImmutableList<Atom> yPlan = new ResolutionPlan(conceptManager, traversalPlanFactory, queryY).plan();
+        ImmutableList<Atom> xPlan = new ResolutionPlan(queryX, traversalPlanFactory).plan();
+        ImmutableList<Atom> yPlan = new ResolutionPlan(queryY, traversalPlanFactory).plan();
         assertNotEquals(xPlan.get(0), getAtomOfType(queryX, "anotherResource", tx));
         assertNotEquals(yPlan.get(0), getAtomOfType(queryY, "resource", tx));
     }
@@ -509,7 +509,7 @@ public class ResolutionPlanIT {
                 basePatternString +
                 "};";
         ReasonerQueryImpl attributedQuery = reasonerQueryFactory.create(conjunction(attributedQueryString));
-        ResolutionPlan attributedResolutionPlan = new ResolutionPlan(conceptManager, traversalPlanFactory, attributedQuery);
+        ResolutionPlan attributedResolutionPlan = new ResolutionPlan(attributedQuery, traversalPlanFactory);
         checkPlanSanity(attributedQuery);
 
         Atom efAtom = getAtomWithVariables(attributedQuery, Sets.newHashSet(new Variable("e"), new Variable("f")));
@@ -547,7 +547,7 @@ public class ResolutionPlanIT {
                 basePatternString +
                 "};";
         ReasonerQueryImpl attributedQuery = reasonerQueryFactory.create(conjunction(attributedQueryString));
-        ResolutionPlan attributedResolutionPlan = new ResolutionPlan(conceptManager, traversalPlanFactory, attributedQuery);
+        ResolutionPlan attributedResolutionPlan = new ResolutionPlan(attributedQuery, traversalPlanFactory);
         checkPlanSanity(attributedQuery);
 
         Atom efAtom = getAtomWithVariables(attributedQuery, Sets.newHashSet(new Variable("e"), new Variable("f")));
@@ -570,7 +570,7 @@ public class ResolutionPlanIT {
                 "};";
 
         ReasonerQueryImpl query = reasonerQueryFactory.create(conjunction(queryString));
-        checkAtomPlanComplete(query, new ResolutionPlan(conceptManager, traversalPlanFactory, query));
+        checkAtomPlanComplete(query, new ResolutionPlan(query, traversalPlanFactory));
         checkQueryPlanComplete(query,new ResolutionQueryPlan(reasonerQueryFactory, query));
     }
 
@@ -590,7 +590,7 @@ public class ResolutionPlanIT {
                 "};";
 
         ReasonerQueryImpl query = reasonerQueryFactory.create(conjunction(queryString));
-        checkAtomPlanComplete(query, new ResolutionPlan(conceptManager, traversalPlanFactory, query));
+        checkAtomPlanComplete(query, new ResolutionPlan(query, traversalPlanFactory));
         checkQueryPlanComplete(query,new ResolutionQueryPlan(reasonerQueryFactory, query));
     }
 
@@ -611,7 +611,7 @@ public class ResolutionPlanIT {
                 "};";
 
         ReasonerQueryImpl query = reasonerQueryFactory.create(conjunction(queryString));
-        checkAtomPlanComplete(query, new ResolutionPlan(conceptManager, traversalPlanFactory, query));
+        checkAtomPlanComplete(query, new ResolutionPlan(query, traversalPlanFactory));
         checkQueryPlanComplete(query,new ResolutionQueryPlan(reasonerQueryFactory, query));
     }
 
@@ -629,7 +629,7 @@ public class ResolutionPlanIT {
                 "($x, $y) isa derivedRelation;" +
                 "};";
         ReasonerQueryImpl query = reasonerQueryFactory.create(conjunction(queryString));
-        ResolutionPlan resolutionPlan = new ResolutionPlan(conceptManager, traversalPlanFactory, query);
+        ResolutionPlan resolutionPlan = new ResolutionPlan(query, traversalPlanFactory);
         checkAtomPlanComplete(query, resolutionPlan);
 
         Atom resolvableIsa = getAtomWithVariables(query, Sets.newHashSet(new Variable("x"), new Variable("type")));
@@ -655,7 +655,7 @@ public class ResolutionPlanIT {
                 "};";
 
         ReasonerQueryImpl query = reasonerQueryFactory.create(conjunction(queryString));
-        ResolutionPlan resolutionPlan = new ResolutionPlan(conceptManager, traversalPlanFactory, query);
+        ResolutionPlan resolutionPlan = new ResolutionPlan(query, traversalPlanFactory);
         checkPlanSanity(query);
         checkQueryPlanComplete(query,new ResolutionQueryPlan(reasonerQueryFactory, query));
 
@@ -723,7 +723,7 @@ public class ResolutionPlanIT {
     }
 
     private void checkAtomPlanSanity(ReasonerQueryImpl query){
-        ResolutionPlan resolutionPlan = new ResolutionPlan(conceptManager, traversalPlanFactory, query);
+        ResolutionPlan resolutionPlan = new ResolutionPlan(query, traversalPlanFactory);
         checkAtomPlanComplete(query, resolutionPlan);
         checkAtomPlanConnected(resolutionPlan);
     }
@@ -735,7 +735,7 @@ public class ResolutionPlanIT {
     }
 
     private void checkOptimalAtomPlanProduced(ReasonerQueryImpl query, ImmutableList<Atom> desiredAtomPlan) {
-        ResolutionPlan resolutionPlan = new ResolutionPlan(conceptManager, traversalPlanFactory, query);
+        ResolutionPlan resolutionPlan = new ResolutionPlan(query, traversalPlanFactory);
         ImmutableList<Atom> atomPlan = resolutionPlan.plan();
         assertEquals(desiredAtomPlan, atomPlan);
         checkAtomPlanComplete(query, resolutionPlan);

@@ -85,7 +85,7 @@ public class ReasonerUtils {
                 .filter(v -> v.var().equals(typeVariable))
                 .flatMap(v -> v.hasProperty(TypeProperty.class)?
                         v.getProperties(TypeProperty.class).map(np -> IdPredicate.create(typeVariable, Label.of(np.name()), parent, conceptManager)) :
-                        v.getProperties(IdProperty.class).map(np -> IdPredicate.create(typeVariable, ConceptId.of(np.id()), parent, conceptManager)))
+                        v.getProperties(IdProperty.class).map(np -> IdPredicate.create(typeVariable, ConceptId.of(np.id()), parent)))
                 .findFirst().orElse(null);
     }
 

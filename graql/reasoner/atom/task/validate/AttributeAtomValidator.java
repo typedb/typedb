@@ -31,6 +31,7 @@ import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Type;
+import grakn.core.kb.graql.exception.GraqlSemanticException;
 import grakn.core.kb.graql.reasoner.cache.RuleCache;
 import graql.lang.statement.Variable;
 import java.util.HashSet;
@@ -39,14 +40,25 @@ import java.util.Set;
 public class AttributeAtomValidator implements AtomValidator<AttributeAtom> {
 
     private final RuleCache ruleCache;
+    private final BasicAtomValidator basicValidator;
 
     public AttributeAtomValidator(RuleCache ruleCache){
         this.ruleCache = ruleCache;
+        this.basicValidator = new BasicAtomValidator();
+    }
+
+    @Override
+    public void checkValid(AttributeAtom atom) {
+        basicValidator.checkValid(atom);
+        SchemaConcept type = atom.getSchemaConcept();
+        if (type != null && !type.isAttributeType()) {
+            throw GraqlSemanticException.attributeWithNonAttributeType(type.label());
+        }
     }
 
     @Override
     public Set<String> validateAsRuleHead(AttributeAtom atom, Rule rule){
-        Set<String> errors = new BasicAtomValidator().validateAsRuleHead(atom, rule);
+        Set<String> errors = basicValidator.validateAsRuleHead(atom, rule);
         SchemaConcept type = atom.getSchemaConcept();
         Set<ValuePredicate> multiPredicate = atom.getMultiPredicate();
 

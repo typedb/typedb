@@ -67,7 +67,7 @@ public abstract class Binary extends Atom {
            Variable predicateVariable, ReasoningContext ctx) {
         super(reasonerQuery, varName, pattern, typeId, ctx);
         this.predicateVariable = predicateVariable;
-        this.semanticProcessor = new BinarySemanticProcessor();
+        this.semanticProcessor = new BinarySemanticProcessor(ctx.conceptManager());
     }
 
     public Variable getPredicateVariable() {
@@ -77,7 +77,7 @@ public abstract class Binary extends Atom {
     @Nullable
     public IdPredicate getTypePredicate(){
         if (typePredicate == null && getTypeId() != null) {
-            typePredicate = IdPredicate.create(new Statement(getPredicateVariable()).id(getTypeId().getValue()), getParentQuery(), context().conceptManager());
+            typePredicate = IdPredicate.create(new Statement(getPredicateVariable()).id(getTypeId().getValue()), getParentQuery());
         }
         return typePredicate;
     }

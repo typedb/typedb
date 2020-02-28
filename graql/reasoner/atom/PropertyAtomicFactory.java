@@ -250,7 +250,7 @@ public class PropertyAtomicFactory {
     }
 
     private Atomic id(Variable var, IdProperty property, ReasonerQuery parent) {
-        return IdPredicate.create(var, ConceptId.of(property.id()), parent, ctx.conceptManager());
+        return IdPredicate.create(var, ConceptId.of(property.id()), parent);
     }
 
     private Atomic hasAttributeType(Variable var, HasAttributeTypeProperty property, ReasonerQuery parent, Statement statement, Set<Statement> otherStatements) {

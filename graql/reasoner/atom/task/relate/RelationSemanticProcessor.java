@@ -61,9 +61,11 @@ import static grakn.core.concept.util.ConceptUtils.bottom;
 public class RelationSemanticProcessor implements SemanticProcessor<RelationAtom> {
 
     private final ConceptManager conceptManager;
+    private final BinarySemanticProcessor binarySemanticProcessor;
 
     public RelationSemanticProcessor(ConceptManager conceptManager){
         this.conceptManager = conceptManager;
+        this.binarySemanticProcessor = new BinarySemanticProcessor(conceptManager);
     }
 
     @Override
@@ -73,7 +75,7 @@ public class RelationSemanticProcessor implements SemanticProcessor<RelationAtom
 
     @Override
     public MultiUnifier getMultiUnifier(RelationAtom childAtom, Atom parentAtom, UnifierType unifierType) {
-        Unifier baseUnifier = new BinarySemanticProcessor().getUnifier(childAtom, parentAtom, unifierType);
+        Unifier baseUnifier = binarySemanticProcessor.getUnifier(childAtom, parentAtom, unifierType);
         if (baseUnifier == null) {
             return MultiUnifierImpl.nonExistent();
         }
@@ -232,7 +234,7 @@ public class RelationSemanticProcessor implements SemanticProcessor<RelationAtom
 
     @Override
     public SemanticDifference computeSemanticDifference(RelationAtom parent, Atom child, Unifier unifier) {
-        SemanticDifference baseDiff = new BinarySemanticProcessor().computeSemanticDifference(parent, child, unifier);
+        SemanticDifference baseDiff = binarySemanticProcessor.computeSemanticDifference(parent, child, unifier);
 
         if (!child.isRelation()) return baseDiff;
         RelationAtom childAtom = (RelationAtom) child;
