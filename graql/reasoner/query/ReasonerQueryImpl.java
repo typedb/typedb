@@ -495,7 +495,7 @@ public class ReasonerQueryImpl extends ResolvableQuery {
         Map<Variable, Concept> roleSub = new HashMap<>();
         ConceptManager conceptManager = context().conceptManager();
         getAtoms(RelationAtom.class)
-                .flatMap(RelationAtom::getRolePredicates)
+                .flatMap(ra -> ra.getRolePredicates(conceptManager))
                 .forEach(p -> {
                     Concept concept = conceptManager.getConcept(p.getPredicate());
                     if (concept == null) throw ReasonerCheckedException.idNotFound(p.getPredicate());

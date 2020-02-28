@@ -28,6 +28,8 @@ import grakn.core.graql.reasoner.atom.AtomicEquivalence;
 import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.reasoner.atom.predicate.Predicate;
 import grakn.core.graql.reasoner.atom.predicate.ValuePredicate;
+import grakn.core.graql.reasoner.atom.task.convert.AtomConverter;
+import grakn.core.graql.reasoner.atom.task.convert.AttributeAtomConverter;
 import grakn.core.graql.reasoner.atom.task.materialise.AttributeMaterialiser;
 import grakn.core.graql.reasoner.atom.task.relate.AttributeSemanticProcessor;
 import grakn.core.graql.reasoner.atom.task.relate.SemanticProcessor;
@@ -41,7 +43,6 @@ import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.graql.exception.GraqlSemanticException;
-import grakn.core.kb.graql.reasoner.ReasonerException;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
@@ -54,7 +55,6 @@ import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 
 import javax.annotation.Nullable;
-import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -87,6 +87,7 @@ public class AttributeAtom extends Binary{
 
     private final SemanticProcessor<AttributeAtom> semanticProcessor;
     private final AtomValidator<AttributeAtom> validator;
+    private final AtomConverter<AttributeAtom> converter = new AttributeAtomConverter();
 
     private AttributeAtom(
             Variable varName,
@@ -177,46 +178,16 @@ public class AttributeAtom extends Binary{
     public Class<? extends VarProperty> getVarPropertyClass() { return HasAttributeProperty.class;}
 
     @Override
-    public AttributeAtom toAttributeAtom(){ return this; }
+    public AttributeAtom toAttributeAtom(){ return converter.toAttributeAtom(this, context());}
 
     @Override
     public RelationAtom toRelationAtom(){
-        SchemaConcept type = getSchemaConcept();
-        if (type == null) throw ReasonerException.illegalAtomConversion(this, RelationAtom.class);
-        Label typeLabel = Schema.ImplicitType.HAS.getLabel(type.label());
-
-        RelationAtom relationAtom = RelationAtom.create(
-                Graql.var(getRelationVariable())
-                        .rel(Schema.ImplicitType.HAS_OWNER.getLabel(type.label()).getValue(), new Statement(getVarName()))
-                        .rel(Schema.ImplicitType.HAS_VALUE.getLabel(type.label()).getValue(), new Statement(getAttributeVariable()))
-                        .isa(typeLabel.getValue()),
-                getPredicateVariable(),
-                context().conceptManager().getSchemaConcept(typeLabel).id(),
-                getParentQuery(),
-                context()
-        );
-
-        Set<Statement> patterns = new HashSet<>(relationAtom.getCombinedPattern().statements());
-        this.getPredicates().map(Predicate::getPattern).forEach(patterns::add);
-        this.getMultiPredicate().stream().map(Predicate::getPattern).forEach(patterns::add);
-        return context().queryFactory().atomic(Graql.and(patterns)).getAtom().toRelationAtom();
+        return converter.toRelationAtom(this, context());
     }
 
-    /**
-     * NB: this is somewhat ambiguous cause from {$x has resource $r;} we can extract:
-     * - $r isa owner-type;
-     * - $x isa attribute-type;
-     * We pick the latter as the type information is available.
-     *
-     * @return corresponding isa atom
-     */
     @Override
     public IsaAtom toIsaAtom() {
-        IsaAtom isaAtom = IsaAtom.create(getAttributeVariable(), getPredicateVariable(), getTypeId(), false, getParentQuery(), context());
-        Set<Statement> patterns = new HashSet<>(isaAtom.getCombinedPattern().statements());
-        this.getPredicates().map(Predicate::getPattern).forEach(patterns::add);
-        this.getMultiPredicate().stream().map(Predicate::getPattern).forEach(patterns::add);
-        return context().queryFactory().atomic(Graql.and(patterns)).getAtom().toIsaAtom();
+        return converter.toIsaAtom(this, context());
     }
 
     @Override

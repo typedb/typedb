@@ -96,7 +96,7 @@ public class RelationMaterialiser implements AtomMaterialiser<RelationAtom> {
     private ConceptMap getRoleSubstitution(RelationAtom atom) {
         Map<Variable, Concept> roleSub = new HashMap<>();
         ConceptManager conceptManager = ctx.conceptManager();
-        atom.getRolePredicates().forEach(p -> roleSub.put(p.getVarName(), conceptManager.getConcept(p.getPredicate())));
+        atom.getRolePredicates(conceptManager).forEach(p -> roleSub.put(p.getVarName(), conceptManager.getConcept(p.getPredicate())));
         return new ConceptMap(roleSub);
     }
 }

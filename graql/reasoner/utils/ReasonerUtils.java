@@ -40,6 +40,7 @@ import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.concept.manager.ConceptManager;
+import grakn.core.kb.graql.exception.GraqlSemanticException;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
 import graql.lang.property.IdProperty;
@@ -72,6 +73,12 @@ import static java.util.stream.Collectors.toSet;
  */
 public class ReasonerUtils {
 
+    public static SchemaConcept typeFromLabel(Label label, ConceptManager conceptManager) {
+        SchemaConcept schemaConcept = conceptManager.getSchemaConcept(label);
+        if (schemaConcept == null) throw GraqlSemanticException.labelNotFound(label);
+        return schemaConcept;
+    }
+
     /**
      * looks for an appropriate var property with a specified name among the vars and maps it to an IdPredicate,
      * covers the case when specified variable name is user defined
@@ -84,7 +91,7 @@ public class ReasonerUtils {
         return  vars.stream()
                 .filter(v -> v.var().equals(typeVariable))
                 .flatMap(v -> v.hasProperty(TypeProperty.class)?
-                        v.getProperties(TypeProperty.class).map(np -> IdPredicate.create(typeVariable, conceptManager.getSchemaConcept(Label.of(np.name())).id(), parent)) :
+                        v.getProperties(TypeProperty.class).map(np -> IdPredicate.create(typeVariable, typeFromLabel(Label.of(np.name()), conceptManager).id(), parent)) :
                         v.getProperties(IdProperty.class).map(np -> IdPredicate.create(typeVariable, ConceptId.of(np.id()), parent)))
                 .findFirst().orElse(null);
     }
@@ -109,7 +116,7 @@ public class ReasonerUtils {
 
             if (nameProp != null){
                 Label typeLabel = Label.of(nameProp.name());
-                SchemaConcept type = conceptManager.getSchemaConcept(typeLabel);
+                SchemaConcept type = typeFromLabel(typeLabel, conceptManager);
                 if (type != null) predicate = IdPredicate.create(typeVariable, type.id(), parent);
             }
         }

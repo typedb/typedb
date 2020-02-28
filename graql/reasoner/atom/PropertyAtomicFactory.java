@@ -44,7 +44,6 @@ import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.exception.GraqlQueryException;
-import grakn.core.kb.graql.exception.GraqlSemanticException;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.kb.graql.reasoner.cache.QueryCache;
 import grakn.core.kb.graql.reasoner.cache.RuleCache;
@@ -71,7 +70,6 @@ import graql.lang.property.VarProperty;
 import graql.lang.property.WhenProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
-
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -80,6 +78,7 @@ import java.util.stream.Stream;
 import static grakn.core.graql.reasoner.utils.ReasonerUtils.getIdPredicate;
 import static grakn.core.graql.reasoner.utils.ReasonerUtils.getUserDefinedIdPredicate;
 import static grakn.core.graql.reasoner.utils.ReasonerUtils.getValuePredicates;
+import static grakn.core.graql.reasoner.utils.ReasonerUtils.typeFromLabel;
 
 /**
  * Factory class for creating Atomic objects from Graql Patterns and Properties
@@ -151,10 +150,8 @@ public class PropertyAtomicFactory {
     }
 
     private Atomic type(Variable var, TypeProperty property, ReasonerQuery parent) {
-        ConceptManager conceptManager = ctx.conceptManager();
         Label typeLabel = Label.of(property.name());
-        SchemaConcept type = conceptManager.getSchemaConcept(typeLabel);
-        if (type == null) throw GraqlSemanticException.labelNotFound(typeLabel);
+        SchemaConcept type = typeFromLabel(typeLabel, ctx.conceptManager());
         return IdPredicate.create(var.asReturnedVar(), type.id(), parent);
     }
 
@@ -171,7 +168,6 @@ public class PropertyAtomicFactory {
         ConceptId predicateId = predicate != null ? predicate.getPredicate() : null;
         return SubAtom.create(var, property.type().var(), predicateId, parent, ctx);
     }
-
 
     private Atomic relation(Variable var, RelationProperty property, ReasonerQuery parent, Statement statement, Set<Statement> otherStatements) {
         //set varName as user defined if reified
@@ -216,10 +212,8 @@ public class PropertyAtomicFactory {
             Statement isaVar = isaProp.type();
             String label = isaVar.getType().orElse(null);
             if (label != null) {
-                SchemaConcept type = conceptManager.getSchemaConcept(Label.of(label));
-                if (type != null) {
-                    predicate = IdPredicate.create(typeVariable, type.id(), parent);
-                }
+                SchemaConcept type = typeFromLabel(Label.of(label), ctx.conceptManager());
+                predicate = IdPredicate.create(typeVariable, type.id(), parent);
             } else {
                 typeVariable = isaVar.var();
                 predicate = getUserDefinedIdPredicate(conceptManager, typeVariable, otherStatements, parent);

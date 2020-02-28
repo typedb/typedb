@@ -278,7 +278,6 @@ public abstract class Atom extends AtomicBase {
      */
     public abstract SchemaConcept getSchemaConcept();
 
-
     /**
      * @return value variable name
      */

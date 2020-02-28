@@ -51,6 +51,7 @@ public class AtomicState extends AnswerPropagatorState<ReasonerAtomicQuery> {
     private MultiUnifier cacheUnifier = null;
     private CacheEntry<ReasonerAtomicQuery, IndexedAnswerSet> cacheEntry = null;
     final private HashMultimap<ConceptId, ConceptMap> materialised = HashMultimap.create();
+
     private ReasonerQueryFactory reasonerQueryFactory;
     private QueryCache queryCache;
 
