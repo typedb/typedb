@@ -119,6 +119,7 @@ public class RelationAtom extends IsaAtomBase {
         super(varName, pattern, parentQuery, typeId, predicateVariable, ctx);
         this.relationPlayers = relationPlayers;
         this.roleLabels = roleLabels;
+
         this.typeReasoner = new RelationTypeReasoner(ctx);
         this.semanticProcessor = new RelationSemanticProcessor(ctx.conceptManager());
         this.validator = new RelationAtomValidator(ctx.conceptManager());
@@ -602,7 +603,9 @@ public class RelationAtom extends IsaAtomBase {
                         .filter(vp -> vp.var().isReturned())
                         .map(vp -> new Pair<>(vp.var(), vp.getType().orElse(null)))
                         .filter(p -> Objects.nonNull(p.second()))
-                        .map(p -> IdPredicate.create(p.first(), Label.of(p.second()), getParentQuery(), conceptManager))
+                        .map(p -> new Pair<Variable, SchemaConcept>(p.first(), conceptManager.getSchemaConcept(Label.of(p.second()))))
+                        .filter(p -> Objects.nonNull(p.second()))
+                        .map(p -> IdPredicate.create(p.first(), p.second().id(), getParentQuery()))
         );
     }
 

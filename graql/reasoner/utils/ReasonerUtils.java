@@ -84,7 +84,7 @@ public class ReasonerUtils {
         return  vars.stream()
                 .filter(v -> v.var().equals(typeVariable))
                 .flatMap(v -> v.hasProperty(TypeProperty.class)?
-                        v.getProperties(TypeProperty.class).map(np -> IdPredicate.create(typeVariable, Label.of(np.name()), parent, conceptManager)) :
+                        v.getProperties(TypeProperty.class).map(np -> IdPredicate.create(typeVariable, conceptManager.getSchemaConcept(Label.of(np.name())).id(), parent)) :
                         v.getProperties(IdProperty.class).map(np -> IdPredicate.create(typeVariable, ConceptId.of(np.id()), parent)))
                 .findFirst().orElse(null);
     }
@@ -106,7 +106,12 @@ public class ReasonerUtils {
             predicate = getUserDefinedIdPredicate(conceptManager, typeVariable, vars, parent);
         } else {
             TypeProperty nameProp = typeVar.getProperty(TypeProperty.class).orElse(null);
-            if (nameProp != null) predicate = IdPredicate.create(typeVariable, Label.of(nameProp.name()), parent, conceptManager);
+
+            if (nameProp != null){
+                Label typeLabel = Label.of(nameProp.name());
+                SchemaConcept type = conceptManager.getSchemaConcept(typeLabel);
+                if (type != null) predicate = IdPredicate.create(typeVariable, type.id(), parent);
+            }
         }
         return predicate;
     }
