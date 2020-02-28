@@ -23,7 +23,6 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
@@ -35,6 +34,8 @@ import grakn.core.graql.reasoner.ReasoningContext;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.reasoner.atom.predicate.Predicate;
+import grakn.core.graql.reasoner.atom.task.convert.AtomConverter;
+import grakn.core.graql.reasoner.atom.task.convert.RelationAtomConverter;
 import grakn.core.graql.reasoner.atom.task.infer.RelationTypeReasoner;
 import grakn.core.graql.reasoner.atom.task.infer.TypeReasoner;
 import grakn.core.graql.reasoner.atom.task.materialise.RelationMaterialiser;
@@ -52,12 +53,10 @@ import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.reasoner.ReasonerCheckedException;
-import grakn.core.kb.graql.reasoner.ReasonerException;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
-import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.property.IsaProperty;
 import graql.lang.property.RelationProperty;
@@ -80,8 +79,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
-import static graql.lang.Graql.var;
-
 /**
  * Atom implementation defining a relation atom corresponding to a combined RelationProperty
  * and (optional) IsaProperty. The relation atom is a TypeAtom with relation players.
@@ -94,6 +91,7 @@ public class RelationAtom extends IsaAtomBase {
     private final TypeReasoner<RelationAtom> typeReasoner;
     private final SemanticProcessor<RelationAtom> semanticProcessor;
     private final AtomValidator<RelationAtom> validator;
+    private final AtomConverter<RelationAtom> converter = new RelationAtomConverter();
 
     private ImmutableList<Type> possibleTypes = null;
 
@@ -118,6 +116,7 @@ public class RelationAtom extends IsaAtomBase {
         super(varName, pattern, parentQuery, typeId, predicateVariable, ctx);
         this.relationPlayers = relationPlayers;
         this.roleLabels = roleLabels;
+
         this.typeReasoner = new RelationTypeReasoner(ctx);
         this.semanticProcessor = new RelationSemanticProcessor(ctx.conceptManager());
         this.validator = new RelationAtomValidator(ctx.conceptManager());
@@ -192,51 +191,17 @@ public class RelationAtom extends IsaAtomBase {
 
     @Override
     public RelationAtom toRelationAtom() {
-        return this;
+        return converter.toRelationAtom(this, context());
     }
 
     @Override
     public AttributeAtom toAttributeAtom() {
-        SchemaConcept type = getSchemaConcept();
-        if (type == null || !type.isImplicit()) {
-            throw ReasonerException.illegalAtomConversion(this, AttributeAtom.class);
-        }
-        ConceptManager conceptManager = context().conceptManager();
-        Label explicitLabel = Schema.ImplicitType.explicitLabel(type.label());
-
-        Role ownerRole = conceptManager.getRole(Schema.ImplicitType.HAS_OWNER.getLabel(explicitLabel).getValue());
-        Role valueRole = conceptManager.getRole(Schema.ImplicitType.HAS_VALUE.getLabel(explicitLabel).getValue());
-        Multimap<Role, Variable> roleVarMap = getRoleVarMap();
-        Variable relationVariable = getVarName();
-        Variable ownerVariable = Iterables.getOnlyElement(roleVarMap.get(ownerRole));
-        Variable attributeVariable = Iterables.getOnlyElement(roleVarMap.get(valueRole));
-
-        Statement attributeStatement = relationVariable.isReturned() ?
-                var(ownerVariable).has(explicitLabel.getValue(), var(attributeVariable), var(relationVariable)) :
-                var(ownerVariable).has(explicitLabel.getValue(), var(attributeVariable));
-        AttributeAtom attributeAtom = AttributeAtom.create(
-                attributeStatement,
-                attributeVariable,
-                relationVariable,
-                getPredicateVariable(),
-                conceptManager.getSchemaConcept(explicitLabel).id(),
-                new HashSet<>(),
-                getParentQuery(),
-                context()
-        );
-
-        Set<Statement> patterns = new HashSet<>(attributeAtom.getCombinedPattern().statements());
-        this.getPredicates().map(Predicate::getPattern).forEach(patterns::add);
-        return context().queryFactory().atomic(Graql.and(patterns)).getAtom().toAttributeAtom();
+        return converter.toAttributeAtom(this, context());
     }
-
 
     @Override
     public IsaAtom toIsaAtom() {
-        IsaAtom isaAtom = IsaAtom.create(getVarName(), getPredicateVariable(), getTypeId(), false, getParentQuery(), context());
-        Set<Statement> patterns = new HashSet<>(isaAtom.getCombinedPattern().statements());
-        this.getPredicates().map(Predicate::getPattern).forEach(patterns::add);
-        return context().queryFactory().atomic(Graql.and(patterns)).getAtom().toIsaAtom();
+        return converter.toIsaAtom(this, context());
     }
 
     @Override
@@ -476,8 +441,7 @@ public class RelationAtom extends IsaAtomBase {
                 .anyMatch(parentTypes::contains);
     }
 
-    public Stream<IdPredicate> getRolePredicates() {
-        ConceptManager conceptManager = context().conceptManager();
+    public Stream<IdPredicate> getRolePredicates(ConceptManager conceptManager) {
         return getRelationPlayers().stream()
                 .map(RelationProperty.RolePlayer::getRole)
                 .flatMap(Streams::optionalToStream)
