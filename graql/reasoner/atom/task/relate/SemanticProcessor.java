@@ -17,7 +17,7 @@
  *
  */
 
-package grakn.core.graql.reasoner.atom.task.processor;
+package grakn.core.graql.reasoner.atom.task.relate;
 
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.cache.SemanticDifference;
@@ -25,10 +25,6 @@ import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
 
-/**
- * Finds possible unifiers between atoms, and for a speciic unifier, computes the semantic difference between
- * a pair of atoms.
- */
 public interface SemanticProcessor<T extends Atom> {
 
     Unifier getUnifier(T childAtom, Atom parentAtom, UnifierType unifierType);

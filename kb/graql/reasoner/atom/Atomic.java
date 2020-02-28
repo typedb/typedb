@@ -62,6 +62,18 @@ public interface Atomic {
     void checkValid();
 
     /**
+     * @return true if the atomic can constitute the head of a rule
+     */
+    @CheckReturnValue
+    Set<String> validateAsRuleHead(Rule rule);
+
+    /**
+     * @return error messages indicating ontological inconsistencies of this atomic
+     */
+    @CheckReturnValue
+    Set<String> validateAsRuleBody(Label ruleLabel);
+
+    /**
      * @return true if the atomic corresponds to a atom
      * */
     @CheckReturnValue
@@ -150,18 +162,6 @@ public interface Atomic {
      */
     @CheckReturnValue
     default boolean isSelectable(){ return false;}
-
-    /**
-     * @return true if the atomic can constitute the head of a rule
-     */
-    @CheckReturnValue
-    Set<String> validateAsRuleHead(Rule rule);
-
-    /**
-     * @return error messages indicating ontological inconsistencies of this atomic
-     */
-    @CheckReturnValue
-    default Set<String> validateAsRuleBody(Label ruleLabel){ return new HashSet<>();}
 
     /**
      * @return the base pattern combined with possible predicate patterns

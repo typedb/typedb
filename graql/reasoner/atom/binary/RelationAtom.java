@@ -27,22 +27,22 @@ import com.google.common.collect.Multimap;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
 import grakn.common.util.Pair;
-import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.util.Streams;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.core.Schema;
 import grakn.core.graql.reasoner.ReasoningContext;
 import grakn.core.graql.reasoner.atom.Atom;
-import grakn.core.graql.reasoner.atom.task.inference.RelationTypeReasoner;
-import grakn.core.graql.reasoner.atom.task.inference.TypeReasoner;
-import grakn.core.graql.reasoner.atom.task.materialise.RelationMaterialiser;
 import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.reasoner.atom.predicate.Predicate;
-import grakn.core.graql.reasoner.atom.task.processor.RelationSemanticProcessor;
-import grakn.core.graql.reasoner.atom.task.processor.SemanticProcessor;
+import grakn.core.graql.reasoner.atom.task.infer.RelationTypeReasoner;
+import grakn.core.graql.reasoner.atom.task.infer.TypeReasoner;
+import grakn.core.graql.reasoner.atom.task.materialise.RelationMaterialiser;
+import grakn.core.graql.reasoner.atom.task.relate.RelationSemanticProcessor;
+import grakn.core.graql.reasoner.atom.task.relate.SemanticProcessor;
+import grakn.core.graql.reasoner.atom.task.validate.AtomValidator;
+import grakn.core.graql.reasoner.atom.task.validate.RelationAtomValidator;
 import grakn.core.graql.reasoner.cache.SemanticDifference;
 import grakn.core.graql.reasoner.unifier.UnifierType;
-import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Role;
@@ -69,7 +69,6 @@ import graql.lang.statement.Variable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -91,8 +90,11 @@ public class RelationAtom extends IsaAtomBase {
 
     private final ImmutableList<RelationProperty.RolePlayer> relationPlayers;
     private final ImmutableSet<Label> roleLabels;
+
     private final TypeReasoner<RelationAtom> typeReasoner;
     private final SemanticProcessor<RelationAtom> semanticProcessor;
+    private final AtomValidator<RelationAtom> validator;
+
     private ImmutableList<Type> possibleTypes = null;
 
     // memoised computed values
@@ -118,6 +120,7 @@ public class RelationAtom extends IsaAtomBase {
         this.roleLabels = roleLabels;
         this.typeReasoner = new RelationTypeReasoner(ctx);
         this.semanticProcessor = new RelationSemanticProcessor(ctx.conceptManager());
+        this.validator = new RelationAtomValidator(ctx.conceptManager());
     }
 
     public static RelationAtom create(Statement pattern, Variable predicateVar, @Nullable ConceptId predicateId, ReasonerQuery parent, ReasoningContext ctx) {
@@ -346,13 +349,6 @@ public class RelationAtom extends IsaAtomBase {
                 .collect(Collectors.toSet());
     }
 
-    public ConceptMap getRoleSubstitution() {
-        Map<Variable, Concept> roleSub = new HashMap<>();
-        ConceptManager conceptManager = context().conceptManager();
-        getRolePredicates().forEach(p -> roleSub.put(p.getVarName(), conceptManager.getConcept(p.getPredicate())));
-        return new ConceptMap(roleSub);
-    }
-
     @Override
     public Atomic copy(ReasonerQuery parent) {
         return create(this, parent);
@@ -464,65 +460,12 @@ public class RelationAtom extends IsaAtomBase {
 
     @Override
     public Set<String> validateAsRuleHead(Rule rule) {
-        //can form a rule head if type is specified, type is not implicit and all relation players are insertable
-        return Sets.union(super.validateAsRuleHead(rule), validateRelationPlayers(rule));
-    }
-
-    private Set<String> validateRelationPlayers(Rule rule) {
-        Set<String> errors = new HashSet<>();
-        ConceptManager conceptManager = context().conceptManager();
-        getRelationPlayers().forEach(rp -> {
-            Statement role = rp.getRole().orElse(null);
-            if (role == null) {
-                errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_RELATION_WITH_AMBIGUOUS_ROLE.getMessage(rule.then(), rule.label()));
-            } else {
-                String roleLabel = role.getType().orElse(null);
-                if (roleLabel == null) {
-                    errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_RELATION_WITH_AMBIGUOUS_ROLE.getMessage(rule.then(), rule.label()));
-                } else {
-                    if (Schema.MetaSchema.isMetaLabel(Label.of(roleLabel))) {
-                        errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_RELATION_WITH_AMBIGUOUS_ROLE.getMessage(rule.then(), rule.label()));
-                    }
-                    Role roleType = conceptManager.getRole(roleLabel);
-                    if (roleType != null && roleType.isImplicit()) {
-                        errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_RELATION_WITH_IMPLICIT_ROLE.getMessage(rule.then(), rule.label()));
-                    }
-                }
-            }
-        });
-        return errors;
+        return validator.validateAsRuleHead(this, rule);
     }
 
     @Override
     public Set<String> validateAsRuleBody(Label ruleLabel) {
-        Set<String> errors = new HashSet<>();
-        SchemaConcept type = getSchemaConcept();
-        if (type != null && !type.isRelationType()) {
-            errors.add(ErrorMessage.VALIDATION_RULE_INVALID_RELATION_TYPE.getMessage(ruleLabel, type.label()));
-            return errors;
-        }
-
-        //check role-type compatibility
-        SetMultimap<Variable, Type> varTypeMap = getParentQuery().getVarTypeMap();
-        for (Map.Entry<Role, Collection<Variable>> e : getRoleVarMap().asMap().entrySet()) {
-            Role role = e.getKey();
-            if (!Schema.MetaSchema.isMetaLabel(role.label())) {
-                //check whether this role can be played in this relation
-                if (type != null && type.asRelationType().roles().noneMatch(r -> r.equals(role))) {
-                    errors.add(ErrorMessage.VALIDATION_RULE_ROLE_CANNOT_BE_PLAYED.getMessage(ruleLabel, role.label(), type.label()));
-                }
-
-                //check whether the role player's type allows playing this role
-                for (Variable player : e.getValue()) {
-                    varTypeMap.get(player).stream()
-                            .filter(playerType -> playerType.playing().noneMatch(plays -> plays.equals(role)))
-                            .forEach(playerType ->
-                                    errors.add(ErrorMessage.VALIDATION_RULE_TYPE_CANNOT_PLAY_ROLE.getMessage(ruleLabel, playerType.label(), role.label(), type == null ? "" : type.label()))
-                            );
-                }
-            }
-        }
-        return errors;
+        return validator.validateAsRuleBody(this, ruleLabel);
     }
 
     public boolean typesRoleCompatibleWithMatchSemantics(Variable typedVar, Set<Type> parentTypes){
@@ -616,17 +559,6 @@ public class RelationAtom extends IsaAtomBase {
                 .sorted(Comparator.comparing(Pair::hashCode))
                 .forEach(p -> builder.put(p.first(), p.second()));
         return builder.build();
-    }
-
-    public Stream<Role> getExplicitRoles() {
-        ConceptManager conceptManager = context().conceptManager();
-        return getRelationPlayers().stream()
-                .map(RelationProperty.RolePlayer::getRole)
-                .flatMap(Streams::optionalToStream)
-                .map(Statement::getType)
-                .flatMap(Streams::optionalToStream)
-                .map(conceptManager::getRole)
-                .filter(Objects::nonNull);
     }
 
     @Override
