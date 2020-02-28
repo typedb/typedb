@@ -20,7 +20,6 @@ package grakn.core.graph.diskstorage.log.kcvs;
 
 
 import grakn.core.graph.diskstorage.StaticBuffer;
-import grakn.core.graph.diskstorage.log.kcvs.KCVSLog;
 import grakn.core.graph.diskstorage.log.util.AbstractMessage;
 
 import java.time.Instant;

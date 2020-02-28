@@ -20,7 +20,6 @@ package grakn.core.graph.graphdb.types;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
-import org.apache.tinkerpop.gremlin.structure.Direction;
 import grakn.core.graph.core.Cardinality;
 import grakn.core.graph.core.Multiplicity;
 import grakn.core.graph.core.schema.ConsistencyModifier;
@@ -30,7 +29,7 @@ import grakn.core.graph.graphdb.database.management.ModifierType;
 import grakn.core.graph.graphdb.internal.ElementCategory;
 import grakn.core.graph.graphdb.internal.Order;
 import grakn.core.graph.graphdb.internal.RelationCategory;
-import grakn.core.graph.graphdb.types.TypeDefinitionMap;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.Set;
 

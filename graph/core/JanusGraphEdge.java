@@ -23,10 +23,6 @@ import com.google.common.collect.ImmutableList;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import grakn.core.graph.core.EdgeLabel;
-import grakn.core.graph.core.InvalidElementException;
-import grakn.core.graph.core.JanusGraphRelation;
-import grakn.core.graph.core.JanusGraphVertex;
 
 import java.util.Iterator;
 import java.util.List;

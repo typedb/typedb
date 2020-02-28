@@ -19,9 +19,6 @@
 package grakn.core.graph.core.schema;
 
 import grakn.core.graph.core.Namifiable;
-import grakn.core.graph.core.schema.JanusGraphIndex;
-import grakn.core.graph.core.schema.JanusGraphSchemaType;
-import grakn.core.graph.core.schema.RelationTypeIndex;
 
 /**
  * Marks any element that is part of a JanusGraph Schema.

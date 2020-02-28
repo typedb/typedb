@@ -19,8 +19,6 @@
 package grakn.core.graph.diskstorage;
 
 
-import grakn.core.graph.diskstorage.BackendException;
-import grakn.core.graph.diskstorage.IDBlock;
 import grakn.core.graph.diskstorage.keycolumnvalue.KeyRange;
 import grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration;
 import grakn.core.graph.graphdb.database.idassigner.IDBlockSizer;

@@ -18,12 +18,8 @@
 
 package grakn.core.graph.core.schema;
 
-import org.apache.tinkerpop.gremlin.structure.Element;
 import grakn.core.graph.core.PropertyKey;
-import grakn.core.graph.core.schema.Index;
-import grakn.core.graph.core.schema.JanusGraphManagement;
-import grakn.core.graph.core.schema.Parameter;
-import grakn.core.graph.core.schema.SchemaStatus;
+import org.apache.tinkerpop.gremlin.structure.Element;
 
 /**
  * A JanusGraphIndex is an index installed on the graph in order to be able to efficiently retrieve graph elements

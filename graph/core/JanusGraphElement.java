@@ -19,15 +19,9 @@
 package grakn.core.graph.core;
 
 
+import grakn.core.graph.util.datastructures.Removable;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Property;
-import grakn.core.graph.core.Cardinality;
-import grakn.core.graph.core.Idfiable;
-import grakn.core.graph.core.JanusGraphRelation;
-import grakn.core.graph.core.JanusGraphTransaction;
-import grakn.core.graph.core.JanusGraphVertex;
-import grakn.core.graph.core.PropertyKey;
-import grakn.core.graph.util.datastructures.Removable;
 
 /**
  * JanusGraphElement represents the abstract concept of an entity in the graph and specifies basic methods for interacting

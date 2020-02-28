@@ -62,7 +62,6 @@ import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.DB_CACHE_TIME;
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_BACKEND;
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_NS;
-import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.MANAGEMENT_LOG;
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.PARALLEL_BACKEND_OPS;
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_BATCH;
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_READ_WAITTIME;

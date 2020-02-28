@@ -18,8 +18,6 @@
 
 package grakn.core.graph.diskstorage.util;
 
-import grakn.core.graph.diskstorage.util.Hex;
-
 import java.nio.ByteBuffer;
 
 /**

@@ -19,9 +19,6 @@
 package grakn.core.graph.graphdb.query;
 
 import grakn.core.graph.core.JanusGraphElement;
-import grakn.core.graph.graphdb.query.BackendQuery;
-import grakn.core.graph.graphdb.query.BackendQueryHolder;
-import grakn.core.graph.graphdb.query.Query;
 
 import java.util.Comparator;
 

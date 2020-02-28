@@ -21,8 +21,6 @@ package grakn.core.graph.graphdb.types;
 import grakn.core.graph.core.Cardinality;
 import grakn.core.graph.core.schema.ConsistencyModifier;
 import grakn.core.graph.core.schema.SchemaStatus;
-import grakn.core.graph.graphdb.types.IndexField;
-import grakn.core.graph.graphdb.types.IndexType;
 
 
 public interface CompositeIndexType extends IndexType {

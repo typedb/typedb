@@ -20,10 +20,9 @@ package grakn.core.graph.diskstorage.indexing;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import org.apache.commons.lang.StringUtils;
 import grakn.core.graph.core.schema.Parameter;
-import grakn.core.graph.diskstorage.indexing.IndexQuery;
 import grakn.core.graph.graphdb.query.BaseQuery;
+import org.apache.commons.lang.StringUtils;
 
 
 public class RawQuery extends BaseQuery {

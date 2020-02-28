@@ -28,7 +28,6 @@ import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 
 import javax.annotation.CheckReturnValue;
-import java.util.HashSet;
 import java.util.Set;
 
 /**

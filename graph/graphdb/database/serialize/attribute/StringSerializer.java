@@ -25,7 +25,6 @@ import grakn.core.graph.diskstorage.WriteBuffer;
 import grakn.core.graph.graphdb.database.idhandling.VariableLong;
 import grakn.core.graph.graphdb.database.serialize.OrderPreservingSerializer;
 import grakn.core.graph.graphdb.database.serialize.SupportsNullSerializer;
-import grakn.core.graph.graphdb.database.serialize.attribute.CharacterSerializer;
 import grakn.core.graph.util.encoding.StringEncoding;
 
 import java.io.ByteArrayOutputStream;

@@ -25,6 +25,7 @@ import grakn.core.graql.reasoner.utils.AnswerUtil;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.EntityType;
 import graql.lang.statement.Variable;
+
 import java.util.stream.Stream;
 
 public class IsaMaterialiser implements AtomMaterialiser<IsaAtom>{

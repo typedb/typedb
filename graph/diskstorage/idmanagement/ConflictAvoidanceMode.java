@@ -19,8 +19,6 @@
 package grakn.core.graph.diskstorage.idmanagement;
 
 
-import grakn.core.graph.diskstorage.idmanagement.ConsistentKeyIDAuthority;
-
 /**
  * Represents ID allocation strategies for avoiding contention between
  * concurrent JanusGraph instances using a shared storage backend. These strategies

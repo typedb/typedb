@@ -19,8 +19,6 @@
 package grakn.core.graph.graphdb.query;
 
 import com.google.common.base.Preconditions;
-import grakn.core.graph.graphdb.query.BackendQuery;
-import grakn.core.graph.graphdb.query.QueryExecutor;
 import grakn.core.graph.graphdb.query.profile.ProfileObservable;
 import grakn.core.graph.graphdb.query.profile.QueryProfiler;
 

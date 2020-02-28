@@ -20,7 +20,6 @@
 package grakn.core.graph.graphdb.types;
 
 import com.google.common.base.Preconditions;
-import grakn.core.graph.graphdb.types.TypeDefinitionCategory;
 
 import java.util.EnumMap;
 import java.util.Set;

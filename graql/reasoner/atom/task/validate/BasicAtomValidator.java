@@ -28,6 +28,7 @@ import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.graql.exception.GraqlSemanticException;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
 import graql.lang.statement.Variable;
+
 import java.util.HashSet;
 import java.util.Set;
 

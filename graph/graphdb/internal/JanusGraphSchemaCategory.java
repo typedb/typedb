@@ -19,7 +19,6 @@
 package grakn.core.graph.graphdb.internal;
 
 import com.google.common.base.Preconditions;
-import grakn.core.graph.graphdb.internal.Token;
 import grakn.core.graph.graphdb.types.TypeDefinitionCategory;
 import grakn.core.graph.graphdb.types.TypeDefinitionMap;
 import grakn.core.graph.graphdb.types.TypeUtil;

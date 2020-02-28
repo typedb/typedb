@@ -26,6 +26,7 @@ import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;
 import graql.lang.statement.StatementInstance;
 import graql.lang.statement.Variable;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;

@@ -19,9 +19,6 @@
 
 package grakn.core.graph.core;
 
-import grakn.core.graph.core.Cardinality;
-import grakn.core.graph.core.RelationType;
-
 /**
  * PropertyKey is an extension of {@link RelationType} for properties. Each property in JanusGraph has a key.
  * <p>

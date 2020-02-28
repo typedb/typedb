@@ -21,6 +21,7 @@ package grakn.core.distribution.element;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.statement.Variable;
+
 import java.util.Objects;
 
 public class AttributeElement implements Element{

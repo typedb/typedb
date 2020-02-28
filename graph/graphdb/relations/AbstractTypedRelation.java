@@ -18,10 +18,6 @@
 
 package grakn.core.graph.graphdb.relations;
 
-import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.structure.Property;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 import grakn.core.graph.core.InvalidElementException;
 import grakn.core.graph.core.PropertyKey;
 import grakn.core.graph.core.RelationType;
@@ -29,11 +25,12 @@ import grakn.core.graph.graphdb.internal.AbstractElement;
 import grakn.core.graph.graphdb.internal.InternalRelation;
 import grakn.core.graph.graphdb.internal.InternalRelationType;
 import grakn.core.graph.graphdb.internal.InternalVertex;
-import grakn.core.graph.graphdb.relations.EdgeDirection;
-import grakn.core.graph.graphdb.relations.RelationIdentifier;
-import grakn.core.graph.graphdb.relations.SimpleJanusGraphProperty;
 import grakn.core.graph.graphdb.transaction.StandardJanusGraphTx;
 import grakn.core.graph.graphdb.types.system.ImplicitKey;
+import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.Property;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 
 import java.util.Iterator;
 import java.util.stream.Stream;

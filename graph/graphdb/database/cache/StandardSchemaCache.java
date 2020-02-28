@@ -30,7 +30,6 @@ import grakn.core.graph.graphdb.types.system.BaseRelationType;
 import grakn.core.graph.graphdb.types.system.SystemRelationType;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 

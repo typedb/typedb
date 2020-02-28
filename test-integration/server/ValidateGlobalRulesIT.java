@@ -29,7 +29,6 @@ import grakn.core.kb.concept.structure.Casting;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.ValidateGlobalRules;
 import grakn.core.util.ConceptDowncasting;
 import org.junit.After;
 import org.junit.Before;

@@ -21,10 +21,6 @@ package grakn.core.graph.diskstorage.keycolumnvalue;
 import grakn.core.graph.diskstorage.BackendException;
 import grakn.core.graph.diskstorage.StaticBuffer;
 import grakn.core.graph.diskstorage.StoreMetaData;
-import grakn.core.graph.diskstorage.keycolumnvalue.KCVMutation;
-import grakn.core.graph.diskstorage.keycolumnvalue.KeyColumnValueStore;
-import grakn.core.graph.diskstorage.keycolumnvalue.StoreManager;
-import grakn.core.graph.diskstorage.keycolumnvalue.StoreTransaction;
 
 import java.util.Map;
 

@@ -21,9 +21,6 @@ package grakn.core.graph.diskstorage.cql;
 import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.google.common.collect.AbstractIterator;
-import io.vavr.Tuple;
-import io.vavr.Tuple3;
-import io.vavr.collection.Iterator;
 import grakn.core.graph.diskstorage.Entry;
 import grakn.core.graph.diskstorage.StaticBuffer;
 import grakn.core.graph.diskstorage.keycolumnvalue.KeyIterator;
@@ -31,6 +28,9 @@ import grakn.core.graph.diskstorage.keycolumnvalue.SliceQuery;
 import grakn.core.graph.diskstorage.util.RecordIterator;
 import grakn.core.graph.diskstorage.util.StaticArrayBuffer;
 import grakn.core.graph.diskstorage.util.StaticArrayEntry;
+import io.vavr.Tuple;
+import io.vavr.Tuple3;
+import io.vavr.collection.Iterator;
 
 import java.io.IOException;
 

@@ -22,8 +22,9 @@ package grakn.core.graql.reasoner.atom.task.validate;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Rule;
-import java.util.Set;
+
 import javax.annotation.CheckReturnValue;
+import java.util.Set;
 
 public interface AtomValidator<T extends Atom> {
     

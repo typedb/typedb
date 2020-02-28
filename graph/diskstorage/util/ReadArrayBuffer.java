@@ -19,7 +19,6 @@
 package grakn.core.graph.diskstorage.util;
 
 import grakn.core.graph.diskstorage.ReadBuffer;
-import grakn.core.graph.diskstorage.util.StaticArrayBuffer;
 
 /**
  * Implementation of {@link ReadBuffer} against a byte array.

@@ -51,8 +51,6 @@ import grakn.core.graph.graphdb.query.condition.ConditionUtil;
 import grakn.core.graph.graphdb.query.condition.MultiCondition;
 import grakn.core.graph.graphdb.query.condition.Or;
 import grakn.core.graph.graphdb.query.condition.PredicateCondition;
-import grakn.core.graph.graphdb.query.graph.GraphCentricQuery;
-import grakn.core.graph.graphdb.query.graph.JointIndexQuery;
 import grakn.core.graph.graphdb.query.profile.QueryProfiler;
 import grakn.core.graph.graphdb.transaction.StandardJanusGraphTx;
 import grakn.core.graph.graphdb.types.CompositeIndexType;

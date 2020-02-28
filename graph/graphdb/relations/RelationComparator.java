@@ -19,7 +19,6 @@
 package grakn.core.graph.graphdb.relations;
 
 import com.google.common.base.Preconditions;
-import org.apache.tinkerpop.gremlin.structure.Direction;
 import grakn.core.graph.core.JanusGraphRelation;
 import grakn.core.graph.core.JanusGraphVertexProperty;
 import grakn.core.graph.core.PropertyKey;
@@ -29,8 +28,8 @@ import grakn.core.graph.graphdb.internal.InternalRelationType;
 import grakn.core.graph.graphdb.internal.InternalVertex;
 import grakn.core.graph.graphdb.internal.Order;
 import grakn.core.graph.graphdb.internal.OrderList;
-import grakn.core.graph.graphdb.relations.EdgeDirection;
 import grakn.core.graph.graphdb.transaction.StandardJanusGraphTx;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.Comparator;
 

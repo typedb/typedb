@@ -18,7 +18,6 @@
 
 package grakn.core.graph.graphdb.database.idassigner.placement;
 
-import grakn.core.graph.graphdb.idmanagement.IDManager;
 import grakn.core.graph.graphdb.internal.InternalElement;
 import grakn.core.graph.graphdb.internal.InternalVertex;
 

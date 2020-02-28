@@ -18,8 +18,6 @@
 
 package grakn.core.graph.core.schema;
 
-import grakn.core.graph.core.schema.JanusGraphSchemaElement;
-
 /**
  * Schema Elements that represent an index in the graph
  *

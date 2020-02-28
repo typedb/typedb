@@ -19,8 +19,6 @@
 package grakn.core.graph.graphdb.query.profile;
 
 
-import grakn.core.graph.graphdb.query.profile.QueryProfiler;
-
 public interface ProfileObservable {
 
     void observeWith(QueryProfiler profiler);

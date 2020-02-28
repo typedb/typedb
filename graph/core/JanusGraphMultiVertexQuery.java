@@ -18,18 +18,10 @@
 
 package grakn.core.graph.core;
 
+import grakn.core.graph.graphdb.query.JanusGraphPredicate;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import grakn.core.graph.core.BaseVertexQuery;
-import grakn.core.graph.core.JanusGraphEdge;
-import grakn.core.graph.core.JanusGraphRelation;
-import grakn.core.graph.core.JanusGraphVertex;
-import grakn.core.graph.core.JanusGraphVertexProperty;
-import grakn.core.graph.core.JanusGraphVertexQuery;
-import grakn.core.graph.core.RelationType;
-import grakn.core.graph.core.VertexList;
-import grakn.core.graph.graphdb.query.JanusGraphPredicate;
 
 import java.util.Collection;
 import java.util.Map;

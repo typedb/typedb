@@ -21,7 +21,6 @@ package grakn.core.graph.graphdb.types.vertices;
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-import org.apache.tinkerpop.gremlin.structure.Direction;
 import grakn.core.graph.core.Multiplicity;
 import grakn.core.graph.core.schema.ConsistencyModifier;
 import grakn.core.graph.graphdb.internal.InternalRelationType;
@@ -31,7 +30,7 @@ import grakn.core.graph.graphdb.types.IndexType;
 import grakn.core.graph.graphdb.types.SchemaSource;
 import grakn.core.graph.graphdb.types.TypeDefinitionCategory;
 import grakn.core.graph.graphdb.types.TypeUtil;
-import grakn.core.graph.graphdb.types.vertices.JanusGraphSchemaVertex;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import javax.annotation.Nullable;
 import java.util.List;

@@ -18,13 +18,13 @@
 
 package grakn.core.graph.graphdb.database.serialize.attribute;
 
-import org.apache.commons.lang3.SerializationUtils;
 import grakn.core.graph.core.attribute.AttributeSerializer;
 import grakn.core.graph.diskstorage.ScanBuffer;
 import grakn.core.graph.diskstorage.WriteBuffer;
 import grakn.core.graph.graphdb.database.serialize.DataOutput;
 import grakn.core.graph.graphdb.database.serialize.Serializer;
 import grakn.core.graph.graphdb.database.serialize.SerializerInjected;
+import org.apache.commons.lang3.SerializationUtils;
 
 import java.io.Serializable;
 

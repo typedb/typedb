@@ -40,7 +40,6 @@ import grakn.core.kb.concept.manager.ConceptNotificationChannel;
 import grakn.core.kb.graql.executor.ExecutorFactory;
 import grakn.core.kb.graql.executor.property.PropertyExecutorFactory;
 import grakn.core.kb.graql.planning.gremlin.TraversalPlanFactory;
-import grakn.core.kb.graql.reasoner.cache.RuleCache;
 import grakn.core.kb.keyspace.AttributeManager;
 import grakn.core.kb.keyspace.KeyspaceSchemaCache;
 import grakn.core.kb.keyspace.KeyspaceStatistics;

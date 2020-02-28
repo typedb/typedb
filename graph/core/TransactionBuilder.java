@@ -18,7 +18,6 @@
 
 package grakn.core.graph.core;
 
-import grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration;
 import grakn.core.graph.graphdb.transaction.StandardJanusGraphTx;
 
 import java.time.Instant;

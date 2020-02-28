@@ -26,6 +26,7 @@ import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import graql.lang.statement.Variable;
+
 import java.util.Set;
 import java.util.function.BiFunction;
 

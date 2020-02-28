@@ -20,6 +20,7 @@ package grakn.core.graql.reasoner.atom.task.materialise;
 
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.atom.Atom;
+
 import java.util.stream.Stream;
 
 public interface AtomMaterialiser<T extends Atom> {

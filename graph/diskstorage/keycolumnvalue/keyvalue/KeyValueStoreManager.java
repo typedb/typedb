@@ -20,7 +20,6 @@ package grakn.core.graph.diskstorage.keycolumnvalue.keyvalue;
 
 import grakn.core.graph.diskstorage.BackendException;
 import grakn.core.graph.diskstorage.keycolumnvalue.StoreManager;
-import grakn.core.graph.diskstorage.keycolumnvalue.keyvalue.KeyValueStore;
 
 /**
  * {@link StoreManager} for {@link KeyValueStore}.

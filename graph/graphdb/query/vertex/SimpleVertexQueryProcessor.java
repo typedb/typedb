@@ -18,9 +18,7 @@
 
 package grakn.core.graph.graphdb.query.vertex;
 
-import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Iterables;
 import grakn.core.graph.core.JanusGraphRelation;
 import grakn.core.graph.core.VertexList;
 import grakn.core.graph.diskstorage.Entry;
@@ -33,7 +31,6 @@ import grakn.core.graph.graphdb.query.profile.QueryProfiler;
 import grakn.core.graph.graphdb.transaction.RelationConstructor;
 import grakn.core.graph.graphdb.transaction.StandardJanusGraphTx;
 
-import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;

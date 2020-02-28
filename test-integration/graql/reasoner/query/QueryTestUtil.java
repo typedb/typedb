@@ -26,6 +26,7 @@ import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.statement.Statement;
+
 import java.util.Set;
 
 import static java.util.stream.Collectors.toSet;

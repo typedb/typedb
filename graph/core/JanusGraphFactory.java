@@ -37,11 +37,7 @@ import grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration;
 import grakn.core.graph.graphdb.configuration.builder.MergedConfigurationBuilder;
 import grakn.core.graph.graphdb.database.StandardJanusGraph;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.ROOT_NS;
-import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_BACKEND;
 
 /**
  * JanusGraphFactory is used to open or instantiate a JanusGraph graph database.

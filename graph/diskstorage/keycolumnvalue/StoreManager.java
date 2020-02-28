@@ -20,9 +20,6 @@ package grakn.core.graph.diskstorage.keycolumnvalue;
 
 import grakn.core.graph.diskstorage.BackendException;
 import grakn.core.graph.diskstorage.BaseTransactionConfig;
-import grakn.core.graph.diskstorage.keycolumnvalue.KeyRange;
-import grakn.core.graph.diskstorage.keycolumnvalue.StoreFeatures;
-import grakn.core.graph.diskstorage.keycolumnvalue.StoreTransaction;
 
 import java.util.List;
 
