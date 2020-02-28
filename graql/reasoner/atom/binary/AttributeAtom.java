@@ -288,7 +288,6 @@ public class AttributeAtom extends Binary{
     public boolean isRuleApplicableViaAtom(Atom ruleAtom) {
         //findbugs complains about cast without it
         if (!(ruleAtom instanceof AttributeAtom)) return false;
-
         AttributeAtom childAtom = (AttributeAtom) ruleAtom;
         return childAtom.isUnifiableWith(this);
     }

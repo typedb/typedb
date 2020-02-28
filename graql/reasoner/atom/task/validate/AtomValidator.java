@@ -28,13 +28,15 @@ import javax.annotation.CheckReturnValue;
 public interface AtomValidator<T extends Atom> {
 
     /**
-     * @return true if the atomic can constitute the head of a rule
+     * Validates this atom as a potential rule head and returns error messages highlighting possible problems.
+     * @return set of error messages indicating ontological inconsistencies if the provided atom was to form a rule head
      */
     @CheckReturnValue
     Set<String> validateAsRuleHead(T atom, Rule rule);
 
     /**
-     * @return error messages indicating ontological inconsistencies of this atomic
+     * Validates this atom as a potential member of a rule body and returns error messages highlighting possible problems.
+     * @return error messages indicating ontological inconsistencies if the provided atom was to be part of a rule body
      */
     @CheckReturnValue
     Set<String> validateAsRuleBody(T atom, Label ruleLabel);
