@@ -18,7 +18,6 @@
 
 package grakn.core.graph.core;
 
-import grakn.core.graph.core.schema.JanusGraphManagement;
 import grakn.core.graph.graphdb.query.JanusGraphPredicate;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 

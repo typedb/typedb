@@ -21,7 +21,6 @@ package grakn.core.graph.graphdb.query.graph;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import grakn.core.graph.diskstorage.indexing.IndexQuery;
-import grakn.core.graph.graphdb.database.IndexSerializer;
 import grakn.core.graph.graphdb.query.BackendQuery;
 import grakn.core.graph.graphdb.query.BaseQuery;
 import grakn.core.graph.graphdb.query.profile.ProfileObservable;

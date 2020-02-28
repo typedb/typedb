@@ -18,10 +18,6 @@
 
 package grakn.core.graph.graphdb.database.idassigner;
 
-import grakn.core.graph.diskstorage.IDAuthority;
-
-import java.time.Duration;
-
 /**
  * The IDBlockSizer specifies the block size for
  * each partition guaranteeing that the same partition will always be assigned the same block size.

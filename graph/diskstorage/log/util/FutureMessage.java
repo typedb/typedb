@@ -20,8 +20,6 @@ package grakn.core.graph.diskstorage.log.util;
 
 import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.AbstractFuture;
-import grakn.core.graph.diskstorage.StaticBuffer;
-import grakn.core.graph.diskstorage.log.Log;
 import grakn.core.graph.diskstorage.log.Message;
 
 /**

@@ -25,7 +25,6 @@ import grakn.core.graph.graphdb.internal.InternalVertex;
 import grakn.core.graph.graphdb.internal.OrderList;
 import grakn.core.graph.graphdb.query.BackendQueryHolder;
 import grakn.core.graph.graphdb.query.ElementQuery;
-import grakn.core.graph.graphdb.query.QueryProcessor;
 import grakn.core.graph.graphdb.query.condition.Condition;
 import grakn.core.graph.graphdb.relations.RelationComparator;
 import org.apache.tinkerpop.gremlin.structure.Direction;

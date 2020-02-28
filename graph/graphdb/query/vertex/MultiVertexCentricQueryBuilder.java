@@ -32,7 +32,6 @@ import grakn.core.graph.graphdb.internal.RelationCategory;
 import grakn.core.graph.graphdb.query.BackendQueryHolder;
 import grakn.core.graph.graphdb.query.profile.QueryProfiler;
 import grakn.core.graph.graphdb.transaction.StandardJanusGraphTx;
-import grakn.core.graph.graphdb.vertices.CacheVertex;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Collection;

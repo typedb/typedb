@@ -26,7 +26,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import grakn.core.graph.core.Cardinality;
 import grakn.core.graph.core.EdgeLabel;
-import grakn.core.graph.core.JanusGraph;
 import grakn.core.graph.core.JanusGraphEdge;
 import grakn.core.graph.core.JanusGraphElement;
 import grakn.core.graph.core.JanusGraphException;

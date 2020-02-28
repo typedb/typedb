@@ -21,7 +21,6 @@ package grakn.core.kb.server.exception;
 
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
-import grakn.core.kb.server.Transaction;
 
 import java.util.List;
 

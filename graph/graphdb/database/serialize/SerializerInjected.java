@@ -18,9 +18,6 @@
 
 package grakn.core.graph.graphdb.database.serialize;
 
-import grakn.core.graph.core.attribute.AttributeSerializer;
-import grakn.core.graph.diskstorage.WriteBuffer;
-
 /**
  * Marks a AttributeSerializer that requires a Serializer
  * to serialize the internal state. It is expected that the serializer is passed into this object upon initialization and before usage.

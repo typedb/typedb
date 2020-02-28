@@ -20,7 +20,6 @@ package grakn.core.graph.graphdb.database.cache;
 
 import grakn.core.graph.diskstorage.EntryList;
 import grakn.core.graph.graphdb.types.system.BaseRelationType;
-import grakn.core.graph.graphdb.types.system.SystemRelationType;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 /**

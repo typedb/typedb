@@ -20,8 +20,6 @@ package grakn.core.graph.diskstorage;
 
 
 import grakn.core.graph.diskstorage.keycolumnvalue.KeyRange;
-import grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration;
-import grakn.core.graph.graphdb.database.idassigner.IDBlockSizer;
 
 import java.time.Duration;
 import java.util.List;

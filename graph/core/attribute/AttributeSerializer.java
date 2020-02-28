@@ -19,8 +19,6 @@
 package grakn.core.graph.core.attribute;
 
 import com.google.common.base.Preconditions;
-import grakn.core.graph.core.PropertyKey;
-import grakn.core.graph.core.schema.PropertyKeyMaker;
 import grakn.core.graph.core.schema.RelationTypeMaker;
 import grakn.core.graph.diskstorage.ScanBuffer;
 import grakn.core.graph.diskstorage.WriteBuffer;

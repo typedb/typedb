@@ -18,10 +18,6 @@
 
 package grakn.core.graph.diskstorage.keycolumnvalue;
 
-import grakn.core.graph.diskstorage.Entry;
-import grakn.core.graph.diskstorage.EntryMetaData;
-import grakn.core.graph.diskstorage.StaticBuffer;
-import grakn.core.graph.diskstorage.StoreMetaData;
 import grakn.core.graph.diskstorage.configuration.Configuration;
 import grakn.core.graph.diskstorage.util.time.TimestampProviders;
 

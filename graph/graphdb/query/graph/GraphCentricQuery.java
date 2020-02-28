@@ -20,13 +20,11 @@ package grakn.core.graph.graphdb.query.graph;
 
 import com.google.common.base.Preconditions;
 import grakn.core.graph.core.JanusGraphElement;
-import grakn.core.graph.core.JanusGraphQuery;
 import grakn.core.graph.graphdb.internal.ElementCategory;
 import grakn.core.graph.graphdb.internal.OrderList;
 import grakn.core.graph.graphdb.query.BackendQueryHolder;
 import grakn.core.graph.graphdb.query.BaseQuery;
 import grakn.core.graph.graphdb.query.ElementQuery;
-import grakn.core.graph.graphdb.query.QueryProcessor;
 import grakn.core.graph.graphdb.query.condition.Condition;
 import grakn.core.graph.graphdb.query.condition.FixedCondition;
 import grakn.core.graph.graphdb.query.profile.ProfileObservable;

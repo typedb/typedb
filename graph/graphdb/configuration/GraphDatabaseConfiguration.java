@@ -19,7 +19,6 @@
 package grakn.core.graph.graphdb.configuration;
 
 import com.google.common.base.Joiner;
-import grakn.core.graph.core.JanusGraph;
 import grakn.core.graph.core.schema.DefaultSchemaMaker;
 import grakn.core.graph.diskstorage.StandardIndexProvider;
 import grakn.core.graph.diskstorage.configuration.ConfigNamespace;
@@ -27,7 +26,6 @@ import grakn.core.graph.diskstorage.configuration.ConfigOption;
 import grakn.core.graph.diskstorage.configuration.Configuration;
 import grakn.core.graph.diskstorage.configuration.ReadConfiguration;
 import grakn.core.graph.diskstorage.idmanagement.ConflictAvoidanceMode;
-import grakn.core.graph.diskstorage.idmanagement.ConsistentKeyIDAuthority;
 import grakn.core.graph.diskstorage.util.time.TimestampProvider;
 import grakn.core.graph.diskstorage.util.time.TimestampProviders;
 import grakn.core.graph.graphdb.tinkerpop.JanusGraphDefaultSchemaMaker;

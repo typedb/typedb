@@ -20,10 +20,8 @@ package grakn.core.graph.graphdb.types;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
-import grakn.core.graph.core.JanusGraphVertexQuery;
 import grakn.core.graph.core.Multiplicity;
 import grakn.core.graph.core.PropertyKey;
-import grakn.core.graph.core.RelationType;
 import grakn.core.graph.core.schema.RelationTypeMaker;
 import grakn.core.graph.core.schema.SchemaStatus;
 import grakn.core.graph.graphdb.database.serialize.AttributeHandler;

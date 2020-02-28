@@ -20,7 +20,6 @@ package grakn.core.graph.graphdb.types;
 
 import grakn.core.graph.core.PropertyKey;
 import grakn.core.graph.core.schema.JanusGraphSchemaType;
-import grakn.core.graph.graphdb.database.management.ManagementSystem;
 import grakn.core.graph.graphdb.internal.ElementCategory;
 
 

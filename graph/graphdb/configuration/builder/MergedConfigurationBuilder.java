@@ -27,7 +27,6 @@ import grakn.core.graph.diskstorage.configuration.backend.CommonsConfiguration;
 import grakn.core.graph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
 import grakn.core.graph.diskstorage.keycolumnvalue.StoreFeatures;
 import grakn.core.graph.diskstorage.keycolumnvalue.ttl.TTLKCVSManager;
-import grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration;
 
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicLong;

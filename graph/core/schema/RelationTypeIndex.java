@@ -18,8 +18,6 @@
 
 package grakn.core.graph.core.schema;
 
-import grakn.core.graph.core.EdgeLabel;
-import grakn.core.graph.core.PropertyKey;
 import grakn.core.graph.core.RelationType;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.structure.Direction;

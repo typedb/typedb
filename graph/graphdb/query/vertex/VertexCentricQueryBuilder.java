@@ -29,7 +29,6 @@ import grakn.core.graph.diskstorage.keycolumnvalue.SliceQuery;
 import grakn.core.graph.graphdb.internal.InternalVertex;
 import grakn.core.graph.graphdb.internal.RelationCategory;
 import grakn.core.graph.graphdb.query.BackendQueryHolder;
-import grakn.core.graph.graphdb.query.QueryProcessor;
 import grakn.core.graph.graphdb.query.profile.QueryProfiler;
 
 import java.util.List;

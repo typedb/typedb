@@ -19,8 +19,6 @@
 package grakn.core.graph.core;
 
 import grakn.core.graph.core.schema.SchemaManager;
-import grakn.core.graph.graphdb.database.StandardJanusGraph;
-import grakn.core.graph.graphdb.idmanagement.IDManager;
 import grakn.core.graph.graphdb.relations.RelationIdentifier;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.structure.Graph;

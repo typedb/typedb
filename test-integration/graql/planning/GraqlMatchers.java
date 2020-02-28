@@ -23,7 +23,6 @@ import org.hamcrest.Description;
 import org.hamcrest.FeatureMatcher;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeDiagnosingMatcher;
-import org.junit.Assert;
 
 import java.util.function.Function;
 import java.util.function.Predicate;
