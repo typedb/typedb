@@ -31,12 +31,12 @@ import java.io.InputStream;
 import java.util.Properties;
 
 /**
- * This class produces a graph on top of {@link HadoopGraph}.
+ * This class produces a graph on top of HadoopGraph.
  * With this vendor some exceptions are in places:
- * 1. The Grakn API cannot work on {@link HadoopGraph} this is due to not being able to directly write to a
- * {@link HadoopGraph}.
+ * 1. The Grakn API cannot work on HadoopGraph this is due to not being able to directly write to a
+ * HadoopGraph.
  * 2. This factory primarily exists as a means of producing a
- * {@link org.apache.tinkerpop.gremlin.process.computer.GraphComputer} on of {@link HadoopGraph}
+ * org.apache.tinkerpop.gremlin.process.computer.GraphComputer on of HadoopGraph
  */
 public class HadoopGraphFactory {
     // Keep visibility to protected as this is used by KGMS

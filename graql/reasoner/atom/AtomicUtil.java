@@ -24,9 +24,10 @@ import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import graql.lang.statement.Variable;
+
+import javax.annotation.CheckReturnValue;
 import java.util.Set;
 import java.util.stream.Collectors;
-import javax.annotation.CheckReturnValue;
 
 /**
  * Helpers for handling and converting to and from Atoms

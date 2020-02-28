@@ -36,6 +36,7 @@ import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.Relation;
 import graql.lang.statement.Variable;
+
 import java.util.Collections;
 import java.util.stream.Stream;
 

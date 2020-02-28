@@ -35,7 +35,7 @@ public interface MessageReader {
     void updateState();
 
     /**
-     * Need to override this method because the {@link Log} uses this comparison
+     * Need to override this method because the Log uses this comparison
      * when un-registering readers
      *
      * @param other other reader to compare against

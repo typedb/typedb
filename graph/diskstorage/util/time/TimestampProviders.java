@@ -27,7 +27,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Implementations of {@link TimestampProvider} for different resolutions of time:
+ * Implementations of TimestampProvider for different resolutions of time:
  * <ul>
  * <li>NANO: nano-second time resolution based on System.nanoTime using a base-time established
  * by System.currentTimeMillis(). The exact resolution depends on the particular JVM and host machine.</li>

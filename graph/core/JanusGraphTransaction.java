@@ -19,14 +19,12 @@
 package grakn.core.graph.core;
 
 import grakn.core.graph.core.schema.SchemaManager;
-import grakn.core.graph.graphdb.database.StandardJanusGraph;
-import grakn.core.graph.graphdb.idmanagement.IDManager;
 import grakn.core.graph.graphdb.relations.RelationIdentifier;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 
 /**
- * Transaction defines a transactional context for a {@link JanusGraph}. Since JanusGraph is a transactional graph
+ * Transaction defines a transactional context for a JanusGraph. Since JanusGraph is a transactional graph
  * database, all interactions with the graph are mitigated by a Transaction.
  * <p>
  * All vertex and edge retrievals are channeled by a graph transaction which bundles all such retrievals, creations and
@@ -76,7 +74,7 @@ public interface JanusGraphTransaction extends Graph, SchemaManager {
     JanusGraphQuery<? extends JanusGraphQuery> query();
 
     /**
-     * Returns a {@link JanusGraphIndexQuery} to query for vertices or edges against the specified indexing backend using
+     * Returns a JanusGraphIndexQuery to query for vertices or edges against the specified indexing backend using
      * the given query string. The query string is analyzed and answered by the underlying storage backend.
      * <p>
      * Note, that using indexQuery may ignore modifications in the current transaction.
@@ -104,9 +102,9 @@ public interface JanusGraphTransaction extends Graph, SchemaManager {
      * Note, that an exception is thrown if the vertex id is not a valid JanusGraph vertex id or if a vertex with the given
      * id already exists.
      * <p>
-     * A valid JanusGraph vertex ids must be provided. Use {@link IDManager#toVertexId(long)}
+     * A valid JanusGraph vertex ids must be provided. Use IDManager#toVertexId(long)
      * to construct a valid JanusGraph vertex id from a user id, where <code>idManager</code> can be obtained through
-     * {@link StandardJanusGraph#getIDManager()}.
+     * StandardJanusGraph#getIDManager().
      * <pre>
      * <code>long vertexId = ((StandardJanusGraph) graph).getIDManager().toVertexId(userVertexId);</code>
      * </pre>
@@ -120,7 +118,7 @@ public interface JanusGraphTransaction extends Graph, SchemaManager {
     /**
      * Retrieves the vertex for the specified id.
      * <p>
-     * This method is intended for internal use only. Use {@link org.apache.tinkerpop.gremlin.structure.Graph#vertices(Object...)} instead.
+     * This method is intended for internal use only. Use org.apache.tinkerpop.gremlin.structure.Graph#vertices(Object...) instead.
      *
      * @param id id of the vertex to retrieve
      * @return vertex with the given id if it exists, else null

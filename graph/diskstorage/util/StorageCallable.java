@@ -23,8 +23,8 @@ import grakn.core.graph.diskstorage.BackendException;
 import java.util.concurrent.Callable;
 
 /**
- * Like {@link Callable}, except the exception type is narrowed from
- * {@link Exception} to {@link BackendException}.
+ * Like Callable, except the exception type is narrowed from
+ * Exception to BackendException.
  *
  * @param <T> call return type
  */

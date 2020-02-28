@@ -28,14 +28,14 @@ public interface BaseTransaction {
     /**
      * Commits the transaction and persists all modifications to the backend.
      * 
-     * Call either this method or {@link #rollback()} at most once per instance.
+     * Call either this method or #rollback() at most once per instance.
      */
     void commit() throws BackendException;
 
     /**
      * Aborts (or rolls back) the transaction.
      *
-     * Call either this method or {@link #commit()} at most once per instance.
+     * Call either this method or #commit() at most once per instance.
      *
      */
     void rollback() throws BackendException;

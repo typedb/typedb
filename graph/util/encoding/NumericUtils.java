@@ -31,9 +31,9 @@ public final class NumericUtils {
    * The value is converted by getting their IEEE 754 floating-point &quot;double format&quot;
    * bit layout and then some bits are swapped, to be able to compare the result as long.
    * By this the precision is not reduced, but the value can easily used as a long.
-   * The sort order (including {@link Double#NaN}) is defined by
-   * {@link Double#compareTo}; {@code NaN} is greater than positive infinity.
-   * @see #sortableLongToDouble
+   * The sort order (including Double#NaN) is defined by
+   * Double#compareTo; {@code NaN} is greater than positive infinity.
+   * see #sortableLongToDouble
    */
   public static long doubleToSortableLong(double val) {
     return sortableDoubleBits(Double.doubleToLongBits(val));
@@ -41,7 +41,7 @@ public final class NumericUtils {
 
   /**
    * Converts a sortable <code>long</code> back to a <code>double</code>.
-   * @see #doubleToSortableLong
+   * see #doubleToSortableLong
    */
   public static double sortableLongToDouble(long val) {
     return Double.longBitsToDouble(sortableDoubleBits(val));
@@ -52,9 +52,9 @@ public final class NumericUtils {
    * The value is converted by getting their IEEE 754 floating-point &quot;float format&quot;
    * bit layout and then some bits are swapped, to be able to compare the result as int.
    * By this the precision is not reduced, but the value can easily used as an int.
-   * The sort order (including {@link Float#NaN}) is defined by
-   * {@link Float#compareTo}; {@code NaN} is greater than positive infinity.
-   * @see #sortableIntToFloat
+   * The sort order (including Float#NaN) is defined by
+   * Float#compareTo; {@code NaN} is greater than positive infinity.
+   * see #sortableIntToFloat
    */
   public static int floatToSortableInt(float val) {
     return sortableFloatBits(Float.floatToIntBits(val));
@@ -62,7 +62,7 @@ public final class NumericUtils {
 
   /**
    * Converts a sortable <code>int</code> back to a <code>float</code>.
-   * @see #floatToSortableInt
+   * see #floatToSortableInt
    */
   public static float sortableIntToFloat(int val) {
     return Float.intBitsToFloat(sortableFloatBits(val));

@@ -142,7 +142,7 @@ public class RelationImpl implements Relation, ConceptVertex {
      * Retrieve a list of all Thing involved in the Relation, and the Role they play.
      *
      * @return A list of all the Roles and the Things playing them in this Relation.
-     * @see Role
+     * see Role
      */
     @Override
     public Map<Role, Set<Thing>> rolePlayersMap() {

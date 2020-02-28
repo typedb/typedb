@@ -24,7 +24,6 @@ import com.google.common.collect.Sets;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.planning.gremlin.value.ValueOperation;
 import grakn.core.graql.reasoner.atom.predicate.ValuePredicate;
-import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.graql.reasoner.utils.AnswerUtil;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.Relation;
@@ -42,7 +41,7 @@ import java.util.stream.Collectors;
 
 /**
  * Quantifies semantic difference between two queries provided they are in a subsumption relation, i. e. there exists
- * a Unifier of {@link UnifierType#SUBSUMPTIVE} between them.
+ * a Unifier of UnifierType#SUBSUMPTIVE between them.
  * Semantic difference between query C and P defines a specialisation operation
  * required to transform query P into a query equivalent to C.
  * In that way we can check whether answers to the parent (more generic) query are also answers

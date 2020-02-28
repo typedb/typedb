@@ -19,7 +19,6 @@
 package grakn.core.graph.graphdb.configuration;
 
 import com.google.common.base.Joiner;
-import grakn.core.graph.core.JanusGraph;
 import grakn.core.graph.core.schema.DefaultSchemaMaker;
 import grakn.core.graph.diskstorage.StandardIndexProvider;
 import grakn.core.graph.diskstorage.configuration.ConfigNamespace;
@@ -27,7 +26,6 @@ import grakn.core.graph.diskstorage.configuration.ConfigOption;
 import grakn.core.graph.diskstorage.configuration.Configuration;
 import grakn.core.graph.diskstorage.configuration.ReadConfiguration;
 import grakn.core.graph.diskstorage.idmanagement.ConflictAvoidanceMode;
-import grakn.core.graph.diskstorage.idmanagement.ConsistentKeyIDAuthority;
 import grakn.core.graph.diskstorage.util.time.TimestampProvider;
 import grakn.core.graph.diskstorage.util.time.TimestampProviders;
 import grakn.core.graph.graphdb.tinkerpop.JanusGraphDefaultSchemaMaker;
@@ -39,7 +37,7 @@ import java.net.InetAddress;
 import java.time.Duration;
 
 /**
- * Provides functionality to configure a {@link JanusGraph} INSTANCE.
+ * Provides functionality to configure a JanusGraph INSTANCE.
  * <p>
  * <p>
  * A graph database configuration is uniquely associated with a graph database and must not be used for multiple
@@ -190,7 +188,7 @@ public class GraphDatabaseConfiguration {
     /**
      * Configures the initial size of the dirty (modified) vertex map used by a transaction.  All vertices created or
      * updated by a transaction are held in that transaction's dirty vertex map until the transaction commits.
-     * This option sets the initial size of the dirty map.  Unlike {@link #TX_CACHE_SIZE}, this is not a maximum.
+     * This option sets the initial size of the dirty map.  Unlike #TX_CACHE_SIZE, this is not a maximum.
      * The transaction will transparently allocate more space to store dirty vertices if this initial size hint
      * is exceeded.  Transactions that know how many vertices they are likely to modify a priori can avoid resize
      * costs associated with growing the dirty vertex data structure by setting this option.
@@ -202,14 +200,14 @@ public class GraphDatabaseConfiguration {
             ConfigOption.Type.MASKABLE, Integer.class);
 
     /**
-     * The default value of {@link #TX_DIRTY_SIZE} when batch loading is disabled.
+     * The default value of #TX_DIRTY_SIZE when batch loading is disabled.
      * This value is only considered if the user does not specify a value for
      * {@code #TX_DIRTY_CACHE_SIZE} explicitly in either the graph or transaction config.
      */
     private static final int TX_DIRTY_SIZE_DEFAULT_WITHOUT_BATCH = 32;
 
     /**
-     * The default value of {@link #TX_DIRTY_SIZE} when batch loading is enabled.
+     * The default value of #TX_DIRTY_SIZE when batch loading is enabled.
      * This value is only considered if the user does not specify a value for
      * {@code #TX_DIRTY_CACHE_SIZE} explicitly in either the graph or transaction config.
      */
@@ -414,7 +412,7 @@ public class GraphDatabaseConfiguration {
             ConfigOption.Type.GLOBAL_OFFLINE, Duration.ofMillis(300L));
 
     /**
-     * Sets the strategy used by {@link ConsistentKeyIDAuthority} to avoid
+     * Sets the strategy used by ConsistentKeyIDAuthority to avoid
      * contention in ID block allocation between JanusGraph instances concurrently
      * sharing a single distributed storage backend.
      */
@@ -425,7 +423,7 @@ public class GraphDatabaseConfiguration {
             ConfigOption.Type.GLOBAL_OFFLINE, ConflictAvoidanceMode.class, ConflictAvoidanceMode.NONE);
 
     /**
-     * When JanusGraph allocates IDs with {@link ConflictAvoidanceMode#GLOBAL_AUTO}
+     * When JanusGraph allocates IDs with ConflictAvoidanceMode#GLOBAL_AUTO
      * configured, it picks a random unique ID marker and attempts to allocate IDs
      * from a partition using the marker. The ID markers function as
      * subpartitions with each ID partition. If the attempt fails because that
@@ -435,8 +433,8 @@ public class GraphDatabaseConfiguration {
      * is allocated and fails the request. It must be set to at least 1 and
      * should generally be set to 3 or more.
      * <p>
-     * This setting has no effect when {@link #IDAUTHORITY_CONFLICT_AVOIDANCE} is not configured to
-     * {@link ConflictAvoidanceMode#GLOBAL_AUTO}.
+     * This setting has no effect when #IDAUTHORITY_CONFLICT_AVOIDANCE is not configured to
+     * ConflictAvoidanceMode#GLOBAL_AUTO.
      */
     public static final ConfigOption<Integer> IDAUTHORITY_CAV_RETRIES = new ConfigOption<>(IDAUTHORITY_NS, "randomized-conflict-avoidance-retries",
             "Number of times the system attempts ID block reservations with random conflict avoidance tags before giving up and throwing an exception",
@@ -450,8 +448,8 @@ public class GraphDatabaseConfiguration {
      * IMPORTANT: This should never ever, ever be modified from its initial value and ALL JanusGraph instances must use the
      * same value. Otherwise, data corruption will occur.
      * <p>
-     * This setting has no effect when {@link #IDAUTHORITY_CONFLICT_AVOIDANCE} is configured to
-     * {@link ConflictAvoidanceMode#NONE}. However, note that while the
+     * This setting has no effect when #IDAUTHORITY_CONFLICT_AVOIDANCE is configured to
+     * ConflictAvoidanceMode#NONE. However, note that while the
      * conflict avoidance mode can be changed, this setting cannot ever be changed and must therefore be considered a priori.
      */
     public static final ConfigOption<Integer> IDAUTHORITY_CAV_BITS = new ConfigOption<>(IDAUTHORITY_NS, "conflict-avoidance-tag-bits",
@@ -466,8 +464,8 @@ public class GraphDatabaseConfiguration {
      * <p>
      * IMPORTANT: The configured unique id marker must fit within the configured unique id bit width.
      * <p>
-     * This setting has no effect when {@link #IDAUTHORITY_CONFLICT_AVOIDANCE} is configured to
-     * {@link ConflictAvoidanceMode#NONE}.
+     * This setting has no effect when #IDAUTHORITY_CONFLICT_AVOIDANCE is configured to
+     * ConflictAvoidanceMode#NONE.
      */
     public static final ConfigOption<Integer> IDAUTHORITY_CAV_TAG = new ConfigOption<>(IDAUTHORITY_NS, "conflict-avoidance-tag",
             "Conflict avoidance tag to be used by this JanusGraph instance when allocating IDs",

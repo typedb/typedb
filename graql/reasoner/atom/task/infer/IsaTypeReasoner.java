@@ -30,6 +30,7 @@ import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.concept.manager.ConceptManager;
 import graql.lang.statement.Variable;
+
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;

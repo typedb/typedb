@@ -22,10 +22,6 @@ package grakn.core.kb.concept.structure;
 import grakn.core.common.exception.GraknException;
 import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.Concept;
-import grakn.core.kb.concept.api.EntityType;
-import grakn.core.kb.concept.api.Label;
-import grakn.core.kb.concept.api.RelationType;
-import grakn.core.kb.concept.api.SchemaConcept;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
@@ -39,8 +35,8 @@ import static grakn.core.common.exception.ErrorMessage.UNIQUE_PROPERTY_TAKEN;
  *
  * <p>
  *     This occurs when attempting to add a globally unique property to a concept.
- *     For example when creating a {@link EntityType} and {@link RelationType} using
- *     the same {@link Label}
+ *     For example when creating a EntityType and RelationType using
+ *     the same Label
  * </p>
  *
  */
@@ -67,8 +63,8 @@ public class PropertyNotUniqueException extends GraknException {
     }
 
     /**
-     * Thrown when trying to create a {@link SchemaConcept} using a unique property which is already taken.
-     * For example this happens when using an already taken {@link Label}
+     * Thrown when trying to create a SchemaConcept using a unique property which is already taken.
+     * For example this happens when using an already taken Label
      */
     public static PropertyNotUniqueException cannotCreateProperty(Concept concept, Schema.VertexProperty property, Object value){
         return create(UNIQUE_PROPERTY_TAKEN.getMessage(property.name(), value, concept));

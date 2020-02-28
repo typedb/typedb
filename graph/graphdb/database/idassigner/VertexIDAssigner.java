@@ -31,7 +31,6 @@ import grakn.core.graph.diskstorage.BackendException;
 import grakn.core.graph.diskstorage.IDAuthority;
 import grakn.core.graph.diskstorage.configuration.Configuration;
 import grakn.core.graph.diskstorage.idmanagement.ConsistentKeyIDAuthority;
-import grakn.core.graph.diskstorage.keycolumnvalue.KeyColumnValueStore;
 import grakn.core.graph.graphdb.database.idassigner.placement.IDPlacementStrategy;
 import grakn.core.graph.graphdb.database.idassigner.placement.PartitionAssignment;
 import grakn.core.graph.graphdb.database.idassigner.placement.PartitionIDRange;

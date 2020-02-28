@@ -29,8 +29,8 @@ import java.nio.file.Paths;
 public class ConfigKey<T> {
 
     /**
-     * Parser for a {@link ConfigKey}.
-     * Describes how to {@link #read(String)} and {@link #write(Object)} properties.
+     * Parser for a ConfigKey.
+     * Describes how to #read(String) and #write(Object) properties.
      *
      * @param <T> The type of the property value
      */

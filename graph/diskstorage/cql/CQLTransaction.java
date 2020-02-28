@@ -30,7 +30,7 @@ import static grakn.core.graph.diskstorage.cql.CQLConfigOptions.WRITE_CONSISTENC
 
 
 /**
- * This class manages the translation of read and write consistency configuration values to CQL API {@link ConsistencyLevel} types.
+ * This class manages the translation of read and write consistency configuration values to CQL API ConsistencyLevel types.
  */
 public class CQLTransaction extends AbstractStoreTransaction {
 

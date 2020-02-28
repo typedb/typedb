@@ -27,6 +27,7 @@ import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.server.Transaction;
 import grakn.verification.tools.operator.TypeContext;
+
 import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;

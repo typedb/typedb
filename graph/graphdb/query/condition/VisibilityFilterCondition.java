@@ -23,7 +23,6 @@ import grakn.core.graph.core.JanusGraphRelation;
 import grakn.core.graph.core.JanusGraphVertex;
 import grakn.core.graph.core.schema.JanusGraphSchemaElement;
 import grakn.core.graph.graphdb.internal.InternalElement;
-import grakn.core.graph.graphdb.query.condition.Literal;
 import grakn.core.graph.graphdb.types.system.SystemRelationType;
 
 import java.util.Objects;

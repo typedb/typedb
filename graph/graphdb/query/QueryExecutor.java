@@ -35,7 +35,7 @@ public interface QueryExecutor<Q extends ElementQuery, R extends JanusGraphEleme
 
     /**
      * Whether the transactional context contains any deletions that could potentially affect the result set of the given query.
-     * This is used to determine whether results need to be checked for deletion with {@link #isDeleted(ElementQuery, JanusGraphElement)}.
+     * This is used to determine whether results need to be checked for deletion with #isDeleted(ElementQuery, JanusGraphElement).
      */
     boolean hasDeletions(Q query);
 
@@ -46,7 +46,7 @@ public interface QueryExecutor<Q extends ElementQuery, R extends JanusGraphEleme
 
     /**
      * Executes the given sub-query against a data store and returns an iterator over the results. These results are not yet adjusted
-     * to any modification made in the transactional context which are done by the {@link QueryProcessor} using the other methods
+     * to any modification made in the transactional context which are done by the QueryProcessor using the other methods
      */
     Iterator<R> execute(Q query, B subquery, Object executionInfo, QueryProfiler profiler);
 

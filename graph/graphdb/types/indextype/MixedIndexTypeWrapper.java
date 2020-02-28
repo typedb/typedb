@@ -19,14 +19,13 @@
 package grakn.core.graph.graphdb.types.indextype;
 
 import com.google.common.collect.Iterables;
-import org.apache.tinkerpop.gremlin.structure.Direction;
 import grakn.core.graph.core.PropertyKey;
 import grakn.core.graph.core.schema.Parameter;
 import grakn.core.graph.graphdb.types.MixedIndexType;
 import grakn.core.graph.graphdb.types.ParameterIndexField;
 import grakn.core.graph.graphdb.types.SchemaSource;
 import grakn.core.graph.graphdb.types.TypeDefinitionCategory;
-import grakn.core.graph.graphdb.types.indextype.IndexTypeWrapper;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 
 public class MixedIndexTypeWrapper extends IndexTypeWrapper implements MixedIndexType {
 

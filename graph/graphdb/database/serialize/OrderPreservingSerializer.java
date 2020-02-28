@@ -23,8 +23,8 @@ import grakn.core.graph.diskstorage.ScanBuffer;
 import grakn.core.graph.diskstorage.WriteBuffer;
 
 /**
- * Interface that extends {@link AttributeSerializer} to provide a serialization that is byte order preserving, i.e. the
- * order of the elements (as given by its {@link Comparable} implementation) corresponds to the natural order of the
+ * Interface that extends AttributeSerializer to provide a serialization that is byte order preserving, i.e. the
+ * order of the elements (as given by its Comparable implementation) corresponds to the natural order of the
  * serialized byte representation representation.
  *
  */

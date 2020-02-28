@@ -19,10 +19,9 @@
 package grakn.core.graph.diskstorage.log;
 
 import grakn.core.graph.diskstorage.BackendException;
-import grakn.core.graph.diskstorage.log.Log;
 
 /**
- * Manager interface for opening {@link Log}s against a particular Log implementation.
+ * Manager interface for opening Logs against a particular Log implementation.
  *
  */
 public interface LogManager {

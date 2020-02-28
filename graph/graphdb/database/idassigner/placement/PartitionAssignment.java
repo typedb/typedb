@@ -19,7 +19,7 @@
 package grakn.core.graph.graphdb.database.idassigner.placement;
 
 /**
- * Utility interface used in {@link IDPlacementStrategy} to hold the partition assignment of
+ * Utility interface used in IDPlacementStrategy to hold the partition assignment of
  * a vertex (if it is already assigned a partition) or to be assigned a partition id.
  */
 public interface PartitionAssignment {

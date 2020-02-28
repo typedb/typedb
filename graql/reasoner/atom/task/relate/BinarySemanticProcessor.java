@@ -32,6 +32,7 @@ import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
 import graql.lang.statement.Variable;
+
 import java.util.Collections;
 import java.util.Set;
 

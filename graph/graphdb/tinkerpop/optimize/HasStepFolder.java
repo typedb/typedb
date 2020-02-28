@@ -18,6 +18,11 @@
 
 package grakn.core.graph.graphdb.tinkerpop.optimize;
 
+import grakn.core.graph.core.Cardinality;
+import grakn.core.graph.core.JanusGraphTransaction;
+import grakn.core.graph.core.PropertyKey;
+import grakn.core.graph.graphdb.query.JanusGraphPredicate;
+import grakn.core.graph.graphdb.query.QueryUtil;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
@@ -37,13 +42,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.util.EmptyStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.process.traversal.util.AndP;
 import org.apache.tinkerpop.gremlin.process.traversal.util.ConnectiveP;
-import grakn.core.graph.core.Cardinality;
-import grakn.core.graph.core.JanusGraphTransaction;
-import grakn.core.graph.core.PropertyKey;
-import grakn.core.graph.graphdb.query.JanusGraphPredicate;
-import grakn.core.graph.graphdb.query.QueryUtil;
-import grakn.core.graph.graphdb.tinkerpop.optimize.JanusGraphStep;
-import grakn.core.graph.graphdb.tinkerpop.optimize.JanusGraphTraversalUtil;
 import org.javatuples.Pair;
 
 import java.util.ArrayList;

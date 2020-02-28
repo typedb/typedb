@@ -24,7 +24,7 @@ import grakn.core.graph.diskstorage.StaticBuffer;
 import java.util.Objects;
 
 /**
- * Extends a {@link SliceQuery} to express a range for columns and a range for
+ * Extends a SliceQuery to express a range for columns and a range for
  * keys. Selects each key on the interval
  * {@code [keyStart inclusive, keyEnd exclusive)} for which there exists at
  * least one column between {@code [sliceStart inclusive, sliceEnd exclusive)}.

@@ -20,8 +20,6 @@ package grakn.core.graph.diskstorage.util;
 
 import com.google.common.hash.HashCode;
 import grakn.core.graph.diskstorage.StaticBuffer;
-import grakn.core.graph.diskstorage.util.HashUtility;
-import grakn.core.graph.diskstorage.util.WriteByteBuffer;
 
 
 public class HashingUtil {

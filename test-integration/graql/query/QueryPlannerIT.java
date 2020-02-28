@@ -20,10 +20,8 @@ package grakn.core.graql.query;
 
 import com.google.common.collect.ImmutableList;
 import grakn.core.common.config.Config;
-import grakn.core.concept.impl.TypeImpl;
 import grakn.core.graql.planning.gremlin.fragment.InIsaFragment;
 import grakn.core.graql.planning.gremlin.fragment.LabelFragment;
-import grakn.core.graql.planning.gremlin.fragment.NeqFragment;
 import grakn.core.graql.planning.gremlin.fragment.OutIsaFragment;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Entity;
@@ -37,7 +35,6 @@ import grakn.core.kb.server.Transaction;
 import grakn.core.rule.GraknTestStorage;
 import grakn.core.rule.SessionUtil;
 import grakn.core.rule.TestTransactionProvider;
-import grakn.core.util.ConceptDowncasting;
 import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;
 import org.junit.After;
@@ -45,7 +42,6 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.List;

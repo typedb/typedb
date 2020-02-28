@@ -29,7 +29,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Utility methods for dealing with {@link Duration}
+ * Utility methods for dealing with Duration
  */
 public class Durations {
 

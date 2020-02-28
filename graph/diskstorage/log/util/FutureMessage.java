@@ -20,15 +20,13 @@ package grakn.core.graph.diskstorage.log.util;
 
 import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.AbstractFuture;
-import grakn.core.graph.diskstorage.StaticBuffer;
-import grakn.core.graph.diskstorage.log.Log;
 import grakn.core.graph.diskstorage.log.Message;
 
 /**
- * Implementation of a {@link java.util.concurrent.Future} for {@link Message}s that
- * are being added to the {@link Log} via {@link Log#add(StaticBuffer)}.
+ * Implementation of a java.util.concurrent.Future for Messages that
+ * are being added to the Log via Log#add(StaticBuffer).
  * <p>
- * This class can be used by {@link Log} implementations to wrap messages.
+ * This class can be used by Log implementations to wrap messages.
  */
 public class FutureMessage<M extends Message> extends AbstractFuture<Message> {
 
@@ -47,7 +45,7 @@ public class FutureMessage<M extends Message> extends AbstractFuture<Message> {
     }
 
     /**
-     * This method should be called by {@link Log} implementations when the message was successfully
+     * This method should be called by Log implementations when the message was successfully
      * added to the LOG.
      */
     public void delivered() {
@@ -55,7 +53,7 @@ public class FutureMessage<M extends Message> extends AbstractFuture<Message> {
     }
 
     /**
-     * This method should be called by {@link Log} implementations when the message could not be added to the LOG
+     * This method should be called by Log implementations when the message could not be added to the LOG
      * with the respective exception object.
      */
     public void failed(Throwable exception) {

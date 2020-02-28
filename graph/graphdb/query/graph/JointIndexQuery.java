@@ -21,7 +21,6 @@ package grakn.core.graph.graphdb.query.graph;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import grakn.core.graph.diskstorage.indexing.IndexQuery;
-import grakn.core.graph.graphdb.database.IndexSerializer;
 import grakn.core.graph.graphdb.query.BackendQuery;
 import grakn.core.graph.graphdb.query.BaseQuery;
 import grakn.core.graph.graphdb.query.profile.ProfileObservable;
@@ -35,14 +34,14 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * A component/sub-query of a {@link GraphCentricQuery} that gets executed against an indexing backend or the index store
+ * A component/sub-query of a GraphCentricQuery that gets executed against an indexing backend or the index store
  * by the query processor of the enclosing transaction.
  * <p>
- * This query itself can contain multiple sub-queries which are individually executed by the {@link IndexSerializer}
+ * This query itself can contain multiple sub-queries which are individually executed by the IndexSerializer
  * and the result sets merged.
  * <p>
  * Those sub-queries are either targeting an external indexing backend or the internal index store which is a distinction this
- * query keeps track of through the sub-class {@link Subquery}, since their definition and execution differs starkly.
+ * query keeps track of through the sub-class Subquery, since their definition and execution differs starkly.
  */
 public class JointIndexQuery extends BaseQuery implements BackendQuery<JointIndexQuery>, ProfileObservable {
 

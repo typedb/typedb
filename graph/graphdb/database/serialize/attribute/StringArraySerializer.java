@@ -21,8 +21,6 @@ package grakn.core.graph.graphdb.database.serialize.attribute;
 import grakn.core.graph.core.attribute.AttributeSerializer;
 import grakn.core.graph.diskstorage.ScanBuffer;
 import grakn.core.graph.diskstorage.WriteBuffer;
-import grakn.core.graph.graphdb.database.serialize.attribute.ArraySerializer;
-import grakn.core.graph.graphdb.database.serialize.attribute.StringSerializer;
 
 import java.lang.reflect.Array;
 

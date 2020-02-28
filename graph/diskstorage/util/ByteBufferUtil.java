@@ -18,8 +18,6 @@
 
 package grakn.core.graph.diskstorage.util;
 
-import grakn.core.graph.diskstorage.util.Hex;
-
 import java.nio.ByteBuffer;
 
 /**
@@ -53,7 +51,7 @@ public class ByteBufferUtil {
      */
 
     /**
-     * Compares two {@link ByteBuffer}s and checks whether the first ByteBuffer is smaller than the second.
+     * Compares two ByteBuffers and checks whether the first ByteBuffer is smaller than the second.
      *
      * @param a First ByteBuffer
      * @param b Second ByteBuffer
@@ -64,7 +62,7 @@ public class ByteBufferUtil {
     }
 
     /**
-     * Compares two {@link ByteBuffer}s and checks whether the first ByteBuffer is smaller than or equal to the second.
+     * Compares two ByteBuffers and checks whether the first ByteBuffer is smaller than or equal to the second.
      *
      * @param a First ByteBuffer
      * @param b Second ByteBuffer
@@ -75,7 +73,7 @@ public class ByteBufferUtil {
     }
 
     /**
-     * Compares two {@link ByteBuffer}s according to their byte order (and not the byte value).
+     * Compares two ByteBuffers according to their byte order (and not the byte value).
      * <p>
      *
      * @param b1 First ByteBuffer

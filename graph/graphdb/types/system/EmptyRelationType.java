@@ -23,7 +23,6 @@ import grakn.core.graph.core.schema.SchemaStatus;
 import grakn.core.graph.graphdb.internal.InternalRelationType;
 import grakn.core.graph.graphdb.internal.Order;
 import grakn.core.graph.graphdb.types.IndexType;
-import grakn.core.graph.graphdb.types.system.EmptyVertex;
 
 import java.util.Collections;
 

@@ -19,12 +19,10 @@
 package grakn.core.graph.diskstorage.idmanagement;
 
 
-import grakn.core.graph.diskstorage.idmanagement.ConsistentKeyIDAuthority;
-
 /**
  * Represents ID allocation strategies for avoiding contention between
  * concurrent JanusGraph instances using a shared storage backend. These strategies
- * are implemented in {@link ConsistentKeyIDAuthority}.
+ * are implemented in ConsistentKeyIDAuthority.
  */
 public enum ConflictAvoidanceMode {
 
@@ -63,7 +61,7 @@ public enum ConflictAvoidanceMode {
      * element IDs allocated by the instance. If each instance has a unique tag,
      * then ID allocations will never conflict.
      * <p>
-     * Unlike {@link #LOCAL_MANUAL}, setting the same tag on multiple instances
+     * Unlike #LOCAL_MANUAL, setting the same tag on multiple instances
      * is safe in this mode. JanusGraph uses global-quorum-level or greater on
      * storage backends that have a notion of eventual consistency, so JanusGraph
      * will detect contention and avoid double allocation even when multiple
@@ -73,7 +71,7 @@ public enum ConflictAvoidanceMode {
 
     /**
      * JanusGraph randomly selects a tag from the space of all possible tags when
-     * performing allocations. Like {@link #GLOBAL_MANUAL}, this uses at least
+     * performing allocations. Like #GLOBAL_MANUAL, this uses at least
      * global-quorum-level consistency, so even if two instances happen to
      * select the same ID simultaneously, the conflict will still be detected.
      */

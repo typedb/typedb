@@ -45,8 +45,8 @@ public interface Thing extends Concept {
      *
      * @param roles An optional parameter which allows you to specify the role of the relations you wish to retrieve.
      * @return A set of Relations which the concept instance takes part in, optionally constrained by the Role Type.
-     * @see Role
-     * @see Relation
+     * see Role
+     * see Relation
      */
     @CheckReturnValue
     Stream<Relation> relations(Role... roles);
@@ -55,7 +55,7 @@ public interface Thing extends Concept {
      * Determine the Roles that this Thing is currently playing.
      *
      * @return A set of all the Roles which this Thing is currently playing.
-     * @see Role
+     * see Role
      */
     @CheckReturnValue
     Stream<Role> roles();
@@ -84,7 +84,7 @@ public interface Thing extends Concept {
      *
      * @param attributeTypes AttributeTypes of the Attributes attached to this entity
      * @return A collection of AttributeTypes attached to this Thing.
-     * @see Attribute
+     * see Attribute
      */
     @CheckReturnValue
     Stream<Attribute<?>> attributes(AttributeType... attributeTypes);
@@ -94,7 +94,7 @@ public interface Thing extends Concept {
      *
      * @param attributeTypes AttributeTypes of the Attributes attached to this entity
      * @return A collection of AttributeTypes attached to this Thing.
-     * @see Attribute
+     * see Attribute
      */
     @CheckReturnValue
     Stream<Attribute<?>> keys(AttributeType... attributeTypes);
@@ -111,7 +111,7 @@ public interface Thing extends Concept {
      * Used to indicate if this Thing has been created as the result of a Rule inference.
      *
      * @return true if this Thing exists due to a rule
-     * @see Rule
+     * see Rule
      */
     boolean isInferred();
 

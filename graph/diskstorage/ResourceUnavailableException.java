@@ -19,8 +19,8 @@
 package grakn.core.graph.diskstorage;
 
 import com.google.common.base.Preconditions;
-import org.apache.commons.lang.StringUtils;
 import grakn.core.graph.core.JanusGraphException;
+import org.apache.commons.lang.StringUtils;
 
 /**
  * This exception is thrown if a resource is being accessed that is unavailable.

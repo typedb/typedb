@@ -18,8 +18,6 @@
 
 package grakn.core.graph.diskstorage;
 
-import grakn.core.graph.diskstorage.BackendException;
-
 /**
  * This exception signifies a (potentially) temporary exception in a JanusGraph storage backend,
  * that is, an exception that is due to a temporary unavailability or other exception that

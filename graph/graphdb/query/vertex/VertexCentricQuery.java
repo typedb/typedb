@@ -25,7 +25,6 @@ import grakn.core.graph.graphdb.internal.InternalVertex;
 import grakn.core.graph.graphdb.internal.OrderList;
 import grakn.core.graph.graphdb.query.BackendQueryHolder;
 import grakn.core.graph.graphdb.query.ElementQuery;
-import grakn.core.graph.graphdb.query.QueryProcessor;
 import grakn.core.graph.graphdb.query.condition.Condition;
 import grakn.core.graph.graphdb.relations.RelationComparator;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -34,9 +33,9 @@ import java.util.Comparator;
 import java.util.List;
 
 /**
- * A vertex-centric query which implements {@link ElementQuery} so that it can be executed by
- * {@link QueryProcessor}. Most of the query definition
- * is in the extended {@link BaseVertexCentricQuery} - this class only adds the base vertex to the mix.
+ * A vertex-centric query which implements ElementQuery so that it can be executed by
+ * QueryProcessor. Most of the query definition
+ * is in the extended BaseVertexCentricQuery - this class only adds the base vertex to the mix.
  */
 public class VertexCentricQuery extends BaseVertexCentricQuery implements ElementQuery<JanusGraphRelation, SliceQuery> {
 

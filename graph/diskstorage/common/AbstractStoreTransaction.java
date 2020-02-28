@@ -24,7 +24,7 @@ import grakn.core.graph.diskstorage.BaseTransactionConfig;
 import grakn.core.graph.diskstorage.keycolumnvalue.StoreTransaction;
 
 /**
- * Abstract implementation of {@link StoreTransaction} to be used as the basis for more specific implementations.
+ * Abstract implementation of StoreTransaction to be used as the basis for more specific implementations.
  *
  */
 

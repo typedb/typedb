@@ -39,6 +39,7 @@ import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
+
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;

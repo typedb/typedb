@@ -18,8 +18,8 @@
 
 package grakn.core.graph.graphdb.database;
 
-import org.apache.tinkerpop.gremlin.structure.Direction;
 import grakn.core.graph.core.RelationType;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 
 
 public interface RelationFactory {

@@ -19,7 +19,6 @@
 package grakn.core.graph.graphdb.query.condition;
 
 import grakn.core.graph.core.JanusGraphElement;
-import grakn.core.graph.graphdb.query.condition.Condition;
 
 import java.util.Collections;
 

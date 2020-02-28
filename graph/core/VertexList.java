@@ -21,12 +21,12 @@ package grakn.core.graph.core;
 import java.util.List;
 
 /**
- * List of {@link JanusGraphVertex}s.
+ * List of JanusGraphVertexs.
  * <p>
  * Basic interface for a list of vertices which supports retrieving individuals vertices or iterating over all of them,
  * but does not support modification.
  * <p>
- * VertexList is returned by {@link JanusGraphVertexQuery}. Depending on how the query was executed that returned this VertexList,
+ * VertexList is returned by JanusGraphVertexQuery. Depending on how the query was executed that returned this VertexList,
  * getting vertex ids might be significantly faster than retrieving vertex objects.
  */
 public interface VertexList extends Iterable<JanusGraphVertex> {

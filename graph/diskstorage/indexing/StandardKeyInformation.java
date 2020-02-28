@@ -22,7 +22,6 @@ import com.google.common.base.Preconditions;
 import grakn.core.graph.core.Cardinality;
 import grakn.core.graph.core.PropertyKey;
 import grakn.core.graph.core.schema.Parameter;
-import grakn.core.graph.diskstorage.indexing.KeyInformation;
 
 
 public class StandardKeyInformation implements KeyInformation {

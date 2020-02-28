@@ -38,7 +38,7 @@ import java.util.stream.Stream;
 
 /**
  * Wraps the transaction handle of an index and buffers all mutations against an index for efficiency.
- * Also acts as a proxy to the {@link IndexProvider} methods.
+ * Also acts as a proxy to the IndexProvider methods.
  */
 
 public class IndexTransaction implements LoggableTransaction {
@@ -100,7 +100,7 @@ public class IndexTransaction implements LoggableTransaction {
     }
 
     /**
-     * @deprecated use {@link #queryStream(IndexQuery query)} instead.
+     * @deprecated use #queryStream(IndexQuery query) instead.
      */
     @Deprecated
     public List<String> query(IndexQuery query) throws BackendException {
@@ -112,7 +112,7 @@ public class IndexTransaction implements LoggableTransaction {
     }
 
     /**
-     * @deprecated use {@link #queryStream(RawQuery query)} instead.
+     * @deprecated use #queryStream(RawQuery query) instead.
      */
     @Deprecated
     public Iterable<RawQuery.Result<String>> query(RawQuery query) throws BackendException {

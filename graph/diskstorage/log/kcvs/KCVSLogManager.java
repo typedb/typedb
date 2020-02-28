@@ -23,11 +23,9 @@ import com.google.common.collect.ImmutableMap;
 import grakn.core.graph.diskstorage.BackendException;
 import grakn.core.graph.diskstorage.StoreMetaData;
 import grakn.core.graph.diskstorage.configuration.Configuration;
-import grakn.core.graph.diskstorage.keycolumnvalue.KeyColumnValueStore;
 import grakn.core.graph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
 import grakn.core.graph.diskstorage.keycolumnvalue.StoreFeatures;
 import grakn.core.graph.diskstorage.keycolumnvalue.ttl.TTLKCVSManager;
-import grakn.core.graph.diskstorage.log.Log;
 import grakn.core.graph.diskstorage.log.LogManager;
 import grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration;
 import grakn.core.graph.graphdb.database.idassigner.placement.PartitionIDRange;
@@ -51,8 +49,8 @@ import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.
 
 
 /**
- * Implementation of {@link LogManager} against an arbitrary {@link KeyColumnValueStoreManager}. Issues {@link Log} instances
- * which wrap around a {@link KeyColumnValueStore}.
+ * Implementation of LogManager against an arbitrary KeyColumnValueStoreManager. Issues Log instances
+ * which wrap around a KeyColumnValueStore.
  */
 public class KCVSLogManager implements LogManager {
 
@@ -60,7 +58,7 @@ public class KCVSLogManager implements LogManager {
 
     /**
      * If LOG_MAX_PARTITIONS isn't set explicitly, the number of partitions is derived by taking the configured
-     * {@link GraphDatabaseConfiguration#CLUSTER_MAX_PARTITIONS} and dividing
+     * GraphDatabaseConfiguration#CLUSTER_MAX_PARTITIONS and dividing
      * the number by this constant.
      */
     private static final int CLUSTER_SIZE_DIVIDER = 8;
@@ -70,11 +68,11 @@ public class KCVSLogManager implements LogManager {
      */
     private final Configuration configuration;
     /**
-     * Store Manager against which to open the {@link KeyColumnValueStore}s to wrap the {@link KCVSLog} around.
+     * Store Manager against which to open the KeyColumnValueStores to wrap the KCVSLog around.
      */
     final KeyColumnValueStoreManager storeManager;
     /**
-     * Id which uniquely identifies this instance. Also see {@link GraphDatabaseConfiguration#UNIQUE_INSTANCE_ID}.
+     * Id which uniquely identifies this instance. Also see GraphDatabaseConfiguration#UNIQUE_INSTANCE_ID.
      */
     final String senderId;
 
@@ -218,7 +216,7 @@ public class KCVSLogManager implements LogManager {
     }
 
     /**
-     * Must be triggered by a particular {@link KCVSLog} when it is closed so that this LOG can be removed from the list
+     * Must be triggered by a particular KCVSLog when it is closed so that this LOG can be removed from the list
      * of open logs.
      */
     synchronized void closedLog(KCVSLog log) {

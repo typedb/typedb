@@ -32,7 +32,7 @@ public interface Entity extends Thing {
 
     /**
      * @return The EntityType of this Entity
-     * @see EntityType
+     * see EntityType
      */
     @Override
     EntityType type();

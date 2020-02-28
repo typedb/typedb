@@ -18,12 +18,11 @@
 
 package grakn.core.graph.graphdb.types.vertices;
 
-import org.apache.tinkerpop.gremlin.structure.Direction;
 import grakn.core.graph.core.Cardinality;
 import grakn.core.graph.core.PropertyKey;
 import grakn.core.graph.graphdb.transaction.StandardJanusGraphTx;
 import grakn.core.graph.graphdb.types.TypeDefinitionCategory;
-import grakn.core.graph.graphdb.types.vertices.RelationTypeVertex;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 
 public class PropertyKeyVertex extends RelationTypeVertex implements PropertyKey {
 

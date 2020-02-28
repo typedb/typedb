@@ -25,9 +25,6 @@ import grakn.core.graph.core.EdgeLabel;
 import grakn.core.graph.core.PropertyKey;
 import grakn.core.graph.graphdb.internal.ElementLifeCycle;
 import grakn.core.graph.graphdb.internal.InternalVertex;
-import grakn.core.graph.graphdb.relations.AbstractEdge;
-import grakn.core.graph.graphdb.relations.ReassignableRelation;
-import grakn.core.graph.graphdb.relations.StandardRelation;
 import grakn.core.graph.graphdb.types.system.ImplicitKey;
 
 import java.util.Collections;

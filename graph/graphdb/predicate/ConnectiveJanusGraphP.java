@@ -18,11 +18,8 @@
 
 package grakn.core.graph.graphdb.predicate;
 
-import org.apache.tinkerpop.gremlin.process.traversal.P;
-import grakn.core.graph.graphdb.predicate.AndJanusPredicate;
-import grakn.core.graph.graphdb.predicate.ConnectiveJanusPredicate;
-import grakn.core.graph.graphdb.predicate.OrJanusPredicate;
 import grakn.core.graph.graphdb.query.JanusGraphPredicate;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
 
 import java.util.ArrayList;
 import java.util.Iterator;

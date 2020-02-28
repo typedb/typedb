@@ -21,9 +21,9 @@ package grakn.core.graql.reasoner.query;
 
 import com.google.common.collect.Iterables;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.graql.reasoner.ReasoningContext;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.PropertyAtomicFactory;
-import grakn.core.graql.reasoner.ReasoningContext;
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.executor.ExecutorFactory;
 import grakn.core.kb.graql.planning.gremlin.TraversalPlanFactory;

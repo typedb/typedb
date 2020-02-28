@@ -28,7 +28,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Wraps a {@link KeyColumnValueStore} as a proxy as a basis for
+ * Wraps a KeyColumnValueStore as a proxy as a basis for
  * other wrappers
  */
 public class KCVSProxy implements KeyColumnValueStore {

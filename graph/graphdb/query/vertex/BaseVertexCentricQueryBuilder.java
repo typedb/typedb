@@ -45,7 +45,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Builds a {@link BaseVertexQuery}, optimizes the query and compiles the result into a {@link BaseVertexCentricQuery} which
+ * Builds a BaseVertexQuery, optimizes the query and compiles the result into a BaseVertexCentricQuery which
  * is then executed by one of the extending classes.
  */
 public abstract class BaseVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q>> implements BaseVertexQuery<Q> {
@@ -231,7 +231,7 @@ public abstract class BaseVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q>
     }
 
     /**
-     * Whether this query is asking for the value of an {@link ImplicitKey}.
+     * Whether this query is asking for the value of an ImplicitKey.
      * <p>
      * Handling of implicit keys is completely distinct from "normal" query execution and handled extra
      * for completeness reasons.

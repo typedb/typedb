@@ -30,7 +30,7 @@ import java.util.List;
 /**
  * An index mutation contains the field updates (additions and deletions) for a particular index entry.
  * In addition it maintains two boolean values: 1) isNew - the entry is newly created, 2) isDeleted -
- * the entire entry is being deleted. These can be used by an {@link IndexProvider} to execute updates more
+ * the entire entry is being deleted. These can be used by an IndexProvider to execute updates more
  * efficiently.
  */
 

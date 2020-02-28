@@ -24,7 +24,6 @@ import com.google.common.base.Preconditions;
 import grakn.common.util.Pair;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
-import grakn.core.graql.reasoner.query.ReasonerQueryEquivalence;
 import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.kb.graql.executor.ExecutorFactory;
 import grakn.core.kb.graql.planning.gremlin.TraversalPlanFactory;
@@ -41,7 +40,7 @@ import java.util.stream.Stream;
 
 /**
  *
- * Implementation of SemanticCache using {@link ReasonerQueryEquivalence#StructuralEquivalence}
+ * Implementation of SemanticCache using ReasonerQueryEquivalence#StructuralEquivalence
  * for query equivalence checks and IndexedAnswerSets for storing query answer sets.
  *
  */

@@ -106,7 +106,7 @@ public abstract class BackgroundThread extends Thread {
      * The action taken by this background thread when the wait condition is met.
      * This action should execute swiftly to ensure that this thread can be closed in a reasonable amount of time.
      * <p>
-     * This action will not be interrupted by {@link #close(Duration)}.
+     * This action will not be interrupted by #close(Duration).
      */
     protected abstract void action();
 

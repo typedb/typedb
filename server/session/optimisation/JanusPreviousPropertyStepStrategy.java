@@ -105,7 +105,7 @@ public class JanusPreviousPropertyStepStrategy extends AbstractTraversalStrategy
     }
 
     /**
-     * Replace the {@code graphStep} and {@code filterStep} with a new {@link JanusPreviousPropertyStep} in the given
+     * Replace the {@code graphStep} and {@code filterStep} with a new JanusPreviousPropertyStep in the given
      * {@code traversal}.
      */
     private void executeStrategy(

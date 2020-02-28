@@ -19,8 +19,8 @@
 package grakn.core.graph.graphdb.types;
 
 import com.google.common.base.Preconditions;
-import org.apache.commons.lang.StringUtils;
 import grakn.core.graph.core.schema.Parameter;
+import org.apache.commons.lang.StringUtils;
 
 import java.util.Arrays;
 import java.util.List;

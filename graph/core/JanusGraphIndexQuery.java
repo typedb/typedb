@@ -81,7 +81,7 @@ public interface JanusGraphIndexQuery {
     /**
      * Returns all vertices that match the query in the indexing backend.
      *
-     * @deprecated use {@link #vertexStream()} instead.
+     * @deprecated use #vertexStream() instead.
      */
     @Deprecated
     Iterable<Result<JanusGraphVertex>> vertices();
@@ -94,7 +94,7 @@ public interface JanusGraphIndexQuery {
     /**
      * Returns all edges that match the query in the indexing backend.
      *
-     * @deprecated use {@link #edgeStream()} instead.
+     * @deprecated use #edgeStream() instead.
      */
     @Deprecated
     Iterable<Result<JanusGraphEdge>> edges();
@@ -107,7 +107,7 @@ public interface JanusGraphIndexQuery {
     /**
      * Returns all properties that match the query in the indexing backend.
      *
-     * @deprecated use {@link #propertyStream()} instead.
+     * @deprecated use #propertyStream() instead.
      */
     @Deprecated
     Iterable<Result<JanusGraphVertexProperty>> properties();

@@ -113,7 +113,7 @@ import static io.vavr.API.Case;
 import static io.vavr.API.Match;
 
 /**
- * This class creates see {@link CQLKeyColumnValueStore CQLKeyColumnValueStores} and handles Cassandra-backed allocation of vertex IDs for JanusGraph (when so
+ * This class creates see CQLKeyColumnValueStore CQLKeyColumnValueStores and handles Cassandra-backed allocation of vertex IDs for JanusGraph (when so
  * configured).
  */
 public class CQLStoreManager extends AbstractStoreManager implements KeyColumnValueStoreManager {
@@ -133,7 +133,7 @@ public class CQLStoreManager extends AbstractStoreManager implements KeyColumnVa
     private final Semaphore semaphore;
 
     /**
-     * Constructor for the {@link CQLStoreManager} given a JanusGraph {@link Configuration}.
+     * Constructor for the CQLStoreManager given a JanusGraph Configuration.
      */
     public CQLStoreManager(Configuration configuration) throws PermanentBackendException {
         super(configuration);

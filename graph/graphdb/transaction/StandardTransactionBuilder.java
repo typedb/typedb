@@ -19,7 +19,6 @@
 package grakn.core.graph.graphdb.transaction;
 
 import com.google.common.base.Preconditions;
-import grakn.core.graph.core.JanusGraphTransaction;
 import grakn.core.graph.core.TransactionBuilder;
 import grakn.core.graph.core.schema.DefaultSchemaMaker;
 import grakn.core.graph.diskstorage.BaseTransactionConfig;
@@ -33,7 +32,7 @@ import grakn.core.graph.graphdb.database.StandardJanusGraph;
 import java.time.Instant;
 
 /**
- * Used to configure a {@link JanusGraphTransaction}.
+ * Used to configure a JanusGraphTransaction.
  */
 public class StandardTransactionBuilder implements TransactionConfiguration, TransactionBuilder {
 

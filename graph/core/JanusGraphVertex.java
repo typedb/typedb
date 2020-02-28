@@ -24,13 +24,13 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 
 /**
- * JanusGraphVertex is the basic unit of a {@link JanusGraph}.
- * It extends the functionality provided by Blueprint's {@link Vertex} by helper and convenience methods.
+ * JanusGraphVertex is the basic unit of a JanusGraph.
+ * It extends the functionality provided by Blueprint's Vertex by helper and convenience methods.
  * <p>
  * Vertices have incident edges and properties. Edge connect the vertex to other vertices. Properties attach key-value
  * pairs to this vertex to define it.
  * <p>
- * Like {@link JanusGraphRelation} a vertex has a vertex label.
+ * Like JanusGraphRelation a vertex has a vertex label.
  */
 public interface JanusGraphVertex extends JanusGraphElement, Vertex {
 
@@ -42,11 +42,11 @@ public interface JanusGraphVertex extends JanusGraphElement, Vertex {
     /**
      * Creates a new edge incident on this vertex.
      * <p>
-     * Creates and returns a new {@link JanusGraphEdge} of the specified label with this vertex being the outgoing vertex
+     * Creates and returns a new JanusGraphEdge of the specified label with this vertex being the outgoing vertex
      * and the given vertex being the incoming vertex.
      * <br>
      * Automatically creates the edge label if it does not exist and automatic creation of types is enabled. Otherwise,
-     * this method with throw an {@link IllegalArgumentException}.
+     * this method with throw an IllegalArgumentException.
      *
      * @param label  label of the edge to be created
      * @param vertex incoming vertex of the edge to be created
@@ -58,11 +58,11 @@ public interface JanusGraphVertex extends JanusGraphElement, Vertex {
     /**
      * Creates a new property for this vertex and given key with the specified value.
      * <p>
-     * Creates and returns a new {@link JanusGraphVertexProperty} for the given key on this vertex with the specified
+     * Creates and returns a new JanusGraphVertexProperty for the given key on this vertex with the specified
      * object being the value.
      * <br>
      * Automatically creates the property key if it does not exist and automatic creation of types is enabled. Otherwise,
-     * this method with throw an {@link IllegalArgumentException}.
+     * this method with throw an IllegalArgumentException.
      *
      * @param key   key of the property to be created
      * @param value value of the property to be created
@@ -102,12 +102,12 @@ public interface JanusGraphVertex extends JanusGraphElement, Vertex {
     // Incident JanusGraphRelation Access methods
 
     /**
-     * Starts a new {@link JanusGraphVertexQuery} for this vertex.
+     * Starts a new JanusGraphVertexQuery for this vertex.
      * <p>
-     * Initializes and returns a new {@link JanusGraphVertexQuery} based on this vertex.
+     * Initializes and returns a new JanusGraphVertexQuery based on this vertex.
      *
      * @return New JanusGraphQuery for this vertex
-     * @see JanusGraphVertexQuery
+     * see JanusGraphVertexQuery
      */
     JanusGraphVertexQuery<? extends JanusGraphVertexQuery> query();
 

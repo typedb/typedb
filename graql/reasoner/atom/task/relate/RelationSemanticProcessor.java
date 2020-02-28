@@ -50,6 +50,7 @@ import grakn.core.kb.graql.reasoner.unifier.Unifier;
 import graql.lang.property.RelationProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
+
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;

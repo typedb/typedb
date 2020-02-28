@@ -18,13 +18,12 @@
 
 package grakn.core.graph.core;
 
-import grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration;
 import grakn.core.graph.graphdb.transaction.StandardJanusGraphTx;
 
 import java.time.Instant;
 
 /**
- * Constructor returned by {@link JanusGraph#buildTransaction()} to build a new transaction.
+ * Constructor returned by JanusGraph#buildTransaction() to build a new transaction.
  * The TransactionBuilder allows certain aspects of the resulting transaction to be configured up-front.
  */
 public interface TransactionBuilder {
