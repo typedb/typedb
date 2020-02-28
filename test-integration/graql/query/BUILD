@@ -190,14 +190,12 @@ java_test(
     test_class = "grakn.core.graql.query.QueryPlannerIT",
     deps = [
         "//common",
-        "//concept/impl",
         "//dependencies/maven/artifacts/com/google/guava",
         "//graql/planning",
         "//kb/concept/api",
         "//kb/graql/planning",
         "//kb/server",
         "//test-integration/rule:grakn-test-server",
-        "//test-integration/util:concept-downcasting",
         "@graknlabs_graql//java:graql",
     ],
 )

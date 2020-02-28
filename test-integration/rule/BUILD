@@ -34,7 +34,6 @@ java_library(
         "//kb/keyspace",
         "//kb/graql/planning",
         "//kb/graql/executor",
-        "//kb/graql/reasoner",
         "//concept/manager",
         "//concept/structure",
         "//graql/reasoner",
