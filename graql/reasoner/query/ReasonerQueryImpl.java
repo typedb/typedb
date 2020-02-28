@@ -172,7 +172,7 @@ public class ReasonerQueryImpl extends ResolvableQuery {
     @Override
     public ReasonerQueryImpl withSubstitution(ConceptMap sub){
         return new ReasonerQueryImpl(Sets.union(this.getAtoms(),
-                AtomicUtil.answerToPredicates(sub,this, context().conceptManager())),
+                AtomicUtil.answerToPredicates(sub,this)),
                 executorFactory,
                 traversalPlanFactory,
                 context());
@@ -209,7 +209,7 @@ public class ReasonerQueryImpl extends ResolvableQuery {
     public ReasonerQueryImpl transformIds(Map<Variable, ConceptId> transform){
         Set<Atomic> atoms = this.getAtoms(IdPredicate.class).map(p -> {
             ConceptId conceptId = transform.get(p.getVarName());
-            if (conceptId != null) return IdPredicate.create(p.getVarName(), conceptId, p.getParentQuery(), context().conceptManager());
+            if (conceptId != null) return IdPredicate.create(p.getVarName(), conceptId, p.getParentQuery());
             return p;
         }).collect(Collectors.toSet());
         getAtoms().stream().filter(at -> !(at instanceof IdPredicate)).forEach(atoms::add);
@@ -243,7 +243,11 @@ public class ReasonerQueryImpl extends ResolvableQuery {
     }
 
     @Override
-    public void checkValid() { getAtoms().forEach(Atomic::checkValid);}
+    public void checkValid() {
+        getAtoms().forEach(Atomic::checkValid);
+        //this creates the corresponding substitution and checks for id validity
+        ConceptMap substitution = getSubstitution();
+    }
 
     @Override
     public Conjunction<Pattern> getPattern() {
@@ -343,7 +347,7 @@ public class ReasonerQueryImpl extends ResolvableQuery {
         ConceptManager conceptManager = context().conceptManager();
         return Stream.concat(
                 getAtoms(IdPredicate.class),
-                AtomicUtil.answerToPredicates(sub, this, conceptManager).stream()
+                AtomicUtil.answerToPredicates(sub, this).stream()
                 .map(IdPredicate.class::cast))
                 .filter(p -> !typedVars.contains(p.getVarName()))
                 .map(p -> new Pair<>(p, conceptManager.<Concept>getConcept(p.getPredicate())))
@@ -426,7 +430,7 @@ public class ReasonerQueryImpl extends ResolvableQuery {
      */
     public ResolutionPlan resolutionPlan(){
         if (resolutionPlan == null){
-            resolutionPlan = new ResolutionPlan(context().conceptManager(), traversalPlanFactory, this);
+            resolutionPlan = new ResolutionPlan(this, traversalPlanFactory);
         }
         return resolutionPlan;
     }
@@ -556,7 +560,7 @@ public class ReasonerQueryImpl extends ResolvableQuery {
             queryMap.put(query, reasonerQueryFactory.atomic(conjunction));
             query.getVarNames().stream()
                     .filter(v -> subs.stream().noneMatch(s -> s.getVarName().equals(v)))
-                    .map(v -> IdPredicate.create(v, ConceptId.of(PLACEHOLDER_ID), query, conceptManager))
+                    .map(v -> IdPredicate.create(v, ConceptId.of(PLACEHOLDER_ID), query))
                     .forEach(subs::add);
         }
         return queryMap.entrySet().stream()

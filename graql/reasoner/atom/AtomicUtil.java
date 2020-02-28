@@ -21,14 +21,12 @@ package grakn.core.graql.reasoner.atom;
 
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
-import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import graql.lang.statement.Variable;
-
-import javax.annotation.CheckReturnValue;
 import java.util.Set;
 import java.util.stream.Collectors;
+import javax.annotation.CheckReturnValue;
 
 /**
  * Helpers for handling and converting to and from Atoms
@@ -39,11 +37,11 @@ public class AtomicUtil {
      * @return (partial) set of predicates corresponding to this answer
      */
     @CheckReturnValue
-    public static Set<Atomic> answerToPredicates(ConceptMap answer, ReasonerQuery parent, ConceptManager conceptManager) {
+    public static Set<Atomic> answerToPredicates(ConceptMap answer, ReasonerQuery parent) {
         Set<Variable> varNames = parent.getVarNames();
         return answer.map().entrySet().stream()
                 .filter(e -> varNames.contains(e.getKey()))
-                .map(e -> IdPredicate.create(e.getKey(), e.getValue().id(), parent, conceptManager))
+                .map(e -> IdPredicate.create(e.getKey(), e.getValue().id(), parent))
                 .collect(Collectors.toSet());
     }
 

@@ -22,6 +22,7 @@ package grakn.core.graql.reasoner.atom.task.validate;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
 import grakn.core.common.exception.ErrorMessage;
+import grakn.core.common.util.Streams;
 import grakn.core.core.Schema;
 import grakn.core.graql.reasoner.atom.binary.RelationAtom;
 import grakn.core.kb.concept.api.Label;
@@ -30,6 +31,8 @@ import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.concept.manager.ConceptManager;
+import grakn.core.kb.graql.exception.GraqlSemanticException;
+import graql.lang.property.RelationProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 import java.util.Collection;
@@ -40,15 +43,27 @@ import java.util.Set;
 public class RelationAtomValidator implements AtomValidator<RelationAtom> {
 
     private final ConceptManager conceptManager;
+    private final BasicAtomValidator basicValidator;
 
     public RelationAtomValidator(ConceptManager conceptManager){
         this.conceptManager = conceptManager;
+        this.basicValidator = new BasicAtomValidator();
+    }
+
+    @Override
+    public void checkValid(RelationAtom atom) {
+        basicValidator.checkValid(atom);
+        SchemaConcept type = atom.getSchemaConcept();
+        if (type != null && !type.isRelationType()) {
+            throw GraqlSemanticException.relationWithNonRelationType(type.label());
+        }
+        checkPattern(atom);
     }
 
     @Override
     public Set<String> validateAsRuleHead(RelationAtom atom, Rule rule) {
         //can form a rule head if type is specified, type is not implicit and all relation players are insertable
-        return Sets.union(new BasicAtomValidator().validateAsRuleHead(atom, rule), validateRelationPlayers(atom, rule));
+        return Sets.union(basicValidator.validateAsRuleHead(atom, rule), validateRelationPlayers(atom, rule));
     }
 
     @Override
@@ -81,6 +96,20 @@ public class RelationAtomValidator implements AtomValidator<RelationAtom> {
             }
         }
         return errors;
+    }
+
+    private void checkPattern(RelationAtom atom) {
+        atom.getPattern().getProperties(RelationProperty.class)
+                .flatMap(p -> p.relationPlayers().stream())
+                .map(RelationProperty.RolePlayer::getRole).flatMap(Streams::optionalToStream)
+                .map(Statement::getType).flatMap(Streams::optionalToStream)
+                .map(Label::of)
+                .forEach(roleId -> {
+                    SchemaConcept schemaConcept = conceptManager.getSchemaConcept(roleId);
+                    if (schemaConcept == null || !schemaConcept.isRole()) {
+                        throw GraqlSemanticException.invalidRoleLabel(roleId);
+                    }
+                });
     }
 
     private Set<String> validateRelationPlayers(RelationAtom atom, Rule rule) {

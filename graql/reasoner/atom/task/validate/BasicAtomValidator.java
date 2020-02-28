@@ -25,6 +25,7 @@ import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.SchemaConcept;
+import grakn.core.kb.graql.exception.GraqlSemanticException;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
 import graql.lang.statement.Variable;
 import java.util.HashSet;
@@ -33,6 +34,14 @@ import java.util.Set;
 import static java.util.stream.Collectors.toSet;
 
 public class BasicAtomValidator implements AtomValidator<Atom> {
+
+    @Override
+    public void checkValid(Atom atom) {
+        SchemaConcept type = atom.getSchemaConcept();
+        if (type != null && !type.isType()) {
+            throw GraqlSemanticException.cannotGetInstancesOfNonType(type.label());
+        }
+    }
 
     @Override
     public Set<String> validateAsRuleHead(Atom atom, Rule rule) {

@@ -28,6 +28,12 @@ import javax.annotation.CheckReturnValue;
 public interface AtomValidator<T extends Atom> {
 
     /**
+     *
+     * @param atom
+     */
+    void checkValid(T atom);
+
+    /**
      * Validates this atom as a potential rule head and returns error messages highlighting possible problems.
      * @return set of error messages indicating ontological inconsistencies if the provided atom was to form a rule head
      */
