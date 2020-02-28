@@ -101,7 +101,7 @@ public class AttributeAtom extends Binary{
         this.relationVariable = relationVariable;
         this.attributeVariable = attributeVariable;
         this.multiPredicate = multiPredicate;
-        this.semanticProcessor = new AttributeSemanticProcessor();
+        this.semanticProcessor = new AttributeSemanticProcessor(ctx.conceptManager());
         this.validator = new AttributeAtomValidator(ctx.ruleCache());
     }
 
@@ -267,15 +267,6 @@ public class AttributeAtom extends Binary{
     }
 
     @Override
-    public void checkValid(){
-        super.checkValid();
-        SchemaConcept type = getSchemaConcept();
-        if (type != null && !type.isAttributeType()) {
-            throw GraqlSemanticException.attributeWithNonAttributeType(type.label());
-        }
-    }
-
-    @Override
     protected Pattern createCombinedPattern(){
         Set<Statement> vars = getMultiPredicate().stream()
                 .map(Atomic::getPattern)
@@ -317,6 +308,9 @@ public class AttributeAtom extends Binary{
 
     @Override
     public boolean requiresMaterialisation(){ return true;}
+
+    @Override
+    public void checkValid(){ validator.checkValid(this); }
 
     @Override
     public Set<String> validateAsRuleHead(Rule rule){

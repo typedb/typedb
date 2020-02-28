@@ -28,6 +28,7 @@ import grakn.core.graql.reasoner.unifier.UnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Type;
+import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
 import graql.lang.statement.Variable;
@@ -35,6 +36,13 @@ import java.util.Collections;
 import java.util.Set;
 
 public class BinarySemanticProcessor implements SemanticProcessor<Binary> {
+
+    private final ConceptManager conceptManager;
+    private final BasicSemanticProcessor basicSemanticProcessor = new BasicSemanticProcessor();
+
+    public BinarySemanticProcessor(ConceptManager conceptManager){
+        this.conceptManager = conceptManager;
+    }
 
     @Override
     public Unifier getUnifier(Binary childAtom, Atom parentAtom, UnifierType unifierType) {
@@ -69,17 +77,17 @@ public class BinarySemanticProcessor implements SemanticProcessor<Binary> {
         }
 
         UnifierImpl unifier = new UnifierImpl(varMappings);
-        return BasicSemanticProcessor.isPredicateCompatible(childAtom, parentAtom, unifier, unifierType)?
+        return basicSemanticProcessor.isPredicateCompatible(childAtom, parentAtom, unifier, unifierType, conceptManager)?
                 unifier : UnifierImpl.nonExistent();
     }
 
     @Override
     public MultiUnifier getMultiUnifier(Binary childAtom, Atom parentAtom, UnifierType unifierType) {
-        return new BasicSemanticProcessor().getMultiUnifier(childAtom, parentAtom, unifierType);
+        return basicSemanticProcessor.getMultiUnifier(childAtom, parentAtom, unifierType);
     }
 
     @Override
     public SemanticDifference computeSemanticDifference(Binary parentAtom, Atom childAtom, Unifier unifier) {
-        return new BasicSemanticProcessor().computeSemanticDifference(parentAtom, childAtom, unifier);
+        return basicSemanticProcessor.computeSemanticDifference(parentAtom, childAtom, unifier);
     }
 }

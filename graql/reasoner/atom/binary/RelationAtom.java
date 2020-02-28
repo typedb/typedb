@@ -16,6 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
  */
+
 package grakn.core.graql.reasoner.atom.binary;
 
 import com.google.common.collect.HashMultimap;
@@ -50,7 +51,6 @@ import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.concept.manager.ConceptManager;
-import grakn.core.kb.graql.exception.GraqlSemanticException;
 import grakn.core.kb.graql.reasoner.ReasonerCheckedException;
 import grakn.core.kb.graql.reasoner.ReasonerException;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
@@ -188,31 +188,6 @@ public class RelationAtom extends IsaAtomBase {
     @Override
     public Class<? extends VarProperty> getVarPropertyClass() {
         return RelationProperty.class;
-    }
-
-    private void checkPattern() {
-        ConceptManager conceptManager = context().conceptManager();
-        getPattern().getProperties(RelationProperty.class)
-                .flatMap(p -> p.relationPlayers().stream())
-                .map(RelationProperty.RolePlayer::getRole).flatMap(Streams::optionalToStream)
-                .map(Statement::getType).flatMap(Streams::optionalToStream)
-                .map(Label::of)
-                .forEach(roleId -> {
-                    SchemaConcept schemaConcept = conceptManager.getSchemaConcept(roleId);
-                    if (schemaConcept == null || !schemaConcept.isRole()) {
-                        throw GraqlSemanticException.invalidRoleLabel(roleId);
-                    }
-                });
-    }
-
-    @Override
-    public void checkValid() {
-        super.checkValid();
-        SchemaConcept type = getSchemaConcept();
-        if (type != null && !type.isRelationType()) {
-            throw GraqlSemanticException.relationWithNonRelationType(type.label());
-        }
-        checkPattern();
     }
 
     @Override
@@ -458,6 +433,9 @@ public class RelationAtom extends IsaAtomBase {
     public boolean requiresRoleExpansion() {
         return !getRoleVariables().isEmpty();
     }
+
+    @Override
+    public void checkValid() { validator.checkValid(this); }
 
     @Override
     public Set<String> validateAsRuleHead(Rule rule) {

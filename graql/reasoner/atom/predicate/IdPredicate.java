@@ -25,7 +25,6 @@ import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.exception.GraqlSemanticException;
-import grakn.core.kb.graql.reasoner.ReasonerCheckedException;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import graql.lang.Graql;
@@ -38,7 +37,6 @@ import graql.lang.statement.Variable;
  * Predicate implementation specialising it to be an id predicate. Corresponds to IdProperty.
  */
 public class IdPredicate extends Predicate<ConceptId> {
-
 
     private IdPredicate(Variable varName, Statement pattern, ReasonerQuery parentQuery, ConceptId predicate) {
         super(varName, pattern, predicate, parentQuery);
@@ -107,14 +105,6 @@ public class IdPredicate extends Predicate<ConceptId> {
     @Override
     public Atomic copy(ReasonerQuery parent) {
         return create( this, parent);
-    }
-
-    @Override
-    public void checkValid() {
-        ConceptId conceptId = getPredicate();
-        if (conceptManager.getConcept(conceptId) == null) {
-            throw ReasonerCheckedException.idNotFound(conceptId);
-        }
     }
 
     @Override
