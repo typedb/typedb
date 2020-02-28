@@ -26,23 +26,23 @@ import java.util.Set;
 import javax.annotation.CheckReturnValue;
 
 public interface AtomValidator<T extends Atom> {
-
+    
     /**
-     *
-     * @param atom
+     * Validates the provided atom wrt to specific transaction (label and id existence)
+     * @param atom to be validated
      */
     void checkValid(T atom);
 
     /**
      * Validates this atom as a potential rule head and returns error messages highlighting possible problems.
-     * @return set of error messages indicating ontological inconsistencies if the provided atom was to form a rule head
+     * @return error messages indicating found problems with respect to the intended rule semantics or empty if the atom can form a rule head
      */
     @CheckReturnValue
     Set<String> validateAsRuleHead(T atom, Rule rule);
 
     /**
      * Validates this atom as a potential member of a rule body and returns error messages highlighting possible problems.
-     * @return error messages indicating ontological inconsistencies if the provided atom was to be part of a rule body
+     * @return error messages indicating found problems with respect to the intended rule semantics or empty if the atom can be part of a rule body
      */
     @CheckReturnValue
     Set<String> validateAsRuleBody(T atom, Label ruleLabel);
