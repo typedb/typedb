@@ -223,8 +223,9 @@ public class RelationAtom extends IsaAtomBase {
         if (type == null || !type.isImplicit()) {
             throw ReasonerException.illegalAtomConversion(this, AttributeAtom.class);
         }
-        Label explicitLabel = Schema.ImplicitType.explicitLabel(type.label());
         ConceptManager conceptManager = context().conceptManager();
+        Label explicitLabel = Schema.ImplicitType.explicitLabel(type.label());
+
         Role ownerRole = conceptManager.getRole(Schema.ImplicitType.HAS_OWNER.getLabel(explicitLabel).getValue());
         Role valueRole = conceptManager.getRole(Schema.ImplicitType.HAS_VALUE.getLabel(explicitLabel).getValue());
         Multimap<Role, Variable> roleVarMap = getRoleVarMap();
@@ -563,7 +564,7 @@ public class RelationAtom extends IsaAtomBase {
                 .filter(vp -> vp.getType().isPresent())
                 .map(vp -> {
                     String label = vp.getType().orElse(null);
-                    return IdPredicate.create(vp.var(), conceptManager.getRole(label).id(), getParentQuery(), conceptManager);
+                    return IdPredicate.create(vp.var(), conceptManager.getRole(label).id(), getParentQuery());
                 });
     }
 

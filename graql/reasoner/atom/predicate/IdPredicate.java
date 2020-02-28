@@ -39,30 +39,28 @@ import graql.lang.statement.Variable;
  */
 public class IdPredicate extends Predicate<ConceptId> {
 
-    private ConceptManager conceptManager;
 
-    private IdPredicate(Variable varName, Statement pattern, ReasonerQuery parentQuery, ConceptId predicate, ConceptManager conceptManager) {
+    private IdPredicate(Variable varName, Statement pattern, ReasonerQuery parentQuery, ConceptId predicate) {
         super(varName, pattern, predicate, parentQuery);
-        this.conceptManager = conceptManager;
     }
 
-    public static IdPredicate create(Statement pattern, ReasonerQuery parent, ConceptManager conceptManager) {
-        return new IdPredicate(pattern.var(), pattern, parent, extractPredicate(pattern), conceptManager);
+    public static IdPredicate create(Statement pattern, ReasonerQuery parent) {
+        return new IdPredicate(pattern.var(), pattern, parent, extractPredicate(pattern));
     }
 
     public static IdPredicate create(Variable varName, Label label, ReasonerQuery parent, ConceptManager conceptManager) {
-        return create(createIdVar(varName.asReturnedVar(), label, conceptManager), parent, conceptManager);
+        return create(createIdVar(varName.asReturnedVar(), label, conceptManager), parent);
     }
 
-    public static IdPredicate create(Variable varName, ConceptId id, ReasonerQuery parent, ConceptManager conceptManager) {
-        return create(createIdVar(varName.asReturnedVar(), id), parent, conceptManager);
+    public static IdPredicate create(Variable varName, ConceptId id, ReasonerQuery parent) {
+        return create(createIdVar(varName.asReturnedVar(), id), parent);
     }
 
     /**
      * Copy constructor
      */
     private static IdPredicate create(IdPredicate a, ReasonerQuery parent) {
-        return create(a.getPattern(), parent, a.conceptManager);
+        return create(a.getPattern(), parent);
     }
 
     private static ConceptId extractPredicate(Statement var) {
@@ -130,7 +128,7 @@ public class IdPredicate extends Predicate<ConceptId> {
     /**
      * @return corresponding value predicate if transformation exists (id corresponds to an attribute concept)
      */
-    public ValuePredicate toValuePredicate() {
+    public ValuePredicate toValuePredicate(ConceptManager conceptManager) {
         Concept concept = conceptManager.getConcept(this.getPredicate());
         Object value = (concept != null && concept.isAttribute()) ? concept.asAttribute().value() : null;
 
@@ -138,8 +136,7 @@ public class IdPredicate extends Predicate<ConceptId> {
             return ValuePredicate.create(this.getVarName(),
                                          ValueProperty.Operation.Comparison.of(Graql.Token.Comparator.EQV, value),
                                          this.getParentQuery());
-        } else {
-            return null;
         }
+        return null;
     }
 }

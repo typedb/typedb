@@ -202,7 +202,7 @@ public class AttributeAtom extends Binary{
     }
 
     /**
-     * NB: this is somewhat ambiguous cause from {$x has resource $r;} we can extract:
+     * NB: this is somewhat ambiguous case -> from {$x has resource $r;} we can extract:
      * - $r isa owner-type;
      * - $x isa attribute-type;
      * We pick the latter as the type information is available.
