@@ -19,7 +19,7 @@ java_test(
 
 java_test(
     name = "benchmark-big-it",
-    size = "large",
+    size = "enormous",
     srcs = ["BenchmarkBigIT.java"],
     classpath_resources = ["//test-integration/resources:logback-test"],
     data = [
@@ -50,8 +50,8 @@ java_test(
     deps = [
         "//concept/answer",
         "//dependencies/maven/artifacts/com/google/guava",
-        "//kb/server",
         "//kb/concept/api",
+        "//kb/server",
         "//test-integration/graql/reasoner/graph:diagonal-graph",
         "//test-integration/graql/reasoner/graph:linear-transitivity-matrix-graph",
         "//test-integration/graql/reasoner/graph:path-tree-graph",
