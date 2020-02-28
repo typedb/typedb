@@ -21,10 +21,7 @@ package grakn.core.graql.reasoner.atom.predicate;
 
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
-import grakn.core.kb.concept.api.Label;
-import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.manager.ConceptManager;
-import grakn.core.kb.graql.exception.GraqlSemanticException;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import graql.lang.Graql;
@@ -46,10 +43,6 @@ public class IdPredicate extends Predicate<ConceptId> {
         return new IdPredicate(pattern.var(), pattern, parent, extractPredicate(pattern));
     }
 
-    public static IdPredicate create(Variable varName, Label label, ReasonerQuery parent, ConceptManager conceptManager) {
-        return create(createIdVar(varName.asReturnedVar(), label, conceptManager), parent);
-    }
-
     public static IdPredicate create(Variable varName, ConceptId id, ReasonerQuery parent) {
         return create(createIdVar(varName.asReturnedVar(), id), parent);
     }
@@ -67,12 +60,6 @@ public class IdPredicate extends Predicate<ConceptId> {
 
     private static Statement createIdVar(Variable varName, ConceptId typeId) {
         return new Statement(varName).id(typeId.getValue());
-    }
-
-    private static Statement createIdVar(Variable varName, Label label, ConceptManager conceptManager) {
-        SchemaConcept schemaConcept = conceptManager.getSchemaConcept(label);
-        if (schemaConcept == null) throw GraqlSemanticException.labelNotFound(label);
-        return new Statement(varName).id(schemaConcept.id().getValue());
     }
 
     @Override

@@ -152,9 +152,10 @@ public class PropertyAtomicFactory {
 
     private Atomic type(Variable var, TypeProperty property, ReasonerQuery parent) {
         ConceptManager conceptManager = ctx.conceptManager();
-        SchemaConcept schemaConcept = conceptManager.getSchemaConcept(Label.of(property.name()));
-        if (schemaConcept == null) throw GraqlSemanticException.labelNotFound(Label.of(property.name()));
-        return IdPredicate.create(var.asReturnedVar(), Label.of(property.name()), parent, conceptManager);
+        Label typeLabel = Label.of(property.name());
+        SchemaConcept type = conceptManager.getSchemaConcept(typeLabel);
+        if (type == null) throw GraqlSemanticException.labelNotFound(typeLabel);
+        return IdPredicate.create(var.asReturnedVar(), type.id(), parent);
     }
 
     private Atomic when() {
@@ -215,7 +216,10 @@ public class PropertyAtomicFactory {
             Statement isaVar = isaProp.type();
             String label = isaVar.getType().orElse(null);
             if (label != null) {
-                predicate = IdPredicate.create(typeVariable, Label.of(label), parent, conceptManager);
+                SchemaConcept type = conceptManager.getSchemaConcept(Label.of(label));
+                if (type != null) {
+                    predicate = IdPredicate.create(typeVariable, type.id(), parent);
+                }
             } else {
                 typeVariable = isaVar.var();
                 predicate = getUserDefinedIdPredicate(conceptManager, typeVariable, otherStatements, parent);
