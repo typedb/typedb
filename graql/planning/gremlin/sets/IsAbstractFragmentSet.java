@@ -30,7 +30,7 @@ import java.util.Set;
 import static grakn.core.graql.planning.gremlin.fragment.Fragments.isAbstract;
 
 /**
- * @see EquivalentFragmentSets#isAbstract(VarProperty, Variable)
+ * see EquivalentFragmentSets#isAbstract(VarProperty, Variable)
  *
  */
 class IsAbstractFragmentSet extends EquivalentFragmentSetImpl {

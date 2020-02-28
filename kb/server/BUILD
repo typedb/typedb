@@ -35,7 +35,6 @@ java_library(
         "//kb/concept/api",
         "//kb/concept/structure",
         "//kb/keyspace",
-        "//kb/graql/reasoner",
         "//concept/answer",
 
         # this is ONLY used for ConceptManager dependency...

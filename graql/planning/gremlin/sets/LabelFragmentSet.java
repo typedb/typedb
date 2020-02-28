@@ -35,7 +35,7 @@ import java.util.Set;
 import static java.util.stream.Collectors.toSet;
 
 /**
- * @see EquivalentFragmentSets#label(VarProperty, Variable, ImmutableSet)
+ * see EquivalentFragmentSets#label(VarProperty, Variable, ImmutableSet)
  *
  */
 public class LabelFragmentSet extends EquivalentFragmentSetImpl {

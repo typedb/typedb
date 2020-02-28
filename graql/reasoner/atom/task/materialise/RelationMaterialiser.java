@@ -34,6 +34,7 @@ import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.manager.ConceptManager;
 import graql.lang.statement.Variable;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Stream;

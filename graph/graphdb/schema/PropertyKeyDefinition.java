@@ -18,11 +18,10 @@
 
 package grakn.core.graph.graphdb.schema;
 
-import org.apache.tinkerpop.gremlin.structure.Direction;
 import grakn.core.graph.core.Cardinality;
 import grakn.core.graph.core.Multiplicity;
 import grakn.core.graph.core.PropertyKey;
-import grakn.core.graph.graphdb.schema.RelationTypeDefinition;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 
 
 public class PropertyKeyDefinition extends RelationTypeDefinition {

@@ -20,9 +20,9 @@
 package grakn.core.graql.reasoner.query;
 
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.graql.reasoner.ReasoningContext;
 import grakn.core.graql.reasoner.ResolutionIterator;
 import grakn.core.graql.reasoner.atom.Atom;
-import grakn.core.graql.reasoner.ReasoningContext;
 import grakn.core.graql.reasoner.state.AnswerPropagatorState;
 import grakn.core.graql.reasoner.state.ResolutionState;
 import grakn.core.kb.graql.executor.ExecutorFactory;

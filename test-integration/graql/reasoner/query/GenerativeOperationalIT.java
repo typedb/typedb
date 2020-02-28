@@ -36,6 +36,11 @@ import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Test;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -45,10 +50,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
 
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
 import static graql.lang.Graql.and;

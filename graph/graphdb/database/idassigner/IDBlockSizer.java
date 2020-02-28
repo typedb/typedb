@@ -18,10 +18,6 @@
 
 package grakn.core.graph.graphdb.database.idassigner;
 
-import grakn.core.graph.diskstorage.IDAuthority;
-
-import java.time.Duration;
-
 /**
  * The IDBlockSizer specifies the block size for
  * each partition guaranteeing that the same partition will always be assigned the same block size.
@@ -30,7 +26,7 @@ import java.time.Duration;
 public interface IDBlockSizer {
 
     /**
-     * The size of the id block to be returned by calls {@link IDAuthority#getIDBlock(int, int, Duration)}
+     * The size of the id block to be returned by calls IDAuthority#getIDBlock(int, int, Duration)
      * for the given id namespace.
      * In other words, for the returned array of the above mentioned call, it must hold that the difference between the second
      * and first value is equal to the block size returned by this method (for the same partition id).
@@ -38,7 +34,7 @@ public interface IDBlockSizer {
     long getBlockSize(int idNamespace);
 
     /**
-     * Returns the upper bound for any id block returned by {@link IDAuthority#getIDBlock(int, int, Duration)}
+     * Returns the upper bound for any id block returned by IDAuthority#getIDBlock(int, int, Duration)
      * for the given id namespace.
      * In other words, it must hold that the second value of the returned array is smaller than this value for the same partition id.
      */

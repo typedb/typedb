@@ -18,14 +18,12 @@
 
 package grakn.core.graph.graphdb.internal;
 
-import org.apache.tinkerpop.gremlin.structure.Direction;
 import grakn.core.graph.core.Multiplicity;
 import grakn.core.graph.core.RelationType;
 import grakn.core.graph.core.schema.ConsistencyModifier;
 import grakn.core.graph.core.schema.SchemaStatus;
-import grakn.core.graph.graphdb.internal.InternalVertex;
-import grakn.core.graph.graphdb.internal.Order;
 import grakn.core.graph.graphdb.types.IndexType;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 
 /**
  * Internal Type interface adding methods that should only be used by JanusGraph

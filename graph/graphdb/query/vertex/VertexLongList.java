@@ -29,12 +29,12 @@ import java.util.List;
 import java.util.NoSuchElementException;
 
 /**
- * An implementation of {@link VertexListInternal} that stores only the vertex ids
- * and simply wraps an {@link ArrayList} and keeps a boolean flag to remember whether this list is in sort order.
+ * An implementation of VertexListInternal that stores only the vertex ids
+ * and simply wraps an ArrayList and keeps a boolean flag to remember whether this list is in sort order.
  * In addition, we need a transaction reference in order to construct actual vertex references on request.
  * <p>
  * This is a more efficient way to represent a vertex result set but only applies to loaded vertices that have ids.
- * So, compared to {@link VertexArrayList} this is an optimization for the special use case that a vertex is loaded.
+ * So, compared to VertexArrayList this is an optimization for the special use case that a vertex is loaded.
  */
 public class VertexLongList implements VertexListInternal {
 

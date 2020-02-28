@@ -22,13 +22,11 @@ import com.google.common.base.Function;
 import com.google.common.base.Functions;
 import grakn.core.graph.diskstorage.Mutation;
 import grakn.core.graph.diskstorage.StaticBuffer;
-import grakn.core.graph.diskstorage.keycolumnvalue.keyvalue.KeyValueEntry;
-import grakn.core.graph.diskstorage.keycolumnvalue.keyvalue.KeyValueStore;
 
 import javax.annotation.Nullable;
 
 /**
- * {@link Mutation} for {@link KeyValueStore}.
+ * Mutation for KeyValueStore.
  */
 public class KVMutation extends Mutation<KeyValueEntry, StaticBuffer> {
 

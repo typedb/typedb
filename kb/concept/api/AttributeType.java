@@ -157,7 +157,7 @@ public interface AttributeType<D> extends Type {
      *
      * @param value A value which an Attribute in the graph may be holding
      * @return The Attribute with the provided value and type or null if no such Attribute exists.
-     * @see Attribute
+     * see Attribute
      */
     @CheckReturnValue
     @Nullable

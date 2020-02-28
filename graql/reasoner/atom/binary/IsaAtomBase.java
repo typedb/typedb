@@ -25,6 +25,7 @@ import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
+
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;

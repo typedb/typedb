@@ -20,7 +20,6 @@ package grakn.core.graph.graphdb.types;
 
 import grakn.core.graph.core.PropertyKey;
 import grakn.core.graph.core.schema.JanusGraphSchemaType;
-import grakn.core.graph.graphdb.database.management.ManagementSystem;
 import grakn.core.graph.graphdb.internal.ElementCategory;
 
 
@@ -48,7 +47,7 @@ public interface IndexType {
 
     /**
      * Resets the internal caches used to speed up lookups on this index.
-     * This is needed when the index gets modified in {@link ManagementSystem}.
+     * This is needed when the index gets modified in ManagementSystem.
      */
     void resetCache();
 

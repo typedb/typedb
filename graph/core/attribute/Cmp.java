@@ -19,9 +19,9 @@
 package grakn.core.graph.core.attribute;
 
 import com.google.common.base.Preconditions;
-import org.apache.commons.lang.ArrayUtils;
 import grakn.core.graph.graphdb.database.serialize.AttributeUtil;
 import grakn.core.graph.graphdb.query.JanusGraphPredicate;
+import org.apache.commons.lang.ArrayUtils;
 
 /**
  * Basic comparison relations for comparable (i.e. linearly ordered) objects.

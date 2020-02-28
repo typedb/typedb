@@ -34,11 +34,9 @@ import grakn.core.graph.diskstorage.configuration.Configuration;
 import grakn.core.graph.diskstorage.keycolumnvalue.KCVMutation;
 import grakn.core.graph.diskstorage.keycolumnvalue.KCVSUtil;
 import grakn.core.graph.diskstorage.keycolumnvalue.KeyColumnValueStore;
-import grakn.core.graph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
 import grakn.core.graph.diskstorage.keycolumnvalue.KeySliceQuery;
 import grakn.core.graph.diskstorage.keycolumnvalue.StoreTransaction;
 import grakn.core.graph.diskstorage.log.Log;
-import grakn.core.graph.diskstorage.log.LogManager;
 import grakn.core.graph.diskstorage.log.Message;
 import grakn.core.graph.diskstorage.log.MessageReader;
 import grakn.core.graph.diskstorage.log.ReadMarker;
@@ -50,7 +48,6 @@ import grakn.core.graph.diskstorage.util.StandardBaseTransactionConfig;
 import grakn.core.graph.diskstorage.util.StaticArrayEntry;
 import grakn.core.graph.diskstorage.util.WriteByteBuffer;
 import grakn.core.graph.diskstorage.util.time.TimestampProvider;
-import grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration;
 import grakn.core.graph.graphdb.database.serialize.DataOutput;
 import grakn.core.graph.util.system.BackgroundThread;
 import org.slf4j.Logger;
@@ -85,30 +82,30 @@ import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.TIMESTAMP_PROVIDER;
 
 /**
- * Implementation of {@link Log} wrapped around a {@link KeyColumnValueStore}. Each message is written as a column-value pair ({@link Entry})
+ * Implementation of Log wrapped around a KeyColumnValueStore. Each message is written as a column-value pair (Entry)
  * into a timeslice slot. A timeslice slot is uniquely identified by:
  * <ul>
  * <li>The partition id: On storage backends that are key-ordered, a partition bit width can be configured which configures the number of
  * first bits that comprise the partition id. On unordered storage backends, this is always 0</li>
  * <li>A bucket id: The number of parallel buckets that should be maintained is configured by
- * {@link GraphDatabaseConfiguration#LOG_NUM_BUCKETS}. Messages are written to the buckets
+ * GraphDatabaseConfiguration#LOG_NUM_BUCKETS. Messages are written to the buckets
  * in round-robin fashion and each bucket is identified by a bucket id.
  * Having multiple buckets per timeslice allows for load balancing across multiple keys in the storage backend.</li>
- * <li>The start time of the timeslice: Each time slice is {@link #TIMESLICE_INTERVAL} microseconds long. And all messages that are added between
- * start-time and start-time+{@link #TIMESLICE_INTERVAL} end up in the same timeslice. For high throughput logs that might be more messages
+ * <li>The start time of the timeslice: Each time slice is #TIMESLICE_INTERVAL microseconds long. And all messages that are added between
+ * start-time and start-time+#TIMESLICE_INTERVAL end up in the same timeslice. For high throughput logs that might be more messages
  * than the underlying storage backend can handle per key. In that case, ensure that (2^(partition-bit-width) x (num-buckets) is large enough
  * to distribute the load.</li>
  * </ul>
  * <p>
- * Each message is uniquely identified by its timestamp, sender id (which uniquely identifies a particular instance of {@link KCVSLogManager}), and the
+ * Each message is uniquely identified by its timestamp, sender id (which uniquely identifies a particular instance of KCVSLogManager), and the
  * message id (which is auto-incrementing). These three data points comprise the column of a LOG message. The actual content of the message
  * is written into the value.
  * <p>
- * When {@link MessageReader} are registered, one reader thread per partition id and bucket is created which periodically (as configured) checks for
+ * When MessageReader are registered, one reader thread per partition id and bucket is created which periodically (as configured) checks for
  * new messages in the storage backend and invokes the reader. <br>
- * Read-markers are maintained (for each partition-id &amp; bucket id combination) under a dedicated key in the same {@link KeyColumnValueStoreManager} as the
+ * Read-markers are maintained (for each partition-id &amp; bucket id combination) under a dedicated key in the same KeyColumnValueStoreManager as the
  * LOG messages. The read markers are updated to the current position before each new iteration of reading messages from the LOG. If the system fails
- * while reading a batch of messages, a subsequently restarted LOG reader may therefore read messages twice. Hence, {@link MessageReader} implementations
+ * while reading a batch of messages, a subsequently restarted LOG reader may therefore read messages twice. Hence, MessageReader implementations
  * should exhibit correct behavior for the (rare) circumstance that messages are read twice.
  * <p>
  * Note: All time values in this class are in microseconds. Hence, there are many cases where milliseconds are converted to microseconds.
@@ -177,7 +174,7 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
             Duration.of(2L, ChronoUnit.MICROS);
 
     /**
-     * Associated {@link LogManager}
+     * Associated LogManager
      */
     private final KCVSLogManager manager;
     /**
@@ -518,7 +515,7 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
     /**
      * This background thread only gets started when messages are locally queued for up to a maximum number of microseconds
      * or until the maximum number of local messages is reached.
-     * This thread waits for either event and then triggers {@link #sendMessages(List)} call to persist the messages.
+     * This thread waits for either event and then triggers #sendMessages(List) call to persist the messages.
      */
     private class SendThread extends BackgroundThread {
 
@@ -666,7 +663,7 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
 
     /**
      * Thread which runs to read all messages from a particular partition id and bucket up to the next timeslice
-     * or current timestamp minus the configured read lag time {@link #LOG_READ_LAG_TIME}.
+     * or current timestamp minus the configured read lag time #LOG_READ_LAG_TIME.
      * The read marker is used to initialize the start time to read from. If a read marker is configured, then
      * the read marker time is looked up for initialization.
      */

@@ -22,7 +22,6 @@ import grakn.core.graph.diskstorage.util.RecordIterator;
 import grakn.core.graph.graphdb.database.StandardJanusGraph;
 import grakn.core.graph.graphdb.idmanagement.IDManager;
 import grakn.core.graph.graphdb.internal.InternalVertex;
-import grakn.core.graph.graphdb.transaction.StandardJanusGraphTx;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;

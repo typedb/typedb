@@ -26,7 +26,7 @@ import javax.annotation.Nullable;
 import java.util.function.Predicate;
 
 /**
- * Utility methods for transforming and inspecting {@link Condition}s.
+ * Utility methods for transforming and inspecting Conditions.
  */
 public class ConditionUtil {
 

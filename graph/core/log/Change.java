@@ -21,10 +21,10 @@ package grakn.core.graph.core.log;
 /**
  * Identifies the type of change has undergone.
  * <p>
- * {@link #ADDED} applies to elements that have been added to the graph, {@link #REMOVED} is for removed elements, and
- * {@link #ANY} is used to retrieve all elements that have undergone change.
+ * #ADDED applies to elements that have been added to the graph, #REMOVED is for removed elements, and
+ * #ANY is used to retrieve all elements that have undergone change.
  * <p>
- * {@link #ADDED} and {@link #REMOVED} are considered proper change states.
+ * #ADDED and #REMOVED are considered proper change states.
  *
  */
 public enum Change {

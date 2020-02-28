@@ -20,7 +20,6 @@ package grakn.core.graph.graphdb.types.indextype;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
-import org.apache.tinkerpop.gremlin.structure.Direction;
 import grakn.core.graph.core.Cardinality;
 import grakn.core.graph.core.PropertyKey;
 import grakn.core.graph.core.schema.ConsistencyModifier;
@@ -32,7 +31,7 @@ import grakn.core.graph.graphdb.types.ParameterType;
 import grakn.core.graph.graphdb.types.SchemaSource;
 import grakn.core.graph.graphdb.types.TypeDefinitionCategory;
 import grakn.core.graph.graphdb.types.TypeUtil;
-import grakn.core.graph.graphdb.types.indextype.IndexTypeWrapper;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 
 public class CompositeIndexTypeWrapper extends IndexTypeWrapper implements CompositeIndexType {
 

@@ -23,21 +23,17 @@ import com.google.common.collect.ImmutableList;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import grakn.core.graph.core.EdgeLabel;
-import grakn.core.graph.core.InvalidElementException;
-import grakn.core.graph.core.JanusGraphRelation;
-import grakn.core.graph.core.JanusGraphVertex;
 
 import java.util.Iterator;
 import java.util.List;
 
 /**
- * A JanusGraphEdge connects two {@link JanusGraphVertex}. It extends the functionality provided by Blueprint's {@link Edge} and
- * is a special case of a {@link JanusGraphRelation}.
+ * A JanusGraphEdge connects two JanusGraphVertex. It extends the functionality provided by Blueprint's Edge and
+ * is a special case of a JanusGraphRelation.
  *
- * @see Edge
- * @see JanusGraphRelation
- * @see EdgeLabel
+ * see Edge
+ * see JanusGraphRelation
+ * see EdgeLabel
  */
 public interface JanusGraphEdge extends JanusGraphRelation, Edge {
 

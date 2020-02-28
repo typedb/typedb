@@ -19,10 +19,9 @@
 package grakn.core.graph.graphdb.database.idassigner.placement;
 
 import com.google.common.base.Preconditions;
-import grakn.core.graph.graphdb.database.idassigner.placement.PartitionAssignment;
 
 /**
- * Simple implementation of {@link PartitionAssignment}.
+ * Simple implementation of PartitionAssignment.
  *
  */
 public class SimplePartitionAssignment implements PartitionAssignment {

@@ -31,7 +31,7 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * An external index query executed on an {@link IndexProvider}.
+ * An external index query executed on an IndexProvider.
  * <p>
  * A query is comprised of the store identifier against which the query ought to be executed and a query condition
  * which defines which entries match the query.

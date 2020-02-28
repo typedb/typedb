@@ -20,8 +20,8 @@ package grakn.core.graph.diskstorage;
 
 
 /**
- * An extension to the {@link BaseTransaction} interface that exposes a
- * configuration object of type {@link BaseTransactionConfig} for this particular transaction.
+ * An extension to the BaseTransaction interface that exposes a
+ * configuration object of type BaseTransactionConfig for this particular transaction.
  *
  */
 public interface BaseTransactionConfigurable extends BaseTransaction {

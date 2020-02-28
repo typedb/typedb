@@ -21,9 +21,6 @@ package grakn.core.graph.diskstorage.cql;
 import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.google.common.collect.AbstractIterator;
-import io.vavr.Tuple;
-import io.vavr.Tuple3;
-import io.vavr.collection.Iterator;
 import grakn.core.graph.diskstorage.Entry;
 import grakn.core.graph.diskstorage.StaticBuffer;
 import grakn.core.graph.diskstorage.keycolumnvalue.KeyIterator;
@@ -31,14 +28,17 @@ import grakn.core.graph.diskstorage.keycolumnvalue.SliceQuery;
 import grakn.core.graph.diskstorage.util.RecordIterator;
 import grakn.core.graph.diskstorage.util.StaticArrayBuffer;
 import grakn.core.graph.diskstorage.util.StaticArrayEntry;
+import io.vavr.Tuple;
+import io.vavr.Tuple3;
+import io.vavr.collection.Iterator;
 
 import java.io.IOException;
 
 /**
- * {@link SliceQuery} iterator that handles CQL result sets that may have more
- * data returned in each column than the {@link SliceQuery} has configured as
+ * SliceQuery iterator that handles CQL result sets that may have more
+ * data returned in each column than the SliceQuery has configured as
  * it's limit. I.e. the iterator only returns the number of entries for each Key
- * to the number of Columns specified in the {@link SliceQuery}s limit.
+ * to the number of Columns specified in the SliceQuerys limit.
  */
 class CQLResultSetKeyIterator extends AbstractIterator<StaticBuffer> implements KeyIterator {
 

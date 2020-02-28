@@ -18,10 +18,9 @@
 
 package grakn.core.graph.graphdb.schema;
 
-import org.apache.tinkerpop.gremlin.structure.Direction;
 import grakn.core.graph.core.EdgeLabel;
 import grakn.core.graph.core.Multiplicity;
-import grakn.core.graph.graphdb.schema.RelationTypeDefinition;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 
 
 public class EdgeLabelDefinition extends RelationTypeDefinition {

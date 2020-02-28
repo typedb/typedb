@@ -35,8 +35,8 @@ public enum Order {
     DESC;
 
     /**
-     * Modulates the result of a {@link Comparable#compareTo(Object)} execution for this specific
-     * order, i.e. it negates the result if the order is {@link #DESC}.
+     * Modulates the result of a Comparable#compareTo(Object) execution for this specific
+     * order, i.e. it negates the result if the order is #DESC.
      */
     public int modulateNaturalOrder(int compare) {
         switch (this) {

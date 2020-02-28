@@ -35,6 +35,7 @@ import grakn.core.kb.graql.exception.GraqlSemanticException;
 import graql.lang.property.RelationProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
+
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;

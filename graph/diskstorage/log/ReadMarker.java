@@ -98,7 +98,7 @@ public class ReadMarker {
     }
 
     /**
-     * Like {@link #fromIdentifierOrTime(String id, Instant timestamp)} but uses the current time point
+     * Like #fromIdentifierOrTime(String id, Instant timestamp) but uses the current time point
      * as the starting timestamp if the LOG has no record of the id.
      */
     public static ReadMarker fromIdentifierOrNow(String id) {

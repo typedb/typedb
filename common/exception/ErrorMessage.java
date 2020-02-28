@@ -23,7 +23,7 @@ import javax.annotation.CheckReturnValue;
 /**
  * Enum containing error messages.
  *
- * Each error message contains a single format string, with a method {@link ErrorMessage#getMessage(Object...)} that
+ * Each error message contains a single format string, with a method ErrorMessage#getMessage(Object...) that
  * accepts arguments to be passed to the format string.
  *
  */

@@ -63,7 +63,7 @@ public class SessionImpl implements Session {
     private final TransactionProvider transactionProvider;
 
     /**
-     * Instantiates {@link SessionImpl} specific for internal use (within Grakn Server),
+     * Instantiates SessionImpl specific for internal use (within Grakn Server),
      * using provided Grakn configuration.
      *
      * @param keyspace to which keyspace the session should be bound to

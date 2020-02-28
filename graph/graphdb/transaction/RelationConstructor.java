@@ -29,7 +29,6 @@ import grakn.core.graph.graphdb.internal.InternalVertex;
 import grakn.core.graph.graphdb.relations.CacheEdge;
 import grakn.core.graph.graphdb.relations.CacheVertexProperty;
 import grakn.core.graph.graphdb.relations.RelationCache;
-import grakn.core.graph.graphdb.transaction.StandardJanusGraphTx;
 import grakn.core.graph.graphdb.types.TypeUtil;
 
 import java.util.Iterator;

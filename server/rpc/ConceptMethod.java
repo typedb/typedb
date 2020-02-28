@@ -35,9 +35,9 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 /**
- * Wrapper for describing methods on {@link Concept}s that can be executed over gRPC.
+ * Wrapper for describing methods on Concepts that can be executed over gRPC.
  * This unifies client and server behaviour for each possible method on a concept.
- * This class maps one-to-one with the gRPC message {@link grakn.protocol.session.ConceptProto.Method.Req}.
+ * This class maps one-to-one with the gRPC message grakn.protocol.session.ConceptProto.Method.Req.
  */
 public class ConceptMethod {
 
@@ -239,7 +239,7 @@ public class ConceptMethod {
         }
 
         /**
-         * A utility class to execute methods on {@link grakn.core.kb.concept.api.Concept}
+         * A utility class to execute methods on grakn.core.kb.concept.api.Concept
          */
         private class Concept {
 
@@ -250,7 +250,7 @@ public class ConceptMethod {
         }
 
         /**
-         * A utility class to execute methods on {@link grakn.core.kb.concept.api.SchemaConcept}
+         * A utility class to execute methods on grakn.core.kb.concept.api.SchemaConcept
          */
         private class SchemaConcept {
 
@@ -354,7 +354,7 @@ public class ConceptMethod {
         }
 
         /**
-         * A utility class to execute methods on {@link grakn.core.kb.concept.api.Rule}
+         * A utility class to execute methods on grakn.core.kb.concept.api.Rule
          */
         private class Rule {
 
@@ -386,7 +386,7 @@ public class ConceptMethod {
         }
 
         /**
-         * A utility class to execute methods on {@link grakn.core.kb.concept.api.Role}
+         * A utility class to execute methods on grakn.core.kb.concept.api.Role
          */
         private class Role {
 
@@ -428,7 +428,7 @@ public class ConceptMethod {
         }
 
         /**
-         * A utility class to execute methods on {@link grakn.core.kb.concept.api.Type}
+         * A utility class to execute methods on grakn.core.kb.concept.api.Type
          */
         private class Type {
 
@@ -557,7 +557,7 @@ public class ConceptMethod {
         }
 
         /**
-         * A utility class to execute methods on {@link grakn.core.kb.concept.api.EntityType}
+         * A utility class to execute methods on grakn.core.kb.concept.api.EntityType
          */
         private class EntityType {
 
@@ -573,7 +573,7 @@ public class ConceptMethod {
         }
 
         /**
-         * A utility class to execute methods on {@link grakn.core.kb.concept.api.RelationType}
+         * A utility class to execute methods on grakn.core.kb.concept.api.RelationType
          */
         private class RelationType {
 
@@ -619,7 +619,7 @@ public class ConceptMethod {
         }
 
         /**
-         * A utility class to execute methods on {@link grakn.core.kb.concept.api.AttributeType}
+         * A utility class to execute methods on grakn.core.kb.concept.api.AttributeType
          */
         private class AttributeType {
 
@@ -704,7 +704,7 @@ public class ConceptMethod {
         }
 
         /**
-         * A utility class to execute methods on {@link grakn.core.kb.concept.api.Thing}
+         * A utility class to execute methods on grakn.core.kb.concept.api.Thing
          */
         private class Thing {
 
@@ -828,7 +828,7 @@ public class ConceptMethod {
         }
 
         /**
-         * A utility class to execute methods on {@link grakn.core.kb.concept.api.Relation}
+         * A utility class to execute methods on grakn.core.kb.concept.api.Relation
          */
         private class Relation {
 
@@ -892,7 +892,7 @@ public class ConceptMethod {
         }
 
         /**
-         * A utility class to execute methods on {@link grakn.core.kb.concept.api.Attribute}
+         * A utility class to execute methods on grakn.core.kb.concept.api.Attribute
          */
         private class Attribute {
 

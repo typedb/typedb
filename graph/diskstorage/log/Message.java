@@ -19,12 +19,11 @@
 package grakn.core.graph.diskstorage.log;
 
 import grakn.core.graph.diskstorage.StaticBuffer;
-import grakn.core.graph.diskstorage.log.Log;
 
 import java.time.Instant;
 
 /**
- * Messages which are added to and received from the {@link Log}.
+ * Messages which are added to and received from the Log.
  *
  */
 public interface Message {

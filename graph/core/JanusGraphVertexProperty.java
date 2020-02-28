@@ -20,18 +20,13 @@
 package grakn.core.graph.core;
 
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
-import grakn.core.graph.core.JanusGraphProperty;
-import grakn.core.graph.core.JanusGraphRelation;
-import grakn.core.graph.core.JanusGraphTransaction;
-import grakn.core.graph.core.JanusGraphVertex;
-import grakn.core.graph.core.PropertyKey;
 
 /**
- * JanusGraphProperty is a {@link JanusGraphRelation} connecting a vertex to a value.
- * JanusGraphProperty extends {@link JanusGraphRelation}, with methods for retrieving the property's value and key.
+ * JanusGraphProperty is a JanusGraphRelation connecting a vertex to a value.
+ * JanusGraphProperty extends JanusGraphRelation, with methods for retrieving the property's value and key.
  *
- * @see JanusGraphRelation
- * @see PropertyKey
+ * see JanusGraphRelation
+ * see PropertyKey
  */
 public interface JanusGraphVertexProperty<V> extends JanusGraphRelation, VertexProperty<V>, JanusGraphProperty<V> {
 

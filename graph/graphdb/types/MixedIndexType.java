@@ -19,8 +19,6 @@
 package grakn.core.graph.graphdb.types;
 
 import grakn.core.graph.core.PropertyKey;
-import grakn.core.graph.graphdb.types.IndexType;
-import grakn.core.graph.graphdb.types.ParameterIndexField;
 
 
 public interface MixedIndexType extends IndexType {

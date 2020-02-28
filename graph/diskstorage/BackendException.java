@@ -21,7 +21,7 @@ package grakn.core.graph.diskstorage;
 /**
  * Exception thrown in the storage layer of the graph database.
  * <p>
- * Such exceptions are typically caused by the underlying storage engine and re-thrown as {@link BackendException}.
+ * Such exceptions are typically caused by the underlying storage engine and re-thrown as BackendException.
  */
 public abstract class BackendException extends Exception {
 

@@ -32,13 +32,13 @@ import grakn.core.graph.core.schema.Parameter;
  *
  * <p>
  * <p>
- * {@link IndexRetriever} returns {@link KeyInformation} for a given store and given key. This will be provided to an
- * index when the key is not fixed in the context, e.g. in {@link IndexProvider#mutate(java.util.Map, IndexRetriever, BaseTransaction)}
+ * IndexRetriever returns KeyInformation for a given store and given key. This will be provided to an
+ * index when the key is not fixed in the context, e.g. in IndexProvider#mutate(java.util.Map, IndexRetriever, BaseTransaction)
  *
  * <p>
  * <p>
- * {@link Retriever} returns {@link IndexRetriever} for a given index identified by its name. This is only used
- * internally to pass {@link IndexRetriever}s around.
+ * Retriever returns IndexRetriever for a given index identified by its name. This is only used
+ * internally to pass IndexRetrievers around.
  */
 public interface KeyInformation {
 
@@ -53,7 +53,7 @@ public interface KeyInformation {
     Parameter[] getParameters();
 
     /**
-     * Returns the {@link Cardinality} for this key.
+     * Returns the Cardinality for this key.
      */
     Cardinality getCardinality();
 
@@ -61,7 +61,7 @@ public interface KeyInformation {
     interface StoreRetriever {
 
         /**
-         * Returns the {@link KeyInformation} for a particular key for this store
+         * Returns the KeyInformation for a particular key for this store
          */
         KeyInformation get(String key);
 
@@ -70,12 +70,12 @@ public interface KeyInformation {
     interface IndexRetriever {
 
         /**
-         * Returns the {@link KeyInformation} for a particular key in a given store.
+         * Returns the KeyInformation for a particular key in a given store.
          */
         KeyInformation get(String store, String key);
 
         /**
-         * Returns a {@link StoreRetriever} for the given store on this IndexRetriever
+         * Returns a StoreRetriever for the given store on this IndexRetriever
          */
         StoreRetriever get(String store);
 
@@ -84,7 +84,7 @@ public interface KeyInformation {
     interface Retriever {
 
         /**
-         * Returns the {@link IndexRetriever} for a given index.
+         * Returns the IndexRetriever for a given index.
          */
         IndexRetriever get(String index);
 

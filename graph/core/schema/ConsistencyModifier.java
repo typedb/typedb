@@ -20,10 +20,10 @@ package grakn.core.graph.core.schema;
 
 /**
  * Used to control JanusGraph's consistency behavior on eventually consistent or other non-transactional backend systems.
- * The consistency behavior can be defined for individual {@link JanusGraphSchemaElement}s which then applies to all instances.
+ * The consistency behavior can be defined for individual JanusGraphSchemaElements which then applies to all instances.
  * <p>
- * Consistency modifiers are installed on schema elements via {@link JanusGraphManagement#setConsistency(JanusGraphSchemaElement, ConsistencyModifier)}
- * and can be read using {@link JanusGraphManagement#getConsistency(JanusGraphSchemaElement)}.
+ * Consistency modifiers are installed on schema elements via JanusGraphManagement#setConsistency(JanusGraphSchemaElement, ConsistencyModifier)
+ * and can be read using JanusGraphManagement#getConsistency(JanusGraphSchemaElement).
  */
 public enum ConsistencyModifier {
 

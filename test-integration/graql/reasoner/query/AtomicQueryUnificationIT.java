@@ -39,15 +39,16 @@ import grakn.core.rule.GraknTestStorage;
 import grakn.core.rule.SessionUtil;
 import grakn.core.rule.TestTransactionProvider;
 import graql.lang.statement.Variable;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Test;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
 
 import static grakn.core.graql.reasoner.pattern.QueryPattern.subListExcludingElements;
 import static grakn.core.graql.reasoner.query.QueryTestUtil.conjunction;

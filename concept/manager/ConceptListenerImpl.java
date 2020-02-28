@@ -41,8 +41,8 @@ import grakn.core.kb.concept.structure.Casting;
 import grakn.core.kb.graql.reasoner.cache.QueryCache;
 import grakn.core.kb.graql.reasoner.cache.RuleCache;
 import grakn.core.kb.keyspace.AttributeManager;
-import grakn.core.kb.server.cache.TransactionCache;
 import grakn.core.kb.keyspace.StatisticsDelta;
+import grakn.core.kb.server.cache.TransactionCache;
 
 import java.util.List;
 import java.util.function.Supplier;

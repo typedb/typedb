@@ -21,8 +21,6 @@ package grakn.core.graph.graphdb.tinkerpop.optimize;
 import com.google.common.collect.Lists;
 import grakn.core.graph.core.JanusGraphTransaction;
 import grakn.core.graph.core.JanusGraphVertex;
-import grakn.core.graph.graphdb.database.StandardJanusGraph;
-import grakn.core.graph.graphdb.transaction.StandardJanusGraphTx;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;

@@ -49,7 +49,7 @@ import static java.util.stream.Collectors.toSet;
  * and subsequently reusing their answer sets.
  *
  * Relies on the following concepts:
- * - Query Subsumption {@link ReasonerAtomicQuery#isSubsumedBy(ReasonerAtomicQuery)} )}
+ * - Query Subsumption ReasonerAtomicQuery#isSubsumedBy(ReasonerAtomicQuery) )}
  * Subsumption relation between a query C (child) and a provided query P (parent) holds if:
  *
  * C <= P,

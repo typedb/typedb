@@ -19,7 +19,9 @@
 
 package grakn.core.core;
 
+import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
+import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.Entity;
 import grakn.core.kb.concept.api.EntityType;
@@ -32,8 +34,6 @@ import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Type;
-import grakn.core.kb.concept.api.Concept;
-import grakn.core.kb.concept.api.Attribute;
 import graql.lang.Graql;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
@@ -43,9 +43,9 @@ import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
 import java.util.Map;
 
-import static grakn.core.common.exception.ErrorMessage.INVALID_IMPLICIT_TYPE;
 import static grakn.common.util.Collections.map;
 import static grakn.common.util.Collections.pair;
+import static grakn.core.common.exception.ErrorMessage.INVALID_IMPLICIT_TYPE;
 
 /**
  * A type enum which restricts the types of links/concepts which can be created

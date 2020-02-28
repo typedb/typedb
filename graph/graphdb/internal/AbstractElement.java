@@ -104,7 +104,7 @@ public abstract class AbstractElement implements InternalElement, Comparable<Jan
      */
 
     /**
-     * Long identifier used to compare elements. Often, this is the same as {@link #longId()}
+     * Long identifier used to compare elements. Often, this is the same as #longId()
      * but some instances of elements may be considered the same even if their ids differ. In that case,
      * this method should be overwritten to return an id that can be used for comparison.
      */

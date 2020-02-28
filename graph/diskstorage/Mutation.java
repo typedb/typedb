@@ -151,7 +151,7 @@ public abstract class Mutation<E,K> {
     public abstract void consolidate();
 
     /**
-     * Checks whether this mutation is consolidated in the sense of {@link #consolidate(com.google.common.base.Function, com.google.common.base.Function)}.
+     * Checks whether this mutation is consolidated in the sense of #consolidate(com.google.common.base.Function, com.google.common.base.Function).
      * This should only be used in assertions and tests due to the performance penalty.
      *
      */

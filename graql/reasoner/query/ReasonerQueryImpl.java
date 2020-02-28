@@ -30,11 +30,11 @@ import grakn.common.util.Pair;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.util.ConceptUtils;
 import grakn.core.graql.reasoner.CacheCasting;
+import grakn.core.graql.reasoner.ReasoningContext;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.AtomicBase;
 import grakn.core.graql.reasoner.atom.AtomicUtil;
 import grakn.core.graql.reasoner.atom.PropertyAtomicFactory;
-import grakn.core.graql.reasoner.ReasoningContext;
 import grakn.core.graql.reasoner.atom.binary.IsaAtom;
 import grakn.core.graql.reasoner.atom.binary.IsaAtomBase;
 import grakn.core.graql.reasoner.atom.binary.RelationAtom;
@@ -74,6 +74,8 @@ import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
+
+import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -85,7 +87,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import javax.annotation.Nullable;
 
 /**
  *

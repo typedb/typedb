@@ -19,12 +19,12 @@
 package grakn.core.graph.graphdb.relations;
 
 import com.google.common.base.Preconditions;
-import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
-import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import grakn.core.graph.core.JanusGraphElement;
 import grakn.core.graph.core.JanusGraphProperty;
 import grakn.core.graph.core.PropertyKey;
 import grakn.core.graph.graphdb.internal.InternalRelation;
+import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
+import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 
 import java.util.NoSuchElementException;
 

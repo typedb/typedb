@@ -22,7 +22,7 @@ package grakn.core.graph.core;
 import java.util.Collection;
 
 /**
- * EdgeLabel is an extension of {@link RelationType} for edges. Each edge in JanusGraph has a label.
+ * EdgeLabel is an extension of RelationType for edges. Each edge in JanusGraph has a label.
  * <p>
  * An edge label defines the following characteristics of an edge:
  * <ul>
@@ -35,7 +35,7 @@ import java.util.Collection;
  * </li>
  * </ul>
  *
- * @see RelationType
+ * see RelationType
  */
 public interface EdgeLabel extends RelationType {
 
@@ -54,21 +54,21 @@ public interface EdgeLabel extends RelationType {
     boolean isUnidirected();
 
     /**
-     * The {@link Multiplicity} for this edge label.
+     * The Multiplicity for this edge label.
      */
     Multiplicity multiplicity();
 
     /**
      * Collects all property constraints.
      *
-     * @return a list of {@link PropertyKey} which represents all property constraints for a {@link EdgeLabel}.
+     * @return a list of PropertyKey which represents all property constraints for a EdgeLabel.
      */
     Collection<PropertyKey> mappedProperties();
 
     /**
      * Collects all connection constraints.
      *
-     * @return a list of {@link Connection} which represents all connection constraints for a {@link EdgeLabel}.
+     * @return a list of Connection which represents all connection constraints for a EdgeLabel.
      */
     Collection<Connection> mappedConnections();
 

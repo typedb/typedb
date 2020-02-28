@@ -48,7 +48,7 @@ public interface InternalRelation extends JanusGraphRelation, InternalElement {
 
     /**
      * Number of vertices on this relation that are aware of its existence. This number will
-     * differ from {@link #getArity()}
+     * differ from #getArity()
      */
     int getLen();
 

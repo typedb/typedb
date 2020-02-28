@@ -20,8 +20,8 @@
 package grakn.core.graql.reasoner.atom.binary;
 
 import com.google.common.collect.Sets;
-import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.ReasoningContext;
+import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.reasoner.atom.predicate.Predicate;
 import grakn.core.graql.reasoner.atom.task.relate.BinarySemanticProcessor;
@@ -38,11 +38,12 @@ import graql.lang.pattern.Pattern;
 import graql.lang.property.IsaProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
+
+import javax.annotation.Nullable;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Stream;
-import javax.annotation.Nullable;
 
 /**
  *

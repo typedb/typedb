@@ -19,10 +19,10 @@
 package grakn.core.graph.graphdb.util;
 
 import com.google.common.collect.Iterators;
+import grakn.core.graph.graphdb.tinkerpop.optimize.HasStepFolder.OrderEntry;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.ElementValueComparator;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.util.function.MultiComparator;
-import grakn.core.graph.graphdb.tinkerpop.optimize.HasStepFolder.OrderEntry;
 
 import java.util.ArrayList;
 import java.util.Comparator;

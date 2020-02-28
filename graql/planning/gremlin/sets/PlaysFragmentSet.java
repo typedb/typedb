@@ -29,7 +29,7 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
- * @see EquivalentFragmentSets#plays(VarProperty, Variable, Variable, boolean)
+ * see EquivalentFragmentSets#plays(VarProperty, Variable, Variable, boolean)
  *
  */
 class PlaysFragmentSet extends EquivalentFragmentSetImpl {

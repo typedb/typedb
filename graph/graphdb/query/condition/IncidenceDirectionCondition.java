@@ -19,11 +19,10 @@
 package grakn.core.graph.graphdb.query.condition;
 
 import com.google.common.base.Preconditions;
-import org.apache.tinkerpop.gremlin.structure.Direction;
 import grakn.core.graph.core.JanusGraphEdge;
 import grakn.core.graph.core.JanusGraphRelation;
 import grakn.core.graph.core.JanusGraphVertex;
-import grakn.core.graph.graphdb.query.condition.Literal;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.Objects;
 

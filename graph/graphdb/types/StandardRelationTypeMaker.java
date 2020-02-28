@@ -20,10 +20,8 @@ package grakn.core.graph.graphdb.types;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
-import grakn.core.graph.core.JanusGraphVertexQuery;
 import grakn.core.graph.core.Multiplicity;
 import grakn.core.graph.core.PropertyKey;
-import grakn.core.graph.core.RelationType;
 import grakn.core.graph.core.schema.RelationTypeMaker;
 import grakn.core.graph.core.schema.SchemaStatus;
 import grakn.core.graph.graphdb.database.serialize.AttributeHandler;
@@ -152,7 +150,7 @@ public abstract class StandardRelationTypeMaker implements RelationTypeMaker {
      * <br>
      * For instance, if the edge label <i>friend</i> has the sort key (<i>since</i>), which is a property key
      * with a timestamp data type, then one can efficiently retrieve all edges with label <i>friend</i> in a specified
-     * time interval using {@link JanusGraphVertexQuery#interval}.
+     * time interval using JanusGraphVertexQuery#interval.
      * <br>
      * In other words, relations are stored on disk in the order of the configured sort key. The sort key is empty
      * by default.
@@ -160,7 +158,7 @@ public abstract class StandardRelationTypeMaker implements RelationTypeMaker {
      * If multiple types are specified as sort key, then those are considered as a <i>composite</i> sort key, i.e. taken jointly
      * in the given order.
      * <p>
-     * {@link RelationType}s used in the sort key must be either property out-unique keys or out-unique unidirected edge lables.
+     * RelationTypes used in the sort key must be either property out-unique keys or out-unique unidirected edge lables.
      *
      * @param keys JanusGraphTypes composing the sort key. The order is relevant.
      * @return this LabelMaker
@@ -172,12 +170,12 @@ public abstract class StandardRelationTypeMaker implements RelationTypeMaker {
     }
 
     /**
-     * Defines in which order to sort the relations for efficient retrieval, i.e. either increasing ({@link Order#ASC}) or
-     * decreasing ({@link Order#DESC}).
+     * Defines in which order to sort the relations for efficient retrieval, i.e. either increasing (Order#ASC) or
+     * decreasing (Order#DESC).
      * <p>
      * Note, that only one sort order can be specified and that a sort key must be defined to use a sort order.
      *
-     * @see #sortKey(PropertyKey... keys)
+     * see #sortKey(PropertyKey... keys)
      */
     public StandardRelationTypeMaker sortOrder(Order order) {
         this.sortOrder = Preconditions.checkNotNull(order);

@@ -47,7 +47,7 @@ public interface InternalElement extends JanusGraphElement {
 
     /**
      * @return The lifecycle of this element
-     * @see ElementLifeCycle
+     * see ElementLifeCycle
      */
     byte getLifeCycle();
 

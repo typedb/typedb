@@ -32,13 +32,13 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
  * 1) Define the query by specifying what to retrieve and
  * 2) execute the query for the elements to retrieve.
  * <p>
- * This is the base interface for the specific implementations of a VertexQuery. Calling {@link JanusGraphVertex#query()}
- * returns a {@link JanusGraphVertexQuery} for querying a single vertex.
- * Calling JanusGraphTransaction#multiQuery() returns a {@link JanusGraphMultiVertexQuery} to execute
+ * This is the base interface for the specific implementations of a VertexQuery. Calling JanusGraphVertex#query()
+ * returns a JanusGraphVertexQuery for querying a single vertex.
+ * Calling JanusGraphTransaction#multiQuery() returns a JanusGraphMultiVertexQuery to execute
  * the same query against multiple vertices at the same time which is typically faster.
  *
- * @see JanusGraphVertexQuery
- * @see JanusGraphMultiVertexQuery
+ * see JanusGraphVertexQuery
+ * see JanusGraphMultiVertexQuery
  */
 public interface BaseVertexQuery<Q extends BaseVertexQuery<Q>> {
 
@@ -104,9 +104,9 @@ public interface BaseVertexQuery<Q extends BaseVertexQuery<Q>> {
      * <p>
      * If type is a property key, then the query is restricted to edges or properties having an incident property matching
      * this key-value pair.
-     * If type is an edge label, then it is expected that this label is unidirected ({@link EdgeLabel#isUnidirected()}
+     * If type is an edge label, then it is expected that this label is unidirected (EdgeLabel#isUnidirected()
      * and the query is restricted to edges or properties having an incident unidirectional edge pointing to the value which is
-     * expected to be a {@link JanusGraphVertex}.
+     * expected to be a JanusGraphVertex.
      *
      * @param type  JanusGraphType name
      * @param value Value for the property of the given key to match, or vertex to point unidirectional edge to
@@ -129,7 +129,7 @@ public interface BaseVertexQuery<Q extends BaseVertexQuery<Q>> {
     Q hasNot(String key);
 
     /**
-     * Identical to {@link #has(String, Object)} but negates the condition, i.e. matches those edges or properties
+     * Identical to #has(String, Object) but negates the condition, i.e. matches those edges or properties
      * that DO NOT satisfy this property condition.
      */
     Q hasNot(String key, Object value);

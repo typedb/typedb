@@ -29,7 +29,7 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
- * @see EquivalentFragmentSets#regex(VarProperty, Variable, String)
+ * see EquivalentFragmentSets#regex(VarProperty, Variable, String)
  *
  */
 class RegexFragmentSet extends EquivalentFragmentSetImpl {

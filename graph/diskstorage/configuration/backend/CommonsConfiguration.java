@@ -35,7 +35,7 @@ import java.util.Iterator;
 import java.util.List;
 
 /**
- * {@link WriteConfiguration} wrapper for Apache Configuration
+ * WriteConfiguration wrapper for Apache Configuration
  */
 public class CommonsConfiguration implements WriteConfiguration {
 

@@ -18,7 +18,6 @@
 
 package grakn.core.graph.core;
 
-import grakn.core.graph.core.JanusGraphVertex;
 import grakn.core.graph.core.schema.JanusGraphSchemaType;
 
 /**

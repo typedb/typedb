@@ -53,11 +53,12 @@ import graql.lang.property.ValueProperty;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
+
+import javax.annotation.Nullable;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import javax.annotation.Nullable;
 
 import static grakn.core.graql.reasoner.utils.ReasonerUtils.isEquivalentCollection;
 

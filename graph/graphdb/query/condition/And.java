@@ -19,8 +19,6 @@
 package grakn.core.graph.graphdb.query.condition;
 
 import grakn.core.graph.core.JanusGraphElement;
-import grakn.core.graph.graphdb.query.condition.Condition;
-import grakn.core.graph.graphdb.query.condition.MultiCondition;
 
 /**
  * Combines multiple conditions under semantic AND, i.e. all conditions must be true for this combination to be true

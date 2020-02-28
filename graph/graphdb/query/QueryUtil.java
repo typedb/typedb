@@ -156,7 +156,7 @@ public class QueryUtil {
      * Prepares the constraints from the query builder into a QNF compliant condition.
      * If the condition is invalid or trivially false, it returns null.
      *
-     * @see #isQueryNormalForm(Condition)
+     * see #isQueryNormalForm(Condition)
      */
     public static <E extends JanusGraphElement> And<E> constraints2QNF(StandardJanusGraphTx tx, List<PredicateCondition<String, E>> constraints) {
         And<E> conditions = new And<>(constraints.size() + 4);

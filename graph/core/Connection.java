@@ -49,7 +49,7 @@ public class Connection {
 
     /**
      *
-     * @return a label from an {@link EdgeLabel}.
+     * @return a label from an EdgeLabel.
      */
     public String getEdgeLabel() {
         return edgeLabel;
@@ -57,7 +57,7 @@ public class Connection {
 
     /**
      *
-     * @return a outgoing {@link VertexLabel}.
+     * @return a outgoing VertexLabel.
      */
     public VertexLabel getOutgoingVertexLabel() {
         return outgoingVertexLabel;
@@ -65,7 +65,7 @@ public class Connection {
 
     /**
      *
-     * @return a incoming {@link VertexLabel}.
+     * @return a incoming VertexLabel.
      */
     public VertexLabel getIncomingVertexLabel() {
         return incomingVertexLabel;

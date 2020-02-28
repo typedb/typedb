@@ -19,7 +19,7 @@
 package grakn.core.graph.graphdb.query;
 
 /**
- * Standard implementation of {@link Query}.
+ * Standard implementation of Query.
  */
 public class BaseQuery implements Query {
 

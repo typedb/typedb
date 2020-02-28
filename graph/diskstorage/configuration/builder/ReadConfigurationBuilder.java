@@ -45,7 +45,7 @@ import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.TIMESTAMP_PROVIDER;
 
 /**
- * Builder to build {@link ReadConfiguration} instance of global configuration
+ * Builder to build ReadConfiguration instance of global configuration
  */
 public class ReadConfigurationBuilder {
 

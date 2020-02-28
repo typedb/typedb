@@ -32,10 +32,10 @@ import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 
-import java.util.HashSet;
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Stream;
 

@@ -50,7 +50,7 @@ import static org.hamcrest.Matchers.equalTo;
 // * Grakn end to end test suite which verifies bootup functionalities, including:
 // * - 'grakn server start, stop, and clean'
 // * - 'graql console'
-// * If you are testing functionalities which needs a running Grakn, add it in {@link GraknGraqlCommands_WithARunningGraknE2E} instead.
+// * If you are testing functionalities which needs a running Grakn, add it in GraknGraqlCommands_WithARunningGraknE2E instead.
 //// */
 
 public class GraknGraqlCommandsE2E {

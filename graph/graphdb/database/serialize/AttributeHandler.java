@@ -27,7 +27,7 @@ public interface AttributeHandler {
     /**
      * Converts the given (not-null) value to the this datatype V.
      * The given object will NOT be of type V.
-     * Throws an {@link IllegalArgumentException} if it cannot be converted.
+     * Throws an IllegalArgumentException if it cannot be converted.
      *
      * @param value to convert
      * @return converted to expected datatype

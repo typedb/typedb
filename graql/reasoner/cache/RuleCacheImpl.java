@@ -32,6 +32,7 @@ import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.reasoner.cache.RuleCache;
 import grakn.core.kb.keyspace.KeyspaceStatistics;
 import graql.lang.pattern.Pattern;
+
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;

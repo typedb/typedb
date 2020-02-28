@@ -21,8 +21,8 @@ package grakn.core.graql.reasoner.atom.binary;
 
 import com.google.common.collect.Sets;
 import grakn.core.common.exception.ErrorMessage;
-import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.ReasoningContext;
+import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.rule.InferenceRule;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.Rule;
@@ -31,6 +31,7 @@ import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
+
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;

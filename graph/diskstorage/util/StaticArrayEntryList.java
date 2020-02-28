@@ -25,7 +25,6 @@ import grakn.core.graph.diskstorage.EntryMetaData;
 import grakn.core.graph.diskstorage.ReadBuffer;
 import grakn.core.graph.diskstorage.StaticBuffer;
 import grakn.core.graph.graphdb.relations.RelationCache;
-import grakn.core.graph.util.encoding.StringEncoding;
 
 import java.nio.ByteBuffer;
 import java.util.AbstractList;

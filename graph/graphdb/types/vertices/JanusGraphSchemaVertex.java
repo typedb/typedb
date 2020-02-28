@@ -26,7 +26,6 @@ import grakn.core.graph.core.JanusGraphEdge;
 import grakn.core.graph.core.JanusGraphVertex;
 import grakn.core.graph.core.JanusGraphVertexProperty;
 import grakn.core.graph.core.schema.SchemaStatus;
-import grakn.core.graph.graphdb.database.management.ManagementSystem;
 import grakn.core.graph.graphdb.internal.JanusGraphSchemaCategory;
 import grakn.core.graph.graphdb.query.vertex.VertexCentricQueryBuilder;
 import grakn.core.graph.graphdb.transaction.RelationConstructor;
@@ -139,7 +138,7 @@ public class JanusGraphSchemaVertex extends CacheVertex implements SchemaSource 
 
     /**
      * Resets the internal caches used to speed up lookups on this index type.
-     * This is needed when the type gets modified in the {@link ManagementSystem}.
+     * This is needed when the type gets modified in the ManagementSystem.
      */
     @Override
     public void resetCache() {

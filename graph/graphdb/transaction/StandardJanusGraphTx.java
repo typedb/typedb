@@ -26,7 +26,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import grakn.core.graph.core.Cardinality;
 import grakn.core.graph.core.EdgeLabel;
-import grakn.core.graph.core.JanusGraph;
 import grakn.core.graph.core.JanusGraphEdge;
 import grakn.core.graph.core.JanusGraphElement;
 import grakn.core.graph.core.JanusGraphException;
@@ -146,7 +145,7 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 /**
- * JanusGraphTransaction defines a transactional context for a {@link JanusGraph}. Since JanusGraph is a transactional graph
+ * JanusGraphTransaction defines a transactional context for a JanusGraph. Since JanusGraph is a transactional graph
  * database, all interactions with the graph are mitigated by a JanusGraphTransaction.
  * <p>
  * All vertex and edge retrievals are channeled by a graph transaction which bundles all such retrievals, creations and
@@ -325,9 +324,9 @@ public class StandardJanusGraphTx implements JanusGraphTransaction, TypeInspecto
      * Note, that an exception is thrown if the vertex id is not a valid JanusGraph vertex id or if a vertex with the given
      * id already exists. Only accepts long ids - all others are ignored.
      * <p>
-     * A valid JanusGraph vertex ids must be provided. Use {@link IDManager#toVertexId(long)}
+     * A valid JanusGraph vertex ids must be provided. Use IDManager#toVertexId(long)
      * to construct a valid JanusGraph vertex id from a user id, where <code>idManager</code> can be obtained through
-     * {@link StandardJanusGraph#getIDManager()}.
+     * StandardJanusGraph#getIDManager().
      * <pre>
      * <code>long vertexId = ((StandardJanusGraph) graph).getIDManager().toVertexId(userVertexId);</code>
      * </pre>

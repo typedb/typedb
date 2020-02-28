@@ -182,7 +182,7 @@ public class Storage {
     /**
      * Attempt to start Storage and perform periodic polling until it is ready. The readiness check is performed with nodetool.
      * <p>
-     * A {@link GraknDaemonException} will be thrown if Storage does not start after a timeout specified
+     * A GraknDaemonException will be thrown if Storage does not start after a timeout specified
      * in the 'WAIT_INTERVAL_SECOND' field.
      *
      * @throws GraknDaemonException

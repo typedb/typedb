@@ -18,8 +18,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-import os
 import json
+import os
 import subprocess as sp
 
 refs = {

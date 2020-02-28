@@ -30,7 +30,7 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
- * @see EquivalentFragmentSets#dataType(VarProperty, Variable, AttributeType.DataType)
+ * see EquivalentFragmentSets#dataType(VarProperty, Variable, AttributeType.DataType)
  *
  */
 class DataTypeFragmentSet extends EquivalentFragmentSetImpl {

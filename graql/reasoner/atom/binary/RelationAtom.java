@@ -65,6 +65,8 @@ import graql.lang.statement.Statement;
 import graql.lang.statement.StatementInstance;
 import graql.lang.statement.StatementThing;
 import graql.lang.statement.Variable;
+
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -77,7 +79,6 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import javax.annotation.Nullable;
 
 /**
  * Atom implementation defining a relation atom corresponding to a combined RelationProperty
@@ -566,7 +567,9 @@ public class RelationAtom extends IsaAtomBase {
                         .filter(vp -> vp.var().isReturned())
                         .map(vp -> new Pair<>(vp.var(), vp.getType().orElse(null)))
                         .filter(p -> Objects.nonNull(p.second()))
-                        .map(p -> IdPredicate.create(p.first(), Label.of(p.second()), getParentQuery(), conceptManager))
+                        .map(p -> new Pair<Variable, SchemaConcept>(p.first(), conceptManager.getSchemaConcept(Label.of(p.second()))))
+                        .filter(p -> Objects.nonNull(p.second()))
+                        .map(p -> IdPredicate.create(p.first(), p.second().id(), getParentQuery()))
         );
     }
 

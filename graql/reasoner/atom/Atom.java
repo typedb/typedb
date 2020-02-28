@@ -53,11 +53,12 @@ import graql.lang.property.IsaProperty;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
+
+import javax.annotation.Nullable;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
-import javax.annotation.Nullable;
 
 import static java.util.stream.Collectors.toSet;
 

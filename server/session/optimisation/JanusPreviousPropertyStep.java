@@ -77,7 +77,7 @@ public class JanusPreviousPropertyStep<S> extends FlatMapStep<S, JanusGraphVerte
     }
 
     /**
-     * Look up vertices in Janus which have a property {@link JanusPreviousPropertyStep#propertyKey} with the given
+     * Look up vertices in Janus which have a property JanusPreviousPropertyStep#propertyKey with the given
      * value.
      * @param tx the Janus transaction to read from
      * @param value the value that the property should have

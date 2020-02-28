@@ -23,10 +23,10 @@ import com.google.common.collect.ImmutableList;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.ReasoningContext;
 import grakn.core.graql.reasoner.atom.Atom;
+import grakn.core.graql.reasoner.atom.predicate.Predicate;
 import grakn.core.graql.reasoner.atom.task.infer.IsaTypeReasoner;
 import grakn.core.graql.reasoner.atom.task.infer.TypeReasoner;
 import grakn.core.graql.reasoner.atom.task.materialise.IsaMaterialiser;
-import grakn.core.graql.reasoner.atom.predicate.Predicate;
 import grakn.core.graql.reasoner.unifier.UnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.kb.concept.api.ConceptId;
@@ -41,12 +41,13 @@ import graql.lang.property.IsaProperty;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
+
+import javax.annotation.Nullable;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import javax.annotation.Nullable;
 
 /**
  * TypeAtom corresponding to graql a IsaProperty property.

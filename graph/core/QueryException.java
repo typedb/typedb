@@ -18,12 +18,8 @@
 
 package grakn.core.graph.core;
 
-import grakn.core.graph.core.JanusGraphException;
-import grakn.core.graph.core.JanusGraphQuery;
-import grakn.core.graph.core.JanusGraphVertex;
-
 /**
- * Exception thrown when a user defined query (e.g. a {@link JanusGraphVertex} or {@link JanusGraphQuery})
+ * Exception thrown when a user defined query (e.g. a JanusGraphVertex or JanusGraphQuery)
  * is invalid or could not be processed.
  */
 public class QueryException extends JanusGraphException {

@@ -23,17 +23,17 @@ import grakn.core.graph.core.Multiplicity;
 import grakn.core.graph.core.PropertyKey;
 
 /**
- * Used to define new {@link EdgeLabel}s.
- * An edge label is defined by its name, {@link Multiplicity}, its directionality, and its signature - all of which
+ * Used to define new EdgeLabels.
+ * An edge label is defined by its name, Multiplicity, its directionality, and its signature - all of which
  * can be specified in this builder.
  */
 public interface EdgeLabelMaker extends RelationTypeMaker {
 
     /**
-     * Sets the multiplicity of this label. The default multiplicity is {@link Multiplicity#MULTI}.
+     * Sets the multiplicity of this label. The default multiplicity is Multiplicity#MULTI.
      *
      * @return this EdgeLabelMaker
-     * @see Multiplicity
+     * see Multiplicity
      */
     EdgeLabelMaker multiplicity(Multiplicity multiplicity);
 
@@ -43,7 +43,7 @@ public interface EdgeLabelMaker extends RelationTypeMaker {
      * By default, the label is directed.
      *
      * @return this EdgeLabelMaker
-     * @see EdgeLabel#isDirected()
+     * see EdgeLabel#isDirected()
      */
     EdgeLabelMaker directed();
 
@@ -53,7 +53,7 @@ public interface EdgeLabelMaker extends RelationTypeMaker {
      * By default, the type is directed.
      *
      * @return this EdgeLabelMaker
-     * @see EdgeLabel#isUnidirected()
+     * see EdgeLabel#isUnidirected()
      */
     EdgeLabelMaker unidirected();
 
@@ -63,9 +63,9 @@ public interface EdgeLabelMaker extends RelationTypeMaker {
 
 
     /**
-     * Defines the {@link EdgeLabel} specified by this EdgeLabelMaker and returns the resulting label
+     * Defines the EdgeLabel specified by this EdgeLabelMaker and returns the resulting label
      *
-     * @return the created {@link EdgeLabel}
+     * @return the created EdgeLabel
      */
     @Override
     EdgeLabel make();

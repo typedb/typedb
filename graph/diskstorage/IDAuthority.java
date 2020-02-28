@@ -19,11 +19,7 @@
 package grakn.core.graph.diskstorage;
 
 
-import grakn.core.graph.diskstorage.BackendException;
-import grakn.core.graph.diskstorage.IDBlock;
 import grakn.core.graph.diskstorage.keycolumnvalue.KeyRange;
-import grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration;
-import grakn.core.graph.graphdb.database.idassigner.IDBlockSizer;
 
 import java.time.Duration;
 import java.util.List;
@@ -37,7 +33,7 @@ import java.util.List;
 public interface IDAuthority {
 
     /**
-     * Returns a block of new ids in the form of {@link IDBlock}. It is guaranteed that
+     * Returns a block of new ids in the form of IDBlock. It is guaranteed that
      * the block of ids for the particular partition id is uniquely assigned,
      * that is, the block of ids has not been previously and will not
      * subsequently be assigned again when invoking this method on the local or
@@ -47,7 +43,7 @@ public interface IDAuthority {
      * per partition.
      * <p>
      * It is furthermore guaranteed that any id of the returned IDBlock is smaller than the upper bound
-     * for the given partition as read from the {@link IDBlockSizer} set on this IDAuthority and that the
+     * for the given partition as read from the IDBlockSizer set on this IDAuthority and that the
      * number of ids returned is equal to the block size of the IDBlockSizer.
      *
      * @param partition
@@ -78,7 +74,7 @@ public interface IDAuthority {
      * from those belonging to other {@code IDAuthority} instances.
      *
      * This should normally be the value of
-     * {@link GraphDatabaseConfiguration#UNIQUE_INSTANCE_ID}, though that's not
+     * GraphDatabaseConfiguration#UNIQUE_INSTANCE_ID, though that's not
      * strictly technically necessary.
      *
      * @return unique ID string
@@ -86,7 +82,7 @@ public interface IDAuthority {
     String getUniqueID();
 
     /**
-     * Whether {@link #getIDBlock(int, int, Duration)} may be safely interrupted.
+     * Whether #getIDBlock(int, int, Duration) may be safely interrupted.
      *
      * @return true if interruption is allowed, false if it is not
      */

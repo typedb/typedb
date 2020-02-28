@@ -32,7 +32,7 @@ import static grakn.core.graql.planning.gremlin.sets.EquivalentFragmentSets.frag
 import static grakn.core.graql.planning.gremlin.sets.EquivalentFragmentSets.labelOf;
 
 /**
- * @see EquivalentFragmentSets#sub(VarProperty, Variable, Variable)
+ * see EquivalentFragmentSets#sub(VarProperty, Variable, Variable)
  *
  */
 class SubFragmentSet extends EquivalentFragmentSetImpl {
@@ -84,7 +84,7 @@ class SubFragmentSet extends EquivalentFragmentSetImpl {
      *
      * <p>
      * However, we still keep the old LabelFragmentSet in case it is connected to anything.
-     * {@link LabelFragmentSet#REDUNDANT_LABEL_ELIMINATION_OPTIMISATION} will eventually remove it if it is not.
+     * LabelFragmentSet#REDUNDANT_LABEL_ELIMINATION_OPTIMISATION will eventually remove it if it is not.
      * </p>
      */
     static final FragmentSetOptimisation SUB_TRAVERSAL_ELIMINATION_OPTIMISATION = (fragmentSets, conceptManager) -> {

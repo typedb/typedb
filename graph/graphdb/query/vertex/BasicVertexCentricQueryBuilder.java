@@ -77,8 +77,8 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Builds a {@link BaseVertexQuery}, optimizes the query and compiles the result into
- * a {@link BaseVertexCentricQuery} which is then executed by one of the extending
+ * Builds a BaseVertexQuery, optimizes the query and compiles the result into
+ * a BaseVertexCentricQuery which is then executed by one of the extending
  * classes.
  */
 public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q>> extends BaseVertexCentricQueryBuilder<Q> {
@@ -101,7 +101,7 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
     private boolean querySystem = false;
     /**
      * Whether to query only for persisted edges, i.e. ignore any modifications to the vertex made in this transaction.
-     * This is achieved by using the {@link SimpleVertexQueryProcessor} for execution.
+     * This is achieved by using the SimpleVertexQueryProcessor for execution.
      */
     private boolean queryOnlyLoaded = false;
 
@@ -218,8 +218,8 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
      */
 
     /**
-     * If {@link #isImplicitKeyQuery(RelationCategory)} is true,
-     * this method provides the result set for the query based on the evaluation of the {@link ImplicitKey}.
+     * If #isImplicitKeyQuery(RelationCategory) is true,
+     * this method provides the result set for the query based on the evaluation of the ImplicitKey.
      * <p>
      * Handling of implicit keys is completely distinct from "normal" query execution and handled extra
      * for completeness reasons.
@@ -397,12 +397,12 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
     private static final int HARD_MAX_LIMIT = 300000;
 
     /**
-     * Constructs a {@link VertexCentricQuery} for this query builder. The query construction and optimization
-     * logic is taken from {@link #constructQuery(RelationCategory)}
+     * Constructs a VertexCentricQuery for this query builder. The query construction and optimization
+     * logic is taken from #constructQuery(RelationCategory)
      * This method only adds the additional conditions that are based on the base vertex.
      *
      * @param vertex    for which to construct this query
-     * @param baseQuery as constructed by {@link #constructQuery(RelationCategory)}
+     * @param baseQuery as constructed by #constructQuery(RelationCategory)
      */
     private VertexCentricQuery constructQuery(InternalVertex vertex, BaseVertexCentricQuery baseQuery) {
         Condition<JanusGraphRelation> condition = baseQuery.getCondition();
@@ -768,7 +768,7 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
      * the query is not fitted and these remaining conditions must be enforced by filtering in-memory. By filtering in
      * memory, we will discard results returned from the backend and hence we should increase the limit to account for
      * this "waste" in order to not have to adjust the limit too often
-     * in {@link grakn.core.graph.graphdb.query.LimitAdjustingIterator}.
+     * in grakn.core.graph.graphdb.query.LimitAdjustingIterator.
      */
     private int computeLimit(int remainingConditions, int baseLimit) {
         if (baseLimit == Query.NO_LIMIT) {
