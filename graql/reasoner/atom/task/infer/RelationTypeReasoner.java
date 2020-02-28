@@ -17,7 +17,7 @@
  *
  */
 
-package grakn.core.graql.reasoner.atom.task.inference;
+package grakn.core.graql.reasoner.atom.task.infer;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
@@ -26,6 +26,7 @@ import com.google.common.collect.Multimap;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
 import grakn.common.util.Pair;
+import grakn.core.common.util.Streams;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.util.ConceptUtils;
 import grakn.core.core.Schema;
@@ -51,8 +52,10 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static grakn.core.concept.util.ConceptUtils.top;
 import static graql.lang.Graql.var;
@@ -149,7 +152,7 @@ public class RelationTypeReasoner implements TypeReasoner<RelationAtom> {
      * @return a map of relations and corresponding roles that could be played by this atom
      */
     private Multimap<RelationType, Role> inferPossibleRelationConfigurations(RelationAtom atom, ConceptMap sub) {
-        Set<Role> roles = atom.getExplicitRoles().filter(r -> !Schema.MetaSchema.isMetaLabel(r.label())).collect(Collectors.toSet());
+        Set<Role> roles = getExplicitRoles(atom).filter(r -> !Schema.MetaSchema.isMetaLabel(r.label())).collect(Collectors.toSet());
         SetMultimap<Variable, Type> varTypeMap = atom.getParentQuery().getVarTypeMap(sub);
         Set<Type> types = atom.getRolePlayers().stream().filter(varTypeMap::containsKey).flatMap(v -> varTypeMap.get(v).stream()).collect(Collectors.toSet());
 
@@ -180,6 +183,17 @@ public class RelationTypeReasoner implements TypeReasoner<RelationAtom> {
         return compatibleTypes;
     }
 
+    private Stream<Role> getExplicitRoles(RelationAtom atom) {
+        ConceptManager conceptManager = ctx.conceptManager();
+        return atom.getRelationPlayers().stream()
+                .map(RelationProperty.RolePlayer::getRole)
+                .flatMap(Streams::optionalToStream)
+                .map(Statement::getType)
+                .flatMap(Streams::optionalToStream)
+                .map(conceptManager::getRole)
+                .filter(Objects::nonNull);
+    }
+
     /**
      * attempt to infer the relation type of this relation
      *
@@ -201,7 +215,7 @@ public class RelationTypeReasoner implements TypeReasoner<RelationAtom> {
      */
     private RelationAtom inferRoles(RelationAtom atom, ConceptMap sub) {
         //return if all roles known and non-meta
-        List<Role> explicitRoles = atom.getExplicitRoles().collect(Collectors.toList());
+        List<Role> explicitRoles = getExplicitRoles(atom).collect(Collectors.toList());
         SetMultimap<Variable, Type> varTypeMap = atom.getParentQuery().getVarTypeMap(sub);
         boolean allRolesMeta = explicitRoles.stream().allMatch(role -> Schema.MetaSchema.isMetaLabel(role.label()));
         boolean roleRecomputationViable = allRolesMeta && (!sub.isEmpty() || !Sets.intersection(varTypeMap.keySet(), atom.getRolePlayers()).isEmpty());

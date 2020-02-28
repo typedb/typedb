@@ -19,16 +19,11 @@
 
 package grakn.core.graql.reasoner.atom.predicate;
 
-import com.google.common.collect.Sets;
-import grakn.core.common.exception.ErrorMessage;
 import grakn.core.graql.reasoner.atom.AtomicBase;
-import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
-
-import java.util.Set;
 
 /**
  * AtomicBase extension serving as base class for predicate implementations.
@@ -46,11 +41,6 @@ public abstract class Predicate<T> extends AtomicBase {
 
     public T getPredicate() { return predicate; }
     public abstract String getPredicateValue();
-
-    @Override
-    public Set<String> validateAsRuleHead(Rule rule) {
-        return Sets.newHashSet(ErrorMessage.VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD.getMessage(rule.then(), rule.label()));
-    }
 
     @Override
     public boolean isStructurallyEquivalent(Object obj) {
