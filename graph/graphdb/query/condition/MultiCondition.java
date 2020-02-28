@@ -26,8 +26,8 @@ import java.util.Objects;
 /**
  * Abstract condition element that combines multiple conditions (for instance, AND, OR).
  *
- * @see And
- * @see Or
+ * see And
+ * see Or
  */
 public abstract class MultiCondition<E extends JanusGraphElement> extends ArrayList<Condition<E>> implements Condition<E> {
 

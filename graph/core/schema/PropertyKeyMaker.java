@@ -47,7 +47,7 @@ public interface PropertyKeyMaker extends RelationTypeMaker {
      *
      * @param clazz Data type to be configured.
      * @return this PropertyKeyMaker
-     * @see PropertyKey#dataType()
+     * see PropertyKey#dataType()
      */
     PropertyKeyMaker dataType(Class<?> clazz);
 

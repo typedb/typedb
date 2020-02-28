@@ -44,7 +44,7 @@ public interface SchemaInspector {
      *
      * @param name name of the type to return
      * @return The type with the given name, or null if such does not exist
-     * @see RelationType
+     * see RelationType
      */
     RelationType getRelationType(String name);
 
@@ -64,7 +64,7 @@ public interface SchemaInspector {
      * @return the property key with the given name
      * @throws IllegalArgumentException if a property key with the given name does not exist or if the
      *                                  type with the given name is not a property key
-     * @see PropertyKey
+     * see PropertyKey
      */
     PropertyKey getOrCreatePropertyKey(String name);
 
@@ -81,7 +81,7 @@ public interface SchemaInspector {
      * @return the property key with the given name
      * @throws IllegalArgumentException if a property key with the given name does not exist or if the
      *                                  type with the given name is not a property key
-     * @see PropertyKey
+     * see PropertyKey
      */
     default PropertyKey getOrCreatePropertyKey(String name, Object value) {
         return getOrCreatePropertyKey(name);
@@ -108,7 +108,7 @@ public interface SchemaInspector {
      * @return the edge label with the given name
      * @throws IllegalArgumentException if an edge label with the given name does not exist or if the
      *                                  type with the given name is not an edge label
-     * @see EdgeLabel
+     * see EdgeLabel
      */
     EdgeLabel getOrCreateEdgeLabel(String name);
 

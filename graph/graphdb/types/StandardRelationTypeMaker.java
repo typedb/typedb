@@ -175,7 +175,7 @@ public abstract class StandardRelationTypeMaker implements RelationTypeMaker {
      * <p>
      * Note, that only one sort order can be specified and that a sort key must be defined to use a sort order.
      *
-     * @see #sortKey(PropertyKey... keys)
+     * see #sortKey(PropertyKey... keys)
      */
     public StandardRelationTypeMaker sortOrder(Order order) {
         this.sortOrder = Preconditions.checkNotNull(order);

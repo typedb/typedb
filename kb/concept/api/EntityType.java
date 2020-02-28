@@ -96,7 +96,7 @@ public interface EntityType extends Type {
      * Creates and returns a new Entity instance, whose direct type will be this type.
      *
      * @return a new empty entity.
-     * @see Entity
+     * see Entity
      */
     Entity create();
 
@@ -152,7 +152,7 @@ public interface EntityType extends Type {
      * Returns a collection of all Entity instances for this EntityType.
      *
      * @return All the instances of this EntityType.
-     * @see Entity
+     * see Entity
      */
     @Override
     Stream<Entity> instances();

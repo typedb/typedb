@@ -37,8 +37,8 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
  * Calling JanusGraphTransaction#multiQuery() returns a JanusGraphMultiVertexQuery to execute
  * the same query against multiple vertices at the same time which is typically faster.
  *
- * @see JanusGraphVertexQuery
- * @see JanusGraphMultiVertexQuery
+ * see JanusGraphVertexQuery
+ * see JanusGraphMultiVertexQuery
  */
 public interface BaseVertexQuery<Q extends BaseVertexQuery<Q>> {
 

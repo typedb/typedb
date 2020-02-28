@@ -107,7 +107,7 @@ public interface JanusGraphVertex extends JanusGraphElement, Vertex {
      * Initializes and returns a new JanusGraphVertexQuery based on this vertex.
      *
      * @return New JanusGraphQuery for this vertex
-     * @see JanusGraphVertexQuery
+     * see JanusGraphVertexQuery
      */
     JanusGraphVertexQuery<? extends JanusGraphVertexQuery> query();
 

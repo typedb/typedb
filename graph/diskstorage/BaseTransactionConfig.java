@@ -62,7 +62,7 @@ public interface BaseTransactionConfig {
      * Return any transaction-specific options.
      *
      * @return options for this tx
-     * @see #getCustomOption(ConfigOption)
+     * see #getCustomOption(ConfigOption)
      */
     Configuration getCustomOptions();
 }

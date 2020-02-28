@@ -39,7 +39,7 @@ import java.util.stream.Stream;
 import static java.util.stream.Collectors.toSet;
 
 /**
- * @see EquivalentFragmentSets#rolePlayer(VarProperty, Variable, Variable, Variable, Variable)
+ * see EquivalentFragmentSets#rolePlayer(VarProperty, Variable, Variable, Variable, Variable)
  *
  */
 public class RolePlayerFragmentSet extends EquivalentFragmentSetImpl {

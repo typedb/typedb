@@ -35,7 +35,7 @@ import java.util.Collection;
  * </li>
  * </ul>
  *
- * @see RelationType
+ * see RelationType
  */
 public interface EdgeLabel extends RelationType {
 

@@ -48,7 +48,7 @@ public interface Relation extends Thing {
      * Retrieve the associated RelationType for this Relation.
      *
      * @return The associated RelationType for this Relation.
-     * @see RelationType
+     * see RelationType
      */
     @Override
     RelationType type();
@@ -57,7 +57,7 @@ public interface Relation extends Thing {
      * Retrieve a list of all Instances involved in the Relation, and the Role they play.
      *
      * @return A list of all the role types and the instances playing them in this Relation.
-     * @see Role
+     * see Role
      */
     @CheckReturnValue
     Map<Role, Set<Thing>> rolePlayersMap();

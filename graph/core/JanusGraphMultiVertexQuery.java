@@ -38,7 +38,7 @@ import java.util.Map;
  * <p>
  * Note, that the #limit(int) constraint applies to each individual result set.
  *
- * @see JanusGraphVertexQuery
+ * see JanusGraphVertexQuery
 
  */
 public interface JanusGraphMultiVertexQuery<Q extends JanusGraphMultiVertexQuery<Q>> extends BaseVertexQuery<Q> {

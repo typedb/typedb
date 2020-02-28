@@ -32,7 +32,7 @@ import static grakn.core.graql.planning.gremlin.sets.EquivalentFragmentSets.frag
 import static grakn.core.graql.planning.gremlin.sets.EquivalentFragmentSets.labelOf;
 
 /**
- * @see EquivalentFragmentSets#sub(VarProperty, Variable, Variable)
+ * see EquivalentFragmentSets#sub(VarProperty, Variable, Variable)
  *
  */
 class SubFragmentSet extends EquivalentFragmentSetImpl {

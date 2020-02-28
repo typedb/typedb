@@ -61,7 +61,7 @@ public interface StoreManager {
      * Returns the features supported by this storage manager
      *
      * @return The supported features of this storage manager
-     * @see StoreFeatures
+     * see StoreFeatures
      */
     StoreFeatures getFeatures();
 

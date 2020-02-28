@@ -19,7 +19,6 @@
 package grakn.core.graph.core.schema;
 
 import grakn.core.graph.core.EdgeLabel;
-import grakn.core.graph.core.JanusGraphTransaction;
 import grakn.core.graph.core.PropertyKey;
 import grakn.core.graph.core.RelationType;
 import grakn.core.graph.core.VertexLabel;
@@ -230,14 +229,14 @@ public interface JanusGraphManagement extends SchemaManager {
     /**
      * Commits this management transaction and persists all schema changes. Closes this transaction.
      *
-     * @see JanusGraphTransaction#commit()
+     * see JanusGraphTransaction#commit()
      */
     void commit();
 
     /**
      * Closes this management transaction and discards all changes.
      *
-     * @see JanusGraphTransaction#rollback()
+     * see JanusGraphTransaction#rollback()
      */
     void rollback();
 

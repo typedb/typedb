@@ -18,14 +18,13 @@
 
 package grakn.core.graph.graphdb.transaction;
 
-import grakn.core.graph.core.JanusGraphTransaction;
 import grakn.core.graph.core.schema.DefaultSchemaMaker;
 import grakn.core.graph.diskstorage.BaseTransactionConfig;
 
 /**
  * Provides configuration options for JanusGraphTransaction.
  *
- * @see JanusGraphTransaction
+ * see JanusGraphTransaction
  */
 public interface TransactionConfiguration extends BaseTransactionConfig {
 

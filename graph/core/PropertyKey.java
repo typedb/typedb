@@ -30,7 +30,7 @@ package grakn.core.graph.core;
  * </li>
  * </ul>
  *
- * @see RelationType
+ * see RelationType
  */
 public interface PropertyKey extends RelationType {
 

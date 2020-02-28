@@ -488,7 +488,7 @@ public class ConceptBuilderImpl implements ConceptBuilder {
      * Class with no fields and exactly one instance.
      * Similar in use to Void, but the single instance is Unit#INSTANCE instead of {@code null}. Useful
      * when {@code null} is not allowed.
-     * @see <a href=https://en.wikipedia.org/wiki/Unit_type>Wikipedia</a>
+     * see <a href=https://en.wikipedia.org/wiki/Unit_type>Wikipedia</a>
      */
     final static class Unit {
         private Unit() {

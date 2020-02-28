@@ -78,7 +78,7 @@ public interface RelationStructure {
      * Used to indicate if this Relation has been created as the result of a Rule inference.
      *
      * @return true if this Relation exists due to a rule
-     * @see Rule
+     * see Rule
      */
     boolean isInferred();
 

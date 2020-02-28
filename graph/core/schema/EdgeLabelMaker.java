@@ -33,7 +33,7 @@ public interface EdgeLabelMaker extends RelationTypeMaker {
      * Sets the multiplicity of this label. The default multiplicity is Multiplicity#MULTI.
      *
      * @return this EdgeLabelMaker
-     * @see Multiplicity
+     * see Multiplicity
      */
     EdgeLabelMaker multiplicity(Multiplicity multiplicity);
 
@@ -43,7 +43,7 @@ public interface EdgeLabelMaker extends RelationTypeMaker {
      * By default, the label is directed.
      *
      * @return this EdgeLabelMaker
-     * @see EdgeLabel#isDirected()
+     * see EdgeLabel#isDirected()
      */
     EdgeLabelMaker directed();
 
@@ -53,7 +53,7 @@ public interface EdgeLabelMaker extends RelationTypeMaker {
      * By default, the type is directed.
      *
      * @return this EdgeLabelMaker
-     * @see EdgeLabel#isUnidirected()
+     * see EdgeLabel#isUnidirected()
      */
     EdgeLabelMaker unidirected();
 

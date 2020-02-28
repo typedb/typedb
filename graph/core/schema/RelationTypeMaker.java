@@ -31,7 +31,7 @@ import grakn.core.graph.core.RelationType;
  * common to both of them.
  * <p>
  *
- * @see RelationType
+ * see RelationType
  */
 public interface RelationTypeMaker {
 

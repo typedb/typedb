@@ -19,7 +19,6 @@
 package grakn.core.graph.core.attribute;
 
 import com.google.common.base.Preconditions;
-import grakn.core.graph.core.schema.RelationTypeMaker;
 import grakn.core.graph.diskstorage.ScanBuffer;
 import grakn.core.graph.diskstorage.WriteBuffer;
 
@@ -37,8 +36,8 @@ import grakn.core.graph.diskstorage.WriteBuffer;
  * is configured, then it will use this custom serializer for persistence operations.
  *
  * @param <V> Type of the attribute associated with the AttributeSerializer
- * @see RelationTypeMaker
- * @see <a href="https://docs.janusgraph.org/latest/serializer.html">
+ * see RelationTypeMaker
+ * see <a href="https://docs.janusgraph.org/latest/serializer.html">
  *      "Datatype and Attribute Serializer Configuration" manual chapter</a>
  */
 public interface AttributeSerializer<V> {

@@ -20,7 +20,6 @@ package grakn.core.graph.core;
 
 
 import grakn.core.graph.core.schema.JanusGraphSchemaType;
-import grakn.core.graph.core.schema.RelationTypeMaker;
 
 /**
  * RelationType defines the schema for JanusGraphRelation. RelationType can be configured through RelationTypeMaker to
@@ -36,9 +35,9 @@ import grakn.core.graph.core.schema.RelationTypeMaker;
  * RelationType names must be unique in a graph database. Many methods allow the name of the type as an argument
  * instead of the actual type reference. That also means, that edge labels and property keys may not have the same name.
  *
- * @see JanusGraphRelation
- * @see RelationTypeMaker
- * @see <a href="https://docs.janusgraph.org/latest/schema.html">"Schema and Data Modeling" manual chapter</a>
+ * see JanusGraphRelation
+ * see RelationTypeMaker
+ * see <a href="https://docs.janusgraph.org/latest/schema.html">"Schema and Data Modeling" manual chapter</a>
  */
 public interface RelationType extends JanusGraphVertex, JanusGraphSchemaType {
 
@@ -46,7 +45,7 @@ public interface RelationType extends JanusGraphVertex, JanusGraphSchemaType {
      * Checks if this relation type is a property key
      *
      * @return true, if this relation type is a property key, else false.
-     * @see PropertyKey
+     * see PropertyKey
      */
     boolean isPropertyKey();
 
@@ -54,7 +53,7 @@ public interface RelationType extends JanusGraphVertex, JanusGraphSchemaType {
      * Checks if this relation type is an edge label
      *
      * @return true, if this relation type is a edge label, else false.
-     * @see EdgeLabel
+     * see EdgeLabel
      */
     boolean isEdgeLabel();
 

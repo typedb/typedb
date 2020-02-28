@@ -45,8 +45,8 @@ public interface JanusGraph extends AutoCloseable{
      * Returns a TransactionBuilder to construct a new thread-independent JanusGraphTransaction.
      *
      * @return a new TransactionBuilder
-     * @see TransactionBuilder
-     * @see #newTransaction()
+     * see TransactionBuilder
+     * see #newTransaction()
      */
     TransactionBuilder buildTransaction();
 
@@ -62,7 +62,7 @@ public interface JanusGraph extends AutoCloseable{
      * Checks whether the graph is open.
      *
      * @return true, if the graph is open, else false.
-     * @see #close()
+     * see #close()
      */
     boolean isOpen();
 

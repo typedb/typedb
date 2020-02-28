@@ -67,7 +67,7 @@ public interface IndexProvider extends IndexInformation {
      *                    all changes for each document in an IndexMutation.
      * @param information Information on the keys used in the mutation accessible through KeyInformation.IndexRetriever.
      * @param tx          Enclosing transaction
-     * @see IndexMutation
+     * see IndexMutation
      */
     void mutate(Map<String, Map<String, IndexMutation>> mutations, KeyInformation.IndexRetriever information, BaseTransaction tx) throws BackendException;
 
@@ -90,7 +90,7 @@ public interface IndexProvider extends IndexInformation {
      * @param information Information on the keys used in the query accessible through KeyInformation.IndexRetriever.
      * @param tx          Enclosing transaction
      * @return The ids of all matching documents
-     * @see IndexQuery
+     * see IndexQuery
      */
     Stream<String> query(IndexQuery query, KeyInformation.IndexRetriever information, BaseTransaction tx) throws BackendException;
 
@@ -101,7 +101,7 @@ public interface IndexProvider extends IndexInformation {
      * @param information Information on the keys used in the query accessible through KeyInformation.IndexRetriever.
      * @param tx          Enclosing transaction
      * @return Results objects for all matching documents (i.e. document id and score)
-     * @see RawQuery
+     * see RawQuery
      */
     Stream<RawQuery.Result<String>> query(RawQuery query, KeyInformation.IndexRetriever information, BaseTransaction tx) throws BackendException;
 
@@ -112,7 +112,7 @@ public interface IndexProvider extends IndexInformation {
      * @param information Information on the keys used in the query accessible through KeyInformation.IndexRetriever.
      * @param tx          Enclosing transaction
      * @return Long total hits for query
-     * @see RawQuery
+     * see RawQuery
      */
     Long totals(RawQuery query, KeyInformation.IndexRetriever information, BaseTransaction tx) throws BackendException;
 

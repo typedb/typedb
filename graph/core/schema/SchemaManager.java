@@ -32,8 +32,8 @@ public interface SchemaManager extends SchemaInspector {
      * The key constructed with this maker will be created in the context of this transaction.
      *
      * @return a PropertyKeyMaker linked to this transaction.
-     * @see PropertyKeyMaker
-     * @see PropertyKey
+     * see PropertyKeyMaker
+     * see PropertyKey
      */
     PropertyKeyMaker makePropertyKey(String name);
 
@@ -45,8 +45,8 @@ public interface SchemaManager extends SchemaInspector {
      * The label constructed with this maker will be created in the context of this transaction.
      *
      * @return a EdgeLabelMaker linked to this transaction.
-     * @see EdgeLabelMaker
-     * @see EdgeLabel
+     * see EdgeLabelMaker
+     * see EdgeLabel
      */
     EdgeLabelMaker makeEdgeLabel(String name);
 

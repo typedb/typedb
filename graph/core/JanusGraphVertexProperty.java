@@ -25,8 +25,8 @@ import org.apache.tinkerpop.gremlin.structure.VertexProperty;
  * JanusGraphProperty is a JanusGraphRelation connecting a vertex to a value.
  * JanusGraphProperty extends JanusGraphRelation, with methods for retrieving the property's value and key.
  *
- * @see JanusGraphRelation
- * @see PropertyKey
+ * see JanusGraphRelation
+ * see PropertyKey
  */
 public interface JanusGraphVertexProperty<V> extends JanusGraphRelation, VertexProperty<V>, JanusGraphProperty<V> {
 

@@ -31,7 +31,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
  * this method is called on. This query builder provides the methods to specify which incident edges or
  * properties to query for.
  *
- * @see BaseVertexQuery
+ * see BaseVertexQuery
  */
 public interface JanusGraphVertexQuery<Q extends JanusGraphVertexQuery<Q>> extends BaseVertexQuery<Q> {
 

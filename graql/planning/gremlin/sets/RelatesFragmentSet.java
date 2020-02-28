@@ -29,7 +29,7 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
- * @see EquivalentFragmentSets#relates(VarProperty, Variable, Variable)
+ * see EquivalentFragmentSets#relates(VarProperty, Variable, Variable)
  *
  */
 class RelatesFragmentSet extends EquivalentFragmentSetImpl {

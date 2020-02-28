@@ -40,8 +40,8 @@ import org.apache.tinkerpop.gremlin.structure.Property;
  * i.e. it has a unique ID which can be retrieved via #id
  * (use #hasId to determine if a given entity has a unique ID).
  *
- * @see JanusGraphVertex
- * @see JanusGraphRelation
+ * see JanusGraphVertex
+ * see JanusGraphRelation
  */
 public interface JanusGraphElement extends Element, Idfiable, Removable {
 
@@ -59,7 +59,7 @@ public interface JanusGraphElement extends Element, Idfiable, Removable {
      *
      * @return The unique identifier for this entity
      * @throws IllegalStateException if the entity does not (yet) have a unique identifier
-     * @see #hasId
+     * see #hasId
      */
     @Override
     default Object id() {
@@ -82,7 +82,7 @@ public interface JanusGraphElement extends Element, Idfiable, Removable {
      * assigned an identifier at the end of a transaction.
      *
      * @return true if this entity has been assigned a unique id, else false
-     * @see #longId()
+     * see #longId()
      */
     boolean hasId();
 

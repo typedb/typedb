@@ -36,8 +36,8 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
  * with a value). A unidirected edge is a special type of directed edge where the connection is only established from the
  * perspective of the outgoing vertex. In that sense, a unidirected edge is akin to a link.
  *
- * @see JanusGraphEdge
- * @see JanusGraphVertexProperty
+ * see JanusGraphEdge
+ * see JanusGraphVertexProperty
  */
 public interface JanusGraphRelation extends JanusGraphElement {
 
@@ -91,7 +91,7 @@ public interface JanusGraphRelation extends JanusGraphElement {
      * Checks whether this relation is a property.
      *
      * @return true, if this relation is a property, else false.
-     * @see JanusGraphVertexProperty
+     * see JanusGraphVertexProperty
      */
     boolean isProperty();
 
@@ -99,7 +99,7 @@ public interface JanusGraphRelation extends JanusGraphElement {
      * Checks whether this relation is an edge.
      *
      * @return true, if this relation is an edge, else false.
-     * @see JanusGraphEdge
+     * see JanusGraphEdge
      */
     boolean isEdge();
 

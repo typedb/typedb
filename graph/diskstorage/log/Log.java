@@ -49,7 +49,7 @@ public interface Log {
     /**
      * @param readMarker Indicates where to start reading from the LOG once message readers are registered
      * @param reader     The readers to register (all at once)
-     * @see #registerReaders(ReadMarker, Iterable)
+     * see #registerReaders(ReadMarker, Iterable)
      */
     void registerReader(ReadMarker readMarker, MessageReader... reader);
 

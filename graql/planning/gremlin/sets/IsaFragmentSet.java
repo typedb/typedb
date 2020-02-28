@@ -33,7 +33,7 @@ import static grakn.core.graql.planning.gremlin.sets.EquivalentFragmentSets.frag
 import static grakn.core.graql.planning.gremlin.sets.EquivalentFragmentSets.labelOf;
 
 /**
- * @see EquivalentFragmentSets#isa(VarProperty, Variable, Variable, boolean)
+ * see EquivalentFragmentSets#isa(VarProperty, Variable, Variable, boolean)
  *
  */
 class IsaFragmentSet extends EquivalentFragmentSetImpl {
