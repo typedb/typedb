@@ -1,0 +1,62 @@
+# Mac files #
+.DS_Store
+
+# Bazel files #
+bazel-*
+
+# IDE files #
+.idea/
+*.iml
+*.geany
+.ijwb/
+
+# VS Code files #
+.vscode/
+.settings/
+.project
+.classpath
+
+# Compiled files #
+dist/
+out/
+*.class
+
+# Mobile Tools for Java (J2ME) files #
+.mtj.tmp/
+
+# Package Files #
+*.jarg
+*.war
+*.ear
+
+# Debug files #
+dep.tree
+
+# Databases #
+db/
+
+# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml #
+hs_err_pid*
+
+# Log files #
+logs/
+*.log
+
+# Analytics files #
+grakn-test/db/
+grakn-test/output/
+grakn-test/*.txt
+
+# Sample Date Files #
+grakn-test/test-biomed/data/*
+
+# Benchmark Files #
+grakn-test/test-integration/benchmarks/
+
+# VIM swap files #
+*.swp
+*.swo
+
+
+# Python cache #
+__pycache__
