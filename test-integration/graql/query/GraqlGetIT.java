@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -488,7 +487,7 @@ public class GraqlGetIT {
 
         Stream<ConceptMap> answers = tx.stream(Graql.parse("insert $x isa person;" +
                 "$y isa somework; " +
-                "$a isa year; $a 2019; " +
+                "$a isa year; $a 2020; " +
                 "$r (author: $x, work: $y) isa authored-by; $r has year $a via $imp;").asInsert());
 
         List<ConceptId> insertedIds = answers.flatMap(conceptMap -> conceptMap.concepts().stream().map(Concept::id)).collect(Collectors.toList());
