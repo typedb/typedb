@@ -33,7 +33,7 @@ load(
     "graknlabs_console",
     "graknlabs_benchmark",
     "graknlabs_simulation",
-    "graknlabs_theory",
+    "graknlabs_verification",
 )
 graknlabs_build_tools()
 graknlabs_common()
@@ -43,7 +43,7 @@ graknlabs_client_java()
 graknlabs_console()
 graknlabs_benchmark()
 graknlabs_simulation()
-graknlabs_theory()
+graknlabs_verification()
 
 load("@graknlabs_build_tools//distribution:dependencies.bzl", "graknlabs_bazel_distribution")
 graknlabs_bazel_distribution()

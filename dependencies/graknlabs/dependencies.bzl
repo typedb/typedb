@@ -71,10 +71,10 @@ def graknlabs_simulation():
     git_repository(
         name = "graknlabs_simulation",
         remote = "https://github.com/graknlabs/simulation",
-        commit = "ba210f264ca219c50318d837508ac0957f938375",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_simulation
+        commit = "ba210f264ca219c50318d837508ac0957f938375",
     )
 
-def graknlabs_theory():
+def graknlabs_verification():
     git_repository(
         name = "graknlabs_verification",
         remote = "git@github.com:graknlabs/verification.git",
