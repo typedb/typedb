@@ -28,7 +28,7 @@ import grakn.core.graql.reasoner.atom.task.infer.TypeReasoner;
 import grakn.core.graql.reasoner.atom.task.materialise.IsaMaterialiser;
 import grakn.core.graql.reasoner.unifier.UnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierType;
-import grakn.core.kb.concept.api.ConceptId;
+import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.graql.exception.GraqlSemanticException;
@@ -40,13 +40,12 @@ import graql.lang.property.IsaProperty;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
-
-import javax.annotation.Nullable;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 /**
  * TypeAtom corresponding to graql a IsaProperty property.
@@ -58,32 +57,25 @@ public class IsaAtom extends IsaAtomBase {
     private int hashCode;
     private boolean hashCodeMemoised;
 
-    private IsaAtom(Variable varName, Statement pattern, ReasonerQuery reasonerQuery, ConceptId typeId,
+    private IsaAtom(Variable varName, Statement pattern, ReasonerQuery reasonerQuery, @Nullable Label label,
                     Variable predicateVariable, ReasoningContext ctx) {
-        super(varName, pattern, reasonerQuery, typeId, predicateVariable, ctx);
+        super(varName, pattern, reasonerQuery, label, predicateVariable, ctx);
         this.typeReasoner = new IsaTypeReasoner(ctx.conceptManager());
     }
 
-    public static IsaAtom create(Variable var, Variable predicateVar, Statement pattern, @Nullable ConceptId predicateId, ReasonerQuery parent, ReasoningContext ctx) {
-        return new IsaAtom(var.asReturnedVar(), pattern, parent, predicateId, predicateVar, ctx);
+    public static IsaAtom create(Variable var, Variable predicateVar, Statement pattern, @Nullable Label label, ReasonerQuery parent, ReasoningContext ctx) {
+        return new IsaAtom(var.asReturnedVar(), pattern, parent, label, predicateVar, ctx);
     }
 
-    public static IsaAtom create(Variable var, Variable predicateVar, @Nullable ConceptId predicateId, boolean isDirect, ReasonerQuery parent, ReasoningContext ctx) {
+    public static IsaAtom create(Variable var, Variable predicateVar, @Nullable Label label, boolean isDirect, ReasonerQuery parent, ReasoningContext ctx) {
         Statement pattern = isDirect ?
                 new Statement(var).isaX(new Statement(predicateVar)) :
                 new Statement(var).isa(new Statement(predicateVar));
-        return new IsaAtom(var, pattern, parent, predicateId, predicateVar, ctx);
-    }
-
-    public static IsaAtom create( Variable var, Variable predicateVar, SchemaConcept type, boolean isDirect, ReasonerQuery parent, ReasoningContext ctx) {
-        Statement pattern = isDirect ?
-                new Statement(var).isaX(new Statement(predicateVar)) :
-                new Statement(var).isa(new Statement(predicateVar));
-        return new IsaAtom(var, pattern, parent, type.id(), predicateVar, ctx);
+        return new IsaAtom(var, pattern, parent, label, predicateVar, ctx);
     }
 
     private static IsaAtom create(IsaAtom a, ReasonerQuery parent) {
-        return create(a.getVarName(), a.getPredicateVariable(), a.getPattern(), a.getTypeId(), parent, a.context());
+        return create(a.getVarName(), a.getPredicateVariable(), a.getPattern(), a.getTypeLabel(), parent, a.context());
     }
 
     @Override
@@ -116,13 +108,13 @@ public class IsaAtom extends IsaAtomBase {
         IsaAtom that = (IsaAtom) obj;
         return this.getVarName().equals(that.getVarName())
                 && this.isDirect() == that.isDirect()
-                && ((this.getTypeId() == null) ? (that.getTypeId() == null) : this.getTypeId().equals(that.getTypeId()));
+                && ((this.getTypeLabel() == null) ? (that.getTypeLabel() == null) : this.getTypeLabel().equals(that.getTypeLabel()));
     }
 
     @Override
     public int hashCode() {
         if (!hashCodeMemoised) {
-            hashCode = Objects.hash(getVarName(), getTypeId());
+            hashCode = Objects.hash(getVarName(), getTypeLabel());
             hashCodeMemoised = true;
         }
         return hashCode;
@@ -149,8 +141,8 @@ public class IsaAtom extends IsaAtomBase {
 
     @Override
     public IsaAtom addType(SchemaConcept type) {
-        if (getTypeId() != null) return this;
-        return create(getVarName(), getPredicateVariable(), type.id(), this.isDirect(), this.getParentQuery(), this.context());
+        if (getTypeLabel() != null) return this;
+        return create(getVarName(), getPredicateVariable(), type.label(), this.isDirect(), this.getParentQuery(), this.context());
     }
 
     @Override
@@ -178,7 +170,7 @@ public class IsaAtom extends IsaAtomBase {
 
     @Override
     public Atom rewriteWithTypeVariable() {
-        return create(getVarName(), getPredicateVariable().asReturnedVar(), getTypeId(), this.isDirect(), getParentQuery(), context());
+        return create(getVarName(), getPredicateVariable().asReturnedVar(), getTypeLabel(), this.isDirect(), getParentQuery(), context());
     }
 
     @Override

@@ -353,7 +353,7 @@ public class ReasonerQueryImpl extends ResolvableQuery {
                 .map(p -> new Pair<>(p, conceptManager.<Concept>getConcept(p.getPredicate())))
                 .filter(p -> Objects.nonNull(p.second()))
                 .filter(p -> p.second().isEntity())
-                .map(p -> IsaAtom.create(p.first().getVarName(), new Variable(), p.second().asEntity().type(), false, this, context()));
+                .map(p -> IsaAtom.create(p.first().getVarName(), new Variable(), p.second().asEntity().type().label(), false, this, context()));
     }
 
     private Multimap<Variable, Type> getVarTypeMap(Stream<IsaAtomBase> isas){

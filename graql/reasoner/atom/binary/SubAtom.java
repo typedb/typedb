@@ -21,6 +21,7 @@ package grakn.core.graql.reasoner.atom.binary;
 import grakn.core.graql.reasoner.ReasoningContext;
 import grakn.core.graql.reasoner.atom.predicate.Predicate;
 import grakn.core.kb.concept.api.ConceptId;
+import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import graql.lang.property.SubProperty;
@@ -44,27 +45,27 @@ public class SubAtom extends OntologicalAtom {
     private SubAtom(Variable varName,
                     Statement pattern,
                     ReasonerQuery parentQuery,
-                    @Nullable ConceptId typeId,
+                    @Nullable Label label,
                     Variable predicateVariable,
                     ReasoningContext ctx) {
-        super(varName, pattern, parentQuery, typeId, predicateVariable, ctx);
+        super(varName, pattern, parentQuery, label, predicateVariable, ctx);
     }
 
-    public static SubAtom create(Variable var, Variable pVar, ConceptId predicateId, ReasonerQuery parent, ReasoningContext ctx) {
+    public static SubAtom create(Variable var, Variable pVar, @Nullable Label label, ReasonerQuery parent, ReasoningContext ctx) {
         Variable varName = var.asReturnedVar();
         Variable predicateVar = pVar.asReturnedVar();
-        return new SubAtom(varName, new Statement(varName).sub(new Statement(predicateVar)), parent, predicateId, predicateVar, ctx);
+        return new SubAtom(varName, new Statement(varName).sub(new Statement(predicateVar)), parent, label, predicateVar, ctx);
     }
     /**
      * copy constructor
      */
     private static SubAtom create(SubAtom a, ReasonerQuery parent) {
-        return create(a.getVarName(), a.getPredicateVariable(), a.getTypeId(), parent, a.context());
+        return create(a.getVarName(), a.getPredicateVariable(), a.getTypeLabel(), parent, a.context());
     }
 
     @Override
-    OntologicalAtom createSelf(Variable var, Variable predicateVar, ConceptId predicateId, ReasonerQuery parent) {
-        return create(var, predicateVar, predicateId, parent, context());
+    OntologicalAtom createSelf(Variable var, Variable predicateVar, @Nullable Label label, ReasonerQuery parent) {
+        return create(var, predicateVar, label, parent, context());
     }
 
     @Override

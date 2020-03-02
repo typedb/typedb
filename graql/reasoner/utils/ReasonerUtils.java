@@ -79,47 +79,40 @@ public class ReasonerUtils {
     }
 
     /**
-     * looks for an appropriate var property with a specified name among the vars and maps it to an IdPredicate,
-     * covers the case when specified variable name is user defined
+     * Looks for an appropriate var property with a specified name among the vars and maps it to a Label if possible.
+     * Covers the case when specified variable name is user defined.
      * @param typeVariable variable name of interest
      * @param vars VarAdmins to look for properties
-     * @param parent reasoner query the mapped predicate should belong to
      * @return mapped IdPredicate
      */
-    public static IdPredicate getUserDefinedIdPredicate(ConceptManager conceptManager, Variable typeVariable, Set<Statement> vars, ReasonerQuery parent){
+    public static Label getLabelFromUserDefinedVar(Variable typeVariable, Set<Statement> vars, ConceptManager conceptManager){
         return  vars.stream()
                 .filter(v -> v.var().equals(typeVariable))
                 .flatMap(v -> v.hasProperty(TypeProperty.class)?
-                        v.getProperties(TypeProperty.class).map(np -> IdPredicate.create(typeVariable, typeFromLabel(Label.of(np.name()), conceptManager).id(), parent)) :
-                        v.getProperties(IdProperty.class).map(np -> IdPredicate.create(typeVariable, ConceptId.of(np.id()), parent)))
+                        v.getProperties(TypeProperty.class).map(np -> Label.of(np.name())) :
+                        v.getProperties(IdProperty.class).map(np -> conceptManager.getConcept(ConceptId.of(np.id())).asType().label()))
                 .findFirst().orElse(null);
     }
 
     /**
-     * looks for an appropriate var property with a specified name among the vars and maps it to an IdPredicate,
-     * covers both the cases when variable is and isn't user defined
+     * Looks for an appropriate var property with a specified name among the vars and maps it to a Label if possible.
+     * Covers both the cases when variable is and isn't user defined.
      * @param typeVariable variable name of interest
      * @param typeVar Statement to look for in case the variable name is not user defined
      * @param vars VarAdmins to look for properties
-     * @param parent reasoner query the mapped predicate should belong to
      * @return mapped IdPredicate
      */
     @Nullable
-    public static IdPredicate getIdPredicate(Variable typeVariable, Statement typeVar, Set<Statement> vars, ReasonerQuery parent, ConceptManager conceptManager){
-        IdPredicate predicate = null;
+    public static Label getLabel(Variable typeVariable, Statement typeVar, Set<Statement> vars, ConceptManager conceptManager){
+        Label label = null;
         //look for id predicate among vars
         if(typeVar.var().isReturned()) {
-            predicate = getUserDefinedIdPredicate(conceptManager, typeVariable, vars, parent);
+            label = getLabelFromUserDefinedVar(typeVariable, vars, conceptManager);
         } else {
             TypeProperty nameProp = typeVar.getProperty(TypeProperty.class).orElse(null);
-
-            if (nameProp != null){
-                Label typeLabel = Label.of(nameProp.name());
-                SchemaConcept type = typeFromLabel(typeLabel, conceptManager);
-                if (type != null) predicate = IdPredicate.create(typeVariable, type.id(), parent);
-            }
+            if (nameProp != null) label = Label.of(nameProp.name());
         }
-        return predicate;
+        return label;
     }
 
     /**

@@ -295,6 +295,6 @@ public class RelationTypeReasoner implements TypeReasoner<RelationAtom> {
                         relationPattern.isa(new Statement(atom.getPredicateVariable()))
                 );
 
-        return RelationAtom.create(newPattern, atom.getPredicateVariable(), atom.getTypeId(), atom.getPossibleTypes(), atom.getParentQuery(), atom.context());
+        return RelationAtom.create(newPattern, atom.getPredicateVariable(), atom.getTypeLabel(), atom.getPossibleTypes(), atom.getParentQuery(), atom.context());
     }
 }

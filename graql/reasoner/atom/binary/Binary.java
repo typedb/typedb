@@ -27,9 +27,8 @@ import grakn.core.graql.reasoner.atom.task.relate.BinarySemanticProcessor;
 import grakn.core.graql.reasoner.atom.task.relate.SemanticProcessor;
 import grakn.core.graql.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierType;
-import grakn.core.kb.concept.api.ConceptId;
+import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.SchemaConcept;
-import grakn.core.kb.graql.reasoner.ReasonerCheckedException;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
 import graql.lang.Graql;
@@ -37,12 +36,11 @@ import graql.lang.pattern.Pattern;
 import graql.lang.property.IsaProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
-
-import javax.annotation.Nullable;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 /**
  *
@@ -63,9 +61,9 @@ public abstract class Binary extends Atom {
     private SchemaConcept type = null;
     private IdPredicate typePredicate = null;
 
-    Binary(Variable varName, Statement pattern, ReasonerQuery reasonerQuery, ConceptId typeId,
+    Binary(Variable varName, Statement pattern, ReasonerQuery reasonerQuery, @Nullable Label label,
            Variable predicateVariable, ReasoningContext ctx) {
-        super(reasonerQuery, varName, pattern, typeId, ctx);
+        super(reasonerQuery, varName, pattern, label, ctx);
         this.predicateVariable = predicateVariable;
         this.semanticProcessor = new BinarySemanticProcessor(ctx.conceptManager());
     }
@@ -76,8 +74,8 @@ public abstract class Binary extends Atom {
 
     @Nullable
     public IdPredicate getTypePredicate(){
-        if (typePredicate == null && getTypeId() != null) {
-            typePredicate = IdPredicate.create(new Statement(getPredicateVariable()).id(getTypeId().getValue()), getParentQuery());
+        if (typePredicate == null && getTypeLabel() != null) {
+            typePredicate = IdPredicate.create(new Statement(getPredicateVariable()).id(getTypeLabel().getValue()), getParentQuery());
         }
         return typePredicate;
     }
@@ -90,9 +88,10 @@ public abstract class Binary extends Atom {
     @Nullable
     @Override
     public SchemaConcept getSchemaConcept(){
-        if (type == null && getTypeId() != null) {
-            SchemaConcept concept = context().conceptManager().getConcept(getTypeId());
-            if (concept == null) throw ReasonerCheckedException.idNotFound(getTypeId());
+        if (type == null && getTypeLabel() != null) {
+            SchemaConcept concept = context().conceptManager().getSchemaConcept(getTypeLabel());
+            //TODO
+            //if (concept == null) throw ReasonerCheckedException.idNotFound(getTypeLabel());
             type = concept;
         }
         return type;
@@ -120,7 +119,7 @@ public abstract class Binary extends Atom {
     @Override
     public int alphaEquivalenceHashCode() {
         int hashCode = 1;
-        hashCode = hashCode * 37 + (this.getTypeId() != null? this.getTypeId().hashCode() : 0);
+        hashCode = hashCode * 37 + (this.getTypeLabel() != null? this.getTypeLabel().hashCode() : 0);
         return hashCode;
     }
 
@@ -136,7 +135,7 @@ public abstract class Binary extends Atom {
         return (this.isUserDefined() == that.isUserDefined())
                 && (this.getPredicateVariable().isReturned() == that.getPredicateVariable().isReturned())
                 && this.isDirect() == that.isDirect()
-                && Objects.equals(this.getTypeId(), that.getTypeId());
+                && Objects.equals(this.getTypeLabel(), that.getTypeLabel());
     }
 
     @Override

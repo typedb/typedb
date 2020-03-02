@@ -20,12 +20,14 @@ package grakn.core.graql.reasoner.atom.binary;
 import grakn.core.graql.reasoner.ReasoningContext;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.kb.concept.api.ConceptId;
+import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 
 import java.util.Set;
+import javax.annotation.Nullable;
 
 /**
  *
@@ -46,9 +48,9 @@ import java.util.Set;
  */
 public abstract class TypeAtom extends Binary {
 
-    TypeAtom(Variable varName, Statement pattern, ReasonerQuery reasonerQuery, ConceptId typeId,
+    TypeAtom(Variable varName, Statement pattern, ReasonerQuery reasonerQuery, @Nullable Label label,
              Variable predicateVariable, ReasoningContext ctx) {
-        super(varName, pattern, reasonerQuery, typeId, predicateVariable, ctx);
+        super(varName, pattern, reasonerQuery, label, predicateVariable, ctx);
     }
 
     @Override

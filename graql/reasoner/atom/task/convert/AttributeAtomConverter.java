@@ -49,7 +49,7 @@ public class AttributeAtomConverter implements AtomConverter<AttributeAtom> {
                         .rel(Schema.ImplicitType.HAS_VALUE.getLabel(type.label()).getValue(), new Statement(atom.getAttributeVariable()))
                         .isa(typeLabel.getValue()),
                 atom.getPredicateVariable(),
-                ctx.conceptManager().getSchemaConcept(typeLabel).id(),
+                typeLabel,
                 atom.getParentQuery(),
                 ctx
         );
@@ -70,7 +70,7 @@ public class AttributeAtomConverter implements AtomConverter<AttributeAtom> {
      */
     @Override
     public IsaAtom toIsaAtom(AttributeAtom atom, ReasoningContext ctx) {
-        IsaAtom isaAtom = IsaAtom.create(atom.getAttributeVariable(), atom.getPredicateVariable(), atom.getTypeId(), false, atom.getParentQuery(), ctx);
+        IsaAtom isaAtom = IsaAtom.create(atom.getAttributeVariable(), atom.getPredicateVariable(), atom.getTypeLabel(), false, atom.getParentQuery(), ctx);
         Set<Statement> patterns = new HashSet<>(isaAtom.getCombinedPattern().statements());
         atom.getPredicates().map(Predicate::getPattern).forEach(patterns::add);
         atom.getMultiPredicate().stream().map(Predicate::getPattern).forEach(patterns::add);

@@ -70,20 +70,20 @@ public abstract class Atom extends AtomicBase {
     private final AtomValidator<Atom> validator = new BasicAtomValidator();
     private Set<InferenceRule> applicableRules = null;
 
-    private final ConceptId typeId;
+    private final Label typeLabel;
 
-    public Atom(ReasonerQuery reasonerQuery, Variable varName, Statement pattern, ConceptId typeId, ReasoningContext ctx) {
+    public Atom(ReasonerQuery reasonerQuery, Variable varName, Statement pattern, @Nullable Label typeLabel, ReasoningContext ctx) {
         super(reasonerQuery, varName, pattern);
         this.ctx = ctx;
-        this.typeId = typeId;
+        this.typeLabel = typeLabel;
     }
 
     /**
      * @return type id of the corresponding type if any
      */
     @Nullable
-    public ConceptId getTypeId() {
-        return typeId;
+    public Label getTypeLabel() {
+        return typeLabel;
     }
 
     public ReasoningContext context(){ return ctx;}
