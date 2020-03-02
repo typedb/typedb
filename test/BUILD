@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2019 Grakn Labs
+# Copyright (C) 2020 Grakn Labs
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -15,18 +15,18 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-package(default_visibility = ["//visibility:public"])
 load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
 
-java_library(
-    name = "graph",
-    srcs = ["Graph.java"],
+java_test(
+    name = "test-graph",
+    test_class = "grakn.hypergraph.GraphTest",
+    srcs = ["GraphTest.java"],
     deps = [
-        "//exception:exception",
-        "//dependencies/maven/artifacts/org/rocksdb:rocksdbjni"
-    ],
+        "//:graph",
+    ]
 )
+
 
 checkstyle_test(
     name = "checkstyle",

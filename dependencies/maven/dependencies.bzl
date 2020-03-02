@@ -68,7 +68,7 @@ def jar_artifact_callback(hash):
 
 def list_dependencies():
     return [
-    {"artifact": "org.rocksdb:rocksdbjni:5.5.1", "lang": "java", "sha1": "57c2e04b9d2e572f6684d23fb3f33a84a289a405", "sha256": "8f194e8d26fdff2caf2c58092658a8fcebd053fc6a0014fccf5e7fd78c7ce9af", "repository": "https://repo.maven.apache.org/maven2/", "url": "https://repo.maven.apache.org/maven2/org/rocksdb/rocksdbjni/5.5.1/rocksdbjni-5.5.1.jar", "source": {"sha1": "12e8139c6b015786653c762f27356a6a599bf6f7", "sha256": "300290421a23e5a5248227c83b085f2e02708ce18ced578793889cad614bde15", "repository": "https://repo.maven.apache.org/maven2/", "url": "https://repo.maven.apache.org/maven2/org/rocksdb/rocksdbjni/5.5.1/rocksdbjni-5.5.1-sources.jar"} , "name": "org-rocksdb-rocksdbjni", "actual": "@org-rocksdb-rocksdbjni//jar", "bind": "jar/org/rocksdb/rocksdbjni"},
+    {"artifact": "org.rocksdb:rocksdbjni:6.6.4", "lang": "java", "sha1": "c0a678885999bdca1bca8ee1226ecc2b9aec7596", "sha256": "a71f1afaa127f7b940cfa81877d6c30a524d3068f469918320e035946f54f71a", "repository": "https://repo.maven.apache.org/maven2/", "url": "https://repo.maven.apache.org/maven2/org/rocksdb/rocksdbjni/6.6.4/rocksdbjni-6.6.4.jar", "source": {"sha1": "fd184e9a85a7794880759faf82ecee43fd74a12d", "sha256": "3b64d27d6925777428bcf6562f9e436d925b78e90607677e697971c156ad1122", "repository": "https://repo.maven.apache.org/maven2/", "url": "https://repo.maven.apache.org/maven2/org/rocksdb/rocksdbjni/6.6.4/rocksdbjni-6.6.4-sources.jar"} , "name": "org-rocksdb-rocksdbjni", "actual": "@org-rocksdb-rocksdbjni//jar", "bind": "jar/org/rocksdb/rocksdbjni"},
     ]
 
 def maven_dependencies(callback = jar_artifact_callback):

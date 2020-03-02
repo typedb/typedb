@@ -37,3 +37,33 @@ load("@graknlabs_build_tools//bazel:dependencies.bzl", "bazel_common", "bazel_de
 bazel_common()
 bazel_deps()
 bazel_toolchain()
+
+
+#################################
+# Load Build Tools dependencies #
+#################################
+
+load("@graknlabs_build_tools//checkstyle:dependencies.bzl", "checkstyle_dependencies")
+checkstyle_dependencies()
+
+load("@graknlabs_build_tools//bazel:dependencies.bzl", "bazel_rules_python")
+bazel_rules_python()
+
+load("@io_bazel_rules_python//python:pip.bzl", "pip_repositories", "pip_import")
+pip_repositories()
+
+pip_import(
+    name = "graknlabs_build_tools_ci_pip",
+    requirements = "@graknlabs_build_tools//ci:requirements.txt",
+)
+load("@graknlabs_build_tools_ci_pip//:requirements.bzl",
+graknlabs_build_tools_ci_pip_install = "pip_install")
+graknlabs_build_tools_ci_pip_install()
+
+
+#####################################
+# Load Java dependencies from Maven #
+#####################################
+
+load("//dependencies/maven:dependencies.bzl", "maven_dependencies")
+maven_dependencies()
