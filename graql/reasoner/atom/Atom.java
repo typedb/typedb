@@ -72,6 +72,9 @@ public abstract class Atom extends AtomicBase {
 
     private final Label typeLabel;
 
+    /**
+     * NB: NULL typeLabel signals that the we don't know the specific non-meta type of this atom.
+     */
     public Atom(ReasonerQuery reasonerQuery, Variable varName, Statement pattern, @Nullable Label typeLabel, ReasoningContext ctx) {
         super(reasonerQuery, varName, pattern);
         this.ctx = ctx;
