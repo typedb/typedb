@@ -27,6 +27,7 @@ import grakn.core.graql.reasoner.atom.task.relate.BinarySemanticProcessor;
 import grakn.core.graql.reasoner.atom.task.relate.SemanticProcessor;
 import grakn.core.graql.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierType;
+import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
@@ -75,7 +76,8 @@ public abstract class Binary extends Atom {
     @Nullable
     public IdPredicate getTypePredicate(){
         if (typePredicate == null && getTypeLabel() != null) {
-            typePredicate = IdPredicate.create(new Statement(getPredicateVariable()).id(getTypeLabel().getValue()), getParentQuery());
+            ConceptId typeId = context().conceptManager().getSchemaConcept(getTypeLabel()).id();
+            typePredicate = IdPredicate.create(new Statement(getPredicateVariable()).id(typeId.getValue()), getParentQuery());
         }
         return typePredicate;
     }
