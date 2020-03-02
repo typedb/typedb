@@ -275,8 +275,8 @@ jobs:
           bazel run @graknlabs_build_tools//ci:sync-dependencies -- \
           --source grakn@$CIRCLE_SHA1 \
           --targets \
-          grakn-kgms:master workbase:master docs:master examples:master \
-          benchmark:master client-java:master console:master kglib:master
+          grakn-kgms:master workbase:master benchmark:master \
+          client-java:master console:master kglib:master
         # TODO: Remove benchmark and client-java once #5272 is solved
         # TODO: Remove console once #5270 is solved
 
