@@ -19,13 +19,14 @@
 package grakn.core.graql.reasoner.atom.binary;
 
 import grakn.core.graql.reasoner.ReasoningContext;
-import grakn.core.kb.concept.api.ConceptId;
+import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import graql.lang.property.RelatesProperty;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
+import javax.annotation.Nullable;
 
 
 /**
@@ -33,24 +34,24 @@ import graql.lang.statement.Variable;
  */
 public class RelatesAtom extends OntologicalAtom {
 
-    private RelatesAtom(Variable varName, Statement pattern, ReasonerQuery reasonerQuery, ConceptId typeId,
+    private RelatesAtom(Variable varName, Statement pattern, ReasonerQuery reasonerQuery, @Nullable Label label,
                         Variable predicateVariable, ReasoningContext ctx) {
-        super(varName, pattern, reasonerQuery, typeId, predicateVariable, ctx);
+        super(varName, pattern, reasonerQuery, label, predicateVariable, ctx);
     }
 
-    public static RelatesAtom create(Variable var, Variable pVar, ConceptId predicateId, ReasonerQuery parent, ReasoningContext ctx) {
+    public static RelatesAtom create(Variable var, Variable pVar, @Nullable Label label, ReasonerQuery parent, ReasoningContext ctx) {
         Variable varName = var.asReturnedVar();
         Variable predicateVar = pVar.asReturnedVar();
-        return new RelatesAtom(varName, new Statement(varName).relates(new Statement(predicateVar)), parent, predicateId, predicateVar, ctx);
+        return new RelatesAtom(varName, new Statement(varName).relates(new Statement(predicateVar)), parent, label, predicateVar, ctx);
     }
 
     private static RelatesAtom create(RelatesAtom a, ReasonerQuery parent) {
-        return create(a.getVarName(), a.getPredicateVariable(), a.getTypeId(), parent, a.context());
+        return create(a.getVarName(), a.getPredicateVariable(), a.getTypeLabel(), parent, a.context());
     }
 
     @Override
-    OntologicalAtom createSelf(Variable var, Variable predicateVar, ConceptId predicateId, ReasonerQuery parent) {
-        return RelatesAtom.create(var, predicateVar, predicateId, parent, context());
+    OntologicalAtom createSelf(Variable var, Variable predicateVar, @Nullable Label label, ReasonerQuery parent) {
+        return RelatesAtom.create(var, predicateVar, label, parent, context());
     }
 
     @Override

@@ -108,12 +108,12 @@ public class RelationAtom extends IsaAtomBase {
             Variable varName,
             Statement pattern,
             ReasonerQuery parentQuery,
-            @Nullable ConceptId typeId,
+            @Nullable Label label,
             Variable predicateVariable,
             ImmutableList<RelationProperty.RolePlayer> relationPlayers,
             ImmutableSet<Label> roleLabels,
             ReasoningContext ctx) {
-        super(varName, pattern, parentQuery, typeId, predicateVariable, ctx);
+        super(varName, pattern, parentQuery, label, predicateVariable, ctx);
         this.relationPlayers = relationPlayers;
         this.roleLabels = roleLabels;
 
@@ -122,7 +122,7 @@ public class RelationAtom extends IsaAtomBase {
         this.validator = new RelationAtomValidator(ctx.conceptManager());
     }
 
-    public static RelationAtom create(Statement pattern, Variable predicateVar, @Nullable ConceptId predicateId, ReasonerQuery parent, ReasoningContext ctx) {
+    public static RelationAtom create(Statement pattern, Variable predicateVar, @Nullable Label label, ReasonerQuery parent, ReasoningContext ctx) {
         List<RelationProperty.RolePlayer> rps = new ArrayList<>();
         pattern.getProperty(RelationProperty.class)
                 .ifPresent(prop -> prop.relationPlayers().stream().sorted(Comparator.comparing(Object::hashCode)).forEach(rps::add));
@@ -135,11 +135,11 @@ public class RelationAtom extends IsaAtomBase {
                         .flatMap(Streams::optionalToStream)
                         .map(Label::of).iterator()
         ).build();
-        return new RelationAtom(pattern.var(), pattern, parent, predicateId, predicateVar, relationPlayers, roleLabels, ctx);
+        return new RelationAtom(pattern.var(), pattern, parent, label, predicateVar, relationPlayers, roleLabels, ctx);
     }
 
-    public static RelationAtom create(Statement pattern, Variable predicateVar, @Nullable ConceptId predicateId, @Nullable ImmutableList<Type> possibleTypes, ReasonerQuery parent, ReasoningContext ctx) {
-        RelationAtom atom = create(pattern, predicateVar, predicateId, parent, ctx);
+    public static RelationAtom create(Statement pattern, Variable predicateVar, @Nullable Label label, @Nullable ImmutableList<Type> possibleTypes, ReasonerQuery parent, ReasoningContext ctx) {
+        RelationAtom atom = create(pattern, predicateVar, label, parent, ctx);
         atom.possibleTypes = possibleTypes;
         return atom;
     }
@@ -148,7 +148,7 @@ public class RelationAtom extends IsaAtomBase {
      * Copy constructor
      */
     private static RelationAtom create(RelationAtom a, ReasonerQuery parent) {
-        RelationAtom atom = new RelationAtom(a.getVarName(), a.getPattern(), parent, a.getTypeId(), a.getPredicateVariable(), a.getRelationPlayers(), a.getRoleLabels(), a.context());
+        RelationAtom atom = new RelationAtom(a.getVarName(), a.getPattern(), parent, a.getTypeLabel(), a.getPredicateVariable(), a.getRelationPlayers(), a.getRoleLabels(), a.context());
         atom.possibleTypes = a.possibleTypes;
         return atom;
     }
@@ -168,7 +168,7 @@ public class RelationAtom extends IsaAtomBase {
         if (obj == this) return true;
         if (obj == null || this.getClass() != obj.getClass()) return false;
         RelationAtom that = (RelationAtom) obj;
-        return Objects.equals(this.getTypeId(), that.getTypeId())
+        return Objects.equals(this.getTypeLabel(), that.getTypeLabel())
                 && this.isUserDefined() == that.isUserDefined()
                 && this.isDirect() == that.isDirect()
                 && this.getVarNames().equals(that.getVarNames())
@@ -178,7 +178,7 @@ public class RelationAtom extends IsaAtomBase {
     @Override
     public int hashCode() {
         if (!hashCodeMemoized) {
-            hashCode = Objects.hash(getTypeId(), getVarNames(), getRelationPlayers());
+            hashCode = Objects.hash(getTypeLabel(), getVarNames(), getRelationPlayers());
             hashCodeMemoized = true;
         }
         return hashCode;
@@ -207,7 +207,7 @@ public class RelationAtom extends IsaAtomBase {
     @Override
     public Set<Atom> rewriteToAtoms() {
         return this.getRelationPlayers().stream()
-                .map(rp -> create(relationPattern(getVarName().asReturnedVar(), Sets.newHashSet(rp)), getPredicateVariable(), getTypeId(), null, getParentQuery(), context()))
+                .map(rp -> create(relationPattern(getVarName().asReturnedVar(), Sets.newHashSet(rp)), getPredicateVariable(), getTypeLabel(), null, getParentQuery(), context()))
                 .collect(Collectors.toSet());
     }
 
@@ -337,7 +337,7 @@ public class RelationAtom extends IsaAtomBase {
 
     private int baseHashCode() {
         int baseHashCode = 1;
-        baseHashCode = baseHashCode * 37 + (this.getTypeId() != null ? this.getTypeId().hashCode() : 0);
+        baseHashCode = baseHashCode * 37 + (this.getTypeLabel() != null ? this.getTypeLabel().hashCode() : 0);
         baseHashCode = baseHashCode * 37 + this.getRoleLabels().hashCode();
         return baseHashCode;
     }
@@ -513,9 +513,9 @@ public class RelationAtom extends IsaAtomBase {
 
     @Override
     public RelationAtom addType(SchemaConcept type) {
-        if (getTypeId() != null) return this;
+        if (getTypeLabel() != null) return this;
         //NB: do not cache possible types
-        return create(this.getPattern(), this.getPredicateVariable(), type.id(), this.getParentQuery(), this.context());
+        return create(this.getPattern(), this.getPredicateVariable(), type.label(), this.getParentQuery(), this.context());
     }
 
     @Override
@@ -652,7 +652,7 @@ public class RelationAtom extends IsaAtomBase {
                 relVar = relVar.rel(rp.getPlayer());
             }
         }
-        return create(relVar, this.getPredicateVariable(), this.getTypeId(), this.getPossibleTypes(), this.getParentQuery(), this.context());
+        return create(relVar, this.getPredicateVariable(), this.getTypeLabel(), this.getPossibleTypes(), this.getParentQuery(), this.context());
     }
 
     /**
@@ -680,12 +680,12 @@ public class RelationAtom extends IsaAtomBase {
                 relVar = relVar.rel(c.getPlayer());
             }
         }
-        return create(relVar, this.getPredicateVariable(), this.getTypeId(), this.getPossibleTypes(), this.getParentQuery(), this.context());
+        return create(relVar, this.getPredicateVariable(), this.getTypeLabel(), this.getPossibleTypes(), this.getParentQuery(), this.context());
     }
 
     @Override
     public RelationAtom rewriteWithTypeVariable() {
-        return create(this.getPattern(), this.getPredicateVariable().asReturnedVar(), this.getTypeId(), this.getPossibleTypes(), this.getParentQuery(), this.context());
+        return create(this.getPattern(), this.getPredicateVariable().asReturnedVar(), this.getTypeLabel(), this.getPossibleTypes(), this.getParentQuery(), this.context());
     }
 
     @Override

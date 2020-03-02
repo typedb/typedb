@@ -24,6 +24,7 @@ import grakn.core.graql.reasoner.ReasoningContext;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.rule.InferenceRule;
 import grakn.core.kb.concept.api.ConceptId;
+import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
@@ -36,18 +37,19 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 /**
  * Base class for defining ontological Atom - ones referring to ontological elements.
  */
 public abstract class OntologicalAtom extends TypeAtom {
 
-    OntologicalAtom(Variable varName, Statement pattern, ReasonerQuery reasonerQuery, ConceptId typeId,
+    OntologicalAtom(Variable varName, Statement pattern, ReasonerQuery reasonerQuery, @Nullable Label label,
                     Variable predicateVariable, ReasoningContext ctx) {
-        super(varName, pattern, reasonerQuery, typeId, predicateVariable, ctx);
+        super(varName, pattern, reasonerQuery, label, predicateVariable, ctx);
     }
 
-    abstract OntologicalAtom createSelf(Variable var, Variable predicateVar, ConceptId predicateId, ReasonerQuery parent);
+    abstract OntologicalAtom createSelf(Variable var, Variable predicateVar, @Nullable Label label, ReasonerQuery parent);
 
     @Override
     public String toString(){
@@ -78,18 +80,18 @@ public abstract class OntologicalAtom extends TypeAtom {
         Collection<Variable> vars = u.get(getVarName());
         return vars.isEmpty()?
                 Collections.singleton(this) :
-                vars.stream().map(v -> createSelf(v, getPredicateVariable(), getTypeId(), this.getParentQuery())).collect(Collectors.toSet());
+                vars.stream().map(v -> createSelf(v, getPredicateVariable(), getTypeLabel(), this.getParentQuery())).collect(Collectors.toSet());
     }
 
     @Override
     public Atom rewriteWithTypeVariable() {
-        return createSelf(getVarName(), getPredicateVariable().asReturnedVar(), getTypeId(), getParentQuery());
+        return createSelf(getVarName(), getPredicateVariable().asReturnedVar(), getTypeLabel(), getParentQuery());
     }
 
     @Override
     public Atom rewriteToUserDefined(Atom parentAtom) {
         return parentAtom.getPredicateVariable().isReturned()?
-                createSelf(getVarName(), getPredicateVariable().asReturnedVar(), getTypeId(), getParentQuery()) :
+                createSelf(getVarName(), getPredicateVariable().asReturnedVar(), getTypeLabel(), getParentQuery()) :
                 this;
     }
 
@@ -101,7 +103,7 @@ public abstract class OntologicalAtom extends TypeAtom {
         if (o instanceof OntologicalAtom) {
             OntologicalAtom that = (OntologicalAtom) o;
             return (this.getVarName().equals(that.getVarName()))
-                    && ((this.getTypeId() == null) ? (that.getTypeId() == null) : this.getTypeId().equals(that.getTypeId()));
+                    && ((this.getTypeLabel() == null) ? (that.getTypeLabel() == null) : this.getTypeLabel().equals(that.getTypeLabel()));
         }
         return false;
     }
@@ -112,7 +114,7 @@ public abstract class OntologicalAtom extends TypeAtom {
         h *= 1000003;
         h ^= this.getVarName().hashCode();
         h *= 1000003;
-        h ^= (getTypeId() == null) ? 0 : this.getTypeId().hashCode();
+        h ^= (getTypeLabel() == null) ? 0 : this.getTypeLabel().hashCode();
         return h;
     }
 }

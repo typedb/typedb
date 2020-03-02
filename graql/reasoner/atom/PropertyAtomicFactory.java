@@ -37,12 +37,10 @@ import grakn.core.graql.reasoner.atom.property.RegexAtom;
 import grakn.core.graql.reasoner.query.ReasonerQueryFactory;
 import grakn.core.graql.reasoner.utils.ReasonerUtils;
 import grakn.core.kb.concept.api.AttributeType;
-import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.manager.ConceptManager;
-import grakn.core.kb.graql.exception.GraqlQueryException;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.kb.graql.reasoner.cache.QueryCache;
 import grakn.core.kb.graql.reasoner.cache.RuleCache;
@@ -74,8 +72,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static grakn.core.graql.reasoner.utils.ReasonerUtils.getIdPredicate;
-import static grakn.core.graql.reasoner.utils.ReasonerUtils.getUserDefinedIdPredicate;
+import static grakn.core.graql.reasoner.utils.ReasonerUtils.getLabel;
+import static grakn.core.graql.reasoner.utils.ReasonerUtils.getLabelFromUserDefinedVar;
 import static grakn.core.graql.reasoner.utils.ReasonerUtils.getValuePredicates;
 import static grakn.core.graql.reasoner.utils.ReasonerUtils.typeFromLabel;
 
@@ -163,9 +161,8 @@ public class PropertyAtomicFactory {
     }
 
     private Atomic sub(Variable var, SubProperty property, ReasonerQuery parent, Set<Statement> otherStatements) {
-        IdPredicate predicate = getIdPredicate(property.type().var(), property.type(), otherStatements, parent, ctx.conceptManager());
-        ConceptId predicateId = predicate != null ? predicate.getPredicate() : null;
-        return SubAtom.create(var, property.type().var(), predicateId, parent, ctx);
+        Label label = getLabel(property.type().var(), property.type(), otherStatements, ctx.conceptManager());
+        return SubAtom.create(var, property.type().var(), label, parent, ctx);
     }
 
     private Atomic relation(Variable var, RelationProperty property, ReasonerQuery parent, Statement statement, Set<Statement> otherStatements) {
@@ -183,25 +180,19 @@ public class PropertyAtomicFactory {
             if (rolePattern != null) {
                 Variable roleVar = rolePattern.var();
                 //look for indirect role definitions
-                IdPredicate roleId = getUserDefinedIdPredicate(conceptManager, roleVar, otherStatements, parent);
-                if (roleId != null) {
-                    Concept concept = conceptManager.getConcept(roleId.getPredicate());
-                    if (concept != null) {
-                        if (concept.isRole()) {
-                            Label roleLabel = concept.asSchemaConcept().label();
-                            rolePattern = new Statement(roleVar).type(roleLabel.getValue());
-                        } else {
-                            throw GraqlQueryException.nonRoleIdAssignedToRoleVariable(statement);
-                        }
-                    }
+                Label roleLabel = getLabelFromUserDefinedVar(roleVar, otherStatements, conceptManager);
+                if (roleLabel != null) {
+                    rolePattern = new Statement(roleVar).type(roleLabel.getValue());
                 }
                 relVar = relVar.rel(rolePattern, rolePlayer);
-            } else relVar = relVar.rel(rolePlayer);
+            } else {
+                relVar = relVar.rel(rolePlayer);
+            }
         }
 
         //isa part
         IsaProperty isaProp = statement.getProperty(IsaProperty.class).orElse(null);
-        IdPredicate predicate = null;
+        Label typeLabel = null;
 
         //if no isa property present generate type variable
         Variable typeVariable = isaProp != null ? isaProp.type().var() : new Variable();
@@ -211,25 +202,21 @@ public class PropertyAtomicFactory {
             Statement isaVar = isaProp.type();
             String label = isaVar.getType().orElse(null);
             if (label != null) {
-                SchemaConcept type = typeFromLabel(Label.of(label), ctx.conceptManager());
-                predicate = IdPredicate.create(typeVariable, type.id(), parent);
+                typeLabel = typeFromLabel(Label.of(label), ctx.conceptManager()).label();
             } else {
                 typeVariable = isaVar.var();
-                predicate = getUserDefinedIdPredicate(conceptManager, typeVariable, otherStatements, parent);
+                typeLabel = getLabelFromUserDefinedVar(typeVariable, otherStatements, conceptManager);
             }
         }
-        ConceptId predicateId = predicate != null ? predicate.getPredicate() : null;
         relVar = isaProp != null && isaProp.isExplicit() ?
                 relVar.isaX(new Statement(typeVariable.asReturnedVar())) :
                 relVar.isa(new Statement(typeVariable.asReturnedVar()));
-        return RelationAtom.create(relVar, typeVariable, predicateId, parent, ctx);
+        return RelationAtom.create(relVar, typeVariable, typeLabel, parent, ctx);
     }
 
-
     private Atomic relates(Variable var, RelatesProperty property, ReasonerQuery parent, Set<Statement> otherStatements) {
-        IdPredicate predicate = getIdPredicate(property.role().var(), property.role(), otherStatements, parent, ctx.conceptManager());
-        ConceptId predicateId = predicate != null ? predicate.getPredicate() : null;
-        return RelatesAtom.create(var, property.role().var(), predicateId, parent, ctx);
+        Label label = getLabel(property.role().var(), property.role(), otherStatements, ctx.conceptManager());
+        return RelatesAtom.create(var, property.role().var(), label, parent, ctx);
     }
 
     private Atomic regex(Variable var, RegexProperty property, ReasonerQuery parent) {
@@ -237,9 +224,8 @@ public class PropertyAtomicFactory {
     }
 
     private Atomic plays(Variable var, PlaysProperty property, ReasonerQuery parent, Set<Statement> otherStatements) {
-        IdPredicate predicate = getIdPredicate(property.role().var(), property.role(), otherStatements, parent, ctx.conceptManager());
-        ConceptId predicateId = predicate == null ? null : predicate.getPredicate();
-        return PlaysAtom.create(var, property.role().var(), predicateId, parent, ctx);
+        Label label = getLabel(property.role().var(), property.role(), otherStatements, ctx.conceptManager());
+        return PlaysAtom.create(var, property.role().var(), label, parent, ctx);
     }
 
     private Atomic neq(Variable var, NeqProperty property, ReasonerQuery parent) {
@@ -256,8 +242,8 @@ public class PropertyAtomicFactory {
 
         Variable predicateVar = new Variable();
         SchemaConcept attributeType = ctx.conceptManager().getSchemaConcept(Label.of(label));
-        ConceptId predicateId = attributeType != null ? attributeType.id() : null;
-        return HasAtom.create(var, predicateVar, predicateId, parent, ctx);
+        Label typeLabel = attributeType != null ? attributeType.label() : null;
+        return HasAtom.create(var, predicateVar, typeLabel, parent, ctx);
     }
 
     private Atomic hasAttribute(Variable var, HasAttributeProperty property, ReasonerQuery parent, Set<Statement> otherStatements) {
@@ -273,14 +259,13 @@ public class PropertyAtomicFactory {
 
         IsaProperty isaProp = property.attribute().getProperties(IsaProperty.class).findFirst().orElse(null);
         Statement typeVar = isaProp != null ? isaProp.type() : null;
-        IdPredicate predicate = typeVar != null ? getIdPredicate(predicateVariable, typeVar, otherStatements, parent, ctx.conceptManager()) : null;
-        ConceptId predicateId = predicate != null ? predicate.getPredicate() : null;
+        Label typeLabel = typeVar != null ? getLabel(predicateVariable, typeVar, otherStatements, ctx.conceptManager()) : null;
 
         //add resource atom
         Statement resVar = relationVariable.isReturned() ?
                 new Statement(varName).has(property.type(), new Statement(attributeVariable), new Statement(relationVariable)) :
                 new Statement(varName).has(property.type(), new Statement(attributeVariable));
-        return AttributeAtom.create(resVar, attributeVariable, relationVariable, predicateVariable, predicateId, predicates, parent, ctx);
+        return AttributeAtom.create(resVar, attributeVariable, relationVariable, predicateVariable, typeLabel, predicates, parent, ctx);
     }
 
 
@@ -319,22 +304,18 @@ public class PropertyAtomicFactory {
         if (statement.hasProperty(RelationProperty.class)) return null;
 
         Variable typeVar = property.type().var();
-
-        IdPredicate predicate = getIdPredicate(typeVar, property.type(), otherStatements, parent, ctx.conceptManager());
-        ConceptId predicateId = predicate != null ? predicate.getPredicate() : null;
+        Label typeLabel = getLabel(typeVar, property.type(), otherStatements, ctx.conceptManager());
 
         //isa part
         Statement isaVar;
-
         if (property.isExplicit()) {
             isaVar = new Statement(var).isaX(new Statement(typeVar));
         } else {
             isaVar = new Statement(var).isa(new Statement(typeVar));
         }
 
-        return IsaAtom.create(var, typeVar, isaVar, predicateId, parent, ctx);
+        return IsaAtom.create(var, typeVar, isaVar, typeLabel, parent, ctx);
     }
-
 
     /**
      * @param pattern conjunction of patterns to be converted to atoms

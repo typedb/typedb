@@ -37,7 +37,6 @@ import grakn.core.graql.reasoner.atom.task.validate.AttributeAtomValidator;
 import grakn.core.graql.reasoner.cache.SemanticDifference;
 import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.kb.concept.api.AttributeType;
-import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.SchemaConcept;
@@ -52,12 +51,11 @@ import graql.lang.property.ValueProperty;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
-
-import javax.annotation.Nullable;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 import static grakn.core.graql.reasoner.utils.ReasonerUtils.isEquivalentCollection;
 
@@ -92,13 +90,13 @@ public class AttributeAtom extends Binary{
             Variable varName,
             Statement pattern,
             ReasonerQuery parentQuery,
-            @Nullable ConceptId typeId,
+            @Nullable Label label,
             Variable predicateVariable,
             Variable relationVariable,
             Variable attributeVariable,
             ImmutableSet<ValuePredicate> multiPredicate,
             ReasoningContext ctx) {
-        super(varName, pattern, parentQuery, typeId, predicateVariable, ctx);
+        super(varName, pattern, parentQuery, label, predicateVariable, ctx);
         this.relationVariable = relationVariable;
         this.attributeVariable = attributeVariable;
         this.multiPredicate = multiPredicate;
@@ -117,15 +115,15 @@ public class AttributeAtom extends Binary{
     }
 
     public static AttributeAtom create(Statement pattern, Variable attributeVariable,
-                                       Variable relationVariable, Variable predicateVariable, ConceptId predicateId,
+                                       Variable relationVariable, Variable predicateVariable, @Nullable Label label,
                                        Set<ValuePredicate> ps, ReasonerQuery parent, ReasoningContext ctx) {
-        return new AttributeAtom(pattern.var(), pattern, parent, predicateId, predicateVariable, relationVariable,
+        return new AttributeAtom(pattern.var(), pattern, parent, label, predicateVariable, relationVariable,
                 attributeVariable, ImmutableSet.copyOf(ps), ctx);
     }
 
     private static AttributeAtom create(AttributeAtom a, ReasonerQuery parent) {
         return create(a.getPattern(), a.getAttributeVariable(), a.getRelationVariable(), a.getPredicateVariable(),
-                a.getTypeId(), a.getMultiPredicate(), parent, a.context());
+                a.getTypeLabel(), a.getMultiPredicate(), parent, a.context());
     }
 
     private AttributeAtom convertValues(){
@@ -147,7 +145,7 @@ public class AttributeAtom extends Binary{
             return ValuePredicate.create(vp.getVarName(), operation, getParentQuery());
         }).collect(Collectors.toSet());
         return create(getPattern(), getAttributeVariable(), getRelationVariable(), getPredicateVariable(),
-                getTypeId(), newMultiPredicate, getParentQuery(), context());
+                getTypeLabel(), newMultiPredicate, getParentQuery(), context());
     }
 
 
@@ -159,7 +157,7 @@ public class AttributeAtom extends Binary{
         return create(getPattern(), getAttributeVariable(),
                 getRelationVariable(),
                 getPredicateVariable(),
-                getTypeId(),
+                getTypeLabel(),
                 newPredicates,
                 getParentQuery(),
                 context());
@@ -206,7 +204,7 @@ public class AttributeAtom extends Binary{
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
         AttributeAtom a2 = (AttributeAtom) obj;
-        return Objects.equals(this.getTypeId(), a2.getTypeId())
+        return Objects.equals(this.getTypeLabel(), a2.getTypeLabel())
                 && this.getVarName().equals(a2.getVarName())
                 && this.multiPredicateEqual(a2);
     }
@@ -232,7 +230,7 @@ public class AttributeAtom extends Binary{
     @Override
     public int alphaEquivalenceHashCode() {
         int hashCode = 1;
-        hashCode = hashCode * 37 + (this.getTypeId() != null? this.getTypeId().hashCode() : 0);
+        hashCode = hashCode * 37 + (this.getTypeLabel() != null? this.getTypeLabel().hashCode() : 0);
         hashCode = hashCode * 37 + AtomicEquivalence.equivalenceHash(this.getMultiPredicate(), AtomicEquivalence.AlphaEquivalence);
         return hashCode;
     }
@@ -338,12 +336,12 @@ public class AttributeAtom extends Binary{
         Variable relationVariable = getRelationVariable().asReturnedVar();
         Statement newVar = new Statement(getVarName())
                 .has(getSchemaConcept().label().getValue(), new Statement(attributeVariable), new Statement(relationVariable));
-        return create(newVar, attributeVariable, relationVariable, getPredicateVariable(), getTypeId(), getMultiPredicate(), getParentQuery(), context());
+        return create(newVar, attributeVariable, relationVariable, getPredicateVariable(), getTypeLabel(), getMultiPredicate(), getParentQuery(), context());
     }
 
     @Override
     public Atom rewriteWithTypeVariable() {
-        return create(getPattern(), getAttributeVariable(), getRelationVariable(), getPredicateVariable().asReturnedVar(), getTypeId(), getMultiPredicate(), getParentQuery(), context());
+        return create(getPattern(), getAttributeVariable(), getRelationVariable(), getPredicateVariable().asReturnedVar(), getTypeLabel(), getMultiPredicate(), getParentQuery(), context());
     }
 
     @Override

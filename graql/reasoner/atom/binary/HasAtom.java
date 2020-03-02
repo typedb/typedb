@@ -39,26 +39,25 @@ public class HasAtom extends OntologicalAtom {
     private HasAtom(Variable varName,
                     Statement pattern,
                     ReasonerQuery parentQuery,
-                    @Nullable ConceptId typeId,
+                    @Nullable Label label,
                     Variable predicateVariable,
                     ReasoningContext ctx) {
-        super(varName, pattern, parentQuery, typeId, predicateVariable, ctx);
+        super(varName, pattern, parentQuery, label, predicateVariable, ctx);
     }
 
-    public static HasAtom create(Variable var, Variable pVar, ConceptId predicateId, ReasonerQuery parent, ReasoningContext ctx) {
+    public static HasAtom create(Variable var, Variable pVar, @Nullable Label label, ReasonerQuery parent, ReasoningContext ctx) {
         Variable varName = var.asReturnedVar();
         Variable predicateVar = pVar.asReturnedVar();
-        Label label = ctx.conceptManager().getConcept(predicateId).asType().label();
-        return new HasAtom(varName, new Statement(varName).has(Graql.type(label.getValue())), parent, predicateId, predicateVar, ctx);
+        return new HasAtom(varName, new Statement(varName).has(Graql.type(label.getValue())), parent, label, predicateVar, ctx);
     }
 
     private static HasAtom create(TypeAtom a, ReasonerQuery parent) {
-        return create(a.getVarName(), a.getPredicateVariable(), a.getTypeId(), parent, a.context());
+        return create(a.getVarName(), a.getPredicateVariable(), a.getTypeLabel(), parent, a.context());
     }
 
     @Override
-    OntologicalAtom createSelf(Variable var, Variable predicateVar, ConceptId predicateId, ReasonerQuery parent) {
-        return HasAtom.create(var, predicateVar, predicateId, parent, context());
+    OntologicalAtom createSelf(Variable var, Variable predicateVar, @Nullable Label label, ReasonerQuery parent) {
+        return HasAtom.create(var, predicateVar, label, parent, context());
     }
 
     @Override
