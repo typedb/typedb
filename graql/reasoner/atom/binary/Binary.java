@@ -30,6 +30,7 @@ import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.SchemaConcept;
+import grakn.core.kb.graql.reasoner.ReasonerCheckedException;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
 import graql.lang.Graql;
@@ -92,8 +93,7 @@ public abstract class Binary extends Atom {
     public SchemaConcept getSchemaConcept(){
         if (type == null && getTypeLabel() != null) {
             SchemaConcept concept = context().conceptManager().getSchemaConcept(getTypeLabel());
-            //TODO
-            //if (concept == null) throw ReasonerCheckedException.idNotFound(getTypeLabel());
+            if (concept == null) throw ReasonerCheckedException.labelNotFound(getTypeLabel());
             type = concept;
         }
         return type;

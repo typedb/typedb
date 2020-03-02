@@ -163,8 +163,6 @@ public class PropertyAtomicFactory {
     private Atomic sub(Variable var, SubProperty property, ReasonerQuery parent, Set<Statement> otherStatements) {
         Label label = getLabel(property.type().var(), property.type(), otherStatements, ctx.conceptManager());
         return SubAtom.create(var, property.type().var(), label, parent, ctx);
-        //ConceptId predicateId = predicate != null ? predicate.getPredicate() : null;
-        //return SubAtom.create(var, property.type().var(), predicateId, parent, ctx);
     }
 
     private Atomic relation(Variable var, RelationProperty property, ReasonerQuery parent, Statement statement, Set<Statement> otherStatements) {
