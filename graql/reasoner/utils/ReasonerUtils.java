@@ -31,6 +31,7 @@ import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.graql.reasoner.utils.conversion.RoleConverter;
 import grakn.core.graql.reasoner.utils.conversion.SchemaConceptConverter;
 import grakn.core.graql.reasoner.utils.conversion.TypeConverter;
+import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.RelationType;
@@ -53,6 +54,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.stream.Stream;
@@ -86,9 +88,16 @@ public class ReasonerUtils {
     public static Label getLabelFromUserDefinedVar(Variable typeVariable, Set<Statement> vars, ConceptManager conceptManager){
         return  vars.stream()
                 .filter(v -> v.var().equals(typeVariable))
-                .flatMap(v -> v.hasProperty(TypeProperty.class)?
-                        v.getProperties(TypeProperty.class).map(np -> Label.of(np.name())) :
-                        v.getProperties(IdProperty.class).map(np -> conceptManager.getConcept(ConceptId.of(np.id())).asType().label()))
+                .flatMap(v -> {
+                    if (v.hasProperty(TypeProperty.class)){
+                        return v.getProperties(TypeProperty.class).map(np -> Label.of(np.name()));
+                    }
+                    return v.getProperties(IdProperty.class)
+                            .map(np -> ConceptId.of(np.id()))
+                            .map(conceptManager::<Concept>getConcept)
+                            .filter(Objects::nonNull)
+                            .map(t -> t.asSchemaConcept().label());
+                })
                 .findFirst().orElse(null);
     }
 
@@ -108,7 +117,10 @@ public class ReasonerUtils {
             label = getLabelFromUserDefinedVar(typeVariable, vars, conceptManager);
         } else {
             TypeProperty nameProp = typeVar.getProperty(TypeProperty.class).orElse(null);
-            if (nameProp != null) label = Label.of(nameProp.name());
+            if (nameProp != null){
+                //NB: we do label conversion to make sure label is valid
+                label = typeFromLabel(Label.of(nameProp.name()), conceptManager).label();
+            }
         }
         return label;
     }
