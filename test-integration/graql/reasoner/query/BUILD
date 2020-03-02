@@ -219,7 +219,6 @@ java_test(
         "//graql/planning",
         "//graql/reasoner",
         "//kb/concept/api",
-        "//kb/concept/manager",
         "//kb/graql/planning",
         "//kb/graql/reasoner",
         "//kb/keyspace",
