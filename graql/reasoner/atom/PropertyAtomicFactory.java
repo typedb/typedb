@@ -37,12 +37,10 @@ import grakn.core.graql.reasoner.atom.property.RegexAtom;
 import grakn.core.graql.reasoner.query.ReasonerQueryFactory;
 import grakn.core.graql.reasoner.utils.ReasonerUtils;
 import grakn.core.kb.concept.api.AttributeType;
-import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.manager.ConceptManager;
-import grakn.core.kb.graql.exception.GraqlQueryException;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.kb.graql.reasoner.cache.QueryCache;
 import grakn.core.kb.graql.reasoner.cache.RuleCache;
@@ -74,9 +72,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static grakn.core.graql.reasoner.utils.ReasonerUtils.getLabelFromUserDefinedVar;
 import static grakn.core.graql.reasoner.utils.ReasonerUtils.getLabel;
-import static grakn.core.graql.reasoner.utils.ReasonerUtils.getUserDefinedIdPredicate;
+import static grakn.core.graql.reasoner.utils.ReasonerUtils.getLabelFromUserDefinedVar;
 import static grakn.core.graql.reasoner.utils.ReasonerUtils.getValuePredicates;
 import static grakn.core.graql.reasoner.utils.ReasonerUtils.typeFromLabel;
 
