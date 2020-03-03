@@ -87,7 +87,7 @@ public class RelationAtom extends IsaAtomBase {
     private final ImmutableSet<Label> roleLabels;
 
     private final TypeReasoner<RelationAtom> typeReasoner = new RelationTypeReasoner();
-    private final SemanticProcessor<RelationAtom> semanticProcessor;
+    private final SemanticProcessor<RelationAtom> semanticProcessor = new RelationSemanticProcessor();
     private final AtomValidator<RelationAtom> validator = new RelationAtomValidator();
     private final AtomConverter<RelationAtom> converter = new RelationAtomConverter();
 
@@ -114,8 +114,6 @@ public class RelationAtom extends IsaAtomBase {
         super(varName, pattern, parentQuery, label, predicateVariable, ctx);
         this.relationPlayers = relationPlayers;
         this.roleLabels = roleLabels;
-
-        this.semanticProcessor = new RelationSemanticProcessor();
     }
 
     public static RelationAtom create(Statement pattern, Variable predicateVar, @Nullable Label label, ReasonerQuery parent,
@@ -508,7 +506,10 @@ public class RelationAtom extends IsaAtomBase {
 
     @Override
     public ImmutableList<Type> getPossibleTypes() {
-        return typeReasoner.inferPossibleTypes(this, new ConceptMap(), context());
+        if (possibleTypes == null) {
+            possibleTypes = typeReasoner.inferPossibleTypes(this, new ConceptMap(), context());
+        }
+        return possibleTypes;
     }
 
     @Override
@@ -634,7 +635,7 @@ public class RelationAtom extends IsaAtomBase {
                 relVar = relVar.rel(rp.getPlayer());
             }
         }
-        return create(relVar, this.getPredicateVariable(), this.getTypeLabel(), possibleTypes, this.getParentQuery(), this.context());
+        return create(relVar, this.getPredicateVariable(), this.getTypeLabel(), this.getPossibleTypes(), this.getParentQuery(), this.context());
     }
 
     /**
@@ -662,12 +663,12 @@ public class RelationAtom extends IsaAtomBase {
                 relVar = relVar.rel(c.getPlayer());
             }
         }
-        return create(relVar, this.getPredicateVariable(), this.getTypeLabel(), possibleTypes, this.getParentQuery(), this.context());
+        return create(relVar, this.getPredicateVariable(), this.getTypeLabel(), this.getPossibleTypes(), this.getParentQuery(), this.context());
     }
 
     @Override
     public RelationAtom rewriteWithTypeVariable() {
-        return create(this.getPattern(), this.getPredicateVariable().asReturnedVar(), this.getTypeLabel(), possibleTypes, this.getParentQuery(), this.context());
+        return create(this.getPattern(), this.getPredicateVariable().asReturnedVar(), this.getTypeLabel(), this.getPossibleTypes(), this.getParentQuery(), this.context());
     }
 
     @Override

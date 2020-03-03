@@ -63,7 +63,8 @@ public abstract class Binary extends Atom {
     private SchemaConcept type = null;
     private IdPredicate typePredicate = null;
 
-    Binary(Variable varName, Statement pattern, ReasonerQuery reasonerQuery, @Nullable Label label, Variable predicateVariable, ReasoningContext ctx) {
+    Binary(Variable varName, Statement pattern, ReasonerQuery reasonerQuery, @Nullable Label label,
+           Variable predicateVariable, ReasoningContext ctx) {
         super(reasonerQuery, varName, pattern, label, ctx);
         this.predicateVariable = predicateVariable;
     }

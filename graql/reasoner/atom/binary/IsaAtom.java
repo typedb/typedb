@@ -40,6 +40,7 @@ import graql.lang.property.IsaProperty;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
+
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -51,7 +52,7 @@ import javax.annotation.Nullable;
  */
 public class IsaAtom extends IsaAtomBase {
 
-    private final TypeReasoner<IsaAtom> typeReasoner;
+    private final TypeReasoner<IsaAtom> typeReasoner = new IsaTypeReasoner();
 
     private int hashCode;
     private boolean hashCodeMemoised;
@@ -59,7 +60,6 @@ public class IsaAtom extends IsaAtomBase {
     private IsaAtom(Variable varName, Statement pattern, ReasonerQuery reasonerQuery, @Nullable Label label, Variable predicateVariable,
                     ReasoningContext ctx) {
         super(varName, pattern, reasonerQuery, label, predicateVariable, ctx);
-        this.typeReasoner = new IsaTypeReasoner();
     }
 
     public static IsaAtom create(Variable var, Variable predicateVar, Statement pattern, @Nullable Label label, ReasonerQuery parent,
