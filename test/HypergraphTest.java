@@ -18,6 +18,7 @@
 
 package hypergraph;
 
+import hypergraph.core.HypergraphCore;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -37,7 +38,7 @@ public class HypergraphTest {
 
         System.out.println("Database Directory: " + directory.toString());
 
-        try (Hypergraph graph = new Hypergraph(directory.toString())) {
+        try (Hypergraph graph = new HypergraphCore(directory.toString())) {
             assertTrue(graph.isOpen());
 
             try (Hypergraph.Session session = graph.session("my_data_keyspace")) {
@@ -46,7 +47,7 @@ public class HypergraphTest {
 
                 try (Hypergraph.Transaction transaction = session.transaction(Hypergraph.Transaction.Type.READ)) {
                     assertTrue(transaction.isOpen());
-                    assertEquals(Hypergraph.Transaction.Type.READ, transaction.type());
+                    assertEquals(HypergraphCore.Transaction.Type.READ, transaction.type());
                 }
             }
         }

@@ -21,11 +21,11 @@ options:
   languages: ["java"]
   resolverType: coursier
   resolvers:
-  - id: mavencentral
-    type: default
-    url: https://repo.maven.apache.org/maven2/
-  - id: mavengraknai
-    url: http://maven.grakn.ai/nexus/content/repositories/snapshots/
+    - id: mavencentral
+      type: default
+      url: https://repo.maven.apache.org/maven2/
+    - id: mavengraknai
+      url: http://maven.grakn.ai/nexus/content/repositories/snapshots/
   strictVisibility: true
   transitivity: runtime_deps
   versionConflictPolicy: highest
