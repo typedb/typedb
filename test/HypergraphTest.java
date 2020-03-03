@@ -32,7 +32,7 @@ import static org.junit.Assert.assertTrue;
 public class HypergraphTest {
 
     @Test
-    public void testGraph() throws IOException {
+    public void test_opening_a_graph() throws IOException {
         Path directory = Paths.get(System.getProperty("user.dir")).resolve("grakn");
         Files.createDirectory(directory);
 
@@ -52,5 +52,4 @@ public class HypergraphTest {
             }
         }
     }
-
 }

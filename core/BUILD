@@ -25,6 +25,7 @@ java_library(
     deps = [
         "//:hypergraph",
         "//exception:exception",
+        "//keyvalue:keyvalue",
         "//dependencies/maven/artifacts/org/rocksdb:rocksdbjni"
     ],
 )

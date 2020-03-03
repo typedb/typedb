@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-package(default_visibility = ["//:__subpackages__"])
+package(default_visibility = ["//visibility:public"])
 load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
 

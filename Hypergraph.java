@@ -58,6 +58,10 @@ public interface Hypergraph extends AutoCloseable {
 
         boolean isOpen();
 
+        void commit();
+
+        void rollback();
+
         void close();
 
         enum Type {
@@ -68,6 +72,13 @@ public interface Hypergraph extends AutoCloseable {
 
             Type(int type) {
                 this.type = type;
+            }
+
+            public static Type of(int value) {
+                for (Type t : Type.values()) {
+                    if (t.type == value) return t;
+                }
+                return null;
             }
 
             public static Type of(String value) {

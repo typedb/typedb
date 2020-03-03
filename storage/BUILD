@@ -15,22 +15,21 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
+package(default_visibility = ["//:__pkg__"])
 load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
 
-java_test(
-    name = "test-hypergraph",
-    test_class = "hypergraph.HypergraphTest",
-    srcs = ["HypergraphTest.java"],
+java_library(
+    name = "storage",
+    srcs = glob(["*.java"]),
     deps = [
-        "//:hypergraph",
-        "//core:hypergraph-core",
-    ]
+        "//keyvalue:keyvalue"
+    ],
 )
 
 checkstyle_test(
     name = "checkstyle",
     targets = [
-        ":test-hypergraph",
+        ":storage",
     ]
 )

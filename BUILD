@@ -21,9 +21,13 @@ load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
 java_library(
     name = "hypergraph",
-    srcs = ["Hypergraph.java"],
+    srcs = [
+        "Hypergraph.java"
+    ],
     deps = [
         "//exception:exception",
+        "//storage:storage",
+        "//traversal:traversal",
         "//dependencies/maven/artifacts/org/rocksdb:rocksdbjni"
     ],
 )

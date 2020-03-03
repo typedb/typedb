@@ -145,6 +145,26 @@ public class HypergraphCore implements Hypergraph {
             }
 
             @Override
+            public void commit() {
+                try {
+                    this.transactionRocks.commit();
+                } catch (RocksDBException e) {
+                    e.printStackTrace();
+                    throw new HypergraphException(e);
+                }
+            }
+
+            @Override
+            public void rollback() {
+                try {
+                    this.transactionRocks.rollback();
+                } catch (RocksDBException e) {
+                    e.printStackTrace();
+                    throw new HypergraphException(e);
+                }
+            }
+
+            @Override
             public Hypergraph.Transaction.Type type() {
                 return this.type;
             }
