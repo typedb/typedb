@@ -16,9 +16,9 @@
  *
  */
 
-package hypergraph.keyvalue;
+package hypergraph.storage;
 
-public interface KeyValue {
+public interface Storage {
 
     byte[] get(byte[] key);
 

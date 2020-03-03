@@ -26,6 +26,13 @@ package(
 )
 
 java_library(
-    name = "keyvalue",
+    name = "storage",
     srcs = glob(["*.java"])
+)
+
+checkstyle_test(
+    name = "checkstyle",
+    targets = [
+        ":storage",
+    ]
 )

@@ -18,13 +18,13 @@
 
 package hypergraph.writer;
 
-import hypergraph.keyvalue.KeyValue;
+import hypergraph.storage.Storage;
 
 public class Writer {
 
-    private final KeyValue keyValue;
+    private final Storage storage;
 
-    public Writer(KeyValue keyValue) {
-        this.keyValue = keyValue;
+    public Writer(Storage storage) {
+        this.storage = storage;
     }
 }

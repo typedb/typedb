@@ -19,13 +19,13 @@
 package hypergraph.reader;
 
 
-import hypergraph.keyvalue.KeyValue;
+import hypergraph.storage.Storage;
 
 public class Reader {
 
-    private final KeyValue keyValue;
+    private final Storage storage;
 
-    public Reader(KeyValue keyValue) {
-        this.keyValue = keyValue;
+    public Reader(Storage storage) {
+        this.storage = storage;
     }
 }

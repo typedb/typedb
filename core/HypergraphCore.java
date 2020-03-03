@@ -148,7 +148,7 @@ public class HypergraphCore implements Hypergraph {
 
             @Override
             public Reader read() {
-                return new Reader(new KeyValue());
+                return new Reader(new Storage());
             }
 
             @Override
@@ -156,7 +156,7 @@ public class HypergraphCore implements Hypergraph {
                 if (this.type.equals(Type.READ)) {
                     throw new HypergraphException("Illegal Write Exception");
                 }
-                return new Writer(new KeyValue());
+                return new Writer(new Storage());
             }
 
             @Override
@@ -192,7 +192,7 @@ public class HypergraphCore implements Hypergraph {
                 }
             }
 
-            class KeyValue implements hypergraph.keyvalue.KeyValue{
+            class Storage implements hypergraph.storage.Storage {
 
                 @Override
                 public byte[] get(byte[] key) {
