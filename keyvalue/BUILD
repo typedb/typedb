@@ -15,15 +15,15 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
+load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 package(
     default_visibility = [
         "//core:__pkg__",
         "//cluster:__pkg__",
-        "//storage:__pkg__",
-        "//traversal:__pkg__",
+        "//reader:__pkg__",
+        "//writer:__pkg__",
     ]
 )
-load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
 java_library(
     name = "keyvalue",

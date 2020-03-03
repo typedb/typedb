@@ -16,7 +16,15 @@
  *
  */
 
-package hypergraph.traversal;
+package hypergraph.writer;
 
-public class Traversal {
+import hypergraph.keyvalue.KeyValue;
+
+public class Writer {
+
+    private final KeyValue keyValue;
+
+    public Writer(KeyValue keyValue) {
+        this.keyValue = keyValue;
+    }
 }

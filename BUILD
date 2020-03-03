@@ -15,8 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-package(default_visibility = ["//visibility:public"])
 load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
+package(default_visibility = ["//visibility:public"])
 
 
 java_library(
@@ -26,9 +26,8 @@ java_library(
     ],
     deps = [
         "//exception:exception",
-        "//storage:storage",
-        "//traversal:traversal",
-        "//dependencies/maven/artifacts/org/rocksdb:rocksdbjni"
+        "//reader:reader",
+        "//writer:writer",
     ],
 )
 

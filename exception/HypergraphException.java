@@ -20,6 +20,10 @@ package hypergraph.exception;
 
 public class HypergraphException extends RuntimeException {
 
+    public HypergraphException(String error) {
+        super(error);
+    }
+
     public HypergraphException(Exception e) {
         super(e);
     }

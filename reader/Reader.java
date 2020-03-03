@@ -16,7 +16,16 @@
  *
  */
 
-package hypergraph.storage;
+package hypergraph.reader;
 
-public class Storage {
+
+import hypergraph.keyvalue.KeyValue;
+
+public class Reader {
+
+    private final KeyValue keyValue;
+
+    public Reader(KeyValue keyValue) {
+        this.keyValue = keyValue;
+    }
 }

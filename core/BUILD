@@ -15,9 +15,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-package(default_visibility = ["//:__pkg__", "//test:__pkg__"])
 load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
-
+package(
+    default_visibility = [
+        "//:__pkg__",
+        "//test:__pkg__",
+    ]
+)
 
 java_library(
     name = "hypergraph-core",
@@ -26,6 +30,8 @@ java_library(
         "//:hypergraph",
         "//exception:exception",
         "//keyvalue:keyvalue",
+        "//reader:reader",
+        "//writer:writer",
         "//dependencies/maven/artifacts/org/rocksdb:rocksdbjni"
     ],
 )

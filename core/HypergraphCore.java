@@ -20,6 +20,8 @@ package hypergraph.core;
 
 import hypergraph.Hypergraph;
 import hypergraph.exception.HypergraphException;
+import hypergraph.reader.Reader;
+import hypergraph.writer.Writer;
 import org.rocksdb.OptimisticTransactionDB;
 import org.rocksdb.Options;
 import org.rocksdb.RocksDB;
@@ -81,7 +83,7 @@ public class HypergraphCore implements Hypergraph {
         }
     }
 
-    public class Session implements Hypergraph.Session {
+    class Session implements Hypergraph.Session {
 
         private final String keyspace;
         private OptimisticTransactionDB sessionRocks;
@@ -126,7 +128,7 @@ public class HypergraphCore implements Hypergraph {
             }
         }
 
-        public class Transaction implements Hypergraph.Transaction {
+        class Transaction implements Hypergraph.Transaction {
 
             private final WriteOptions optionsWrite = new WriteOptions();
             private final org.rocksdb.Transaction transactionRocks;
@@ -142,6 +144,19 @@ public class HypergraphCore implements Hypergraph {
             @Override
             public boolean isOpen() {
                 return this.isOpen.get();
+            }
+
+            @Override
+            public Reader read() {
+                return new Reader(new KeyValue());
+            }
+
+            @Override
+            public Writer write() {
+                if (this.type.equals(Type.READ)) {
+                    throw new HypergraphException("Illegal Write Exception");
+                }
+                return new Writer(new KeyValue());
             }
 
             @Override
@@ -174,6 +189,14 @@ public class HypergraphCore implements Hypergraph {
                 if (isOpen.compareAndSet(true, false)) {
                     transactionRocks.close();
                     optionsWrite.close();
+                }
+            }
+
+            class KeyValue implements hypergraph.keyvalue.KeyValue{
+
+                @Override
+                public byte[] get(byte[] key) {
+                    return new byte[0];
                 }
             }
         }

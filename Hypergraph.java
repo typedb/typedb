@@ -18,6 +18,9 @@
 
 package hypergraph;
 
+import hypergraph.reader.Reader;
+import hypergraph.writer.Writer;
+
 /**
  * A Hypergraph Database API
  * <p>
@@ -57,6 +60,10 @@ public interface Hypergraph extends AutoCloseable {
         Transaction.Type type();
 
         boolean isOpen();
+
+        Reader read();
+
+        Writer write();
 
         void commit();
 

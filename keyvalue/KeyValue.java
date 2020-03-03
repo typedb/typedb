@@ -19,4 +19,7 @@
 package hypergraph.keyvalue;
 
 public interface KeyValue {
+
+    byte[] get(byte[] key);
+
 }

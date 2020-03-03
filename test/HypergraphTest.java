@@ -48,6 +48,9 @@ public class HypergraphTest {
                 try (Hypergraph.Transaction transaction = session.transaction(Hypergraph.Transaction.Type.READ)) {
                     assertTrue(transaction.isOpen());
                     assertEquals(HypergraphCore.Transaction.Type.READ, transaction.type());
+
+
+
                 }
             }
         }
