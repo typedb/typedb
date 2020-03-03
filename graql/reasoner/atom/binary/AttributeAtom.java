@@ -309,8 +309,8 @@ public class AttributeAtom extends Binary{
     }
 
     @Override
-    public SemanticDifference computeSemanticDifference(Atom child, Unifier unifier, ReasoningContext ctx) {
-        return semanticProcessor.computeSemanticDifference(this, child, unifier, ctx);
+    public SemanticDifference computeSemanticDifference(Atom child, Unifier unifier) {
+        return semanticProcessor.computeSemanticDifference(this, child, unifier, context());
     }
 
     @Override

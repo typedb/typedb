@@ -445,7 +445,7 @@ public abstract class Atom extends AtomicBase {
      * @param unifier    parent->child unifier
      * @return semantic difference between this and child defined in terms of this variables
      */
-    public SemanticDifference computeSemanticDifference(Atom childAtom, Unifier unifier, ReasoningContext ctx) {
+    public SemanticDifference computeSemanticDifference(Atom childAtom, Unifier unifier) {
         return new BasicSemanticProcessor().computeSemanticDifference(this, childAtom, unifier, ctx);
     }
 }
