@@ -133,6 +133,8 @@ public enum ErrorMessage {
 
     VALIDATION_RULE_ILLEGAL_HEAD_COPYING_INCOMPATIBLE_ATTRIBUTE_VALUES("Attribute [%s] is not allowed to form a rule head of rule [%s] as it copies an attribute value from an incompatible attribute type [%s]\n"),
 
+    VALIDATION_RULE_ILLEGAL_HEAD_REWRITING_TYPE("Rule [%s] attempts to rewrite the type"),
+
     VALIDATION_RULE_INVALID_RELATION_TYPE("Rule [%s] attempts to define a relation pattern with type [%s] which is not a relation type\n"),
 
     VALIDATION_RULE_INVALID_ATTRIBUTE_TYPE("Rule [%s] attempts to define an attribute pattern with type [%s] which is not an attribute type\n"),
@@ -142,6 +144,7 @@ public enum ErrorMessage {
     VALIDATION_RULE_ROLE_CANNOT_BE_PLAYED("Rule [%s] attempts to define a rule containing a relation pattern with role [%s] which cannot be played in relation [%s]\n"),
 
     VALIDATION_RULE_TYPE_CANNOT_PLAY_ROLE("Rule [%s] attempts to define a rule containing a relation pattern with type [%s] that cannot play role [%s] in relation [%s]\n"),
+
 
     //--------------------------------------------- Factory Errors
     INVALID_PATH_TO_CONFIG("Unable to open config file [%s]"),

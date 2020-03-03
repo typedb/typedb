@@ -26,6 +26,7 @@ import grakn.core.graql.reasoner.atom.predicate.Predicate;
 import grakn.core.graql.reasoner.atom.task.infer.IsaTypeReasoner;
 import grakn.core.graql.reasoner.atom.task.infer.TypeReasoner;
 import grakn.core.graql.reasoner.atom.task.materialise.IsaMaterialiser;
+import grakn.core.graql.reasoner.atom.task.validate.IsaAtomValidator;
 import grakn.core.graql.reasoner.unifier.UnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.kb.concept.api.Label;
@@ -141,10 +142,7 @@ public class IsaAtom extends IsaAtomBase {
     @Override
     public void checkValid(){
         super.checkValid();
-        SchemaConcept type = getSchemaConcept();
-        if (type != null && !type.isType()) {
-            throw GraqlSemanticException.cannotGetInstancesOfNonType(type.label());
-        }
+        (new IsaAtomValidator()).checkValid(this, context());
     }
 
     @Override
