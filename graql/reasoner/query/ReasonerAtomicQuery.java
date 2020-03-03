@@ -214,7 +214,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         return unifier.stream()
                 .map(childParentUnifier -> {
                     Unifier inverse = childParentUnifier.inverse();
-                    return new Pair<>(inverse, this.getAtom().computeSemanticDifference(child.getAtom(), inverse));
+                    return new Pair<>(inverse, this.getAtom().computeSemanticDifference(child.getAtom(), inverse, context()));
                 })
                 .collect(Collectors.toSet());
     }
@@ -235,7 +235,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     public ResolutionState resolutionState(ConceptMap sub, Unifier u, AnswerPropagatorState parent, Set<ReasonerAtomicQuery> subGoals){
         if (getAtom().getSchemaConcept() == null) return new AtomicStateProducer(this, sub, u, parent, subGoals);
         return !containsVariablePredicates()?
-                new AtomicState(this, sub, u, parent, subGoals, context().queryFactory(), context().queryCache()) :
+                new AtomicState(this, sub, u, parent, subGoals, context()) :
                 new VariableComparisonState(this, sub, u, parent, subGoals);
     }
 

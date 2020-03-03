@@ -20,8 +20,10 @@ package grakn.core.graql.reasoner.atom.task.infer;
 
 import com.google.common.collect.ImmutableList;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.graql.reasoner.ReasoningContext;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.kb.concept.api.Type;
+import java.util.List;
 
 public interface TypeReasoner<T extends Atom>  {
 
@@ -32,7 +34,7 @@ public interface TypeReasoner<T extends Atom>  {
      * @param sub a concept map containing Ids for concepts that may be used during the inference process
      * @return a new atom with unambiguous types inferred
      */
-    T inferTypes(T atom, ConceptMap sub);
+    T inferTypes(T atom, ConceptMap sub, ReasoningContext ctx);
 
     /**
      * Attempts to infer all possible types associated with the atom. At least one must be the correct type of the atom.
@@ -40,5 +42,11 @@ public interface TypeReasoner<T extends Atom>  {
      * @param sub a concept map containing Ids for concepts that may be used during the inference process
      * @return list of semantically possible types that the provided atom can have
      */
-    ImmutableList<Type> inferPossibleTypes(T atom, ConceptMap sub);
+    ImmutableList<Type> inferPossibleTypes(T atom, ConceptMap sub, ReasoningContext ctx);
+
+    /**
+     * @param sub partial substitution
+     * @return list of possible atoms obtained by applying type inference
+     */
+    List<Atom> atomOptions(T atom, ConceptMap sub, ReasoningContext ctx);
 }

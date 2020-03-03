@@ -19,6 +19,7 @@ package grakn.core.graql.reasoner.atom.task.materialise;
 
 import com.google.common.collect.ImmutableMap;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.graql.reasoner.ReasoningContext;
 import grakn.core.graql.reasoner.atom.binary.IsaAtom;
 import grakn.core.graql.reasoner.utils.AnswerUtil;
 import grakn.core.kb.concept.api.Concept;
@@ -30,7 +31,7 @@ import java.util.stream.Stream;
 public class IsaMaterialiser implements AtomMaterialiser<IsaAtom>{
 
     @Override
-    public Stream<ConceptMap> materialise(IsaAtom atom){
+    public Stream<ConceptMap> materialise(IsaAtom atom, ReasoningContext ctx){
         ConceptMap substitution = atom.getParentQuery().getSubstitution();
         EntityType entityType = atom.getSchemaConcept().asEntityType();
 

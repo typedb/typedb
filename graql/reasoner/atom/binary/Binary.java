@@ -58,20 +58,23 @@ import javax.annotation.Nullable;
 public abstract class Binary extends Atom {
 
     private final Variable predicateVariable;
-    private final SemanticProcessor<Binary> semanticProcessor;
+    private final SemanticProcessor<Binary> semanticProcessor = new BinarySemanticProcessor();
 
     private SchemaConcept type = null;
     private IdPredicate typePredicate = null;
 
-    Binary(Variable varName, Statement pattern, ReasonerQuery reasonerQuery, @Nullable Label label,
-           Variable predicateVariable, ReasoningContext ctx) {
+    Binary(Variable varName, Statement pattern, ReasonerQuery reasonerQuery, @Nullable Label label, Variable predicateVariable, ReasoningContext ctx) {
         super(reasonerQuery, varName, pattern, label, ctx);
         this.predicateVariable = predicateVariable;
-        this.semanticProcessor = new BinarySemanticProcessor(ctx.conceptManager());
     }
 
     public Variable getPredicateVariable() {
         return predicateVariable;
+    }
+
+    public boolean isDirect(){
+        return getPattern().getProperties(IsaProperty.class).findFirst()
+                .map(IsaProperty::isExplicit).orElse(false);
     }
 
     @Nullable
@@ -83,9 +86,10 @@ public abstract class Binary extends Atom {
         return typePredicate;
     }
 
-    public boolean isDirect(){
-        return getPattern().getProperties(IsaProperty.class).findFirst()
-                .map(IsaProperty::isExplicit).orElse(false);
+
+    @Override
+    public boolean requiresSchema() {
+        return getTypeLabel() == null || this instanceof OntologicalAtom;
     }
 
     @Nullable
@@ -101,7 +105,8 @@ public abstract class Binary extends Atom {
 
     @Override
     public void checkValid() {
-        if (getTypePredicate() != null) getTypePredicate().checkValid();
+        IdPredicate typePredicate = getTypePredicate();
+        if (typePredicate != null) typePredicate.checkValid();
     }
 
     @Override
@@ -141,13 +146,6 @@ public abstract class Binary extends Atom {
     }
 
     @Override
-    protected Pattern createCombinedPattern(){
-        Set<Pattern> vars = Sets.newHashSet((Pattern) getPattern());
-        if (getTypePredicate() != null) vars.add(getTypePredicate().getPattern());
-        return Graql.and(vars);
-    }
-
-    @Override
     public Set<Variable> getVarNames() {
         Set<Variable> vars = new HashSet<>();
         if (getVarName().isReturned()) vars.add(getVarName());
@@ -156,12 +154,21 @@ public abstract class Binary extends Atom {
     }
 
     @Override
+    protected Pattern createCombinedPattern(){
+        Set<Pattern> vars = Sets.newHashSet((Pattern) getPattern());
+        IdPredicate typePredicate = getTypePredicate();
+        if (typePredicate != null) vars.add(typePredicate.getPattern());
+        return Graql.and(vars);
+    }
+
+    @Override
     public Stream<Predicate> getInnerPredicates(){
-        return getTypePredicate() != null? Stream.of(getTypePredicate()) : Stream.empty();
+        IdPredicate typePredicate = getTypePredicate();
+        return typePredicate != null? Stream.of(typePredicate) : Stream.empty();
     }
 
     @Override
     public Unifier getUnifier(Atom parentAtom, UnifierType unifierType) {
-        return semanticProcessor.getUnifier(this, parentAtom, unifierType);
+        return semanticProcessor.getUnifier(this, parentAtom, unifierType, context());
     }
 }

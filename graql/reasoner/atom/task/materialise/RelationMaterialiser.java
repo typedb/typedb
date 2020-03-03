@@ -40,18 +40,12 @@ import java.util.stream.Stream;
 
 public class RelationMaterialiser implements AtomMaterialiser<RelationAtom> {
 
-    private final ReasoningContext ctx;
-
-    public RelationMaterialiser(ReasoningContext ctx){
-        this.ctx = ctx;
-    }
-
     @Override
-    public Stream<ConceptMap> materialise(RelationAtom atom) {
+    public Stream<ConceptMap> materialise(RelationAtom atom, ReasoningContext ctx) {
         RelationType relationType = atom.getSchemaConcept().asRelationType();
         //in case the roles are variable, we wouldn't have enough information if converted to attribute
         if (relationType.isImplicit()) {
-            ConceptMap roleSub = getRoleSubstitution(atom);
+            ConceptMap roleSub = getRoleSubstitution(atom, ctx);
             return atom.toAttributeAtom().materialise().map(ans -> AnswerUtil.joinAnswers(ans, roleSub));
         }
         Multimap<Role, Variable> roleVarMap = atom.getRoleVarMap();
@@ -64,7 +58,7 @@ public class RelationMaterialiser implements AtomMaterialiser<RelationAtom> {
         if (substitution.containsVar(varName)) {
             relation = substitution.get(varName).asRelation();
         } else {
-            Relation foundRelation = findRelation(atom, substitution);
+            Relation foundRelation = findRelation(atom, substitution, ctx);
             relation = foundRelation != null? foundRelation : relationType.addRelationInferred();
         }
 
@@ -73,7 +67,7 @@ public class RelationMaterialiser implements AtomMaterialiser<RelationAtom> {
                 .forEach((key, value) -> value.forEach(var -> relation.assign(key, substitution.get(var).asThing())));
 
         ConceptMap relationSub = AnswerUtil.joinAnswers(
-                getRoleSubstitution(atom),
+                getRoleSubstitution(atom, ctx),
                 varName.isReturned() ?
                         new ConceptMap(ImmutableMap.of(varName, relation)) :
                         new ConceptMap()
@@ -83,7 +77,7 @@ public class RelationMaterialiser implements AtomMaterialiser<RelationAtom> {
         return Stream.of(answer);
     }
 
-    private Relation findRelation(RelationAtom atom, ConceptMap sub) {
+    private Relation findRelation(RelationAtom atom, ConceptMap sub, ReasoningContext ctx) {
         ReasonerAtomicQuery query = ctx.queryFactory().atomic(atom).withSubstitution(sub);
         MultilevelSemanticCache queryCache = CacheCasting.queryCacheCast(ctx.queryCache());
         ConceptMap answer = queryCache.getAnswerStream(query).findFirst().orElse(null);
@@ -92,7 +86,7 @@ public class RelationMaterialiser implements AtomMaterialiser<RelationAtom> {
         return answer != null ? answer.get(atom.getVarName()).asRelation() : null;
     }
 
-    private ConceptMap getRoleSubstitution(RelationAtom atom) {
+    private ConceptMap getRoleSubstitution(RelationAtom atom, ReasoningContext ctx) {
         Map<Variable, Concept> roleSub = new HashMap<>();
         ConceptManager conceptManager = ctx.conceptManager();
         atom.getRolePredicates(conceptManager).forEach(p -> roleSub.put(p.getVarName(), conceptManager.getConcept(p.getPredicate())));

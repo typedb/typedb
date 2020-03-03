@@ -20,7 +20,6 @@ package grakn.core.graql.reasoner.atom;
 
 import com.google.common.collect.Sets;
 import grakn.core.common.exception.ErrorMessage;
-import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.reasoner.atom.predicate.Predicate;
 import grakn.core.kb.concept.api.Label;
@@ -30,13 +29,12 @@ import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
-
-import javax.annotation.CheckReturnValue;
-import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Stream;
+import javax.annotation.CheckReturnValue;
+import javax.annotation.Nullable;
 
 /**
  * Base Atomic implementation providing basic functionalities.
@@ -138,9 +136,7 @@ public abstract class AtomicBase implements Atomic {
     }
 
     @Override
-    public Atomic inferTypes(){ return inferTypes(new ConceptMap()); }
-
-    public Atomic inferTypes(ConceptMap sub){ return this; }
+    public Atomic inferTypes() { return this; }
 
     @Override
     public boolean equals(Object o) {

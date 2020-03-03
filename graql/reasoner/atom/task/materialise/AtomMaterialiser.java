@@ -18,6 +18,7 @@
 package grakn.core.graql.reasoner.atom.task.materialise;
 
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.graql.reasoner.ReasoningContext;
 import grakn.core.graql.reasoner.atom.Atom;
 
 import java.util.stream.Stream;
@@ -30,5 +31,5 @@ public interface AtomMaterialiser<T extends Atom> {
      *
      * @return materialised answer to this atom
      */
-    Stream<ConceptMap> materialise(T toMaterialise);
+    Stream<ConceptMap> materialise(T toMaterialise, ReasoningContext ctx);
 }

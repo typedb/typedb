@@ -21,6 +21,7 @@ package grakn.core.graql.reasoner.state;
 import com.google.common.collect.HashMultimap;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.CacheCasting;
+import grakn.core.graql.reasoner.ReasoningContext;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.cache.IndexedAnswerSet;
 import grakn.core.graql.reasoner.explanation.RuleExplanation;
@@ -30,6 +31,7 @@ import grakn.core.graql.reasoner.rule.InferenceRule;
 import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.graql.reasoner.utils.AnswerUtil;
 import grakn.core.kb.concept.api.ConceptId;
+import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.graql.reasoner.cache.CacheEntry;
 import grakn.core.kb.graql.reasoner.cache.QueryCache;
 import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
@@ -51,19 +53,16 @@ public class AtomicState extends AnswerPropagatorState<ReasonerAtomicQuery> {
     private CacheEntry<ReasonerAtomicQuery, IndexedAnswerSet> cacheEntry = null;
     final private HashMultimap<ConceptId, ConceptMap> materialised = HashMultimap.create();
 
-    private ReasonerQueryFactory reasonerQueryFactory;
-    private QueryCache queryCache;
+    private final ReasoningContext ctx;
 
     public AtomicState(ReasonerAtomicQuery query,
                        ConceptMap sub,
                        Unifier u,
                        AnswerPropagatorState parent,
                        Set<ReasonerAtomicQuery> subGoals,
-                       ReasonerQueryFactory reasonerQueryFactory,
-                       QueryCache queryCache) {
+                       ReasoningContext ctx) {
         super(query.withSubstitution(sub), sub, u, parent, subGoals);
-        this.reasonerQueryFactory = reasonerQueryFactory;
-        this.queryCache = queryCache;
+        this.ctx = ctx;
     }
 
     @Override
@@ -109,7 +108,7 @@ public class AtomicState extends AnswerPropagatorState<ReasonerAtomicQuery> {
      * @return cache unifier if any
      */
     private MultiUnifier getCacheUnifier() {
-        if (cacheUnifier == null) this.cacheUnifier = CacheCasting.queryCacheCast(queryCache).getCacheUnifier(getQuery());
+        if (cacheUnifier == null) this.cacheUnifier = CacheCasting.queryCacheCast(ctx.queryCache()).getCacheUnifier(getQuery());
         return cacheUnifier;
     }
 
@@ -120,6 +119,7 @@ public class AtomicState extends AnswerPropagatorState<ReasonerAtomicQuery> {
 
     private ConceptMap recordAnswer(ReasonerAtomicQuery query, ConceptMap answer) {
         if (answer.isEmpty()) return answer;
+        QueryCache queryCache = ctx.queryCache();
         if (cacheEntry == null) {
             cacheEntry = queryCache.record(query, answer, cacheEntry, null);
             return answer;
@@ -142,6 +142,9 @@ public class AtomicState extends AnswerPropagatorState<ReasonerAtomicQuery> {
 
     private ConceptMap materialisedAnswer(ConceptMap baseAnswer, InferenceRule rule, Unifier unifier) {
         ReasonerAtomicQuery query = getQuery();
+        ReasonerQueryFactory reasonerQueryFactory = ctx.queryFactory();
+        QueryCache queryCache = ctx.queryCache();
+
         ReasonerAtomicQuery ruleHead = reasonerQueryFactory.atomic(rule.getHead(), baseAnswer);
         ConceptMap sub = ruleHead.getSubstitution();
         if(materialised.get(rule.getRule().id()).contains(sub)
@@ -163,7 +166,8 @@ public class AtomicState extends AnswerPropagatorState<ReasonerAtomicQuery> {
             queryCache.record(ruleHead, ruleAnswer);
             Atom ruleAtom = ruleHead.getAtom();
             //if it's an implicit relation also record it as an attribute
-            if (ruleAtom.isRelation() && ruleAtom.getSchemaConcept() != null && ruleAtom.getSchemaConcept().isImplicit()) {
+            SchemaConcept ruleAtomType = ruleAtom.getSchemaConcept();
+            if (ruleAtom.isRelation() && ruleAtomType != null && ruleAtomType.isImplicit()) {
                 ReasonerAtomicQuery attributeHead = reasonerQueryFactory.atomic(ruleHead.getAtom().toAttributeAtom());
                 queryCache.record(attributeHead, ruleAnswer.project(attributeHead.getVarNames()));
             }

@@ -82,8 +82,8 @@ public class AttributeAtom extends Binary{
     private final Variable attributeVariable;
     private final Variable relationVariable;
 
-    private final SemanticProcessor<AttributeAtom> semanticProcessor;
-    private final AtomValidator<AttributeAtom> validator;
+    private final SemanticProcessor<AttributeAtom> semanticProcessor = new AttributeSemanticProcessor();
+    private final AtomValidator<AttributeAtom> validator = new AttributeAtomValidator();
     private final AtomConverter<AttributeAtom> converter = new AttributeAtomConverter();
 
     private AttributeAtom(
@@ -100,8 +100,6 @@ public class AttributeAtom extends Binary{
         this.relationVariable = relationVariable;
         this.attributeVariable = attributeVariable;
         this.multiPredicate = multiPredicate;
-        this.semanticProcessor = new AttributeSemanticProcessor(ctx.conceptManager());
-        this.validator = new AttributeAtomValidator(ctx.ruleCache());
     }
 
     public Variable getRelationVariable() {
@@ -192,7 +190,7 @@ public class AttributeAtom extends Binary{
         String multiPredicateString = getMultiPredicate().isEmpty()?
                 "" :
                 getMultiPredicate().stream().map(Predicate::getPredicate).collect(Collectors.toSet()).toString();
-        return getVarName() + " has " + getSchemaConcept().label() + " " +
+        return getVarName() + " has " + getTypeLabel() + " " +
                 getAttributeVariable() + " " +
                 multiPredicateString +
                 (getRelationVariable().isReturned()? "(" + getRelationVariable() + ")" : "") +
@@ -261,6 +259,15 @@ public class AttributeAtom extends Binary{
     public boolean isValueEquality(){ return getMultiPredicate().stream().anyMatch(p -> p.getPredicate().isValueEquality());}
 
     @Override
+    public Set<Variable> getVarNames() {
+        Set<Variable> varNames = super.getVarNames();
+        varNames.add(getAttributeVariable());
+        if (getRelationVariable().isReturned()) varNames.add(getRelationVariable());
+        getMultiPredicate().forEach(p -> varNames.addAll(p.getVarNames()));
+        return varNames;
+    }
+
+    @Override
     public boolean hasUniqueAnswer(){
         ConceptMap sub = getParentQuery().getSubstitution();
         if (sub.vars().containsAll(getVarNames())) return true;
@@ -279,40 +286,31 @@ public class AttributeAtom extends Binary{
     public boolean requiresMaterialisation(){ return true;}
 
     @Override
-    public void checkValid(){ validator.checkValid(this); }
+    public void checkValid(){ validator.checkValid(this, context()); }
 
     @Override
     public Set<String> validateAsRuleHead(Rule rule){
-        return validator.validateAsRuleHead(this, rule);
+        return validator.validateAsRuleHead(this, rule, context());
     }
 
     @Override
     public Set<String> validateAsRuleBody(Label ruleLabel) {
-        return validator.validateAsRuleBody(this, ruleLabel);
-    }
-
-    @Override
-    public Set<Variable> getVarNames() {
-        Set<Variable> varNames = super.getVarNames();
-        varNames.add(getAttributeVariable());
-        if (getRelationVariable().isReturned()) varNames.add(getRelationVariable());
-        getMultiPredicate().forEach(p -> varNames.addAll(p.getVarNames()));
-        return varNames;
+        return validator.validateAsRuleBody(this, ruleLabel, context());
     }
 
     @Override
     public Stream<ConceptMap> materialise() {
-        return new AttributeMaterialiser(context()).materialise(this);
+        return new AttributeMaterialiser().materialise(this, context());
     }
 
     @Override
     public Unifier getUnifier(Atom parentAtom, UnifierType unifierType) {
-        return semanticProcessor.getUnifier(this, parentAtom, unifierType);
+        return semanticProcessor.getUnifier(this, parentAtom, unifierType, context());
     }
 
     @Override
-    public SemanticDifference computeSemanticDifference(Atom child, Unifier unifier) {
-        return semanticProcessor.computeSemanticDifference(this, child, unifier);
+    public SemanticDifference computeSemanticDifference(Atom child, Unifier unifier, ReasoningContext ctx) {
+        return semanticProcessor.computeSemanticDifference(this, child, unifier, ctx);
     }
 
     @Override
@@ -335,7 +333,7 @@ public class AttributeAtom extends Binary{
         Variable attributeVariable = getAttributeVariable();
         Variable relationVariable = getRelationVariable().asReturnedVar();
         Statement newVar = new Statement(getVarName())
-                .has(getSchemaConcept().label().getValue(), new Statement(attributeVariable), new Statement(relationVariable));
+                .has(getTypeLabel().getValue(), new Statement(attributeVariable), new Statement(relationVariable));
         return create(newVar, attributeVariable, relationVariable, getPredicateVariable(), getTypeLabel(), getMultiPredicate(), getParentQuery(), context());
     }
 

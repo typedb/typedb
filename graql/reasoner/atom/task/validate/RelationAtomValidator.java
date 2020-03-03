@@ -23,6 +23,7 @@ import com.google.common.collect.Sets;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.util.Streams;
 import grakn.core.core.Schema;
+import grakn.core.graql.reasoner.ReasoningContext;
 import grakn.core.graql.reasoner.atom.binary.RelationAtom;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Role;
@@ -42,32 +43,30 @@ import java.util.Set;
 
 public class RelationAtomValidator implements AtomValidator<RelationAtom> {
 
-    private final ConceptManager conceptManager;
     private final BasicAtomValidator basicValidator;
 
-    public RelationAtomValidator(ConceptManager conceptManager){
-        this.conceptManager = conceptManager;
+    public RelationAtomValidator(){
         this.basicValidator = new BasicAtomValidator();
     }
 
     @Override
-    public void checkValid(RelationAtom atom) {
-        basicValidator.checkValid(atom);
+    public void checkValid(RelationAtom atom, ReasoningContext ctx) {
+        basicValidator.checkValid(atom, ctx);
         SchemaConcept type = atom.getSchemaConcept();
         if (type != null && !type.isRelationType()) {
             throw GraqlSemanticException.relationWithNonRelationType(type.label());
         }
-        checkPattern(atom);
+        checkPattern(atom, ctx);
     }
 
     @Override
-    public Set<String> validateAsRuleHead(RelationAtom atom, Rule rule) {
+    public Set<String> validateAsRuleHead(RelationAtom atom, Rule rule, ReasoningContext ctx) {
         //can form a rule head if type is specified, type is not implicit and all relation players are insertable
-        return Sets.union(basicValidator.validateAsRuleHead(atom, rule), validateRelationPlayers(atom, rule));
+        return Sets.union(basicValidator.validateAsRuleHead(atom, rule, ctx), validateRelationPlayers(atom, rule, ctx));
     }
 
     @Override
-    public Set<String> validateAsRuleBody(RelationAtom atom, Label ruleLabel) {
+    public Set<String> validateAsRuleBody(RelationAtom atom, Label ruleLabel, ReasoningContext ctx) {
         Set<String> errors = new HashSet<>();
         SchemaConcept type = atom.getSchemaConcept();
         if (type != null && !type.isRelationType()) {
@@ -98,7 +97,8 @@ public class RelationAtomValidator implements AtomValidator<RelationAtom> {
         return errors;
     }
 
-    private void checkPattern(RelationAtom atom) {
+    private void checkPattern(RelationAtom atom, ReasoningContext ctx) {
+        ConceptManager conceptManager = ctx.conceptManager();
         atom.getPattern().getProperties(RelationProperty.class)
                 .flatMap(p -> p.relationPlayers().stream())
                 .map(RelationProperty.RolePlayer::getRole).flatMap(Streams::optionalToStream)
@@ -112,8 +112,9 @@ public class RelationAtomValidator implements AtomValidator<RelationAtom> {
                 });
     }
 
-    private Set<String> validateRelationPlayers(RelationAtom atom, Rule rule) {
+    private Set<String> validateRelationPlayers(RelationAtom atom, Rule rule, ReasoningContext ctx) {
         Set<String> errors = new HashSet<>();
+        ConceptManager conceptManager = ctx.conceptManager();
         atom.getRelationPlayers().forEach(rp -> {
             Statement role = rp.getRole().orElse(null);
             if (role == null) {
