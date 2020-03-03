@@ -21,7 +21,7 @@ load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
 java_library(
     name = "exception",
-    srcs = ["GraknHypergraphException.java"],
+    srcs = ["HypergraphException.java"],
     deps = [],
 )
 

@@ -16,7 +16,7 @@
  *
  */
 
-package grakn.hypergraph;
+package hypergraph;
 
 import org.junit.Test;
 
@@ -28,7 +28,7 @@ import java.nio.file.Paths;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class GraphTest {
+public class HypergraphTest {
 
     @Test
     public void testGraph() throws IOException {
@@ -37,16 +37,16 @@ public class GraphTest {
 
         System.out.println("Database Directory: " + directory.toString());
 
-        try (Graph graph = new Graph(directory.toString())) {
+        try (Hypergraph graph = new Hypergraph(directory.toString())) {
             assertTrue(graph.isOpen());
 
-            try (Graph.Session session = graph.session("my_data_keyspace")) {
+            try (Hypergraph.Session session = graph.session("my_data_keyspace")) {
                 assertTrue(session.isOpen());
                 assertEquals("my_data_keyspace", session.keyspace());
 
-                try (Graph.Transaction transaction = session.transaction(Graph.Transaction.Type.READ)) {
+                try (Hypergraph.Transaction transaction = session.transaction(Hypergraph.Transaction.Type.READ)) {
                     assertTrue(transaction.isOpen());
-                    assertEquals(Graph.Transaction.Type.READ, transaction.type());
+                    assertEquals(Hypergraph.Transaction.Type.READ, transaction.type());
                 }
             }
         }

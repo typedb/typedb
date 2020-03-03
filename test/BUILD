@@ -19,11 +19,11 @@ load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
 
 java_test(
-    name = "test-graph",
-    test_class = "grakn.hypergraph.GraphTest",
-    srcs = ["GraphTest.java"],
+    name = "test-hypergraph",
+    test_class = "hypergraph.HypergraphTest",
+    srcs = ["HypergraphTest.java"],
     deps = [
-        "//:graph",
+        "//:hypergraph",
     ]
 )
 
@@ -31,6 +31,6 @@ java_test(
 checkstyle_test(
     name = "checkstyle",
     targets = [
-        ":graph",
+        ":test-hypergraph",
     ]
 )

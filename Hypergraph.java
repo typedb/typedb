@@ -16,9 +16,9 @@
  *
  */
 
-package grakn.hypergraph;
+package hypergraph;
 
-import grakn.hypergraph.exception.GraknHypergraphException;
+import hypergraph.exception.HypergraphException;
 import org.rocksdb.OptimisticTransactionDB;
 import org.rocksdb.Options;
 import org.rocksdb.RocksDB;
@@ -32,7 +32,7 @@ import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class Graph implements AutoCloseable {
+public class Hypergraph implements AutoCloseable {
 
     private final Path directory;
     private final Options optionsGraph = new Options();
@@ -43,11 +43,11 @@ public class Graph implements AutoCloseable {
         RocksDB.loadLibrary();
     }
 
-    public Graph(String directory) {
+    public Hypergraph(String directory) {
         this(directory, new Properties());
     }
 
-    public Graph(String directory, Properties properties) {
+    public Hypergraph(String directory, Properties properties) {
         this.directory = Paths.get(directory);
         this.optionsGraph.setCreateIfMissing(true);
         this.isOpen.set(true);
@@ -87,10 +87,10 @@ public class Graph implements AutoCloseable {
 
         Session(String keyspace) {
             try {
-                sessionRocks = OptimisticTransactionDB.open(Graph.this.optionsGraph, directory.resolve(keyspace).toString());
+                sessionRocks = OptimisticTransactionDB.open(Hypergraph.this.optionsGraph, directory.resolve(keyspace).toString());
             } catch (RocksDBException e) {
                 e.printStackTrace();
-                throw new GraknHypergraphException(e);
+                throw new HypergraphException(e);
             }
             this.keyspace = keyspace;
             this.isOpen.set(true);

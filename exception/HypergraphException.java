@@ -16,11 +16,11 @@
  *
  */
 
-package grakn.hypergraph.exception;
+package hypergraph.exception;
 
-public class GraknHypergraphException extends RuntimeException {
+public class HypergraphException extends RuntimeException {
 
-    public GraknHypergraphException(Exception e) {
+    public HypergraphException(Exception e) {
         super(e);
     }
 
