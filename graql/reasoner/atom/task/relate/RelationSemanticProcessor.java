@@ -26,6 +26,7 @@ import com.google.common.collect.Sets;
 import grakn.common.util.Pair;
 import grakn.core.common.util.Streams;
 import grakn.core.core.Schema;
+import grakn.core.graql.reasoner.ReasoningContext;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.binary.RelationAtom;
 import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
@@ -60,22 +61,16 @@ import static grakn.core.concept.util.ConceptUtils.bottom;
 
 public class RelationSemanticProcessor implements SemanticProcessor<RelationAtom> {
 
-    private final ConceptManager conceptManager;
-    private final BinarySemanticProcessor binarySemanticProcessor;
+    private final BinarySemanticProcessor binarySemanticProcessor = new BinarySemanticProcessor();
 
-    public RelationSemanticProcessor(ConceptManager conceptManager){
-        this.conceptManager = conceptManager;
-        this.binarySemanticProcessor = new BinarySemanticProcessor(conceptManager);
+    @Override
+    public Unifier getUnifier(RelationAtom childAtom, Atom parentAtom, UnifierType unifierType, ReasoningContext ctx) {
+        return getMultiUnifier(childAtom, parentAtom, unifierType, ctx).getUnifier();
     }
 
     @Override
-    public Unifier getUnifier(RelationAtom childAtom, Atom parentAtom, UnifierType unifierType) {
-        return getMultiUnifier(childAtom, parentAtom, unifierType).getUnifier();
-    }
-
-    @Override
-    public MultiUnifier getMultiUnifier(RelationAtom childAtom, Atom parentAtom, UnifierType unifierType) {
-        Unifier baseUnifier = binarySemanticProcessor.getUnifier(childAtom, parentAtom, unifierType);
+    public MultiUnifier getMultiUnifier(RelationAtom childAtom, Atom parentAtom, UnifierType unifierType, ReasoningContext ctx) {
+        Unifier baseUnifier = binarySemanticProcessor.getUnifier(childAtom, parentAtom, unifierType, ctx);
         if (baseUnifier == null) {
             return MultiUnifierImpl.nonExistent();
         }
@@ -83,7 +78,7 @@ public class RelationSemanticProcessor implements SemanticProcessor<RelationAtom
         Set<Unifier> unifiers = new HashSet<>();
         if (parentAtom.isRelation()) {
             RelationAtom parent = parentAtom.toRelationAtom();
-            Set<List<Pair<RelationProperty.RolePlayer, RelationProperty.RolePlayer>>> rpMappings = getRelationPlayerMappings(childAtom, parent, unifierType);
+            Set<List<Pair<RelationProperty.RolePlayer, RelationProperty.RolePlayer>>> rpMappings = getRelationPlayerMappings(childAtom, parent, unifierType, ctx);
             boolean containsRoleVariables = parent.getRelationPlayers().stream()
                     .map(RelationProperty.RolePlayer::getRole)
                     .flatMap(Streams::optionalToStream)
@@ -135,7 +130,7 @@ public class RelationSemanticProcessor implements SemanticProcessor<RelationAtom
      * @param unifierType type of match to be performed
      * @return set of possible COMPLETE mappings between this (child) and parent relation players
      */
-    private Set<List<Pair<RelationProperty.RolePlayer, RelationProperty.RolePlayer>>> getRelationPlayerMappings(RelationAtom childAtom, RelationAtom parentAtom, UnifierType unifierType) {
+    private Set<List<Pair<RelationProperty.RolePlayer, RelationProperty.RolePlayer>>> getRelationPlayerMappings(RelationAtom childAtom, RelationAtom parentAtom, UnifierType unifierType, ReasoningContext ctx) {
         SetMultimap<Variable, Type> childVarTypeMap = childAtom.getParentQuery().getVarTypeMap(unifierType.inferTypes());
         SetMultimap<Variable, Type> parentVarTypeMap = parentAtom.getParentQuery().getVarTypeMap(unifierType.inferTypes());
 
@@ -148,6 +143,7 @@ public class RelationSemanticProcessor implements SemanticProcessor<RelationAtom
 
         //child query is rule body + head here
         ReasonerQuery childQuery = childAtom.getParentQuery();
+        ConceptManager conceptManager = ctx.conceptManager();
         parentAtom.getRelationPlayers()
                 .forEach(prp -> {
                     Statement parentRolePattern = prp.getRole().orElse(null);
@@ -233,13 +229,14 @@ public class RelationSemanticProcessor implements SemanticProcessor<RelationAtom
     }
 
     @Override
-    public SemanticDifference computeSemanticDifference(RelationAtom parent, Atom child, Unifier unifier) {
-        SemanticDifference baseDiff = binarySemanticProcessor.computeSemanticDifference(parent, child, unifier);
+    public SemanticDifference computeSemanticDifference(RelationAtom parent, Atom child, Unifier unifier, ReasoningContext ctx) {
+        SemanticDifference baseDiff = binarySemanticProcessor.computeSemanticDifference(parent, child, unifier, ctx);
 
         if (!child.isRelation()) return baseDiff;
         RelationAtom childAtom = (RelationAtom) child;
         Set<VariableDefinition> diff = new HashSet<>();
 
+        ConceptManager conceptManager = ctx.conceptManager();
         Set<Variable> parentRoleVars = parent.getRoleExpansionVariables();
         HashMultimap<Variable, Role> childVarRoleMap = childAtom.getVarRoleMap();
         HashMultimap<Variable, Role> parentVarRoleMap = parent.getVarRoleMap();

@@ -25,9 +25,8 @@ import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
-
-import javax.annotation.CheckReturnValue;
 import java.util.Set;
+import javax.annotation.CheckReturnValue;
 
 /**
  * Basic interface for logical atoms used in reasoning.

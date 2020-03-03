@@ -40,7 +40,7 @@ import graql.lang.property.IsaProperty;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
-import java.util.Comparator;
+
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -52,22 +52,23 @@ import javax.annotation.Nullable;
  */
 public class IsaAtom extends IsaAtomBase {
 
-    private final TypeReasoner<IsaAtom> typeReasoner;
+    private final TypeReasoner<IsaAtom> typeReasoner = new IsaTypeReasoner();
 
     private int hashCode;
     private boolean hashCodeMemoised;
 
-    private IsaAtom(Variable varName, Statement pattern, ReasonerQuery reasonerQuery, @Nullable Label label,
-                    Variable predicateVariable, ReasoningContext ctx) {
+    private IsaAtom(Variable varName, Statement pattern, ReasonerQuery reasonerQuery, @Nullable Label label, Variable predicateVariable,
+                    ReasoningContext ctx) {
         super(varName, pattern, reasonerQuery, label, predicateVariable, ctx);
-        this.typeReasoner = new IsaTypeReasoner(ctx.conceptManager());
     }
 
-    public static IsaAtom create(Variable var, Variable predicateVar, Statement pattern, @Nullable Label label, ReasonerQuery parent, ReasoningContext ctx) {
+    public static IsaAtom create(Variable var, Variable predicateVar, Statement pattern, @Nullable Label label, ReasonerQuery parent,
+                                 ReasoningContext ctx) {
         return new IsaAtom(var.asReturnedVar(), pattern, parent, label, predicateVar, ctx);
     }
 
-    public static IsaAtom create(Variable var, Variable predicateVar, @Nullable Label label, boolean isDirect, ReasonerQuery parent, ReasoningContext ctx) {
+    public static IsaAtom create(Variable var, Variable predicateVar, @Nullable Label label, boolean isDirect, ReasonerQuery parent,
+                                 ReasoningContext ctx) {
         Statement pattern = isDirect ?
                 new Statement(var).isaX(new Statement(predicateVar)) :
                 new Statement(var).isa(new Statement(predicateVar));
@@ -89,15 +90,6 @@ public class IsaAtom extends IsaAtomBase {
     @Override
     public Class<? extends VarProperty> getVarPropertyClass() {
         return IsaProperty.class;
-    }
-
-    @Override
-    public void checkValid(){
-        super.checkValid();
-        SchemaConcept type = getSchemaConcept();
-        if (type != null && !type.isType()) {
-            throw GraqlSemanticException.cannotGetInstancesOfNonType(type.label());
-        }
     }
 
     //NB: overriding as these require a derived property
@@ -122,7 +114,8 @@ public class IsaAtom extends IsaAtomBase {
 
     @Override
     public String toString(){
-        String typeString = (getSchemaConcept() != null? getSchemaConcept().label() : "") + "(" + getVarName() + ")";
+        Label typeLabel = getTypeLabel();
+        String typeString = (typeLabel != null? typeLabel : "") + "(" + getVarName() + ")";
         return typeString +
                 (getPredicateVariable().isReturned()? "(" + getPredicateVariable() + ")" : "") +
                 (isDirect()? "!" : "") +
@@ -132,11 +125,11 @@ public class IsaAtom extends IsaAtomBase {
     @Override
     protected Pattern createCombinedPattern(){
         if (getPredicateVariable().isReturned()) return super.createCombinedPattern();
-        return getSchemaConcept() == null?
+        return getTypeLabel() == null?
                 new Statement(getVarName()).isa(new Statement(getPredicateVariable())) :
                 isDirect()?
-                        new Statement(getVarName()).isaX(getSchemaConcept().label().getValue()) :
-                        new Statement(getVarName()).isa(getSchemaConcept().label().getValue()) ;
+                        new Statement(getVarName()).isaX(getTypeLabel().getValue()) :
+                        new Statement(getVarName()).isa(getTypeLabel().getValue()) ;
     }
 
     @Override
@@ -146,31 +139,37 @@ public class IsaAtom extends IsaAtomBase {
     }
 
     @Override
+    public void checkValid(){
+        super.checkValid();
+        SchemaConcept type = getSchemaConcept();
+        if (type != null && !type.isType()) {
+            throw GraqlSemanticException.cannotGetInstancesOfNonType(type.label());
+        }
+    }
+
+    @Override
     public IsaAtom inferTypes(ConceptMap sub) {
-        return typeReasoner.inferTypes(this, sub);
+        return typeReasoner.inferTypes(this, sub, context());
     }
 
     @Override
     public ImmutableList<Type> getPossibleTypes() {
-        return typeReasoner.inferPossibleTypes(this, new ConceptMap());
+        return typeReasoner.inferPossibleTypes(this, new ConceptMap(), context());
     }
 
     @Override
     public Stream<ConceptMap> materialise() {
-        return new IsaMaterialiser().materialise(this);
+        return new IsaMaterialiser().materialise(this, context());
     }
 
     @Override
     public List<Atom> atomOptions(ConceptMap sub) {
-        return typeReasoner.inferPossibleTypes(this, sub).stream()
-                .map(this::addType)
-                .sorted(Comparator.comparing(Atom::isRuleResolvable))
-                .collect(Collectors.toList());
+        return typeReasoner.atomOptions(this, sub, context());
     }
 
     @Override
     public Atom rewriteWithTypeVariable() {
-        return create(getVarName(), getPredicateVariable().asReturnedVar(), getTypeLabel(), this.isDirect(), getParentQuery(), context());
+        return create(getVarName(), getPredicateVariable().asReturnedVar(), getTypeLabel(), this.isDirect(), getParentQuery(), this.context());
     }
 
     @Override

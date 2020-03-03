@@ -19,13 +19,12 @@ package grakn.core.graql.reasoner.atom.binary;
 
 import grakn.core.graql.reasoner.ReasoningContext;
 import grakn.core.graql.reasoner.atom.Atom;
-import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.Label;
+import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
-
 import java.util.Set;
 import javax.annotation.Nullable;
 
@@ -72,7 +71,9 @@ public abstract class TypeAtom extends Binary {
 
     @Override
     public boolean requiresMaterialisation() {
-        return isUserDefined() && getSchemaConcept() != null && getSchemaConcept().isRelationType();
+        if (!isUserDefined()) return false;
+        SchemaConcept type = getSchemaConcept();
+        return isUserDefined() && type != null && type.isRelationType();
     }
 
     /**

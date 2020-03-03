@@ -41,14 +41,8 @@ import java.util.stream.Stream;
 
 public class AttributeMaterialiser implements AtomMaterialiser<AttributeAtom> {
 
-    private final ReasoningContext ctx;
-
-    public AttributeMaterialiser(ReasoningContext ctx){
-        this.ctx = ctx;
-    }
-
     @Override
-    public Stream<ConceptMap> materialise(AttributeAtom atom) {
+    public Stream<ConceptMap> materialise(AttributeAtom atom, ReasoningContext ctx) {
         ConceptMap substitution = atom.getParentQuery().getSubstitution();
         AttributeType<Object> attributeType = atom.getSchemaConcept().asAttributeType();
 
@@ -84,7 +78,7 @@ public class AttributeMaterialiser implements AtomMaterialiser<AttributeAtom> {
                     resourceVariable, attribute)
             );
 
-            Relation relation = putImplicitRelation(atom, answer, owner, attribute);
+            Relation relation = putImplicitRelation(atom, answer, owner, attribute, ctx);
             if (atom.getRelationVariable().isReturned()) {
                 answer = AnswerUtil.joinAnswers(answer, new ConceptMap(ImmutableMap.of(atom.getRelationVariable(), relation)));
             }
@@ -93,7 +87,7 @@ public class AttributeMaterialiser implements AtomMaterialiser<AttributeAtom> {
         return Stream.empty();
     }
 
-    private ConceptMap findAnswer(Atom atom, ConceptMap sub) {
+    private ConceptMap findAnswer(Atom atom, ConceptMap sub, ReasoningContext ctx) {
         //NB: we are only interested in this atom and its subs, not any other constraints
         ReasonerAtomicQuery query = ctx.queryFactory().atomic(Collections.singleton(atom)).withSubstitution(sub);
         MultilevelSemanticCache queryCacheImpl = CacheCasting.queryCacheCast(ctx.queryCache());
@@ -130,8 +124,8 @@ public class AttributeMaterialiser implements AtomMaterialiser<AttributeAtom> {
      * @param attribute attribute concept
      * @return inserted implicit relation if didn't exist, null otherwise
      */
-    private Relation putImplicitRelation(AttributeAtom atom, ConceptMap sub, Concept owner, Attribute attribute) {
-        ConceptMap answer = findAnswer(atom, sub);
+    private Relation putImplicitRelation(AttributeAtom atom, ConceptMap sub, Concept owner, Attribute attribute, ReasoningContext ctx) {
+        ConceptMap answer = findAnswer(atom, sub, ctx);
         if (answer == null) return attachAttribute(owner, attribute);
         Variable relationVariable = atom.getRelationVariable();
         return relationVariable.isReturned() ? answer.get(relationVariable).asRelation() : null;

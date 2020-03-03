@@ -19,6 +19,7 @@
 package grakn.core.graql.reasoner.atom.task.relate;
 
 import com.google.common.collect.ImmutableMap;
+import grakn.core.graql.reasoner.ReasoningContext;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.binary.AttributeAtom;
 import grakn.core.graql.reasoner.atom.binary.IsaAtom;
@@ -28,11 +29,9 @@ import grakn.core.graql.reasoner.cache.SemanticDifference;
 import grakn.core.graql.reasoner.cache.VariableDefinition;
 import grakn.core.graql.reasoner.unifier.UnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierType;
-import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
 import graql.lang.statement.Variable;
-
 import java.util.HashSet;
 import java.util.Set;
 
@@ -40,16 +39,10 @@ import static java.util.stream.Collectors.toSet;
 
 public class AttributeSemanticProcessor implements SemanticProcessor<AttributeAtom> {
 
-    private final ConceptManager conceptManager;
-    private final BinarySemanticProcessor binarySemanticProcessor;
-
-    public AttributeSemanticProcessor(ConceptManager conceptManager){
-        this.conceptManager = conceptManager;
-        this.binarySemanticProcessor = new BinarySemanticProcessor(conceptManager);
-    }
+    private final BinarySemanticProcessor binarySemanticProcessor = new BinarySemanticProcessor();
 
     @Override
-    public Unifier getUnifier(AttributeAtom childAtom, Atom parentAtom, UnifierType unifierType) {
+    public Unifier getUnifier(AttributeAtom childAtom, Atom parentAtom, UnifierType unifierType, ReasoningContext ctx) {
         if (!(parentAtom instanceof AttributeAtom)) {
             // in general this >= parent, hence for rule unifiers we can potentially specialise child to match parent
             if (unifierType.equals(UnifierType.RULE)) {
@@ -63,7 +56,7 @@ public class AttributeSemanticProcessor implements SemanticProcessor<AttributeAt
 
         AttributeAtom parent = (AttributeAtom) parentAtom;
 
-        Unifier unifier = binarySemanticProcessor.getUnifier(childAtom, parentAtom, unifierType);
+        Unifier unifier = binarySemanticProcessor.getUnifier(childAtom, parentAtom, unifierType, ctx);
         if (unifier == null) return UnifierImpl.nonExistent();
 
         //unify attribute vars
@@ -80,18 +73,18 @@ public class AttributeSemanticProcessor implements SemanticProcessor<AttributeAt
             unifier = unifier.merge(new UnifierImpl(ImmutableMap.of(childRelationVarName, parentRelationVarName)));
         }
 
-        return new BasicSemanticProcessor().isPredicateCompatible(childAtom, parentAtom, unifier, unifierType, conceptManager)?
+        return new BasicSemanticProcessor().isPredicateCompatible(childAtom, parentAtom, unifier, unifierType, ctx.conceptManager())?
                 unifier : UnifierImpl.nonExistent();
     }
 
     @Override
-    public MultiUnifier getMultiUnifier(AttributeAtom childAtom, Atom parentAtom, UnifierType unifierType) {
-        return binarySemanticProcessor.getMultiUnifier(childAtom, parentAtom, unifierType);
+    public MultiUnifier getMultiUnifier(AttributeAtom childAtom, Atom parentAtom, UnifierType unifierType, ReasoningContext ctx) {
+        return binarySemanticProcessor.getMultiUnifier(childAtom, parentAtom, unifierType, ctx);
     }
 
     @Override
-    public SemanticDifference computeSemanticDifference(AttributeAtom parent, Atom child, Unifier unifier) {
-        SemanticDifference baseDiff = binarySemanticProcessor.computeSemanticDifference(parent, child, unifier);
+    public SemanticDifference computeSemanticDifference(AttributeAtom parent, Atom child, Unifier unifier, ReasoningContext ctx) {
+        SemanticDifference baseDiff = binarySemanticProcessor.computeSemanticDifference(parent, child, unifier, ctx);
         if (!child.isResource()) return baseDiff;
         AttributeAtom childAtom = (AttributeAtom) child;
         Set<VariableDefinition> diff = new HashSet<>();

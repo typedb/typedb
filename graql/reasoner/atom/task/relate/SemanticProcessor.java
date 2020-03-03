@@ -18,6 +18,7 @@
 
 package grakn.core.graql.reasoner.atom.task.relate;
 
+import grakn.core.graql.reasoner.ReasoningContext;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.cache.SemanticDifference;
 import grakn.core.graql.reasoner.unifier.UnifierType;
@@ -26,9 +27,9 @@ import grakn.core.kb.graql.reasoner.unifier.Unifier;
 
 public interface SemanticProcessor<T extends Atom> {
 
-    Unifier getUnifier(T childAtom, Atom parentAtom, UnifierType unifierType);
+    Unifier getUnifier(T childAtom, Atom parentAtom, UnifierType unifierType, ReasoningContext ctx);
 
-    MultiUnifier getMultiUnifier(T childAtom, Atom parentAtom, UnifierType unifierType);
+    MultiUnifier getMultiUnifier(T childAtom, Atom parentAtom, UnifierType unifierType, ReasoningContext ctx);
 
     /**
      * Calculates the semantic difference between the this (parent) and child atom,
@@ -38,6 +39,6 @@ public interface SemanticProcessor<T extends Atom> {
      * @param unifier    parent->child unifier
      * @return semantic difference between this and child defined in terms of this variables
      */
-    SemanticDifference computeSemanticDifference(T parentAtom, Atom childAtom, Unifier unifier);
+    SemanticDifference computeSemanticDifference(T parentAtom, Atom childAtom, Unifier unifier, ReasoningContext ctx);
 
 }

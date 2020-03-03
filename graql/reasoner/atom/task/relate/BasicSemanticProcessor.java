@@ -18,6 +18,7 @@
 
 package grakn.core.graql.reasoner.atom.task.relate;
 
+import grakn.core.graql.reasoner.ReasoningContext;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.reasoner.atom.predicate.ValuePredicate;
@@ -41,12 +42,12 @@ import static java.util.stream.Collectors.toSet;
 public class BasicSemanticProcessor implements SemanticProcessor<Atom>{
 
     @Override
-    public Unifier getUnifier(Atom childAtom, Atom parentAtom, UnifierType unifierType){
+    public Unifier getUnifier(Atom childAtom, Atom parentAtom, UnifierType unifierType, ReasoningContext ctx){
         throw new IllegalArgumentException();
     }
 
     @Override
-    public MultiUnifier getMultiUnifier(Atom childAtom, Atom parentAtom, UnifierType unifierType) {
+    public MultiUnifier getMultiUnifier(Atom childAtom, Atom parentAtom, UnifierType unifierType, ReasoningContext ctx) {
         throw new IllegalArgumentException();
     }
 
@@ -59,7 +60,7 @@ public class BasicSemanticProcessor implements SemanticProcessor<Atom>{
      * @return semantic difference between this and child defined in terms of this variables
      */
     @Override
-    public SemanticDifference computeSemanticDifference(Atom parentAtom, Atom childAtom, Unifier unifier){
+    public SemanticDifference computeSemanticDifference(Atom parentAtom, Atom childAtom, Unifier unifier, ReasoningContext ctx){
         Set<VariableDefinition> diff = new HashSet<>();
         Unifier unifierInverse = unifier.inverse();
 

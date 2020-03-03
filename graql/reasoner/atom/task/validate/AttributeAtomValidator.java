@@ -20,6 +20,7 @@ package grakn.core.graql.reasoner.atom.task.validate;
 
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.graql.reasoner.CacheCasting;
+import grakn.core.graql.reasoner.ReasoningContext;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.binary.AttributeAtom;
 import grakn.core.graql.reasoner.atom.binary.Binary;
@@ -31,25 +32,21 @@ import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.graql.exception.GraqlSemanticException;
-import grakn.core.kb.graql.reasoner.cache.RuleCache;
 import graql.lang.statement.Variable;
-
 import java.util.HashSet;
 import java.util.Set;
 
 public class AttributeAtomValidator implements AtomValidator<AttributeAtom> {
 
-    private final RuleCache ruleCache;
     private final BasicAtomValidator basicValidator;
 
-    public AttributeAtomValidator(RuleCache ruleCache){
-        this.ruleCache = ruleCache;
+    public AttributeAtomValidator(){
         this.basicValidator = new BasicAtomValidator();
     }
 
     @Override
-    public void checkValid(AttributeAtom atom) {
-        basicValidator.checkValid(atom);
+    public void checkValid(AttributeAtom atom, ReasoningContext ctx) {
+        basicValidator.checkValid(atom, ctx);
         SchemaConcept type = atom.getSchemaConcept();
         if (type != null && !type.isAttributeType()) {
             throw GraqlSemanticException.attributeWithNonAttributeType(type.label());
@@ -57,8 +54,8 @@ public class AttributeAtomValidator implements AtomValidator<AttributeAtom> {
     }
 
     @Override
-    public Set<String> validateAsRuleHead(AttributeAtom atom, Rule rule){
-        Set<String> errors = basicValidator.validateAsRuleHead(atom, rule);
+    public Set<String> validateAsRuleHead(AttributeAtom atom, Rule rule, ReasoningContext ctx){
+        Set<String> errors = basicValidator.validateAsRuleHead(atom, rule, ctx);
         SchemaConcept type = atom.getSchemaConcept();
         Set<ValuePredicate> multiPredicate = atom.getMultiPredicate();
 
@@ -76,7 +73,7 @@ public class AttributeAtomValidator implements AtomValidator<AttributeAtom> {
             }
 
             AttributeType.DataType<Object> dataType = type.asAttributeType().dataType();
-            ResolvableQuery body = CacheCasting.ruleCacheCast(ruleCache).getRule(rule).getBody();
+            ResolvableQuery body = CacheCasting.ruleCacheCast(ctx.ruleCache()).getRule(rule).getBody();
             ErrorMessage incompatibleValuesMsg = ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_COPYING_INCOMPATIBLE_ATTRIBUTE_VALUES;
             body.getAtoms(AttributeAtom.class)
                     .filter(at -> at.getAttributeVariable().equals(attributeVar))
@@ -94,7 +91,7 @@ public class AttributeAtomValidator implements AtomValidator<AttributeAtom> {
     }
 
     @Override
-    public Set<String> validateAsRuleBody(AttributeAtom atom, Label ruleLabel) {
+    public Set<String> validateAsRuleBody(AttributeAtom atom, Label ruleLabel, ReasoningContext ctx) {
         SchemaConcept type = atom.getSchemaConcept();
         Set<String> errors = new HashSet<>();
         if (type == null) return errors;

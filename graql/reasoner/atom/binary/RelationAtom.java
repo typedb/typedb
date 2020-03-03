@@ -44,7 +44,6 @@ import grakn.core.graql.reasoner.atom.task.validate.AtomValidator;
 import grakn.core.graql.reasoner.atom.task.validate.RelationAtomValidator;
 import grakn.core.graql.reasoner.cache.SemanticDifference;
 import grakn.core.graql.reasoner.unifier.UnifierType;
-import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Rule;
@@ -64,8 +63,6 @@ import graql.lang.statement.Statement;
 import graql.lang.statement.StatementInstance;
 import graql.lang.statement.StatementThing;
 import graql.lang.statement.Variable;
-
-import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -78,6 +75,7 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 /**
  * Atom implementation defining a relation atom corresponding to a combined RelationProperty
@@ -88,9 +86,9 @@ public class RelationAtom extends IsaAtomBase {
     private final ImmutableList<RelationProperty.RolePlayer> relationPlayers;
     private final ImmutableSet<Label> roleLabels;
 
-    private final TypeReasoner<RelationAtom> typeReasoner;
-    private final SemanticProcessor<RelationAtom> semanticProcessor;
-    private final AtomValidator<RelationAtom> validator;
+    private final TypeReasoner<RelationAtom> typeReasoner = new RelationTypeReasoner();
+    private final SemanticProcessor<RelationAtom> semanticProcessor = new RelationSemanticProcessor();
+    private final AtomValidator<RelationAtom> validator = new RelationAtomValidator();
     private final AtomConverter<RelationAtom> converter = new RelationAtomConverter();
 
     private ImmutableList<Type> possibleTypes = null;
@@ -116,13 +114,10 @@ public class RelationAtom extends IsaAtomBase {
         super(varName, pattern, parentQuery, label, predicateVariable, ctx);
         this.relationPlayers = relationPlayers;
         this.roleLabels = roleLabels;
-
-        this.typeReasoner = new RelationTypeReasoner(ctx);
-        this.semanticProcessor = new RelationSemanticProcessor(ctx.conceptManager());
-        this.validator = new RelationAtomValidator(ctx.conceptManager());
     }
 
-    public static RelationAtom create(Statement pattern, Variable predicateVar, @Nullable Label label, ReasonerQuery parent, ReasoningContext ctx) {
+    public static RelationAtom create(Statement pattern, Variable predicateVar, @Nullable Label label, ReasonerQuery parent,
+                                      ReasoningContext ctx) {
         List<RelationProperty.RolePlayer> rps = new ArrayList<>();
         pattern.getProperty(RelationProperty.class)
                 .ifPresent(prop -> prop.relationPlayers().stream().sorted(Comparator.comparing(Object::hashCode)).forEach(rps::add));
@@ -138,7 +133,8 @@ public class RelationAtom extends IsaAtomBase {
         return new RelationAtom(pattern.var(), pattern, parent, label, predicateVar, relationPlayers, roleLabels, ctx);
     }
 
-    public static RelationAtom create(Statement pattern, Variable predicateVar, @Nullable Label label, @Nullable ImmutableList<Type> possibleTypes, ReasonerQuery parent, ReasoningContext ctx) {
+    public static RelationAtom create(Statement pattern, Variable predicateVar, @Nullable Label label, @Nullable ImmutableList<Type> possibleTypes, ReasonerQuery parent,
+                                      ReasoningContext ctx) {
         RelationAtom atom = create(pattern, predicateVar, label, parent, ctx);
         atom.possibleTypes = possibleTypes;
         return atom;
@@ -157,10 +153,7 @@ public class RelationAtom extends IsaAtomBase {
         return relationPlayers;
     }
 
-    private ImmutableSet<Label> getRoleLabels() {
-        return roleLabels;
-    }
-
+    public ImmutableSet<Label> getRoleLabels() { return roleLabels; }
 
     //NB: overriding as these require a derived property
     @Override
@@ -213,15 +206,7 @@ public class RelationAtom extends IsaAtomBase {
 
     @Override
     public String toString() {
-        String typeString;
-        if (getSchemaConcept() != null) {
-            typeString = getSchemaConcept().label().getValue();
-        } else {
-            String types = typeReasoner.inferPossibleTypes(this, new ConceptMap()).stream()
-                    .map(rt -> rt.label().getValue())
-                    .collect(Collectors.joining(", "));
-            typeString = "{" + types + "}";
-        }
+        String typeString = getTypeLabel() != null? getTypeLabel() .getValue() : "{*}";
         String relationString = (isUserDefined() ? getVarName() + " " : "") +
                 typeString +
                 (getPredicateVariable().isReturned() ? "(" + getPredicateVariable() + ")" : "") +
@@ -298,11 +283,12 @@ public class RelationAtom extends IsaAtomBase {
     @Override
     protected Pattern createCombinedPattern() {
         if (getPredicateVariable().isReturned()) return super.createCombinedPattern();
-        return getSchemaConcept() == null ?
+        Label typeLabel = getTypeLabel();
+        return typeLabel == null ?
                 relationPattern() :
                 isDirect() ?
-                        relationPattern().isaX(getSchemaConcept().label().getValue()) :
-                        relationPattern().isa(getSchemaConcept().label().getValue());
+                        relationPattern().isaX(typeLabel.getValue()) :
+                        relationPattern().isa(typeLabel.getValue());
     }
 
     private Statement relationPattern() {
@@ -386,7 +372,7 @@ public class RelationAtom extends IsaAtomBase {
 
     @Override
     public boolean isType() {
-        return getSchemaConcept() != null;
+        return getTypeLabel() != null;
     }
 
     @Override
@@ -400,16 +386,16 @@ public class RelationAtom extends IsaAtomBase {
     }
 
     @Override
-    public void checkValid() { validator.checkValid(this); }
+    public void checkValid() { validator.checkValid(this, context()); }
 
     @Override
     public Set<String> validateAsRuleHead(Rule rule) {
-        return validator.validateAsRuleHead(this, rule);
+        return validator.validateAsRuleHead(this, rule, context());
     }
 
     @Override
     public Set<String> validateAsRuleBody(Label ruleLabel) {
-        return validator.validateAsRuleBody(this, ruleLabel);
+        return validator.validateAsRuleBody(this, ruleLabel, context());
     }
 
     public boolean typesRoleCompatibleWithMatchSemantics(Variable typedVar, Set<Type> parentTypes){
@@ -507,7 +493,7 @@ public class RelationAtom extends IsaAtomBase {
     @Override
     public boolean isRuleApplicableViaAtom(Atom ruleAtom) {
         if (!(ruleAtom instanceof RelationAtom)) return isRuleApplicableViaAtom(ruleAtom.toRelationAtom());
-        RelationAtom atomWithType = typeReasoner.inferTypes(this.addType(ruleAtom.getSchemaConcept()), new ConceptMap());
+        RelationAtom atomWithType = typeReasoner.inferTypes(this.addType(ruleAtom.getSchemaConcept()), new ConceptMap(), context());
         return ruleAtom.isUnifiableWith(atomWithType);
     }
 
@@ -520,28 +506,25 @@ public class RelationAtom extends IsaAtomBase {
 
     @Override
     public ImmutableList<Type> getPossibleTypes() {
-        return typeReasoner.inferPossibleTypes(this, new ConceptMap());
+        if (possibleTypes == null) {
+            possibleTypes = typeReasoner.inferPossibleTypes(this, new ConceptMap(), context());
+        }
+        return possibleTypes;
     }
 
     @Override
     public RelationAtom inferTypes(ConceptMap sub) {
-        return typeReasoner.inferTypes(this, sub);
+        return typeReasoner.inferTypes(this, sub, context());
     }
 
     @Override
     public Stream<ConceptMap> materialise() {
-        return new RelationMaterialiser(context()).materialise(this);
+        return new RelationMaterialiser().materialise(this, context());
     }
 
     @Override
     public List<Atom> atomOptions(ConceptMap sub) {
-        return typeReasoner.inferPossibleTypes(this, sub).stream()
-                .map(this::addType)
-                .map(at -> typeReasoner.inferTypes(at, sub))
-                //order by number of distinct roles
-                .sorted(Comparator.comparing(at -> -at.getRoleLabels().size()))
-                .sorted(Comparator.comparing(Atom::isRuleResolvable))
-                .collect(Collectors.toList());
+        return typeReasoner.atomOptions(this, sub, context());
     }
 
     @Override
@@ -610,17 +593,17 @@ public class RelationAtom extends IsaAtomBase {
 
     @Override
     public Unifier getUnifier(Atom pAtom, UnifierType unifierType) {
-        return semanticProcessor.getUnifier(this, pAtom, unifierType);
+        return semanticProcessor.getUnifier(this, pAtom, unifierType, context());
     }
 
     @Override
     public MultiUnifier getMultiUnifier(Atom parentAtom, UnifierType unifierType) {
-        return semanticProcessor.getMultiUnifier(this, parentAtom, unifierType);
+        return semanticProcessor.getMultiUnifier(this, parentAtom, unifierType, context());
     }
 
     @Override
     public SemanticDifference computeSemanticDifference(Atom child, Unifier unifier) {
-        return semanticProcessor.computeSemanticDifference(this, child, unifier);
+        return semanticProcessor.computeSemanticDifference(this, child, unifier, context());
     }
 
     public HashMultimap<Variable, Role> getVarRoleMap() {
