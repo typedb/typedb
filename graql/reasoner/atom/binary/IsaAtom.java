@@ -59,7 +59,7 @@ public class IsaAtom extends IsaAtomBase {
 
     private IsaAtom(Variable varName, Statement pattern, ReasonerQuery reasonerQuery, @Nullable Label label, Variable predicateVariable,
                     ReasoningContext ctx) {
-        super(varName, pattern, reasonerQuery, label, predicateVariable, ctx);
+        super(varName.asReturnedVar(), pattern, reasonerQuery, label, predicateVariable, ctx);
     }
 
     public static IsaAtom create(Variable var, Variable predicateVar, @Nullable Label label, boolean isDirect, ReasonerQuery parent,
