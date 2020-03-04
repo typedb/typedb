@@ -15,5 +15,29 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-package(default_visibility = ["//:__pkg__", "//test:__pkg__"])
 load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
+package(
+    default_visibility = [
+        "//:__pkg__",
+        "//test:__pkg__",
+    ]
+)
+
+java_library(
+    name = "hypergraph-cluster",
+    srcs = ["HypergraphCluster.java"],
+    deps = [
+        "//:hypergraph",
+        "//common:common",
+        "//operation:operation",
+        "//reader:reader",
+        "//writer:writer",
+    ],
+)
+
+checkstyle_test(
+    name = "checkstyle",
+    targets = [
+        ":hypergraph-cluster",
+    ]
+)

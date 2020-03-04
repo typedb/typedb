@@ -16,16 +16,15 @@
  *
  */
 
-package hypergraph.reader;
-
+package hypergraph.graph;
 
 import hypergraph.operation.Operation;
 
-public class Reader {
+public class Vertex {
 
-    private final Operation storage;
+    private final Operation operation;
 
-    public Reader(Operation storage) {
-        this.storage = storage;
+    public Vertex(Operation operation) {
+        this.operation = operation;
     }
 }

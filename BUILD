@@ -25,7 +25,7 @@ java_library(
         "Hypergraph.java"
     ],
     deps = [
-        "//exception:exception",
+        "//common:common",
         "//reader:reader",
         "//writer:writer",
     ],

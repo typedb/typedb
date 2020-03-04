@@ -18,13 +18,18 @@
 
 package hypergraph.writer;
 
-import hypergraph.storage.Storage;
+import hypergraph.operation.Operation;
+import hypergraph.concept.type.EntityType;
 
 public class Writer {
 
-    private final Storage storage;
+    private final Operation operation;
 
-    public Writer(Storage storage) {
-        this.storage = storage;
+    public Writer(Operation operation) {
+        this.operation = operation;
+    }
+
+    public EntityType entityType(String entityType) {
+        return new EntityType(operation);
     }
 }

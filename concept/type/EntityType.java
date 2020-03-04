@@ -16,16 +16,16 @@
  *
  */
 
-package hypergraph.reader;
+package hypergraph.concept.type;
 
-
+import hypergraph.graph.Vertex;
 import hypergraph.operation.Operation;
 
-public class Reader {
+public class EntityType {
 
-    private final Operation storage;
+    private final Vertex vertex;
 
-    public Reader(Operation storage) {
-        this.storage = storage;
+    public EntityType(Operation operation) {
+        this.vertex = new Vertex(operation);
     }
 }

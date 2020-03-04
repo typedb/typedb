@@ -20,16 +20,18 @@ package(
     default_visibility = [
         "//:__pkg__",
         "//core:__pkg__",
-        "//cluster:__pkg__"
+        "//cluster:__pkg__",
+        "//reader:__pkg__",
+        "//writer:__pkg__",
     ]
 )
 
 java_library(
-    name = "writer",
-    srcs = glob(["*.java"]),
+    name = "concept",
+    srcs = glob(["*/*.java"]),
     deps = [
-        "//concept:concept",
         "//common:common",
+        "//graph:graph",
         "//operation:operation",
     ],
 )
@@ -37,6 +39,6 @@ java_library(
 checkstyle_test(
     name = "checkstyle",
     targets = [
-        ":writer",
+        ":concept",
     ]
 )

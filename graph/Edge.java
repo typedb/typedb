@@ -16,16 +16,8 @@
  *
  */
 
-package hypergraph.reader;
+package hypergraph.graph;
 
+public class Edge {
 
-import hypergraph.operation.Operation;
-
-public class Reader {
-
-    private final Operation storage;
-
-    public Reader(Operation storage) {
-        this.storage = storage;
-    }
 }

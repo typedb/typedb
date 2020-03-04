@@ -16,16 +16,13 @@
  *
  */
 
-package hypergraph.reader;
+package hypergraph.cluster;
+
+import hypergraph.Hypergraph;
+import hypergraph.common.HypergraphException;
+import hypergraph.reader.Reader;
+import hypergraph.writer.Writer;
 
 
-import hypergraph.operation.Operation;
-
-public class Reader {
-
-    private final Operation storage;
-
-    public Reader(Operation storage) {
-        this.storage = storage;
-    }
+public class HypergraphCluster {
 }

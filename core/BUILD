@@ -28,8 +28,8 @@ java_library(
     srcs = ["HypergraphCore.java"],
     deps = [
         "//:hypergraph",
-        "//exception:exception",
-        "//storage:storage",
+        "//common:common",
+        "//operation:operation",
         "//reader:reader",
         "//writer:writer",
         "//dependencies/maven/artifacts/org/rocksdb:rocksdbjni"

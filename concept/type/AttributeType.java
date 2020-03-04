@@ -16,16 +16,7 @@
  *
  */
 
-package hypergraph.reader;
+package hypergraph.concept.type;
 
-
-import hypergraph.operation.Operation;
-
-public class Reader {
-
-    private final Operation storage;
-
-    public Reader(Operation storage) {
-        this.storage = storage;
-    }
+public class AttributeType {
 }

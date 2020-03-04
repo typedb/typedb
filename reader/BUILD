@@ -28,7 +28,9 @@ java_library(
     name = "reader",
     srcs = glob(["*.java"]),
     deps = [
-        "//storage:storage"
+        "//common:common",
+        "//concept:concept",
+        "//operation:operation",
     ],
 )
 

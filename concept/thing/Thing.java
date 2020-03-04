@@ -16,10 +16,7 @@
  *
  */
 
-package hypergraph.storage;
+package hypergraph.concept.thing;
 
-public interface Storage {
-
-    byte[] get(byte[] key);
-
+public class Thing {
 }

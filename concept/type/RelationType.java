@@ -16,16 +16,7 @@
  *
  */
 
-package hypergraph.exception;
+package hypergraph.concept.type;
 
-public class HypergraphException extends RuntimeException {
-
-    public HypergraphException(String error) {
-        super(error);
-    }
-
-    public HypergraphException(Exception e) {
-        super(e);
-    }
-
+public class RelationType {
 }

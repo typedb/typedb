@@ -49,8 +49,14 @@ public class HypergraphTest {
                     assertTrue(transaction.isOpen());
                     assertEquals(HypergraphCore.Transaction.Type.READ, transaction.type());
 
+//                    transaction.read().getConcept(...)
+                }
 
+                try (Hypergraph.Transaction transaction = session.transaction(Hypergraph.Transaction.Type.WRITE)) {
+                    assertTrue(transaction.isOpen());
+                    assertEquals(HypergraphCore.Transaction.Type.WRITE, transaction.type());
 
+//                    transaction.write().entityType("person");
                 }
             }
         }

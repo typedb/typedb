@@ -16,18 +16,28 @@
 #
 
 load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
-package(default_visibility = ["//visibility:public"])
-
+package(
+    default_visibility = [
+        "//core:__pkg__",
+        "//cluster:__pkg__",
+        "//concept:__pkg__",
+        "//graph:__pkg__",
+        "//reader:__pkg__",
+        "//writer:__pkg__",
+    ]
+)
 
 java_library(
-    name = "exception",
-    srcs = ["HypergraphException.java"],
-    deps = [],
+    name = "operation",
+    srcs = glob(["*.java"]),
+    deps = [
+        "//common:common",
+    ]
 )
 
 checkstyle_test(
     name = "checkstyle",
     targets = [
-        ":exception",
+        ":operation",
     ]
 )

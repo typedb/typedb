@@ -16,16 +16,12 @@
  *
  */
 
-package hypergraph.reader;
+package hypergraph.operation;
 
+public interface Operation {
 
-import hypergraph.operation.Operation;
+    byte[] get(byte[] key);
 
-public class Reader {
+    void put(byte[] key, byte[] value);
 
-    private final Operation storage;
-
-    public Reader(Operation storage) {
-        this.storage = storage;
-    }
 }

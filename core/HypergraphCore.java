@@ -19,11 +19,12 @@
 package hypergraph.core;
 
 import hypergraph.Hypergraph;
-import hypergraph.exception.HypergraphException;
+import hypergraph.common.HypergraphException;
 import hypergraph.reader.Reader;
 import hypergraph.writer.Writer;
 import org.rocksdb.OptimisticTransactionDB;
 import org.rocksdb.Options;
+import org.rocksdb.ReadOptions;
 import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
 import org.rocksdb.WriteOptions;
@@ -35,6 +36,9 @@ import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+/**
+ * A Hypergraph implementation with RocksDB
+ */
 public class HypergraphCore implements Hypergraph {
 
     static {
@@ -83,7 +87,7 @@ public class HypergraphCore implements Hypergraph {
         }
     }
 
-    class Session implements Hypergraph.Session {
+    private class Session implements Hypergraph.Session {
 
         private final String keyspace;
         private OptimisticTransactionDB sessionRocks;
@@ -128,8 +132,9 @@ public class HypergraphCore implements Hypergraph {
             }
         }
 
-        class Transaction implements Hypergraph.Transaction {
+        private class Transaction implements Hypergraph.Transaction {
 
+            private final ReadOptions optionsRead = new ReadOptions();
             private final WriteOptions optionsWrite = new WriteOptions();
             private final org.rocksdb.Transaction transactionRocks;
             private final Hypergraph.Transaction.Type type;
@@ -148,7 +153,7 @@ public class HypergraphCore implements Hypergraph {
 
             @Override
             public Reader read() {
-                return new Reader(new Storage());
+                return new Reader(new Operation());
             }
 
             @Override
@@ -156,7 +161,7 @@ public class HypergraphCore implements Hypergraph {
                 if (this.type.equals(Type.READ)) {
                     throw new HypergraphException("Illegal Write Exception");
                 }
-                return new Writer(new Storage());
+                return new Writer(new Operation());
             }
 
             @Override
@@ -192,11 +197,26 @@ public class HypergraphCore implements Hypergraph {
                 }
             }
 
-            class Storage implements hypergraph.storage.Storage {
+            private class Operation implements hypergraph.operation.Operation {
 
                 @Override
                 public byte[] get(byte[] key) {
-                    return new byte[0];
+                    try {
+                        return transactionRocks.get(optionsRead, key);
+                    } catch (RocksDBException e) {
+                        e.printStackTrace();
+                        throw new HypergraphException(e);
+                    }
+                }
+
+                @Override
+                public void put(byte[] key, byte[] value) {
+                    try {
+                        transactionRocks.put(key, value);
+                    } catch (RocksDBException e) {
+                        e.printStackTrace();
+                        throw new HypergraphException(e);
+                    }
                 }
             }
         }

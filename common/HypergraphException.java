@@ -16,16 +16,16 @@
  *
  */
 
-package hypergraph.reader;
+package hypergraph.common;
 
+public class HypergraphException extends RuntimeException {
 
-import hypergraph.operation.Operation;
-
-public class Reader {
-
-    private final Operation storage;
-
-    public Reader(Operation storage) {
-        this.storage = storage;
+    public HypergraphException(String error) {
+        super(error);
     }
+
+    public HypergraphException(Exception e) {
+        super(e);
+    }
+
 }
