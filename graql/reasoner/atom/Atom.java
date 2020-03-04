@@ -433,8 +433,6 @@ public abstract class Atom extends AtomicBase {
      * @return multiunifier
      */
     public abstract MultiUnifier getMultiUnifier(Atom parentAtom, UnifierType unifierType);
-//        Unifier unifier = this.getUnifier(parentAtom, unifierType);
-//        return unifier != null ? new MultiUnifierImpl(unifier) : MultiUnifierImpl.nonExistent();
 
     /**
      * Calculates the semantic difference between the this (parent) and child atom,

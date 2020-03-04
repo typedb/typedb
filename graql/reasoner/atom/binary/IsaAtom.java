@@ -191,6 +191,5 @@ public class IsaAtom extends IsaAtomBase {
     public MultiUnifier getMultiUnifier(Atom parentAtom, UnifierType unifierType) {
         Unifier unifier = this.getUnifier(parentAtom, unifierType);
         return unifier != null ? new MultiUnifierImpl(unifier) : MultiUnifierImpl.nonExistent();
-//        return semanticProcessor.getMultiUnifier(this, parentAtom, unifierType, context());
     }
 }

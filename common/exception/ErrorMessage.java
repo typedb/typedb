@@ -201,7 +201,6 @@ public enum ErrorMessage {
     INVALID_VARIABLE_PREDICATE_STATE("Invalid state in variable predicate [%s] with answer [%s]: either a concept is missing or not an attribute."),
     NO_ATOMS_SELECTED("No atoms were selected from the query [%s]."),
     INVALID_CACHE_ENTRY("Query cache entry for query [%s] contains an invalid entry: [%s]."),
-    UNIFICATION_ATOM_INCOMPATIBILITY("Attempted unification from child atom [%s] to parent atom [%s] was incompatible."),
     NON_EXISTENT_UNIFIER("Could not proceed with the unification as the unifier doesn't exist."),
     ILLEGAL_ATOM_CONVERSION("Attempted illegal atom conversion of atom [%s] to type [%s]."),
     CONCEPT_NOT_THING("Attempted concept conversion from concept [%s] that is not a thing."),
