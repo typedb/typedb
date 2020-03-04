@@ -154,8 +154,13 @@ public class AttributeAtom extends Atom{
                 getTypeLabel(), newMultiPredicate, getParentQuery(), context());
     }
 
-    public IsaAtom ownerIsa(){ return ownerIsa;}
-    public IsaAtom attributeIsa(){ return attributeIsa;}
+    public IsaAtom ownerIsa(){
+        return ownerIsa;
+    }
+
+    public IsaAtom attributeIsa(){
+        return attributeIsa;
+    }
 
     @Override
     public Atomic copy(ReasonerQuery parent){ return create(this, parent);}
