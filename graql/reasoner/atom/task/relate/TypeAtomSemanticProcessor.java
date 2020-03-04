@@ -22,7 +22,7 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import grakn.core.graql.reasoner.ReasoningContext;
 import grakn.core.graql.reasoner.atom.Atom;
-import grakn.core.graql.reasoner.atom.binary.Binary;
+import grakn.core.graql.reasoner.atom.binary.TypeAtom;
 import grakn.core.graql.reasoner.cache.SemanticDifference;
 import grakn.core.graql.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierImpl;
@@ -33,16 +33,15 @@ import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
 import graql.lang.statement.Variable;
-
 import java.util.Collections;
 import java.util.Set;
 
-public class BinarySemanticProcessor implements SemanticProcessor<Binary> {
+public class TypeAtomSemanticProcessor implements SemanticProcessor<TypeAtom> {
 
     private final BasicSemanticProcessor basicSemanticProcessor = new BasicSemanticProcessor();
 
     @Override
-    public Unifier getUnifier(Binary childAtom, Atom parentAtom, UnifierType unifierType, ReasoningContext ctx) {
+    public Unifier getUnifier(TypeAtom childAtom, Atom parentAtom, UnifierType unifierType, ReasoningContext ctx) {
         boolean inferTypes = unifierType.inferTypes();
         Variable childVarName = childAtom.getVarName();
         Variable parentVarName = parentAtom.getVarName();
@@ -80,13 +79,13 @@ public class BinarySemanticProcessor implements SemanticProcessor<Binary> {
     }
 
     @Override
-    public MultiUnifier getMultiUnifier(Binary childAtom, Atom parentAtom, UnifierType unifierType, ReasoningContext ctx) {
+    public MultiUnifier getMultiUnifier(TypeAtom childAtom, Atom parentAtom, UnifierType unifierType, ReasoningContext ctx) {
         Unifier unifier = getUnifier(childAtom, parentAtom, unifierType, ctx);
         return unifier != null ? new MultiUnifierImpl(unifier) : MultiUnifierImpl.nonExistent();
     }
 
     @Override
-    public SemanticDifference computeSemanticDifference(Binary parentAtom, Atom childAtom, Unifier unifier, ReasoningContext ctx) {
+    public SemanticDifference computeSemanticDifference(TypeAtom parentAtom, Atom childAtom, Unifier unifier, ReasoningContext ctx) {
         return basicSemanticProcessor.computeSemanticDifference(parentAtom, childAtom, unifier, ctx);
     }
 }
