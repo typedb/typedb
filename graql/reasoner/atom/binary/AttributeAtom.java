@@ -17,6 +17,7 @@
  */
 package grakn.core.graql.reasoner.atom.binary;
 
+import com.google.common.base.Equivalence;
 import com.google.common.collect.ImmutableSet;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.core.AttributeValueConverter;
@@ -35,6 +36,7 @@ import grakn.core.graql.reasoner.atom.task.relate.SemanticProcessor;
 import grakn.core.graql.reasoner.atom.task.validate.AtomValidator;
 import grakn.core.graql.reasoner.atom.task.validate.AttributeAtomValidator;
 import grakn.core.graql.reasoner.cache.SemanticDifference;
+import grakn.core.graql.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Label;
@@ -77,7 +79,10 @@ import static grakn.core.graql.reasoner.utils.ReasonerUtils.isEquivalentCollecti
  *
  *
  */
-public class AttributeAtom extends Binary{
+public class AttributeAtom extends Atom{
+
+    private final IsaAtom attributeIsa;
+    private final IsaAtom ownerIsa;
 
     private final ImmutableSet<ValuePredicate> multiPredicate;
     private final Variable attributeVariable;
@@ -97,7 +102,10 @@ public class AttributeAtom extends Binary{
             Variable attributeVariable,
             ImmutableSet<ValuePredicate> multiPredicate,
             ReasoningContext ctx) {
-        super(varName, pattern, parentQuery, label, predicateVariable, ctx);
+        //super(varName, pattern, parentQuery, label, predicateVariable, ctx);
+        super(parentQuery, varName, pattern, label, ctx);
+        this.ownerIsa = IsaAtom.create(varName, new Variable(), label, false, parentQuery, ctx);
+        this.attributeIsa = IsaAtom.create(attributeVariable, predicateVariable, label, false, parentQuery, ctx);
         this.relationVariable = relationVariable;
         this.attributeVariable = attributeVariable;
         this.multiPredicate = multiPredicate;
@@ -147,31 +155,19 @@ public class AttributeAtom extends Binary{
                 getTypeLabel(), newMultiPredicate, getParentQuery(), context());
     }
 
-
-    /**
-     * TODO remove this, short term workaround
-     * copy constructor that overrides the predicates
-     */
-    public AttributeAtom copy(Set<ValuePredicate> newPredicates) {
-        return create(getPattern(), getAttributeVariable(),
-                getRelationVariable(),
-                getPredicateVariable(),
-                getTypeLabel(),
-                newPredicates,
-                getParentQuery(),
-                context());
-    }
+    public IsaAtom ownerIsa(){ return ownerIsa;}
+    public IsaAtom attributeIsa(){ return attributeIsa;}
 
     @Override
     public Atomic copy(ReasonerQuery parent){ return create(this, parent);}
 
     @Override
+    public Class<? extends VarProperty> getVarPropertyClass() { return HasAttributeProperty.class;}
+
+    @Override
     public Atomic simplify() {
         return this.convertValues();
     }
-
-    @Override
-    public Class<? extends VarProperty> getVarPropertyClass() { return HasAttributeProperty.class;}
 
     @Override
     public AttributeAtom toAttributeAtom(){ return converter.toAttributeAtom(this, context());}
@@ -199,6 +195,16 @@ public class AttributeAtom extends Binary{
     }
 
     @Override
+    public SchemaConcept getSchemaConcept() {
+        return attributeIsa.getSchemaConcept();
+    }
+
+    @Override
+    public Variable getPredicateVariable() {
+        return attributeIsa.getPredicateVariable();
+    }
+
+    @Override
     public final boolean equals(Object obj) {
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
@@ -209,10 +215,26 @@ public class AttributeAtom extends Binary{
     }
 
     @Override
-    boolean isBaseEquivalent(Object obj){
-        if (!super.isBaseEquivalent(obj)) return false;
+    public boolean isAlphaEquivalent(Object obj) {
+        if (!isBaseEquivalent(obj, AtomicEquivalence.AlphaEquivalence)) return false;
+        Atom that = (Atom) obj;
+        return !this.getMultiUnifier(that, UnifierType.EXACT).equals(MultiUnifierImpl.nonExistent());
+    }
+
+    @Override
+    public boolean isStructurallyEquivalent(Object obj) {
+        if (!isBaseEquivalent(obj, AtomicEquivalence.StructuralEquivalence)) return false;
+        Atom that = (Atom) obj;
+        return !this.getMultiUnifier(that, UnifierType.STRUCTURAL).equals(MultiUnifierImpl.nonExistent());
+    }
+
+    private boolean isBaseEquivalent(Object obj, Equivalence<Atomic> equivalence){
+        if (obj == null || this.getClass() != obj.getClass()) return false;
+        if (obj == this) return true;
         AttributeAtom that = (AttributeAtom) obj;
-        return this.getRelationVariable().isReturned() == that.getRelationVariable().isReturned();
+        return equivalence.equivalent(this.attributeIsa(), that.attributeIsa())
+                && equivalence.equivalent(this.ownerIsa(), that.ownerIsa())
+                && this.getRelationVariable().isReturned() == that.getRelationVariable().isReturned();
     }
 
     private boolean multiPredicateEqual(AttributeAtom that){
@@ -235,6 +257,11 @@ public class AttributeAtom extends Binary{
     }
 
     @Override
+    public int structuralEquivalenceHashCode() {
+        return alphaEquivalenceHashCode();
+    }
+
+    @Override
     protected Pattern createCombinedPattern(){
         Set<Statement> vars = getMultiPredicate().stream()
                 .map(Atomic::getPattern)
@@ -252,7 +279,7 @@ public class AttributeAtom extends Binary{
     }
 
     @Override
-    public boolean isResource(){ return true;}
+    public boolean isAttribute(){ return true;}
 
     @Override
     public boolean isSelectable(){ return true;}
@@ -321,7 +348,7 @@ public class AttributeAtom extends Binary{
 
     @Override
     public Stream<Predicate> getInnerPredicates(){
-        return Stream.concat(super.getInnerPredicates(), getMultiPredicate().stream());
+        return Stream.concat(attributeIsa.getInnerPredicates(), getMultiPredicate().stream());
     }
 
     /**
@@ -330,7 +357,7 @@ public class AttributeAtom extends Binary{
      * @return rewritten atom
      */
     private AttributeAtom rewriteWithRelationVariable(Atom parentAtom){
-        if (parentAtom.isResource() && ((AttributeAtom) parentAtom).getRelationVariable().isReturned()) return rewriteWithRelationVariable();
+        if (parentAtom.isAttribute() && ((AttributeAtom) parentAtom).getRelationVariable().isReturned()) return rewriteWithRelationVariable();
         return this;
     }
 

@@ -217,7 +217,7 @@ public class InferenceRule {
      * @return rule with propagated constraints from parent
      */
     private InferenceRule propagateConstraints(Atom parentAtom, Unifier unifier){
-        if (!parentAtom.isRelation() && !parentAtom.isResource()) return this;
+        if (!parentAtom.isRelation() && !parentAtom.isAttribute()) return this;
         Atom headAtom = head.getAtom();
 
         //we are only rewriting the conjunction atoms (not complement atoms) as
@@ -235,7 +235,7 @@ public class InferenceRule {
         bodyConjunctionAtoms.addAll(vpsToPropagate);
 
         //if head is a resource merge vps into head
-        if (headAtom.isResource()) {
+        if (headAtom.isAttribute()) {
             AttributeAtom resourceHead = (AttributeAtom) headAtom;
 
             if (resourceHead.getMultiPredicate().isEmpty()) {
@@ -246,7 +246,14 @@ public class InferenceRule {
 
                 // TODO revert this to old implementation of instantiating without copy constructor
                 // or do it properly with a factory
-                headAtom = resourceHead.copy(innerVps);
+                headAtom = AttributeAtom.create(resourceHead.getPattern(), resourceHead.getAttributeVariable(),
+                        resourceHead.getRelationVariable(),
+                        resourceHead.getPredicateVariable(),
+                        resourceHead.getTypeLabel(),
+                        innerVps,
+                        resourceHead.getParentQuery(),
+                        resourceHead.context());
+                //headAtom = resourceHead.copy(innerVps);
             }
         }
 
@@ -307,7 +314,7 @@ public class InferenceRule {
     }
 
     private InferenceRule rewriteHeadToRelation(Atom parentAtom){
-        if (parentAtom.isRelation() && getHead().getAtom().isResource()){
+        if (parentAtom.isRelation() && getHead().getAtom().isAttribute()){
             return new InferenceRule(
                     reasonerQueryFactory.atomic(getHead().getAtom().toRelationAtom()),
                     getBody(),

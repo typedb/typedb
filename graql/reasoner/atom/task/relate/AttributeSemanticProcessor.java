@@ -56,16 +56,13 @@ public class AttributeSemanticProcessor implements SemanticProcessor<AttributeAt
         }
 
         AttributeAtom parent = (AttributeAtom) parentAtom;
-
-        Unifier unifier = binarySemanticProcessor.getUnifier(childAtom, parentAtom, unifierType, ctx);
+        Unifier unifier = binarySemanticProcessor.getUnifier(childAtom.attributeIsa(), parent.attributeIsa(), unifierType, ctx);
         if (unifier == null) return UnifierImpl.nonExistent();
 
-        //unify attribute vars
-        Variable childAttributeVarName = childAtom.getAttributeVariable();
-        Variable parentAttributeVarName = parent.getAttributeVariable();
-        if (parentAttributeVarName.isReturned()){
-            unifier = unifier.merge(new UnifierImpl(ImmutableMap.of(childAttributeVarName, parentAttributeVarName)));
-        }
+        //unify owner isa
+        Unifier ownerUnifier = binarySemanticProcessor.getUnifier(childAtom.ownerIsa(), parent.ownerIsa(), unifierType, ctx);
+        if (ownerUnifier == null) return UnifierImpl.nonExistent();
+        unifier = unifier.merge(ownerUnifier);
 
         //unify relation vars
         Variable childRelationVarName = childAtom.getRelationVariable();
@@ -96,8 +93,8 @@ public class AttributeSemanticProcessor implements SemanticProcessor<AttributeAt
 
     @Override
     public SemanticDifference computeSemanticDifference(AttributeAtom parent, Atom child, Unifier unifier, ReasoningContext ctx) {
-        SemanticDifference baseDiff = binarySemanticProcessor.computeSemanticDifference(parent, child, unifier, ctx);
-        if (!child.isResource()) return baseDiff;
+        SemanticDifference baseDiff = binarySemanticProcessor.computeSemanticDifference(parent.toIsaAtom(), child, unifier, ctx);
+        if (!child.isAttribute()) return baseDiff;
         AttributeAtom childAtom = (AttributeAtom) child;
         Set<VariableDefinition> diff = new HashSet<>();
 

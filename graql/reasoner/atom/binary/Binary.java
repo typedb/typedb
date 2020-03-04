@@ -88,12 +88,6 @@ public abstract class Binary extends Atom {
         return typePredicate;
     }
 
-
-    @Override
-    public boolean requiresSchema() {
-        return getTypeLabel() == null || this instanceof OntologicalAtom;
-    }
-
     @Nullable
     @Override
     public SchemaConcept getSchemaConcept(){

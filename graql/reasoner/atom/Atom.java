@@ -161,7 +161,7 @@ public abstract class Atom extends AtomicBase {
      * @return true if this atom is bounded - via substitution/specific resource or schema
      */
     public boolean isBounded() {
-        return isResource() && ((AttributeAtom) this).isValueEquality()
+        return isAttribute() && ((AttributeAtom) this).isValueEquality()
                 || this instanceof OntologicalAtom
                 || isGround();
     }
@@ -209,7 +209,9 @@ public abstract class Atom extends AtomicBase {
     /**
      * @return true if this atom requires direct schema lookups
      */
-    public abstract boolean requiresSchema();
+    public boolean requiresSchema() {
+        return getTypeLabel() == null || this instanceof OntologicalAtom;
+    }
 
     private boolean isRuleApplicable(InferenceRule child) {
         return (getIdPredicate(getVarName()) == null
