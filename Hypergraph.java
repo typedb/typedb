@@ -18,12 +18,12 @@
 
 package hypergraph;
 
-import hypergraph.concept.ConceptMgr;
+import hypergraph.concept.Concepts;
 import hypergraph.traversal.Traversal;
 
 /**
  * A Hypergraph Database API
- * <p>
+ *
  * This interface allows you to open a 'Session' to connect to the Hypergraph
  * database, and open a 'Transaction' from that session.
  */
@@ -37,7 +37,7 @@ public interface Hypergraph extends AutoCloseable {
 
     /**
      * A Hypergraph Database Session
-     * <p>
+     *
      * This interface allows you to create transactions to perform READs or
      * WRITEs onto the database.
      */
@@ -63,7 +63,7 @@ public interface Hypergraph extends AutoCloseable {
 
         Traversal read();
 
-        ConceptMgr write();
+        Concepts write();
 
         void commit();
 

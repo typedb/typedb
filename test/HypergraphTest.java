@@ -38,7 +38,7 @@ public class HypergraphTest {
 
         System.out.println("Database Directory: " + directory.toString());
 
-        try (Hypergraph graph = new HypergraphCore(directory.toString())) {
+        try (Hypergraph graph = HypergraphCore.open(directory.toString())) {
             assertTrue(graph.isOpen());
 
             try (Hypergraph.Session session = graph.session("my_data_keyspace")) {

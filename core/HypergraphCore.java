@@ -20,11 +20,13 @@ package hypergraph.core;
 
 import hypergraph.Hypergraph;
 import hypergraph.common.HypergraphException;
-import hypergraph.concept.ConceptMgr;
+import hypergraph.concept.Concepts;
 import hypergraph.graph.Graph;
-import hypergraph.index.Index;
+import hypergraph.storage.Index;
+import hypergraph.storage.Storage;
 import hypergraph.traversal.Traversal;
 import org.rocksdb.OptimisticTransactionDB;
+import org.rocksdb.OptimisticTransactionOptions;
 import org.rocksdb.Options;
 import org.rocksdb.ReadOptions;
 import org.rocksdb.RocksDB;
@@ -55,11 +57,15 @@ public class HypergraphCore implements Hypergraph {
     private AtomicBoolean isOpen = new AtomicBoolean();
     private Map<String, Index> indexes = new ConcurrentHashMap<>();
 
-    public HypergraphCore(String directory) {
-        this(directory, new Properties());
+    public static HypergraphCore open(String directory) {
+        return new HypergraphCore(directory,  new Properties());
     }
 
-    public HypergraphCore(String directory, Properties properties) {
+    public static HypergraphCore open(String directory, Properties properties) {
+        return new HypergraphCore(directory, properties);
+    }
+
+    private HypergraphCore(String directory, Properties properties) {
         this.directory = Paths.get(directory);
         this.optionsGraph.setCreateIfMissing(true);
         this.isOpen.set(true);
@@ -68,6 +74,10 @@ public class HypergraphCore implements Hypergraph {
 
     private void setOPtionsFromProperties(Properties properties) {
         // TODO: configure optimisation paramaters
+    }
+
+    private void loadIndexes() {
+        // TODO: load indexes for every pre-existing keyspace
     }
 
     @Override
@@ -108,6 +118,9 @@ public class HypergraphCore implements Hypergraph {
             }
             this.keyspace = keyspace;
             this.isOpen.set(true);
+            if (!indexes.containsKey(this.keyspace)) {
+                indexes.put(keyspace, new Index());
+            }
         }
 
         @Override
@@ -139,19 +152,23 @@ public class HypergraphCore implements Hypergraph {
 
         private class Transaction implements Hypergraph.Transaction {
 
-            private final ReadOptions optionsRead = new ReadOptions();
-            private final WriteOptions optionsWrite = new WriteOptions();
-            private final org.rocksdb.Transaction transactionRocks;
+            private final ReadOptions readOptions = new ReadOptions();
+            private final WriteOptions writeOptions = new WriteOptions();
+            private final OptimisticTransactionOptions transactionOptions =
+                    new OptimisticTransactionOptions().setSetSnapshot(true);
+            private final org.rocksdb.Transaction rocksTransaction;
             private final Hypergraph.Transaction.Type type;
-            private final Graph transactionGraph = new Graph(new Operation());
-            private final ConceptMgr conceptMgr = new ConceptMgr(indexes.get(keyspace), transactionGraph);
-            private final Traversal traversal = new Traversal(conceptMgr);
+            private final Storage storage = new Storage(new Operation(), indexes.get(keyspace));
+            private final Graph graph = new Graph(storage);
+            private final Concepts concepts = new Concepts(graph);
+            private final Traversal traversal = new Traversal(concepts);
             private AtomicBoolean isOpen = new AtomicBoolean();
 
             Transaction(Hypergraph.Transaction.Type type) {
-                this.transactionRocks = sessionRocks.beginTransaction(optionsWrite);
                 this.type = type;
-                this.isOpen.set(true);
+                rocksTransaction = sessionRocks.beginTransaction(writeOptions, transactionOptions);
+                readOptions.setSnapshot(rocksTransaction.getSnapshot());
+                isOpen.set(true);
             }
 
             @Override
@@ -165,17 +182,17 @@ public class HypergraphCore implements Hypergraph {
             }
 
             @Override
-            public ConceptMgr write() {
-                if (this.type.equals(Type.READ)) {
-                    throw new HypergraphException("Illegal Write Exception");
-                }
-                return conceptMgr;
+            public Concepts write() {
+                return concepts;
             }
 
             @Override
             public void commit() {
+                if (type.equals(Type.READ)) {
+                    throw new HypergraphException("Illegal Write Exception");
+                }
                 try {
-                    this.transactionRocks.commit();
+                    rocksTransaction.commit();
                 } catch (RocksDBException e) {
                     e.printStackTrace();
                     throw new HypergraphException(e);
@@ -185,7 +202,7 @@ public class HypergraphCore implements Hypergraph {
             @Override
             public void rollback() {
                 try {
-                    this.transactionRocks.rollback();
+                    rocksTransaction.rollback();
                 } catch (RocksDBException e) {
                     e.printStackTrace();
                     throw new HypergraphException(e);
@@ -200,17 +217,18 @@ public class HypergraphCore implements Hypergraph {
             @Override
             public void close() {
                 if (isOpen.compareAndSet(true, false)) {
-                    transactionRocks.close();
-                    optionsWrite.close();
+                    storage.persist();
+                    rocksTransaction.close();
+                    writeOptions.close();
                 }
             }
 
-            private class Operation implements hypergraph.operation.Operation {
+            private class Operation implements hypergraph.storage.Operation {
 
                 @Override
                 public byte[] get(byte[] key) {
                     try {
-                        return transactionRocks.get(optionsRead, key);
+                        return rocksTransaction.get(readOptions, key);
                     } catch (RocksDBException e) {
                         e.printStackTrace();
                         throw new HypergraphException(e);
@@ -220,7 +238,7 @@ public class HypergraphCore implements Hypergraph {
                 @Override
                 public void put(byte[] key, byte[] value) {
                     try {
-                        transactionRocks.put(key, value);
+                        rocksTransaction.put(key, value);
                     } catch (RocksDBException e) {
                         e.printStackTrace();
                         throw new HypergraphException(e);

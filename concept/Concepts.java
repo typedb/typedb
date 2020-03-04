@@ -16,24 +16,24 @@
  *
  */
 
-package hypergraph.graph;
+package hypergraph.concept;
 
 import hypergraph.common.HypergraphException;
-import hypergraph.storage.Storage;
+import hypergraph.concept.type.EntityType;
+import hypergraph.graph.Graph;
+import hypergraph.graph.Vertex;
 
-public class Graph {
+public class Concepts {
 
-    private final Storage storage;
+    private final Graph graph;
 
-    public Graph(Storage storage) {
-        this.storage = storage;
+    public Concepts(Graph graph) {
+        this.graph = graph;
     }
 
-    public Vertex putVertex() {
-        return new Vertex();
-    }
+    public EntityType putEntityType(String label) {
+        Vertex vertex = graph.putVertex();
 
-    public Edge putEdge() {
-        return new Edge();
+        return new EntityType(vertex);
     }
 }

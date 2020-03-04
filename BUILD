@@ -25,7 +25,6 @@ java_library(
         "Hypergraph.java"
     ],
     deps = [
-        "//common:common",
         "//traversal:traversal",
         "//concept:concept",
     ],

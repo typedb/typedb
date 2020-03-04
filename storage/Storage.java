@@ -16,26 +16,21 @@
  *
  */
 
-package hypergraph.concept;
+package hypergraph.storage;
 
-import hypergraph.concept.type.EntityType;
-import hypergraph.graph.Graph;
-import hypergraph.graph.Vertex;
-import hypergraph.index.Index;
+import hypergraph.common.HypergraphException;
 
-public class ConceptMgr {
+public class Storage {
 
+    private final Operation operation;
     private final Index index;
-    private final Graph graph;
 
-    public ConceptMgr(Index index, Graph graph) {
+    public Storage(Operation operation, Index index) {
+        this.operation = operation;
         this.index = index;
-        this.graph = graph;
     }
 
-    public EntityType putEntityType(String label) {
-        Vertex vertex = graph.putVertex();
+    public void persist() {
 
-        return new EntityType(vertex);
     }
 }

@@ -29,7 +29,7 @@ java_library(
     srcs = glob(["*.java"]),
     deps = [
         "//common:common",
-        "//operation:operation",
+        "//storage:storage",
     ]
 )
 

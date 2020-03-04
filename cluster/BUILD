@@ -23,23 +23,24 @@ package(
     ]
 )
 
-java_library(
-    name = "hypergraph-cluster",
-    srcs = ["HypergraphCluster.java"],
-    deps = [
-        "//:hypergraph",
-        "//common:common",
-        "//concept:concept",
-        "//graph:graph",
-        "//index:index",
-        "//operation:operation",
-        "//traversal:traversal",
-    ],
-)
-
-checkstyle_test(
-    name = "checkstyle",
-    targets = [
-        ":hypergraph-cluster",
-    ]
-)
+# TODO: Enable the following code once we implement HypergraphCluster
+#
+#java_library(
+#    name = "hypergraph-cluster",
+#    srcs = ["HypergraphCluster.java"],
+#    deps = [
+#        "//:hypergraph",
+#        "//common:common",
+#        "//concept:concept",
+#        "//graph:graph",
+#        "//storage:storage",
+#        "//traversal:traversal",
+#    ],
+#)
+#
+#checkstyle_test(
+#    name = "checkstyle",
+#    targets = [
+#        ":hypergraph-cluster",
+#    ]
+#)

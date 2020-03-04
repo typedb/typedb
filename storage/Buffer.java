@@ -16,12 +16,7 @@
  *
  */
 
-package hypergraph.operation;
+package hypergraph.storage;
 
-public interface Operation {
-
-    byte[] get(byte[] key);
-
-    void put(byte[] key, byte[] value);
-
+public class Buffer {
 }

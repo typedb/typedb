@@ -16,24 +16,7 @@
  *
  */
 
-package hypergraph.graph;
+package hypergraph.storage;
 
-import hypergraph.common.HypergraphException;
-import hypergraph.storage.Storage;
-
-public class Graph {
-
-    private final Storage storage;
-
-    public Graph(Storage storage) {
-        this.storage = storage;
-    }
-
-    public Vertex putVertex() {
-        return new Vertex();
-    }
-
-    public Edge putEdge() {
-        return new Edge();
-    }
+public class Index {
 }

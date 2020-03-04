@@ -34,7 +34,6 @@ java_library(
     deps = [
         "//common:common",
         "//graph:graph",
-        "//index:index",
     ],
 )
 

@@ -18,24 +18,24 @@
 load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 package(
     default_visibility = [
-        "//concept:__pkg__",
         "//core:__pkg__",
         "//cluster:__pkg__",
+        "//graph:__pkg__",
+        "//index:__pkg__",
     ]
 )
 
 java_library(
-    name = "index",
+    name = "storage",
     srcs = glob(["*.java"]),
     deps = [
         "//common:common",
-        "//operation:operation",
     ]
 )
 
 checkstyle_test(
     name = "checkstyle",
     targets = [
-        ":index",
+        ":storage",
     ]
 )
