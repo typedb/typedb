@@ -82,7 +82,7 @@ public class AttributeSemanticProcessor implements SemanticProcessor<AttributeAt
     @Override
     public SemanticDifference computeSemanticDifference(AttributeAtom parent, Atom child, Unifier unifier, ReasoningContext ctx) {
         SemanticDifference baseDiff = binarySemanticProcessor.computeSemanticDifference(parent.toIsaAtom(), child, unifier, ctx);
-        if (!child.isResource()) return baseDiff;
+        if (!child.isAttribute()) return baseDiff;
         AttributeAtom childAtom = (AttributeAtom) child;
         Set<VariableDefinition> diff = new HashSet<>();
 

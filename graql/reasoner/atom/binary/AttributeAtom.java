@@ -17,6 +17,7 @@
  */
 package grakn.core.graql.reasoner.atom.binary;
 
+import com.google.common.base.Equivalence;
 import com.google.common.collect.ImmutableSet;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.core.AttributeValueConverter;
@@ -174,12 +175,12 @@ public class AttributeAtom extends Atom{
     public Atomic copy(ReasonerQuery parent){ return create(this, parent);}
 
     @Override
+    public Class<? extends VarProperty> getVarPropertyClass() { return HasAttributeProperty.class;}
+
+    @Override
     public Atomic simplify() {
         return this.convertValues();
     }
-
-    @Override
-    public Class<? extends VarProperty> getVarPropertyClass() { return HasAttributeProperty.class;}
 
     @Override
     public AttributeAtom toAttributeAtom(){ return converter.toAttributeAtom(this, context());}
@@ -207,32 +208,6 @@ public class AttributeAtom extends Atom{
     }
 
     @Override
-    public final boolean equals(Object obj) {
-        if (obj == null || this.getClass() != obj.getClass()) return false;
-        if (obj == this) return true;
-        AttributeAtom a2 = (AttributeAtom) obj;
-        return Objects.equals(this.getTypeLabel(), a2.getTypeLabel())
-                && this.getVarName().equals(a2.getVarName())
-                && this.multiPredicateEqual(a2);
-    }
-
-    private boolean isBaseEquivalent(Object obj){
-        if (obj == null || this.getClass() != obj.getClass()) return false;
-        if (obj == this) return true;
-        AttributeAtom that = (AttributeAtom) obj;
-        return (this.isUserDefined() == that.isUserDefined())
-                && (this.getPredicateVariable().isReturned() == that.getPredicateVariable().isReturned())
-                && this.isDirect() == that.isDirect()
-                && Objects.equals(this.getTypeLabel(), that.getTypeLabel())
-
-                && this.getRelationVariable().isReturned() == that.getRelationVariable().isReturned();
-    }
-
-    private boolean multiPredicateEqual(AttributeAtom that){
-        return isEquivalentCollection(this.getMultiPredicate(), that.getMultiPredicate(), AtomicEquivalence.Equality);
-    }
-
-    @Override
     public SchemaConcept getSchemaConcept() {
         return attributeIsa.getSchemaConcept();
     }
@@ -243,17 +218,40 @@ public class AttributeAtom extends Atom{
     }
 
     @Override
+    public final boolean equals(Object obj) {
+        if (obj == null || this.getClass() != obj.getClass()) return false;
+        if (obj == this) return true;
+        AttributeAtom a2 = (AttributeAtom) obj;
+        return Objects.equals(this.getTypeLabel(), a2.getTypeLabel())
+                && this.getVarName().equals(a2.getVarName())
+                && this.multiPredicateEqual(a2);
+    }
+
+    @Override
     public boolean isAlphaEquivalent(Object obj) {
-        if (!isBaseEquivalent(obj)) return false;
+        if (!isBaseEquivalent(obj, AtomicEquivalence.AlphaEquivalence)) return false;
         Atom that = (Atom) obj;
         return !this.getMultiUnifier(that, UnifierType.EXACT).equals(MultiUnifierImpl.nonExistent());
     }
 
     @Override
     public boolean isStructurallyEquivalent(Object obj) {
-        if (!isBaseEquivalent(obj)) return false;
+        if (!isBaseEquivalent(obj, AtomicEquivalence.StructuralEquivalence)) return false;
         Atom that = (Atom) obj;
         return !this.getMultiUnifier(that, UnifierType.STRUCTURAL).equals(MultiUnifierImpl.nonExistent());
+    }
+
+    private boolean isBaseEquivalent(Object obj, Equivalence<Atomic> equivalence){
+        if (obj == null || this.getClass() != obj.getClass()) return false;
+        if (obj == this) return true;
+        AttributeAtom that = (AttributeAtom) obj;
+        return equivalence.equivalent(this.attributeIsa(), that.attributeIsa())
+                && equivalence.equivalent(this.ownerIsa(), that.ownerIsa())
+                && this.getRelationVariable().isReturned() == that.getRelationVariable().isReturned();
+    }
+
+    private boolean multiPredicateEqual(AttributeAtom that){
+        return isEquivalentCollection(this.getMultiPredicate(), that.getMultiPredicate(), AtomicEquivalence.Equality);
     }
 
     @Override
@@ -294,7 +292,7 @@ public class AttributeAtom extends Atom{
     }
 
     @Override
-    public boolean isResource(){ return true;}
+    public boolean isAttribute(){ return true;}
 
     @Override
     public boolean isSelectable(){ return true;}
@@ -367,7 +365,7 @@ public class AttributeAtom extends Atom{
      * @return rewritten atom
      */
     private AttributeAtom rewriteWithRelationVariable(Atom parentAtom){
-        if (parentAtom.isResource() && ((AttributeAtom) parentAtom).getRelationVariable().isReturned()) return rewriteWithRelationVariable();
+        if (parentAtom.isAttribute() && ((AttributeAtom) parentAtom).getRelationVariable().isReturned()) return rewriteWithRelationVariable();
         return this;
     }
 

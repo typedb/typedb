@@ -163,7 +163,7 @@ public class RuleUtils {
                     .flatMap(type -> queryCacheImpl.getFamily(type).stream())
                     .map(Equivalence.Wrapper::get)
                     .filter(q -> queryCacheImpl.getParents(q).isEmpty())
-                    .filter(q -> q.getAtom().isRelation() || q.getAtom().isResource())
+                    .filter(q -> q.getAtom().isRelation() || q.getAtom().isAttribute())
                     .collect(toSet());
             //if we don't have full information (query answers in cache), we assume reiteration is needed
             if (!queries.stream().allMatch(q -> queryCacheImpl.isDBComplete(q))) return true;

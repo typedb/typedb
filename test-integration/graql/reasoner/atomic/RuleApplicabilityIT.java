@@ -354,7 +354,7 @@ public class RuleApplicabilityIT {
             Atom attribute3 = reasonerQueryFactory.create(conjunction(relationString3)).getAtoms(AttributeAtom.class).findFirst().orElse(null);
             Set<InferenceRule> attributeRules = testTx.ruleCache().getRules()
                     .map(r -> new InferenceRule(r, reasonerQueryFactory))
-                    .filter(r -> r.getHead().getAtom().isResource())
+                    .filter(r -> r.getHead().getAtom().isAttribute())
                     .collect(Collectors.toSet());
 
             assertEquals(
@@ -388,7 +388,7 @@ public class RuleApplicabilityIT {
             assertEquals(2, type.getApplicableRules().count());
             assertEquals(1, type2.getApplicableRules().count());
             assertEquals(3, type3.getApplicableRules().count());
-            assertEquals(rules.stream().filter(r -> r.getHead().getAtom().isResource()).count(), type4.getApplicableRules().count());
+            assertEquals(rules.stream().filter(r -> r.getHead().getAtom().isAttribute()).count(), type4.getApplicableRules().count());
             assertEquals(rules.stream().filter(r -> r.getHead().getAtom().isRelation()).count(), type5.getApplicableRules().count());
         }
     }

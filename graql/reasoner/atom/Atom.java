@@ -161,7 +161,7 @@ public abstract class Atom extends AtomicBase {
      * @return true if this atom is bounded - via substitution/specific resource or schema
      */
     public boolean isBounded() {
-        return isResource() && ((AttributeAtom) this).isValueEquality()
+        return isAttribute() && ((AttributeAtom) this).isValueEquality()
                 || this instanceof OntologicalAtom
                 || isGround();
     }
