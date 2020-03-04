@@ -23,7 +23,6 @@ import grakn.core.graql.reasoner.CacheCasting;
 import grakn.core.graql.reasoner.ReasoningContext;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.binary.AttributeAtom;
-import grakn.core.graql.reasoner.atom.binary.Binary;
 import grakn.core.graql.reasoner.atom.predicate.ValuePredicate;
 import grakn.core.graql.reasoner.query.ResolvableQuery;
 import grakn.core.kb.concept.api.AttributeType;
@@ -77,7 +76,7 @@ public class AttributeAtomValidator implements AtomValidator<AttributeAtom> {
             ErrorMessage incompatibleValuesMsg = ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_COPYING_INCOMPATIBLE_ATTRIBUTE_VALUES;
             body.getAtoms(AttributeAtom.class)
                     .filter(at -> at.getAttributeVariable().equals(attributeVar))
-                    .map(Binary::getSchemaConcept)
+                    .map(AttributeAtom::getSchemaConcept)
                     .filter(t -> !t.asAttributeType().dataType().equals(dataType))
                     .forEach(t -> errors.add(incompatibleValuesMsg.getMessage(type.label(), rule.label(), t.label())));
         }

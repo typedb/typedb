@@ -59,24 +59,19 @@ public class IsaAtom extends IsaAtomBase {
 
     private IsaAtom(Variable varName, Statement pattern, ReasonerQuery reasonerQuery, @Nullable Label label, Variable predicateVariable,
                     ReasoningContext ctx) {
-        super(varName, pattern, reasonerQuery, label, predicateVariable, ctx);
-    }
-
-    public static IsaAtom create(Variable var, Variable predicateVar, Statement pattern, @Nullable Label label, ReasonerQuery parent,
-                                 ReasoningContext ctx) {
-        return new IsaAtom(var.asReturnedVar(), pattern, parent, label, predicateVar, ctx);
+        super(varName.asReturnedVar(), pattern, reasonerQuery, label, predicateVariable, ctx);
     }
 
     public static IsaAtom create(Variable var, Variable predicateVar, @Nullable Label label, boolean isDirect, ReasonerQuery parent,
                                  ReasoningContext ctx) {
-        Statement pattern = isDirect ?
+        Statement pattern = isDirect?
                 new Statement(var).isaX(new Statement(predicateVar)) :
                 new Statement(var).isa(new Statement(predicateVar));
         return new IsaAtom(var, pattern, parent, label, predicateVar, ctx);
     }
 
     private static IsaAtom create(IsaAtom a, ReasonerQuery parent) {
-        return create(a.getVarName(), a.getPredicateVariable(), a.getPattern(), a.getTypeLabel(), parent, a.context());
+        return create(a.getVarName(), a.getPredicateVariable(), a.getTypeLabel(), a.isDirect(), parent, a.context());
     }
 
     @Override

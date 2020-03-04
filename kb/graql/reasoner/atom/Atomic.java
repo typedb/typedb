@@ -92,7 +92,7 @@ public interface Atomic {
      * @return true if the atomic corresponds to a resource atom
      */
     @CheckReturnValue
-    default boolean isResource(){ return false;}
+    default boolean isAttribute(){ return false;}
 
     /**
      * @return if atom contains properties considering only explicit type hierarchies

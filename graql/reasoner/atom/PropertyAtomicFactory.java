@@ -305,16 +305,7 @@ public class PropertyAtomicFactory {
 
         Variable typeVar = property.type().var();
         Label typeLabel = getLabel(typeVar, property.type(), otherStatements, ctx.conceptManager());
-
-        //isa part
-        Statement isaVar;
-        if (property.isExplicit()) {
-            isaVar = new Statement(var).isaX(new Statement(typeVar));
-        } else {
-            isaVar = new Statement(var).isa(new Statement(typeVar));
-        }
-
-        return IsaAtom.create(var, typeVar, isaVar, typeLabel, parent, ctx);
+        return IsaAtom.create(var, typeVar, typeLabel, property.isExplicit(), parent, ctx);
     }
 
     /**
