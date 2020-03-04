@@ -20,8 +20,10 @@ package hypergraph.core;
 
 import hypergraph.Hypergraph;
 import hypergraph.common.HypergraphException;
-import hypergraph.reader.Reader;
-import hypergraph.writer.Writer;
+import hypergraph.concept.ConceptMgr;
+import hypergraph.graph.Graph;
+import hypergraph.index.Index;
+import hypergraph.traversal.Traversal;
 import org.rocksdb.OptimisticTransactionDB;
 import org.rocksdb.Options;
 import org.rocksdb.ReadOptions;
@@ -33,7 +35,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -49,6 +53,7 @@ public class HypergraphCore implements Hypergraph {
     private final Options optionsGraph = new Options();
     private List<Session> sessions = new ArrayList<>();
     private AtomicBoolean isOpen = new AtomicBoolean();
+    private Map<String, Index> indexes = new ConcurrentHashMap<>();
 
     public HypergraphCore(String directory) {
         this(directory, new Properties());
@@ -138,6 +143,9 @@ public class HypergraphCore implements Hypergraph {
             private final WriteOptions optionsWrite = new WriteOptions();
             private final org.rocksdb.Transaction transactionRocks;
             private final Hypergraph.Transaction.Type type;
+            private final Graph transactionGraph = new Graph(new Operation());
+            private final ConceptMgr conceptMgr = new ConceptMgr(indexes.get(keyspace), transactionGraph);
+            private final Traversal traversal = new Traversal(conceptMgr);
             private AtomicBoolean isOpen = new AtomicBoolean();
 
             Transaction(Hypergraph.Transaction.Type type) {
@@ -152,16 +160,16 @@ public class HypergraphCore implements Hypergraph {
             }
 
             @Override
-            public Reader read() {
-                return new Reader(new Operation());
+            public Traversal read() {
+                return traversal;
             }
 
             @Override
-            public Writer write() {
+            public ConceptMgr write() {
                 if (this.type.equals(Type.READ)) {
                     throw new HypergraphException("Illegal Write Exception");
                 }
-                return new Writer(new Operation());
+                return conceptMgr;
             }
 
             @Override

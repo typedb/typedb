@@ -18,19 +18,23 @@
 load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 package(
     default_visibility = [
-        "//reader:__pkg__",
-        "//writer:__pkg__",
+        "//:__pkg__",
+        "//core:__pkg__",
+        "//cluster:__pkg__",
+        "//traversal:__pkg__",
     ]
 )
 
 java_library(
     name = "concept",
-    srcs = glob(["*/*.java"]),
+    srcs = glob([
+        "*.java",
+        "*/*.java",
+    ]),
     deps = [
         "//common:common",
         "//graph:graph",
         "//index:index",
-        "//operation:operation",
     ],
 )
 

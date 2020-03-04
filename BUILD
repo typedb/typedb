@@ -26,8 +26,8 @@ java_library(
     ],
     deps = [
         "//common:common",
-        "//reader:reader",
-        "//writer:writer",
+        "//traversal:traversal",
+        "//concept:concept",
     ],
 )
 

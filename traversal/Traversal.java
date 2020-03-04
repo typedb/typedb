@@ -16,11 +16,16 @@
  *
  */
 
-package hypergraph.graph;
+package hypergraph.traversal;
 
-public class Vertex {
 
-    public Vertex() {
+import hypergraph.concept.ConceptMgr;
 
+public class Traversal {
+
+    private final ConceptMgr conceptMgr;
+
+    public Traversal(ConceptMgr conceptMgr) {
+        this.conceptMgr = conceptMgr;
     }
 }

@@ -19,6 +19,8 @@ load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 package(
     default_visibility = [
         "//concept:__pkg__",
+        "//core:__pkg__",
+        "//cluster:__pkg__",
     ]
 )
 

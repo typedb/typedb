@@ -16,16 +16,26 @@
  *
  */
 
-package hypergraph.reader;
+package hypergraph.concept;
 
+import hypergraph.concept.type.EntityType;
+import hypergraph.graph.Graph;
+import hypergraph.graph.Vertex;
+import hypergraph.index.Index;
 
-import hypergraph.operation.Operation;
+public class ConceptMgr {
 
-public class Reader {
+    private final Index index;
+    private final Graph graph;
 
-    private final Operation storage;
+    public ConceptMgr(Index index, Graph graph) {
+        this.index = index;
+        this.graph = graph;
+    }
 
-    public Reader(Operation storage) {
-        this.storage = storage;
+    public EntityType putEntityType(String label) {
+        Vertex vertex = graph.putVertex();
+
+        return new EntityType(vertex);
     }
 }

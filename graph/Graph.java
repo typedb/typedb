@@ -16,20 +16,23 @@
  *
  */
 
-package hypergraph.writer;
+package hypergraph.graph;
 
 import hypergraph.operation.Operation;
-import hypergraph.concept.type.EntityType;
 
-public class Writer {
+public class Graph {
 
     private final Operation operation;
 
-    public Writer(Operation operation) {
+    public Graph(Operation operation) {
         this.operation = operation;
     }
 
-    public EntityType entityType(String entityType) {
-        return new EntityType(operation);
+    public Vertex putVertex() {
+        return new Vertex();
+    }
+
+    public Edge putEdge() {
+        return new Edge();
     }
 }

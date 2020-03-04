@@ -20,4 +20,8 @@ package hypergraph.graph;
 
 public class Edge {
 
+    public Edge() {
+
+    }
+
 }

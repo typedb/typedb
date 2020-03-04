@@ -25,18 +25,17 @@ package(
 )
 
 java_library(
-    name = "writer",
+    name = "traversal",
     srcs = glob(["*.java"]),
     deps = [
-        "//concept:concept",
         "//common:common",
-        "//operation:operation",
+        "//concept:concept",
     ],
 )
 
 checkstyle_test(
     name = "checkstyle",
     targets = [
-        ":writer",
+        ":traversal",
     ]
 )

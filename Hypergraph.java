@@ -18,8 +18,8 @@
 
 package hypergraph;
 
-import hypergraph.reader.Reader;
-import hypergraph.writer.Writer;
+import hypergraph.concept.ConceptMgr;
+import hypergraph.traversal.Traversal;
 
 /**
  * A Hypergraph Database API
@@ -61,9 +61,9 @@ public interface Hypergraph extends AutoCloseable {
 
         boolean isOpen();
 
-        Reader read();
+        Traversal read();
 
-        Writer write();
+        ConceptMgr write();
 
         void commit();
 

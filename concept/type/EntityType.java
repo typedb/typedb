@@ -19,13 +19,12 @@
 package hypergraph.concept.type;
 
 import hypergraph.graph.Vertex;
-import hypergraph.operation.Operation;
 
 public class EntityType {
 
     private final Vertex vertex;
 
-    public EntityType(Operation operation) {
-        this.vertex = new Vertex(operation);
+    public EntityType(Vertex vertex) {
+        this.vertex = vertex;
     }
 }

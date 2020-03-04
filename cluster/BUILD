@@ -29,9 +29,11 @@ java_library(
     deps = [
         "//:hypergraph",
         "//common:common",
+        "//concept:concept",
+        "//graph:graph",
+        "//index:index",
         "//operation:operation",
-        "//reader:reader",
-        "//writer:writer",
+        "//traversal:traversal",
     ],
 )
 
