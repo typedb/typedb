@@ -23,7 +23,7 @@ package(
 )
 
 java_library(
-    name = "graph",
+    name = "index",
     srcs = glob(["*.java"]),
     deps = [
         "//common:common",
@@ -34,6 +34,6 @@ java_library(
 checkstyle_test(
     name = "checkstyle",
     targets = [
-        ":graph",
+        ":index",
     ]
 )

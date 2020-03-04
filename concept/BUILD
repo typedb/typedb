@@ -18,9 +18,6 @@
 load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 package(
     default_visibility = [
-        "//:__pkg__",
-        "//core:__pkg__",
-        "//cluster:__pkg__",
         "//reader:__pkg__",
         "//writer:__pkg__",
     ]
@@ -32,6 +29,7 @@ java_library(
     deps = [
         "//common:common",
         "//graph:graph",
+        "//index:index",
         "//operation:operation",
     ],
 )

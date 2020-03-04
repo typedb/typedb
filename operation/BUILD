@@ -22,6 +22,7 @@ package(
         "//cluster:__pkg__",
         "//concept:__pkg__",
         "//graph:__pkg__",
+        "//index:__pkg__",
         "//reader:__pkg__",
         "//writer:__pkg__",
     ]
