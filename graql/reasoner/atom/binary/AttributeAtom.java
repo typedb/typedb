@@ -154,20 +154,6 @@ public class AttributeAtom extends Atom{
                 getTypeLabel(), newMultiPredicate, getParentQuery(), context());
     }
 
-    /**
-     * TODO remove this, short term workaround
-     * copy constructor that overrides the predicates
-     */
-    public AttributeAtom copy(Set<ValuePredicate> newPredicates) {
-        return create(getPattern(), getAttributeVariable(),
-                getRelationVariable(),
-                getPredicateVariable(),
-                getTypeLabel(),
-                newPredicates,
-                getParentQuery(),
-                context());
-    }
-
     public IsaAtom ownerIsa(){ return ownerIsa;}
     public IsaAtom attributeIsa(){ return attributeIsa;}
 
