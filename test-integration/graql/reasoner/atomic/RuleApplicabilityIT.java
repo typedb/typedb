@@ -343,17 +343,27 @@ public class RuleApplicabilityIT {
     @Test
     public void typedAttributes(){
         try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
-            ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
+            TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction)tx;
+            ReasonerQueryFactory reasonerQueryFactory = testTx.reasonerQueryFactory();
 
             String relationString = "{ $x isa reifiable-relation; $x has description $d; };";
             String relationString2 = "{ $x isa typed-relation; $x has description $d; };";
             String relationString3 = "{ $x isa relation; $x has description $d; };";
-            Atom resource = reasonerQueryFactory.create(conjunction(relationString)).getAtoms(AttributeAtom.class).findFirst().orElse(null);
-            Atom resource2 = reasonerQueryFactory.create(conjunction(relationString2)).getAtoms(AttributeAtom.class).findFirst().orElse(null);
-            Atom resource3 = reasonerQueryFactory.create(conjunction(relationString3)).getAtoms(AttributeAtom.class).findFirst().orElse(null);
-            assertEquals(2, resource.getApplicableRules().count());
-            assertEquals(2, resource2.getApplicableRules().count());
-            assertEquals(3, resource3.getApplicableRules().count());
+            Atom attribute = reasonerQueryFactory.create(conjunction(relationString)).getAtoms(AttributeAtom.class).findFirst().orElse(null);
+            Atom attribute2 = reasonerQueryFactory.create(conjunction(relationString2)).getAtoms(AttributeAtom.class).findFirst().orElse(null);
+            Atom attribute3 = reasonerQueryFactory.create(conjunction(relationString3)).getAtoms(AttributeAtom.class).findFirst().orElse(null);
+            Set<InferenceRule> attributeRules = testTx.ruleCache().getRules()
+                    .map(r -> new InferenceRule(r, reasonerQueryFactory))
+                    .filter(r -> r.getHead().getAtom().isResource())
+                    .collect(Collectors.toSet());
+
+            assertEquals(
+                    attributeRules.stream().filter(r -> !r.getRule().label().equals(Label.of("typed-relation-description-rule"))).collect(toSet()),
+                    attribute.getApplicableRules().collect(toSet()));
+            assertEquals(
+                    attributeRules.stream().filter(r -> !r.getRule().label().equals(Label.of("reifiable-relation-description-rule"))).collect(toSet()),
+                    attribute2.getApplicableRules().collect(toSet()));
+            assertEquals(attributeRules, attribute3.getApplicableRules().collect(toSet()));
         }
     }
 

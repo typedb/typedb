@@ -70,7 +70,7 @@ public class AttributeAtomConverter implements AtomConverter<AttributeAtom> {
      */
     @Override
     public IsaAtom toIsaAtom(AttributeAtom atom, ReasoningContext ctx) {
-        IsaAtom isaAtom = IsaAtom.create(atom.getAttributeVariable(), atom.getPredicateVariable(), atom.getTypeLabel(), false, atom.getParentQuery(), ctx);
+        IsaAtom isaAtom = atom.attributeIsa();
         Set<Statement> patterns = new HashSet<>(isaAtom.getCombinedPattern().statements());
         atom.getPredicates().map(Predicate::getPattern).forEach(patterns::add);
         atom.getMultiPredicate().stream().map(Predicate::getPattern).forEach(patterns::add);

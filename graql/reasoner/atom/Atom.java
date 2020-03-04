@@ -209,7 +209,9 @@ public abstract class Atom extends AtomicBase {
     /**
      * @return true if this atom requires direct schema lookups
      */
-    public abstract boolean requiresSchema();
+    public boolean requiresSchema() {
+        return getTypeLabel() == null || this instanceof OntologicalAtom;
+    }
 
     private boolean isRuleApplicable(InferenceRule child) {
         return (getIdPredicate(getVarName()) == null

@@ -35,6 +35,7 @@ import grakn.core.graql.reasoner.atom.task.relate.SemanticProcessor;
 import grakn.core.graql.reasoner.atom.task.validate.AtomValidator;
 import grakn.core.graql.reasoner.atom.task.validate.AttributeAtomValidator;
 import grakn.core.graql.reasoner.cache.SemanticDifference;
+import grakn.core.graql.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Label;
@@ -76,7 +77,10 @@ import static grakn.core.graql.reasoner.utils.ReasonerUtils.isEquivalentCollecti
  *
  *
  */
-public class AttributeAtom extends Binary{
+public class AttributeAtom extends Atom{
+
+    private final IsaAtom attributeIsa;
+    private final IsaAtom ownerIsa;
 
     private final ImmutableSet<ValuePredicate> multiPredicate;
     private final Variable attributeVariable;
@@ -96,7 +100,10 @@ public class AttributeAtom extends Binary{
             Variable attributeVariable,
             ImmutableSet<ValuePredicate> multiPredicate,
             ReasoningContext ctx) {
-        super(varName, pattern, parentQuery, label, predicateVariable, ctx);
+        //super(varName, pattern, parentQuery, label, predicateVariable, ctx);
+        super(parentQuery, varName, pattern, label, ctx);
+        this.ownerIsa = IsaAtom.create(varName, new Variable(), label, false, parentQuery, ctx);
+        this.attributeIsa = IsaAtom.create(attributeVariable, predicateVariable, label, false, parentQuery, ctx);
         this.relationVariable = relationVariable;
         this.attributeVariable = attributeVariable;
         this.multiPredicate = multiPredicate;
@@ -146,7 +153,6 @@ public class AttributeAtom extends Binary{
                 getTypeLabel(), newMultiPredicate, getParentQuery(), context());
     }
 
-
     /**
      * TODO remove this, short term workaround
      * copy constructor that overrides the predicates
@@ -160,6 +166,9 @@ public class AttributeAtom extends Binary{
                 getParentQuery(),
                 context());
     }
+
+    public IsaAtom ownerIsa(){ return ownerIsa;}
+    public IsaAtom attributeIsa(){ return attributeIsa;}
 
     @Override
     public Atomic copy(ReasonerQuery parent){ return create(this, parent);}
@@ -207,15 +216,44 @@ public class AttributeAtom extends Binary{
                 && this.multiPredicateEqual(a2);
     }
 
-    @Override
-    boolean isBaseEquivalent(Object obj){
-        if (!super.isBaseEquivalent(obj)) return false;
+    private boolean isBaseEquivalent(Object obj){
+        if (obj == null || this.getClass() != obj.getClass()) return false;
+        if (obj == this) return true;
         AttributeAtom that = (AttributeAtom) obj;
-        return this.getRelationVariable().isReturned() == that.getRelationVariable().isReturned();
+        return (this.isUserDefined() == that.isUserDefined())
+                && (this.getPredicateVariable().isReturned() == that.getPredicateVariable().isReturned())
+                && this.isDirect() == that.isDirect()
+                && Objects.equals(this.getTypeLabel(), that.getTypeLabel())
+
+                && this.getRelationVariable().isReturned() == that.getRelationVariable().isReturned();
     }
 
     private boolean multiPredicateEqual(AttributeAtom that){
         return isEquivalentCollection(this.getMultiPredicate(), that.getMultiPredicate(), AtomicEquivalence.Equality);
+    }
+
+    @Override
+    public SchemaConcept getSchemaConcept() {
+        return attributeIsa.getSchemaConcept();
+    }
+
+    @Override
+    public Variable getPredicateVariable() {
+        return attributeIsa.getPredicateVariable();
+    }
+
+    @Override
+    public boolean isAlphaEquivalent(Object obj) {
+        if (!isBaseEquivalent(obj)) return false;
+        Atom that = (Atom) obj;
+        return !this.getMultiUnifier(that, UnifierType.EXACT).equals(MultiUnifierImpl.nonExistent());
+    }
+
+    @Override
+    public boolean isStructurallyEquivalent(Object obj) {
+        if (!isBaseEquivalent(obj)) return false;
+        Atom that = (Atom) obj;
+        return !this.getMultiUnifier(that, UnifierType.STRUCTURAL).equals(MultiUnifierImpl.nonExistent());
     }
 
     @Override
@@ -231,6 +269,11 @@ public class AttributeAtom extends Binary{
         hashCode = hashCode * 37 + (this.getTypeLabel() != null? this.getTypeLabel().hashCode() : 0);
         hashCode = hashCode * 37 + AtomicEquivalence.equivalenceHash(this.getMultiPredicate(), AtomicEquivalence.AlphaEquivalence);
         return hashCode;
+    }
+
+    @Override
+    public int structuralEquivalenceHashCode() {
+        return alphaEquivalenceHashCode();
     }
 
     @Override
@@ -315,7 +358,7 @@ public class AttributeAtom extends Binary{
 
     @Override
     public Stream<Predicate> getInnerPredicates(){
-        return Stream.concat(super.getInnerPredicates(), getMultiPredicate().stream());
+        return Stream.concat(attributeIsa.getInnerPredicates(), getMultiPredicate().stream());
     }
 
     /**

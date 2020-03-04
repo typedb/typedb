@@ -183,7 +183,7 @@ attributed-relation-long-rule sub rule,
     	(someRole:$x, subRole:$y, anotherRole: $z) isa attributed-relation;
     };
 
-resource-rule sub rule,
+reifiable-relation-description-rule sub rule,
     when {
         $rel (someRole: $x, subRole: $y) isa reifiable-relation;
     },
@@ -191,7 +191,7 @@ resource-rule sub rule,
         $rel has description 'reified';
     };
 
-resource-rule2 sub rule,
+typed-relation-description-rule sub rule,
     when {
         $r1 (someRole:$x, subRole:$y, anotherRole: $z) isa typed-relation;
     },
@@ -199,7 +199,7 @@ resource-rule2 sub rule,
         $r1 has description 'reified';
     };
 
-resource-rule3 sub rule,
+description-rule sub rule,
     when {
         $r has description 'typed';
         $r has description 'reified';
