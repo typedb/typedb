@@ -39,7 +39,7 @@ import static java.util.stream.Collectors.toSet;
 
 public class AttributeSemanticProcessor implements SemanticProcessor<AttributeAtom> {
 
-    private final BinarySemanticProcessor binarySemanticProcessor = new BinarySemanticProcessor();
+    private final TypeAtomSemanticProcessor binarySemanticProcessor = new TypeAtomSemanticProcessor();
 
     @Override
     public Unifier getUnifier(AttributeAtom childAtom, Atom parentAtom, UnifierType unifierType, ReasoningContext ctx) {

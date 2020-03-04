@@ -61,7 +61,7 @@ import static grakn.core.concept.util.ConceptUtils.bottom;
 
 public class RelationSemanticProcessor implements SemanticProcessor<RelationAtom> {
 
-    private final BinarySemanticProcessor binarySemanticProcessor = new BinarySemanticProcessor();
+    private final TypeAtomSemanticProcessor binarySemanticProcessor = new TypeAtomSemanticProcessor();
 
     @Override
     public Unifier getUnifier(RelationAtom childAtom, Atom parentAtom, UnifierType unifierType, ReasoningContext ctx) {

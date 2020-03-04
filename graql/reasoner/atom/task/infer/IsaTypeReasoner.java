@@ -24,9 +24,9 @@ import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.util.ConceptUtils;
 import grakn.core.graql.reasoner.ReasoningContext;
 import grakn.core.graql.reasoner.atom.Atom;
-import grakn.core.graql.reasoner.atom.binary.Binary;
 import grakn.core.graql.reasoner.atom.binary.IsaAtom;
 import grakn.core.graql.reasoner.atom.binary.RelationAtom;
+import grakn.core.graql.reasoner.atom.binary.TypeAtom;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Type;
@@ -69,7 +69,7 @@ public class IsaTypeReasoner implements TypeReasoner<IsaAtom> {
         Set<Type> typesFromTypes = atom.getParentQuery().getAtoms(IsaAtom.class)
                 .filter(at -> at.getVarNames().contains(varName))
                 .filter(at -> at != atom)
-                .map(Binary::getSchemaConcept)
+                .map(TypeAtom::getSchemaConcept)
                 .filter(Objects::nonNull)
                 .filter(Concept::isType)
                 .map(Concept::asType)
