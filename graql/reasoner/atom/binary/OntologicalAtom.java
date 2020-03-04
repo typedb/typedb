@@ -48,8 +48,6 @@ import javax.annotation.Nullable;
  */
 public abstract class OntologicalAtom extends TypeAtom {
 
-    BinarySemanticProcessor semanticProcessor = new BinarySemanticProcessor();
-
     OntologicalAtom(Variable varName, Statement pattern, ReasonerQuery reasonerQuery, @Nullable Label label,
                     Variable predicateVariable, ReasoningContext ctx) {
         super(varName, pattern, reasonerQuery, label, predicateVariable, ctx);
@@ -94,11 +92,6 @@ public abstract class OntologicalAtom extends TypeAtom {
         return vars.isEmpty() ?
                 Collections.singleton(this) :
                 vars.stream().map(v -> createSelf(v, getPredicateVariable(), getTypeLabel(), this.getParentQuery())).collect(Collectors.toSet());
-    }
-
-    @Override
-    public MultiUnifier getMultiUnifier(Atom parentAtom, UnifierType unifierType) {
-        return semanticProcessor.getMultiUnifier(this, parentAtom, unifierType, context());
     }
 
     @Override

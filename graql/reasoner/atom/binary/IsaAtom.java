@@ -59,7 +59,6 @@ import javax.annotation.Nullable;
 public class IsaAtom extends IsaAtomBase {
 
     private final TypeReasoner<IsaAtom> typeReasoner = new IsaTypeReasoner();
-    private final SemanticProcessor<Binary> semanticProcessor = new BinarySemanticProcessor();
 
     private int hashCode;
     private boolean hashCodeMemoised;
@@ -190,6 +189,8 @@ public class IsaAtom extends IsaAtomBase {
 
     @Override
     public MultiUnifier getMultiUnifier(Atom parentAtom, UnifierType unifierType) {
-        return semanticProcessor.getMultiUnifier(this, parentAtom, unifierType, context());
+        Unifier unifier = this.getUnifier(parentAtom, unifierType);
+        return unifier != null ? new MultiUnifierImpl(unifier) : MultiUnifierImpl.nonExistent();
+//        return semanticProcessor.getMultiUnifier(this, parentAtom, unifierType, context());
     }
 }
