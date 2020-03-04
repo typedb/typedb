@@ -133,6 +133,12 @@ public enum ErrorMessage {
 
     VALIDATION_RULE_ILLEGAL_HEAD_COPYING_INCOMPATIBLE_ATTRIBUTE_VALUES("Attribute [%s] is not allowed to form a rule head of rule [%s] as it copies an attribute value from an incompatible attribute type [%s]\n"),
 
+    VALIDATION_RULE_ILLEGAL_HEAD_REWRITING_TYPE_TO_RELATION("Rule [%s] attempts to rewrite type to a relation type"),
+
+    VALIDATION_RULE_ILLEGAL_HEAD_REWRITING_TYPE_DATATYPE_INCOMPATIBLE("Rule [%s] attempts to convert attribute to a new datatype [%s]"),
+
+    VALIDATION_RULE_ILLEGAL_HEAD_REWRITING_META_TYPE("Rule [%s] changes meta type for variable [%s]"),
+
     VALIDATION_RULE_INVALID_RELATION_TYPE("Rule [%s] attempts to define a relation pattern with type [%s] which is not a relation type\n"),
 
     VALIDATION_RULE_INVALID_ATTRIBUTE_TYPE("Rule [%s] attempts to define an attribute pattern with type [%s] which is not an attribute type\n"),
@@ -142,6 +148,7 @@ public enum ErrorMessage {
     VALIDATION_RULE_ROLE_CANNOT_BE_PLAYED("Rule [%s] attempts to define a rule containing a relation pattern with role [%s] which cannot be played in relation [%s]\n"),
 
     VALIDATION_RULE_TYPE_CANNOT_PLAY_ROLE("Rule [%s] attempts to define a rule containing a relation pattern with type [%s] that cannot play role [%s] in relation [%s]\n"),
+
 
     //--------------------------------------------- Factory Errors
     INVALID_PATH_TO_CONFIG("Unable to open config file [%s]"),
@@ -194,8 +201,7 @@ public enum ErrorMessage {
     INVALID_VARIABLE_PREDICATE_STATE("Invalid state in variable predicate [%s] with answer [%s]: either a concept is missing or not an attribute."),
     NO_ATOMS_SELECTED("No atoms were selected from the query [%s]."),
     INVALID_CACHE_ENTRY("Query cache entry for query [%s] contains an invalid entry: [%s]."),
-    UNIFICATION_ATOM_INCOMPATIBILITY("Attempted unification on incompatible atoms."),
-    NON_EXISTENT_UNIFIER("Could not proceed with thr unification as the unifier doesn't exist."),
+    NON_EXISTENT_UNIFIER("Could not proceed with the unification as the unifier doesn't exist."),
     ILLEGAL_ATOM_CONVERSION("Attempted illegal atom conversion of atom [%s] to type [%s]."),
     CONCEPT_NOT_THING("Attempted concept conversion from concept [%s] that is not a thing."),
     AMBIGUOUS_TYPE("Sought variable [%s] has ambiguous types [%s]"),

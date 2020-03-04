@@ -50,9 +50,10 @@ public abstract class OntologicalAtom extends TypeAtom {
     abstract OntologicalAtom createSelf(Variable var, Variable predicateVar, @Nullable Label label, ReasonerQuery parent);
 
     @Override
-    public String toString(){
+    public String toString() {
         return getPattern().toString() +
-                (getTypeLabel() != null? getTypeLabel() : ""); }
+                (getTypeLabel() != null ? getTypeLabel() : "");
+    }
 
     @Override
     public boolean isSelectable() {
@@ -60,13 +61,19 @@ public abstract class OntologicalAtom extends TypeAtom {
     }
 
     @Override
-    public boolean isSubsumedBy(Atomic atom) { return this.isAlphaEquivalent(atom); }
+    public boolean isSubsumedBy(Atomic atom) {
+        return this.isAlphaEquivalent(atom);
+    }
 
     @Override
-    public Stream<Rule> getPotentialRules(){ return Stream.empty();}
+    public Stream<Rule> getPotentialRules() {
+        return Stream.empty();
+    }
 
     @Override
-    public Stream<InferenceRule> getApplicableRules() { return Stream.empty();}
+    public Stream<InferenceRule> getApplicableRules() {
+        return Stream.empty();
+    }
 
     @Override
     public Set<String> validateAsRuleHead(Rule rule) {
@@ -74,9 +81,9 @@ public abstract class OntologicalAtom extends TypeAtom {
     }
 
     @Override
-    public Set<TypeAtom> unify(Unifier u){
+    public Set<TypeAtom> unify(Unifier u) {
         Collection<Variable> vars = u.get(getVarName());
-        return vars.isEmpty()?
+        return vars.isEmpty() ?
                 Collections.singleton(this) :
                 vars.stream().map(v -> createSelf(v, getPredicateVariable(), getTypeLabel(), this.getParentQuery())).collect(Collectors.toSet());
     }
@@ -88,7 +95,7 @@ public abstract class OntologicalAtom extends TypeAtom {
 
     @Override
     public Atom rewriteToUserDefined(Atom parentAtom) {
-        return parentAtom.getPredicateVariable().isReturned()?
+        return parentAtom.getPredicateVariable().isReturned() ?
                 createSelf(getVarName(), getPredicateVariable().asReturnedVar(), getTypeLabel(), getParentQuery()) :
                 this;
     }

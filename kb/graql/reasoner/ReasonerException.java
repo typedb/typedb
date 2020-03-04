@@ -93,4 +93,5 @@ public class ReasonerException extends GraknException {
     public static ReasonerException unsafeNegationBlock(ReasonerQuery query) {
         return new ReasonerException(ErrorMessage.UNSAFE_NEGATION_BLOCK.getMessage(query));
     }
+
 }
