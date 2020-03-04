@@ -93,4 +93,8 @@ public class ReasonerException extends GraknException {
     public static ReasonerException unsafeNegationBlock(ReasonerQuery query) {
         return new ReasonerException(ErrorMessage.UNSAFE_NEGATION_BLOCK.getMessage(query));
     }
+
+    public static ReasonerException incompatibleAtomUnification(Atomic atomic, Atomic parent) {
+        return new ReasonerException(ErrorMessage.UNIFICATION_ATOM_INCOMPATIBILITY.getMessage(atomic.toString(), parent.toString()));
+    }
 }

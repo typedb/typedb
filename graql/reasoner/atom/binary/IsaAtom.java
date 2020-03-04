@@ -26,7 +26,11 @@ import grakn.core.graql.reasoner.atom.predicate.Predicate;
 import grakn.core.graql.reasoner.atom.task.infer.IsaTypeReasoner;
 import grakn.core.graql.reasoner.atom.task.infer.TypeReasoner;
 import grakn.core.graql.reasoner.atom.task.materialise.IsaMaterialiser;
+import grakn.core.graql.reasoner.atom.task.relate.AttributeSemanticProcessor;
+import grakn.core.graql.reasoner.atom.task.relate.BinarySemanticProcessor;
+import grakn.core.graql.reasoner.atom.task.relate.SemanticProcessor;
 import grakn.core.graql.reasoner.atom.task.validate.IsaAtomValidator;
+import grakn.core.graql.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.kb.concept.api.Label;
@@ -35,6 +39,7 @@ import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.graql.exception.GraqlSemanticException;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
+import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
 import graql.lang.pattern.Pattern;
 import graql.lang.property.IsaProperty;
@@ -54,6 +59,7 @@ import javax.annotation.Nullable;
 public class IsaAtom extends IsaAtomBase {
 
     private final TypeReasoner<IsaAtom> typeReasoner = new IsaTypeReasoner();
+    private final SemanticProcessor<Binary> semanticProcessor = new BinarySemanticProcessor();
 
     private int hashCode;
     private boolean hashCodeMemoised;
@@ -180,5 +186,10 @@ public class IsaAtom extends IsaAtomBase {
         //in general this <= parent, so no specialisation viable
         if (this.getClass() != parentAtom.getClass()) return UnifierImpl.nonExistent();
         return super.getUnifier(parentAtom, unifierType);
+    }
+
+    @Override
+    public MultiUnifier getMultiUnifier(Atom parentAtom, UnifierType unifierType) {
+        return semanticProcessor.getMultiUnifier(this, parentAtom, unifierType, context());
     }
 }

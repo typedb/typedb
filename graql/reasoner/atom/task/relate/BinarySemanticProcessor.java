@@ -24,6 +24,7 @@ import grakn.core.graql.reasoner.ReasoningContext;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.binary.Binary;
 import grakn.core.graql.reasoner.cache.SemanticDifference;
+import grakn.core.graql.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.kb.concept.api.SchemaConcept;
@@ -80,7 +81,8 @@ public class BinarySemanticProcessor implements SemanticProcessor<Binary> {
 
     @Override
     public MultiUnifier getMultiUnifier(Binary childAtom, Atom parentAtom, UnifierType unifierType, ReasoningContext ctx) {
-        return basicSemanticProcessor.getMultiUnifier(childAtom, parentAtom, unifierType, ctx);
+        Unifier unifier = getUnifier(childAtom, parentAtom, unifierType, ctx);
+        return unifier != null ? new MultiUnifierImpl(unifier) : MultiUnifierImpl.nonExistent();
     }
 
     @Override

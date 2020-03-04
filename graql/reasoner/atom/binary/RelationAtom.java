@@ -497,8 +497,6 @@ public class RelationAtom extends IsaAtomBase {
         if (ruleAtom instanceof RelationAtom || ruleAtom instanceof AttributeAtom)  {
             RelationAtom atomWithType = typeReasoner.inferTypes(this.addType(ruleAtom.toRelationAtom().getSchemaConcept()), new ConceptMap(), context());
             return ruleAtom.isUnifiableWith(atomWithType);
-        } else {
-
         }
         return false;
     }

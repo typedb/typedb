@@ -62,11 +62,10 @@ public class IsaAtomValidator implements AtomValidator<IsaAtom> {
 
         SchemaConcept type = atom.getSchemaConcept();
         if (type.isRelationType()) {
-            errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_REWRITING_TYPE.getMessage(rule.label()));
+            errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_REWRITING_TYPE_TO_RELATION.getMessage(rule.label()));
         } else if (type.isAttributeType()) {
             AttributeType.DataType<Object> datatypeInHead = type.asAttributeType().dataType();
 
-            Variable headVariable = atom.getVarName();
             // parent query is the combined rule head and body
 
             boolean datatypeMatchesBody = atom.getParentQuery().getAtoms(Atom.class)
@@ -77,9 +76,7 @@ public class IsaAtomValidator implements AtomValidator<IsaAtom> {
                     .anyMatch(schemaConcept -> schemaConcept.asAttributeType().dataType().equals(datatypeInHead));
 
             if (!datatypeMatchesBody) {
-
-                // TODO append error to errors
-
+                errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_REWRITING_TYPE_DATATYPE_INCOMPATIBLE.getMessage(rule, datatypeInHead));
             }
         } else {
             boolean typeMatchesBody = atom.getParentQuery().getAtoms(IsaAtom.class)
@@ -90,9 +87,8 @@ public class IsaAtomValidator implements AtomValidator<IsaAtom> {
                                         type.isAttributeType() && schemaConcept.isAttributeType());
 
             if (!typeMatchesBody) {
-
-                // TODO append error to errors
-
+                Variable headVariable = atom.getVarName();
+                errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_REWRITING_META_TYPE.getMessage(rule, headVariable));
             }
         }
 
