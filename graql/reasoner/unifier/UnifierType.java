@@ -246,6 +246,8 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
      *
      * Subsumption relation is NOT symmetric in general. The only case when it is symmetric is when parent and child
      * queries are alpha-equivalent.
+     *
+     * Used in the query cache
      */
     SUBSUMPTIVE {
 
@@ -326,7 +328,8 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
      * Unifier type used to determine whether two queries are in a subsumption relation up to structural equivalence.
      * Consequently two queries that are structurally equivalent are structurally subsumptive.
      *
-     * */
+     * Used by query cache
+     */
     STRUCTURAL_SUBSUMPTIVE {
         @Override public ReasonerQueryEquivalence equivalence() { return SUBSUMPTIVE.equivalence(); }
 
