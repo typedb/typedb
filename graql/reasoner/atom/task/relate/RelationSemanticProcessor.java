@@ -70,7 +70,7 @@ public class RelationSemanticProcessor implements SemanticProcessor<RelationAtom
 
     @Override
     public MultiUnifier getMultiUnifier(RelationAtom childAtom, Atom parentAtom, UnifierType unifierType, ReasoningContext ctx) {
-        Unifier baseUnifier = binarySemanticProcessor.getUnifier(childAtom.toIsaAtom(), parentAtom.toIsaAtom(), unifierType, ctx);
+        Unifier baseUnifier = binarySemanticProcessor.getUnifier(childAtom.toIsaAtom(), parentAtom, unifierType, ctx);
         if (baseUnifier == null) {
             return MultiUnifierImpl.nonExistent();
         }
