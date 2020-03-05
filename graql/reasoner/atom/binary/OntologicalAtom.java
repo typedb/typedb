@@ -54,9 +54,9 @@ public class OntologicalAtom extends TypeAtom {
 
     public enum OntologicalAtomType{
         HasAtom(HasAttributeTypeProperty.class, (v, label) -> var(v.first()).has(type(label.getValue()))),
-        PlaysAtom(PlaysProperty.class, (v, label) -> var(v.first()).has(var(v.second()))),
-        SubAtom(SubProperty.class, (v, label) -> var(v.first()).has(var(v.second()))),
-        RelatesAtom(RelatesProperty.class, (v, label) -> var(v.first()).has(var(v.second())));
+        PlaysAtom(PlaysProperty.class, (v, label) -> var(v.first()).plays(var(v.second()))),
+        SubAtom(SubProperty.class, (v, label) -> var(v.first()).sub(var(v.second()))),
+        RelatesAtom(RelatesProperty.class, (v, label) -> var(v.first()).relates(var(v.second())));
 
         private final Class<? extends VarProperty> property;
         private final BiFunction<Pair<Variable, Variable>, Label, Statement> statementFunction;
