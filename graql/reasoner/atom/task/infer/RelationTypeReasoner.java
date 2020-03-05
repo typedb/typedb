@@ -206,7 +206,7 @@ public class RelationTypeReasoner implements TypeReasoner<RelationAtom> {
      * @return either this if relation type can't be inferred or a fresh relation with inferred relation type
      */
     private RelationAtom inferType(RelationAtom atom, ConceptMap sub, ReasoningContext ctx) {
-        if (atom.getTypePredicate() != null) return atom;
+        if (atom.getTypeLabel() != null) return atom;
         if (sub.containsVar(atom.getPredicateVariable())) return atom.addType(sub.get(atom.getPredicateVariable()).asType());
         List<Type> relationTypes = inferPossibleTypes(atom, sub, ctx);
         if (relationTypes.size() == 1) return atom.addType(Iterables.getOnlyElement(relationTypes));

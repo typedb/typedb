@@ -70,7 +70,7 @@ public class RelationSemanticProcessor implements SemanticProcessor<RelationAtom
 
     @Override
     public MultiUnifier getMultiUnifier(RelationAtom childAtom, Atom parentAtom, UnifierType unifierType, ReasoningContext ctx) {
-        Unifier baseUnifier = binarySemanticProcessor.getUnifier(childAtom, parentAtom, unifierType, ctx);
+        Unifier baseUnifier = binarySemanticProcessor.getUnifier(childAtom.toIsaAtom(), parentAtom, unifierType, ctx);
         if (baseUnifier == null) {
             return MultiUnifierImpl.nonExistent();
         }
@@ -230,7 +230,7 @@ public class RelationSemanticProcessor implements SemanticProcessor<RelationAtom
 
     @Override
     public SemanticDifference computeSemanticDifference(RelationAtom parent, Atom child, Unifier unifier, ReasoningContext ctx) {
-        SemanticDifference baseDiff = binarySemanticProcessor.computeSemanticDifference(parent, child, unifier, ctx);
+        SemanticDifference baseDiff = binarySemanticProcessor.computeSemanticDifference(parent.toIsaAtom(), child, unifier, ctx);
 
         if (!child.isRelation()) return baseDiff;
         RelationAtom childAtom = (RelationAtom) child;

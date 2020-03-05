@@ -18,6 +18,7 @@
 
 package grakn.core.graql.reasoner.atom.binary;
 
+import com.google.common.base.Equivalence;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultimap;
@@ -31,6 +32,7 @@ import grakn.core.concept.answer.ConceptMap;
 import grakn.core.core.Schema;
 import grakn.core.graql.reasoner.ReasoningContext;
 import grakn.core.graql.reasoner.atom.Atom;
+import grakn.core.graql.reasoner.atom.AtomicEquivalence;
 import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.reasoner.atom.predicate.Predicate;
 import grakn.core.graql.reasoner.atom.task.convert.AtomConverter;
@@ -43,10 +45,9 @@ import grakn.core.graql.reasoner.atom.task.relate.SemanticProcessor;
 import grakn.core.graql.reasoner.atom.task.validate.AtomValidator;
 import grakn.core.graql.reasoner.atom.task.validate.RelationAtomValidator;
 import grakn.core.graql.reasoner.cache.SemanticDifference;
+import grakn.core.graql.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierType;
-import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.Label;
-import grakn.core.kb.concept.api.Relation;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.SchemaConcept;
@@ -83,7 +84,9 @@ import javax.annotation.Nullable;
  * Atom implementation defining a relation atom corresponding to a combined RelationProperty
  * and (optional) IsaProperty. The relation atom is a TypeAtom with relation players.
  */
-public class RelationAtom extends IsaAtomBase {
+public class RelationAtom extends Atom {
+
+    private final IsaAtom isaAtom;
 
     private final ImmutableList<RelationProperty.RolePlayer> relationPlayers;
     private final ImmutableSet<Label> roleLabels;
@@ -113,7 +116,9 @@ public class RelationAtom extends IsaAtomBase {
             ImmutableList<RelationProperty.RolePlayer> relationPlayers,
             ImmutableSet<Label> roleLabels,
             ReasoningContext ctx) {
-        super(varName, pattern, parentQuery, label, predicateVariable, ctx);
+        super(parentQuery, varName, pattern, label, ctx);
+        boolean isDirect = pattern.getProperties(IsaProperty.class).anyMatch(IsaProperty::isExplicit);
+        this.isaAtom = IsaAtom.create(varName, predicateVariable, label, isDirect, parentQuery, ctx);
         this.relationPlayers = relationPlayers;
         this.roleLabels = roleLabels;
     }
@@ -151,24 +156,16 @@ public class RelationAtom extends IsaAtomBase {
         return atom;
     }
 
-    public ImmutableList<RelationProperty.RolePlayer> getRelationPlayers() {
-        return relationPlayers;
+    @Override
+    public Atomic copy(ReasonerQuery parent) {
+        return create(this, parent);
     }
+
+    public IsaAtom isaAtom(){ return isaAtom;}
+
+    public ImmutableList<RelationProperty.RolePlayer> getRelationPlayers() { return relationPlayers; }
 
     public ImmutableSet<Label> getRoleLabels() { return roleLabels; }
-
-    //NB: overriding as these require a derived property
-    @Override
-    public final boolean equals(Object obj) {
-        if (obj == this) return true;
-        if (obj == null || this.getClass() != obj.getClass()) return false;
-        RelationAtom that = (RelationAtom) obj;
-        return Objects.equals(this.getTypeLabel(), that.getTypeLabel())
-                && this.isUserDefined() == that.isUserDefined()
-                && this.isDirect() == that.isDirect()
-                && this.getVarNames().equals(that.getVarNames())
-                && this.getRelationPlayers().equals(that.getRelationPlayers());
-    }
 
     @Override
     public int hashCode() {
@@ -219,10 +216,92 @@ public class RelationAtom extends IsaAtomBase {
 
     @Override
     public Set<Variable> getVarNames() {
-        Set<Variable> vars = super.getVarNames();
+        Set<Variable> vars = isaAtom.getVarNames();
         vars.addAll(getRolePlayers());
         vars.addAll(getRoleVariables());
         return vars;
+    }
+
+    @Override
+    public SchemaConcept getSchemaConcept() { return isaAtom.getSchemaConcept();}
+
+    @Override
+    public Variable getPredicateVariable() { return isaAtom.getPredicateVariable();}
+
+    //NB: overriding as these require a derived property
+    @Override
+    public final boolean equals(Object obj) {
+        if (obj == this) return true;
+        if (obj == null || this.getClass() != obj.getClass()) return false;
+        RelationAtom that = (RelationAtom) obj;
+        return Objects.equals(this.getTypeLabel(), that.getTypeLabel())
+                && this.isUserDefined() == that.isUserDefined()
+                && this.isDirect() == that.isDirect()
+                && this.getVarNames().equals(that.getVarNames())
+                && this.getRelationPlayers().equals(that.getRelationPlayers());
+    }
+
+    @Override
+    public boolean isAlphaEquivalent(Object obj) {
+        if (!isBaseEquivalent(obj, AtomicEquivalence.AlphaEquivalence)) return false;
+        Atom that = (Atom) obj;
+        return !this.getMultiUnifier(that, UnifierType.EXACT).equals(MultiUnifierImpl.nonExistent());
+    }
+
+    @Override
+    public boolean isStructurallyEquivalent(Object obj) {
+        if (!isBaseEquivalent(obj, AtomicEquivalence.StructuralEquivalence)) return false;
+        Atom that = (Atom) obj;
+        return !this.getMultiUnifier(that, UnifierType.STRUCTURAL).equals(MultiUnifierImpl.nonExistent());
+    }
+
+    private boolean isBaseEquivalent(Object obj, Equivalence<Atomic> equivalence) {
+        if (obj == null || this.getClass() != obj.getClass()) return false;
+        if (obj == this) return true;
+        RelationAtom that = (RelationAtom) obj;
+        return equivalence.equivalent(this.isaAtom, that.isaAtom)
+                && this.getRolePlayers().size() == that.getRolePlayers().size()
+                && this.getRelationPlayers().size() == that.getRelationPlayers().size()
+                && this.getRoleLabels().equals(that.getRoleLabels());
+    }
+
+    @Override
+    public int alphaEquivalenceHashCode() {
+        if (!alphaEquivalenceHashCodeMemoized) {
+            alphaEquivalenceHashCode = computeAlphaEquivalenceHashCode();
+            alphaEquivalenceHashCodeMemoized = true;
+        }
+        return alphaEquivalenceHashCode;
+    }
+
+    @Override
+    public int structuralEquivalenceHashCode() {
+        int equivalenceHashCode = baseHashCode();
+        equivalenceHashCode = equivalenceHashCode * 37 + this.computeRoleTypeMap(false).hashCode();
+        equivalenceHashCode = equivalenceHashCode * 37 + this.getRoleConceptIdMap().keySet().hashCode();
+        return equivalenceHashCode;
+    }
+
+    private int baseHashCode() {
+        int baseHashCode = 1;
+        baseHashCode = baseHashCode * 37 + (this.getTypeLabel() != null ? this.getTypeLabel().hashCode() : 0);
+        baseHashCode = baseHashCode * 37 + this.getRoleLabels().hashCode();
+        return baseHashCode;
+    }
+
+    private int computeAlphaEquivalenceHashCode() {
+        int equivalenceHashCode = baseHashCode();
+        SortedSet<Integer> hashes = new TreeSet<>();
+        this.getRoleTypeMap().entries().stream()
+                .sorted(Comparator.comparing(e -> e.getKey().label()))
+                .sorted(Comparator.comparing(e -> e.getValue().label()))
+                .forEach(e -> hashes.add(e.hashCode()));
+        this.getRoleConceptIdMap().entries().stream()
+                .sorted(Comparator.comparing(e -> e.getKey().label()))
+                .sorted(Comparator.comparing(Map.Entry::getValue))
+                .forEach(e -> hashes.add(e.hashCode()));
+        for (Integer hash : hashes) equivalenceHashCode = equivalenceHashCode * 37 + hash;
+        return equivalenceHashCode;
     }
 
     /**
@@ -277,10 +356,7 @@ public class RelationAtom extends IsaAtomBase {
                 .collect(Collectors.toSet());
     }
 
-    @Override
-    public Atomic copy(ReasonerQuery parent) {
-        return create(this, parent);
-    }
+
 
     @Override
     protected Pattern createCombinedPattern() {
@@ -314,63 +390,10 @@ public class RelationAtom extends IsaAtomBase {
     }
 
     @Override
-    boolean isBaseEquivalent(Object obj) {
-        if (!super.isBaseEquivalent(obj)) return false;
-        RelationAtom that = (RelationAtom) obj;
-        //check relation players equivalent
-        return this.getRolePlayers().size() == that.getRolePlayers().size()
-                && this.getRelationPlayers().size() == that.getRelationPlayers().size()
-                && this.getRoleLabels().equals(that.getRoleLabels());
-    }
-
-    private int baseHashCode() {
-        int baseHashCode = 1;
-        baseHashCode = baseHashCode * 37 + (this.getTypeLabel() != null ? this.getTypeLabel().hashCode() : 0);
-        baseHashCode = baseHashCode * 37 + this.getRoleLabels().hashCode();
-        return baseHashCode;
-    }
+    public boolean isRelation() { return true; }
 
     @Override
-    public int alphaEquivalenceHashCode() {
-        if (!alphaEquivalenceHashCodeMemoized) {
-            alphaEquivalenceHashCode = computeAlphaEquivalenceHashCode();
-            alphaEquivalenceHashCodeMemoized = true;
-        }
-        return alphaEquivalenceHashCode;
-    }
-
-    private int computeAlphaEquivalenceHashCode() {
-        int equivalenceHashCode = baseHashCode();
-        SortedSet<Integer> hashes = new TreeSet<>();
-        this.getRoleTypeMap().entries().stream()
-                .sorted(Comparator.comparing(e -> e.getKey().label()))
-                .sorted(Comparator.comparing(e -> e.getValue().label()))
-                .forEach(e -> hashes.add(e.hashCode()));
-        this.getRoleConceptIdMap().entries().stream()
-                .sorted(Comparator.comparing(e -> e.getKey().label()))
-                .sorted(Comparator.comparing(Map.Entry::getValue))
-                .forEach(e -> hashes.add(e.hashCode()));
-        for (Integer hash : hashes) equivalenceHashCode = equivalenceHashCode * 37 + hash;
-        return equivalenceHashCode;
-    }
-
-    @Override
-    public int structuralEquivalenceHashCode() {
-        int equivalenceHashCode = baseHashCode();
-        equivalenceHashCode = equivalenceHashCode * 37 + this.computeRoleTypeMap(false).hashCode();
-        equivalenceHashCode = equivalenceHashCode * 37 + this.getRoleConceptIdMap().keySet().hashCode();
-        return equivalenceHashCode;
-    }
-
-    @Override
-    public boolean isRelation() {
-        return true;
-    }
-
-    @Override
-    public boolean isSelectable() {
-        return true;
-    }
+    public boolean isSelectable() { return true; }
 
     @Override
     public boolean isType() {
@@ -547,7 +570,7 @@ public class RelationAtom extends IsaAtomBase {
     public Stream<Predicate> getInnerPredicates(){
         ConceptManager conceptManager = context().conceptManager();
         return Stream.concat(
-                super.getInnerPredicates(),
+                isaAtom.getInnerPredicates(),
                 getRelationPlayers().stream()
                         .map(RelationProperty.RolePlayer::getRole)
                         .flatMap(Streams::optionalToStream)

@@ -262,7 +262,7 @@ public class PatternIT {
 
     @Test
     public void whenMatchingWithValueInequality_resultsAreFilteredCorrectly() {
-        assertExists(tx, var().isa("movie").has("title", "Godfather"));
+        assertExists(tx, var("x").isa("movie").has("title", "Godfather"));
         Set<Concept> allMoviesWithoutGodfatherMovies = tx.stream(Graql.match(
                 var("x").isa("movie").has("title", var("y")),
                 var("y").neq("Godfather")).get("x"))

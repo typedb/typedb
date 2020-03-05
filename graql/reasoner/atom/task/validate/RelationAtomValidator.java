@@ -62,7 +62,9 @@ public class RelationAtomValidator implements AtomValidator<RelationAtom> {
     @Override
     public Set<String> validateAsRuleHead(RelationAtom atom, Rule rule, ReasoningContext ctx) {
         //can form a rule head if type is specified, type is not implicit and all relation players are insertable
-        return Sets.union(basicValidator.validateAsRuleHead(atom, rule, ctx), validateRelationPlayers(atom, rule, ctx));
+        return Sets.union(
+                basicValidator.validateAsRuleHead(atom, rule, ctx),
+                validateRelationPlayers(atom, rule, ctx));
     }
 
     @Override

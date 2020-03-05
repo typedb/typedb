@@ -140,8 +140,6 @@ public abstract class Atom extends AtomicBase {
     @Override
     public boolean isAtom() { return true;}
 
-
-
     /**
      * @return true if the atom is ground (all variables are bound)
      */
