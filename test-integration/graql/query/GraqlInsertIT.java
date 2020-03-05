@@ -177,9 +177,9 @@ public class GraqlInsertIT {
     public void testInsertSameVarName() {
         tx.execute(Graql.insert(var("x").has("title", "SW"), var("x").has("title", "Star Wars").isa("movie")));
 
-        assertExists(tx, var().isa("movie").has("title", "SW"));
-        assertExists(tx, var().isa("movie").has("title", "Star Wars"));
-        assertExists(tx, var().isa("movie").has("title", "SW").has("title", "Star Wars"));
+        assertExists(tx, var("x").isa("movie").has("title", "SW"));
+        assertExists(tx, var("x").isa("movie").has("title", "Star Wars"));
+        assertExists(tx, var("x").isa("movie").has("title", "SW").has("title", "Star Wars"));
     }
 
     @Test
@@ -201,16 +201,16 @@ public class GraqlInsertIT {
 
     @Test
     public void testMatchInsertQuery() {
-        Statement language1 = var().isa("language").has("name", "123");
-        Statement language2 = var().isa("language").has("name", "456");
+        Statement language1 = var("x").isa("language").has("name", "123");
+        Statement language2 = var("x").isa("language").has("name", "456");
 
         tx.execute(Graql.insert(language1, language2));
         assertExists(tx, language1);
         assertExists(tx, language2);
 
         tx.execute(Graql.match(var("x").isa("language")).insert(var("x").has("name", "HELLO")));
-        assertExists(tx, var().isa("language").has("name", "123").has("name", "HELLO"));
-        assertExists(tx, var().isa("language").has("name", "456").has("name", "HELLO"));
+        assertExists(tx, var("x").isa("language").has("name", "123").has("name", "HELLO"));
+        assertExists(tx, var("x").isa("language").has("name", "456").has("name", "HELLO"));
 
         tx.execute(Graql.match(var("x").isa("language")).delete("x"));
         assertNotExists(tx, language1);
@@ -234,8 +234,8 @@ public class GraqlInsertIT {
 
     @Test
     public void testMatchInsertShouldInsertDataEvenWhenResultsAreNotCollected() {
-        Statement language1 = var().isa("language").has("name", "123");
-        Statement language2 = var().isa("language").has("name", "456");
+        Statement language1 = var("x").isa("language").has("name", "123");
+        Statement language2 = var("x").isa("language").has("name", "456");
 
         tx.execute(Graql.insert(language1, language2));
         assertExists(tx, language1);
@@ -244,8 +244,8 @@ public class GraqlInsertIT {
         GraqlInsert query = Graql.match(var("x").isa("language")).insert(var("x").has("name", "HELLO"));
         tx.stream(query);
 
-        assertExists(tx, var().isa("language").has("name", "123").has("name", "HELLO"));
-        assertExists(tx, var().isa("language").has("name", "456").has("name", "HELLO"));
+        assertExists(tx, var("x").isa("language").has("name", "123").has("name", "HELLO"));
+        assertExists(tx, var("x").isa("language").has("name", "456").has("name", "HELLO"));
     }
 
     @Test
