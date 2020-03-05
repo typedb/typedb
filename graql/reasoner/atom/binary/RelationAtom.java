@@ -276,7 +276,7 @@ public class RelationAtom extends Atom {
 
     @Override
     public int structuralEquivalenceHashCode() {
-        return Objects.hash(getTypeLabel(), getRoleLabels(), computeRoleTypeMap(false), getRoleConceptIdMap());
+        return Objects.hash(getTypeLabel(), getRoleLabels(), computeRoleTypeMap(false), getRoleConceptIdMap().keySet());
     }
 
     private int computeAlphaEquivalenceHashCode() {
