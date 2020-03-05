@@ -168,15 +168,6 @@ public class RelationAtom extends Atom {
     public ImmutableSet<Label> getRoleLabels() { return roleLabels; }
 
     @Override
-    public int hashCode() {
-        if (!hashCodeMemoized) {
-            hashCode = Objects.hash(getTypeLabel(), getVarNames(), getRelationPlayers());
-            hashCodeMemoized = true;
-        }
-        return hashCode;
-    }
-
-    @Override
     public Class<? extends VarProperty> getVarPropertyClass() {
         return RelationProperty.class;
     }
@@ -266,6 +257,15 @@ public class RelationAtom extends Atom {
     }
 
     @Override
+    public int hashCode() {
+        if (!hashCodeMemoized) {
+            hashCode = Objects.hash(getTypeLabel(), getVarNames(), getRelationPlayers());
+            hashCodeMemoized = true;
+        }
+        return hashCode;
+    }
+
+    @Override
     public int alphaEquivalenceHashCode() {
         if (!alphaEquivalenceHashCodeMemoized) {
             alphaEquivalenceHashCode = computeAlphaEquivalenceHashCode();
@@ -276,21 +276,11 @@ public class RelationAtom extends Atom {
 
     @Override
     public int structuralEquivalenceHashCode() {
-        int equivalenceHashCode = baseHashCode();
-        equivalenceHashCode = equivalenceHashCode * 37 + this.computeRoleTypeMap(false).hashCode();
-        equivalenceHashCode = equivalenceHashCode * 37 + this.getRoleConceptIdMap().keySet().hashCode();
-        return equivalenceHashCode;
-    }
-
-    private int baseHashCode() {
-        int baseHashCode = 1;
-        baseHashCode = baseHashCode * 37 + (this.getTypeLabel() != null ? this.getTypeLabel().hashCode() : 0);
-        baseHashCode = baseHashCode * 37 + this.getRoleLabels().hashCode();
-        return baseHashCode;
+        return Objects.hash(getTypeLabel(), getRoleLabels(), computeRoleTypeMap(false), getRoleConceptIdMap().keySet());
     }
 
     private int computeAlphaEquivalenceHashCode() {
-        int equivalenceHashCode = baseHashCode();
+        int equivalenceHashCode = Objects.hash(getTypeLabel(), getRoleLabels());
         SortedSet<Integer> hashes = new TreeSet<>();
         this.getRoleTypeMap().entries().stream()
                 .sorted(Comparator.comparing(e -> e.getKey().label()))
@@ -355,8 +345,6 @@ public class RelationAtom extends Atom {
                 .filter(Variable::isReturned)
                 .collect(Collectors.toSet());
     }
-
-
 
     @Override
     protected Pattern createCombinedPattern() {

@@ -43,19 +43,6 @@ public abstract class Predicate<T> extends AtomicBase {
     public abstract String getPredicateValue();
 
     @Override
-    public boolean isStructurallyEquivalent(Object obj) {
-        return isAlphaEquivalent(obj);
-    }
-
-    @Override
-    public int structuralEquivalenceHashCode() {
-        return alphaEquivalenceHashCode();
-    }
-
-    @Override
-    public boolean isSubsumedBy(Atomic atom) { return this.isAlphaEquivalent(atom); }
-
-    @Override
     public boolean equals(Object obj) {
         if (obj == this) return true;
         if (obj == null || this.getClass() != obj.getClass()) return false;
@@ -65,9 +52,20 @@ public abstract class Predicate<T> extends AtomicBase {
     }
 
     @Override
+    public boolean isStructurallyEquivalent(Object obj) {
+        return isAlphaEquivalent(obj);
+    }
+
+    @Override
+    public boolean isSubsumedBy(Atomic atom) { return this.isAlphaEquivalent(atom); }
+
+    @Override
     public int hashCode() {
         return Objects.hash(getVarName(), getPredicate());
     }
 
-
+    @Override
+    public int structuralEquivalenceHashCode() {
+        return alphaEquivalenceHashCode();
+    }
 }

@@ -63,9 +63,7 @@ public class RegexAtom extends AtomicBase {
 
     @Override
     public int alphaEquivalenceHashCode() {
-        int hashCode = 1;
-        hashCode = hashCode * 37 + this.getRegex().hashCode();
-        return hashCode;
+        return getRegex().hashCode();
     }
 
     @Override

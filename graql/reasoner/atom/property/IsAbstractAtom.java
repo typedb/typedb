@@ -29,7 +29,7 @@ import graql.lang.statement.Variable;
  */
 public class IsAbstractAtom extends AtomicBase {
 
-    public IsAbstractAtom(Variable varName, Statement pattern, ReasonerQuery reasonerQuery) {
+    private IsAbstractAtom(Variable varName, Statement pattern, ReasonerQuery reasonerQuery) {
         super(reasonerQuery, varName, pattern);
     }
 

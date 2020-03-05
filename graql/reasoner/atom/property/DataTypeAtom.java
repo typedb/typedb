@@ -64,9 +64,7 @@ public class DataTypeAtom extends AtomicBase {
 
     @Override
     public int alphaEquivalenceHashCode() {
-        int hashCode = 1;
-        hashCode = hashCode * 37 + this.getDataType().hashCode();
-        return hashCode;
+        return getDataType().hashCode();
     }
 
     @Override
