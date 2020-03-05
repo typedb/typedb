@@ -149,7 +149,7 @@ public abstract class AtomicBase implements Atomic {
 
     @Override
     public int hashCode() {
-        return Objects.hash(varName);
+        return varName.hashCode();
     }
 }
 

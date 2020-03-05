@@ -176,7 +176,7 @@ public class OntologicalAtom extends TypeAtom {
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), atomType);
+        return Objects.hash(getVarName(), atomType);
     }
 
     @Override
