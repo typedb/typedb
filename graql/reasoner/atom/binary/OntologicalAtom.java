@@ -153,7 +153,6 @@ public class OntologicalAtom extends TypeAtom {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        if (!super.equals(o)) return false;
         OntologicalAtom that = (OntologicalAtom) o;
         return (this.getVarName().equals(that.getVarName()))
                 && ((this.getTypeLabel() == null) ? (that.getTypeLabel() == null) : this.getTypeLabel().equals(that.getTypeLabel()))

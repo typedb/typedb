@@ -31,7 +31,6 @@ import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Stream;
 import javax.annotation.CheckReturnValue;
@@ -138,18 +137,5 @@ public abstract class AtomicBase implements Atomic {
 
     @Override
     public Atomic inferTypes() { return this; }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        AtomicBase that = (AtomicBase) o;
-        return Objects.equals(varName, that.varName);
-    }
-
-    @Override
-    public int hashCode() {
-        return varName.hashCode();
-    }
 }
 

@@ -23,6 +23,7 @@ import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
+import java.util.Objects;
 
 /**
  * AtomicBase extension serving as base class for predicate implementations.
@@ -65,11 +66,8 @@ public abstract class Predicate<T> extends AtomicBase {
 
     @Override
     public int hashCode() {
-        int h = 1;
-        h *= 1000003;
-        h ^= this.getVarName().hashCode();
-        h *= 1000003;
-        h ^= this.getPredicate().hashCode();
-        return h;
+        return Objects.hash(getVarName(), getPredicate());
     }
+
+
 }
