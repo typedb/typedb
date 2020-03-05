@@ -44,9 +44,7 @@ import grakn.core.graql.reasoner.atom.task.validate.AtomValidator;
 import grakn.core.graql.reasoner.atom.task.validate.RelationAtomValidator;
 import grakn.core.graql.reasoner.cache.SemanticDifference;
 import grakn.core.graql.reasoner.unifier.UnifierType;
-import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.Label;
-import grakn.core.kb.concept.api.Relation;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.SchemaConcept;
@@ -323,12 +321,6 @@ public class RelationAtom extends IsaAtomBase {
                 && this.getRoleLabels().equals(that.getRoleLabels());
     }
 
-    private int baseHashCode() {
-        int baseHashCode = 1;
-        baseHashCode = baseHashCode * 37 + (this.getTypeLabel() != null ? this.getTypeLabel().hashCode() : 0);
-        baseHashCode = baseHashCode * 37 + this.getRoleLabels().hashCode();
-        return baseHashCode;
-    }
 
     @Override
     public int alphaEquivalenceHashCode() {
@@ -339,8 +331,13 @@ public class RelationAtom extends IsaAtomBase {
         return alphaEquivalenceHashCode;
     }
 
+    @Override
+    public int structuralEquivalenceHashCode() {
+        return Objects.hash(getTypeLabel(), getRoleLabels(), computeRoleTypeMap(false), getRoleConceptIdMap());
+    }
+
     private int computeAlphaEquivalenceHashCode() {
-        int equivalenceHashCode = baseHashCode();
+        int equivalenceHashCode = Objects.hash(getTypeLabel(), getRoleLabels());
         SortedSet<Integer> hashes = new TreeSet<>();
         this.getRoleTypeMap().entries().stream()
                 .sorted(Comparator.comparing(e -> e.getKey().label()))
@@ -351,14 +348,6 @@ public class RelationAtom extends IsaAtomBase {
                 .sorted(Comparator.comparing(Map.Entry::getValue))
                 .forEach(e -> hashes.add(e.hashCode()));
         for (Integer hash : hashes) equivalenceHashCode = equivalenceHashCode * 37 + hash;
-        return equivalenceHashCode;
-    }
-
-    @Override
-    public int structuralEquivalenceHashCode() {
-        int equivalenceHashCode = baseHashCode();
-        equivalenceHashCode = equivalenceHashCode * 37 + this.computeRoleTypeMap(false).hashCode();
-        equivalenceHashCode = equivalenceHashCode * 37 + this.getRoleConceptIdMap().keySet().hashCode();
         return equivalenceHashCode;
     }
 

@@ -152,9 +152,7 @@ public abstract class TypeAtom extends Atom {
 
     @Override
     public int alphaEquivalenceHashCode() {
-        int hashCode = 1;
-        hashCode = hashCode * 37 + (this.getTypeLabel() != null? this.getTypeLabel().hashCode() : 0);
-        return hashCode;
+        return Objects.hash(getTypeLabel());
     }
 
     @Override

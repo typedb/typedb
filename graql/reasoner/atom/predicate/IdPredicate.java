@@ -70,17 +70,15 @@ public class IdPredicate extends Predicate<ConceptId> {
     }
 
     @Override
-    public int alphaEquivalenceHashCode() {
-        int hashCode = 1;
-        hashCode = hashCode * 37 + this.getPredicateValue().hashCode();
-        return hashCode;
-    }
-
-    @Override
     public boolean isStructurallyEquivalent(Object obj) {
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
         return true;
+    }
+
+    @Override
+    public int alphaEquivalenceHashCode() {
+        return getPredicateValue().hashCode();
     }
 
     @Override
