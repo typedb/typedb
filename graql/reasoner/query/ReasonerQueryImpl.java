@@ -35,9 +35,9 @@ import grakn.core.graql.reasoner.atom.AtomicBase;
 import grakn.core.graql.reasoner.atom.AtomicUtil;
 import grakn.core.graql.reasoner.atom.PropertyAtomicFactory;
 import grakn.core.graql.reasoner.atom.binary.IsaAtom;
-import grakn.core.graql.reasoner.atom.binary.IsaAtomBase;
 import grakn.core.graql.reasoner.atom.binary.OntologicalAtom;
 import grakn.core.graql.reasoner.atom.binary.RelationAtom;
+import grakn.core.graql.reasoner.atom.binary.TypeAtom;
 import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.reasoner.atom.predicate.VariablePredicate;
 import grakn.core.graql.reasoner.cache.Index;
@@ -473,8 +473,8 @@ public class ReasonerQueryImpl extends ResolvableQuery {
         if (substitution == null) {
             ConceptManager conceptManager = context().conceptManager();
             Set<Variable> varNames = getVarNames();
-            Set<IdPredicate> predicates = getAtoms(IsaAtomBase.class)
-                    .map(IsaAtomBase::getTypePredicate)
+            Set<IdPredicate> predicates = isas()
+                    .map(TypeAtom::getTypePredicate)
                     .filter(Objects::nonNull)
                     .filter(p -> varNames.contains(p.getVarName()))
                     .collect(Collectors.toSet());
@@ -541,7 +541,6 @@ public class ReasonerQueryImpl extends ResolvableQuery {
     public boolean isCacheComplete(){
         MultilevelSemanticCache queryCache = CacheCasting.queryCacheCast(context().queryCache());
         ReasonerQueryFactory reasonerQueryFactory = context().queryFactory();
-        ConceptManager conceptManager = context().conceptManager();
         if (selectAtoms().count() == 0) return false;
         if (isAtomic()) return queryCache.isComplete(reasonerQueryFactory.atomic(selectAtoms().iterator().next()));
         List<ReasonerAtomicQuery> queries = resolutionPlan().plan().stream().map(reasonerQueryFactory::atomic).collect(Collectors.toList());
