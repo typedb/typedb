@@ -47,7 +47,9 @@ import grakn.core.graql.reasoner.atom.task.validate.RelationAtomValidator;
 import grakn.core.graql.reasoner.cache.SemanticDifference;
 import grakn.core.graql.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierType;
+import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.Label;
+import grakn.core.kb.concept.api.Relation;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.SchemaConcept;
@@ -522,10 +524,13 @@ public class RelationAtom extends Atom {
 
     @Override
     public boolean isRuleApplicableViaAtom(Atom ruleAtom) {
-        if (!(ruleAtom instanceof RelationAtom)) return isRuleApplicableViaAtom(ruleAtom.toRelationAtom());
-        RelationAtom atomWithType = typeReasoner.inferTypes(this.addType(ruleAtom.getSchemaConcept()), new ConceptMap(), context());
-        return ruleAtom.isUnifiableWith(atomWithType);
+        if (ruleAtom instanceof RelationAtom || ruleAtom instanceof AttributeAtom)  {
+            RelationAtom atomWithType = typeReasoner.inferTypes(this.addType(ruleAtom.toRelationAtom().getSchemaConcept()), new ConceptMap(), context());
+            return ruleAtom.isUnifiableWith(atomWithType);
+        }
+        return false;
     }
+
 
     @Override
     public RelationAtom addType(SchemaConcept type) {

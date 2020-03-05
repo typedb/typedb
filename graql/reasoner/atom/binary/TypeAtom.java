@@ -32,6 +32,7 @@ import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.graql.reasoner.ReasonerCheckedException;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
+import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
@@ -196,6 +197,11 @@ public abstract class TypeAtom extends Atom {
     @Override
     public Unifier getUnifier(Atom parentAtom, UnifierType unifierType) {
         return semanticProcessor.getUnifier(this, parentAtom, unifierType, context());
+    }
+
+    @Override
+    public MultiUnifier getMultiUnifier(Atom parentAtom, UnifierType unifierType) {
+        return semanticProcessor.getMultiUnifier(this, parentAtom, unifierType, context());
     }
 
     /**

@@ -27,6 +27,7 @@ import grakn.core.graql.reasoner.atom.binary.RelationAtom;
 import grakn.core.graql.reasoner.atom.predicate.ValuePredicate;
 import grakn.core.graql.reasoner.cache.SemanticDifference;
 import grakn.core.graql.reasoner.cache.VariableDefinition;
+import grakn.core.graql.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
@@ -76,7 +77,18 @@ public class AttributeSemanticProcessor implements SemanticProcessor<AttributeAt
 
     @Override
     public MultiUnifier getMultiUnifier(AttributeAtom childAtom, Atom parentAtom, UnifierType unifierType, ReasoningContext ctx) {
-        return binarySemanticProcessor.getMultiUnifier(childAtom.toIsaAtom(), parentAtom.toIsaAtom(), unifierType, ctx);
+        if (!(parentAtom instanceof AttributeAtom)) {
+            // in general this >= parent, hence for rule unifiers we can potentially specialise child to match parent
+            if (unifierType.equals(UnifierType.RULE)) {
+                if (parentAtom instanceof IsaAtom) return childAtom.toIsaAtom().getMultiUnifier(parentAtom, unifierType);
+                else if (parentAtom instanceof RelationAtom){
+                    return childAtom.toRelationAtom().getMultiUnifier(parentAtom, unifierType);
+                }
+            }
+            return MultiUnifierImpl.nonExistent();
+        }
+        Unifier unifier = getUnifier(childAtom, parentAtom, unifierType, ctx);
+        return unifier != null ? new MultiUnifierImpl(unifier) : MultiUnifierImpl.nonExistent();
     }
 
     @Override
