@@ -52,10 +52,10 @@ public class HypergraphCore implements Hypergraph {
     }
 
     private final Path directory;
-    private final Options optionsGraph = new Options();
-    private List<Session> sessions = new ArrayList<>();
-    private AtomicBoolean isOpen = new AtomicBoolean();
-    private Map<String, Index> indexes = new ConcurrentHashMap<>();
+    private final Options optionsGraph;
+    private final List<Session> sessions;
+    private final AtomicBoolean isOpen;
+    private final Map<String, Index> indexes;
 
     public static HypergraphCore open(String directory) {
         return new HypergraphCore(directory,  new Properties());
@@ -67,12 +67,19 @@ public class HypergraphCore implements Hypergraph {
 
     private HypergraphCore(String directory, Properties properties) {
         this.directory = Paths.get(directory);
-        this.optionsGraph.setCreateIfMissing(true);
-        this.isOpen.set(true);
-        setOPtionsFromProperties(properties);
+
+        sessions = new ArrayList<>();
+        indexes = new ConcurrentHashMap<>();
+        optionsGraph = new Options().setCreateIfMissing(true);
+
+        setOptionsFromProperties(properties);
+        loadIndexes();
+
+        isOpen = new AtomicBoolean();
+        isOpen.set(true);
     }
 
-    private void setOPtionsFromProperties(Properties properties) {
+    private void setOptionsFromProperties(Properties properties) {
         // TODO: configure optimisation paramaters
     }
 
@@ -105,9 +112,9 @@ public class HypergraphCore implements Hypergraph {
     private class Session implements Hypergraph.Session {
 
         private final String keyspace;
-        private OptimisticTransactionDB sessionRocks;
-        private List<Transaction> transactions = new ArrayList<>();
-        private AtomicBoolean isOpen = new AtomicBoolean();
+        private final OptimisticTransactionDB sessionRocks;
+        private final List<Transaction> transactions;
+        private final AtomicBoolean isOpen;
 
         Session(String keyspace) {
             try {
@@ -116,11 +123,15 @@ public class HypergraphCore implements Hypergraph {
                 e.printStackTrace();
                 throw new HypergraphException(e);
             }
+
             this.keyspace = keyspace;
-            this.isOpen.set(true);
             if (!indexes.containsKey(this.keyspace)) {
                 indexes.put(keyspace, new Index());
             }
+
+            transactions = new ArrayList<>();
+            isOpen = new AtomicBoolean();
+            isOpen.set(true);
         }
 
         @Override
@@ -152,22 +163,30 @@ public class HypergraphCore implements Hypergraph {
 
         private class Transaction implements Hypergraph.Transaction {
 
-            private final ReadOptions readOptions = new ReadOptions();
-            private final WriteOptions writeOptions = new WriteOptions();
-            private final OptimisticTransactionOptions transactionOptions =
-                    new OptimisticTransactionOptions().setSetSnapshot(true);
+            private final ReadOptions readOptions;
+            private final WriteOptions writeOptions;
             private final org.rocksdb.Transaction rocksTransaction;
             private final Hypergraph.Transaction.Type type;
-            private final Storage storage = new Storage(new Operation(), indexes.get(keyspace));
-            private final Graph graph = new Graph(storage);
-            private final Concepts concepts = new Concepts(graph);
-            private final Traversal traversal = new Traversal(concepts);
-            private AtomicBoolean isOpen = new AtomicBoolean();
+            private final Storage storage;
+            private final Concepts concepts;
+            private final Traversal traversal;
+            private final AtomicBoolean isOpen;
 
             Transaction(Hypergraph.Transaction.Type type) {
+                readOptions = new ReadOptions();
+                writeOptions = new WriteOptions();
+
+                storage = new Storage(new Operation(), indexes.get(keyspace));
+                concepts = new Concepts(new Graph(storage));
+                traversal = new Traversal(concepts);
+
                 this.type = type;
-                rocksTransaction = sessionRocks.beginTransaction(writeOptions, transactionOptions);
+                rocksTransaction = sessionRocks.beginTransaction(
+                        writeOptions, new OptimisticTransactionOptions().setSetSnapshot(true)
+                );
                 readOptions.setSnapshot(rocksTransaction.getSnapshot());
+
+                isOpen = new AtomicBoolean();
                 isOpen.set(true);
             }
 
