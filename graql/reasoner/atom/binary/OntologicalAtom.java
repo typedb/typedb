@@ -38,6 +38,7 @@ import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
@@ -149,26 +150,43 @@ public class OntologicalAtom extends TypeAtom {
     }
 
     @Override
-    public final boolean equals(Object o) {
-        if (o == this) {
-            return true;
-        }
-        if (o instanceof OntologicalAtom) {
-            OntologicalAtom that = (OntologicalAtom) o;
-            return (this.getVarName().equals(that.getVarName()))
-                    && ((this.getTypeLabel() == null) ? (that.getTypeLabel() == null) : this.getTypeLabel().equals(that.getTypeLabel()));
-        }
-        return false;
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+        OntologicalAtom that = (OntologicalAtom) o;
+        return (this.getVarName().equals(that.getVarName()))
+                && ((this.getTypeLabel() == null) ? (that.getTypeLabel() == null) : this.getTypeLabel().equals(that.getTypeLabel()))
+                && atomType == that.atomType;
     }
 
     @Override
-    public final int hashCode() {
-        int h = 1;
-        h *= 1000003;
-        h ^= this.getVarName().hashCode();
-        h *= 1000003;
-        h ^= (getTypeLabel() == null) ? 0 : this.getTypeLabel().hashCode();
-        return h;
+    public boolean isAlphaEquivalent(Object obj) {
+        if (!super.isAlphaEquivalent(obj)) return false;
+        OntologicalAtom that = (OntologicalAtom) obj;
+        return atomType == that.atomType;
+    }
+
+    @Override
+    public boolean isStructurallyEquivalent(Object obj) {
+        if (!super.isStructurallyEquivalent(obj)) return false;
+        OntologicalAtom that = (OntologicalAtom) obj;
+        return atomType == that.atomType;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), atomType);
+    }
+
+    @Override
+    public int alphaEquivalenceHashCode() {
+        return Objects.hash(getTypeLabel());
+    }
+
+    @Override
+    public int structuralEquivalenceHashCode() {
+        return alphaEquivalenceHashCode();
     }
 
     @Override
