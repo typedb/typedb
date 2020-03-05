@@ -42,8 +42,11 @@ import graql.lang.property.IsaProperty;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
@@ -51,7 +54,7 @@ import javax.annotation.Nullable;
 /**
  * TypeAtom corresponding to graql a IsaProperty property.
  */
-public class IsaAtom extends IsaAtomBase {
+public class IsaAtom extends TypeAtom {
 
     private final TypeReasoner<IsaAtom> typeReasoner = new IsaTypeReasoner();
 
@@ -181,5 +184,15 @@ public class IsaAtom extends IsaAtomBase {
     public MultiUnifier getMultiUnifier(Atom parentAtom, UnifierType unifierType) {
         Unifier unifier = this.getUnifier(parentAtom, unifierType);
         return unifier != null ? new MultiUnifierImpl(unifier) : MultiUnifierImpl.nonExistent();
+    }
+
+    @Override
+    public Set<TypeAtom> unify(Unifier u){
+        Collection<Variable> vars = u.get(getVarName());
+        return vars.isEmpty()?
+                Collections.singleton(this) :
+                vars.stream()
+                        .map(v -> IsaAtom.create(v, getPredicateVariable(), getTypeLabel(), this.isDirect(), this.getParentQuery(), this.context()))
+                        .collect(Collectors.toSet());
     }
 }
