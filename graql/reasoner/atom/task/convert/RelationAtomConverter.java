@@ -84,9 +84,6 @@ public class RelationAtomConverter implements AtomConverter<RelationAtom> {
 
     @Override
     public IsaAtom toIsaAtom(RelationAtom atom, ReasoningContext ctx) {
-        IsaAtom isaAtom = IsaAtom.create(atom.getVarName(), atom.getPredicateVariable(), atom.getTypeLabel(), false, atom.getParentQuery(), ctx);
-        Set<Statement> patterns = new HashSet<>(isaAtom.getCombinedPattern().statements());
-        atom.getPredicates().map(Predicate::getPattern).forEach(patterns::add);
-        return ctx.queryFactory().atomic(Graql.and(patterns)).getAtom().toIsaAtom();
+        return atom.isaAtom();
     }
 }
