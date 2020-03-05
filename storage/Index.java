@@ -19,4 +19,12 @@
 package hypergraph.storage;
 
 public class Index {
+
+    public Index() {
+
+    }
+
+    public void load(String keyspace, Operation operation) {
+
+    }
 }

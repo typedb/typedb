@@ -22,12 +22,15 @@ import hypergraph.common.HypergraphException;
 
 public class Storage {
 
+    private final Buffer buffer;
     private final Operation operation;
     private final Index index;
 
     public Storage(Operation operation, Index index) {
         this.operation = operation;
         this.index = index;
+
+        buffer = new Buffer();
     }
 
     public void persist() {

@@ -32,8 +32,6 @@ public class Concepts {
     }
 
     public EntityType putEntityType(String label) {
-        Vertex vertex = graph.putVertex();
-
-        return new EntityType(vertex);
+        return null;
     }
 }
