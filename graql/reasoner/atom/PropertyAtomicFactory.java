@@ -21,12 +21,9 @@ package grakn.core.graql.reasoner.atom;
 import com.google.common.collect.ImmutableMap;
 import grakn.core.graql.reasoner.ReasoningContext;
 import grakn.core.graql.reasoner.atom.binary.AttributeAtom;
-import grakn.core.graql.reasoner.atom.binary.HasAtom;
 import grakn.core.graql.reasoner.atom.binary.IsaAtom;
-import grakn.core.graql.reasoner.atom.binary.PlaysAtom;
-import grakn.core.graql.reasoner.atom.binary.RelatesAtom;
+import grakn.core.graql.reasoner.atom.binary.OntologicalAtom;
 import grakn.core.graql.reasoner.atom.binary.RelationAtom;
-import grakn.core.graql.reasoner.atom.binary.SubAtom;
 import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.reasoner.atom.predicate.NeqIdPredicate;
 import grakn.core.graql.reasoner.atom.predicate.ValuePredicate;
@@ -101,7 +98,7 @@ public class PropertyAtomicFactory {
             return hasAttribute(var, (HasAttributeProperty) property, parent, otherStatements);
 
         } else if (property instanceof HasAttributeTypeProperty) {
-            return hasAttributeType(var, (HasAttributeTypeProperty) property, parent, statement, otherStatements);
+            return hasAttributeType(var, (HasAttributeTypeProperty) property, parent, otherStatements);
 
         } else if (property instanceof IdProperty) {
             return id(var, (IdProperty) property, parent);
@@ -160,10 +157,18 @@ public class PropertyAtomicFactory {
         return null;
     }
 
-    private Atomic sub(Variable var, SubProperty property, ReasonerQuery parent, Set<Statement> otherStatements) {
-        Label label = getLabel(property.type().var(), property.type(), otherStatements, ctx.conceptManager());
-        return SubAtom.create(var, property.type().var(), label, parent, ctx);
+    private Atomic regex(Variable var, RegexProperty property, ReasonerQuery parent) {
+        return RegexAtom.create(var, property, parent);
     }
+
+    private Atomic neq(Variable var, NeqProperty property, ReasonerQuery parent) {
+        return NeqIdPredicate.create(var, property, parent);
+    }
+
+    private Atomic id(Variable var, IdProperty property, ReasonerQuery parent) {
+        return IdPredicate.create(var, ConceptId.of(property.id()), parent);
+    }
+
 
     private Atomic relation(Variable var, RelationProperty property, ReasonerQuery parent, Statement statement, Set<Statement> otherStatements) {
         //set varName as user defined if reified
@@ -214,36 +219,29 @@ public class PropertyAtomicFactory {
         return RelationAtom.create(relVar, typeVariable, typeLabel, parent, ctx);
     }
 
-    private Atomic relates(Variable var, RelatesProperty property, ReasonerQuery parent, Set<Statement> otherStatements) {
-        Label label = getLabel(property.role().var(), property.role(), otherStatements, ctx.conceptManager());
-        return RelatesAtom.create(var, property.role().var(), label, parent, ctx);
+    private Atomic sub(Variable var, SubProperty property, ReasonerQuery parent, Set<Statement> otherStatements) {
+        Label label = getLabel(property.type().var(), property.type(), otherStatements, ctx.conceptManager());
+        return OntologicalAtom.create(var, property.type().var(), label, parent, OntologicalAtom.OntologicalAtomType.SubAtom, ctx);
     }
 
-    private Atomic regex(Variable var, RegexProperty property, ReasonerQuery parent) {
-        return RegexAtom.create(var, property, parent);
+    private Atomic relates(Variable var, RelatesProperty property, ReasonerQuery parent, Set<Statement> otherStatements) {
+        Label label = getLabel(property.role().var(), property.role(), otherStatements, ctx.conceptManager());
+        return OntologicalAtom.create(var, property.role().var(), label, parent, OntologicalAtom.OntologicalAtomType.RelatesAtom, ctx);
     }
 
     private Atomic plays(Variable var, PlaysProperty property, ReasonerQuery parent, Set<Statement> otherStatements) {
         Label label = getLabel(property.role().var(), property.role(), otherStatements, ctx.conceptManager());
-        return PlaysAtom.create(var, property.role().var(), label, parent, ctx);
+        return OntologicalAtom.create(var, property.role().var(), label, parent, OntologicalAtom.OntologicalAtomType.PlaysAtom, ctx);
     }
 
-    private Atomic neq(Variable var, NeqProperty property, ReasonerQuery parent) {
-        return NeqIdPredicate.create(var, property, parent);
-    }
-
-    private Atomic id(Variable var, IdProperty property, ReasonerQuery parent) {
-        return IdPredicate.create(var, ConceptId.of(property.id()), parent);
-    }
-
-    private Atomic hasAttributeType(Variable var, HasAttributeTypeProperty property, ReasonerQuery parent, Statement statement, Set<Statement> otherStatements) {
+    private Atomic hasAttributeType(Variable var, HasAttributeTypeProperty property, ReasonerQuery parent, Set<Statement> otherStatements) {
         //NB: HasResourceType is a special case and it doesn't allow variables as resource types
         String label = property.attributeType().getType().orElse(null);
 
         Variable predicateVar = new Variable();
         SchemaConcept attributeType = ctx.conceptManager().getSchemaConcept(Label.of(label));
         Label typeLabel = attributeType != null ? attributeType.label() : null;
-        return HasAtom.create(var, predicateVar, typeLabel, parent, ctx);
+        return OntologicalAtom.create(var, predicateVar, typeLabel, parent, OntologicalAtom.OntologicalAtomType.HasAtom, ctx);
     }
 
     private Atomic hasAttribute(Variable var, HasAttributeProperty property, ReasonerQuery parent, Set<Statement> otherStatements) {

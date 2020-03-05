@@ -19,6 +19,7 @@
 package grakn.core.graql.reasoner.atom.binary;
 
 import com.google.common.collect.Sets;
+import grakn.common.util.Pair;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.graql.reasoner.ReasoningContext;
 import grakn.core.graql.reasoner.atom.Atom;
@@ -28,26 +29,74 @@ import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
+import graql.lang.property.HasAttributeTypeProperty;
+import graql.lang.property.PlaysProperty;
+import graql.lang.property.RelatesProperty;
+import graql.lang.property.SubProperty;
+import graql.lang.property.VarProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Objects;
 import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
-/**
- * Base class for defining ontological Atom - ones referring to ontological elements.
- */
-public abstract class OntologicalAtom extends TypeAtom {
+import static graql.lang.Graql.type;
+import static graql.lang.Graql.var;
 
-    OntologicalAtom(Variable varName, Statement pattern, ReasonerQuery reasonerQuery, @Nullable Label label,
-                    Variable predicateVariable, ReasoningContext ctx) {
-        super(varName, pattern, reasonerQuery, label, predicateVariable, ctx);
+/**
+ * Class for defining different ontological Atoms - ones referring to ontological elements.
+ */
+public class OntologicalAtom extends TypeAtom {
+
+    public enum OntologicalAtomType{
+        HasAtom(HasAttributeTypeProperty.class, (v, label) -> var(v.first()).has(type(label.getValue()))),
+        PlaysAtom(PlaysProperty.class, (v, label) -> var(v.first()).plays(var(v.second()))),
+        SubAtom(SubProperty.class, (v, label) -> var(v.first()).sub(var(v.second()))),
+        RelatesAtom(RelatesProperty.class, (v, label) -> var(v.first()).relates(var(v.second())));
+
+        private final Class<? extends VarProperty> property;
+        private final BiFunction<Pair<Variable, Variable>, Label, Statement> statementFunction;
+
+        OntologicalAtomType(Class<? extends VarProperty> property, BiFunction<Pair<Variable, Variable>, Label, Statement> statementFunction){
+            this.property = property;
+            this.statementFunction = statementFunction;
+        }
+
+        public Class<? extends VarProperty> property(){ return property;}
+        public BiFunction<Pair<Variable, Variable>, Label, Statement> statementFunction(){ return statementFunction;}
     }
 
-    abstract OntologicalAtom createSelf(Variable var, Variable predicateVar, @Nullable Label label, ReasonerQuery parent);
+    private final OntologicalAtomType atomType;
+
+    private OntologicalAtom(Variable varName, Statement pattern, ReasonerQuery reasonerQuery, @Nullable Label label,
+                            Variable predicateVariable, OntologicalAtomType type, ReasoningContext ctx) {
+        super(varName, pattern, reasonerQuery, label, predicateVariable, ctx);
+        this.atomType = type;
+    }
+
+    public static OntologicalAtom create(Variable var, Variable pVar, @Nullable Label label, ReasonerQuery parent, OntologicalAtomType type,
+                                         ReasoningContext ctx) {
+        Variable varName = var.asReturnedVar();
+        Variable predicateVar = pVar.asReturnedVar();
+        Statement statement = type.statementFunction().apply(new Pair<>(var, pVar), label);
+        return new OntologicalAtom(varName, statement, parent, label, predicateVar, type, ctx);
+    }
+
+    private static OntologicalAtom create(OntologicalAtom a, ReasonerQuery parent) {
+        return create(a.getVarName(), a.getPredicateVariable(), a.getTypeLabel(), parent, a.atomType(), a.context());
+    }
+
+    @Override
+    public Atomic copy(ReasonerQuery parent){
+        return create(this, parent);
+    }
+
+    public OntologicalAtomType atomType(){ return atomType;}
 
     @Override
     public String toString() {
@@ -85,41 +134,60 @@ public abstract class OntologicalAtom extends TypeAtom {
         Collection<Variable> vars = u.get(getVarName());
         return vars.isEmpty() ?
                 Collections.singleton(this) :
-                vars.stream().map(v -> createSelf(v, getPredicateVariable(), getTypeLabel(), this.getParentQuery())).collect(Collectors.toSet());
+                vars.stream().map(v -> create(v, getPredicateVariable(), getTypeLabel(), this.getParentQuery(), atomType(), context())).collect(Collectors.toSet());
     }
 
     @Override
     public Atom rewriteWithTypeVariable() {
-        return createSelf(getVarName(), getPredicateVariable().asReturnedVar(), getTypeLabel(), getParentQuery());
+        return create(getVarName(), getPredicateVariable().asReturnedVar(), getTypeLabel(), getParentQuery(), atomType(), context());
     }
 
     @Override
     public Atom rewriteToUserDefined(Atom parentAtom) {
         return parentAtom.getPredicateVariable().isReturned() ?
-                createSelf(getVarName(), getPredicateVariable().asReturnedVar(), getTypeLabel(), getParentQuery()) :
+                create(getVarName(), getPredicateVariable().asReturnedVar(), getTypeLabel(), getParentQuery(), atomType(), context()) :
                 this;
     }
 
     @Override
-    public final boolean equals(Object o) {
-        if (o == this) {
-            return true;
-        }
-        if (o instanceof OntologicalAtom) {
-            OntologicalAtom that = (OntologicalAtom) o;
-            return (this.getVarName().equals(that.getVarName()))
-                    && ((this.getTypeLabel() == null) ? (that.getTypeLabel() == null) : this.getTypeLabel().equals(that.getTypeLabel()));
-        }
-        return false;
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        OntologicalAtom that = (OntologicalAtom) o;
+        return (this.getVarName().equals(that.getVarName()))
+                && ((this.getTypeLabel() == null) ? (that.getTypeLabel() == null) : this.getTypeLabel().equals(that.getTypeLabel()))
+                && atomType == that.atomType;
     }
 
     @Override
-    public final int hashCode() {
-        int h = 1;
-        h *= 1000003;
-        h ^= this.getVarName().hashCode();
-        h *= 1000003;
-        h ^= (getTypeLabel() == null) ? 0 : this.getTypeLabel().hashCode();
-        return h;
+    public boolean isAlphaEquivalent(Object obj) {
+        if (!super.isAlphaEquivalent(obj)) return false;
+        OntologicalAtom that = (OntologicalAtom) obj;
+        return atomType == that.atomType;
     }
+
+    @Override
+    public boolean isStructurallyEquivalent(Object obj) {
+        if (!super.isStructurallyEquivalent(obj)) return false;
+        OntologicalAtom that = (OntologicalAtom) obj;
+        return atomType == that.atomType;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(getVarName(), atomType);
+    }
+
+    @Override
+    public int alphaEquivalenceHashCode() {
+        return Objects.hash(getTypeLabel());
+    }
+
+    @Override
+    public int structuralEquivalenceHashCode() {
+        return alphaEquivalenceHashCode();
+    }
+
+    @Override
+    public Class<? extends VarProperty> getVarPropertyClass() {return atomType.property();}
 }
