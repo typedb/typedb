@@ -47,9 +47,7 @@ import grakn.core.graql.reasoner.atom.task.validate.RelationAtomValidator;
 import grakn.core.graql.reasoner.cache.SemanticDifference;
 import grakn.core.graql.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierType;
-import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.Label;
-import grakn.core.kb.concept.api.Relation;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.SchemaConcept;
@@ -108,11 +106,6 @@ public class RelationAtom extends Atom {
     private Multimap<Role, String> roleConceptIdMap = null;
     private Multimap<Role, Type> roleTypeMap = null;
     private Multimap<Role, Variable> roleVarMap = null;
-
-    /*
-    public static IsaAtom create(Variable var, Variable predicateVar, @Nullable Label label, boolean isDirect, ReasonerQuery parent,
-                                 ReasoningContext ctx) {
-     */
 
     private RelationAtom(
             Variable varName,
