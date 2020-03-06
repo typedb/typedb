@@ -1,0 +1,19 @@
+digraph mygraph {
+  node [shape=box];
+  "//core:hypergraph-core"
+  "//core:hypergraph-core" -> "//:hypergraph"
+  "//core:hypergraph-core" -> "//concept:concept"
+  "//core:hypergraph-core" -> "//traversal:traversal"
+  "//core:hypergraph-core" -> "//graph:graph"
+  "//core:hypergraph-core" -> "//storage:storage"
+  "//:hypergraph"
+  "//:hypergraph" -> "//concept:concept"
+  "//:hypergraph" -> "//traversal:traversal"
+  "//traversal:traversal"
+  "//traversal:traversal" -> "//concept:concept"
+  "//concept:concept"
+  "//concept:concept" -> "//graph:graph"
+  "//graph:graph"
+  "//graph:graph" -> "//storage:storage"
+  "//storage:storage"
+}
