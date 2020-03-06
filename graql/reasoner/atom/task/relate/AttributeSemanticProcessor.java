@@ -21,6 +21,7 @@ package grakn.core.graql.reasoner.atom.task.relate;
 import com.google.common.collect.ImmutableMap;
 import grakn.core.graql.reasoner.ReasoningContext;
 import grakn.core.graql.reasoner.atom.Atom;
+import grakn.core.graql.reasoner.atom.AtomicUtil;
 import grakn.core.graql.reasoner.atom.binary.AttributeAtom;
 import grakn.core.graql.reasoner.atom.binary.IsaAtom;
 import grakn.core.graql.reasoner.atom.binary.RelationAtom;
@@ -71,7 +72,7 @@ public class AttributeSemanticProcessor implements SemanticProcessor<AttributeAt
             unifier = unifier.merge(new UnifierImpl(ImmutableMap.of(childRelationVarName, parentRelationVarName)));
         }
 
-        return new BasicSemanticProcessor().isPredicateCompatible(childAtom, parentAtom, unifier, unifierType, ctx.conceptManager())?
+        return AtomicUtil.isPredicateCompatible(childAtom, parentAtom, unifier, unifierType, ctx.conceptManager())?
                 unifier : UnifierImpl.nonExistent();
     }
 
