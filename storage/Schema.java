@@ -36,7 +36,8 @@ public class Schema {
         private static final int VERTEX_RELATION = 70;
         private static final int VERTEX_ROLE = 80;
         private static final int VERTEX_ATTRIBUTE = 90;
-        private static final int VERTEX_RULE = 100;
+        private static final int VERTEX_VALUE = 100;
+        private static final int VERTEX_RULE = 110;
 
     }
 
@@ -90,6 +91,7 @@ public class Schema {
         RELATION(Prefix.VERTEX_RELATION),
         ROLE(Prefix.VERTEX_ROLE),
         ATTRIBUTE(Prefix.VERTEX_ATTRIBUTE),
+        VALUE(Prefix.VERTEX_VALUE),
         RULE(Prefix.VERTEX_RULE);
 
         private final byte key;
