@@ -45,20 +45,29 @@ public class HypergraphTest {
                 assertTrue(session.isOpen());
                 assertEquals("my_data_keyspace", session.keyspace());
 
-                try (Hypergraph.Transaction transaction = session.transaction(Hypergraph.Transaction.Type.READ)) {
-                    assertTrue(transaction.isOpen());
-                    assertEquals(HypergraphCore.Transaction.Type.READ, transaction.type());
-
-//                    transaction.read().getConcept(...)
-                }
-
                 try (Hypergraph.Transaction transaction = session.transaction(Hypergraph.Transaction.Type.WRITE)) {
                     assertTrue(transaction.isOpen());
                     assertEquals(HypergraphCore.Transaction.Type.WRITE, transaction.type());
 
 //                    transaction.write().entityType("person");
                 }
+
+                try (Hypergraph.Transaction transaction = session.transaction(Hypergraph.Transaction.Type.READ)) {
+                    assertTrue(transaction.isOpen());
+                    assertEquals(HypergraphCore.Transaction.Type.READ, transaction.type());
+
+//                    transaction.read().getConcept(...)
+                }
             }
         }
+    }
+
+    @Test
+    public void test_java_nubmers() {
+        byte low = (byte) Short.MIN_VALUE;
+        System.out.println(low);
+
+        byte high = (byte) Short.MAX_VALUE;
+        System.out.println(high);
     }
 }
