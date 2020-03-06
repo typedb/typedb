@@ -18,6 +18,7 @@
 
 package grakn.core.graql.reasoner.atom.task.convert;
 
+import com.google.common.collect.Sets;
 import grakn.core.core.Schema;
 import grakn.core.graql.reasoner.ReasoningContext;
 import grakn.core.graql.reasoner.atom.binary.AttributeAtom;
@@ -27,6 +28,7 @@ import grakn.core.graql.reasoner.atom.predicate.Predicate;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.graql.reasoner.ReasonerException;
+import grakn.core.kb.graql.reasoner.atom.Atomic;
 import graql.lang.Graql;
 import graql.lang.statement.Statement;
 import java.util.HashSet;
@@ -70,11 +72,10 @@ public class AttributeAtomConverter implements AtomConverter<AttributeAtom> {
      */
     @Override
     public IsaAtom toIsaAtom(AttributeAtom atom, ReasoningContext ctx) {
-        IsaAtom isaAtom = atom.attributeIsa();
-        Set<Statement> patterns = new HashSet<>(isaAtom.getCombinedPattern().statements());
-        atom.getPredicates().map(Predicate::getPattern).forEach(patterns::add);
-        atom.getMultiPredicate().stream().map(Predicate::getPattern).forEach(patterns::add);
-        return ctx.queryFactory().atomic(Graql.and(patterns)).getAtom().toIsaAtom();
+        Set<Atomic> atoms = Sets.newHashSet(atom.attributeIsa());
+        atom.getPredicates().forEach(atoms::add);
+        atoms.addAll(atom.getMultiPredicate());
+        return ctx.queryFactory().atomic(atoms).getAtom().toIsaAtom();
     }
 
 }
