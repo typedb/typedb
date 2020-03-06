@@ -18,11 +18,31 @@
 load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
 java_test(
-    name = "isa-explicit-it",
-    size = "large",
-    srcs = ["IsaExplicitIT.java"],
+    name = "direct-sub-it",
+    size = "small",
+    srcs = ["DirectSubIT.java"],
     classpath_resources = ["//test-integration/resources:logback-test"],
-    test_class = "grakn.core.graql.executor.IsaExplicitIT",
+    test_class = "grakn.core.graql.executor.DirectSubIT",
+    deps = [
+        "//common",
+        "//dependencies/maven/artifacts/com/google/guava",
+        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+        "//graql/planning",
+        "//kb/concept/api",
+        "//kb/graql/planning",
+        "//kb/server",
+        "//concept/answer",
+        "//test-integration/rule:grakn-test-server",
+        "@graknlabs_graql//java:graql",
+    ],
+)
+
+java_test(
+    name = "direct-isa-it",
+    size = "medium",
+    srcs = ["DirectIsaIT.java"],
+    classpath_resources = ["//test-integration/resources:logback-test"],
+    test_class = "grakn.core.graql.executor.DirectIsaIT",
     deps = [
         "//common",
         "//dependencies/maven/artifacts/com/google/guava",
@@ -38,5 +58,8 @@ java_test(
 
 checkstyle_test(
     name = "checkstyle",
-    targets = [":isa-explicit-it"],
+    targets = [
+        ":direct-isa-it",
+        ":direct-sub-it"
+    ],
 )
