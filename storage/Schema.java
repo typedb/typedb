@@ -140,8 +140,8 @@ public class Schema {
         PLAYS_IN(Infix.EDGE_PLAYS_IN),
         RELATES_OUT(Infix.EDGE_RELATES_OUT),
         RELATES_IN(Infix.EDGE_RELATES_IN),
-        OPT_OUT(Infix.EDGE_OPT_OUT),
-        OPT_IN(Infix.EDGE_OPT_IN);
+        OPT_ROLE_OUT(Infix.EDGE_OPT_OUT),
+        OPT_ROLE_IN(Infix.EDGE_OPT_IN);
 
         private final byte key;
 
