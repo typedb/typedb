@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -33,22 +32,22 @@ public class StringEncoding {
         Preconditions.checkNotNull(input);
         for (int i = 0; i < input.length(); i++) {
             int c = input.charAt(i);
-            if (c>127 || c<=0) return false;
+            if (c > 127 || c <= 0) return false;
         }
         return true;
     }
 
-    //Similar to {@link StringSerializer}
+    //Similar to StringSerializer
     public static int writeAsciiString(byte[] array, int startPos, String attribute) {
         Preconditions.checkArgument(isAsciiString(attribute));
-        if (attribute.length()==0) {
-            array[startPos++] = (byte)0x80;
+        if (attribute.length() == 0) {
+            array[startPos++] = (byte) 0x80;
         } else {
             for (int i = 0; i < attribute.length(); i++) {
                 int c = attribute.charAt(i);
-                byte b = (byte)c;
-                if (i+1==attribute.length()) b |= 0x80; //End marker
-                array[startPos++]=b;
+                byte b = (byte) c;
+                if (i + 1 == attribute.length()) b |= 0x80; //End marker
+                array[startPos++] = b;
             }
         }
         return startPos;
@@ -58,7 +57,7 @@ public class StringEncoding {
         StringBuilder sb = new StringBuilder();
         while (true) {
             int c = 0xFF & array[startPos++];
-            if (c!=0x80) sb.append((char)(c & 0x7F));
+            if (c != 0x80) sb.append((char) (c & 0x7F));
             if ((c & 0x80) > 0) break;
         }
         return sb.toString();
@@ -66,7 +65,7 @@ public class StringEncoding {
 
     public static int getAsciiByteLength(String attribute) {
         Preconditions.checkArgument(isAsciiString(attribute));
-        return attribute.isEmpty()?1:attribute.length();
+        return attribute.isEmpty() ? 1 : attribute.length();
     }
 
     public static String launder(String input) {

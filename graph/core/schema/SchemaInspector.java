@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -44,7 +43,7 @@ public interface SchemaInspector {
      *
      * @param name name of the type to return
      * @return The type with the given name, or null if such does not exist
-     * @see RelationType
+     * see RelationType
      */
     RelationType getRelationType(String name);
 
@@ -64,7 +63,7 @@ public interface SchemaInspector {
      * @return the property key with the given name
      * @throws IllegalArgumentException if a property key with the given name does not exist or if the
      *                                  type with the given name is not a property key
-     * @see PropertyKey
+     * see PropertyKey
      */
     PropertyKey getOrCreatePropertyKey(String name);
 
@@ -73,7 +72,7 @@ public interface SchemaInspector {
      * Returns the property key with the given name. If automatic type making is enabled, it will make the property key
      * using the configured default type maker if a key with the given name does not exist.
      * <p>
-     * The default implementation simply calls the {@link #getOrCreatePropertyKey(String name) getOrCreatePropertyKey} method
+     * The default implementation simply calls the #getOrCreatePropertyKey(String name) getOrCreatePropertyKey method
      *
      * @param name  name of the property key to return
      * @param value the value of the property key. This param is not used by the default
@@ -81,7 +80,7 @@ public interface SchemaInspector {
      * @return the property key with the given name
      * @throws IllegalArgumentException if a property key with the given name does not exist or if the
      *                                  type with the given name is not a property key
-     * @see PropertyKey
+     * see PropertyKey
      */
     default PropertyKey getOrCreatePropertyKey(String name, Object value) {
         return getOrCreatePropertyKey(name);
@@ -108,7 +107,7 @@ public interface SchemaInspector {
      * @return the edge label with the given name
      * @throws IllegalArgumentException if an edge label with the given name does not exist or if the
      *                                  type with the given name is not an edge label
-     * @see EdgeLabel
+     * see EdgeLabel
      */
     EdgeLabel getOrCreateEdgeLabel(String name);
 
@@ -129,7 +128,7 @@ public interface SchemaInspector {
 
     /**
      * Returns the vertex label with the given name. If a vertex label with this name does not exist, the label is
-     * automatically created through the registered {@link DefaultSchemaMaker}.
+     * automatically created through the registered DefaultSchemaMaker.
      * <p>
      * Attempting to automatically create a vertex label might cause an exception depending on the configuration.
      */

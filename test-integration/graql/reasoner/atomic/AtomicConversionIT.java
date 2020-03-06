@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -19,8 +18,8 @@
 package grakn.core.graql.reasoner.atomic;
 
 import com.google.common.collect.Sets;
-import grakn.core.graql.reasoner.ReasonerException;
-import grakn.core.kb.server.exception.GraqlQueryException;
+import grakn.core.common.config.Config;
+import grakn.core.core.Schema;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.binary.AttributeAtom;
 import grakn.core.graql.reasoner.atom.binary.IsaAtom;
@@ -28,11 +27,13 @@ import grakn.core.graql.reasoner.atom.binary.RelationAtom;
 import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.reasoner.atom.predicate.Predicate;
 import grakn.core.graql.reasoner.atom.predicate.ValuePredicate;
-import grakn.core.graql.reasoner.query.ReasonerQueries;
-import grakn.core.rule.GraknTestServer;
-import grakn.core.core.Schema;
+import grakn.core.graql.reasoner.query.ReasonerQueryFactory;
+import grakn.core.kb.graql.reasoner.ReasonerException;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
+import grakn.core.rule.GraknTestStorage;
+import grakn.core.rule.SessionUtil;
+import grakn.core.rule.TestTransactionProvider;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.property.HasAttributeProperty;
@@ -51,7 +52,7 @@ import static junit.framework.TestCase.assertTrue;
 public class AtomicConversionIT {
 
     @ClassRule
-    public static final GraknTestServer server = new GraknTestServer();
+    public static final GraknTestStorage storage = new GraknTestStorage();
 
     private static Session session;
 
@@ -64,7 +65,8 @@ public class AtomicConversionIT {
     @BeforeClass
     public static void loadContext(){
         final String resourcePath = "test-integration/graql/reasoner/resources/";
-        session = server.sessionWithNewKeyspace();
+        Config mockServerConfig = storage.createCompatibleServerConfig();
+        session = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig);
         loadFromFileAndCommit(resourcePath, "genericSchema.gql", session);
 
         Statement has = Graql.var("x").has("resource", "b");
@@ -95,7 +97,8 @@ public class AtomicConversionIT {
     @Test
     public void whenConvertingAttributeToIsaAtom_predicatesArePreserved(){
         try(Transaction tx = session.readTransaction()){
-            Atom attribute = ReasonerQueries.atomic(attributePattern, tx).getAtom();
+            ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
+            Atom attribute = reasonerQueryFactory.atomic(attributePattern).getAtom();
             IsaAtom isa = attribute.toIsaAtom();
 
             assertEquals(
@@ -108,7 +111,8 @@ public class AtomicConversionIT {
     @Test
     public void whenConvertingRelationToIsaAtom_predicatesArePreserved(){
         try(Transaction tx = session.readTransaction()){
-            Atom relation = ReasonerQueries.atomic(relationPattern, tx).getAtom();
+            ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
+            Atom relation = reasonerQueryFactory.atomic(relationPattern).getAtom();
             IsaAtom isa = relation.toIsaAtom();
 
             assertEquals(
@@ -121,7 +125,9 @@ public class AtomicConversionIT {
     @Test (expected = ReasonerException.class)
     public void whenConvertingNonImplicitRelationToAttribute_weThrow(){
         try(Transaction tx = session.readTransaction()){
-            Atom relation = ReasonerQueries.atomic(relationPattern, tx).getAtom();
+            ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
+
+            Atom relation = reasonerQueryFactory.atomic(relationPattern).getAtom();
             AttributeAtom attribute = relation.toAttributeAtom();
             assertEquals(
                     relation.getPredicates().collect(toSet()),
@@ -133,7 +139,9 @@ public class AtomicConversionIT {
     @Test
     public void whenConvertingImplicitRelationToAttribute_predicatesArePreserved(){
         try(Transaction tx = session.readTransaction()){
-            Atom relation = ReasonerQueries.atomic(implicitRelationPattern, tx).getAtom();
+            ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
+
+            Atom relation = reasonerQueryFactory.atomic(implicitRelationPattern).getAtom();
             AttributeAtom attribute = relation.toAttributeAtom();
 
             assertEquals(
@@ -146,7 +154,9 @@ public class AtomicConversionIT {
     @Test
     public void whenConvertingAttributeToRelation_predicatesArePreserved(){
         try(Transaction tx = session.readTransaction()){
-            Atom attribute = ReasonerQueries.atomic(attributePattern, tx).getAtom();
+            ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
+
+            Atom attribute = reasonerQueryFactory.atomic(attributePattern).getAtom();
             RelationAtom relation = attribute.toRelationAtom();
 
             assertEquals(
@@ -164,7 +174,9 @@ public class AtomicConversionIT {
     @Test
     public void whenPerformingAttributeRelationIdentityConversion_equivalenceIsPreserved(){
         try(Transaction tx = session.readTransaction()){
-            Atom attribute = ReasonerQueries.atomic(attributePattern, tx).getAtom();
+            ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
+
+            Atom attribute = reasonerQueryFactory.atomic(attributePattern).getAtom();
             RelationAtom intermittentAtom = attribute.toRelationAtom();
             AttributeAtom equivalentAttribute = intermittentAtom.toAttributeAtom();
             assertTrue(attribute.isAlphaEquivalent(equivalentAttribute));
@@ -175,7 +187,8 @@ public class AtomicConversionIT {
     @Test
     public void whenPerformingRelationAttributeIdentityConversion_equivalenceIsPreserved(){
         try(Transaction tx = session.readTransaction()){
-            Atom relation = ReasonerQueries.atomic(implicitRelationPattern, tx).getAtom();
+            ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
+            Atom relation = reasonerQueryFactory.atomic(implicitRelationPattern).getAtom();
             AttributeAtom intermittentAtom = relation.toAttributeAtom();
             Atom equivalentRelation = intermittentAtom.toRelationAtom();
             assertEquals(relation, equivalentRelation);

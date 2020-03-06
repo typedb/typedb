@@ -1,6 +1,5 @@
 #
-# GRAKN.AI - THE KNOWLEDGE GRAPH
-# Copyright (C) 2019 Grakn Labs Ltd
+# Copyright (C) 2020 Grakn Labs
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -31,7 +30,9 @@ load(
     "graknlabs_protocol",
     "graknlabs_client_java",
     "graknlabs_console",
-    "graknlabs_benchmark"
+    "graknlabs_benchmark",
+    "graknlabs_simulation",
+    "graknlabs_verification",
 )
 graknlabs_build_tools()
 graknlabs_common()
@@ -40,6 +41,8 @@ graknlabs_protocol()
 graknlabs_client_java()
 graknlabs_console()
 graknlabs_benchmark()
+graknlabs_simulation()
+graknlabs_verification()
 
 load("@graknlabs_build_tools//distribution:dependencies.bzl", "graknlabs_bazel_distribution")
 graknlabs_bazel_distribution()
@@ -148,6 +151,9 @@ load("@io_bazel_rules_docker//repositories:repositories.bzl",
 bazel_rules_docker_repositories = "repositories")
 bazel_rules_docker_repositories()
 
+load("@io_bazel_rules_docker//repositories:deps.bzl", bazel_rules_docker_container_deps = "deps")
+bazel_rules_docker_container_deps()
+
 load("@io_bazel_rules_docker//container:container.bzl", "container_pull")
 container_pull(
   name = "openjdk_image",
@@ -155,6 +161,19 @@ container_pull(
   repository = "library/openjdk",
   tag = "8"
 )
+
+
+################################
+# Load Simulation dependencies #
+################################
+
+load("@graknlabs_simulation//dependencies/maven:dependencies.bzl",
+graknlabs_simulation_dependencies = "maven_dependencies")
+graknlabs_simulation_dependencies()
+
+load("@graknlabs_simulation//dependencies/graknlabs:dependencies.bzl", "graknlabs_grabl_tracing")
+graknlabs_grabl_tracing()
+
 
 #####################################
 # Load Bazel common workspace rules #

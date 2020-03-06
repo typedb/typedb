@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -21,14 +20,13 @@ package grakn.core.kb.graql.reasoner.atom;
 
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Rule;
+import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
-
-import javax.annotation.CheckReturnValue;
-import java.util.HashSet;
 import java.util.Set;
+import javax.annotation.CheckReturnValue;
 
 /**
  * Basic interface for logical atoms used in reasoning.
@@ -61,6 +59,18 @@ public interface Atomic {
     void checkValid();
 
     /**
+     * @return true if the atomic can constitute the head of a rule
+     */
+    @CheckReturnValue
+    Set<String> validateAsRuleHead(Rule rule);
+
+    /**
+     * @return error messages indicating ontological inconsistencies of this atomic
+     */
+    @CheckReturnValue
+    Set<String> validateAsRuleBody(Label ruleLabel);
+
+    /**
      * @return true if the atomic corresponds to a atom
      * */
     @CheckReturnValue
@@ -82,7 +92,7 @@ public interface Atomic {
      * @return true if the atomic corresponds to a resource atom
      */
     @CheckReturnValue
-    default boolean isResource(){ return false;}
+    default boolean isAttribute(){ return false;}
 
     /**
      * @return if atom contains properties considering only explicit type hierarchies
@@ -108,6 +118,12 @@ public interface Atomic {
     @CheckReturnValue
     default boolean isCompatibleWith(Object obj){return isAlphaEquivalent(obj);}
 
+    @CheckReturnValue
+    default boolean typesRoleCompatibleWithMatchSemantics(Variable typedVar, Set<Type> parentTypes){ return true;}
+
+    @CheckReturnValue
+    default boolean typesRoleCompatibleWithInsertSemantics(Variable typedVar, Set<Type> parentTypes){ return true;}
+
     /**
      * Determines whether the subsumption relation between this (A) and provided atom (B) holds,
      * i. e. determines if:
@@ -121,10 +137,10 @@ public interface Atomic {
      * i. e. the set of answers of A is a subset of the set of answers of B
      *
      * @param atom to compare with
-     * @return true if this atom subsumes the provided atom
+     * @return true if this atom isSubsumedBy the provided atom
      */
     @CheckReturnValue
-    boolean subsumes(Atomic atom);
+    boolean isSubsumedBy(Atomic atom);
 
     /**
      * @return alpha-equivalence hash code
@@ -143,18 +159,6 @@ public interface Atomic {
      */
     @CheckReturnValue
     default boolean isSelectable(){ return false;}
-
-    /**
-     * @return true if the atomic can constitute the head of a rule
-     */
-    @CheckReturnValue
-    Set<String> validateAsRuleHead(Rule rule);
-
-    /**
-     * @return error messages indicating ontological inconsistencies of this atomic
-     */
-    @CheckReturnValue
-    default Set<String> validateAsRuleBody(Label ruleLabel){ return new HashSet<>();}
 
     /**
      * @return the base pattern combined with possible predicate patterns

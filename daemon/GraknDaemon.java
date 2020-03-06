@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -23,7 +22,7 @@ import grakn.core.common.exception.ErrorMessage;
 import grakn.core.daemon.executor.Executor;
 import grakn.core.daemon.executor.Server;
 import grakn.core.daemon.executor.Storage;
-import grakn.core.server.templates.Version;
+import grakn.core.server.Version;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,7 +51,7 @@ public class GraknDaemon {
     private final Server serverExecutor;
 
     /**
-     * Main function of the {@link GraknDaemon}. It is meant to be invoked by the 'grakn' bash script.
+     * Main function of the GraknDaemon. It is meant to be invoked by the 'grakn' bash script.
      * You should have 'grakn.dir' and 'grakn.conf' Java properties set.
      *
      * @param args arguments such as 'server start', 'server stop', 'clean', and so on

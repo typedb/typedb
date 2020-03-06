@@ -105,7 +105,7 @@ attributed-relation sub relation,
 #Rules
 
 #3 instances in total
-rule-0 sub rule,
+binary-transitivity sub rule,
     when {
     	(someRole: $x, subRole: $y) isa binary;
     	(someRole: $y, subRole: $z) isa binary;
@@ -115,7 +115,7 @@ rule-0 sub rule,
     };
 
 #1 instance
-rule-1 sub rule,
+ternary-rule sub rule,
     when {
     	(someRole: $x, subRole: $y) isa binary;
     	(someRole: $y, subRole: $z) isa binary;
@@ -125,7 +125,7 @@ rule-1 sub rule,
     };
 
 #1 instance
-rule-2 sub rule,
+alternative-ternary-rule sub rule,
     when {
     	(someRole: $x, subRole: $y) isa binary;
     	(someRole: $y, subRole: $z) isa binary;
@@ -135,7 +135,7 @@ rule-2 sub rule,
     };
 
 #1 instance
-rule-3 sub rule,
+reifiable-chain-rule sub rule,
     when {
     	$r1 (someRole: $x, subRole: $y) isa reifiable-relation;
     	$r2 (someRole: $y, subRole: $z) isa reifiable-relation;
@@ -144,7 +144,7 @@ rule-3 sub rule,
     	(someRole:$r1, subRole:$r2) isa reifying-relation;
     };
 
-rule-4 sub rule,
+typed-reifying-rule sub rule,
     when {
     	$x isa anotherTwoRoleEntity;
     	$y isa anotherTwoRoleEntity;
@@ -153,7 +153,7 @@ rule-4 sub rule,
     	(symmetricRole:$x, symmetricRole:$y) isa reifying-relation;
     };
 
-rule-5 sub rule,
+typed-relation-rule sub rule,
     when {
     	$x isa singleRoleEntity;
     	$y isa anotherTwoRoleEntity;
@@ -183,7 +183,7 @@ attributed-relation-long-rule sub rule,
     	(someRole:$x, subRole:$y, anotherRole: $z) isa attributed-relation;
     };
 
-resource-rule sub rule,
+reifiable-relation-description-rule sub rule,
     when {
         $rel (someRole: $x, subRole: $y) isa reifiable-relation;
     },
@@ -191,7 +191,7 @@ resource-rule sub rule,
         $rel has description 'reified';
     };
 
-resource-rule2 sub rule,
+typed-relation-description-rule sub rule,
     when {
         $r1 (someRole:$x, subRole:$y, anotherRole: $z) isa typed-relation;
     },
@@ -199,7 +199,7 @@ resource-rule2 sub rule,
         $r1 has description 'reified';
     };
 
-resource-rule3 sub rule,
+description-rule sub rule,
     when {
         $r has description 'typed';
         $r has description 'reified';

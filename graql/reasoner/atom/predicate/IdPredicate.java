@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -21,13 +20,9 @@ package grakn.core.graql.reasoner.atom.predicate;
 
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
-import grakn.core.kb.concept.api.Label;
-import grakn.core.kb.concept.api.SchemaConcept;
-import grakn.core.graql.reasoner.ReasonerCheckedException;
-import grakn.core.kb.server.exception.GraqlSemanticException;
+import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
-import grakn.core.kb.server.Transaction;
 import graql.lang.Graql;
 import graql.lang.property.IdProperty;
 import graql.lang.property.ValueProperty;
@@ -47,14 +42,13 @@ public class IdPredicate extends Predicate<ConceptId> {
         return new IdPredicate(pattern.var(), pattern, parent, extractPredicate(pattern));
     }
 
-    public static IdPredicate create(Variable varName, Label label, ReasonerQuery parent) {
-        return create(createIdVar(varName.asReturnedVar(), label, parent.tx()), parent);
-    }
-
     public static IdPredicate create(Variable varName, ConceptId id, ReasonerQuery parent) {
         return create(createIdVar(varName.asReturnedVar(), id), parent);
     }
 
+    /**
+     * Copy constructor
+     */
     private static IdPredicate create(IdPredicate a, ReasonerQuery parent) {
         return create(a.getPattern(), parent);
     }
@@ -67,25 +61,12 @@ public class IdPredicate extends Predicate<ConceptId> {
         return new Statement(varName).id(typeId.getValue());
     }
 
-    private static Statement createIdVar(Variable varName, Label label, Transaction tx) {
-        SchemaConcept schemaConcept = tx.getSchemaConcept(label);
-        if (schemaConcept == null) throw GraqlSemanticException.labelNotFound(label);
-        return new Statement(varName).id(schemaConcept.id().getValue());
-    }
-
     @Override
     public boolean isAlphaEquivalent(Object obj) {
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
         Predicate a2 = (Predicate) obj;
         return this.getPredicateValue().equals(a2.getPredicateValue());
-    }
-
-    @Override
-    public int alphaEquivalenceHashCode() {
-        int hashCode = 1;
-        hashCode = hashCode * 37 + this.getPredicateValue().hashCode();
-        return hashCode;
     }
 
     @Override
@@ -96,21 +77,18 @@ public class IdPredicate extends Predicate<ConceptId> {
     }
 
     @Override
+    public int alphaEquivalenceHashCode() {
+        return getPredicateValue().hashCode();
+    }
+
+    @Override
     public int structuralEquivalenceHashCode() {
         return 1;
     }
 
     @Override
     public Atomic copy(ReasonerQuery parent) {
-        return create(this, parent);
-    }
-
-    @Override
-    public void checkValid() {
-        ConceptId conceptId = getPredicate();
-        if (tx().getConcept(conceptId) == null) {
-            throw ReasonerCheckedException.idNotFound(conceptId);
-        }
+        return create( this, parent);
     }
 
     @Override
@@ -124,16 +102,15 @@ public class IdPredicate extends Predicate<ConceptId> {
     /**
      * @return corresponding value predicate if transformation exists (id corresponds to an attribute concept)
      */
-    public ValuePredicate toValuePredicate() {
-        Concept concept = tx().getConcept(this.getPredicate());
+    public ValuePredicate toValuePredicate(ConceptManager conceptManager) {
+        Concept concept = conceptManager.getConcept(this.getPredicate());
         Object value = (concept != null && concept.isAttribute()) ? concept.asAttribute().value() : null;
 
         if (value != null) {
             return ValuePredicate.create(this.getVarName(),
                                          ValueProperty.Operation.Comparison.of(Graql.Token.Comparator.EQV, value),
                                          this.getParentQuery());
-        } else {
-            return null;
         }
+        return null;
     }
 }

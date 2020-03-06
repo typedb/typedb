@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -19,8 +18,6 @@
 package grakn.core.server.rpc;
 
 import grakn.core.common.exception.GraknException;
-import grakn.core.concept.answer.Void;
-import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.concept.answer.AnswerGroup;
 import grakn.core.concept.answer.ConceptList;
 import grakn.core.concept.answer.ConceptMap;
@@ -28,11 +25,13 @@ import grakn.core.concept.answer.ConceptSet;
 import grakn.core.concept.answer.ConceptSetMeasure;
 import grakn.core.concept.answer.Explanation;
 import grakn.core.concept.answer.Numeric;
+import grakn.core.concept.answer.Void;
 import grakn.core.kb.concept.api.AttributeType;
-import grakn.core.kb.server.exception.GraqlSemanticException;
+import grakn.core.kb.concept.api.ConceptId;
+import grakn.core.kb.concept.structure.PropertyNotUniqueException;
+import grakn.core.kb.graql.exception.GraqlSemanticException;
 import grakn.core.kb.server.exception.GraknServerException;
 import grakn.core.kb.server.exception.InvalidKBException;
-import grakn.core.kb.concept.structure.PropertyNotUniqueException;
 import grakn.core.kb.server.exception.TemporaryWriteException;
 import grakn.core.kb.server.exception.TransactionException;
 import grakn.protocol.session.AnswerProto;

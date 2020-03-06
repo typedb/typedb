@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -21,14 +20,13 @@ package grakn.core.graql.reasoner.query;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import grakn.core.graql.reasoner.atom.AtomicEquivalence;
-import grakn.core.kb.graql.reasoner.atom.Atomic;
+import grakn.core.common.config.Config;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
-import grakn.core.rule.GraknTestServer;
+import grakn.core.rule.GraknTestStorage;
+import grakn.core.rule.SessionUtil;
+import grakn.core.rule.TestTransactionProvider;
 import graql.lang.Graql;
-import graql.lang.pattern.Conjunction;
-import graql.lang.statement.Statement;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -40,12 +38,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
+import static grakn.core.graql.reasoner.query.QueryTestUtil.atomicEquivalence;
+import static grakn.core.graql.reasoner.query.QueryTestUtil.conjunction;
+import static grakn.core.graql.reasoner.query.QueryTestUtil.queryEquivalence;
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
-import static java.util.stream.Collectors.toSet;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 @SuppressWarnings("CheckReturnValue")
 public class AtomicQueryEquivalenceIT {
@@ -53,15 +50,18 @@ public class AtomicQueryEquivalenceIT {
     private static String resourcePath = "test-integration/graql/reasoner/resources/";
 
     @ClassRule
-    public static final GraknTestServer server = new GraknTestServer();
+    public static final GraknTestStorage storage = new GraknTestStorage();
 
     private static Session genericSchemaSession;
 
     private Transaction tx;
+    // Transaction-bound reasonerQueryFactory
+    private ReasonerQueryFactory reasonerQueryFactory;
 
     @BeforeClass
     public static void loadContext(){
-        genericSchemaSession = server.sessionWithNewKeyspace();
+        Config mockServerConfig = storage.createCompatibleServerConfig();
+        genericSchemaSession = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig);
         loadFromFileAndCommit(resourcePath, "genericSchema.gql", genericSchemaSession);
     }
 
@@ -73,6 +73,7 @@ public class AtomicQueryEquivalenceIT {
     @Before
     public void setUp(){
         tx = genericSchemaSession.writeTransaction();
+        reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
     }
 
     @After
@@ -82,6 +83,8 @@ public class AtomicQueryEquivalenceIT {
 
     @Test
     public void testEquivalence_DifferentIsaVariants(){
+        ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
+
         String query = "{ $x isa baseRoleEntity; };";
         String query2 = "{ $y isa $type;$type type baseRoleEntity; };";
         String query3 = "{ $z isa $t;$t type baseRoleEntity; };";
@@ -90,20 +93,20 @@ public class AtomicQueryEquivalenceIT {
 
         ArrayList<String> queries = Lists.newArrayList(query, query2, query3, query4, query5);
 
-        equivalence(query, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, tx);
-        equivalence(query, queries, new ArrayList<>(), ReasonerQueryEquivalence.StructuralEquivalence, tx);
+        equivalence(query, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, reasonerQueryFactory);
+        equivalence(query, queries, new ArrayList<>(), ReasonerQueryEquivalence.StructuralEquivalence, reasonerQueryFactory);
 
-        equivalence(query2, queries, Lists.newArrayList(query3), ReasonerQueryEquivalence.AlphaEquivalence, tx);
-        equivalence(query2, queries, Lists.newArrayList(query3), ReasonerQueryEquivalence.StructuralEquivalence, tx);
+        equivalence(query2, queries, Lists.newArrayList(query3), ReasonerQueryEquivalence.AlphaEquivalence, reasonerQueryFactory);
+        equivalence(query2, queries, Lists.newArrayList(query3), ReasonerQueryEquivalence.StructuralEquivalence, reasonerQueryFactory);
 
-        equivalence(query3, queries, Lists.newArrayList(query2), ReasonerQueryEquivalence.AlphaEquivalence, tx);
-        equivalence(query3, queries, Lists.newArrayList(query2), ReasonerQueryEquivalence.StructuralEquivalence, tx);
+        equivalence(query3, queries, Lists.newArrayList(query2), ReasonerQueryEquivalence.AlphaEquivalence, reasonerQueryFactory);
+        equivalence(query3, queries, Lists.newArrayList(query2), ReasonerQueryEquivalence.StructuralEquivalence, reasonerQueryFactory);
 
-        equivalence(query4, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, tx);
-        equivalence(query4, queries, new ArrayList<>(), ReasonerQueryEquivalence.StructuralEquivalence, tx);
+        equivalence(query4, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, reasonerQueryFactory);
+        equivalence(query4, queries, new ArrayList<>(), ReasonerQueryEquivalence.StructuralEquivalence, reasonerQueryFactory);
 
-        equivalence(query5, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, tx);
-        equivalence(query5, queries, new ArrayList<>(), ReasonerQueryEquivalence.StructuralEquivalence, tx);
+        equivalence(query5, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, reasonerQueryFactory);
+        equivalence(query5, queries, new ArrayList<>(), ReasonerQueryEquivalence.StructuralEquivalence, reasonerQueryFactory);
     }
 
     @Test
@@ -122,6 +125,7 @@ public class AtomicQueryEquivalenceIT {
     }
 
     private void testEquivalence_DifferentOntologicalVariants(Transaction tx, String keyword, String label, String label2){
+
         String query = "{ $x " + keyword + " " + label + "; };";
         String query2 = "{ $y " + keyword + " $type;$type type " + label +"; };";
         String query3 = "{ $z " + keyword + " $t;$t type " + label +"; };";
@@ -130,20 +134,20 @@ public class AtomicQueryEquivalenceIT {
 
         ArrayList<String> queries = Lists.newArrayList(query, query2, query3, query4, query5);
 
-        equivalence(query, queries, Lists.newArrayList(query2, query3), ReasonerQueryEquivalence.AlphaEquivalence, tx);
-        equivalence(query, queries, Lists.newArrayList(query2, query3), ReasonerQueryEquivalence.StructuralEquivalence, tx);
+        equivalence(query, queries, Lists.newArrayList(query2, query3), ReasonerQueryEquivalence.AlphaEquivalence, reasonerQueryFactory);
+        equivalence(query, queries, Lists.newArrayList(query2, query3), ReasonerQueryEquivalence.StructuralEquivalence, reasonerQueryFactory);
 
-        equivalence(query2, queries, Lists.newArrayList(query, query3), ReasonerQueryEquivalence.AlphaEquivalence, tx);
-        equivalence(query2, queries, Lists.newArrayList(query, query3), ReasonerQueryEquivalence.StructuralEquivalence, tx);
+        equivalence(query2, queries, Lists.newArrayList(query, query3), ReasonerQueryEquivalence.AlphaEquivalence, reasonerQueryFactory);
+        equivalence(query2, queries, Lists.newArrayList(query, query3), ReasonerQueryEquivalence.StructuralEquivalence, reasonerQueryFactory);
 
-        equivalence(query3, queries, Lists.newArrayList(query, query2), ReasonerQueryEquivalence.AlphaEquivalence, tx);
-        equivalence(query3, queries, Lists.newArrayList(query, query2), ReasonerQueryEquivalence.StructuralEquivalence, tx);
+        equivalence(query3, queries, Lists.newArrayList(query, query2), ReasonerQueryEquivalence.AlphaEquivalence, reasonerQueryFactory);
+        equivalence(query3, queries, Lists.newArrayList(query, query2), ReasonerQueryEquivalence.StructuralEquivalence, reasonerQueryFactory);
 
-        equivalence(query4, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, tx);
-        equivalence(query4, queries, new ArrayList<>(), ReasonerQueryEquivalence.StructuralEquivalence, tx);
+        equivalence(query4, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, reasonerQueryFactory);
+        equivalence(query4, queries, new ArrayList<>(), ReasonerQueryEquivalence.StructuralEquivalence, reasonerQueryFactory);
 
-        equivalence(query5, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, tx);
-        equivalence(query5, queries, new ArrayList<>(), ReasonerQueryEquivalence.StructuralEquivalence, tx);
+        equivalence(query5, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, reasonerQueryFactory);
+        equivalence(query5, queries, new ArrayList<>(), ReasonerQueryEquivalence.StructuralEquivalence, reasonerQueryFactory);
     }
 
     @Test
@@ -154,14 +158,14 @@ public class AtomicQueryEquivalenceIT {
 
         ArrayList<String> queries = Lists.newArrayList(query, query2, query3);
 
-        equivalence(query, queries, Lists.newArrayList(query2), ReasonerQueryEquivalence.AlphaEquivalence, tx);
-        equivalence(query, queries, Lists.newArrayList(query2), ReasonerQueryEquivalence.StructuralEquivalence, tx);
+        equivalence(query, queries, Lists.newArrayList(query2), ReasonerQueryEquivalence.AlphaEquivalence, reasonerQueryFactory);
+        equivalence(query, queries, Lists.newArrayList(query2), ReasonerQueryEquivalence.StructuralEquivalence, reasonerQueryFactory);
 
-        equivalence(query2, queries, Lists.newArrayList(query), ReasonerQueryEquivalence.AlphaEquivalence, tx);
-        equivalence(query2, queries, Lists.newArrayList(query), ReasonerQueryEquivalence.StructuralEquivalence, tx);
+        equivalence(query2, queries, Lists.newArrayList(query), ReasonerQueryEquivalence.AlphaEquivalence, reasonerQueryFactory);
+        equivalence(query2, queries, Lists.newArrayList(query), ReasonerQueryEquivalence.StructuralEquivalence, reasonerQueryFactory);
 
-        equivalence(query3, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, tx);
-        equivalence(query3, queries, new ArrayList<>(), ReasonerQueryEquivalence.StructuralEquivalence, tx);
+        equivalence(query3, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, reasonerQueryFactory);
+        equivalence(query3, queries, new ArrayList<>(), ReasonerQueryEquivalence.StructuralEquivalence, reasonerQueryFactory);
     }
 
     @Test
@@ -176,20 +180,20 @@ public class AtomicQueryEquivalenceIT {
 
         ArrayList<String> queries = Lists.newArrayList(isaQuery, subQuery, playsQuery, relatesQuery, hasQuery, subQuery2);
 
-        equivalence(isaQuery, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, tx);
-        equivalence(isaQuery, queries, new ArrayList<>(), ReasonerQueryEquivalence.StructuralEquivalence, tx);
+        equivalence(isaQuery, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, reasonerQueryFactory);
+        equivalence(isaQuery, queries, new ArrayList<>(), ReasonerQueryEquivalence.StructuralEquivalence, reasonerQueryFactory);
 
-        equivalence(subQuery, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, tx);
-        equivalence(subQuery, queries, new ArrayList<>(), ReasonerQueryEquivalence.StructuralEquivalence, tx);
+        equivalence(subQuery, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, reasonerQueryFactory);
+        equivalence(subQuery, queries, new ArrayList<>(), ReasonerQueryEquivalence.StructuralEquivalence, reasonerQueryFactory);
 
-        equivalence(playsQuery, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, tx);
-        equivalence(playsQuery, queries, new ArrayList<>(), ReasonerQueryEquivalence.StructuralEquivalence, tx);
+        equivalence(playsQuery, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, reasonerQueryFactory);
+        equivalence(playsQuery, queries, new ArrayList<>(), ReasonerQueryEquivalence.StructuralEquivalence, reasonerQueryFactory);
 
-        equivalence(relatesQuery, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, tx);
-        equivalence(relatesQuery, queries, new ArrayList<>(), ReasonerQueryEquivalence.StructuralEquivalence, tx);
+        equivalence(relatesQuery, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, reasonerQueryFactory);
+        equivalence(relatesQuery, queries, new ArrayList<>(), ReasonerQueryEquivalence.StructuralEquivalence, reasonerQueryFactory);
 
-        equivalence(hasQuery, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, tx);
-        equivalence(hasQuery, queries, new ArrayList<>(), ReasonerQueryEquivalence.StructuralEquivalence, tx);
+        equivalence(hasQuery, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, reasonerQueryFactory);
+        equivalence(hasQuery, queries, new ArrayList<>(), ReasonerQueryEquivalence.StructuralEquivalence, reasonerQueryFactory);
     }
 
     @Test
@@ -215,8 +219,8 @@ public class AtomicQueryEquivalenceIT {
             queries.stream()
                     .filter(qB -> !qA.equals(qB))
                     .forEach(qB -> {
-                        equivalence(qA, qB, false, ReasonerQueryEquivalence.AlphaEquivalence, tx);
-                        equivalence(qA, qB, false, ReasonerQueryEquivalence.StructuralEquivalence, tx);
+                        equivalence(qA, qB, false, ReasonerQueryEquivalence.AlphaEquivalence, reasonerQueryFactory);
+                        equivalence(qA, qB, false, ReasonerQueryEquivalence.StructuralEquivalence, reasonerQueryFactory);
                     });
         });
     }
@@ -226,8 +230,8 @@ public class AtomicQueryEquivalenceIT {
         String query = "{ (baseRole1: $x, baseRole2: $y); };";
         String query2 = "{ (baseRole1: $x, baseRole2: $x); };";
 
-        equivalence(query, query2, false, ReasonerQueryEquivalence.AlphaEquivalence, tx);
-        equivalence(query, query2, false, ReasonerQueryEquivalence.StructuralEquivalence, tx);
+        equivalence(query, query2, false, ReasonerQueryEquivalence.AlphaEquivalence, reasonerQueryFactory);
+        equivalence(query, query2, false, ReasonerQueryEquivalence.StructuralEquivalence, reasonerQueryFactory);
     }
 
     @Test
@@ -243,26 +247,26 @@ public class AtomicQueryEquivalenceIT {
 
         ArrayList<String> queries = Lists.newArrayList(query, query2, query3, query4, query5, query6, query7, query8);
 
-        equivalence(query, queries, Collections.singletonList(query2), ReasonerQueryEquivalence.AlphaEquivalence, tx);
-        equivalence(query, queries, Collections.singletonList(query2), ReasonerQueryEquivalence.StructuralEquivalence, tx);
+        equivalence(query, queries, Collections.singletonList(query2), ReasonerQueryEquivalence.AlphaEquivalence, reasonerQueryFactory);
+        equivalence(query, queries, Collections.singletonList(query2), ReasonerQueryEquivalence.StructuralEquivalence, reasonerQueryFactory);
 
-        equivalence(query2, queries, Collections.singletonList(query), ReasonerQueryEquivalence.AlphaEquivalence, tx);
-        equivalence(query2, queries, Collections.singletonList(query), ReasonerQueryEquivalence.StructuralEquivalence, tx);
+        equivalence(query2, queries, Collections.singletonList(query), ReasonerQueryEquivalence.AlphaEquivalence, reasonerQueryFactory);
+        equivalence(query2, queries, Collections.singletonList(query), ReasonerQueryEquivalence.StructuralEquivalence, reasonerQueryFactory);
 
-        equivalence(query3, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, tx);
-        equivalence(query3, queries, new ArrayList<>(), ReasonerQueryEquivalence.StructuralEquivalence, tx);
+        equivalence(query3, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, reasonerQueryFactory);
+        equivalence(query3, queries, new ArrayList<>(), ReasonerQueryEquivalence.StructuralEquivalence, reasonerQueryFactory);
 
-        equivalence(query4, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, tx);
-        equivalence(query4, queries, new ArrayList<>(), ReasonerQueryEquivalence.StructuralEquivalence, tx);
+        equivalence(query4, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, reasonerQueryFactory);
+        equivalence(query4, queries, new ArrayList<>(), ReasonerQueryEquivalence.StructuralEquivalence, reasonerQueryFactory);
 
-        equivalence(query5, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, tx);
-        equivalence(query5, queries, new ArrayList<>(), ReasonerQueryEquivalence.StructuralEquivalence, tx);
+        equivalence(query5, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, reasonerQueryFactory);
+        equivalence(query5, queries, new ArrayList<>(), ReasonerQueryEquivalence.StructuralEquivalence, reasonerQueryFactory);
 
-        equivalence(query6, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, tx);
-        equivalence(query6, queries, new ArrayList<>(), ReasonerQueryEquivalence.StructuralEquivalence, tx);
+        equivalence(query6, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, reasonerQueryFactory);
+        equivalence(query6, queries, new ArrayList<>(), ReasonerQueryEquivalence.StructuralEquivalence, reasonerQueryFactory);
 
-        equivalence(query7, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, tx);
-        equivalence(query7, queries, new ArrayList<>(), ReasonerQueryEquivalence.StructuralEquivalence, tx);
+        equivalence(query7, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, reasonerQueryFactory);
+        equivalence(query7, queries, new ArrayList<>(), ReasonerQueryEquivalence.StructuralEquivalence, reasonerQueryFactory);
     }
 
     @Test
@@ -280,26 +284,26 @@ public class AtomicQueryEquivalenceIT {
 
         ArrayList<String> queries = Lists.newArrayList(query, queryb, query2, query2b, query3, query4, query5);
 
-        equivalence(query, queries, Collections.singletonList(queryb), ReasonerQueryEquivalence.AlphaEquivalence, tx);
-        equivalence(query, queries, Collections.singletonList(queryb), ReasonerQueryEquivalence.StructuralEquivalence, tx);
+        equivalence(query, queries, Collections.singletonList(queryb), ReasonerQueryEquivalence.AlphaEquivalence, reasonerQueryFactory);
+        equivalence(query, queries, Collections.singletonList(queryb), ReasonerQueryEquivalence.StructuralEquivalence, reasonerQueryFactory);
 
-        equivalence(queryb, queries, Collections.singletonList(query), ReasonerQueryEquivalence.AlphaEquivalence, tx);
-        equivalence(queryb, queries, Collections.singletonList(query), ReasonerQueryEquivalence.StructuralEquivalence, tx);
+        equivalence(queryb, queries, Collections.singletonList(query), ReasonerQueryEquivalence.AlphaEquivalence, reasonerQueryFactory);
+        equivalence(queryb, queries, Collections.singletonList(query), ReasonerQueryEquivalence.StructuralEquivalence, reasonerQueryFactory);
 
-        equivalence(query2, queries, Collections.singletonList(query2b), ReasonerQueryEquivalence.AlphaEquivalence, tx);
-        equivalence(query2, queries, Lists.newArrayList(query2b, query3), ReasonerQueryEquivalence.StructuralEquivalence, tx);
+        equivalence(query2, queries, Collections.singletonList(query2b), ReasonerQueryEquivalence.AlphaEquivalence, reasonerQueryFactory);
+        equivalence(query2, queries, Lists.newArrayList(query2b, query3), ReasonerQueryEquivalence.StructuralEquivalence, reasonerQueryFactory);
 
-        equivalence(query2b, queries, Collections.singletonList(query2), ReasonerQueryEquivalence.AlphaEquivalence, tx);
-        equivalence(query2b, queries, Lists.newArrayList(query2, query3), ReasonerQueryEquivalence.StructuralEquivalence, tx);
+        equivalence(query2b, queries, Collections.singletonList(query2), ReasonerQueryEquivalence.AlphaEquivalence, reasonerQueryFactory);
+        equivalence(query2b, queries, Lists.newArrayList(query2, query3), ReasonerQueryEquivalence.StructuralEquivalence, reasonerQueryFactory);
 
-        equivalence(query4, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, tx);
-        equivalence(query4, queries, Collections.singletonList(query5), ReasonerQueryEquivalence.StructuralEquivalence, tx);
+        equivalence(query4, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, reasonerQueryFactory);
+        equivalence(query4, queries, Collections.singletonList(query5), ReasonerQueryEquivalence.StructuralEquivalence, reasonerQueryFactory);
 
-        equivalence(query5, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, tx);
-        equivalence(query5, queries, Collections.singletonList(query4), ReasonerQueryEquivalence.StructuralEquivalence, tx);
+        equivalence(query5, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, reasonerQueryFactory);
+        equivalence(query5, queries, Collections.singletonList(query4), ReasonerQueryEquivalence.StructuralEquivalence, reasonerQueryFactory);
 
-        equivalence(query3, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, tx);
-        equivalence(query3, queries, Lists.newArrayList(query2, query2b), ReasonerQueryEquivalence.StructuralEquivalence, tx);
+        equivalence(query3, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, reasonerQueryFactory);
+        equivalence(query3, queries, Lists.newArrayList(query2, query2b), ReasonerQueryEquivalence.StructuralEquivalence, reasonerQueryFactory);
     }
 
     @Test
@@ -313,20 +317,20 @@ public class AtomicQueryEquivalenceIT {
         String query6 = "{ (baseRole1: $x, baseRole2: $y);$y id V666;$x id V667; };";
         ArrayList<String> queries = Lists.newArrayList(query, query2, query3, query4, query6);
 
-        equivalence(query, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, tx);
-        equivalence(query, queries, Collections.singletonList(query2), ReasonerQueryEquivalence.StructuralEquivalence, tx);
+        equivalence(query, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, reasonerQueryFactory);
+        equivalence(query, queries, Collections.singletonList(query2), ReasonerQueryEquivalence.StructuralEquivalence, reasonerQueryFactory);
 
-        equivalence(query2, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, tx);
-        equivalence(query2, queries, Collections.singletonList(query), ReasonerQueryEquivalence.StructuralEquivalence, tx);
+        equivalence(query2, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, reasonerQueryFactory);
+        equivalence(query2, queries, Collections.singletonList(query), ReasonerQueryEquivalence.StructuralEquivalence, reasonerQueryFactory);
 
-        equivalence(query3, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, tx);
-        equivalence(query3, queries, Collections.singletonList(query4), ReasonerQueryEquivalence.StructuralEquivalence, tx);
+        equivalence(query3, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, reasonerQueryFactory);
+        equivalence(query3, queries, Collections.singletonList(query4), ReasonerQueryEquivalence.StructuralEquivalence, reasonerQueryFactory);
 
-        equivalence(query4, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, tx);
-        equivalence(query4, queries, Collections.singletonList(query3), ReasonerQueryEquivalence.StructuralEquivalence, tx);
+        equivalence(query4, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, reasonerQueryFactory);
+        equivalence(query4, queries, Collections.singletonList(query3), ReasonerQueryEquivalence.StructuralEquivalence, reasonerQueryFactory);
 
-        equivalence(query5, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, tx);
-        equivalence(query5, queries, Collections.singletonList(query6), ReasonerQueryEquivalence.StructuralEquivalence, tx);
+        equivalence(query5, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, reasonerQueryFactory);
+        equivalence(query5, queries, Collections.singletonList(query6), ReasonerQueryEquivalence.StructuralEquivalence, reasonerQueryFactory);
     }
 
     @Test
@@ -341,20 +345,20 @@ public class AtomicQueryEquivalenceIT {
         String query6 = "{ (baseRole1: $x, baseRole2: $y);$y == 'V666';$x == 'V667'; };";
         ArrayList<String> queries = Lists.newArrayList(query, query2, query3, query4, query5, query6);
 
-        equivalence(query, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, tx);
-        equivalence(query, queries, new ArrayList<>(), ReasonerQueryEquivalence.StructuralEquivalence, tx);
+        equivalence(query, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, reasonerQueryFactory);
+        equivalence(query, queries, new ArrayList<>(), ReasonerQueryEquivalence.StructuralEquivalence, reasonerQueryFactory);
 
-        equivalence(query2, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, tx);
-        equivalence(query2, queries, new ArrayList<>(), ReasonerQueryEquivalence.StructuralEquivalence, tx);
+        equivalence(query2, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, reasonerQueryFactory);
+        equivalence(query2, queries, new ArrayList<>(), ReasonerQueryEquivalence.StructuralEquivalence, reasonerQueryFactory);
 
-        equivalence(query3, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, tx);
-        equivalence(query3, queries, new ArrayList<>(), ReasonerQueryEquivalence.StructuralEquivalence, tx);
+        equivalence(query3, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, reasonerQueryFactory);
+        equivalence(query3, queries, new ArrayList<>(), ReasonerQueryEquivalence.StructuralEquivalence, reasonerQueryFactory);
 
-        equivalence(query4, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, tx);
-        equivalence(query4, queries, new ArrayList<>(), ReasonerQueryEquivalence.StructuralEquivalence, tx);
+        equivalence(query4, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, reasonerQueryFactory);
+        equivalence(query4, queries, new ArrayList<>(), ReasonerQueryEquivalence.StructuralEquivalence, reasonerQueryFactory);
 
-        equivalence(query5, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, tx);
-        equivalence(query5, queries, new ArrayList<>(), ReasonerQueryEquivalence.StructuralEquivalence, tx);
+        equivalence(query5, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, reasonerQueryFactory);
+        equivalence(query5, queries, new ArrayList<>(), ReasonerQueryEquivalence.StructuralEquivalence, reasonerQueryFactory);
     }
 
     @Test
@@ -364,65 +368,24 @@ public class AtomicQueryEquivalenceIT {
         String query3 = "{ $b (baseRole2: $y);$y id V666; };";
         ArrayList<String> queries = Lists.newArrayList(query, query2, query3);
 
-        equivalence(query, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, tx);
-        equivalence(query, queries, Collections.singletonList(query2), ReasonerQueryEquivalence.StructuralEquivalence, tx);
+        equivalence(query, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, reasonerQueryFactory);
+        equivalence(query, queries, Collections.singletonList(query2), ReasonerQueryEquivalence.StructuralEquivalence, reasonerQueryFactory);
 
-        equivalence(query2, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, tx);
-        equivalence(query2, queries, Collections.singletonList(query), ReasonerQueryEquivalence.StructuralEquivalence, tx);
+        equivalence(query2, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, reasonerQueryFactory);
+        equivalence(query2, queries, Collections.singletonList(query), ReasonerQueryEquivalence.StructuralEquivalence, reasonerQueryFactory);
 
-        equivalence(query3, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, tx);
-        equivalence(query3, queries, new ArrayList<>(), ReasonerQueryEquivalence.StructuralEquivalence, tx);
+        equivalence(query3, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, reasonerQueryFactory);
+        equivalence(query3, queries, new ArrayList<>(), ReasonerQueryEquivalence.StructuralEquivalence, reasonerQueryFactory);
     }
 
-    private void equivalence(String target, List<String> queries, List<String> equivalentQueries, ReasonerQueryEquivalence equiv, Transaction tx){
-        queries.forEach(q -> equivalence(target, q, equivalentQueries.contains(q) || q.equals(target), equiv, tx));
+    private void equivalence(String target, List<String> queries, List<String> equivalentQueries, ReasonerQueryEquivalence equiv, ReasonerQueryFactory reasonerQueryFactory){
+        queries.forEach(q -> equivalence(target, q, equivalentQueries.contains(q) || q.equals(target), equiv,reasonerQueryFactory));
     }
 
-    private void equivalence(String patternA, String patternB, boolean expectation, ReasonerQueryEquivalence equiv, Transaction tx){
-        ReasonerAtomicQuery a = ReasonerQueries.atomic(conjunction(patternA), tx);
-        ReasonerAtomicQuery b = ReasonerQueries.atomic(conjunction(patternB), tx);
+    private void equivalence(String patternA, String patternB, boolean expectation, ReasonerQueryEquivalence equiv, ReasonerQueryFactory reasonerQueryFactory){
+        ReasonerAtomicQuery a = reasonerQueryFactory.atomic(conjunction(patternA));
+        ReasonerAtomicQuery b = reasonerQueryFactory.atomic(conjunction(patternB));
         queryEquivalence(a, b, expectation, equiv);
         atomicEquivalence(a.getAtom(), b.getAtom(), expectation, equiv.atomicEquivalence());
     }
-
-
-    private void queryEquivalence(ReasonerAtomicQuery a, ReasonerAtomicQuery b, boolean queryExpectation, ReasonerQueryEquivalence equiv){
-        singleQueryEquivalence(a, a, true, equiv);
-        singleQueryEquivalence(b, b, true, equiv);
-        singleQueryEquivalence(a, b, queryExpectation, equiv);
-        singleQueryEquivalence(b, a, queryExpectation, equiv);
-    }
-
-    private void atomicEquivalence(Atomic a, Atomic b, boolean expectation, AtomicEquivalence equiv){
-        singleAtomicEquivalence(a, a, true, equiv);
-        singleAtomicEquivalence(b, b, true, equiv);
-        singleAtomicEquivalence(a, b, expectation, equiv);
-        singleAtomicEquivalence(b, a, expectation, equiv);
-    }
-
-    private void singleQueryEquivalence(ReasonerAtomicQuery a, ReasonerAtomicQuery b, boolean queryExpectation, ReasonerQueryEquivalence equiv){
-        assertEquals(equiv.name() + " - Query:\n" + a + "\n=?\n" + b, queryExpectation, equiv.equivalent(a, b));
-
-        //check hash additionally if need to be equal
-        if (queryExpectation) {
-            assertTrue(equiv.name() + ":\n" + a + "\nhash=?\n" + b, equiv.hash(a) == equiv.hash(b));
-        }
-    }
-
-    private void singleAtomicEquivalence(Atomic a, Atomic b, boolean expectation, AtomicEquivalence equivalence){
-        assertEquals(equivalence.name() + " - Atom:\n" + a + "\n=?\n" + b, expectation,  equivalence.equivalent(a, b));
-
-        //check hash additionally if need to be equal
-        if (expectation) {
-            assertTrue(equivalence.name() + ":\n" + a + "\nhash=?\n" + b, equivalence.hash(a) == equivalence.hash(b));
-        }
-    }
-
-    private Conjunction<Statement> conjunction(String patternString){
-        Set<Statement> vars = Graql.parsePattern(patternString)
-                .getDisjunctiveNormalForm().getPatterns()
-                .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
-        return Graql.and(vars);
-    }
-
 }

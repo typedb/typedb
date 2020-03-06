@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -26,8 +25,10 @@ import com.google.common.collect.Sets;
 import grakn.common.util.Pair;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.CacheCasting;
+import grakn.core.graql.reasoner.ReasoningContext;
 import grakn.core.graql.reasoner.atom.Atom;
-import grakn.core.graql.reasoner.atom.AtomicFactory;
+import grakn.core.graql.reasoner.atom.AtomicUtil;
+import grakn.core.graql.reasoner.atom.PropertyAtomicFactory;
 import grakn.core.graql.reasoner.atom.binary.TypeAtom;
 import grakn.core.graql.reasoner.atom.predicate.VariablePredicate;
 import grakn.core.graql.reasoner.cache.SemanticDifference;
@@ -42,16 +43,19 @@ import grakn.core.graql.reasoner.state.VariableComparisonState;
 import grakn.core.graql.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.graql.reasoner.utils.ReasonerUtils;
+import grakn.core.kb.graql.executor.ExecutorFactory;
+import grakn.core.kb.graql.planning.gremlin.TraversalPlanFactory;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
+import grakn.core.kb.graql.reasoner.cache.QueryCache;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
-import grakn.core.kb.server.Transaction;
 import graql.lang.pattern.Conjunction;
 import graql.lang.statement.Statement;
 
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -64,23 +68,36 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
     private final Atom atom;
 
-    ReasonerAtomicQuery(Conjunction<Statement> pattern, Transaction tx) {
-        super(pattern, tx);
+    /**
+     * BUILDER constructor should only be used in the ReasonerQueryFactory because it utilises
+     * the setAtomSet method to work around an ordering constraint
+     */
+    ReasonerAtomicQuery(Conjunction<Statement> pattern, PropertyAtomicFactory propertyAtomicFactory,
+                        ExecutorFactory executorFactory, TraversalPlanFactory traversalPlanFactory, ReasoningContext ctx) {
+        super(pattern, propertyAtomicFactory, executorFactory, traversalPlanFactory, ctx);
         this.atom = Iterables.getOnlyElement(selectAtoms()::iterator);
     }
 
+    /**
+     * Copy constructor
+     * @param query
+     */
     ReasonerAtomicQuery(ReasonerQueryImpl query) {
         super(query);
         this.atom = Iterables.getOnlyElement(selectAtoms()::iterator);
     }
 
-    ReasonerAtomicQuery(Atom at) {
-        super(at);
+    private ReasonerAtomicQuery(List<Atom> atomsToPropagate, ExecutorFactory executorFactory, TraversalPlanFactory traversalPlanFactory, ReasoningContext ctx) {
+        super(atomsToPropagate, executorFactory, traversalPlanFactory, ctx);
         this.atom = Iterables.getOnlyElement(selectAtoms()::iterator);
     }
 
-    ReasonerAtomicQuery(Set<Atomic> atoms, Transaction tx){
-        super(atoms, tx);
+    ReasonerAtomicQuery(Atom atomToPropagate, ExecutorFactory executorFactory, TraversalPlanFactory traversalPlanFactory, ReasoningContext ctx) {
+        this(Collections.singletonList(atomToPropagate), executorFactory, traversalPlanFactory, ctx);
+    }
+
+    ReasonerAtomicQuery(Set<Atomic> atomsToCopy, ExecutorFactory executorFactory, TraversalPlanFactory traversalPlanFactory, ReasoningContext ctx) {
+        super(atomsToCopy, executorFactory, traversalPlanFactory, ctx);
         this.atom = Iterables.getOnlyElement(selectAtoms()::iterator);
     }
 
@@ -89,12 +106,13 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
     @Override
     public ReasonerAtomicQuery withSubstitution(ConceptMap sub){
-        return new ReasonerAtomicQuery(Sets.union(this.getAtoms(), AtomicFactory.answerToPredicates(sub, this)), this.tx());
+        Set<Atomic> union = Sets.union(getAtoms(), AtomicUtil.answerToPredicates(sub, this));
+        return new ReasonerAtomicQuery(union, executorFactory, traversalPlanFactory, context());
     }
 
     @Override
     public ReasonerAtomicQuery inferTypes() {
-        return new ReasonerAtomicQuery(getAtoms().stream().map(Atomic::inferTypes).collect(Collectors.toSet()), tx());
+        return new ReasonerAtomicQuery(getAtoms().stream().map(Atomic::inferTypes).collect(Collectors.toSet()), executorFactory, traversalPlanFactory, context());
     }
 
     @Override
@@ -104,6 +122,22 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     public boolean isAtomic(){ return true;}
 
     public boolean hasUniqueAnswer(){ return getAtom().hasUniqueAnswer();}
+
+    /**
+     * @param parent query to compare with
+     * @return true if this query is subsumed by the provided query
+     */
+    public boolean isSubsumedBy(ReasonerAtomicQuery parent){
+        return isSubsumedBy(parent, UnifierType.SUBSUMPTIVE);
+    }
+
+    /**
+     * @param parent query to compare with
+     * @return true if this query is structurally subsumed by the provided query
+     */
+    public boolean isSubsumedStructurallyBy(ReasonerAtomicQuery parent){
+        return isSubsumedBy(parent, UnifierType.STRUCTURAL_SUBSUMPTIVE);
+    }
 
     /**
      * Determines whether the subsumption relation between this (C) and provided query (P) holds,
@@ -118,10 +152,11 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
      * i. e. the set of answers of C is a subset of the set of answers of P
      *
      * @param parent query to compare with
-     * @return true if this query subsumes the provided query
+     * @param unifierType unifier type specifying subsumption type
+     * @return true if this query is subsumed by the provided query
      */
-    public boolean subsumes(ReasonerAtomicQuery parent){
-        MultiUnifier multiUnifier = this.getMultiUnifier(parent, UnifierType.SUBSUMPTIVE);
+    private boolean isSubsumedBy(ReasonerAtomicQuery parent, UnifierType unifierType){
+        MultiUnifier multiUnifier = this.getMultiUnifier(parent, unifierType);
         if (multiUnifier.isEmpty()) return false;
         MultiUnifier inverse = multiUnifier.inverse();
 
@@ -129,8 +164,8 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         boolean propagatedAnswersComplete = !inverse.isEmpty() &&
                 inverse.stream().allMatch(u -> u.values().containsAll(this.getVarNames()));
         return propagatedAnswersComplete
-                        && !parent.getAtoms(VariablePredicate.class).findFirst().isPresent()
-                        && !this.getAtoms(VariablePredicate.class).findFirst().isPresent();
+                && !parent.getAtoms(VariablePredicate.class).findFirst().isPresent()
+                && !this.getAtoms(VariablePredicate.class).findFirst().isPresent();
     }
 
     /**
@@ -175,11 +210,11 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
      * @return pair of: a parent->child unifier and a parent->child semantic difference between
      */
     public Set<Pair<Unifier, SemanticDifference>> getMultiUnifierWithSemanticDiff(ReasonerAtomicQuery child){
-        MultiUnifier unifier = child.getMultiUnifier(this, UnifierType.SUBSUMPTIVE);
+        MultiUnifier unifier = child.getMultiUnifier(this, UnifierType.STRUCTURAL_SUBSUMPTIVE);
         return unifier.stream()
                 .map(childParentUnifier -> {
                     Unifier inverse = childParentUnifier.inverse();
-                    return new Pair<>(inverse, this.getAtom().semanticDifference(child.getAtom(), inverse));
+                    return new Pair<>(inverse, this.getAtom().computeSemanticDifference(child.getAtom(), inverse));
                 })
                 .collect(Collectors.toSet());
     }
@@ -200,30 +235,31 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     public ResolutionState resolutionState(ConceptMap sub, Unifier u, AnswerPropagatorState parent, Set<ReasonerAtomicQuery> subGoals){
         if (getAtom().getSchemaConcept() == null) return new AtomicStateProducer(this, sub, u, parent, subGoals);
         return !containsVariablePredicates()?
-                new AtomicState(this, sub, u, parent, subGoals) :
+                new AtomicState(this, sub, u, parent, subGoals, context()) :
                 new VariableComparisonState(this, sub, u, parent, subGoals);
     }
 
     @Override
     protected Stream<ReasonerQueryImpl> getQueryStream(ConceptMap sub){
-        return getAtom().atomOptions(sub).stream().map(ReasonerAtomicQuery::new);
+        return getAtom().atomOptions(sub).stream().map(atom -> new ReasonerAtomicQuery(atom, executorFactory, traversalPlanFactory, context()));
     }
 
     @Override
     public Iterator<ResolutionState> innerStateIterator(AnswerPropagatorState parent, Set<ReasonerAtomicQuery> visitedSubGoals) {
-        Pair<Stream<ConceptMap>, MultiUnifier> cacheEntry = CacheCasting.queryCacheCast(tx().queryCache()).getAnswerStreamWithUnifier(this);
+        QueryCache queryCache = context().queryCache();
+        Pair<Stream<ConceptMap>, MultiUnifier> cacheEntry = CacheCasting.queryCacheCast(queryCache).getAnswerStreamWithUnifier(this);
         Iterator<AnswerState> dbIterator = cacheEntry.first()
                 .map(a -> a.explain(a.explanation(), this.getPattern()))
                 .map(ans -> new AnswerState(ans, parent.getUnifier(), parent))
                 .iterator();
 
         Iterator<ResolutionState> dbCompletionIterator =
-                Iterators.singletonIterator(new CacheCompletionState(this, new ConceptMap(), parent));
+                Iterators.singletonIterator(new CacheCompletionState(queryCache, this, new ConceptMap(), parent));
 
         boolean visited = visitedSubGoals.contains(this);
         //if this is ground and exists in the db then do not resolve further
         boolean doNotResolveFurther = visited
-                || CacheCasting.queryCacheCast(tx().queryCache()).isComplete(this)
+                || CacheCasting.queryCacheCast(queryCache).isComplete(this)
                 || (this.isGround() && dbIterator.hasNext());
         Iterator<ResolutionState> subGoalIterator = !doNotResolveFurther?
                 ruleStateIterator(parent, visitedSubGoals) :

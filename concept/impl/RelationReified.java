@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -24,9 +23,12 @@ import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.GraknConceptException;
 import grakn.core.kb.concept.api.Relation;
+import grakn.core.kb.concept.api.RelationStructure;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Thing;
+import grakn.core.kb.concept.manager.ConceptManager;
+import grakn.core.kb.concept.manager.ConceptNotificationChannel;
 import grakn.core.kb.concept.structure.Casting;
 import grakn.core.kb.concept.structure.EdgeElement;
 import grakn.core.kb.concept.structure.VertexElement;
@@ -54,8 +56,8 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
     @Nullable
     private RelationImpl owner;
 
-    RelationReified(VertexElement vertexElement, ConceptManagerImpl conceptManager, ConceptObserver conceptObserver) {
-        super(vertexElement, conceptManager, conceptObserver);
+    public RelationReified(VertexElement vertexElement, ConceptManager conceptManager, ConceptNotificationChannel conceptNotificationChannel) {
+        super(vertexElement, conceptManager, conceptNotificationChannel);
     }
 
     @Override
@@ -63,7 +65,7 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
         //TODO remove this once we fix the whole relation hierarchy
         // removing the owner as it is the real concept that gets cached.
         // trying to delete a RelationStructure will fail the concept.isRelation check leading to errors when deleting the relation from transactionCache
-        conceptObserver.deleteReifiedOwner(owner);
+        conceptNotificationChannel.deleteReifiedOwner(owner);
 
         super.delete();
     }
@@ -100,7 +102,7 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
                 findAny().
                 ifPresent(casting -> {
                     casting.delete();
-                    conceptObserver.castingDeleted(casting);
+                    conceptNotificationChannel.castingDeleted(casting);
                 });
     }
 
@@ -141,7 +143,7 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
         edge.property(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID, this.type().labelId().getValue());
         edge.property(Schema.EdgeProperty.ROLE_LABEL_ID, role.labelId().getValue());
         Casting casting = CastingImpl.create(edge, owner, role, toThing, conceptManager);
-        conceptObserver.rolePlayerCreated(casting);
+        conceptNotificationChannel.rolePlayerCreated(casting);
     }
 
     /**

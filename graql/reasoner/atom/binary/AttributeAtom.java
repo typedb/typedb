@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,43 +17,36 @@
  */
 package grakn.core.graql.reasoner.atom.binary;
 
-import com.google.common.collect.ImmutableMap;
+import com.google.common.base.Equivalence;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
-import grakn.core.common.exception.ErrorMessage;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.core.AttributeValueConverter;
 import grakn.core.core.Schema;
-import grakn.core.graql.reasoner.CacheCasting;
-import grakn.core.graql.reasoner.ReasonerException;
+import grakn.core.graql.reasoner.ReasoningContext;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.AtomicEquivalence;
 import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.reasoner.atom.predicate.Predicate;
 import grakn.core.graql.reasoner.atom.predicate.ValuePredicate;
-import grakn.core.graql.reasoner.cache.MultilevelSemanticCache;
+import grakn.core.graql.reasoner.atom.task.convert.AtomConverter;
+import grakn.core.graql.reasoner.atom.task.convert.AttributeAtomConverter;
+import grakn.core.graql.reasoner.atom.task.materialise.AttributeMaterialiser;
+import grakn.core.graql.reasoner.atom.task.relate.AttributeSemanticProcessor;
+import grakn.core.graql.reasoner.atom.task.relate.SemanticProcessor;
+import grakn.core.graql.reasoner.atom.task.validate.AtomValidator;
+import grakn.core.graql.reasoner.atom.task.validate.AttributeAtomValidator;
 import grakn.core.graql.reasoner.cache.SemanticDifference;
-import grakn.core.graql.reasoner.cache.VariableDefinition;
-import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
-import grakn.core.graql.reasoner.query.ReasonerQueries;
-import grakn.core.graql.reasoner.query.ResolvableQuery;
-import grakn.core.graql.reasoner.unifier.UnifierImpl;
+import grakn.core.graql.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierType;
-import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
-import grakn.core.kb.concept.api.Concept;
-import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.Label;
-import grakn.core.kb.concept.api.Relation;
 import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.SchemaConcept;
-import grakn.core.kb.concept.api.Type;
-import grakn.core.kb.concept.util.ConceptUtils;
-import grakn.core.kb.concept.util.ValueConverter;
+import grakn.core.kb.graql.exception.GraqlSemanticException;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
+import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
-import grakn.core.kb.server.Transaction;
-import grakn.core.kb.server.exception.GraqlSemanticException;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.property.HasAttributeProperty;
@@ -62,17 +54,13 @@ import graql.lang.property.ValueProperty;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
-
-import javax.annotation.Nullable;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 import static grakn.core.graql.reasoner.utils.ReasonerUtils.isEquivalentCollection;
-import static java.util.stream.Collectors.toSet;
 
 /**
  *
@@ -91,23 +79,33 @@ import static java.util.stream.Collectors.toSet;
  *
  *
  */
-public class AttributeAtom extends Binary{
+public class AttributeAtom extends Atom{
+
+    private final IsaAtom attributeIsa;
+    private final IsaAtom ownerIsa;
 
     private final ImmutableSet<ValuePredicate> multiPredicate;
     private final Variable attributeVariable;
     private final Variable relationVariable;
 
+    private final SemanticProcessor<AttributeAtom> semanticProcessor = new AttributeSemanticProcessor();
+    private final AtomValidator<AttributeAtom> validator = new AttributeAtomValidator();
+    private final AtomConverter<AttributeAtom> converter = new AttributeAtomConverter();
+
     private AttributeAtom(
             Variable varName,
             Statement pattern,
             ReasonerQuery parentQuery,
-            @Nullable ConceptId typeId,
+            @Nullable Label label,
             Variable predicateVariable,
             Variable relationVariable,
             Variable attributeVariable,
-            ImmutableSet<ValuePredicate> multiPredicate) {
-        super(varName, pattern, parentQuery, typeId, predicateVariable);
-
+            ImmutableSet<ValuePredicate> multiPredicate,
+            ReasoningContext ctx) {
+        //super(varName, pattern, parentQuery, label, predicateVariable, ctx);
+        super(parentQuery, varName, pattern, label, ctx);
+        this.ownerIsa = IsaAtom.create(varName, new Variable(), label, false, parentQuery, ctx);
+        this.attributeIsa = IsaAtom.create(attributeVariable, predicateVariable, label, false, parentQuery, ctx);
         this.relationVariable = relationVariable;
         this.attributeVariable = attributeVariable;
         this.multiPredicate = multiPredicate;
@@ -123,12 +121,16 @@ public class AttributeAtom extends Binary{
         return multiPredicate;
     }
 
-    public static AttributeAtom create(Statement pattern, Variable attributeVariable, Variable relationVariable, Variable predicateVariable, ConceptId predicateId, Set<ValuePredicate> ps, ReasonerQuery parent) {
-        return new AttributeAtom(pattern.var(), pattern, parent, predicateId, predicateVariable, relationVariable, attributeVariable, ImmutableSet.copyOf(ps));
+    public static AttributeAtom create(Statement pattern, Variable attributeVariable,
+                                       Variable relationVariable, Variable predicateVariable, @Nullable Label label,
+                                       Set<ValuePredicate> ps, ReasonerQuery parent, ReasoningContext ctx) {
+        return new AttributeAtom(pattern.var(), pattern, parent, label, predicateVariable, relationVariable,
+                attributeVariable, ImmutableSet.copyOf(ps), ctx);
     }
 
     private static AttributeAtom create(AttributeAtom a, ReasonerQuery parent) {
-        return create(a.getPattern(), a.getAttributeVariable(), a.getRelationVariable(), a.getPredicateVariable(), a.getTypeId(), a.getMultiPredicate(), parent);
+        return create(a.getPattern(), a.getAttributeVariable(), a.getRelationVariable(), a.getPredicateVariable(),
+                a.getTypeLabel(), a.getMultiPredicate(), parent, a.context());
     }
 
     private AttributeAtom convertValues(){
@@ -142,18 +144,30 @@ public class AttributeAtom extends Binary{
             if (value == null) return vp;
             Object convertedValue;
             try {
-                convertedValue = ValueConverter.of(dataType).convert(value);
+                convertedValue = AttributeValueConverter.of(dataType).convert(value);
             } catch (ClassCastException e){
                 throw GraqlSemanticException.incompatibleAttributeValue(dataType, value);
             }
             ValueProperty.Operation operation = ValueProperty.Operation.Comparison.of(vp.getPredicate().comparator(), convertedValue);
             return ValuePredicate.create(vp.getVarName(), operation, getParentQuery());
         }).collect(Collectors.toSet());
-        return create(getPattern(), getAttributeVariable(), getRelationVariable(), getPredicateVariable(), getTypeId(), newMultiPredicate, getParentQuery());
+        return create(getPattern(), getAttributeVariable(), getRelationVariable(), getPredicateVariable(),
+                getTypeLabel(), newMultiPredicate, getParentQuery(), context());
+    }
+
+    public IsaAtom ownerIsa(){
+        return ownerIsa;
+    }
+
+    public IsaAtom attributeIsa(){
+        return attributeIsa;
     }
 
     @Override
     public Atomic copy(ReasonerQuery parent){ return create(this, parent);}
+
+    @Override
+    public Class<? extends VarProperty> getVarPropertyClass() { return HasAttributeProperty.class;}
 
     @Override
     public Atomic simplify() {
@@ -161,50 +175,16 @@ public class AttributeAtom extends Binary{
     }
 
     @Override
-    public Class<? extends VarProperty> getVarPropertyClass() { return HasAttributeProperty.class;}
-
-    @Override
-    public AttributeAtom toAttributeAtom(){ return this; }
+    public AttributeAtom toAttributeAtom(){ return converter.toAttributeAtom(this, context());}
 
     @Override
     public RelationAtom toRelationAtom(){
-        SchemaConcept type = getSchemaConcept();
-        if (type == null) throw ReasonerException.illegalAtomConversion(this, RelationAtom.class);
-        Transaction tx = getParentQuery().tx();
-        Label typeLabel = Schema.ImplicitType.HAS.getLabel(type.label());
-
-        RelationAtom relationAtom = RelationAtom.create(
-                Graql.var(getRelationVariable())
-                        .rel(Schema.ImplicitType.HAS_OWNER.getLabel(type.label()).getValue(), new Statement(getVarName()))
-                        .rel(Schema.ImplicitType.HAS_VALUE.getLabel(type.label()).getValue(), new Statement(getAttributeVariable()))
-                        .isa(typeLabel.getValue()),
-                getPredicateVariable(),
-                tx.getSchemaConcept(typeLabel).id(),
-                getParentQuery()
-        );
-
-        Set<Statement> patterns = new HashSet<>(relationAtom.getCombinedPattern().statements());
-        this.getPredicates().map(Predicate::getPattern).forEach(patterns::add);
-        this.getMultiPredicate().stream().map(Predicate::getPattern).forEach(patterns::add);
-        return ReasonerQueries.atomic(Graql.and(patterns), tx()).getAtom().toRelationAtom();
+        return converter.toRelationAtom(this, context());
     }
 
-    /**
-     * NB: this is somewhat ambiguous cause from {$x has resource $r;} we can extract:
-     * - $r isa owner-type;
-     * - $x isa attribute-type;
-     * We pick the latter as the type information is available.
-     *
-     * @return corresponding isa atom
-     */
     @Override
-    public IsaAtom toIsaAtom(){
-        IsaAtom isaAtom = IsaAtom.create(getAttributeVariable(), getPredicateVariable(), getTypeId(), false, getParentQuery());
-
-        Set<Statement> patterns = new HashSet<>(isaAtom.getCombinedPattern().statements());
-        this.getPredicates().map(Predicate::getPattern).forEach(patterns::add);
-        this.getMultiPredicate().stream().map(Predicate::getPattern).forEach(patterns::add);
-        return ReasonerQueries.atomic(Graql.and(patterns), tx()).getAtom().toIsaAtom();
+    public IsaAtom toIsaAtom() {
+        return converter.toIsaAtom(this, context());
     }
 
     @Override
@@ -212,7 +192,7 @@ public class AttributeAtom extends Binary{
         String multiPredicateString = getMultiPredicate().isEmpty()?
                 "" :
                 getMultiPredicate().stream().map(Predicate::getPredicate).collect(Collectors.toSet()).toString();
-        return getVarName() + " has " + getSchemaConcept().label() + " " +
+        return getVarName() + " has " + getTypeLabel() + " " +
                 getAttributeVariable() + " " +
                 multiPredicateString +
                 (getRelationVariable().isReturned()? "(" + getRelationVariable() + ")" : "") +
@@ -220,20 +200,46 @@ public class AttributeAtom extends Binary{
     }
 
     @Override
+    public SchemaConcept getSchemaConcept() {
+        return attributeIsa.getSchemaConcept();
+    }
+
+    @Override
+    public Variable getPredicateVariable() {
+        return attributeIsa.getPredicateVariable();
+    }
+
+    @Override
     public final boolean equals(Object obj) {
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
         AttributeAtom a2 = (AttributeAtom) obj;
-        return Objects.equals(this.getTypeId(), a2.getTypeId())
+        return Objects.equals(this.getTypeLabel(), a2.getTypeLabel())
                 && this.getVarName().equals(a2.getVarName())
                 && this.multiPredicateEqual(a2);
     }
 
     @Override
-    boolean isBaseEquivalent(Object obj){
-        if (!super.isBaseEquivalent(obj)) return false;
+    public boolean isAlphaEquivalent(Object obj) {
+        if (!isBaseEquivalent(obj, AtomicEquivalence.AlphaEquivalence)) return false;
+        Atom that = (Atom) obj;
+        return !this.getMultiUnifier(that, UnifierType.EXACT).equals(MultiUnifierImpl.nonExistent());
+    }
+
+    @Override
+    public boolean isStructurallyEquivalent(Object obj) {
+        if (!isBaseEquivalent(obj, AtomicEquivalence.StructuralEquivalence)) return false;
+        Atom that = (Atom) obj;
+        return !this.getMultiUnifier(that, UnifierType.STRUCTURAL).equals(MultiUnifierImpl.nonExistent());
+    }
+
+    private boolean isBaseEquivalent(Object obj, Equivalence<Atomic> equivalence){
+        if (obj == null || this.getClass() != obj.getClass()) return false;
+        if (obj == this) return true;
         AttributeAtom that = (AttributeAtom) obj;
-        return this.getRelationVariable().isReturned() == that.getRelationVariable().isReturned();
+        return equivalence.equivalent(this.attributeIsa(), that.attributeIsa())
+                && equivalence.equivalent(this.ownerIsa(), that.ownerIsa())
+                && this.getRelationVariable().isReturned() == that.getRelationVariable().isReturned();
     }
 
     private boolean multiPredicateEqual(AttributeAtom that){
@@ -250,18 +256,14 @@ public class AttributeAtom extends Binary{
     @Override
     public int alphaEquivalenceHashCode() {
         int hashCode = 1;
-        hashCode = hashCode * 37 + (this.getTypeId() != null? this.getTypeId().hashCode() : 0);
+        hashCode = hashCode * 37 + (this.getTypeLabel() != null? this.getTypeLabel().hashCode() : 0);
         hashCode = hashCode * 37 + AtomicEquivalence.equivalenceHash(this.getMultiPredicate(), AtomicEquivalence.AlphaEquivalence);
         return hashCode;
     }
 
     @Override
-    public void checkValid(){
-        super.checkValid();
-        SchemaConcept type = getSchemaConcept();
-        if (type != null && !type.isAttributeType()) {
-            throw GraqlSemanticException.attributeWithNonAttributeType(type.label());
-        }
+    public int structuralEquivalenceHashCode() {
+        return alphaEquivalenceHashCode();
     }
 
     @Override
@@ -277,18 +279,26 @@ public class AttributeAtom extends Binary{
     public boolean isRuleApplicableViaAtom(Atom ruleAtom) {
         //findbugs complains about cast without it
         if (!(ruleAtom instanceof AttributeAtom)) return false;
-
         AttributeAtom childAtom = (AttributeAtom) ruleAtom;
         return childAtom.isUnifiableWith(this);
     }
 
     @Override
-    public boolean isResource(){ return true;}
+    public boolean isAttribute(){ return true;}
 
     @Override
     public boolean isSelectable(){ return true;}
 
     public boolean isValueEquality(){ return getMultiPredicate().stream().anyMatch(p -> p.getPredicate().isValueEquality());}
+
+    @Override
+    public Set<Variable> getVarNames() {
+        Set<Variable> varNames = super.getVarNames();
+        varNames.add(getAttributeVariable());
+        if (getRelationVariable().isReturned()) varNames.add(getRelationVariable());
+        getMultiPredicate().forEach(p -> varNames.addAll(p.getVarNames()));
+        return varNames;
+    }
 
     @Override
     public boolean hasUniqueAnswer(){
@@ -309,214 +319,41 @@ public class AttributeAtom extends Binary{
     public boolean requiresMaterialisation(){ return true;}
 
     @Override
+    public void checkValid(){ validator.checkValid(this, context()); }
+
+    @Override
     public Set<String> validateAsRuleHead(Rule rule){
-        Set<String> errors = super.validateAsRuleHead(rule);
-        if (getSchemaConcept() == null || getMultiPredicate().size() > 1){
-            errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_ATTRIBUTE_WITH_AMBIGUOUS_PREDICATES.getMessage(rule.then(), rule.label()));
-        }
-        if (getMultiPredicate().isEmpty()){
-            boolean predicateBound = getParentQuery().getAtoms(Atom.class)
-                    .filter(at -> !at.equals(this))
-                    .anyMatch(at -> at.getVarNames().contains(getAttributeVariable()));
-            if (!predicateBound) {
-                errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_ATOM_WITH_UNBOUND_VARIABLE.getMessage(rule.then(), rule.label()));
-            }
-        }
-
-        getMultiPredicate().stream()
-                .filter(p -> !p.getPredicate().isValueEquality())
-                .forEach( p ->
-                        errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_ATTRIBUTE_WITH_NONSPECIFIC_PREDICATE.getMessage(rule.then(), rule.label()))
-                );
-
-        if(getMultiPredicate().isEmpty()) {
-            Variable attrVar = getAttributeVariable();
-            AttributeType.DataType<Object> dataType = getSchemaConcept().asAttributeType().dataType();
-            ResolvableQuery body = CacheCasting.ruleCacheCast(tx().ruleCache()).getRule(rule).getBody();
-            ErrorMessage incompatibleValuesMsg = ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_COPYING_INCOMPATIBLE_ATTRIBUTE_VALUES;
-            body.getAtoms(AttributeAtom.class)
-                    .filter(at -> at.getAttributeVariable().equals(attrVar))
-                    .map(Binary::getSchemaConcept)
-                    .filter(type -> !type.asAttributeType().dataType().equals(dataType))
-                    .forEach(type ->
-                            errors.add(incompatibleValuesMsg.getMessage(getSchemaConcept().label(), rule.label(), type.label()))
-                    );
-        }
-        return errors;
+        return validator.validateAsRuleHead(this, rule, context());
     }
 
     @Override
     public Set<String> validateAsRuleBody(Label ruleLabel) {
-        SchemaConcept type = getSchemaConcept();
-        Set<String> errors = new HashSet<>();
-        if (type == null) return errors;
-
-        if (!type.isAttributeType()){
-            errors.add(ErrorMessage.VALIDATION_RULE_INVALID_ATTRIBUTE_TYPE.getMessage(ruleLabel, type.label()));
-            return errors;
-        }
-
-        Type ownerType = getParentQuery().getUnambiguousType(getVarName(), false);
-
-        if (ownerType != null
-                && ownerType.attributes().noneMatch(rt -> rt.equals(type.asAttributeType()))){
-            errors.add(ErrorMessage.VALIDATION_RULE_ATTRIBUTE_OWNER_CANNOT_HAVE_ATTRIBUTE.getMessage(ruleLabel, type.label(), ownerType.label()));
-        }
-        return errors;
+        return validator.validateAsRuleBody(this, ruleLabel, context());
     }
 
     @Override
-    public Set<Variable> getVarNames() {
-        Set<Variable> varNames = super.getVarNames();
-        varNames.add(getAttributeVariable());
-        if (getRelationVariable().isReturned()) varNames.add(getRelationVariable());
-        getMultiPredicate().forEach(p -> varNames.addAll(p.getVarNames()));
-        return varNames;
+    public Stream<ConceptMap> materialise() {
+        return new AttributeMaterialiser().materialise(this, context());
     }
 
     @Override
     public Unifier getUnifier(Atom parentAtom, UnifierType unifierType) {
-        if (!(parentAtom instanceof AttributeAtom)) {
-            // in general this >= parent, hence for rule unifiers we can potentially specialise child to match parent
-            if (unifierType.equals(UnifierType.RULE)) {
-                if (parentAtom instanceof IsaAtom) return this.toIsaAtom().getUnifier(parentAtom, unifierType);
-                else if (parentAtom instanceof RelationAtom){
-                    return this.toRelationAtom().getUnifier(parentAtom, unifierType);
-                }
-            }
-            return UnifierImpl.nonExistent();
-        }
+        return semanticProcessor.getUnifier(this, parentAtom, unifierType, context());
+    }
 
-        AttributeAtom parent = (AttributeAtom) parentAtom;
-        Unifier unifier = super.getUnifier(parentAtom, unifierType);
-        if (unifier == null) return UnifierImpl.nonExistent();
+    @Override
+    public MultiUnifier getMultiUnifier(Atom parentAtom, UnifierType unifierType) {
+        return semanticProcessor.getMultiUnifier(this, parentAtom, unifierType, context());
+    }
 
-        //unify attribute vars
-        Variable childAttributeVarName = this.getAttributeVariable();
-        Variable parentAttributeVarName = parent.getAttributeVariable();
-        if (parentAttributeVarName.isReturned()){
-            unifier = unifier.merge(new UnifierImpl(ImmutableMap.of(childAttributeVarName, parentAttributeVarName)));
-        }
-
-        //unify relation vars
-        Variable childRelationVarName = this.getRelationVariable();
-        Variable parentRelationVarName = parent.getRelationVariable();
-        if (parentRelationVarName.isReturned()){
-            unifier = unifier.merge(new UnifierImpl(ImmutableMap.of(childRelationVarName, parentRelationVarName)));
-        }
-
-        return isPredicateCompatible(parentAtom, unifier, unifierType)?
-                unifier : UnifierImpl.nonExistent();
+    @Override
+    public SemanticDifference computeSemanticDifference(Atom child, Unifier unifier) {
+        return semanticProcessor.computeSemanticDifference(this, child, unifier, context());
     }
 
     @Override
     public Stream<Predicate> getInnerPredicates(){
-        return Stream.concat(super.getInnerPredicates(), getMultiPredicate().stream());
-    }
-
-    @Override
-    public SemanticDifference semanticDifference(Atom child, Unifier unifier) {
-        SemanticDifference baseDiff = super.semanticDifference(child, unifier);
-        if (!child.isResource()) return baseDiff;
-        AttributeAtom childAtom = (AttributeAtom) child;
-        Set<VariableDefinition> diff = new HashSet<>();
-
-        Variable parentVar = this.getAttributeVariable();
-        Unifier unifierInverse = unifier.inverse();
-        Set<ValuePredicate> predicatesToSatisfy = childAtom.getMultiPredicate().stream()
-                .flatMap(vp -> vp.unify(unifierInverse).stream()).collect(toSet());
-        this.getMultiPredicate().forEach(predicatesToSatisfy::remove);
-
-        diff.add(new VariableDefinition(parentVar, null, null, new HashSet<>(), predicatesToSatisfy));
-        return baseDiff.merge(new SemanticDifference(diff));
-    }
-
-    /**
-     * @param owner attribute owner
-     * @param attribute attribute itself
-     * @return implicit relation of the attribute
-     */
-    private Relation attachAttribute(Concept owner, Attribute attribute){
-        //NB: this inserts the implicit relation based on the type of the attribute.
-        //We can have cases when we want to specialise the relation while retaining the existing attribute.
-        //In such cases at the moment we still insert the attribute type relation whilst retaining an appropriate cache entry.
-        Relation relation = null;
-        if (owner.isEntity()) {
-            relation = owner.asEntity().attributeInferred(attribute);
-        } else if (owner.isRelation()) {
-            relation = owner.asRelation().attributeInferred(attribute);
-        } else if (owner.isAttribute()) {
-            relation = owner.asAttribute().attributeInferred(attribute);
-        }
-        return relation;
-    }
-
-    private ConceptMap findAnswer(ConceptMap sub){
-        //NB: we are only interested in this atom and its subs, not any other constraints
-        ReasonerAtomicQuery query = ReasonerQueries.atomic(Collections.singleton(this), tx()).withSubstitution(sub);
-        MultilevelSemanticCache queryCache = CacheCasting.queryCacheCast(tx().queryCache());
-        ConceptMap answer = queryCache.getAnswerStream(query).findFirst().orElse(null);
-
-        if (answer == null) queryCache.ackDBCompleteness(query);
-        else queryCache.record(query.withSubstitution(answer), answer);
-        return answer;
-    }
-
-    /**
-     * @param sub partial substitution
-     * @param owner attribute owner
-     * @param attribute attribute concept
-     * @return inserted implicit relation if didn't exist, null otherwise
-     */
-    private Relation putImplicitRelation(ConceptMap sub, Concept owner, Attribute attribute){
-        ConceptMap answer = findAnswer(sub);
-        if (answer == null) return attachAttribute(owner, attribute);
-        return getRelationVariable().isReturned()? answer.get(getRelationVariable()).asRelation() : null;
-    }
-
-    @Override
-    public Stream<ConceptMap> materialise(){
-        ConceptMap substitution = getParentQuery().getSubstitution();
-        AttributeType<Object> attributeType = getSchemaConcept().asAttributeType();
-
-        Concept owner = substitution.get(getVarName());
-        Variable resourceVariable = getAttributeVariable();
-
-        //if the attribute already exists, only attach a new link to the owner, otherwise create a new attribute
-        Attribute attribute = null;
-        if(this.isValueEquality()){
-            ValuePredicate vp = Iterables.getOnlyElement(getMultiPredicate());
-            Object value = vp.getPredicate().value();
-            Object persistedValue = ValueConverter.of(attributeType.dataType()).convert(value);
-            Attribute existingAttribute = attributeType.attribute(persistedValue);
-            attribute = existingAttribute == null? attributeType.putAttributeInferred(persistedValue) : existingAttribute;
-        } else {
-            Attribute existingAttribute = substitution.containsVar(resourceVariable)? substitution.get(resourceVariable).asAttribute() : null;
-            //even if the attribute exists but is of different type (supertype for instance) we create a new one
-            //to make sure the attribute index will be different
-            if (existingAttribute != null){
-                Object value = existingAttribute.value();
-                attribute = existingAttribute;
-                if (!existingAttribute.type().equals(attributeType)){
-                    existingAttribute = attributeType.attribute(value);
-                    attribute = existingAttribute == null? attributeType.putAttributeInferred(value) : existingAttribute;
-                }
-            }
-        }
-
-        if (attribute != null) {
-            ConceptMap answer = new ConceptMap(ImmutableMap.of(
-                    getVarName(), substitution.get(getVarName()),
-                    resourceVariable, attribute));
-
-            Relation relation = putImplicitRelation(answer, owner, attribute);
-
-            if (getRelationVariable().isReturned()){
-                answer = ConceptUtils.joinAnswers(answer, new ConceptMap(ImmutableMap.of(getRelationVariable(), relation)));
-            }
-            return Stream.of(answer);
-        }
-        return Stream.empty();
+        return Stream.concat(attributeIsa.getInnerPredicates(), getMultiPredicate().stream());
     }
 
     /**
@@ -525,7 +362,7 @@ public class AttributeAtom extends Binary{
      * @return rewritten atom
      */
     private AttributeAtom rewriteWithRelationVariable(Atom parentAtom){
-        if (parentAtom.isResource() && ((AttributeAtom) parentAtom).getRelationVariable().isReturned()) return rewriteWithRelationVariable();
+        if (parentAtom.isAttribute() && ((AttributeAtom) parentAtom).getRelationVariable().isReturned()) return rewriteWithRelationVariable();
         return this;
     }
 
@@ -534,13 +371,13 @@ public class AttributeAtom extends Binary{
         Variable attributeVariable = getAttributeVariable();
         Variable relationVariable = getRelationVariable().asReturnedVar();
         Statement newVar = new Statement(getVarName())
-                .has(getSchemaConcept().label().getValue(), new Statement(attributeVariable), new Statement(relationVariable));
-        return create(newVar, attributeVariable, relationVariable, getPredicateVariable(), getTypeId(), getMultiPredicate(), getParentQuery());
+                .has(getTypeLabel().getValue(), new Statement(attributeVariable), new Statement(relationVariable));
+        return create(newVar, attributeVariable, relationVariable, getPredicateVariable(), getTypeLabel(), getMultiPredicate(), getParentQuery(), context());
     }
 
     @Override
     public Atom rewriteWithTypeVariable() {
-        return create(getPattern(), getAttributeVariable(), getRelationVariable(), getPredicateVariable().asReturnedVar(), getTypeId(), getMultiPredicate(), getParentQuery());
+        return create(getPattern(), getAttributeVariable(), getRelationVariable(), getPredicateVariable().asReturnedVar(), getTypeLabel(), getMultiPredicate(), getParentQuery(), context());
     }
 
     @Override

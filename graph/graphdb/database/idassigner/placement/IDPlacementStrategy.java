@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,7 +17,6 @@
 
 package grakn.core.graph.graphdb.database.idassigner.placement;
 
-import grakn.core.graph.graphdb.idmanagement.IDManager;
 import grakn.core.graph.graphdb.internal.InternalElement;
 import grakn.core.graph.graphdb.internal.InternalVertex;
 
@@ -47,7 +45,7 @@ public interface IDPlacementStrategy {
      * It is expected that the passed in map contains the partition assignment after this method
      * returns. Any initial values in the map are meaningless and to be ignored.
      * <p>
-     * This is an optional operation. Check with {@link #supportsBulkPlacement()} first.
+     * This is an optional operation. Check with #supportsBulkPlacement() first.
      *
      * @param vertices Map containing all vertices and their partition placement.
      */
@@ -55,7 +53,7 @@ public interface IDPlacementStrategy {
 
     /**
      * Whether this placement strategy supports bulk placement.
-     * If not, then {@link #getPartitions(Map)} will throw {@link UnsupportedOperationException}
+     * If not, then #getPartitions(Map) will throw UnsupportedOperationException
      */
     boolean supportsBulkPlacement();
 
@@ -71,7 +69,7 @@ public interface IDPlacementStrategy {
      * Depending on the storage backend one or multiple ranges of partition ids may be given. However, this list is never
      * empty.
      *
-     * @param localPartitionIdRanges List of {@link PartitionIDRange}s corresponding to the locally hosted partitions
+     * @param localPartitionIdRanges List of PartitionIDRanges corresponding to the locally hosted partitions
      */
     void setLocalPartitionBounds(List<PartitionIDRange> localPartitionIdRanges);
 

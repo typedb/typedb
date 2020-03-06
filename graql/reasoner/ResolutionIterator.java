@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -27,6 +26,7 @@ import grakn.core.graql.reasoner.state.ResolutionState;
 import grakn.core.graql.reasoner.tree.Node;
 import grakn.core.graql.reasoner.tree.ResolutionTree;
 import grakn.core.graql.reasoner.unifier.UnifierImpl;
+import grakn.core.kb.graql.reasoner.cache.QueryCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,6 +50,7 @@ public class ResolutionIterator extends ReasonerQueryIterator {
     private final ResolvableQuery query;
     private final Set<ConceptMap> answers = new HashSet<>();
     private final Set<ReasonerAtomicQuery> subGoals;
+    private final QueryCache queryCache;
     private final Stack<ResolutionState> states = new Stack<>();
     private final ResolutionTree logTree;
 
@@ -57,9 +58,10 @@ public class ResolutionIterator extends ReasonerQueryIterator {
 
     private static final Logger LOG = LoggerFactory.getLogger(ResolutionIterator.class);
 
-    public ResolutionIterator(ResolvableQuery q, Set<ReasonerAtomicQuery> subGoals){
+    public ResolutionIterator(ResolvableQuery q, Set<ReasonerAtomicQuery> subGoals, QueryCache queryCache){
         this.query = q;
         this.subGoals = subGoals;
+        this.queryCache = queryCache;
         ResolutionState rootState = query.resolutionState(new ConceptMap(), new UnifierImpl(), null, subGoals);
         states.push(rootState);
         this.logTree = new ResolutionTree(rootState);
@@ -136,7 +138,7 @@ public class ResolutionIterator extends ReasonerQueryIterator {
             }
         }
 
-        MultilevelSemanticCache queryCache = CacheCasting.queryCacheCast(query.tx().queryCache());
+        MultilevelSemanticCache queryCache = CacheCasting.queryCacheCast(this.queryCache);
         subGoals.forEach(queryCache::ackCompleteness);
         queryCache.propagateAnswers();
 

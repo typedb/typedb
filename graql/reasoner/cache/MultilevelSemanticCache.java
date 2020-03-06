@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -24,26 +23,33 @@ import com.google.common.base.Preconditions;
 import grakn.common.util.Pair;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
-import grakn.core.graql.reasoner.query.ReasonerQueryEquivalence;
+import grakn.core.graql.reasoner.unifier.UnifierType;
+import grakn.core.kb.graql.executor.ExecutorFactory;
+import grakn.core.kb.graql.planning.gremlin.TraversalPlanFactory;
+import grakn.core.kb.graql.reasoner.cache.CacheEntry;
 import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
-import grakn.core.graql.reasoner.unifier.UnifierType;
 import graql.lang.statement.Variable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import grakn.core.kb.graql.reasoner.cache.CacheEntry;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 /**
  *
- * Implementation of SemanticCache using {@link ReasonerQueryEquivalence#StructuralEquivalence}
+ * Implementation of SemanticCache using ReasonerQueryEquivalence#StructuralEquivalence
  * for query equivalence checks and IndexedAnswerSets for storing query answer sets.
  *
  */
 public class MultilevelSemanticCache extends SemanticCache<Equivalence.Wrapper<ReasonerAtomicQuery>, IndexedAnswerSet> {
+
+    private static final Logger LOG = LoggerFactory.getLogger(MultilevelSemanticCache.class);
+
+    public MultilevelSemanticCache(ExecutorFactory executorFactory, TraversalPlanFactory traversalPlanFactory) {
+        super(executorFactory, traversalPlanFactory);
+    }
 
     @Override public UnifierType unifierType() { return UnifierType.STRUCTURAL;}
 
@@ -66,24 +72,7 @@ public class MultilevelSemanticCache extends SemanticCache<Equivalence.Wrapper<R
     }
 
     @Override
-    protected boolean answersQuery(ReasonerAtomicQuery query) {
-        CacheEntry<ReasonerAtomicQuery, IndexedAnswerSet> entry = getEntry(query);
-        if (entry == null) return false;
-        ReasonerAtomicQuery cacheQuery = entry.query();
-        IndexedAnswerSet answerSet = entry.cachedElement();
-        Set<Variable> cacheIndex = cacheQuery.getAnswerIndex().vars();
-        MultiUnifier queryToCacheUnifier = query.getMultiUnifier(cacheQuery, semanticUnifier());
-
-        return queryToCacheUnifier.apply(query.getAnswerIndex())
-                .anyMatch(sub ->
-                        answerSet.get(sub.project(cacheIndex)).stream()
-                                .anyMatch(ans -> ans.containsAll(sub)));
-    }
-
-    private static final Logger LOG = LoggerFactory.getLogger(MultilevelSemanticCache.class);
-
-    @Override
-    protected boolean propagateAnswers(CacheEntry<ReasonerAtomicQuery, IndexedAnswerSet> parentEntry,
+    boolean propagateAnswers(CacheEntry<ReasonerAtomicQuery, IndexedAnswerSet> parentEntry,
                                     CacheEntry<ReasonerAtomicQuery, IndexedAnswerSet> childEntry,
                                     boolean propagateInferred) {
         ReasonerAtomicQuery parent = parentEntry.query();
@@ -117,12 +106,7 @@ public class MultilevelSemanticCache extends SemanticCache<Equivalence.Wrapper<R
     }
 
     @Override
-    protected Stream<ConceptMap> entryToAnswerStream(CacheEntry<ReasonerAtomicQuery, IndexedAnswerSet> entry) {
-        return entry.cachedElement().get(entry.query().getAnswerIndex()).stream();
-    }
-
-    @Override
-    protected Pair<Stream<ConceptMap>, MultiUnifier> entryToAnswerStreamWithUnifier(ReasonerAtomicQuery query, CacheEntry<ReasonerAtomicQuery, IndexedAnswerSet> entry) {
+    Pair<Stream<ConceptMap>, MultiUnifier> entryToAnswerStreamWithUnifier(ReasonerAtomicQuery query, CacheEntry<ReasonerAtomicQuery, IndexedAnswerSet> entry) {
         ConceptMap answerIndex = query.getAnswerIndex();
         ReasonerAtomicQuery equivalentQuery = entry.query();
         AnswerSet answers = entry.cachedElement();
@@ -137,6 +121,21 @@ public class MultilevelSemanticCache extends SemanticCache<Equivalence.Wrapper<R
                 .map(ans -> ans.withPattern(query.getPattern())),
                 multiUnifier
         );
+    }
+
+    @Override
+    public boolean answersQuery(ReasonerAtomicQuery query) {
+        CacheEntry<ReasonerAtomicQuery, IndexedAnswerSet> entry = getEntry(query);
+        if (entry == null) return false;
+        ReasonerAtomicQuery cacheQuery = entry.query();
+        IndexedAnswerSet answerSet = entry.cachedElement();
+        Set<Variable> cacheIndex = cacheQuery.getAnswerIndex().vars();
+        MultiUnifier queryToCacheUnifier = query.getMultiUnifier(cacheQuery, unifierType());
+
+        return queryToCacheUnifier.apply(query.getAnswerIndex())
+                .anyMatch(sub ->
+                        answerSet.get(sub.project(cacheIndex)).stream()
+                                .anyMatch(ans -> ans.containsAll(sub)));
     }
 }
 

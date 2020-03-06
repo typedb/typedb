@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -20,8 +19,8 @@
 package grakn.core.concept.impl;
 
 import com.google.common.collect.Sets;
-import grakn.core.concept.structure.CastingImpl;
 import grakn.core.concept.cache.ConceptCache;
+import grakn.core.concept.structure.CastingImpl;
 import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
@@ -36,6 +35,8 @@ import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.concept.api.Type;
+import grakn.core.kb.concept.manager.ConceptManager;
+import grakn.core.kb.concept.manager.ConceptNotificationChannel;
 import grakn.core.kb.concept.structure.Casting;
 import grakn.core.kb.concept.structure.EdgeElement;
 import grakn.core.kb.concept.structure.VertexElement;
@@ -76,8 +77,8 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
         return type.orElseThrow(() -> GraknConceptException.noType(this));
     });
 
-    ThingImpl(VertexElement vertexElement, ConceptManagerImpl conceptManager, ConceptObserver conceptObserver) {
-        super(vertexElement, conceptManager, conceptObserver);
+    ThingImpl(VertexElement vertexElement, ConceptManager conceptManager, ConceptNotificationChannel conceptNotificationChannel) {
+        super(vertexElement, conceptManager, conceptNotificationChannel);
     }
 
     public boolean isInferred() {
@@ -103,7 +104,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
 
         if (!isDeleted())  {
             // must happen before deleteNode() so we can access properties on the vertex
-            conceptObserver.thingDeleted(this);
+            conceptNotificationChannel.thingDeleted(this);
         }
 
         this.edgeRelations().forEach(Concept::delete);
@@ -332,7 +333,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
     /**
      * @param type The type of this concept
      */
-    void type(TypeImpl type) {
+    public void type(TypeImpl type) {
         if (type != null) {
             //noinspection unchecked
             cachedType.set((V) type); //We cache the type early because it turns out we use it EVERY time. So this prevents many db reads

@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -28,8 +27,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static grakn.common.util.Collections.set;
 import static grakn.common.util.Collections.list;
+import static grakn.common.util.Collections.set;
 
 /**
  * An ontological element which models and categorises the various Attribute in the graph.
@@ -157,7 +156,7 @@ public interface AttributeType<D> extends Type {
      *
      * @param value A value which an Attribute in the graph may be holding
      * @return The Attribute with the provided value and type or null if no such Attribute exists.
-     * @see Attribute
+     * see Attribute
      */
     @CheckReturnValue
     @Nullable

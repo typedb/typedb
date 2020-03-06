@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -95,7 +94,7 @@ public interface SchemaConcept extends Concept {
      * Return the collection of Rule for which this SchemaConcept serves as a hypothesis.
      *
      * @return A collection of Rule for which this SchemaConcept serves as a hypothesis
-     * @see Rule
+     * see Rule
      */
     @CheckReturnValue
     Stream<Rule> whenRules();
@@ -104,7 +103,7 @@ public interface SchemaConcept extends Concept {
      * Return the collection of Rule for which this SchemaConcept serves as a conclusion.
      *
      * @return A collection of Rule for which this SchemaConcept serves as a conclusion
-     * @see Rule
+     * see Rule
      */
     @CheckReturnValue
     Stream<Rule> thenRules();

@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -19,13 +18,13 @@
 package grakn.core.graql.query.pattern;
 
 import com.google.common.collect.Sets;
-import grakn.core.kb.concept.api.Concept;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.kb.server.exception.GraqlSemanticException;
 import grakn.core.graql.graph.MovieGraph;
-import grakn.core.rule.GraknTestServer;
+import grakn.core.kb.concept.api.Concept;
+import grakn.core.kb.graql.exception.GraqlSemanticException;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
+import grakn.core.rule.GraknTestServer;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;
@@ -263,7 +262,7 @@ public class PatternIT {
 
     @Test
     public void whenMatchingWithValueInequality_resultsAreFilteredCorrectly() {
-        assertExists(tx, var().isa("movie").has("title", "Godfather"));
+        assertExists(tx, var("x").isa("movie").has("title", "Godfather"));
         Set<Concept> allMoviesWithoutGodfatherMovies = tx.stream(Graql.match(
                 var("x").isa("movie").has("title", var("y")),
                 var("y").neq("Godfather")).get("x"))

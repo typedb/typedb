@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -33,8 +32,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * An implementation of {@link VertexListInternal} that stores the actual vertex references
- * and simply wraps an {@link ArrayList} and keeps a boolean flag to remember whether this list is in sort order.
+ * An implementation of VertexListInternal that stores the actual vertex references
+ * and simply wraps an ArrayList and keeps a boolean flag to remember whether this list is in sort order.
  */
 public class VertexArrayList implements VertexListInternal {
 

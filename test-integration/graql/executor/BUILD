@@ -1,6 +1,5 @@
 #
-# GRAKN.AI - THE KNOWLEDGE GRAPH
-# Copyright (C) 2019 Grakn Labs Ltd
+# Copyright (C) 2020 Grakn Labs
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -25,11 +24,13 @@ java_test(
     classpath_resources = ["//test-integration/resources:logback-test"],
     test_class = "grakn.core.graql.executor.IsaExplicitIT",
     deps = [
+        "//common",
         "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
-        "//graql:graql",
-        "//kb",
+        "//graql/planning",
         "//kb/concept/api",
+        "//kb/graql/planning",
+        "//kb/server",
         "//test-integration/rule:grakn-test-server",
         "@graknlabs_graql//java:graql",
     ],

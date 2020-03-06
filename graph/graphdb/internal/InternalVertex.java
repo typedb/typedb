@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -60,7 +59,7 @@ public interface InternalVertex extends JanusGraphVertex, InternalElement {
 
     /**
      * Returns all relations that match the given query. If these matching relations are not currently
-     * held in memory, it uses the given {@link Retriever} to retrieve the edges from backend storage.
+     * held in memory, it uses the given Retriever to retrieve the edges from backend storage.
      */
     EntryList loadRelations(SliceQuery query, Retriever<SliceQuery, EntryList> lookup);
 

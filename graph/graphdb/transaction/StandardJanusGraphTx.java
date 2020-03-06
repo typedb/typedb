@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -26,7 +25,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import grakn.core.graph.core.Cardinality;
 import grakn.core.graph.core.EdgeLabel;
-import grakn.core.graph.core.JanusGraph;
 import grakn.core.graph.core.JanusGraphEdge;
 import grakn.core.graph.core.JanusGraphElement;
 import grakn.core.graph.core.JanusGraphException;
@@ -118,14 +116,12 @@ import grakn.core.graph.graphdb.vertices.StandardVertex;
 import grakn.core.graph.util.datastructures.Retriever;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
-import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Transaction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.apache.tinkerpop.gremlin.structure.io.Io;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.slf4j.Logger;
@@ -148,7 +144,7 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 /**
- * JanusGraphTransaction defines a transactional context for a {@link JanusGraph}. Since JanusGraph is a transactional graph
+ * JanusGraphTransaction defines a transactional context for a JanusGraph. Since JanusGraph is a transactional graph
  * database, all interactions with the graph are mitigated by a JanusGraphTransaction.
  * <p>
  * All vertex and edge retrievals are channeled by a graph transaction which bundles all such retrievals, creations and
@@ -275,9 +271,14 @@ public class StandardJanusGraphTx implements JanusGraphTransaction, TypeInspecto
         this.indexCache = CacheBuilder.newBuilder().weigher((Weigher<JointIndexQuery.Subquery, List<Object>>) (q, r) -> 2 + r.size()).concurrencyLevel(concurrencyLevel).maximumWeight(config.getIndexCacheWeight()).build();
 
         this.deletedRelations = EMPTY_DELETED_RELATIONS;
+
+        //The following 2 variables need to be reworked completely, but in order to do that
+        // correctly, the whole hierarchy Transaction-QueryBuilder-QueryProcessor needs to be reworked
         elementProcessor = elementProcessorImpl;
         edgeProcessor = edgeProcessorImpl;
 
+        // Ideally we should try to remove the dependency IndexSerialiser to Tx (which is why we can only open BackendTransaction here),
+        // and find a proper structure so that this Tx and BackendTransaction don't have this awkward coupling.
         this.backendTransaction = graph.openBackendTransaction(this); // awkward!
     }
 
@@ -317,29 +318,14 @@ public class StandardJanusGraphTx implements JanusGraphTransaction, TypeInspecto
         return getGraph().configuration();
     }
 
-    @Override
-    public <I extends Io> I io(Io.Builder<I> builder) {
-        return null; // Not used
-    }
-
-    @Override
-    public <C extends GraphComputer> C compute(Class<C> graphComputerClass) throws IllegalArgumentException {
-        return null; // This is only implemented in HadoopGraph
-    }
-
-    @Override
-    public GraphComputer compute() throws IllegalArgumentException {
-        return null; // This is only implemented in HadoopGraph
-    }
-
     /**
      * Creates a new vertex in the graph with the given vertex id.
      * Note, that an exception is thrown if the vertex id is not a valid JanusGraph vertex id or if a vertex with the given
      * id already exists. Only accepts long ids - all others are ignored.
      * <p>
-     * A valid JanusGraph vertex ids must be provided. Use {@link IDManager#toVertexId(long)}
+     * A valid JanusGraph vertex ids must be provided. Use IDManager#toVertexId(long)
      * to construct a valid JanusGraph vertex id from a user id, where <code>idManager</code> can be obtained through
-     * {@link StandardJanusGraph#getIDManager()}.
+     * StandardJanusGraph#getIDManager().
      * <pre>
      * <code>long vertexId = ((StandardJanusGraph) graph).getIDManager().toVertexId(userVertexId);</code>
      * </pre>
@@ -1054,6 +1040,7 @@ public class StandardJanusGraphTx implements JanusGraphTransaction, TypeInspecto
 
     @Override
     public JanusGraphMultiVertexQuery multiQuery(JanusGraphVertex... vertices) {
+        // The interesting question here is: why does the QueryBuilder also implements Query interface?
         MultiVertexCentricQueryBuilder builder = new MultiVertexCentricQueryBuilder(this);
         for (JanusGraphVertex v : vertices) {
             builder.addVertex(v);
@@ -1256,9 +1243,6 @@ public class StandardJanusGraphTx implements JanusGraphTransaction, TypeInspecto
                 iterator = new SubQueryIterator(indexQuery.getQuery(0), indexSerializer, backendTransaction, indexCache, indexQuery.getLimit(), getConversionFunction(query.getResultType()),
                         retrievals.isEmpty() ? null : QueryUtil.processIntersectingRetrievals(retrievals, Query.NO_LIMIT));
             } else {
-                if (config.hasForceIndexUsage()) {
-                    throw new JanusGraphException("Could not find a suitable index to answer graph query and graph scans are disabled: " + query);
-                }
                 LOG.warn("Query requires iterating over all vertices [{}]. For better performance, use indexes", query.getCondition());
 
                 QueryProfiler sub = profiler.addNested("scan");

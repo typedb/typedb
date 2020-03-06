@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,14 +17,13 @@
 
 package grakn.core.graph.graphdb.transaction;
 
-import grakn.core.graph.core.JanusGraphTransaction;
 import grakn.core.graph.core.schema.DefaultSchemaMaker;
 import grakn.core.graph.diskstorage.BaseTransactionConfig;
 
 /**
- * Provides configuration options for {@link JanusGraphTransaction}.
+ * Provides configuration options for JanusGraphTransaction.
  *
- * @see JanusGraphTransaction
+ * see JanusGraphTransaction
  */
 public interface TransactionConfiguration extends BaseTransactionConfig {
 
@@ -66,7 +64,7 @@ public interface TransactionConfiguration extends BaseTransactionConfig {
      * longer existing vertices. Use this setting with caution as it introduces additional overhead entailed by checking
      * the existence.
      * <p>
-     * Unlike {@link #hasVerifyExternalVertexExistence()} this is about internally verifying ids.
+     * Unlike #hasVerifyExternalVertexExistence() this is about internally verifying ids.
      *
      * @return True, if vertex existence is verified, else false
      */
@@ -89,64 +87,41 @@ public interface TransactionConfiguration extends BaseTransactionConfig {
     /**
      * Whether this transaction is only accessed by a single thread.
      * If so, then certain data structures may be optimized for single threaded access since locking can be avoided.
-     *
-     * @return
      */
     boolean isSingleThreaded();
 
     /**
      * Whether this transaction is bound to a running thread.
      * If so, then elements in this transaction can expand their life cycle to the next transaction in the thread.
-     *
-     * @return
      */
     boolean isThreadBound();
 
     /**
      * The maximum number of recently-used vertices to cache in this transaction.
      * The recently-used vertex cache can include both clean and dirty vertices.
-     *
-     * @return
      */
     int getVertexCacheSize();
 
     /**
      * The initial size of the dirty (modified) vertex map used by a transaction.
-     *
-     * @return
      */
     int getDirtyVertexSize();
 
     /**
      * The maximum weight for the index cache store used in this particular transaction
-     *
-     * @return
      */
     long getIndexCacheWeight();
 
     /**
      * The name of the LOG to be used for logging the mutations in this transaction.
      * If the identifier is NULL the mutations will not be logged.
-     *
-     * @return
      */
     String getLogIdentifier();
 
 
     /**
-     * Whether this transaction should throw an exception when a graph query is issued that cannot be answered
-     * with any existing index but instead requires a full graph-scan.
-     *
-     * @return
-     */
-    boolean hasForceIndexUsage();
-
-
-    /**
      * Querying of partitioned vertices is restricted to the partitions returned by this
      * method. If the return value has length 0 all partitions are queried (i.e. unrestricted).
-     *
-     * @return
      */
     int[] getRestrictedPartitions();
 

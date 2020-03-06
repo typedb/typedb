@@ -1,6 +1,5 @@
 #
-# GRAKN.AI - THE KNOWLEDGE GRAPH
-# Copyright (C) 2019 Grakn Labs Ltd
+# Copyright (C) 2020 Grakn Labs
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -27,8 +26,9 @@ java_test(
     deps = [
         "//concept/answer",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
-        "//kb",
         "//kb/concept/api",
+        "//kb/graql/exception",
+        "//kb/server",
         "//test-integration/graql/graph:movie-graph",
         "//test-integration/rule:grakn-test-server",
         "@graknlabs_graql//java:graql",
@@ -42,12 +42,13 @@ java_test(
     classpath_resources = ["//test-integration/resources:logback-test"],
     test_class = "grakn.core.graql.query.GraqlDefineIT",
     deps = [
-        "//common:common",
+        "//common",
         "//concept/answer",
         "//core",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
-        "//kb",
         "//kb/concept/api",
+        "//kb/graql/exception",
+        "//kb/server",
         "//test-integration/graql/graph:movie-graph",
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:graql-test-util",
@@ -66,8 +67,9 @@ java_test(
     deps = [
         "//concept/answer",
         "//core",
-        "//kb",
         "//kb/concept/api",
+        "//kb/graql/exception",
+        "//kb/server",
         "//test-integration/graql/graph:movie-graph",
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:graql-test-util",
@@ -85,8 +87,9 @@ java_test(
         "//concept/answer",
         "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
-        "//kb",
         "//kb/concept/api",
+        "//kb/graql/exception",
+        "//kb/server",
         "//test-integration/graql/graph:movie-graph",
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:graql-test-util",
@@ -103,8 +106,9 @@ java_test(
     deps = [
         "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
-        "//kb",
         "//kb/concept/api",
+        "//kb/graql/exception",
+        "//kb/server",
         "//test-integration/graql/graph:movie-graph",
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:graql-test-util",
@@ -121,8 +125,8 @@ java_test(
     deps = [
         "//concept/answer",
         "//dependencies/maven/artifacts/com/google/guava",
-        "//kb",
         "//kb/concept/api",
+        "//kb/server",
         "//test-integration/rule:grakn-test-server",
         "@graknlabs_graql//java:graql",
     ],
@@ -135,7 +139,8 @@ java_test(
     classpath_resources = ["//test-integration/resources:logback-test"],
     test_class = "grakn.core.graql.query.QueryBuilderIT",
     deps = [
-        "//kb",
+        "//kb/graql/exception",
+        "//kb/server",
         "//test-integration/graql/graph:movie-graph",
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:graql-test-util",
@@ -151,7 +156,7 @@ java_test(
     test_class = "grakn.core.graql.query.QueryAdminIT",
     deps = [
         "//dependencies/maven/artifacts/com/google/guava",
-        "//kb",
+        "//kb/server",
         "//test-integration/graql/graph:movie-graph",
         "//test-integration/rule:grakn-test-server",
         "@graknlabs_graql//java:graql",
@@ -165,10 +170,11 @@ java_test(
     classpath_resources = ["//test-integration/resources:logback-test"],
     test_class = "grakn.core.graql.query.QueryErrorIT",
     deps = [
-        "//common:common",
+        "//common",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
-        "//kb",
         "//kb/concept/api",
+        "//kb/graql/exception",
+        "//kb/server",
         "//test-integration/graql/graph:movie-graph",
         "//test-integration/rule:grakn-test-server",
         "@graknlabs_graql//java:graql",
@@ -182,13 +188,13 @@ java_test(
     classpath_resources = ["//test-integration/resources:logback-test"],
     test_class = "grakn.core.graql.query.QueryPlannerIT",
     deps = [
-        "//concept/impl:impl",
+        "//common",
         "//dependencies/maven/artifacts/com/google/guava",
-        "//graql:graql",
-        "//kb",
+        "//graql/planning",
         "//kb/concept/api",
+        "//kb/graql/planning",
+        "//kb/server",
         "//test-integration/rule:grakn-test-server",
-        "//test-integration/util:concept-downcasting",
         "@graknlabs_graql//java:graql",
     ],
 )
@@ -201,7 +207,8 @@ java_test(
     test_class = "grakn.core.graql.query.QueryValidityIT",
     deps = [
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
-        "//kb",
+        "//kb/graql/exception",
+        "//kb/server",
         "//test-integration/rule:grakn-test-server",
         "@graknlabs_graql//java:graql",
     ],

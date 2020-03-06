@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -21,16 +20,15 @@ package grakn.core.graql.reasoner.cache;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
-import grakn.core.kb.concept.api.Concept;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.graql.planning.gremlin.value.ValueOperation;
+import grakn.core.graql.reasoner.atom.predicate.ValuePredicate;
+import grakn.core.graql.reasoner.utils.AnswerUtil;
+import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.Relation;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Type;
-import grakn.core.kb.graql.executor.property.value.ValueOperation;
-import grakn.core.graql.reasoner.atom.predicate.ValuePredicate;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
-import grakn.core.graql.reasoner.unifier.UnifierType;
-import grakn.core.kb.concept.util.ConceptUtils;
 import graql.lang.statement.Variable;
 
 import javax.annotation.CheckReturnValue;
@@ -42,7 +40,7 @@ import java.util.stream.Collectors;
 
 /**
  * Quantifies semantic difference between two queries provided they are in a subsumption relation, i. e. there exists
- * a Unifier of {@link UnifierType#SUBSUMPTIVE} between them.
+ * a Unifier of UnifierType#SUBSUMPTIVE between them.
  * Semantic difference between query C and P defines a specialisation operation
  * required to transform query P into a query equivalent to C.
  * In that way we can check whether answers to the parent (more generic) query are also answers
@@ -146,7 +144,7 @@ public class SemanticDifference {
         ConceptMap unified = unifier.apply(answer);
         if (unified.isEmpty()) return unified;
         Set<Variable> varsToRetain = Sets.difference(unified.vars(), childSub.vars());
-        return ConceptUtils.joinAnswers(unified.project(varsToRetain), childSub).project(childVars);
+        return AnswerUtil.joinAnswers(unified.project(varsToRetain), childSub).project(childVars);
     }
 
     boolean isEmpty() { return definition.stream().allMatch(VariableDefinition::isTrivial);}

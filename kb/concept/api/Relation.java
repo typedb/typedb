@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -48,7 +47,7 @@ public interface Relation extends Thing {
      * Retrieve the associated RelationType for this Relation.
      *
      * @return The associated RelationType for this Relation.
-     * @see RelationType
+     * see RelationType
      */
     @Override
     RelationType type();
@@ -57,7 +56,7 @@ public interface Relation extends Thing {
      * Retrieve a list of all Instances involved in the Relation, and the Role they play.
      *
      * @return A list of all the role types and the instances playing them in this Relation.
-     * @see Role
+     * see Role
      */
     @CheckReturnValue
     Map<Role, Set<Thing>> rolePlayersMap();

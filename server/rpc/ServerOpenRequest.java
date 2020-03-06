@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -19,9 +18,9 @@
 package grakn.core.server.rpc;
 
 import grakn.core.kb.server.Session;
-import grakn.protocol.session.SessionProto;
 import grakn.core.server.keyspace.KeyspaceImpl;
 import grakn.core.server.session.SessionFactory;
+import grakn.protocol.session.SessionProto;
 
 /**
  * A request transaction opener for RPC Services. It requires the keyspace and transaction type from the argument object

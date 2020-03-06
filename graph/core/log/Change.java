@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -21,10 +20,10 @@ package grakn.core.graph.core.log;
 /**
  * Identifies the type of change has undergone.
  * <p>
- * {@link #ADDED} applies to elements that have been added to the graph, {@link #REMOVED} is for removed elements, and
- * {@link #ANY} is used to retrieve all elements that have undergone change.
+ * #ADDED applies to elements that have been added to the graph, #REMOVED is for removed elements, and
+ * #ANY is used to retrieve all elements that have undergone change.
  * <p>
- * {@link #ADDED} and {@link #REMOVED} are considered proper change states.
+ * #ADDED and #REMOVED are considered proper change states.
  *
  */
 public enum Change {

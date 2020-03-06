@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -21,7 +20,7 @@ package grakn.core.graph.diskstorage;
 /**
  * Exception thrown in the storage layer of the graph database.
  * <p>
- * Such exceptions are typically caused by the underlying storage engine and re-thrown as {@link BackendException}.
+ * Such exceptions are typically caused by the underlying storage engine and re-thrown as BackendException.
  */
 public abstract class BackendException extends Exception {
 

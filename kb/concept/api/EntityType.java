@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -96,7 +95,7 @@ public interface EntityType extends Type {
      * Creates and returns a new Entity instance, whose direct type will be this type.
      *
      * @return a new empty entity.
-     * @see Entity
+     * see Entity
      */
     Entity create();
 
@@ -152,7 +151,7 @@ public interface EntityType extends Type {
      * Returns a collection of all Entity instances for this EntityType.
      *
      * @return All the instances of this EntityType.
-     * @see Entity
+     * see Entity
      */
     @Override
     Stream<Entity> instances();

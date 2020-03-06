@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -25,7 +24,6 @@ import grakn.core.graph.diskstorage.EntryMetaData;
 import grakn.core.graph.diskstorage.ReadBuffer;
 import grakn.core.graph.diskstorage.StaticBuffer;
 import grakn.core.graph.graphdb.relations.RelationCache;
-import grakn.core.graph.util.encoding.StringEncoding;
 
 import java.nio.ByteBuffer;
 import java.util.AbstractList;
@@ -492,8 +490,6 @@ public class StaticArrayEntryList extends AbstractList<Entry> implements EntryLi
                 return IntSerializer.INSTANCE;
             case TIMESTAMP:
                 return LongSerializer.INSTANCE;
-            case VISIBILITY:
-                return ASCIIStringSerializer.INSTANCE;
             default:
                 throw new AssertionError("Unexpected meta data: " + meta);
         }
@@ -546,27 +542,6 @@ public class StaticArrayEntryList extends AbstractList<Entry> implements EntryLi
         @Override
         public Long read(byte[] data, int startPos) {
             return StaticArrayBuffer.getLong(data, startPos);
-        }
-    }
-
-    private enum ASCIIStringSerializer implements MetaDataSerializer<String> {
-
-        INSTANCE;
-
-
-        @Override
-        public int getByteLength(String value) {
-            return StringEncoding.getAsciiByteLength(value);
-        }
-
-        @Override
-        public void write(byte[] data, int startPos, String value) {
-            StringEncoding.writeAsciiString(data, startPos, value);
-        }
-
-        @Override
-        public String read(byte[] data, int startPos) {
-            return StringEncoding.readAsciiString(data, startPos);
         }
     }
 

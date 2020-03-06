@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -45,7 +44,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Builds a {@link BaseVertexQuery}, optimizes the query and compiles the result into a {@link BaseVertexCentricQuery} which
+ * Builds a BaseVertexQuery, optimizes the query and compiles the result into a BaseVertexCentricQuery which
  * is then executed by one of the extending classes.
  */
 public abstract class BaseVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q>> implements BaseVertexQuery<Q> {
@@ -93,7 +92,6 @@ public abstract class BaseVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q>
      * Query Construction
      * ---------------------------------------------------------------
      */
-
 
     @Override
     public Q adjacent(Vertex vertex) {
@@ -204,8 +202,7 @@ public abstract class BaseVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q>
         Preconditions.checkArgument(schemaInspector.containsPropertyKey(keyName), "Provided key does not exist: %s", keyName);
         PropertyKey key = schemaInspector.getPropertyKey(keyName);
         Preconditions.checkArgument(key != null && order != null, "Need to specify and key and an order");
-        Preconditions.checkArgument(Comparable.class.isAssignableFrom(key.dataType()),
-                "Can only order on keys with comparable data type. [%s] has datatype [%s]", key.name(), key.dataType());
+        Preconditions.checkArgument(Comparable.class.isAssignableFrom(key.dataType()), "Can only order on keys with comparable data type. [%s] has datatype [%s]", key.name(), key.dataType());
         Preconditions.checkArgument(!(key instanceof SystemRelationType), "Cannot use system types in ordering: %s", key);
         Preconditions.checkArgument(!orders.containsKey(key));
         Preconditions.checkArgument(orders.isEmpty(), "Only a single sort order is supported on vertex queries");
@@ -233,13 +230,10 @@ public abstract class BaseVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q>
     }
 
     /**
-     * Whether this query is asking for the value of an {@link ImplicitKey}.
+     * Whether this query is asking for the value of an ImplicitKey.
      * <p>
      * Handling of implicit keys is completely distinct from "normal" query execution and handled extra
      * for completeness reasons.
-     *
-     * @param returnType
-     * @return
      */
     protected final boolean isImplicitKeyQuery(RelationCategory returnType) {
         return returnType != RelationCategory.EDGE && types.length == 1 && constraints.isEmpty() && schemaInspector.getRelationType(types[0]) instanceof ImplicitKey;

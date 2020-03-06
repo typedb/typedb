@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -78,7 +77,7 @@ public class CacheTransaction implements StoreTransaction, LoggableTransaction {
         if (additions.isEmpty() && deletions.isEmpty()) return;
 
         KCVEntryMutation m = new KCVEntryMutation(additions, deletions);
-        final Map<StaticBuffer, KCVEntryMutation> storeMutation = mutations.computeIfAbsent(store, k -> new HashMap<>());
+        Map<StaticBuffer, KCVEntryMutation> storeMutation = mutations.computeIfAbsent(store, k -> new HashMap<>());
         KCVEntryMutation existingM = storeMutation.get(key);
         if (existingM != null) {
             existingM.merge(m);

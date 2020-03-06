@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -24,8 +23,8 @@ import grakn.core.graph.graphdb.query.BaseQuery;
 import java.util.function.Predicate;
 
 /**
- * A query against a {@link OrderedKeyValueStore}. Retrieves all the results that lie between start (inclusive) and
- * end (exclusive) which satisfy the filter. Returns up to the specified limit number of key-value pairs {@link KeyValueEntry}.
+ * A query against a OrderedKeyValueStore. Retrieves all the results that lie between start (inclusive) and
+ * end (exclusive) which satisfy the filter. Returns up to the specified limit number of key-value pairs KeyValueEntry.
  */
 public class KVQuery extends BaseQuery {
 

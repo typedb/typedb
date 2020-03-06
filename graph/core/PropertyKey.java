@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -19,11 +18,8 @@
 
 package grakn.core.graph.core;
 
-import grakn.core.graph.core.Cardinality;
-import grakn.core.graph.core.RelationType;
-
 /**
- * PropertyKey is an extension of {@link RelationType} for properties. Each property in JanusGraph has a key.
+ * PropertyKey is an extension of RelationType for properties. Each property in JanusGraph has a key.
  * <p>
  * A property key defines the following characteristics of a property:
  * <ul>
@@ -33,7 +29,7 @@ import grakn.core.graph.core.RelationType;
  * </li>
  * </ul>
  *
- * @see RelationType
+ * see RelationType
  */
 public interface PropertyKey extends RelationType {
 
@@ -46,7 +42,7 @@ public interface PropertyKey extends RelationType {
     Class<?> dataType();
 
     /**
-     * The {@link Cardinality} of this property key.
+     * The Cardinality of this property key.
      */
     Cardinality cardinality();
 

@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -21,22 +20,22 @@ package grakn.core.graql.reasoner.atom;
 
 import com.google.common.collect.Sets;
 import grakn.core.common.exception.ErrorMessage;
-import grakn.core.concept.answer.ConceptMap;
-import grakn.core.kb.concept.api.Rule;
 import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.reasoner.atom.predicate.Predicate;
+import grakn.core.kb.concept.api.Label;
+import grakn.core.kb.concept.api.Rule;
+import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
-import grakn.core.kb.server.Transaction;
 import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
-import grakn.core.kb.graql.reasoner.atom.Atomic;
-
-import javax.annotation.CheckReturnValue;
-import javax.annotation.Nullable;
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Stream;
+import javax.annotation.CheckReturnValue;
+import javax.annotation.Nullable;
 
 /**
  * Base Atomic implementation providing basic functionalities.
@@ -75,6 +74,11 @@ public abstract class AtomicBase implements Atomic {
     @Override
     public Set<String> validateAsRuleHead(Rule rule) {
         return Sets.newHashSet(ErrorMessage.VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD.getMessage(rule.then(), rule.label()));
+    }
+
+    @Override
+    public Set<String> validateAsRuleBody(Label ruleLabel) {
+        return new HashSet<>();
     }
 
     @Override
@@ -133,35 +137,19 @@ public abstract class AtomicBase implements Atomic {
     }
 
     @Override
-    public Atomic inferTypes(){ return inferTypes(new ConceptMap()); }
-
-    public Atomic inferTypes(ConceptMap sub){ return this; }
-
-    /**
-     * @return Transaction this atomic is defined in
-     */
-    public Transaction tx(){
-        return getParentQuery().tx();
-    }
+    public Atomic inferTypes() { return this; }
 
     @Override
     public boolean equals(Object o) {
-        if (o == this) {
-            return true;
-        }
-        if (this.getClass().equals(o.getClass())) {
-            AtomicBase that = (AtomicBase) o;
-            return (this.getVarName().equals(that.getVarName()));
-        }
-        return false;
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        AtomicBase that = (AtomicBase) o;
+        return Objects.equals(varName, that.varName);
     }
 
     @Override
     public int hashCode() {
-        int h = 1;
-        h *= 1000003;
-        h ^= this.getVarName().hashCode();
-        return h;
+        return varName.hashCode();
     }
 }
 

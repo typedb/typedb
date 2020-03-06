@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -20,32 +19,36 @@ package grakn.core.graql.reasoner.reasoning;
 
 import com.google.common.collect.Iterables;
 import grakn.common.util.Pair;
-import grakn.core.kb.concept.api.Label;
+import grakn.core.common.config.Config;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.kb.concept.api.Type;
 import grakn.core.graql.reasoner.atom.binary.AttributeAtom;
 import grakn.core.graql.reasoner.atom.predicate.VariableValuePredicate;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
-import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.graql.reasoner.query.ReasonerQueryEquivalence;
+import grakn.core.graql.reasoner.query.ReasonerQueryFactory;
 import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
 import grakn.core.graql.reasoner.query.ResolvableQuery;
 import grakn.core.graql.reasoner.utils.ReasonerUtils;
-import grakn.core.rule.GraknTestServer;
+import grakn.core.kb.concept.api.Label;
+import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
+import grakn.core.rule.GraknTestStorage;
+import grakn.core.rule.SessionUtil;
+import grakn.core.rule.TestTransactionProvider;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlGet;
 import graql.lang.statement.Statement;
-import java.util.AbstractCollection;
-import java.util.List;
-import java.util.Set;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
+
+import java.util.AbstractCollection;
+import java.util.List;
+import java.util.Set;
 
 import static grakn.core.util.GraqlTestUtil.assertCollectionsNonTriviallyEqual;
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
@@ -58,12 +61,13 @@ import static org.junit.Assert.assertNotEquals;
 public class ValuePredicateIT {
 
     @ClassRule
-    public static final GraknTestServer server = new GraknTestServer();
+    public static final GraknTestStorage storage = new GraknTestStorage();
 
     private static Session attributeAttachmentSession;
     @BeforeClass
     public static void loadContext(){
-        attributeAttachmentSession = server.sessionWithNewKeyspace();
+        Config mockServerConfig = storage.createCompatibleServerConfig();
+        attributeAttachmentSession = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig);
         String resourcePath = "test-integration/graql/reasoner/stubs/";
         loadFromFileAndCommit(resourcePath, "resourceAttachment.gql", attributeAttachmentSession);
     }
@@ -75,7 +79,8 @@ public class ValuePredicateIT {
 
     @Test
     public void whenResolvingInferrableAttributesWithBounds_answersAreCalculatedCorrectly(){
-        Session session = server.sessionWithNewKeyspace();
+        Config mockServerConfig = storage.createCompatibleServerConfig();
+        Session session = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig);
         try(Transaction tx = session.writeTransaction()) {
             tx.execute(Graql.parse("define " +
                     "someEntity sub entity," +
@@ -127,11 +132,13 @@ public class ValuePredicateIT {
             assertFalse(answers.isEmpty());
             answers.forEach(ans -> assertTrue((long) ans.get(value.var()).asAttribute().value() != bound));
         }
+        session.close();
     }
 
     @Test
     public void whenResolvableAttributesHaveVariableComparisons_answersAreCalculatedCorrectly(){
-        Session session = server.sessionWithNewKeyspace();
+        Config mockServerConfig = storage.createCompatibleServerConfig();
+        Session session = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig);
         try(Transaction tx = session.writeTransaction()) {
             tx.execute(Graql.parse("define " +
                     "someEntity sub entity," +
@@ -197,11 +204,14 @@ public class ValuePredicateIT {
                 assertTrue((long) ans.get(value.var()).asAttribute().value() != (long) ans.get(anotherValue.var()).asAttribute().value());
             });
         }
+
+        session.close();
     }
 
     @Test
-    public void whenResolvableAttributesHaveVariableComparisonsWithABound_answersAreCalculatedCorrectly(){
-        Session session = server.sessionWithNewKeyspace();
+    public void whenResolvableAttributesHaveVariableComparisonsWithAoBound_answersAreCalculatedCorrectly(){
+        Config mockServerConfig = storage.createCompatibleServerConfig();
+        Session session = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig);
         try(Transaction tx = session.writeTransaction()) {
             tx.execute(Graql.parse("define " +
                     "someEntity sub entity," +
@@ -258,6 +268,7 @@ public class ValuePredicateIT {
             assertFalse(answers.isEmpty());
             answers.forEach(ans -> assertTrue((long) ans.get(value.var()).asAttribute().value() != bound));
         }
+        session.close();
     }
 
     @Test
@@ -319,12 +330,14 @@ public class ValuePredicateIT {
                     ).getNegationDNF().getPatterns()
             );
 
-            ResolvableQuery unboundNeqQuery = ReasonerQueries.resolvable(neqWithoutBound, tx);
-            ResolvableQuery unboundNeqQuery2 = ReasonerQueries.resolvable(neqWithoutBound2, tx);
-            ResolvableQuery boundNeqQuery = ReasonerQueries.resolvable(neqWithBound, tx);
-            ResolvableQuery softBoundNeqQuery = ReasonerQueries.resolvable(neqWithSoftBound, tx);
-            ResolvableQuery negatedQueryWithIndirectBound = ReasonerQueries.resolvable(negationWithIndirectBound, tx);
-            ResolvableQuery negatedQueryWithBound = ReasonerQueries.resolvable(negationWithBound, tx);
+            ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
+
+            ResolvableQuery unboundNeqQuery = reasonerQueryFactory.resolvable(neqWithoutBound);
+            ResolvableQuery unboundNeqQuery2 = reasonerQueryFactory.resolvable(neqWithoutBound2);
+            ResolvableQuery boundNeqQuery = reasonerQueryFactory.resolvable(neqWithBound);
+            ResolvableQuery softBoundNeqQuery = reasonerQueryFactory.resolvable(neqWithSoftBound);
+            ResolvableQuery negatedQueryWithIndirectBound = reasonerQueryFactory.resolvable(negationWithIndirectBound);
+            ResolvableQuery negatedQueryWithBound = reasonerQueryFactory.resolvable(negationWithBound);
 
             //we keep unbound predicates outside attributes
             assertTrue(ReasonerQueryEquivalence.AlphaEquivalence.equivalent(unboundNeqQuery, unboundNeqQuery2));
@@ -367,11 +380,13 @@ public class ValuePredicateIT {
                             "$val !== $unwanted;" +
                     "};").getNegationDNF().getPatterns());
 
-            ResolvableQuery outsideAttribute = ReasonerQueries.resolvable(neqOutsideAttribute, tx);
+            ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
+
+            ResolvableQuery outsideAttribute = reasonerQueryFactory.resolvable(neqOutsideAttribute);
 
             //if a comparison vp is inside attribute, we need to copy it outside as well to ensure correctness at the end of execution
-            ResolvableQuery insideAttribute = ReasonerQueries.resolvable(neqInsideAttribute, tx);
-            ResolvableQuery indirectOutside = ReasonerQueries.resolvable(indirectOutsideNeq, tx);
+            ResolvableQuery insideAttribute = reasonerQueryFactory.resolvable(neqInsideAttribute);
+            ResolvableQuery indirectOutside = reasonerQueryFactory.resolvable(indirectOutsideNeq);
             assertTrue(ReasonerQueryEquivalence.AlphaEquivalence.equivalent(outsideAttribute, insideAttribute));
             assertTrue(ReasonerQueryEquivalence.AlphaEquivalence.equivalent(insideAttribute, indirectOutside));
         }
@@ -407,10 +422,12 @@ public class ValuePredicateIT {
                     "$anotherValue contains 'value';" +
                     "};";
 
-            ReasonerQueryImpl query = ReasonerQueries.create(conjunction(neqVariant), tx);
-            ReasonerQueryImpl query2 = ReasonerQueries.create(conjunction(neqVariantWithExtraCondition), tx);
-            ReasonerQueryImpl query3 = ReasonerQueries.create(conjunction(eqVariant), tx);
-            ReasonerQueryImpl query4 = ReasonerQueries.create(conjunction(eqVariantWithExtraCondition), tx);
+            ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
+
+            ReasonerQueryImpl query = reasonerQueryFactory.create(conjunction(neqVariant));
+            ReasonerQueryImpl query2 = reasonerQueryFactory.create(conjunction(neqVariantWithExtraCondition));
+            ReasonerQueryImpl query3 = reasonerQueryFactory.create(conjunction(eqVariant));
+            ReasonerQueryImpl query4 = reasonerQueryFactory.create(conjunction(eqVariantWithExtraCondition));
             List<ConceptMap> neqAnswers = tx.execute(Graql.match(Graql.parsePattern(neqVariant)).get());
             List<ConceptMap> neqAnswersWithCondition = tx.execute(Graql.match(Graql.parsePattern(neqVariantWithExtraCondition)).get());
             List<ConceptMap> eqAnswers = tx.execute(Graql.match(Graql.parsePattern(eqVariant)).get());
@@ -469,11 +486,13 @@ public class ValuePredicateIT {
                     "not {$val !== 'unattached';};" +
                     "};";
 
-            ReasonerAtomicQuery neqHardBoundQuery = ReasonerQueries.atomic(conjunction(neqHardBound), tx);
-            ReasonerAtomicQuery neqHardBoundQuery2 = ReasonerQueries.atomic(conjunction(neqHardBound2), tx);
-            ResolvableQuery negatedVpHardBoundQuery = ReasonerQueries.resolvable(conjunctionWithNegation(negatedVpHardBound), tx);
-            ResolvableQuery negatedVpHardBoundQuery2 = ReasonerQueries.resolvable(conjunctionWithNegation(negatedVpHardBound2), tx);
-            ResolvableQuery negatedNeqVpHardBoundQuery = ReasonerQueries.resolvable(conjunctionWithNegation(negatedNeqVpHardBound), tx);
+            ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
+
+            ReasonerAtomicQuery neqHardBoundQuery = reasonerQueryFactory.atomic(conjunction(neqHardBound));
+            ReasonerAtomicQuery neqHardBoundQuery2 = reasonerQueryFactory.atomic(conjunction(neqHardBound2));
+            ResolvableQuery negatedVpHardBoundQuery = reasonerQueryFactory.resolvable(conjunctionWithNegation(negatedVpHardBound));
+            ResolvableQuery negatedVpHardBoundQuery2 = reasonerQueryFactory.resolvable(conjunctionWithNegation(negatedVpHardBound2));
+            ResolvableQuery negatedNeqVpHardBoundQuery = reasonerQueryFactory.resolvable(conjunctionWithNegation(negatedNeqVpHardBound));
 
             assertTrue(ReasonerQueryEquivalence.AlphaEquivalence.equivalent(neqHardBoundQuery, neqHardBoundQuery2));
             assertTrue(ReasonerQueryEquivalence.AlphaEquivalence.equivalent(negatedVpHardBoundQuery, negatedVpHardBoundQuery2));
@@ -481,7 +500,7 @@ public class ValuePredicateIT {
             String complementQueryPattern = "{$x has derived-resource-string $val; $val == 'unattached';};";
             String completeQueryPattern = "{$x has derived-resource-string $val;};";
 
-            ReasonerAtomicQuery complementQuery = ReasonerQueries.atomic(conjunction(complementQueryPattern), tx);
+            ReasonerAtomicQuery complementQuery = reasonerQueryFactory.atomic(conjunction(complementQueryPattern));
 
             List<ConceptMap> answers = tx.execute(Graql.match(Graql.parsePattern(neqHardBound)).get());
 

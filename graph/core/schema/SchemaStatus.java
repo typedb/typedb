@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,10 +17,8 @@
 
 package grakn.core.graph.core.schema;
 
-import grakn.core.graph.core.schema.Index;
-
 /**
- * Designates the status of a {@link Index} in a graph.
+ * Designates the status of a Index in a graph.
  *
  */
 public enum SchemaStatus {

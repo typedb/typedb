@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -20,6 +19,7 @@
 package grakn.core.concept.impl;
 
 import grakn.core.concept.cache.ConceptCache;
+import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Concept;
@@ -29,9 +29,10 @@ import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.concept.api.Type;
-import grakn.core.kb.concept.structure.Shard;
+import grakn.core.kb.concept.manager.ConceptManager;
+import grakn.core.kb.concept.manager.ConceptNotificationChannel;
 import grakn.core.kb.concept.structure.EdgeElement;
-import grakn.core.core.Schema;
+import grakn.core.kb.concept.structure.Shard;
 import grakn.core.kb.concept.structure.VertexElement;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
@@ -67,8 +68,8 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         return roleTypes;
     });
 
-    TypeImpl(VertexElement vertexElement, ConceptManagerImpl conceptManager, ConceptObserver conceptObserver) {
-        super(vertexElement, conceptManager, conceptObserver);
+    public TypeImpl(VertexElement vertexElement, ConceptManager conceptManager, ConceptNotificationChannel conceptNotificationChannel) {
+        super(vertexElement, conceptManager, conceptNotificationChannel);
     }
 
     public static <X extends Type, Y extends Thing> TypeImpl<X, Y> from(Type type) {
@@ -309,7 +310,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         property(Schema.VertexProperty.IS_ABSTRACT, isAbstract);
         cachedIsAbstract.set(isAbstract);
 
-        conceptObserver.conceptSetAbstract(this, isAbstract);
+        conceptNotificationChannel.conceptSetAbstract(this, isAbstract);
 
         return getThis();
     }

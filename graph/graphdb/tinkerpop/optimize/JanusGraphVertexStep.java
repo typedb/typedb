@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -20,6 +19,17 @@ package grakn.core.graph.graphdb.tinkerpop.optimize;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
+import grakn.core.graph.core.BaseVertexQuery;
+import grakn.core.graph.core.JanusGraphElement;
+import grakn.core.graph.core.JanusGraphMultiVertexQuery;
+import grakn.core.graph.core.JanusGraphVertex;
+import grakn.core.graph.core.JanusGraphVertexQuery;
+import grakn.core.graph.graphdb.query.BaseQuery;
+import grakn.core.graph.graphdb.query.JanusGraphPredicate;
+import grakn.core.graph.graphdb.query.Query;
+import grakn.core.graph.graphdb.query.profile.QueryProfiler;
+import grakn.core.graph.graphdb.query.vertex.BasicVertexCentricQueryBuilder;
+import grakn.core.graph.graphdb.tinkerpop.profile.TP3ProfileWrapper;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
@@ -38,20 +48,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
-import grakn.core.graph.core.BaseVertexQuery;
-import grakn.core.graph.core.JanusGraphElement;
-import grakn.core.graph.core.JanusGraphMultiVertexQuery;
-import grakn.core.graph.core.JanusGraphVertex;
-import grakn.core.graph.core.JanusGraphVertexQuery;
-import grakn.core.graph.graphdb.query.BaseQuery;
-import grakn.core.graph.graphdb.query.JanusGraphPredicate;
-import grakn.core.graph.graphdb.query.Query;
-import grakn.core.graph.graphdb.query.profile.QueryProfiler;
-import grakn.core.graph.graphdb.query.vertex.BasicVertexCentricQueryBuilder;
-import grakn.core.graph.graphdb.tinkerpop.optimize.HasStepFolder;
-import grakn.core.graph.graphdb.tinkerpop.optimize.JanusGraphTraversalUtil;
-import grakn.core.graph.graphdb.tinkerpop.optimize.MultiQueriable;
-import grakn.core.graph.graphdb.tinkerpop.profile.TP3ProfileWrapper;
 
 import java.util.ArrayList;
 import java.util.Arrays;

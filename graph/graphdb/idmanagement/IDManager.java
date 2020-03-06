@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -558,8 +557,8 @@ public class IDManager {
     }
 
     /**
-     * Converts a user provided long id into a JanusGraph vertex id. The id must be positive and less than {@link #getVertexCountBound()}.
-     * This method is useful when providing ids during vertex creation via {@link org.apache.tinkerpop.gremlin.structure.Graph#addVertex(Object...)}.
+     * Converts a user provided long id into a JanusGraph vertex id. The id must be positive and less than #getVertexCountBound().
+     * This method is useful when providing ids during vertex creation via org.apache.tinkerpop.gremlin.structure.Graph#addVertex(Object...).
      *
      * @param id long id
      * @return a corresponding JanusGraph vertex id

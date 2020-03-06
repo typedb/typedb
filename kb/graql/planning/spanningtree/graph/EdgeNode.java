@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -19,7 +18,8 @@
 
 package grakn.core.kb.graql.planning.spanningtree.graph;
 
-import grakn.core.kb.server.Transaction;
+import grakn.core.kb.concept.manager.ConceptManager;
+import grakn.core.kb.keyspace.KeyspaceStatistics;
 
 public class EdgeNode extends Node {
     private static final int EDGE_NODE_PRIORITY = 2;
@@ -29,7 +29,7 @@ public class EdgeNode extends Node {
     }
 
     @Override
-    public long matchingElementsEstimate(Transaction tx) {
+    public long matchingElementsEstimate(ConceptManager conceptManager, KeyspaceStatistics statistics) {
         // edge nodes for now return 1 so we don't affect the multiplication of other vertices' counts
         return 1;
     }

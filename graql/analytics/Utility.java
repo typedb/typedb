@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -19,12 +18,11 @@
 package grakn.core.graql.analytics;
 
 import com.google.common.collect.Sets;
+import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.LabelId;
-import grakn.core.core.Schema;
-import grakn.core.kb.server.Transaction;
-import graql.lang.Graql;
+import grakn.core.kb.concept.manager.ConceptManager;
 import org.apache.tinkerpop.gremlin.process.computer.KeyValue;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
@@ -32,10 +30,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
-
-import static graql.lang.Graql.var;
 
 /**
  * Some helper methods for MapReduce and vertex program.
@@ -110,28 +105,11 @@ public class Utility {
     /**
      * Check whether it is possible that there is a resource edge between the two given concepts.
      */
-    private static boolean mayHaveResourceEdge(Transaction tx, ConceptId conceptId1, ConceptId conceptId2) {
-        Concept concept1 = tx.getConcept(conceptId1);
-        Concept concept2 = tx.getConcept(conceptId2);
+    public static boolean mayHaveResourceEdge(ConceptManager conceptManager, ConceptId conceptId1, ConceptId conceptId2) {
+        Concept concept1 = conceptManager.getConcept(conceptId1);
+        Concept concept2 = conceptManager.getConcept(conceptId2);
         return concept1 != null && concept2 != null && (concept1.isAttribute() || concept2.isAttribute());
     }
 
-    /**
-     * Get the resource edge id if there is one. Return null if not.
-     */
-    public static ConceptId getResourceEdgeId(Transaction tx, ConceptId conceptId1, ConceptId conceptId2) {
-        if (mayHaveResourceEdge(tx, conceptId1, conceptId2)) {
-            Optional<Concept> firstConcept = tx.stream(Graql.match(
-                    var("x").id(conceptId1.getValue()),
-                    var("y").id(conceptId2.getValue()),
-                    var("z").rel(var("x")).rel(var("y")))
-                    .get("z"))
-                    .map(answer -> answer.get("z"))
-                    .findFirst();
-            if (firstConcept.isPresent()) {
-                return firstConcept.get().id();
-            }
-        }
-        return null;
-    }
+
 }

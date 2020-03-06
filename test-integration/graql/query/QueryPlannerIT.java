@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -19,23 +18,22 @@
 package grakn.core.graql.query;
 
 import com.google.common.collect.ImmutableList;
-import grakn.core.concept.impl.TypeImpl;
+import grakn.core.common.config.Config;
+import grakn.core.graql.planning.gremlin.fragment.InIsaFragment;
+import grakn.core.graql.planning.gremlin.fragment.LabelFragment;
+import grakn.core.graql.planning.gremlin.fragment.OutIsaFragment;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Entity;
 import grakn.core.kb.concept.api.EntityType;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
-import grakn.core.graql.gremlin.TraversalPlanFactoryImpl;
-import grakn.core.graql.gremlin.fragment.InIsaFragment;
-import grakn.core.graql.gremlin.fragment.LabelFragment;
-import grakn.core.graql.gremlin.fragment.NeqFragment;
-import grakn.core.graql.gremlin.fragment.OutIsaFragment;
-import grakn.core.kb.graql.planning.Fragment;
-import grakn.core.kb.graql.planning.TraversalPlanFactory;
-import grakn.core.rule.GraknTestServer;
+import grakn.core.kb.graql.planning.gremlin.Fragment;
+import grakn.core.kb.graql.planning.gremlin.TraversalPlanFactory;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
-import grakn.core.util.ConceptDowncasting;
+import grakn.core.rule.GraknTestStorage;
+import grakn.core.rule.SessionUtil;
+import grakn.core.rule.TestTransactionProvider;
 import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;
 import org.junit.After;
@@ -76,13 +74,14 @@ public class QueryPlannerIT {
     private static final String resourceType = "resourceType";
 
     @ClassRule
-    public static GraknTestServer graknServer = new GraknTestServer();
+    public static GraknTestStorage storage = new GraknTestStorage();
     private static Session session;
     private Transaction tx;
 
     @BeforeClass
     public static void newSession() {
-        session = graknServer.sessionWithNewKeyspace();
+        Config mockServerConfig = storage.createCompatibleServerConfig();
+        session = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig);
         Transaction graph = session.writeTransaction();
 
         EntityType entityType0 = graph.putEntityType(thingy0);
@@ -395,115 +394,9 @@ public class QueryPlannerIT {
                 .filter(fragment -> fragment instanceof OutIsaFragment || fragment instanceof InIsaFragment).count());
     }
 
-    @Test @SuppressWarnings("Duplicates")
-    public void shardCountIsUsed() {
-        // force the concept to get a new shard
-        // shards of thing = 2 (thing = 1 and thing itself)
-        // thing 2 = 4, thing3 = 7
-        TypeImpl<?,?> entityType2 = ConceptDowncasting.type(tx.getEntityType(thingy2));
-        entityType2.createShard();
-        entityType2.createShard();
-        entityType2.createShard();
-
-        TypeImpl<?,?> entityType3 = ConceptDowncasting.type(tx.getEntityType(thingy3));
-        entityType3.createShard();
-        entityType3.createShard();
-        entityType3.createShard();
-        entityType3.createShard();
-        entityType3.createShard();
-        entityType3.createShard();
-
-        Pattern pattern;
-        ImmutableList<? extends Fragment> plan;
-
-        pattern = and(
-                x.isa(thingy1),
-                y.isa(thingy2),
-                z.isa(thingy3),
-                var().rel(x).rel(y).rel(z));
-        plan = getPlan(pattern);
-        assertEquals(x.var(), plan.get(3).end());
-        assertEquals(3L, plan.stream().filter(fragment -> fragment instanceof NeqFragment).count());
-
-        //TODO: should uncomment the following after updating cost of out-isa fragment
-//        varName = plan.get(7).end().value();
-//        assertEquals(y.value(), varName);
-//
-//        varName = plan.get(11).end().value();
-//        assertEquals(y.value(), varName);
-
-        pattern = and(
-                x.isa(thingy),
-                y.isa(thingy2),
-                var().rel(x).rel(y));
-        plan = getPlan(pattern);
-        assertEquals(x.var(), plan.get(3).end());
-
-        pattern = and(
-                x.isa(thingy),
-                y.isa(thingy2),
-                z.isa(thingy3),
-                var().rel(x).rel(y).rel(z));
-        plan = getPlan(pattern);
-        assertEquals(x.var(), plan.get(4).end());
-
-        pattern = and(
-                x.isa(superType),
-                superType.type(thingy),
-                y.isa(thingy2),
-                subType.sub(superType),
-                z.isa(subType),
-                var().rel(x).rel(y));
-        plan = getPlan(pattern);
-        assertEquals(z.var(), plan.get(10).end());
-
-        TypeImpl<?, ?> thingy1Impl = ConceptDowncasting.type(tx.getEntityType(thingy1));
-        thingy1Impl.createShard();
-        thingy1Impl.createShard();
-
-        TypeImpl<?, ?> thingyImpl = ConceptDowncasting.type(tx.getEntityType(thingy));
-        thingyImpl.createShard();
-        // now thing = 5, thing1 = 3
-
-        pattern = and(
-                x.isa(thingy),
-                y.isa(thingy2),
-                z.isa(thingy3),
-                var().rel(x).rel(y).rel(z));
-        plan = getPlan(pattern);
-        assertEquals(y.var(), plan.get(3).end());
-
-        pattern = and(
-                x.isa(thingy1),
-                y.isa(thingy2),
-                z.isa(thingy3),
-                var().rel(x).rel(y).rel(z));
-        plan = getPlan(pattern);
-        assertEquals(x.var(), plan.get(3).end());
-
-        thingy1Impl.createShard();
-        thingy1Impl.createShard();
-        // now thing = 7, thing1 = 5
-
-        pattern = and(
-                x.isa(thingy),
-                y.isa(thingy2),
-                z.isa(thingy3),
-                var().rel(x).rel(y).rel(z));
-        plan = getPlan(pattern);
-        assertEquals(y.var(), plan.get(3).end());
-
-        pattern = and(
-                x.isa(thingy1),
-                y.isa(thingy2),
-                z.isa(thingy3),
-                var().rel(x).rel(y).rel(z));
-        plan = getPlan(pattern);
-        assertEquals(y.var(), plan.get(3).end());
-    }
-
     private ImmutableList<? extends Fragment> getPlan(Pattern pattern) {
-        TraversalPlanFactory traversalPlanFactory = new TraversalPlanFactoryImpl(tx);
+        TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
+        TraversalPlanFactory traversalPlanFactory = testTx.traversalPlanFactory();
         return traversalPlanFactory.createTraversal(pattern).fragments().iterator().next();
     }
 }

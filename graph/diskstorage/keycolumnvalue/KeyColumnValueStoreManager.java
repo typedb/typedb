@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -21,10 +20,6 @@ package grakn.core.graph.diskstorage.keycolumnvalue;
 import grakn.core.graph.diskstorage.BackendException;
 import grakn.core.graph.diskstorage.StaticBuffer;
 import grakn.core.graph.diskstorage.StoreMetaData;
-import grakn.core.graph.diskstorage.keycolumnvalue.KCVMutation;
-import grakn.core.graph.diskstorage.keycolumnvalue.KeyColumnValueStore;
-import grakn.core.graph.diskstorage.keycolumnvalue.StoreManager;
-import grakn.core.graph.diskstorage.keycolumnvalue.StoreTransaction;
 
 import java.util.Map;
 
@@ -64,7 +59,7 @@ public interface KeyColumnValueStoreManager extends StoreManager {
      * Executes multiple mutations at once. For each store (identified by a string name) there is a map of (key,mutation) pairs
      * that specifies all the mutations to execute against the particular store for that key.
      *
-     * This is an optional operation. Check {@link #getFeatures()} if it is supported by a particular implementation.
+     * This is an optional operation. Check #getFeatures() if it is supported by a particular implementation.
      */
     void mutateMany(Map<String, Map<StaticBuffer, KCVMutation>> mutations, StoreTransaction txh) throws BackendException;
 

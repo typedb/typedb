@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -20,17 +19,13 @@
 package grakn.core.graql.executor.property;
 
 import com.google.common.collect.ImmutableSet;
+import grakn.core.graql.planning.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.graql.executor.WriteExecutor;
-import grakn.core.kb.graql.planning.EquivalentFragmentSet;
-import grakn.core.graql.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.kb.graql.executor.property.PropertyExecutor;
-import grakn.core.kb.graql.reasoner.atom.Atomic;
-import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
-import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
+import grakn.core.kb.graql.planning.gremlin.EquivalentFragmentSet;
 import graql.lang.property.IdProperty;
 import graql.lang.property.VarProperty;
-import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 
 import java.util.Set;
@@ -52,10 +47,6 @@ public class IdExecutor  implements PropertyExecutor.Referrable {
         return ImmutableSet.of(EquivalentFragmentSets.id(property, var, id));
     }
 
-    @Override
-    public Atomic atomic(ReasonerQuery parent, Statement statement, Set<Statement> otherStatements) {
-        return IdPredicate.create(var, id, parent);
-    }
 
     @Override
     public Referrer referrer() {

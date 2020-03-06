@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -20,16 +19,12 @@
 package grakn.core.kb.graql.executor;
 
 import grakn.core.concept.answer.AnswerGroup;
-import grakn.core.concept.answer.ConceptList;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concept.answer.ConceptSet;
-import grakn.core.concept.answer.ConceptSetMeasure;
 import grakn.core.concept.answer.Numeric;
 import grakn.core.concept.answer.Void;
-import grakn.core.kb.graql.planning.GraqlTraversal;
+import grakn.core.kb.graql.planning.gremlin.GraqlTraversal;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
-import graql.lang.query.GraqlCompute;
 import graql.lang.query.GraqlDefine;
 import graql.lang.query.GraqlDelete;
 import graql.lang.query.GraqlGet;
@@ -49,9 +44,9 @@ public interface QueryExecutor {
      */
     Stream<ConceptMap> traverse(Conjunction<Pattern> pattern, GraqlTraversal graqlTraversal);
 
-    ConceptMap define(GraqlDefine query);
+    Stream<ConceptMap> define(GraqlDefine query);
 
-    ConceptMap undefine(GraqlUndefine query);
+    Stream<ConceptMap> undefine(GraqlUndefine query);
 
     Stream<ConceptMap> insert(GraqlInsert query);
 
@@ -64,12 +59,4 @@ public interface QueryExecutor {
     Stream<AnswerGroup<ConceptMap>> get(GraqlGet.Group query);
 
     Stream<AnswerGroup<Numeric>> get(GraqlGet.Group.Aggregate query);
-
-    Stream<Numeric> compute(GraqlCompute.Statistics query);
-
-    Stream<ConceptList> compute(GraqlCompute.Path query);
-
-    Stream<ConceptSetMeasure> compute(GraqlCompute.Centrality query);
-
-    Stream<ConceptSet> compute(GraqlCompute.Cluster query);
 }

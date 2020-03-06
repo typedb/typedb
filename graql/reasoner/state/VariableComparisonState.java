@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -23,10 +22,9 @@ import com.google.common.collect.Iterators;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.atom.predicate.VariablePredicate;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
-import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
+import grakn.core.graql.reasoner.utils.AnswerUtil;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
-import grakn.core.kb.concept.util.ConceptUtils;
 
 import java.util.Iterator;
 import java.util.Set;
@@ -58,10 +56,10 @@ public class VariableComparisonState extends AnswerPropagatorState<ReasonerQuery
                                    Unifier u,
                                    AnswerPropagatorState parent,
                                    Set<ReasonerAtomicQuery> subGoals) {
-        super(ReasonerQueries.create(q, sub), sub, u, parent, subGoals);
+        super(q.withSubstitution(sub), sub, u, parent, subGoals);
 
         this.variablePredicates = getQuery().getAtoms(VariablePredicate.class).collect(Collectors.toSet());
-        this.variablePredicateSub = ConceptUtils.joinAnswers(getQuery().getSubstitution(), sub)
+        this.variablePredicateSub = AnswerUtil.joinAnswers(getQuery().getSubstitution(), sub)
                 .project(this.variablePredicates.stream().flatMap(p -> p.getVarNames().stream()).collect(Collectors.toSet()));
     }
 
@@ -74,7 +72,7 @@ public class VariableComparisonState extends AnswerPropagatorState<ReasonerQuery
 
     @Override
     public ResolutionState propagateAnswer(AnswerState state) {
-        ConceptMap fullAnswer = ConceptUtils.joinAnswers(state.getSubstitution(), variablePredicateSub);
+        ConceptMap fullAnswer = AnswerUtil.joinAnswers(state.getSubstitution(), variablePredicateSub);
 
         boolean predicatesSatisfied = variablePredicates.stream()
                 .allMatch(p -> p.isSatisfied(fullAnswer));

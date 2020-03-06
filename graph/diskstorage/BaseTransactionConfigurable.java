@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -20,8 +19,8 @@ package grakn.core.graph.diskstorage;
 
 
 /**
- * An extension to the {@link BaseTransaction} interface that exposes a
- * configuration object of type {@link BaseTransactionConfig} for this particular transaction.
+ * An extension to the BaseTransaction interface that exposes a
+ * configuration object of type BaseTransactionConfig for this particular transaction.
  *
  */
 public interface BaseTransactionConfigurable extends BaseTransaction {

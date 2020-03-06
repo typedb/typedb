@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -24,7 +23,7 @@ import grakn.core.graph.diskstorage.StaticBuffer;
 import java.util.function.Predicate;
 
 /**
- * A {@link KeySelector} utility that can be generated out of a given {@link KVQuery}
+ * A KeySelector utility that can be generated out of a given KVQuery
  */
 public class KeySelector {
 

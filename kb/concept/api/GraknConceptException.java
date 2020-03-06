@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -25,6 +24,7 @@ import grakn.core.common.exception.GraknException;
 import java.util.stream.Collectors;
 
 import static grakn.core.common.exception.ErrorMessage.HAS_INVALID;
+import static grakn.core.common.exception.ErrorMessage.INVALID_PROPERTY_USE;
 import static grakn.core.common.exception.ErrorMessage.LABEL_TAKEN;
 import static grakn.core.common.exception.ErrorMessage.META_TYPE_IMMUTABLE;
 import static grakn.core.common.exception.ErrorMessage.NO_TYPE;
@@ -111,8 +111,8 @@ public class GraknConceptException extends GraknException {
     /**
      * Thrown when creating an Attribute whose value Object does not match attribute data type
      */
-    public static GraknConceptException invalidAttributeValue(Object object, AttributeType.DataType dataType) {
-        return create(ErrorMessage.INVALID_DATATYPE.getMessage(object, object.getClass().getSimpleName(), dataType.name()));
+    public static GraknConceptException invalidAttributeValue(AttributeType attributeType, Object object, AttributeType.DataType dataType) {
+        return create(ErrorMessage.INVALID_DATATYPE.getMessage(object, object.getClass().getSimpleName(), dataType.name(), attributeType.label()));
     }
 
     /**
@@ -210,6 +210,29 @@ public class GraknConceptException extends GraknException {
      */
     public static GraknConceptException duplicateHas(Type type, AttributeType attributeType) {
         return create(ErrorMessage.CANNOT_BE_KEY_AND_ATTRIBUTE.getMessage(type.label(), attributeType.label()));
+    }
+
+
+    /**
+     * Thrown when trying to add a Schema.VertexProperty to a Concept which does not accept that type
+     * of Schema.VertexProperty
+     */
+    public static GraknConceptException invalidPropertyUse(Concept concept, String property) {
+        return create(INVALID_PROPERTY_USE.getMessage(concept, property));
+    }
+
+    /**
+     * Thrown when trying to set an invalid super type
+     */
+    public static GraknConceptException invalidSuperType(Label label, SchemaConcept superType) {
+        return new GraknConceptException(ErrorMessage.INVALID_SUPER_TYPE.getMessage(label, superType.label()));
+    }
+
+    /**
+     * Thrown when trying to delete a concept that is not handled
+     */
+    public static GraknConceptException unhandledConceptDeletion(Concept concept) {
+        return new GraknConceptException(ErrorMessage.UNHANDLED_CONCEPT_DELETION.getMessage(concept.toString()));
     }
 
 }

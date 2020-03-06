@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -25,7 +24,7 @@ import grakn.core.graph.diskstorage.StaticBuffer;
 import java.nio.ByteBuffer;
 
 /**
- * Implementation of {@link StaticBuffer} against byte array.
+ * Implementation of StaticBuffer against byte array.
  * <p>
  * The byte to primitive conversion code was copied from / is inspired by Kryo's Input class:
  * <a href="https://code.google.com/p/kryo/source/browse/trunk/src/com/esotericsoftware/kryo/io/Input.java">https://code.google.com/p/kryo/source/browse/trunk/src/com/esotericsoftware/kryo/io/Input.java</a>

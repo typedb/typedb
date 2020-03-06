@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -21,10 +20,11 @@ package grakn.core.graql.reasoner.plan;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
-import grakn.core.graql.reasoner.ReasonerException;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.AtomicBase;
 import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
+import grakn.core.kb.graql.planning.gremlin.TraversalPlanFactory;
+import grakn.core.kb.graql.reasoner.ReasonerException;
 import graql.lang.statement.Variable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,9 +44,9 @@ public final class ResolutionPlan {
     private final ReasonerQueryImpl query;
     private static final Logger LOG = LoggerFactory.getLogger(ResolutionPlan.class);
 
-    public ResolutionPlan(ReasonerQueryImpl q){
+    public ResolutionPlan(ReasonerQueryImpl q, TraversalPlanFactory traversalPlanFactory){
         this.query = q;
-        this.plan = GraqlTraversalPlanner.plan(query);
+        this.plan = GraqlTraversalPlanner.plan(query, traversalPlanFactory);
         validatePlan();
     }
 

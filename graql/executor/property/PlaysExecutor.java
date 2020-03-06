@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -20,27 +19,19 @@
 package grakn.core.graql.executor.property;
 
 import com.google.common.collect.ImmutableSet;
-import grakn.core.kb.concept.api.ConceptId;
+import grakn.core.graql.planning.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.graql.executor.WriteExecutor;
-import grakn.core.kb.graql.planning.EquivalentFragmentSet;
-import grakn.core.graql.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.kb.graql.executor.property.PropertyExecutor;
-import grakn.core.kb.graql.reasoner.atom.Atomic;
-import grakn.core.graql.reasoner.atom.binary.PlaysAtom;
-import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
-import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
+import grakn.core.kb.graql.planning.gremlin.EquivalentFragmentSet;
 import graql.lang.property.PlaysProperty;
 import graql.lang.property.VarProperty;
-import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
-
-import static grakn.core.graql.reasoner.utils.ReasonerUtils.getIdPredicate;
 
 public class PlaysExecutor  implements PropertyExecutor.Definable {
 
@@ -57,13 +48,6 @@ public class PlaysExecutor  implements PropertyExecutor.Definable {
         return ImmutableSet.of(
                 EquivalentFragmentSets.plays(property, var, property.role().var(), property.isRequired())
         );
-    }
-
-    @Override
-    public Atomic atomic(ReasonerQuery parent, Statement statement, Set<Statement> otherStatements) {
-        IdPredicate predicate = getIdPredicate(property.role().var(), property.role(), otherStatements, parent);
-        ConceptId predicateId = predicate == null ? null : predicate.getPredicate();
-        return PlaysAtom.create(var, property.role().var(), predicateId, parent);
     }
 
     @Override

@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -22,6 +21,7 @@ package grakn.core.server;
 import com.google.common.base.Stopwatch;
 import grakn.core.common.config.SystemProperty;
 import grakn.core.common.exception.ErrorMessage;
+import grakn.core.server.util.PIDManager;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -31,8 +31,6 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import grakn.core.server.util.PIDManager;
 
 import java.io.IOException;
 import java.nio.file.Path;

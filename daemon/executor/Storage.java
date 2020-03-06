@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -182,7 +181,7 @@ public class Storage {
     /**
      * Attempt to start Storage and perform periodic polling until it is ready. The readiness check is performed with nodetool.
      * <p>
-     * A {@link GraknDaemonException} will be thrown if Storage does not start after a timeout specified
+     * A GraknDaemonException will be thrown if Storage does not start after a timeout specified
      * in the 'WAIT_INTERVAL_SECOND' field.
      *
      * @throws GraknDaemonException

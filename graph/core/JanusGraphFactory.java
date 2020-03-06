@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -22,6 +21,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import grakn.core.graph.diskstorage.Backend;
 import grakn.core.graph.diskstorage.BackendException;
+import grakn.core.graph.diskstorage.PermanentBackendException;
 import grakn.core.graph.diskstorage.configuration.BasicConfiguration;
 import grakn.core.graph.diskstorage.configuration.Configuration;
 import grakn.core.graph.diskstorage.configuration.MergedConfiguration;
@@ -30,16 +30,13 @@ import grakn.core.graph.diskstorage.configuration.WriteConfiguration;
 import grakn.core.graph.diskstorage.configuration.backend.CommonsConfiguration;
 import grakn.core.graph.diskstorage.configuration.backend.builder.KCVSConfigurationBuilder;
 import grakn.core.graph.diskstorage.configuration.builder.ReadConfigurationBuilder;
+import grakn.core.graph.diskstorage.cql.CQLStoreManager;
 import grakn.core.graph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
 import grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration;
 import grakn.core.graph.graphdb.configuration.builder.MergedConfigurationBuilder;
 import grakn.core.graph.graphdb.database.StandardJanusGraph;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.ROOT_NS;
-import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_BACKEND;
 
 /**
  * JanusGraphFactory is used to open or instantiate a JanusGraph graph database.
@@ -47,7 +44,7 @@ import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.
 public class JanusGraphFactory {
 
     /**
-     * Opens a {@link JanusGraph} database configured according to the provided configuration.
+     * Opens a JanusGraph database configured according to the provided configuration.
      *
      * @param configuration Configuration for the graph database
      * @return JanusGraph graph database
@@ -104,10 +101,10 @@ public class JanusGraphFactory {
     }
 
     /**
-     * Returns a {@link Builder} that allows to set the configuration options for opening a JanusGraph graph database.
+     * Returns a Builder that allows to set the configuration options for opening a JanusGraph graph database.
      * <p>
      * In the builder, the configuration options for the graph can be set individually. Once all options are configured,
-     * the graph can be opened with {@link JanusGraphFactory.Builder#open()}.
+     * the graph can be opened with JanusGraphFactory.Builder#open().
      */
     public static Builder build() {
         return new Builder();
@@ -141,26 +138,10 @@ public class JanusGraphFactory {
 
     @VisibleForTesting
     public static KeyColumnValueStoreManager getStoreManager(Configuration configuration) {
-        String className;
-        String backendName = configuration.get(STORAGE_BACKEND);
-        switch (backendName) {
-            case "cql":
-                className = "grakn.core.graph.diskstorage.cql.CQLStoreManager";
-                break;
-            default:
-                throw new IllegalArgumentException("Could not find implementation class for backend: " + backendName);
-        }
-
         try {
-            Class clazz = Class.forName(className);
-            Constructor constructor = clazz.getConstructor(Configuration.class);
-            return (KeyColumnValueStoreManager) constructor.newInstance(new Object[]{configuration});
-        } catch (ClassNotFoundException e) {
-            throw new IllegalArgumentException("Could instantiate StoreManager class: " + className, e);
-        } catch (NoSuchMethodException e) {
-            throw new IllegalArgumentException("StoreManager class does not have required constructor: " + className, e);
-        } catch (InstantiationException | IllegalAccessException | InvocationTargetException | ClassCastException e) {
-            throw new IllegalArgumentException("Could not instantiate StoreManager class: " + className, e);
+            return new CQLStoreManager(configuration);
+        } catch (PermanentBackendException e) {
+            throw new IllegalArgumentException("Could not instantiate StoreManager class: " + e);
         }
     }
 

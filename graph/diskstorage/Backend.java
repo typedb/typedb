@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -62,7 +61,6 @@ import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.DB_CACHE_TIME;
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_BACKEND;
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_NS;
-import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.MANAGEMENT_LOG;
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.PARALLEL_BACKEND_OPS;
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_BATCH;
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_READ_WAITTIME;
@@ -75,7 +73,7 @@ import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.
 
 /**
  * Orchestrates and configures all backend systems:
- * The primary backend storage ({@link KeyColumnValueStore}) and all external indexing providers ({@link IndexProvider}).
+ * The primary backend storage (KeyColumnValueStore) and all external indexing providers (IndexProvider).
  */
 public class Backend {
 
@@ -120,7 +118,7 @@ public class Backend {
         config = configuration;
         storeManager = manager;
         indexes = getIndexes(configuration);
-        storeFeatures = storeManager.getFeatures();
+        storeFeatures = storeManager.getFeatures(); // features describing actual capabilities of actual backend engine
         txLogManager = new KCVSLogManager(storeManager, configuration.restrictTo(TRANSACTION_LOG)); //KCVStore where tx LOG will be persisted
         userLogManager = new KCVSLogManager(storeManager, configuration.restrictTo(USER_LOG));
         bufferSize = configuration.get(BUFFER_SIZE);
@@ -185,7 +183,7 @@ public class Backend {
     }
 
     /**
-     * Get information about all registered {@link IndexProvider}s.
+     * Get information about all registered IndexProviders.
      */
     public Map<String, IndexInformation> getIndexInformation() {
         ImmutableMap.Builder<String, IndexInformation> copy = ImmutableMap.builder();
@@ -261,7 +259,7 @@ public class Backend {
     }
 
     /**
-     * Opens a new transaction against all registered backend system wrapped in one {@link BackendTransaction}.
+     * Opens a new transaction against all registered backend system wrapped in one BackendTransaction.
      */
     public BackendTransaction beginTransaction(TransactionConfiguration configuration, KeyInformation.Retriever indexKeyRetriever) throws BackendException {
         StoreTransaction tx = storeManager.beginTransaction(configuration);

@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -19,13 +18,13 @@
 
 package grakn.core.kb.server;
 
-import com.google.common.annotations.VisibleForTesting;
 import grakn.core.concept.answer.Answer;
 import grakn.core.concept.answer.AnswerGroup;
 import grakn.core.concept.answer.ConceptList;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.answer.ConceptSet;
 import grakn.core.concept.answer.ConceptSetMeasure;
+import grakn.core.concept.answer.Explanation;
 import grakn.core.concept.answer.Numeric;
 import grakn.core.concept.answer.Void;
 import grakn.core.kb.concept.api.Attribute;
@@ -34,21 +33,15 @@ import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.EntityType;
 import grakn.core.kb.concept.api.Label;
-import grakn.core.kb.concept.api.LabelId;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.SchemaConcept;
-import grakn.core.kb.concept.manager.ConceptManager;
-import grakn.core.kb.graql.executor.QueryExecutor;
-import grakn.core.kb.graql.executor.property.PropertyExecutorFactory;
-import grakn.core.kb.graql.planning.TraversalPlanFactory;
-import grakn.core.kb.graql.reasoner.cache.QueryCache;
-import grakn.core.kb.graql.reasoner.cache.RuleCache;
-import grakn.core.kb.server.cache.TransactionCache;
+import grakn.core.kb.concept.structure.GraknElementException;
+import grakn.core.kb.concept.structure.PropertyNotUniqueException;
 import grakn.core.kb.server.exception.InvalidKBException;
+import grakn.core.kb.server.exception.TransactionException;
 import grakn.core.kb.server.keyspace.Keyspace;
-import grakn.core.kb.server.statistics.UncomittedStatisticsDelta;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlCompute;
 import graql.lang.query.GraqlDefine;
@@ -58,7 +51,6 @@ import graql.lang.query.GraqlInsert;
 import graql.lang.query.GraqlQuery;
 import graql.lang.query.GraqlUndefine;
 import graql.lang.query.MatchClause;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Collection;
@@ -152,30 +144,11 @@ public interface Transaction extends AutoCloseable {
 
     Stream<? extends Answer> stream(GraqlQuery query, boolean infer);
 
-    RuleCache ruleCache();
-
-    QueryCache queryCache();
-
-    TransactionCache cache();
-
-    UncomittedStatisticsDelta statisticsDelta();
-
     boolean isOpen();
 
     Type type();
 
-    /**
-     * Utility function to get a read-only Tinkerpop traversal.
-     *
-     * @return A read-only Tinkerpop traversal for manually traversing the graph
-     * <p>
-     * Mostly used for tests // TODO refactor push this implementation down from Transaction itself, should not be here
-     */
-    GraphTraversalSource getTinkerTraversal();
-
     Stream<SchemaConcept> sups(SchemaConcept schemaConcept);
-
-    void checkMutationAllowed();
 
     /**
      * @param label A unique label for the EntityType
@@ -215,7 +188,7 @@ public interface Transaction extends AutoCloseable {
      * @return A new or existing AttributeType with the provided label and data type.
      * @throws TransactionException       if the graph is closed
      * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-AttributeType.
-     * @throws TransactionException       if the {@param label} is already in use by an existing AttributeType which is
+     * @throws GraknElementException if the {@param label} is already in use by an existing AttributeType which is
      *                                    unique or has a different datatype.
      */
     @SuppressWarnings("unchecked")
@@ -354,6 +327,8 @@ public interface Transaction extends AutoCloseable {
      */
     Rule getRule(String label);
 
+    Explanation explanation(Pattern queryPattern);
+
     @Override
     void close();
 
@@ -374,28 +349,6 @@ public interface Transaction extends AutoCloseable {
 
     List<ConceptMap> execute(MatchClause matchClause, boolean infer);
 
-    LabelId convertToId(Label label);
-
-    @VisibleForTesting
-    ConceptManager factory();
-
-
-    // TODO remove this
-    default long getShardCount(grakn.core.kb.concept.api.Type t) {
-        return 1L;
-    }
-
-    // TODO determine if this should be exposed via Tx or in other ways
-    TraversalPlanFactory traversalPlanFactory();
-
-    // TODO we may not want to expose both Executor and PlanFactory
-    QueryExecutor executor();
-
-    QueryExecutor executor(boolean infer);
-
-    PropertyExecutorFactory propertyExecutorFactory();
-
-    long shardingThreshold();
 
     /**
      * An enum that determines the type of Grakn Transaction.

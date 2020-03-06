@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -22,9 +21,9 @@ package grakn.core.graql.reasoner.state;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.query.CompositeQuery;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
-import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.graql.reasoner.query.ResolvableQuery;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
+
 import java.util.Iterator;
 import java.util.Set;
 
@@ -85,7 +84,7 @@ public class CompositeState extends AnswerPropagatorState<CompositeQuery> {
         ConceptMap answer = consumeAnswer(state);
 
         boolean isNegationSatisfied = complements.stream()
-                .map(q -> ReasonerQueries.resolvable(q, answer))
+                .map(q -> q.withSubstitution(answer))
                 .noneMatch(q -> q.resolve(getVisitedSubGoals()).findFirst().isPresent());
 
         return isNegationSatisfied?

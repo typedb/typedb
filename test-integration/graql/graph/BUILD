@@ -1,6 +1,5 @@
 #
-# GRAKN.AI - THE KNOWLEDGE GRAPH
-# Copyright (C) 2019 Grakn Labs Ltd
+# Copyright (C) 2020 Grakn Labs
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -24,7 +23,7 @@ java_library(
     visibility = ["//test-integration:__subpackages__"],
     deps = [
         "//core",
-        "//kb",
+        "//kb/server",
         "//kb/concept/api",
         "@graknlabs_graql//java:graql",
     ],

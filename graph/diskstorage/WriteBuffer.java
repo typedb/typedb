@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -19,7 +18,7 @@
 package grakn.core.graph.diskstorage;
 
 /**
- * A Buffer that allows simple writes and returns the result as a {@link StaticBuffer}.
+ * A Buffer that allows simple writes and returns the result as a StaticBuffer.
  *
  */
 

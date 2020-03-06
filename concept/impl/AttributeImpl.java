@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -19,14 +18,16 @@
 
 package grakn.core.concept.impl;
 
-import grakn.core.kb.concept.api.Label;
-import grakn.core.kb.concept.api.Attribute;
-import grakn.core.kb.concept.api.Thing;
-import grakn.core.kb.concept.api.AttributeType;
-import grakn.core.kb.concept.api.Role;
+import grakn.core.core.AttributeSerialiser;
 import grakn.core.core.Schema;
+import grakn.core.kb.concept.api.Attribute;
+import grakn.core.kb.concept.api.AttributeType;
+import grakn.core.kb.concept.api.Label;
+import grakn.core.kb.concept.api.Role;
+import grakn.core.kb.concept.api.Thing;
+import grakn.core.kb.concept.manager.ConceptManager;
+import grakn.core.kb.concept.manager.ConceptNotificationChannel;
 import grakn.core.kb.concept.structure.VertexElement;
-import grakn.core.kb.concept.util.Serialiser;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.stream.Stream;
@@ -41,8 +42,8 @@ import java.util.stream.Stream;
  *            Supported Types include: String, Long, Double, and Boolean
  */
 public class AttributeImpl<D> extends ThingImpl<Attribute<D>, AttributeType<D>> implements Attribute<D> {
-    AttributeImpl(VertexElement vertexElement, ConceptManagerImpl conceptManager, ConceptObserver conceptObserver) {
-        super(vertexElement, conceptManager, conceptObserver);
+    public AttributeImpl(VertexElement vertexElement, ConceptManager conceptManager, ConceptNotificationChannel conceptNotificationChannel) {
+        super(vertexElement, conceptManager, conceptNotificationChannel);
     }
 
     public static AttributeImpl from(Attribute attribute) {
@@ -75,7 +76,7 @@ public class AttributeImpl<D> extends ThingImpl<Attribute<D>, AttributeType<D>> 
      */
     @Override
     public D value() {
-        return Serialiser.of(dataType()).deserialise(
+        return AttributeSerialiser.of(dataType()).deserialise(
                 vertex().property(Schema.VertexProperty.ofDataType(dataType()))
         );
     }

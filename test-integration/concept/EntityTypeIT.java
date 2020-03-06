@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -19,23 +18,23 @@
 
 package grakn.core.concept;
 
-import grakn.core.kb.concept.structure.PropertyNotUniqueException;
+import grakn.core.core.Schema;
+import grakn.core.kb.concept.api.Attribute;
+import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Concept;
+import grakn.core.kb.concept.api.Entity;
+import grakn.core.kb.concept.api.EntityType;
 import grakn.core.kb.concept.api.GraknConceptException;
 import grakn.core.kb.concept.api.Label;
-import grakn.core.kb.concept.api.Attribute;
-import grakn.core.kb.concept.api.Entity;
-import grakn.core.kb.concept.api.AttributeType;
-import grakn.core.kb.concept.api.EntityType;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Type;
-import grakn.core.rule.GraknTestServer;
-import grakn.core.kb.server.exception.TransactionException;
-import grakn.core.core.Schema;
+import grakn.core.kb.concept.structure.PropertyNotUniqueException;
 import grakn.core.kb.concept.structure.Shard;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
+import grakn.core.kb.server.exception.TransactionException;
+import grakn.core.rule.GraknTestServer;
 import grakn.core.util.ConceptDowncasting;
 import graql.lang.Graql;
 import org.apache.tinkerpop.gremlin.structure.Direction;

@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -24,8 +23,6 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
 import grakn.core.common.exception.ErrorMessage;
-import grakn.core.graql.reasoner.ReasonerException;
-import grakn.core.kb.concept.api.Label;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.plan.ResolutionPlan;
@@ -35,11 +32,14 @@ import grakn.core.graql.reasoner.state.ResolutionState;
 import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
-import grakn.core.kb.server.exception.GraqlSemanticException;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
+import grakn.core.graql.reasoner.ReasoningContext;
+import grakn.core.kb.concept.api.Label;
+import grakn.core.kb.graql.exception.GraqlSemanticException;
+import grakn.core.kb.graql.executor.ExecutorFactory;
+import grakn.core.kb.graql.reasoner.ReasonerException;
 import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
-import grakn.core.kb.server.Transaction;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Negation;
@@ -68,25 +68,25 @@ import java.util.stream.Stream;
  * The negative part is stored in terms of the negation complement - hence all stored queries are positive.
  *
  */
-public class CompositeQuery implements ResolvableQuery {
+public class CompositeQuery extends ResolvableQuery {
 
     final private ReasonerQueryImpl conjunctiveQuery;
     final private Set<ResolvableQuery> complementQueries;
-    final private Transaction tx;
 
-    CompositeQuery(Conjunction<Pattern> pattern, Transaction tx) throws ReasonerException {
+    CompositeQuery(Conjunction<Pattern> pattern, ExecutorFactory executorFactory, ReasoningContext ctx) throws ReasonerException {
+        super(executorFactory, ctx);
+        ReasonerQueryFactory queryFactory = context().queryFactory();
         Conjunction<Statement> positiveConj = Graql.and(
                 pattern.getPatterns().stream()
                         .filter(p -> !p.isNegation())
                         .flatMap(p -> p.statements().stream())
                         .collect(Collectors.toSet())
         );
-        this.tx = tx;
         //conjunction of negation patterns
         Set<Conjunction<Pattern>> complementPattern = complementPattern(pattern);
-        this.conjunctiveQuery = ReasonerQueries.create(positiveConj, tx);
+        this.conjunctiveQuery = queryFactory.create(positiveConj);
         this.complementQueries = complementPattern.stream()
-                .map(comp -> ReasonerQueries.resolvable(comp, tx))
+                .map(queryFactory::resolvable)
                 .collect(Collectors.toSet());
 
         if (!isNegationSafe()){
@@ -94,10 +94,10 @@ public class CompositeQuery implements ResolvableQuery {
         }
     }
 
-    CompositeQuery(ReasonerQueryImpl conj, Set<ResolvableQuery> comp, Transaction tx) {
+    CompositeQuery(ReasonerQueryImpl conj, Set<ResolvableQuery> comp, ExecutorFactory executorFactory, ReasoningContext ctx) {
+        super(executorFactory, ctx);
         this.conjunctiveQuery = conj;
         this.complementQueries = comp;
-        this.tx = tx;
     }
 
     @Override
@@ -177,14 +177,13 @@ public class CompositeQuery implements ResolvableQuery {
      * - no negation nesting
      * - no disjunctions
      * - at most single negation block
-     * @param tx transaction to be validated against
      * @param pattern pattern to be validated
      * @return set of error messages applicable
      */
-    public static Set<String> validateAsRuleBody(Conjunction<Pattern> pattern, Rule rule, Transaction tx){
+    public static Set<String> validateAsRuleBody(Conjunction<Pattern> pattern, Rule rule, ReasonerQueryFactory reasonerQueryFactory){
         Set<String> errors = new HashSet<>();
         try{
-            CompositeQuery body = ReasonerQueries.composite(pattern, tx);
+            CompositeQuery body = reasonerQueryFactory.composite(pattern);
             Set<ResolvableQuery> complementQueries = body.getComplementQueries();
             if(complementQueries.size() > 1){
                 errors.add(ErrorMessage.VALIDATION_RULE_MULTIPLE_NEGATION_BLOCKS.getMessage(rule.label()));
@@ -210,13 +209,14 @@ public class CompositeQuery implements ResolvableQuery {
         return new CompositeQuery(
                 getConjunctiveQuery().withSubstitution(sub),
                 getComplementQueries().stream().map(q -> q.withSubstitution(sub)).collect(Collectors.toSet()),
-                tx()
+                executorFactory,
+                context()
         );
     }
 
     @Override
     public CompositeQuery inferTypes() {
-        return new CompositeQuery(getConjunctiveQuery().inferTypes(), getComplementQueries(), this.tx());
+        return new CompositeQuery(getConjunctiveQuery().inferTypes(), getComplementQueries(), executorFactory, context());
     }
 
     @Override
@@ -224,7 +224,8 @@ public class CompositeQuery implements ResolvableQuery {
         return new CompositeQuery(
                 getConjunctiveQuery().constantValuePredicateQuery(),
                 getComplementQueries(),
-                tx());
+                executorFactory,
+                context());
     }
 
     public ReasonerQueryImpl getConjunctiveQuery() {
@@ -240,7 +241,8 @@ public class CompositeQuery implements ResolvableQuery {
         return new CompositeQuery(
                 getConjunctiveQuery().copy(),
                 getComplementQueries().stream().map(ResolvableQuery::copy).collect(Collectors.toSet()),
-                this.tx()
+                executorFactory,
+                context()
         );
     }
 
@@ -282,12 +284,10 @@ public class CompositeQuery implements ResolvableQuery {
                                 this.getPattern().getPatterns(),
                                 q.getPattern().getPatterns()
                         )),
-                this.tx()
+                executorFactory,
+                context()
         );
     }
-
-    @Override
-    public Transaction tx() { return tx; }
 
     @Override
     public void checkValid() {
@@ -324,11 +324,6 @@ public class CompositeQuery implements ResolvableQuery {
     @Override
     public boolean isRuleResolvable() {
         return getConjunctiveQuery().isRuleResolvable() || getComplementQueries().stream().anyMatch(ResolvableQuery::isRuleResolvable);
-    }
-
-    @Override
-    public boolean isTypeRoleCompatible(Variable typedVar, Type parentType) {
-        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -378,7 +373,8 @@ public class CompositeQuery implements ResolvableQuery {
                 getComplementQueries().isEmpty()?
                         getComplementQueries() :
                         getComplementQueries().stream().map(ResolvableQuery::rewrite).collect(Collectors.toSet()),
-                tx()
+                executorFactory,
+                context()
         );
     }
 

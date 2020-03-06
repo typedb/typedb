@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -21,9 +20,6 @@ package grakn.core.kb.server.exception;
 
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
-import grakn.core.kb.concept.api.Label;
-import grakn.core.kb.concept.api.SchemaConcept;
-import grakn.core.kb.server.Transaction;
 
 import java.util.List;
 
@@ -33,7 +29,7 @@ import java.util.List;
  * </p>
  *
  * <p>
- *     This exception is thrown on {@link Transaction#commit()} when the graph does not comply with the grakn
+ *     This exception is thrown on Transaction#commit() when the graph does not comply with the grakn
  *     validation rules. For a complete list of these rules please refer to the documentation
  * </p>
  *
@@ -67,7 +63,4 @@ public class InvalidKBException extends GraknException {
         return create(message.toString());
     }
 
-    public static InvalidKBException insertMetaType(Label label, SchemaConcept schemaConcept) {
-        return new InvalidKBException(ErrorMessage.INSERT_METATYPE.getMessage(label, schemaConcept.label()));
-    }
 }

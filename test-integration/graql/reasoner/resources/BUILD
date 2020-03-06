@@ -1,6 +1,5 @@
 #
-# GRAKN.AI - THE KNOWLEDGE GRAPH
-# Copyright (C) 2019 Grakn Labs Ltd
+# Copyright (C) 2020 Grakn Labs
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -16,7 +15,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-package(default_visibility = ["//test-integration/graql/reasoner:__subpackages__", "//test-integration/graql/reasoner/cache:__subpackages__"])
+package(default_visibility = [
+    "//test-integration/graql/reasoner:__subpackages__",
+    "//test-integration/graql/reasoner/cache:__subpackages__",
+])
 
 filegroup(
     name = "generic-schema",

@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -43,7 +42,7 @@ public interface RelationType extends Type {
      * Creates and returns a new Relation instance, whose direct type will be this type.
      *
      * @return a new empty relation.
-     * @see Relation
+     * see Relation
      */
     Relation create();
     Relation addRelationInferred();
@@ -80,7 +79,7 @@ public interface RelationType extends Type {
      * Retrieves a list of the RoleTypes that make up this RelationType.
      *
      * @return A list of the RoleTypes which make up this RelationType.
-     * @see Role
+     * see Role
      */
     @CheckReturnValue
     Stream<Role> roles();
@@ -92,7 +91,7 @@ public interface RelationType extends Type {
      *
      * @param role A new role which is part of this relation.
      * @return The RelationType itself.
-     * @see Role
+     * see Role
      */
     RelationType relates(Role role);
 
@@ -103,7 +102,7 @@ public interface RelationType extends Type {
      *
      * @param role The Role to unrelate from the RelationType.
      * @return The RelationType itself.
-     * @see Role
+     * see Role
      */
     RelationType unrelate(Role role);
 
@@ -183,7 +182,7 @@ public interface RelationType extends Type {
      * Retrieve all the Relation instances of this RelationType
      *
      * @return All the Relation instances of this RelationType
-     * @see Relation
+     * see Relation
      */
     @Override
     Stream<Relation> instances();

@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -20,14 +19,18 @@
 package grakn.core.graql.reasoner.cache;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.HashMultimap;
+import grakn.core.core.Schema;
+import grakn.core.graql.reasoner.query.ReasonerQueryFactory;
+import grakn.core.graql.reasoner.rule.InferenceRule;
+import grakn.core.kb.concept.api.Concept;
+import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Type;
-import grakn.core.core.Schema;
-import grakn.core.kb.server.Transaction;
-import grakn.core.graql.reasoner.rule.InferenceRule;
+import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.reasoner.cache.RuleCache;
+import grakn.core.kb.keyspace.KeyspaceStatistics;
+import graql.lang.pattern.Pattern;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -42,19 +45,28 @@ import java.util.stream.Stream;
  */
 public class RuleCacheImpl implements RuleCache {
 
-    private final HashMultimap<Type, Rule> ruleMap = HashMultimap.create();
+    //NB: we specifically use map to differentiate between type with no rules (empty set) and unchecked type (null)
+    private final Map<Type, Set<Rule>> ruleMap = new HashMap<>();
     private final Map<Rule, InferenceRule> ruleConversionMap = new HashMap<>();
-    private Transaction tx;
+    private final ConceptManager conceptManager;
+    private final KeyspaceStatistics keyspaceStatistics;
 
-    //TODO: these should be eventually stored together with statistics
     private Set<Type> absentTypes = new HashSet<>();
     private Set<Type> checkedTypes = new HashSet<>();
     private Set<Rule> unmatchableRules = new HashSet<>();
     private Set<Rule> checkedRules = new HashSet<>();
+    private ReasonerQueryFactory reasonerQueryFactory;
 
-    @Override
-    public void setTx(Transaction tx) {
-        this.tx = tx;
+    public RuleCacheImpl(ConceptManager conceptManager, KeyspaceStatistics keyspaceStatistics) {
+        this.conceptManager = conceptManager;
+        this.keyspaceStatistics = keyspaceStatistics;
+    }
+
+    /*
+    TODO remove this when circular deps are broken
+     */
+    public void setReasonerQueryFactory(ReasonerQueryFactory reasonerQueryFactory) {
+        this.reasonerQueryFactory = reasonerQueryFactory;
     }
 
     /**
@@ -62,23 +74,38 @@ public class RuleCacheImpl implements RuleCache {
      */
     @Override
     public Stream<Rule> getRules() {
-        Rule metaRule = tx.getMetaRule();
+        Rule metaRule = conceptManager.getMetaRule();
         return metaRule.subs().filter(sub -> !sub.equals(metaRule));
     }
 
     /**
-     * @param type rule head's type
      * @param rule to be appended
      */
     @Override
-    public void updateRules(Type type, Rule rule) {
-        Set<Rule> match = ruleMap.get(type);
-        if (match.isEmpty()) {
-            getTypes(type, false)
-                    .flatMap(SchemaConcept::thenRules)
-                    .forEach(r -> ruleMap.put(type, r));
-        }
-        ruleMap.put(type, rule);
+    public void ackRuleInsertion(Rule rule) {
+        Pattern thenPattern = rule.then();
+        if (thenPattern == null) return;
+        //NB: thenTypes() will be empty as type edges added on commit
+        //NB: this will cache also non-committed rules
+        thenPattern.statements().stream()
+                .flatMap(v -> v.getTypes().stream())
+                .map(type -> conceptManager.<SchemaConcept>getSchemaConcept(Label.of(type)))
+                .filter(Objects::nonNull)
+                .filter(Concept::isType)
+                .map(Concept::asType)
+                .forEach(type -> {
+                    Set<Rule> match = ruleMap.get(type);
+                    if (match == null) {
+                        Set<Rule> rules = new HashSet<>();
+                        rules.add(rule);
+                        getTypes(type, false)
+                                .flatMap(SchemaConcept::thenRules)
+                                .forEach(rules::add);
+                        ruleMap.put(type, rules);
+                    } else {
+                        match.add(rule);
+                    }
+                });
     }
 
     /**
@@ -91,7 +118,7 @@ public class RuleCacheImpl implements RuleCache {
         Stream<? extends Type> baseStream = direct ? Stream.of(type) : type.subs();
         if (type.isImplicit()) {
             return baseStream
-                    .flatMap(t -> Stream.of(t, tx.getType(Schema.ImplicitType.explicitLabel(t.label()))))
+                    .flatMap(t -> Stream.of(t, conceptManager.getType(Schema.ImplicitType.explicitLabel(t.label()))))
                     .filter(Objects::nonNull);
         }
         return baseStream;
@@ -121,7 +148,7 @@ public class RuleCacheImpl implements RuleCache {
      * @param type to be acked
      */
     @Override
-    public void ackTypeInstance(Type type){
+    public void ackTypeInstanceInsertion(Type type){
         checkedTypes.add(type);
         absentTypes.remove(type);
     }
@@ -136,24 +163,38 @@ public class RuleCacheImpl implements RuleCache {
         if (type == null) return getRules();
 
         Set<Rule> match = ruleMap.get(type);
-        if (!match.isEmpty()) return match.stream();
+        if (match != null) return match.stream();
 
+        Set<Rule> rules = new HashSet<>();
         getTypes(type, direct)
                 .flatMap(SchemaConcept::thenRules)
                 .filter(this::isRuleMatchable)
-                .forEach(rule -> ruleMap.put(type, rule));
+                .forEach(rules::add);
+        ruleMap.put(type, rules);
 
-        return match.stream();
+        return rules.stream();
+    }
+
+    private boolean instancePresent(Type type){
+        boolean instanceCountPresent = type.subs()
+                .anyMatch(t -> keyspaceStatistics.count(conceptManager, t.label()) != 0);
+        if (instanceCountPresent) return true;
+
+        //NB: this is a defensive check, it stat count shows 0 (no instances) we additionally check the DB
+        //also, if we have ephemeral instances (inserted but not committed), we will catch them by doing the DB check
+        return type.instances().findFirst().isPresent();
     }
 
     private boolean typeHasInstances(Type type){
         if (checkedTypes.contains(type)) return !absentTypes.contains(type);
         checkedTypes.add(type);
-        boolean instancePresent = type.instances().findFirst().isPresent()
+        boolean instancePresent =instancePresent(type)
                 || type.subs().flatMap(SchemaConcept::thenRules).anyMatch(this::isRuleMatchable);
         if (!instancePresent){
             absentTypes.add(type);
-            type.whenRules().forEach(r -> unmatchableRules.add(r));
+            type.whenRules()
+                    .filter(rule -> rule.whenPositiveTypes().anyMatch(pt -> pt.equals(type)))
+                    .forEach(r -> unmatchableRules.add(r));
         }
         return instancePresent;
     }
@@ -179,7 +220,7 @@ public class RuleCacheImpl implements RuleCache {
         InferenceRule match = ruleConversionMap.get(rule);
         if (match != null) return match;
 
-        InferenceRule newMatch = new InferenceRule(rule, tx);
+        InferenceRule newMatch = new InferenceRule(rule, reasonerQueryFactory);
         ruleConversionMap.put(rule, newMatch);
         return newMatch;
     }
@@ -196,4 +237,6 @@ public class RuleCacheImpl implements RuleCache {
         checkedRules.clear();
         unmatchableRules.clear();
     }
+
+
 }

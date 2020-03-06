@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,20 +17,20 @@
 
 package grakn.core.graql.query;
 
-import grakn.core.kb.concept.api.Concept;
-import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.concept.answer.AnswerGroup;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.answer.Numeric;
-import grakn.core.kb.concept.api.Thing;
+import grakn.core.graql.graph.MovieGraph;
 import grakn.core.kb.concept.api.AttributeType;
+import grakn.core.kb.concept.api.Concept;
+import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.EntityType;
 import grakn.core.kb.concept.api.Role;
-import grakn.core.kb.server.exception.GraqlSemanticException;
-import grakn.core.graql.graph.MovieGraph;
-import grakn.core.rule.GraknTestServer;
+import grakn.core.kb.concept.api.Thing;
+import grakn.core.kb.graql.exception.GraqlSemanticException;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
+import grakn.core.rule.GraknTestServer;
 import graql.lang.Graql;
 import graql.lang.exception.GraqlException;
 import graql.lang.pattern.Pattern;
@@ -488,7 +487,7 @@ public class GraqlGetIT {
 
         Stream<ConceptMap> answers = tx.stream(Graql.parse("insert $x isa person;" +
                 "$y isa somework; " +
-                "$a isa year; $a 2019; " +
+                "$a isa year; $a 2020; " +
                 "$r (author: $x, work: $y) isa authored-by; $r has year $a via $imp;").asInsert());
 
         List<ConceptId> insertedIds = answers.flatMap(conceptMap -> conceptMap.concepts().stream().map(Concept::id)).collect(Collectors.toList());

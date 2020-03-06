@@ -1,6 +1,5 @@
 #
-# GRAKN.AI - THE KNOWLEDGE GRAPH
-# Copyright (C) 2019 Grakn Labs Ltd
+# Copyright (C) 2020 Grakn Labs
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -45,17 +44,28 @@ java_library(
     srcs = glob(["**/*.java"], exclude=["templates/**", "test/**"]) + [":version"],
     deps = [
         # Internal dependencies
-        "//common:common",
-        "//kb/concept/api:api",
-        "//kb/concept/util:util",
-        "//kb/concept/structure:structure",
-        "//concept/structure:structureimpl",
-        "//concept/impl:impl",
-        "//concept/answer:answer",
-        "//kb:kb",
-        "//core:core",
-        "//graql:graql",
+        "//common",
+        "//kb/concept/api",
+        "//kb/concept/structure",
+        "//kb/concept/manager",
+        "//concept/structure",
+        "//concept/impl",
+        "//concept/answer",
+        "//concept/util",
+        "//concept/manager",
+        "//kb/server",
+        "//kb/keyspace",
+        "//kb/graql/reasoner",
+        "//kb/graql/executor",
+        "//kb/graql/planning",
+        "//kb/graql/exception",
+        "//keyspace",
+        "//core",
+        "//graql/executor",
+        "//graql/planning",
+        "//graql/reasoner",
         "//graph",
+
 
         # External dependencies from @graknlabs
         "@graknlabs_graql//java:graql",
@@ -73,6 +83,7 @@ java_library(
         "//dependencies/maven/artifacts/io/grpc:grpc-core",
         "//dependencies/maven/artifacts/io/grpc:grpc-netty",
         "//dependencies/maven/artifacts/io/grpc:grpc-stub",
+        "//dependencies/maven/artifacts/io/grpc:grpc-api",
         "//dependencies/maven/artifacts/io/netty:netty-all",
         "//dependencies/maven/artifacts/io/zipkin/brave:brave",
         "//dependencies/maven/artifacts/org/apache/cassandra:cassandra-all",
@@ -93,8 +104,7 @@ java_library(
         "//dependencies/maven/artifacts/ch/qos/logback:logback-classic",
         "//dependencies/maven/artifacts/ch/qos/logback:logback-core",
         "//dependencies/maven/artifacts/javax/servlet:javax-servlet-api",
-        "//graph-cql",
-        "//graph-hadoop"
+        "//mapreduce:mapreduce"
     ],
     resources = ["LICENSE"] + glob(["resources/*"]),
     resource_strip_prefix = "server",
@@ -115,6 +125,26 @@ java_binary(
     main_class = "grakn.core.daemon.GraknDaemon",
     runtime_deps = [
         "//daemon",
+        "//server:server"
+    ],
+    tags = ["maven_coordinates=io.grakn.core:grakn-server-bin:{pom_version}"],
+    visibility = ["//:__pkg__"],
+)
+
+java_binary(
+    name = "server-core-binary",
+    main_class = "grakn.core.server.Grakn",
+    runtime_deps = [
+        "//server:server"
+    ],
+    tags = ["maven_coordinates=io.grakn.core:grakn-server-bin:{pom_version}"],
+    visibility = ["//:__pkg__"],
+)
+
+java_binary(
+    name = "server-storage-binary",
+    main_class = "grakn.core.server.GraknStorage",
+    runtime_deps = [
         "//server:server"
     ],
     tags = ["maven_coordinates=io.grakn.core:grakn-server-bin:{pom_version}"],

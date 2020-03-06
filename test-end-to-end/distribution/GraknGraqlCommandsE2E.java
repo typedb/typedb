@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -50,7 +49,7 @@ import static org.hamcrest.Matchers.equalTo;
 // * Grakn end to end test suite which verifies bootup functionalities, including:
 // * - 'grakn server start, stop, and clean'
 // * - 'graql console'
-// * If you are testing functionalities which needs a running Grakn, add it in {@link GraknGraqlCommands_WithARunningGraknE2E} instead.
+// * If you are testing functionalities which needs a running Grakn, add it in GraknGraqlCommands_WithARunningGraknE2E instead.
 //// */
 
 public class GraknGraqlCommandsE2E {

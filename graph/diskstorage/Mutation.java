@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -151,7 +150,7 @@ public abstract class Mutation<E,K> {
     public abstract void consolidate();
 
     /**
-     * Checks whether this mutation is consolidated in the sense of {@link #consolidate(com.google.common.base.Function, com.google.common.base.Function)}.
+     * Checks whether this mutation is consolidated in the sense of #consolidate(com.google.common.base.Function, com.google.common.base.Function).
      * This should only be used in assertions and tests due to the performance penalty.
      *
      */

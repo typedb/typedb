@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -47,7 +46,7 @@ public interface InternalElement extends JanusGraphElement {
 
     /**
      * @return The lifecycle of this element
-     * @see ElementLifeCycle
+     * see ElementLifeCycle
      */
     byte getLifeCycle();
 

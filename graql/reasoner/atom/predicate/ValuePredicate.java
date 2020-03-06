@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -19,9 +18,8 @@
 
 package grakn.core.graql.reasoner.atom.predicate;
 
-import grakn.core.kb.graql.executor.property.value.ValueComparison;
-import grakn.core.kb.graql.executor.property.value.ValueOperation;
-import grakn.core.graql.reasoner.ReasonerException;
+import grakn.core.graql.planning.gremlin.value.ValueOperation;
+import grakn.core.kb.graql.reasoner.ReasonerException;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
@@ -29,13 +27,13 @@ import graql.lang.Graql;
 import graql.lang.property.ValueProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
-
-import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import javax.annotation.Nullable;
 
 /**
  * Predicate implementation specialising it to be an value predicate. Corresponds to ValueProperty.
@@ -96,11 +94,7 @@ public class ValuePredicate extends Predicate<ValueProperty.Operation> {
 
     @Override
     public int alphaEquivalenceHashCode() {
-        int hashCode = 1;
-        hashCode = hashCode * 37 + this.getPredicate().comparator().hashCode();
-        boolean useValue = ! (ValueOperation.of(getPredicate()) instanceof ValueComparison.Variable);
-        hashCode = hashCode * 37 + (useValue? this.getPredicate().value().hashCode() : 0);
-        return hashCode;
+        return Objects.hash(getPredicate().comparator(), getPredicate().value());
     }
 
     @Override
@@ -114,13 +108,13 @@ public class ValuePredicate extends Predicate<ValueProperty.Operation> {
     }
 
     @Override
-    public boolean subsumes(Atomic atomic){
+    public boolean isSubsumedBy(Atomic atomic){
         if (this.isAlphaEquivalent(atomic)) return true;
         if (atomic == null || this.getClass() != atomic.getClass()) return false;
         if (atomic == this) return true;
         ValuePredicate that = (ValuePredicate) atomic;
         return ValueOperation.of(this.getPredicate())
-                .subsumes(ValueOperation.of(that.getPredicate()));
+                .isSubsumedBy(ValueOperation.of(that.getPredicate()));
     }
 
     @Override

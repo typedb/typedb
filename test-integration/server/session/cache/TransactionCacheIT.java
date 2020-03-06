@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -19,6 +18,7 @@
 package grakn.core.server.session.cache;
 
 import grakn.common.util.Pair;
+import grakn.core.core.JanusTraversalSourceProvider;
 import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
@@ -32,9 +32,10 @@ import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.server.Session;
-import grakn.core.kb.server.Transaction;
 import grakn.core.kb.server.cache.TransactionCache;
 import grakn.core.rule.GraknTestServer;
+import grakn.core.rule.SessionUtil;
+import grakn.core.rule.TestTransactionProvider.TestTransaction;
 import graql.lang.Graql;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.After;
@@ -72,6 +73,7 @@ import static org.junit.Assert.assertThat;
 
 @SuppressWarnings("CheckReturnValue")
 public class TransactionCacheIT {
+    // TODO we don't need the server config for this test if we don't start the Grakn server
     static final Path SERVER_SMALL_TX_CACHE_CONFIG_PATH = Paths.get("test-integration/resources/grakn-small-tx-cache.properties");
     static final Path CASSANDRA_CONFIG_PATH = Paths.get("test-integration/resources/cassandra-embedded.yaml");
 
@@ -80,13 +82,14 @@ public class TransactionCacheIT {
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
-    private Transaction tx;
+    private TestTransaction tx;
     private Session session;
 
     @Before
     public void setUp() {
-        session = server.sessionWithNewKeyspace();
-        tx = session.writeTransaction();
+        // disconnected session?
+        session = SessionUtil.serverlessSessionWithNewKeyspace(server.serverConfig());
+        tx = (TestTransaction) session.writeTransaction();
     }
 
     @After
@@ -117,7 +120,7 @@ public class TransactionCacheIT {
         tx.commit();
 
         // examine new transaction's cache
-        tx = session.readTransaction();
+        tx = (TestTransaction)session.readTransaction();
         EntityType retrievedPerson = tx.getEntityType("person");
         Entity retrievedPersonInstance = retrievedPerson.instances().collect(Collectors.toList()).get(0);
 
@@ -136,7 +139,7 @@ public class TransactionCacheIT {
         tx.commit();
 
         // examine new transaction's cache
-        tx = session.readTransaction();
+        tx = (TestTransaction)session.readTransaction();
         tx.getEntityType("person");
 
         TransactionCache transactionCache = tx.cache();
@@ -227,7 +230,7 @@ public class TransactionCacheIT {
         tx.commit();
 
 
-        tx = session.writeTransaction();
+        tx = (TestTransaction)session.writeTransaction();
         tx.execute(Graql.insert(var("x").isa(testAttributeLabel).val(testAttributeValue)));
         tx.execute(Graql.match(var("x").isa(testAttributeLabel).val(testAttributeValue)).delete());
         assertFalse(tx.cache().getNewAttributes().containsKey(new Pair<>(Label.of(testAttributeLabel), index)));
@@ -261,7 +264,7 @@ public class TransactionCacheIT {
         aRelation.has(aProvenance);
 
         tx.commit();
-        tx = session.writeTransaction();
+        tx = (TestTransaction)session.writeTransaction();
 
         // retrieve the vertex as a concept
         aRelation = tx.getConcept(relationId);
@@ -271,8 +274,10 @@ public class TransactionCacheIT {
         Attribute<String> newProvenance = provenance.create("bye");
         aRelation.has(newProvenance);
 
+        JanusTraversalSourceProvider janusTraversalSourceProvider = tx.janusTraversalSourceProvider();
+
         // retireve the specific janus vertex
-        Vertex relationVertex = tx.getTinkerTraversal().V(Schema.elementId(relationId)).next();
+        Vertex relationVertex = janusTraversalSourceProvider.getTinkerTraversal().V(Schema.elementId(relationId)).next();
         relationVertex.property("testKey", "testValue");
 
         // do a bunch of janus ops to evict the relation
@@ -281,7 +286,7 @@ public class TransactionCacheIT {
             person.create();
         }
 
-        Vertex janusVertex = tx.getTinkerTraversal().V(Schema.elementId(relationId)).next();
+        Vertex janusVertex = janusTraversalSourceProvider.getTinkerTraversal().V(Schema.elementId(relationId)).next();
 
         // confirm we have the exact same object from Janus
         assertSame(janusVertex, relationVertex);
@@ -319,22 +324,24 @@ public class TransactionCacheIT {
             fillerJanusVertices.add(Schema.elementId(person.create().id()));
         }
         tx.commit();
-        tx = session.writeTransaction();
+        tx = (TestTransaction)session.writeTransaction();
+
+        JanusTraversalSourceProvider janusTraversalSourceProvider = tx.janusTraversalSourceProvider();
 
         // retrieve the vertex as a concept
         aRelation = tx.getConcept(relationId);
         // retrieve the specific janus vertex
-        Vertex relationVertex = tx.getTinkerTraversal().V(Schema.elementId(relationId)).next();
+        Vertex relationVertex = janusTraversalSourceProvider.getTinkerTraversal().V(Schema.elementId(relationId)).next();
 
         // read a bunch of janus vertices to evict the relation
-        List<Vertex> vertices = tx.getTinkerTraversal().V(fillerJanusVertices).toStream().collect(Collectors.toList());
+        List<Vertex> vertices = janusTraversalSourceProvider.getTinkerTraversal().V(fillerJanusVertices).toStream().collect(Collectors.toList());
 
         // modify the vertex by adding a property
         provenance = tx.getAttributeType("provenance");
         relationVertex.property("testKey", "testValue");
 
         // re-retrieve the specific janus vertex
-        Vertex janusVertex = tx.getTinkerTraversal().V(Schema.elementId(relationId)).next();
+        Vertex janusVertex = janusTraversalSourceProvider.getTinkerTraversal().V(Schema.elementId(relationId)).next();
 
         // confirm we have the exact same object from Janus
         assertSame(janusVertex, relationVertex);

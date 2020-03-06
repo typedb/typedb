@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,6 +17,9 @@
 
 package grakn.core.server.session.optimisation;
 
+import grakn.core.graph.core.JanusGraphTransaction;
+import grakn.core.graph.core.JanusGraphVertex;
+import grakn.core.graph.graphdb.tinkerpop.optimize.JanusGraphTraversalUtil;
 import org.apache.tinkerpop.gremlin.process.traversal.Pop;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
@@ -25,9 +27,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.Scoping;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.FlatMapStep;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequirement;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
-import grakn.core.graph.core.JanusGraphTransaction;
-import grakn.core.graph.core.JanusGraphVertex;
-import grakn.core.graph.graphdb.tinkerpop.optimize.JanusGraphTraversalUtil;
 
 import java.util.Collections;
 import java.util.EnumSet;
@@ -77,7 +76,7 @@ public class JanusPreviousPropertyStep<S> extends FlatMapStep<S, JanusGraphVerte
     }
 
     /**
-     * Look up vertices in Janus which have a property {@link JanusPreviousPropertyStep#propertyKey} with the given
+     * Look up vertices in Janus which have a property JanusPreviousPropertyStep#propertyKey with the given
      * value.
      * @param tx the Janus transaction to read from
      * @param value the value that the property should have

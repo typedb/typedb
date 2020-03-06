@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,12 +17,12 @@
 
 package grakn.core.server.rpc;
 
+import grakn.core.core.AttributeSerialiser;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.Entity;
+import grakn.core.kb.concept.api.GraknConceptException;
 import grakn.core.kb.concept.api.Label;
-import grakn.core.kb.server.exception.InvalidKBException;
-import grakn.core.kb.concept.util.Serialiser;
 import grakn.protocol.session.ConceptProto;
 import grakn.protocol.session.SessionProto;
 import grakn.protocol.session.SessionProto.Transaction;
@@ -35,9 +34,9 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 /**
- * Wrapper for describing methods on {@link Concept}s that can be executed over gRPC.
+ * Wrapper for describing methods on Concepts that can be executed over gRPC.
  * This unifies client and server behaviour for each possible method on a concept.
- * This class maps one-to-one with the gRPC message {@link grakn.protocol.session.ConceptProto.Method.Req}.
+ * This class maps one-to-one with the gRPC message grakn.protocol.session.ConceptProto.Method.Req.
  */
 public class ConceptMethod {
 
@@ -239,7 +238,7 @@ public class ConceptMethod {
         }
 
         /**
-         * A utility class to execute methods on {@link grakn.core.kb.concept.api.Concept}
+         * A utility class to execute methods on grakn.core.kb.concept.api.Concept
          */
         private class Concept {
 
@@ -250,7 +249,7 @@ public class ConceptMethod {
         }
 
         /**
-         * A utility class to execute methods on {@link grakn.core.kb.concept.api.SchemaConcept}
+         * A utility class to execute methods on grakn.core.kb.concept.api.SchemaConcept
          */
         private class SchemaConcept {
 
@@ -294,7 +293,7 @@ public class ConceptMethod {
 
             private Transaction.Res sup(ConceptProto.Concept superConcept) {
                 // Make the second argument the super of the first argument
-                // @throws GraqlQueryException if the types are different, or setting the super to be a meta-type
+                // @throws GraknConceptException if the types are different, or setting the super to be a meta-type
 
                 grakn.core.kb.concept.api.SchemaConcept sup = convert(superConcept).asSchemaConcept();
                 grakn.core.kb.concept.api.SchemaConcept sub = concept.asSchemaConcept();
@@ -310,7 +309,7 @@ public class ConceptMethod {
                 } else if (sup.isRule()) {
                     sub.asRule().sup(sup.asRule());
                 } else {
-                    throw InvalidKBException.insertMetaType(sub.label(), sup);
+                    throw GraknConceptException.invalidSuperType(sub.label(), sup);
                 }
 
                 return null;
@@ -354,7 +353,7 @@ public class ConceptMethod {
         }
 
         /**
-         * A utility class to execute methods on {@link grakn.core.kb.concept.api.Rule}
+         * A utility class to execute methods on grakn.core.kb.concept.api.Rule
          */
         private class Rule {
 
@@ -386,7 +385,7 @@ public class ConceptMethod {
         }
 
         /**
-         * A utility class to execute methods on {@link grakn.core.kb.concept.api.Role}
+         * A utility class to execute methods on grakn.core.kb.concept.api.Role
          */
         private class Role {
 
@@ -428,7 +427,7 @@ public class ConceptMethod {
         }
 
         /**
-         * A utility class to execute methods on {@link grakn.core.kb.concept.api.Type}
+         * A utility class to execute methods on grakn.core.kb.concept.api.Type
          */
         private class Type {
 
@@ -557,7 +556,7 @@ public class ConceptMethod {
         }
 
         /**
-         * A utility class to execute methods on {@link grakn.core.kb.concept.api.EntityType}
+         * A utility class to execute methods on grakn.core.kb.concept.api.EntityType
          */
         private class EntityType {
 
@@ -573,7 +572,7 @@ public class ConceptMethod {
         }
 
         /**
-         * A utility class to execute methods on {@link grakn.core.kb.concept.api.RelationType}
+         * A utility class to execute methods on grakn.core.kb.concept.api.RelationType
          */
         private class RelationType {
 
@@ -619,26 +618,26 @@ public class ConceptMethod {
         }
 
         /**
-         * A utility class to execute methods on {@link grakn.core.kb.concept.api.AttributeType}
+         * A utility class to execute methods on grakn.core.kb.concept.api.AttributeType
          */
         private class AttributeType {
 
             private Transaction.Res create(ConceptProto.ValueObject protoValue) {
                 switch (protoValue.getValueCase()) {
                     case BOOLEAN:
-                        return create(Serialiser.BOOLEAN.deserialise(protoValue.getBoolean()));
+                        return create(AttributeSerialiser.BOOLEAN.deserialise(protoValue.getBoolean()));
                     case DATE:
-                        return create(Serialiser.DATE.deserialise(protoValue.getDate()));
+                        return create(AttributeSerialiser.DATE.deserialise(protoValue.getDate()));
                     case DOUBLE:
-                        return create(Serialiser.DOUBLE.deserialise(protoValue.getDouble()));
+                        return create(AttributeSerialiser.DOUBLE.deserialise(protoValue.getDouble()));
                     case FLOAT:
-                        return create(Serialiser.FLOAT.deserialise(protoValue.getFloat()));
+                        return create(AttributeSerialiser.FLOAT.deserialise(protoValue.getFloat()));
                     case INTEGER:
-                        return create(Serialiser.INTEGER.deserialise(protoValue.getInteger()));
+                        return create(AttributeSerialiser.INTEGER.deserialise(protoValue.getInteger()));
                     case LONG:
-                        return create(Serialiser.LONG.deserialise(protoValue.getLong()));
+                        return create(AttributeSerialiser.LONG.deserialise(protoValue.getLong()));
                     case STRING:
-                        return create(Serialiser.STRING.deserialise(protoValue.getString()));
+                        return create(AttributeSerialiser.STRING.deserialise(protoValue.getString()));
                     default:
                         return null;
                 }
@@ -704,7 +703,7 @@ public class ConceptMethod {
         }
 
         /**
-         * A utility class to execute methods on {@link grakn.core.kb.concept.api.Thing}
+         * A utility class to execute methods on grakn.core.kb.concept.api.Thing
          */
         private class Thing {
 
@@ -828,7 +827,7 @@ public class ConceptMethod {
         }
 
         /**
-         * A utility class to execute methods on {@link grakn.core.kb.concept.api.Relation}
+         * A utility class to execute methods on grakn.core.kb.concept.api.Relation
          */
         private class Relation {
 
@@ -892,7 +891,7 @@ public class ConceptMethod {
         }
 
         /**
-         * A utility class to execute methods on {@link grakn.core.kb.concept.api.Attribute}
+         * A utility class to execute methods on grakn.core.kb.concept.api.Attribute
          */
         private class Attribute {
 

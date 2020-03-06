@@ -1,6 +1,5 @@
 #
-# GRAKN.AI - THE KNOWLEDGE GRAPH
-# Copyright (C) 2019 Grakn Labs Ltd
+# Copyright (C) 2020 Grakn Labs
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -20,12 +19,21 @@ package(default_visibility = ["//visibility:public"])
 
 load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
+# This package is currently a bit of a catch-all for thing sa lot of different packages depend on
+# Over time hopefully it will emerge what it should be named or how it should be split up
+# TODO definitely not in a final state, goal is to properly name or delete it!
+
 java_library(
     name = "core",
     srcs = glob(["*.java"]),
     deps = [
         "//common:common",
         "//kb/concept/api:api",
+
+        # TEMPORARY
+        "//graph",
+
+
 
         # External dependenicies from @graknlabs
         "@graknlabs_graql//java:graql",
@@ -37,7 +45,6 @@ java_library(
         "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core"
     ],
     tags = ["maven_coordinates=io.grakn.core:grakn-core:{pom_version}"],
-
 )
 
 

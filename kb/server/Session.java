@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -19,23 +18,16 @@
 
 package grakn.core.kb.server;
 
+import grakn.core.kb.keyspace.AttributeManager;
+import grakn.core.kb.keyspace.KeyspaceStatistics;
+import grakn.core.kb.keyspace.ShardManager;
 import grakn.core.kb.server.keyspace.Keyspace;
-import grakn.core.kb.server.statistics.KeyspaceStatistics;
+
 import java.util.function.Consumer;
-import javax.annotation.CheckReturnValue;
 
 public interface Session extends AutoCloseable {
     Transaction readTransaction();
     Transaction writeTransaction();
-
-    /**
-     * Get a new or existing TransactionOLAP.
-     *
-     * @return A new or existing Grakn graph computer
-     * @see TransactionOLAP
-     */
-    @CheckReturnValue
-    TransactionAnalytics transactionOLAP();
 
     /**
      * Method used by SessionFactory to register a callback function that has to be triggered when closing current session.

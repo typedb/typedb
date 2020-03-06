@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -20,19 +19,19 @@ package grakn.core.graql.query;
 
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
-import grakn.core.kb.concept.api.ConceptId;
-import grakn.core.kb.concept.api.Label;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.graql.graph.MovieGraph;
 import grakn.core.kb.concept.api.AttributeType;
+import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.EntityType;
+import grakn.core.kb.concept.api.GraknConceptException;
+import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
-import grakn.core.kb.server.exception.GraqlSemanticException;
-import grakn.core.graql.graph.MovieGraph;
-import grakn.core.rule.GraknTestServer;
-import grakn.core.kb.server.exception.InvalidKBException;
+import grakn.core.kb.graql.exception.GraqlSemanticException;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
+import grakn.core.rule.GraknTestServer;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlDefine;
@@ -359,8 +358,8 @@ public class GraqlDefineIT {
 
     @Test
     public void whenDefiningMetaType_Throw() {
-        exception.expect(InvalidKBException.class);
-        exception.expectMessage(ErrorMessage.INSERT_METATYPE.getMessage("my-metatype", Graql.Token.Type.THING));
+        exception.expect(GraknConceptException.class);
+        exception.expectMessage(ErrorMessage.INVALID_SUPER_TYPE.getMessage("my-metatype", Graql.Token.Type.THING));
         tx.execute(Graql.define(type("my-metatype").sub(Graql.Token.Type.THING)));
     }
 

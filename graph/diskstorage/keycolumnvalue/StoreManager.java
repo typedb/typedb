@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -20,9 +19,6 @@ package grakn.core.graph.diskstorage.keycolumnvalue;
 
 import grakn.core.graph.diskstorage.BackendException;
 import grakn.core.graph.diskstorage.BaseTransactionConfig;
-import grakn.core.graph.diskstorage.keycolumnvalue.KeyRange;
-import grakn.core.graph.diskstorage.keycolumnvalue.StoreFeatures;
-import grakn.core.graph.diskstorage.keycolumnvalue.StoreTransaction;
 
 import java.util.List;
 
@@ -64,7 +60,7 @@ public interface StoreManager {
      * Returns the features supported by this storage manager
      *
      * @return The supported features of this storage manager
-     * @see StoreFeatures
+     * see StoreFeatures
      */
     StoreFeatures getFeatures();
 
@@ -92,7 +88,7 @@ public interface StoreManager {
      * @return A list of local key ranges
      * @throws UnsupportedOperationException
      *             if the underlying store does not support this operation.
-     *             Check {@link StoreFeatures#hasLocalKeyPartition()} first.
+     *             Check StoreFeatures#hasLocalKeyPartition() first.
      */
     List<KeyRange> getLocalKeyPartition() throws BackendException;
 

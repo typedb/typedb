@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -27,7 +26,6 @@ import grakn.core.graph.diskstorage.configuration.backend.CommonsConfiguration;
 import grakn.core.graph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
 import grakn.core.graph.diskstorage.keycolumnvalue.StoreFeatures;
 import grakn.core.graph.diskstorage.keycolumnvalue.ttl.TTLKCVSManager;
-import grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration;
 
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicLong;
@@ -44,7 +42,7 @@ import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID;
 
 /**
- * Builder for {@link GraphDatabaseConfiguration}
+ * Builder for GraphDatabaseConfiguration
  */
 public class MergedConfigurationBuilder {
 

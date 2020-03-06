@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -20,30 +19,38 @@ package grakn.core.graql.analytics;
 
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
-import grakn.core.kb.concept.api.Concept;
-import grakn.core.kb.concept.api.ConceptId;
-import grakn.core.kb.concept.api.Label;
 import grakn.core.concept.answer.ConceptList;
 import grakn.core.concept.answer.ConceptSet;
 import grakn.core.concept.answer.ConceptSetMeasure;
 import grakn.core.concept.answer.Numeric;
+import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.Attribute;
-import grakn.core.kb.concept.api.Entity;
 import grakn.core.kb.concept.api.AttributeType;
+import grakn.core.kb.concept.api.Concept;
+import grakn.core.kb.concept.api.ConceptId;
+import grakn.core.kb.concept.api.Entity;
 import grakn.core.kb.concept.api.EntityType;
+import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.SchemaConcept;
-import grakn.core.kb.server.exception.GraqlSemanticException;
-import grakn.core.rule.GraknTestServer;
-import grakn.core.kb.server.exception.InvalidKBException;
-import grakn.core.core.Schema;
+import grakn.core.kb.graql.exception.GraqlSemanticException;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
+import grakn.core.kb.server.exception.InvalidKBException;
+import grakn.core.rule.GraknTestServer;
 import graql.lang.Graql;
 import graql.lang.exception.GraqlException;
 import graql.lang.query.GraqlCompute;
 import graql.lang.query.GraqlGet;
+import graql.lang.query.GraqlQuery;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -54,14 +61,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
-
-import graql.lang.query.GraqlQuery;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import static graql.lang.Graql.Token.Compute.Algorithm.CONNECTED_COMPONENT;
 import static graql.lang.Graql.Token.Compute.Algorithm.DEGREE;

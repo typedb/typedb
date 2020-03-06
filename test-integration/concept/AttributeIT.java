@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -24,7 +23,6 @@ import grakn.core.concept.impl.AttributeTypeImpl;
 import grakn.core.concept.impl.RelationEdge;
 import grakn.core.concept.impl.RelationImpl;
 import grakn.core.concept.impl.RelationReified;
-import grakn.core.concept.impl.RelationStructure;
 import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
@@ -32,6 +30,7 @@ import grakn.core.kb.concept.api.Entity;
 import grakn.core.kb.concept.api.EntityType;
 import grakn.core.kb.concept.api.GraknConceptException;
 import grakn.core.kb.concept.api.Relation;
+import grakn.core.kb.concept.api.RelationStructure;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Thing;
@@ -177,7 +176,7 @@ public class AttributeIT {
         String invalidThing = "Invalid Thing";
         AttributeType longAttributeType = tx.putAttributeType("long", AttributeType.DataType.LONG);
         expectedException.expect(GraknConceptException.class);
-        expectedException.expectMessage(GraknConceptException.invalidAttributeValue(invalidThing, AttributeType.DataType.LONG).getMessage());
+        expectedException.expectMessage(GraknConceptException.invalidAttributeValue(longAttributeType, invalidThing, AttributeType.DataType.LONG).getMessage());
         longAttributeType.create(invalidThing);
     }
 
@@ -186,10 +185,10 @@ public class AttributeIT {
     @Test
     public void whenCreatingResourceWithAnInvalidDataTypeOnADate_Throw() {
         String invalidThing = "Invalid Thing";
-        AttributeType longAttributeType = tx.putAttributeType("date", AttributeType.DataType.DATE);
+        AttributeType dateAttributeType = tx.putAttributeType("date", AttributeType.DataType.DATE);
         expectedException.expect(GraknConceptException.class);
-        expectedException.expectMessage(GraknConceptException.invalidAttributeValue(invalidThing, AttributeType.DataType.DATE).getMessage());
-        longAttributeType.create(invalidThing);
+        expectedException.expectMessage(GraknConceptException.invalidAttributeValue(dateAttributeType, invalidThing, AttributeType.DataType.DATE).getMessage());
+        dateAttributeType.create(invalidThing);
     }
 
     // this is deliberately an incorrect type for the test

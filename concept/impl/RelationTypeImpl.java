@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -20,12 +19,14 @@
 package grakn.core.concept.impl;
 
 import grakn.core.concept.cache.ConceptCache;
+import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.Relation;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
+import grakn.core.kb.concept.manager.ConceptManager;
+import grakn.core.kb.concept.manager.ConceptNotificationChannel;
 import grakn.core.kb.concept.structure.Casting;
 import grakn.core.kb.concept.structure.EdgeElement;
-import grakn.core.core.Schema;
 import grakn.core.kb.concept.structure.VertexElement;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
@@ -42,8 +43,8 @@ import java.util.stream.Stream;
 public class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements RelationType {
     private final ConceptCache<Set<Role>> cachedRelates = new ConceptCache<>(() -> this.<Role>neighbours(Direction.OUT, Schema.EdgeLabel.RELATES).collect(Collectors.toSet()));
 
-    RelationTypeImpl(VertexElement vertexElement, ConceptManagerImpl conceptBuilder, ConceptObserver conceptObserver) {
-        super(vertexElement, conceptBuilder, conceptObserver);
+    public RelationTypeImpl(VertexElement vertexElement, ConceptManager conceptBuilder, ConceptNotificationChannel conceptNotificationChannel) {
+        super(vertexElement, conceptBuilder, conceptNotificationChannel);
     }
 
     public static RelationTypeImpl from(RelationType relationType) {
@@ -98,7 +99,7 @@ public class RelationTypeImpl extends TypeImpl<RelationType, Relation> implement
 
         // pass relation type, role, and castings to observer for validation
         List<Casting> conceptsPlayingRole = roleTypeImpl.rolePlayers().collect(Collectors.toList());
-        conceptObserver.relationRoleUnrelated(this, role, conceptsPlayingRole);
+        conceptNotificationChannel.relationRoleUnrelated(this, role, conceptsPlayingRole);
 
         //Remove from internal cache
         cachedRelates.ifCached(set -> set.remove(role));
@@ -113,7 +114,7 @@ public class RelationTypeImpl extends TypeImpl<RelationType, Relation> implement
     public void delete() {
         cachedRelates.get().forEach(r -> {
             RoleImpl role = ((RoleImpl) r);
-            conceptObserver.roleDeleted(role);
+            conceptNotificationChannel.roleDeleted(role);
             ((RoleImpl) r).deleteCachedRelationType(this);
         });
 
@@ -122,7 +123,7 @@ public class RelationTypeImpl extends TypeImpl<RelationType, Relation> implement
 
     @Override
     void trackRolePlayers() {
-        conceptObserver.trackRelationInstancesRolePlayers(this);
+        conceptNotificationChannel.trackRelationInstancesRolePlayers(this);
     }
 
     @Override
@@ -149,7 +150,7 @@ public class RelationTypeImpl extends TypeImpl<RelationType, Relation> implement
                     Stream<EdgeElement> edgeRelationsConnectedToTypeInstances = ConceptVertex.from(type).vertex()
                             .edgeRelationsConnectedToInstancesOfType(labelId());
 
-                    return edgeRelationsConnectedToTypeInstances.map(edgeElement ->  conceptManager.buildConcept(edgeElement));
+                    return edgeRelationsConnectedToTypeInstances.map(conceptManager::buildRelation);
                 });
     }
 }

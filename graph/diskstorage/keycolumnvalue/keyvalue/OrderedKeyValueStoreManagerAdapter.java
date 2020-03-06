@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -26,7 +25,6 @@ import grakn.core.graph.diskstorage.Entry;
 import grakn.core.graph.diskstorage.StaticBuffer;
 import grakn.core.graph.diskstorage.StoreMetaData;
 import grakn.core.graph.diskstorage.keycolumnvalue.KCVMutation;
-import grakn.core.graph.diskstorage.keycolumnvalue.KeyColumnValueStore;
 import grakn.core.graph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
 import grakn.core.graph.diskstorage.keycolumnvalue.KeyRange;
 import grakn.core.graph.diskstorage.keycolumnvalue.StoreFeatures;
@@ -37,10 +35,10 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Wraps a {@link OrderedKeyValueStoreManager} and exposes it as a {@link KeyColumnValueStoreManager}.
+ * Wraps a OrderedKeyValueStoreManager and exposes it as a KeyColumnValueStoreManager.
  * <p>
- * An optional mapping of key-length can be defined if it is known that the {@link KeyColumnValueStore} of a given
- * name has a static key length. See {@link OrderedKeyValueStoreAdapter} for more information.
+ * An optional mapping of key-length can be defined if it is known that the KeyColumnValueStore of a given
+ * name has a static key length. See OrderedKeyValueStoreAdapter for more information.
  */
 public class OrderedKeyValueStoreManagerAdapter implements KeyColumnValueStoreManager {
 

@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,14 +17,11 @@
 
 package grakn.core.graph.graphdb.database.serialize;
 
-import grakn.core.graph.core.attribute.AttributeSerializer;
-import grakn.core.graph.diskstorage.WriteBuffer;
-
 /**
- * Marks a {@link AttributeSerializer} that requires a {@link Serializer}
+ * Marks a AttributeSerializer that requires a Serializer
  * to serialize the internal state. It is expected that the serializer is passed into this object upon initialization and before usage.
- * Furthermore, such serializers will convert the {@link WriteBuffer} passed into the
- * {@link AttributeSerializer}'s write methods to be cast to {@link DataOutput}.
+ * Furthermore, such serializers will convert the WriteBuffer passed into the
+ * AttributeSerializer's write methods to be cast to DataOutput.
  */
 public interface SerializerInjected {
 

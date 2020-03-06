@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -40,10 +39,10 @@ public class Streams {
     }
 
     /**
-     * Helper which lazily checks if a {@link Stream} contains the number specified
+     * Helper which lazily checks if a Stream contains the number specified
      * WARNING: This consumes the stream rendering it unusable afterwards
      *
-     * @param stream the {@link Stream} to check the count against
+     * @param stream the Stream to check the count against
      * @param size the expected number of elements in the stream
      * @return true if the expected size is found
      */

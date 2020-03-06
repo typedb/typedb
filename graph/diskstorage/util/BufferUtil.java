@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -24,8 +23,6 @@ import grakn.core.graph.diskstorage.EntryMetaData;
 import grakn.core.graph.diskstorage.ReadBuffer;
 import grakn.core.graph.diskstorage.ScanBuffer;
 import grakn.core.graph.diskstorage.StaticBuffer;
-import grakn.core.graph.diskstorage.util.StaticArrayBuffer;
-import grakn.core.graph.diskstorage.util.StaticArrayEntry;
 import grakn.core.graph.graphdb.database.idhandling.VariableLong;
 import grakn.core.graph.graphdb.database.serialize.DataOutput;
 import grakn.core.graph.graphdb.database.serialize.Serializer;
@@ -34,7 +31,7 @@ import java.nio.ByteBuffer;
 import java.util.Map;
 
 /**
- * Utility methods for dealing with {@link ByteBuffer}.
+ * Utility methods for dealing with ByteBuffer.
  */
 public class BufferUtil {
 

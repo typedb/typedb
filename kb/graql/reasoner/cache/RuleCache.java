@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -22,7 +21,6 @@ package grakn.core.kb.graql.reasoner.cache;
 import com.google.common.annotations.VisibleForTesting;
 import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.Type;
-import grakn.core.kb.server.Transaction;
 
 import java.util.Set;
 import java.util.stream.Stream;
@@ -32,18 +30,10 @@ import java.util.stream.Stream;
  * This helps break circular dependencies but needs some work
  */
 public interface RuleCache {
-    void setTx(Transaction tx);
-
     /**
      * @return set of inference rules contained in the graph
      */
     Stream<Rule> getRules();
-
-    /**
-     * @param type rule head's type
-     * @param rule to be appended
-     */
-    void updateRules(Type type, Rule rule);
 
     /**
      * @param type for which rules containing it in the head are sought
@@ -59,10 +49,15 @@ public interface RuleCache {
     boolean absentTypes(Set<Type> types);
 
     /**
+     * @param rule whose insertion we want to acknowledge
+     */
+    void ackRuleInsertion(Rule rule);
+
+    /**
      * acknowledge addition of an instance of a specific type
      * @param type to be acked
      */
-    void ackTypeInstance(Type type);
+    void ackTypeInstanceInsertion(Type type);
 
     /**
      * @param type   for which rules containing it in the head are sought
@@ -75,4 +70,5 @@ public interface RuleCache {
      * cleans cache contents
      */
     void clear();
+
 }

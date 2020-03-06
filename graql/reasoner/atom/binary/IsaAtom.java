@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -20,71 +19,63 @@
 package grakn.core.graql.reasoner.atom.binary;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Sets;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.graql.reasoner.ReasoningContext;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.predicate.Predicate;
+import grakn.core.graql.reasoner.atom.task.infer.IsaTypeReasoner;
+import grakn.core.graql.reasoner.atom.task.infer.TypeReasoner;
+import grakn.core.graql.reasoner.atom.task.materialise.IsaMaterialiser;
+import grakn.core.graql.reasoner.atom.task.validate.IsaAtomValidator;
+import grakn.core.graql.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierType;
-import grakn.core.kb.concept.api.Concept;
-import grakn.core.kb.concept.api.ConceptId;
-import grakn.core.kb.concept.api.EntityType;
+import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Type;
-import grakn.core.kb.concept.util.ConceptUtils;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
+import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
-import grakn.core.kb.server.exception.GraqlSemanticException;
 import graql.lang.pattern.Pattern;
 import graql.lang.property.IsaProperty;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
-
-import javax.annotation.Nullable;
-import java.util.Comparator;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 /**
  * TypeAtom corresponding to graql a IsaProperty property.
  */
-public class IsaAtom extends IsaAtomBase {
+public class IsaAtom extends TypeAtom {
+
+    private final TypeReasoner<IsaAtom> typeReasoner = new IsaTypeReasoner();
 
     private int hashCode;
     private boolean hashCodeMemoised;
 
-    IsaAtom(Variable varName, Statement pattern, ReasonerQuery reasonerQuery, ConceptId typeId,
-             Variable predicateVariable) {
-        super(varName, pattern, reasonerQuery, typeId, predicateVariable);
+    private IsaAtom(Variable varName, Statement pattern, ReasonerQuery reasonerQuery, @Nullable Label label, Variable predicateVariable,
+                    ReasoningContext ctx) {
+        super(varName, pattern, reasonerQuery, label, predicateVariable, ctx);
     }
 
-    public static IsaAtom create(Variable var, Variable predicateVar, Statement pattern, @Nullable ConceptId predicateId, ReasonerQuery parent) {
-        return new IsaAtom(var.asReturnedVar(), pattern, parent, predicateId, predicateVar);
-    }
-
-    public static IsaAtom create(Variable var, Variable predicateVar, @Nullable ConceptId predicateId, boolean isDirect, ReasonerQuery parent) {
-        Statement pattern = isDirect ?
+    public static IsaAtom create(Variable var, Variable predicateVar, @Nullable Label label, boolean isDirect, ReasonerQuery parent,
+                                 ReasoningContext ctx) {
+        Statement pattern = isDirect?
                 new Statement(var).isaX(new Statement(predicateVar)) :
                 new Statement(var).isa(new Statement(predicateVar));
-
-        return new IsaAtom(var, pattern, parent, predicateId, predicateVar);
+        return new IsaAtom(var, pattern, parent, label, predicateVar, ctx);
     }
 
-    public static IsaAtom create(Variable var, Variable predicateVar, SchemaConcept type, boolean isDirect, ReasonerQuery parent) {
-        Statement pattern = isDirect ?
-                new Statement(var).isaX(new Statement(predicateVar)) :
-                new Statement(var).isa(new Statement(predicateVar));
-        return new IsaAtom(var, pattern, parent, type.id(), predicateVar);
-    }
     private static IsaAtom create(IsaAtom a, ReasonerQuery parent) {
-        return create(a.getVarName(), a.getPredicateVariable(), a.getPattern(), a.getTypeId(), parent);
+        return create(a.getVarName(), a.getPredicateVariable(), a.getTypeLabel(), a.isDirect(), parent, a.context());
     }
 
     @Override
@@ -100,15 +91,6 @@ public class IsaAtom extends IsaAtomBase {
         return IsaProperty.class;
     }
 
-    @Override
-    public void checkValid(){
-        super.checkValid();
-        SchemaConcept type = getSchemaConcept();
-        if (type != null && !type.isType()) {
-            throw GraqlSemanticException.cannotGetInstancesOfNonType(type.label());
-        }
-    }
-
     //NB: overriding as these require a derived property
     @Override
     public final boolean equals(Object obj) {
@@ -117,13 +99,13 @@ public class IsaAtom extends IsaAtomBase {
         IsaAtom that = (IsaAtom) obj;
         return this.getVarName().equals(that.getVarName())
                 && this.isDirect() == that.isDirect()
-                && ((this.getTypeId() == null) ? (that.getTypeId() == null) : this.getTypeId().equals(that.getTypeId()));
+                && ((this.getTypeLabel() == null) ? (that.getTypeLabel() == null) : this.getTypeLabel().equals(that.getTypeLabel()));
     }
 
     @Override
     public int hashCode() {
         if (!hashCodeMemoised) {
-            hashCode = Objects.hash(getVarName(), getTypeId());
+            hashCode = Objects.hash(getVarName(), getTypeLabel());
             hashCodeMemoised = true;
         }
         return hashCode;
@@ -131,7 +113,8 @@ public class IsaAtom extends IsaAtomBase {
 
     @Override
     public String toString(){
-        String typeString = (getSchemaConcept() != null? getSchemaConcept().label() : "") + "(" + getVarName() + ")";
+        Label typeLabel = getTypeLabel();
+        String typeString = (typeLabel != null? typeLabel : "") + "(" + getVarName() + ")";
         return typeString +
                 (getPredicateVariable().isReturned()? "(" + getPredicateVariable() + ")" : "") +
                 (isDirect()? "!" : "") +
@@ -141,91 +124,48 @@ public class IsaAtom extends IsaAtomBase {
     @Override
     protected Pattern createCombinedPattern(){
         if (getPredicateVariable().isReturned()) return super.createCombinedPattern();
-        return getSchemaConcept() == null?
+        return getTypeLabel() == null?
                 new Statement(getVarName()).isa(new Statement(getPredicateVariable())) :
                 isDirect()?
-                        new Statement(getVarName()).isaX(getSchemaConcept().label().getValue()) :
-                        new Statement(getVarName()).isa(getSchemaConcept().label().getValue()) ;
+                        new Statement(getVarName()).isaX(getTypeLabel().getValue()) :
+                        new Statement(getVarName()).isa(getTypeLabel().getValue()) ;
     }
 
     @Override
     public IsaAtom addType(SchemaConcept type) {
-        if (getTypeId() != null) return this;
-        return create(getVarName(), getPredicateVariable(), type.id(), this.isDirect(), this.getParentQuery());
+        if (getTypeLabel() != null) return this;
+        return create(getVarName(), getPredicateVariable(), type.label(), this.isDirect(), this.getParentQuery(), this.context());
     }
 
-    private IsaAtom inferEntityType(ConceptMap sub){
-        if (getTypePredicate() != null) return this;
-        if (sub.containsVar(getPredicateVariable())) return addType(sub.get(getPredicateVariable()).asType());
-        return this;
-    }
-
-    private ImmutableList<Type> inferPossibleTypes(ConceptMap sub){
-        if (getSchemaConcept() != null) return ImmutableList.of(getSchemaConcept().asType());
-        if (sub.containsVar(getPredicateVariable())) return ImmutableList.of(sub.get(getPredicateVariable()).asType());
-
-        //determine compatible types from played roles
-        Set<Type> typesFromRoles = getParentQuery().getAtoms(RelationAtom.class)
-                .filter(r -> r.getVarNames().contains(getVarName()))
-                .flatMap(r -> r.getRoleVarMap().entries().stream()
-                        .filter(e -> e.getValue().equals(getVarName()))
-                        .map(Map.Entry::getKey))
-                .map(role -> role.players().collect(Collectors.toSet()))
-                .reduce(Sets::intersection)
-                .orElse(Sets.newHashSet());
-
-        Set<Type> typesFromTypes = getParentQuery().getAtoms(IsaAtom.class)
-                .filter(at -> at.getVarNames().contains(getVarName()))
-                .filter(at -> at != this)
-                .map(Binary::getSchemaConcept)
-                .filter(Objects::nonNull)
-                .filter(Concept::isType)
-                .map(Concept::asType)
-                .collect(Collectors.toSet());
-
-        Set<Type> types = typesFromTypes.isEmpty()?
-                typesFromRoles :
-                typesFromRoles.isEmpty()? typesFromTypes: Sets.intersection(typesFromRoles, typesFromTypes);
-
-        return !types.isEmpty()?
-                ImmutableList.copyOf(ConceptUtils.top(types)) :
-                tx().getMetaConcept().subs().collect(ImmutableList.toImmutableList());
+    @Override
+    public void checkValid(){
+        super.checkValid();
+        (new IsaAtomValidator()).checkValid(this, context());
     }
 
     @Override
     public IsaAtom inferTypes(ConceptMap sub) {
-        return this
-                .inferEntityType(sub);
+        return typeReasoner.inferTypes(this, sub, context());
     }
 
     @Override
-    public ImmutableList<Type> getPossibleTypes() { return inferPossibleTypes(new ConceptMap()); }
+    public ImmutableList<Type> getPossibleTypes() {
+        return typeReasoner.inferPossibleTypes(this, new ConceptMap(), context());
+    }
+
+    @Override
+    public Stream<ConceptMap> materialise() {
+        return new IsaMaterialiser().materialise(this, context());
+    }
 
     @Override
     public List<Atom> atomOptions(ConceptMap sub) {
-        return this.inferPossibleTypes(sub).stream()
-                .map(this::addType)
-                .sorted(Comparator.comparing(Atom::isRuleResolvable))
-                .collect(Collectors.toList());
-    }
-
-    @Override
-    public Stream<ConceptMap> materialise(){
-        ConceptMap substitution = getParentQuery().getSubstitution();
-        EntityType entityType = getSchemaConcept().asEntityType();
-
-        Concept foundConcept = substitution.containsVar(getVarName())? substitution.get(getVarName()) : null;
-        if (foundConcept != null) return Stream.of(substitution);
-
-        Concept concept = entityType.addEntityInferred();
-        return Stream.of(
-                ConceptUtils.joinAnswers(substitution, new ConceptMap(ImmutableMap.of(getVarName(), concept))
-        ));
+        return typeReasoner.atomOptions(this, sub, context());
     }
 
     @Override
     public Atom rewriteWithTypeVariable() {
-        return create(getVarName(), getPredicateVariable().asReturnedVar(), getTypeId(), this.isDirect(), getParentQuery());
+        return create(getVarName(), getPredicateVariable().asReturnedVar(), getTypeLabel(), this.isDirect(), getParentQuery(), this.context());
     }
 
     @Override
@@ -238,5 +178,21 @@ public class IsaAtom extends IsaAtomBase {
         //in general this <= parent, so no specialisation viable
         if (this.getClass() != parentAtom.getClass()) return UnifierImpl.nonExistent();
         return super.getUnifier(parentAtom, unifierType);
+    }
+
+    @Override
+    public MultiUnifier getMultiUnifier(Atom parentAtom, UnifierType unifierType) {
+        Unifier unifier = this.getUnifier(parentAtom, unifierType);
+        return unifier != null ? new MultiUnifierImpl(unifier) : MultiUnifierImpl.nonExistent();
+    }
+
+    @Override
+    public Set<TypeAtom> unify(Unifier u){
+        Collection<Variable> vars = u.get(getVarName());
+        return vars.isEmpty()?
+                Collections.singleton(this) :
+                vars.stream()
+                        .map(v -> IsaAtom.create(v, getPredicateVariable(), getTypeLabel(), this.isDirect(), this.getParentQuery(), this.context()))
+                        .collect(Collectors.toSet());
     }
 }

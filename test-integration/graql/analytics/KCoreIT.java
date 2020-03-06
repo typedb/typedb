@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,19 +17,19 @@
 
 package grakn.core.graql.analytics;
 
-import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.concept.answer.ConceptSet;
 import grakn.core.kb.concept.api.Attribute;
-import grakn.core.kb.concept.api.Entity;
 import grakn.core.kb.concept.api.AttributeType;
+import grakn.core.kb.concept.api.ConceptId;
+import grakn.core.kb.concept.api.Entity;
 import grakn.core.kb.concept.api.EntityType;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
-import grakn.core.kb.server.exception.GraqlSemanticException;
-import grakn.core.rule.GraknTestServer;
-import grakn.core.kb.server.exception.InvalidKBException;
+import grakn.core.kb.graql.exception.GraqlSemanticException;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
+import grakn.core.kb.server.exception.InvalidKBException;
+import grakn.core.rule.GraknTestServer;
 import graql.lang.Graql;
 import org.junit.After;
 import org.junit.Before;

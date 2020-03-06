@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -20,23 +19,24 @@ package grakn.core.graql.reasoner;
 
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
-import grakn.core.kb.concept.api.Concept;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
+import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.server.Session;
-import grakn.core.rule.GraknTestServer;
 import grakn.core.kb.server.Transaction;
+import grakn.core.rule.GraknTestServer;
 import graql.lang.Graql;
 import graql.lang.query.GraqlGet;
 import graql.lang.statement.Variable;
+import org.junit.ClassRule;
+import org.junit.Test;
+
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.junit.ClassRule;
-import org.junit.Test;
 
 import static grakn.core.core.Schema.ImplicitType.HAS;
 import static grakn.core.core.Schema.ImplicitType.HAS_OWNER;

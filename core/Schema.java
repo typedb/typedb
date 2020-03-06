@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -19,10 +18,13 @@
 
 package grakn.core.core;
 
+import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
+import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.Entity;
 import grakn.core.kb.concept.api.EntityType;
+import grakn.core.kb.concept.api.GraknConceptException;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.LabelId;
 import grakn.core.kb.concept.api.Relation;
@@ -31,8 +33,6 @@ import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Type;
-import grakn.core.kb.concept.api.Concept;
-import grakn.core.kb.concept.api.Attribute;
 import graql.lang.Graql;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
@@ -42,9 +42,9 @@ import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
 import java.util.Map;
 
-import static grakn.core.common.exception.ErrorMessage.INVALID_IMPLICIT_TYPE;
 import static grakn.common.util.Collections.map;
 import static grakn.common.util.Collections.pair;
+import static grakn.core.common.exception.ErrorMessage.INVALID_IMPLICIT_TYPE;
 
 /**
  * A type enum which restricts the types of links/concepts which can be created
@@ -57,20 +57,31 @@ public final class Schema {
         throw new UnsupportedOperationException();
     }
 
-    public static ConceptId conceptIdFromVertexId(Object vertexId){
+    public static ConceptId conceptIdFromVertexId(Object vertexId) {
         return ConceptId.of(PREFIX_VERTEX + vertexId);
     }
 
-    public static ConceptId conceptId(Element element){
-        String prefix = element instanceof Edge? PREFIX_EDGE : PREFIX_VERTEX;
+    public static ConceptId conceptId(Element element) {
+        String prefix = element instanceof Edge ? PREFIX_EDGE : PREFIX_VERTEX;
         return ConceptId.of(prefix + element.id().toString());
     }
 
-    public static String elementId(ConceptId conceptId){
+    public static String elementId(ConceptId conceptId) {
         return conceptId.getValue().substring(1);
     }
 
-    public static boolean isEdgeId(ConceptId conceptId){
+    public static boolean validateConceptId(ConceptId conceptId) throws GraknConceptException {
+        try {
+            if (!isEdgeId(conceptId)) {
+                Long.parseLong(elementId(conceptId));
+            }
+        } catch (NumberFormatException e) {
+            return false;
+        }
+        return true;
+    }
+
+    public static boolean isEdgeId(ConceptId conceptId) {
         return conceptId.getValue().startsWith(Schema.PREFIX_EDGE);
     }
 

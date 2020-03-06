@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,11 +17,8 @@
 
 package grakn.core.graph.graphdb.predicate;
 
-import org.apache.tinkerpop.gremlin.process.traversal.P;
-import grakn.core.graph.graphdb.predicate.AndJanusPredicate;
-import grakn.core.graph.graphdb.predicate.ConnectiveJanusPredicate;
-import grakn.core.graph.graphdb.predicate.OrJanusPredicate;
 import grakn.core.graph.graphdb.query.JanusGraphPredicate;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
 
 import java.util.ArrayList;
 import java.util.Iterator;

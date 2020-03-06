@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -27,13 +26,39 @@ import grakn.core.kb.concept.api.Type;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+import javax.annotation.Nullable;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
-public interface VertexElement extends AbstractElement<Vertex, Schema.VertexProperty> {
+public interface VertexElement extends AbstractElement<Vertex> {
     EdgeElement addEdge(VertexElement to, Schema.EdgeLabel type);
     EdgeElement putEdge(VertexElement to, Schema.EdgeLabel type);
     void deleteEdge(Direction direction, Schema.EdgeLabel edgeLabel, VertexElement... targets);
+
+    /**
+     * Sets a property which cannot be mutated
+     *
+     * @param property   The key of the immutable property to mutate
+     * @param newValue   The new value to put on the property (if the property is not set)
+     * @param foundValue The current value of the property
+     * @param converter  Helper method to ensure data is persisted in the correct format
+     */
+    <X> void propertyImmutable(Schema.VertexProperty property, X newValue, @Nullable X foundValue, Function<X, Object> converter);
+    <X> void propertyImmutable(Schema.VertexProperty property, X newValue, X foundValue);
+
+    void property(Schema.VertexProperty key, Object value);
+    <X> X property(Schema.VertexProperty key);
+    Boolean propertyBoolean(Schema.VertexProperty key);
+
+    /**
+     * Sets the value of a property with the added restriction that no other vertex can have that property.
+     *
+     * @param key   The key of the unique property to mutate
+     * @param value The new value of the unique property
+     */
+    void propertyUnique(Schema.VertexProperty key, String value);
+
 
     Stream<EdgeElement> getEdgesOfType(Direction direction, Schema.EdgeLabel label);
 

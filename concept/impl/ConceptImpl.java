@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -20,13 +19,15 @@
 package grakn.core.concept.impl;
 
 import grakn.core.concept.cache.ConceptCache;
+import grakn.core.concept.structure.ElementUtils;
+import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
-import grakn.core.kb.concept.structure.GraknElementException;
-import grakn.core.concept.structure.ElementUtils;
-import grakn.core.kb.concept.structure.Shard;
+import grakn.core.kb.concept.manager.ConceptManager;
+import grakn.core.kb.concept.manager.ConceptNotificationChannel;
 import grakn.core.kb.concept.structure.EdgeElement;
-import grakn.core.core.Schema;
+import grakn.core.kb.concept.structure.GraknElementException;
+import grakn.core.kb.concept.structure.Shard;
 import grakn.core.kb.concept.structure.VertexElement;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
@@ -39,21 +40,20 @@ import java.util.stream.Stream;
  */
 public abstract class ConceptImpl implements Concept, ConceptVertex {
     private final VertexElement vertexElement;
-    final ConceptManagerImpl conceptManager;
-    final ConceptObserver conceptObserver;
+    final ConceptManager conceptManager;
+    final ConceptNotificationChannel conceptNotificationChannel;
 
-    //WARNING: DO not flush the current shard into the central cache. It is not safe to do so in a concurrent environment
     private final ConceptCache<Shard> currentShard;
     private final ConceptCache<Long> shardCount;
     private final ConceptCache<ConceptId> conceptId;
 
-    ConceptImpl(VertexElement vertexElement, ConceptManagerImpl conceptManager, ConceptObserver conceptObserver) {
+    ConceptImpl(VertexElement vertexElement, ConceptManager conceptManager, ConceptNotificationChannel conceptNotificationChannel) {
         this.vertexElement = vertexElement;
         this.conceptManager = conceptManager;
-        this.conceptObserver = conceptObserver;
         this.currentShard = new ConceptCache<>(() -> conceptManager.getShardWithLock(vertex().element().id().toString()));
         this.shardCount = new ConceptCache<>(() -> shards().count());
         this.conceptId = new ConceptCache<>(() -> Schema.conceptId(vertex().element()));
+        this.conceptNotificationChannel = conceptNotificationChannel;
     }
 
     @Override
@@ -85,7 +85,7 @@ public abstract class ConceptImpl implements Concept, ConceptVertex {
      */
     public void deleteNode() {
         // TODO write cache tests to ensure that this is safe to remove
-//        conceptObserver.transactionCache().remove(this);
+//        conceptNotificationChannel.transactionCache().remove(this);
         vertex().delete();
     }
 

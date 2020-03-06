@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -19,15 +18,13 @@
 package grakn.core.graph.graphdb.relations;
 
 import com.google.common.base.Preconditions;
-import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import grakn.core.graph.core.EdgeLabel;
 import grakn.core.graph.core.JanusGraphEdge;
 import grakn.core.graph.core.JanusGraphVertex;
 import grakn.core.graph.graphdb.internal.InternalVertex;
-import grakn.core.graph.graphdb.relations.AbstractTypedRelation;
-import grakn.core.graph.graphdb.relations.EdgeDirection;
+import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 
 public abstract class AbstractEdge extends AbstractTypedRelation implements JanusGraphEdge {
 

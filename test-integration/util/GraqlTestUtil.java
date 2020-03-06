@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -29,6 +28,8 @@ import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlInsert;
 import graql.lang.query.MatchClause;
 import graql.lang.statement.Statement;
+import org.apache.commons.collections.CollectionUtils;
+
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -41,7 +42,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
-import org.apache.commons.collections.CollectionUtils;
 
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertFalse;

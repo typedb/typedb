@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -24,7 +23,7 @@ import grakn.core.graph.diskstorage.BaseTransactionConfig;
 import grakn.core.graph.diskstorage.keycolumnvalue.StoreTransaction;
 
 /**
- * Abstract implementation of {@link StoreTransaction} to be used as the basis for more specific implementations.
+ * Abstract implementation of StoreTransaction to be used as the basis for more specific implementations.
  *
  */
 

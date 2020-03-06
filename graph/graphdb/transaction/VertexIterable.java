@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -22,7 +21,6 @@ import grakn.core.graph.diskstorage.util.RecordIterator;
 import grakn.core.graph.graphdb.database.StandardJanusGraph;
 import grakn.core.graph.graphdb.idmanagement.IDManager;
 import grakn.core.graph.graphdb.internal.InternalVertex;
-import grakn.core.graph.graphdb.transaction.StandardJanusGraphTx;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;

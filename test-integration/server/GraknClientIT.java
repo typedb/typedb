@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -31,7 +30,6 @@ import grakn.client.answer.ConceptList;
 import grakn.client.answer.ConceptMap;
 import grakn.client.answer.ConceptSet;
 import grakn.client.answer.ConceptSetMeasure;
-import grakn.client.answer.Explanation;
 import grakn.client.answer.Numeric;
 import grakn.client.concept.Attribute;
 import grakn.client.concept.AttributeType;
@@ -39,7 +37,6 @@ import grakn.client.concept.Concept;
 import grakn.client.concept.ConceptId;
 import grakn.client.concept.Entity;
 import grakn.client.concept.EntityType;
-import grakn.client.concept.EntityTypeImpl;
 import grakn.client.concept.Label;
 import grakn.client.concept.Relation;
 import grakn.client.concept.RelationType;
@@ -47,11 +44,11 @@ import grakn.client.concept.Role;
 import grakn.client.concept.SchemaConcept;
 import grakn.client.concept.Thing;
 import grakn.client.concept.Type;
-import grakn.core.kb.server.keyspace.Keyspace;
-import grakn.core.rule.GraknTestServer;
-import grakn.core.kb.server.exception.SessionException;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
+import grakn.core.kb.server.exception.SessionException;
+import grakn.core.kb.server.keyspace.Keyspace;
+import grakn.core.rule.GraknTestServer;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlDelete;

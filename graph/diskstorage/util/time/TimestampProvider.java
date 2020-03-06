@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -29,18 +28,18 @@ public interface TimestampProvider {
 
     /**
      * Returns the current time based on this timestamp provider
-     * as a {@link Instant}.
+     * as a Instant.
      *
      */
     Instant getTime();
 
     /**
-     * Returns the given time as a {@link Instant} based off of this timestamp providers units
+     * Returns the given time as a Instant based off of this timestamp providers units
      */
     Instant getTime(long sinceEpoch);
 
     /**
-     * Return the units of {@link #getTime()}. This method's return value must
+     * Return the units of #getTime(). This method's return value must
      * be constant over at least the life of the object implementing this
      * interface.
      *
@@ -49,7 +48,7 @@ public interface TimestampProvider {
     ChronoUnit getUnit();
 
     /**
-     * Block until the current time as returned by {@link #getTime()} is greater
+     * Block until the current time as returned by #getTime() is greater
      * than the given timepoint.
      *
      * @param futureTime The time to sleep past
@@ -66,7 +65,7 @@ public interface TimestampProvider {
     void sleepFor(Duration duration) throws InterruptedException;
 
     /**
-     * Returns a {@link Timer} based on this timestamp provider
+     * Returns a Timer based on this timestamp provider
      */
     Timer getTimer();
 

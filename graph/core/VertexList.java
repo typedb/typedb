@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -21,12 +20,12 @@ package grakn.core.graph.core;
 import java.util.List;
 
 /**
- * List of {@link JanusGraphVertex}s.
+ * List of JanusGraphVertexs.
  * <p>
  * Basic interface for a list of vertices which supports retrieving individuals vertices or iterating over all of them,
  * but does not support modification.
  * <p>
- * VertexList is returned by {@link JanusGraphVertexQuery}. Depending on how the query was executed that returned this VertexList,
+ * VertexList is returned by JanusGraphVertexQuery. Depending on how the query was executed that returned this VertexList,
  * getting vertex ids might be significantly faster than retrieving vertex objects.
  */
 public interface VertexList extends Iterable<JanusGraphVertex> {

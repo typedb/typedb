@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -19,7 +18,9 @@
 
 package grakn.core.graql.executor.property;
 
-import grakn.core.kb.server.exception.GraqlSemanticException;
+import grakn.core.kb.graql.exception.GraqlSemanticException;
+import grakn.core.kb.graql.executor.property.PropertyExecutor;
+import grakn.core.kb.graql.executor.property.PropertyExecutorFactory;
 import graql.lang.property.AbstractProperty;
 import graql.lang.property.DataTypeProperty;
 import graql.lang.property.HasAttributeProperty;
@@ -38,8 +39,6 @@ import graql.lang.property.ValueProperty;
 import graql.lang.property.VarProperty;
 import graql.lang.property.WhenProperty;
 import graql.lang.statement.Variable;
-import grakn.core.kb.graql.executor.property.PropertyExecutorFactory;
-import grakn.core.kb.graql.executor.property.PropertyExecutor;
 
 public class PropertyExecutorFactoryImpl implements PropertyExecutorFactory {
 
@@ -73,7 +72,7 @@ public class PropertyExecutorFactoryImpl implements PropertyExecutorFactory {
             return new HasAttributeExecutor(var, (HasAttributeProperty) property);
 
         } else if (property instanceof HasAttributeTypeProperty) {
-            return new HasAttributeTypeExecutor(var, (HasAttributeTypeProperty) property);
+            return new HasAttributeTypeExecutor(var, (HasAttributeTypeProperty) property, this);
 
         } else if (property instanceof IdProperty) {
             return new IdExecutor(var, (IdProperty) property);
@@ -113,7 +112,6 @@ public class PropertyExecutorFactoryImpl implements PropertyExecutorFactory {
 
         } else if (property instanceof WhenProperty) {
             return new WhenExecutor(var, (WhenProperty) property);
-
         } else {
             throw new IllegalArgumentException("Unrecognised subclass of PropertyExecutor");
         }

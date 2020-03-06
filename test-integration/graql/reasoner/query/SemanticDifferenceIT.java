@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -23,6 +22,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import grakn.common.util.Pair;
+import grakn.core.common.config.Config;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.atom.binary.AttributeAtom;
 import grakn.core.graql.reasoner.atom.predicate.ValuePredicate;
@@ -35,7 +35,9 @@ import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
-import grakn.core.rule.GraknTestServer;
+import grakn.core.rule.GraknTestStorage;
+import grakn.core.rule.SessionUtil;
+import grakn.core.rule.TestTransactionProvider.TestTransaction;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;
@@ -64,13 +66,14 @@ import static org.junit.Assert.assertTrue;
 public class SemanticDifferenceIT {
 
     @ClassRule
-    public static final GraknTestServer server = new GraknTestServer();
+    public static final GraknTestStorage storage = new GraknTestStorage();
 
     private static Session genericSchemaSession;
 
     @BeforeClass
     public static void loadContext(){
-        genericSchemaSession = server.sessionWithNewKeyspace();
+        Config mockServerConfig = storage.createCompatibleServerConfig();
+        genericSchemaSession = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig);
         String resourcePath = "test-integration/graql/reasoner/resources/";
         loadFromFileAndCommit(resourcePath, "genericSchema.gql", genericSchemaSession);
     }
@@ -82,7 +85,8 @@ public class SemanticDifferenceIT {
 
     @Test
     public void whenChildSpecifiesType_typesAreFilteredCorrectly(){
-        try(Transaction tx = genericSchemaSession.writeTransaction()) {
+        try(TestTransaction tx = ((TestTransaction) genericSchemaSession.writeTransaction())) {
+            ReasonerQueryFactory reasonerQueryFactory = tx.reasonerQueryFactory();
             EntityType subRoleEntity = tx.getEntityType("subRoleEntity");
 
             Pattern parentPattern =
@@ -91,8 +95,8 @@ public class SemanticDifferenceIT {
                     var().rel("baseRole1", var("x")).rel("baseRole2", var("y")).isa("binary"),
                     var("x").isa(subRoleEntity.label().getValue())
             );
-            ReasonerAtomicQuery parent = ReasonerQueries.atomic(conjunction(parentPattern), tx);
-            ReasonerAtomicQuery child = ReasonerQueries.atomic(conjunction(childPattern), tx);
+            ReasonerAtomicQuery parent = reasonerQueryFactory.atomic(conjunction(parentPattern));
+            ReasonerAtomicQuery child = reasonerQueryFactory.atomic(conjunction(childPattern));
 
             Set<Pair<Unifier, SemanticDifference>> semanticPairs = parent.getMultiUnifierWithSemanticDiff(child);
             Pair<Unifier, SemanticDifference> semanticPair = Iterables.getOnlyElement(semanticPairs);
@@ -104,14 +108,15 @@ public class SemanticDifferenceIT {
             );
             assertEquals(expected, semanticPair.second());
             Set<ConceptMap> childAnswers = tx.stream(child.getQuery(), false).collect(Collectors.toSet());
-            Set<ConceptMap> propagatedAnswers = projectAnswersToChild(child, parent, semanticPair.first(), semanticPair.second());
+            Set<ConceptMap> propagatedAnswers = projectAnswersToChild(tx, child, parent, semanticPair.first(), semanticPair.second());
             assertCollectionsNonTriviallyEqual(propagatedAnswers + "\n!=\n" + childAnswers + "\n", childAnswers, propagatedAnswers);
         }
     }
 
     @Test
     public void whenChildSpecialisesType_typesAreFilteredCorrectly(){
-        try(Transaction tx = genericSchemaSession.writeTransaction()) {
+        try(TestTransaction tx = ((TestTransaction) genericSchemaSession.writeTransaction())) {
+            ReasonerQueryFactory reasonerQueryFactory = tx.reasonerQueryFactory();
             EntityType baseRoleEntity = tx.getEntityType("baseRoleEntity");
             EntityType subRoleEntity = tx.getEntityType("subRoleEntity");
 
@@ -122,8 +127,8 @@ public class SemanticDifferenceIT {
                     var().rel("baseRole1", var("x")).rel("baseRole2", var("y")).isa("binary"),
                     var("x").isa(subRoleEntity.label().getValue()));
 
-            ReasonerAtomicQuery parent = ReasonerQueries.atomic(conjunction(parentPattern), tx);
-            ReasonerAtomicQuery child = ReasonerQueries.atomic(conjunction(childPattern), tx);
+            ReasonerAtomicQuery parent = reasonerQueryFactory.atomic(conjunction(parentPattern));
+            ReasonerAtomicQuery child = reasonerQueryFactory.atomic(conjunction(childPattern));
 
             Set<Pair<Unifier, SemanticDifference>> semanticPairs = parent.getMultiUnifierWithSemanticDiff(child);
             Pair<Unifier, SemanticDifference> semanticPair = Iterables.getOnlyElement(semanticPairs);
@@ -135,14 +140,15 @@ public class SemanticDifferenceIT {
             );
             assertEquals(expected, semanticPair.second());
             Set<ConceptMap> childAnswers = tx.stream(child.getQuery(), false).collect(Collectors.toSet());
-            Set<ConceptMap> propagatedAnswers = projectAnswersToChild(child, parent, semanticPair.first(), semanticPair.second());
+            Set<ConceptMap> propagatedAnswers = projectAnswersToChild(tx, child, parent, semanticPair.first(), semanticPair.second());
             assertCollectionsNonTriviallyEqual(propagatedAnswers + "\n!=\n" + childAnswers + "\n", childAnswers, propagatedAnswers);
         }
     }
 
     @Test
     public void whenChildGeneralisesType_semanticDifferenceIsTrivial(){
-        try(Transaction tx = genericSchemaSession.writeTransaction()) {
+        try(TestTransaction tx = ((TestTransaction) genericSchemaSession.writeTransaction())) {
+            ReasonerQueryFactory reasonerQueryFactory = tx.reasonerQueryFactory();
             EntityType baseRoleEntity = tx.getEntityType("baseRoleEntity");
             EntityType metaEntityType = tx.getMetaEntityType();
 
@@ -153,19 +159,20 @@ public class SemanticDifferenceIT {
                     var().rel("baseRole1", var("x")).rel("baseRole2", var("y")).isa("binary"),
                     var("x").isa(metaEntityType.label().getValue()));
 
-            ReasonerAtomicQuery parent = ReasonerQueries.atomic(conjunction(parentPattern), tx);
-            ReasonerAtomicQuery child = ReasonerQueries.atomic(conjunction(childPattern), tx);
+            ReasonerAtomicQuery parent = reasonerQueryFactory.atomic(conjunction(parentPattern));
+            ReasonerAtomicQuery child = reasonerQueryFactory.atomic(conjunction(childPattern));
 
             MultiUnifier multiUnifier = parent.getMultiUnifier(child, UnifierType.SUBSUMPTIVE);
             multiUnifier.stream()
-                    .map(u -> child.getAtom().semanticDifference(parent.getAtom(), u))
+                    .map(u -> child.getAtom().computeSemanticDifference(parent.getAtom(), u))
                     .forEach(sd -> assertTrue(sd.isTrivial()));
         }
     }
 
     @Test
     public void whenChildSpecifiesRole_rolesAreFilteredCorrectly(){
-        try(Transaction tx = genericSchemaSession.writeTransaction()) {
+        try(TestTransaction tx = ((TestTransaction) genericSchemaSession.writeTransaction())) {
+            ReasonerQueryFactory reasonerQueryFactory = tx.reasonerQueryFactory();
             Role role = tx.getRole("baseRole1");
             Pattern parentPattern =
                     var().rel(var("role"), var("z")).rel("baseRole2", var("w")).isa("binary");
@@ -173,8 +180,8 @@ public class SemanticDifferenceIT {
                     var().rel(var("role"), var("x")).rel("baseRole2", var("y")).isa("binary"),
                     var("role").type(role.label().getValue()));
 
-            ReasonerAtomicQuery parent = ReasonerQueries.atomic(conjunction(parentPattern), tx);
-            ReasonerAtomicQuery child = ReasonerQueries.atomic(conjunction(childPattern), tx);
+            ReasonerAtomicQuery parent = reasonerQueryFactory.atomic(conjunction(parentPattern));
+            ReasonerAtomicQuery child = reasonerQueryFactory.atomic(conjunction(childPattern));
 
             Set<Pair<Unifier, SemanticDifference>> semanticPairs = parent.getMultiUnifierWithSemanticDiff(child);
             Pair<Unifier, SemanticDifference> semanticPair = Iterables.getOnlyElement(semanticPairs);
@@ -187,14 +194,15 @@ public class SemanticDifferenceIT {
             );
             assertEquals(expected, semanticPair.second());
             Set<ConceptMap> childAnswers = tx.stream(child.getQuery(), false).collect(Collectors.toSet());
-            Set<ConceptMap> propagatedAnswers = projectAnswersToChild(child, parent, semanticPair.first(), semanticPair.second());
+            Set<ConceptMap> propagatedAnswers = projectAnswersToChild(tx, child, parent, semanticPair.first(), semanticPair.second());
             assertCollectionsNonTriviallyEqual(propagatedAnswers + "\n!=\n" + childAnswers + "\n", childAnswers, propagatedAnswers);
         }
     }
 
     @Test
     public void whenChildSpecialisesRole_rolesAreFilteredCorrectly(){
-        try(Transaction tx = genericSchemaSession.writeTransaction()) {
+        try(TestTransaction tx = ((TestTransaction) genericSchemaSession.writeTransaction())) {
+            ReasonerQueryFactory reasonerQueryFactory = tx.reasonerQueryFactory();
             Role baseRole = tx.getRole("baseRole1");
             Role subRole = tx.getRole("subRole1");
 
@@ -204,8 +212,8 @@ public class SemanticDifferenceIT {
             Pattern childPattern = and(
                     var().rel(var("role"), var("x")).rel("baseRole2", var("y")).isa("binary"),
                     var("role").type(subRole.label().getValue()));
-            ReasonerAtomicQuery parent = ReasonerQueries.atomic(conjunction(parentPattern), tx);
-            ReasonerAtomicQuery child = ReasonerQueries.atomic(conjunction(childPattern), tx);
+            ReasonerAtomicQuery parent = reasonerQueryFactory.atomic(conjunction(parentPattern));
+            ReasonerAtomicQuery child = reasonerQueryFactory.atomic(conjunction(childPattern));
 
             Set<Pair<Unifier, SemanticDifference>> semanticPairs = parent.getMultiUnifierWithSemanticDiff(child);
             Pair<Unifier, SemanticDifference> semanticPair = Iterables.getOnlyElement(semanticPairs);
@@ -217,14 +225,15 @@ public class SemanticDifferenceIT {
             );
             assertEquals(expected, semanticPair.second());
             Set<ConceptMap> childAnswers = tx.stream(child.getQuery(), false).collect(Collectors.toSet());
-            Set<ConceptMap> propagatedAnswers = projectAnswersToChild(child, parent, semanticPair.first(), semanticPair.second());
+            Set<ConceptMap> propagatedAnswers = projectAnswersToChild(tx, child, parent, semanticPair.first(), semanticPair.second());
             assertCollectionsNonTriviallyEqual(propagatedAnswers + "\n!=\n" + childAnswers + "\n", childAnswers, propagatedAnswers);
         }
     }
 
     @Test
     public void whenChildGeneralisesRole_semanticDifferenceIsTrivial(){
-        try(Transaction tx = genericSchemaSession.writeTransaction()) {
+        try(TestTransaction tx = ((TestTransaction) genericSchemaSession.writeTransaction())) {
+            ReasonerQueryFactory reasonerQueryFactory = tx.reasonerQueryFactory();
             Role baseRole = tx.getRole("baseRole1");
             Role metaRole = tx.getMetaRole();
 
@@ -234,17 +243,18 @@ public class SemanticDifferenceIT {
             Pattern childPattern = and(
                     var().rel(var("role"), var("x")).rel("baseRole2", var("y")).isa("binary"),
                     var("role").type(metaRole.label().getValue()));
-            ReasonerAtomicQuery parent = ReasonerQueries.atomic(conjunction(parentPattern), tx);
-            ReasonerAtomicQuery child = ReasonerQueries.atomic(conjunction(childPattern), tx);
+            ReasonerAtomicQuery parent = reasonerQueryFactory.atomic(conjunction(parentPattern));
+            ReasonerAtomicQuery child = reasonerQueryFactory.atomic(conjunction(childPattern));
 
             Unifier unifier = parent.getMultiUnifier(child, UnifierType.SUBSUMPTIVE).getUnifier();
-            assertTrue(parent.getAtom().semanticDifference(child.getAtom(), unifier).isTrivial());
+            assertTrue(parent.getAtom().computeSemanticDifference(child.getAtom(), unifier).isTrivial());
         }
     }
 
     @Test
     public void whenChildSpecialisesRole_rolePlayersPlayingMultipleRoles_differenceIsCalculatedCorrectly(){
-        try(Transaction tx = genericSchemaSession.writeTransaction()) {
+        try(TestTransaction tx = ((TestTransaction) genericSchemaSession.writeTransaction())) {
+            ReasonerQueryFactory reasonerQueryFactory = tx.reasonerQueryFactory();
             Role baseRole1 = tx.getRole("baseRole1");
             Role subRole1 = tx.getRole("subRole1");
             Role baseRole2 = tx.getRole("baseRole2");
@@ -258,8 +268,8 @@ public class SemanticDifferenceIT {
                     var().rel(var("role"), var("x")).rel(var("role2"), var("x")).isa("binary"),
                     var("role").type(subRole1.label().getValue()),
                     var("role2").type(subRole2.label().getValue()));
-            ReasonerAtomicQuery parent = ReasonerQueries.atomic(conjunction(parentPattern), tx);
-            ReasonerAtomicQuery child = ReasonerQueries.atomic(conjunction(childPattern), tx);
+            ReasonerAtomicQuery parent = reasonerQueryFactory.atomic(conjunction(parentPattern));
+            ReasonerAtomicQuery child = reasonerQueryFactory.atomic(conjunction(childPattern));
 
             Set<Pair<Unifier, SemanticDifference>> semanticPairs = parent.getMultiUnifierWithSemanticDiff(child);
             Pair<Unifier, SemanticDifference> semanticPair = Iterables.getOnlyElement(semanticPairs);
@@ -271,21 +281,22 @@ public class SemanticDifferenceIT {
             );
             assertEquals(expected, semanticPair.second());
             Set<ConceptMap> childAnswers = tx.stream(child.getQuery(), false).collect(Collectors.toSet());
-            Set<ConceptMap> propagatedAnswers = projectAnswersToChild(child, parent, semanticPair.first(), semanticPair.second());
+            Set<ConceptMap> propagatedAnswers = projectAnswersToChild(tx, child, parent, semanticPair.first(), semanticPair.second());
             assertCollectionsEqual(propagatedAnswers + "\n!=\n" + childAnswers + "\n", childAnswers, propagatedAnswers);
         }
     }
 
     @Test
     public void whenChildAndParentHaveVariableRoles_differenceIsCalculatedCorrectly(){
-        try(Transaction tx = genericSchemaSession.writeTransaction()) {
+        try(TestTransaction tx = ((TestTransaction) genericSchemaSession.writeTransaction())) {
+            ReasonerQueryFactory reasonerQueryFactory = tx.reasonerQueryFactory();
             Pattern parentPattern =
                     var().rel(var("role"), var("z")).rel(var("role2"), var("w")).isa("binary");
             Pattern childPattern = and(
                     var().rel(var("role"), var("x")).rel(var("role2"), var("y")).isa("binary"),
                     var("y").id("V123"));
-            ReasonerAtomicQuery parent = ReasonerQueries.atomic(conjunction(parentPattern), tx);
-            ReasonerAtomicQuery child = ReasonerQueries.atomic(conjunction(childPattern), tx);
+            ReasonerAtomicQuery parent = reasonerQueryFactory.atomic(conjunction(parentPattern));
+            ReasonerAtomicQuery child = reasonerQueryFactory.atomic(conjunction(childPattern));
 
             Set<Pair<Unifier, SemanticDifference>> semanticPairs = parent.getMultiUnifierWithSemanticDiff(child);
 
@@ -296,13 +307,14 @@ public class SemanticDifferenceIT {
 
     @Test
     public void whenChildSpecialisesPlayedRole_RPsAreFilteredCorrectly(){
-        try(Transaction tx = genericSchemaSession.writeTransaction()) {
+        try(TestTransaction tx = ((TestTransaction) genericSchemaSession.writeTransaction())) {
+            ReasonerQueryFactory reasonerQueryFactory = tx.reasonerQueryFactory();
             Role subRole1 = tx.getRole("subRole1");
             Role subRole2 = tx.getRole("subSubRole2");
             Pattern parentPattern = var().rel("baseRole1", var("z")).rel("baseRole2", var("w")).isa("binary");
             Pattern childPattern = var().rel(subRole1.label().getValue(), var("x")).rel(subRole2.label().getValue(), var("y")).isa("binary");
-            ReasonerAtomicQuery parent = ReasonerQueries.atomic(conjunction(parentPattern), tx);
-            ReasonerAtomicQuery child = ReasonerQueries.atomic(conjunction(childPattern), tx);
+            ReasonerAtomicQuery parent = reasonerQueryFactory.atomic(conjunction(parentPattern));
+            ReasonerAtomicQuery child = reasonerQueryFactory.atomic(conjunction(childPattern));
 
             Set<Pair<Unifier, SemanticDifference>> semanticPairs = parent.getMultiUnifierWithSemanticDiff(child);
             Pair<Unifier, SemanticDifference> semanticPair = Iterables.getOnlyElement(semanticPairs);
@@ -315,36 +327,38 @@ public class SemanticDifferenceIT {
             );
             assertEquals(expected, semanticPair.second());
             Set<ConceptMap> childAnswers = tx.stream(child.getQuery(), false).collect(Collectors.toSet());
-            Set<ConceptMap> propagatedAnswers = projectAnswersToChild(child, parent, semanticPair.first(), semanticPair.second());
+            Set<ConceptMap> propagatedAnswers = projectAnswersToChild(tx, child, parent, semanticPair.first(), semanticPair.second());
             assertCollectionsNonTriviallyEqual(propagatedAnswers + "\n!=\n" + childAnswers + "\n", childAnswers, propagatedAnswers);
         }
     }
 
     @Test
     public void whenChildGeneralisesRoles_semanticDifferenceIsTrivial(){
-        try(Transaction tx = genericSchemaSession.writeTransaction()) {
+        try(TestTransaction tx = ((TestTransaction) genericSchemaSession.writeTransaction())) {
+            ReasonerQueryFactory reasonerQueryFactory = tx.reasonerQueryFactory();
             Role metaRole = tx.getMetaRole();
             Pattern parentPattern = var().rel("baseRole1", var("z")).rel("baseRole2", var("w")).isa("binary");
             Pattern childPattern = var().rel(metaRole.label().getValue(), var("x")).rel(metaRole.label().getValue(), var("y")).isa("binary");
 
-            ReasonerAtomicQuery parent = ReasonerQueries.atomic(conjunction(parentPattern), tx);
-            ReasonerAtomicQuery child = ReasonerQueries.atomic(conjunction(childPattern), tx);
+            ReasonerAtomicQuery parent = reasonerQueryFactory.atomic(conjunction(parentPattern));
+            ReasonerAtomicQuery child = reasonerQueryFactory.atomic(conjunction(childPattern));
 
             MultiUnifier multiUnifier = parent.getMultiUnifier(child, UnifierType.SUBSUMPTIVE);
             multiUnifier.stream()
-                    .map(u -> parent.getAtom().semanticDifference(child.getAtom(), u))
+                    .map(u -> parent.getAtom().computeSemanticDifference(child.getAtom(), u))
                     .forEach(semDiff -> assertTrue(semDiff.isTrivial()));
         }
     }
 
     @Test
     public void whenChildSpecifiesResourceValuePredicate_valuesAreFilteredCorrectly(){
-        try(Transaction tx = genericSchemaSession.writeTransaction()) {
+        try(TestTransaction tx = ((TestTransaction) genericSchemaSession.writeTransaction())) {
+            ReasonerQueryFactory reasonerQueryFactory = tx.reasonerQueryFactory();
             final String value = "m";
             Pattern parentPattern = var("z").has("resource", var("r"));
             Pattern childPattern = var("x").has("resource", val(value));
-            ReasonerAtomicQuery parent = ReasonerQueries.atomic(conjunction(parentPattern), tx);
-            ReasonerAtomicQuery child = ReasonerQueries.atomic(conjunction(childPattern), tx);
+            ReasonerAtomicQuery parent = reasonerQueryFactory.atomic(conjunction(parentPattern));
+            ReasonerAtomicQuery child = reasonerQueryFactory.atomic(conjunction(childPattern));
 
             Set<Pair<Unifier, SemanticDifference>> semanticPairs = parent.getMultiUnifierWithSemanticDiff(child);
             Pair<Unifier, SemanticDifference> semanticPair = Iterables.getOnlyElement(semanticPairs);
@@ -363,19 +377,20 @@ public class SemanticDifferenceIT {
             );
             assertEquals(expected, semanticPair.second());
             Set<ConceptMap> childAnswers = tx.stream(child.getQuery(), false).collect(Collectors.toSet());
-            Set<ConceptMap> propagatedAnswers = projectAnswersToChild(child, parent, semanticPair.first(), semanticPair.second());
+            Set<ConceptMap> propagatedAnswers = projectAnswersToChild(tx, child, parent, semanticPair.first(), semanticPair.second());
             assertCollectionsNonTriviallyEqual(propagatedAnswers + "\n!=\n" + childAnswers + "\n", childAnswers, propagatedAnswers);
         }
     }
 
     @Test
     public void whenChildSpecialisesResourceValuePredicate_valuesAreFilteredCorrectly(){
-        try(Transaction tx = genericSchemaSession.writeTransaction()) {
+        try(TestTransaction tx = ((TestTransaction) genericSchemaSession.writeTransaction())) {
+            ReasonerQueryFactory reasonerQueryFactory = tx.reasonerQueryFactory();
             final String value = "b";
             Pattern parentPattern = var("z").has("resource", neq("m"));
             Pattern childPattern = var("x").has("resource", val(value));
-            ReasonerAtomicQuery parent = ReasonerQueries.atomic(conjunction(parentPattern), tx);
-            ReasonerAtomicQuery child = ReasonerQueries.atomic(conjunction(childPattern), tx);
+            ReasonerAtomicQuery parent = reasonerQueryFactory.atomic(conjunction(parentPattern));
+            ReasonerAtomicQuery child = reasonerQueryFactory.atomic(conjunction(childPattern));
 
             Set<Pair<Unifier, SemanticDifference>> semanticPairs = parent.getMultiUnifierWithSemanticDiff(child);
             Pair<Unifier, SemanticDifference> semanticPair = Iterables.getOnlyElement(semanticPairs);
@@ -393,19 +408,20 @@ public class SemanticDifferenceIT {
             );
             assertEquals(expected, semanticPair.second());
             Set<ConceptMap> childAnswers = tx.stream(child.getQuery(), false).collect(Collectors.toSet());
-            Set<ConceptMap> propagatedAnswers = projectAnswersToChild(child, parent, semanticPair.first(), semanticPair.second());
+            Set<ConceptMap> propagatedAnswers = projectAnswersToChild(tx, child, parent, semanticPair.first(), semanticPair.second());
             assertCollectionsNonTriviallyEqual(propagatedAnswers + "\n!=\n" + childAnswers + "\n", childAnswers, propagatedAnswers);
         }
     }
 
     @Test
     public void whenChildSpecifiesValuePredicateOnType_valuesAreFilteredCorrectly(){
-        try(Transaction tx = genericSchemaSession.writeTransaction()) {
+        try(TestTransaction tx = ((TestTransaction) genericSchemaSession.writeTransaction())) {
+            ReasonerQueryFactory reasonerQueryFactory = tx.reasonerQueryFactory();
             final long value = 0;
             Pattern parentPattern = var("z").isa("resource-long");
             Pattern childPattern = var("x").isa("resource-long").val(value);
-            ReasonerAtomicQuery parent = ReasonerQueries.atomic(conjunction(parentPattern), tx);
-            ReasonerAtomicQuery child = ReasonerQueries.atomic(conjunction(childPattern), tx);
+            ReasonerAtomicQuery parent = reasonerQueryFactory.atomic(conjunction(parentPattern));
+            ReasonerAtomicQuery child = reasonerQueryFactory.atomic(conjunction(childPattern));
 
             Set<Pair<Unifier, SemanticDifference>> semanticPairs = parent.getMultiUnifierWithSemanticDiff(child);
             Pair<Unifier, SemanticDifference> semanticPair = Iterables.getOnlyElement(semanticPairs);
@@ -421,19 +437,20 @@ public class SemanticDifferenceIT {
             );
             assertEquals(expected, semanticPair.second());
             Set<ConceptMap> childAnswers = tx.stream(child.getQuery(), false).collect(Collectors.toSet());
-            Set<ConceptMap> propagatedAnswers = projectAnswersToChild(child, parent, semanticPair.first(), semanticPair.second());
+            Set<ConceptMap> propagatedAnswers = projectAnswersToChild(tx, child, parent, semanticPair.first(), semanticPair.second());
             assertCollectionsNonTriviallyEqual(propagatedAnswers + "\n!=\n" + childAnswers + "\n", childAnswers, propagatedAnswers);
         }
     }
 
     @Test
     public void whenChildSpecialisesValuePredicateOnType_valuesAreFilteredCorrectly2(){
-        try(Transaction tx = genericSchemaSession.writeTransaction()) {
+        try(TestTransaction tx = ((TestTransaction) genericSchemaSession.writeTransaction())) {
+            ReasonerQueryFactory reasonerQueryFactory = tx.reasonerQueryFactory();
             final long value = 1;
             Pattern parentPattern = var("z").isa("resource-long").gt(0);
             Pattern childPattern = var("x").isa("resource-long").eq(value);
-            ReasonerAtomicQuery parent = ReasonerQueries.atomic(conjunction(parentPattern), tx);
-            ReasonerAtomicQuery child = ReasonerQueries.atomic(conjunction(childPattern), tx);
+            ReasonerAtomicQuery parent = reasonerQueryFactory.atomic(conjunction(parentPattern));
+            ReasonerAtomicQuery child = reasonerQueryFactory.atomic(conjunction(childPattern));
 
             Set<Pair<Unifier, SemanticDifference>> semanticPairs = parent.getMultiUnifierWithSemanticDiff(child);
             Pair<Unifier, SemanticDifference> semanticPair = Iterables.getOnlyElement(semanticPairs);
@@ -449,31 +466,32 @@ public class SemanticDifferenceIT {
             );
             assertEquals(expected, semanticPair.second());
             Set<ConceptMap> childAnswers = tx.stream(child.getQuery(), false).collect(Collectors.toSet());
-            Set<ConceptMap> propagatedAnswers = projectAnswersToChild(child, parent, semanticPair.first(), semanticPair.second());
+            Set<ConceptMap> propagatedAnswers = projectAnswersToChild(tx, child, parent, semanticPair.first(), semanticPair.second());
             assertCollectionsNonTriviallyEqual(propagatedAnswers + "\n!=\n" + childAnswers + "\n", childAnswers, propagatedAnswers);
         }
     }
 
     @Test
     public void whenChildGeneralisesValuePredicateOnType_semanticDifferenceIsTrivial(){
-        try(Transaction tx = genericSchemaSession.writeTransaction()) {
+        try(TestTransaction tx = ((TestTransaction) genericSchemaSession.writeTransaction())) {
+            ReasonerQueryFactory reasonerQueryFactory = tx.reasonerQueryFactory();
             final long value = 1;
             Pattern parentPattern = var("z").has("resource-long", value);
             Pattern childPattern = var("x").has("resource-long", var("r"));
-            ReasonerAtomicQuery parent = ReasonerQueries.atomic(conjunction(parentPattern), tx);
-            ReasonerAtomicQuery child = ReasonerQueries.atomic(conjunction(childPattern), tx);
+            ReasonerAtomicQuery parent = reasonerQueryFactory.atomic(conjunction(parentPattern));
+            ReasonerAtomicQuery child = reasonerQueryFactory.atomic(conjunction(childPattern));
 
             MultiUnifier multiUnifier = parent.getMultiUnifier(child, UnifierType.SUBSUMPTIVE);
             multiUnifier.stream()
-                    .map(u -> parent.getAtom().semanticDifference(child.getAtom(), u))
+                    .map(u -> parent.getAtom().computeSemanticDifference(child.getAtom(), u))
                     .forEach(sd -> assertTrue(sd.isTrivial()));
         }
     }
 
-    private Set<ConceptMap> projectAnswersToChild(ReasonerAtomicQuery child, ReasonerAtomicQuery parent, Unifier parentToChildUnifier, SemanticDifference diff){
+    private Set<ConceptMap> projectAnswersToChild(Transaction tx, ReasonerAtomicQuery child, ReasonerAtomicQuery parent, Unifier parentToChildUnifier, SemanticDifference diff){
         Set<Variable> childVars = child.getVarNames();
         ConceptMap childSub = child.getRoleSubstitution();
-        return parent.tx().stream(parent.getQuery(), false)
+        return tx.stream(parent.getQuery(), false)
                 .map(ans -> diff.propagateAnswer(ans, childSub, childVars, parentToChildUnifier))
                 .filter(ans -> !ans.isEmpty())
                 .collect(Collectors.toSet());

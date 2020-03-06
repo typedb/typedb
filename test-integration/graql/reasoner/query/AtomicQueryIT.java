@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -19,14 +18,17 @@
 
 package grakn.core.graql.reasoner.query;
 
+import grakn.core.common.config.Config;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.unifier.UnifierType;
+import grakn.core.kb.graql.exception.GraqlSemanticException;
 import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
-import grakn.core.kb.server.exception.GraqlSemanticException;
-import grakn.core.rule.GraknTestServer;
+import grakn.core.rule.GraknTestStorage;
+import grakn.core.rule.SessionUtil;
+import grakn.core.rule.TestTransactionProvider;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
@@ -47,13 +49,14 @@ import static org.junit.Assert.assertEquals;
 public class AtomicQueryIT {
 
     @ClassRule
-    public static final GraknTestServer server = new GraknTestServer();
+    public static final GraknTestStorage storage = new GraknTestStorage();
 
     private static Session session;
 
     @BeforeClass
     public static void loadContext(){
-        session = server.sessionWithNewKeyspace();
+        Config mockServerConfig = storage.createCompatibleServerConfig();
+        session = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig);
         String resourcePath = "test-integration/graql/reasoner/resources/";
         loadFromFileAndCommit(resourcePath, "genericSchema.gql", session);
     }
@@ -61,33 +64,40 @@ public class AtomicQueryIT {
     @Test(expected = IllegalArgumentException.class)
     public void whenConstructingNonAtomicQuery_ExceptionIsThrown() {
         try (Transaction tx = session.writeTransaction()) {
+            ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
             String patternString = "{ ($x, $y) isa binary;($y, $z) isa binary; };";
-            ReasonerAtomicQuery atomicQuery = ReasonerQueries.atomic(conjunction(patternString), tx);
+            ReasonerAtomicQuery atomicQuery = reasonerQueryFactory.atomic(conjunction(patternString));
         }
     }
 
     @Test(expected = GraqlSemanticException.class)
     public void whenCreatingQueryWithNonexistentType_ExceptionIsThrown() {
         try (Transaction tx = session.writeTransaction()) {
+            ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
+
             String patternString = "{ $x isa someType; };";
-            ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString), tx);
+            ReasonerAtomicQuery query = reasonerQueryFactory.atomic(conjunction(patternString));
         }
     }
 
     @Test(expected = GraqlSemanticException.class)
     public void whenCreatingAttributeQueryWithInvalidValueType_ExceptionIsThrown() {
         try (Transaction tx = session.writeTransaction()) {
+            ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
+
             String patternString = "{ $x has resource-double '100'; };";
-            ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString), tx);
+            ReasonerAtomicQuery query = reasonerQueryFactory.atomic(conjunction(patternString));
         }
     }
 
     @Test
     public void whenCopyingQuery_TheCopyIsAlphaEquivalentToOriginal() {
         try (Transaction tx = session.writeTransaction()) {
+            ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
+
             String patternString = "{ $x isa subRoleEntity;$y isa subSubRoleEntity;($x, $y) isa binary; };";
             Conjunction<Statement> pattern = conjunction(patternString);
-            ReasonerAtomicQuery atomicQuery = ReasonerQueries.atomic(pattern, tx);
+            ReasonerAtomicQuery atomicQuery = reasonerQueryFactory.atomic(pattern);
             ReasonerAtomicQuery copy = atomicQuery.copy();
             assertEquals(atomicQuery, copy);
             assertEquals(atomicQuery.hashCode(), copy.hashCode());
@@ -97,6 +107,8 @@ public class AtomicQueryIT {
     @Test
     public void whenQueryingForRelationsWithAmbiguousRoleTypes_answersArePermutedCorrectly() {
         try (Transaction tx = session.writeTransaction()) {
+            ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
+
             String childString = "match (subRole1: $x, subRole2: $y) isa binary; get;";
             String parentString = "match ($x, $y) isa binary; get;";
 
@@ -104,8 +116,8 @@ public class AtomicQueryIT {
             GraqlGet parentQuery = Graql.parse(parentString).asGet();
             Set<ConceptMap> answers = tx.stream(childQuery, false).collect(toSet());
             Set<ConceptMap> fullAnswers = tx.stream(parentQuery, false).collect(toSet());
-            Atom childAtom = ReasonerQueries.atomic(conjunction(childQuery.match().getPatterns()), tx).getAtom();
-            Atom parentAtom = ReasonerQueries.atomic(conjunction(parentQuery.match().getPatterns()), tx).getAtom();
+            Atom childAtom = reasonerQueryFactory.atomic(conjunction(childQuery.match().getPatterns())).getAtom();
+            Atom parentAtom = reasonerQueryFactory.atomic(conjunction(parentQuery.match().getPatterns())).getAtom();
 
             MultiUnifier multiUnifier = childAtom.getMultiUnifier(childAtom, UnifierType.RULE);
             Set<ConceptMap> permutedAnswers = answers.stream()

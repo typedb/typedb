@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -76,7 +75,7 @@ public interface Role extends SchemaConcept {
      * Returns the RelationTypes that this Role takes part in.
      *
      * @return The RelationType which this Role takes part in.
-     * @see RelationType
+     * see RelationType
      */
     @CheckReturnValue
     Stream<RelationType> relations();
@@ -85,7 +84,7 @@ public interface Role extends SchemaConcept {
      * Returns a collection of the Types that can play this Role.
      *
      * @return A list of all the Types which can play this Role.
-     * @see Type
+     * see Type
      */
     @CheckReturnValue
     Stream<Type> players();

@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -81,7 +80,7 @@ public interface JanusGraphIndexQuery {
     /**
      * Returns all vertices that match the query in the indexing backend.
      *
-     * @deprecated use {@link #vertexStream()} instead.
+     * @deprecated use #vertexStream() instead.
      */
     @Deprecated
     Iterable<Result<JanusGraphVertex>> vertices();
@@ -94,7 +93,7 @@ public interface JanusGraphIndexQuery {
     /**
      * Returns all edges that match the query in the indexing backend.
      *
-     * @deprecated use {@link #edgeStream()} instead.
+     * @deprecated use #edgeStream() instead.
      */
     @Deprecated
     Iterable<Result<JanusGraphEdge>> edges();
@@ -107,7 +106,7 @@ public interface JanusGraphIndexQuery {
     /**
      * Returns all properties that match the query in the indexing backend.
      *
-     * @deprecated use {@link #propertyStream()} instead.
+     * @deprecated use #propertyStream() instead.
      */
     @Deprecated
     Iterable<Result<JanusGraphVertexProperty>> properties();

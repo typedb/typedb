@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -34,7 +33,7 @@ import java.util.Objects;
 
 /**
  * Queries for a slice of data identified by a start point (inclusive) and end point (exclusive).
- * Returns all {@link StaticBuffer}s that lie in this range up to the given limit.
+ * Returns all StaticBuffers that lie in this range up to the given limit.
  * <p>
  * If a SliceQuery is marked <i>static</i> it is expected that the result set does not change.
  */

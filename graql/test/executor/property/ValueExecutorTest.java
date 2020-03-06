@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,7 +17,7 @@
 
 package grakn.core.graql.executor.property;
 
-import grakn.core.kb.graql.executor.property.value.ValueComparison;
+import grakn.core.graql.planning.gremlin.value.ValueComparison;
 import graql.lang.Graql;
 import graql.lang.property.ValueProperty;
 import org.junit.Test;

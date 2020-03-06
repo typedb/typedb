@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -26,7 +25,6 @@ import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
-
 import java.util.Set;
 
 public abstract class VariablePredicate extends Predicate<Variable> {
@@ -53,8 +51,8 @@ public abstract class VariablePredicate extends Predicate<Variable> {
 
     private int bindingHash(AtomicEquivalence equiv){
         int hashCode = 1;
-        IdPredicate idPredicate = this.getIdPredicate(this.getVarName());
-        IdPredicate refIdPredicate = this.getIdPredicate(this.getPredicate());
+        IdPredicate idPredicate = getIdPredicate(getVarName());
+        IdPredicate refIdPredicate = getIdPredicate(getPredicate());
         hashCode = hashCode * 37 + (idPredicate != null? equiv.hash(idPredicate) : 0);
         hashCode = hashCode * 37 + (refIdPredicate != null? equiv.hash(refIdPredicate) : 0);
         return hashCode;

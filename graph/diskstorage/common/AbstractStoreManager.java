@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -30,7 +29,6 @@ import java.util.List;
 
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.STORE_META_TIMESTAMPS;
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.STORE_META_TTL;
-import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.STORE_META_VISIBILITY;
 
 /**
  * Abstract Store Manager used as the basis for concrete StoreManager implementations.
@@ -57,9 +55,6 @@ public abstract class AbstractStoreManager implements StoreManager {
         }
         if (features.hasCellTTL() && storageConfig.get(STORE_META_TTL, storeName)) {
             schemaBuilder.add(EntryMetaData.TTL);
-        }
-        if (features.hasVisibility() && storageConfig.get(STORE_META_VISIBILITY, storeName)) {
-            schemaBuilder.add(EntryMetaData.VISIBILITY);
         }
         if (schemaBuilder.isEmpty()) {
             return StaticArrayEntry.EMPTY_SCHEMA;

@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -21,7 +20,6 @@ package grakn.core.graql.reasoner.state;
 
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
-import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
 
@@ -38,7 +36,7 @@ public class ConjunctiveState extends AnswerPropagatorState<ReasonerQueryImpl> {
                             Unifier u,
                             AnswerPropagatorState parent,
                             Set<ReasonerAtomicQuery> visitedSubGoals) {
-        super(ReasonerQueries.create(q, sub), sub, u, parent, visitedSubGoals);
+        super(q.withSubstitution(sub), sub, u, parent, visitedSubGoals);
     }
 
     @Override

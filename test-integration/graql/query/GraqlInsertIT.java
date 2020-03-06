@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -22,23 +21,23 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
-import grakn.core.kb.concept.api.Concept;
-import grakn.core.kb.concept.api.ConceptId;
-import grakn.core.kb.concept.api.Label;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.answer.Numeric;
-import grakn.core.kb.concept.api.Attribute;
-import grakn.core.kb.concept.api.Entity;
-import grakn.core.kb.concept.api.Relation;
-import grakn.core.kb.concept.api.Thing;
-import grakn.core.kb.concept.api.EntityType;
-import grakn.core.kb.concept.api.Role;
-import grakn.core.kb.server.exception.GraqlSemanticException;
 import grakn.core.graql.graph.MovieGraph;
-import grakn.core.rule.GraknTestServer;
-import grakn.core.kb.server.exception.InvalidKBException;
+import grakn.core.kb.concept.api.Attribute;
+import grakn.core.kb.concept.api.Concept;
+import grakn.core.kb.concept.api.ConceptId;
+import grakn.core.kb.concept.api.Entity;
+import grakn.core.kb.concept.api.EntityType;
+import grakn.core.kb.concept.api.Label;
+import grakn.core.kb.concept.api.Relation;
+import grakn.core.kb.concept.api.Role;
+import grakn.core.kb.concept.api.Thing;
+import grakn.core.kb.graql.exception.GraqlSemanticException;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
+import grakn.core.kb.server.exception.InvalidKBException;
+import grakn.core.rule.GraknTestServer;
 import graql.lang.Graql;
 import graql.lang.exception.GraqlException;
 import graql.lang.pattern.Pattern;
@@ -67,7 +66,6 @@ import java.util.Set;
 import static grakn.core.util.GraqlTestUtil.assertCollectionsNonTriviallyEqual;
 import static grakn.core.util.GraqlTestUtil.assertExists;
 import static grakn.core.util.GraqlTestUtil.assertNotExists;
-import static graql.lang.Graql.insert;
 import static graql.lang.Graql.type;
 import static graql.lang.Graql.var;
 import static graql.lang.exception.ErrorMessage.NO_PATTERNS;
@@ -179,9 +177,9 @@ public class GraqlInsertIT {
     public void testInsertSameVarName() {
         tx.execute(Graql.insert(var("x").has("title", "SW"), var("x").has("title", "Star Wars").isa("movie")));
 
-        assertExists(tx, var().isa("movie").has("title", "SW"));
-        assertExists(tx, var().isa("movie").has("title", "Star Wars"));
-        assertExists(tx, var().isa("movie").has("title", "SW").has("title", "Star Wars"));
+        assertExists(tx, var("x").isa("movie").has("title", "SW"));
+        assertExists(tx, var("x").isa("movie").has("title", "Star Wars"));
+        assertExists(tx, var("x").isa("movie").has("title", "SW").has("title", "Star Wars"));
     }
 
     @Test
@@ -203,16 +201,16 @@ public class GraqlInsertIT {
 
     @Test
     public void testMatchInsertQuery() {
-        Statement language1 = var().isa("language").has("name", "123");
-        Statement language2 = var().isa("language").has("name", "456");
+        Statement language1 = var("x").isa("language").has("name", "123");
+        Statement language2 = var("x").isa("language").has("name", "456");
 
         tx.execute(Graql.insert(language1, language2));
         assertExists(tx, language1);
         assertExists(tx, language2);
 
         tx.execute(Graql.match(var("x").isa("language")).insert(var("x").has("name", "HELLO")));
-        assertExists(tx, var().isa("language").has("name", "123").has("name", "HELLO"));
-        assertExists(tx, var().isa("language").has("name", "456").has("name", "HELLO"));
+        assertExists(tx, var("x").isa("language").has("name", "123").has("name", "HELLO"));
+        assertExists(tx, var("x").isa("language").has("name", "456").has("name", "HELLO"));
 
         tx.execute(Graql.match(var("x").isa("language")).delete("x"));
         assertNotExists(tx, language1);
@@ -236,8 +234,8 @@ public class GraqlInsertIT {
 
     @Test
     public void testMatchInsertShouldInsertDataEvenWhenResultsAreNotCollected() {
-        Statement language1 = var().isa("language").has("name", "123");
-        Statement language2 = var().isa("language").has("name", "456");
+        Statement language1 = var("x").isa("language").has("name", "123");
+        Statement language2 = var("x").isa("language").has("name", "456");
 
         tx.execute(Graql.insert(language1, language2));
         assertExists(tx, language1);
@@ -246,8 +244,8 @@ public class GraqlInsertIT {
         GraqlInsert query = Graql.match(var("x").isa("language")).insert(var("x").has("name", "HELLO"));
         tx.stream(query);
 
-        assertExists(tx, var().isa("language").has("name", "123").has("name", "HELLO"));
-        assertExists(tx, var().isa("language").has("name", "456").has("name", "HELLO"));
+        assertExists(tx, var("x").isa("language").has("name", "123").has("name", "HELLO"));
+        assertExists(tx, var("x").isa("language").has("name", "456").has("name", "HELLO"));
     }
 
     @Test

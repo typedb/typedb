@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -26,7 +25,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Helper class for processing read messages with the registered message readers.
- * Simple implementation of a {@link Runnable}.
+ * Simple implementation of a Runnable.
  */
 public class ProcessMessageJob implements Runnable {
 

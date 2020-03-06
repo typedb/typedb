@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -20,8 +19,6 @@ package grakn.core.client;
 
 import grakn.client.GraknClient;
 import grakn.client.answer.ConceptMap;
-import grakn.client.answer.ConceptSet;
-import grakn.client.answer.Void;
 import graql.lang.Graql;
 import graql.lang.query.GraqlCompute;
 import graql.lang.query.GraqlDefine;

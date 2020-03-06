@@ -1,6 +1,5 @@
 #
-# GRAKN.AI - THE KNOWLEDGE GRAPH
-# Copyright (C) 2019 Grakn Labs Ltd
+# Copyright (C) 2020 Grakn Labs
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -24,7 +23,7 @@ options:
       type: default
       url: https://repo.maven.apache.org/maven2/
     - id: mavengraknai
-      url: http://maven.grakn.ai/nexus/content/repositories/snapshots/
+      url: https://maven.grakn.ai/nexus/content/repositories/snapshots/
     - id: repograknai
       type: default
       url: https://repo.grakn.ai/repository/maven-snapshot/
@@ -101,19 +100,22 @@ dependencies:
 
   io.grpc:
     grpc-core:
-      version: "1.16.0"
+      version: "1.24.1"
       lang: java
     grpc-netty:
-      version: "1.16.0"
+      version: "1.24.1"
       lang: java
     grpc-protobuf:
-      version: "1.16.0"
+      version: "1.24.1"
       lang: java
     grpc-stub:
-      version: "1.16.0"
+      version: "1.24.1"
       lang: java
     grpc-testing:
-      version: "1.16.0"
+      version: "1.24.1"
+      lang: java
+    grpc-api:
+      version: "1.24.1"
       lang: java
 
   io.netty:

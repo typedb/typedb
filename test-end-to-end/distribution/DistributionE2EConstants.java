@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -20,13 +19,14 @@ package grakn.core.distribution;
 
 import grakn.core.common.config.Config;
 import grakn.core.common.config.ConfigKey;
+import org.junit.Assert;
+import org.zeroturnaround.exec.ProcessExecutor;
+
 import java.io.IOException;
 import java.net.Socket;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.concurrent.TimeoutException;
-import org.junit.Assert;
-import org.zeroturnaround.exec.ProcessExecutor;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;

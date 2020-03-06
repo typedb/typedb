@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -27,11 +26,11 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 /**
  * A JanusGraphVertexQuery is a VertexQuery executed for a single vertex.
  * <p>
- * Calling {@link JanusGraphVertex#query()} builds such a query against the vertex
+ * Calling JanusGraphVertex#query() builds such a query against the vertex
  * this method is called on. This query builder provides the methods to specify which incident edges or
  * properties to query for.
  *
- * @see BaseVertexQuery
+ * see BaseVertexQuery
  */
 public interface JanusGraphVertexQuery<Q extends JanusGraphVertexQuery<Q>> extends BaseVertexQuery<Q> {
 

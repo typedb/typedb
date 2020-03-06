@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -21,9 +20,14 @@ package grakn.core.graql.reasoner;
 
 import grakn.core.graql.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.graql.reasoner.cache.RuleCacheImpl;
+import grakn.core.kb.graql.reasoner.ReasonerException;
 import grakn.core.kb.graql.reasoner.cache.QueryCache;
 import grakn.core.kb.graql.reasoner.cache.RuleCache;
 
+/**
+ * Downcasting interfaces that are injected into reasoner into more specific instances
+ * THat reasoner is already allowed to access and instantiate
+ */
 public class CacheCasting {
 
     // ---------- TODO these casts should be removed when the architecture is improved ---------

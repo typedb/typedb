@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -21,7 +20,7 @@ package grakn.core.graph.core.schema;
 import grakn.core.graph.core.VertexLabel;
 
 /**
- * A builder to create new {@link VertexLabel}s.
+ * A builder to create new VertexLabels.
  *
  * A vertex label is defined by its name and additional properties such as:
  * <ul>
@@ -56,7 +55,7 @@ public interface VertexLabelMaker {
     VertexLabelMaker setStatic();
 
     /**
-     * Creates a {@link VertexLabel} according to the specifications of this builder.
+     * Creates a VertexLabel according to the specifications of this builder.
      *
      * @return the created vertex label
      */

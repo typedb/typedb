@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,14 +17,14 @@
 
 package grakn.core.graql.graph;
 
+import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.Attribute;
-import grakn.core.kb.concept.api.Relation;
-import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.EntityType;
+import grakn.core.kb.concept.api.Relation;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
-import grakn.core.core.Schema;
+import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import graql.lang.Graql;

@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -21,14 +20,15 @@ package grakn.core.graql.reasoner.atom.predicate;
 
 import com.google.common.base.Preconditions;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.graql.planning.gremlin.value.ValueOperation;
 import grakn.core.kb.concept.api.Concept;
-import grakn.core.kb.graql.executor.property.value.ValueOperation;
-import grakn.core.graql.reasoner.ReasonerException;
+import grakn.core.kb.graql.reasoner.ReasonerException;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import graql.lang.property.ValueProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
+import java.util.Objects;
 
 /**
  * Class used to handle value predicates with a variable:
@@ -63,7 +63,7 @@ public class VariableValuePredicate extends VariablePredicate {
         return new VariableValuePredicate(varName, predicateVar, op, pattern, parent);
     }
 
-    public static Atomic fromValuePredicate(ValuePredicate predicate){
+    public static VariableValuePredicate fromValuePredicate(ValuePredicate predicate){
         return create(predicate.getVarName(), predicate.getPredicate(), predicate.getParentQuery());
     }
 
@@ -86,9 +86,19 @@ public class VariableValuePredicate extends VariablePredicate {
 
     @Override
     public int hashCode() {
-        int hashCode = 1;
-        hashCode = hashCode * 37 + this.getVarName().hashCode();
-        hashCode = hashCode * 37 + this.getPredicate().hashCode();
+        return Objects.hash(getVarName(), getPredicate(), operation());
+    }
+
+    @Override
+    public int alphaEquivalenceHashCode() {
+        int hashCode = super.alphaEquivalenceHashCode();
+        hashCode = hashCode * 37 + this.operation().hashCode();
+        return hashCode;
+    }
+
+    @Override
+    public int structuralEquivalenceHashCode() {
+        int hashCode = super.structuralEquivalenceHashCode();
         hashCode = hashCode * 37 + this.operation().hashCode();
         return hashCode;
     }
@@ -104,13 +114,6 @@ public class VariableValuePredicate extends VariablePredicate {
     }
 
     @Override
-    public int alphaEquivalenceHashCode() {
-        int hashCode = super.alphaEquivalenceHashCode();
-        hashCode = hashCode * 37 + this.operation().hashCode();
-        return hashCode;
-    }
-
-    @Override
     public boolean isStructurallyEquivalent(Object obj){
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
@@ -118,13 +121,6 @@ public class VariableValuePredicate extends VariablePredicate {
         VariableValuePredicate that = (VariableValuePredicate) obj;
         return this.operation().comparator().equals(that.operation().comparator())
                 && this.operation().value().equals(that.operation().value());
-    }
-
-    @Override
-    public int structuralEquivalenceHashCode() {
-        int hashCode = super.structuralEquivalenceHashCode();
-        hashCode = hashCode * 37 + this.operation().hashCode();
-        return hashCode;
     }
 
     @Override
@@ -138,13 +134,13 @@ public class VariableValuePredicate extends VariablePredicate {
     }
 
     @Override
-    public boolean subsumes(Atomic atomic){
+    public boolean isSubsumedBy(Atomic atomic){
         if (this.isAlphaEquivalent(atomic)) return true;
         if (atomic == null || this.getClass() != atomic.getClass()) return false;
         if (atomic == this) return true;
         VariableValuePredicate that = (VariableValuePredicate) atomic;
         return ValueOperation.of(this.operation())
-                .subsumes(ValueOperation.of(that.operation()));
+                .isSubsumedBy(ValueOperation.of(that.operation()));
     }
 
     @Override

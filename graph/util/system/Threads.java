@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -19,7 +18,7 @@
 package grakn.core.graph.util.system;
 
 /**
- * Utility class for dealing with {@link Thread}
+ * Utility class for dealing with Thread
  */
 public class Threads {
 

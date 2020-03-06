@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -23,8 +22,8 @@ import grakn.core.graph.diskstorage.ScanBuffer;
 import grakn.core.graph.diskstorage.WriteBuffer;
 
 /**
- * Interface that extends {@link AttributeSerializer} to provide a serialization that is byte order preserving, i.e. the
- * order of the elements (as given by its {@link Comparable} implementation) corresponds to the natural order of the
+ * Interface that extends AttributeSerializer to provide a serialization that is byte order preserving, i.e. the
+ * order of the elements (as given by its Comparable implementation) corresponds to the natural order of the
  * serialized byte representation representation.
  *
  */

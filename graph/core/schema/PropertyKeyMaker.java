@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -22,14 +21,14 @@ import grakn.core.graph.core.Cardinality;
 import grakn.core.graph.core.PropertyKey;
 
 /**
- * Used to define new {@link PropertyKey}s.
- * An property key is defined by its name, {@link Cardinality}, its data type, and its signature - all of which
+ * Used to define new PropertyKeys.
+ * An property key is defined by its name, Cardinality, its data type, and its signature - all of which
  * can be specified in this builder.
  */
 public interface PropertyKeyMaker extends RelationTypeMaker {
 
     /**
-     * Configures the {@link Cardinality} of this property key.
+     * Configures the Cardinality of this property key.
      *
      * @return this PropertyKeyMaker
      */
@@ -47,7 +46,7 @@ public interface PropertyKeyMaker extends RelationTypeMaker {
      *
      * @param clazz Data type to be configured.
      * @return this PropertyKeyMaker
-     * @see PropertyKey#dataType()
+     * see PropertyKey#dataType()
      */
     PropertyKeyMaker dataType(Class<?> clazz);
 
@@ -56,9 +55,9 @@ public interface PropertyKeyMaker extends RelationTypeMaker {
 
 
     /**
-     * Defines the {@link PropertyKey} specified by this PropertyKeyMaker and returns the resulting key.
+     * Defines the PropertyKey specified by this PropertyKeyMaker and returns the resulting key.
      *
-     * @return the created {@link PropertyKey}
+     * @return the created PropertyKey
      */
     @Override
     PropertyKey make();

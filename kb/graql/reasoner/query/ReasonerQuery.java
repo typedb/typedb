@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -20,12 +19,11 @@
 package grakn.core.kb.graql.reasoner.query;
 
 import com.google.common.collect.SetMultimap;
-import grakn.core.kb.concept.api.Label;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
-import grakn.core.kb.server.Transaction;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
 import graql.lang.statement.Variable;
@@ -45,12 +43,6 @@ public interface ReasonerQuery{
      */
     @CheckReturnValue
     ReasonerQuery conjunction(ReasonerQuery q);
-
-    /**
-     * @return tx associated with this reasoner query
-     */
-    @CheckReturnValue
-    Transaction tx();
 
     /**
      * @return true if this query contains strictly non-negated atomics
@@ -117,14 +109,6 @@ public interface ReasonerQuery{
      */
     @CheckReturnValue
     boolean isRuleResolvable();
-
-    /**
-     * @param typedVar variable of interest
-     * @param parentType which playability in this query is to be checked
-     * @return true if typing the typeVar with type is compatible with role configuration of this query
-     */
-    @CheckReturnValue
-    boolean isTypeRoleCompatible(Variable typedVar, Type parentType);
 
     /**
      * @param parent query we want to unify this query with

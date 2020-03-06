@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -24,6 +23,7 @@ import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.Relation;
+import grakn.core.kb.concept.api.RelationStructure;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Thing;
@@ -42,10 +42,10 @@ import java.util.stream.Stream;
 public class RelationImpl implements Relation, ConceptVertex {
     private RelationStructure relationStructure;
 
-    RelationImpl(RelationStructure relationStructure) {
+    public RelationImpl(RelationStructure relationStructure) {
         this.relationStructure = relationStructure;
         if (relationStructure.isReified()) {
-            relationStructure.reify().owner(this);
+            ((RelationReified)relationStructure.reify()).owner(this);
         }
     }
 
@@ -62,7 +62,7 @@ public class RelationImpl implements Relation, ConceptVertex {
      */
     @Nullable
     public RelationReified reified() {
-        if (relationStructure.isReified()) return relationStructure.reify();
+        if (relationStructure.isReified()) return (RelationReified)relationStructure.reify();
         return null;
     }
 
@@ -70,7 +70,7 @@ public class RelationImpl implements Relation, ConceptVertex {
      * Reifies and returns the RelationReified
      */
     private RelationReified reify() {
-        if (relationStructure.isReified()) return relationStructure.reify();
+        if (relationStructure.isReified()) return (RelationReified) relationStructure.reify();
 
         //Get the role players to transfer
         Map<Role, Set<Thing>> rolePlayers = structure().allRolePlayers();
@@ -84,7 +84,7 @@ public class RelationImpl implements Relation, ConceptVertex {
             assign(role, thing);
         });
 
-        return relationStructure.reify();
+        return (RelationReified) relationStructure.reify();
     }
 
     public RelationStructure structure() {
@@ -141,7 +141,7 @@ public class RelationImpl implements Relation, ConceptVertex {
      * Retrieve a list of all Thing involved in the Relation, and the Role they play.
      *
      * @return A list of all the Roles and the Things playing them in this Relation.
-     * @see Role
+     * see Role
      */
     @Override
     public Map<Role, Set<Thing>> rolePlayersMap() {

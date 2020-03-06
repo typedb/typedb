@@ -50,6 +50,9 @@ jobs:
       - checkout
       - run-bazel-rbe:
           command: bazel build //...
+      - run:
+          command: bazel run @graknlabs_build_tools//unused_deps -- list
+          no_output_timeout: 30m
 
   build-checkstyle:
     machine: true
@@ -60,9 +63,6 @@ jobs:
       - run: bazel run @graknlabs_build_tools//checkstyle:test-coverage
       - run-bazel-rbe:
           command: bazel test $(bazel query 'kind(checkstyle_test, //...)')
-      - run:
-          command: bazel run @graknlabs_build_tools//unused_deps -- list
-          no_output_timeout: 30m
 
   build-analysis:
     machine: true
@@ -73,7 +73,10 @@ jobs:
       - run: |
           SONARCLOUD_CODE_ANALYSIS_CREDENTIAL=$SONARCLOUD_CREDENTIAL \
             bazel run @graknlabs_build_tools//sonarcloud:code-analysis -- \
-            --project-key graknlabs_grakn_core --commit-id=$CIRCLE_SHA1 --branch=$CIRCLE_BRANCH
+            --organisation=$SONARCLOUD_ORGANISATION \
+            --project-key=$SONARCLOUD_PROJECT_KEY \
+            --commit-id=$CIRCLE_SHA1 \
+            --branch=$CIRCLE_BRANCH
   
   test-common:
     machine: true
@@ -272,8 +275,8 @@ jobs:
           bazel run @graknlabs_build_tools//ci:sync-dependencies -- \
           --source grakn@$CIRCLE_SHA1 \
           --targets \
-          grakn-kgms:master workbase:master docs:master examples:master \
-          benchmark:master client-java:master console:master kglib:master
+          grakn-kgms:master workbase:master benchmark:master \
+          client-java:master console:master kglib:master
         # TODO: Remove benchmark and client-java once #5272 is solved
         # TODO: Remove console once #5270 is solved
 
@@ -411,7 +414,9 @@ workflows:
       - build-analysis:
           filters:
             branches:
-              only: master
+              only:
+                - master
+                - rewrite
       - test-common:
           filters:
             branches:
@@ -439,7 +444,9 @@ workflows:
       - test-assembly-mac-zip:
           filters:
             branches:
-              only: master
+              only:
+                - master
+                - rewrite
           requires:
             - build
             - build-checkstyle
@@ -453,7 +460,9 @@ workflows:
       - test-assembly-windows-zip:
           filters:
             branches:
-              only: master
+              only:
+                - master
+                - rewrite
           requires:
             - build
             - build-checkstyle
@@ -467,7 +476,9 @@ workflows:
       - test-assembly-linux-targz:
           filters:
             branches:
-              only: master
+              only:
+                - master
+                - rewrite
           requires:
             - build
             - build-checkstyle
@@ -481,7 +492,9 @@ workflows:
       - test-assembly-docker:
           filters:
             branches:
-              only: master
+              only:
+                - master
+                - rewrite
           requires:
             - build
             - build-checkstyle
@@ -495,7 +508,9 @@ workflows:
       - deploy-apt-snapshot:
           filters:
             branches:
-              only: master
+              only:
+                - master
+                - rewrite
           requires:
             - test-assembly-mac-zip
             - test-assembly-windows-zip
@@ -504,7 +519,9 @@ workflows:
       - deploy-rpm-snapshot:
           filters:
             branches:
-              only: master
+              only:
+                - master
+                - rewrite
           requires:
             - test-assembly-mac-zip
             - test-assembly-windows-zip
@@ -513,13 +530,17 @@ workflows:
       - test-deployment-linux-apt:
           filters:
             branches:
-              only: master
+              only:
+                - master
+                - rewrite
           requires:
             - deploy-apt-snapshot
       - test-deployment-linux-rpm:
           filters:
             branches:
-              only: master
+              only:
+                - master
+                - rewrite
           requires:
             - deploy-rpm-snapshot
       - sync-dependencies-snapshot:

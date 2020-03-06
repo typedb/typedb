@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -19,20 +18,20 @@
 
 package grakn.core.concept;
 
+import grakn.core.common.exception.ErrorMessage;
 import grakn.core.concept.impl.AttributeTypeImpl;
 import grakn.core.concept.impl.EntityTypeImpl;
-import grakn.core.common.exception.ErrorMessage;
-import grakn.core.kb.concept.api.Label;
+import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.EntityType;
+import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.structure.EdgeElement;
-import grakn.core.rule.GraknTestServer;
-import grakn.core.kb.server.exception.TransactionException;
-import grakn.core.core.Schema;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
+import grakn.core.kb.server.exception.TransactionException;
+import grakn.core.rule.GraknTestServer;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.junit.After;
 import org.junit.Assert;
@@ -49,6 +48,7 @@ import static junit.framework.TestCase.assertEquals;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
@@ -86,12 +86,16 @@ public class SchemaConceptIT {
         //Change The Label
         entityType.label(newLabel);
 
-        //Check the label is changes
-        assertEquals(newLabel, entityType.label());
-        assertEquals(entityType, tx.getType(newLabel));
-
         //Check old label is dead
         assertNull(tx.getType(originalLabel));
+
+        // check new label is not dead
+        assertNotNull(tx.getSchemaConcept(newLabel));
+        assertEquals(entityType, tx.getType(newLabel));
+
+        //Check the label is changes
+        assertEquals(newLabel, entityType.label());
+
     }
 
     @Test

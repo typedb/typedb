@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -21,6 +20,8 @@ package grakn.core.concept.impl;
 
 import grakn.core.kb.concept.api.Entity;
 import grakn.core.kb.concept.api.EntityType;
+import grakn.core.kb.concept.manager.ConceptManager;
+import grakn.core.kb.concept.manager.ConceptNotificationChannel;
 import grakn.core.kb.concept.structure.VertexElement;
 
 /**
@@ -29,8 +30,8 @@ import grakn.core.kb.concept.structure.VertexElement;
  * Any instance of a EntityType is called an Entity.
  */
 public class EntityTypeImpl extends TypeImpl<EntityType, Entity> implements EntityType {
-    EntityTypeImpl(VertexElement vertexElement, ConceptManagerImpl conceptManager, ConceptObserver conceptObserver) {
-        super(vertexElement, conceptManager, conceptObserver);
+    public EntityTypeImpl(VertexElement vertexElement, ConceptManager conceptManager, ConceptNotificationChannel conceptNotificationChannel) {
+        super(vertexElement, conceptManager, conceptNotificationChannel);
     }
 
     public static EntityTypeImpl from(EntityType entityType) {
@@ -53,6 +54,6 @@ public class EntityTypeImpl extends TypeImpl<EntityType, Entity> implements Enti
 
     @Override
     void trackRolePlayers() {
-        conceptObserver.trackEntityInstancesRolesPlayed(this);
+        conceptNotificationChannel.trackEntityInstancesRolesPlayed(this);
     }
 }

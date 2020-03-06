@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -19,8 +18,9 @@
 
 package grakn.core.kb.graql.planning.spanningtree.graph;
 
-import grakn.core.kb.server.Transaction;
-import grakn.core.kb.graql.planning.Fragment;
+import grakn.core.kb.concept.manager.ConceptManager;
+import grakn.core.kb.graql.planning.gremlin.Fragment;
+import grakn.core.kb.keyspace.KeyspaceStatistics;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -106,10 +106,9 @@ public abstract class Node {
      * available to this node. Without further refinement, this only consumes the node type and if it's an
      * instance node then returns the total count of the graph vertices using labels to refine if available
      *
-     * @param tx
      * @return estimated number nodes in the graph that may match this node (aiming for an upper bound)
      */
-    public abstract long matchingElementsEstimate(Transaction tx);
+    public abstract long matchingElementsEstimate(ConceptManager conceptManager, KeyspaceStatistics statistics);
 
     /**
      * Lower is a more specific and therefore a more desirable node type

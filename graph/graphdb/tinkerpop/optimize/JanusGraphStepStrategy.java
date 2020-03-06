@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,6 +17,7 @@
 
 package grakn.core.graph.graphdb.tinkerpop.optimize;
 
+import grakn.core.graph.graphdb.tinkerpop.ElementUtils;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.GraphStep;
@@ -25,10 +25,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversal
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Graph;
-import grakn.core.graph.graphdb.tinkerpop.ElementUtils;
-import grakn.core.graph.graphdb.tinkerpop.optimize.HasStepFolder;
-import grakn.core.graph.graphdb.tinkerpop.optimize.JanusGraphStep;
-import grakn.core.graph.graphdb.tinkerpop.optimize.JanusGraphTraversalUtil;
 
 @SuppressWarnings("ComparableType")
 public class JanusGraphStepStrategy extends AbstractTraversalStrategy<TraversalStrategy.ProviderOptimizationStrategy> implements TraversalStrategy.ProviderOptimizationStrategy {

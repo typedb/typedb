@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -21,30 +20,23 @@ package grakn.core.graph.core;
 
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import grakn.core.graph.core.EdgeLabel;
-import grakn.core.graph.core.InvalidElementException;
-import grakn.core.graph.core.JanusGraphEdge;
-import grakn.core.graph.core.JanusGraphElement;
-import grakn.core.graph.core.JanusGraphVertexProperty;
-import grakn.core.graph.core.PropertyKey;
-import grakn.core.graph.core.RelationType;
 
 /**
  * JanusGraphRelation is the most abstract form of a relation between a vertex and some other entity, where
  * relation is understood in its mathematical sense. It generalizes the notion of an edge and a property.
  * <br>
- * A JanusGraphRelation extends {@link JanusGraphElement} which means it is an entity in its own right. This means, a JanusGraphRelation
+ * A JanusGraphRelation extends JanusGraphElement which means it is an entity in its own right. This means, a JanusGraphRelation
  * can have properties and unidirectional edges connecting it to other vertices.
  * <br>
- * A JanusGraphRelation is an abstract concept. A JanusGraphRelation is either a {@link JanusGraphVertexProperty} or a {@link JanusGraphEdge}.
+ * A JanusGraphRelation is an abstract concept. A JanusGraphRelation is either a JanusGraphVertexProperty or a JanusGraphEdge.
  * A JanusGraphRelation has a type which is either a label or key depending on the implementation.
  * <br>
  * A JanusGraphRelation is either directed, or unidirected. Properties are always directed (connecting a vertex
  * with a value). A unidirected edge is a special type of directed edge where the connection is only established from the
  * perspective of the outgoing vertex. In that sense, a unidirected edge is akin to a link.
  *
- * @see JanusGraphEdge
- * @see JanusGraphVertexProperty
+ * see JanusGraphEdge
+ * see JanusGraphVertexProperty
  */
 public interface JanusGraphRelation extends JanusGraphElement {
 
@@ -62,7 +54,7 @@ public interface JanusGraphRelation extends JanusGraphElement {
     /**
      * Returns the type of this relation.
      * <p>
-     * The type is either a label ({@link EdgeLabel} if this relation is an edge or a key ({@link PropertyKey}) if this
+     * The type is either a label (EdgeLabel if this relation is an edge or a key (PropertyKey) if this
      * relation is a property.
      *
      * @return Type of this relation
@@ -98,7 +90,7 @@ public interface JanusGraphRelation extends JanusGraphElement {
      * Checks whether this relation is a property.
      *
      * @return true, if this relation is a property, else false.
-     * @see JanusGraphVertexProperty
+     * see JanusGraphVertexProperty
      */
     boolean isProperty();
 
@@ -106,7 +98,7 @@ public interface JanusGraphRelation extends JanusGraphElement {
      * Checks whether this relation is an edge.
      *
      * @return true, if this relation is an edge, else false.
-     * @see JanusGraphEdge
+     * see JanusGraphEdge
      */
     boolean isEdge();
 

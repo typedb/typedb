@@ -1,6 +1,5 @@
 #
-# GRAKN.AI - THE KNOWLEDGE GRAPH
-# Copyright (C) 2019 Grakn Labs Ltd
+# Copyright (C) 2020 Grakn Labs
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -22,7 +21,7 @@ java_test(
     name = "lazy-merging-stream-test",
     srcs = ["LazyMergingStreamTest.java"],
     deps = [
-        "//graql:graql",
+        "//graql/executor",
         "//dependencies/maven/artifacts/org/mockito:mockito-core"
     ],
     test_class = "grakn.core.common.util.LazyMergingStreamTest",

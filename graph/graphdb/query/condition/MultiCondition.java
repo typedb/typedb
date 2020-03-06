@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -19,9 +18,6 @@
 package grakn.core.graph.graphdb.query.condition;
 
 import grakn.core.graph.core.JanusGraphElement;
-import grakn.core.graph.graphdb.query.condition.And;
-import grakn.core.graph.graphdb.query.condition.Condition;
-import grakn.core.graph.graphdb.query.condition.Or;
 
 import java.util.ArrayList;
 import java.util.Objects;
@@ -29,8 +25,8 @@ import java.util.Objects;
 /**
  * Abstract condition element that combines multiple conditions (for instance, AND, OR).
  *
- * @see And
- * @see Or
+ * see And
+ * see Or
  */
 public abstract class MultiCondition<E extends JanusGraphElement> extends ArrayList<Condition<E>> implements Condition<E> {
 

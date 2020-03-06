@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -32,7 +31,6 @@ import grakn.core.graph.graphdb.internal.RelationCategory;
 import grakn.core.graph.graphdb.query.BackendQueryHolder;
 import grakn.core.graph.graphdb.query.profile.QueryProfiler;
 import grakn.core.graph.graphdb.transaction.StandardJanusGraphTx;
-import grakn.core.graph.graphdb.vertices.CacheVertex;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Collection;
@@ -41,9 +39,9 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Implementation of {@link JanusGraphMultiVertexQuery} that extends {@link BasicVertexCentricQueryBuilder}
+ * Implementation of JanusGraphMultiVertexQuery that extends BasicVertexCentricQueryBuilder
  * for all the query building and optimization and adds only the execution logic in
- * {@link #execute(RelationCategory, BasicVertexCentricQueryBuilder.ResultConstructor)}.
+ * #execute(RelationCategory, BasicVertexCentricQueryBuilder.ResultConstructor).
  * <p>
  * All other methods just prepare or transform that result set to fit the particular method semantics.
  */
@@ -87,11 +85,11 @@ public class MultiVertexCentricQueryBuilder extends BasicVertexCentricQueryBuild
      */
 
     /**
-     * Constructs the BaseVertexCentricQuery through {@link BasicVertexCentricQueryBuilder#constructQuery(RelationCategory)}.
+     * Constructs the BaseVertexCentricQuery through BasicVertexCentricQueryBuilder#constructQuery(RelationCategory).
      * If the query asks for an implicit key, the resulting map is computed and returned directly.
      * If the query is empty, a map that maps each vertex to an empty list is returned.
      * Otherwise, the query is executed for all vertices through the transaction which will effectively
-     * pre-load the return result sets into the associated {@link CacheVertex} or
+     * pre-load the return result sets into the associated CacheVertex or
      * don't do anything at all if the vertex is new (and hence no edges in the storage backend).
      * After that, a map is constructed that maps each vertex to the corresponding VertexCentricQuery and wrapped
      * into a QueryProcessor. Hence, upon iteration the query will be executed like any other VertexCentricQuery
@@ -103,7 +101,7 @@ public class MultiVertexCentricQueryBuilder extends BasicVertexCentricQueryBuild
      */
     protected <Q> Map<JanusGraphVertex, Q> execute(RelationCategory returnType, ResultConstructor<Q> resultConstructor) {
         Preconditions.checkArgument(!vertices.isEmpty(), "Need to add at least one vertex to query");
-        final Map<JanusGraphVertex, Q> result = new HashMap<>(vertices.size());
+        Map<JanusGraphVertex, Q> result = new HashMap<>(vertices.size());
         BaseVertexCentricQuery bq = super.constructQuery(returnType);
         profiler.setAnnotation(QueryProfiler.MULTIQUERY_ANNOTATION, true);
         profiler.setAnnotation(QueryProfiler.NUMVERTICES_ANNOTATION, vertices.size());

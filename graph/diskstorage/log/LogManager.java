@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -19,10 +18,9 @@
 package grakn.core.graph.diskstorage.log;
 
 import grakn.core.graph.diskstorage.BackendException;
-import grakn.core.graph.diskstorage.log.Log;
 
 /**
- * Manager interface for opening {@link Log}s against a particular Log implementation.
+ * Manager interface for opening Logs against a particular Log implementation.
  *
  */
 public interface LogManager {

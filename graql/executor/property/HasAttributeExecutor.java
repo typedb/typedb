@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -27,26 +26,17 @@ import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.graql.executor.WriteExecutor;
 import grakn.core.kb.graql.executor.property.PropertyExecutor;
-import grakn.core.kb.graql.planning.EquivalentFragmentSet;
-import grakn.core.kb.graql.reasoner.atom.Atomic;
-import grakn.core.graql.reasoner.atom.binary.AttributeAtom;
-import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
-import grakn.core.graql.reasoner.atom.predicate.ValuePredicate;
-import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
+import grakn.core.kb.graql.planning.gremlin.EquivalentFragmentSet;
 import graql.lang.property.HasAttributeProperty;
-import graql.lang.property.IsaProperty;
 import graql.lang.property.VarProperty;
-import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-import static grakn.core.graql.gremlin.sets.EquivalentFragmentSets.neq;
-import static grakn.core.graql.gremlin.sets.EquivalentFragmentSets.rolePlayer;
-import static grakn.core.graql.reasoner.utils.ReasonerUtils.getIdPredicate;
-import static grakn.core.graql.reasoner.utils.ReasonerUtils.getValuePredicates;
+import static grakn.core.graql.planning.gremlin.sets.EquivalentFragmentSets.neq;
+import static grakn.core.graql.planning.gremlin.sets.EquivalentFragmentSets.rolePlayer;
 
 public class HasAttributeExecutor  implements PropertyExecutor.Insertable {
 
@@ -84,29 +74,6 @@ public class HasAttributeExecutor  implements PropertyExecutor.Insertable {
         );
     }
 
-    @Override
-    public Atomic atomic(ReasonerQuery parent, Statement statement, Set<Statement> otherStatements) {
-        //NB: HasAttributeProperty always has (type) label specified
-        Variable varName = var.asReturnedVar();
-
-        //NB: we always make the attribute variable explicit
-        Variable attributeVariable = property.attribute().var().asReturnedVar();
-        Variable relationVariable = property.relation().var();
-        Variable predicateVariable = new Variable();
-        Set<ValuePredicate> predicates = getValuePredicates(attributeVariable, property.attribute(), otherStatements, parent,
-                new PropertyExecutorFactoryImpl());
-
-        IsaProperty isaProp = property.attribute().getProperties(IsaProperty.class).findFirst().orElse(null);
-        Statement typeVar = isaProp != null ? isaProp.type() : null;
-        IdPredicate predicate = typeVar != null ? getIdPredicate(predicateVariable, typeVar, otherStatements, parent) : null;
-        ConceptId predicateId = predicate != null ? predicate.getPredicate() : null;
-
-        //add resource atom
-        Statement resVar = relationVariable.isReturned() ?
-                new Statement(varName).has(property.type(), new Statement(attributeVariable), new Statement(relationVariable)) :
-                new Statement(varName).has(property.type(), new Statement(attributeVariable));
-        return AttributeAtom.create(resVar, attributeVariable, relationVariable, predicateVariable, predicateId, predicates, parent);
-    }
 
     @Override
     public Set<PropertyExecutor.Writer> insertExecutors() {

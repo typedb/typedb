@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -31,12 +30,12 @@ import java.io.InputStream;
 import java.util.Properties;
 
 /**
- * This class produces a graph on top of {@link HadoopGraph}.
+ * This class produces a graph on top of HadoopGraph.
  * With this vendor some exceptions are in places:
- * 1. The Grakn API cannot work on {@link HadoopGraph} this is due to not being able to directly write to a
- * {@link HadoopGraph}.
+ * 1. The Grakn API cannot work on HadoopGraph this is due to not being able to directly write to a
+ * HadoopGraph.
  * 2. This factory primarily exists as a means of producing a
- * {@link org.apache.tinkerpop.gremlin.process.computer.GraphComputer} on of {@link HadoopGraph}
+ * org.apache.tinkerpop.gremlin.process.computer.GraphComputer on of HadoopGraph
  */
 public class HadoopGraphFactory {
     // Keep visibility to protected as this is used by KGMS

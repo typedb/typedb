@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -20,16 +19,15 @@ package grakn.core.graph.diskstorage.log.util;
 
 import com.google.common.base.Preconditions;
 import grakn.core.graph.diskstorage.StaticBuffer;
-import grakn.core.graph.diskstorage.log.Log;
 import grakn.core.graph.diskstorage.log.Message;
 
 import java.time.Instant;
 import java.util.Objects;
 
 /**
- * Abstract implementation of {@link Message} which exposes the timestamp, sender, and payload
+ * Abstract implementation of Message which exposes the timestamp, sender, and payload
  * of a message.
- * Particular {@link Log} implementations can extend this class.
+ * Particular Log implementations can extend this class.
  */
 public abstract class AbstractMessage implements Message {
 

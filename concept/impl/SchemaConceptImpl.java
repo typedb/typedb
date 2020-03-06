@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -19,7 +18,6 @@
 
 package grakn.core.concept.impl;
 
-import grakn.core.kb.concept.structure.PropertyNotUniqueException;
 import grakn.core.concept.cache.ConceptCache;
 import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.GraknConceptException;
@@ -27,6 +25,9 @@ import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.LabelId;
 import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.SchemaConcept;
+import grakn.core.kb.concept.manager.ConceptManager;
+import grakn.core.kb.concept.manager.ConceptNotificationChannel;
+import grakn.core.kb.concept.structure.PropertyNotUniqueException;
 import grakn.core.kb.concept.structure.VertexElement;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
@@ -52,8 +53,8 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
     private final ConceptCache<Set<T>> cachedDirectSubTypes = new ConceptCache<>(() -> this.<T>neighbours(Direction.IN, Schema.EdgeLabel.SUB).collect(Collectors.toSet()));
     private final ConceptCache<Boolean> cachedIsImplicit = new ConceptCache<>(() -> vertex().propertyBoolean(Schema.VertexProperty.IS_IMPLICIT));
 
-    SchemaConceptImpl(VertexElement vertexElement, ConceptManagerImpl conceptManager, ConceptObserver conceptObserver) {
-        super(vertexElement, conceptManager, conceptObserver);
+    SchemaConceptImpl(VertexElement vertexElement, ConceptManager conceptManager, ConceptNotificationChannel conceptNotificationChannel) {
+        super(vertexElement, conceptManager, conceptNotificationChannel);
     }
 
     public static <X extends SchemaConcept> SchemaConceptImpl<X> from(SchemaConcept schemaConcept) {
@@ -63,7 +64,7 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
 
     public T label(Label label) {
         // TODO combine with labelAdded if possible
-        conceptObserver.labelRemoved(this);
+        conceptNotificationChannel.labelRemoved(this);
         try {
             vertex().propertyUnique(Schema.VertexProperty.SCHEMA_LABEL, label.getValue());
             cachedLabel.set(label);
@@ -71,7 +72,7 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
         } catch (PropertyNotUniqueException exception) {
             throw GraknConceptException.labelTaken(label);
         } finally {
-            conceptObserver.labelAdded(this);
+            conceptNotificationChannel.labelAdded(this);
         }
     }
 
@@ -132,7 +133,7 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
             T superConcept = cachedSuperType.get();
 
             // delete schema concept from caches before deleting the vertex
-            conceptObserver.schemaConceptDeleted(this);
+            conceptNotificationChannel.schemaConceptDeleted(this);
 
             deleteNode();
 

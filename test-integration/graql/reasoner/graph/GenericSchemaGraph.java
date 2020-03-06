@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -19,23 +18,24 @@ package grakn.core.graql.reasoner.graph;
 
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Lists;
-import grakn.core.kb.concept.api.Label;
-import grakn.core.kb.concept.api.Attribute;
-import grakn.core.kb.concept.api.Entity;
-import grakn.core.kb.concept.api.Relation;
-import grakn.core.kb.concept.api.AttributeType;
-import grakn.core.kb.concept.api.EntityType;
-import grakn.core.kb.concept.api.RelationType;
 import grakn.core.graql.reasoner.pattern.AttributePattern;
 import grakn.core.graql.reasoner.pattern.QueryPattern;
 import grakn.core.graql.reasoner.pattern.RelationPattern;
 import grakn.core.graql.reasoner.pattern.TypePattern;
+import grakn.core.kb.concept.api.Attribute;
+import grakn.core.kb.concept.api.AttributeType;
+import grakn.core.kb.concept.api.Entity;
+import grakn.core.kb.concept.api.EntityType;
+import grakn.core.kb.concept.api.Label;
+import grakn.core.kb.concept.api.Relation;
+import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import graql.lang.Graql;
 import graql.lang.property.RelationProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
+
 import java.util.ArrayList;
 import java.util.Iterator;
 

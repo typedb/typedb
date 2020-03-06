@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -20,13 +19,10 @@
 package grakn.core.kb.graql.executor.property;
 
 import com.google.common.collect.ImmutableSet;
-import grakn.core.kb.graql.reasoner.atom.Atomic;
-import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
-import graql.lang.property.VarProperty;
-import graql.lang.statement.Statement;
-import graql.lang.statement.Variable;
-import grakn.core.kb.graql.planning.EquivalentFragmentSet;
 import grakn.core.kb.graql.executor.WriteExecutor;
+import grakn.core.kb.graql.planning.gremlin.EquivalentFragmentSet;
+import graql.lang.property.VarProperty;
+import graql.lang.statement.Variable;
 
 import java.util.Set;
 
@@ -34,8 +30,6 @@ import java.util.Set;
 public interface PropertyExecutor {
 
     Set<EquivalentFragmentSet> matchFragments();
-
-    Atomic atomic(ReasonerQuery parent, Statement statement, Set<Statement> otherStatements);
 
     interface Referrable extends Definable, Insertable {
 

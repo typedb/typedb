@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,7 +17,6 @@
 
 package grakn.core.graph.core;
 
-import grakn.core.graph.core.schema.JanusGraphManagement;
 import grakn.core.graph.graphdb.query.JanusGraphPredicate;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 
@@ -27,7 +25,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.Order;
  * that match all conditions.
  * <p>
  * Finding matching elements efficiently using this query mechanism requires that appropriate index structures have
- * been defined for the keys. See {@link JanusGraphManagement} for more information
+ * been defined for the keys. See JanusGraphManagement for more information
  * on how to define index structures in JanusGraph.
  *
  * @since 0.3.0

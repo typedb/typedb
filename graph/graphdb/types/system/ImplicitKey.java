@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -20,9 +19,6 @@ package grakn.core.graph.graphdb.types.system;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
-import org.apache.commons.lang.StringUtils;
-import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.structure.T;
 import grakn.core.graph.core.Cardinality;
 import grakn.core.graph.core.JanusGraphProperty;
 import grakn.core.graph.core.Multiplicity;
@@ -36,9 +32,9 @@ import grakn.core.graph.graphdb.internal.InternalVertex;
 import grakn.core.graph.graphdb.internal.InternalVertexLabel;
 import grakn.core.graph.graphdb.internal.JanusGraphSchemaCategory;
 import grakn.core.graph.graphdb.internal.Token;
-import grakn.core.graph.graphdb.types.system.BaseRelationType;
-import grakn.core.graph.graphdb.types.system.EmptyRelationType;
-import grakn.core.graph.graphdb.types.system.SystemRelationType;
+import org.apache.commons.lang.StringUtils;
+import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.T;
 
 import java.time.Duration;
 import java.time.Instant;

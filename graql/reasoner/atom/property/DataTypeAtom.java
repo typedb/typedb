@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -65,9 +64,7 @@ public class DataTypeAtom extends AtomicBase {
 
     @Override
     public int alphaEquivalenceHashCode() {
-        int hashCode = 1;
-        hashCode = hashCode * 37 + this.getDataType().hashCode();
-        return hashCode;
+        return getDataType().hashCode();
     }
 
     @Override
@@ -81,5 +78,5 @@ public class DataTypeAtom extends AtomicBase {
     }
 
     @Override
-    public boolean subsumes(Atomic atom) { return this.isAlphaEquivalent(atom); }
+    public boolean isSubsumedBy(Atomic atom) { return this.isAlphaEquivalent(atom); }
 }

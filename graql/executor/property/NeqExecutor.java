@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -20,14 +19,10 @@
 package grakn.core.graql.executor.property;
 
 import com.google.common.collect.Sets;
-import grakn.core.kb.graql.planning.EquivalentFragmentSet;
-import grakn.core.graql.gremlin.sets.EquivalentFragmentSets;
+import grakn.core.graql.planning.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.kb.graql.executor.property.PropertyExecutor;
-import grakn.core.kb.graql.reasoner.atom.Atomic;
-import grakn.core.graql.reasoner.atom.predicate.NeqIdPredicate;
-import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
+import grakn.core.kb.graql.planning.gremlin.EquivalentFragmentSet;
 import graql.lang.property.NeqProperty;
-import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 
 import java.util.Set;
@@ -51,8 +46,4 @@ public class NeqExecutor  implements PropertyExecutor {
         );
     }
 
-    @Override
-    public Atomic atomic(ReasonerQuery parent, Statement statement, Set<Statement> otherStatements) {
-        return NeqIdPredicate.create(var, property, parent);
-    }
 }

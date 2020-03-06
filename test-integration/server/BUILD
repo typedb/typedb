@@ -1,6 +1,5 @@
 #
-# GRAKN.AI - THE KNOWLEDGE GRAPH
-# Copyright (C) 2019 Grakn Labs Ltd
+# Copyright (C) 2020 Grakn Labs
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -28,7 +27,7 @@ java_test(
         "//concept/answer",
         "//core",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
-        "//kb",
+        "//kb/server",
         "//kb/concept/api",
         "//test-integration/rule:grakn-test-server",
         "@graknlabs_graql//java:graql",
@@ -51,7 +50,7 @@ java_test(
         "@graknlabs_client_java//:client-java",
 
         # Internal dependencies
-        "//kb",
+        "//kb/server",
         "//kb/concept/api",
         "//test-integration/rule:grakn-test-server",
 
@@ -65,10 +64,68 @@ java_test(
     ],
 )
 
+
+
+java_test(
+    name = "validator-it",
+    size = "medium",
+    srcs = ["ValidatorIT.java"],
+    classpath_resources = ["//test-integration/resources:logback-test"],
+    test_class = "grakn.core.server.ValidatorIT",
+    deps = [
+        "//common:common",
+        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+        "//kb/server",
+        "//kb/concept/api",
+        "//test-integration/rule:grakn-test-server",
+        "@graknlabs_graql//java:graql",
+    ],
+)
+
+java_test(
+    name = "validate-global-rules-it",
+    size = "medium",
+    srcs = ["ValidateGlobalRulesIT.java"],
+    classpath_resources = ["//test-integration/resources:logback-test"],
+    test_class = "grakn.core.server.ValidateGlobalRulesIT",
+    deps = [
+        "//concept/impl:impl",
+        "//kb/server",
+        "//kb/concept/api",
+        "//kb/concept/structure",
+        "//server",
+        "//test-integration/rule:grakn-test-server",
+        "//test-integration/util:concept-downcasting",
+    ],
+)
+
+java_test(
+    name = "rule-validation-it",
+    size = "large",
+    srcs = ["RuleValidationIT.java"],
+    classpath_resources = ["//test-integration/resources:logback-test"],
+    test_class = "grakn.core.server.RuleValidationIT",
+    deps = [
+        "//common:common",
+        "//core",
+        "//dependencies/maven/artifacts/com/google/guava",
+        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+        "//kb/server",
+        "//kb/concept/api",
+        "//graql/reasoner",
+        "//test-integration/rule:grakn-test-server",
+        "@graknlabs_graql//java:graql",
+    ],
+)
+
+
 checkstyle_test(
     name = "checkstyle",
     targets = [
         ":attribute-uniqueness-it",
         ":grakn-client-it",
+        ":validator-it",
+        ":validate-global-rules-it",
+        ":rule-validation-it",
     ],
 )

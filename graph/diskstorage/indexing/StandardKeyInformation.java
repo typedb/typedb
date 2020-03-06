@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -22,7 +21,6 @@ import com.google.common.base.Preconditions;
 import grakn.core.graph.core.Cardinality;
 import grakn.core.graph.core.PropertyKey;
 import grakn.core.graph.core.schema.Parameter;
-import grakn.core.graph.diskstorage.indexing.KeyInformation;
 
 
 public class StandardKeyInformation implements KeyInformation {

@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -19,17 +18,18 @@
 
 package grakn.core.concept;
 
+import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.Entity;
+import grakn.core.kb.concept.api.EntityType;
 import grakn.core.kb.concept.api.GraknConceptException;
 import grakn.core.kb.concept.api.Thing;
-import grakn.core.kb.concept.api.EntityType;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.concept.structure.EdgeElement;
-import grakn.core.rule.GraknTestServer;
-import grakn.core.core.Schema;
 import grakn.core.kb.server.Session;
-import grakn.core.kb.server.Transaction;
+import grakn.core.rule.GraknTestStorage;
+import grakn.core.rule.SessionUtil;
+import grakn.core.rule.TestTransactionProvider;
 import grakn.core.util.ConceptDowncasting;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.junit.After;
@@ -55,17 +55,17 @@ import static org.junit.Assert.assertTrue;
 public class ConceptIT {
 
     @ClassRule
-    public static final GraknTestServer server = new GraknTestServer();
+    public static final GraknTestStorage storage = new GraknTestStorage();
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
-    private Transaction tx;
+    private TestTransactionProvider.TestTransaction tx;
     private Session session;
 
     @Before
     public void setUp() {
-        session = server.sessionWithNewKeyspace();
-        tx = session.writeTransaction();
+        session = SessionUtil.serverlessSessionWithNewKeyspace(storage.createCompatibleServerConfig());
+        tx = (TestTransactionProvider.TestTransaction)session.writeTransaction();
     }
 
     @After
@@ -117,8 +117,8 @@ public class ConceptIT {
         assertThat(superType, is(not(empty())));
         assertThat(subs, is(not(empty())));
 
-        superType.forEach(edge -> assertEquals(entityType1, tx.factory().buildConcept(edge.target())));
-        subs.forEach(edge -> assertEquals(entityType3, tx.factory().buildConcept(edge.source())));
+        superType.forEach(edge -> assertEquals(entityType1, tx.conceptManager().buildConcept(edge.target())));
+        subs.forEach(edge -> assertEquals(entityType3, tx.conceptManager().buildConcept(edge.source())));
     }
 
     @Test

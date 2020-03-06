@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,35 +17,27 @@
 
 package grakn.core.graph.core;
 
+import grakn.core.graph.graphdb.query.JanusGraphPredicate;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import grakn.core.graph.core.BaseVertexQuery;
-import grakn.core.graph.core.JanusGraphEdge;
-import grakn.core.graph.core.JanusGraphRelation;
-import grakn.core.graph.core.JanusGraphVertex;
-import grakn.core.graph.core.JanusGraphVertexProperty;
-import grakn.core.graph.core.JanusGraphVertexQuery;
-import grakn.core.graph.core.RelationType;
-import grakn.core.graph.core.VertexList;
-import grakn.core.graph.graphdb.query.JanusGraphPredicate;
 
 import java.util.Collection;
 import java.util.Map;
 
 /**
- * A MultiVertexQuery is identical to a {@link JanusGraphVertexQuery} but executed against a set of vertices simultaneously.
- * In other words, {@link JanusGraphMultiVertexQuery} allows identical {@link JanusGraphVertexQuery} executed against a non-trivial set
+ * A MultiVertexQuery is identical to a JanusGraphVertexQuery but executed against a set of vertices simultaneously.
+ * In other words, JanusGraphMultiVertexQuery allows identical JanusGraphVertexQuery executed against a non-trivial set
  * of vertices to be executed in one batch which can significantly reduce the query latency.
  * <p>
- * The query specification methods are identical to {@link JanusGraphVertexQuery}. The result set method return Maps from the specified
+ * The query specification methods are identical to JanusGraphVertexQuery. The result set method return Maps from the specified
  * set of anchor vertices to their respective individual result sets.
  * <p>
  * Call JanusGraphTransaction#multiQuery() to construct a multi query in the enclosing transaction.
  * <p>
- * Note, that the {@link #limit(int)} constraint applies to each individual result set.
+ * Note, that the #limit(int) constraint applies to each individual result set.
  *
- * @see JanusGraphVertexQuery
+ * see JanusGraphVertexQuery
 
  */
 public interface JanusGraphMultiVertexQuery<Q extends JanusGraphMultiVertexQuery<Q>> extends BaseVertexQuery<Q> {

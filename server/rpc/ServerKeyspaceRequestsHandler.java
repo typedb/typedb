@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,13 +17,13 @@
 
 package grakn.core.server.rpc;
 
+import grakn.core.kb.server.exception.GraknServerException;
+import grakn.core.kb.server.keyspace.Keyspace;
 import grakn.core.server.keyspace.KeyspaceImpl;
 import grakn.core.server.keyspace.KeyspaceManager;
 import grakn.core.server.session.JanusGraphFactory;
 import grakn.core.server.session.SessionFactory;
 import grakn.protocol.keyspace.KeyspaceProto;
-import grakn.core.kb.server.keyspace.Keyspace;
-import grakn.core.kb.server.exception.GraknServerException;
 
 import java.util.stream.Collectors;
 

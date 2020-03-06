@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -22,7 +21,7 @@ import grakn.core.graph.diskstorage.configuration.Configuration;
 import grakn.core.graph.diskstorage.util.time.TimestampProviders;
 
 /**
- * Immutable, {@link Builder}-customizable implementation of StoreFeatures.
+ * Immutable, Builder-customizable implementation of StoreFeatures.
  */
 public class StandardStoreFeatures implements StoreFeatures {
 
@@ -40,7 +39,6 @@ public class StandardStoreFeatures implements StoreFeatures {
     private final TimestampProviders preferredTimestamps;
     private final boolean cellLevelTTL;
     private final boolean storeLevelTTL;
-    private final boolean visibility;
     private final boolean supportsPersist;
     private final Configuration keyConsistentTxConfig;
     private final Configuration localKeyConsistentTxConfig;
@@ -118,11 +116,6 @@ public class StandardStoreFeatures implements StoreFeatures {
     }
 
     @Override
-    public boolean hasVisibility() {
-        return visibility;
-    }
-
-    @Override
     public boolean supportsPersistence() {
         return supportsPersist;
     }
@@ -153,7 +146,7 @@ public class StandardStoreFeatures implements StoreFeatures {
     }
 
     /**
-     * The only way to instantiate {@link StandardStoreFeatures}.
+     * The only way to instantiate StandardStoreFeatures.
      */
     public static class Builder {
 
@@ -170,7 +163,6 @@ public class StandardStoreFeatures implements StoreFeatures {
         private TimestampProviders preferredTimestamps;
         private boolean cellLevelTTL;
         private boolean storeLevelTTL;
-        private boolean visibility;
         private boolean supportsPersist = true;
         private boolean keyConsistent;
         private Configuration keyConsistentTxConfig;
@@ -202,7 +194,6 @@ public class StandardStoreFeatures implements StoreFeatures {
             preferredTimestamps(template.getPreferredTimestamps());
             cellTTL(template.hasCellTTL());
             storeTTL(template.hasStoreTTL());
-            visibility(template.hasVisibility());
             persists(template.supportsPersistence());
             if (template.isKeyConsistent()) {
                 keyConsistent(template.getKeyConsistentTxConfig(), template.getLocalKeyConsistentTxConfig());
@@ -281,11 +272,6 @@ public class StandardStoreFeatures implements StoreFeatures {
             return this;
         }
 
-        public Builder visibility(boolean b) {
-            visibility = b;
-            return this;
-        }
-
         public Builder persists(boolean b) {
             supportsPersist = b;
             return this;
@@ -308,7 +294,7 @@ public class StandardStoreFeatures implements StoreFeatures {
                     multiQuery, locking, batchMutation, localKeyPartition,
                     keyOrdered, distributed, transactional, keyConsistent,
                     timestamps, preferredTimestamps, cellLevelTTL,
-                    storeLevelTTL, visibility, supportsPersist,
+                    storeLevelTTL, supportsPersist,
                     keyConsistentTxConfig,
                     localKeyConsistentTxConfig, supportsInterruption, optimisticLocking);
         }
@@ -319,8 +305,7 @@ public class StandardStoreFeatures implements StoreFeatures {
                                   boolean localKeyPartition, boolean keyOrdered, boolean distributed,
                                   boolean transactional, boolean keyConsistent,
                                   boolean timestamps, TimestampProviders preferredTimestamps,
-                                  boolean cellLevelTTL, boolean storeLevelTTL,
-                                  boolean visibility, boolean supportsPersist,
+                                  boolean cellLevelTTL, boolean storeLevelTTL, boolean supportsPersist,
                                   Configuration keyConsistentTxConfig,
                                   Configuration localKeyConsistentTxConfig, boolean supportsInterruption, boolean optimisticLocking) {
         this.unorderedScan = unorderedScan;
@@ -337,7 +322,6 @@ public class StandardStoreFeatures implements StoreFeatures {
         this.preferredTimestamps = preferredTimestamps;
         this.cellLevelTTL = cellLevelTTL;
         this.storeLevelTTL = storeLevelTTL;
-        this.visibility = visibility;
         this.supportsPersist = supportsPersist;
         this.keyConsistentTxConfig = keyConsistentTxConfig;
         this.localKeyConsistentTxConfig = localKeyConsistentTxConfig;

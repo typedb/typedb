@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -28,14 +27,14 @@ public interface BaseTransaction {
     /**
      * Commits the transaction and persists all modifications to the backend.
      * 
-     * Call either this method or {@link #rollback()} at most once per instance.
+     * Call either this method or #rollback() at most once per instance.
      */
     void commit() throws BackendException;
 
     /**
      * Aborts (or rolls back) the transaction.
      *
-     * Call either this method or {@link #commit()} at most once per instance.
+     * Call either this method or #commit() at most once per instance.
      *
      */
     void rollback() throws BackendException;

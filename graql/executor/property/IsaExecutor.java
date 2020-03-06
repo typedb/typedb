@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -20,30 +19,21 @@
 package grakn.core.graql.executor.property;
 
 import com.google.common.collect.ImmutableSet;
+import grakn.core.graql.planning.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.kb.concept.api.Concept;
-import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Type;
-import grakn.core.kb.server.exception.GraqlSemanticException;
+import grakn.core.kb.graql.exception.GraqlSemanticException;
 import grakn.core.kb.graql.executor.WriteExecutor;
-import grakn.core.kb.graql.planning.EquivalentFragmentSet;
-import grakn.core.graql.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.kb.graql.executor.property.PropertyExecutor;
-import grakn.core.kb.graql.reasoner.atom.Atomic;
-import grakn.core.graql.reasoner.atom.binary.IsaAtom;
-import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
-import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
+import grakn.core.kb.graql.planning.gremlin.EquivalentFragmentSet;
 import graql.lang.property.IsaProperty;
-import graql.lang.property.RelationProperty;
 import graql.lang.property.VarProperty;
-import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 
 import java.util.Set;
 
-import static grakn.core.graql.reasoner.utils.ReasonerUtils.getIdPredicate;
-
-public class IsaExecutor  implements PropertyExecutor.Insertable {
+public class IsaExecutor implements PropertyExecutor.Insertable {
 
     private final Variable var;
     private final IsaProperty property;
@@ -66,28 +56,6 @@ public class IsaExecutor  implements PropertyExecutor.Insertable {
                     EquivalentFragmentSets.isa(property, var, property.type().var(), true)
             );
         }
-    }
-
-    @Override
-    public Atomic atomic(ReasonerQuery parent, Statement statement, Set<Statement> otherStatements) {
-        //IsaProperty is unique within a var, so skip if this is a relation
-        if (statement.hasProperty(RelationProperty.class)) return null;
-
-        Variable typeVar = property.type().var();
-
-        IdPredicate predicate = getIdPredicate(typeVar, property.type(), otherStatements, parent);
-        ConceptId predicateId = predicate != null ? predicate.getPredicate() : null;
-
-        //isa part
-        Statement isaVar;
-
-        if (property.isExplicit()) {
-            isaVar = new Statement(var).isaX(new Statement(typeVar));
-        } else {
-            isaVar = new Statement(var).isa(new Statement(typeVar));
-        }
-
-        return IsaAtom.create(var, typeVar, isaVar, predicateId, parent);
     }
 
     @Override

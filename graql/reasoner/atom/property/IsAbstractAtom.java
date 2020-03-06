@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -30,7 +29,7 @@ import graql.lang.statement.Variable;
  */
 public class IsAbstractAtom extends AtomicBase {
 
-    public IsAbstractAtom(Variable varName, Statement pattern, ReasonerQuery reasonerQuery) {
+    private IsAbstractAtom(Variable varName, Statement pattern, ReasonerQuery reasonerQuery) {
         super(reasonerQuery, varName, pattern);
     }
 
@@ -65,6 +64,6 @@ public class IsAbstractAtom extends AtomicBase {
     }
 
     @Override
-    public boolean subsumes(Atomic atom) { return this.isAlphaEquivalent(atom); }
+    public boolean isSubsumedBy(Atomic atom) { return this.isAlphaEquivalent(atom); }
 
 }

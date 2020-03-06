@@ -1,6 +1,5 @@
 #
-# GRAKN.AI - THE KNOWLEDGE GRAPH
-# Copyright (C) 2019 Grakn Labs Ltd
+# Copyright (C) 2020 Grakn Labs
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -28,18 +27,20 @@ java_library(
     ),
     deps = [
         # External dependencies from Maven
+        "//dependencies/maven/artifacts/commons-collections:commons-collections",
+        "//dependencies/maven/artifacts/commons-configuration:commons-configuration",
+        "//dependencies/maven/artifacts/commons-lang:commons-lang",
+        "//dependencies/maven/artifacts/com/datastax/oss:java-driver-core",
+        "//dependencies/maven/artifacts/com/datastax/oss:java-driver-query-builder",
+        "//dependencies/maven/artifacts/com/fasterxml/jackson/core:jackson-databind",
+        "//dependencies/maven/artifacts/com/google/code/findbugs:jsr305",
         "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/io/vavr:vavr",
+        "//dependencies/maven/artifacts/org/apache/commons:commons-lang3",
         "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
         "//dependencies/maven/artifacts/org/apache/tinkerpop:tinkergraph-gremlin",
         "//dependencies/maven/artifacts/org/javatuples:javatuples",
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
-        "//dependencies/maven/artifacts/com/google/code/findbugs:jsr305",
-        "//dependencies/maven/artifacts/commons-lang:commons-lang",
-        "//dependencies/maven/artifacts/commons-configuration:commons-configuration",
-        "//dependencies/maven/artifacts/org/apache/commons:commons-lang3",
-        "//dependencies/maven/artifacts/commons-collections:commons-collections",
-        "//dependencies/maven/artifacts/com/fasterxml/jackson/core:jackson-databind"
     ],
     runtime_deps = [
             "//dependencies/maven/artifacts/ch/qos/logback:logback-classic",

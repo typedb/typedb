@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -19,25 +18,30 @@
 package grakn.core.graql.executor;
 
 import com.google.common.collect.ImmutableList;
-import grakn.core.graql.gremlin.TraversalPlanFactoryImpl;
-import grakn.core.graql.gremlin.fragment.InIsaFragment;
-import grakn.core.graql.gremlin.fragment.InSubFragment;
-import grakn.core.graql.gremlin.fragment.LabelFragment;
-import grakn.core.graql.gremlin.fragment.NeqFragment;
-import grakn.core.graql.gremlin.fragment.OutIsaFragment;
-import grakn.core.graql.gremlin.fragment.OutRolePlayerFragment;
-import grakn.core.graql.gremlin.fragment.OutSubFragment;
+import grakn.core.common.config.Config;
+import grakn.core.graql.planning.TraversalPlanFactoryImpl;
+import grakn.core.graql.planning.gremlin.fragment.InIsaFragment;
+import grakn.core.graql.planning.gremlin.fragment.InSubFragment;
+import grakn.core.graql.planning.gremlin.fragment.LabelFragment;
+import grakn.core.graql.planning.gremlin.fragment.NeqFragment;
+import grakn.core.graql.planning.gremlin.fragment.OutIsaFragment;
+import grakn.core.graql.planning.gremlin.fragment.OutRolePlayerFragment;
+import grakn.core.graql.planning.gremlin.fragment.OutSubFragment;
 import grakn.core.kb.concept.api.Entity;
 import grakn.core.kb.concept.api.EntityType;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
-import grakn.core.kb.graql.planning.Fragment;
-import grakn.core.kb.graql.planning.TraversalPlanFactory;
+import grakn.core.kb.graql.planning.gremlin.Fragment;
+import grakn.core.kb.graql.planning.gremlin.TraversalPlanFactory;
+import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
-import grakn.core.rule.GraknTestServer;
+import grakn.core.rule.GraknTestStorage;
+import grakn.core.rule.SessionUtil;
+import grakn.core.rule.TestTransactionProvider;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -55,15 +59,28 @@ import static org.junit.Assert.assertThat;
 public class IsaExplicitIT {
 
     @ClassRule
-    public static final GraknTestServer server = new GraknTestServer();
+    public static final GraknTestStorage storage = new GraknTestStorage();
 
     private Transaction tx;
+    private Session session;
     private TraversalPlanFactory traversalPlanFactory;
 
     @Before
-    public void loadSimpleData() {
-        tx = server.sessionWithNewKeyspace().writeTransaction();
-        traversalPlanFactory = new TraversalPlanFactoryImpl(tx);
+    public void setUp(){
+        Config mockServerConfig = storage.createCompatibleServerConfig();
+        session = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig);
+
+        TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction)session.writeTransaction();
+        traversalPlanFactory = new TraversalPlanFactoryImpl(
+                testTx.janusTraversalSourceProvider(),
+                testTx.conceptManager(),
+                testTx.propertyExecutorFactory(),
+                testTx.shardingThreshold(),
+                testTx.session().keyspaceStatistics()
+        );
+
+        tx = testTx;
+
         EntityType entityType0 = tx.putEntityType("entityType0");
         EntityType entityType1 = tx.putEntityType("entityType1");
         EntityType entityType2 = tx.putEntityType("entityType2");
@@ -89,6 +106,12 @@ public class IsaExplicitIT {
                 .assign(role1, entity1)
                 .assign(role2, entity2)
                 .assign(role3, entity3);
+    }
+
+    @After
+    public void tearDown() {
+        tx.close();
+        session.close();
     }
 
     @Test

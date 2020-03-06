@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -19,13 +18,15 @@
 
 package grakn.core.server;
 
+import grakn.core.graql.reasoner.query.ReasonerQueryFactory;
 import grakn.core.kb.concept.api.Relation;
-import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Rule;
+import grakn.core.kb.concept.api.Thing;
+import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.concept.structure.Casting;
-import grakn.core.kb.server.Transaction;
+import grakn.core.kb.server.cache.TransactionCache;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -37,11 +38,15 @@ import java.util.Set;
  * type of the concept.
  */
 public class Validator {
-    private final Transaction transaction;
+    private final ReasonerQueryFactory reasonerQueryFactory;
+    private TransactionCache transactionCache;
+    private ConceptManager conceptManager;
     private final List<String> errorsFound = new ArrayList<>();
 
-    public Validator(Transaction transaction) {
-        this.transaction = transaction;
+    public Validator(ReasonerQueryFactory reasonerQueryFactory, TransactionCache transactionCache, ConceptManager conceptManager) {
+        this.reasonerQueryFactory = reasonerQueryFactory;
+        this.transactionCache = transactionCache;
+        this.conceptManager = conceptManager;
     }
 
     /**
@@ -56,27 +61,27 @@ public class Validator {
      */
     public boolean validate() {
         //Validate Things
-        for (Thing thing : transaction.cache().getModifiedThings()) {
-            validateThing(transaction, thing);
+        for (Thing thing : transactionCache.getModifiedThings()) {
+            validateThing(thing);
         }
 
         //Validate Relations
-        transaction.cache().getNewRelations().forEach(this::validateRelation);
+        transactionCache.getNewRelations().forEach(this::validateRelation);
 
         //Validate RoleTypes
-        transaction.cache().getModifiedRoles().forEach(this::validateRole);
+        transactionCache.getModifiedRoles().forEach(this::validateRole);
         //Validate Role Players
-        transaction.cache().getModifiedCastings().forEach(this::validateCasting);
+        transactionCache.getModifiedCastings().forEach(this::validateCasting);
 
         //Validate Relation Types
-        transaction.cache().getModifiedRelationTypes().forEach(this::validateRelationType);
+        transactionCache.getModifiedRelationTypes().forEach(this::validateRelationType);
 
         //Validate Rules
-        transaction.cache().getModifiedRules().forEach(rule -> validateRule(transaction, rule));
+        transactionCache.getModifiedRules().forEach(rule -> validateRule(rule));
 
         //Validate rule type graph
-        if (!transaction.cache().getModifiedRules().isEmpty()) {
-            errorsFound.addAll(ValidateGlobalRules.validateRuleStratifiability(transaction));
+        if (!transactionCache.getModifiedRules().isEmpty()) {
+            errorsFound.addAll(ValidateGlobalRules.validateRuleStratifiability(conceptManager));
         }
 
         return errorsFound.size() == 0;
@@ -87,17 +92,16 @@ public class Validator {
      * the precedence of validation is: labelValidation -> ontologicalValidation -> clauseValidation
      * each of the validation happens only if the preceding validation yields no errors
      *
-     * @param graph the graph to query against
      * @param rule  the rule which needs to be validated
      */
-    private void validateRule(Transaction graph, Rule rule) {
-        Set<String> labelErrors = ValidateGlobalRules.validateRuleSchemaConceptExist(graph, rule);
+    private void validateRule(Rule rule) {
+        Set<String> labelErrors = ValidateGlobalRules.validateRuleSchemaConceptExist(conceptManager, rule);
         errorsFound.addAll(labelErrors);
         if (labelErrors.isEmpty()) {
-            Set<String> ontologicalErrors = ValidateGlobalRules.validateRuleOntologically(graph, rule);
+            Set<String> ontologicalErrors = ValidateGlobalRules.validateRuleOntologically(reasonerQueryFactory, rule);
             errorsFound.addAll(ontologicalErrors);
             if (ontologicalErrors.isEmpty()) {
-                errorsFound.addAll(ValidateGlobalRules.validateRuleIsValidClause(graph, rule));
+                errorsFound.addAll(ValidateGlobalRules.validateRuleIsValidClause(reasonerQueryFactory, rule));
             }
         }
     }
@@ -135,8 +139,8 @@ public class Validator {
      *
      * @param thing The Thing to validate
      */
-    private void validateThing(Transaction tx, Thing thing) {
-        ValidateGlobalRules.validateInstancePlaysAllRequiredRoles(tx, thing).ifPresent(errorsFound::add);
+    private void validateThing(Thing thing) {
+        ValidateGlobalRules.validateInstancePlaysAllRequiredRoles(conceptManager, thing).ifPresent(errorsFound::add);
     }
 
     /**
