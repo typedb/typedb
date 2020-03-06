@@ -77,5 +77,4 @@ public class AttributeAtomConverter implements AtomConverter<AttributeAtom> {
         atoms.addAll(atom.getMultiPredicate());
         return ctx.queryFactory().atomic(atoms).getAtom().toIsaAtom();
     }
-
 }
