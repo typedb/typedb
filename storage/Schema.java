@@ -65,8 +65,9 @@ public class Schema {
         private static final int EDGE_PLAYS_IN = 65;
         private static final int EDGE_RELATES_OUT = 70;
         private static final int EDGE_RELATES_IN = 75;
-        private static final int EDGE_OPT_OUT = 100;
-        private static final int EDGE_OPT_IN = 105;
+        private static final int EDGE_OPT_ROLE_OUT = 100;
+        private static final int EDGE_OPT_ROLE_IN = 105;
+        private static final int EDGE_OPT_RELATION_OUT = 110;
 
     }
 
@@ -140,8 +141,9 @@ public class Schema {
         PLAYS_IN(Infix.EDGE_PLAYS_IN),
         RELATES_OUT(Infix.EDGE_RELATES_OUT),
         RELATES_IN(Infix.EDGE_RELATES_IN),
-        OPT_ROLE_OUT(Infix.EDGE_OPT_OUT),
-        OPT_ROLE_IN(Infix.EDGE_OPT_IN);
+        OPT_ROLE_OUT(Infix.EDGE_OPT_ROLE_OUT),
+        OPT_ROLE_IN(Infix.EDGE_OPT_ROLE_IN),
+        OPT_RELATION_OUT(Infix.EDGE_OPT_RELATION_OUT);
 
         private final byte key;
 
