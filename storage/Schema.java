@@ -28,6 +28,7 @@ public class Schema {
      */
     private static class Prefix {
         private static final int INDEX_TYPE = 0;
+        private static final int INDEX_VALUE = 5;
         private static final int VERTEX_ENTITY_TYPE = 20;
         private static final int VERTEX_RELATION_TYPE = 30;
         private static final int VERTEX_ROLE_TYPE = 40;
@@ -73,7 +74,8 @@ public class Schema {
     }
 
     public enum IndexType {
-        TYPE(Prefix.INDEX_TYPE);
+        TYPE(Prefix.INDEX_TYPE),
+        VALUE(Prefix.INDEX_VALUE);
 
         private final byte key;
 
