@@ -1,5 +1,5 @@
 digraph hypergraph {
-    graph [splines = true, mindist = 10.0]
+    graph [splines = true]
 
     TYPE [shape = hexagon,  label = "TYPE", pos = "6,12!"]
     REL_T [shape = diamond,    label = "RELATION_TYPE",  pos = "6,10!"]
