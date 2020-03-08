@@ -53,8 +53,9 @@ public class Schema {
         private static final int PROPERTY_DATATYPE = 1;
         private static final int PROPERTY_REGEX = 2;
         private static final int PROPERTY_VALUE = 3;
-        private static final int PROPERTY_WHEN = 4;
-        private static final int PROPERTY_THEN = 5;
+        private static final int PROPERTY_VALUE_REF = 4;
+        private static final int PROPERTY_WHEN = 5;
+        private static final int PROPERTY_THEN = 6;
         private static final int EDGE_SUB_OUT = 20;
         private static final int EDGE_SUB_IN = 25;
         private static final int EDGE_ISA_OUT = 30;
@@ -108,6 +109,7 @@ public class Schema {
         DATATYPE(Infix.PROPERTY_DATATYPE),
         REGEX(Infix.PROPERTY_REGEX),
         VALUE(Infix.PROPERTY_VALUE),
+        VALUE_REF(Infix.PROPERTY_VALUE_REF),
         WHEN(Infix.PROPERTY_WHEN),
         THEN(Infix.PROPERTY_THEN);
 
