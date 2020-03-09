@@ -37,12 +37,12 @@ import java.util.stream.Stream;
 public interface QueryExecutor {
     Stream<ConceptMap> match(MatchClause matchClause);
 
-    Stream<ConceptMap> traverse(Conjunction<Pattern> pattern);
+    Stream<ConceptMap> traverse(Conjunction<? extends Pattern> pattern);
 
     /**
      * @return resulting answer stream
      */
-    Stream<ConceptMap> traverse(Conjunction<Pattern> pattern, GraqlTraversal graqlTraversal);
+    Stream<ConceptMap> traverse(Conjunction<? extends Pattern> pattern, GraqlTraversal graqlTraversal);
 
     Stream<ConceptMap> define(GraqlDefine query);
 

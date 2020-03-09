@@ -65,7 +65,17 @@ public class DirectSubIT {
     }
 
     @Test
-    public void directSubReturnsOnlyItselfAndDirectChildTypes() {
+    public void directSubReturnsOnlyItselfAndDirectChildTypesWithoutReasoning() {
+        tx.execute(Graql.parse("define person sub entity; child sub person;").asDefine());
+        tx.commit();
+
+        tx = session.writeTransaction();
+        List<ConceptMap> directSubs = tx.execute(Graql.match(Graql.var("x").subX("entity")).get(), false);
+        assertEquals(2, directSubs.size());
+    }
+
+    @Test
+    public void directSubReturnsOnlyItselfAndDirectChildTypesWithReasoning() {
         tx.execute(Graql.parse("define person sub entity; child sub person;").asDefine());
         tx.commit();
 
