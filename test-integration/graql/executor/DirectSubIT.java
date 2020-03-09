@@ -19,8 +19,6 @@
 package grakn.core.graql.executor;
 
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.kb.concept.api.Label;
-import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import grakn.core.rule.GraknTestServer;

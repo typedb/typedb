@@ -24,16 +24,13 @@ java_test(
     classpath_resources = ["//test-integration/resources:logback-test"],
     test_class = "grakn.core.graql.executor.DirectSubIT",
     deps = [
-        "//common",
-        "//dependencies/maven/artifacts/com/google/guava",
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
-        "//graql/planning",
         "//kb/concept/api",
-        "//kb/graql/planning",
         "//kb/server",
         "//concept/answer",
         "//test-integration/rule:grakn-test-server",
         "@graknlabs_graql//java:graql",
+        "//dependencies/maven/artifacts/com/google/guava",
+        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
     ],
 )
 
