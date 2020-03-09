@@ -20,6 +20,8 @@ package grakn.core.server;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import grabl.tracing.client.GrablTracing;
+import grabl.tracing.client.GrablTracingThreadStatic;
 import grakn.benchmark.lib.instrumentation.ServerTracing;
 import grakn.core.common.config.Config;
 import grakn.core.common.config.ConfigKey;
@@ -56,7 +58,7 @@ public class ServerFactory {
      *
      * @return a Server instance configured for Grakn Core
      */
-    public static Server createServer(boolean benchmark) {
+    public static Server createServer(Grakn.Arguments arguments) {
         // Grakn Server configuration
         Config config = Config.create();
 
@@ -80,8 +82,16 @@ public class ServerFactory {
         SessionFactory sessionFactory = new SessionFactory(lockManager, janusGraphFactory, hadoopGraphFactory, config);
 
         // Enable server tracing
-        if (benchmark) {
+        if (arguments.isBenchmark()) {
             ServerTracing.initInstrumentation("server-instrumentation");
+        }
+        if (arguments.isGrablTracing()) {
+            GrablTracing grablTracingClient = GrablTracing.tracing(
+                    arguments.getGrablTracing().getUri(),
+                    arguments.getGrablTracing().getUsername(),
+                    arguments.getGrablTracing().getAccessToken()
+            );
+            GrablTracingThreadStatic.setGlobalTracingClient(grablTracingClient);
         }
 
         // create gRPC server

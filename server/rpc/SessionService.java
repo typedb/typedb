@@ -21,6 +21,9 @@ import brave.ScopedSpan;
 import brave.Span;
 import brave.propagation.TraceContext;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import grabl.tracing.client.GrablTracing;
+import grabl.tracing.client.GrablTracingThreadStatic;
+import grabl.tracing.client.GrablTracingThreadStatic.ThreadTrace;
 import grakn.benchmark.lib.instrumentation.ServerTracing;
 import grakn.core.concept.answer.Explanation;
 import grakn.core.kb.concept.api.Attribute;
@@ -62,6 +65,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
+
+import static grabl.tracing.client.GrablTracingThreadStatic.traceOnThread;
 
 
 /**
@@ -169,6 +174,16 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
         @Override
         public void onNext(Transaction.Req request) {
             // !important: this is the gRPC thread
+            if (GrablTracingThreadStatic.isTracingEnabled()) {
+                Map<String, String> metadata = request.getMetadataMap();
+                String rootId = metadata.get("traceRootId");
+                String parentId = metadata.get("traceParentId");
+                if (rootId != null && parentId != null) {
+                    submit(() -> handleRequest(request, GrablTracingThreadStatic.getGrablTracing()
+                            .trace(UUID.fromString(rootId), UUID.fromString(parentId), "received")));
+                    return;
+                }
+            }
             if (ServerTracing.tracingEnabledFromMessage(request)) {
                 TraceContext receivedTraceContext = ServerTracing.extractTraceContext(request);
                 Span queueSpan = ServerTracing.createChildSpanWithParentContext("Server receive queue", receivedTraceContext);
@@ -213,6 +228,16 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
             ScopedSpan span = ServerTracing.startScopedChildSpanWithParentContext("Server handle request", context);
             span.tag("childNumber", "1");
             handleRequest(request);
+        }
+
+        private void handleRequest(Transaction.Req request, GrablTracing.Trace queueTrace) {
+            try (ThreadTrace trace = GrablTracingThreadStatic.continueTraceOnThread(
+                    queueTrace.getRootId(), queueTrace.getId(), "handle")
+            ) {
+                queueTrace.end();
+
+                handleRequest(request);
+            }
         }
 
         private void handleRequest(Transaction.Req request) {
@@ -332,20 +357,27 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
         }
 
         private void query(SessionProto.Transaction.Query.Req request) {
-            /* permanent tracing hooks, as performance here varies depending on query and what's in the graph */
-            int parseQuerySpanId = ServerTracing.startScopedChildSpan("Parsing Graql Query");
+            Transaction.Res response;
+            try (ThreadTrace trace = traceOnThread("query")) {
+                /* permanent tracing hooks, as performance here varies depending on query and what's in the graph */
+                int parseQuerySpanId = ServerTracing.startScopedChildSpan("Parsing Graql Query");
 
-            GraqlQuery query = Graql.parse(request.getQuery());
+                GraqlQuery query;
+                try (ThreadTrace parse = traceOnThread("parse")) {
+                    query = Graql.parse(request.getQuery());
+                }
 
-            ServerTracing.closeScopedChildSpan(parseQuerySpanId);
+                ServerTracing.closeScopedChildSpan(parseQuerySpanId);
 
-            int createStreamSpanId = ServerTracing.startScopedChildSpan("Creating query stream");
+                int createStreamSpanId = ServerTracing.startScopedChildSpan("Creating query stream");
 
-            Stream<Transaction.Res> responseStream = tx().stream(query, request.getInfer().equals(Transaction.Query.INFER.TRUE)).map(ResponseBuilder.Transaction.Iter::query);
-            Transaction.Res response = ResponseBuilder.Transaction.queryIterator(iterators.add(responseStream.iterator()));
+                try (ThreadTrace stream = traceOnThread("stream")) {
+                    Stream<Transaction.Res> responseStream = tx().stream(query, request.getInfer().equals(Transaction.Query.INFER.TRUE)).map(ResponseBuilder.Transaction.Iter::query);
+                    response = ResponseBuilder.Transaction.queryIterator(iterators.add(responseStream.iterator()));
+                }
 
-            ServerTracing.closeScopedChildSpan(createStreamSpanId);
-
+                ServerTracing.closeScopedChildSpan(createStreamSpanId);
+            }
             onNextResponse(response);
         }
 
