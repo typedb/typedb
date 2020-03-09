@@ -26,20 +26,25 @@ public class Schema {
      *
      * The size of a prefix is 1 byte; i.e. min-value = 0 and max-value = 255.
      */
-    private static class Prefix {
-        private static final int INDEX_TYPE = 0;
-        private static final int INDEX_VALUE = 5;
-        private static final int VERTEX_ENTITY_TYPE = 20;
-        private static final int VERTEX_RELATION_TYPE = 30;
-        private static final int VERTEX_ROLE_TYPE = 40;
-        private static final int VERTEX_ATTRIBUTE_TYPE = 50;
-        private static final int VERTEX_ENTITY = 60;
-        private static final int VERTEX_RELATION = 70;
-        private static final int VERTEX_ROLE = 80;
-        private static final int VERTEX_ATTRIBUTE = 90;
-        private static final int VERTEX_VALUE = 100;
-        private static final int VERTEX_RULE = 110;
+    private enum Prefix {
+        INDEX_TYPE(0),
+        INDEX_VALUE(5),
+        VERTEX_ENTITY_TYPE(20),
+        VERTEX_RELATION_TYPE(30),
+        VERTEX_ROLE_TYPE(40),
+        VERTEX_ATTRIBUTE_TYPE(50),
+        VERTEX_ENTITY(60),
+        VERTEX_RELATION(70),
+        VERTEX_ROLE(80),
+        VERTEX_ATTRIBUTE(90),
+        VERTEX_VALUE(100),
+        VERTEX_RULE(110);
 
+        private final byte key;
+
+        Prefix(int key) {
+            this.key = (byte) key;
+        }
     }
 
     /**
@@ -48,40 +53,49 @@ public class Schema {
      *
      * The size of a prefix is 1 byte; i.e. min-value = 0 and max-value = 255.
      */
-    private static class Infix {
-        private static final int PROPERTY_ABSTRACT = 0;
-        private static final int PROPERTY_DATATYPE = 1;
-        private static final int PROPERTY_REGEX = 2;
-        private static final int PROPERTY_VALUE = 3;
-        private static final int PROPERTY_VALUE_REF = 4;
-        private static final int PROPERTY_WHEN = 5;
-        private static final int PROPERTY_THEN = 6;
-        private static final int EDGE_SUB_OUT = 20;
-        private static final int EDGE_SUB_IN = 25;
-        private static final int EDGE_ISA_OUT = 30;
-        private static final int EDGE_ISA_IN = 35;
-        private static final int EDGE_KEY_OUT = 40;
-        private static final int EDGE_KEY_IN = 45;
-        private static final int EDGE_HAS_OUT = 50;
-        private static final int EDGE_HAS_IN = 55;
-        private static final int EDGE_PLAYS_OUT = 60;
-        private static final int EDGE_PLAYS_IN = 65;
-        private static final int EDGE_RELATES_OUT = 70;
-        private static final int EDGE_RELATES_IN = 75;
-        private static final int EDGE_OPT_ROLE_OUT = 100;
-        private static final int EDGE_OPT_ROLE_IN = 105;
-        private static final int EDGE_OPT_RELATION_OUT = 110;
+    private enum Infix {
+        PROPERTY_ABSTRACT(0),
+        PROPERTY_DATATYPE(1),
+        PROPERTY_REGEX(2),
+        PROPERTY_VALUE(3),
+        PROPERTY_VALUE_REF(4),
+        PROPERTY_WHEN(5),
+        PROPERTY_THEN(6),
+        EDGE_SUB_OUT(20),
+        EDGE_SUB_IN(25),
+        EDGE_ISA_OUT(30),
+        EDGE_ISA_IN(35),
+        EDGE_KEY_OUT(40),
+        EDGE_KEY_IN(45),
+        EDGE_HAS_OUT(50),
+        EDGE_HAS_IN(55),
+        EDGE_PLAYS_OUT(60),
+        EDGE_PLAYS_IN(65),
+        EDGE_RELATES_OUT(70),
+        EDGE_RELATES_IN(75),
+        EDGE_OPT_ROLE_OUT(100),
+        EDGE_OPT_ROLE_IN(105),
+        EDGE_OPT_RELATION_OUT(110);
 
+        private final byte key;
+
+        Infix(int key) {
+            this.key = (byte) key;
+        }
     }
 
     public enum IndexType {
         TYPE(Prefix.INDEX_TYPE),
         VALUE(Prefix.INDEX_VALUE);
 
-        private final byte key;
+        private final byte prefix;
 
-        IndexType(int key) {
-            this.key = (byte) key;
+        IndexType(Prefix prefix) {
+            this.prefix = prefix.key;
+        }
+
+        public byte prefix(){
+            return prefix;
         }
     }
 
@@ -97,10 +111,14 @@ public class Schema {
         VALUE(Prefix.VERTEX_VALUE),
         RULE(Prefix.VERTEX_RULE);
 
-        private final byte key;
+        private final byte prefix;
 
-        VertexType(int key) {
-            this.key = (byte) key;
+        VertexType(Prefix prefix) {
+            this.prefix = prefix.key;
+        }
+
+        public byte prefix() {
+            return prefix;
         }
     }
 
@@ -113,10 +131,14 @@ public class Schema {
         WHEN(Infix.PROPERTY_WHEN),
         THEN(Infix.PROPERTY_THEN);
 
-        private final byte key;
+        private final byte infix;
 
-        PropertyType(int key) {
-            this.key = (byte) key;
+        PropertyType(Infix infix) {
+            this.infix = infix.key;
+        }
+
+        public byte infix() {
+            return infix;
         }
     }
 
@@ -127,10 +149,14 @@ public class Schema {
         BOOLEAN(6),
         DATE(8);
 
-        private final byte key;
+        private final byte value;
 
-        DataType(int key) {
-            this.key = (byte) key;
+        DataType(int value) {
+            this.value = (byte) value;
+        }
+
+        public byte value() {
+            return value;
         }
     }
 
@@ -151,10 +177,14 @@ public class Schema {
         OPT_ROLE_IN(Infix.EDGE_OPT_ROLE_IN),
         OPT_RELATION_OUT(Infix.EDGE_OPT_RELATION_OUT);
 
-        private final byte key;
+        private final byte infix;
 
-        EdgeType(int key) {
-            this.key = (byte) key;
+        EdgeType(Infix infix) {
+            this.infix = infix.key;
+        }
+
+        public byte infix() {
+            return infix;
         }
     }
 }
