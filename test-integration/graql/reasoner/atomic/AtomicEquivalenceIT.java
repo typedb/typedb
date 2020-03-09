@@ -123,6 +123,16 @@ public class AtomicEquivalenceIT {
     }
 
     @Test
+    public void testEqualityOfAttributeAtoms() {
+        ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
+
+        String patternString = "{ $x has resource $v1; };";
+        String patternString2 = "{ $x has resource $v2; };";
+
+        atomicEquality(patternString, patternString2, false, reasonerQueryFactory);
+    }
+
+    @Test
     public void testEquality_DifferentRelationVariants() {
         ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
