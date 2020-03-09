@@ -21,9 +21,13 @@ digraph hypergraph {
         }
 
         GRAKN_ENTITY -> GRAKN_THING [label = "subtype"]
+        GRAKN_ENTITY:w -> GRAKN_ENTITY:w [label = "subtype"]
         GRAKN_RELATION -> GRAKN_THING [label = "subtype"]
+        GRAKN_RELATION:w -> GRAKN_RELATION:w [label = "subtype"]
         GRAKN_ROLE -> GRAKN_THING [label = "subtype"]
+        GRAKN_ROLE:w -> GRAKN_ROLE:w [label = "subtype"]
         GRAKN_ATTRIBUTE -> GRAKN_THING [label = "subtype"]
+        GRAKN_ATTRIBUTE:w -> GRAKN_ATTRIBUTE:w [label = "subtype"]
 
         {
             edge [style = dashed]
