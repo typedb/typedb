@@ -24,7 +24,6 @@ java_test(
     classpath_resources = ["//test-integration/resources:logback-test"],
     test_class = "grakn.core.graql.executor.DirectSubIT",
     deps = [
-        "//kb/concept/api",
         "//kb/server",
         "//concept/answer",
         "//test-integration/rule:grakn-test-server",
