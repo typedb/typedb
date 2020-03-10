@@ -25,6 +25,10 @@ import graql.lang.pattern.Pattern;
 
 import java.util.stream.Stream;
 
+/**
+ * A lower level component that directly executes traversals on the backend storage
+ * Should sit below reasoning and only be used for query -> backend DB traversal -> answer execution
+ */
 public interface TraversalExecutor {
     Stream<ConceptMap> traverse(Conjunction<? extends Pattern> pattern);
 
