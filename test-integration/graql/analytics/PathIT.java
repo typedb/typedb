@@ -35,6 +35,7 @@ import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.exception.GraqlSemanticException;
 import grakn.core.kb.graql.executor.ExecutorFactory;
+import grakn.core.kb.graql.executor.TraversalExecutor;
 import grakn.core.kb.graql.planning.gremlin.TraversalPlanFactory;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
@@ -499,8 +500,9 @@ public class PathIT {
             ConceptManager conceptManager = testTx.conceptManager();
             TraversalPlanFactory traversalPlanFactory = testTx.traversalPlanFactory();
             ReasonerQueryFactory reasonerQueryFactory = testTx.reasonerQueryFactory();
+            TraversalExecutor traversalExecutor = testTx.traversalExecutor();
 
-            ExecutorFactoryImpl executorFactory = new ExecutorFactoryImpl(conceptManager, null, null, traversalPlanFactory);
+            ExecutorFactoryImpl executorFactory = new ExecutorFactoryImpl(conceptManager, null, null, traversalPlanFactory, traversalExecutor);
             executorFactory.setReasonerQueryFactory(reasonerQueryFactory);
             List<ConceptList> allPaths;
 

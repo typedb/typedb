@@ -20,7 +20,7 @@ package grakn.core.graql.reasoner.query;
 
 import com.google.common.collect.Iterables;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.graql.executor.TraversalExecutor;
+import grakn.core.kb.graql.executor.TraversalExecutor;
 import grakn.core.graql.reasoner.ReasoningContext;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.PropertyAtomicFactory;

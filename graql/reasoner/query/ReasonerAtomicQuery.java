@@ -24,7 +24,7 @@ import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
 import grakn.common.util.Pair;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.graql.executor.TraversalExecutor;
+import grakn.core.kb.graql.executor.TraversalExecutor;
 import grakn.core.graql.reasoner.CacheCasting;
 import grakn.core.graql.reasoner.ReasoningContext;
 import grakn.core.graql.reasoner.atom.Atom;
@@ -44,7 +44,6 @@ import grakn.core.graql.reasoner.state.VariableComparisonState;
 import grakn.core.graql.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.graql.reasoner.utils.ReasonerUtils;
-import grakn.core.kb.graql.executor.ExecutorFactory;
 import grakn.core.kb.graql.planning.gremlin.TraversalPlanFactory;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.kb.graql.reasoner.cache.QueryCache;
@@ -89,8 +88,8 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         this.atom = Iterables.getOnlyElement(selectAtoms()::iterator);
     }
 
-    private ReasonerAtomicQuery(List<Atom> atomsToPropagate,  TraversalPlanFactory traversalPlanFactory, ReasoningContext ctx) {
-        super(atomsToPropagate, executorFactory, traversalPlanFactory, ctx);
+    private ReasonerAtomicQuery(List<Atom> atomsToPropagate,  TraversalPlanFactory traversalPlanFactory, TraversalExecutor traversalExecutor, ReasoningContext ctx) {
+        super(atomsToPropagate, traversalPlanFactory, traversalExecutor, ctx);
         this.atom = Iterables.getOnlyElement(selectAtoms()::iterator);
     }
 
@@ -98,7 +97,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         this(Collections.singletonList(atomToPropagate), traversalPlanFactory, traversalExecutor, ctx);
     }
 
-    ReasonerAtomicQuery(Set<Atomic> atomsToCopy, TraversalPlanFactory traversalPlanFactory, TraversalExecutor traversalExecutor,, ReasoningContext ctx) {
+    ReasonerAtomicQuery(Set<Atomic> atomsToCopy, TraversalPlanFactory traversalPlanFactory, TraversalExecutor traversalExecutor, ReasoningContext ctx) {
         super(atomsToCopy, traversalPlanFactory, traversalExecutor, ctx);
         this.atom = Iterables.getOnlyElement(selectAtoms()::iterator);
     }

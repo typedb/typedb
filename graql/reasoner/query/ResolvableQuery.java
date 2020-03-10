@@ -20,13 +20,12 @@ package grakn.core.graql.reasoner.query;
 
 import com.google.common.annotations.VisibleForTesting;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.graql.executor.TraversalExecutor;
+import grakn.core.kb.graql.executor.TraversalExecutor;
 import grakn.core.graql.reasoner.ReasoningContext;
 import grakn.core.graql.reasoner.ResolutionIterator;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.state.AnswerPropagatorState;
 import grakn.core.graql.reasoner.state.ResolutionState;
-import grakn.core.kb.graql.executor.ExecutorFactory;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
 import graql.lang.Graql;
@@ -49,7 +48,7 @@ public abstract class ResolvableQuery implements ReasonerQuery {
     protected final TraversalExecutor traversalExecutor;
 
     ResolvableQuery(TraversalExecutor traversalExecutor, ReasoningContext ctx) {
-        this.traversalExecutor = traversalExecutor
+        this.traversalExecutor = traversalExecutor;
         this.ctx = ctx;
     }
 

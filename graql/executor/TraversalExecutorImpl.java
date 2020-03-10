@@ -23,6 +23,7 @@ import grakn.core.concept.answer.ConceptMap;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.exception.GraqlSemanticException;
+import grakn.core.kb.graql.executor.TraversalExecutor;
 import grakn.core.kb.graql.planning.gremlin.GraqlTraversal;
 import grakn.core.kb.graql.planning.gremlin.TraversalPlanFactory;
 import graql.lang.pattern.Conjunction;
@@ -38,16 +39,17 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
-public class TraversalExecutor {
+public class TraversalExecutorImpl implements TraversalExecutor {
 
     private TraversalPlanFactory traversalPlanFactory;
     private ConceptManager conceptManager;
 
-    public TraversalExecutor(TraversalPlanFactory traversalPlanFactory, ConceptManager conceptManager) {
+    public TraversalExecutorImpl(TraversalPlanFactory traversalPlanFactory, ConceptManager conceptManager) {
         this.traversalPlanFactory = traversalPlanFactory;
         this.conceptManager = conceptManager;
     }
 
+    @Override
     public Stream<ConceptMap> traverse(Conjunction<? extends Pattern> pattern) {
         return traverse(pattern, traversalPlanFactory.createTraversal(pattern));
     }
@@ -57,6 +59,7 @@ public class TraversalExecutor {
      * TODO: seems out of place: make private or move elsewhere
      * @return resulting answer stream
      */
+    @Override
     public Stream<ConceptMap> traverse(Conjunction<? extends Pattern> pattern, GraqlTraversal graqlTraversal) {
         Set<Variable> vars = Sets.filter(pattern.variables(), Variable::isReturned);
         GraphTraversal<Vertex, Map<String, Element>> traversal = graqlTraversal.getGraphTraversal(vars);

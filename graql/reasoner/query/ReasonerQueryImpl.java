@@ -28,7 +28,7 @@ import com.google.common.collect.Sets;
 import grakn.common.util.Pair;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.util.ConceptUtils;
-import grakn.core.graql.executor.TraversalExecutor;
+import grakn.core.kb.graql.executor.TraversalExecutor;
 import grakn.core.graql.reasoner.CacheCasting;
 import grakn.core.graql.reasoner.ReasoningContext;
 import grakn.core.graql.reasoner.atom.Atom;
@@ -62,7 +62,6 @@ import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.concept.manager.ConceptManager;
-import grakn.core.kb.graql.executor.ExecutorFactory;
 import grakn.core.kb.graql.planning.gremlin.TraversalPlanFactory;
 import grakn.core.kb.graql.reasoner.ReasonerCheckedException;
 import grakn.core.kb.graql.reasoner.ReasonerException;
@@ -167,7 +166,7 @@ public class ReasonerQueryImpl extends ResolvableQuery {
 
     @Override
     public CompositeQuery asComposite() {
-        return new CompositeQuery(getPattern(), executorFactory, context());
+        return new CompositeQuery(getPattern(), traversalExecutor, context());
     }
 
     @Override
