@@ -36,10 +36,10 @@ public abstract class Vertex {
 
         Type(Storage storage, Schema.Vertex.Type type, String label) {
             super(storage);
-            ByteBuffer newIID = ByteBuffer.allocate(3);
-            newIID.put(type.prefix());
+            ByteBuffer iidBuffer = ByteBuffer.allocate(3);
+            iidBuffer.put(type.prefix());
 
-            this.iid = newIID.array();
+            this.iid = iidBuffer.array();
         }
     }
     public static class Thing extends Vertex {

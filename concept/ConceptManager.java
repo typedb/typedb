@@ -19,10 +19,9 @@
 package hypergraph.concept;
 
 import hypergraph.concept.type.EntityType;
-import hypergraph.concept.type.Type;
 import hypergraph.graph.GraphManager;
-import hypergraph.graph.Vertex;
 import hypergraph.graph.Schema;
+import hypergraph.graph.Vertex;
 
 public class ConceptManager {
 
@@ -33,7 +32,7 @@ public class ConceptManager {
     }
 
     public EntityType putEntityType(String label) {
-        return putEntityType(label, Schema.Vertex.Type.Root.ROOT_ENTITY_TYPE.label());
+        return putEntityType(label, Schema.Vertex.Type.Root.ENTITY.label());
     }
 
     public EntityType putEntityType(String label, String parent) {

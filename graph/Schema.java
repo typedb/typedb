@@ -31,7 +31,7 @@ public class Schema {
     private enum Prefix {
         INDEX_TYPE(0),
         INDEX_VALUE(5),
-        VERTEX_ROOT_TYPE(10),
+        VERTEX_TYPE(10),
         VERTEX_ENTITY_TYPE(20),
         VERTEX_RELATION_TYPE(30),
         VERTEX_ROLE_TYPE(40),
@@ -115,6 +115,7 @@ public class Schema {
         }
 
         public enum Type {
+            TYPE(Prefix.VERTEX_TYPE),
             ENTITY_TYPE(Prefix.VERTEX_ENTITY_TYPE),
             RELATION_TYPE(Prefix.VERTEX_RELATION_TYPE),
             ROLE_TYPE(Prefix.VERTEX_ROLE_TYPE),
@@ -131,30 +132,16 @@ public class Schema {
             }
 
             public enum Root {
-                ROOT_TYPE(Prefix.VERTEX_ROOT_TYPE, 0, "thing"),
-                ROOT_ENTITY_TYPE(Prefix.VERTEX_ENTITY_TYPE, 1, "entity"),
-                ROOT_RELATION_TYPE(Prefix.VERTEX_ENTITY_TYPE, 2, "relation"),
-                ROOT_ROLE_TYPE(Prefix.VERTEX_ENTITY_TYPE, 3, "role"),
-                ROOT_ATTRIBUTE_TYPE(Prefix.VERTEX_ENTITY_TYPE, 4, "attribute");
+                THING("thing"),
+                ENTITY("entity"),
+                RELATION("relation"),
+                ROLE("role"),
+                ATTRIBUTE("attribute");
 
-                private final Prefix prefix;
-                private final int key;
                 private final String label;
-                private final byte[] iid;
 
-                Root(Prefix prefix, int key, String label) {
-                    this.prefix = prefix;
-                    this.key = key;
+                Root(String label) {
                     this.label = label;
-                    this.iid = ByteBuffer.allocate(2).putInt(key).array();
-                }
-
-                public Prefix prefix() {
-                    return prefix;
-                }
-
-                public byte[] iid() {
-                    return iid;
                 }
 
                 public String label() {

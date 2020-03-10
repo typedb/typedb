@@ -20,10 +20,7 @@ package hypergraph.core;
 
 import hypergraph.Hypergraph;
 import hypergraph.common.HypergraphException;
-import hypergraph.graph.GraphManager;
-import hypergraph.graph.Schema;
 import hypergraph.storage.Index;
-import hypergraph.storage.Storage;
 import org.rocksdb.OptimisticTransactionDB;
 import org.rocksdb.RocksDBException;
 
@@ -55,6 +52,8 @@ class CoreKeyspace implements Hypergraph.Keyspace {
         try (CoreSession session = sessionCreateAndOpen()) {
             try (CoreTransaction txn = session.transaction(Hypergraph.Transaction.Type.WRITE)) {
                 txn.graph().initialise();
+
+                txn.commit();
             }
         }
     }
