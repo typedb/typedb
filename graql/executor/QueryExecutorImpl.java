@@ -119,10 +119,7 @@ public class QueryExecutorImpl implements QueryExecutor {
 
                 // TODO: lazy flatMap() is automatically fixed in Java 10 or OpenJDK 8u222, remove workaround if these conditions met
                 // custom workaround to deal with non-lazy Java 8 flatMap() functions is in LazyMergingStream
-                Stream<Conjunction<Statement>> conjunctions = matchClause.getPatterns().getDisjunctiveNormalForm().getPatterns().stream();
-                Stream<Stream<ConceptMap>> answerStreams = conjunctions
-                        .map(p -> reasonerQueryFactory.create(p))
-                        .map(ReasonerQuery::getPattern)
+                Stream<Stream<ConceptMap>> answerStreams = matchClause.getPatterns().getDisjunctiveNormalForm().getPatterns().stream()
                         .map(p -> traverse(p));
 
                 LazyMergingStream<ConceptMap> mergedStreams = new LazyMergingStream<>(answerStreams);
@@ -213,7 +210,7 @@ public class QueryExecutorImpl implements QueryExecutor {
     }
 
     @Override
-    public Stream<ConceptMap> traverse(Conjunction<Pattern> pattern) {
+    public Stream<ConceptMap> traverse(Conjunction<? extends Pattern> pattern) {
         return traverse(pattern, traversalPlanFactory.createTraversal(pattern));
     }
 
@@ -223,7 +220,7 @@ public class QueryExecutorImpl implements QueryExecutor {
      * @return resulting answer stream
      */
     @Override
-    public Stream<ConceptMap> traverse(Conjunction<Pattern> pattern, GraqlTraversal graqlTraversal) {
+    public Stream<ConceptMap> traverse(Conjunction<? extends Pattern> pattern, GraqlTraversal graqlTraversal) {
         Set<Variable> vars = Sets.filter(pattern.variables(), Variable::isReturned);
         GraphTraversal<Vertex, Map<String, Element>> traversal = graqlTraversal.getGraphTraversal(vars);
 
