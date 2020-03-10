@@ -194,4 +194,17 @@ public class AtomicConversionIT {
             assertEquals(relation, equivalentRelation);
         }
     }
+
+    // TODO is this the right name?
+    @Test
+    public void whenConvertingAttributeAtomToRelation_equivalenceIsPreserved() {
+        try(Transaction tx = session.readTransaction()){
+            ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
+            Atom attributeAtom = reasonerQueryFactory.atomic(attributePattern).getAtom();
+
+
+            Atom equivalentRelation = attributeAtom.toRelationAtom();
+            assertEquals(attributeAtom, equivalentRelation);
+        }
+    }
 }
