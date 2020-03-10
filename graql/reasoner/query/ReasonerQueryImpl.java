@@ -580,6 +580,8 @@ public class ReasonerQueryImpl extends ResolvableQuery {
         if (isCacheComplete()) return false;
         Set<InferenceRule> dependentRules = RuleUtils.getDependentRules(this);
         return RuleUtils.subGraphIsCyclical(dependentRules, context().queryCache())
+                // if any role players are added, we could create a data cycle that is not explicit in the rules
+                || dependentRules.stream().anyMatch(InferenceRule::appendsRolePlayers)
                 || RuleUtils.subGraphHasRulesWithHeadSatisfyingBody(dependentRules)
                 || selectAtoms().filter(Atom::isDisconnected).filter(Atom::isRuleResolvable).count() > 1;
     }
