@@ -20,8 +20,8 @@ package hypergraph.core;
 
 import hypergraph.Hypergraph;
 import hypergraph.common.HypergraphException;
-import hypergraph.concept.Concepts;
-import hypergraph.graph.Graph;
+import hypergraph.concept.ConceptManager;
+import hypergraph.graph.GraphManager;
 import hypergraph.storage.Index;
 import hypergraph.storage.Storage;
 import hypergraph.traversal.Traversal;
@@ -40,7 +40,7 @@ class CoreTransaction implements Hypergraph.Transaction {
     private final Transaction rocksTransaction;
     private final Type type;
     private final Storage storage;
-    private final Concepts concepts;
+    private final ConceptManager concepts;
     private final Traversal traversal;
     private final AtomicBoolean isOpen;
 
@@ -52,7 +52,7 @@ class CoreTransaction implements Hypergraph.Transaction {
         this.readOptions = readOptions;
 
         storage = new Storage(new CoreOperation());
-        concepts = new Concepts(new Graph(storage));
+        concepts = new ConceptManager(new GraphManager(storage));
         traversal = new Traversal(concepts);
 
         isOpen = new AtomicBoolean();
@@ -70,7 +70,7 @@ class CoreTransaction implements Hypergraph.Transaction {
     }
 
     @Override
-    public Concepts write() {
+    public ConceptManager write() {
         return concepts;
     }
 

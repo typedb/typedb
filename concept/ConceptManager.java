@@ -19,15 +19,15 @@
 package hypergraph.concept;
 
 import hypergraph.concept.type.EntityType;
-import hypergraph.graph.Graph;
+import hypergraph.graph.GraphManager;
 import hypergraph.graph.Vertex;
 import hypergraph.graph.Schema;
 
-public class Concepts {
+public class ConceptManager {
 
-    private final Graph graph;
+    private final GraphManager graph;
 
-    public Concepts(Graph graph) {
+    public ConceptManager(GraphManager graph) {
         this.graph = graph;
     }
 

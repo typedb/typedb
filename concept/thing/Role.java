@@ -16,15 +16,7 @@
  *
  */
 
-package hypergraph.traversal;
+package hypergraph.concept.thing;
 
-import hypergraph.concept.ConceptManager;
-
-public class Traversal {
-
-    private final ConceptManager conceptMgr;
-
-    public Traversal(ConceptManager conceptMgr) {
-        this.conceptMgr = conceptMgr;
-    }
+public class Role {
 }

@@ -20,11 +20,11 @@ package hypergraph.graph;
 
 import hypergraph.storage.Storage;
 
-public class Graph {
+public class GraphManager {
 
     private final Storage storage;
 
-    public Graph(Storage storage) {
+    public GraphManager(Storage storage) {
         this.storage = storage;
     }
 
