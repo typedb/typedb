@@ -131,7 +131,7 @@ public class QueryIT {
             //with cache empty no loops are found
             assertFalse(RuleUtils.subGraphIsCyclical(rules, tx.queryCache()));
             assertFalse(query.requiresReiteration());
-            query.resolve().collect(Collectors.toList());
+            query.resolve(true).collect(Collectors.toList());
 
                 //with populated cache we find a loop
                 assertTrue(RuleUtils.subGraphIsCyclical(rules, tx.queryCache()));
@@ -211,7 +211,7 @@ public class QueryIT {
                 //with cache empty no loops are found
                 assertFalse(RuleUtils.subGraphIsCyclical(rules, tx.queryCache()));
                 assertFalse(query.requiresReiteration());
-                query.resolve().collect(Collectors.toList());
+                query.resolve(true).collect(Collectors.toList());
 
                 //with populated cache we find a loop
                 assertTrue(RuleUtils.subGraphIsCyclical(rules, tx.queryCache()));

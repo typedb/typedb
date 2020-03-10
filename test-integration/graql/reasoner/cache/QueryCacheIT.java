@@ -665,7 +665,7 @@ public class QueryCacheIT {
             MultilevelSemanticCache cache = testTx.queryCache();
             ReasonerAtomicQuery query = testTx.reasonerQueryFactory().atomic(conjunction("(role: $x, role: $y) isa baseRelation;"));
 
-            query.resolve().collect(toSet());
+            query.resolve(true).collect(toSet());
             cache.queries().forEach(q -> assertEquals(cache.isDBComplete(q), cache.isComplete(q)));
         }
     }
@@ -677,7 +677,7 @@ public class QueryCacheIT {
             MultilevelSemanticCache cache = testTx.queryCache();
             ReasonerAtomicQuery query = testTx.reasonerQueryFactory().atomic(conjunction("(symmetricRole: $x, symmetricRole: $y) isa binary-symmetric;"));
 
-            Set<ConceptMap> incompleteAnswers = query.resolve().limit(3).collect(toSet());
+            Set<ConceptMap> incompleteAnswers = query.resolve(true).limit(3).collect(toSet());
             Set<ReasonerAtomicQuery> incompleteQueries = cache.queries();
             //binary symmetric has no db entries
             assertTrue(cache.isDBComplete(query));
@@ -688,7 +688,7 @@ public class QueryCacheIT {
             });
 
             query = testTx.reasonerQueryFactory().atomic(conjunction("(symmetricRole: $y, symmetricRole: $z) isa binary-trans;"));
-            Set<ConceptMap> answers = query.resolve().collect(toSet());
+            Set<ConceptMap> answers = query.resolve(true).collect(toSet());
             Sets.difference(cache.queries(), Collections.singleton(query))
                     .forEach(q -> {
                         assertTrue(cache.isDBComplete(q));
@@ -715,12 +715,12 @@ public class QueryCacheIT {
             //record all partial queries
             query.getAtoms(RelationAtom.class)
                     .map(testTx.reasonerQueryFactory()::atomic)
-                    .forEach(q -> q.resolve(new HashSet<>()).collect(Collectors.toSet()));
+                    .forEach(q -> q.resolve(new HashSet<>(), true).collect(Collectors.toSet()));
 
             Set<ConceptMap> preFetchCache = getCacheContent(testTx);
 
             assertTrue(query.isCacheComplete());
-            Set<ConceptMap> answers = query.resolve(new HashSet<>()).collect(toSet());
+            Set<ConceptMap> answers = query.resolve(new HashSet<>(), true).collect(toSet());
             assertEquals(preFetchCache, getCacheContent(testTx));
         }
     }
@@ -829,7 +829,7 @@ public class QueryCacheIT {
             TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
             MultilevelSemanticCache cache = testTx.queryCache();
             ReasonerQueryImpl baseQuery = testTx.reasonerQueryFactory().create(conjunction("{$x has resource $r via $rel;};"));
-            Set<ConceptMap> answers = baseQuery.resolve().collect(toSet());
+            Set<ConceptMap> answers = baseQuery.resolve(true).collect(toSet());
 
             ConceptMap answer = answers.iterator().next();
             Concept owner = answer.get("x");
@@ -867,10 +867,10 @@ public class QueryCacheIT {
             assertFalse(ownerAndValueMappedWithRelVariable.hasUniqueAnswer());
             assertFalse(ownerAndRelationMapped.hasUniqueAnswer());
 
-            ownerAndValueMapped.resolve()
+            ownerAndValueMapped.resolve(true)
                     .map(ans -> ans.explain(new LookupExplanation(), ownerAndValueMapped.getPattern()))
                     .forEach(ans -> cache.record(ownerAndValueMapped, ans));
-            allMapped.resolve()
+            allMapped.resolve(true)
                     .map(ans -> ans.explain(new LookupExplanation(), allMapped.getPattern()))
                     .forEach(ans -> cache.record(allMapped, ans));
 

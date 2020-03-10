@@ -34,6 +34,7 @@ java_test(
     ],
 )
 
+
 java_test(
     name = "direct-isa-it",
     size = "medium",
