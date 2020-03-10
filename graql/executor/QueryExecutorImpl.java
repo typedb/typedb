@@ -137,7 +137,7 @@ public class QueryExecutorImpl implements QueryExecutor {
                 Stream<Stream<ConceptMap>> answerStreams = conjunctions
                         .map(p -> reasonerQueryFactory.resolvable(p).rewrite())
                         // we return an answer with the substituted IDs in the pattern
-                        .map(q -> q.resolve(false).map(ans -> ans.withPattern(q.withSubstitution(ans).getPattern())));
+                        .map(q -> q.resolve(infer).map(ans -> ans.withPattern(q.withSubstitution(ans).getPattern())));
 
                 LazyMergingStream<ConceptMap> mergedStreams = new LazyMergingStream<>(answerStreams);
                 return mergedStreams.flatStream();
