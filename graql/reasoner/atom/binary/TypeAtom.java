@@ -25,6 +25,7 @@ import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.reasoner.atom.predicate.Predicate;
 import grakn.core.graql.reasoner.atom.task.relate.TypeAtomSemanticProcessor;
 import grakn.core.graql.reasoner.atom.task.relate.SemanticProcessor;
+import grakn.core.graql.reasoner.cache.SemanticDifference;
 import grakn.core.graql.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.kb.concept.api.ConceptId;
@@ -200,6 +201,11 @@ public abstract class TypeAtom extends Atom {
     @Override
     public MultiUnifier getMultiUnifier(Atom parentAtom, UnifierType unifierType) {
         return semanticProcessor.getMultiUnifier(this, parentAtom, unifierType, context());
+    }
+
+    @Override
+    public SemanticDifference computeSemanticDifference(Atom childAtom, Unifier unifier) {
+        return semanticProcessor.computeSemanticDifference(this, childAtom, unifier, context());
     }
 
     /**

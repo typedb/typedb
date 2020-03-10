@@ -25,6 +25,7 @@ java_test(
     test_class = "grakn.core.graql.executor.DirectSubIT",
     deps = [
         "//kb/server",
+        "//kb/concept/api",
         "//concept/answer",
         "//test-integration/rule:grakn-test-server",
         "@graknlabs_graql//java:graql",
@@ -32,6 +33,7 @@ java_test(
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
     ],
 )
+
 
 java_test(
     name = "direct-isa-it",

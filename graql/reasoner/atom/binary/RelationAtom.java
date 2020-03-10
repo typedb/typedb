@@ -18,7 +18,6 @@
 
 package grakn.core.graql.reasoner.atom.binary;
 
-import com.google.common.base.Equivalence;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultimap;
@@ -32,7 +31,6 @@ import grakn.core.concept.answer.ConceptMap;
 import grakn.core.core.Schema;
 import grakn.core.graql.reasoner.ReasoningContext;
 import grakn.core.graql.reasoner.atom.Atom;
-import grakn.core.graql.reasoner.atom.AtomicEquivalence;
 import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.reasoner.atom.predicate.Predicate;
 import grakn.core.graql.reasoner.atom.task.convert.AtomConverter;
@@ -234,23 +232,23 @@ public class RelationAtom extends Atom {
 
     @Override
     public boolean isAlphaEquivalent(Object obj) {
-        if (!isBaseEquivalent(obj, AtomicEquivalence.AlphaEquivalence)) return false;
+        if (!isBaseEquivalent(obj)) return false;
         Atom that = (Atom) obj;
         return !this.getMultiUnifier(that, UnifierType.EXACT).equals(MultiUnifierImpl.nonExistent());
     }
 
     @Override
     public boolean isStructurallyEquivalent(Object obj) {
-        if (!isBaseEquivalent(obj, AtomicEquivalence.StructuralEquivalence)) return false;
+        if (!isBaseEquivalent(obj)) return false;
         Atom that = (Atom) obj;
         return !this.getMultiUnifier(that, UnifierType.STRUCTURAL).equals(MultiUnifierImpl.nonExistent());
     }
 
-    private boolean isBaseEquivalent(Object obj, Equivalence<Atomic> equivalence) {
+    private boolean isBaseEquivalent(Object obj) {
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
         RelationAtom that = (RelationAtom) obj;
-        return equivalence.equivalent(this.isaAtom, that.isaAtom)
+        return this.isaAtom.isBaseEquivalent(that.isaAtom)
                 && this.getRolePlayers().size() == that.getRolePlayers().size()
                 && this.getRelationPlayers().size() == that.getRelationPlayers().size()
                 && this.getRoleLabels().equals(that.getRoleLabels());

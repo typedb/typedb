@@ -183,12 +183,17 @@ public class GenerativeOperationalIT {
     @Test
     public void whenGeneralisingAttributes_SubsumptionRelationHoldsBetweenPairs(){
         int depth = 10;
+        List<ReasonerQueryEquivalence> equivs = Lists.newArrayList(
+                ReasonerQueryEquivalence.Equality,
+                ReasonerQueryEquivalence.AlphaEquivalence,
+                ReasonerQueryEquivalence.StructuralEquivalence);
+
         try (Transaction tx = genericSchemaSession.readTransaction()) {
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction) tx).reasonerQueryFactory();
             TransactionContext ctx = new TransactionContext(tx);
 
-            Pattern input = Graql.var("x").has("resource-double", 16.0);
-            Pattern input2 = Graql.var("x").has("resource-double", -16.0);
+            Pattern input = Graql.and(Graql.var("x").has("resource-double", 16.0));
+            Pattern input2 = Graql.and(Graql.var("x").has("resource-double", -16.0));
 
             List<Operator> ops = Lists.newArrayList(Operators.generaliseAttribute());
 
@@ -201,6 +206,8 @@ public class GenerativeOperationalIT {
                 QueryTestUtil.unification(parent, child,true, UnifierType.RULE);
                 QueryTestUtil.unification(parent, child,true, UnifierType.SUBSUMPTIVE);
                 QueryTestUtil.unification(parent, child,true, UnifierType.STRUCTURAL_SUBSUMPTIVE);
+
+                equivs.forEach(equiv -> QueryTestUtil.queryEquivalence(child, parent, false, equiv));
 
                 secondTree.keySet().forEach(p -> {
                     ReasonerAtomicQuery unrelated = reasonerQueryFactory.atomic(conjunction(p));
@@ -218,6 +225,10 @@ public class GenerativeOperationalIT {
                         QueryTestUtil.unification(unrelated, child, false, UnifierType.RULE);
                         QueryTestUtil.unification(unrelated, child, false, UnifierType.SUBSUMPTIVE);
                         QueryTestUtil.unification(unrelated, child, false, UnifierType.STRUCTURAL_SUBSUMPTIVE);
+
+
+                        equivs.forEach(equiv -> QueryTestUtil.queryEquivalence(child, unrelated, false, equiv));
+                        equivs.forEach(equiv -> QueryTestUtil.queryEquivalence(parent, unrelated, false, equiv));
                     }
                 });
 
@@ -240,7 +251,8 @@ public class GenerativeOperationalIT {
                 int N = fuzzedPatterns.size();
                 for (int i = 0 ; i < N ;i++) {
                     Pattern p = fuzzedPatterns.get(i);
-                    fuzzedPatterns.subList(i, N).forEach(p2 -> {
+                    for (int j = i ; j < N ;j++) {
+                        Pattern p2 = fuzzedPatterns.get(j);
                         ReasonerQueryImpl pQuery = reasonerQueryFactory.create(conjunction(p));
                         ReasonerQueryImpl cQuery = reasonerQueryFactory.create(conjunction(p2));
 
@@ -248,8 +260,10 @@ public class GenerativeOperationalIT {
                             ReasonerAtomicQuery queryA = (ReasonerAtomicQuery) pQuery;
                             ReasonerAtomicQuery queryB = (ReasonerAtomicQuery) cQuery;
                             QueryTestUtil.unification(queryA, queryB,true, UnifierType.EXACT);
+                            QueryTestUtil.queryEquivalence(queryA, queryB, i == j, ReasonerQueryEquivalence.Equality);
+                            QueryTestUtil.queryEquivalence(queryA, queryB, true, ReasonerQueryEquivalence.StructuralEquivalence);
                         }
-                    });
+                    }
                 }
             }
         }
