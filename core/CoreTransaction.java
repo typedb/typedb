@@ -22,7 +22,7 @@ import hypergraph.Hypergraph;
 import hypergraph.common.HypergraphException;
 import hypergraph.concept.ConceptManager;
 import hypergraph.graph.GraphManager;
-import hypergraph.storage.Index;
+import hypergraph.storage.KeyGenerator;
 import hypergraph.storage.Operation;
 import hypergraph.storage.Storage;
 import hypergraph.traversal.Traversal;
@@ -123,8 +123,8 @@ class CoreTransaction implements Hypergraph.Transaction {
     private class CoreOperation implements hypergraph.storage.Operation {
 
         @Override
-        public Index getIndex() {
-            return session.getIndex();
+        public KeyGenerator keyGenerator() {
+            return session.keyGenerator();
         }
 
         @Override

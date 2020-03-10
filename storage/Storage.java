@@ -22,17 +22,17 @@ public class Storage {
 
     private final Buffer buffer;
     private final Operation operation;
-    private final Index index;
+    private final KeyGenerator keyGenerator;
 
     public Storage(Operation operation) {
         this.operation = operation;
-        this.index = operation.getIndex();
+        this.keyGenerator = operation.keyGenerator();
 
         buffer = new Buffer();
     }
 
-    public Index index() {
-        return index;
+    public KeyGenerator keyGenerator() {
+        return keyGenerator;
     }
 
     public void persist() {

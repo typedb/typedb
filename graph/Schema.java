@@ -18,8 +18,6 @@
 
 package hypergraph.graph;
 
-import java.nio.ByteBuffer;
-
 public class Schema {
 
     /**
@@ -28,7 +26,7 @@ public class Schema {
      *
      * The size of a prefix is 1 byte; i.e. min-value = 0 and max-value = 255.
      */
-    private enum Prefix {
+    public enum Prefix {
         INDEX_TYPE(0),
         INDEX_VALUE(5),
         VERTEX_TYPE(10),
@@ -48,6 +46,10 @@ public class Schema {
         Prefix(int key) {
             this.key = (byte) key;
         }
+
+        public byte key() {
+            return key;
+        }
     }
 
     /**
@@ -56,7 +58,7 @@ public class Schema {
      *
      * The size of a prefix is 1 byte; i.e. min-value = 0 and max-value = 255.
      */
-    private enum Infix {
+    public enum Infix {
         PROPERTY_ABSTRACT(0),
         PROPERTY_DATATYPE(1),
         PROPERTY_REGEX(2),
@@ -83,19 +85,23 @@ public class Schema {
         Infix(int key) {
             this.key = (byte) key;
         }
+
+        public byte key() {
+            return key;
+        }
     }
 
     public enum Index {
         TYPE(Prefix.INDEX_TYPE),
         VALUE(Prefix.INDEX_VALUE);
 
-        private final byte prefix;
+        private final Prefix prefix;
 
         Index(Prefix prefix) {
-            this.prefix = prefix.key;
+            this.prefix = prefix;
         }
 
-        public byte prefix(){
+        public Prefix prefix(){
             return prefix;
         }
     }
@@ -104,31 +110,37 @@ public class Schema {
         VALUE(Prefix.VERTEX_VALUE),
         RULE(Prefix.VERTEX_RULE);
 
-        private final byte prefix;
+        private final Prefix prefix;
 
         Vertex(Prefix prefix) {
-            this.prefix = prefix.key;
+            this.prefix = prefix;
         }
 
-        public byte prefix() {
+        public Prefix prefix() {
             return prefix;
         }
 
         public enum Type {
-            TYPE(Prefix.VERTEX_TYPE),
-            ENTITY_TYPE(Prefix.VERTEX_ENTITY_TYPE),
-            RELATION_TYPE(Prefix.VERTEX_RELATION_TYPE),
-            ROLE_TYPE(Prefix.VERTEX_ROLE_TYPE),
-            ATTRIBUTE_TYPE(Prefix.VERTEX_ATTRIBUTE_TYPE);
+            TYPE(Prefix.VERTEX_TYPE, Root.THING),
+            ENTITY_TYPE(Prefix.VERTEX_ENTITY_TYPE, Root.ENTITY),
+            RELATION_TYPE(Prefix.VERTEX_RELATION_TYPE, Root.RELATION),
+            ROLE_TYPE(Prefix.VERTEX_ROLE_TYPE, Root.ROLE),
+            ATTRIBUTE_TYPE(Prefix.VERTEX_ATTRIBUTE_TYPE, Root.ATTRIBUTE);
 
-            private final byte prefix;
+            private final Prefix prefix;
+            private final Root root;
 
-            Type(Prefix prefix) {
-                this.prefix = prefix.key;
+            Type(Prefix prefix, Root root) {
+                this.prefix = prefix;
+                this.root = root;
             }
 
-            public byte prefix() {
+            public Prefix prefix() {
                 return prefix;
+            }
+
+            public Root root() {
+                return root;
             }
 
             public enum Root {
@@ -157,13 +169,13 @@ public class Schema {
             VALUE(Prefix.VERTEX_VALUE),
             RULE(Prefix.VERTEX_RULE);
 
-            private final byte prefix;
+            private final Prefix prefix;
 
             Thing(Prefix prefix) {
-                this.prefix = prefix.key;
+                this.prefix = prefix;
             }
 
-            public byte prefix() {
+            public Prefix prefix() {
                 return prefix;
             }
         }
@@ -178,13 +190,13 @@ public class Schema {
         WHEN(Infix.PROPERTY_WHEN),
         THEN(Infix.PROPERTY_THEN);
 
-        private final byte infix;
+        private final Infix infix;
 
         Property(Infix infix) {
-            this.infix = infix.key;
+            this.infix = infix;
         }
 
-        public byte infix() {
+        public Infix infix() {
             return infix;
         }
     }
@@ -216,19 +228,19 @@ public class Schema {
         OPT_ROLE(Infix.EDGE_OPT_ROLE_OUT, Infix.EDGE_OPT_ROLE_IN),
         OPT_RELATION(Infix.EDGE_OPT_RELATION_OUT, null);
 
-        private final byte out;
-        private final byte in;
+        private final Infix out;
+        private final Infix in;
 
         Edge(Infix out, Infix in) {
-            this.out = out.key;
-            this.in = in.key;
+            this.out = out;
+            this.in = in;
         }
 
-        public byte out() {
+        public Infix out() {
             return out;
         }
 
-        public byte in() {
+        public Infix in() {
             return in;
         }
     }

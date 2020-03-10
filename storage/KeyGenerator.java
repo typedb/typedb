@@ -18,13 +18,18 @@
 
 package hypergraph.storage;
 
-public class Index {
+public class KeyGenerator {
 
-    public Index() {
-
-    }
-
-    public void load(String keyspace, Operation operation) {
+    public KeyGenerator() {
 
     }
+
+    public short forType(String root) {
+        return 0;
+    }
+
+    public long forThing(String type) {
+        return 0;
+    }
+
 }

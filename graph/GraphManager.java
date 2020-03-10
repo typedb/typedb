@@ -30,15 +30,15 @@ public class GraphManager {
 
     public void initialise() {
         Vertex.Type rootType = new Vertex.Type(
-                storage, Schema.Vertex.Type.TYPE, Schema.Vertex.Type.Root.THING.label());
+                storage, Schema.Vertex.Type.TYPE, Schema.Vertex.Type.Root.THING.label()).setAbstract(true);
         Vertex.Type rootEntityType = new Vertex.Type(
-                storage, Schema.Vertex.Type.ENTITY_TYPE, Schema.Vertex.Type.Root.ENTITY.label());
+                storage, Schema.Vertex.Type.ENTITY_TYPE, Schema.Vertex.Type.Root.ENTITY.label()).setAbstract(true);
         Vertex.Type rootRelationType = new Vertex.Type(
-                storage, Schema.Vertex.Type.RELATION_TYPE, Schema.Vertex.Type.Root.RELATION.label());
+                storage, Schema.Vertex.Type.RELATION_TYPE, Schema.Vertex.Type.Root.RELATION.label()).setAbstract(true);
         Vertex.Type rootRoleType = new Vertex.Type(
-                storage, Schema.Vertex.Type.ROLE_TYPE, Schema.Vertex.Type.Root.ROLE.label());
+                storage, Schema.Vertex.Type.ROLE_TYPE, Schema.Vertex.Type.Root.ROLE.label()).setAbstract(true);
         Vertex.Type rootAttributeType = new Vertex.Type(
-                storage, Schema.Vertex.Type.ATTRIBUTE_TYPE, Schema.Vertex.Type.Root.ATTRIBUTE.label());
+                storage, Schema.Vertex.Type.ATTRIBUTE_TYPE, Schema.Vertex.Type.Root.ATTRIBUTE.label()).setAbstract(true);
 
         putEdge(Schema.Edge.SUB, rootEntityType, rootType);
         putEdge(Schema.Edge.SUB, rootRelationType, rootType);

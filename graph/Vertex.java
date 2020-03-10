@@ -33,13 +33,19 @@ public abstract class Vertex {
     public static class Type extends Vertex {
 
         private final byte[] iid;
+        private boolean isAbstract;
 
         Type(Storage storage, Schema.Vertex.Type type, String label) {
             super(storage);
             ByteBuffer iidBuffer = ByteBuffer.allocate(3);
-            iidBuffer.put(type.prefix());
-
+            iidBuffer.put(type.prefix().key());
+            iidBuffer.putShort(storage.keyGenerator().forType(type.root().label()));
             this.iid = iidBuffer.array();
+        }
+
+        public Vertex.Type setAbstract(boolean isAbstract) {
+            this.isAbstract = isAbstract;
+            return this;
         }
     }
     public static class Thing extends Vertex {

@@ -19,7 +19,7 @@
 package hypergraph.core;
 
 import hypergraph.Hypergraph;
-import hypergraph.storage.Index;
+import hypergraph.storage.KeyGenerator;
 import org.rocksdb.OptimisticTransactionDB;
 import org.rocksdb.OptimisticTransactionOptions;
 import org.rocksdb.ReadOptions;
@@ -46,8 +46,8 @@ class CoreSession implements Hypergraph.Session {
         isOpen.set(true);
     }
 
-    Index getIndex() {
-        return keyspace.index();
+    KeyGenerator keyGenerator() {
+        return keyspace.keyGenerator();
     }
 
     @Override

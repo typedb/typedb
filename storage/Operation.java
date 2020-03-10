@@ -20,7 +20,7 @@ package hypergraph.storage;
 
 public interface Operation {
 
-    Index getIndex();
+    KeyGenerator keyGenerator();
 
     byte[] get(byte[] key);
 
