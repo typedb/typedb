@@ -31,6 +31,9 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 import java.util.Scanner;
 
@@ -133,10 +136,18 @@ public class GraknDaemon {
     public void run(String[] args) {
         String action = args.length > 1 ? args[1] : "";
         String option = args.length > 2 ? args[2] : "";
+
+        List<String> otherArgs = Collections.emptyList();
+        for (int i = 3; i < args.length; i++) {
+            if ("--".equals(args[i])) {
+                otherArgs = Arrays.asList(args).subList(i + 1, args.length);
+            }
+        }
+
         switch (action) {
             case "start":
                 printGraknLogo();
-                serverStart(option);
+                serverStart(option, otherArgs);
                 break;
             case "stop":
                 printGraknLogo();
@@ -174,18 +185,21 @@ public class GraknDaemon {
         }
     }
 
-    private void serverStart(String arg) {
+    private void serverStart(String arg, List<String> otherArgs) {
         switch (arg) {
             case SERVER:
-                serverExecutor.startIfNotRunning(arg);
+                serverExecutor.startIfNotRunning(otherArgs);
                 break;
             case STORAGE:
                 storageExecutor.startIfNotRunning();
                 break;
             case BENCHMARK_FLAG:
+                storageExecutor.startIfNotRunning();
+                serverExecutor.startIfNotRunning(Collections.singletonList(BENCHMARK_FLAG));
+                break;
             case EMPTY_STRING:
                 storageExecutor.startIfNotRunning();
-                serverExecutor.startIfNotRunning(arg);
+                serverExecutor.startIfNotRunning(otherArgs);
                 break;
             default:
                 serverHelp();
