@@ -46,8 +46,6 @@ public interface Hypergraph extends AutoCloseable {
         Keyspace get(String keyspace);
 
         Set<Keyspace> getAll();
-
-        void delete(String keyspace);
     }
     /**
      * A Hypergraph Keyspace
@@ -57,6 +55,8 @@ public interface Hypergraph extends AutoCloseable {
     interface Keyspace extends AutoCloseable {
 
         String name();
+
+        boolean isOpen();
 
         void load();
 

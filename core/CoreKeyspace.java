@@ -70,6 +70,11 @@ class CoreKeyspace implements Hypergraph.Keyspace {
     }
 
     @Override
+    public boolean isOpen() {
+        return isOpen.get();
+    }
+
+    @Override
     public void load() {
         // TODO
     }

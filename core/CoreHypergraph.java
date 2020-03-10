@@ -25,11 +25,7 @@ import org.rocksdb.RocksDB;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashSet;
-import java.util.Map;
 import java.util.Properties;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -44,7 +40,7 @@ public class CoreHypergraph implements Hypergraph {
     private final Path directory;
     private final Options options;
     private final AtomicBoolean isOpen;
-    private final CoreKeyspaceManager keyspaces;
+    private final CoreKeyspaceManager keyspaceMgr;
 
     public static CoreHypergraph open(String directory) {
         return open(directory, new Properties());
@@ -57,11 +53,11 @@ public class CoreHypergraph implements Hypergraph {
     private CoreHypergraph(String directory, Properties properties) {
         this.directory = Paths.get(directory);
 
-        keyspaces = new CoreKeyspaceManager();
         options = new Options().setCreateIfMissing(true);
-
         setOptionsFromProperties(properties);
-        loadIndexes();
+
+        keyspaceMgr = new CoreKeyspaceManager(this);
+        keyspaceMgr.loadAll();
 
         isOpen = new AtomicBoolean();
         isOpen.set(true);
@@ -69,10 +65,6 @@ public class CoreHypergraph implements Hypergraph {
 
     private void setOptionsFromProperties(Properties properties) {
         // TODO: configure optimisation paramaters
-    }
-
-    private void loadIndexes() {
-        // TODO: load indexes for every pre-existing keyspace
     }
 
     Path directory() {
@@ -85,17 +77,17 @@ public class CoreHypergraph implements Hypergraph {
 
     @Override
     public CoreSession session(String keyspace) {
-        Keyspace k = keyspaces.get(keyspace);
+        Keyspace k = keyspaceMgr.get(keyspace);
         if (k != null){
-            return keyspaces.get(keyspace).sessionCreateAndOpen();
+            return keyspaceMgr.get(keyspace).sessionCreateAndOpen();
         } else {
-            throw new HypergraphException("There does not exists a keyspace with name: " + keyspace);
+            throw new HypergraphException("There does not exists a keyspace with the name: " + keyspace);
         }
     }
 
     @Override
     public KeyspaceManager keyspaces() {
-        return keyspaces;
+        return keyspaceMgr;
     }
 
     @Override
@@ -106,40 +98,10 @@ public class CoreHypergraph implements Hypergraph {
     @Override
     public void close() {
         if (isOpen.compareAndSet(true, false)) {
-            for (Keyspace keyspace : keyspaces.getAll()) {
+            for (Keyspace keyspace : keyspaceMgr.getAll()) {
                 keyspace.close();
             }
             options.close();
-        }
-    }
-
-    class CoreKeyspaceManager implements KeyspaceManager {
-
-        private final Map<String, CoreKeyspace> keyspaces;
-        CoreKeyspaceManager() {
-            keyspaces = new ConcurrentHashMap<>();
-        }
-
-        @Override
-        public CoreKeyspace create(String name) {
-            CoreKeyspace keyspace = new CoreKeyspace(CoreHypergraph.this, name);
-            keyspaces.put(name, keyspace);
-            return keyspace;
-        }
-
-        @Override
-        public CoreKeyspace get(String keyspace) {
-            return keyspaces.get(keyspace);
-        }
-
-        @Override
-        public Set<Hypergraph.Keyspace> getAll() {
-            return new HashSet<>(keyspaces.values());
-        }
-
-        @Override
-        public void delete(String keyspace) {
-            // TODO
         }
     }
 

@@ -42,6 +42,8 @@ public class HypergraphTest {
             assertTrue(graph.isOpen());
 
             try (Hypergraph.Keyspace keyspace = graph.keyspaces().create("my_data_keyspace")) {
+                assertTrue(keyspace.isOpen());
+                assertEquals("my_data_keyspace", keyspace.name());
 
                 try (Hypergraph.Session session = graph.session("my_data_keyspace")) {
                     assertTrue(session.isOpen());
