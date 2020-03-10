@@ -55,8 +55,6 @@ public class TraversalExecutorImpl implements TraversalExecutor {
     }
 
     /**
-     * NB: doesn't depend on the infer flag, the result is always returned directly from the DB without application of rules
-     * TODO: seems out of place: make private or move elsewhere
      * @return resulting answer stream
      */
     @Override
