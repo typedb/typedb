@@ -24,6 +24,7 @@ import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.graql.executor.TraversalExecutor;
 import grakn.core.graql.reasoner.ReasoningContext;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.state.AnswerPropagatorState;
@@ -33,7 +34,6 @@ import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.graql.exception.GraqlSemanticException;
-import grakn.core.kb.graql.executor.ExecutorFactory;
 import grakn.core.kb.graql.reasoner.ReasonerException;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
@@ -73,8 +73,8 @@ public class CompositeQuery extends ResolvableQuery {
     final private ReasonerQueryImpl conjunctiveQuery;
     final private Set<ResolvableQuery> complementQueries;
 
-    CompositeQuery(Conjunction<Pattern> pattern, ExecutorFactory executorFactory, ReasoningContext ctx) throws ReasonerException {
-        super(executorFactory, ctx);
+    CompositeQuery(Conjunction<Pattern> pattern, TraversalExecutor traversalExecutor, ReasoningContext ctx) throws ReasonerException {
+        super(traversalExecutor, ctx);
         ReasonerQueryFactory queryFactory = context().queryFactory();
         Conjunction<Statement> positiveConj = Graql.and(
                 pattern.getPatterns().stream()
@@ -94,8 +94,8 @@ public class CompositeQuery extends ResolvableQuery {
         }
     }
 
-    CompositeQuery(ReasonerQueryImpl conj, Set<ResolvableQuery> comp, ExecutorFactory executorFactory, ReasoningContext ctx) {
-        super(executorFactory, ctx);
+    CompositeQuery(ReasonerQueryImpl conj, Set<ResolvableQuery> comp,  TraversalExecutor traversalExecutor, ReasoningContext ctx) {
+        super(traversalExecutor, ctx);
         this.conjunctiveQuery = conj;
         this.complementQueries = comp;
     }
@@ -209,14 +209,14 @@ public class CompositeQuery extends ResolvableQuery {
         return new CompositeQuery(
                 getConjunctiveQuery().withSubstitution(sub),
                 getComplementQueries().stream().map(q -> q.withSubstitution(sub)).collect(Collectors.toSet()),
-                executorFactory,
+                traversalExecutor,
                 context()
         );
     }
 
     @Override
     public CompositeQuery inferTypes() {
-        return new CompositeQuery(getConjunctiveQuery().inferTypes(), getComplementQueries(), executorFactory, context());
+        return new CompositeQuery(getConjunctiveQuery().inferTypes(), getComplementQueries(), traversalExecutor, context());
     }
 
     @Override
@@ -224,7 +224,7 @@ public class CompositeQuery extends ResolvableQuery {
         return new CompositeQuery(
                 getConjunctiveQuery().constantValuePredicateQuery(),
                 getComplementQueries(),
-                executorFactory,
+                traversalExecutor,
                 context());
     }
 
@@ -241,7 +241,7 @@ public class CompositeQuery extends ResolvableQuery {
         return new CompositeQuery(
                 getConjunctiveQuery().copy(),
                 getComplementQueries().stream().map(ResolvableQuery::copy).collect(Collectors.toSet()),
-                executorFactory,
+                traversalExecutor,
                 context()
         );
     }
@@ -284,7 +284,7 @@ public class CompositeQuery extends ResolvableQuery {
                                 this.getPattern().getPatterns(),
                                 q.getPattern().getPatterns()
                         )),
-                executorFactory,
+                traversalExecutor,
                 context()
         );
     }
@@ -368,7 +368,7 @@ public class CompositeQuery extends ResolvableQuery {
                 getComplementQueries().isEmpty()?
                         getComplementQueries() :
                         getComplementQueries().stream().map(ResolvableQuery::rewrite).collect(Collectors.toSet()),
-                executorFactory,
+                traversalExecutor,
                 context()
         );
     }

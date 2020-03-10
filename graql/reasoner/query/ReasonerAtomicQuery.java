@@ -24,6 +24,7 @@ import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
 import grakn.common.util.Pair;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.graql.executor.TraversalExecutor;
 import grakn.core.graql.reasoner.CacheCasting;
 import grakn.core.graql.reasoner.ReasoningContext;
 import grakn.core.graql.reasoner.atom.Atom;
@@ -73,8 +74,9 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
      * the setAtomSet method to work around an ordering constraint
      */
     ReasonerAtomicQuery(Conjunction<Statement> pattern, PropertyAtomicFactory propertyAtomicFactory,
-                        ExecutorFactory executorFactory, TraversalPlanFactory traversalPlanFactory, ReasoningContext ctx) {
-        super(pattern, propertyAtomicFactory, executorFactory, traversalPlanFactory, ctx);
+                        TraversalPlanFactory traversalPlanFactory, TraversalExecutor traversalExecutor,
+                        ReasoningContext ctx) {
+        super(pattern, propertyAtomicFactory, traversalPlanFactory, traversalExecutor, ctx);
         this.atom = Iterables.getOnlyElement(selectAtoms()::iterator);
     }
 
@@ -87,17 +89,17 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         this.atom = Iterables.getOnlyElement(selectAtoms()::iterator);
     }
 
-    private ReasonerAtomicQuery(List<Atom> atomsToPropagate, ExecutorFactory executorFactory, TraversalPlanFactory traversalPlanFactory, ReasoningContext ctx) {
+    private ReasonerAtomicQuery(List<Atom> atomsToPropagate,  TraversalPlanFactory traversalPlanFactory, ReasoningContext ctx) {
         super(atomsToPropagate, executorFactory, traversalPlanFactory, ctx);
         this.atom = Iterables.getOnlyElement(selectAtoms()::iterator);
     }
 
-    ReasonerAtomicQuery(Atom atomToPropagate, ExecutorFactory executorFactory, TraversalPlanFactory traversalPlanFactory, ReasoningContext ctx) {
-        this(Collections.singletonList(atomToPropagate), executorFactory, traversalPlanFactory, ctx);
+    ReasonerAtomicQuery(Atom atomToPropagate, TraversalPlanFactory traversalPlanFactory, TraversalExecutor traversalExecutor, ReasoningContext ctx) {
+        this(Collections.singletonList(atomToPropagate), traversalPlanFactory, traversalExecutor, ctx);
     }
 
-    ReasonerAtomicQuery(Set<Atomic> atomsToCopy, ExecutorFactory executorFactory, TraversalPlanFactory traversalPlanFactory, ReasoningContext ctx) {
-        super(atomsToCopy, executorFactory, traversalPlanFactory, ctx);
+    ReasonerAtomicQuery(Set<Atomic> atomsToCopy, TraversalPlanFactory traversalPlanFactory, TraversalExecutor traversalExecutor,, ReasoningContext ctx) {
+        super(atomsToCopy, traversalPlanFactory, traversalExecutor, ctx);
         this.atom = Iterables.getOnlyElement(selectAtoms()::iterator);
     }
 
@@ -107,12 +109,12 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     @Override
     public ReasonerAtomicQuery withSubstitution(ConceptMap sub){
         Set<Atomic> union = Sets.union(getAtoms(), AtomicUtil.answerToPredicates(sub, this));
-        return new ReasonerAtomicQuery(union, executorFactory, traversalPlanFactory, context());
+        return new ReasonerAtomicQuery(union,  traversalPlanFactory, traversalExecutor, context());
     }
 
     @Override
     public ReasonerAtomicQuery inferTypes() {
-        return new ReasonerAtomicQuery(getAtoms().stream().map(Atomic::inferTypes).collect(Collectors.toSet()), executorFactory, traversalPlanFactory, context());
+        return new ReasonerAtomicQuery(getAtoms().stream().map(Atomic::inferTypes).collect(Collectors.toSet()), traversalPlanFactory, traversalExecutor, context());
     }
 
     @Override
@@ -241,7 +243,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
     @Override
     protected Stream<ReasonerQueryImpl> getQueryStream(ConceptMap sub){
-        return getAtom().atomOptions(sub).stream().map(atom -> new ReasonerAtomicQuery(atom, executorFactory, traversalPlanFactory, context()));
+        return getAtom().atomOptions(sub).stream().map(atom -> new ReasonerAtomicQuery(atom, traversalPlanFactory, traversalExecutor, context()));
     }
 
     @Override

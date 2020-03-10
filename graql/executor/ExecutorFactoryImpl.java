@@ -49,7 +49,7 @@ public class ExecutorFactoryImpl implements ExecutorFactory {
 
     @Override
     public QueryExecutor transactional(boolean infer) {
-        return new QueryExecutorImpl(conceptManager, this, traversalPlanFactory, reasonerQueryFactory, infer);
+        return new QueryExecutorImpl(conceptManager, traversalPlanFactory, reasonerQueryFactory, infer);
     }
 
     public void setReasonerQueryFactory(ReasonerQueryFactory reasonerQueryFactory) {

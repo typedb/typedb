@@ -33,14 +33,10 @@ import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.GraknConceptException;
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.exception.GraqlSemanticException;
-import grakn.core.kb.graql.executor.ExecutorFactory;
 import grakn.core.kb.graql.executor.QueryExecutor;
 import grakn.core.kb.graql.executor.property.PropertyExecutor;
 import grakn.core.kb.graql.executor.property.PropertyExecutorFactory;
-import grakn.core.kb.graql.planning.gremlin.GraqlTraversal;
-import grakn.core.kb.graql.planning.gremlin.TraversalPlanFactory;
 import grakn.core.kb.graql.reasoner.ReasonerCheckedException;
-import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Disjunction;
@@ -57,10 +53,6 @@ import graql.lang.query.MatchClause;
 import graql.lang.query.builder.Filterable;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
-import org.apache.tinkerpop.gremlin.structure.Edge;
-import org.apache.tinkerpop.gremlin.structure.Element;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -68,11 +60,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collector;
@@ -89,18 +79,14 @@ import static java.util.stream.Collectors.toList;
 public class QueryExecutorImpl implements QueryExecutor {
 
     private ConceptManager conceptManager;
-    private ExecutorFactory executorFactory;
     private final boolean infer;
-    private final TraversalPlanFactory traversalPlanFactory;
     private ReasonerQueryFactory reasonerQueryFactory;
     private final PropertyExecutorFactory propertyExecutorFactory;
     private static final Logger LOG = LoggerFactory.getLogger(QueryExecutorImpl.class);
 
-    QueryExecutorImpl(ConceptManager conceptManager, ExecutorFactory executorFactory, TraversalPlanFactory traversalPlanFactory, ReasonerQueryFactory reasonerQueryFactory, boolean infer) {
+    QueryExecutorImpl(ConceptManager conceptManager, ReasonerQueryFactory reasonerQueryFactory, boolean infer) {
         this.conceptManager = conceptManager;
-        this.executorFactory = executorFactory;
         this.infer = infer;
-        this.traversalPlanFactory = traversalPlanFactory;
         this.reasonerQueryFactory = reasonerQueryFactory;
         propertyExecutorFactory = new PropertyExecutorFactoryImpl();
     }
@@ -215,52 +201,6 @@ public class QueryExecutorImpl implements QueryExecutor {
         }
     }
 
-    @Override
-    public Stream<ConceptMap> traverse(Conjunction<? extends Pattern> pattern) {
-        return traverse(pattern, traversalPlanFactory.createTraversal(pattern));
-    }
-
-    /**
-     * NB: doesn't depend on the infer flag, the result is always returned directly from the DB without application of rules
-     * TODO: seems out of place: make private or move elsewhere
-     * @return resulting answer stream
-     */
-    @Override
-    public Stream<ConceptMap> traverse(Conjunction<? extends Pattern> pattern, GraqlTraversal graqlTraversal) {
-        Set<Variable> vars = Sets.filter(pattern.variables(), Variable::isReturned);
-        GraphTraversal<Vertex, Map<String, Element>> traversal = graqlTraversal.getGraphTraversal(vars);
-
-        return traversal.toStream()
-                .map(elements -> createAnswer(vars, elements))
-                .distinct()
-                .sequential()
-                .map(ConceptMap::new);
-    }
-
-    /**
-     * @param vars     set of variables of interest
-     * @param elements a map of vertices and edges where the key is the variable name
-     * @return a map of concepts where the key is the variable name
-     */
-    private Map<Variable, Concept> createAnswer(Set<Variable> vars, Map<String, Element> elements) {
-        Map<Variable, Concept> map = new HashMap<>();
-        for (Variable var : vars) {
-            Element element = elements.get(var.symbol());
-            if (element == null) {
-                throw GraqlSemanticException.unexpectedResult(var);
-            } else {
-                Concept result;
-                if (element instanceof Vertex) {
-                    result = conceptManager.buildConcept((Vertex) element);
-                } else {
-                    result = conceptManager.buildConcept((Edge) element);
-                }
-                Concept concept = result;
-                map.put(var, concept);
-            }
-        }
-        return map;
-    }
 
     @Override
     public Stream<ConceptMap> insert(GraqlInsert query) {
@@ -291,7 +231,7 @@ public class QueryExecutorImpl implements QueryExecutor {
             LinkedHashSet<Variable> projectedVars = new LinkedHashSet<>(matchVars);
             projectedVars.retainAll(insertVars);
 
-            Stream<ConceptMap> answers = executorFactory.transactional(infer).get(match.get(projectedVars));
+            Stream<ConceptMap> answers = get(match.get(projectedVars));
             answerStream = answers
                     .flatMap(answer -> WriteExecutorImpl.create(conceptManager, executors.build()).write(answer))
                     .collect(toList()).stream();
@@ -307,7 +247,7 @@ public class QueryExecutorImpl implements QueryExecutor {
 
     @Override
     public Void delete(GraqlDelete query) {
-        Stream<ConceptMap> answers = executorFactory.transactional(infer).match(query.match())
+        Stream<ConceptMap> answers = match(query.match())
                 .map(result -> result.project(query.vars()))
                 .distinct();
 
