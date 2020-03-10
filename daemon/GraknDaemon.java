@@ -46,6 +46,7 @@ public class GraknDaemon {
     private static final String SERVER = "server";
     private static final String STORAGE = "storage";
     private static final String EMPTY_STRING = "";
+    private static final String OPTIONS = "--";
     private static final String BENCHMARK_FLAG = "--benchmark";
     private static final String VERSION_LABEL = "Version: ";
 
@@ -139,7 +140,7 @@ public class GraknDaemon {
 
         List<String> otherArgs = Collections.emptyList();
         for (int i = 3; i < args.length; i++) {
-            if ("--".equals(args[i])) {
+            if (OPTIONS.equals(args[i])) {
                 otherArgs = Arrays.asList(args).subList(i + 1, args.length);
             }
         }
@@ -197,6 +198,7 @@ public class GraknDaemon {
                 storageExecutor.startIfNotRunning();
                 serverExecutor.startIfNotRunning(Collections.singletonList(BENCHMARK_FLAG));
                 break;
+            case OPTIONS:
             case EMPTY_STRING:
                 storageExecutor.startIfNotRunning();
                 serverExecutor.startIfNotRunning(otherArgs);
