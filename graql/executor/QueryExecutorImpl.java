@@ -119,14 +119,8 @@ public class QueryExecutorImpl implements QueryExecutor {
 
                 // TODO: lazy flatMap() is automatically fixed in Java 10 or OpenJDK 8u222, remove workaround if these conditions met
                 // custom workaround to deal with non-lazy Java 8 flatMap() functions is in LazyMergingStream
-//                Stream<Conjunction<Statement>> conjunctions = matchClause.getPatterns().getDisjunctiveNormalForm().getPatterns().stream();
-
                 Stream<Stream<ConceptMap>> answerStreams = matchClause.getPatterns().getDisjunctiveNormalForm().getPatterns().stream()
                         .map(p -> traverse(p));
-//                Stream<Stream<ConceptMap>> answerStreams = conjunctions
-//                        .map(p -> reasonerQueryFactory.create(p))
-//                        .map(ReasonerQuery::getPattern)
-//                        .map(p -> traverse(p));
 
                 LazyMergingStream<ConceptMap> mergedStreams = new LazyMergingStream<>(answerStreams);
                 return mergedStreams.flatStream();
