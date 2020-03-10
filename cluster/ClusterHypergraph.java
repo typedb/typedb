@@ -18,6 +18,5 @@
 
 package hypergraph.cluster;
 
-
 public class ClusterHypergraph {
 }

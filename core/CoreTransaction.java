@@ -23,6 +23,7 @@ import hypergraph.common.HypergraphException;
 import hypergraph.concept.ConceptManager;
 import hypergraph.graph.GraphManager;
 import hypergraph.storage.Index;
+import hypergraph.storage.Operation;
 import hypergraph.storage.Storage;
 import hypergraph.traversal.Traversal;
 import org.rocksdb.ReadOptions;
@@ -39,8 +40,10 @@ class CoreTransaction implements Hypergraph.Transaction {
     private final ReadOptions readOptions;
     private final Transaction rocksTransaction;
     private final Type type;
+    private final Operation operation;
+    private final GraphManager graphMgr;
     private final Storage storage;
-    private final ConceptManager concepts;
+    private final ConceptManager conceptMgr;
     private final Traversal traversal;
     private final AtomicBoolean isOpen;
 
@@ -51,12 +54,18 @@ class CoreTransaction implements Hypergraph.Transaction {
         this.writeOptions = writeOptions;
         this.readOptions = readOptions;
 
-        storage = new Storage(new CoreOperation());
-        concepts = new ConceptManager(new GraphManager(storage));
-        traversal = new Traversal(concepts);
+        operation = new CoreOperation();
+        storage = new Storage(operation);
+        graphMgr = new GraphManager(storage);
+        conceptMgr = new ConceptManager(graphMgr);
+        traversal = new Traversal(conceptMgr);
 
         isOpen = new AtomicBoolean();
         isOpen.set(true);
+    }
+
+    GraphManager graph() {
+        return graphMgr;
     }
 
     @Override
@@ -71,7 +80,7 @@ class CoreTransaction implements Hypergraph.Transaction {
 
     @Override
     public ConceptManager write() {
-        return concepts;
+        return conceptMgr;
     }
 
     @Override

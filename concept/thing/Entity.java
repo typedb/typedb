@@ -16,35 +16,7 @@
  *
  */
 
-package hypergraph.graph;
+package hypergraph.concept.thing;
 
-import hypergraph.storage.Storage;
-
-public class GraphManager {
-
-    private final Storage storage;
-
-    public GraphManager(Storage storage) {
-        this.storage = storage;
-    }
-
-    public void initialise() {
-
-    }
-
-    public Vertex.Type createVertexType(Schema.Vertex.Type type, String label) {
-        return new Vertex.Type(storage, type, label);
-    }
-
-    public Vertex.Thing createVertexThing(Schema.Vertex.Thing thing) {
-        return new Vertex.Thing(storage, thing);
-    }
-
-    public Vertex.Type getVertexType(String label) {
-        return null;
-    }
-
-    public Edge putEdge(Schema.Edge type, Vertex from, Vertex to) {
-        return new Edge();
-    }
+public class Entity {
 }

@@ -19,6 +19,7 @@
 package hypergraph.concept;
 
 import hypergraph.concept.type.EntityType;
+import hypergraph.concept.type.Type;
 import hypergraph.graph.GraphManager;
 import hypergraph.graph.Vertex;
 import hypergraph.graph.Schema;
