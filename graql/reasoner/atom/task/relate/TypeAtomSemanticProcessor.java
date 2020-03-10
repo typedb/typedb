@@ -22,8 +22,11 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import grakn.core.graql.reasoner.ReasoningContext;
 import grakn.core.graql.reasoner.atom.Atom;
+import grakn.core.graql.reasoner.atom.AtomicUtil;
 import grakn.core.graql.reasoner.atom.binary.TypeAtom;
+import grakn.core.graql.reasoner.atom.predicate.ValuePredicate;
 import grakn.core.graql.reasoner.cache.SemanticDifference;
+import grakn.core.graql.reasoner.cache.VariableDefinition;
 import grakn.core.graql.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierType;
@@ -34,11 +37,12 @@ import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
 import graql.lang.statement.Variable;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
 
-public class TypeAtomSemanticProcessor implements SemanticProcessor<TypeAtom> {
+import static java.util.stream.Collectors.toSet;
 
-    private final BasicSemanticProcessor basicSemanticProcessor = new BasicSemanticProcessor();
+public class TypeAtomSemanticProcessor implements SemanticProcessor<TypeAtom> {
 
     @Override
     public Unifier getUnifier(TypeAtom childAtom, Atom parentAtom, UnifierType unifierType, ReasoningContext ctx) {
@@ -74,7 +78,7 @@ public class TypeAtomSemanticProcessor implements SemanticProcessor<TypeAtom> {
         }
 
         UnifierImpl unifier = new UnifierImpl(varMappings);
-        return basicSemanticProcessor.isPredicateCompatible(childAtom, parentAtom, unifier, unifierType, conceptManager)?
+        return AtomicUtil.isPredicateCompatible(childAtom, parentAtom, unifier, unifierType, conceptManager)?
                 unifier : UnifierImpl.nonExistent();
     }
 
@@ -85,7 +89,30 @@ public class TypeAtomSemanticProcessor implements SemanticProcessor<TypeAtom> {
     }
 
     @Override
-    public SemanticDifference computeSemanticDifference(TypeAtom parentAtom, Atom childAtom, Unifier unifier, ReasoningContext ctx) {
-        return basicSemanticProcessor.computeSemanticDifference(parentAtom, childAtom, unifier, ctx);
+    public SemanticDifference computeSemanticDifference(TypeAtom parentAtom, Atom childAtom, Unifier unifier, ReasoningContext ctx){
+        Set<VariableDefinition> diff = new HashSet<>();
+        Unifier unifierInverse = unifier.inverse();
+
+        unifier.mappings().forEach(m -> {
+            Variable parentVar = m.getKey();
+            Variable childVar = m.getValue();
+
+            Type parentType = parentAtom.getParentQuery().getUnambiguousType(parentVar, false);
+            Type childType = childAtom.getParentQuery().getUnambiguousType(childVar, false);
+            Type requiredType = childType != null ?
+                    parentType != null ?
+                            (!parentType.equals(childType) ? childType : null) :
+                            childType
+                    : null;
+
+            Set<ValuePredicate> predicatesToSatisfy = childAtom.getPredicates(childVar, ValuePredicate.class)
+                    .flatMap(vp -> vp.unify(unifierInverse).stream()).collect(toSet());
+            parentAtom.getPredicates(parentVar, ValuePredicate.class).forEach(predicatesToSatisfy::remove);
+
+            diff.add(new VariableDefinition(parentVar, requiredType, null, new HashSet<>(), predicatesToSatisfy));
+        });
+        return new SemanticDifference(diff);
     }
+
+
 }

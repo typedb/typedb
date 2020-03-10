@@ -19,6 +19,7 @@
 package grakn.core.graql.executor;
 
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import grakn.core.rule.GraknTestServer;
@@ -34,6 +35,7 @@ import org.junit.Test;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 public class DirectSubIT {
 
@@ -70,6 +72,7 @@ public class DirectSubIT {
         tx = session.writeTransaction();
         List<ConceptMap> directSubs = tx.execute(Graql.match(Graql.var("x").subX("entity")).get(), false);
         assertEquals(2, directSubs.size());
+        assertFalse(directSubs.stream().anyMatch(conceptMap -> conceptMap.get("x").asType().label().equals(Label.of("child"))));
     }
 
     @Test
@@ -80,6 +83,7 @@ public class DirectSubIT {
         tx = session.writeTransaction();
         List<ConceptMap> directSubs = tx.execute(Graql.match(Graql.var("x").subX("entity")).get());
         assertEquals(2, directSubs.size());
+        assertFalse(directSubs.stream().anyMatch(conceptMap -> conceptMap.get("x").asType().label().equals(Label.of("child"))));
     }
 
 
