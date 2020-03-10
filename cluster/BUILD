@@ -26,8 +26,8 @@ package(
 # TODO: Enable the following code once we implement HypergraphCluster
 #
 #java_library(
-#    name = "hypergraph-cluster",
-#    srcs = ["HypergraphCluster.java"],
+#    name = "hypergraph",
+#    srcs = ["ClusterHypergraph.java"],
 #    deps = [
 #        "//:hypergraph",
 #        "//common:common",
@@ -41,6 +41,6 @@ package(
 #checkstyle_test(
 #    name = "checkstyle",
 #    targets = [
-#        ":hypergraph-cluster",
+#        ":hypergraph",
 #    ]
 #)

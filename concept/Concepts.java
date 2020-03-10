@@ -18,10 +18,10 @@
 
 package hypergraph.concept;
 
-import hypergraph.common.HypergraphException;
 import hypergraph.concept.type.EntityType;
 import hypergraph.graph.Graph;
 import hypergraph.graph.Vertex;
+import hypergraph.graph.Schema;
 
 public class Concepts {
 
@@ -32,8 +32,18 @@ public class Concepts {
     }
 
     public EntityType putEntityType(String label) {
-        Vertex vertex = graph.putVertex();
+        return putEntityType(label, Schema.Vertex.Type.Root.ROOT_ENTITY_TYPE.label());
+    }
 
-        return new EntityType(vertex);
+    public EntityType putEntityType(String label, String parent) {
+        Vertex.Type entityTypeVertex = graph.getVertexType(label);
+
+        if (entityTypeVertex == null) {
+            entityTypeVertex = graph.createVertexType(Schema.Vertex.Type.ENTITY_TYPE, label);
+            Vertex.Type parentTypeVertex = graph.getVertexType(parent);
+            graph.putEdge(Schema.Edge.SUB, entityTypeVertex, parentTypeVertex);
+        }
+
+        return new EntityType(entityTypeVertex);
     }
 }

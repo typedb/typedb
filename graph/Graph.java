@@ -18,7 +18,6 @@
 
 package hypergraph.graph;
 
-import hypergraph.common.HypergraphException;
 import hypergraph.storage.Storage;
 
 public class Graph {
@@ -29,11 +28,19 @@ public class Graph {
         this.storage = storage;
     }
 
-    public Vertex putVertex() {
-        return new Vertex();
+    public Vertex.Type createVertexType(Schema.Vertex.Type type, String label) {
+        return new Vertex.Type(storage, type, label);
     }
 
-    public Edge putEdge() {
+    public Vertex.Thing createVertexThing(Schema.Vertex.Thing thing) {
+        return new Vertex.Thing(storage, thing);
+    }
+
+    public Vertex.Type getVertexType(String label) {
+        return null;
+    }
+
+    public Edge putEdge(Schema.Edge type, Vertex from, Vertex to) {
         return new Edge();
     }
 }

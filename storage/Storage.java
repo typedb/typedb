@@ -18,19 +18,21 @@
 
 package hypergraph.storage;
 
-import hypergraph.common.HypergraphException;
-
 public class Storage {
 
     private final Buffer buffer;
     private final Operation operation;
     private final Index index;
 
-    public Storage(Operation operation, Index index) {
+    public Storage(Operation operation) {
         this.operation = operation;
-        this.index = index;
+        this.index = operation.getIndex();
 
         buffer = new Buffer();
+    }
+
+    public Index index() {
+        return index;
     }
 
     public void persist() {

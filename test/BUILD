@@ -23,7 +23,7 @@ java_test(
     srcs = ["HypergraphTest.java"],
     deps = [
         "//:hypergraph",
-        "//core:hypergraph-core",
+        "//core:hypergraph",
     ]
 )
 

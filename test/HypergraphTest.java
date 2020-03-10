@@ -18,7 +18,7 @@
 
 package hypergraph;
 
-import hypergraph.core.HypergraphCore;
+import hypergraph.core.CoreHypergraph;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -38,25 +38,28 @@ public class HypergraphTest {
 
         System.out.println("Database Directory: " + directory.toString());
 
-        try (Hypergraph graph = HypergraphCore.open(directory.toString())) {
+        try (Hypergraph graph = CoreHypergraph.open(directory.toString())) {
             assertTrue(graph.isOpen());
 
-            try (Hypergraph.Session session = graph.session("my_data_keyspace")) {
-                assertTrue(session.isOpen());
-                assertEquals("my_data_keyspace", session.keyspace());
+            try (Hypergraph.Keyspace keyspace = graph.keyspaces().create("my_data_keyspace")) {
 
-                try (Hypergraph.Transaction transaction = session.transaction(Hypergraph.Transaction.Type.WRITE)) {
-                    assertTrue(transaction.isOpen());
-                    assertEquals(HypergraphCore.Transaction.Type.WRITE, transaction.type());
+                try (Hypergraph.Session session = graph.session("my_data_keyspace")) {
+                    assertTrue(session.isOpen());
+                    assertEquals("my_data_keyspace", session.keyspace().name());
+
+                    try (Hypergraph.Transaction transaction = session.transaction(Hypergraph.Transaction.Type.WRITE)) {
+                        assertTrue(transaction.isOpen());
+                        assertEquals(CoreHypergraph.Transaction.Type.WRITE, transaction.type());
 
 //                    transaction.write().entityType("person");
-                }
+                    }
 
-                try (Hypergraph.Transaction transaction = session.transaction(Hypergraph.Transaction.Type.READ)) {
-                    assertTrue(transaction.isOpen());
-                    assertEquals(HypergraphCore.Transaction.Type.READ, transaction.type());
+                    try (Hypergraph.Transaction transaction = session.transaction(Hypergraph.Transaction.Type.READ)) {
+                        assertTrue(transaction.isOpen());
+                        assertEquals(CoreHypergraph.Transaction.Type.READ, transaction.type());
 
 //                    transaction.read().getConcept(...)
+                    }
                 }
             }
         }

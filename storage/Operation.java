@@ -20,6 +20,8 @@ package hypergraph.storage;
 
 public interface Operation {
 
+    Index getIndex();
+
     byte[] get(byte[] key);
 
     void put(byte[] key, byte[] value);

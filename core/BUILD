@@ -24,8 +24,8 @@ package(
 )
 
 java_library(
-    name = "hypergraph-core",
-    srcs = ["HypergraphCore.java"],
+    name = "hypergraph",
+    srcs = glob(["*.java"]),
     deps = [
         "//:hypergraph",
         "//common:common",
@@ -40,6 +40,6 @@ java_library(
 checkstyle_test(
     name = "checkstyle",
     targets = [
-        ":hypergraph-core",
+        ":hypergraph",
     ]
 )

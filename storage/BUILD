@@ -21,7 +21,6 @@ package(
         "//core:__pkg__",
         "//cluster:__pkg__",
         "//graph:__pkg__",
-        "//index:__pkg__",
     ]
 )
 

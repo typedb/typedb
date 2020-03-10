@@ -18,9 +18,44 @@
 
 package hypergraph.graph;
 
-public class Vertex {
+import hypergraph.storage.Storage;
 
-    public Vertex() {
+import java.nio.ByteBuffer;
+
+public abstract class Vertex {
+
+    protected final Storage storage;
+
+    private Vertex(Storage storage) {
+        this.storage = storage;
+    }
+
+    public static class Type extends Vertex {
+
+        private final byte[] iid;
+
+        Type(Storage storage, Schema.Vertex.Type type, String label) {
+            super(storage);
+            ByteBuffer newIID = ByteBuffer.allocate(3);
+            newIID.put(type.prefix());
+
+            this.iid = newIID.array();
+        }
+    }
+    public static class Thing extends Vertex {
+
+        Thing(Storage storage, Schema.Vertex.Thing thing) {
+            super(storage);
+        }
+    }
+
+    public static class Value extends Vertex {
+
+        Value(Storage storage) {
+            super(storage);
+            Schema.Vertex type = Schema.Vertex.VALUE;
+
+        }
 
     }
 }

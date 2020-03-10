@@ -21,6 +21,8 @@ package hypergraph;
 import hypergraph.concept.Concepts;
 import hypergraph.traversal.Traversal;
 
+import java.util.Set;
+
 /**
  * A Hypergraph Database API
  *
@@ -31,9 +33,37 @@ public interface Hypergraph extends AutoCloseable {
 
     Session session(String keyspace);
 
+    KeyspaceManager keyspaces();
+
     boolean isOpen();
 
     void close();
+
+    interface KeyspaceManager {
+
+        Keyspace create(String keyspace);
+
+        Keyspace get(String keyspace);
+
+        Set<Keyspace> getAll();
+
+        void delete(String keyspace);
+    }
+    /**
+     * A Hypergraph Keyspace
+     *
+     * A keyspace is an isolated scope of data in the storage engine.
+     */
+    interface Keyspace extends AutoCloseable {
+
+        String name();
+
+        void load();
+
+        void close();
+
+        void delete();
+    }
 
     /**
      * A Hypergraph Database Session
@@ -45,7 +75,7 @@ public interface Hypergraph extends AutoCloseable {
 
         Transaction transaction(Transaction.Type type);
 
-        String keyspace();
+        Keyspace keyspace();
 
         boolean isOpen();
 

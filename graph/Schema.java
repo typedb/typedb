@@ -16,7 +16,9 @@
  *
  */
 
-package hypergraph.storage;
+package hypergraph.graph;
+
+import java.nio.ByteBuffer;
 
 public class Schema {
 
@@ -29,6 +31,7 @@ public class Schema {
     private enum Prefix {
         INDEX_TYPE(0),
         INDEX_VALUE(5),
+        VERTEX_ROOT_TYPE(10),
         VERTEX_ENTITY_TYPE(20),
         VERTEX_RELATION_TYPE(30),
         VERTEX_ROLE_TYPE(40),
@@ -63,16 +66,14 @@ public class Schema {
         PROPERTY_THEN(6),
         EDGE_SUB_OUT(20),
         EDGE_SUB_IN(25),
-        EDGE_ISA_OUT(30),
-        EDGE_ISA_IN(35),
-        EDGE_KEY_OUT(40),
-        EDGE_KEY_IN(45),
-        EDGE_HAS_OUT(50),
-        EDGE_HAS_IN(55),
-        EDGE_PLAYS_OUT(60),
-        EDGE_PLAYS_IN(65),
-        EDGE_RELATES_OUT(70),
-        EDGE_RELATES_IN(75),
+        EDGE_KEY_OUT(30),
+        EDGE_KEY_IN(35),
+        EDGE_HAS_OUT(40),
+        EDGE_HAS_IN(45),
+        EDGE_PLAYS_OUT(50),
+        EDGE_PLAYS_IN(55),
+        EDGE_RELATES_OUT(60),
+        EDGE_RELATES_IN(65),
         EDGE_OPT_ROLE_OUT(100),
         EDGE_OPT_ROLE_IN(105),
         EDGE_OPT_RELATION_OUT(110);
@@ -84,13 +85,13 @@ public class Schema {
         }
     }
 
-    public enum IndexType {
+    public enum Index {
         TYPE(Prefix.INDEX_TYPE),
         VALUE(Prefix.INDEX_VALUE);
 
         private final byte prefix;
 
-        IndexType(Prefix prefix) {
+        Index(Prefix prefix) {
             this.prefix = prefix.key;
         }
 
@@ -99,30 +100,89 @@ public class Schema {
         }
     }
 
-    public enum VertexType {
-        ENTITY_TYPE(Prefix.VERTEX_ENTITY_TYPE),
-        RELATION_TYPE(Prefix.VERTEX_RELATION_TYPE),
-        ROLE_TYPE(Prefix.VERTEX_ROLE_TYPE),
-        ATTRIBUTE_TYPE(Prefix.VERTEX_ATTRIBUTE_TYPE),
-        ENTITY(Prefix.VERTEX_ENTITY),
-        RELATION(Prefix.VERTEX_RELATION),
-        ROLE(Prefix.VERTEX_ROLE),
-        ATTRIBUTE(Prefix.VERTEX_ATTRIBUTE),
+    public enum Vertex {
         VALUE(Prefix.VERTEX_VALUE),
         RULE(Prefix.VERTEX_RULE);
 
         private final byte prefix;
 
-        VertexType(Prefix prefix) {
+        Vertex(Prefix prefix) {
             this.prefix = prefix.key;
         }
 
         public byte prefix() {
             return prefix;
         }
+
+        public enum Type {
+            ENTITY_TYPE(Prefix.VERTEX_ENTITY_TYPE),
+            RELATION_TYPE(Prefix.VERTEX_RELATION_TYPE),
+            ROLE_TYPE(Prefix.VERTEX_ROLE_TYPE),
+            ATTRIBUTE_TYPE(Prefix.VERTEX_ATTRIBUTE_TYPE);
+
+            private final byte prefix;
+
+            Type(Prefix prefix) {
+                this.prefix = prefix.key;
+            }
+
+            public byte prefix() {
+                return prefix;
+            }
+
+            public enum Root {
+                ROOT_TYPE(Prefix.VERTEX_ROOT_TYPE, 0, "thing"),
+                ROOT_ENTITY_TYPE(Prefix.VERTEX_ENTITY_TYPE, 1, "entity"),
+                ROOT_RELATION_TYPE(Prefix.VERTEX_ENTITY_TYPE, 2, "relation"),
+                ROOT_ROLE_TYPE(Prefix.VERTEX_ENTITY_TYPE, 3, "role"),
+                ROOT_ATTRIBUTE_TYPE(Prefix.VERTEX_ENTITY_TYPE, 4, "attribute");
+
+                private final Prefix prefix;
+                private final int key;
+                private final String label;
+                private final byte[] iid;
+
+                Root(Prefix prefix, int key, String label) {
+                    this.prefix = prefix;
+                    this.key = key;
+                    this.label = label;
+                    this.iid = ByteBuffer.allocate(2).putInt(key).array();
+                }
+
+                public Prefix prefix() {
+                    return prefix;
+                }
+
+                public byte[] iid() {
+                    return iid;
+                }
+
+                public String label() {
+                    return label;
+                }
+            }
+        }
+        public enum Thing {
+            ENTITY(Prefix.VERTEX_ENTITY),
+            RELATION(Prefix.VERTEX_RELATION),
+            ROLE(Prefix.VERTEX_ROLE),
+            ATTRIBUTE(Prefix.VERTEX_ATTRIBUTE),
+            VALUE(Prefix.VERTEX_VALUE),
+            RULE(Prefix.VERTEX_RULE);
+
+            private final byte prefix;
+
+            Thing(Prefix prefix) {
+                this.prefix = prefix.key;
+            }
+
+            public byte prefix() {
+                return prefix;
+            }
+        }
     }
 
-    public enum PropertyType {
+    public enum Property {
         ABSTRACT(Infix.PROPERTY_ABSTRACT),
         DATATYPE(Infix.PROPERTY_DATATYPE),
         REGEX(Infix.PROPERTY_REGEX),
@@ -133,7 +193,7 @@ public class Schema {
 
         private final byte infix;
 
-        PropertyType(Infix infix) {
+        Property(Infix infix) {
             this.infix = infix.key;
         }
 
@@ -160,31 +220,29 @@ public class Schema {
         }
     }
 
-    public enum EdgeType {
-        SUB_OUT(Infix.EDGE_SUB_OUT),
-        SUB_IN(Infix.EDGE_SUB_IN),
-        ISA_OUT(Infix.EDGE_ISA_OUT),
-        ISA_IN(Infix.EDGE_ISA_IN),
-        KEY_OUT(Infix.EDGE_KEY_OUT),
-        KEY_IN(Infix.EDGE_KEY_IN),
-        HAS_OUT(Infix.EDGE_HAS_OUT),
-        HAS_IN(Infix.EDGE_HAS_IN),
-        PLAYS_OUT(Infix.EDGE_PLAYS_OUT),
-        PLAYS_IN(Infix.EDGE_PLAYS_IN),
-        RELATES_OUT(Infix.EDGE_RELATES_OUT),
-        RELATES_IN(Infix.EDGE_RELATES_IN),
-        OPT_ROLE_OUT(Infix.EDGE_OPT_ROLE_OUT),
-        OPT_ROLE_IN(Infix.EDGE_OPT_ROLE_IN),
-        OPT_RELATION_OUT(Infix.EDGE_OPT_RELATION_OUT);
+    public enum Edge {
+        SUB(Infix.EDGE_SUB_OUT, Infix.EDGE_SUB_IN),
+        KEY(Infix.EDGE_KEY_OUT, Infix.EDGE_KEY_IN),
+        HAS(Infix.EDGE_HAS_OUT, Infix.EDGE_HAS_IN),
+        PLAYS(Infix.EDGE_PLAYS_OUT, Infix.EDGE_PLAYS_IN),
+        RELATES(Infix.EDGE_RELATES_OUT, Infix.EDGE_RELATES_IN),
+        OPT_ROLE(Infix.EDGE_OPT_ROLE_OUT, Infix.EDGE_OPT_ROLE_IN),
+        OPT_RELATION(Infix.EDGE_OPT_RELATION_OUT, null);
 
-        private final byte infix;
+        private final byte out;
+        private final byte in;
 
-        EdgeType(Infix infix) {
-            this.infix = infix.key;
+        Edge(Infix out, Infix in) {
+            this.out = out.key;
+            this.in = in.key;
         }
 
-        public byte infix() {
-            return infix;
+        public byte out() {
+            return out;
+        }
+
+        public byte in() {
+            return in;
         }
     }
 }
