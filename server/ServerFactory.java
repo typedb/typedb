@@ -39,6 +39,8 @@ import grakn.core.server.util.LockManager;
 import io.grpc.netty.NettyServerBuilder;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.ExecutorService;
@@ -86,11 +88,16 @@ public class ServerFactory {
             ServerTracing.initInstrumentation("server-instrumentation");
         }
         if (arguments.isGrablTracing()) {
-            GrablTracing grablTracingClient = GrablTracing.tracing(
-                    arguments.getGrablTracing().getUri(),
-                    arguments.getGrablTracing().getUsername(),
-                    arguments.getGrablTracing().getAccessToken()
-            );
+            GrablTracing grablTracingClient;
+            if (arguments.getGrablTracing().isSecureMode()) {
+                grablTracingClient = GrablTracing.tracing(
+                        arguments.getGrablTracing().getUri(),
+                        arguments.getGrablTracing().getUsername(),
+                        arguments.getGrablTracing().getAccessToken()
+                );
+            } else {
+                grablTracingClient = GrablTracing.withLogging(GrablTracing.tracing(arguments.getGrablTracing().getUri()));
+            }
             GrablTracingThreadStatic.setGlobalTracingClient(grablTracingClient);
         }
 

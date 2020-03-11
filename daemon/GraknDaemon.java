@@ -118,10 +118,11 @@ public class GraknDaemon {
 
                 System.out.println(logoString);
                 if (spaces > 0) {
-                    System.out.printf("%" + spaces + "s" + VERSION_LABEL + "%s\n", " ", Version.VERSION);
-                } else {
-                    System.out.print(VERSION_LABEL + " " + Version.VERSION + "\n");
+                    char[] charSpaces = new char[spaces];
+                    Arrays.fill(charSpaces, ' ');
+                    System.out.print(new String(charSpaces));
                 }
+                System.out.println(VERSION_LABEL + " " + Version.VERSION);
             } catch (IOException e) {
                 // DO NOTHING
             }
@@ -139,7 +140,7 @@ public class GraknDaemon {
         String option = args.length > 2 ? args[2] : "";
 
         List<String> otherArgs = Collections.emptyList();
-        for (int i = 3; i < args.length; i++) {
+        for (int i = 2; i < args.length; ++i) {
             if (OPTIONS.equals(args[i])) {
                 otherArgs = Arrays.asList(args).subList(i + 1, args.length);
             }

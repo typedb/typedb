@@ -35,7 +35,9 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * The main class of the 'grakn' command. This class is not a class responsible
@@ -93,8 +95,7 @@ public class Grakn {
                     .build());
 
             options.addOption(Option.builder("t")
-                    .longOpt("tracing")
-                    .hasArg()
+                    .longOpt("tracing-enabled")
                     .desc("Enable grabl tracing")
                     .required(false)
                     .type(Boolean.class)
@@ -109,7 +110,7 @@ public class Grakn {
                     .build());
 
             options.addOption(Option.builder()
-                    .longOpt("username")
+                    .longOpt("tracing-username")
                     .hasArg()
                     .desc("Grabl tracing username")
                     .required(false)
@@ -117,7 +118,7 @@ public class Grakn {
                     .build());
 
             options.addOption(Option.builder()
-                    .longOpt("access-token")
+                    .longOpt("tracing-access-token")
                     .hasArg()
                     .desc("Grabl tracing access-token")
                     .required(false)
@@ -134,7 +135,7 @@ public class Grakn {
             }
 
             benchmark = arguments.hasOption("benchmark");
-            if (arguments.hasOption("tracing")) {
+            if (arguments.hasOption("tracing-enabled")) {
                 if (benchmark) {
                     throw new RuntimeException("Cannot run with both benchmark and tracing at the same time");
                 }
@@ -181,6 +182,10 @@ public class Grakn {
 
             public String getAccessToken() {
                 return accessToken;
+            }
+
+            public boolean isSecureMode() {
+                return username != null;
             }
         }
     }
