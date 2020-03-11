@@ -20,12 +20,12 @@ package grakn.core.graql.reasoner.query;
 
 import com.google.common.annotations.VisibleForTesting;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.kb.graql.executor.TraversalExecutor;
 import grakn.core.graql.reasoner.ReasoningContext;
 import grakn.core.graql.reasoner.ResolutionIterator;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.state.AnswerPropagatorState;
 import grakn.core.graql.reasoner.state.ResolutionState;
-import grakn.core.kb.graql.executor.ExecutorFactory;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
 import graql.lang.Graql;
@@ -45,10 +45,10 @@ import java.util.stream.Stream;
 public abstract class ResolvableQuery implements ReasonerQuery {
 
     private final ReasoningContext ctx;
-    protected final ExecutorFactory executorFactory;
+    protected final TraversalExecutor traversalExecutor;
 
-    ResolvableQuery(ExecutorFactory executorFactory, ReasoningContext ctx) {
-        this.executorFactory = executorFactory;
+    ResolvableQuery(TraversalExecutor traversalExecutor, ReasoningContext ctx) {
+        this.traversalExecutor = traversalExecutor;
         this.ctx = ctx;
     }
 
@@ -140,8 +140,7 @@ public abstract class ResolvableQuery implements ReasonerQuery {
     public Stream<ConceptMap> resolve(Set<ReasonerAtomicQuery> subGoals, boolean infer){
         boolean doNotResolve = !infer || getAtoms().isEmpty() || (isPositive() && !isRuleResolvable());
         if (doNotResolve) {
-            //NB: the flag actually doesn't affect the traverse method which doesn't use reasoning
-            return executorFactory.transactional(false).traverse(getPattern());
+            return traversalExecutor.traverse(getPattern());
         } else {
             return new ResolutionIterator(this, subGoals, ctx.queryCache()).hasStream();
         }

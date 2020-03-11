@@ -62,6 +62,7 @@ import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.exception.GraqlSemanticException;
 import grakn.core.kb.graql.executor.ComputeExecutor;
 import grakn.core.kb.graql.executor.ExecutorFactory;
+import grakn.core.kb.graql.executor.TraversalExecutor;
 import grakn.core.kb.keyspace.KeyspaceStatistics;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
@@ -111,12 +112,14 @@ public class ComputeExecutorImpl implements ComputeExecutor {
     private static final Logger LOG = LoggerFactory.getLogger(ComputeExecutorImpl.class);
     private ConceptManager conceptManager;
     private ExecutorFactory executorFactory;
+    private TraversalExecutor traversalExecutor;
     private HadoopGraph hadoopGraph;
     private KeyspaceStatistics keyspaceStatistics;
 
-    ComputeExecutorImpl(ConceptManager conceptManager, ExecutorFactory executorFactory, HadoopGraph hadoopGraph, KeyspaceStatistics keyspaceStatistics) {
+    ComputeExecutorImpl(ConceptManager conceptManager, ExecutorFactory executorFactory, TraversalExecutor traversalExecutor, HadoopGraph hadoopGraph, KeyspaceStatistics keyspaceStatistics) {
         this.conceptManager = conceptManager;
         this.executorFactory = executorFactory;
+        this.traversalExecutor = traversalExecutor;
         this.hadoopGraph = hadoopGraph;
         this.keyspaceStatistics = keyspaceStatistics;
     }
@@ -775,7 +778,7 @@ public class ComputeExecutorImpl implements ComputeExecutor {
                         scopeLabels.stream()
                                 .map(type -> patternFunction.apply(attributeType, type))
                                 .map(pattern -> Graql.and(Collections.singleton(pattern)))
-                                .flatMap(pattern -> executorFactory.transactional(true).traverse(pattern))
+                                .flatMap(pattern -> traversalExecutor.traverse(pattern))
                 ).findFirst().isPresent();
     }
 
@@ -852,7 +855,7 @@ public class ComputeExecutorImpl implements ComputeExecutor {
                 .map(type -> Graql.var("x").isa(Graql.type(type.getValue())))
                 .map(Pattern.class::cast)
                 .map(pattern -> Graql.and(Collections.singleton(pattern)))
-                .flatMap(pattern -> executorFactory.transactional(false).traverse(pattern))
+                .flatMap(pattern -> traversalExecutor.traverse(pattern))
                 .findFirst().isPresent();
     }
 
