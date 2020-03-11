@@ -50,8 +50,8 @@ public class GraphManager {
         return new Vertex.Type(storage, type, label);
     }
 
-    public Vertex.Thing createVertexThing(Schema.Vertex.Thing thing) {
-        return new Vertex.Thing(storage, thing);
+    public Vertex.Thing createVertexThing(Schema.Vertex.Thing thing, Vertex.Type type) {
+        return new Vertex.Thing(storage, thing, type);
     }
 
     public Vertex.Type getVertexType(String label) {

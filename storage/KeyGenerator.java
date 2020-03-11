@@ -18,18 +18,38 @@
 
 package hypergraph.storage;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+
 public class KeyGenerator {
 
-    public KeyGenerator() {
+    private final Map<String, AtomicInteger> typeKeys;
+    private final Map<String, AtomicLong> thingKeys;
 
+    public KeyGenerator() {
+        typeKeys = new ConcurrentHashMap<>();
+        thingKeys = new ConcurrentHashMap<>();
     }
 
     public short forType(String root) {
-        return 0;
+        if (typeKeys.containsKey(root)) {
+            return (short) typeKeys.get(root).getAndIncrement();
+        } else {
+            AtomicInteger zero = new AtomicInteger(0);
+            typeKeys.put(root, zero);
+            return (short) zero.getAndIncrement();
+        }
     }
 
     public long forThing(String type) {
-        return 0;
+        if (thingKeys.containsKey(type)) {
+            return thingKeys.get(type).getAndIncrement();
+        } else {
+            AtomicLong zero = new AtomicLong(0);
+            thingKeys.put(type, zero);
+            return zero.getAndIncrement();
+        }
     }
-
 }

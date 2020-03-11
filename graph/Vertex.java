@@ -24,44 +24,62 @@ import java.nio.ByteBuffer;
 
 public abstract class Vertex {
 
-    protected final Storage storage;
+    private final Storage storage;
+    private final byte[] iid;
 
-    private Vertex(Storage storage) {
+    private Vertex(Storage storage, byte[] iid) {
         this.storage = storage;
+        this.iid = iid;
+    }
+
+    public byte[] iid() {
+        return iid;
     }
 
     public static class Type extends Vertex {
 
-        private final byte[] iid;
+        private final String label;
         private boolean isAbstract;
 
         Type(Storage storage, Schema.Vertex.Type type, String label) {
-            super(storage);
-            ByteBuffer iidBuffer = ByteBuffer.allocate(3);
-            iidBuffer.put(type.prefix().key());
-            iidBuffer.putShort(storage.keyGenerator().forType(type.root().label()));
-            this.iid = iidBuffer.array();
+            super(storage, ByteBuffer.allocate(3)
+                    .put(type.prefix().key())
+                    .putShort(storage.keyGenerator().forType(type.root().label()))
+                    .array());
+            this.label = label;
         }
 
         public Vertex.Type setAbstract(boolean isAbstract) {
             this.isAbstract = isAbstract;
             return this;
         }
+
+        public boolean isAbstract() {
+            return isAbstract;
+        }
+
+        public String label() {
+            return label;
+        }
     }
+
     public static class Thing extends Vertex {
 
-        Thing(Storage storage, Schema.Vertex.Thing thing) {
-            super(storage);
+        Thing(Storage storage, Schema.Vertex.Thing thing, Vertex.Type type) {
+            super(storage, ByteBuffer.allocate(11)
+                    .put(thing.prefix().key())
+                    .put(type.iid())
+                    .putLong(storage.keyGenerator().forThing(type.label()))
+                    .array());
         }
     }
 
-    public static class Value extends Vertex {
-
-        Value(Storage storage) {
-            super(storage);
-            Schema.Vertex type = Schema.Vertex.VALUE;
-
-        }
-
-    }
+//    public static class Value extends Vertex {
+//
+//        Value(Storage storage) {
+//            super(storage);
+//            Schema.Vertex type = Schema.Vertex.VALUE;
+//        }
+//
+//    }
 }
