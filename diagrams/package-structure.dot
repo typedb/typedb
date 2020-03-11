@@ -1,5 +1,7 @@
 digraph mygraph {
   node [shape=box];
+  "//cluster:hypergraph"
+  "//cluster:hypergraph" -> "//:hypergraph"
   "//core:hypergraph"
   "//core:hypergraph" -> "//:hypergraph"
   "//core:hypergraph" -> "//concept:concept"
