@@ -887,7 +887,7 @@ public class RuleValidationIT {
             );
 
             expectedException.expect(InvalidKBException.class);
-            expectedException.expectMessage("Rule [invalid-role-assignment] asserts [$x] plays a role that it can never play");
+            expectedException.expectMessage("Rule [invalid-role-assignment] asserts [$x] plays role [unplayed] that it can never play");
             tx.commit();
         }
     }
