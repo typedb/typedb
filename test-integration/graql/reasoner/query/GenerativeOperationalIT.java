@@ -221,11 +221,11 @@ public class GenerativeOperationalIT {
                 QueryTestUtil.unification(parent, child, true, UnifierType.STRUCTURAL_SUBSUMPTIVE);
                 equivs.forEach(equiv -> QueryTestUtil.queryEquivalence(parent, child, false, equiv));
 
-                fuzzer.apply(childPattern, ctx).forEach(fuzzedChildPattern -> {
-                            ReasonerAtomicQuery fuzzedChild = reasonerQueryFactory.atomic(conjunction(fuzzedChildPattern));
-                            QueryTestUtil.queryEquivalence(child, fuzzedChild, false, ReasonerQueryEquivalence.Equality);
-                            QueryTestUtil.queryEquivalence(child, fuzzedChild, true, ReasonerQueryEquivalence.AlphaEquivalence);
-                            QueryTestUtil.queryEquivalence(child, fuzzedChild, true, ReasonerQueryEquivalence.StructuralEquivalence);
+                fuzzer.apply(parent.getPattern(), ctx).forEach(fuzzedParentPattern -> {
+                            ReasonerAtomicQuery fuzzedParent = reasonerQueryFactory.atomic(conjunction(fuzzedParentPattern));
+                            QueryTestUtil.queryEquivalence(parent, fuzzedParent, false, ReasonerQueryEquivalence.Equality);
+                            QueryTestUtil.queryEquivalence(parent, fuzzedParent, true, ReasonerQueryEquivalence.AlphaEquivalence);
+                            QueryTestUtil.queryEquivalence(parent, fuzzedParent, true, ReasonerQueryEquivalence.StructuralEquivalence);
                         });
 
                 equivs.forEach(equiv -> QueryTestUtil.queryEquivalence(child, parent, false, equiv));
