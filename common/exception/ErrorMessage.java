@@ -133,13 +133,13 @@ public enum ErrorMessage {
 
     VALIDATION_RULE_ILLEGAL_HEAD_COPYING_INCOMPATIBLE_ATTRIBUTE_VALUES("Attribute [%s] is not allowed to form a rule head of rule [%s] as it copies an attribute value from an incompatible attribute type [%s]\n"),
 
-    VALIDATION_RULE_ILLEGAL_HEAD_REWRITING_TYPE_TO_RELATION("Rule [%s] attempts to rewrite type to a relation type"),
+    VALIDATION_RULE_ILLEGAL_HEAD_REWRITING_TYPE_TO_RELATION("Rule [%s] attempts to rewrite type to a relation type\n"),
 
-    VALIDATION_RULE_ILLEGAL_HEAD_REWRITING_TYPE_DATATYPE_INCOMPATIBLE("Rule [%s] attempts to convert attribute to a new datatype [%s]"),
+    VALIDATION_RULE_ILLEGAL_HEAD_REWRITING_TYPE_DATATYPE_INCOMPATIBLE("Rule [%s] attempts to convert attribute to a new datatype [%s]\n"),
 
-    VALIDATION_RULE_ILLEGAL_HEAD_REWRITING_META_TYPE("Rule [%s] changes meta type for variable [%s]"),
+    VALIDATION_RULE_ILLEGAL_HEAD_REWRITING_META_TYPE("Rule [%s] changes meta type for variable [%s]\n"),
 
-    VALIDATION_RULE_ILLEGAL_HEAD_ROLE_CANNOT_BE_PLAYED("Rule [%s] asserts [%s] plays a role that it can never play"),
+    VALIDATION_RULE_ILLEGAL_HEAD_ROLE_CANNOT_BE_PLAYED("Rule [%s] asserts [%s] plays role [%s] that it can never play\n"),
 
     VALIDATION_RULE_INVALID_RELATION_TYPE("Rule [%s] attempts to define a relation pattern with type [%s] which is not a relation type\n"),
 

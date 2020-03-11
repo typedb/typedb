@@ -147,7 +147,7 @@ public class RelationAtomValidator implements AtomValidator<RelationAtom> {
                     ImmutableList<Type> possibleTypesOfRolePlayer = isaAtom.getPossibleTypes();
                     boolean anyCanPlayRequiredRole = possibleTypesOfRolePlayer.stream().anyMatch(type -> type.playing().anyMatch(rolePlayed -> rolePlayed.equals(roleType)));
                     if (!anyCanPlayRequiredRole) {
-                        errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_ROLE_CANNOT_BE_PLAYED.getMessage(rule.label(), rp.getPlayer().var()));
+                        errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_ROLE_CANNOT_BE_PLAYED.getMessage(rule.label(), rp.getPlayer().var(), roleLabel));
                     }
                 }
             }

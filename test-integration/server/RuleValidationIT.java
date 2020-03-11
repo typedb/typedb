@@ -886,6 +886,8 @@ public class RuleValidationIT {
                     Graql.var().isa("other-rel").rel("unplayed", "x")
             );
 
+            expectedException.expect(InvalidKBException.class);
+            expectedException.expectMessage("Rule [invalid-role-assignment] asserts [$x] plays a role that it can never play");
             tx.commit();
         }
     }
