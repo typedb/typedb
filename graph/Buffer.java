@@ -16,14 +16,19 @@
  *
  */
 
-package hypergraph.storage;
+package hypergraph.graph;
 
-public interface Operation {
+import hypergraph.storage.KeyGenerator;
 
-    KeyGenerator keyGenerator();
+public class Buffer {
 
-    byte[] get(byte[] key);
+    private final KeyGenerator keyGenerator;
 
-    void put(byte[] key, byte[] value);
+    Buffer() {
+        this.keyGenerator = new KeyGenerator();
+    }
 
+    public KeyGenerator keyGenerator() {
+        return keyGenerator;
+    }
 }

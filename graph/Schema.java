@@ -106,34 +106,78 @@ public class Schema {
         }
     }
 
-    public enum Vertex {
-        VALUE(Prefix.VERTEX_VALUE),
-        RULE(Prefix.VERTEX_RULE);
+    public enum Status {
+        BUFFERED(0),
+        PERSISTED(1);
 
-        private final Prefix prefix;
-
-        Vertex(Prefix prefix) {
-            this.prefix = prefix;
+        private int status;
+        Status(int status) {
+            this.status = status;
         }
 
-        public Prefix prefix() {
-            return prefix;
+        public int status() {
+            return status;
+        }
+    }
+
+    public enum Property {
+        ABSTRACT(Infix.PROPERTY_ABSTRACT),
+        DATATYPE(Infix.PROPERTY_DATATYPE),
+        REGEX(Infix.PROPERTY_REGEX),
+        VALUE(Infix.PROPERTY_VALUE),
+        VALUE_REF(Infix.PROPERTY_VALUE_REF),
+        WHEN(Infix.PROPERTY_WHEN),
+        THEN(Infix.PROPERTY_THEN);
+
+        private final Infix infix;
+
+        Property(Infix infix) {
+            this.infix = infix;
         }
 
-        public enum Status {
-            BUFFERED(0),
-            PERSISTED(1);
+        public Infix infix() {
+            return infix;
+        }
+    }
+    public enum DataType {
+        LONG(0),
+        DOUBLE(2),
+        STRING(4),
+        BOOLEAN(6),
+        DATE(8);
 
-            private int status;
-            Status(int status) {
-                this.status = status;
+        private final byte value;
+
+        DataType(int value) {
+            this.value = (byte) value;
+        }
+
+        public byte value() {
+            return value;
+        }
+    }
+
+    public interface Vertex {
+
+        Prefix prefix();
+
+        public enum Other implements Vertex {
+            VALUE(Prefix.VERTEX_VALUE),
+            RULE(Prefix.VERTEX_RULE);
+
+            private final Prefix prefix;
+
+            Other(Prefix prefix) {
+                this.prefix = prefix;
             }
 
-            public int status() {
-                return status;
+            @Override
+            public Prefix prefix() {
+                return prefix;
             }
         }
-        public enum Type {
+
+        public enum Type implements Vertex {
             TYPE(Prefix.VERTEX_TYPE, Root.THING),
             ENTITY_TYPE(Prefix.VERTEX_ENTITY_TYPE, Root.ENTITY),
             RELATION_TYPE(Prefix.VERTEX_RELATION_TYPE, Root.RELATION),
@@ -148,6 +192,7 @@ public class Schema {
                 this.root = root;
             }
 
+            @Override
             public Prefix prefix() {
                 return prefix;
             }
@@ -174,7 +219,8 @@ public class Schema {
                 }
             }
         }
-        public enum Thing {
+
+        public enum Thing implements Vertex {
             ENTITY(Prefix.VERTEX_ENTITY),
             RELATION(Prefix.VERTEX_RELATION),
             ROLE(Prefix.VERTEX_ROLE),
@@ -192,44 +238,7 @@ public class Schema {
                 return prefix;
             }
         }
-    }
 
-    public enum Property {
-        ABSTRACT(Infix.PROPERTY_ABSTRACT),
-        DATATYPE(Infix.PROPERTY_DATATYPE),
-        REGEX(Infix.PROPERTY_REGEX),
-        VALUE(Infix.PROPERTY_VALUE),
-        VALUE_REF(Infix.PROPERTY_VALUE_REF),
-        WHEN(Infix.PROPERTY_WHEN),
-        THEN(Infix.PROPERTY_THEN);
-
-        private final Infix infix;
-
-        Property(Infix infix) {
-            this.infix = infix;
-        }
-
-        public Infix infix() {
-            return infix;
-        }
-    }
-
-    public enum DataType {
-        LONG(0),
-        DOUBLE(2),
-        STRING(4),
-        BOOLEAN(6),
-        DATE(8);
-
-        private final byte value;
-
-        DataType(int value) {
-            this.value = (byte) value;
-        }
-
-        public byte value() {
-            return value;
-        }
     }
 
     public enum Edge {

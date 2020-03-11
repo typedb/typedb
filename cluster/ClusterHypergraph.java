@@ -18,5 +18,7 @@
 
 package hypergraph.cluster;
 
-public class ClusterHypergraph {
+import hypergraph.Hypergraph;
+
+public abstract class ClusterHypergraph implements Hypergraph {
 }

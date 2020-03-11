@@ -51,8 +51,7 @@ class CoreKeyspace implements Hypergraph.Keyspace {
     private void initialise() {
         try (CoreSession session = sessionCreateAndOpen()) {
             try (CoreTransaction txn = session.transaction(Hypergraph.Transaction.Type.WRITE)) {
-                txn.graph().initialise();
-
+                txn.graph().creatRootTypes();
                 txn.commit();
             }
         }

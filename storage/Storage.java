@@ -18,22 +18,12 @@
 
 package hypergraph.storage;
 
-public class Storage {
+public interface Storage {
 
-    private final Buffer buffer;
-    private final Operation operation;
+    KeyGenerator keyGenerator();
 
-    public Storage(Operation operation) {
-        this.operation = operation;
+    byte[] get(byte[] key);
 
-        buffer = new Buffer();
-    }
+    void put(byte[] key, byte[] value);
 
-    public Buffer buffer() {
-        return buffer;
-    }
-
-    public void persist() {
-
-    }
 }

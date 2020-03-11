@@ -20,10 +20,9 @@ package hypergraph.core;
 
 import hypergraph.Hypergraph;
 import hypergraph.common.HypergraphException;
+import hypergraph.storage.KeyGenerator;
 import hypergraph.concept.ConceptManager;
 import hypergraph.graph.GraphManager;
-import hypergraph.storage.KeyGenerator;
-import hypergraph.storage.Operation;
 import hypergraph.storage.Storage;
 import hypergraph.traversal.Traversal;
 import org.rocksdb.ReadOptions;
@@ -40,9 +39,8 @@ class CoreTransaction implements Hypergraph.Transaction {
     private final ReadOptions readOptions;
     private final Transaction rocksTransaction;
     private final Type type;
-    private final Operation operation;
+    private final Storage operation;
     private final GraphManager graphMgr;
-    private final Storage storage;
     private final ConceptManager conceptMgr;
     private final Traversal traversal;
     private final AtomicBoolean isOpen;
@@ -55,8 +53,7 @@ class CoreTransaction implements Hypergraph.Transaction {
         this.readOptions = readOptions;
 
         operation = new CoreOperation();
-        storage = new Storage(operation);
-        graphMgr = new GraphManager(storage);
+        graphMgr = new GraphManager(operation);
         conceptMgr = new ConceptManager(graphMgr);
         traversal = new Traversal(conceptMgr);
 
@@ -89,6 +86,7 @@ class CoreTransaction implements Hypergraph.Transaction {
             throw new HypergraphException("Illegal Write Exception");
         }
         try {
+            graphMgr.persist();
             rocksTransaction.commit();
         } catch (RocksDBException e) {
             e.printStackTrace();
@@ -99,6 +97,7 @@ class CoreTransaction implements Hypergraph.Transaction {
     @Override
     public void rollback() {
         try {
+            graphMgr.reset();
             rocksTransaction.rollback();
         } catch (RocksDBException e) {
             e.printStackTrace();
@@ -114,13 +113,12 @@ class CoreTransaction implements Hypergraph.Transaction {
     @Override
     public void close() {
         if (isOpen.compareAndSet(true, false)) {
-            storage.persist();
             rocksTransaction.close();
             writeOptions.close();
         }
     }
 
-    private class CoreOperation implements hypergraph.storage.Operation {
+    private class CoreOperation implements Storage {
 
         @Override
         public KeyGenerator keyGenerator() {

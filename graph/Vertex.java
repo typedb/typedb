@@ -18,25 +18,22 @@
 
 package hypergraph.graph;
 
-import hypergraph.storage.Storage;
-
-import java.nio.ByteBuffer;
-
 public abstract class Vertex {
 
-    private final Storage storage;
+    private final GraphManager graph;
     private final byte[] iid;
 
-    private Schema.Vertex.Status status;
+    private Schema.Status status;
+    private Schema.Vertex clazz;
 
-    private Vertex(Storage storage, Schema.Vertex.Status status, byte[] iid) {
-        this.storage = storage;
+    private Vertex(GraphManager graph, Schema.Status status, Schema.Vertex type, byte[] iid) {
+        this.graph = graph;
         this.iid = iid;
 
         this.status = status;
     }
 
-    public Schema.Vertex.Status status() {
+    public Schema.Status status() {
         return status;
     }
 
@@ -47,19 +44,22 @@ public abstract class Vertex {
     public static class Type extends Vertex {
 
         private final String label;
-        private boolean isAbstract;
 
-        Type(Storage storage, Schema.Vertex.Type type, String label) {
-            super(storage, Schema.Vertex.Status.BUFFERED, ByteBuffer.allocate(3)
-                    .put(type.prefix().key())
-                    .putShort(storage.buffer().keyGenerator().forType(type.root().label()))
-                    .array());
+        private boolean isAbstract;
+        private Schema.DataType dataType;
+        private String regex;
+
+        Type(GraphManager graph, Schema.Status status, Schema.Vertex.Type type, byte[] iid, String label) {
+            super(graph, status, type, iid);
             this.label = label;
         }
 
-        Type(Storage storage, byte[] iid, String label) {
-            super(storage, Schema.Vertex.Status.PERSISTED, iid);
-            this.label = label;
+        public String label() {
+            return label;
+        }
+
+        public boolean isAbstract() {
+            return isAbstract;
         }
 
         public Vertex.Type setAbstract(boolean isAbstract) {
@@ -67,32 +67,40 @@ public abstract class Vertex {
             return this;
         }
 
-        public boolean isAbstract() {
-            return isAbstract;
+        public Schema.DataType dataType() {
+            return dataType;
         }
 
-        public String label() {
-            return label;
+        public Vertex.Type dataType(Schema.DataType dataType) {
+            this.dataType = dataType;
+            return this;
+        }
+
+        public String regex() {
+            return regex;
+        }
+
+        public Vertex.Type regex(String regex) {
+            this.regex = regex;
+            return this;
         }
     }
 
     public static class Thing extends Vertex {
 
-        Thing(Storage storage, Schema.Vertex.Thing thing, Vertex.Type type) {
-            super(storage, Schema.Vertex.Status.BUFFERED, ByteBuffer.allocate(11)
-                    .put(thing.prefix().key())
-                    .put(type.iid())
-                    .putLong(storage.buffer().keyGenerator().forThing(type.label()))
-                    .array());
+        Thing(GraphManager graph, Schema.Status status, Schema.Vertex.Thing type, byte[] iid) {
+            super(graph, status, type, iid);
         }
     }
 
-//    public static class Value extends Vertex {
-//
-//        Value(Storage storage) {
-//            super(storage);
-//            Schema.Vertex type = Schema.Vertex.VALUE;
-//        }
-//
-//    }
+    public static class Value extends Vertex {
+
+        private final Object value;
+
+        Value(GraphManager graph, Schema.Status status, byte[] iid, Object value) {
+            super(graph, status, Schema.Vertex.Other.VALUE, iid);
+            this.value = value;
+        }
+
+    }
 }
