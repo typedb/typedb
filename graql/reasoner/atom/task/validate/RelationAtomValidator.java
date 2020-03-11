@@ -18,12 +18,14 @@
 
 package grakn.core.graql.reasoner.atom.task.validate;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.util.Streams;
 import grakn.core.core.Schema;
 import grakn.core.graql.reasoner.ReasoningContext;
+import grakn.core.graql.reasoner.atom.binary.IsaAtom;
 import grakn.core.graql.reasoner.atom.binary.RelationAtom;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Role;
@@ -32,6 +34,7 @@ import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.exception.GraqlSemanticException;
+import graql.lang.property.PlaysProperty;
 import graql.lang.property.RelationProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
@@ -117,21 +120,34 @@ public class RelationAtomValidator implements AtomValidator<RelationAtom> {
     private Set<String> validateRelationPlayers(RelationAtom atom, Rule rule, ReasoningContext ctx) {
         Set<String> errors = new HashSet<>();
         ConceptManager conceptManager = ctx.conceptManager();
+
         atom.getRelationPlayers().forEach(rp -> {
+
             Statement role = rp.getRole().orElse(null);
             if (role == null) {
                 errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_RELATION_WITH_AMBIGUOUS_ROLE.getMessage(rule.then(), rule.label()));
             } else {
+
                 String roleLabel = role.getType().orElse(null);
                 if (roleLabel == null) {
                     errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_RELATION_WITH_AMBIGUOUS_ROLE.getMessage(rule.then(), rule.label()));
                 } else {
+
                     if (Schema.MetaSchema.isMetaLabel(Label.of(roleLabel))) {
                         errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_RELATION_WITH_AMBIGUOUS_ROLE.getMessage(rule.then(), rule.label()));
                     }
                     Role roleType = conceptManager.getRole(roleLabel);
                     if (roleType != null && roleType.isImplicit()) {
                         errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_RELATION_WITH_IMPLICIT_ROLE.getMessage(rule.then(), rule.label()));
+                    }
+
+                    // take the role player variable, perform type inference and check if any of the possible types can play
+                    // the given roles
+                    IsaAtom isaAtom = IsaAtom.create(rp.getPlayer().var(), new Variable(), null, false, atom.getParentQuery(), ctx);
+                    ImmutableList<Type> possibleTypesOfRolePlayer = isaAtom.getPossibleTypes();
+                    boolean anyCanPlayRequiredRole = possibleTypesOfRolePlayer.stream().anyMatch(type -> type.playing().anyMatch(rolePlayed -> rolePlayed.equals(roleType)));
+                    if (!anyCanPlayRequiredRole) {
+                        errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_ROLE_CANNOT_BE_PLAYED.getMessage(rule.label(), rp.getPlayer().var()));
                     }
                 }
             }

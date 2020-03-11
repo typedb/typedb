@@ -139,6 +139,8 @@ public enum ErrorMessage {
 
     VALIDATION_RULE_ILLEGAL_HEAD_REWRITING_META_TYPE("Rule [%s] changes meta type for variable [%s]"),
 
+    VALIDATION_RULE_ILLEGAL_HEAD_ROLE_CANNOT_BE_PLAYED("Rule [%s] asserts [%s] plays a role that it can never play"),
+
     VALIDATION_RULE_INVALID_RELATION_TYPE("Rule [%s] attempts to define a relation pattern with type [%s] which is not a relation type\n"),
 
     VALIDATION_RULE_INVALID_ATTRIBUTE_TYPE("Rule [%s] attempts to define an attribute pattern with type [%s] which is not an attribute type\n"),
