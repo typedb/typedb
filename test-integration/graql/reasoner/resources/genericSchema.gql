@@ -40,6 +40,9 @@ baseEntity sub entity,
     plays baseRole3,
     abstract;
 
+keyedEntity sub baseEntity,
+    key key-resource;
+
 baseRoleEntity sub baseEntity;
 anotherBaseRoleEntity sub baseEntity;
 
@@ -101,6 +104,7 @@ resource-double sub attribute, datatype double;
 resource-date sub attribute, datatype date;
 resource-boolean sub attribute, datatype boolean;
 
+key-resource sub attribute, datatype string;
 
 binarySymmetricity sub rule,
 when {
@@ -124,8 +128,6 @@ insert
 #Instances
 
 $a isa anotherBaseRoleEntity;
-
-$b isa baseRoleEntity, has resource 'b';
 
 $f isa subRoleEntity, has resource 'f';
 $m isa subSubRoleEntity, has resource 'm';
@@ -153,6 +155,8 @@ $s isa subSubRoleEntity, has resource 's';
 
 (subSubRole1: $m, subSubRole2: $d, subSubRole3: $s) isa ternary;
 (subSubRole1: $m, subSubRole2: $m, subSubRole3: $s) isa ternary;
+
+$b isa keyedEntity, has key-resource 'b';
 
 $dummy 0 isa resource-long;
 $dummy2 1 isa resource-long;

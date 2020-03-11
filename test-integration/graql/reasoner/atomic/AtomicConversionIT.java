@@ -38,6 +38,7 @@ import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.property.HasAttributeProperty;
 import graql.lang.statement.Statement;
+import graql.lang.statement.StatementRelation;
 import graql.lang.statement.Variable;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -57,9 +58,11 @@ public class AtomicConversionIT {
     private static Session session;
 
     private static Conjunction<Statement> attributePattern;
+    private static Conjunction<Statement> keyAttributePattern;
     private static Conjunction<Statement> relationPattern;
     private static Conjunction<Statement> implicitRelationPattern;
     private static Variable attributeVar;
+    private static Variable keyVar;
     private static Variable relationVar;
 
     @BeforeClass
@@ -73,6 +76,11 @@ public class AtomicConversionIT {
         attributeVar = has.getProperties(HasAttributeProperty.class).iterator().next().attribute().var();
         Statement id = Graql.var(attributeVar).id("V123");
         attributePattern = Graql.and(Sets.newHashSet(has, id));
+
+        Statement keyHas = Graql.var("x").has("key-resource", "unique");
+        keyVar = new Variable("x");
+        Statement keyId = Graql.var(keyVar).id("V123");
+        keyAttributePattern = Graql.and(Sets.newHashSet(keyHas, keyId));
 
         relationVar = Graql.var("r").var();
         Statement rel = Graql.var(relationVar).rel("baseRole1", "x").rel("baseRole2", "y").isa("binary");
@@ -200,11 +208,13 @@ public class AtomicConversionIT {
     public void whenConvertingAttributeAtomToRelation_equivalenceIsPreserved() {
         try(Transaction tx = session.readTransaction()){
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
-            Atom attributeAtom = reasonerQueryFactory.atomic(attributePattern).getAtom();
-
-
-            Atom equivalentRelation = attributeAtom.toRelationAtom();
-            assertEquals(attributeAtom, equivalentRelation);
+            Atom keyAttributeAtom = reasonerQueryFactory.atomic(keyAttributePattern).getAtom();
+            Statement s1 = Graql.var("r").type("@key-key-resource");
+            Statement s2 = Graql.var("r").rel("@key-key-resource-owner", "x").rel("@key-key-resource-value", "a");
+            Conjunction<Statement> implicitKeyOwnership = Graql.and(Sets.newHashSet(s1, s2));
+            Atom expectedImplicitKeyship = reasonerQueryFactory.atomic(implicitKeyOwnership).getAtom();
+            RelationAtom asRelationAtom = keyAttributeAtom.toRelationAtom();
+            assertEquals(asRelationAtom, expectedImplicitKeyship);
         }
     }
 }
