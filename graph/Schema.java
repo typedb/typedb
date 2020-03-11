@@ -120,6 +120,19 @@ public class Schema {
             return prefix;
         }
 
+        public enum Status {
+            BUFFERED(0),
+            PERSISTED(1);
+
+            private int status;
+            Status(int status) {
+                this.status = status;
+            }
+
+            public int status() {
+                return status;
+            }
+        }
         public enum Type {
             TYPE(Prefix.VERTEX_TYPE, Root.THING),
             ENTITY_TYPE(Prefix.VERTEX_ENTITY_TYPE, Root.ENTITY),

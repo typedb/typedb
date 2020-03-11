@@ -27,9 +27,17 @@ public abstract class Vertex {
     private final Storage storage;
     private final byte[] iid;
 
-    private Vertex(Storage storage, byte[] iid) {
+    private Schema.Vertex.Status status;
+
+    private Vertex(Storage storage, Schema.Vertex.Status status, byte[] iid) {
         this.storage = storage;
         this.iid = iid;
+
+        this.status = status;
+    }
+
+    public Schema.Vertex.Status status() {
+        return status;
     }
 
     public byte[] iid() {
@@ -42,10 +50,15 @@ public abstract class Vertex {
         private boolean isAbstract;
 
         Type(Storage storage, Schema.Vertex.Type type, String label) {
-            super(storage, ByteBuffer.allocate(3)
+            super(storage, Schema.Vertex.Status.BUFFERED, ByteBuffer.allocate(3)
                     .put(type.prefix().key())
-                    .putShort(storage.keyGenerator().forType(type.root().label()))
+                    .putShort(storage.buffer().keyGenerator().forType(type.root().label()))
                     .array());
+            this.label = label;
+        }
+
+        Type(Storage storage, byte[] iid, String label) {
+            super(storage, Schema.Vertex.Status.PERSISTED, iid);
             this.label = label;
         }
 
@@ -66,10 +79,10 @@ public abstract class Vertex {
     public static class Thing extends Vertex {
 
         Thing(Storage storage, Schema.Vertex.Thing thing, Vertex.Type type) {
-            super(storage, ByteBuffer.allocate(11)
+            super(storage, Schema.Vertex.Status.BUFFERED, ByteBuffer.allocate(11)
                     .put(thing.prefix().key())
                     .put(type.iid())
-                    .putLong(storage.keyGenerator().forThing(type.label()))
+                    .putLong(storage.buffer().keyGenerator().forThing(type.label()))
                     .array());
         }
     }

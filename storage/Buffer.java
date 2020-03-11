@@ -19,4 +19,14 @@
 package hypergraph.storage;
 
 public class Buffer {
+
+    private final KeyGenerator keyGenerator;
+
+    Buffer() {
+        this.keyGenerator = new KeyGenerator();
+    }
+
+    public KeyGenerator keyGenerator() {
+        return keyGenerator;
+    }
 }
