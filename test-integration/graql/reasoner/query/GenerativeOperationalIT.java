@@ -183,41 +183,71 @@ public class GenerativeOperationalIT {
     @Test
     public void whenGeneralisingAttributes_SubsumptionRelationHoldsBetweenPairs(){
         int depth = 10;
+        List<ReasonerQueryEquivalence> equivs = Lists.newArrayList(
+                ReasonerQueryEquivalence.Equality,
+                ReasonerQueryEquivalence.AlphaEquivalence,
+                ReasonerQueryEquivalence.StructuralEquivalence);
+
+        List<UnifierType> unifierTypes = Lists.newArrayList(
+                UnifierType.EXACT,
+                UnifierType.RULE,
+                UnifierType.SUBSUMPTIVE,
+                UnifierType.STRUCTURAL,
+                UnifierType.STRUCTURAL_SUBSUMPTIVE
+        );
+
         try (Transaction tx = genericSchemaSession.readTransaction()) {
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction) tx).reasonerQueryFactory();
             TransactionContext ctx = new TransactionContext(tx);
 
-            Pattern input = Graql.var("x").has("resource-double", 16.0);
-            Pattern input2 = Graql.var("x").has("resource-double", -16.0);
+            Pattern input = Graql.and(Graql.var("x").has("resource-double", 16.0));
+            Pattern input2 = Graql.and(Graql.var("x").has("resource-double", -16.0));
 
             List<Operator> ops = Lists.newArrayList(Operators.generaliseAttribute());
 
             HashMultimap<Pattern, Pattern> firstTree = new TarjanSCC<>(generatePatternTree(input, ctx, ops, depth)).successorMap();
             HashMultimap<Pattern, Pattern> secondTree = new TarjanSCC<>(generatePatternTree(input2, ctx, ops, depth)).successorMap();
 
+            Operator fuzzer = Operators.fuzzVariables();
+
             firstTree.entries().forEach(e -> {
                 ReasonerAtomicQuery parent = reasonerQueryFactory.atomic(conjunction(e.getKey()));
-                ReasonerAtomicQuery child = reasonerQueryFactory.atomic(conjunction(e.getValue()));
-                QueryTestUtil.unification(parent, child,true, UnifierType.RULE);
-                QueryTestUtil.unification(parent, child,true, UnifierType.SUBSUMPTIVE);
-                QueryTestUtil.unification(parent, child,true, UnifierType.STRUCTURAL_SUBSUMPTIVE);
+
+                Pattern childPattern = e.getValue();
+                ReasonerAtomicQuery child = reasonerQueryFactory.atomic(conjunction(childPattern));
+
+                QueryTestUtil.unification(parent, child, true, UnifierType.RULE);
+                QueryTestUtil.unification(parent, child, true, UnifierType.SUBSUMPTIVE);
+                QueryTestUtil.unification(parent, child, true, UnifierType.STRUCTURAL_SUBSUMPTIVE);
+                equivs.forEach(equiv -> QueryTestUtil.queryEquivalence(parent, child, false, equiv));
+
+                fuzzer.apply(parent.getPattern(), ctx).forEach(fuzzedParentPattern -> {
+                            ReasonerAtomicQuery fuzzedParent = reasonerQueryFactory.atomic(conjunction(fuzzedParentPattern));
+                            QueryTestUtil.queryEquivalence(parent, fuzzedParent, false, ReasonerQueryEquivalence.Equality);
+                            QueryTestUtil.queryEquivalence(parent, fuzzedParent, true, ReasonerQueryEquivalence.AlphaEquivalence);
+                            QueryTestUtil.queryEquivalence(parent, fuzzedParent, true, ReasonerQueryEquivalence.StructuralEquivalence);
+                        });
+
+                equivs.forEach(equiv -> QueryTestUtil.queryEquivalence(child, parent, false, equiv));
 
                 secondTree.keySet().forEach(p -> {
                     ReasonerAtomicQuery unrelated = reasonerQueryFactory.atomic(conjunction(p));
                     if (!unrelated.getAtom().toAttributeAtom().isValueEquality()) {
-                        QueryTestUtil.unification(parent, unrelated, false, UnifierType.RULE);
-                        QueryTestUtil.unification(parent, unrelated, false, UnifierType.SUBSUMPTIVE);
-                        QueryTestUtil.unification(parent, unrelated, false, UnifierType.STRUCTURAL_SUBSUMPTIVE);
-                        QueryTestUtil.unification(unrelated, parent, false, UnifierType.RULE);
-                        QueryTestUtil.unification(unrelated, parent, false, UnifierType.SUBSUMPTIVE);
-                        QueryTestUtil.unification(unrelated, parent, false, UnifierType.STRUCTURAL_SUBSUMPTIVE);
+                        fuzzer.apply(p, ctx).forEach(fuzzedUnrelatedPattern -> {
+                            ReasonerAtomicQuery fuzzedUnrelated = reasonerQueryFactory.atomic(conjunction(fuzzedUnrelatedPattern));
 
-                        QueryTestUtil.unification(child, unrelated, false, UnifierType.RULE);
-                        QueryTestUtil.unification(child, unrelated, false, UnifierType.SUBSUMPTIVE);
-                        QueryTestUtil.unification(child, unrelated, false, UnifierType.STRUCTURAL_SUBSUMPTIVE);
-                        QueryTestUtil.unification(unrelated, child, false, UnifierType.RULE);
-                        QueryTestUtil.unification(unrelated, child, false, UnifierType.SUBSUMPTIVE);
-                        QueryTestUtil.unification(unrelated, child, false, UnifierType.STRUCTURAL_SUBSUMPTIVE);
+                            Lists.newArrayList(unrelated, fuzzedUnrelated).forEach(unrel -> {
+                                unifierTypes.forEach(unifierType -> {
+                                    QueryTestUtil.unification(parent, unrel, false, unifierType);
+                                    QueryTestUtil.unification(unrel, parent, false, unifierType);
+                                    QueryTestUtil.unification(child, unrel, false, unifierType);
+                                    QueryTestUtil.unification(unrel, child, false, unifierType);
+                                });
+
+                                equivs.forEach(equiv -> QueryTestUtil.queryEquivalence(child, unrel, false, equiv));
+                                equivs.forEach(equiv -> QueryTestUtil.queryEquivalence(parent, unrel, false, equiv));
+                            });
+                        });
                     }
                 });
 
@@ -240,7 +270,8 @@ public class GenerativeOperationalIT {
                 int N = fuzzedPatterns.size();
                 for (int i = 0 ; i < N ;i++) {
                     Pattern p = fuzzedPatterns.get(i);
-                    fuzzedPatterns.subList(i, N).forEach(p2 -> {
+                    for (int j = i ; j < N ;j++) {
+                        Pattern p2 = fuzzedPatterns.get(j);
                         ReasonerQueryImpl pQuery = reasonerQueryFactory.create(conjunction(p));
                         ReasonerQueryImpl cQuery = reasonerQueryFactory.create(conjunction(p2));
 
@@ -248,8 +279,10 @@ public class GenerativeOperationalIT {
                             ReasonerAtomicQuery queryA = (ReasonerAtomicQuery) pQuery;
                             ReasonerAtomicQuery queryB = (ReasonerAtomicQuery) cQuery;
                             QueryTestUtil.unification(queryA, queryB,true, UnifierType.EXACT);
+                            QueryTestUtil.queryEquivalence(queryA, queryB, i == j, ReasonerQueryEquivalence.Equality);
+                            QueryTestUtil.queryEquivalence(queryA, queryB, true, ReasonerQueryEquivalence.StructuralEquivalence);
                         }
-                    });
+                    }
                 }
             }
         }

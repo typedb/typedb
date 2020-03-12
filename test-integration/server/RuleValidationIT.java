@@ -869,6 +869,29 @@ public class RuleValidationIT {
         }
     }
 
+    @Test
+    public void whenCreatingRuleWithImpossibleRole_rejectRule() {
+        try (Transaction tx = session.writeTransaction()) {
+            tx.execute(Graql.parse("define " +
+                    "valid-rel sub relation, relates left, relates right;" +
+                    "other-rel sub relation, relates unplayed;" +
+                    "player sub entity, plays left, plays right;"
+            ).asDefine());
+            tx.execute(Graql.insert(Sets.newHashSet(
+                    Graql.var("x").isa("player"),
+                    Graql.var("r").rel("left", "x").rel("right", "x").isa("valid-rel"))
+            ));
+            tx.putRule("invalid-role-assignment",
+                    Graql.var("r").isa("valid-rel").rel("left", "x").rel("right", "y"),
+                    Graql.var().isa("other-rel").rel("unplayed", "x")
+            );
+
+            expectedException.expect(InvalidKBException.class);
+            expectedException.expectMessage("Rule [invalid-role-assignment] asserts [$x] plays role [unplayed] that it can never play");
+            tx.commit();
+        }
+    }
+
     public static <T> T[] concat(T[] first, T[] second) {
         T[] result = Arrays.copyOf(first, first.length + second.length);
         System.arraycopy(second, 0, result, first.length, second.length);

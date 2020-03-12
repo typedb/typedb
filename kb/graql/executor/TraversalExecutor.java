@@ -18,38 +18,22 @@
 
 package grakn.core.kb.graql.executor;
 
-import grakn.core.concept.answer.AnswerGroup;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concept.answer.Numeric;
-import grakn.core.concept.answer.Void;
 import grakn.core.kb.graql.planning.gremlin.GraqlTraversal;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
-import graql.lang.query.GraqlDefine;
-import graql.lang.query.GraqlDelete;
-import graql.lang.query.GraqlGet;
-import graql.lang.query.GraqlInsert;
-import graql.lang.query.GraqlUndefine;
-import graql.lang.query.MatchClause;
 
 import java.util.stream.Stream;
 
-public interface QueryExecutor {
-    Stream<ConceptMap> match(MatchClause matchClause);
+/**
+ * A lower level component that directly executes traversals on the backend storage
+ * Should sit below reasoning and only be used for query -> backend DB traversal -> answer execution
+ */
+public interface TraversalExecutor {
+    Stream<ConceptMap> traverse(Conjunction<? extends Pattern> pattern);
 
-    Stream<ConceptMap> define(GraqlDefine query);
-
-    Stream<ConceptMap> undefine(GraqlUndefine query);
-
-    Stream<ConceptMap> insert(GraqlInsert query);
-
-    Void delete(GraqlDelete query);
-
-    Stream<ConceptMap> get(GraqlGet query);
-
-    Stream<Numeric> aggregate(GraqlGet.Aggregate query);
-
-    Stream<AnswerGroup<ConceptMap>> get(GraqlGet.Group query);
-
-    Stream<AnswerGroup<Numeric>> get(GraqlGet.Group.Aggregate query);
+    /**
+     * @return resulting answer stream
+     */
+    Stream<ConceptMap> traverse(Conjunction<? extends Pattern> pattern, GraqlTraversal graqlTraversal);
 }

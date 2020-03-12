@@ -140,7 +140,7 @@ public class ClientJavaE2E {
                     type("parentship").sub("relation").relates("parent").relates("child"),
 
                     type("name").sub("attribute").datatype(Graql.Token.DataType.STRING),
-                    type("lion").sub("entity").has("name").plays("male-partner").plays("female-partner").plays("offspring")
+                    type("lion").sub("entity").has("name").plays("male-partner").plays("female-partner").plays("offspring").plays("parent").plays("child")
             );
 
             GraqlDefine ruleQuery = Graql.define(type("infer-parentship-from-mating-and-child-bearing").sub("rule")
