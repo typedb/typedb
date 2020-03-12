@@ -251,7 +251,8 @@ public class AttributeAtom extends Atom{
     @Override
     public final int hashCode() {
         int hashCode = this.alphaEquivalenceHashCode();
-        hashCode = hashCode * 37 + this.getVarName().hashCode() + this.getAttributeVariable().hashCode();
+        hashCode = hashCode * 37 + this.getVarName().hashCode();
+        hashCode = hashCode * 37 + this.getAttributeVariable().hashCode();
         return hashCode;
     }
 
