@@ -37,7 +37,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -78,8 +80,7 @@ public abstract class SemanticCache<
 
     final private HashMultimap<SchemaConcept, QE> families = HashMultimap.create();
     final private HashMultimap<QE, QE> parents = HashMultimap.create();
-    private boolean areParentsUpToDate = true;
-
+//    private Map<SchemaConcept, Boolean> areParentsInFamilyUpToDate = new HashMap<>();
     private static final Logger LOG = LoggerFactory.getLogger(SemanticCache.class);
 
     SemanticCache(TraversalPlanFactory traversalPlanFactory, TraversalExecutor traversalExecutor) {
@@ -99,7 +100,7 @@ public abstract class SemanticCache<
         super.clear();
         families.clear();
         parents.clear();
-        areParentsUpToDate = true;
+//        areParentsInFamilyUpToDate.clear();
     }
 
     /**
@@ -123,7 +124,6 @@ public abstract class SemanticCache<
         ReasonerAtomicQuery query = cacheEntry.query();
         updateFamily(query);
 //        computeParents(query);
-        areParentsUpToDate = false;
         propagateAnswersToQuery(query, cacheEntry, query.isGround());
         return cacheEntry;
     }
@@ -147,7 +147,7 @@ public abstract class SemanticCache<
                 .peek(this::unackCompleteness)
                 .forEach(this::removeEntry);
 
-        areParentsUpToDate = false;
+//        familyModified(type);
     }
 
     /**
@@ -167,6 +167,7 @@ public abstract class SemanticCache<
     public Set<QE> getParents(ReasonerAtomicQuery child) {
         Set<QE> parents = this.parents.get(queryToKey(child));
         if (parents.isEmpty()) parents = computeParents(child);
+//        computeAllParentsInFamily(child);
         return parents;
     }
 
@@ -177,13 +178,29 @@ public abstract class SemanticCache<
         getFamily(parent)
                 .map(this::keyToQuery)
                 .forEach(related -> computeParents(related));
+//        computeAllParentsInFamily(parent);
 
         parents.entries().stream()
                 .filter(entry -> entry.getValue().equals(queryToKey(parent)))
                 .forEach(entry -> children.add(entry.getKey()));
         return children;
     }
-
+//
+//    private void computeAllParentsInFamily(ReasonerAtomicQuery query) {
+//        SchemaConcept type = query.getAtom().getSchemaConcept();
+//        if (!areParentsInFamilyUpToDate.getOrDefault(type, false)) {
+//            // compute update of all parents in the family
+//            getFamily(query)
+//                    .map(this::keyToQuery)
+//                    .forEach(this::computeParents);
+//            areParentsInFamilyUpToDate.put(type, true);
+//        }
+//    }
+//
+//    private void familyModified(SchemaConcept type) {
+//        areParentsInFamilyUpToDate.put(type, false);
+//    }
+//
     public Set<QE> getFamily(SchemaConcept type) {
         return families.get(type);
     }
@@ -206,7 +223,7 @@ public abstract class SemanticCache<
         if (schemaConcept != null) {
             families.put(schemaConcept, queryToKey(query));
         }
-        areParentsUpToDate = false;
+//        familyModified(schemaConcept);
     }
 
     /**
@@ -320,18 +337,18 @@ public abstract class SemanticCache<
             boolean fetchFromParent = parents.stream().anyMatch(p ->
                     queryGround || isDBComplete(keyToQuery(p))
             );
-
-            if (!fetchFromParent) {
-                CacheEntry<ReasonerAtomicQuery, SE> newEntry = addEntry(createEntry(query, new HashSet<>()));
-                cachePair = entryToAnswerStreamWithUnifier(query, newEntry);
-                return new Pair<>(
-                        Streams.concat(
-                                cachePair.first(),
-                                getDBAnswerStreamWithUnifier(query).first()
-                        ).distinct(),
-                        cachePair.second());
-//                return getDBAnswerStreamWithUnifier(query);
-            }
+//
+//            if (!fetchFromParent) {
+//                CacheEntry<ReasonerAtomicQuery, SE> newEntry = addEntry(createEntry(query, new HashSet<>()));
+//                cachePair = entryToAnswerStreamWithUnifier(query, newEntry);
+//                return new Pair<>(
+//                        Streams.concat(
+//                                cachePair.first(),
+//                                getDBAnswerStreamWithUnifier(query).first()
+//                        ).distinct(),
+//                        cachePair.second());
+////                return getDBAnswerStreamWithUnifier(query);
+//            }
 
             LOG.trace("Query Cache miss: {} with fetch from parents:\n{}", query, parents);
             CacheEntry<ReasonerAtomicQuery, SE> newEntry = addEntry(createEntry(query, new HashSet<>()));

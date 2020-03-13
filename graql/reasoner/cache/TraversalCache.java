@@ -66,9 +66,9 @@ public class TraversalCache<Q extends ReasonerQueryImpl>{
      */
     public Stream<ConceptMap> get(Q query){
 
-        // for debugging, get IDs of continent and area
-        Stream<ConceptMap> ids = traversalExecutor.traverse(Graql.and(Graql.parsePattern("{$a isa area; $c isa continent;};")));
-        ConceptMap expectedIds = ids.findFirst().get();
+//        // for debugging, get IDs of continent and area
+//        Stream<ConceptMap> ids = traversalExecutor.traverse(Graql.and(Graql.parsePattern("{$a isa area; $c isa continent;};")));
+//        ConceptMap expectedIds = ids.findFirst().get();
 
 
         Equivalence.Wrapper<Q> structQuery = equivalence.wrap(query);
@@ -85,11 +85,11 @@ public class TraversalCache<Q extends ReasonerQueryImpl>{
 
             return traversalExecutor.traverse(transformedQuery.getPattern(), traversal.transform(idTransform))
                     .map(unifier::apply)
-                    .peek(a -> {
-                        if (expectedIds.map().values().stream().allMatch(requiredConcept -> a.map().values().stream().anyMatch(otherConcept -> otherConcept.id().equals(requiredConcept.id())))) {
-                            System.out.println("hi");
-                        }
-                    })
+//                    .peek(a -> {
+//                        if (expectedIds.map().values().stream().allMatch(requiredConcept -> a.map().values().stream().anyMatch(otherConcept -> otherConcept.id().equals(requiredConcept.id())))) {
+//                            System.out.println("hi");
+//                        }
+//                    })
                     .map(a -> a.explain(new LookupExplanation(), query.getPattern()));
         }
 
@@ -97,11 +97,11 @@ public class TraversalCache<Q extends ReasonerQueryImpl>{
         structCache.put(structQuery, new CacheEntry<>(query, traversal));
 
         return traversalExecutor.traverse(query.getPattern(), traversal)
-                .peek(a -> {
-                    if (expectedIds.map().values().stream().allMatch(requiredConcept -> a.map().values().stream().anyMatch(otherConcept -> otherConcept.id().equals(requiredConcept.id())))) {
-                        System.out.println("hi");
-                    }
-                })
+//                .peek(a -> {
+//                    if (expectedIds.map().values().stream().allMatch(requiredConcept -> a.map().values().stream().anyMatch(otherConcept -> otherConcept.id().equals(requiredConcept.id())))) {
+//                        System.out.println("hi");
+//                    }
+//                })
                 .map(a -> a.explain(new LookupExplanation(), query.getPattern()));
     }
 
