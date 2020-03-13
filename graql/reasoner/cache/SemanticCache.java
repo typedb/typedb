@@ -27,7 +27,6 @@ import grakn.core.graql.reasoner.rule.RuleUtils;
 import grakn.core.graql.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Type;
-import grakn.core.kb.graql.executor.ExecutorFactory;
 import grakn.core.kb.graql.executor.TraversalExecutor;
 import grakn.core.kb.graql.planning.gremlin.TraversalPlanFactory;
 import grakn.core.kb.graql.reasoner.cache.CacheEntry;
@@ -108,7 +107,8 @@ public abstract class SemanticCache<
      * @param inferred true if inferred answers should be propagated
      * @return true if new answers were found during propagation
      */
-    abstract boolean propagateAnswers(CacheEntry<ReasonerAtomicQuery, SE> parentEntry, CacheEntry<ReasonerAtomicQuery, SE> childEntry, boolean inferred);
+    abstract boolean propagateAnswersToChild(CacheEntry<ReasonerAtomicQuery, SE> parentEntry, CacheEntry<ReasonerAtomicQuery, SE> childEntry, boolean inferred);
+    abstract boolean propagateAnswersToParent(CacheEntry<ReasonerAtomicQuery, SE> parentEntry, CacheEntry<ReasonerAtomicQuery, SE> childEntry, boolean inferred);
 
     abstract Pair<Stream<ConceptMap>, MultiUnifier> entryToAnswerStreamWithUnifier(ReasonerAtomicQuery query, CacheEntry<ReasonerAtomicQuery, SE> entry);
 
@@ -146,7 +146,7 @@ public abstract class SemanticCache<
     /**
      * propagate answers within the cache (children fetch answers from parents)
      */
-    public void propagateAnswers(){
+    public void propagateAnswersToChild(){
         queries().stream()
                 .filter(q -> !getParents(q).isEmpty())
                 .forEach(child -> {
@@ -159,8 +159,15 @@ public abstract class SemanticCache<
 
     public Set<QE> getParents(ReasonerAtomicQuery child) {
         Set<QE> parents = this.parents.get(queryToKey(child));
-        if (parents.isEmpty()) parents = computeParents(child);
         return parents;
+    }
+
+    public Set<QE> getChildren(ReasonerAtomicQuery parent) {
+        Set<QE> children = new HashSet<>();
+        parents.entries().stream()
+            .filter(entry -> entry.getValue().equals(queryToKey(parent)))
+            .forEach(entry -> children.add(entry.getKey()));
+        return children;
     }
 
     public Set<QE> getFamily(SchemaConcept type){
@@ -203,11 +210,11 @@ public abstract class SemanticCache<
      * NB: uses getEntry
      * NB: target and childMatch.query() are in general not the same hence explicit arguments
      * @param target query we want propagate the answers to
-     * @param childMatch entry to which we want to propagate answers
+     * @param targetCacheEntry entry to which we want to propagate answers
      * @param fetchInferred true if inferred answers should be propagated
      */
-    private boolean propagateAnswersToQuery(ReasonerAtomicQuery target, CacheEntry<ReasonerAtomicQuery, SE> childMatch, boolean fetchInferred){
-        ReasonerAtomicQuery child = childMatch.query();
+    private boolean propagateAnswersToQuery(ReasonerAtomicQuery target, CacheEntry<ReasonerAtomicQuery, SE> targetCacheEntry, boolean fetchInferred){
+        ReasonerAtomicQuery child = targetCacheEntry.query();
         boolean[] newAnswersFound = {false};
         boolean childGround = child.isGround();
         getParents(target)
@@ -219,7 +226,7 @@ public abstract class SemanticCache<
                         CacheEntry<ReasonerAtomicQuery, SE> parentMatch = getEntry(keyToQuery(parent));
 
                         boolean propagateInferred = fetchInferred || parentComplete || child.getAtom().getVarName().isReturned();
-                        boolean newAnswers = propagateAnswers(parentMatch, childMatch, propagateInferred);
+                        boolean newAnswers = propagateAnswersToChild(parentMatch, targetCacheEntry, propagateInferred);
                         newAnswersFound[0] = newAnswersFound[0] || newAnswers;
 
                         boolean targetSubsumesParent = target.isSubsumedBy(keyToQuery(parent));
@@ -233,6 +240,14 @@ public abstract class SemanticCache<
                         }
                     }
                 });
+
+        getChildren(target)
+                .forEach(childQuery -> {
+                    CacheEntry<ReasonerAtomicQuery, SE> chidEntry = getEntry(keyToQuery(childQuery));
+                    boolean newAnswers = propagateAnswersToParent(targetCacheEntry, chidEntry, true);
+                    newAnswersFound[0] = newAnswersFound[0] || newAnswers;
+                });
+
         return newAnswersFound[0];
     }
 
@@ -285,9 +300,9 @@ public abstract class SemanticCache<
                     queryGround || isDBComplete(keyToQuery(p))
             );
 
-            if (!fetchFromParent){
-                return getDBAnswerStreamWithUnifier(query);
-            }
+//            if (!fetchFromParent){
+//                return getDBAnswerStreamWithUnifier(query);
+//            }
 
             LOG.trace("Query Cache miss: {} with fetch from parents:\n{}", query, parents);
             CacheEntry<ReasonerAtomicQuery, SE> newEntry = addEntry(createEntry(query, new HashSet<>()));

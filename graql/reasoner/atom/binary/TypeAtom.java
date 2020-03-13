@@ -126,6 +126,7 @@ public abstract class TypeAtom extends Atom {
     public boolean isSelectable() {
         return getTypePredicate() == null
                 //disjoint atom
+                // check if this atom is present in any other Atom (not Atomics), which means this is not required to be selected
                 || !this.getNeighbours(Atom.class).findFirst().isPresent()
                 || getPotentialRules().findFirst().isPresent();
     }

@@ -46,14 +46,14 @@ import java.util.stream.Stream;
  *
  * @param <Q> the type of query that is being cached
  */
-public class StructuralCache<Q extends ReasonerQueryImpl>{
+public class TraversalCache<Q extends ReasonerQueryImpl>{
 
     private final ReasonerQueryEquivalence equivalence = ReasonerQueryEquivalence.StructuralEquivalence;
     private final Map<Equivalence.Wrapper<Q>, CacheEntry<Q, GraqlTraversal>> structCache;
     private TraversalPlanFactory traversalPlanFactory;
     private TraversalExecutor traversalExecutor;
 
-    StructuralCache(TraversalPlanFactory traversalPlanFactory, TraversalExecutor traversalExecutor){
+    TraversalCache(TraversalPlanFactory traversalPlanFactory, TraversalExecutor traversalExecutor){
         this.traversalPlanFactory = traversalPlanFactory;
         this.traversalExecutor = traversalExecutor;
         this.structCache = new HashMap<>();

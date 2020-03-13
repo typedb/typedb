@@ -21,7 +21,6 @@ package grakn.core.graql.reasoner.cache;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
 import grakn.core.graql.reasoner.unifier.UnifierType;
-import grakn.core.kb.graql.executor.ExecutorFactory;
 import grakn.core.kb.graql.executor.TraversalExecutor;
 import grakn.core.kb.graql.planning.gremlin.TraversalPlanFactory;
 import grakn.core.kb.graql.reasoner.ReasonerException;
@@ -54,11 +53,11 @@ public abstract class QueryCacheBase<
         SE extends Collection<ConceptMap>> implements QueryCache<Q, R, SE> {
 
     private final Map<QE, CacheEntry<Q, SE>> cache;
-    private final StructuralCache<Q> sCache;
+    private final TraversalCache<Q> sCache;
 
     QueryCacheBase(TraversalPlanFactory traversalPlanFactory, TraversalExecutor traversalExecutor) {
         cache = new HashMap<>();
-        sCache = new StructuralCache<>(traversalPlanFactory, traversalExecutor);
+        sCache = new TraversalCache<>(traversalPlanFactory, traversalExecutor);
     }
 
     abstract UnifierType unifierType();
@@ -76,7 +75,7 @@ public abstract class QueryCacheBase<
     /**
      * @return structural cache of this cache
      */
-    StructuralCache<Q> structuralCache() { return sCache;}
+    TraversalCache<Q> structuralCache() { return sCache;}
 
     @Override
     public CacheEntry<Q, SE> record(Q query, ConceptMap answer) {

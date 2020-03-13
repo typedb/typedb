@@ -30,6 +30,7 @@ import grakn.client.answer.ConceptList;
 import grakn.client.answer.ConceptMap;
 import grakn.client.answer.ConceptSet;
 import grakn.client.answer.ConceptSetMeasure;
+import grakn.client.answer.Explanation;
 import grakn.client.answer.Numeric;
 import grakn.client.concept.Attribute;
 import grakn.client.concept.AttributeType;
@@ -252,7 +253,7 @@ public class GraknClientIT {
             List<Pattern> patterns = Lists.newArrayList(
                     Graql.var("x").isa("content").has("name", "x"),
                     var("z").isa("content").has("name", "z"),
-                    var("infer").rel("contained","x").rel("container","z").isa("contains")
+                    var("infer").rel("contained", "x").rel("container", "z").isa("contains")
             );
             ConceptMap answer = Iterables.getOnlyElement(tx.execute(Graql.match(patterns).get()));
 
@@ -266,6 +267,66 @@ public class GraknClientIT {
                     .filter(a -> a.map().containsKey(var("infer").var()))
                     .forEach(a -> assertEquals(ruleStatements, a.explanation().getAnswers().size()));
             testExplanation(answer);
+        }
+    }
+
+    @Test
+    public void test() {
+        try (GraknClient.Transaction tx = remoteSession.transaction().write()) {
+            tx.execute(Graql.parse("define\n" +
+                    "name sub attribute,\n" +
+                    "    datatype string;\n" +
+                    "\n" +
+                    "location sub entity,\n" +
+                    "    abstract,\n" +
+                    "    key name,\n" +
+                    "    plays location-hierarchy_superior,\n" +
+                    "    plays location-hierarchy_subordinate;\n" +
+                    "\n" +
+                    "area sub location;\n" +
+                    "city sub location;\n" +
+                    "country sub location;\n" +
+                    "continent sub location;\n" +
+                    "\n" +
+                    "location-hierarchy sub relation,\n" +
+                    "    relates location-hierarchy_superior,\n" +
+                    "    relates location-hierarchy_subordinate;\n" +
+                    "\n" +
+                    "location-hierarchy-transitivity sub rule,\n" +
+                    "when {\n" +
+                    "    $lh1 (location-hierarchy_superior: $a, location-hierarchy_subordinate: $b) isa location-hierarchy;\n" +
+                    "    $lh2 (location-hierarchy_superior: $b, location-hierarchy_subordinate: $c) isa location-hierarchy;\n" +
+                    "}, then {\n" +
+                    "    (location-hierarchy_superior: $a, location-hierarchy_subordinate: $c) isa location-hierarchy;\n" +
+                    "};").asDefine());
+
+            tx.execute(Graql.parse("insert\n" +
+                    "$ar isa area, has name \"King's Cross\";\n" +
+                    "$cit isa city, has name \"London\";\n" +
+                    "$cntry isa country, has name \"UK\";\n" +
+                    "$cont isa continent, has name \"Europe\";\n" +
+                    "(location-hierarchy_superior: $cont, location-hierarchy_subordinate: $cntry) isa location-hierarchy;\n" +
+                    "(location-hierarchy_superior: $cntry, location-hierarchy_subordinate: $cit) isa location-hierarchy;\n" +
+                    "(location-hierarchy_superior: $cit, location-hierarchy_subordinate: $ar) isa location-hierarchy;").asInsert());
+
+            tx.commit();
+        }
+
+        for (int i =0 ; i < 500; i++) {
+            try (GraknClient.Transaction tx = remoteSession.transaction().write()) {
+                List<ConceptMap> answers = tx.execute(Graql.parse("match\n" +
+                        "$ar isa area, has name $ar-name;\n" +
+                        "$cont isa continent, has name $cont-name;\n" +
+                        "$lh (location-hierarchy_superior: $cont, location-hierarchy_subordinate: $ar) isa location-hierarchy;\n" +
+                        "get;").asGet());
+
+                Explanation explanation = answers.get(0).explanation();
+                boolean b = explanation.getAnswers().stream().anyMatch(answer -> answer.hasExplanation());
+                assertTrue(b);
+                boolean present = explanation.getAnswers().stream().filter(ans -> ans.hasExplanation()).map(ans -> ans.explanation()).findAny().isPresent();
+                assertTrue(present);
+                System.out.println("Great success " + i);
+    }
         }
     }
 
@@ -296,7 +357,7 @@ public class GraknClientIT {
             List<Pattern> patterns = Lists.newArrayList(
                     Graql.var("x").isa("content").has("name", "x"),
                     var("z").isa("content").has("name", "z"),
-                    var("infer").rel("contained","x").rel("container","z").isa("contains")
+                    var("infer").rel("contained", "x").rel("container", "z").isa("contains")
             );
             ConceptMap answer = Iterables.getOnlyElement(tx.execute(Graql.match(patterns).get()));
 
@@ -304,7 +365,7 @@ public class GraknClientIT {
             List<Pattern> patterns2 = Lists.newArrayList(
                     Graql.var("x2").isa("content").has("name", "x"),
                     var("z2").isa("content").has("name", "z"),
-                    var().rel("contained","x2").rel("container","z2").isa("contains")
+                    var().rel("contained", "x2").rel("container", "z2").isa("contains")
             );
             ConceptMap answer2 = Iterables.getOnlyElement(tx.execute(Graql.match(patterns2).get()));
             testExplanation(answer2);
@@ -472,7 +533,7 @@ public class GraknClientIT {
                     grakn.core.kb.concept.api.Relation::rolePlayers,
                     grakn.client.concept.Relation::rolePlayers);
 
-                    ImmutableMultimap.Builder<String, String> localRolePlayers = ImmutableMultimap.builder();
+            ImmutableMultimap.Builder<String, String> localRolePlayers = ImmutableMultimap.builder();
             localConcept.rolePlayersMap().forEach((role, players) -> {
                 for (grakn.core.kb.concept.api.Thing player : players) {
                     localRolePlayers.put(role.id().toString(), player.id().toString());
@@ -1109,7 +1170,7 @@ public class GraknClientIT {
 
 
     private <T extends grakn.core.kb.concept.api.Concept, S extends Concept> void assertEqualConcepts(
-            T conceptLocal, S conceptRemote, Function<T,Stream<?extends grakn.core.kb.concept.api.Concept>> functionLocal,
+            T conceptLocal, S conceptRemote, Function<T, Stream<? extends grakn.core.kb.concept.api.Concept>> functionLocal,
             Function<S, Stream<? extends Concept>> functionRemote
     ) {
         assertEquals(

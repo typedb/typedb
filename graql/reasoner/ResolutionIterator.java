@@ -126,7 +126,7 @@ public class ResolutionIterator extends ReasonerQueryIterator {
         MultilevelSemanticCache queryCache = CacheCasting.queryCacheCast(this.queryCache);
 
         subGoals.forEach(queryCache::ackCompleteness);
-        queryCache.propagateAnswers();
+        queryCache.propagateAnswersToChild();
 
         return false;
     }

@@ -41,6 +41,7 @@ import grakn.core.core.Schema;
 import grakn.core.graph.core.JanusGraphTransaction;
 import grakn.core.graql.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.graql.reasoner.explanation.JoinExplanation;
+import grakn.core.graql.reasoner.explanation.RuleExplanation;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.reasoner.query.ReasonerQueryFactory;
 import grakn.core.graql.reasoner.query.ResolvableQuery;
@@ -1070,7 +1071,7 @@ public class TransactionImpl implements Transaction {
             explanation = originatingAnswer.explanation();
         } else {
             // If the query is not atomic, we can break it down into sub queries and retrieve each component's answer
-            // these are the same components used to re-construct the explanation for our original query, which we
+            // these are the same components used to re-construct the explanation for our original query
             // whenever we set the pattern, we need to provide the correct variable ID substitutions as well
             List<ConceptMap> maps = q.selectAtoms()
                     .map(atom -> reasonerQueryFactory.atomic(atom))

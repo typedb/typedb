@@ -73,7 +73,7 @@ public class MultilevelSemanticCache extends SemanticCache<Equivalence.Wrapper<R
     }
 
     @Override
-    boolean propagateAnswers(CacheEntry<ReasonerAtomicQuery, IndexedAnswerSet> parentEntry,
+    boolean propagateAnswersToChild(CacheEntry<ReasonerAtomicQuery, IndexedAnswerSet> parentEntry,
                                     CacheEntry<ReasonerAtomicQuery, IndexedAnswerSet> childEntry,
                                     boolean propagateInferred) {
         ReasonerAtomicQuery parent = parentEntry.query();
@@ -98,10 +98,39 @@ public class MultilevelSemanticCache extends SemanticCache<Equivalence.Wrapper<R
                 )
                 .filter(ans -> !ans.isEmpty())
                 .peek(ans -> validateAnswer(ans, child, childVars))
-                .filter(childAnswers::add)
+                .filter(ans -> childAnswers.add(ans))
                 .forEach(newAnswers::add);
 
         LOG.trace("Parent {} answers propagated to child {}: {}", parent, child, newAnswers);
+
+        return !newAnswers.isEmpty();
+    }
+
+    @Override
+    boolean propagateAnswersToParent(CacheEntry<ReasonerAtomicQuery, IndexedAnswerSet> parentEntry,
+                             CacheEntry<ReasonerAtomicQuery, IndexedAnswerSet> childEntry,
+                             boolean propagateInferred) {
+        ReasonerAtomicQuery parent = parentEntry.query();
+        ReasonerAtomicQuery child = childEntry.query();
+        IndexedAnswerSet parentAnswers = parentEntry.cachedElement();
+        IndexedAnswerSet childAnswers = childEntry.cachedElement();
+
+        /*
+         * propagate answers to parent:
+         * * calculate constraint difference
+         * * apply constraints from the difference
+         */
+        MultiUnifier childToParentUnifier = child.getMultiUnifier(parent, UnifierType.STRUCTURAL_SUBSUMPTIVE);
+        Set<ConceptMap> newAnswers = new HashSet<>();
+
+        childAnswers.getAll().stream()
+                .filter(childAns -> propagateInferred || childAns.explanation().isLookupExplanation())
+                .filter(ans -> !ans.isEmpty())
+                .flatMap(ans -> childToParentUnifier.apply(ans))
+                .filter(parentAnswers::add)
+                .forEach(newAnswers::add);
+
+        LOG.trace("Child {} answers propagated to parent{}: {}", child, parent, newAnswers);
 
         return !newAnswers.isEmpty();
     }
