@@ -32,6 +32,7 @@ import grakn.core.kb.graql.planning.gremlin.TraversalPlanFactory;
 import grakn.core.kb.graql.reasoner.cache.CacheEntry;
 import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
+import graql.lang.Graql;
 import graql.lang.statement.Variable;
 
 import java.util.HashMap;
@@ -64,6 +65,12 @@ public class TraversalCache<Q extends ReasonerQueryImpl>{
      * @return answer stream of provided query
      */
     public Stream<ConceptMap> get(Q query){
+
+        // for debugging, get IDs of continent and area
+        Stream<ConceptMap> ids = traversalExecutor.traverse(Graql.and(Graql.parsePattern("{$a isa area; $c isa continent;};")));
+        ConceptMap expectedIds = ids.findFirst().get();
+
+
         Equivalence.Wrapper<Q> structQuery = equivalence.wrap(query);
 
         CacheEntry<Q, GraqlTraversal> match = structCache.get(structQuery);
@@ -78,6 +85,11 @@ public class TraversalCache<Q extends ReasonerQueryImpl>{
 
             return traversalExecutor.traverse(transformedQuery.getPattern(), traversal.transform(idTransform))
                     .map(unifier::apply)
+                    .peek(a -> {
+                        if (expectedIds.map().values().stream().allMatch(requiredConcept -> a.map().values().stream().anyMatch(otherConcept -> otherConcept.id().equals(requiredConcept.id())))) {
+                            System.out.println("hi");
+                        }
+                    })
                     .map(a -> a.explain(new LookupExplanation(), query.getPattern()));
         }
 
@@ -85,6 +97,11 @@ public class TraversalCache<Q extends ReasonerQueryImpl>{
         structCache.put(structQuery, new CacheEntry<>(query, traversal));
 
         return traversalExecutor.traverse(query.getPattern(), traversal)
+                .peek(a -> {
+                    if (expectedIds.map().values().stream().allMatch(requiredConcept -> a.map().values().stream().anyMatch(otherConcept -> otherConcept.id().equals(requiredConcept.id())))) {
+                        System.out.println("hi");
+                    }
+                })
                 .map(a -> a.explain(new LookupExplanation(), query.getPattern()));
     }
 

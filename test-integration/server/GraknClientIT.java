@@ -272,47 +272,53 @@ public class GraknClientIT {
 
     @Test
     public void test() {
-        try (GraknClient.Transaction tx = remoteSession.transaction().write()) {
-            tx.execute(Graql.parse("define\n" +
-                    "name sub attribute,\n" +
-                    "    datatype string;\n" +
-                    "\n" +
-                    "location sub entity,\n" +
-                    "    abstract,\n" +
-                    "    key name,\n" +
-                    "    plays location-hierarchy_superior,\n" +
-                    "    plays location-hierarchy_subordinate;\n" +
-                    "\n" +
-                    "area sub location;\n" +
-                    "city sub location;\n" +
-                    "country sub location;\n" +
-                    "continent sub location;\n" +
-                    "\n" +
-                    "location-hierarchy sub relation,\n" +
-                    "    relates location-hierarchy_superior,\n" +
-                    "    relates location-hierarchy_subordinate;\n" +
-                    "\n" +
-                    "location-hierarchy-transitivity sub rule,\n" +
-                    "when {\n" +
-                    "    $lh1 (location-hierarchy_superior: $a, location-hierarchy_subordinate: $b) isa location-hierarchy;\n" +
-                    "    $lh2 (location-hierarchy_superior: $b, location-hierarchy_subordinate: $c) isa location-hierarchy;\n" +
-                    "}, then {\n" +
-                    "    (location-hierarchy_superior: $a, location-hierarchy_subordinate: $c) isa location-hierarchy;\n" +
-                    "};").asDefine());
+        for (int i = 0; i < 100; i++) {
 
-            tx.execute(Graql.parse("insert\n" +
-                    "$ar isa area, has name \"King's Cross\";\n" +
-                    "$cit isa city, has name \"London\";\n" +
-                    "$cntry isa country, has name \"UK\";\n" +
-                    "$cont isa continent, has name \"Europe\";\n" +
-                    "(location-hierarchy_superior: $cont, location-hierarchy_subordinate: $cntry) isa location-hierarchy;\n" +
-                    "(location-hierarchy_superior: $cntry, location-hierarchy_subordinate: $cit) isa location-hierarchy;\n" +
-                    "(location-hierarchy_superior: $cit, location-hierarchy_subordinate: $ar) isa location-hierarchy;").asInsert());
+            System.out.println("iteration: " + i);
 
-            tx.commit();
-        }
+            localSession = server.sessionWithNewKeyspace();
+            remoteSession = graknClient.session(localSession.keyspace().name());
 
-        for (int i =0 ; i < 500; i++) {
+            try (GraknClient.Transaction tx = remoteSession.transaction().write()) {
+                tx.execute(Graql.parse("define\n" +
+                        "name sub attribute,\n" +
+                        "    datatype string;\n" +
+                        "\n" +
+                        "location sub entity,\n" +
+                        "    abstract,\n" +
+                        "    key name,\n" +
+                        "    plays location-hierarchy_superior,\n" +
+                        "    plays location-hierarchy_subordinate;\n" +
+                        "\n" +
+                        "area sub location;\n" +
+                        "city sub location;\n" +
+                        "country sub location;\n" +
+                        "continent sub location;\n" +
+                        "\n" +
+                        "location-hierarchy sub relation,\n" +
+                        "    relates location-hierarchy_superior,\n" +
+                        "    relates location-hierarchy_subordinate;\n" +
+                        "\n" +
+                        "location-hierarchy-transitivity sub rule,\n" +
+                        "when {\n" +
+                        "    $lh1 (location-hierarchy_superior: $a, location-hierarchy_subordinate: $b) isa location-hierarchy;\n" +
+                        "    $lh2 (location-hierarchy_superior: $b, location-hierarchy_subordinate: $c) isa location-hierarchy;\n" +
+                        "}, then {\n" +
+                        "    (location-hierarchy_superior: $a, location-hierarchy_subordinate: $c) isa location-hierarchy;\n" +
+                        "};").asDefine());
+
+                tx.execute(Graql.parse("insert\n" +
+                        "$ar isa area, has name \"King's Cross\";\n" +
+                        "$cit isa city, has name \"London\";\n" +
+                        "$cntry isa country, has name \"UK\";\n" +
+                        "$cont isa continent, has name \"Europe\";\n" +
+                        "(location-hierarchy_superior: $cont, location-hierarchy_subordinate: $cntry) isa location-hierarchy;\n" +
+                        "(location-hierarchy_superior: $cntry, location-hierarchy_subordinate: $cit) isa location-hierarchy;\n" +
+                        "(location-hierarchy_superior: $cit, location-hierarchy_subordinate: $ar) isa location-hierarchy;").asInsert());
+
+                tx.commit();
+            }
+
             try (GraknClient.Transaction tx = remoteSession.transaction().write()) {
                 List<ConceptMap> answers = tx.execute(Graql.parse("match\n" +
                         "$ar isa area, has name $ar-name;\n" +
@@ -320,13 +326,17 @@ public class GraknClientIT {
                         "$lh (location-hierarchy_superior: $cont, location-hierarchy_subordinate: $ar) isa location-hierarchy;\n" +
                         "get;").asGet());
 
+                if (!answers.get(0).hasExplanation()) {
+                    answers.get(0).explanation();
+                }
                 Explanation explanation = answers.get(0).explanation();
                 boolean b = explanation.getAnswers().stream().anyMatch(answer -> answer.hasExplanation());
+                if (!b) {
+                    answers.get(0).explanation();
+                    explanation.getAnswers().stream().anyMatch(answer -> answer.explanation() != null);
+                }
                 assertTrue(b);
-                boolean present = explanation.getAnswers().stream().filter(ans -> ans.hasExplanation()).map(ans -> ans.explanation()).findAny().isPresent();
-                assertTrue(present);
-                System.out.println("Great success " + i);
-    }
+            }
         }
     }
 
