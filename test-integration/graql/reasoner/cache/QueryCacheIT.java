@@ -221,7 +221,7 @@ public class QueryCacheIT {
 
             //record parent, mark the answers to be explained by a rule so that we can distinguish them
             tx.execute(parentQuery.getQuery(), false).stream()
-                    .map(ans -> ans.explain(new RuleExplanation(tx.getMetaRule().id()), parentQuery.getPattern()))
+                    .map(ans -> ans.explain(new RuleExplanation(tx.getMetaRule()), parentQuery.getPattern()))
                     .forEach(ans -> cache.record(parentQuery, ans));
 
             //NB: WE ACK COMPLETENESS
@@ -344,7 +344,7 @@ public class QueryCacheIT {
                             Graql.var("x").var(), mConcept,
                             Graql.var("y").var(), fConcept
                     ),
-                    new RuleExplanation(tx.getMetaRule().id()),
+                    new RuleExplanation(tx.getMetaRule()),
                     parentQuery.getPattern()
             );
             cache.record(parentQuery, inferredAnswer);
@@ -472,7 +472,7 @@ public class QueryCacheIT {
             ConceptMap inferredAnswer = new ConceptMap(ImmutableMap.of(
                     Graql.var("x").var(), tx.getEntityType("entity").instances().iterator().next(),
                     Graql.var("y").var(), tx.getEntityType("entity").instances().iterator().next()),
-                    new RuleExplanation(tx.getMetaRule().id()),
+                    new RuleExplanation(tx.getMetaRule()),
                     query.getPattern()
             );
             cache.record(query, inferredAnswer);
@@ -511,7 +511,7 @@ public class QueryCacheIT {
                     .forEach(ans -> cache.record(query, ans));
 
             //mock a rule explained answer that is equal to a dbAnswer
-            ConceptMap inferredAnswer = dbAnswer.explain(new RuleExplanation(tx.getMetaRule().id()), query.getPattern());
+            ConceptMap inferredAnswer = dbAnswer.explain(new RuleExplanation(tx.getMetaRule()), query.getPattern());
             cache.record(query, inferredAnswer);
 
             //retrieve
@@ -597,7 +597,7 @@ public class QueryCacheIT {
             ConceptMap inferredAnswer = new ConceptMap(ImmutableMap.of(
                     Graql.var("x").var(), mConcept,
                     Graql.var("y").var(), tx.getEntityType("entity").instances().iterator().next()),
-                    new RuleExplanation(tx.getMetaRule().id()),
+                    new RuleExplanation(tx.getMetaRule()),
                     childQuery.getPattern()
             );
 

@@ -30,6 +30,7 @@ import grakn.client.answer.ConceptList;
 import grakn.client.answer.ConceptMap;
 import grakn.client.answer.ConceptSet;
 import grakn.client.answer.ConceptSetMeasure;
+import grakn.client.answer.Explanation;
 import grakn.client.answer.Numeric;
 import grakn.client.concept.Attribute;
 import grakn.client.concept.AttributeType;
@@ -222,6 +223,49 @@ public class GraknClientIT {
                 assertThat(answer.map().keySet(), contains(new Variable("x")));
                 assertNotNull(tx.getConcept(grakn.core.kb.concept.api.ConceptId.of(answer.get("x").id().getValue())));
             }
+        }
+    }
+
+    @Test
+    public void explanationIsGivenWithRule() {
+        try (GraknClient.Transaction tx = remoteSession.transaction().write()) {
+            tx.execute(Graql.define(
+                    type("name").sub("attribute").datatype("string"),
+                    type("content").sub("entity").key("name").plays("contained").plays("container"),
+                    type("contains").sub("relation").relates("contained").relates("container"),
+                    type("transitive-location").sub("rule")
+                            .when(and(
+                                    rel("contained", "x").rel("container", "y").isa("contains"),
+                                    rel("contained", "y").rel("container", "z").isa("contains")
+                            ))
+                            .then(rel("contained", "x").rel("container", "z").isa("contains"))
+            ));
+            tx.execute(Graql.insert(
+                    var("x").isa("content").has("name", "x"),
+                    var("y").isa("content").has("name", "y"),
+                    var("z").isa("content").has("name", "z"),
+                    rel("contained", "x").rel("container", "y").isa("contains"),
+                    rel("contained", "y").rel("container", "z").isa("contains")
+            ));
+            tx.commit();
+        }
+
+        try (GraknClient.Transaction tx = remoteSession.transaction().write()) {
+            List<Pattern> patterns = Lists.newArrayList(
+                    Graql.var("x").isa("content").has("name", "x"),
+                    var("z").isa("content").has("name", "z"),
+                    var("infer").rel("contained", "x").rel("container", "z").isa("contains")
+            );
+            ConceptMap answer = Iterables.getOnlyElement(tx.execute(Graql.match(patterns).get()));
+
+            Set<ConceptMap> deductions = deductions(answer);
+            assertTrue(deductions.stream().anyMatch(ans -> {
+                if (ans.hasExplanation()) {
+                    assertEquals("transitive-location", ans.explanation().getRule().label().toString());
+                    return true;
+                }
+                return false;
+            }));
         }
     }
 
