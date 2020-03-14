@@ -127,6 +127,9 @@ public class MultilevelSemanticCache extends SemanticCache<Equivalence.Wrapper<R
                 .filter(childAns -> propagateInferred || childAns.explanation().isLookupExplanation())
                 .filter(ans -> !ans.isEmpty())
                 .flatMap(ans -> childToParentUnifier.apply(ans))
+                // temporary filter for debugging, this should NOT be required
+                .filter(ans -> ans.vars().equals(parent.getVarNames()))
+                .peek(ans -> validateAnswer(ans, parent, parent.getVarNames()))
                 .filter(parentAnswers::add)
                 .forEach(newAnswers::add);
 
