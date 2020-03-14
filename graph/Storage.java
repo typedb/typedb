@@ -16,15 +16,14 @@
  *
  */
 
-package hypergraph.concept.type;
+package hypergraph.graph;
 
-import hypergraph.graph.vertex.Vertex;
+public interface Storage {
 
-public class EntityType {
+    KeyGenerator keyGenerator();
 
-    private final Vertex vertex;
+    byte[] get(byte[] key);
 
-    public EntityType(Vertex vertex) {
-        this.vertex = vertex;
-    }
+    void put(byte[] key, byte[] value);
+
 }

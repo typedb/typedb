@@ -16,14 +16,12 @@
  *
  */
 
-package hypergraph.storage;
+package hypergraph.graph.edge;
 
-public interface Storage {
+public class Edge {
 
-    KeyGenerator keyGenerator();
+    public Edge() {
 
-    byte[] get(byte[] key);
-
-    void put(byte[] key, byte[] value);
+    }
 
 }

@@ -16,7 +16,7 @@
  *
  */
 
-package hypergraph.storage;
+package hypergraph.graph;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -25,15 +25,15 @@ import java.util.concurrent.atomic.AtomicLong;
 
 public class KeyGenerator {
 
-    private final Map<String, AtomicInteger> typeKeys;
-    private final Map<String, AtomicLong> thingKeys;
+    private final Map<Schema.Vertex.Type.Root, AtomicInteger> typeKeys;
+    private final Map<Schema.Vertex.Type, AtomicLong> thingKeys;
 
     public KeyGenerator() {
         typeKeys = new ConcurrentHashMap<>();
         thingKeys = new ConcurrentHashMap<>();
     }
 
-    public short forType(String root) {
+    public short forType(Schema.Vertex.Type.Root root) {
         if (typeKeys.containsKey(root)) {
             return (short) typeKeys.get(root).getAndIncrement();
         } else {
@@ -43,7 +43,7 @@ public class KeyGenerator {
         }
     }
 
-    public long forThing(String type) {
+    public long forThing(Schema.Vertex.Type type) {
         if (thingKeys.containsKey(type)) {
             return thingKeys.get(type).getAndIncrement();
         } else {

@@ -26,10 +26,9 @@ package(
 
 java_library(
     name = "graph",
-    srcs = glob(["*.java"]),
+    srcs = glob(["**/*.java"]),
     deps = [
         "//common:common",
-        "//storage:storage",
     ]
 )
 

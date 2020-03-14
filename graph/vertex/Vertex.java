@@ -16,34 +16,35 @@
  *
  */
 
-package hypergraph.concept;
+package hypergraph.graph.vertex;
 
-import hypergraph.concept.type.EntityType;
 import hypergraph.graph.GraphManager;
 import hypergraph.graph.Schema;
-import hypergraph.graph.vertex.TypeVertex;
 
-public class ConceptManager {
+public abstract class Vertex {
 
     private final GraphManager graph;
+    private final byte[] iid;
 
-    public ConceptManager(GraphManager graph) {
+    private Schema.Status status;
+    private Schema.Vertex schema;
+
+    Vertex(GraphManager graph, Schema.Status status, Schema.Vertex schema, byte[] iid) {
         this.graph = graph;
+        this.status = status;
+        this.schema = schema;
+        this.iid = iid;
     }
 
-    public EntityType putEntityType(String label) {
-        return putEntityType(label, Schema.Vertex.Type.Root.ENTITY.label());
+    public Schema.Status status() {
+        return status;
     }
 
-    public EntityType putEntityType(String label, String parent) {
-        TypeVertex entityTypeVertex = graph.getTypeVertex(label);
+    public byte[] iid() {
+        return iid;
+    }
 
-        if (entityTypeVertex == null) {
-            entityTypeVertex = graph.createTypeVertex(Schema.Vertex.Type.ENTITY_TYPE, label);
-            TypeVertex parentTypeVertex = graph.getTypeVertex(parent);
-            graph.putEdge(Schema.Edge.SUB, entityTypeVertex, parentTypeVertex);
-        }
-
-        return new EntityType(entityTypeVertex);
+    public static TypeVertex.Buffered createBufferedTypeVertex(GraphManager graph, Schema.Vertex.Type type, byte[] iid, String label) {
+        return new TypeVertex.Buffered(graph, type, iid, label);
     }
 }

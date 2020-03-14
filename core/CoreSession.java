@@ -19,7 +19,7 @@
 package hypergraph.core;
 
 import hypergraph.Hypergraph;
-import hypergraph.storage.KeyGenerator;
+import hypergraph.graph.KeyGenerator;
 import org.rocksdb.OptimisticTransactionDB;
 import org.rocksdb.OptimisticTransactionOptions;
 import org.rocksdb.ReadOptions;

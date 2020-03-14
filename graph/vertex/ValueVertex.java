@@ -16,12 +16,18 @@
  *
  */
 
-package hypergraph.graph;
+package hypergraph.graph.vertex;
 
-public class Edge {
+import hypergraph.graph.GraphManager;
+import hypergraph.graph.Schema;
 
-    public Edge() {
+public class ValueVertex extends Vertex {
 
+    private final Object value;
+
+    ValueVertex(GraphManager graph, Schema.Status status, byte[] iid, Object value) {
+        super(graph, status, Schema.Vertex.Other.VALUE, iid);
+        this.value = value;
     }
 
 }

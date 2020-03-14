@@ -31,7 +31,6 @@ java_library(
         "//common:common",
         "//concept:concept",
         "//graph:graph",
-        "//storage:storage",
         "//traversal:traversal",
         "//dependencies/maven/artifacts/org/rocksdb:rocksdbjni"
     ],

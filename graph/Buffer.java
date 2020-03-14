@@ -18,8 +18,6 @@
 
 package hypergraph.graph;
 
-import hypergraph.storage.KeyGenerator;
-
 public class Buffer {
 
     private final KeyGenerator keyGenerator;
@@ -28,7 +26,7 @@ public class Buffer {
         this.keyGenerator = new KeyGenerator();
     }
 
-    public KeyGenerator keyGenerator() {
+    KeyGenerator keyGenerator() {
         return keyGenerator;
     }
 }

@@ -20,10 +20,10 @@ package hypergraph.core;
 
 import hypergraph.Hypergraph;
 import hypergraph.common.HypergraphException;
-import hypergraph.storage.KeyGenerator;
+import hypergraph.graph.KeyGenerator;
 import hypergraph.concept.ConceptManager;
 import hypergraph.graph.GraphManager;
-import hypergraph.storage.Storage;
+import hypergraph.graph.Storage;
 import hypergraph.traversal.Traversal;
 import org.rocksdb.ReadOptions;
 import org.rocksdb.RocksDBException;

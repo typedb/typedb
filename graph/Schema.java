@@ -225,7 +225,6 @@ public class Schema {
             RELATION(Prefix.VERTEX_RELATION),
             ROLE(Prefix.VERTEX_ROLE),
             ATTRIBUTE(Prefix.VERTEX_ATTRIBUTE),
-            VALUE(Prefix.VERTEX_VALUE),
             RULE(Prefix.VERTEX_RULE);
 
             private final Prefix prefix;
@@ -234,6 +233,7 @@ public class Schema {
                 this.prefix = prefix;
             }
 
+            @Override
             public Prefix prefix() {
                 return prefix;
             }

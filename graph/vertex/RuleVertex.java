@@ -16,15 +16,14 @@
  *
  */
 
-package hypergraph.concept.type;
+package hypergraph.graph.vertex;
 
-import hypergraph.graph.vertex.Vertex;
+import hypergraph.graph.GraphManager;
+import hypergraph.graph.Schema;
 
-public class EntityType {
+public class RuleVertex extends Vertex{
 
-    private final Vertex vertex;
-
-    public EntityType(Vertex vertex) {
-        this.vertex = vertex;
+    RuleVertex(GraphManager graph, Schema.Status status, byte[] iid) {
+        super(graph, status, Schema.Vertex.Other.RULE, iid);
     }
 }

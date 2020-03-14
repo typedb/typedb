@@ -18,7 +18,12 @@
 
 package hypergraph.graph;
 
-import hypergraph.storage.Storage;
+import hypergraph.graph.edge.Edge;
+import hypergraph.graph.vertex.ThingVertex;
+import hypergraph.graph.vertex.TypeVertex;
+import hypergraph.graph.vertex.Vertex;
+
+import java.nio.ByteBuffer;
 
 public class GraphManager {
 
@@ -39,34 +44,50 @@ public class GraphManager {
     }
 
     public void creatRootTypes() {
-//        Vertex.Type rootType = new Vertex.Type(
-//                storage, Schema.Vertex.Type.TYPE, Schema.Vertex.Type.Root.THING.label()).setAbstract(true);
-//        Vertex.Type rootEntityType = new Vertex.Type(
-//                storage, Schema.Vertex.Type.ENTITY_TYPE, Schema.Vertex.Type.Root.ENTITY.label()).setAbstract(true);
-//        Vertex.Type rootRelationType = new Vertex.Type(
-//                storage, Schema.Vertex.Type.RELATION_TYPE, Schema.Vertex.Type.Root.RELATION.label()).setAbstract(true);
-//        Vertex.Type rootRoleType = new Vertex.Type(
-//                storage, Schema.Vertex.Type.ROLE_TYPE, Schema.Vertex.Type.Root.ROLE.label()).setAbstract(true);
-//        Vertex.Type rootAttributeType = new Vertex.Type(
-//                storage, Schema.Vertex.Type.ATTRIBUTE_TYPE, Schema.Vertex.Type.Root.ATTRIBUTE.label()).setAbstract(true);
-//
-//        putEdge(Schema.Edge.SUB, rootEntityType, rootType);
-//        putEdge(Schema.Edge.SUB, rootRelationType, rootType);
-//        putEdge(Schema.Edge.SUB, rootRoleType, rootType);
-//        putEdge(Schema.Edge.SUB, rootAttributeType, rootType);
+        TypeVertex rootType = createTypeVertex(
+                Schema.Vertex.Type.TYPE,
+                Schema.Vertex.Type.Root.THING.label()
+        ).setAbstract(true);
+
+        TypeVertex rootEntityType = createTypeVertex(
+                Schema.Vertex.Type.ENTITY_TYPE,
+                Schema.Vertex.Type.Root.ENTITY.label()
+        ).setAbstract(true);
+
+        TypeVertex rootRelationType = createTypeVertex(
+                Schema.Vertex.Type.RELATION_TYPE,
+                Schema.Vertex.Type.Root.RELATION.label()
+        ).setAbstract(true);
+
+        TypeVertex rootRoleType = createTypeVertex(
+                Schema.Vertex.Type.ROLE_TYPE,
+                Schema.Vertex.Type.Root.ROLE.label()
+        ).setAbstract(true);
+
+        TypeVertex rootAttributeType = createTypeVertex(
+                Schema.Vertex.Type.ATTRIBUTE_TYPE,
+                Schema.Vertex.Type.Root.ATTRIBUTE.label()
+        ).setAbstract(true);
+
+        putEdge(Schema.Edge.SUB, rootEntityType, rootType);
+        putEdge(Schema.Edge.SUB, rootRelationType, rootType);
+        putEdge(Schema.Edge.SUB, rootRoleType, rootType);
+        putEdge(Schema.Edge.SUB, rootAttributeType, rootType);
     }
 
-    public Vertex.Type createVertexType(Schema.Vertex.Type type, String label) {
-//        return new Vertex.Type(storage, type, label);
+    public TypeVertex createTypeVertex(Schema.Vertex.Type type, String label) {
+        byte[] iid = ByteBuffer.allocate(3)
+                .put(type.prefix().key())
+                .putShort(buffer.keyGenerator().forType(type.root()))
+                .array();
+        return Vertex.createBufferedTypeVertex(this, type, iid, label);
+    }
+
+    public TypeVertex getTypeVertex(String label) {
         return null;
     }
 
-    public Vertex.Thing createVertexThing(Schema.Vertex.Thing thing, Vertex.Type type) {
-//        return new Vertex.Thing(storage, thing, type);
-        return null;
-    }
-
-    public Vertex.Type getVertexType(String label) {
+    public ThingVertex createThingVertex(Schema.Vertex.Thing thing, TypeVertex type) {
         return null;
     }
 
