@@ -19,12 +19,24 @@
 package hypergraph.graph.vertex;
 
 import hypergraph.graph.GraphManager;
+import hypergraph.graph.KeyGenerator;
 import hypergraph.graph.Schema;
+
+import java.nio.ByteBuffer;
 
 public class ThingVertex extends Vertex {
 
-    ThingVertex(GraphManager graph, Schema.Status status, Schema.Vertex.Thing type, byte[] iid) {
-        super(graph, status, type, iid);
+    ThingVertex(GraphManager graph, Schema.Status status, Schema.Vertex.Thing schema, byte[] iid) {
+        super(graph, status, schema, iid);
+    }
+
+    @Override
+    public Schema.Vertex.Thing schema() {
+        return (Schema.Vertex.Thing) super.schema();
+    }
+
+    public static byte[] generateIID(KeyGenerator keyGenerator, Schema.Vertex.Thing schema) {
+        return null; // TODO
     }
 
 }

@@ -21,30 +21,50 @@ package hypergraph.graph.vertex;
 import hypergraph.graph.GraphManager;
 import hypergraph.graph.Schema;
 
+import java.util.Arrays;
+
 public abstract class Vertex {
 
     private final GraphManager graph;
-    private final byte[] iid;
+    private final Schema.Status status;
+    private final Schema.Vertex schema;
+    private final int hash;
 
-    private Schema.Status status;
-    private Schema.Vertex schema;
+    private byte[] iid;
 
     Vertex(GraphManager graph, Schema.Status status, Schema.Vertex schema, byte[] iid) {
         this.graph = graph;
         this.status = status;
         this.schema = schema;
         this.iid = iid;
+        this.hash = Arrays.hashCode(iid);
     }
 
     public Schema.Status status() {
         return status;
     }
 
+    public Schema.Vertex schema() {
+        return schema;
+    }
+
     public byte[] iid() {
         return iid;
     }
 
-    public static TypeVertex.Buffered createBufferedTypeVertex(GraphManager graph, Schema.Vertex.Type type, byte[] iid, String label) {
-        return new TypeVertex.Buffered(graph, type, iid, label);
+    public void iid(byte[] iid) {
+        this.iid = iid;
+    }
+
+    @Override
+    public boolean equals(Object object) {
+        if (this == object) return true;
+        if (object == null || getClass() != object.getClass()) return false;
+        return Arrays.equals(iid, ((Vertex) object).iid);
+    }
+
+    @Override
+    public final int hashCode() {
+        return hash;
     }
 }

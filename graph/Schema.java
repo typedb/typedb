@@ -20,6 +20,28 @@ package hypergraph.graph;
 
 public class Schema {
 
+    public enum Key {
+        PERSISTED(0, true),
+        BUFFERED(-1, false);
+
+        private final int initialValue;
+        private final boolean isIncrement;
+
+
+        Key(int initialValue, boolean isIncrement) {
+            this.initialValue = initialValue;
+            this.isIncrement = isIncrement;
+        }
+
+        public int initialValue() {
+            return initialValue;
+        }
+
+        public boolean isIncrement() {
+            return isIncrement;
+        }
+    }
+
     /**
      * The values in this class will be used as 'prefixes' within an IID in the
      * of every object database, and must not overlap with each other.

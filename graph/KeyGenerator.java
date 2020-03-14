@@ -27,19 +27,23 @@ public class KeyGenerator {
 
     private final Map<Schema.Vertex.Type.Root, AtomicInteger> typeKeys;
     private final Map<Schema.Vertex.Type, AtomicLong> thingKeys;
+    private final int initialValue;
+    private final int delta;
 
-    public KeyGenerator() {
+    public KeyGenerator(Schema.Key schema) {
         typeKeys = new ConcurrentHashMap<>();
         thingKeys = new ConcurrentHashMap<>();
+        this.initialValue = schema.initialValue();
+        delta = schema.isIncrement() ? 1 : -1;
     }
 
     public short forType(Schema.Vertex.Type.Root root) {
         if (typeKeys.containsKey(root)) {
             return (short) typeKeys.get(root).getAndIncrement();
         } else {
-            AtomicInteger zero = new AtomicInteger(0);
+            AtomicInteger zero = new AtomicInteger(initialValue);
             typeKeys.put(root, zero);
-            return (short) zero.getAndIncrement();
+            return (short) zero.getAndAdd(delta);
         }
     }
 
@@ -47,9 +51,9 @@ public class KeyGenerator {
         if (thingKeys.containsKey(type)) {
             return thingKeys.get(type).getAndIncrement();
         } else {
-            AtomicLong zero = new AtomicLong(0);
+            AtomicLong zero = new AtomicLong(initialValue);
             thingKeys.put(type, zero);
-            return zero.getAndIncrement();
+            return zero.getAndAdd(delta);
         }
     }
 }

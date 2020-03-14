@@ -23,12 +23,10 @@ import hypergraph.graph.vertex.ThingVertex;
 import hypergraph.graph.vertex.TypeVertex;
 import hypergraph.graph.vertex.Vertex;
 
-import java.nio.ByteBuffer;
-
 public class GraphManager {
 
     private final Storage storage;
-    private final Buffer buffer;
+    private Buffer buffer;
 
     public GraphManager(Storage storage) {
         this.storage = storage;
@@ -36,11 +34,19 @@ public class GraphManager {
     }
 
     public void reset() {
-        // TODO
+        buffer = new Buffer();
     }
 
     public void persist() {
-        // TODO
+        buffer.vertices().forEach(vertex -> {
+            byte[] iid;
+            if (vertex instanceof TypeVertex) {
+                iid = TypeVertex.generateIID(storage.keyGenerator(), ((TypeVertex) vertex).schema());
+            } else {
+                iid = ThingVertex.generateIID(storage.keyGenerator(), ((ThingVertex) vertex).schema());
+            }
+            vertex.iid(iid);
+        });
     }
 
     public void creatRootTypes() {
@@ -69,18 +75,23 @@ public class GraphManager {
                 Schema.Vertex.Type.Root.ATTRIBUTE.label()
         ).setAbstract(true);
 
-        putEdge(Schema.Edge.SUB, rootEntityType, rootType);
-        putEdge(Schema.Edge.SUB, rootRelationType, rootType);
-        putEdge(Schema.Edge.SUB, rootRoleType, rootType);
-        putEdge(Schema.Edge.SUB, rootAttributeType, rootType);
+        createEdge(Schema.Edge.SUB, rootEntityType, rootType);
+        createEdge(Schema.Edge.SUB, rootRelationType, rootType);
+        createEdge(Schema.Edge.SUB, rootRoleType, rootType);
+        createEdge(Schema.Edge.SUB, rootAttributeType, rootType);
     }
 
     public TypeVertex createTypeVertex(Schema.Vertex.Type type, String label) {
-        byte[] iid = ByteBuffer.allocate(3)
-                .put(type.prefix().key())
-                .putShort(buffer.keyGenerator().forType(type.root()))
-                .array();
-        return Vertex.createBufferedTypeVertex(this, type, iid, label);
+        byte[] bufferedIID = TypeVertex.generateIID(buffer.keyGenerator(), type);
+        TypeVertex typeVertex = new TypeVertex.Buffered(this, type, bufferedIID, label);
+        buffer.put(typeVertex);
+        return typeVertex;
+    }
+
+    public Edge createEdge(Schema.Edge type, Vertex from, Vertex to) {
+        Edge edge = new Edge(type, from, to);
+        buffer.put(edge);
+        return edge;
     }
 
     public TypeVertex getTypeVertex(String label) {
@@ -89,9 +100,5 @@ public class GraphManager {
 
     public ThingVertex createThingVertex(Schema.Vertex.Thing thing, TypeVertex type) {
         return null;
-    }
-
-    public Edge putEdge(Schema.Edge type, Vertex from, Vertex to) {
-        return new Edge();
     }
 }

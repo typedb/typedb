@@ -18,10 +18,48 @@
 
 package hypergraph.graph.edge;
 
+import hypergraph.graph.Schema;
+import hypergraph.graph.vertex.Vertex;
+
+import java.util.Objects;
+
 public class Edge {
 
-    public Edge() {
+    private final Schema.Edge schema;
+    private final Vertex from;
+    private final Vertex to;
+    private final int hash;
 
+    public Edge(Schema.Edge schema, Vertex from, Vertex to) {
+        this.schema = schema;
+        this.from = from;
+        this.to = to;
+        this.hash = Objects.hash(schema, from, to);
+    }
+
+    public Vertex from() {
+        return from;
+    }
+
+    public Vertex to() {
+        return to;
+    }
+
+    @Override
+    public boolean equals(Object object) {
+        if (this == object) return true;
+        if (object == null || getClass() != object.getClass()) return false;
+
+        Edge that = (Edge) object;
+
+        return (this.schema.equals(that.schema) &&
+                this.from.equals(that.from) &&
+                this.to.equals(that.to));
+    }
+
+    @Override
+    public final int hashCode() {
+        return hash;
     }
 
 }

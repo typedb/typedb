@@ -21,6 +21,7 @@ package hypergraph.core;
 import hypergraph.Hypergraph;
 import hypergraph.common.HypergraphException;
 import hypergraph.graph.KeyGenerator;
+import hypergraph.graph.Schema;
 import org.rocksdb.OptimisticTransactionDB;
 import org.rocksdb.RocksDBException;
 
@@ -39,7 +40,7 @@ class CoreKeyspace implements Hypergraph.Keyspace {
     CoreKeyspace(CoreHypergraph core, String name) {
         this.name = name;
         this.core = core;
-        keyGenerator = new KeyGenerator();
+        keyGenerator = new KeyGenerator(Schema.Key.PERSISTED);
         sessions = new ArrayList<>();
 
         initialise();

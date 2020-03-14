@@ -19,7 +19,10 @@
 package hypergraph.graph.vertex;
 
 import hypergraph.graph.GraphManager;
+import hypergraph.graph.KeyGenerator;
 import hypergraph.graph.Schema;
+
+import java.nio.ByteBuffer;
 
 public abstract class TypeVertex extends Vertex {
 
@@ -30,8 +33,20 @@ public abstract class TypeVertex extends Vertex {
         this.label = label;
     }
 
+    @Override
+    public Schema.Vertex.Type schema() {
+        return (Schema.Vertex.Type) super.schema();
+    }
+
     public String label() {
         return label;
+    }
+
+    public static byte[] generateIID(KeyGenerator keyGenerator, Schema.Vertex.Type schema) {
+        return ByteBuffer.allocate(3)
+                .put(schema.prefix().key())
+                .putShort(keyGenerator.forType(schema.root()))
+                .array();
     }
 
     public abstract boolean isAbstract();
@@ -52,7 +67,7 @@ public abstract class TypeVertex extends Vertex {
         private Schema.DataType dataType;
         private String regex;
 
-        Buffered(GraphManager graph, Schema.Vertex.Type type, byte[] iid, String label) {
+        public Buffered(GraphManager graph, Schema.Vertex.Type type, byte[] iid, String label) {
             super(graph, Schema.Status.BUFFERED, type, iid, label);
         }
 

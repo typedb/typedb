@@ -41,7 +41,7 @@ public class ConceptManager {
         if (entityTypeVertex == null) {
             entityTypeVertex = graph.createTypeVertex(Schema.Vertex.Type.ENTITY_TYPE, label);
             TypeVertex parentTypeVertex = graph.getTypeVertex(parent);
-            graph.putEdge(Schema.Edge.SUB, entityTypeVertex, parentTypeVertex);
+            graph.createEdge(Schema.Edge.SUB, entityTypeVertex, parentTypeVertex);
         }
 
         return new EntityType(entityTypeVertex);

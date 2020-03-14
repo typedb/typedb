@@ -18,15 +18,40 @@
 
 package hypergraph.graph;
 
+import hypergraph.graph.edge.Edge;
+import hypergraph.graph.vertex.Vertex;
+
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Stream;
+
 public class Buffer {
 
     private final KeyGenerator keyGenerator;
+    private final Map<Vertex, Set<Edge>> adjacencyList;
 
     Buffer() {
-        this.keyGenerator = new KeyGenerator();
+        keyGenerator = new KeyGenerator(Schema.Key.BUFFERED);
+        adjacencyList = new ConcurrentHashMap<>();
     }
 
     KeyGenerator keyGenerator() {
         return keyGenerator;
     }
+
+    void put(Vertex vertex) {
+        adjacencyList.putIfAbsent(vertex, Collections.synchronizedSet(new HashSet<>()));
+    }
+
+    void put(Edge edge) {
+        adjacencyList.get(edge.from()).add(edge);
+    }
+
+    Stream<Vertex> vertices() {
+        return adjacencyList.keySet().parallelStream();
+    }
+
 }

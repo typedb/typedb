@@ -66,13 +66,4 @@ public class HypergraphTest {
             }
         }
     }
-
-    @Test
-    public void test_java_nubmers() {
-        byte low = (byte) Short.MIN_VALUE;
-        System.out.println(low);
-
-        byte high = (byte) Short.MAX_VALUE;
-        System.out.println(high);
-    }
 }
