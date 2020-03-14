@@ -18,40 +18,52 @@
 
 package hypergraph.graph;
 
-import hypergraph.graph.edge.Edge;
+import hypergraph.graph.vertex.ThingVertex;
+import hypergraph.graph.vertex.TypeVertex;
 import hypergraph.graph.vertex.Vertex;
 
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Stream;
 
 public class Buffer {
 
     private final KeyGenerator keyGenerator;
-    private final Map<Vertex, Set<Edge>> adjacencyList;
+    private final Set<TypeVertex> types;
+    private final Set<ThingVertex> things;
 
     Buffer() {
         keyGenerator = new KeyGenerator(Schema.Key.BUFFERED);
-        adjacencyList = new ConcurrentHashMap<>();
+        types = Collections.synchronizedSet(new HashSet<>());
+        things = Collections.synchronizedSet(new HashSet<>());
     }
 
     KeyGenerator keyGenerator() {
         return keyGenerator;
     }
 
-    void put(Vertex vertex) {
-        adjacencyList.putIfAbsent(vertex, Collections.synchronizedSet(new HashSet<>()));
+    void add(Vertex vertex) {
+        if (vertex instanceof TypeVertex) {
+            add((TypeVertex) vertex);
+        } else if (vertex instanceof ThingVertex) {
+            add((ThingVertex) vertex);
+        }
     }
 
-    void put(Edge edge) {
-        adjacencyList.get(edge.from()).add(edge);
+    void add(TypeVertex vertex) {
+        types.add(vertex);
     }
 
-    Stream<Vertex> vertices() {
-        return adjacencyList.keySet().parallelStream();
+    void add(ThingVertex vertex) {
+        things.add(vertex);
+    }
+
+    Set<TypeVertex> typeVertices() {
+        return types;
+    }
+
+    Set<ThingVertex> thingVertices() {
+        return things;
     }
 
 }

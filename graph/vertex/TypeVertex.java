@@ -97,5 +97,10 @@ public abstract class TypeVertex extends Vertex {
             this.regex = regex;
             return this;
         }
+
+        @Override
+        public void persist() {
+            // TODO
+        }
     }
 }

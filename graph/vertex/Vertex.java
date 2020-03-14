@@ -20,8 +20,14 @@ package hypergraph.graph.vertex;
 
 import hypergraph.graph.GraphManager;
 import hypergraph.graph.Schema;
+import hypergraph.graph.edge.Edge;
 
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 public abstract class Vertex {
 
@@ -30,6 +36,9 @@ public abstract class Vertex {
     private final Schema.Vertex schema;
     private final int hash;
 
+    private final Map<Schema.Edge, Set<Edge>> outs;
+    private final Map<Schema.Edge, Set<Edge>> ins;
+
     private byte[] iid;
 
     Vertex(GraphManager graph, Schema.Status status, Schema.Vertex schema, byte[] iid) {
@@ -37,7 +46,9 @@ public abstract class Vertex {
         this.status = status;
         this.schema = schema;
         this.iid = iid;
-        this.hash = Arrays.hashCode(iid);
+        hash = Arrays.hashCode(iid);
+        outs = new ConcurrentHashMap<>();
+        ins = new ConcurrentHashMap<>();
     }
 
     public Schema.Status status() {
@@ -55,6 +66,26 @@ public abstract class Vertex {
     public void iid(byte[] iid) {
         this.iid = iid;
     }
+
+    public Set<Edge> outs(Schema.Edge schema) {
+        return outs.get(schema);
+    }
+
+    public void out(Edge edge) {
+        outs.putIfAbsent(edge.schema(), Collections.synchronizedSet(new HashSet<>()));
+        outs.get(edge.schema()).add(edge);
+    }
+
+    public Set<Edge> ins(Schema.Edge schema) {
+        return ins.get(schema);
+    }
+
+    public void in(Edge edge) {
+        ins.putIfAbsent(edge.schema(), Collections.synchronizedSet(new HashSet<>()));
+        ins.get(edge.schema()).add(edge);
+    }
+
+    public abstract void persist();
 
     @Override
     public boolean equals(Object object) {

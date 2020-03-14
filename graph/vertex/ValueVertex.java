@@ -21,7 +21,7 @@ package hypergraph.graph.vertex;
 import hypergraph.graph.GraphManager;
 import hypergraph.graph.Schema;
 
-public class ValueVertex extends Vertex {
+public abstract class ValueVertex extends Vertex {
 
     private final Object value;
 

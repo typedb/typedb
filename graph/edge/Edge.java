@@ -37,6 +37,10 @@ public class Edge {
         this.hash = Objects.hash(schema, from, to);
     }
 
+    public Schema.Edge schema() {
+        return schema;
+    }
+
     public Vertex from() {
         return from;
     }

@@ -38,15 +38,14 @@ public class GraphManager {
     }
 
     public void persist() {
-        buffer.vertices().forEach(vertex -> {
-            byte[] iid;
-            if (vertex instanceof TypeVertex) {
-                iid = TypeVertex.generateIID(storage.keyGenerator(), ((TypeVertex) vertex).schema());
-            } else {
-                iid = ThingVertex.generateIID(storage.keyGenerator(), ((ThingVertex) vertex).schema());
-            }
-            vertex.iid(iid);
-        });
+        buffer.typeVertices().parallelStream().forEach(
+                vertex -> vertex.iid(TypeVertex.generateIID(storage.keyGenerator(), vertex.schema()))
+        );
+        buffer.thingVertices().parallelStream().forEach(
+                vertex -> vertex.iid(ThingVertex.generateIID(storage.keyGenerator(), vertex.schema()))
+        );
+        buffer.typeVertices().parallelStream().forEach(Vertex::persist);
+        buffer.thingVertices().parallelStream().forEach(Vertex::persist);
     }
 
     public void creatRootTypes() {
@@ -84,13 +83,14 @@ public class GraphManager {
     public TypeVertex createTypeVertex(Schema.Vertex.Type type, String label) {
         byte[] bufferedIID = TypeVertex.generateIID(buffer.keyGenerator(), type);
         TypeVertex typeVertex = new TypeVertex.Buffered(this, type, bufferedIID, label);
-        buffer.put(typeVertex);
+        buffer.add(typeVertex);
         return typeVertex;
     }
 
     public Edge createEdge(Schema.Edge type, Vertex from, Vertex to) {
         Edge edge = new Edge(type, from, to);
-        buffer.put(edge);
+        from.out(edge);
+        to.in(edge);
         return edge;
     }
 

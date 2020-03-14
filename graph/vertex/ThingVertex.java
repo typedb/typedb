@@ -24,7 +24,7 @@ import hypergraph.graph.Schema;
 
 import java.nio.ByteBuffer;
 
-public class ThingVertex extends Vertex {
+public abstract class ThingVertex extends Vertex {
 
     ThingVertex(GraphManager graph, Schema.Status status, Schema.Vertex.Thing schema, byte[] iid) {
         super(graph, status, schema, iid);

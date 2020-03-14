@@ -21,7 +21,7 @@ package hypergraph.graph.vertex;
 import hypergraph.graph.GraphManager;
 import hypergraph.graph.Schema;
 
-public class RuleVertex extends Vertex{
+public abstract class RuleVertex extends Vertex{
 
     RuleVertex(GraphManager graph, Schema.Status status, byte[] iid) {
         super(graph, status, Schema.Vertex.Other.RULE, iid);
