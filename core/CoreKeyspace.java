@@ -42,23 +42,28 @@ class CoreKeyspace implements Hypergraph.Keyspace {
         this.core = core;
         keyGenerator = new KeyGenerator(Schema.Key.PERSISTED);
         sessions = new ArrayList<>();
-
-        initialise();
-
-        isOpen = new AtomicBoolean();
-        isOpen.set(true);
+        isOpen = new AtomicBoolean(false);
     }
 
-    private void initialise() {
-        try (CoreSession session = sessionCreateAndOpen()) {
+    CoreKeyspace initialiseAndOpen() {
+        try (CoreSession session = createSessionAndOpen()) {
             try (CoreTransaction txn = session.transaction(Hypergraph.Transaction.Type.WRITE)) {
+                if (txn.graph().hasRootType()) throw new HypergraphException("Invalid Keyspace Initialisation");
                 txn.graph().creatRootTypes();
                 txn.commit();
             }
         }
+        isOpen.set(true);
+        return this;
     }
 
-    CoreSession sessionCreateAndOpen() {
+    CoreKeyspace loadAndOpen() {
+        // TODO load keyGenerator
+        isOpen.set(true);
+        return this;
+    }
+
+    CoreSession createSessionAndOpen() {
         try {
             OptimisticTransactionDB rocksSession = OptimisticTransactionDB.open(
                     core.options(), core.directory().resolve(name).toString()
@@ -76,28 +81,17 @@ class CoreKeyspace implements Hypergraph.Keyspace {
         return keyGenerator;
     }
 
-    @Override
-    public String name() {
-        return name;
-    }
-
-    @Override
-    public boolean isOpen() {
-        return isOpen.get();
-    }
-
-    @Override
-    public void load() {
-        // TODO
-    }
-
-    @Override
-    public void close() {
+    void close() {
         if (isOpen.compareAndSet(true, false)) {
             for (CoreSession session : sessions) {
                 session.close();
             }
         }
+    }
+
+    @Override
+    public String name() {
+        return name;
     }
 
     @Override

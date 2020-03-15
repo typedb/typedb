@@ -45,22 +45,16 @@ public interface Hypergraph extends AutoCloseable {
 
         Keyspace get(String keyspace);
 
-        Set<Keyspace> getAll();
+        Set<? extends Keyspace> getAll();
     }
     /**
      * A Hypergraph Keyspace
      *
      * A keyspace is an isolated scope of data in the storage engine.
      */
-    interface Keyspace extends AutoCloseable {
+    interface Keyspace {
 
         String name();
-
-        boolean isOpen();
-
-        void load();
-
-        void close();
 
         void delete();
     }

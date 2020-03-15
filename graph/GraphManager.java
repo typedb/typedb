@@ -48,6 +48,11 @@ public class GraphManager {
         buffer.thingVertices().parallelStream().forEach(Vertex::persist);
     }
 
+    public boolean hasRootType() {
+        return false; // TODO
+//        return getTypeVertex(Schema.Vertex.Type.Root.THING.label()) != null;
+    }
+
     public void creatRootTypes() {
         TypeVertex rootType = createTypeVertex(
                 Schema.Vertex.Type.TYPE,
@@ -82,7 +87,7 @@ public class GraphManager {
 
     public TypeVertex createTypeVertex(Schema.Vertex.Type type, String label) {
         byte[] bufferedIID = TypeVertex.generateIID(buffer.keyGenerator(), type);
-        TypeVertex typeVertex = new TypeVertex.Buffered(this, type, bufferedIID, label);
+        TypeVertex typeVertex = new TypeVertex.Buffered(this.storage, type, bufferedIID, label);
         buffer.add(typeVertex);
         return typeVertex;
     }

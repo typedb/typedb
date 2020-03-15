@@ -19,7 +19,10 @@
 package hypergraph.core;
 
 import hypergraph.Hypergraph;
+import hypergraph.common.HypergraphException;
 
+import java.io.File;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -36,14 +39,22 @@ class CoreKeyspaceManager implements Hypergraph.KeyspaceManager {
     }
 
     void loadAll() {
-        for (CoreKeyspace keyspace : keyspaces.values()) {
-            keyspace.load();
+        File[] keyspaceDirectories = core.directory().toFile().listFiles(File::isDirectory);
+        if (keyspaceDirectories != null && keyspaceDirectories.length > 0) {
+            Arrays.stream(keyspaceDirectories).parallel().forEach(directory -> {
+                String name = directory.getName();
+                CoreKeyspace keyspace = new CoreKeyspace(core, name);
+                keyspace.loadAndOpen();
+                keyspaces.put(name, keyspace);
+            });
         }
     }
 
     @Override
     public CoreKeyspace create(String name) {
-        CoreKeyspace keyspace = new CoreKeyspace(core, name);
+        if (keyspaces.containsKey(name)) throw new HypergraphException("Keyspace Already Exist: " + name);
+
+        CoreKeyspace keyspace = new CoreKeyspace(core, name).initialiseAndOpen();
         keyspaces.put(name, keyspace);
         return keyspace;
     }
@@ -54,7 +65,7 @@ class CoreKeyspaceManager implements Hypergraph.KeyspaceManager {
     }
 
     @Override
-    public Set<Hypergraph.Keyspace> getAll() {
+    public Set<CoreKeyspace> getAll() {
         return new HashSet<>(keyspaces.values());
     }
 }

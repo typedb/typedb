@@ -39,7 +39,6 @@ class CoreTransaction implements Hypergraph.Transaction {
     private final ReadOptions readOptions;
     private final Transaction rocksTransaction;
     private final Type type;
-    private final Storage operation;
     private final GraphManager graph;
     private final ConceptManager concepts;
     private final Traversal traversal;
@@ -52,8 +51,7 @@ class CoreTransaction implements Hypergraph.Transaction {
         this.writeOptions = writeOptions;
         this.readOptions = readOptions;
 
-        operation = new CoreOperation();
-        graph = new GraphManager(operation);
+        graph = new GraphManager(new CoreOperation());
         concepts = new ConceptManager(graph);
         traversal = new Traversal(concepts);
 
@@ -133,6 +131,11 @@ class CoreTransaction implements Hypergraph.Transaction {
                 e.printStackTrace();
                 throw new HypergraphException(e);
             }
+        }
+
+        @Override
+        public void put(byte[] key) {
+            put(key, new byte[]{0});
         }
 
         @Override

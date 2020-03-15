@@ -18,15 +18,15 @@
 
 package hypergraph.graph.vertex;
 
-import hypergraph.graph.GraphManager;
 import hypergraph.graph.Schema;
+import hypergraph.graph.Storage;
 
 public abstract class ValueVertex extends Vertex {
 
     private final Object value;
 
-    ValueVertex(GraphManager graph, Schema.Status status, byte[] iid, Object value) {
-        super(graph, status, Schema.Vertex.Other.VALUE, iid);
+    ValueVertex(Storage storage, Schema.Status status, byte[] iid, Object value) {
+        super(storage, status, Schema.Vertex.Other.VALUE, iid);
         this.value = value;
     }
 

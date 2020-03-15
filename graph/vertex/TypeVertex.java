@@ -18,18 +18,19 @@
 
 package hypergraph.graph.vertex;
 
-import hypergraph.graph.GraphManager;
 import hypergraph.graph.KeyGenerator;
 import hypergraph.graph.Schema;
+import hypergraph.graph.Storage;
 
 import java.nio.ByteBuffer;
 
 public abstract class TypeVertex extends Vertex {
 
+    private static final int IID_SIZE = 3;
     private final String label;
 
-    TypeVertex(GraphManager graph, Schema.Status status, Schema.Vertex.Type type, byte[] iid, String label) {
-        super(graph, status, type, iid);
+    TypeVertex(Storage storage, Schema.Status status, Schema.Vertex.Type type, byte[] iid, String label) {
+        super(storage, status, type, iid);
         this.label = label;
     }
 
@@ -43,7 +44,7 @@ public abstract class TypeVertex extends Vertex {
     }
 
     public static byte[] generateIID(KeyGenerator keyGenerator, Schema.Vertex.Type schema) {
-        return ByteBuffer.allocate(3)
+        return ByteBuffer.allocate(IID_SIZE)
                 .put(schema.prefix().key())
                 .putShort(keyGenerator.forType(schema.root()))
                 .array();
@@ -63,12 +64,12 @@ public abstract class TypeVertex extends Vertex {
 
     public static class Buffered extends TypeVertex {
 
-        private boolean isAbstract;
+        private Boolean isAbstract;
         private Schema.DataType dataType;
         private String regex;
 
-        public Buffered(GraphManager graph, Schema.Vertex.Type type, byte[] iid, String label) {
-            super(graph, Schema.Status.BUFFERED, type, iid, label);
+        public Buffered(Storage storage, Schema.Vertex.Type type, byte[] iid, String label) {
+            super(storage, Schema.Status.BUFFERED, type, iid, label);
         }
 
         public boolean isAbstract() {
@@ -100,7 +101,42 @@ public abstract class TypeVertex extends Vertex {
 
         @Override
         public void persist() {
-            // TODO
+            storage.put(this.iid());
+            persistProperties();
+            persistEdges();
+        }
+
+        void persistProperties() {
+            if (isAbstract != null) persistPropertyAbstract();
+            if (dataType != null) persistPropertyDataType();
+            if (regex != null && !regex.isEmpty()) persistPropertyRegex();
+        }
+
+        void persistPropertyAbstract() {
+            storage.put(ByteBuffer.allocate(this.iid().length + 1)
+                                .put(this.iid())
+                                .put(Schema.Property.ABSTRACT.infix().key())
+                                .array());
+        }
+
+        void persistPropertyDataType() {
+            byte[] key = ByteBuffer.allocate(this.iid().length + 1)
+                    .put(this.iid())
+                    .put(Schema.Property.DATATYPE.infix().key())
+                    .array();
+            storage.put(key, new byte[]{dataType.value()});
+        }
+
+        void persistPropertyRegex() {
+            byte[] key = ByteBuffer.allocate(this.iid().length + 1)
+                    .put(this.iid())
+                    .put(Schema.Property.REGEX.infix().key())
+                    .array();
+            storage.put(key, regex.getBytes());
+        }
+
+        void persistEdges() {
+
         }
     }
 }

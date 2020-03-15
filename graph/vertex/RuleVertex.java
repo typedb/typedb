@@ -18,12 +18,12 @@
 
 package hypergraph.graph.vertex;
 
-import hypergraph.graph.GraphManager;
 import hypergraph.graph.Schema;
+import hypergraph.graph.Storage;
 
 public abstract class RuleVertex extends Vertex{
 
-    RuleVertex(GraphManager graph, Schema.Status status, byte[] iid) {
-        super(graph, status, Schema.Vertex.Other.RULE, iid);
+    RuleVertex(Storage storage, Schema.Status status, byte[] iid) {
+        super(storage, status, Schema.Vertex.Other.RULE, iid);
     }
 }

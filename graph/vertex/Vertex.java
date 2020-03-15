@@ -18,8 +18,8 @@
 
 package hypergraph.graph.vertex;
 
-import hypergraph.graph.GraphManager;
 import hypergraph.graph.Schema;
+import hypergraph.graph.Storage;
 import hypergraph.graph.edge.Edge;
 
 import java.util.Arrays;
@@ -31,7 +31,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public abstract class Vertex {
 
-    private final GraphManager graph;
+    protected final Storage storage;
     private final Schema.Status status;
     private final Schema.Vertex schema;
     private final int hash;
@@ -41,8 +41,8 @@ public abstract class Vertex {
 
     private byte[] iid;
 
-    Vertex(GraphManager graph, Schema.Status status, Schema.Vertex schema, byte[] iid) {
-        this.graph = graph;
+    Vertex(Storage storage, Schema.Status status, Schema.Vertex schema, byte[] iid) {
+        this.storage = storage;
         this.status = status;
         this.schema = schema;
         this.iid = iid;

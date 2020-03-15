@@ -18,16 +18,14 @@
 
 package hypergraph.graph.vertex;
 
-import hypergraph.graph.GraphManager;
 import hypergraph.graph.KeyGenerator;
 import hypergraph.graph.Schema;
-
-import java.nio.ByteBuffer;
+import hypergraph.graph.Storage;
 
 public abstract class ThingVertex extends Vertex {
 
-    ThingVertex(GraphManager graph, Schema.Status status, Schema.Vertex.Thing schema, byte[] iid) {
-        super(graph, status, schema, iid);
+    ThingVertex(Storage storage, Schema.Status status, Schema.Vertex.Thing schema, byte[] iid) {
+        super(storage, status, schema, iid);
     }
 
     @Override

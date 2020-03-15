@@ -79,7 +79,7 @@ public class CoreHypergraph implements Hypergraph {
     public CoreSession session(String keyspace) {
         Keyspace k = keyspaceMgr.get(keyspace);
         if (k != null){
-            return keyspaceMgr.get(keyspace).sessionCreateAndOpen();
+            return keyspaceMgr.get(keyspace).createSessionAndOpen();
         } else {
             throw new HypergraphException("There does not exists a keyspace with the name: " + keyspace);
         }
@@ -98,7 +98,7 @@ public class CoreHypergraph implements Hypergraph {
     @Override
     public void close() {
         if (isOpen.compareAndSet(true, false)) {
-            for (Keyspace keyspace : keyspaceMgr.getAll()) {
+            for (CoreKeyspace keyspace : keyspaceMgr.getAll()) {
                 keyspace.close();
             }
             options.close();
