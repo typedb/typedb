@@ -136,7 +136,25 @@ public abstract class TypeVertex extends Vertex {
         }
 
         void persistEdges() {
-
+            final int prefixSize = this.iid().length + 1;
+            outs.entrySet().parallelStream().forEach(entry -> {
+                entry.getValue().parallelStream().forEach(edge -> {
+                    storage.put(ByteBuffer.allocate(prefixSize + edge.to().iid().length)
+                                        .put(this.iid())
+                                        .put(entry.getKey().out().key())
+                                        .put(edge.from().iid())
+                                        .array());
+                });
+            });
+            ins.entrySet().parallelStream().forEach(entry -> {
+                entry.getValue().parallelStream().forEach(edge -> {
+                    storage.put(ByteBuffer.allocate(prefixSize + edge.from().iid().length)
+                                        .put(this.iid())
+                                        .put(entry.getKey().in().key())
+                                        .put(edge.from().iid())
+                                        .array());
+                });
+            });
         }
     }
 }

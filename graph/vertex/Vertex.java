@@ -36,8 +36,8 @@ public abstract class Vertex {
     private final Schema.Vertex schema;
     private final int hash;
 
-    private final Map<Schema.Edge, Set<Edge>> outs;
-    private final Map<Schema.Edge, Set<Edge>> ins;
+    protected final Map<Schema.Edge, Set<Edge>> outs;
+    protected final Map<Schema.Edge, Set<Edge>> ins;
 
     private byte[] iid;
 
