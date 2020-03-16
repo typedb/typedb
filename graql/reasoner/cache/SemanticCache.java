@@ -281,9 +281,11 @@ public abstract class SemanticCache<
 
         getChildren(target)
                 .forEach(childQuery -> {
-                    CacheEntry<ReasonerAtomicQuery, SE> chidEntry = getEntry(keyToQuery(childQuery));
-                    boolean newAnswers = propagateAnswersToParent(targetCacheEntry, chidEntry, true);
-                    newAnswersFound[0] = newAnswersFound[0] || newAnswers;
+                    CacheEntry<ReasonerAtomicQuery, SE> childEntry = getEntry(keyToQuery(childQuery));
+                    if (childEntry != null) {
+                        boolean newAnswers = propagateAnswersToParent(targetCacheEntry, childEntry, true);
+                        newAnswersFound[0] = newAnswersFound[0] || newAnswers;
+                    }
                 });
 
         return newAnswersFound[0];
