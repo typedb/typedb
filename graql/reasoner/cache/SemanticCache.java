@@ -185,18 +185,21 @@ public abstract class SemanticCache<
         parents.entries().stream()
                 .filter(entry -> entry.getValue().equals(queryToKey(parent)))
                 .map(entry -> keyToQuery(entry.getKey()))
-                .filter(childQuery -> {
-                    MultiUnifier multiUnifier = childQuery.getMultiUnifier(parent, UnifierType.STRUCTURAL_SUBSUMPTIVE);
-                    return !multiUnifier.isEmpty() &&
-                            // check that the multiunifier hasn't dropped a variable that is required in the parent that are unifying with
-                            multiUnifier.stream()
-                                    .allMatch(u -> {
-                                        Set<Variable> valuesFromReturnedVars = u.mappings().stream().filter(entry -> !entry.getKey().isReturned()).map(Map.Entry::getValue).collect(toSet());
-                                        return valuesFromReturnedVars.containsAll(parent.getVarNames());
-                                    });
-                })
+                .filter(childQuery -> childQueryIsCompatibleWithParent(childQuery, parent))
                 .forEach(childQuery -> children.add(queryToKey(childQuery)));
         return children;
+    }
+
+    private boolean childQueryIsCompatibleWithParent(ReasonerAtomicQuery childQuery, ReasonerAtomicQuery parentQuery) {
+        MultiUnifier multiUnifier = childQuery.getMultiUnifier(parentQuery, UnifierType.STRUCTURAL_SUBSUMPTIVE);
+        return !multiUnifier.isEmpty() &&
+                // check that the multiunifier hasn't dropped a variable that is required in the parent that are unifying with
+                multiUnifier.stream()
+                        .allMatch(u -> {
+                            // filter out unifier entries that are anonymous/not returned, then take expected set of variables
+                            Set<Variable> valuesFromReturnedVars = u.mappings().stream().filter(entry -> !entry.getKey().isReturned()).map(Map.Entry::getValue).collect(toSet());
+                            return valuesFromReturnedVars.containsAll(parentQuery.getVarNames());
+                        });
     }
 
     //
