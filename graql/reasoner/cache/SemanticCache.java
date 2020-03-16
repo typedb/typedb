@@ -26,6 +26,7 @@ import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.reasoner.rule.RuleUtils;
 import grakn.core.graql.reasoner.unifier.MultiUnifierImpl;
+import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.graql.executor.TraversalExecutor;
@@ -182,7 +183,12 @@ public abstract class SemanticCache<
 
         parents.entries().stream()
                 .filter(entry -> entry.getValue().equals(queryToKey(parent)))
-                .forEach(entry -> children.add(entry.getKey()));
+                .map(entry -> keyToQuery(entry.getKey()))
+                .filter(childQuery-> {
+                    MultiUnifier multiUnifier = childQuery.getMultiUnifier(parent, UnifierType.STRUCTURAL_SUBSUMPTIVE);
+                    return !multiUnifier.isEmpty();
+                })
+                .forEach(childQuery -> children.add(queryToKey(childQuery)));
         return children;
     }
 //
