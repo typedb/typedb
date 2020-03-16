@@ -42,6 +42,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toSet;
@@ -81,7 +82,7 @@ public abstract class SemanticCache<
 
     final private HashMultimap<SchemaConcept, QE> families = HashMultimap.create();
     final private HashMultimap<QE, QE> parents = HashMultimap.create();
-//    private Map<SchemaConcept, Boolean> areParentsInFamilyUpToDate = new HashMap<>();
+    //    private Map<SchemaConcept, Boolean> areParentsInFamilyUpToDate = new HashMap<>();
     private static final Logger LOG = LoggerFactory.getLogger(SemanticCache.class);
 
     SemanticCache(TraversalPlanFactory traversalPlanFactory, TraversalExecutor traversalExecutor) {
@@ -184,14 +185,21 @@ public abstract class SemanticCache<
         parents.entries().stream()
                 .filter(entry -> entry.getValue().equals(queryToKey(parent)))
                 .map(entry -> keyToQuery(entry.getKey()))
-                .filter(childQuery-> {
+                .filter(childQuery -> {
                     MultiUnifier multiUnifier = childQuery.getMultiUnifier(parent, UnifierType.STRUCTURAL_SUBSUMPTIVE);
-                    return !multiUnifier.isEmpty();
+                    return !multiUnifier.isEmpty() &&
+                            // check that the multiunifier hasn't dropped a variable that is required in the parent that are unifying with
+                            multiUnifier.stream()
+                                    .allMatch(u -> {
+                                        Set<Variable> valuesFromReturnedVars = u.mappings().stream().filter(entry -> !entry.getKey().isReturned()).map(Map.Entry::getValue).collect(toSet());
+                                        return valuesFromReturnedVars.containsAll(parent.getVarNames());
+                                    });
                 })
                 .forEach(childQuery -> children.add(queryToKey(childQuery)));
         return children;
     }
-//
+
+    //
 //    private void computeAllParentsInFamily(ReasonerAtomicQuery query) {
 //        SchemaConcept type = query.getAtom().getSchemaConcept();
 //        if (!areParentsInFamilyUpToDate.getOrDefault(type, false)) {
