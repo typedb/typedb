@@ -66,33 +66,31 @@ public class OntologicalQueryIT {
     public void instancePairsRelatedToSameTypeOfEntity(){
         Session session = server.sessionWithNewKeyspace();
         loadFromFileAndCommit(resourcePath, "matchingTypesTest.gql", session);
-        for(int i = 0; i < 500 ; i++) {
-            try (Transaction tx = session.writeTransaction()) {
-                String basePattern = "$x isa service;" +
-                        "$y isa service;" +
-                        "(owner: $x, capability: $xx) isa has-capability; $xx isa $type;" +
-                        "(owner: $y, capability: $yy) isa has-capability; $yy isa $type;" +
-                        "$y != $x;";
+        try (Transaction tx = session.writeTransaction()) {
+            String basePattern = "$x isa service;" +
+                    "$y isa service;" +
+                    "(owner: $x, capability: $xx) isa has-capability; $xx isa $type;" +
+                    "(owner: $y, capability: $yy) isa has-capability; $yy isa $type;" +
+                    "$y != $x;";
 
-                String simpleQuery = "match " +
-                        basePattern +
-                        "get $x, $y;";
-                String queryWithExclusions = "match " +
-                        basePattern +
-                        "$meta type entity; $type != $meta;" +
-                        "$meta2 type thing; $type != $meta2;" +
-                        "$meta3 type capability-type; $type != $meta3;" +
-                        "get $x, $y, $type;";
+            String simpleQuery = "match " +
+                    basePattern +
+                    "get $x, $y;";
+            String queryWithExclusions = "match " +
+                    basePattern +
+                    "$meta type entity; $type != $meta;" +
+                    "$meta2 type thing; $type != $meta2;" +
+                    "$meta3 type capability-type; $type != $meta3;" +
+                    "get $x, $y, $type;";
 
-                List<ConceptMap> simpleAnswers = tx.execute(Graql.parse(simpleQuery).asGet(), false);
-                List<ConceptMap> simpleAnswersInferred = tx.execute(Graql.parse(simpleQuery).asGet());
-                List<ConceptMap> answersWithExclusions = tx.execute(Graql.parse(queryWithExclusions).asGet(), false);
-                List<ConceptMap> answersWithExclusionsInferred = tx.execute(Graql.parse(queryWithExclusions).asGet());
-                assertFalse(simpleAnswers.isEmpty());
-                assertFalse(answersWithExclusions.isEmpty());
-                assertCollectionsNonTriviallyEqual(simpleAnswers, simpleAnswersInferred);
-                assertCollectionsNonTriviallyEqual(answersWithExclusions, answersWithExclusionsInferred);
-            }
+            List<ConceptMap> simpleAnswers = tx.execute(Graql.parse(simpleQuery).asGet(), false);
+            List<ConceptMap> simpleAnswersInferred = tx.execute(Graql.parse(simpleQuery).asGet());
+            List<ConceptMap> answersWithExclusions = tx.execute(Graql.parse(queryWithExclusions).asGet(), false);
+            List<ConceptMap> answersWithExclusionsInferred = tx.execute(Graql.parse(queryWithExclusions).asGet());
+            assertFalse(simpleAnswers.isEmpty());
+            assertFalse(answersWithExclusions.isEmpty());
+            assertCollectionsNonTriviallyEqual(simpleAnswers, simpleAnswersInferred);
+            assertCollectionsNonTriviallyEqual(answersWithExclusions, answersWithExclusionsInferred);
         }
     }
 
