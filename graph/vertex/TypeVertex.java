@@ -28,6 +28,9 @@ public abstract class TypeVertex extends Vertex {
 
     private static final int IID_SIZE = 3;
     protected final String label;
+    protected Boolean isAbstract;
+    protected Schema.DataType dataType;
+    protected String regex;
 
     TypeVertex(Storage storage, Schema.Status status, Schema.Vertex.Type type, byte[] iid, String label) {
         super(storage, status, type, iid);
@@ -50,6 +53,14 @@ public abstract class TypeVertex extends Vertex {
                 .array();
     }
 
+    public static byte[] generateIndex(String label) {
+        byte[] labelBytes = label.getBytes();
+        return ByteBuffer.allocate(labelBytes.length + 1)
+                .put(Schema.Index.TYPE.prefix().key())
+                .put(labelBytes)
+                .array();
+    }
+
     public abstract boolean isAbstract();
 
     public abstract TypeVertex setAbstract(boolean isAbstract);
@@ -64,12 +75,8 @@ public abstract class TypeVertex extends Vertex {
 
     public static class Buffered extends TypeVertex {
 
-        private Boolean isAbstract;
-        private Schema.DataType dataType;
-        private String regex;
-
-        public Buffered(Storage storage, Schema.Vertex.Type type, byte[] iid, String label) {
-            super(storage, Schema.Status.BUFFERED, type, iid, label);
+        public Buffered(Storage storage, Schema.Vertex.Type schema, byte[] iid, String label) {
+            super(storage, Schema.Status.BUFFERED, schema, iid, label);
         }
 
         public boolean isAbstract() {
@@ -108,16 +115,17 @@ public abstract class TypeVertex extends Vertex {
         }
 
         void persistIndex() {
-            byte[] index = ByteBuffer.allocate(label.getBytes().length + 1)
+            byte[] labelBytes = label.getBytes();
+            byte[] index = ByteBuffer.allocate(labelBytes.length + 1)
                     .put(Schema.Index.TYPE.prefix().key())
-                    .put(label.getBytes())
+                    .put(labelBytes)
                     .array();
             storage.put(index, iid);
         }
 
         void persistProperties() {
             persistPropertyLabel();
-            if (isAbstract != null) persistPropertyAbstract();
+            if (isAbstract != null && !isAbstract) persistPropertyAbstract();
             if (dataType != null) persistPropertyDataType();
             if (regex != null && !regex.isEmpty()) persistPropertyRegex();
         }
@@ -170,6 +178,67 @@ public abstract class TypeVertex extends Vertex {
                                     .put(edge.from().iid())
                                     .array());
             }));
+        }
+    }
+
+    public static class Persisted extends TypeVertex {
+
+
+        public Persisted(Storage storage, byte[] iid, String label) {
+            super(storage, Schema.Status.PERSISTED, Schema.Vertex.Type.of(iid[0]), iid, label);
+        }
+
+        @Override
+        public boolean isAbstract() {
+            if (isAbstract != null) return isAbstract;
+            byte[] abs = storage.get(ByteBuffer.allocate(iid.length + 1)
+                                             .put(iid)
+                                             .put(Schema.Property.ABSTRACT.infix().key())
+                                             .array());
+            isAbstract = abs != null;
+            return isAbstract;
+        }
+
+        @Override
+        public TypeVertex setAbstract(boolean isAbstract) {
+            return null;
+        }
+
+        @Override
+        public Schema.DataType dataType() {
+            if (dataType != null) return dataType;
+            byte[] val = storage.get(ByteBuffer.allocate(iid.length + 1)
+                                             .put(iid)
+                                             .put(Schema.Property.DATATYPE.infix().key())
+                                             .array());
+            if (val != null) dataType = Schema.DataType.of(val[0]);
+            return dataType;
+        }
+
+        @Override
+        public TypeVertex dataType(Schema.DataType dataType) {
+            return null;
+        }
+
+        @Override
+        public String regex() {
+            if (regex != null) return regex;
+            byte[] val = storage.get(ByteBuffer.allocate(iid.length + 1)
+                                             .put(iid)
+                                             .put(Schema.Property.REGEX.infix().key())
+                                             .array());
+            if (val != null) regex = new String(val);
+            return regex;
+        }
+
+        @Override
+        public TypeVertex regex(String regex) {
+            return null;
+        }
+
+        @Override
+        public void persist() {
+
         }
     }
 }

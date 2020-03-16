@@ -29,6 +29,7 @@ import java.nio.file.Paths;
 import java.util.Comparator;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 public class HypergraphTest {
@@ -64,7 +65,7 @@ public class HypergraphTest {
                 try (Hypergraph.Transaction transaction = session.transaction(Hypergraph.Transaction.Type.WRITE)) {
                     assertTrue(transaction.isOpen());
                     assertEquals(CoreHypergraph.Transaction.Type.WRITE, transaction.type());
-//                    assertNotNull(transaction.concepts().getRootType());
+                    assertNotNull(transaction.concepts().getRootType());
 //                    assertNotNull(transaction.concepts().getEntityType("entity"));
 //                    assertNotNull(transaction.concepts().getRelationType("relation"));
 //                    assertNotNull(transaction.concepts().getAttributeType("attribute"));

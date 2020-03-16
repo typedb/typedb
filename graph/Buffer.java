@@ -62,6 +62,10 @@ public class Buffer {
         thingVertices.add(vertex);
     }
 
+    TypeVertex getTypeVertex(String label) {
+        return typeIndex.get(label);
+    }
+
 
     Set<TypeVertex> typeVertices() {
         return typeVertices;

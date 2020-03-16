@@ -179,13 +179,22 @@ public class Schema {
         public byte value() {
             return value;
         }
+
+        public static DataType of(byte value) {
+            for (DataType t : DataType.values()) {
+                if (t.value == value) {
+                    return t;
+                }
+            }
+            return null;
+        }
     }
 
     public interface Vertex {
 
         Prefix prefix();
 
-        public enum Other implements Vertex {
+        enum Other implements Vertex {
             VALUE(Prefix.VERTEX_VALUE),
             RULE(Prefix.VERTEX_RULE);
 
@@ -201,7 +210,7 @@ public class Schema {
             }
         }
 
-        public enum Type implements Vertex {
+        enum Type implements Vertex {
             TYPE(Prefix.VERTEX_TYPE, Root.THING),
             ENTITY_TYPE(Prefix.VERTEX_ENTITY_TYPE, Root.ENTITY),
             RELATION_TYPE(Prefix.VERTEX_RELATION_TYPE, Root.RELATION),
@@ -225,6 +234,15 @@ public class Schema {
                 return root;
             }
 
+            public static Type of(byte prefix) {
+                for (Type t : Type.values()) {
+                    if (t.prefix.key == prefix) {
+                        return t;
+                    }
+                }
+                return null;
+            }
+
             public enum Root {
                 THING("thing"),
                 ENTITY("entity"),
@@ -244,7 +262,7 @@ public class Schema {
             }
         }
 
-        public enum Thing implements Vertex {
+        enum Thing implements Vertex {
             ENTITY(Prefix.VERTEX_ENTITY),
             RELATION(Prefix.VERTEX_RELATION),
             ROLE(Prefix.VERTEX_ROLE),
@@ -260,6 +278,15 @@ public class Schema {
             @Override
             public Prefix prefix() {
                 return prefix;
+            }
+
+            public static Thing of(byte prefix) {
+                for (Thing t : Thing.values()) {
+                    if (t.prefix.key == prefix) {
+                        return t;
+                    }
+                }
+                return null;
             }
         }
 

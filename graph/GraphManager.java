@@ -23,6 +23,8 @@ import hypergraph.graph.vertex.ThingVertex;
 import hypergraph.graph.vertex.TypeVertex;
 import hypergraph.graph.vertex.Vertex;
 
+import java.nio.ByteBuffer;
+
 public class GraphManager {
 
     private final Storage storage;
@@ -38,7 +40,7 @@ public class GraphManager {
     }
 
     public void persist() {
-        buffer.typeVertices().parallelStream().forEach(
+        buffer.typeVertices().parallelStream().filter(v -> v.status().equals(Schema.Status.BUFFERED)).forEach(
                 vertex -> vertex.iid(TypeVertex.generateIID(storage.keyGenerator(), vertex.schema()))
         );
         buffer.thingVertices().parallelStream().forEach(
@@ -96,6 +98,12 @@ public class GraphManager {
     }
 
     public TypeVertex getTypeVertex(String label) {
+        TypeVertex vertex = buffer.getTypeVertex(label);
+        if (vertex != null) return vertex;
+
+        byte[] iid = storage.get(TypeVertex.generateIndex(label));
+        if (iid != null) return new TypeVertex.Persisted(storage, iid, label);
+
         return null;
     }
 
