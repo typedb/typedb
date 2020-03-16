@@ -19,12 +19,10 @@
 package hypergraph.core;
 
 import hypergraph.Hypergraph;
+import hypergraph.common.HypergraphException;
 import hypergraph.graph.KeyGenerator;
 import org.rocksdb.OptimisticTransactionDB;
-import org.rocksdb.OptimisticTransactionOptions;
-import org.rocksdb.ReadOptions;
-import org.rocksdb.Transaction;
-import org.rocksdb.WriteOptions;
+import org.rocksdb.RocksDBException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -37,13 +35,22 @@ class CoreSession implements Hypergraph.Session {
     private final List<CoreTransaction> transactions;
     private final AtomicBoolean isOpen;
 
-    CoreSession(CoreKeyspace keyspace, OptimisticTransactionDB rocksSession) {
+    CoreSession(CoreKeyspace keyspace) {
         this.keyspace = keyspace;
-        this.rocksSession = rocksSession;
+        try {
+            rocksSession = OptimisticTransactionDB.open(keyspace.options(), keyspace.directory().toString());
+        } catch (RocksDBException e) {
+            e.printStackTrace();
+            throw new HypergraphException(e);
+        }
 
         transactions = new ArrayList<>();
         isOpen = new AtomicBoolean();
         isOpen.set(true);
+    }
+
+    OptimisticTransactionDB rocks() {
+        return rocksSession;
     }
 
     KeyGenerator keyGenerator() {
@@ -57,14 +64,7 @@ class CoreSession implements Hypergraph.Session {
 
     @Override
     public CoreTransaction transaction(Hypergraph.Transaction.Type type) {
-        ReadOptions readOptions = new ReadOptions();
-        WriteOptions writeOptions = new WriteOptions();
-        Transaction rocksTransaction = rocksSession.beginTransaction(
-                writeOptions, new OptimisticTransactionOptions().setSetSnapshot(true)
-        );
-        readOptions.setSnapshot(rocksTransaction.getSnapshot());
-
-        CoreTransaction transaction = new CoreTransaction(type, this, rocksTransaction, writeOptions, readOptions);
+        CoreTransaction transaction = new CoreTransaction(this, type);
         transactions.add(transaction);
         return transaction;
     }
@@ -77,9 +77,7 @@ class CoreSession implements Hypergraph.Session {
     @Override
     public void close() {
         if (isOpen.compareAndSet(true, false)) {
-            for (CoreTransaction transaction : transactions) {
-                transaction.close();
-            }
+            transactions.parallelStream().forEach(CoreTransaction::close);
             rocksSession.close();
         }
     }

@@ -22,20 +22,23 @@ import hypergraph.graph.vertex.ThingVertex;
 import hypergraph.graph.vertex.TypeVertex;
 import hypergraph.graph.vertex.Vertex;
 
-import java.util.Collections;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class Buffer {
 
     private final KeyGenerator keyGenerator;
-    private final Set<TypeVertex> types;
-    private final Set<ThingVertex> things;
+    private final Map<String, TypeVertex> typeIndex;
+    private final Set<TypeVertex> typeVertices;
+    private final Set<ThingVertex> thingVertices;
 
     Buffer() {
         keyGenerator = new KeyGenerator(Schema.Key.BUFFERED);
-        types = Collections.synchronizedSet(new HashSet<>());
-        things = Collections.synchronizedSet(new HashSet<>());
+        typeIndex = new ConcurrentHashMap<>();
+        typeVertices = new HashSet<>();
+        thingVertices = new HashSet<>();
     }
 
     KeyGenerator keyGenerator() {
@@ -51,19 +54,21 @@ public class Buffer {
     }
 
     void add(TypeVertex vertex) {
-        types.add(vertex);
+        typeVertices.add(vertex);
+        typeIndex.put(vertex.label(), vertex);
     }
 
     void add(ThingVertex vertex) {
-        things.add(vertex);
+        thingVertices.add(vertex);
     }
 
+
     Set<TypeVertex> typeVertices() {
-        return types;
+        return typeVertices;
     }
 
     Set<ThingVertex> thingVertices() {
-        return things;
+        return thingVertices;
     }
 
 }

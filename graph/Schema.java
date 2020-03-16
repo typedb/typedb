@@ -81,13 +81,14 @@ public class Schema {
      * The size of a prefix is 1 byte; i.e. min-value = 0 and max-value = 255.
      */
     public enum Infix {
-        PROPERTY_ABSTRACT(0),
-        PROPERTY_DATATYPE(1),
-        PROPERTY_REGEX(2),
-        PROPERTY_VALUE(3),
-        PROPERTY_VALUE_REF(4),
-        PROPERTY_WHEN(5),
-        PROPERTY_THEN(6),
+        PROPERTY_LABEL(0),
+        PROPERTY_ABSTRACT(1),
+        PROPERTY_DATATYPE(2),
+        PROPERTY_REGEX(3),
+        PROPERTY_VALUE(4),
+        PROPERTY_VALUE_REF(5),
+        PROPERTY_WHEN(6),
+        PROPERTY_THEN(7),
         EDGE_SUB_OUT(20),
         EDGE_SUB_IN(25),
         EDGE_KEY_OUT(30),
@@ -143,6 +144,7 @@ public class Schema {
     }
 
     public enum Property {
+        LABEL(Infix.PROPERTY_LABEL),
         ABSTRACT(Infix.PROPERTY_ABSTRACT),
         DATATYPE(Infix.PROPERTY_DATATYPE),
         REGEX(Infix.PROPERTY_REGEX),

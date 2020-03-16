@@ -23,7 +23,6 @@ import hypergraph.graph.Storage;
 import hypergraph.graph.edge.Edge;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -39,7 +38,7 @@ public abstract class Vertex {
     protected final Map<Schema.Edge, Set<Edge>> outs;
     protected final Map<Schema.Edge, Set<Edge>> ins;
 
-    private byte[] iid;
+    protected byte[] iid;
 
     Vertex(Storage storage, Schema.Status status, Schema.Vertex schema, byte[] iid) {
         this.storage = storage;
@@ -72,7 +71,7 @@ public abstract class Vertex {
     }
 
     public void out(Edge edge) {
-        outs.putIfAbsent(edge.schema(), Collections.synchronizedSet(new HashSet<>()));
+        outs.putIfAbsent(edge.schema(), new HashSet<>());
         outs.get(edge.schema()).add(edge);
     }
 
@@ -81,7 +80,7 @@ public abstract class Vertex {
     }
 
     public void in(Edge edge) {
-        ins.putIfAbsent(edge.schema(), Collections.synchronizedSet(new HashSet<>()));
+        ins.putIfAbsent(edge.schema(), new HashSet<>());
         ins.get(edge.schema()).add(edge);
     }
 

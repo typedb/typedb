@@ -44,13 +44,9 @@ public class GraphManager {
         buffer.thingVertices().parallelStream().forEach(
                 vertex -> vertex.iid(ThingVertex.generateIID(storage.keyGenerator(), vertex.schema()))
         );
-        buffer.typeVertices().parallelStream().forEach(Vertex::persist);
-        buffer.thingVertices().parallelStream().forEach(Vertex::persist);
-    }
 
-    public boolean hasRootType() {
-        return false; // TODO
-//        return getTypeVertex(Schema.Vertex.Type.Root.THING.label()) != null;
+        buffer.typeVertices().forEach(Vertex::persist);
+        buffer.thingVertices().forEach(Vertex::persist);
     }
 
     public void creatRootTypes() {

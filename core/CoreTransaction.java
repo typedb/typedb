@@ -20,11 +20,12 @@ package hypergraph.core;
 
 import hypergraph.Hypergraph;
 import hypergraph.common.HypergraphException;
-import hypergraph.graph.KeyGenerator;
 import hypergraph.concept.ConceptManager;
 import hypergraph.graph.GraphManager;
+import hypergraph.graph.KeyGenerator;
 import hypergraph.graph.Storage;
 import hypergraph.traversal.Traversal;
+import org.rocksdb.OptimisticTransactionOptions;
 import org.rocksdb.ReadOptions;
 import org.rocksdb.RocksDBException;
 import org.rocksdb.Transaction;
@@ -35,6 +36,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 class CoreTransaction implements Hypergraph.Transaction {
 
     private final CoreSession session;
+    private final OptimisticTransactionOptions optOptions;
     private final WriteOptions writeOptions;
     private final ReadOptions readOptions;
     private final Transaction rocksTransaction;
@@ -44,14 +46,19 @@ class CoreTransaction implements Hypergraph.Transaction {
     private final Traversal traversal;
     private final AtomicBoolean isOpen;
 
-    CoreTransaction(Type type, CoreSession session, Transaction rocksTransaction, WriteOptions writeOptions, ReadOptions readOptions) {
+    private static final byte[] EMPTY_ARRAY = new byte[]{};
+
+    CoreTransaction(CoreSession session, Type type) {
         this.type = type;
         this.session = session;
-        this.rocksTransaction = rocksTransaction;
-        this.writeOptions = writeOptions;
-        this.readOptions = readOptions;
 
-        graph = new GraphManager(new CoreOperation());
+        readOptions = new ReadOptions();
+        writeOptions = new WriteOptions();
+        optOptions = new OptimisticTransactionOptions().setSetSnapshot(true);
+        rocksTransaction = session.rocks().beginTransaction(writeOptions, optOptions);
+        readOptions.setSnapshot(rocksTransaction.getSnapshot());
+
+        graph = new GraphManager(new CoreStorage());
         concepts = new ConceptManager(graph);
         traversal = new Traversal(concepts);
 
@@ -69,20 +76,19 @@ class CoreTransaction implements Hypergraph.Transaction {
     }
 
     @Override
-    public Traversal read() {
+    public Traversal traversal() {
         return traversal;
     }
 
     @Override
-    public ConceptManager write() {
+    public ConceptManager concepts() {
         return concepts;
     }
 
     @Override
     public void commit() {
-        if (type.equals(Type.READ)) {
-            throw new HypergraphException("Illegal Write Exception");
-        }
+        if (type.equals(Type.READ)) throw new HypergraphException("Illegal Write Exception");
+
         try {
             graph.persist();
             rocksTransaction.commit();
@@ -90,6 +96,7 @@ class CoreTransaction implements Hypergraph.Transaction {
             e.printStackTrace();
             throw new HypergraphException(e);
         }
+        close();
     }
 
     @Override
@@ -111,12 +118,20 @@ class CoreTransaction implements Hypergraph.Transaction {
     @Override
     public void close() {
         if (isOpen.compareAndSet(true, false)) {
-            rocksTransaction.close();
+            optOptions.close();
             writeOptions.close();
+            readOptions.close();
+            rocksTransaction.close();
         }
     }
 
-    private class CoreOperation implements Storage {
+    private class CoreStorage implements Storage {
+
+        private final AtomicBoolean isWriting;
+
+        CoreStorage() {
+            isWriting = new AtomicBoolean(false);
+        }
 
         @Override
         public KeyGenerator keyGenerator() {
@@ -126,7 +141,7 @@ class CoreTransaction implements Hypergraph.Transaction {
         @Override
         public byte[] get(byte[] key) {
             try {
-                return rocksTransaction.get(readOptions, key);
+                return session.rocks().get(readOptions, key);
             } catch (RocksDBException e) {
                 e.printStackTrace();
                 throw new HypergraphException(e);
@@ -135,17 +150,23 @@ class CoreTransaction implements Hypergraph.Transaction {
 
         @Override
         public void put(byte[] key) {
-            put(key, new byte[]{0});
+            put(key, EMPTY_ARRAY);
         }
 
         @Override
         public void put(byte[] key, byte[] value) {
+            if (!isWriting.compareAndSet(false, true)) {
+                throw new HypergraphException("Attempted multiple access to PUT operation concurrently");
+            }
+
             try {
                 rocksTransaction.put(key, value);
             } catch (RocksDBException e) {
                 e.printStackTrace();
                 throw new HypergraphException(e);
             }
+
+            isWriting.set(false);
         }
     }
 }

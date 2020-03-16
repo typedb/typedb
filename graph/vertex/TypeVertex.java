@@ -27,7 +27,7 @@ import java.nio.ByteBuffer;
 public abstract class TypeVertex extends Vertex {
 
     private static final int IID_SIZE = 3;
-    private final String label;
+    protected final String label;
 
     TypeVertex(Storage storage, Schema.Status status, Schema.Vertex.Type type, byte[] iid, String label) {
         super(storage, status, type, iid);
@@ -101,35 +101,54 @@ public abstract class TypeVertex extends Vertex {
 
         @Override
         public void persist() {
-            storage.put(this.iid());
+            storage.put(iid);
+            persistIndex();
             persistProperties();
             persistEdges();
         }
 
+        void persistIndex() {
+            byte[] index = ByteBuffer.allocate(label.getBytes().length + 1)
+                    .put(Schema.Index.TYPE.prefix().key())
+                    .put(label.getBytes())
+                    .array();
+            storage.put(index, iid);
+        }
+
         void persistProperties() {
+            persistPropertyLabel();
             if (isAbstract != null) persistPropertyAbstract();
             if (dataType != null) persistPropertyDataType();
             if (regex != null && !regex.isEmpty()) persistPropertyRegex();
         }
 
         void persistPropertyAbstract() {
-            storage.put(ByteBuffer.allocate(this.iid().length + 1)
-                                .put(this.iid())
-                                .put(Schema.Property.ABSTRACT.infix().key())
-                                .array());
+            byte[] key = ByteBuffer.allocate(iid.length + 1)
+                    .put(iid)
+                    .put(Schema.Property.ABSTRACT.infix().key())
+                    .array();
+            storage.put(key);
+        }
+
+        void persistPropertyLabel() {
+            byte[] key = ByteBuffer.allocate(iid.length + 1)
+                    .put(iid)
+                    .put(Schema.Property.LABEL.infix().key())
+                    .array();
+            storage.put(key, label.getBytes());
         }
 
         void persistPropertyDataType() {
-            byte[] key = ByteBuffer.allocate(this.iid().length + 1)
-                    .put(this.iid())
+            byte[] key = ByteBuffer.allocate(iid.length + 1)
+                    .put(iid)
                     .put(Schema.Property.DATATYPE.infix().key())
                     .array();
             storage.put(key, new byte[]{dataType.value()});
         }
 
         void persistPropertyRegex() {
-            byte[] key = ByteBuffer.allocate(this.iid().length + 1)
-                    .put(this.iid())
+            byte[] key = ByteBuffer.allocate(iid.length + 1)
+                    .put(iid)
                     .put(Schema.Property.REGEX.infix().key())
                     .array();
             storage.put(key, regex.getBytes());
@@ -137,24 +156,20 @@ public abstract class TypeVertex extends Vertex {
 
         void persistEdges() {
             final int prefixSize = this.iid().length + 1;
-            outs.entrySet().parallelStream().forEach(entry -> {
-                entry.getValue().parallelStream().forEach(edge -> {
-                    storage.put(ByteBuffer.allocate(prefixSize + edge.to().iid().length)
-                                        .put(this.iid())
-                                        .put(entry.getKey().out().key())
-                                        .put(edge.from().iid())
-                                        .array());
-                });
-            });
-            ins.entrySet().parallelStream().forEach(entry -> {
-                entry.getValue().parallelStream().forEach(edge -> {
-                    storage.put(ByteBuffer.allocate(prefixSize + edge.from().iid().length)
-                                        .put(this.iid())
-                                        .put(entry.getKey().in().key())
-                                        .put(edge.from().iid())
-                                        .array());
-                });
-            });
+            outs.forEach((key, value) -> value.forEach(edge -> {
+                storage.put(ByteBuffer.allocate(prefixSize + edge.to().iid().length)
+                                    .put(iid)
+                                    .put(key.out().key())
+                                    .put(edge.from().iid())
+                                    .array());
+            }));
+            ins.forEach((key, value) -> value.forEach(edge -> {
+                storage.put(ByteBuffer.allocate(prefixSize + edge.from().iid().length)
+                                    .put(iid)
+                                    .put(key.in().key())
+                                    .put(edge.from().iid())
+                                    .array());
+            }));
         }
     }
 }

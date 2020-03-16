@@ -85,9 +85,9 @@ public interface Hypergraph extends AutoCloseable {
 
         boolean isOpen();
 
-        Traversal read();
+        Traversal traversal();
 
-        ConceptManager write();
+        ConceptManager concepts();
 
         void commit();
 

@@ -98,9 +98,7 @@ public class CoreHypergraph implements Hypergraph {
     @Override
     public void close() {
         if (isOpen.compareAndSet(true, false)) {
-            for (CoreKeyspace keyspace : keyspaceMgr.getAll()) {
-                keyspace.close();
-            }
+            keyspaceMgr.getAll().parallelStream().forEach(CoreKeyspace::close);
             options.close();
         }
     }

@@ -22,9 +22,9 @@ import hypergraph.Hypergraph;
 import hypergraph.common.HypergraphException;
 import hypergraph.graph.KeyGenerator;
 import hypergraph.graph.Schema;
-import org.rocksdb.OptimisticTransactionDB;
-import org.rocksdb.RocksDBException;
+import org.rocksdb.Options;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -48,7 +48,9 @@ class CoreKeyspace implements Hypergraph.Keyspace {
     CoreKeyspace initialiseAndOpen() {
         try (CoreSession session = createSessionAndOpen()) {
             try (CoreTransaction txn = session.transaction(Hypergraph.Transaction.Type.WRITE)) {
-                if (txn.graph().hasRootType()) throw new HypergraphException("Invalid Keyspace Initialisation");
+                if (txn.concepts().getRootType() != null) {
+                    throw new HypergraphException("Invalid Keyspace Initialisation");
+                }
                 txn.graph().creatRootTypes();
                 txn.commit();
             }
@@ -63,18 +65,18 @@ class CoreKeyspace implements Hypergraph.Keyspace {
         return this;
     }
 
+    Options options() {
+        return core.options();
+    }
+
+    Path directory() {
+        return core.directory().resolve(name);
+    }
+
     CoreSession createSessionAndOpen() {
-        try {
-            OptimisticTransactionDB rocksSession = OptimisticTransactionDB.open(
-                    core.options(), core.directory().resolve(name).toString()
-            );
-            CoreSession session = new CoreSession(this, rocksSession);
-            sessions.add(session);
-            return session;
-        } catch (RocksDBException e) {
-            e.printStackTrace();
-            throw new HypergraphException(e);
-        }
+        CoreSession session = new CoreSession(this);
+        sessions.add(session);
+        return session;
     }
 
     KeyGenerator keyGenerator() {
@@ -83,9 +85,7 @@ class CoreKeyspace implements Hypergraph.Keyspace {
 
     void close() {
         if (isOpen.compareAndSet(true, false)) {
-            for (CoreSession session : sessions) {
-                session.close();
-            }
+            sessions.parallelStream().forEach(CoreSession::close);
         }
     }
 

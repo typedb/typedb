@@ -18,7 +18,10 @@
 
 package hypergraph.concept;
 
+import hypergraph.concept.type.AttributeType;
 import hypergraph.concept.type.EntityType;
+import hypergraph.concept.type.RelationType;
+import hypergraph.concept.type.Type;
 import hypergraph.graph.GraphManager;
 import hypergraph.graph.Schema;
 import hypergraph.graph.vertex.TypeVertex;
@@ -29,6 +32,24 @@ public class ConceptManager {
 
     public ConceptManager(GraphManager graph) {
         this.graph = graph;
+    }
+
+    public Type getRootType() {
+        TypeVertex vertex = graph.getTypeVertex(Schema.Vertex.Type.Root.THING.label());
+        if (vertex != null) return new Type(vertex);
+        else return null;
+    }
+
+    public EntityType getEntityType(String label) {
+        return null;
+    }
+
+    public RelationType getRelationType(String label) {
+        return null;
+    }
+
+    public AttributeType getAttributeType(String label) {
+        return null;
     }
 
     public EntityType putEntityType(String label) {
