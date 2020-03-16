@@ -360,8 +360,7 @@ public abstract class SemanticCache<
         boolean answersToGroundQuery = queryGround && answersQuery(query);
 
         //if db complete or we found answers to ground query via propagation we don't need to hit the database
-//        if (queryDBComplete || answersToGroundQuery) return cachePair;
-        if (answersToGroundQuery) return cachePair;
+        if (queryDBComplete || answersToGroundQuery) return cachePair;
 
         //otherwise lookup and add inferred answers on top
         return new Pair<>(

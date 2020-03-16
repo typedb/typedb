@@ -96,6 +96,7 @@ java_test(
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//graql/reasoner",
         "//kb/concept/api",
+        "//kb/graql/reasoner",
         "//kb/server",
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:graql-test-util",

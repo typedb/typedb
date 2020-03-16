@@ -22,9 +22,11 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import grakn.core.common.config.Config;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.graql.reasoner.explanation.LookupExplanation;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.Entity;
 import grakn.core.kb.concept.api.Relation;
+import grakn.core.kb.graql.reasoner.cache.QueryCache;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import grakn.core.rule.GraknTestStorage;
@@ -271,13 +273,17 @@ public class MaterialisationIT {
 
     private List<ConceptMap> materialiseWithoutDuplicates(Conjunction<Statement> statement, ReasonerQueryFactory reasonerQueryFactory, Transaction tx){
         ReasonerAtomicQuery query = reasonerQueryFactory.atomic(statement);
-
         List<ConceptMap> materialised = query.materialise(new ConceptMap()).collect(Collectors.toList());
-        List<ConceptMap> answers = tx.execute(query.getQuery());
-        assertTrue(answers.containsAll(materialised));
+
+        // update the cache, which is not meant to be used independently of the ResolutionIterator or in conjunction with just the materialise() calls
+        TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
+        QueryCache queryCache = testTx.queryCache();
+        for (ConceptMap ans : materialised) {
+            queryCache.record(query, ans.explain(new LookupExplanation(), null));
+        }
+
         List<ConceptMap> reMaterialised = query.materialise(new ConceptMap()).collect(Collectors.toList());
         assertCollectionsNonTriviallyEqual(materialised, reMaterialised);
-        assertCollectionsNonTriviallyEqual(answers, tx.execute(query.getQuery()));
         return materialised;
     }
 
