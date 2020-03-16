@@ -20,7 +20,6 @@ package grakn.core.graql.reasoner.cache;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Sets;
-import com.google.common.collect.Streams;
 import grakn.common.util.Pair;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
@@ -42,7 +41,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toSet;
@@ -82,7 +80,7 @@ public abstract class SemanticCache<
 
     final private HashMultimap<SchemaConcept, QE> families = HashMultimap.create();
     final private HashMultimap<QE, QE> parents = HashMultimap.create();
-    //    private Map<SchemaConcept, Boolean> areParentsInFamilyUpToDate = new HashMap<>();
+        private Map<SchemaConcept, Boolean> areParentsInFamilyUpToDate = new HashMap<>();
     private static final Logger LOG = LoggerFactory.getLogger(SemanticCache.class);
 
     SemanticCache(TraversalPlanFactory traversalPlanFactory, TraversalExecutor traversalExecutor) {
@@ -102,7 +100,7 @@ public abstract class SemanticCache<
         super.clear();
         families.clear();
         parents.clear();
-//        areParentsInFamilyUpToDate.clear();
+        areParentsInFamilyUpToDate.clear();
     }
 
     /**
@@ -149,7 +147,7 @@ public abstract class SemanticCache<
                 .peek(this::unackCompleteness)
                 .forEach(this::removeEntry);
 
-//        familyModified(type);
+        familyModified(type);
     }
 
     /**
@@ -167,21 +165,20 @@ public abstract class SemanticCache<
     }
 
     public Set<QE> getParents(ReasonerAtomicQuery child) {
+//        if (parents.isEmpty()) parents = computeParents(child);
+        computeAllParentsInFamily(child);
         Set<QE> parents = this.parents.get(queryToKey(child));
-        if (parents.isEmpty()) parents = computeParents(child);
-//        computeAllParentsInFamily(child);
         return parents;
     }
 
-    public Set<QE> getChildren(ReasonerAtomicQuery parent) {
-        Set<QE> children = new HashSet<>();
+    public Set<QE> getCompatibleChildren(ReasonerAtomicQuery parent) {
 
         // force compute update of all parents in the family before using the parents map to retrieve children
-        getFamily(parent)
-                .map(this::keyToQuery)
-                .forEach(related -> computeParents(related));
-//        computeAllParentsInFamily(parent);
-
+//        getFamily(parent)
+//                .map(this::keyToQuery)
+//                .forEach(related -> computeParents(related));
+        computeAllParentsInFamily(parent);
+        Set<QE> children = new HashSet<>();
         parents.entries().stream()
                 .filter(entry -> entry.getValue().equals(queryToKey(parent)))
                 .map(entry -> keyToQuery(entry.getKey()))
@@ -202,22 +199,22 @@ public abstract class SemanticCache<
                         });
     }
 
-    //
-//    private void computeAllParentsInFamily(ReasonerAtomicQuery query) {
-//        SchemaConcept type = query.getAtom().getSchemaConcept();
-//        if (!areParentsInFamilyUpToDate.getOrDefault(type, false)) {
-//            // compute update of all parents in the family
-//            getFamily(query)
-//                    .map(this::keyToQuery)
-//                    .forEach(this::computeParents);
-//            areParentsInFamilyUpToDate.put(type, true);
-//        }
-//    }
-//
-//    private void familyModified(SchemaConcept type) {
-//        areParentsInFamilyUpToDate.put(type, false);
-//    }
-//
+
+    private void computeAllParentsInFamily(ReasonerAtomicQuery query) {
+        SchemaConcept type = query.getAtom().getSchemaConcept();
+        if (!areParentsInFamilyUpToDate.getOrDefault(type, false)) {
+            // compute update of all parents in the family
+            getFamily(type).stream()
+                    .map(this::keyToQuery)
+                    .forEach(this::computeParents);
+            areParentsInFamilyUpToDate.put(type, true);
+        }
+    }
+
+    private void familyModified(SchemaConcept type) {
+        areParentsInFamilyUpToDate.put(type, false);
+    }
+
     public Set<QE> getFamily(SchemaConcept type) {
         return families.get(type);
     }
@@ -240,7 +237,7 @@ public abstract class SemanticCache<
         if (schemaConcept != null) {
             families.put(schemaConcept, queryToKey(query));
         }
-//        familyModified(schemaConcept);
+        familyModified(schemaConcept);
     }
 
     /**
@@ -296,7 +293,7 @@ public abstract class SemanticCache<
                     }
                 });
 
-        getChildren(target)
+        getCompatibleChildren(target)
                 .forEach(childQuery -> {
                     CacheEntry<ReasonerAtomicQuery, SE> childEntry = getEntry(keyToQuery(childQuery));
                     if (childEntry != null) {
@@ -352,10 +349,10 @@ public abstract class SemanticCache<
             cachePair = entryToAnswerStreamWithUnifier(query, match);
         } else {
             //if no match but db-complete parent exists, use parent to create entry
-            Set<QE> parents = getParents(query);
-            boolean fetchFromParent = parents.stream().anyMatch(p ->
-                    queryGround || isDBComplete(keyToQuery(p))
-            );
+//            Set<QE> parents = getParents(query);
+//            boolean fetchFromParent = parents.stream().anyMatch(p ->
+//                    queryGround || isDBComplete(keyToQuery(p))
+//            );
 //
 //            if (!fetchFromParent) {
 //                CacheEntry<ReasonerAtomicQuery, SE> newEntry = addEntry(createEntry(query, new HashSet<>()));
@@ -369,7 +366,7 @@ public abstract class SemanticCache<
 ////                return getDBAnswerStreamWithUnifier(query);
 //            }
 
-            LOG.trace("Query Cache miss: {} with fetch from parents:\n{}", query, parents);
+//            LOG.trace("Query Cache miss: {} with fetch from parents:\n{}", query, parents);
             CacheEntry<ReasonerAtomicQuery, SE> newEntry = addEntry(createEntry(query, new HashSet<>()));
             cachePair = entryToAnswerStreamWithUnifier(query, newEntry);
         }

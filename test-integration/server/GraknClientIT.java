@@ -45,8 +45,10 @@ import grakn.client.concept.Role;
 import grakn.client.concept.SchemaConcept;
 import grakn.client.concept.Thing;
 import grakn.client.concept.Type;
+import grakn.client.exception.GraknClientException;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
+import grakn.core.kb.server.exception.GraknServerException;
 import grakn.core.kb.server.exception.SessionException;
 import grakn.core.kb.server.keyspace.Keyspace;
 import grakn.core.rule.GraknTestServer;
@@ -1174,6 +1176,7 @@ public class GraknClientIT {
 
     @Test
     public void whenDeletingNonExistingKeyspace_exceptionThrown() {
+        exception.expect(GraknClientException.class);
         exception.expectMessage("It is not possible to delete keyspace [nonexistingkeyspace] as it does not exist");
         graknClient.keyspaces().delete("nonexistingkeyspace");
     }
