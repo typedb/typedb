@@ -37,7 +37,7 @@ public class GraphManager {
         buffer = new Buffer();
     }
 
-    public void persist() {
+    public void commit() {
         buffer.typeVertices().parallelStream().filter(v -> v.status().equals(Schema.Status.BUFFERED)).forEach(
                 vertex -> vertex.iid(TypeVertex.generateIID(storage.keyGenerator(), vertex.schema()))
         );
@@ -45,8 +45,8 @@ public class GraphManager {
                 vertex -> vertex.iid(ThingVertex.generateIID(storage.keyGenerator(), vertex.schema()))
         );
 
-        buffer.typeVertices().forEach(Vertex::persist);
-        buffer.thingVertices().forEach(Vertex::persist);
+        buffer.typeVertices().forEach(Vertex::commit);
+        buffer.thingVertices().forEach(Vertex::commit);
     }
 
     public void creatRootTypes() {
@@ -89,7 +89,7 @@ public class GraphManager {
     }
 
     public TypeEdge createTypeEdge(Schema.Edge.Type type, TypeVertex from, TypeVertex to) {
-        TypeEdge edge = new TypeEdge.Buffered(type, from, to);
+        TypeEdge edge = new TypeEdge.Buffered(storage, type, from, to);
         from.out(edge);
         to.in(edge);
         return edge;

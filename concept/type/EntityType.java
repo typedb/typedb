@@ -44,9 +44,9 @@ public class EntityType extends Type {
         if (parent != null) return parent;
 
         Set<TypeEdge> sub = vertex.outs(Schema.Edge.Type.SUB);
-        if (sub != null && sub.size()==1) return new EntityType(sub.iterator().next().to());
+        if (sub != null && sub.size()==1) parent = new EntityType(sub.iterator().next().to());
 
-        return null;
+        return parent;
     }
 
 }

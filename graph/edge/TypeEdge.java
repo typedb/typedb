@@ -19,7 +19,11 @@
 package hypergraph.graph.edge;
 
 import hypergraph.graph.Schema;
+import hypergraph.graph.Storage;
 import hypergraph.graph.vertex.TypeVertex;
+
+import java.nio.ByteBuffer;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public abstract class TypeEdge extends Edge<Schema.Edge.Type, TypeVertex> {
 
@@ -29,16 +33,30 @@ public abstract class TypeEdge extends Edge<Schema.Edge.Type, TypeVertex> {
 
     public static class Buffered extends TypeEdge {
 
-        public Buffered(Schema.Edge.Type schema, TypeVertex from, TypeVertex to) {
+        private Storage storage;
+        private AtomicBoolean committed;
+
+        public Buffered(Storage storage, Schema.Edge.Type schema, TypeVertex from, TypeVertex to) {
             super(schema, from, to);
+            this.storage = storage;
+            committed = new AtomicBoolean(false);
         }
 
         public Schema.Status status() {
-            return Schema.Status.BUFFERED;
+            return committed.get() ? Schema.Status.COMMITTED : Schema.Status.BUFFERED;
         }
 
-        public void persist() {
-            // TODO
+        public void commit() {
+            if (committed.compareAndSet(false, true)) {
+                if (schema.out() != null) {
+                    storage.put(ByteBuffer.allocate(from.iid().length + to().iid().length + 1)
+                                        .put(from.iid()).put(schema.out().key()).put(to.iid()).array());
+                }
+                if (schema.in() != null) {
+                    storage.put(ByteBuffer.allocate(from.iid().length + to().iid().length + 1)
+                                        .put(to.iid()).put(schema.in().key()).put(from.iid()).array());
+                }
+            }
         }
     }
 
@@ -52,6 +70,6 @@ public abstract class TypeEdge extends Edge<Schema.Edge.Type, TypeVertex> {
             return Schema.Status.PERSISTED;
         }
 
-        public void persist() {}
+        public void commit() {}
     }
 }

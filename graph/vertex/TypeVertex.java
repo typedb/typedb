@@ -21,11 +21,10 @@ package hypergraph.graph.vertex;
 import hypergraph.graph.KeyGenerator;
 import hypergraph.graph.Schema;
 import hypergraph.graph.Storage;
+import hypergraph.graph.edge.Edge;
 import hypergraph.graph.edge.TypeEdge;
 
 import java.nio.ByteBuffer;
-import java.util.HashSet;
-import java.util.Set;
 
 import static hypergraph.graph.Schema.Property.ABSTRACT;
 import static hypergraph.graph.Schema.Property.DATATYPE;
@@ -47,24 +46,6 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, Schema.Edge.
 
     public String label() {
         return label;
-    }
-
-    public Set<TypeEdge> outs(Schema.Edge.Type schema) {
-        return outs.get(schema);
-    }
-
-    public void out(TypeEdge edge) {
-        outs.putIfAbsent(edge.schema(), new HashSet<>());
-        outs.get(edge.schema()).add(edge);
-    }
-
-    public Set<TypeEdge> ins(Schema.Edge.Type schema) {
-        return ins.get(schema);
-    }
-
-    public void in(TypeEdge edge) {
-        ins.putIfAbsent(edge.schema(), new HashSet<>());
-        ins.get(edge.schema()).add(edge);
     }
 
     public static byte[] generateIID(KeyGenerator keyGenerator, Schema.Vertex.Type schema) {
@@ -132,61 +113,54 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, Schema.Edge.
         }
 
         @Override
-        public void persist() {
+        public void commit() {
             storage.put(iid);
-            persistIndex();
-            persistProperties();
-            persistEdges();
+            commitIndex();
+            commitProperties();
+            commitEdges();
         }
 
-        void persistIndex() {
+        void commitIndex() {
             byte[] labelBytes = label.getBytes();
             byte[] index = ByteBuffer.allocate(labelBytes.length + 1)
                     .put(Schema.Index.TYPE.prefix().key()).put(labelBytes).array();
             storage.put(index, iid);
         }
 
-        void persistProperties() {
-            persistPropertyLabel();
-            if (isAbstract != null && !isAbstract) persistPropertyAbstract();
-            if (dataType != null) persistPropertyDataType();
-            if (regex != null && !regex.isEmpty()) persistPropertyRegex();
+        void commitProperties() {
+            commitPropertyLabel();
+            if (isAbstract != null && !isAbstract) commitPropertyAbstract();
+            if (dataType != null) commitPropertyDataType();
+            if (regex != null && !regex.isEmpty()) commitPropertyRegex();
         }
 
-        void persistPropertyAbstract() {
+        void commitPropertyAbstract() {
             byte[] key = ByteBuffer.allocate(iid.length + 1)
                     .put(iid).put(ABSTRACT.infix().key()).array();
             storage.put(key);
         }
 
-        void persistPropertyLabel() {
+        void commitPropertyLabel() {
             byte[] key = ByteBuffer.allocate(iid.length + 1)
                     .put(iid).put(Schema.Property.LABEL.infix().key()).array();
             storage.put(key, label.getBytes());
         }
 
-        void persistPropertyDataType() {
+        void commitPropertyDataType() {
             byte[] key = ByteBuffer.allocate(iid.length + 1)
                     .put(iid).put(DATATYPE.infix().key()).array();
             storage.put(key, new byte[]{dataType.value()});
         }
 
-        void persistPropertyRegex() {
+        void commitPropertyRegex() {
             byte[] key = ByteBuffer.allocate(iid.length + 1)
                     .put(iid).put(REGEX.infix().key()).array();
             storage.put(key, regex.getBytes());
         }
 
-        void persistEdges() {
-            final int prefixSize = this.iid().length + 1;
-            outs.forEach((key, set) -> set.forEach(edge -> {
-                storage.put(ByteBuffer.allocate(prefixSize + edge.to().iid().length)
-                                    .put(iid).put(key.out().key()).put(edge.from().iid()).array());
-            }));
-            ins.forEach((key, set) -> set.forEach(edge -> {
-                storage.put(ByteBuffer.allocate(prefixSize + edge.from().iid().length)
-                                    .put(iid).put(key.in().key()).put(edge.from().iid()).array());
-            }));
+        void commitEdges() {
+            outs.forEach((key, set) -> set.forEach(Edge::commit));
+            ins.forEach((key, set) -> set.forEach(Edge::commit));
         }
     }
 
@@ -245,7 +219,7 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, Schema.Edge.
         }
 
         @Override
-        public void persist() {
+        public void commit() {
 
         }
     }

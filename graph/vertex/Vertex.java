@@ -57,7 +57,7 @@ public abstract class Vertex<
         return schema;
     }
 
-    public abstract void persist();
+    public abstract void commit();
 
     public Set<EDGE> outs(EDGE_SCHEMA schema) {
         return outs.get(schema);

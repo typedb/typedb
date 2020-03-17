@@ -131,7 +131,8 @@ public class Schema {
 
     public enum Status {
         BUFFERED(0),
-        PERSISTED(1);
+        COMMITTED(1),
+        PERSISTED(2);
 
         private int status;
         Status(int status) {

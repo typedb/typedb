@@ -37,7 +37,7 @@ public abstract class ThingEdge extends Edge<Schema.Edge.Thing, ThingVertex> {
             return Schema.Status.BUFFERED;
         }
 
-        public void persist() {
+        public void commit() {
             // TODO
         }
     }
@@ -52,6 +52,6 @@ public abstract class ThingEdge extends Edge<Schema.Edge.Thing, ThingVertex> {
             return Schema.Status.PERSISTED;
         }
 
-        public void persist() {}
+        public void commit() {}
     }
 }

@@ -90,7 +90,7 @@ class CoreTransaction implements Hypergraph.Transaction {
         if (type.equals(Type.READ)) throw new HypergraphException("Illegal Write Exception");
 
         try {
-            graph.persist();
+            graph.commit();
             rocksTransaction.commit();
         } catch (RocksDBException e) {
             e.printStackTrace();

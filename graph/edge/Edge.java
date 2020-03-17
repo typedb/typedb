@@ -39,7 +39,7 @@ public abstract class Edge<EDGE_SCHEMA extends Schema.Edge, VERTEX extends Verte
 
     public abstract Schema.Status status();
 
-    public abstract void persist();
+    public abstract void commit();
 
     public EDGE_SCHEMA schema(){
         return schema;
