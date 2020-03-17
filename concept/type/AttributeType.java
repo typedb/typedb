@@ -18,5 +18,13 @@
 
 package hypergraph.concept.type;
 
+import hypergraph.graph.vertex.TypeVertex;
+
 public class AttributeType {
+
+    private final TypeVertex vertex;
+
+    public AttributeType(TypeVertex vertex) {
+        this.vertex = vertex;
+    }
 }

@@ -40,6 +40,24 @@ public class ConceptManager {
         else return null;
     }
 
+    public EntityType getRootEntityType() {
+        TypeVertex vertex = graph.getTypeVertex(Schema.Vertex.Type.Root.ENTITY.label());
+        if (vertex != null) return new EntityType(vertex);
+        else return null;
+    }
+
+    public RelationType getRootRelationType() {
+        TypeVertex vertex = graph.getTypeVertex(Schema.Vertex.Type.Root.RELATION.label());
+        if (vertex != null) return new RelationType(vertex);
+        else return null;
+    }
+
+    public AttributeType getRootAttributeType() {
+        TypeVertex vertex = graph.getTypeVertex(Schema.Vertex.Type.Root.ATTRIBUTE.label());
+        if (vertex != null) return new AttributeType(vertex);
+        else return null;
+    }
+
     public EntityType getEntityType(String label) {
         return null;
     }

@@ -18,13 +18,13 @@
 
 package hypergraph.concept.type;
 
-import hypergraph.graph.vertex.Vertex;
+import hypergraph.graph.vertex.TypeVertex;
 
 public class EntityType {
 
-    private final Vertex vertex;
+    private final TypeVertex vertex;
 
-    public EntityType(Vertex vertex) {
+    public EntityType(TypeVertex vertex) {
         this.vertex = vertex;
     }
 }

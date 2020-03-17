@@ -66,9 +66,9 @@ public class HypergraphTest {
                     assertTrue(transaction.isOpen());
                     assertEquals(CoreHypergraph.Transaction.Type.WRITE, transaction.type());
                     assertNotNull(transaction.concepts().getRootType());
-//                    assertNotNull(transaction.concepts().getEntityType("entity"));
-//                    assertNotNull(transaction.concepts().getRelationType("relation"));
-//                    assertNotNull(transaction.concepts().getAttributeType("attribute"));
+                    assertNotNull(transaction.concepts().getRootEntityType());
+                    assertNotNull(transaction.concepts().getRootRelationType());
+                    assertNotNull(transaction.concepts().getRootAttributeType());
                 }
 
                 try (Hypergraph.Transaction transaction = session.transaction(Hypergraph.Transaction.Type.READ)) {
