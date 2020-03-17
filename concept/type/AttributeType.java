@@ -18,6 +18,8 @@
 
 package hypergraph.concept.type;
 
+import hypergraph.graph.GraphManager;
+import hypergraph.graph.Schema;
 import hypergraph.graph.vertex.TypeVertex;
 
 public class AttributeType {
@@ -26,5 +28,11 @@ public class AttributeType {
 
     public AttributeType(TypeVertex vertex) {
         this.vertex = vertex;
+    }
+
+    public AttributeType(GraphManager graph, String label) {
+        vertex = graph.createTypeVertex(Schema.Vertex.Type.ATTRIBUTE_TYPE, label);
+        TypeVertex root = graph.getTypeVertex(Schema.Vertex.Type.Root.ATTRIBUTE.label());
+        graph.createEdge(Schema.Edge.SUB, vertex, root);
     }
 }

@@ -23,8 +23,6 @@ import hypergraph.graph.vertex.ThingVertex;
 import hypergraph.graph.vertex.TypeVertex;
 import hypergraph.graph.vertex.Vertex;
 
-import java.nio.ByteBuffer;
-
 public class GraphManager {
 
     private final Storage storage;

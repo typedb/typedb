@@ -18,6 +18,8 @@
 
 package hypergraph.concept.type;
 
+import hypergraph.graph.GraphManager;
+import hypergraph.graph.Schema;
 import hypergraph.graph.vertex.TypeVertex;
 
 public class EntityType {
@@ -26,5 +28,11 @@ public class EntityType {
 
     public EntityType(TypeVertex vertex) {
         this.vertex = vertex;
+    }
+
+    public EntityType(GraphManager graph, String label) {
+        vertex = graph.createTypeVertex(Schema.Vertex.Type.ENTITY_TYPE, label);
+        TypeVertex root = graph.getTypeVertex(Schema.Vertex.Type.Root.ENTITY.label());
+        graph.createEdge(Schema.Edge.SUB, vertex, root);
     }
 }

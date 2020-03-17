@@ -58,31 +58,39 @@ public class ConceptManager {
         else return null;
     }
 
+    public EntityType putEntityType(String label) {
+        TypeVertex vertex = graph.getTypeVertex(label);
+        if (vertex != null) return new EntityType(vertex);
+        else return new EntityType(graph, label);
+    }
+
     public EntityType getEntityType(String label) {
-        return null;
+        TypeVertex vertex = graph.getTypeVertex(label);
+        if (vertex != null) return new EntityType(vertex);
+        else return null;
+    }
+
+    public RelationType putRelationType(String label) {
+        TypeVertex vertex = graph.getTypeVertex(label);
+        if (vertex != null) return new RelationType(vertex);
+        else return new RelationType(graph, label);
     }
 
     public RelationType getRelationType(String label) {
-        return null;
+        TypeVertex vertex = graph.getTypeVertex(label);
+        if (vertex != null) return new RelationType(vertex);
+        else return null;
+    }
+
+    public AttributeType putAttributeType(String label) {
+        TypeVertex vertex = graph.getTypeVertex(label);
+        if (vertex != null) return new AttributeType(vertex);
+        else return new AttributeType(graph, label);
     }
 
     public AttributeType getAttributeType(String label) {
-        return null;
-    }
-
-    public EntityType putEntityType(String label) {
-        return putEntityType(label, Schema.Vertex.Type.Root.ENTITY.label());
-    }
-
-    public EntityType putEntityType(String label, String parent) {
-        TypeVertex entityTypeVertex = graph.getTypeVertex(label);
-
-        if (entityTypeVertex == null) {
-            entityTypeVertex = graph.createTypeVertex(Schema.Vertex.Type.ENTITY_TYPE, label);
-            TypeVertex parentTypeVertex = graph.getTypeVertex(parent);
-            graph.createEdge(Schema.Edge.SUB, entityTypeVertex, parentTypeVertex);
-        }
-
-        return new EntityType(entityTypeVertex);
+        TypeVertex vertex = graph.getTypeVertex(label);
+        if (vertex != null) return new AttributeType(vertex);
+        else return null;
     }
 }

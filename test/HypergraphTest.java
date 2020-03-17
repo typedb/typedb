@@ -18,6 +18,9 @@
 
 package hypergraph;
 
+import hypergraph.concept.type.AttributeType;
+import hypergraph.concept.type.EntityType;
+import hypergraph.concept.type.RelationType;
 import hypergraph.core.CoreHypergraph;
 import org.junit.Test;
 
@@ -51,9 +54,9 @@ public class HypergraphTest {
         System.out.println("Database Directory created: " + directory.toString());
 
         try (Hypergraph graph = CoreHypergraph.open(directory.toString())) {
-            assertTrue(graph.isOpen());
             graph.keyspaces().create("my_data_keyspace");
 
+            assertTrue(graph.isOpen());
             assertEquals(1, graph.keyspaces().getAll().size());
             assertEquals("my_data_keyspace", graph.keyspaces().getAll().iterator().next().name());
 
@@ -62,13 +65,32 @@ public class HypergraphTest {
                 assertTrue(session.isOpen());
                 assertEquals("my_data_keyspace", session.keyspace().name());
 
+                try (Hypergraph.Transaction transaction = session.transaction(Hypergraph.Transaction.Type.READ)) {
+                    assertTrue(transaction.isOpen());
+                    assertEquals(CoreHypergraph.Transaction.Type.READ, transaction.type());
+                    notNull(transaction.concepts().getRootType(),
+                            transaction.concepts().getRootEntityType(),
+                            transaction.concepts().getRootRelationType(),
+                            transaction.concepts().getRootAttributeType());
+                }
+
                 try (Hypergraph.Transaction transaction = session.transaction(Hypergraph.Transaction.Type.WRITE)) {
                     assertTrue(transaction.isOpen());
                     assertEquals(CoreHypergraph.Transaction.Type.WRITE, transaction.type());
-                    assertNotNull(transaction.concepts().getRootType());
-                    assertNotNull(transaction.concepts().getRootEntityType());
-                    assertNotNull(transaction.concepts().getRootRelationType());
-                    assertNotNull(transaction.concepts().getRootAttributeType());
+
+                    AttributeType name = transaction.concepts().putAttributeType("name");
+                    AttributeType age = transaction.concepts().putAttributeType("age");
+                    notNull(name, age);
+
+                    RelationType marriage = transaction.concepts().putRelationType("marriage");
+                    RelationType employment = transaction.concepts().putRelationType("employment");
+                    notNull(marriage, employment);
+
+                    EntityType person = transaction.concepts().putEntityType("person");
+                    EntityType man = transaction.concepts().putEntityType("man");
+                    EntityType woman = transaction.concepts().putEntityType("woman");
+                    EntityType company = transaction.concepts().putEntityType("company");
+                    notNull(person, man, woman, company);
                 }
 
                 try (Hypergraph.Transaction transaction = session.transaction(Hypergraph.Transaction.Type.READ)) {
@@ -78,6 +100,36 @@ public class HypergraphTest {
 //                    transaction.read().getConcept(...)
                 }
             }
+        }
+
+
+        try (Hypergraph graph = CoreHypergraph.open(directory.toString())) {
+
+            assertTrue(graph.isOpen());
+            assertEquals(1, graph.keyspaces().getAll().size());
+            assertEquals("my_data_keyspace", graph.keyspaces().getAll().iterator().next().name());
+
+            try (Hypergraph.Session session = graph.session("my_data_keyspace")) {
+
+                assertTrue(session.isOpen());
+                assertEquals("my_data_keyspace", session.keyspace().name());
+
+                try (Hypergraph.Transaction transaction = session.transaction(Hypergraph.Transaction.Type.READ)) {
+                    assertTrue(transaction.isOpen());
+                    assertEquals(CoreHypergraph.Transaction.Type.READ, transaction.type());
+                    assertNotNull(transaction.concepts().getRootType());
+                    assertNotNull(transaction.concepts().getRootEntityType());
+                    assertNotNull(transaction.concepts().getRootRelationType());
+                    assertNotNull(transaction.concepts().getRootAttributeType());
+//                    transaction.read().getConcept(...)
+                }
+            }
+        }
+    }
+
+    public static void notNull(Object... objects) {
+        for (Object object : objects) {
+            assertNotNull(object);
         }
     }
 }

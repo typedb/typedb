@@ -18,6 +18,8 @@
 
 package hypergraph.concept.type;
 
+import hypergraph.graph.GraphManager;
+import hypergraph.graph.Schema;
 import hypergraph.graph.vertex.TypeVertex;
 
 public class RelationType {
@@ -26,5 +28,11 @@ public class RelationType {
 
     public RelationType(TypeVertex vertex) {
         this.vertex = vertex;
+    }
+
+    public RelationType(GraphManager graph, String label) {
+        vertex = graph.createTypeVertex(Schema.Vertex.Type.RELATION_TYPE, label);
+        TypeVertex root = graph.getTypeVertex(Schema.Vertex.Type.Root.RELATION.label());
+        graph.createEdge(Schema.Edge.SUB, vertex, root);
     }
 }

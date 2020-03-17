@@ -22,6 +22,7 @@ package(
         "//core:__pkg__",
         "//cluster:__pkg__",
         "//traversal:__pkg__",
+        "//test:__pkg__"
     ]
 )
 

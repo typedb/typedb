@@ -5,9 +5,8 @@ digraph mygraph {
   "//core:hypergraph"
   "//core:hypergraph" -> "//:hypergraph"
   "//core:hypergraph" -> "//concept:concept"
-  "//core:hypergraph" -> "//traversal:traversal"
   "//core:hypergraph" -> "//graph:graph"
-  "//core:hypergraph" -> "//storage:storage"
+  "//core:hypergraph" -> "//traversal:traversal"
   "//:hypergraph"
   "//:hypergraph" -> "//concept:concept"
   "//:hypergraph" -> "//traversal:traversal"
@@ -16,6 +15,4 @@ digraph mygraph {
   "//concept:concept"
   "//concept:concept" -> "//graph:graph"
   "//graph:graph"
-  "//graph:graph" -> "//storage:storage"
-  "//storage:storage"
 }
