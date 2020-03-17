@@ -30,6 +30,7 @@ import grakn.core.kb.graql.planning.gremlin.TraversalPlanFactory;
 import grakn.core.kb.graql.reasoner.cache.CacheEntry;
 import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
+import graql.lang.Graql;
 import graql.lang.statement.Variable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -140,6 +141,12 @@ public class MultilevelSemanticCache extends SemanticCache<Equivalence.Wrapper<R
 
     @Override
     Pair<Stream<ConceptMap>, MultiUnifier> entryToAnswerStreamWithUnifier(ReasonerAtomicQuery query, CacheEntry<ReasonerAtomicQuery, IndexedAnswerSet> entry) {
+
+
+        Stream<ConceptMap> traverse = sCache.traversalExecutor.traverse(Graql.and(Graql.parsePattern("{$x isa continent; $y isa area;};")));
+        ConceptMap expectedAnswer = traverse.findFirst().get();
+
+
         ConceptMap answerIndex = query.getAnswerIndex();
         ReasonerAtomicQuery equivalentQuery = entry.query();
         AnswerSet answers = entry.cachedElement();
@@ -151,7 +158,13 @@ public class MultilevelSemanticCache extends SemanticCache<Equivalence.Wrapper<R
                         .apply(answerIndex)
                         .flatMap(index -> answers.get(index).stream())
                         .flatMap(multiUnifier::apply)
-                .map(ans -> ans.withPattern(query.getPattern())),
+                .map(ans -> {
+                    ConceptMap a = expectedAnswer;
+                    MultilevelSemanticCache x = this;
+                    CacheEntry<ReasonerAtomicQuery, IndexedAnswerSet> outer = entry;
+
+                    return ans.withPattern(query.getPattern());
+                }),
                 multiUnifier
         );
     }

@@ -53,7 +53,7 @@ public abstract class QueryCacheBase<
         SE extends Collection<ConceptMap>> implements QueryCache<Q, R, SE> {
 
     protected final Map<QE, CacheEntry<Q, SE>> cache;
-    private final TraversalCache<Q> sCache;
+    public final TraversalCache<Q> sCache;
 
     QueryCacheBase(TraversalPlanFactory traversalPlanFactory, TraversalExecutor traversalExecutor) {
         cache = new HashMap<>();

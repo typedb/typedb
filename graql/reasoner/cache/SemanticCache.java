@@ -32,6 +32,7 @@ import grakn.core.kb.graql.executor.TraversalExecutor;
 import grakn.core.kb.graql.planning.gremlin.TraversalPlanFactory;
 import grakn.core.kb.graql.reasoner.cache.CacheEntry;
 import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
+import graql.lang.Graql;
 import graql.lang.statement.Variable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -312,6 +313,8 @@ public abstract class SemanticCache<
             @Nullable CacheEntry<ReasonerAtomicQuery, SE> entry,
             @Nullable MultiUnifier unifier) {
 
+
+
         validateAnswer(answer, query, query.getVarNames());
         if (query.hasUniqueAnswer()) ackCompleteness(query);
 
@@ -338,6 +341,11 @@ public abstract class SemanticCache<
 
     @Override
     public Pair<Stream<ConceptMap>, MultiUnifier> getAnswerStreamWithUnifier(ReasonerAtomicQuery query) {
+
+        Stream<ConceptMap> traverse = sCache.traversalExecutor.traverse(Graql.and(Graql.parsePattern("{$x isa continent; $y isa area;};")));
+        ConceptMap expectedAnswer = traverse.findFirst().get();
+
+
         CacheEntry<ReasonerAtomicQuery, SE> match = getEntry(query);
         boolean queryGround = query.isGround();
         boolean queryDBComplete = isDBComplete(query);

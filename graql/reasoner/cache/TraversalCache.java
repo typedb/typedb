@@ -52,7 +52,8 @@ public class TraversalCache<Q extends ReasonerQueryImpl>{
     private final ReasonerQueryEquivalence equivalence = ReasonerQueryEquivalence.StructuralEquivalence;
     private final Map<Equivalence.Wrapper<Q>, CacheEntry<Q, GraqlTraversal>> structCache;
     private TraversalPlanFactory traversalPlanFactory;
-    private TraversalExecutor traversalExecutor;
+    // TODO remove public
+    public TraversalExecutor traversalExecutor;
 
     TraversalCache(TraversalPlanFactory traversalPlanFactory, TraversalExecutor traversalExecutor){
         this.traversalPlanFactory = traversalPlanFactory;

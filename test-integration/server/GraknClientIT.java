@@ -274,7 +274,7 @@ public class GraknClientIT {
 
     @Test
     public void test() {
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 1; i++) {
 
             System.out.println("iteration: " + i);
 
@@ -335,7 +335,7 @@ public class GraknClientIT {
                 boolean b = explanation.getAnswers().stream().anyMatch(answer -> answer.hasExplanation());
                 if (!b) {
                     answers.get(0).explanation();
-                    explanation.getAnswers().stream().anyMatch(answer -> answer.explanation() != null);
+//                    explanation.getAnswers().stream().anyMatch(answer -> answer.explanation() != null);
                 }
                 assertTrue(b);
             }
