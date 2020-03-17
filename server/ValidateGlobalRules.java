@@ -19,6 +19,7 @@
 package grakn.core.server;
 
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Multimap;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.util.Streams;
 import grakn.core.concept.impl.RelationTypeImpl;
@@ -26,6 +27,7 @@ import grakn.core.concept.impl.RuleImpl;
 import grakn.core.concept.impl.SchemaConceptImpl;
 import grakn.core.concept.impl.TypeImpl;
 import grakn.core.core.Schema;
+import grakn.core.graql.reasoner.atom.binary.RelationAtom;
 import grakn.core.graql.reasoner.query.CompositeQuery;
 import grakn.core.graql.reasoner.query.ReasonerQueryFactory;
 import grakn.core.graql.reasoner.rule.RuleUtils;
@@ -47,6 +49,7 @@ import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;
+import graql.lang.statement.Variable;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -358,6 +361,16 @@ public class ValidateGlobalRules {
                     .filter(Atomic::isAtom)
                     .filter(Atomic::isSelectable)
                     .collect(Collectors.toSet());
+
+            headQuery.getAtoms(RelationAtom.class)
+                    .map(relationAtom -> {
+                        Map<Role, Collection<Variable>> roleVarMap = relationAtom.getRoleVarMap().asMap();
+                        Set<Role> duplicateRoles = roleVarMap.entrySet().stream().filter(entry -> entry.getValue().size() > 1).map(Map.Entry::getKey).collect(Collectors.toSet());
+
+                        // check that each pair of variables from the duplicate roles has a !=
+                        // otherwise there is a risk of having duplicate edges
+
+                    })
 
             if (selectableHeadAtoms.size() > 1) {
                 errors.add(ErrorMessage.VALIDATION_RULE_HEAD_NON_ATOMIC.getMessage(rule.label()));
