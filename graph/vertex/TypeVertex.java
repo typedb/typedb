@@ -21,10 +21,17 @@ package hypergraph.graph.vertex;
 import hypergraph.graph.KeyGenerator;
 import hypergraph.graph.Schema;
 import hypergraph.graph.Storage;
+import hypergraph.graph.edge.TypeEdge;
 
 import java.nio.ByteBuffer;
+import java.util.HashSet;
+import java.util.Set;
 
-public abstract class TypeVertex extends Vertex {
+import static hypergraph.graph.Schema.Property.ABSTRACT;
+import static hypergraph.graph.Schema.Property.DATATYPE;
+import static hypergraph.graph.Schema.Property.REGEX;
+
+public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, Schema.Edge.Type, TypeEdge> {
 
     private static final int IID_SIZE = 3;
     protected final String label;
@@ -32,18 +39,32 @@ public abstract class TypeVertex extends Vertex {
     protected Schema.DataType dataType;
     protected String regex;
 
-    TypeVertex(Storage storage, Schema.Status status, Schema.Vertex.Type type, byte[] iid, String label) {
-        super(storage, status, type, iid);
-        this.label = label;
-    }
 
-    @Override
-    public Schema.Vertex.Type schema() {
-        return (Schema.Vertex.Type) super.schema();
+    TypeVertex(Storage storage, Schema.Vertex.Type type, byte[] iid, String label) {
+        super(storage, type, iid);
+        this.label = label;
     }
 
     public String label() {
         return label;
+    }
+
+    public Set<TypeEdge> outs(Schema.Edge.Type schema) {
+        return outs.get(schema);
+    }
+
+    public void out(TypeEdge edge) {
+        outs.putIfAbsent(edge.schema(), new HashSet<>());
+        outs.get(edge.schema()).add(edge);
+    }
+
+    public Set<TypeEdge> ins(Schema.Edge.Type schema) {
+        return ins.get(schema);
+    }
+
+    public void in(TypeEdge edge) {
+        ins.putIfAbsent(edge.schema(), new HashSet<>());
+        ins.get(edge.schema()).add(edge);
     }
 
     public static byte[] generateIID(KeyGenerator keyGenerator, Schema.Vertex.Type schema) {
@@ -76,7 +97,11 @@ public abstract class TypeVertex extends Vertex {
     public static class Buffered extends TypeVertex {
 
         public Buffered(Storage storage, Schema.Vertex.Type schema, byte[] iid, String label) {
-            super(storage, Schema.Status.BUFFERED, schema, iid, label);
+            super(storage, schema, iid, label);
+        }
+
+        public Schema.Status status() {
+            return Schema.Status.BUFFERED;
         }
 
         public boolean isAbstract() {
@@ -117,9 +142,7 @@ public abstract class TypeVertex extends Vertex {
         void persistIndex() {
             byte[] labelBytes = label.getBytes();
             byte[] index = ByteBuffer.allocate(labelBytes.length + 1)
-                    .put(Schema.Index.TYPE.prefix().key())
-                    .put(labelBytes)
-                    .array();
+                    .put(Schema.Index.TYPE.prefix().key()).put(labelBytes).array();
             storage.put(index, iid);
         }
 
@@ -132,51 +155,37 @@ public abstract class TypeVertex extends Vertex {
 
         void persistPropertyAbstract() {
             byte[] key = ByteBuffer.allocate(iid.length + 1)
-                    .put(iid)
-                    .put(Schema.Property.ABSTRACT.infix().key())
-                    .array();
+                    .put(iid).put(ABSTRACT.infix().key()).array();
             storage.put(key);
         }
 
         void persistPropertyLabel() {
             byte[] key = ByteBuffer.allocate(iid.length + 1)
-                    .put(iid)
-                    .put(Schema.Property.LABEL.infix().key())
-                    .array();
+                    .put(iid).put(Schema.Property.LABEL.infix().key()).array();
             storage.put(key, label.getBytes());
         }
 
         void persistPropertyDataType() {
             byte[] key = ByteBuffer.allocate(iid.length + 1)
-                    .put(iid)
-                    .put(Schema.Property.DATATYPE.infix().key())
-                    .array();
+                    .put(iid).put(DATATYPE.infix().key()).array();
             storage.put(key, new byte[]{dataType.value()});
         }
 
         void persistPropertyRegex() {
             byte[] key = ByteBuffer.allocate(iid.length + 1)
-                    .put(iid)
-                    .put(Schema.Property.REGEX.infix().key())
-                    .array();
+                    .put(iid).put(REGEX.infix().key()).array();
             storage.put(key, regex.getBytes());
         }
 
         void persistEdges() {
             final int prefixSize = this.iid().length + 1;
-            outs.forEach((key, value) -> value.forEach(edge -> {
+            outs.forEach((key, set) -> set.forEach(edge -> {
                 storage.put(ByteBuffer.allocate(prefixSize + edge.to().iid().length)
-                                    .put(iid)
-                                    .put(key.out().key())
-                                    .put(edge.from().iid())
-                                    .array());
+                                    .put(iid).put(key.out().key()).put(edge.from().iid()).array());
             }));
-            ins.forEach((key, value) -> value.forEach(edge -> {
+            ins.forEach((key, set) -> set.forEach(edge -> {
                 storage.put(ByteBuffer.allocate(prefixSize + edge.from().iid().length)
-                                    .put(iid)
-                                    .put(key.in().key())
-                                    .put(edge.from().iid())
-                                    .array());
+                                    .put(iid).put(key.in().key()).put(edge.from().iid()).array());
             }));
         }
     }
@@ -185,16 +194,19 @@ public abstract class TypeVertex extends Vertex {
 
 
         public Persisted(Storage storage, byte[] iid, String label) {
-            super(storage, Schema.Status.PERSISTED, Schema.Vertex.Type.of(iid[0]), iid, label);
+            super(storage, Schema.Vertex.Type.of(iid[0]), iid, label);
+        }
+
+        @Override
+        public Schema.Status status() {
+            return Schema.Status.PERSISTED;
         }
 
         @Override
         public boolean isAbstract() {
             if (isAbstract != null) return isAbstract;
             byte[] abs = storage.get(ByteBuffer.allocate(iid.length + 1)
-                                             .put(iid)
-                                             .put(Schema.Property.ABSTRACT.infix().key())
-                                             .array());
+                                             .put(iid).put(ABSTRACT.infix().key()).array());
             isAbstract = abs != null;
             return isAbstract;
         }
@@ -208,9 +220,7 @@ public abstract class TypeVertex extends Vertex {
         public Schema.DataType dataType() {
             if (dataType != null) return dataType;
             byte[] val = storage.get(ByteBuffer.allocate(iid.length + 1)
-                                             .put(iid)
-                                             .put(Schema.Property.DATATYPE.infix().key())
-                                             .array());
+                                             .put(iid).put(DATATYPE.infix().key()).array());
             if (val != null) dataType = Schema.DataType.of(val[0]);
             return dataType;
         }
@@ -224,9 +234,7 @@ public abstract class TypeVertex extends Vertex {
         public String regex() {
             if (regex != null) return regex;
             byte[] val = storage.get(ByteBuffer.allocate(iid.length + 1)
-                                             .put(iid)
-                                             .put(Schema.Property.REGEX.infix().key())
-                                             .array());
+                                             .put(iid).put(REGEX.infix().key()).array());
             if (val != null) regex = new String(val);
             return regex;
         }

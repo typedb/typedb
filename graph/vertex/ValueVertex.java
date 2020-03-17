@@ -20,14 +20,15 @@ package hypergraph.graph.vertex;
 
 import hypergraph.graph.Schema;
 import hypergraph.graph.Storage;
+import hypergraph.graph.edge.ThingEdge;
 
-public abstract class ValueVertex extends Vertex {
-
-    private final Object value;
-
-    ValueVertex(Storage storage, Schema.Status status, byte[] iid, Object value) {
-        super(storage, status, Schema.Vertex.Other.VALUE, iid);
-        this.value = value;
-    }
-
-}
+//public abstract class ValueVertex extends Vertex<Schema.Vertex.Value, Schema.Edge.Thing, ThingEdge> {
+//
+//    private final Object value;
+//
+//    ValueVertex(Storage storage, Schema.Status status, byte[] iid, Object value) {
+//        super(storage, Schema.Vertex.Value.VALUE, iid);
+//        this.value = value;
+//    }
+//
+//}

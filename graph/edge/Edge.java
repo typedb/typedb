@@ -23,29 +23,33 @@ import hypergraph.graph.vertex.Vertex;
 
 import java.util.Objects;
 
-public class Edge {
+public abstract class Edge<EDGE_SCHEMA extends Schema.Edge, VERTEX extends Vertex> {
 
-    private final Schema.Edge schema;
-    private final Vertex from;
-    private final Vertex to;
-    private final int hash;
+    protected final EDGE_SCHEMA schema;
+    protected final VERTEX from;
+    protected final VERTEX to;
+    protected final int hash;
 
-    public Edge(Schema.Edge schema, Vertex from, Vertex to) {
+    public Edge(EDGE_SCHEMA schema, VERTEX from, VERTEX to) {
         this.schema = schema;
         this.from = from;
         this.to = to;
         this.hash = Objects.hash(schema, from, to);
     }
 
-    public Schema.Edge schema() {
+    public abstract Schema.Status status();
+
+    public abstract void persist();
+
+    public EDGE_SCHEMA schema(){
         return schema;
     }
 
-    public Vertex from() {
+    public VERTEX from() {
         return from;
     }
 
-    public Vertex to() {
+    public VERTEX to() {
         return to;
     }
 

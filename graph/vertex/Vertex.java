@@ -28,21 +28,22 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-public abstract class Vertex {
+public abstract class Vertex<
+        VERTEX_SCHEMA extends Schema.Vertex,
+        EDGE_SCHEMA extends Schema.Edge,
+        EDGE extends Edge<EDGE_SCHEMA, ? extends Vertex<VERTEX_SCHEMA, EDGE_SCHEMA, EDGE>>> {
 
     protected final Storage storage;
-    private final Schema.Status status;
-    private final Schema.Vertex schema;
+    protected final VERTEX_SCHEMA schema;
     private final int hash;
 
-    protected final Map<Schema.Edge, Set<Edge>> outs;
-    protected final Map<Schema.Edge, Set<Edge>> ins;
+    protected final Map<EDGE_SCHEMA, Set<EDGE>> outs;
+    protected final Map<EDGE_SCHEMA, Set<EDGE>> ins;
 
     protected byte[] iid;
 
-    Vertex(Storage storage, Schema.Status status, Schema.Vertex schema, byte[] iid) {
+    Vertex(Storage storage, VERTEX_SCHEMA schema, byte[] iid) {
         this.storage = storage;
-        this.status = status;
         this.schema = schema;
         this.iid = iid;
         hash = Arrays.hashCode(iid);
@@ -50,12 +51,30 @@ public abstract class Vertex {
         ins = new ConcurrentHashMap<>();
     }
 
-    public Schema.Status status() {
-        return status;
+    public abstract Schema.Status status();
+
+    public VERTEX_SCHEMA schema() {
+        return schema;
     }
 
-    public Schema.Vertex schema() {
-        return schema;
+    public abstract void persist();
+
+    public Set<EDGE> outs(EDGE_SCHEMA schema) {
+        return outs.get(schema);
+    }
+
+    public void out(EDGE edge) {
+        outs.putIfAbsent(edge.schema(), new HashSet<>());
+        outs.get(edge.schema()).add(edge);
+    }
+
+    public Set<EDGE> ins(EDGE_SCHEMA schema) {
+        return ins.get(schema);
+    }
+
+    public void in(EDGE edge) {
+        ins.putIfAbsent(edge.schema(), new HashSet<>());
+        ins.get(edge.schema()).add(edge);
     }
 
     public byte[] iid() {
@@ -65,26 +84,6 @@ public abstract class Vertex {
     public void iid(byte[] iid) {
         this.iid = iid;
     }
-
-    public Set<Edge> outs(Schema.Edge schema) {
-        return outs.get(schema);
-    }
-
-    public void out(Edge edge) {
-        outs.putIfAbsent(edge.schema(), new HashSet<>());
-        outs.get(edge.schema()).add(edge);
-    }
-
-    public Set<Edge> ins(Schema.Edge schema) {
-        return ins.get(schema);
-    }
-
-    public void in(Edge edge) {
-        ins.putIfAbsent(edge.schema(), new HashSet<>());
-        ins.get(edge.schema()).add(edge);
-    }
-
-    public abstract void persist();
 
     @Override
     public boolean equals(Object object) {

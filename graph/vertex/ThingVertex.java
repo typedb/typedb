@@ -21,16 +21,16 @@ package hypergraph.graph.vertex;
 import hypergraph.graph.KeyGenerator;
 import hypergraph.graph.Schema;
 import hypergraph.graph.Storage;
+import hypergraph.graph.edge.ThingEdge;
+import hypergraph.graph.edge.TypeEdge;
 
-public abstract class ThingVertex extends Vertex {
+import java.util.HashSet;
+import java.util.Set;
 
-    ThingVertex(Storage storage, Schema.Status status, Schema.Vertex.Thing schema, byte[] iid) {
-        super(storage, status, schema, iid);
-    }
+public abstract class ThingVertex extends Vertex<Schema.Vertex.Thing, Schema.Edge.Thing, ThingEdge> {
 
-    @Override
-    public Schema.Vertex.Thing schema() {
-        return (Schema.Vertex.Thing) super.schema();
+    ThingVertex(Storage storage, Schema.Vertex.Thing schema, byte[] iid) {
+        super(storage, schema, iid);
     }
 
     public static byte[] generateIID(KeyGenerator keyGenerator, Schema.Vertex.Thing schema) {

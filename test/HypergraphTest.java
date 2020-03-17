@@ -21,6 +21,7 @@ package hypergraph;
 import hypergraph.concept.type.AttributeType;
 import hypergraph.concept.type.EntityType;
 import hypergraph.concept.type.RelationType;
+import hypergraph.concept.type.Type;
 import hypergraph.core.CoreHypergraph;
 import org.junit.Test;
 
@@ -77,6 +78,12 @@ public class HypergraphTest {
                 try (Hypergraph.Transaction transaction = session.transaction(Hypergraph.Transaction.Type.WRITE)) {
                     assertTrue(transaction.isOpen());
                     assertEquals(CoreHypergraph.Transaction.Type.WRITE, transaction.type());
+
+                    Type rootType = transaction.concepts().getRootType();
+                    EntityType rootEntityType = transaction.concepts().getRootEntityType();
+                    RelationType rootRelationType = transaction.concepts().getRootRelationType();
+                    AttributeType rootAttributeType = transaction.concepts().getRootAttributeType();
+                    notNull(rootType, rootEntityType, rootRelationType, rootAttributeType);
 
                     AttributeType name = transaction.concepts().putAttributeType("name");
                     AttributeType age = transaction.concepts().putAttributeType("age");

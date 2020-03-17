@@ -18,7 +18,7 @@
 
 package hypergraph.graph;
 
-import hypergraph.graph.edge.Edge;
+import hypergraph.graph.edge.TypeEdge;
 import hypergraph.graph.vertex.ThingVertex;
 import hypergraph.graph.vertex.TypeVertex;
 import hypergraph.graph.vertex.Vertex;
@@ -75,10 +75,10 @@ public class GraphManager {
                 Schema.Vertex.Type.Root.ATTRIBUTE.label()
         ).setAbstract(true);
 
-        createEdge(Schema.Edge.SUB, rootEntityType, rootType);
-        createEdge(Schema.Edge.SUB, rootRelationType, rootType);
-        createEdge(Schema.Edge.SUB, rootRoleType, rootType);
-        createEdge(Schema.Edge.SUB, rootAttributeType, rootType);
+        createTypeEdge(Schema.Edge.Type.SUB, rootEntityType, rootType);
+        createTypeEdge(Schema.Edge.Type.SUB, rootRelationType, rootType);
+        createTypeEdge(Schema.Edge.Type.SUB, rootRoleType, rootType);
+        createTypeEdge(Schema.Edge.Type.SUB, rootAttributeType, rootType);
     }
 
     public TypeVertex createTypeVertex(Schema.Vertex.Type type, String label) {
@@ -88,8 +88,8 @@ public class GraphManager {
         return typeVertex;
     }
 
-    public Edge createEdge(Schema.Edge type, Vertex from, Vertex to) {
-        Edge edge = new Edge(type, from, to);
+    public TypeEdge createTypeEdge(Schema.Edge.Type type, TypeVertex from, TypeVertex to) {
+        TypeEdge edge = new TypeEdge.Buffered(type, from, to);
         from.out(edge);
         to.in(edge);
         return edge;

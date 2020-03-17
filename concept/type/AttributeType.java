@@ -22,17 +22,15 @@ import hypergraph.graph.GraphManager;
 import hypergraph.graph.Schema;
 import hypergraph.graph.vertex.TypeVertex;
 
-public class AttributeType {
-
-    private final TypeVertex vertex;
+public class AttributeType extends Type {
 
     public AttributeType(TypeVertex vertex) {
-        this.vertex = vertex;
+        super(vertex);
     }
 
     public AttributeType(GraphManager graph, String label) {
-        vertex = graph.createTypeVertex(Schema.Vertex.Type.ATTRIBUTE_TYPE, label);
-        TypeVertex root = graph.getTypeVertex(Schema.Vertex.Type.Root.ATTRIBUTE.label());
-        graph.createEdge(Schema.Edge.SUB, vertex, root);
+        super(graph.createTypeVertex(Schema.Vertex.Type.ATTRIBUTE_TYPE, label));
+        TypeVertex parent = graph.getTypeVertex(Schema.Vertex.Type.Root.ATTRIBUTE.label());
+        graph.createTypeEdge(Schema.Edge.Type.SUB, vertex, parent);
     }
 }

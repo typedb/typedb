@@ -20,19 +20,33 @@ package hypergraph.concept.type;
 
 import hypergraph.graph.GraphManager;
 import hypergraph.graph.Schema;
+import hypergraph.graph.edge.TypeEdge;
 import hypergraph.graph.vertex.TypeVertex;
 
-public class EntityType {
+import java.util.Set;
 
-    private final TypeVertex vertex;
+public class EntityType extends Type {
+
+    private EntityType parent;
 
     public EntityType(TypeVertex vertex) {
-        this.vertex = vertex;
+        super(vertex);
     }
 
     public EntityType(GraphManager graph, String label) {
-        vertex = graph.createTypeVertex(Schema.Vertex.Type.ENTITY_TYPE, label);
-        TypeVertex root = graph.getTypeVertex(Schema.Vertex.Type.Root.ENTITY.label());
-        graph.createEdge(Schema.Edge.SUB, vertex, root);
+        super(graph.createTypeVertex(Schema.Vertex.Type.ENTITY_TYPE, label));
+        TypeVertex parentVertex = graph.getTypeVertex(Schema.Vertex.Type.Root.ENTITY.label());
+        graph.createTypeEdge(Schema.Edge.Type.SUB, vertex, parentVertex);
+        parent = new EntityType(parentVertex);
     }
+
+    public EntityType sup() {
+        if (parent != null) return parent;
+
+        Set<TypeEdge> sub = vertex.outs(Schema.Edge.Type.SUB);
+        if (sub != null && sub.size()==1) return new EntityType(sub.iterator().next().to());
+
+        return null;
+    }
+
 }

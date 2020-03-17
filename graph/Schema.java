@@ -194,13 +194,26 @@ public class Schema {
 
         Prefix prefix();
 
-        enum Other implements Vertex {
-            VALUE(Prefix.VERTEX_VALUE),
+        enum Value implements Vertex {
+            VALUE(Prefix.VERTEX_VALUE);
+
+            private final Prefix prefix;
+
+            Value(Prefix prefix) {
+                this.prefix = prefix;
+            }
+
+            @Override
+            public Prefix prefix() {
+                return prefix;
+            }
+        }
+        enum Rule implements Vertex {
             RULE(Prefix.VERTEX_RULE);
 
             private final Prefix prefix;
 
-            Other(Prefix prefix) {
+            Rule(Prefix prefix) {
                 this.prefix = prefix;
             }
 
@@ -292,29 +305,61 @@ public class Schema {
 
     }
 
-    public enum Edge {
-        SUB(Infix.EDGE_SUB_OUT, Infix.EDGE_SUB_IN),
-        KEY(Infix.EDGE_KEY_OUT, Infix.EDGE_KEY_IN),
-        HAS(Infix.EDGE_HAS_OUT, Infix.EDGE_HAS_IN),
-        PLAYS(Infix.EDGE_PLAYS_OUT, Infix.EDGE_PLAYS_IN),
-        RELATES(Infix.EDGE_RELATES_OUT, Infix.EDGE_RELATES_IN),
-        OPT_ROLE(Infix.EDGE_OPT_ROLE_OUT, Infix.EDGE_OPT_ROLE_IN),
-        OPT_RELATION(Infix.EDGE_OPT_RELATION_OUT, null);
+    public interface Edge {
 
-        private final Infix out;
-        private final Infix in;
+        Infix out();
 
-        Edge(Infix out, Infix in) {
-            this.out = out;
-            this.in = in;
+        Infix in();
+
+        enum Type implements Edge {
+            SUB(Infix.EDGE_SUB_OUT, Infix.EDGE_SUB_IN),
+            KEY(Infix.EDGE_KEY_OUT, Infix.EDGE_KEY_IN),
+            HAS(Infix.EDGE_HAS_OUT, Infix.EDGE_HAS_IN),
+            PLAYS(Infix.EDGE_PLAYS_OUT, Infix.EDGE_PLAYS_IN),
+            RELATES(Infix.EDGE_RELATES_OUT, Infix.EDGE_RELATES_IN);
+
+            private final Infix out;
+            private final Infix in;
+
+            Type(Infix out, Infix in) {
+                this.out = out;
+                this.in = in;
+            }
+
+            @Override
+            public Infix out() {
+                return out;
+            }
+
+            public Infix in() {
+                return in;
+            }
         }
 
-        public Infix out() {
-            return out;
-        }
+        enum Thing implements Edge {
+            HAS(Infix.EDGE_HAS_OUT, Infix.EDGE_HAS_IN),
+            PLAYS(Infix.EDGE_PLAYS_OUT, Infix.EDGE_PLAYS_IN),
+            RELATES(Infix.EDGE_RELATES_OUT, Infix.EDGE_RELATES_IN),
+            OPT_ROLE(Infix.EDGE_OPT_ROLE_OUT, Infix.EDGE_OPT_ROLE_IN),
+            OPT_RELATION(Infix.EDGE_OPT_RELATION_OUT, null);
 
-        public Infix in() {
-            return in;
+            private final Infix out;
+            private final Infix in;
+
+            Thing(Infix out, Infix in) {
+                this.out = out;
+                this.in = in;
+            }
+
+            @Override
+            public Infix out() {
+                return out;
+            }
+
+            @Override
+            public Infix in() {
+                return in;
+            }
         }
     }
 }
