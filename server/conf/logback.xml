@@ -67,4 +67,8 @@
         <appender-ref ref="STDOUT"/>
     </logger>
 
+    <logger name="grabl.tracing" level="TRACE">
+        <appender-ref ref="MAIN"/>
+    </logger>
+
 </configuration>

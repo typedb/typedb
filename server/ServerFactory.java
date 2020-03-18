@@ -52,6 +52,8 @@ import java.util.concurrent.TimeUnit;
  */
 public class ServerFactory {
 
+    private static final Logger LOG = LoggerFactory.getLogger(ServerFactory.class);
+
     private static final int GRPC_EXECUTOR_THREADS = Runtime.getRuntime().availableProcessors() * 2; // default Netty way of assigning threads, probably expose in config in future
     private static final int ELG_THREADS = 4; // this could also be 1, but to avoid risks set it to 4, probably expose in config in future
 
@@ -88,17 +90,22 @@ public class ServerFactory {
             ServerTracing.initInstrumentation("server-instrumentation");
         }
         if (arguments.isGrablTracing()) {
+            LOG.info("Grabl tracing is enabled!");
+
             GrablTracing grablTracingClient;
             if (arguments.getGrablTracing().isSecureMode()) {
-                grablTracingClient = GrablTracing.tracing(
+                LOG.info("Using Grabl tracing secure mode");
+                grablTracingClient = GrablTracing.withLogging(GrablTracing.tracing(
                         arguments.getGrablTracing().getUri(),
                         arguments.getGrablTracing().getUsername(),
                         arguments.getGrablTracing().getAccessToken()
-                );
+                ));
             } else {
+                LOG.warn("Using Grabl tracing UNSECURED mode!!!");
                 grablTracingClient = GrablTracing.withLogging(GrablTracing.tracing(arguments.getGrablTracing().getUri()));
             }
             GrablTracingThreadStatic.setGlobalTracingClient(grablTracingClient);
+            LOG.info("Completed tracing setup");
         }
 
         // create gRPC server

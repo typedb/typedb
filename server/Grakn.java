@@ -141,8 +141,8 @@ public class Grakn {
                 }
                 grablTracing = new Tracing(
                         arguments.getOptionValue("tracing-uri"),
-                        arguments.getOptionValue("username"),
-                        arguments.getOptionValue("access-token")
+                        arguments.getOptionValue("tracing-username"),
+                        arguments.getOptionValue("tracing-access-token")
                 );
             } else {
                 grablTracing = null;
