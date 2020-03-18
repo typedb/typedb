@@ -143,7 +143,7 @@ class CoreTransaction implements Hypergraph.Transaction {
         public byte[] get(byte[] key) {
             try {
                 readWriteLock.lockRead();
-                return session.rocks().get(readOptions, key);
+                return rocksTransaction.get(readOptions, key);
             } catch (RocksDBException | InterruptedException e) {
                 throw new HypergraphException(e);
             } finally {
