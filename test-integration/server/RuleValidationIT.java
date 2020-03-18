@@ -892,6 +892,54 @@ public class RuleValidationIT {
         }
     }
 
+
+    @Test
+    public void whenCreatingRuleWithPossibleDuplicateRolePlayers_RejectIfNoNeqPredicatesExist() {
+        try (Transaction tx = session.writeTransaction()) {
+            tx.execute(Graql.parse("define " +
+                    "person sub entity, plays friend;" +
+                    "friendship sub relation, relates friend;" +
+                    "friendship-transitive sub rule, when " +
+                    "{ (friend: $f1, friend: $f2) isa friendship;(friend: $f2, friend: $f3) isa friendship;}, " +
+                    "then {  (friend: $f1, friend: $f3) isa friendship;};"
+            ).asDefine());
+            tx.execute(Graql.insert(Sets.newHashSet(
+                    Graql.var("x").isa("person"),
+                    Graql.var("y").isa("person"),
+                    Graql.var("z").isa("person"),
+                    Graql.var("r1").rel("friend", "x").rel("friend", "y").isa("friendship"),
+                    Graql.var("r2").rel("friend", "y").rel("friend", "x").isa("friendship")
+            )));
+
+            expectedException.expect(Exception.class);
+            expectedException.expectMessage("may infer duplicate roles");
+            tx.commit();
+        }
+    }
+
+    @Test
+    public void whenCreatingRuleWithPossibleDuplicateRolePlayers_acceptIfNeqExists() {
+        try (Transaction tx = session.writeTransaction()) {
+            tx.execute(Graql.parse("define " +
+                    "person sub entity, plays friend;" +
+                    "friendship sub relation, relates friend;" +
+                    "friendship-transitive sub rule, when " +
+                    "{ (friend: $f1, friend: $f2) isa friendship;(friend: $f2, friend: $f3) isa friendship; $f1 != $f3; }, " +
+                    "then {  (friend: $f1, friend: $f3) isa friendship;};"
+            ).asDefine());
+            tx.execute(Graql.insert(Sets.newHashSet(
+                    Graql.var("x").isa("person"),
+                    Graql.var("y").isa("person"),
+                    Graql.var("z").isa("person"),
+                    Graql.var("r1").rel("friend", "x").rel("friend", "y").isa("friendship"),
+                    Graql.var("r2").rel("friend", "y").rel("friend", "x").isa("friendship")
+            )));
+
+            tx.commit();
+        }
+    }
+
+
     public static <T> T[] concat(T[] first, T[] second) {
         T[] result = Arrays.copyOf(first, first.length + second.length);
         System.arraycopy(second, 0, result, first.length, second.length);
