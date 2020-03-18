@@ -326,9 +326,12 @@ public class ResponseBuilder {
                 conceptMapProto.putMap(var.name(), conceptProto);
             });
 
+            if (answer.getPattern() != null) {
+                conceptMapProto.setPattern(answer.getPattern().toString());
+            }
+
             if (answer.explanation() != null && !answer.explanation().isEmpty()) {
                 conceptMapProto.setHasExplanation(true);
-                conceptMapProto.setPattern(answer.getPattern().toString());
             } else {
                 conceptMapProto.setHasExplanation(false);
             }

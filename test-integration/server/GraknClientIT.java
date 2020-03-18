@@ -260,6 +260,7 @@ public class GraknClientIT {
 
             Set<ConceptMap> deductions = deductions(answer);
             assertTrue(deductions.stream().anyMatch(ans -> {
+                assertNotNull(ans.queryPattern());
                 if (ans.hasExplanation()) {
                     assertEquals("transitive-location", ans.explanation().getRule().label().toString());
                     return true;
