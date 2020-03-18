@@ -49,11 +49,11 @@ public abstract class TypeEdge extends Edge<Schema.Edge.Type, TypeVertex> {
         public void commit() {
             if (committed.compareAndSet(false, true)) {
                 if (schema.out() != null) {
-                    storage.put(ByteBuffer.allocate(from.iid().length + to().iid().length + 1)
+                    storage.put(ByteBuffer.allocate(from.iid().length + to.iid().length + 1)
                                         .put(from.iid()).put(schema.out().key()).put(to.iid()).array());
                 }
                 if (schema.in() != null) {
-                    storage.put(ByteBuffer.allocate(from.iid().length + to().iid().length + 1)
+                    storage.put(ByteBuffer.allocate(from.iid().length + to.iid().length + 1)
                                         .put(to.iid()).put(schema.in().key()).put(from.iid()).array());
                 }
             }

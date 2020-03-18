@@ -25,6 +25,7 @@ import hypergraph.graph.edge.Edge;
 import hypergraph.graph.edge.TypeEdge;
 
 import java.nio.ByteBuffer;
+import java.util.Set;
 
 import static hypergraph.graph.Schema.Property.ABSTRACT;
 import static hypergraph.graph.Schema.Property.DATATYPE;
@@ -110,6 +111,14 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, Schema.Edge.
         public TypeVertex regex(String regex) {
             this.regex = regex;
             return this;
+        }
+
+        public Set<TypeEdge> outs(Schema.Edge.Type schema) {
+            return outs.get(schema);
+        }
+
+        public Set<TypeEdge> ins(Schema.Edge.Type schema) {
+            return ins.get(schema);
         }
 
         @Override
@@ -218,9 +227,15 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, Schema.Edge.
             return null;
         }
 
-        @Override
-        public void commit() {
-
+        public Set<TypeEdge> outs(Schema.Edge.Type schema) {
+            return outs.get(schema); // TODO
         }
+
+        public Set<TypeEdge> ins(Schema.Edge.Type schema) {
+            return ins.get(schema); // TODO
+        }
+
+        @Override
+        public void commit() {}
     }
 }

@@ -59,17 +59,13 @@ public abstract class Vertex<
 
     public abstract void commit();
 
-    public Set<EDGE> outs(EDGE_SCHEMA schema) {
-        return outs.get(schema);
-    }
+    public abstract Set<EDGE> outs(EDGE_SCHEMA schema);
+
+    public abstract Set<EDGE> ins(EDGE_SCHEMA schema);
 
     public void out(EDGE edge) {
         outs.putIfAbsent(edge.schema(), new HashSet<>());
         outs.get(edge.schema()).add(edge);
-    }
-
-    public Set<EDGE> ins(EDGE_SCHEMA schema) {
-        return ins.get(schema);
     }
 
     public void in(EDGE edge) {

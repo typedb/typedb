@@ -45,8 +45,8 @@ public class GraphManager {
                 vertex -> vertex.iid(ThingVertex.generateIID(storage.keyGenerator(), vertex.schema()))
         );
 
-        buffer.typeVertices().forEach(Vertex::commit);
-        buffer.thingVertices().forEach(Vertex::commit);
+        buffer.typeVertices().parallelStream().forEach(Vertex::commit);
+        buffer.thingVertices().parallelStream().forEach(Vertex::commit);
     }
 
     public void creatRootTypes() {

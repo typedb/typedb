@@ -20,6 +20,7 @@ package hypergraph.core;
 
 import hypergraph.Hypergraph;
 import hypergraph.common.HypergraphException;
+import hypergraph.common.ManagedReadWriteLock;
 import hypergraph.concept.ConceptManager;
 import hypergraph.graph.GraphManager;
 import hypergraph.graph.KeyGenerator;
@@ -127,10 +128,10 @@ class CoreTransaction implements Hypergraph.Transaction {
 
     private class CoreStorage implements Storage {
 
-        private final AtomicBoolean isWriting;
+        private final ManagedReadWriteLock readWriteLock;
 
         CoreStorage() {
-            isWriting = new AtomicBoolean(false);
+            readWriteLock = new ManagedReadWriteLock();
         }
 
         @Override
@@ -141,10 +142,12 @@ class CoreTransaction implements Hypergraph.Transaction {
         @Override
         public byte[] get(byte[] key) {
             try {
+                readWriteLock.lockRead();
                 return session.rocks().get(readOptions, key);
-            } catch (RocksDBException e) {
-                e.printStackTrace();
+            } catch (RocksDBException | InterruptedException e) {
                 throw new HypergraphException(e);
+            } finally {
+                readWriteLock.unlockRead();
             }
         }
 
@@ -155,18 +158,19 @@ class CoreTransaction implements Hypergraph.Transaction {
 
         @Override
         public void put(byte[] key, byte[] value) {
-            if (!isWriting.compareAndSet(false, true)) {
-                throw new HypergraphException("Attempted multiple access to PUT operation concurrently");
-            }
-
             try {
+                readWriteLock.lockWrite();
                 rocksTransaction.put(key, value);
-            } catch (RocksDBException e) {
+            } catch (RocksDBException | InterruptedException e) {
                 e.printStackTrace();
                 throw new HypergraphException(e);
+            } finally {
+                readWriteLock.unlockWrite();
             }
+        }
 
-            isWriting.set(false);
+        public void iterate(byte[] key) {
+            rocksTransaction.getIterator(readOptions).seek(key);
         }
     }
 }
