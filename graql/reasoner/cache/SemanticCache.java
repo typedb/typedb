@@ -195,7 +195,7 @@ public abstract class SemanticCache<
                 multiUnifier.stream()
                         .allMatch(u -> {
                             // filter out unifier entries that are anonymous/not returned, then take expected set of variables
-                            Set<Variable> valuesFromReturnedVars = u.mappings().stream().filter(entry -> !entry.getKey().isReturned()).map(Map.Entry::getValue).collect(toSet());
+                            Set<Variable> valuesFromReturnedVars = u.mappings().stream().filter(entry -> entry.getKey().isReturned()).map(Map.Entry::getValue).collect(toSet());
                             return valuesFromReturnedVars.containsAll(parentQuery.getVarNames());
                         });
     }
@@ -341,9 +341,9 @@ public abstract class SemanticCache<
 
     @Override
     public Pair<Stream<ConceptMap>, MultiUnifier> getAnswerStreamWithUnifier(ReasonerAtomicQuery query) {
-
-        Stream<ConceptMap> traverse = sCache.traversalExecutor.traverse(Graql.and(Graql.parsePattern("{$x isa continent; $y isa area;};")));
-        ConceptMap expectedAnswer = traverse.findFirst().get();
+//
+//        Stream<ConceptMap> traverse = sCache.traversalExecutor.traverse(Graql.and(Graql.parsePattern("{$x isa continent; $y isa area;};")));
+//        ConceptMap expectedAnswer = traverse.findFirst().get();
 
 
         CacheEntry<ReasonerAtomicQuery, SE> match = getEntry(query);
@@ -351,10 +351,12 @@ public abstract class SemanticCache<
         boolean queryDBComplete = isDBComplete(query);
 
         Pair<Stream<ConceptMap>, MultiUnifier> cachePair;
+        CacheEntry<ReasonerAtomicQuery, SE> newEntry;
         if (match != null) {
             boolean newAnswers = propagateAnswersToQuery(query, match, queryGround);
             LOG.trace("Query Cache hit: {} with new answers propagated: {}", query, newAnswers);
             cachePair = entryToAnswerStreamWithUnifier(query, match);
+            newEntry = null;
         } else {
             //if no match but db-complete parent exists, use parent to create entry
 //            Set<QE> parents = getParents(query);
@@ -375,7 +377,7 @@ public abstract class SemanticCache<
 //            }
 
 //            LOG.trace("Query Cache miss: {} with fetch from parents:\n{}", query, parents);
-            CacheEntry<ReasonerAtomicQuery, SE> newEntry = addEntry(createEntry(query, new HashSet<>()));
+            newEntry = addEntry(createEntry(query, new HashSet<>()));
             cachePair = entryToAnswerStreamWithUnifier(query, newEntry);
         }
 
@@ -391,8 +393,18 @@ public abstract class SemanticCache<
                 //NB: concat retains the order between elements from different streams so cache entries will come first
                 //and any duplicates from the DB will be removed by the .distinct step
                 Stream.concat(
-                        cachePair.first().filter(ans -> ans.explanation().isRuleExplanation()),
-                        getDBAnswerStreamWithUnifier(query).first()
+                        cachePair.first().filter(
+                                ans -> {
+//                                    ConceptMap tmp = expectedAnswer;
+
+                                    return ans.explanation().isRuleExplanation();
+                                }),
+                        getDBAnswerStreamWithUnifier(query).first().peek(ans -> {
+//                            ConceptMap tmp = expectedAnswer;
+//                            Pair<Stream<ConceptMap>, MultiUnifier>  tmp2 = cachePair;
+//                            CacheEntry<ReasonerAtomicQuery, SE> tmp3 = newEntry;
+                            System.out.println("hi");
+                        })
                 ).distinct(),
                 cachePair.second());
     }

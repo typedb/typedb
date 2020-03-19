@@ -128,8 +128,6 @@ public class MultilevelSemanticCache extends SemanticCache<Equivalence.Wrapper<R
                 .filter(childAns -> propagateInferred || childAns.explanation().isLookupExplanation())
                 .filter(ans -> !ans.isEmpty())
                 .flatMap(ans -> childToParentUnifier.apply(ans))
-//                // temporary filter for debugging, this should NOT be required
-//                .filter(ans -> ans.vars().equals(parent.getVarNames()))
                 .peek(ans -> validateAnswer(ans, parent, parent.getVarNames()))
                 .filter(parentAnswers::add)
                 .forEach(newAnswers::add);
@@ -143,9 +141,9 @@ public class MultilevelSemanticCache extends SemanticCache<Equivalence.Wrapper<R
     Pair<Stream<ConceptMap>, MultiUnifier> entryToAnswerStreamWithUnifier(ReasonerAtomicQuery query, CacheEntry<ReasonerAtomicQuery, IndexedAnswerSet> entry) {
 
 
-        Stream<ConceptMap> traverse = sCache.traversalExecutor.traverse(Graql.and(Graql.parsePattern("{$x isa continent; $y isa area;};")));
-        ConceptMap expectedAnswer = traverse.findFirst().get();
-
+//        Stream<ConceptMap> traverse = sCache.traversalExecutor.traverse(Graql.and(Graql.parsePattern("{$x isa continent; $y isa area;};")));
+//        ConceptMap expectedAnswer = traverse.findFirst().get();
+//
 
         ConceptMap answerIndex = query.getAnswerIndex();
         ReasonerAtomicQuery equivalentQuery = entry.query();
@@ -159,9 +157,9 @@ public class MultilevelSemanticCache extends SemanticCache<Equivalence.Wrapper<R
                         .flatMap(index -> answers.get(index).stream())
                         .flatMap(multiUnifier::apply)
                 .map(ans -> {
-                    ConceptMap a = expectedAnswer;
-                    MultilevelSemanticCache x = this;
-                    CacheEntry<ReasonerAtomicQuery, IndexedAnswerSet> outer = entry;
+//                    ConceptMap a = expectedAnswer;
+//                    MultilevelSemanticCache x = this;
+//                    CacheEntry<ReasonerAtomicQuery, IndexedAnswerSet> outer = entry;
 
                     return ans.withPattern(query.getPattern());
                 }),

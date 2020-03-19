@@ -43,6 +43,7 @@ import grakn.core.graql.reasoner.state.VariableComparisonState;
 import grakn.core.graql.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.graql.reasoner.utils.ReasonerUtils;
+import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.executor.TraversalExecutor;
 import grakn.core.kb.graql.planning.gremlin.TraversalPlanFactory;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
@@ -50,6 +51,7 @@ import grakn.core.kb.graql.reasoner.cache.QueryCache;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
+import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.statement.Statement;
 
@@ -248,9 +250,16 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     @Override
     public Iterator<ResolutionState> innerStateIterator(AnswerPropagatorState parent, Set<ReasonerAtomicQuery> visitedSubGoals) {
         QueryCache queryCache = context().queryCache();
+
+//        Stream<ConceptMap> traverse = traversalExecutor.traverse(Graql.and(Graql.parsePattern("{$x isa continent; $y isa area;};")));
+//        ConceptMap expectedAnswer = traverse.findFirst().get();
+
         Pair<Stream<ConceptMap>, MultiUnifier> cacheEntry = CacheCasting.queryCacheCast(queryCache).getAnswerStreamWithUnifier(this);
         Iterator<AnswerState> dbIterator = cacheEntry.first()
-                .map(a -> a.explain(a.explanation(), this.getPattern()))
+                .map(a -> {
+//                    ConceptMap tmp = expectedAnswer;
+                    return a.explain(a.explanation(), this.getPattern());
+                })
                 .map(ans -> new AnswerState(ans, parent.getUnifier(), parent))
                 .iterator();
 
