@@ -61,6 +61,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 
@@ -433,9 +434,14 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
 
         private void next(Transaction.Iter.Req iterate) {
             int iteratorId = iterate.getId();
-            Transaction.Res response = iterators.next(iteratorId);
-            if (response == null) throw ResponseBuilder.exception(Status.FAILED_PRECONDITION);
-            onNextResponse(response);
+            if (iterate.getAll()) {
+                boolean success = iterators.all(iteratorId, this::onNextResponse);
+                if (!success) throw ResponseBuilder.exception(Status.FAILED_PRECONDITION);
+            } else {
+                Transaction.Res response = iterators.next(iteratorId);
+                if (response == null) throw ResponseBuilder.exception(Status.FAILED_PRECONDITION);
+                onNextResponse(response);
+            }
         }
 
         private void onNextResponse(Transaction.Res response) {
@@ -475,6 +481,20 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
             }
 
             return response;
+        }
+
+        public boolean all(int iteratorId, Consumer<Transaction.Res> responses) {
+            Iterator<Transaction.Res> iterator = iterators.get(iteratorId);
+            if (iterator == null) return false;
+
+            while (iterator.hasNext()) {
+                responses.accept(iterator.next());
+            }
+            responses.accept(SessionProto.Transaction.Res.newBuilder()
+                    .setIterateRes(SessionProto.Transaction.Iter.Res.newBuilder()
+                            .setDone(true)).build());
+
+            return true;
         }
 
         public void stop(int iteratorId) {
