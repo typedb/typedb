@@ -124,11 +124,14 @@ public class MultilevelSemanticCache extends SemanticCache<Equivalence.Wrapper<R
         MultiUnifier childToParentUnifier = child.getMultiUnifier(parent, UnifierType.STRUCTURAL_SUBSUMPTIVE);
         Set<ConceptMap> newAnswers = new HashSet<>();
 
+        Set<Variable> parentVars = parent.getVarNames();
+
         childAnswers.getAll().stream()
                 .filter(childAns -> propagateInferred || childAns.explanation().isLookupExplanation())
                 .filter(ans -> !ans.isEmpty())
-                .flatMap(ans -> childToParentUnifier.apply(ans))
-                .peek(ans -> validateAnswer(ans, parent, parent.getVarNames()))
+                .flatMap(childToParentUnifier::apply)
+                .map(unifiedAnswer -> unifiedAnswer.project(parentVars))
+                .peek(ans -> validateAnswer(ans, parent, parentVars))
                 .filter(parentAnswers::add)
                 .forEach(newAnswers::add);
 
