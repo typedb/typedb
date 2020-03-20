@@ -26,13 +26,15 @@ import org.rocksdb.RocksDBException;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 class CoreSession implements Hypergraph.Session {
 
     private final CoreKeyspace keyspace;
     private final OptimisticTransactionDB rocksSession;
-    private final List<CoreTransaction> transactions;
+    private final Set<CoreTransaction> transactions;
     private final AtomicBoolean isOpen;
 
     CoreSession(CoreKeyspace keyspace) {
@@ -44,7 +46,7 @@ class CoreSession implements Hypergraph.Session {
             throw new HypergraphException(e);
         }
 
-        transactions = new ArrayList<>();
+        transactions = ConcurrentHashMap.newKeySet();
         isOpen = new AtomicBoolean();
         isOpen.set(true);
     }
@@ -55,6 +57,10 @@ class CoreSession implements Hypergraph.Session {
 
     KeyGenerator keyGenerator() {
         return keyspace.keyGenerator();
+    }
+
+    void remove(CoreTransaction transaction) {
+        transactions.remove(transaction);
     }
 
     @Override

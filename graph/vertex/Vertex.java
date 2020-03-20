@@ -26,7 +26,9 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.Spliterator;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Stream;
 
 public abstract class Vertex<
         VERTEX_SCHEMA extends Schema.Vertex,
@@ -59,9 +61,9 @@ public abstract class Vertex<
 
     public abstract void commit();
 
-    public abstract Set<EDGE> outs(EDGE_SCHEMA schema);
+    public abstract Spliterator<EDGE> outs(EDGE_SCHEMA schema);
 
-    public abstract Set<EDGE> ins(EDGE_SCHEMA schema);
+    public abstract Spliterator<EDGE> ins(EDGE_SCHEMA schema);
 
     public void out(EDGE edge) {
         outs.putIfAbsent(edge.schema(), new HashSet<>());

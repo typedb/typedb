@@ -23,7 +23,7 @@ import hypergraph.graph.Schema;
 import hypergraph.graph.edge.TypeEdge;
 import hypergraph.graph.vertex.TypeVertex;
 
-import java.util.Set;
+import java.util.Spliterator;
 
 public class EntityType extends Type {
 
@@ -43,10 +43,12 @@ public class EntityType extends Type {
     public EntityType sup() {
         if (parent != null) return parent;
 
-        Set<TypeEdge> sub = vertex.outs(Schema.Edge.Type.SUB);
-        if (sub != null && sub.size()==1) parent = new EntityType(sub.iterator().next().to());
+        Spliterator<TypeEdge> parent = vertex.outs(Schema.Edge.Type.SUB);
+        if (parent != null && parent.tryAdvance(e -> this.parent = new EntityType(e.to()))) {
+            return this.parent;
+        }
 
-        return parent;
+        return null;
     }
 
 }

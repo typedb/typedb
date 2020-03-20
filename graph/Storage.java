@@ -18,6 +18,8 @@
 
 package hypergraph.graph;
 
+import java.util.Iterator;
+
 public interface Storage {
 
     KeyGenerator keyGenerator();
@@ -28,4 +30,12 @@ public interface Storage {
 
     void put(byte[] key, byte[] value);
 
+    Iterator<? extends KeyValue> iterate(byte[] key);
+
+    interface KeyValue {
+
+        byte[] key();
+
+        byte[] value();
+    }
 }

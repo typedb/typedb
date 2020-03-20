@@ -20,8 +20,8 @@ package hypergraph.core;
 
 import hypergraph.Hypergraph;
 import hypergraph.common.HypergraphException;
-import hypergraph.common.ManagedReadWriteLock;
 import hypergraph.concept.ConceptManager;
+import hypergraph.core.util.ManagedReadWriteLock;
 import hypergraph.graph.GraphManager;
 import hypergraph.graph.KeyGenerator;
 import hypergraph.graph.Storage;
@@ -29,9 +29,13 @@ import hypergraph.traversal.Traversal;
 import org.rocksdb.OptimisticTransactionOptions;
 import org.rocksdb.ReadOptions;
 import org.rocksdb.RocksDBException;
+import org.rocksdb.RocksIterator;
 import org.rocksdb.Transaction;
 import org.rocksdb.WriteOptions;
 
+import java.util.Iterator;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 class CoreTransaction implements Hypergraph.Transaction {
@@ -42,6 +46,7 @@ class CoreTransaction implements Hypergraph.Transaction {
     private final ReadOptions readOptions;
     private final Transaction rocksTransaction;
     private final Type type;
+    private final CoreStorage storage;
     private final GraphManager graph;
     private final ConceptManager concepts;
     private final Traversal traversal;
@@ -59,7 +64,8 @@ class CoreTransaction implements Hypergraph.Transaction {
         rocksTransaction = session.rocks().beginTransaction(writeOptions, optOptions);
         readOptions.setSnapshot(rocksTransaction.getSnapshot());
 
-        graph = new GraphManager(new CoreStorage());
+        storage = new CoreStorage();
+        graph = new GraphManager(storage);
         concepts = new ConceptManager(graph);
         traversal = new Traversal(concepts);
 
@@ -119,19 +125,23 @@ class CoreTransaction implements Hypergraph.Transaction {
     @Override
     public void close() {
         if (isOpen.compareAndSet(true, false)) {
+            storage.close();
             optOptions.close();
             writeOptions.close();
             readOptions.close();
             rocksTransaction.close();
+            session.remove(this);
         }
     }
 
-    private class CoreStorage implements Storage {
+    class CoreStorage implements Storage {
 
         private final ManagedReadWriteLock readWriteLock;
+        private final Set<CoreIterator> iterators;
 
         CoreStorage() {
             readWriteLock = new ManagedReadWriteLock();
+            iterators = ConcurrentHashMap.newKeySet();
         }
 
         @Override
@@ -169,8 +179,23 @@ class CoreTransaction implements Hypergraph.Transaction {
             }
         }
 
-        public void iterate(byte[] key) {
-            rocksTransaction.getIterator(readOptions).seek(key);
+        @Override
+        public Iterator<CoreIterator.CoreKeyValue> iterate(byte[] key) {
+            CoreIterator iterator = new CoreIterator(this, key);
+            iterators.add(iterator);
+            return iterator;
+        }
+
+        RocksIterator newRocksIterator() {
+            return rocksTransaction.getIterator(readOptions);
+        }
+
+        void remove(CoreIterator iterator) {
+            iterators.remove(iterator);
+        }
+
+        void close() {
+            iterators.parallelStream().forEach(CoreIterator::close);
         }
     }
 }

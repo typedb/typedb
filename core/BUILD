@@ -25,14 +25,17 @@ package(
 
 java_library(
     name = "hypergraph",
-    srcs = glob(["*.java"]),
+    srcs = glob(["**/*.java"]),
     deps = [
+        # Internal package dependencies
         "//:hypergraph",
         "//common:common",
         "//concept:concept",
         "//graph:graph",
         "//traversal:traversal",
-        "//dependencies/maven/artifacts/org/rocksdb:rocksdbjni"
+
+        # External dependencies
+        "//dependencies/maven/artifacts/org/rocksdb:rocksdbjni",
     ],
 )
 

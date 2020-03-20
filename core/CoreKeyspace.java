@@ -27,6 +27,8 @@ import org.rocksdb.Options;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 class CoreKeyspace implements Hypergraph.Keyspace {
@@ -35,13 +37,13 @@ class CoreKeyspace implements Hypergraph.Keyspace {
     private final CoreHypergraph core;
     private final KeyGenerator keyGenerator;
     private final AtomicBoolean isOpen;
-    private final List<CoreSession> sessions;
+    private final Set<CoreSession> sessions;
 
     CoreKeyspace(CoreHypergraph core, String name) {
         this.name = name;
         this.core = core;
         keyGenerator = new KeyGenerator(Schema.Key.PERSISTED);
-        sessions = new ArrayList<>();
+        sessions = ConcurrentHashMap.newKeySet();
         isOpen = new AtomicBoolean(false);
     }
 

@@ -16,7 +16,7 @@
  *
  */
 
-package hypergraph.common;
+package hypergraph.core.util;
 
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.locks.ReentrantReadWriteLock;

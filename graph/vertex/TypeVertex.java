@@ -25,7 +25,8 @@ import hypergraph.graph.edge.Edge;
 import hypergraph.graph.edge.TypeEdge;
 
 import java.nio.ByteBuffer;
-import java.util.Set;
+import java.util.Spliterator;
+import java.util.stream.Stream;
 
 import static hypergraph.graph.Schema.Property.ABSTRACT;
 import static hypergraph.graph.Schema.Property.DATATYPE;
@@ -113,12 +114,14 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, Schema.Edge.
             return this;
         }
 
-        public Set<TypeEdge> outs(Schema.Edge.Type schema) {
-            return outs.get(schema);
+        public Spliterator<TypeEdge> outs(Schema.Edge.Type schema) {
+            if (outs.get(schema) != null) return outs.get(schema).spliterator();
+            return null;
         }
 
-        public Set<TypeEdge> ins(Schema.Edge.Type schema) {
-            return ins.get(schema);
+        public Spliterator<TypeEdge> ins(Schema.Edge.Type schema) {
+            if (ins.get(schema) != null) return ins.get(schema).spliterator();
+            return null;
         }
 
         @Override
@@ -227,12 +230,14 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, Schema.Edge.
             return null;
         }
 
-        public Set<TypeEdge> outs(Schema.Edge.Type schema) {
-            return outs.get(schema); // TODO
+        public Spliterator<TypeEdge> outs(Schema.Edge.Type schema) {
+            if (outs.get(schema) != null) return outs.get(schema).spliterator();
+            return null; // TODO
         }
 
-        public Set<TypeEdge> ins(Schema.Edge.Type schema) {
-            return ins.get(schema); // TODO
+        public Spliterator<TypeEdge> ins(Schema.Edge.Type schema) {
+            if (ins.get(schema) != null) return ins.get(schema).spliterator();
+            return null; // TODO
         }
 
         @Override
