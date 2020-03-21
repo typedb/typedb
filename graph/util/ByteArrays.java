@@ -37,22 +37,31 @@ public class ByteArrays {
     }
 
     public static byte[] toShortBytes(int num) {
-        return new byte[] {
-                (byte) (num >> 8),
-                (byte) (num)
-        };
+        byte[] bytes = new byte[2];
+        bytes[1] = (byte) (num);
+        bytes[0] = (byte) (num >> 8);
+        return bytes;
+    }
+
+    public static byte[] toIntegerBytes(int num) {
+        byte[] bytes = new byte[4];
+        bytes[3] = (byte) (num);
+        bytes[2] = (byte) (num >>= 8);
+        bytes[1] = (byte) (num >>= 8);
+        bytes[0] = (byte) (num >> 8);
+        return bytes;
     }
 
     public static byte[] toLongBytes(long num) {
-        return new byte[] {
-                (byte) (num >> 56),
-                (byte) (num >> 48),
-                (byte) (num >> 40),
-                (byte) (num >> 32),
-                (byte) (num >> 24),
-                (byte) (num >> 16),
-                (byte) (num >> 8),
-                (byte) (num),
-        };
+        byte[] bytes = new byte[8];
+        bytes[7] = (byte) (num);
+        bytes[6] = (byte) (num >>= 8);
+        bytes[5] = (byte) (num >>= 8);
+        bytes[4] = (byte) (num >>= 8);
+        bytes[3] = (byte) (num >>= 8);
+        bytes[2] = (byte) (num >>= 8);
+        bytes[1] = (byte) (num >>= 8);
+        bytes[0] = (byte) (num >> 8);
+        return bytes;
     }
 }
