@@ -43,15 +43,15 @@ public class Schema {
     }
 
     public enum IID {
-        Type(3),
-        Thing(12);
+        TYPE(3),
+        THING(12);
 
         private final int length;
 
         IID(int length) {
             this.length = length;
         }
-        
+
         public int length() {
             return length;
         }

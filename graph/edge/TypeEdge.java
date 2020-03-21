@@ -50,11 +50,11 @@ public abstract class TypeEdge extends Edge<Schema.Edge.Type, TypeVertex> {
         public void commit() {
             if (committed.compareAndSet(false, true)) {
                 if (schema.out() != null) {
-                    storage.put(ByteBuffer.allocate(from.iid().length + to.iid().length + 1)
+                    storage.put(ByteBuffer.allocate((Schema.IID.TYPE.length() * 2) + 1)
                                         .put(from.iid()).put(schema.out().key()).put(to.iid()).array());
                 }
                 if (schema.in() != null) {
-                    storage.put(ByteBuffer.allocate(from.iid().length + to.iid().length + 1)
+                    storage.put(ByteBuffer.allocate((Schema.IID.TYPE.length() * 2) + 1)
                                         .put(to.iid()).put(schema.in().key()).put(from.iid()).array());
                 }
             }
@@ -65,9 +65,9 @@ public abstract class TypeEdge extends Edge<Schema.Edge.Type, TypeVertex> {
 
         public Persisted(Storage storage, byte[] iid) {
             super(
-                    Schema.Edge.Type.of(iid[Schema.IID.Type.length()]),
-                    new TypeVertex.Persisted(storage, Arrays.copyOfRange(iid, 0, Schema.IID.Type.length())),
-                    new TypeVertex.Persisted(storage, Arrays.copyOfRange(iid, Schema.IID.Type.length() + 1, iid.length))
+                    Schema.Edge.Type.of(iid[Schema.IID.TYPE.length()]),
+                    new TypeVertex.Persisted(storage, Arrays.copyOfRange(iid, 0, Schema.IID.TYPE.length())),
+                    new TypeVertex.Persisted(storage, Arrays.copyOfRange(iid, Schema.IID.TYPE.length() + 1, iid.length))
             );
         }
 
