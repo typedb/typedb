@@ -100,9 +100,12 @@ public class GraphManager {
         if (vertex != null) return vertex;
 
         byte[] iid = storage.get(TypeVertex.generateIndex(label));
-        if (iid != null) return new TypeVertex.Persisted(storage, iid, label);
+        if (iid != null) {
+            vertex = new TypeVertex.Persisted(storage, iid, label);
+            buffer.add(vertex);
+        }
 
-        return null;
+        return vertex;
     }
 
     public ThingVertex createThingVertex(Schema.Vertex.Thing thing, TypeVertex type) {

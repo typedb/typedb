@@ -18,32 +18,29 @@
 
 package hypergraph.core;
 
-import hypergraph.graph.Storage;
 import org.rocksdb.RocksIterator;
 
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
-import java.util.Objects;
-import java.util.Spliterator;
-import java.util.Spliterators;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.StreamSupport;
+import java.util.function.BiFunction;
 
-public class CoreIterator implements Iterator<CoreIterator.CoreKeyValue> {
+public class CoreIterator<G> implements Iterator<G> {
 
     private final byte[] prefix;
     private final CoreTransaction.CoreStorage storage;
     private final AtomicBoolean isOpen;
+    private final BiFunction<byte[], byte[], G> constructor;
     private RocksIterator rocksIterator;
     private State state;
-    private CoreKeyValue next;
+    private G next;
 
     private enum State {INIT, EMPTY, RETRIEVED, COMPLETED}
 
-    CoreIterator(CoreTransaction.CoreStorage storage, byte[] prefix) {
+    CoreIterator(CoreTransaction.CoreStorage storage, byte[] prefix, BiFunction<byte[], byte[], G> constructor) {
         this.storage = storage;
         this.prefix = prefix;
+        this.constructor = constructor;
 
         isOpen = new AtomicBoolean(false);
         state = State.INIT;
@@ -62,7 +59,7 @@ public class CoreIterator implements Iterator<CoreIterator.CoreKeyValue> {
             return false;
         }
 
-        next = new CoreKeyValue(key, rocksIterator.value());
+        next = constructor.apply(key, rocksIterator.value());
         state = State.RETRIEVED;
         return true;
     }
@@ -75,7 +72,7 @@ public class CoreIterator implements Iterator<CoreIterator.CoreKeyValue> {
         return true;
     }
 
-    public final CoreKeyValue peek() {
+    public final G peek() {
         if (!hasNext()) throw new NoSuchElementException();
         return next;
     }
@@ -105,49 +102,9 @@ public class CoreIterator implements Iterator<CoreIterator.CoreKeyValue> {
     }
 
     @Override
-    public final CoreKeyValue next() {
+    public final G next() {
         if (!hasNext()) throw new NoSuchElementException();
-        CoreKeyValue result = next;
-        next = null;
         state = State.EMPTY;
-        return result;
-    }
-
-    public static class CoreKeyValue implements Storage.KeyValue {
-
-        private final byte[] key;
-        private final byte[] value;
-        private final int hash;
-
-        CoreKeyValue(byte[] key, byte[] value) {
-            this.key = key;
-            this.value = value;
-            hash = Objects.hash(Arrays.hashCode(key), Arrays.hashCode(value));
-        }
-
-        @Override
-        public byte[] key() { return key; }
-
-        @Override
-        public byte[] value() { return value; }
-
-        @Override
-        public String toString() {
-            return "{ " + Arrays.toString(key) + " -> " + Arrays.toString(value) + " }";
-        }
-
-        @Override
-        public boolean equals(Object obj) {
-            if (obj == null || this.getClass() != obj.getClass()) return false;
-            if (obj == this) return true;
-            CoreKeyValue that = (CoreKeyValue) obj;
-            return (Arrays.equals(this.key, that.key) &&
-                    Arrays.equals(this.value, that.value));
-        }
-
-        @Override
-        public int hashCode() {
-            return hash;
-        }
+        return next;
     }
 }

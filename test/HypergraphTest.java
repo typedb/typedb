@@ -34,6 +34,7 @@ import java.util.Comparator;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 public class HypergraphTest {
@@ -74,9 +75,9 @@ public class HypergraphTest {
                     EntityType rootEntityType = transaction.concepts().getRootEntityType();
                     RelationType rootRelationType = transaction.concepts().getRootRelationType();
                     AttributeType rootAttributeType = transaction.concepts().getRootAttributeType();
-                    notNull(rootType, rootEntityType, rootRelationType, rootAttributeType);
+                    notNulls(rootType, rootEntityType, rootRelationType, rootAttributeType);
 
-//                    assertEquals(rootEntityType.sup(), rootType);
+                    nulls(rootEntityType.sup());
                 }
 
                 try (Hypergraph.Transaction transaction = session.transaction(Hypergraph.Transaction.Type.WRITE)) {
@@ -87,21 +88,21 @@ public class HypergraphTest {
                     EntityType rootEntityType = transaction.concepts().getRootEntityType();
                     RelationType rootRelationType = transaction.concepts().getRootRelationType();
                     AttributeType rootAttributeType = transaction.concepts().getRootAttributeType();
-                    notNull(rootType, rootEntityType, rootRelationType, rootAttributeType);
+                    notNulls(rootType, rootEntityType, rootRelationType, rootAttributeType);
 
                     AttributeType name = transaction.concepts().putAttributeType("name");
                     AttributeType age = transaction.concepts().putAttributeType("age");
-                    notNull(name, age);
+                    notNulls(name, age);
 
                     RelationType marriage = transaction.concepts().putRelationType("marriage");
                     RelationType employment = transaction.concepts().putRelationType("employment");
-                    notNull(marriage, employment);
+                    notNulls(marriage, employment);
 
                     EntityType person = transaction.concepts().putEntityType("person");
                     EntityType man = transaction.concepts().putEntityType("man");
                     EntityType woman = transaction.concepts().putEntityType("woman");
                     EntityType company = transaction.concepts().putEntityType("company");
-                    notNull(person, man, woman, company);
+                    notNulls(person, man, woman, company);
                 }
 
                 try (Hypergraph.Transaction transaction = session.transaction(Hypergraph.Transaction.Type.READ)) {
@@ -138,9 +139,15 @@ public class HypergraphTest {
         }
     }
 
-    public static void notNull(Object... objects) {
+    private static void notNulls(Object... objects) {
         for (Object object : objects) {
             assertNotNull(object);
+        }
+    }
+
+    private static void nulls(Object... objects) {
+        for (Object object : objects) {
+            assertNull(object);
         }
     }
 }

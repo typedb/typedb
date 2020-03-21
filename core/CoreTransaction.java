@@ -37,6 +37,7 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BiFunction;
 
 class CoreTransaction implements Hypergraph.Transaction {
 
@@ -137,7 +138,7 @@ class CoreTransaction implements Hypergraph.Transaction {
     class CoreStorage implements Storage {
 
         private final ManagedReadWriteLock readWriteLock;
-        private final Set<CoreIterator> iterators;
+        private final Set<CoreIterator<?>> iterators;
 
         CoreStorage() {
             readWriteLock = new ManagedReadWriteLock();
@@ -180,8 +181,8 @@ class CoreTransaction implements Hypergraph.Transaction {
         }
 
         @Override
-        public Iterator<CoreIterator.CoreKeyValue> iterate(byte[] key) {
-            CoreIterator iterator = new CoreIterator(this, key);
+        public <G> Iterator<G> iterate(byte[] key, BiFunction<byte[], byte[], G> constructor) {
+            CoreIterator<G> iterator = new CoreIterator<>(this, key, constructor);
             iterators.add(iterator);
             return iterator;
         }
@@ -190,7 +191,7 @@ class CoreTransaction implements Hypergraph.Transaction {
             return rocksTransaction.getIterator(readOptions);
         }
 
-        void remove(CoreIterator iterator) {
+        void remove(CoreIterator<?> iterator) {
             iterators.remove(iterator);
         }
 

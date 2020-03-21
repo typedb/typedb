@@ -18,12 +18,13 @@
 
 package hypergraph.concept.type;
 
+import hypergraph.common.HypergraphException;
 import hypergraph.graph.GraphManager;
 import hypergraph.graph.Schema;
 import hypergraph.graph.edge.TypeEdge;
 import hypergraph.graph.vertex.TypeVertex;
 
-import java.util.Spliterator;
+import java.util.Iterator;
 
 public class EntityType extends Type {
 
@@ -31,6 +32,9 @@ public class EntityType extends Type {
 
     public EntityType(TypeVertex vertex) {
         super(vertex);
+        if (vertex.schema() != Schema.Vertex.Type.ENTITY_TYPE) {
+            throw new HypergraphException("Invalid TypeVertex for EntityType");
+        }
     }
 
     public EntityType(GraphManager graph, String label) {
@@ -43,12 +47,15 @@ public class EntityType extends Type {
     public EntityType sup() {
         if (parent != null) return parent;
 
-        Spliterator<TypeEdge> parent = vertex.outs(Schema.Edge.Type.SUB);
-        if (parent != null && parent.tryAdvance(e -> this.parent = new EntityType(e.to()))) {
-            return this.parent;
+        Iterator<TypeEdge> parentEdge = vertex.outs(Schema.Edge.Type.SUB);
+        if (parentEdge != null && parentEdge.hasNext()) {
+            TypeVertex typeVertex = parentEdge.next().to();
+            if (typeVertex.schema().equals(Schema.Vertex.Type.ENTITY_TYPE)) {
+                parent = new EntityType(typeVertex);
+            }
         }
 
-        return null;
+        return parent;
     }
 
 }

@@ -19,6 +19,7 @@
 package hypergraph.graph;
 
 import java.util.Iterator;
+import java.util.function.BiFunction;
 
 public interface Storage {
 
@@ -30,12 +31,6 @@ public interface Storage {
 
     void put(byte[] key, byte[] value);
 
-    Iterator<? extends KeyValue> iterate(byte[] key);
+    <G> Iterator<G> iterate(byte[] key, BiFunction<byte[], byte[], G> constructor);
 
-    interface KeyValue {
-
-        byte[] key();
-
-        byte[] value();
-    }
 }

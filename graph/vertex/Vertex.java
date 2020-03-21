@@ -24,11 +24,10 @@ import hypergraph.graph.edge.Edge;
 
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
-import java.util.Spliterator;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Stream;
 
 public abstract class Vertex<
         VERTEX_SCHEMA extends Schema.Vertex,
@@ -61,9 +60,9 @@ public abstract class Vertex<
 
     public abstract void commit();
 
-    public abstract Spliterator<EDGE> outs(EDGE_SCHEMA schema);
+    public abstract Iterator<EDGE> outs(EDGE_SCHEMA schema);
 
-    public abstract Spliterator<EDGE> ins(EDGE_SCHEMA schema);
+    public abstract Iterator<EDGE> ins(EDGE_SCHEMA schema);
 
     public void out(EDGE edge) {
         outs.putIfAbsent(edge.schema(), new HashSet<>());
@@ -81,6 +80,11 @@ public abstract class Vertex<
 
     public void iid(byte[] iid) {
         this.iid = iid;
+    }
+
+    @Override
+    public String toString() {
+        return this.getClass().getSimpleName() + ": [" + schema + "] " + Arrays.toString(iid);
     }
 
     @Override

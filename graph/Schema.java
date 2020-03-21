@@ -42,6 +42,21 @@ public class Schema {
         }
     }
 
+    public enum IID {
+        Type(3),
+        Thing(12);
+
+        private final int length;
+
+        IID(int length) {
+            this.length = length;
+        }
+        
+        public int length() {
+            return length;
+        }
+    }
+
     /**
      * The values in this class will be used as 'prefixes' within an IID in the
      * of every object database, and must not overlap with each other.
@@ -325,6 +340,15 @@ public class Schema {
             Type(Infix out, Infix in) {
                 this.out = out;
                 this.in = in;
+            }
+
+            public static Type of(byte infix) {
+                for (Type t : Type.values()) {
+                    if (t.out.key == infix || t.in.key == infix) {
+                        return t;
+                    }
+                }
+                return null;
             }
 
             @Override

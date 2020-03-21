@@ -23,6 +23,7 @@ import hypergraph.graph.Storage;
 import hypergraph.graph.vertex.TypeVertex;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public abstract class TypeEdge extends Edge<Schema.Edge.Type, TypeVertex> {
@@ -62,8 +63,12 @@ public abstract class TypeEdge extends Edge<Schema.Edge.Type, TypeVertex> {
 
     public static class Persisted extends TypeEdge {
 
-        public Persisted(Schema.Edge.Type schema, TypeVertex from, TypeVertex to) {
-            super(schema, from, to);
+        public Persisted(Storage storage, byte[] iid) {
+            super(
+                    Schema.Edge.Type.of(iid[Schema.IID.Type.length()]),
+                    new TypeVertex.Persisted(storage, Arrays.copyOfRange(iid, 0, Schema.IID.Type.length())),
+                    new TypeVertex.Persisted(storage, Arrays.copyOfRange(iid, Schema.IID.Type.length() + 1, iid.length))
+            );
         }
 
         public Schema.Status status() {

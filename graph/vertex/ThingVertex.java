@@ -22,10 +22,6 @@ import hypergraph.graph.KeyGenerator;
 import hypergraph.graph.Schema;
 import hypergraph.graph.Storage;
 import hypergraph.graph.edge.ThingEdge;
-import hypergraph.graph.edge.TypeEdge;
-
-import java.util.HashSet;
-import java.util.Set;
 
 public abstract class ThingVertex extends Vertex<Schema.Vertex.Thing, Schema.Edge.Thing, ThingEdge> {
 

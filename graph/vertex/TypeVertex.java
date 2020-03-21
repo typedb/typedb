@@ -23,31 +23,27 @@ import hypergraph.graph.Schema;
 import hypergraph.graph.Storage;
 import hypergraph.graph.edge.Edge;
 import hypergraph.graph.edge.TypeEdge;
+import hypergraph.graph.util.LinkedIterators;
 
 import java.nio.ByteBuffer;
-import java.util.Spliterator;
-import java.util.stream.Stream;
+import java.util.Iterator;
 
 import static hypergraph.graph.Schema.Property.ABSTRACT;
 import static hypergraph.graph.Schema.Property.DATATYPE;
+import static hypergraph.graph.Schema.Property.LABEL;
 import static hypergraph.graph.Schema.Property.REGEX;
 
 public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, Schema.Edge.Type, TypeEdge> {
 
     private static final int IID_SIZE = 3;
-    protected final String label;
+    protected String label;
     protected Boolean isAbstract;
     protected Schema.DataType dataType;
     protected String regex;
 
 
-    TypeVertex(Storage storage, Schema.Vertex.Type type, byte[] iid, String label) {
+    TypeVertex(Storage storage, Schema.Vertex.Type type, byte[] iid) {
         super(storage, type, iid);
-        this.label = label;
-    }
-
-    public String label() {
-        return label;
     }
 
     public static byte[] generateIID(KeyGenerator keyGenerator, Schema.Vertex.Type schema) {
@@ -65,6 +61,8 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, Schema.Edge.
                 .array();
     }
 
+    public abstract String label();
+
     public abstract boolean isAbstract();
 
     public abstract TypeVertex setAbstract(boolean isAbstract);
@@ -80,7 +78,13 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, Schema.Edge.
     public static class Buffered extends TypeVertex {
 
         public Buffered(Storage storage, Schema.Vertex.Type schema, byte[] iid, String label) {
-            super(storage, schema, iid, label);
+            super(storage, schema, iid);
+            this.label = label;
+        }
+
+        @Override
+        public String label() {
+            return label;
         }
 
         public Schema.Status status() {
@@ -114,13 +118,13 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, Schema.Edge.
             return this;
         }
 
-        public Spliterator<TypeEdge> outs(Schema.Edge.Type schema) {
-            if (outs.get(schema) != null) return outs.get(schema).spliterator();
+        public Iterator<TypeEdge> outs(Schema.Edge.Type schema) {
+            if (outs.get(schema) != null) return outs.get(schema).iterator();
             return null;
         }
 
-        public Spliterator<TypeEdge> ins(Schema.Edge.Type schema) {
-            if (ins.get(schema) != null) return ins.get(schema).spliterator();
+        public Iterator<TypeEdge> ins(Schema.Edge.Type schema) {
+            if (ins.get(schema) != null) return ins.get(schema).iterator();
             return null;
         }
 
@@ -178,14 +182,27 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, Schema.Edge.
 
     public static class Persisted extends TypeVertex {
 
-
         public Persisted(Storage storage, byte[] iid, String label) {
-            super(storage, Schema.Vertex.Type.of(iid[0]), iid, label);
+            super(storage, Schema.Vertex.Type.of(iid[0]), iid);
+            this.label = label;
+        }
+
+        public Persisted(Storage storage, byte[] iid) {
+            super(storage, Schema.Vertex.Type.of(iid[0]), iid);
         }
 
         @Override
         public Schema.Status status() {
             return Schema.Status.PERSISTED;
+        }
+
+        @Override
+        public String label() {
+            if (label != null) return label;
+            byte[] val = storage.get(ByteBuffer.allocate(iid.length + 1)
+                                             .put(iid).put(LABEL.infix().key()).array());
+            if (val != null) label = new String(val);
+            return label;
         }
 
         @Override
@@ -230,14 +247,24 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, Schema.Edge.
             return null;
         }
 
-        public Spliterator<TypeEdge> outs(Schema.Edge.Type schema) {
-            if (outs.get(schema) != null) return outs.get(schema).spliterator();
-            return null; // TODO
+        public Iterator<TypeEdge> outs(Schema.Edge.Type schema) {
+            Iterator<TypeEdge> persistedIterator = storage.iterate(
+                    ByteBuffer.allocate(iid.length + 1).put(iid).put(schema.out().key()).array(),
+                    (key, value) -> new TypeEdge.Persisted(storage, key)
+            );
+
+            if (outs.get(schema) != null) return new LinkedIterators<>(outs.get(schema).iterator(), persistedIterator);
+            else return persistedIterator;
         }
 
-        public Spliterator<TypeEdge> ins(Schema.Edge.Type schema) {
-            if (ins.get(schema) != null) return ins.get(schema).spliterator();
-            return null; // TODO
+        public Iterator<TypeEdge> ins(Schema.Edge.Type schema) {
+            Iterator<TypeEdge> persistedIterator = storage.iterate(
+                    ByteBuffer.allocate(iid.length + 1).put(iid).put(schema.in().key()).array(),
+                    (key, value) -> new TypeEdge.Persisted(storage, key)
+            );
+
+            if (ins.get(schema) != null) return new LinkedIterators<>(ins.get(schema).iterator(), persistedIterator);
+            else return persistedIterator;
         }
 
         @Override

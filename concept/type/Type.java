@@ -20,13 +20,18 @@ package hypergraph.concept.type;
 
 import hypergraph.graph.vertex.TypeVertex;
 
+import java.util.Objects;
+
 public class Type {
 
     protected final TypeVertex vertex;
 
     public Type(TypeVertex vertex) {
-        this.vertex = vertex;
+        this.vertex = Objects.requireNonNull(vertex);
     }
 
-
+    @Override
+    public String toString() {
+        return this.getClass().getSimpleName() + " {" + vertex.toString() + "}";
+    }
 }
