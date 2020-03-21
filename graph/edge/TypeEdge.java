@@ -22,9 +22,10 @@ import hypergraph.graph.Schema;
 import hypergraph.graph.Storage;
 import hypergraph.graph.vertex.TypeVertex;
 
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import static hypergraph.graph.util.ByteArrays.join;
 
 public abstract class TypeEdge extends Edge<Schema.Edge.Type, TypeVertex> {
 
@@ -50,12 +51,10 @@ public abstract class TypeEdge extends Edge<Schema.Edge.Type, TypeVertex> {
         public void commit() {
             if (committed.compareAndSet(false, true)) {
                 if (schema.out() != null) {
-                    storage.put(ByteBuffer.allocate((Schema.IID.TYPE.length() * 2) + 1)
-                                        .put(from.iid()).put(schema.out().key()).put(to.iid()).array());
+                    storage.put(join(from.iid(), schema.out().key(), to.iid()));
                 }
                 if (schema.in() != null) {
-                    storage.put(ByteBuffer.allocate((Schema.IID.TYPE.length() * 2) + 1)
-                                        .put(to.iid()).put(schema.in().key()).put(from.iid()).array());
+                    storage.put(join(to.iid(), schema.in().key(), from.iid()));
                 }
             }
         }

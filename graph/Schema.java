@@ -84,8 +84,8 @@ public class Schema {
             this.key = (byte) key;
         }
 
-        public byte key() {
-            return key;
+        public byte[] key() {
+            return new byte[]{key};
         }
     }
 
@@ -124,8 +124,8 @@ public class Schema {
             this.key = (byte) key;
         }
 
-        public byte key() {
-            return key;
+        public byte[] key() {
+            return new byte[]{key};
         }
     }
 
@@ -192,8 +192,8 @@ public class Schema {
             this.value = (byte) value;
         }
 
-        public byte value() {
-            return value;
+        public byte[] value() {
+            return new byte[]{value};
         }
 
         public static DataType of(byte value) {

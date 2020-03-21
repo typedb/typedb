@@ -18,6 +18,8 @@
 
 package hypergraph.graph;
 
+import hypergraph.graph.util.ByteArrays;
+
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -33,27 +35,27 @@ public class KeyGenerator {
     public KeyGenerator(Schema.Key schema) {
         typeKeys = new ConcurrentHashMap<>();
         thingKeys = new ConcurrentHashMap<>();
-        this.initialValue = schema.initialValue();
+        initialValue = schema.initialValue();
         delta = schema.isIncrement() ? 1 : -1;
     }
 
-    public short forType(Schema.Vertex.Type.Root root) {
+    public byte[] forType(Schema.Vertex.Type.Root root) {
         if (typeKeys.containsKey(root)) {
-            return (short) typeKeys.get(root).getAndIncrement();
+            return ByteArrays.toShortBytes(typeKeys.get(root).getAndIncrement());
         } else {
             AtomicInteger zero = new AtomicInteger(initialValue);
             typeKeys.put(root, zero);
-            return (short) zero.getAndAdd(delta);
+            return ByteArrays.toShortBytes(zero.getAndAdd(delta));
         }
     }
 
-    public long forThing(Schema.Vertex.Type type) {
+    public byte[] forThing(Schema.Vertex.Type type) {
         if (thingKeys.containsKey(type)) {
-            return thingKeys.get(type).getAndIncrement();
+            return ByteArrays.toLongBytes(thingKeys.get(type).getAndIncrement());
         } else {
             AtomicLong zero = new AtomicLong(initialValue);
             thingKeys.put(type, zero);
-            return zero.getAndAdd(delta);
+            return ByteArrays.toLongBytes(zero.getAndAdd(delta));
         }
     }
 }
