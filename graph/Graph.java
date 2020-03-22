@@ -108,8 +108,9 @@ public class Graph {
         public void commit() {
             typeByIID.values().parallelStream().filter(v -> v.status().equals(Schema.Status.BUFFERED)).forEach(
                     vertex -> vertex.iid(TypeVertex.generateIID(storage.keyGenerator(), vertex.schema()))
-            );
+            ); // typeByIID no longer contains valid mapping from IID to TypeVertex
             typeByIID.values().parallelStream().forEach(Vertex::commit);
+            clear(); // we now flush the indexes after commit, and we do not expect this Graph.Type to be used again
         }
 
         public TypeEdge createEdge(Schema.Edge.Type schema, TypeVertex from, TypeVertex to) {
@@ -184,8 +185,9 @@ public class Graph {
         public void commit() {
             thingByIID.values().parallelStream().forEach(
                     vertex -> vertex.iid(ThingVertex.generateIID(storage.keyGenerator(), vertex.schema()))
-            );
+            ); // typeByIID no longer contains valid mapping from IID to TypeVertex
             thingByIID.values().parallelStream().forEach(Vertex::commit);
+            clear(); // we now flush the indexes after commit, and we do not expect this Graph.Thing to be used again
         }
 
         private void clear() {
