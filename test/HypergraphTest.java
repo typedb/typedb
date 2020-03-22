@@ -111,6 +111,8 @@ public class HypergraphTest {
                     assertEquals(man.sup(), rootEntityType);
                     assertEquals(woman.sup(), rootEntityType);
                     assertEquals(company.sup(), rootEntityType);
+
+                    transaction.commit();
                 }
 
                 try (Hypergraph.Transaction transaction = session.transaction(Hypergraph.Transaction.Type.READ)) {
