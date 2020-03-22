@@ -18,6 +18,8 @@
 
 package hypergraph.graph;
 
+import hypergraph.common.HypergraphException;
+import hypergraph.common.ManagedReadWriteLock;
 import hypergraph.graph.edge.TypeEdge;
 import hypergraph.graph.vertex.ThingVertex;
 import hypergraph.graph.vertex.TypeVertex;
@@ -52,8 +54,9 @@ public class Graph {
         return thingGraph;
     }
 
-    public void reset() {
-        // TODO
+    public void clear() {
+        typeGraph.clear();
+        thingGraph.clear();
     }
 
     public boolean isInitialised() {
@@ -73,10 +76,12 @@ public class Graph {
 
         private final Map<String, TypeVertex> typeByLabel;
         private final Map<byte[], TypeVertex> typeByIID;
+        private final Map<String, ManagedReadWriteLock> labelLocks;
 
         private Type() {
             typeByLabel = new ConcurrentHashMap<>();
             typeByIID = new ConcurrentHashMap<>();
+            labelLocks = new ConcurrentHashMap<>();
         }
 
         public Storage storage() {
@@ -115,24 +120,41 @@ public class Graph {
         }
 
         public TypeVertex createVertex(Schema.Vertex.Type type, String label) {
-            TypeVertex typeVertex = typeByLabel.computeIfAbsent(
-                    label, l -> new TypeVertex.Buffered(this, type, TypeVertex.generateIID(keyGenerator, type), l)
-            );
-            typeByIID.put(typeVertex.iid(), typeVertex);
-            return typeVertex;
+            try {
+                labelLocks.computeIfAbsent(label, x -> new ManagedReadWriteLock()).lockWrite();
+                TypeVertex typeVertex = typeByLabel.computeIfAbsent(
+                        label, l -> new TypeVertex.Buffered(this, type, TypeVertex.generateIID(keyGenerator, type), l)
+                );
+                typeByIID.put(typeVertex.iid(), typeVertex);
+                return typeVertex;
+            } catch (InterruptedException e) {
+                throw new HypergraphException(e);
+            } finally {
+                labelLocks.get(label).unlockWrite();
+                labelLocks.remove(label);
+            }
         }
 
         public TypeVertex getVertex(String label) {
-            TypeVertex vertex = typeByLabel.get(label);
-            if (vertex != null) return vertex;
+            try {
+                labelLocks.computeIfAbsent(label, x -> new ManagedReadWriteLock()).lockRead();
 
-            byte[] iid = storage.get(TypeVertex.generateIndex(label));
-            if (iid != null) {
-                vertex = typeByIID.computeIfAbsent(iid, x -> new TypeVertex.Persisted(this, x, label));
-                typeByLabel.putIfAbsent(label, vertex);
+                TypeVertex vertex = typeByLabel.get(label);
+                if (vertex != null) return vertex;
+
+                byte[] iid = storage.get(TypeVertex.generateIndex(label));
+                if (iid != null) {
+                    vertex = typeByIID.computeIfAbsent(iid, x -> new TypeVertex.Persisted(this, x, label));
+                    typeByLabel.putIfAbsent(label, vertex);
+                }
+
+                return vertex;
+            } catch (InterruptedException e) {
+                throw new HypergraphException(e);
+            } finally {
+                labelLocks.get(label).unlockRead();
+                labelLocks.remove(label);
             }
-
-            return vertex;
         }
 
         public TypeVertex getVertex(byte[] iid) {
@@ -143,6 +165,11 @@ public class Graph {
             typeByLabel.putIfAbsent(vertex.label(), vertex);
 
             return vertex;
+        }
+
+        private void clear() {
+            typeByIID.clear();
+            typeByLabel.clear();
         }
     }
 
@@ -159,6 +186,10 @@ public class Graph {
                     vertex -> vertex.iid(ThingVertex.generateIID(storage.keyGenerator(), vertex.schema()))
             );
             thingByIID.values().parallelStream().forEach(Vertex::commit);
+        }
+
+        private void clear() {
+            thingByIID.clear();
         }
     }
 }

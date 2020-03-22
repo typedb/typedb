@@ -20,8 +20,8 @@ package hypergraph.core;
 
 import hypergraph.Hypergraph;
 import hypergraph.common.HypergraphException;
+import hypergraph.common.ManagedReadWriteLock;
 import hypergraph.concept.ConceptManager;
-import hypergraph.core.util.ManagedReadWriteLock;
 import hypergraph.graph.Graph;
 import hypergraph.graph.KeyGenerator;
 import hypergraph.graph.Storage;
@@ -110,7 +110,7 @@ class CoreTransaction implements Hypergraph.Transaction {
     @Override
     public void rollback() {
         try {
-            graph.reset();
+            graph.clear();
             rocksTransaction.rollback();
         } catch (RocksDBException e) {
             e.printStackTrace();
@@ -173,7 +173,6 @@ class CoreTransaction implements Hypergraph.Transaction {
                 readWriteLock.lockWrite();
                 rocksTransaction.put(key, value);
             } catch (RocksDBException | InterruptedException e) {
-                e.printStackTrace();
                 throw new HypergraphException(e);
             } finally {
                 readWriteLock.unlockWrite();
