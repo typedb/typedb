@@ -23,7 +23,6 @@ import hypergraph.graph.Schema;
 import hypergraph.graph.edge.Edge;
 
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
@@ -36,18 +35,16 @@ public abstract class Vertex<
 
     protected final Graph graph;
     protected final VERTEX_SCHEMA schema;
-    private final int hash;
 
     protected final Map<EDGE_SCHEMA, Set<EDGE>> outs;
     protected final Map<EDGE_SCHEMA, Set<EDGE>> ins;
 
     protected byte[] iid;
 
-    Vertex(Graph graph, VERTEX_SCHEMA schema, byte[] iid) {
+    Vertex(Graph graph, byte[] iid, VERTEX_SCHEMA schema) {
         this.graph = graph;
         this.schema = schema;
         this.iid = iid;
-        hash = Arrays.hashCode(iid);
         outs = new ConcurrentHashMap<>();
         ins = new ConcurrentHashMap<>();
     }
@@ -65,13 +62,11 @@ public abstract class Vertex<
     public abstract Iterator<EDGE> ins(EDGE_SCHEMA schema);
 
     public void out(EDGE edge) {
-        outs.putIfAbsent(edge.schema(), new HashSet<>());
-        outs.get(edge.schema()).add(edge);
+        outs.computeIfAbsent(edge.schema(), e -> ConcurrentHashMap.newKeySet()).add(edge);
     }
 
     public void in(EDGE edge) {
-        ins.putIfAbsent(edge.schema(), new HashSet<>());
-        ins.get(edge.schema()).add(edge);
+        ins.computeIfAbsent(edge.schema(), e -> ConcurrentHashMap.newKeySet()).add(edge);
     }
 
     public byte[] iid() {
@@ -96,6 +91,6 @@ public abstract class Vertex<
 
     @Override
     public final int hashCode() {
-        return hash;
+        return Arrays.hashCode(iid);
     }
 }

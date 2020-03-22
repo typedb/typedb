@@ -37,8 +37,9 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, Schema.Edge.
     protected String regex;
 
 
-    TypeVertex(Graph graph, Schema.Vertex.Type type, byte[] iid) {
-        super(graph, type, iid);
+    TypeVertex(Graph graph, Schema.Vertex.Type type, byte[] iid, String label) {
+        super(graph, iid, type);
+        this.label = label;
     }
 
     public static byte[] generateIID(KeyGenerator keyGenerator, Schema.Vertex.Type schema) {
@@ -49,7 +50,9 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, Schema.Edge.
         return join(Schema.Index.TYPE.prefix().key(), label.getBytes());
     }
 
-    public abstract String label();
+    public String label() {
+        return label;
+    }
 
     public abstract boolean isAbstract();
 
@@ -66,13 +69,7 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, Schema.Edge.
     public static class Buffered extends TypeVertex {
 
         public Buffered(Graph graph, Schema.Vertex.Type schema, byte[] iid, String label) {
-            super(graph, schema, iid);
-            this.label = label;
-        }
-
-        @Override
-        public String label() {
-            return label;
+            super(graph, schema, iid, label);
         }
 
         public Schema.Status status() {
@@ -160,25 +157,17 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, Schema.Edge.
     public static class Persisted extends TypeVertex {
 
         public Persisted(Graph graph, byte[] iid, String label) {
-            super(graph, Schema.Vertex.Type.of(iid[0]), iid);
-            this.label = label;
+            super(graph, Schema.Vertex.Type.of(iid[0]), iid, label);
         }
 
         public Persisted(Graph graph, byte[] iid) {
-            super(graph, Schema.Vertex.Type.of(iid[0]), iid);
+            super(graph, Schema.Vertex.Type.of(iid[0]), iid,
+                  new String(graph.storage().get(join(iid, Schema.Property.LABEL.infix().key()))));
         }
 
         @Override
         public Schema.Status status() {
             return Schema.Status.PERSISTED;
-        }
-
-        @Override
-        public String label() {
-            if (label != null) return label;
-            byte[] val = graph.storage().get(join(iid, Schema.Property.LABEL.infix().key()));
-            if (val != null) label = new String(val);
-            return label;
         }
 
         @Override

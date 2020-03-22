@@ -105,17 +105,17 @@ public class Schema {
         PROPERTY_WHEN(6),
         PROPERTY_THEN(7),
         EDGE_SUB_OUT(20),
-        EDGE_SUB_IN(25),
+        EDGE_SUB_IN(-20),
         EDGE_KEY_OUT(30),
-        EDGE_KEY_IN(35),
+        EDGE_KEY_IN(-30),
         EDGE_HAS_OUT(40),
-        EDGE_HAS_IN(45),
+        EDGE_HAS_IN(-40),
         EDGE_PLAYS_OUT(50),
-        EDGE_PLAYS_IN(55),
+        EDGE_PLAYS_IN(-50),
         EDGE_RELATES_OUT(60),
-        EDGE_RELATES_IN(65),
+        EDGE_RELATES_IN(-60),
         EDGE_OPT_ROLE_OUT(100),
-        EDGE_OPT_ROLE_IN(105),
+        EDGE_OPT_ROLE_IN(-100),
         EDGE_OPT_RELATION_OUT(110);
 
         private final byte key;
@@ -326,6 +326,10 @@ public class Schema {
         Infix out();
 
         Infix in();
+
+        static boolean isOut(byte infix) {
+            return infix > 0;
+        }
 
         enum Type implements Edge {
             SUB(Infix.EDGE_SUB_OUT, Infix.EDGE_SUB_IN),

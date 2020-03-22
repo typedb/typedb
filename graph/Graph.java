@@ -23,18 +23,23 @@ import hypergraph.graph.vertex.ThingVertex;
 import hypergraph.graph.vertex.TypeVertex;
 import hypergraph.graph.vertex.Vertex;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 public class Graph {
 
     private final Storage storage;
-    private Buffer buffer;
+    private final KeyGenerator keyGenerator;
+    private final Map<String, TypeVertex> typeByLabel;
+    private final Map<byte[], TypeVertex> typeByIID;
+    private final Map<byte[], ThingVertex> thingByIID;
 
     public Graph(Storage storage) {
         this.storage = storage;
-        buffer = new Buffer();
-    }
-
-    public Buffer buffer() {
-        return buffer;
+        keyGenerator = new KeyGenerator(Schema.Key.BUFFERED);
+        typeByLabel = new ConcurrentHashMap<>();
+        typeByIID = new ConcurrentHashMap<>();
+        thingByIID = new ConcurrentHashMap<>();
     }
 
     public Storage storage() {
@@ -42,19 +47,19 @@ public class Graph {
     }
 
     public void reset() {
-        buffer = new Buffer();
+        // TODO
     }
 
     public void commit() {
-        buffer.typeVertices().parallelStream().filter(v -> v.status().equals(Schema.Status.BUFFERED)).forEach(
+        typeByIID.values().parallelStream().filter(v -> v.status().equals(Schema.Status.BUFFERED)).forEach(
                 vertex -> vertex.iid(TypeVertex.generateIID(storage.keyGenerator(), vertex.schema()))
         );
-        buffer.thingVertices().parallelStream().forEach(
+        thingByIID.values().parallelStream().forEach(
                 vertex -> vertex.iid(ThingVertex.generateIID(storage.keyGenerator(), vertex.schema()))
         );
 
-        buffer.typeVertices().parallelStream().forEach(Vertex::commit);
-        buffer.thingVertices().parallelStream().forEach(Vertex::commit);
+        typeByIID.values().parallelStream().forEach(Vertex::commit);
+        thingByIID.values().parallelStream().forEach(Vertex::commit);
     }
 
     public boolean isInitialised() {
@@ -94,9 +99,10 @@ public class Graph {
     }
 
     public TypeVertex createTypeVertex(Schema.Vertex.Type type, String label) {
-        byte[] bufferedIID = TypeVertex.generateIID(buffer.keyGenerator(), type);
+        byte[] bufferedIID = TypeVertex.generateIID(keyGenerator, type);
         TypeVertex typeVertex = new TypeVertex.Buffered(this, type, bufferedIID, label);
-        buffer.add(typeVertex);
+        typeByIID.put(typeVertex.iid(), typeVertex);
+        typeByLabel.put(typeVertex.label(), typeVertex);
         return typeVertex;
     }
 
@@ -108,19 +114,25 @@ public class Graph {
     }
 
     public TypeVertex getTypeVertex(String label) {
-        TypeVertex vertex = buffer.getTypeVertex(label);
+        TypeVertex vertex = typeByLabel.get(label);
         if (vertex != null) return vertex;
 
         byte[] iid = storage.get(TypeVertex.generateIndex(label));
         if (iid != null) {
-            vertex = new TypeVertex.Persisted(this, iid, label);
-            buffer.add(vertex);
+            vertex = typeByIID.computeIfAbsent(iid, x -> new TypeVertex.Persisted(this, x, label));
+            typeByLabel.putIfAbsent(label, vertex);
         }
 
         return vertex;
     }
 
-    public ThingVertex createThingVertex(Schema.Vertex.Thing thing, TypeVertex type) {
-        return null;
+    public TypeVertex getTypeVertex(byte[] iid) {
+        TypeVertex vertex = typeByIID.get(iid);
+        if (vertex != null) return vertex;
+
+        vertex = typeByIID.computeIfAbsent(iid, x -> new TypeVertex.Persisted(this, x));
+        typeByLabel.putIfAbsent(vertex.label(), vertex);
+
+        return vertex;
     }
 }

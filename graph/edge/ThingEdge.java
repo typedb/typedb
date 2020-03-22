@@ -24,20 +24,32 @@ import hypergraph.graph.vertex.ThingVertex;
 
 public abstract class ThingEdge extends Edge<Schema.Edge.Thing, ThingVertex> {
 
-    ThingEdge(Graph graph, Schema.Edge.Thing schema, ThingVertex from, ThingVertex to) {
-        super(graph, schema, from, to);
+    ThingEdge(Graph graph, byte[] iid, Schema.Edge.Thing schema, ThingVertex from, ThingVertex to) {
+        super(graph, iid, schema, from, to);
     }
 
     public static class Buffered extends ThingEdge {
 
         public Buffered(Graph graph, Schema.Edge.Thing schema, ThingVertex from, ThingVertex to) {
-            super(graph, schema, from, to);
+            super(graph, null, schema, from, to);
         }
 
+        @Override
         public Schema.Status status() {
             return Schema.Status.BUFFERED;
         }
 
+        @Override
+        public ThingVertex from() {
+            return from;
+        }
+
+        @Override
+        public ThingVertex to() {
+            return to;
+        }
+
+        @Override
         public void commit() {
             // TODO
         }
@@ -45,14 +57,26 @@ public abstract class ThingEdge extends Edge<Schema.Edge.Thing, ThingVertex> {
 
     public static class Persisted extends ThingEdge {
 
-        public Persisted(Graph graph, Schema.Edge.Thing schema, ThingVertex from, ThingVertex to) {
-            super(graph, schema, from, to);
+        public Persisted(Graph graph, byte[] iid) {
+            super(graph, iid, null, null, null); // TODO
         }
 
+        @Override
         public Schema.Status status() {
             return Schema.Status.PERSISTED;
         }
 
+        @Override
+        public ThingVertex from() {
+            return null; // TODO
+        }
+
+        @Override
+        public ThingVertex to() {
+            return null; // TODO
+        }
+
+        @Override
         public void commit() {}
     }
 }

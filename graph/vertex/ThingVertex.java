@@ -26,7 +26,7 @@ import hypergraph.graph.edge.ThingEdge;
 public abstract class ThingVertex extends Vertex<Schema.Vertex.Thing, Schema.Edge.Thing, ThingEdge> {
 
     ThingVertex(Graph graph, Schema.Vertex.Thing schema, byte[] iid) {
-        super(graph, schema, iid);
+        super(graph, iid, schema);
     }
 
     public static byte[] generateIID(KeyGenerator keyGenerator, Schema.Vertex.Thing schema) {

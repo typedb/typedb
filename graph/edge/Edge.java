@@ -22,39 +22,36 @@ import hypergraph.graph.Graph;
 import hypergraph.graph.Schema;
 import hypergraph.graph.vertex.Vertex;
 
+import java.util.Arrays;
 import java.util.Objects;
 
 public abstract class Edge<EDGE_SCHEMA extends Schema.Edge, VERTEX extends Vertex> {
 
     protected final Graph graph;
+    protected final byte[] iid;
     protected final EDGE_SCHEMA schema;
-    protected final VERTEX from;
-    protected final VERTEX to;
-    protected final int hash;
+    protected VERTEX from;
+    protected VERTEX to;
 
-    public Edge(Graph graph, EDGE_SCHEMA schema, VERTEX from, VERTEX to) {
+    public Edge(Graph graph, byte[] iid, EDGE_SCHEMA schema, VERTEX from, VERTEX to) {
         this.graph = graph;
+        this.iid = iid;
         this.schema = schema;
         this.from = from;
         this.to = to;
-        this.hash = Objects.hash(schema, from, to);
     }
-
-    public abstract Schema.Status status();
-
-    public abstract void commit();
 
     public EDGE_SCHEMA schema(){
         return schema;
     }
 
-    public VERTEX from() {
-        return from;
-    }
+    public abstract Schema.Status status();
 
-    public VERTEX to() {
-        return to;
-    }
+    public abstract VERTEX from();
+
+    public abstract VERTEX to();
+
+    public abstract void commit();
 
     @Override
     public boolean equals(Object object) {
@@ -63,14 +60,15 @@ public abstract class Edge<EDGE_SCHEMA extends Schema.Edge, VERTEX extends Verte
 
         Edge that = (Edge) object;
 
-        return (this.schema.equals(that.schema) &&
+        return (Arrays.equals(this.iid, that.iid) &&
+                this.schema.equals(that.schema) &&
                 this.from.equals(that.from) &&
                 this.to.equals(that.to));
     }
 
     @Override
     public final int hashCode() {
-        return hash;
+        return Objects.hash(Arrays.hashCode(iid), schema, from, to);
     }
 
 }
