@@ -182,7 +182,7 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, Schema.Edge.
 
         @Override
         public TypeVertex setAbstract(boolean isAbstract) {
-            return null;
+            return null; // TODO
         }
 
         @Override
@@ -195,7 +195,7 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, Schema.Edge.
 
         @Override
         public TypeVertex dataType(Schema.DataType dataType) {
-            return null;
+            return null; // TODO
         }
 
         @Override
@@ -208,7 +208,7 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, Schema.Edge.
 
         @Override
         public TypeVertex regex(String regex) {
-            return null;
+            return null; // TODO
         }
 
         public Iterator<TypeEdge> outs(Schema.Edge.Type schema) {
@@ -232,6 +232,13 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, Schema.Edge.
         }
 
         @Override
-        public void commit() {}
+        public void commit() {
+            commitEdges();
+        }
+
+        private void commitEdges() {
+            outs.forEach((key, set) -> set.forEach(Edge::commit));
+            ins.forEach((key, set) -> set.forEach(Edge::commit));
+        }
     }
 }

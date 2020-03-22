@@ -20,9 +20,14 @@ package hypergraph.concept.type;
 
 import hypergraph.graph.Graph;
 import hypergraph.graph.Schema;
+import hypergraph.graph.edge.TypeEdge;
 import hypergraph.graph.vertex.TypeVertex;
 
+import java.util.Iterator;
+
 public class AttributeType extends Type {
+
+    private AttributeType parent;
 
     public AttributeType(TypeVertex vertex) {
         super(vertex);
@@ -32,5 +37,19 @@ public class AttributeType extends Type {
         super(graph.type().createVertex(Schema.Vertex.Type.ATTRIBUTE_TYPE, label));
         TypeVertex parent = graph.type().getVertex(Schema.Vertex.Type.Root.ATTRIBUTE.label());
         graph.type().createEdge(Schema.Edge.Type.SUB, vertex, parent);
+    }
+
+    public AttributeType sup() {
+        if (parent != null) return parent;
+
+        Iterator<TypeEdge> parentEdge = vertex.outs(Schema.Edge.Type.SUB);
+        if (parentEdge != null && parentEdge.hasNext()) {
+            TypeVertex typeVertex = parentEdge.next().to();
+            if (typeVertex.schema().equals(Schema.Vertex.Type.ATTRIBUTE_TYPE)) {
+                parent = new AttributeType(typeVertex);
+            }
+        }
+
+        return parent;
     }
 }

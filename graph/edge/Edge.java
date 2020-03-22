@@ -54,9 +54,7 @@ public abstract class Edge<EDGE_SCHEMA extends Schema.Edge, VERTEX extends Verte
     public boolean equals(Object object) {
         if (this == object) return true;
         if (object == null || getClass() != object.getClass()) return false;
-
         Edge that = (Edge) object;
-
         return (Arrays.equals(this.iid, that.iid) &&
                 this.schema.equals(that.schema) &&
                 this.from.equals(that.from) &&

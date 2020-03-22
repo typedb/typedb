@@ -77,7 +77,7 @@ public class HypergraphTest {
                     AttributeType rootAttributeType = transaction.concepts().getRootAttributeType();
                     notNulls(rootType, rootEntityType, rootRelationType, rootAttributeType);
 
-                    nulls(rootEntityType.sup());
+                    nulls(rootEntityType.sup(), rootRelationType.sup(), rootAttributeType.sup());
                 }
 
                 try (Hypergraph.Transaction transaction = session.transaction(Hypergraph.Transaction.Type.WRITE)) {
@@ -93,16 +93,24 @@ public class HypergraphTest {
                     AttributeType name = transaction.concepts().putAttributeType("name");
                     AttributeType age = transaction.concepts().putAttributeType("age");
                     notNulls(name, age);
+                    assertEquals(name.sup(), rootAttributeType);
+                    assertEquals(age.sup(), rootAttributeType);
 
                     RelationType marriage = transaction.concepts().putRelationType("marriage");
                     RelationType employment = transaction.concepts().putRelationType("employment");
                     notNulls(marriage, employment);
+                    assertEquals(marriage.sup(), rootRelationType);
+                    assertEquals(employment.sup(), rootRelationType);
 
                     EntityType person = transaction.concepts().putEntityType("person");
                     EntityType man = transaction.concepts().putEntityType("man");
                     EntityType woman = transaction.concepts().putEntityType("woman");
                     EntityType company = transaction.concepts().putEntityType("company");
                     notNulls(person, man, woman, company);
+                    assertEquals(person.sup(), rootEntityType);
+                    assertEquals(man.sup(), rootEntityType);
+                    assertEquals(woman.sup(), rootEntityType);
+                    assertEquals(company.sup(), rootEntityType);
                 }
 
                 try (Hypergraph.Transaction transaction = session.transaction(Hypergraph.Transaction.Type.READ)) {
