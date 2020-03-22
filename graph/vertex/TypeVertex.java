@@ -31,14 +31,16 @@ import static hypergraph.graph.util.ByteArrays.join;
 
 public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, Schema.Edge.Type, TypeEdge> {
 
+    protected final Graph.Type graph;
     protected String label;
     protected Boolean isAbstract;
     protected Schema.DataType dataType;
     protected String regex;
 
 
-    TypeVertex(Graph graph, Schema.Vertex.Type type, byte[] iid, String label) {
-        super(graph, iid, type);
+    TypeVertex(Graph.Type graph, Schema.Vertex.Type type, byte[] iid, String label) {
+        super(iid, type);
+        this.graph = graph;
         this.label = label;
     }
 
@@ -68,7 +70,7 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, Schema.Edge.
 
     public static class Buffered extends TypeVertex {
 
-        public Buffered(Graph graph, Schema.Vertex.Type schema, byte[] iid, String label) {
+        public Buffered(Graph.Type graph, Schema.Vertex.Type schema, byte[] iid, String label) {
             super(graph, schema, iid, label);
         }
 
@@ -156,11 +158,11 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, Schema.Edge.
 
     public static class Persisted extends TypeVertex {
 
-        public Persisted(Graph graph, byte[] iid, String label) {
+        public Persisted(Graph.Type graph, byte[] iid, String label) {
             super(graph, Schema.Vertex.Type.of(iid[0]), iid, label);
         }
 
-        public Persisted(Graph graph, byte[] iid) {
+        public Persisted(Graph.Type graph, byte[] iid) {
             super(graph, Schema.Vertex.Type.of(iid[0]), iid,
                   new String(graph.storage().get(join(iid, Schema.Property.LABEL.infix().key()))));
         }

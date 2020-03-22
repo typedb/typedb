@@ -24,13 +24,13 @@ import hypergraph.graph.vertex.ThingVertex;
 
 public abstract class ThingEdge extends Edge<Schema.Edge.Thing, ThingVertex> {
 
-    ThingEdge(Graph graph, byte[] iid, Schema.Edge.Thing schema, ThingVertex from, ThingVertex to) {
-        super(graph, iid, schema, from, to);
+    ThingEdge(Graph.Thing graph, byte[] iid, Schema.Edge.Thing schema, ThingVertex from, ThingVertex to) {
+        super(iid, schema, from, to);
     }
 
     public static class Buffered extends ThingEdge {
 
-        public Buffered(Graph graph, Schema.Edge.Thing schema, ThingVertex from, ThingVertex to) {
+        public Buffered(Graph.Thing graph, Schema.Edge.Thing schema, ThingVertex from, ThingVertex to) {
             super(graph, null, schema, from, to);
         }
 
@@ -57,7 +57,7 @@ public abstract class ThingEdge extends Edge<Schema.Edge.Thing, ThingVertex> {
 
     public static class Persisted extends ThingEdge {
 
-        public Persisted(Graph graph, byte[] iid) {
+        public Persisted(Graph.Thing graph, byte[] iid) {
             super(graph, iid, null, null, null); // TODO
         }
 

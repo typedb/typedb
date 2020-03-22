@@ -29,8 +29,8 @@ public class RelationType extends Type {
     }
 
     public RelationType(Graph graph, String label) {
-        super(graph.createTypeVertex(Schema.Vertex.Type.RELATION_TYPE, label));
-        TypeVertex parent = graph.getTypeVertex(Schema.Vertex.Type.Root.RELATION.label());
-        graph.createTypeEdge(Schema.Edge.Type.SUB, vertex, parent);
+        super(graph.type().createVertex(Schema.Vertex.Type.RELATION_TYPE, label));
+        TypeVertex parent = graph.type().getVertex(Schema.Vertex.Type.Root.RELATION.label());
+        graph.type().createEdge(Schema.Edge.Type.SUB, vertex, parent);
     }
 }

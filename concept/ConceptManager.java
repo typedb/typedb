@@ -35,61 +35,61 @@ public class ConceptManager {
     }
 
     public Type getRootType() {
-        TypeVertex vertex = graph.getTypeVertex(Schema.Vertex.Type.Root.THING.label());
+        TypeVertex vertex = graph.type().getVertex(Schema.Vertex.Type.Root.THING.label());
         if (vertex != null) return new Type(vertex);
         else return null;
     }
 
     public EntityType getRootEntityType() {
-        TypeVertex vertex = graph.getTypeVertex(Schema.Vertex.Type.Root.ENTITY.label());
+        TypeVertex vertex = graph.type().getVertex(Schema.Vertex.Type.Root.ENTITY.label());
         if (vertex != null) return new EntityType(vertex);
         else return null;
     }
 
     public RelationType getRootRelationType() {
-        TypeVertex vertex = graph.getTypeVertex(Schema.Vertex.Type.Root.RELATION.label());
+        TypeVertex vertex = graph.type().getVertex(Schema.Vertex.Type.Root.RELATION.label());
         if (vertex != null) return new RelationType(vertex);
         else return null;
     }
 
     public AttributeType getRootAttributeType() {
-        TypeVertex vertex = graph.getTypeVertex(Schema.Vertex.Type.Root.ATTRIBUTE.label());
+        TypeVertex vertex = graph.type().getVertex(Schema.Vertex.Type.Root.ATTRIBUTE.label());
         if (vertex != null) return new AttributeType(vertex);
         else return null;
     }
 
     public EntityType putEntityType(String label) {
-        TypeVertex vertex = graph.getTypeVertex(label);
+        TypeVertex vertex = graph.type().getVertex(label);
         if (vertex != null) return new EntityType(vertex);
         else return new EntityType(graph, label);
     }
 
     public EntityType getEntityType(String label) {
-        TypeVertex vertex = graph.getTypeVertex(label);
+        TypeVertex vertex = graph.type().getVertex(label);
         if (vertex != null) return new EntityType(vertex);
         else return null;
     }
 
     public RelationType putRelationType(String label) {
-        TypeVertex vertex = graph.getTypeVertex(label);
+        TypeVertex vertex = graph.type().getVertex(label);
         if (vertex != null) return new RelationType(vertex);
         else return new RelationType(graph, label);
     }
 
     public RelationType getRelationType(String label) {
-        TypeVertex vertex = graph.getTypeVertex(label);
+        TypeVertex vertex = graph.type().getVertex(label);
         if (vertex != null) return new RelationType(vertex);
         else return null;
     }
 
     public AttributeType putAttributeType(String label) {
-        TypeVertex vertex = graph.getTypeVertex(label);
+        TypeVertex vertex = graph.type().getVertex(label);
         if (vertex != null) return new AttributeType(vertex);
         else return new AttributeType(graph, label);
     }
 
     public AttributeType getAttributeType(String label) {
-        TypeVertex vertex = graph.getTypeVertex(label);
+        TypeVertex vertex = graph.type().getVertex(label);
         if (vertex != null) return new AttributeType(vertex);
         else return null;
     }

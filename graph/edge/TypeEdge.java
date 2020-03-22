@@ -29,15 +29,18 @@ import static java.util.Arrays.copyOfRange;
 
 public abstract class TypeEdge extends Edge<Schema.Edge.Type, TypeVertex> {
 
-    TypeEdge(Graph graph, byte[] iid, Schema.Edge.Type schema, TypeVertex from, TypeVertex to) {
-        super(graph, iid, schema, from, to);
+    protected final Graph.Type graph;
+
+    TypeEdge(Graph.Type graph, byte[] iid, Schema.Edge.Type schema, TypeVertex from, TypeVertex to) {
+        super(iid, schema, from, to);
+        this.graph = graph;
     }
 
     public static class Buffered extends TypeEdge {
 
         private AtomicBoolean committed;
 
-        public Buffered(Graph graph, Schema.Edge.Type schema, TypeVertex from, TypeVertex to) {
+        public Buffered(Graph.Type graph, Schema.Edge.Type schema, TypeVertex from, TypeVertex to) {
             super(graph, null, schema, from, to);
             committed = new AtomicBoolean(false);
         }
@@ -75,7 +78,7 @@ public abstract class TypeEdge extends Edge<Schema.Edge.Type, TypeVertex> {
         private byte[] fromIID;
         private byte[] toIID;
 
-        public Persisted(Graph graph, byte[] iid) {
+        public Persisted(Graph.Type graph, byte[] iid) {
             super(graph, iid, Schema.Edge.Type.of(iid[Schema.IID.TYPE.length()]), null, null);
             byte[] start = copyOfRange(iid, 0, Schema.IID.TYPE.length());
             byte[] end = copyOfRange(iid, Schema.IID.TYPE.length() + 1, iid.length);
@@ -93,14 +96,14 @@ public abstract class TypeEdge extends Edge<Schema.Edge.Type, TypeVertex> {
         @Override
         public TypeVertex from() {
             if (from != null) return from;
-            from = graph.getTypeVertex(fromIID);
+            from = graph.getVertex(fromIID);
             return from;
         }
 
         @Override
         public TypeVertex to() {
             if (to != null) return to;
-            to = graph.getTypeVertex(toIID);
+            to = graph.getVertex(toIID);
             return to;
         }
 

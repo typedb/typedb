@@ -18,7 +18,6 @@
 
 package hypergraph.graph.vertex;
 
-import hypergraph.graph.Graph;
 import hypergraph.graph.Schema;
 import hypergraph.graph.edge.Edge;
 
@@ -33,7 +32,6 @@ public abstract class Vertex<
         EDGE_SCHEMA extends Schema.Edge,
         EDGE extends Edge<EDGE_SCHEMA, ? extends Vertex<VERTEX_SCHEMA, EDGE_SCHEMA, EDGE>>> {
 
-    protected final Graph graph;
     protected final VERTEX_SCHEMA schema;
 
     protected final Map<EDGE_SCHEMA, Set<EDGE>> outs;
@@ -41,8 +39,7 @@ public abstract class Vertex<
 
     protected byte[] iid;
 
-    Vertex(Graph graph, byte[] iid, VERTEX_SCHEMA schema) {
-        this.graph = graph;
+    Vertex(byte[] iid, VERTEX_SCHEMA schema) {
         this.schema = schema;
         this.iid = iid;
         outs = new ConcurrentHashMap<>();

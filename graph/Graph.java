@@ -30,109 +30,135 @@ public class Graph {
 
     private final Storage storage;
     private final KeyGenerator keyGenerator;
-    private final Map<String, TypeVertex> typeByLabel;
-    private final Map<byte[], TypeVertex> typeByIID;
-    private final Map<byte[], ThingVertex> thingByIID;
+    private final Graph.Type typeGraph;
+    private final Graph.Thing thingGraph;
 
     public Graph(Storage storage) {
         this.storage = storage;
         keyGenerator = new KeyGenerator(Schema.Key.BUFFERED);
-        typeByLabel = new ConcurrentHashMap<>();
-        typeByIID = new ConcurrentHashMap<>();
-        thingByIID = new ConcurrentHashMap<>();
+        typeGraph = new Graph.Type();
+        thingGraph = new Graph.Thing();
     }
 
     public Storage storage() {
         return storage;
     }
 
+    public Graph.Type type() {
+        return typeGraph;
+    }
+
+    public Graph.Thing thing() {
+        return thingGraph;
+    }
+
     public void reset() {
         // TODO
     }
 
-    public void commit() {
-        typeByIID.values().parallelStream().filter(v -> v.status().equals(Schema.Status.BUFFERED)).forEach(
-                vertex -> vertex.iid(TypeVertex.generateIID(storage.keyGenerator(), vertex.schema()))
-        );
-        thingByIID.values().parallelStream().forEach(
-                vertex -> vertex.iid(ThingVertex.generateIID(storage.keyGenerator(), vertex.schema()))
-        );
-
-        typeByIID.values().parallelStream().forEach(Vertex::commit);
-        thingByIID.values().parallelStream().forEach(Vertex::commit);
-    }
-
     public boolean isInitialised() {
-        return getTypeVertex(Schema.Vertex.Type.Root.THING.label()) != null;
+        return typeGraph.isInitialised();
     }
 
     public void initialise() {
-        TypeVertex rootType = createTypeVertex(
-                Schema.Vertex.Type.TYPE,
-                Schema.Vertex.Type.Root.THING.label()
-        ).setAbstract(true);
-
-        TypeVertex rootEntityType = createTypeVertex(
-                Schema.Vertex.Type.ENTITY_TYPE,
-                Schema.Vertex.Type.Root.ENTITY.label()
-        ).setAbstract(true);
-
-        TypeVertex rootRelationType = createTypeVertex(
-                Schema.Vertex.Type.RELATION_TYPE,
-                Schema.Vertex.Type.Root.RELATION.label()
-        ).setAbstract(true);
-
-        TypeVertex rootRoleType = createTypeVertex(
-                Schema.Vertex.Type.ROLE_TYPE,
-                Schema.Vertex.Type.Root.ROLE.label()
-        ).setAbstract(true);
-
-        TypeVertex rootAttributeType = createTypeVertex(
-                Schema.Vertex.Type.ATTRIBUTE_TYPE,
-                Schema.Vertex.Type.Root.ATTRIBUTE.label()
-        ).setAbstract(true);
-
-        createTypeEdge(Schema.Edge.Type.SUB, rootEntityType, rootType);
-        createTypeEdge(Schema.Edge.Type.SUB, rootRelationType, rootType);
-        createTypeEdge(Schema.Edge.Type.SUB, rootRoleType, rootType);
-        createTypeEdge(Schema.Edge.Type.SUB, rootAttributeType, rootType);
+        typeGraph.initialise();
     }
 
-    public TypeVertex createTypeVertex(Schema.Vertex.Type type, String label) {
-        byte[] bufferedIID = TypeVertex.generateIID(keyGenerator, type);
-        TypeVertex typeVertex = new TypeVertex.Buffered(this, type, bufferedIID, label);
-        typeByIID.put(typeVertex.iid(), typeVertex);
-        typeByLabel.put(typeVertex.label(), typeVertex);
-        return typeVertex;
+    public void commit() {
+        typeGraph.commit();
+        thingGraph.commit();
     }
 
-    public TypeEdge createTypeEdge(Schema.Edge.Type type, TypeVertex from, TypeVertex to) {
-        TypeEdge edge = new TypeEdge.Buffered(this, type, from, to);
-        from.out(edge);
-        to.in(edge);
-        return edge;
-    }
+    public class Type {
 
-    public TypeVertex getTypeVertex(String label) {
-        TypeVertex vertex = typeByLabel.get(label);
-        if (vertex != null) return vertex;
+        private final Map<String, TypeVertex> typeByLabel;
+        private final Map<byte[], TypeVertex> typeByIID;
 
-        byte[] iid = storage.get(TypeVertex.generateIndex(label));
-        if (iid != null) {
-            vertex = typeByIID.computeIfAbsent(iid, x -> new TypeVertex.Persisted(this, x, label));
-            typeByLabel.putIfAbsent(label, vertex);
+        private Type() {
+            typeByLabel = new ConcurrentHashMap<>();
+            typeByIID = new ConcurrentHashMap<>();
         }
 
-        return vertex;
+        public Storage storage() {
+            return storage;
+        }
+
+        private boolean isInitialised() {
+            return getVertex(Schema.Vertex.Type.Root.THING.label()) != null;
+        }
+
+        private void initialise() {
+            TypeVertex rootType = createVertex(Schema.Vertex.Type.TYPE, Schema.Vertex.Type.Root.THING.label()).setAbstract(true);
+            TypeVertex rootEntityType = createVertex(Schema.Vertex.Type.ENTITY_TYPE, Schema.Vertex.Type.Root.ENTITY.label()).setAbstract(true);
+            TypeVertex rootRelationType = createVertex(Schema.Vertex.Type.RELATION_TYPE, Schema.Vertex.Type.Root.RELATION.label()).setAbstract(true);
+            TypeVertex rootRoleType = createVertex(Schema.Vertex.Type.ROLE_TYPE, Schema.Vertex.Type.Root.ROLE.label()).setAbstract(true);
+            TypeVertex rootAttributeType = createVertex(Schema.Vertex.Type.ATTRIBUTE_TYPE, Schema.Vertex.Type.Root.ATTRIBUTE.label()).setAbstract(true);
+
+            createEdge(Schema.Edge.Type.SUB, rootEntityType, rootType);
+            createEdge(Schema.Edge.Type.SUB, rootRelationType, rootType);
+            createEdge(Schema.Edge.Type.SUB, rootRoleType, rootType);
+            createEdge(Schema.Edge.Type.SUB, rootAttributeType, rootType);
+        }
+
+        public void commit() {
+            typeByIID.values().parallelStream().filter(v -> v.status().equals(Schema.Status.BUFFERED)).forEach(
+                    vertex -> vertex.iid(TypeVertex.generateIID(storage.keyGenerator(), vertex.schema()))
+            );
+            typeByIID.values().parallelStream().forEach(Vertex::commit);
+        }
+
+        public TypeEdge createEdge(Schema.Edge.Type schema, TypeVertex from, TypeVertex to) {
+            TypeEdge edge = new TypeEdge.Buffered(this, schema, from, to);
+            from.out(edge);
+            to.in(edge);
+            return edge;
+        }
+
+        public TypeVertex createVertex(Schema.Vertex.Type type, String label) {
+            TypeVertex typeVertex = typeByLabel.computeIfAbsent(
+                    label, l -> new TypeVertex.Buffered(this, type, TypeVertex.generateIID(keyGenerator, type), l)
+            );
+            typeByIID.put(typeVertex.iid(), typeVertex);
+            return typeVertex;
+        }
+
+        public TypeVertex getVertex(String label) {
+            TypeVertex vertex = typeByLabel.get(label);
+            if (vertex != null) return vertex;
+
+            byte[] iid = storage.get(TypeVertex.generateIndex(label));
+            if (iid != null) {
+                vertex = typeByIID.computeIfAbsent(iid, x -> new TypeVertex.Persisted(this, x, label));
+                typeByLabel.putIfAbsent(label, vertex);
+            }
+
+            return vertex;
+        }
+
+        public TypeVertex getVertex(byte[] iid) {
+            TypeVertex vertex = typeByIID.get(iid);
+            if (vertex != null) return vertex;
+
+            vertex = typeByIID.computeIfAbsent(iid, x -> new TypeVertex.Persisted(this, x));
+            typeByLabel.putIfAbsent(vertex.label(), vertex);
+
+            return vertex;
+        }
     }
 
-    public TypeVertex getTypeVertex(byte[] iid) {
-        TypeVertex vertex = typeByIID.get(iid);
-        if (vertex != null) return vertex;
+    public class Thing {
 
-        vertex = typeByIID.computeIfAbsent(iid, x -> new TypeVertex.Persisted(this, x));
-        typeByLabel.putIfAbsent(vertex.label(), vertex);
+        private final Map<byte[], ThingVertex> thingByIID;
 
-        return vertex;
+        Thing() {
+            thingByIID = new ConcurrentHashMap<>();
+        }
+
+        public void commit() {
+            thingByIID.values().parallelStream().forEach(
+                    vertex -> vertex.iid(ThingVertex.generateIID(storage.keyGenerator(), vertex.schema()))
+            );
+            thingByIID.values().parallelStream().forEach(Vertex::commit);
+        }
     }
 }

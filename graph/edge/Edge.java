@@ -18,7 +18,6 @@
 
 package hypergraph.graph.edge;
 
-import hypergraph.graph.Graph;
 import hypergraph.graph.Schema;
 import hypergraph.graph.vertex.Vertex;
 
@@ -27,21 +26,19 @@ import java.util.Objects;
 
 public abstract class Edge<EDGE_SCHEMA extends Schema.Edge, VERTEX extends Vertex> {
 
-    protected final Graph graph;
     protected final byte[] iid;
     protected final EDGE_SCHEMA schema;
     protected VERTEX from;
     protected VERTEX to;
 
-    public Edge(Graph graph, byte[] iid, EDGE_SCHEMA schema, VERTEX from, VERTEX to) {
-        this.graph = graph;
+    public Edge(byte[] iid, EDGE_SCHEMA schema, VERTEX from, VERTEX to) {
         this.iid = iid;
         this.schema = schema;
         this.from = from;
         this.to = to;
     }
 
-    public EDGE_SCHEMA schema(){
+    public EDGE_SCHEMA schema() {
         return schema;
     }
 

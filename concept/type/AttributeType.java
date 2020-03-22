@@ -29,8 +29,8 @@ public class AttributeType extends Type {
     }
 
     public AttributeType(Graph graph, String label) {
-        super(graph.createTypeVertex(Schema.Vertex.Type.ATTRIBUTE_TYPE, label));
-        TypeVertex parent = graph.getTypeVertex(Schema.Vertex.Type.Root.ATTRIBUTE.label());
-        graph.createTypeEdge(Schema.Edge.Type.SUB, vertex, parent);
+        super(graph.type().createVertex(Schema.Vertex.Type.ATTRIBUTE_TYPE, label));
+        TypeVertex parent = graph.type().getVertex(Schema.Vertex.Type.Root.ATTRIBUTE.label());
+        graph.type().createEdge(Schema.Edge.Type.SUB, vertex, parent);
     }
 }

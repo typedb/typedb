@@ -38,9 +38,9 @@ public class EntityType extends Type {
     }
 
     public EntityType(Graph graph, String label) {
-        super(graph.createTypeVertex(Schema.Vertex.Type.ENTITY_TYPE, label));
-        TypeVertex parentVertex = graph.getTypeVertex(Schema.Vertex.Type.Root.ENTITY.label());
-        graph.createTypeEdge(Schema.Edge.Type.SUB, vertex, parentVertex);
+        super(graph.type().createVertex(Schema.Vertex.Type.ENTITY_TYPE, label));
+        TypeVertex parentVertex = graph.type().getVertex(Schema.Vertex.Type.Root.ENTITY.label());
+        graph.type().createEdge(Schema.Edge.Type.SUB, vertex, parentVertex);
         parent = new EntityType(parentVertex);
     }
 
