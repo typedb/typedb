@@ -22,15 +22,15 @@ import hypergraph.concept.type.AttributeType;
 import hypergraph.concept.type.EntityType;
 import hypergraph.concept.type.RelationType;
 import hypergraph.concept.type.Type;
-import hypergraph.graph.GraphManager;
+import hypergraph.graph.Graph;
 import hypergraph.graph.Schema;
 import hypergraph.graph.vertex.TypeVertex;
 
 public class ConceptManager {
 
-    private final GraphManager graph;
+    private final Graph graph;
 
-    public ConceptManager(GraphManager graph) {
+    public ConceptManager(Graph graph) {
         this.graph = graph;
     }
 

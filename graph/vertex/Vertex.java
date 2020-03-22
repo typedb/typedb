@@ -18,8 +18,8 @@
 
 package hypergraph.graph.vertex;
 
+import hypergraph.graph.Graph;
 import hypergraph.graph.Schema;
-import hypergraph.graph.Storage;
 import hypergraph.graph.edge.Edge;
 
 import java.util.Arrays;
@@ -34,7 +34,7 @@ public abstract class Vertex<
         EDGE_SCHEMA extends Schema.Edge,
         EDGE extends Edge<EDGE_SCHEMA, ? extends Vertex<VERTEX_SCHEMA, EDGE_SCHEMA, EDGE>>> {
 
-    protected final Storage storage;
+    protected final Graph graph;
     protected final VERTEX_SCHEMA schema;
     private final int hash;
 
@@ -43,8 +43,8 @@ public abstract class Vertex<
 
     protected byte[] iid;
 
-    Vertex(Storage storage, VERTEX_SCHEMA schema, byte[] iid) {
-        this.storage = storage;
+    Vertex(Graph graph, VERTEX_SCHEMA schema, byte[] iid) {
+        this.graph = graph;
         this.schema = schema;
         this.iid = iid;
         hash = Arrays.hashCode(iid);

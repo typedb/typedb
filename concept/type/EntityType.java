@@ -19,7 +19,7 @@
 package hypergraph.concept.type;
 
 import hypergraph.common.HypergraphException;
-import hypergraph.graph.GraphManager;
+import hypergraph.graph.Graph;
 import hypergraph.graph.Schema;
 import hypergraph.graph.edge.TypeEdge;
 import hypergraph.graph.vertex.TypeVertex;
@@ -37,7 +37,7 @@ public class EntityType extends Type {
         }
     }
 
-    public EntityType(GraphManager graph, String label) {
+    public EntityType(Graph graph, String label) {
         super(graph.createTypeVertex(Schema.Vertex.Type.ENTITY_TYPE, label));
         TypeVertex parentVertex = graph.getTypeVertex(Schema.Vertex.Type.Root.ENTITY.label());
         graph.createTypeEdge(Schema.Edge.Type.SUB, vertex, parentVertex);

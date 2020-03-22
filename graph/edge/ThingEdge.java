@@ -18,19 +18,20 @@
 
 package hypergraph.graph.edge;
 
+import hypergraph.graph.Graph;
 import hypergraph.graph.Schema;
 import hypergraph.graph.vertex.ThingVertex;
 
 public abstract class ThingEdge extends Edge<Schema.Edge.Thing, ThingVertex> {
 
-    ThingEdge(Schema.Edge.Thing schema, ThingVertex from, ThingVertex to) {
-        super(schema, from, to);
+    ThingEdge(Graph graph, Schema.Edge.Thing schema, ThingVertex from, ThingVertex to) {
+        super(graph, schema, from, to);
     }
 
     public static class Buffered extends ThingEdge {
 
-        public Buffered(Schema.Edge.Thing schema, ThingVertex from, ThingVertex to) {
-            super(schema, from, to);
+        public Buffered(Graph graph, Schema.Edge.Thing schema, ThingVertex from, ThingVertex to) {
+            super(graph, schema, from, to);
         }
 
         public Schema.Status status() {
@@ -44,8 +45,8 @@ public abstract class ThingEdge extends Edge<Schema.Edge.Thing, ThingVertex> {
 
     public static class Persisted extends ThingEdge {
 
-        public Persisted(Schema.Edge.Thing schema, ThingVertex from, ThingVertex to) {
-            super(schema, from, to);
+        public Persisted(Graph graph, Schema.Edge.Thing schema, ThingVertex from, ThingVertex to) {
+            super(graph, schema, from, to);
         }
 
         public Schema.Status status() {

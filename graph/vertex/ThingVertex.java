@@ -18,15 +18,15 @@
 
 package hypergraph.graph.vertex;
 
+import hypergraph.graph.Graph;
 import hypergraph.graph.KeyGenerator;
 import hypergraph.graph.Schema;
-import hypergraph.graph.Storage;
 import hypergraph.graph.edge.ThingEdge;
 
 public abstract class ThingVertex extends Vertex<Schema.Vertex.Thing, Schema.Edge.Thing, ThingEdge> {
 
-    ThingVertex(Storage storage, Schema.Vertex.Thing schema, byte[] iid) {
-        super(storage, schema, iid);
+    ThingVertex(Graph graph, Schema.Vertex.Thing schema, byte[] iid) {
+        super(graph, schema, iid);
     }
 
     public static byte[] generateIID(KeyGenerator keyGenerator, Schema.Vertex.Thing schema) {

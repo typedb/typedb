@@ -18,9 +18,9 @@
 
 package hypergraph.graph.vertex;
 
+import hypergraph.graph.Graph;
 import hypergraph.graph.KeyGenerator;
 import hypergraph.graph.Schema;
-import hypergraph.graph.Storage;
 import hypergraph.graph.edge.Edge;
 import hypergraph.graph.edge.TypeEdge;
 import hypergraph.graph.util.LinkedIterators;
@@ -37,8 +37,8 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, Schema.Edge.
     protected String regex;
 
 
-    TypeVertex(Storage storage, Schema.Vertex.Type type, byte[] iid) {
-        super(storage, type, iid);
+    TypeVertex(Graph graph, Schema.Vertex.Type type, byte[] iid) {
+        super(graph, type, iid);
     }
 
     public static byte[] generateIID(KeyGenerator keyGenerator, Schema.Vertex.Type schema) {
@@ -65,8 +65,8 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, Schema.Edge.
 
     public static class Buffered extends TypeVertex {
 
-        public Buffered(Storage storage, Schema.Vertex.Type schema, byte[] iid, String label) {
-            super(storage, schema, iid);
+        public Buffered(Graph graph, Schema.Vertex.Type schema, byte[] iid, String label) {
+            super(graph, schema, iid);
             this.label = label;
         }
 
@@ -118,14 +118,14 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, Schema.Edge.
 
         @Override
         public void commit() {
-            storage.put(iid);
+            graph.storage().put(iid);
             commitIndex();
             commitProperties();
             commitEdges();
         }
 
         void commitIndex() {
-            storage.put(join(Schema.Index.TYPE.prefix().key(), label.getBytes()), iid);
+            graph.storage().put(join(Schema.Index.TYPE.prefix().key(), label.getBytes()), iid);
         }
 
         void commitProperties() {
@@ -136,19 +136,19 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, Schema.Edge.
         }
 
         void commitPropertyAbstract() {
-            storage.put(join(iid, Schema.Property.ABSTRACT.infix().key()));
+            graph.storage().put(join(iid, Schema.Property.ABSTRACT.infix().key()));
         }
 
         void commitPropertyLabel() {
-            storage.put(join(iid, Schema.Property.LABEL.infix().key()), label.getBytes());
+            graph.storage().put(join(iid, Schema.Property.LABEL.infix().key()), label.getBytes());
         }
 
         void commitPropertyDataType() {
-            storage.put(join(iid, Schema.Property.DATATYPE.infix().key()), dataType.value());
+            graph.storage().put(join(iid, Schema.Property.DATATYPE.infix().key()), dataType.value());
         }
 
         void commitPropertyRegex() {
-            storage.put(join(iid, Schema.Property.REGEX.infix().key()), regex.getBytes());
+            graph.storage().put(join(iid, Schema.Property.REGEX.infix().key()), regex.getBytes());
         }
 
         void commitEdges() {
@@ -159,13 +159,13 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, Schema.Edge.
 
     public static class Persisted extends TypeVertex {
 
-        public Persisted(Storage storage, byte[] iid, String label) {
-            super(storage, Schema.Vertex.Type.of(iid[0]), iid);
+        public Persisted(Graph graph, byte[] iid, String label) {
+            super(graph, Schema.Vertex.Type.of(iid[0]), iid);
             this.label = label;
         }
 
-        public Persisted(Storage storage, byte[] iid) {
-            super(storage, Schema.Vertex.Type.of(iid[0]), iid);
+        public Persisted(Graph graph, byte[] iid) {
+            super(graph, Schema.Vertex.Type.of(iid[0]), iid);
         }
 
         @Override
@@ -176,7 +176,7 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, Schema.Edge.
         @Override
         public String label() {
             if (label != null) return label;
-            byte[] val = storage.get(join(iid, Schema.Property.LABEL.infix().key()));
+            byte[] val = graph.storage().get(join(iid, Schema.Property.LABEL.infix().key()));
             if (val != null) label = new String(val);
             return label;
         }
@@ -184,7 +184,7 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, Schema.Edge.
         @Override
         public boolean isAbstract() {
             if (isAbstract != null) return isAbstract;
-            byte[] abs = storage.get(join(iid, Schema.Property.ABSTRACT.infix().key()));
+            byte[] abs = graph.storage().get(join(iid, Schema.Property.ABSTRACT.infix().key()));
             isAbstract = abs != null;
             return isAbstract;
         }
@@ -197,7 +197,7 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, Schema.Edge.
         @Override
         public Schema.DataType dataType() {
             if (dataType != null) return dataType;
-            byte[] val = storage.get(join(iid, Schema.Property.DATATYPE.infix().key()));
+            byte[] val = graph.storage().get(join(iid, Schema.Property.DATATYPE.infix().key()));
             if (val != null) dataType = Schema.DataType.of(val[0]);
             return dataType;
         }
@@ -210,7 +210,7 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, Schema.Edge.
         @Override
         public String regex() {
             if (regex != null) return regex;
-            byte[] val = storage.get(join(iid, Schema.Property.REGEX.infix().key()));
+            byte[] val = graph.storage().get(join(iid, Schema.Property.REGEX.infix().key()));
             if (val != null) regex = new String(val);
             return regex;
         }
@@ -221,9 +221,9 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, Schema.Edge.
         }
 
         public Iterator<TypeEdge> outs(Schema.Edge.Type schema) {
-            Iterator<TypeEdge> persistedIterator = storage.iterate(
+            Iterator<TypeEdge> persistedIterator = graph.storage().iterate(
                     join(iid, schema.out().key()),
-                    (key, value) -> new TypeEdge.Persisted(storage, key)
+                    (key, value) -> new TypeEdge.Persisted(graph, key)
             );
 
             if (outs.get(schema) != null) return new LinkedIterators<>(outs.get(schema).iterator(), persistedIterator);
@@ -231,9 +231,9 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, Schema.Edge.
         }
 
         public Iterator<TypeEdge> ins(Schema.Edge.Type schema) {
-            Iterator<TypeEdge> persistedIterator = storage.iterate(
+            Iterator<TypeEdge> persistedIterator = graph.storage().iterate(
                     join(iid, schema.in().key()),
-                    (key, value) -> new TypeEdge.Persisted(storage, key)
+                    (key, value) -> new TypeEdge.Persisted(graph, key)
             );
 
             if (ins.get(schema) != null) return new LinkedIterators<>(ins.get(schema).iterator(), persistedIterator);

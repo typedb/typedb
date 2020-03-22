@@ -18,7 +18,7 @@
 
 package hypergraph.concept.type;
 
-import hypergraph.graph.GraphManager;
+import hypergraph.graph.Graph;
 import hypergraph.graph.Schema;
 import hypergraph.graph.vertex.TypeVertex;
 
@@ -28,7 +28,7 @@ public class RelationType extends Type {
         super(vertex);
     }
 
-    public RelationType(GraphManager graph, String label) {
+    public RelationType(Graph graph, String label) {
         super(graph.createTypeVertex(Schema.Vertex.Type.RELATION_TYPE, label));
         TypeVertex parent = graph.getTypeVertex(Schema.Vertex.Type.Root.RELATION.label());
         graph.createTypeEdge(Schema.Edge.Type.SUB, vertex, parent);

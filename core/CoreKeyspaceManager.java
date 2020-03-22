@@ -43,8 +43,7 @@ class CoreKeyspaceManager implements Hypergraph.KeyspaceManager {
         if (keyspaceDirectories != null && keyspaceDirectories.length > 0) {
             Arrays.stream(keyspaceDirectories).parallel().forEach(directory -> {
                 String name = directory.getName();
-                CoreKeyspace keyspace = new CoreKeyspace(core, name);
-                keyspace.loadAndOpen();
+                CoreKeyspace keyspace = CoreKeyspace.loadExistingAndOpen(core, name);
                 keyspaces.put(name, keyspace);
             });
         }
@@ -54,7 +53,7 @@ class CoreKeyspaceManager implements Hypergraph.KeyspaceManager {
     public CoreKeyspace create(String name) {
         if (keyspaces.containsKey(name)) throw new HypergraphException("Keyspace Already Exist: " + name);
 
-        CoreKeyspace keyspace = new CoreKeyspace(core, name).initialiseAndOpen();
+        CoreKeyspace keyspace = CoreKeyspace.createNewAndOpen(core, name);
         keyspaces.put(name, keyspace);
         return keyspace;
     }

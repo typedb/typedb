@@ -23,14 +23,22 @@ import hypergraph.graph.vertex.ThingVertex;
 import hypergraph.graph.vertex.TypeVertex;
 import hypergraph.graph.vertex.Vertex;
 
-public class GraphManager {
+public class Graph {
 
     private final Storage storage;
     private Buffer buffer;
 
-    public GraphManager(Storage storage) {
+    public Graph(Storage storage) {
         this.storage = storage;
         buffer = new Buffer();
+    }
+
+    public Buffer buffer() {
+        return buffer;
+    }
+
+    public Storage storage() {
+        return storage;
     }
 
     public void reset() {
@@ -49,7 +57,11 @@ public class GraphManager {
         buffer.thingVertices().parallelStream().forEach(Vertex::commit);
     }
 
-    public void creatRootTypes() {
+    public boolean isInitialised() {
+        return getTypeVertex(Schema.Vertex.Type.Root.THING.label()) != null;
+    }
+
+    public void initialise() {
         TypeVertex rootType = createTypeVertex(
                 Schema.Vertex.Type.TYPE,
                 Schema.Vertex.Type.Root.THING.label()
@@ -83,13 +95,13 @@ public class GraphManager {
 
     public TypeVertex createTypeVertex(Schema.Vertex.Type type, String label) {
         byte[] bufferedIID = TypeVertex.generateIID(buffer.keyGenerator(), type);
-        TypeVertex typeVertex = new TypeVertex.Buffered(this.storage, type, bufferedIID, label);
+        TypeVertex typeVertex = new TypeVertex.Buffered(this, type, bufferedIID, label);
         buffer.add(typeVertex);
         return typeVertex;
     }
 
     public TypeEdge createTypeEdge(Schema.Edge.Type type, TypeVertex from, TypeVertex to) {
-        TypeEdge edge = new TypeEdge.Buffered(storage, type, from, to);
+        TypeEdge edge = new TypeEdge.Buffered(this, type, from, to);
         from.out(edge);
         to.in(edge);
         return edge;
@@ -101,7 +113,7 @@ public class GraphManager {
 
         byte[] iid = storage.get(TypeVertex.generateIndex(label));
         if (iid != null) {
-            vertex = new TypeVertex.Persisted(storage, iid, label);
+            vertex = new TypeVertex.Persisted(this, iid, label);
             buffer.add(vertex);
         }
 

@@ -37,7 +37,7 @@ class CoreKeyspace implements Hypergraph.Keyspace {
     private final AtomicBoolean isOpen;
     private final Set<CoreSession> sessions;
 
-    CoreKeyspace(CoreHypergraph core, String name) {
+    private CoreKeyspace(CoreHypergraph core, String name) {
         this.name = name;
         this.core = core;
         keyGenerator = new KeyGenerator(Schema.Key.PERSISTED);
@@ -45,13 +45,21 @@ class CoreKeyspace implements Hypergraph.Keyspace {
         isOpen = new AtomicBoolean(false);
     }
 
-    CoreKeyspace initialiseAndOpen() {
+    static CoreKeyspace createNewAndOpen(CoreHypergraph core, String name) {
+        return new CoreKeyspace(core, name).initialiseAndOpen();
+    }
+
+    static CoreKeyspace loadExistingAndOpen(CoreHypergraph core, String name) {
+        return new CoreKeyspace(core, name).loadAndOpen();
+    }
+
+    private CoreKeyspace initialiseAndOpen() {
         try (CoreSession session = createSessionAndOpen()) {
             try (CoreTransaction txn = session.transaction(Hypergraph.Transaction.Type.WRITE)) {
-                if (txn.concepts().getRootType() != null) {
+                if (txn.graph().isInitialised()) {
                     throw new HypergraphException("Invalid Keyspace Initialisation");
                 }
-                txn.graph().creatRootTypes();
+                txn.graph().initialise();
                 txn.commit();
             }
         }
@@ -59,7 +67,7 @@ class CoreKeyspace implements Hypergraph.Keyspace {
         return this;
     }
 
-    CoreKeyspace loadAndOpen() {
+    private CoreKeyspace loadAndOpen() {
         // TODO load keyGenerator
         isOpen.set(true);
         return this;

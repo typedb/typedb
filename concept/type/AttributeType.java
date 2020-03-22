@@ -18,7 +18,7 @@
 
 package hypergraph.concept.type;
 
-import hypergraph.graph.GraphManager;
+import hypergraph.graph.Graph;
 import hypergraph.graph.Schema;
 import hypergraph.graph.vertex.TypeVertex;
 
@@ -28,7 +28,7 @@ public class AttributeType extends Type {
         super(vertex);
     }
 
-    public AttributeType(GraphManager graph, String label) {
+    public AttributeType(Graph graph, String label) {
         super(graph.createTypeVertex(Schema.Vertex.Type.ATTRIBUTE_TYPE, label));
         TypeVertex parent = graph.getTypeVertex(Schema.Vertex.Type.Root.ATTRIBUTE.label());
         graph.createTypeEdge(Schema.Edge.Type.SUB, vertex, parent);

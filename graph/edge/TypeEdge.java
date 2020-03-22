@@ -18,8 +18,8 @@
 
 package hypergraph.graph.edge;
 
+import hypergraph.graph.Graph;
 import hypergraph.graph.Schema;
-import hypergraph.graph.Storage;
 import hypergraph.graph.vertex.TypeVertex;
 
 import java.util.Arrays;
@@ -29,18 +29,16 @@ import static hypergraph.graph.util.ByteArrays.join;
 
 public abstract class TypeEdge extends Edge<Schema.Edge.Type, TypeVertex> {
 
-    TypeEdge(Schema.Edge.Type schema, TypeVertex from, TypeVertex to) {
-        super(schema, from, to);
+    TypeEdge(Graph graph, Schema.Edge.Type schema, TypeVertex from, TypeVertex to) {
+        super(graph, schema, from, to);
     }
 
     public static class Buffered extends TypeEdge {
 
-        private Storage storage;
         private AtomicBoolean committed;
 
-        public Buffered(Storage storage, Schema.Edge.Type schema, TypeVertex from, TypeVertex to) {
-            super(schema, from, to);
-            this.storage = storage;
+        public Buffered(Graph graph, Schema.Edge.Type schema, TypeVertex from, TypeVertex to) {
+            super(graph, schema, from, to);
             committed = new AtomicBoolean(false);
         }
 
@@ -51,10 +49,10 @@ public abstract class TypeEdge extends Edge<Schema.Edge.Type, TypeVertex> {
         public void commit() {
             if (committed.compareAndSet(false, true)) {
                 if (schema.out() != null) {
-                    storage.put(join(from.iid(), schema.out().key(), to.iid()));
+                    graph.storage().put(join(from.iid(), schema.out().key(), to.iid()));
                 }
                 if (schema.in() != null) {
-                    storage.put(join(to.iid(), schema.in().key(), from.iid()));
+                    graph.storage().put(join(to.iid(), schema.in().key(), from.iid()));
                 }
             }
         }
@@ -62,12 +60,10 @@ public abstract class TypeEdge extends Edge<Schema.Edge.Type, TypeVertex> {
 
     public static class Persisted extends TypeEdge {
 
-        public Persisted(Storage storage, byte[] iid) {
-            super(
-                    Schema.Edge.Type.of(iid[Schema.IID.TYPE.length()]),
-                    new TypeVertex.Persisted(storage, Arrays.copyOfRange(iid, 0, Schema.IID.TYPE.length())),
-                    new TypeVertex.Persisted(storage, Arrays.copyOfRange(iid, Schema.IID.TYPE.length() + 1, iid.length))
-            );
+        public Persisted(Graph graph, byte[] iid) {
+            super(graph, Schema.Edge.Type.of(iid[Schema.IID.TYPE.length()]),
+                  new TypeVertex.Persisted(graph, Arrays.copyOfRange(iid, 0, Schema.IID.TYPE.length())),
+                  new TypeVertex.Persisted(graph, Arrays.copyOfRange(iid, Schema.IID.TYPE.length() + 1, iid.length)));
         }
 
         public Schema.Status status() {
