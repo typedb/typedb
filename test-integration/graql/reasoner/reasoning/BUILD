@@ -124,7 +124,7 @@ java_test(
 
 java_test(
     name = "variable-roles-it",
-    size = "medium",
+    size = "large",
     srcs = ["VariableRolesIT.java"],
     classpath_resources = ["//test-integration/resources:logback-test"],
     resources = ["//test-integration/graql/reasoner/stubs:reasoning-stubs"],
