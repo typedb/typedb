@@ -49,7 +49,7 @@ def graknlabs_client_java():
     git_repository(
         name = "graknlabs_client_java",
         remote = "https://github.com/graknlabs/client-java",
-        commit = "c37f67a6a95e93d9647403b08aa3421cc047e1a7",
+        commit = "4df3911d06e37508c21880e74fa5a545a8b65f37",
     )
 
 def graknlabs_console():
@@ -70,7 +70,7 @@ def graknlabs_simulation():
     git_repository(
         name = "graknlabs_simulation",
         remote = "https://github.com/graknlabs/simulation",
-        commit = "c5edff018df75d96300c70bcc667f38570b389b0",
+        commit = "33ead5a0258be5bd76318d62ebdbacbb1edf6bed", # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_protocol
     )
 
 def graknlabs_verification():
@@ -78,4 +78,11 @@ def graknlabs_verification():
         name = "graknlabs_verification",
         remote = "git@github.com:graknlabs/verification.git",
         commit = "22e20f955884c94d0667001e13e346cb80ebd92d",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_verification
+    )
+
+def graknlabs_grabl_tracing():
+    git_repository(
+        name = "graknlabs_grabl_tracing",
+        remote = "https://github.com/graknlabs/grabl-tracing",
+        commit = "42f507d6b973cbc87d18a27ee83121c791295184", # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_protocol
     )
