@@ -19,6 +19,7 @@
 package grakn.core.graql.reasoner.atom.task.validate;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
 import grakn.core.common.exception.ErrorMessage;
@@ -27,6 +28,8 @@ import grakn.core.core.Schema;
 import grakn.core.graql.reasoner.ReasoningContext;
 import grakn.core.graql.reasoner.atom.binary.IsaAtom;
 import grakn.core.graql.reasoner.atom.binary.RelationAtom;
+import grakn.core.graql.reasoner.atom.predicate.NeqIdPredicate;
+import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Rule;
@@ -34,21 +37,23 @@ import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.exception.GraqlSemanticException;
-import graql.lang.property.PlaysProperty;
+import graql.lang.pattern.Conjunction;
 import graql.lang.property.RelationProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class RelationAtomValidator implements AtomValidator<RelationAtom> {
 
     private final BasicAtomValidator basicValidator;
 
-    public RelationAtomValidator(){
+    public RelationAtomValidator() {
         this.basicValidator = new BasicAtomValidator();
     }
 
@@ -67,7 +72,8 @@ public class RelationAtomValidator implements AtomValidator<RelationAtom> {
         //can form a rule head if type is specified, type is not implicit and all relation players are insertable
         return Sets.union(
                 basicValidator.validateAsRuleHead(atom, rule, ctx),
-                validateRelationPlayers(atom, rule, ctx));
+                validateRelationPlayers(atom, rule, ctx),
+                validateDuplicateInferredRolesMustBeDifferentConcepts(atom, ctx);
     }
 
     @Override
@@ -155,4 +161,39 @@ public class RelationAtomValidator implements AtomValidator<RelationAtom> {
         return errors;
     }
 
+
+    /**
+     * We have an over-strict defensive check we enforce for now, to ensure that a rule will not throw at runtime
+     * Requiring a '!=' between variables that may result in an inferred relation with duplicate role player edges.
+     * For example:
+     */
+    private static Set<String> validateDuplicateInferredRolesMustBeDifferentConcepts(RelationAtom headAtom, Rule rule, ReasoningContext ctx) {
+        Set<String> errors = new HashSet<>();
+        Map<Role, Collection<Variable>> roleVarMap = headAtom.getRoleVarMap().asMap();
+        Set<Role> duplicateRoles = roleVarMap.entrySet().stream().filter(entry -> entry.getValue().size() > 1).map(Map.Entry::getKey).collect(Collectors.toSet());
+
+        // check that each pair of variables from the duplicate roles has a !=
+        // otherwise there is a risk of having duplicate edges
+
+        Set<Conjunction<Statement>> bodyPatterns = rule.when().getDisjunctiveNormalForm().getPatterns();
+
+        ReasonerQueryImpl bodyQuery = ctx.queryFactory().create(Iterables.getOnlyElement(bodyPatterns));
+        List<NeqIdPredicate> neqAssertions = bodyQuery.getAtoms(NeqIdPredicate.class).collect(Collectors.toList());
+
+        for (Role duplicateRole : duplicateRoles) {
+            Set<Variable> variables = new HashSet<>(roleVarMap.get(duplicateRole));
+            Set<List<Variable>> variablePairsWithDuplicates = Sets.cartesianProduct(variables, variables);
+            // we can remove all the duplicate pairs because (X,Y) and (Y,X) only need to be checked once
+            // also remove pairs (X,X), these are over-generated
+            Set<Set<Variable>> pairs = variablePairsWithDuplicates.stream().map(HashSet::new).filter(pair -> pair.size() > 1).collect(Collectors.toSet());
+            for (Set<Variable> pair : pairs) {
+                boolean requiredInequalityFound = neqAssertions.stream()
+                        .anyMatch(neq -> neq.getVarNames().equals(pair));
+                if (!requiredInequalityFound) {
+                    errors.add("Rule that may infer duplicate roles played by same concept is missing != check between variables: " + pair.toString());
+                }
+            }
+        }
+        return errors;
+    }
 }
