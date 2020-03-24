@@ -36,7 +36,7 @@ public class ConceptManager {
 
     public Type getRootType() {
         TypeVertex vertex = graph.type().getVertex(Schema.Vertex.Type.Root.THING.label());
-        if (vertex != null) return new Type(vertex);
+        if (vertex != null) return new Type.Root(vertex);
         else return null;
     }
 

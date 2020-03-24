@@ -21,46 +21,31 @@ package hypergraph.concept.type;
 import hypergraph.common.HypergraphException;
 import hypergraph.graph.Graph;
 import hypergraph.graph.Schema;
-import hypergraph.graph.edge.TypeEdge;
 import hypergraph.graph.vertex.TypeVertex;
 
-import java.util.Iterator;
-
-public class AttributeType extends Type {
-
-    private AttributeType parent;
+public class AttributeType extends Type.Real<AttributeType> {
 
     public AttributeType(TypeVertex vertex) {
         super(vertex);
         if (vertex.schema() != Schema.Vertex.Type.ATTRIBUTE_TYPE) {
+            // TODO: REMOVE THIS ONCE TESTED
             throw new HypergraphException("Invalid TypeVertex for EntityType");
         }
     }
 
     public AttributeType(Graph graph, String label) {
-        super(graph.type().createVertex(Schema.Vertex.Type.ATTRIBUTE_TYPE, label));
-        TypeVertex parentVertex = graph.type().getVertex(Schema.Vertex.Type.Root.ATTRIBUTE.label());
-        vertex.out(Schema.Edge.Type.SUB, parentVertex);
-        parent = new AttributeType(parentVertex);
+        super(graph, label, Schema.Vertex.Type.ATTRIBUTE_TYPE);
     }
 
-    public AttributeType sup(AttributeType parent) {
-        vertex.out(Schema.Edge.Type.SUB, parent.vertex);
-        this.parent = parent;
+    @Override
+    AttributeType newInstance(TypeVertex vertex) {
+        return new AttributeType(vertex);
+    }
+
+    @Override
+    AttributeType getThis() {
         return this;
     }
 
-    public AttributeType sup() {
-        if (parent != null) return parent;
 
-        Iterator<TypeEdge> parentEdge = vertex.outs(Schema.Edge.Type.SUB);
-        if (parentEdge != null && parentEdge.hasNext()) {
-            TypeVertex typeVertex = parentEdge.next().to();
-            if (typeVertex.schema().equals(Schema.Vertex.Type.ATTRIBUTE_TYPE)) {
-                parent = new AttributeType(typeVertex);
-            }
-        }
-
-        return parent;
-    }
 }

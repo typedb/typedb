@@ -18,11 +18,15 @@
 
 package hypergraph.concept.type;
 
+import hypergraph.graph.Graph;
+import hypergraph.graph.Schema;
+import hypergraph.graph.edge.TypeEdge;
 import hypergraph.graph.vertex.TypeVertex;
 
+import java.util.Iterator;
 import java.util.Objects;
 
-public class Type {
+public abstract class Type {
 
     protected final TypeVertex vertex;
 
@@ -46,5 +50,53 @@ public class Type {
     @Override
     public final int hashCode() {
         return vertex.hashCode();
+    }
+
+    public static class Root extends Type {
+
+        public Root(TypeVertex vertex) {
+            super(vertex);
+        }
+    }
+
+    public static abstract class Real<TYPE extends Type.Real> extends Type {
+
+        protected TYPE parent;
+
+        Real(TypeVertex vertex) {
+            super(vertex);
+        }
+
+        Real(Graph graph, String label, Schema.Vertex.Type schema) {
+            super(graph.type().createVertex(schema, label));
+            TypeVertex parentVertex = graph.type().getVertex(schema.root().label());
+            vertex.out(Schema.Edge.Type.SUB, parentVertex);
+            parent = newInstance(parentVertex);
+        }
+
+        abstract TYPE newInstance(TypeVertex vertex);
+
+        abstract TYPE getThis();
+
+        public TYPE sup(TYPE parent) {
+            vertex.out(Schema.Edge.Type.SUB, parent.vertex);
+            this.parent = parent;
+            return getThis();
+        }
+
+        public TYPE sup() {
+            if (parent != null) return parent;
+
+            Iterator<TypeEdge> parentEdge = vertex.outs(Schema.Edge.Type.SUB);
+            if (parentEdge != null && parentEdge.hasNext()) {
+                TypeVertex parentVertex = parentEdge.next().to();
+                if (parentVertex.schema().equals(vertex.schema())) {
+                    parent = newInstance(parentVertex);
+                }
+            }
+
+            return parent;
+        }
+
     }
 }

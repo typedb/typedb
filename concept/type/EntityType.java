@@ -21,47 +21,29 @@ package hypergraph.concept.type;
 import hypergraph.common.HypergraphException;
 import hypergraph.graph.Graph;
 import hypergraph.graph.Schema;
-import hypergraph.graph.edge.TypeEdge;
 import hypergraph.graph.vertex.TypeVertex;
 
-import java.util.Iterator;
-
-public class EntityType extends Type {
-
-    private EntityType parent;
+public class EntityType extends Type.Real<EntityType> {
 
     public EntityType(TypeVertex vertex) {
         super(vertex);
         if (vertex.schema() != Schema.Vertex.Type.ENTITY_TYPE) {
+            // TODO: REMOVE THIS ONCE TESTED
             throw new HypergraphException("Invalid TypeVertex for EntityType");
         }
     }
 
     public EntityType(Graph graph, String label) {
-        super(graph.type().createVertex(Schema.Vertex.Type.ENTITY_TYPE, label));
-        TypeVertex parentVertex = graph.type().getVertex(Schema.Vertex.Type.Root.ENTITY.label());
-        vertex.out(Schema.Edge.Type.SUB, parentVertex);
-        parent = new EntityType(parentVertex);
+        super(graph, label, Schema.Vertex.Type.ENTITY_TYPE);
     }
 
-    public EntityType sup(EntityType parent) {
-        vertex.out(Schema.Edge.Type.SUB, parent.vertex);
-        this.parent = parent;
+    @Override
+    EntityType newInstance(TypeVertex vertex) {
+        return new EntityType(vertex);
+    }
+
+    @Override
+    EntityType getThis() {
         return this;
     }
-
-    public EntityType sup() {
-        if (parent != null) return parent;
-
-        Iterator<TypeEdge> parentEdge = vertex.outs(Schema.Edge.Type.SUB);
-        if (parentEdge != null && parentEdge.hasNext()) {
-            TypeVertex typeVertex = parentEdge.next().to();
-            if (typeVertex.schema().equals(Schema.Vertex.Type.ENTITY_TYPE)) {
-                parent = new EntityType(typeVertex);
-            }
-        }
-
-        return parent;
-    }
-
 }

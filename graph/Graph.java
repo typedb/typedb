@@ -20,7 +20,6 @@ package hypergraph.graph;
 
 import hypergraph.common.HypergraphException;
 import hypergraph.common.ManagedReadWriteLock;
-import hypergraph.graph.edge.TypeEdge;
 import hypergraph.graph.vertex.ThingVertex;
 import hypergraph.graph.vertex.TypeVertex;
 import hypergraph.graph.vertex.Vertex;
@@ -125,7 +124,6 @@ public class Graph {
                 throw new HypergraphException(e);
             } finally {
                 labelLocks.get(label).unlockWrite();
-                labelLocks.remove(label);
             }
         }
 
@@ -147,7 +145,6 @@ public class Graph {
                 throw new HypergraphException(e);
             } finally {
                 labelLocks.get(label).unlockRead();
-                labelLocks.remove(label);
             }
         }
 

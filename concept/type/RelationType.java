@@ -21,46 +21,29 @@ package hypergraph.concept.type;
 import hypergraph.common.HypergraphException;
 import hypergraph.graph.Graph;
 import hypergraph.graph.Schema;
-import hypergraph.graph.edge.TypeEdge;
 import hypergraph.graph.vertex.TypeVertex;
 
-import java.util.Iterator;
-
-public class RelationType extends Type {
-
-    private RelationType parent;
+public class RelationType extends Type.Real<RelationType> {
 
     public RelationType(TypeVertex vertex) {
         super(vertex);
         if (vertex.schema() != Schema.Vertex.Type.RELATION_TYPE) {
+            // TODO: REMOVE THIS ONCE TESTED
             throw new HypergraphException("Invalid TypeVertex for EntityType");
         }
     }
 
     public RelationType(Graph graph, String label) {
-        super(graph.type().createVertex(Schema.Vertex.Type.RELATION_TYPE, label));
-        TypeVertex parentVertex = graph.type().getVertex(Schema.Vertex.Type.Root.RELATION.label());
-        vertex.out(Schema.Edge.Type.SUB, parentVertex);
-        parent = new RelationType(parentVertex);
+        super(graph, label, Schema.Vertex.Type.RELATION_TYPE);
     }
 
-    public RelationType sup(RelationType parent) {
-        vertex.out(Schema.Edge.Type.SUB, parent.vertex);
-        this.parent = parent;
+    @Override
+    RelationType newInstance(TypeVertex vertex) {
+        return new RelationType(vertex);
+    }
+
+    @Override
+    RelationType getThis() {
         return this;
-    }
-
-    public RelationType sup() {
-        if (parent != null) return parent;
-
-        Iterator<TypeEdge> parentEdge = vertex.outs(Schema.Edge.Type.SUB);
-        if (parentEdge != null && parentEdge.hasNext()) {
-            TypeVertex typeVertex = parentEdge.next().to();
-            if (typeVertex.schema().equals(Schema.Vertex.Type.RELATION_TYPE)) {
-                parent = new RelationType(typeVertex);
-            }
-        }
-
-        return parent;
     }
 }
