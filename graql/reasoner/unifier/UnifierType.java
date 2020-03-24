@@ -149,9 +149,9 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
      * Rule unifier, found between queries and rule heads, allows rule heads to be more general than matched queries.
      * Used in rule matching. The general condition of the child query C (rule head) and parent query P that needs to be satisfied is:
      *
-     * C >= P,
+     * P >= C,
      *
-     * i. e. parent specialises the child.
+     * i. e. child specialises the parent.
      *
      * If two queries are alpha-equivalent they are rule-unifiable.
      * Rule unification relaxes restrictions of exact unification in that it merely

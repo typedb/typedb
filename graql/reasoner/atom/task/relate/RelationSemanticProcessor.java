@@ -186,7 +186,19 @@ public class RelationSemanticProcessor implements SemanticProcessor<RelationAtom
                             .filter(crp -> {
                                 Set<Atomic> parentIds = parentAtom.getPredicates(prp.getPlayer().var(), IdPredicate.class).collect(Collectors.toSet());
                                 Set<Atomic> childIds = childAtom.getPredicates(crp.getPlayer().var(), IdPredicate.class).collect(Collectors.toSet());
-                                return unifierType.idCompatibility(parentIds, childIds);
+
+
+                                Set<Atomic> parentRoleIds = new HashSet<>();
+                                if (prp.getRole().isPresent()) {
+                                    parentAtom.getAllPredicates(prp.getRole().get().var(), IdPredicate.class).forEach(parentRoleIds::add);
+                                }
+
+                                Set<Atomic> childRoleIds = new HashSet<>();
+                                if (crp.getRole().isPresent()) {
+                                    childAtom.getAllPredicates(crp.getRole().get().var(), IdPredicate.class).forEach(childRoleIds::add);
+                                }
+
+                                return unifierType.idCompatibility(parentIds, childIds) && unifierType.idCompatibility(parentRoleIds, childRoleIds);
                             })
                             //check for value predicate compatibility
                             .filter(crp -> {

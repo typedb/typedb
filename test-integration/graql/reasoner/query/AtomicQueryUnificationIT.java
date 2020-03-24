@@ -560,6 +560,25 @@ public class AtomicQueryUnificationIT {
         }
     }
 
+    /**
+     *
+     */
+    @Test
+    public void testUnification_RelationRolesNotIdentical() {
+        try (Transaction tx = genericSchemaSession.writeTransaction()) {
+            TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction) tx);
+            String query = "{ ($r1 : $a, $r2: $b); $r1 type baseRole1; };";
+            String potentiallyParent = "{ ($r1: $x, $r2: $y); $r1 type role;};";
+            unification(query, potentiallyParent, false, UnifierType.EXACT, testTx);
+            unification(query, potentiallyParent, false, UnifierType.RULE, testTx);
+            // WHY is this false!
+            unification(query, potentiallyParent, false, UnifierType.STRUCTURAL, testTx);
+            unification(query, potentiallyParent, false, UnifierType.SUBSUMPTIVE, testTx);
+            // WHY does this not match structural and subsumptive
+            unification(query, potentiallyParent, false, UnifierType.STRUCTURAL_SUBSUMPTIVE, testTx);
+        }
+    }
+
     @Test
     public void testUnification_differentRelationVariants_EXACT() {
         try (Transaction tx = genericSchemaSession.readTransaction()) {
