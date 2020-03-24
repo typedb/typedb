@@ -73,8 +73,7 @@ public class RelationAtomValidator implements AtomValidator<RelationAtom> {
         Set<String> errors = Sets.union(
                 basicValidator.validateAsRuleHead(atom, rule, ctx),
                 validateRelationPlayers(atom, rule, ctx));
-        errors.addAll(validateDuplicateInferredRolesMustBeDifferentConcepts(atom, rule, ctx));
-        return errors;
+        return Sets.union(errors, validateDuplicateInferredRolesMustBeDifferentConcepts(atom, rule, ctx));
     }
 
     @Override
@@ -168,7 +167,7 @@ public class RelationAtomValidator implements AtomValidator<RelationAtom> {
      * Requiring a '!=' between variables that may result in an inferred relation with duplicate role player edges.
      * For example:
      */
-    private static Set<String> validateDuplicateInferredRolesMustBeDifferentConcepts(RelationAtom headAtom, Rule rule, ReasoningContext ctx) {
+    private Set<String> validateDuplicateInferredRolesMustBeDifferentConcepts(RelationAtom headAtom, Rule rule, ReasoningContext ctx) {
         Set<String> errors = new HashSet<>();
         Map<Role, Collection<Variable>> roleVarMap = headAtom.getRoleVarMap().asMap();
         Set<Role> duplicateRoles = roleVarMap.entrySet().stream().filter(entry -> entry.getValue().size() > 1).map(Map.Entry::getKey).collect(Collectors.toSet());
@@ -191,7 +190,7 @@ public class RelationAtomValidator implements AtomValidator<RelationAtom> {
                 boolean requiredInequalityFound = neqAssertions.stream()
                         .anyMatch(neq -> neq.getVarNames().equals(pair));
                 if (!requiredInequalityFound) {
-                    errors.add("Rule that may infer duplicate roles played by same concept is missing != check between variables: " + pair.toString());
+                    errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_RELATION_POSSIBLE_DUPLICATE_ROLE_PLAYER.getMessage(rule.label(), pair));
                 }
             }
         }

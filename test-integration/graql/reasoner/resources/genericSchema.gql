@@ -105,6 +105,7 @@ resource-boolean sub attribute, datatype boolean;
 binarySymmetricity sub rule,
 when {
     (baseRole1: $x, baseRole2: $y) isa binary;
+    $x != $y;
 },
 then {
     (symmetricRole: $x, symmetricRole: $y) isa binary-symmetric;
@@ -114,6 +115,7 @@ binaryTransitivity sub rule,
 when {
     (symmetricRole: $x, symmetricRole: $y) isa binary-symmetric;
     (symmetricRole: $y, symmetricRole: $z) isa binary-symmetric;
+    $y != $z;
 },
 then {
     (symmetricRole: $y, symmetricRole: $z) isa binary-trans;

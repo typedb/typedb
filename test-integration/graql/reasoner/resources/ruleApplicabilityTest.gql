@@ -129,6 +129,7 @@ alternative-ternary-rule sub rule,
     when {
     	(someRole: $x, subRole: $y) isa binary;
     	(someRole: $y, subRole: $z) isa binary;
+    	$z != $y;
     },
     then {
     	(someRole:$x, subRole:$y, subRole: $z) isa ternary;
@@ -148,6 +149,7 @@ typed-reifying-rule sub rule,
     when {
     	$x isa anotherTwoRoleEntity;
     	$y isa anotherTwoRoleEntity;
+    	$x != $y;
     },
     then {
     	(symmetricRole:$x, symmetricRole:$y) isa reifying-relation;

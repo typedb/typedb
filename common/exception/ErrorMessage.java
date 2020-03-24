@@ -141,6 +141,8 @@ public enum ErrorMessage {
 
     VALIDATION_RULE_ILLEGAL_HEAD_ROLE_CANNOT_BE_PLAYED("Rule [%s] asserts [%s] plays role [%s] that it can never play\n"),
 
+    VALIDATION_RULE_ILLEGAL_HEAD_RELATION_POSSIBLE_DUPLICATE_ROLE_PLAYER("Rule [%s] that may infer duplicate roles played by same concept is missing != check between variables in 'when' clause: [%s]\n"),
+
     VALIDATION_RULE_INVALID_RELATION_TYPE("Rule [%s] attempts to define a relation pattern with type [%s] which is not a relation type\n"),
 
     VALIDATION_RULE_INVALID_ATTRIBUTE_TYPE("Rule [%s] attempts to define an attribute pattern with type [%s] which is not an attribute type\n"),
