@@ -73,7 +73,7 @@ public class RelationAtomValidator implements AtomValidator<RelationAtom> {
         return Sets.union(
                 basicValidator.validateAsRuleHead(atom, rule, ctx),
                 validateRelationPlayers(atom, rule, ctx),
-                validateDuplicateInferredRolesMustBeDifferentConcepts(atom, ctx);
+                validateDuplicateInferredRolesMustBeDifferentConcepts(atom, rule, ctx);
     }
 
     @Override
