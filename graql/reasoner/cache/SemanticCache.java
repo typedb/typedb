@@ -189,7 +189,7 @@ public abstract class SemanticCache<
     }
 
     private boolean childQueryIsCompatibleWithParent(ReasonerAtomicQuery childQuery, ReasonerAtomicQuery parentQuery) {
-        MultiUnifier multiUnifier = childQuery.getMultiUnifier(parentQuery, UnifierType.STRUCTURAL_SUBSUMPTIVE);
+        MultiUnifier multiUnifier = childQuery.getMultiUnifier(parentQuery, UnifierType.SUBSUMPTIVE);
         return !multiUnifier.isEmpty() &&
                 // check that the multiunifier hasn't dropped a variable that is required in the parent that are unifying with
                 multiUnifier.stream()
