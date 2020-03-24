@@ -366,8 +366,6 @@ public class ValidateGlobalRules {
                     .filter(Atomic::isSelectable)
                     .collect(Collectors.toSet());
 
-            validateDuplicateInferredRolesMustBeDifferentConcepts(headQuery, bodyQuery);
-
             if (selectableHeadAtoms.size() > 1) {
                 errors.add(ErrorMessage.VALIDATION_RULE_HEAD_NON_ATOMIC.getMessage(rule.label()));
             }
