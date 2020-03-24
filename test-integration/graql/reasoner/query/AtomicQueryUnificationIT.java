@@ -561,7 +561,7 @@ public class AtomicQueryUnificationIT {
     }
 
     /**
-     *
+     * An example of a test where we have different levels of relaxed-ness of the unifiers
      */
     @Test
     public void testUnification_RelationRolesNotIdentical() {
@@ -571,11 +571,13 @@ public class AtomicQueryUnificationIT {
             String potentiallyParent = "{ ($r1: $x, $r2: $y); $r1 type role;};";
             unification(query, potentiallyParent, false, UnifierType.EXACT, testTx);
             unification(query, potentiallyParent, false, UnifierType.RULE, testTx);
-            // WHY is this false!
+            // structural requires IDs to be present in all the same places, but may not have to match
+            // this is false because of role inference - we rewrite $r1 to be specific role
             unification(query, potentiallyParent, false, UnifierType.STRUCTURAL, testTx);
             unification(query, potentiallyParent, false, UnifierType.SUBSUMPTIVE, testTx);
-            // WHY does this not match structural and subsumptive
-            unification(query, potentiallyParent, false, UnifierType.STRUCTURAL_SUBSUMPTIVE, testTx);
+            // structural_subsumptive is the most relaxed unifier - we don't care about IDs if they don't exist
+            // and if they do, then they don't have to match
+            unification(query, potentiallyParent, true, UnifierType.STRUCTURAL_SUBSUMPTIVE, testTx);
         }
     }
 
