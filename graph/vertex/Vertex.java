@@ -29,8 +29,9 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public abstract class Vertex<
         VERTEX_SCHEMA extends Schema.Vertex,
+        VERTEX extends Vertex,
         EDGE_SCHEMA extends Schema.Edge,
-        EDGE extends Edge<EDGE_SCHEMA, ? extends Vertex<VERTEX_SCHEMA, EDGE_SCHEMA, EDGE>>> {
+        EDGE extends Edge<EDGE_SCHEMA, ? extends Vertex<VERTEX_SCHEMA, VERTEX, EDGE_SCHEMA, EDGE>>> {
 
     protected final VERTEX_SCHEMA schema;
 
@@ -58,11 +59,15 @@ public abstract class Vertex<
 
     public abstract Iterator<EDGE> ins(EDGE_SCHEMA schema);
 
-    public void out(EDGE edge) {
+    public abstract VERTEX out(EDGE_SCHEMA schema, VERTEX to);
+
+    public abstract VERTEX in(EDGE_SCHEMA schema, VERTEX from);
+
+    protected void out(EDGE edge) {
         outs.computeIfAbsent(edge.schema(), e -> ConcurrentHashMap.newKeySet()).add(edge);
     }
 
-    public void in(EDGE edge) {
+    protected void in(EDGE edge) {
         ins.computeIfAbsent(edge.schema(), e -> ConcurrentHashMap.newKeySet()).add(edge);
     }
 

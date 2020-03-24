@@ -136,14 +136,14 @@ public class HypergraphTest {
 
                                 Stream<Consumer<Hypergraph.Transaction>> subPersonAssertions = Stream.of(
                                         tx2 -> {
-                                            EntityType man = tx2.concepts().putEntityType("man");
+                                            EntityType man = tx2.concepts().putEntityType("man").sup(person);
                                             notNulls(man);
-                                            assertEquals(man.sup(), rootEntityType);
+                                            assertEquals(man.sup(), person);
                                         },
                                         tx2 -> {
-                                            EntityType woman = tx2.concepts().putEntityType("woman");
+                                            EntityType woman = tx2.concepts().putEntityType("woman").sup(person);
                                             notNulls(woman);
-                                            assertEquals(woman.sup(), rootEntityType);
+                                            assertEquals(woman.sup(), person);
                                         }
                                 );
                                 subPersonAssertions.parallel().forEach(assertions -> assertions.accept(tx));

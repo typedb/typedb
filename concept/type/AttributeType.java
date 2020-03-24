@@ -18,6 +18,7 @@
 
 package hypergraph.concept.type;
 
+import hypergraph.common.HypergraphException;
 import hypergraph.graph.Graph;
 import hypergraph.graph.Schema;
 import hypergraph.graph.edge.TypeEdge;
@@ -31,12 +32,22 @@ public class AttributeType extends Type {
 
     public AttributeType(TypeVertex vertex) {
         super(vertex);
+        if (vertex.schema() != Schema.Vertex.Type.ATTRIBUTE_TYPE) {
+            throw new HypergraphException("Invalid TypeVertex for EntityType");
+        }
     }
 
     public AttributeType(Graph graph, String label) {
         super(graph.type().createVertex(Schema.Vertex.Type.ATTRIBUTE_TYPE, label));
-        TypeVertex parent = graph.type().getVertex(Schema.Vertex.Type.Root.ATTRIBUTE.label());
-        graph.type().createEdge(Schema.Edge.Type.SUB, vertex, parent);
+        TypeVertex parentVertex = graph.type().getVertex(Schema.Vertex.Type.Root.ATTRIBUTE.label());
+        vertex.out(Schema.Edge.Type.SUB, parentVertex);
+        parent = new AttributeType(parentVertex);
+    }
+
+    public AttributeType sup(AttributeType parent) {
+        vertex.out(Schema.Edge.Type.SUB, parent.vertex);
+        this.parent = parent;
+        return this;
     }
 
     public AttributeType sup() {

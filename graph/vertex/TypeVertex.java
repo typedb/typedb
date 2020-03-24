@@ -26,10 +26,11 @@ import hypergraph.graph.edge.TypeEdge;
 import hypergraph.graph.util.LinkedIterators;
 
 import java.util.Iterator;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static hypergraph.graph.util.ByteArrays.join;
 
-public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, Schema.Edge.Type, TypeEdge> {
+public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, TypeVertex, Schema.Edge.Type, TypeEdge> {
 
     protected final Graph.Type graph;
     protected String label;
@@ -54,6 +55,22 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, Schema.Edge.
 
     public String label() {
         return label;
+    }
+
+    @Override
+    public TypeVertex out(Schema.Edge.Type schema, TypeVertex to) {
+        TypeEdge edge = new TypeEdge.Buffered(graph, schema, this, to);
+        outs.computeIfAbsent(edge.schema(), e -> ConcurrentHashMap.newKeySet()).add(edge);
+        to.in(edge);
+        return this;
+    }
+
+    @Override
+    public TypeVertex in(Schema.Edge.Type schema, TypeVertex from) {
+        TypeEdge edge = new TypeEdge.Buffered(graph, schema, from, this);
+        ins.computeIfAbsent(edge.schema(), e -> ConcurrentHashMap.newKeySet()).add(edge);
+        from.out(edge);
+        return this;
     }
 
     public abstract boolean isAbstract();

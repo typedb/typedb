@@ -99,10 +99,10 @@ public class Graph {
             TypeVertex rootRoleType = createVertex(Schema.Vertex.Type.ROLE_TYPE, Schema.Vertex.Type.Root.ROLE.label()).setAbstract(true);
             TypeVertex rootAttributeType = createVertex(Schema.Vertex.Type.ATTRIBUTE_TYPE, Schema.Vertex.Type.Root.ATTRIBUTE.label()).setAbstract(true);
 
-            createEdge(Schema.Edge.Type.SUB, rootEntityType, rootType);
-            createEdge(Schema.Edge.Type.SUB, rootRelationType, rootType);
-            createEdge(Schema.Edge.Type.SUB, rootRoleType, rootType);
-            createEdge(Schema.Edge.Type.SUB, rootAttributeType, rootType);
+            rootEntityType.out(Schema.Edge.Type.SUB, rootType);
+            rootRelationType.out(Schema.Edge.Type.SUB, rootType);
+            rootRoleType.out(Schema.Edge.Type.SUB, rootType);
+            rootAttributeType.out(Schema.Edge.Type.SUB, rootType);
         }
 
         public void commit() {
@@ -111,13 +111,6 @@ public class Graph {
             ); // typeByIID no longer contains valid mapping from IID to TypeVertex
             typeByIID.values().parallelStream().forEach(Vertex::commit);
             clear(); // we now flush the indexes after commit, and we do not expect this Graph.Type to be used again
-        }
-
-        public TypeEdge createEdge(Schema.Edge.Type schema, TypeVertex from, TypeVertex to) {
-            TypeEdge edge = new TypeEdge.Buffered(this, schema, from, to);
-            from.out(edge);
-            to.in(edge);
-            return edge;
         }
 
         public TypeVertex createVertex(Schema.Vertex.Type type, String label) {

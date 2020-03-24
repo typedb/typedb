@@ -23,7 +23,7 @@ import hypergraph.graph.KeyGenerator;
 import hypergraph.graph.Schema;
 import hypergraph.graph.edge.ThingEdge;
 
-public abstract class ThingVertex extends Vertex<Schema.Vertex.Thing, Schema.Edge.Thing, ThingEdge> {
+public abstract class ThingVertex extends Vertex<Schema.Vertex.Thing, ThingVertex, Schema.Edge.Thing, ThingEdge> {
 
     protected final Graph.Thing graph;
 
