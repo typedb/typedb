@@ -20,7 +20,6 @@ package hypergraph.concept.type;
 
 import hypergraph.graph.Graph;
 import hypergraph.graph.Schema;
-import hypergraph.graph.edge.TypeEdge;
 import hypergraph.graph.vertex.TypeVertex;
 
 import java.util.Iterator;
@@ -70,7 +69,7 @@ public abstract class Type {
         Tree(Graph graph, String label, Schema.Vertex.Type schema) {
             super(graph.type().createVertex(schema, label));
             TypeVertex parentVertex = graph.type().getVertex(schema.root().label());
-            vertex.out(Schema.Edge.Type.SUB, parentVertex);
+            vertex.outs().add(Schema.Edge.Type.SUB, parentVertex);
             parent = newInstance(parentVertex);
         }
 
@@ -79,7 +78,7 @@ public abstract class Type {
         abstract TYPE getThis();
 
         public TYPE sup(TYPE parent) {
-            vertex.out(Schema.Edge.Type.SUB, parent.vertex);
+            vertex.outs().add(Schema.Edge.Type.SUB, parent.vertex);
             this.parent = parent;
             return getThis();
         }
@@ -87,9 +86,9 @@ public abstract class Type {
         public TYPE sup() {
             if (parent != null) return parent;
 
-            Iterator<TypeEdge> parentEdge = vertex.outs(Schema.Edge.Type.SUB);
-            if (parentEdge != null && parentEdge.hasNext()) {
-                TypeVertex parentVertex = parentEdge.next().to();
+            Iterator<TypeVertex> iterator = vertex.outs().get(Schema.Edge.Type.SUB);
+            if (iterator != null && iterator.hasNext()) {
+                TypeVertex parentVertex = iterator.next();
                 if (parentVertex.schema().equals(vertex.schema())) {
                     parent = newInstance(parentVertex);
                 }

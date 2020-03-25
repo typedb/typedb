@@ -98,10 +98,10 @@ public class Graph {
             TypeVertex rootRoleType = createVertex(Schema.Vertex.Type.ROLE_TYPE, Schema.Vertex.Type.Root.ROLE.label()).setAbstract(true);
             TypeVertex rootAttributeType = createVertex(Schema.Vertex.Type.ATTRIBUTE_TYPE, Schema.Vertex.Type.Root.ATTRIBUTE.label()).setAbstract(true);
 
-            rootEntityType.out(Schema.Edge.Type.SUB, rootType);
-            rootRelationType.out(Schema.Edge.Type.SUB, rootType);
-            rootRoleType.out(Schema.Edge.Type.SUB, rootType);
-            rootAttributeType.out(Schema.Edge.Type.SUB, rootType);
+            rootEntityType.outs().add(Schema.Edge.Type.SUB, rootType);
+            rootRelationType.outs().add(Schema.Edge.Type.SUB, rootType);
+            rootRoleType.outs().add(Schema.Edge.Type.SUB, rootType);
+            rootAttributeType.outs().add(Schema.Edge.Type.SUB, rootType);
         }
 
         public void commit() {

@@ -26,26 +26,29 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 
 public abstract class Vertex<
         VERTEX_SCHEMA extends Schema.Vertex,
         VERTEX extends Vertex,
         EDGE_SCHEMA extends Schema.Edge,
-        EDGE extends Edge<EDGE_SCHEMA, ? extends Vertex<VERTEX_SCHEMA, VERTEX, EDGE_SCHEMA, EDGE>>> {
+        EDGE extends Edge<EDGE_SCHEMA, VERTEX>> {
 
     protected final VERTEX_SCHEMA schema;
 
-    protected final Map<EDGE_SCHEMA, Set<EDGE>> outs;
-    protected final Map<EDGE_SCHEMA, Set<EDGE>> ins;
+    protected final DirectedEdges<VERTEX, EDGE_SCHEMA, EDGE> outs;
+    protected final DirectedEdges<VERTEX, EDGE_SCHEMA, EDGE> ins;
 
     protected byte[] iid;
 
     Vertex(byte[] iid, VERTEX_SCHEMA schema) {
         this.schema = schema;
         this.iid = iid;
-        outs = new ConcurrentHashMap<>();
-        ins = new ConcurrentHashMap<>();
+        outs = newDirectedEdges(DirectedEdges.Direction.OUT);
+        ins = newDirectedEdges(DirectedEdges.Direction.IN);
     }
+
+    protected abstract DirectedEdges<VERTEX, EDGE_SCHEMA, EDGE> newDirectedEdges(DirectedEdges.Direction direction);
 
     public abstract Schema.Status status();
 
@@ -55,20 +58,12 @@ public abstract class Vertex<
 
     public abstract void commit();
 
-    public abstract Iterator<EDGE> outs(EDGE_SCHEMA schema);
-
-    public abstract Iterator<EDGE> ins(EDGE_SCHEMA schema);
-
-    public abstract VERTEX out(EDGE_SCHEMA schema, VERTEX to);
-
-    public abstract VERTEX in(EDGE_SCHEMA schema, VERTEX from);
-
-    protected void out(EDGE edge) {
-        outs.computeIfAbsent(edge.schema(), e -> ConcurrentHashMap.newKeySet()).add(edge);
+    public DirectedEdges<VERTEX, EDGE_SCHEMA, EDGE> outs() {
+        return outs;
     }
 
-    protected void in(EDGE edge) {
-        ins.computeIfAbsent(edge.schema(), e -> ConcurrentHashMap.newKeySet()).add(edge);
+    public DirectedEdges<VERTEX, EDGE_SCHEMA, EDGE> ins() {
+        return ins;
     }
 
     public byte[] iid() {
@@ -95,5 +90,54 @@ public abstract class Vertex<
     @Override
     public final int hashCode() {
         return Arrays.hashCode(iid);
+    }
+
+    public abstract static class DirectedEdges<
+            DIR_VERTEX extends Vertex,
+            DIR_EDGE_SCHEMA extends Schema.Edge,
+            DIR_EDGE extends Edge<DIR_EDGE_SCHEMA, DIR_VERTEX>> {
+
+        protected final Map<DIR_EDGE_SCHEMA, Set<DIR_EDGE>> edges;
+        protected final Direction direction;
+
+        enum Direction {
+            OUT(true),
+            IN(false);
+
+            private final boolean isOut;
+
+            Direction(boolean isOut) {
+                this.isOut = isOut;
+            }
+
+            public boolean isOut() {
+                return isOut;
+            }
+
+            public boolean isIn() {
+                return !isOut;
+            }
+        }
+
+        DirectedEdges(Direction direction) {
+            this.direction = direction;
+            edges = new ConcurrentHashMap<>();
+        }
+
+        public abstract Iterator<DIR_VERTEX> get(DIR_EDGE_SCHEMA schema);
+
+        public abstract DIR_VERTEX add(DIR_EDGE_SCHEMA schema, DIR_VERTEX to);
+
+        protected void add(DIR_EDGE edge) {
+            edges.computeIfAbsent(edge.schema(), e -> ConcurrentHashMap.newKeySet()).add(edge);
+        }
+
+        public abstract DIR_VERTEX remove(DIR_EDGE_SCHEMA schema, DIR_VERTEX to);
+
+        public abstract DIR_VERTEX remove(DIR_EDGE_SCHEMA schema);
+
+        protected void forEach(Consumer<DIR_EDGE> function) {
+            edges.forEach((key, set) -> set.forEach(function));
+        }
     }
 }

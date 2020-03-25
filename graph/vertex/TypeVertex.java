@@ -23,10 +23,12 @@ import hypergraph.graph.KeyGenerator;
 import hypergraph.graph.Schema;
 import hypergraph.graph.edge.Edge;
 import hypergraph.graph.edge.TypeEdge;
-import hypergraph.graph.util.LinkedIterators;
+import hypergraph.graph.util.Iterators;
 
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 
 import static hypergraph.graph.util.ByteArrays.join;
 
@@ -57,22 +59,6 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, TypeVertex, 
         return label;
     }
 
-    @Override
-    public TypeVertex out(Schema.Edge.Type schema, TypeVertex to) {
-        TypeEdge edge = new TypeEdge.Buffered(graph, schema, this, to);
-        outs.computeIfAbsent(edge.schema(), e -> ConcurrentHashMap.newKeySet()).add(edge);
-        to.in(edge);
-        return this;
-    }
-
-    @Override
-    public TypeVertex in(Schema.Edge.Type schema, TypeVertex from) {
-        TypeEdge edge = new TypeEdge.Buffered(graph, schema, from, this);
-        ins.computeIfAbsent(edge.schema(), e -> ConcurrentHashMap.newKeySet()).add(edge);
-        from.out(edge);
-        return this;
-    }
-
     public abstract boolean isAbstract();
 
     public abstract TypeVertex setAbstract(boolean isAbstract);
@@ -85,10 +71,32 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, TypeVertex, 
 
     public abstract TypeVertex regex(String regex);
 
+    public abstract class DirectedTypeEdges extends DirectedEdges<TypeVertex, Schema.Edge.Type, TypeEdge> {
+
+        DirectedTypeEdges(Direction direction) {
+            super(direction);
+        }
+
+        @Override
+        public TypeVertex add(Schema.Edge.Type schema, TypeVertex adjacent) {
+            TypeVertex from = direction.isOut() ? TypeVertex.this : adjacent;
+            TypeVertex to = direction.isOut() ? adjacent : TypeVertex.this;
+            TypeEdge edge = new TypeEdge.Buffered(graph, schema, from, to);
+            edges.computeIfAbsent(edge.schema(), e -> ConcurrentHashMap.newKeySet()).add(edge);
+            to.ins().add(edge);
+            return TypeVertex.this;
+        }
+    }
+
     public static class Buffered extends TypeVertex {
 
         public Buffered(Graph.Type graph, Schema.Vertex.Type schema, byte[] iid, String label) {
             super(graph, schema, iid, label);
+        }
+
+        @Override
+        protected DirectedTypeEdges newDirectedEdges(DirectedEdges.Direction direction) {
+            return new BufferedDirectedTypeEdges(direction);
         }
 
         public Schema.Status status() {
@@ -122,14 +130,27 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, TypeVertex, 
             return this;
         }
 
-        public Iterator<TypeEdge> outs(Schema.Edge.Type schema) {
-            if (outs.get(schema) != null) return outs.get(schema).iterator();
-            return null;
-        }
+        public class BufferedDirectedTypeEdges extends DirectedTypeEdges {
 
-        public Iterator<TypeEdge> ins(Schema.Edge.Type schema) {
-            if (ins.get(schema) != null) return ins.get(schema).iterator();
-            return null;
+            BufferedDirectedTypeEdges(Direction direction) {
+                super(direction);
+            }
+
+            @Override
+            public Iterator<TypeVertex> get(Schema.Edge.Type schema) {
+                if (edges.get(schema) != null) return Iterators.apply(edges.get(schema).iterator(), Edge::to);
+                return Collections.emptyIterator();
+            }
+
+            @Override
+            public TypeVertex remove(Schema.Edge.Type schema, TypeVertex to) {
+                return null;
+            }
+
+            @Override
+            public TypeVertex remove(Schema.Edge.Type schema) {
+                return null;
+            }
         }
 
         @Override
@@ -168,8 +189,8 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, TypeVertex, 
         }
 
         void commitEdges() {
-            outs.forEach((key, set) -> set.forEach(Edge::commit));
-            ins.forEach((key, set) -> set.forEach(Edge::commit));
+            outs.forEach(Edge::commit);
+            ins.forEach(Edge::commit);
         }
     }
 
@@ -182,6 +203,11 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, TypeVertex, 
         public Persisted(Graph.Type graph, byte[] iid) {
             super(graph, Schema.Vertex.Type.of(iid[0]), iid,
                   new String(graph.storage().get(join(iid, Schema.Property.LABEL.infix().key()))));
+        }
+
+        @Override
+        protected DirectedEdges<TypeVertex, Schema.Edge.Type, TypeEdge> newDirectedEdges(DirectedEdges.Direction direction) {
+            return new PersistedDirectedTypeEdges(direction);
         }
 
         @Override
@@ -228,34 +254,45 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, TypeVertex, 
             return null; // TODO
         }
 
-        public Iterator<TypeEdge> outs(Schema.Edge.Type schema) {
-            Iterator<TypeEdge> persistedIterator = graph.storage().iterate(
-                    join(iid, schema.out().key()),
-                    (key, value) -> new TypeEdge.Persisted(graph, key)
-            );
-
-            if (outs.get(schema) != null) return new LinkedIterators<>(outs.get(schema).iterator(), persistedIterator);
-            else return persistedIterator;
-        }
-
-        public Iterator<TypeEdge> ins(Schema.Edge.Type schema) {
-            Iterator<TypeEdge> persistedIterator = graph.storage().iterate(
-                    join(iid, schema.in().key()),
-                    (key, value) -> new TypeEdge.Persisted(graph, key)
-            );
-
-            if (ins.get(schema) != null) return new LinkedIterators<>(ins.get(schema).iterator(), persistedIterator);
-            else return persistedIterator;
-        }
-
         @Override
         public void commit() {
             commitEdges();
         }
 
         private void commitEdges() {
-            outs.forEach((key, set) -> set.forEach(Edge::commit));
-            ins.forEach((key, set) -> set.forEach(Edge::commit));
+            outs.forEach(Edge::commit);
+            ins.forEach(Edge::commit);
+        }
+
+        public class PersistedDirectedTypeEdges extends DirectedTypeEdges {
+
+            PersistedDirectedTypeEdges(Direction direction) {
+                super(direction);
+            }
+
+            @Override
+            public Iterator<TypeVertex> get(Schema.Edge.Type schema) {
+                Schema.Infix edgeInfix = direction.isOut() ? schema.out() : schema.in();
+                Function<TypeEdge, TypeVertex> vertexFn = direction.isOut() ? Edge::to : Edge::from;
+
+                Iterator<TypeEdge> persistedIterator = graph.storage().iterate(
+                        join(iid, edgeInfix.key()),
+                        (key, value) -> new TypeEdge.Persisted(graph, key)
+                );
+
+                if (edges.get(schema) != null) return Iterators.link(edges.get(schema).iterator(), persistedIterator).apply(vertexFn);
+                else return Iterators.apply(persistedIterator, vertexFn);
+            }
+
+            @Override
+            public TypeVertex remove(Schema.Edge.Type schema, TypeVertex to) {
+                return null;
+            }
+
+            @Override
+            public TypeVertex remove(Schema.Edge.Type schema) {
+                return null;
+            }
         }
     }
 }
