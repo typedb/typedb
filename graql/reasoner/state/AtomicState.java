@@ -28,10 +28,6 @@ import grakn.core.graql.reasoner.explanation.RuleExplanation;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.reasoner.query.ReasonerQueryFactory;
 import grakn.core.graql.reasoner.rule.InferenceRule;
-import grakn.core.graql.reasoner.tree.Node;
-import grakn.core.graql.reasoner.tree.MultiNode;
-import grakn.core.graql.reasoner.tree.NodeSingle;
-import grakn.core.graql.reasoner.tree.ResolutionTree;
 import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.graql.reasoner.utils.AnswerUtil;
 import grakn.core.kb.concept.api.ConceptId;
@@ -41,9 +37,7 @@ import grakn.core.kb.graql.reasoner.cache.QueryCache;
 import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
 import graql.lang.statement.Variable;
-
 import java.util.Iterator;
-import java.util.List;
 import java.util.Set;
 
 /**
@@ -107,52 +101,6 @@ public class AtomicState extends AnswerPropagatorState<ReasonerAtomicQuery> {
                     ruleAnswer(baseAnswer, rule, unifier);
         }
         return recordAnswer(query, answer);
-    }
-
-    @Override
-    public Node createNode(){
-        AnswerPropagatorState parent = getParentState();
-        AnswerPropagatorState grandParent = parent != null ? parent.getParentState() : null;
-
-        NodeSingle node = new NodeSingle(this);
-        return (grandParent instanceof ConjunctiveState)?
-                node :
-                new MultiNode(node);
-    }
-
-    @Override
-    public void updateTreeProfile(ResolutionTree tree){
-        if (getParentState() == null) return;
-        AnswerPropagatorState parentCS = this;
-        int CSstates = 0;
-        while(parentCS.getParentState() != null
-                && parentCS.getParentState() instanceof JoinState){
-            parentCS = parentCS.getParentState();
-            CSstates++;
-        }
-
-        if (parentCS == this){
-            tree.addChildToNode(parentCS, this);
-            return;
-        }
-
-        //attachment if within cumulative state
-        //if first state we attach to parent, else we add to last child of CS
-        if (getParentState() == parentCS){
-            tree.addChildToNode(parentCS,this);
-        } else {
-            Node CSnode = tree.getNode(parentCS);
-            List<Node> children = CSnode.children();
-            if (children.size() == CSstates) {
-                Node lastChild = children.get(children.size() - 1);
-                if (!lastChild.isMultiNode()){
-                    System.out.println();
-                }
-                lastChild.asMultiNode().addNode(new NodeSingle(this));
-            } else {
-                tree.addChildToNode(parentCS, this);
-            }
-        }
     }
 
     /**

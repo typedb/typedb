@@ -49,8 +49,8 @@ public class ResolutionTree {
     public Node addChildToNode(ResolutionState parent, ResolutionState child){
         Node parentMatch = mapping.get(parent);
         Node childMatch = mapping.get(child);
-        Node parentNode = parentMatch != null? parentMatch : parent.createNode();
-        Node childNode = childMatch != null? childMatch : child.createNode();
+        Node parentNode = parentMatch != null? parentMatch : createNode(parent);
+        Node childNode = childMatch != null? childMatch : createNode(child);
 
         if (childNode == null || parentNode == null) return null;
 
@@ -62,6 +62,14 @@ public class ResolutionTree {
 
     public void clear(){
         mapping.clear();
+    }
+
+    public void updateTree(ResolutionState state) {
+        TreeUpdater.updateTree(state, this);
+    }
+
+    private Node createNode(ResolutionState state){
+        return TreeUpdater.create(state);
     }
 }
 
