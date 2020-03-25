@@ -69,7 +69,7 @@ public class ResolutionTree {
     }
 
     private Node createNode(ResolutionState state){
-        return TreeUpdater.create(state);
+        return TreeUpdater.createNode(state);
     }
 }
 

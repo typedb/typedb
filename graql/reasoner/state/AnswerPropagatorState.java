@@ -21,9 +21,7 @@ package grakn.core.graql.reasoner.state;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.reasoner.query.ResolvableQuery;
-import grakn.core.graql.reasoner.tree.ResolutionTree;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
-
 import java.util.Iterator;
 import java.util.Objects;
 import java.util.Set;
@@ -77,11 +75,6 @@ public abstract class AnswerPropagatorState<Q extends ResolvableQuery> extends R
     @Override
     public int hashCode() {
         return Objects.hash(query, unifier, getSubstitution());
-    }
-
-    @Override
-    public void updateTreeProfile(ResolutionTree tree) {
-        tree.addChildToNode(getParentState(), this);
     }
 
     /**

@@ -40,25 +40,30 @@ public abstract class TreeUpdater{
 
     public abstract void update(ResolutionState state, ResolutionTree tree);
 
-    public abstract Node createNode(ResolutionState state);
+    public abstract Node create(ResolutionState state);
 
     static void updateTree(ResolutionState state, ResolutionTree tree){
         TreeUpdater treeUpdater = updaters.getOrDefault(state.getClass(), new DefaultUpdater());
         treeUpdater.update(state, tree);
     }
 
-    static Node create(ResolutionState state){
+    static Node createNode(ResolutionState state){
         TreeUpdater treeUpdater = updaters.getOrDefault(state.getClass(), new DefaultUpdater());
-        return treeUpdater.createNode(state);
+        return treeUpdater.create(state);
     }
 
     public static class AtomicStateUpdater extends TreeUpdater{
 
         @Override
-        public Node createNode(ResolutionState state) {
+        public Node create(ResolutionState state) {
             AnswerPropagatorState parent = state.getParentState();
             AnswerPropagatorState grandParent = parent != null ? parent.getParentState() : null;
 
+            if (!(grandParent instanceof ConjunctiveState)){
+                System.out.println();
+            }
+
+            //second case is possible when parent is a RuleState and hence grandparent is an AtomicState
             NodeSingle node = new NodeSingle(state);
             return (grandParent instanceof ConjunctiveState)?
                     node :
@@ -71,34 +76,36 @@ public abstract class TreeUpdater{
             ResolutionState parent = state.getParentState();
             if (parent == null) return;
 
-            AnswerPropagatorState parentCS = state;
-            int CSstates = 0;
-            while(parentCS.getParentState() != null
-                    && parentCS.getParentState() instanceof JoinState){
-                parentCS = parentCS.getParentState();
-                CSstates++;
+            AnswerPropagatorState topParentJoinState = state;
+            int joinStates = 0;
+            while(topParentJoinState.getParentState() != null
+                    && topParentJoinState.getParentState() instanceof JoinState){
+                topParentJoinState = topParentJoinState.getParentState();
+                joinStates++;
             }
 
-            if (parentCS == state){
-                tree.addChildToNode(parentCS, state);
+            //this is possible when a parent is a RuleState
+            if (topParentJoinState == state){
+                tree.addChildToNode(topParentJoinState, state);
                 return;
             }
 
-            //attachment if within cumulative state
-            //if first state we attach to parent, else we add to last child of CS
-            if (parent == parentCS){
-                tree.addChildToNode(parentCS,state);
+
+            //attachment if within join state
+            //if first state we attach to parent, else we add to last child of join state
+            if (parent == topParentJoinState){
+                tree.addChildToNode(parent, state);
             } else {
-                Node CSnode = tree.getNode(parentCS);
-                List<Node> children = CSnode.children();
-                if (children.size() == CSstates) {
+                Node joinStateNode = tree.getNode(topParentJoinState);
+                List<Node> children = joinStateNode.children();
+                if (children.size() == joinStates) {
                     Node lastChild = children.get(children.size() - 1);
                     if (!lastChild.isMultiNode()){
                         System.out.println();
                     }
                     lastChild.asMultiNode().addNode(new NodeSingle(state));
                 } else {
-                    tree.addChildToNode(parentCS, state);
+                    tree.addChildToNode(topParentJoinState, state);
                 }
             }
         }
@@ -107,7 +114,7 @@ public abstract class TreeUpdater{
     public static class JoinStateUpdater extends TreeUpdater {
 
         @Override
-        public Node createNode(ResolutionState state) {
+        public Node create(ResolutionState state) {
             if(state.getParentState() instanceof ConjunctiveState) return new NodeSingle(state);
             return null;
         }
@@ -126,7 +133,7 @@ public abstract class TreeUpdater{
     public static class AnswerStateUpdater extends TreeUpdater{
 
         @Override
-        public Node createNode(ResolutionState state) {
+        public Node create(ResolutionState state) {
             return new NodeSingle(state);
         }
 
@@ -149,7 +156,7 @@ public abstract class TreeUpdater{
     public static class DefaultUpdater extends TreeUpdater {
 
         @Override
-        public Node createNode(ResolutionState state) {
+        public Node create(ResolutionState state) {
             return new NodeSingle(state);
         }
 
