@@ -19,6 +19,7 @@
 
 package grakn.core.graql.reasoner.tree;
 
+import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.state.ResolutionState;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -51,7 +52,18 @@ public class ResolutionTree {
     }
 
     public void updateTree(ResolutionState state) {
-        TreeUpdater.updateTree(state, this);
+        ResolutionState parent = state.getParentState();
+        if (parent == null) return;
+
+        if (state.isAnswerState()) {
+            Node parentNode = getNode(parent);
+            if (parentNode != null){
+                ConceptMap sub = state.getSubstitution();
+                parentNode.addAnswer(sub);
+            }
+        } else {
+            addChildToNode(parent, state);
+        }
     }
 
     Node addChildToNode(ResolutionState parent, ResolutionState child){
