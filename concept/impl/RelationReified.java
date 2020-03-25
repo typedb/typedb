@@ -134,9 +134,9 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
                         ConceptVertex.from(toThing).elementId().toString()
                 );
 
-        if (rolePlayerEdgeExists) {
-            return;
-        }
+//        if (rolePlayerEdgeExists) {
+//            return;
+//        }
 
         //Role player edge does not exist create a new one
         EdgeElement edge = this.addEdge(ConceptVertex.from(toThing), Schema.EdgeLabel.ROLE_PLAYER);
