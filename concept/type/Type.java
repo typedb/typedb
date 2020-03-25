@@ -59,15 +59,15 @@ public abstract class Type {
         }
     }
 
-    public static abstract class Real<TYPE extends Type.Real> extends Type {
+    public static abstract class Tree<TYPE extends Tree> extends Type {
 
         protected TYPE parent;
 
-        Real(TypeVertex vertex) {
+        Tree(TypeVertex vertex) {
             super(vertex);
         }
 
-        Real(Graph graph, String label, Schema.Vertex.Type schema) {
+        Tree(Graph graph, String label, Schema.Vertex.Type schema) {
             super(graph.type().createVertex(schema, label));
             TypeVertex parentVertex = graph.type().getVertex(schema.root().label());
             vertex.out(Schema.Edge.Type.SUB, parentVertex);

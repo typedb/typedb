@@ -23,7 +23,7 @@ import hypergraph.graph.Graph;
 import hypergraph.graph.Schema;
 import hypergraph.graph.vertex.TypeVertex;
 
-public class EntityType extends Type.Real<EntityType> {
+public class EntityType extends Type.Tree<EntityType> {
 
     public EntityType(TypeVertex vertex) {
         super(vertex);

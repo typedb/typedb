@@ -120,7 +120,7 @@ class CoreTransaction implements Hypergraph.Transaction {
 
     @Override
     public Type type() {
-        return this.type;
+        return type;
     }
 
     @Override
@@ -153,12 +153,12 @@ class CoreTransaction implements Hypergraph.Transaction {
         @Override
         public byte[] get(byte[] key) {
             try {
-                readWriteLock.lockRead();
+                if (type.isWrite()) readWriteLock.lockRead();
                 return rocksTransaction.get(readOptions, key);
             } catch (RocksDBException | InterruptedException e) {
                 throw new HypergraphException(e);
             } finally {
-                readWriteLock.unlockRead();
+                if (type.isWrite()) readWriteLock.unlockRead();
             }
         }
 

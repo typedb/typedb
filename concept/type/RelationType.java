@@ -23,7 +23,7 @@ import hypergraph.graph.Graph;
 import hypergraph.graph.Schema;
 import hypergraph.graph.vertex.TypeVertex;
 
-public class RelationType extends Type.Real<RelationType> {
+public class RelationType extends Type.Tree<RelationType> {
 
     public RelationType(TypeVertex vertex) {
         super(vertex);

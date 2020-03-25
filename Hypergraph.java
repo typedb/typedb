@@ -100,9 +100,11 @@ public interface Hypergraph extends AutoCloseable {
             WRITE(1);
 
             private final int type;
+            private final boolean isWrite;
 
             Type(int type) {
                 this.type = type;
+                this.isWrite = type == 1;
             }
 
             public static Type of(int value) {
@@ -121,6 +123,14 @@ public interface Hypergraph extends AutoCloseable {
 
             public int id() {
                 return type;
+            }
+
+            public boolean isRead() {
+                return !isWrite;
+            }
+
+            public boolean isWrite() {
+                return isWrite;
             }
 
             @Override
