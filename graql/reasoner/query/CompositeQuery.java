@@ -27,17 +27,16 @@ import grakn.core.concept.answer.ConceptMap;
 import grakn.core.kb.graql.executor.TraversalExecutor;
 import grakn.core.graql.reasoner.ReasoningContext;
 import grakn.core.graql.reasoner.atom.Atom;
-import grakn.core.graql.reasoner.plan.ResolutionPlan;
 import grakn.core.graql.reasoner.state.AnswerPropagatorState;
 import grakn.core.graql.reasoner.state.CompositeState;
 import grakn.core.graql.reasoner.state.ResolutionState;
+import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.Type;
-import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
-import grakn.core.kb.graql.reasoner.atom.Atomic;
-import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.graql.exception.GraqlSemanticException;
 import grakn.core.kb.graql.reasoner.ReasonerException;
+import grakn.core.kb.graql.reasoner.atom.Atomic;
+import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
 import graql.lang.Graql;
@@ -46,6 +45,7 @@ import graql.lang.pattern.Negation;
 import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
+
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
@@ -344,11 +344,6 @@ public class CompositeQuery extends ResolvableQuery {
 
     @Override
     public ImmutableSetMultimap<Variable, Type> getVarTypeMap(ConceptMap sub) { return getVarTypeMap(); }
-
-    @Override
-    public ResolutionPlan resolutionPlan() {
-        return getConjunctiveQuery().resolutionPlan();
-    }
 
     @Override
     public boolean requiresReiteration() {
