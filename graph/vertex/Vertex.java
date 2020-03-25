@@ -126,15 +126,17 @@ public abstract class Vertex<
 
         public abstract Iterator<DIR_VERTEX> get(DIR_EDGE_SCHEMA schema);
 
-        public abstract DIR_VERTEX add(DIR_EDGE_SCHEMA schema, DIR_VERTEX to);
+        public abstract void add(DIR_EDGE_SCHEMA schema, DIR_VERTEX to);
 
-        protected void add(DIR_EDGE edge) {
+        public abstract void remove(DIR_EDGE_SCHEMA schema, DIR_VERTEX to);
+
+        public abstract void remove(DIR_EDGE_SCHEMA schema);
+
+        public abstract void removeNonRecursive(DIR_EDGE edge);
+
+        protected void addNonRecursive(DIR_EDGE edge) {
             edges.computeIfAbsent(edge.schema(), e -> ConcurrentHashMap.newKeySet()).add(edge);
         }
-
-        public abstract DIR_VERTEX remove(DIR_EDGE_SCHEMA schema, DIR_VERTEX to);
-
-        public abstract DIR_VERTEX remove(DIR_EDGE_SCHEMA schema);
 
         protected void forEach(Consumer<DIR_EDGE> function) {
             edges.forEach((key, set) -> set.forEach(function));

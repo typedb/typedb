@@ -27,6 +27,7 @@ import hypergraph.graph.util.Iterators;
 
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
@@ -78,13 +79,18 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, TypeVertex, 
         }
 
         @Override
-        public TypeVertex add(Schema.Edge.Type schema, TypeVertex adjacent) {
+        public void add(Schema.Edge.Type schema, TypeVertex adjacent) {
             TypeVertex from = direction.isOut() ? TypeVertex.this : adjacent;
             TypeVertex to = direction.isOut() ? adjacent : TypeVertex.this;
             TypeEdge edge = new TypeEdge.Buffered(graph, schema, from, to);
             edges.computeIfAbsent(edge.schema(), e -> ConcurrentHashMap.newKeySet()).add(edge);
-            to.ins().add(edge);
-            return TypeVertex.this;
+            to.ins().addNonRecursive(edge);
+        }
+
+        @Override
+        public void removeNonRecursive(TypeEdge edge) {
+            if (edges.containsKey(edge.schema()))
+                edges.get(edge.schema()).remove(edge);
         }
     }
 
@@ -130,29 +136,6 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, TypeVertex, 
             return this;
         }
 
-        public class BufferedDirectedTypeEdges extends DirectedTypeEdges {
-
-            BufferedDirectedTypeEdges(Direction direction) {
-                super(direction);
-            }
-
-            @Override
-            public Iterator<TypeVertex> get(Schema.Edge.Type schema) {
-                if (edges.get(schema) != null) return Iterators.apply(edges.get(schema).iterator(), Edge::to);
-                return Collections.emptyIterator();
-            }
-
-            @Override
-            public TypeVertex remove(Schema.Edge.Type schema, TypeVertex to) {
-                return null;
-            }
-
-            @Override
-            public TypeVertex remove(Schema.Edge.Type schema) {
-                return null;
-            }
-        }
-
         @Override
         public void commit() {
             graph.storage().put(iid);
@@ -192,9 +175,34 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, TypeVertex, 
             outs.forEach(Edge::commit);
             ins.forEach(Edge::commit);
         }
-    }
 
+        public class BufferedDirectedTypeEdges extends DirectedTypeEdges {
+
+            BufferedDirectedTypeEdges(Direction direction) {
+                super(direction);
+            }
+
+            @Override
+            public Iterator<TypeVertex> get(Schema.Edge.Type schema) {
+                if (edges.get(schema) != null) return Iterators.apply(edges.get(schema).iterator(), Edge::to);
+                return Collections.emptyIterator();
+            }
+
+            @Override
+            public void remove(Schema.Edge.Type schema, TypeVertex adjacent) {
+                if (edges.containsKey(schema))
+                    edges.get(schema).parallelStream().filter(e -> e.to().equals(adjacent)).forEach(Edge::delete);
+            }
+
+            @Override
+            public void remove(Schema.Edge.Type schema) {
+                if (edges.containsKey(schema))
+                    edges.get(schema).parallelStream().forEach(Edge::delete);
+            }
+        }
+    }
     public static class Persisted extends TypeVertex {
+
 
         public Persisted(Graph.Type graph, byte[] iid, String label) {
             super(graph, Schema.Vertex.Type.of(iid[0]), iid, label);
@@ -275,23 +283,39 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, TypeVertex, 
                 Schema.Infix edgeInfix = direction.isOut() ? schema.out() : schema.in();
                 Function<TypeEdge, TypeVertex> vertexFn = direction.isOut() ? Edge::to : Edge::from;
 
-                Iterator<TypeEdge> persistedIterator = graph.storage().iterate(
+                Iterator<TypeEdge> storageIterator = graph.storage().iterate(
                         join(iid, edgeInfix.key()),
-                        (key, value) -> new TypeEdge.Persisted(graph, key)
+                        (iid, value) -> new TypeEdge.Persisted(graph, iid)
                 );
 
-                if (edges.get(schema) != null) return Iterators.link(edges.get(schema).iterator(), persistedIterator).apply(vertexFn);
-                else return Iterators.apply(persistedIterator, vertexFn);
+                if (edges.get(schema) != null) return Iterators.link(edges.get(schema).iterator(), storageIterator).apply(vertexFn);
+                else return Iterators.apply(storageIterator, vertexFn);
             }
 
             @Override
-            public TypeVertex remove(Schema.Edge.Type schema, TypeVertex to) {
-                return null;
+            public void remove(Schema.Edge.Type schema, TypeVertex adjacent) {
+                Optional<TypeEdge> container;
+                if (edges.containsKey(schema) && (container = edges.get(schema).stream().filter(e -> e.to().equals(adjacent)).findAny()).isPresent()) {
+                    edges.get(schema).remove(container.get());
+                } else {
+                    Schema.Infix infix = direction.isOut() ? schema.out() : schema.in();
+                    byte[] edgeIID = join(iid, infix.key(), adjacent.iid);
+                    if (graph.storage().get(edgeIID) != null) {
+                        (new TypeEdge.Persisted(graph, edgeIID)).delete();
+                    }
+                }
             }
 
             @Override
-            public TypeVertex remove(Schema.Edge.Type schema) {
-                return null;
+            public void remove(Schema.Edge.Type schema) {
+                if (edges.containsKey(schema))
+                    edges.get(schema).parallelStream().forEach(Edge::delete);
+
+                Iterator<TypeEdge> storageIterator = graph.storage().iterate(
+                        join(iid, direction.isOut() ? schema.out().key() : schema.in().key()),
+                        (iid, value) -> new TypeEdge.Persisted(graph, iid)
+                );
+                storageIterator.forEachRemaining(Edge::delete);
             }
         }
     }

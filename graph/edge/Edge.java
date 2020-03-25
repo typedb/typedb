@@ -21,21 +21,12 @@ package hypergraph.graph.edge;
 import hypergraph.graph.Schema;
 import hypergraph.graph.vertex.Vertex;
 
-import java.util.Arrays;
-import java.util.Objects;
-
 public abstract class Edge<EDGE_SCHEMA extends Schema.Edge, VERTEX extends Vertex> {
 
-    protected final byte[] iid;
     protected final EDGE_SCHEMA schema;
-    protected VERTEX from;
-    protected VERTEX to;
 
-    public Edge(byte[] iid, EDGE_SCHEMA schema, VERTEX from, VERTEX to) {
-        this.iid = iid;
+    public Edge(EDGE_SCHEMA schema) {
         this.schema = schema;
-        this.from = from;
-        this.to = to;
     }
 
     public EDGE_SCHEMA schema() {
@@ -44,26 +35,21 @@ public abstract class Edge<EDGE_SCHEMA extends Schema.Edge, VERTEX extends Verte
 
     public abstract Schema.Status status();
 
+    public abstract byte[] outIID();
+
+    public abstract byte[] inIID();
+
     public abstract VERTEX from();
 
     public abstract VERTEX to();
 
+    public abstract void delete();
+
     public abstract void commit();
 
     @Override
-    public boolean equals(Object object) {
-        if (this == object) return true;
-        if (object == null || getClass() != object.getClass()) return false;
-        Edge that = (Edge) object;
-        return (Arrays.equals(this.iid, that.iid) &&
-                this.schema.equals(that.schema) &&
-                this.from.equals(that.from) &&
-                this.to.equals(that.to));
-    }
+    public abstract boolean equals(Object object);
 
     @Override
-    public final int hashCode() {
-        return Objects.hash(Arrays.hashCode(iid), schema, from, to);
-    }
-
+    public abstract int hashCode();
 }

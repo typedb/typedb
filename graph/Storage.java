@@ -27,6 +27,8 @@ public interface Storage {
 
     byte[] get(byte[] key);
 
+    void delete(byte[] key);
+
     void put(byte[] key);
 
     void put(byte[] key, byte[] value);

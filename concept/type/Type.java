@@ -78,6 +78,7 @@ public abstract class Type {
         abstract TYPE getThis();
 
         public TYPE sup(TYPE parent) {
+            vertex.outs().remove(Schema.Edge.Type.SUB, this.parent.vertex);
             vertex.outs().add(Schema.Edge.Type.SUB, parent.vertex);
             this.parent = parent;
             return getThis();

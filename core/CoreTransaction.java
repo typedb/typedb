@@ -163,6 +163,18 @@ class CoreTransaction implements Hypergraph.Transaction {
         }
 
         @Override
+        public void delete(byte[] key) {
+            try {
+                readWriteLock.lockWrite();
+                rocksTransaction.delete(key);
+            } catch (RocksDBException | InterruptedException e) {
+                throw new HypergraphException(e);
+            } finally {
+                readWriteLock.unlockWrite();
+            }
+        }
+
+        @Override
         public void put(byte[] key) {
             put(key, EMPTY_ARRAY);
         }

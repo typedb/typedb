@@ -22,6 +22,8 @@ import hypergraph.graph.Graph;
 import hypergraph.graph.Schema;
 import hypergraph.graph.vertex.TypeVertex;
 
+import java.util.Arrays;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static hypergraph.graph.util.ByteArrays.join;
@@ -31,23 +33,37 @@ public abstract class TypeEdge extends Edge<Schema.Edge.Type, TypeVertex> {
 
     protected final Graph.Type graph;
 
-    TypeEdge(Graph.Type graph, byte[] iid, Schema.Edge.Type schema, TypeVertex from, TypeVertex to) {
-        super(iid, schema, from, to);
+    TypeEdge(Graph.Type graph, Schema.Edge.Type schema) {
+        super(schema);
         this.graph = graph;
     }
 
     public static class Buffered extends TypeEdge {
 
         private AtomicBoolean committed;
+        private final TypeVertex from;
+        private final TypeVertex to;
 
         public Buffered(Graph.Type graph, Schema.Edge.Type schema, TypeVertex from, TypeVertex to) {
-            super(graph, null, schema, from, to);
+            super(graph, schema);
+            this.from = from;
+            this.to = to;
             committed = new AtomicBoolean(false);
         }
 
         @Override
         public Schema.Status status() {
             return committed.get() ? Schema.Status.COMMITTED : Schema.Status.BUFFERED;
+        }
+
+        @Override
+        public byte[] outIID() {
+            return join(from().iid(), schema.out().key(), to().iid());
+        }
+
+        @Override
+        public byte[] inIID() {
+            return join(to().iid(), schema.in().key(), from().iid());
         }
 
         @Override
@@ -61,36 +77,79 @@ public abstract class TypeEdge extends Edge<Schema.Edge.Type, TypeVertex> {
         }
 
         @Override
+        public void delete() {
+            from.outs().removeNonRecursive(this);
+            to.ins().removeNonRecursive(this);
+        }
+
+        @Override
         public void commit() {
             if (committed.compareAndSet(false, true)) {
                 if (schema.out() != null) {
-                    graph.storage().put(join(from.iid(), schema.out().key(), to.iid()));
+                    graph.storage().put(outIID());
                 }
                 if (schema.in() != null) {
-                    graph.storage().put(join(to.iid(), schema.in().key(), from.iid()));
+                    graph.storage().put(inIID());
                 }
             }
+        }
+
+        @Override
+        public boolean equals(Object object) {
+            if (this == object) return true;
+            if (object == null || getClass() != object.getClass()) return false;
+            TypeEdge.Buffered that = (TypeEdge.Buffered) object;
+            return (this.schema.equals(that.schema) &&
+                    this.from.equals(that.from) &&
+                    this.to.equals(that.to));
+        }
+
+        @Override
+        public final int hashCode() {
+            return Objects.hash(schema, from, to);
         }
     }
 
     public static class Persisted extends TypeEdge {
 
-        private byte[] fromIID;
-        private byte[] toIID;
+        private final byte[] outIID;
+        private final byte[] inIID;
+        private final byte[] fromIID;
+        private final byte[] toIID;
+        private final AtomicBoolean isDeleted;
+
+        private TypeVertex from;
+        private TypeVertex to;
 
         public Persisted(Graph.Type graph, byte[] iid) {
-            super(graph, iid, Schema.Edge.Type.of(iid[Schema.IID.TYPE.length()]), null, null);
+            super(graph, Schema.Edge.Type.of(iid[Schema.IID.TYPE.length()]));
             byte[] start = copyOfRange(iid, 0, Schema.IID.TYPE.length());
             byte[] end = copyOfRange(iid, Schema.IID.TYPE.length() + 1, iid.length);
 
-            boolean isOut = Schema.Edge.isOut(iid[Schema.IID.TYPE.length()]);
-            fromIID = isOut ? start : end;
-            toIID = isOut ? end : start;
+            if (Schema.Edge.isOut(iid[Schema.IID.TYPE.length()])) {
+                fromIID = start; toIID = end; outIID = iid;
+                inIID = join(end, schema.in().key(), start);
+            } else {
+                fromIID = end; toIID = start; inIID = iid;
+                outIID = join(end, schema().out().key(), start);
+            }
+
+            isDeleted = new AtomicBoolean(false);
         }
 
         @Override
         public Schema.Status status() {
             return Schema.Status.PERSISTED;
+        }
+
+        @Override
+        public byte[] outIID() {
+            return outIID;
+        }
+
+        @Override
+        public byte[] inIID() {
+            return inIID;
         }
 
         @Override
@@ -108,6 +167,31 @@ public abstract class TypeEdge extends Edge<Schema.Edge.Type, TypeVertex> {
         }
 
         @Override
+        public void delete() {
+            if (isDeleted.compareAndSet(false, true)) {
+                if (from != null) from.outs().removeNonRecursive(this);
+                if (to != null) to.ins().removeNonRecursive(this);
+                graph.storage().delete(this.outIID);
+                graph.storage().delete(this.inIID);
+            }
+        }
+
+        @Override
         public void commit() {}
+
+        @Override
+        public boolean equals(Object object) {
+            if (this == object) return true;
+            if (object == null || getClass() != object.getClass()) return false;
+            TypeEdge.Persisted that = (TypeEdge.Persisted) object;
+            return (this.schema.equals(that.schema) &&
+                    Arrays.equals(this.fromIID, that.fromIID) &&
+                    Arrays.equals(this.toIID, that.toIID));
+        }
+
+        @Override
+        public final int hashCode() {
+            return Objects.hash(schema, Arrays.hashCode(fromIID), Arrays.hashCode(toIID));
+        }
     }
 }

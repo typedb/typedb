@@ -160,10 +160,7 @@ public class HypergraphTest {
                 }
 
                 try (Hypergraph.Transaction transaction = session.transaction(Hypergraph.Transaction.Type.READ)) {
-                    assertTrue(transaction.isOpen());
-                    assertEquals(CoreHypergraph.Transaction.Type.READ, transaction.type());
-
-//                    transaction.read().getConcept(...)
+                    assertTransactionRead(transaction);
                 }
             }
         }
@@ -181,16 +178,70 @@ public class HypergraphTest {
                 assertEquals("my_data_keyspace", session.keyspace().name());
 
                 try (Hypergraph.Transaction transaction = session.transaction(Hypergraph.Transaction.Type.READ)) {
-                    assertTrue(transaction.isOpen());
-                    assertEquals(CoreHypergraph.Transaction.Type.READ, transaction.type());
-                    assertNotNull(transaction.concepts().getRootType());
-                    assertNotNull(transaction.concepts().getRootEntityType());
-                    assertNotNull(transaction.concepts().getRootRelationType());
-                    assertNotNull(transaction.concepts().getRootAttributeType());
-//                    transaction.read().getConcept(...)
+                    assertTransactionRead(transaction);
                 }
             }
         }
+    }
+
+    private static void assertTransactionRead(Hypergraph.Transaction transaction) {
+        assertTrue(transaction.isOpen());
+        assertEquals(CoreHypergraph.Transaction.Type.READ, transaction.type());
+
+        Type rootType = transaction.concepts().getRootType();
+        EntityType rootEntityType = transaction.concepts().getRootEntityType();
+        RelationType rootRelationType = transaction.concepts().getRootRelationType();
+        AttributeType rootAttributeType = transaction.concepts().getRootAttributeType();
+        notNulls(rootType, rootEntityType, rootRelationType, rootAttributeType);
+
+        Stream<Consumer<Hypergraph.Transaction>> typeAssertions = Stream.of(
+                tx -> {
+                    AttributeType name = tx.concepts().getAttributeType("name");
+                    notNulls(name);
+                    assertEquals(name.sup(), rootAttributeType);
+                },
+                tx -> {
+                    AttributeType age = tx.concepts().getAttributeType("age");
+                    notNulls(age);
+                    assertEquals(age.sup(), rootAttributeType);
+                },
+                tx -> {
+                    RelationType marriage = tx.concepts().getRelationType("marriage");
+                    notNulls(marriage);
+                    assertEquals(marriage.sup(), rootRelationType);
+                },
+                tx -> {
+                    RelationType employment = tx.concepts().getRelationType("employment");
+                    notNulls(employment);
+                    assertEquals(employment.sup(), rootRelationType);
+                },
+                tx -> {
+                    EntityType person = tx.concepts().getEntityType("person");
+                    notNulls(person);
+                    assertEquals(person.sup(), rootEntityType);
+
+                    Stream<Consumer<Hypergraph.Transaction>> subPersonAssertions = Stream.of(
+                            tx2 -> {
+                                EntityType man = tx2.concepts().getEntityType("man");
+                                notNulls(man);
+                                assertEquals(man.sup(), person);
+                            },
+                            tx2 -> {
+                                EntityType woman = tx2.concepts().getEntityType("woman");
+                                notNulls(woman);
+                                assertEquals(woman.sup(), person);
+                            }
+                    );
+                    subPersonAssertions.parallel().forEach(assertions -> assertions.accept(tx));
+                },
+                tx -> {
+                    EntityType company = tx.concepts().getEntityType("company");
+                    notNulls(company);
+                    assertEquals(company.sup(), rootEntityType);
+                }
+        );
+
+        typeAssertions.parallel().forEach(assertion -> assertion.accept(transaction));
     }
 
     private static void notNulls(Object... objects) {
