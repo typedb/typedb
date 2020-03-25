@@ -28,6 +28,7 @@ import grakn.core.graql.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.graql.executor.ExecutorFactory;
+import grakn.core.kb.graql.executor.TraversalExecutor;
 import grakn.core.kb.graql.planning.gremlin.TraversalPlanFactory;
 import grakn.core.kb.graql.reasoner.cache.CacheEntry;
 import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
@@ -80,8 +81,8 @@ public abstract class SemanticCache<
 
     private static final Logger LOG = LoggerFactory.getLogger(SemanticCache.class);
 
-    SemanticCache(ExecutorFactory executorFactory, TraversalPlanFactory traversalPlanFactory) {
-        super(executorFactory, traversalPlanFactory);
+    SemanticCache(TraversalPlanFactory traversalPlanFactory, TraversalExecutor traversalExecutor) {
+        super(traversalPlanFactory, traversalExecutor);
     }
 
     @Override

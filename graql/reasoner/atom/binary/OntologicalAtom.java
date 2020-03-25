@@ -57,6 +57,7 @@ public class OntologicalAtom extends TypeAtom {
         HasAtom(HasAttributeTypeProperty.class, (v, label) -> var(v.first()).has(type(label.getValue()))),
         PlaysAtom(PlaysProperty.class, (v, label) -> var(v.first()).plays(var(v.second()))),
         SubAtom(SubProperty.class, (v, label) -> var(v.first()).sub(var(v.second()))),
+        SubDirectAtom(SubProperty.class, (v, label) -> var(v.first()).subX(var(v.second()))),
         RelatesAtom(RelatesProperty.class, (v, label) -> var(v.first()).relates(var(v.second())));
 
         private final Class<? extends VarProperty> property;

@@ -56,7 +56,7 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertThat;
 
 @SuppressWarnings({"CheckReturnValue", "Duplicates"})
-public class IsaExplicitIT {
+public class DirectIsaIT {
 
     @ClassRule
     public static final GraknTestStorage storage = new GraknTestStorage();

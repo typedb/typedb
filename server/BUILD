@@ -72,6 +72,7 @@ java_library(
         "@graknlabs_common//:common",
         "@graknlabs_protocol//grpc/java:protocol",
         "@graknlabs_benchmark//lib:server-instrumentation",
+        "@graknlabs_grabl_tracing//client",
 
         # External dependencies from Maven
         "//dependencies/maven/artifacts/org/apache/hadoop:hadoop-annotations",

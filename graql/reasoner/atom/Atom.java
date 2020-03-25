@@ -30,7 +30,6 @@ import grakn.core.graql.reasoner.atom.binary.RelationAtom;
 import grakn.core.graql.reasoner.atom.binary.TypeAtom;
 import grakn.core.graql.reasoner.atom.predicate.Predicate;
 import grakn.core.graql.reasoner.atom.predicate.VariablePredicate;
-import grakn.core.graql.reasoner.atom.task.relate.BasicSemanticProcessor;
 import grakn.core.graql.reasoner.atom.task.validate.AtomValidator;
 import grakn.core.graql.reasoner.atom.task.validate.BasicAtomValidator;
 import grakn.core.graql.reasoner.cache.SemanticDifference;
@@ -442,7 +441,5 @@ public abstract class Atom extends AtomicBase {
      * @param unifier    parent->child unifier
      * @return semantic difference between this and child defined in terms of this variables
      */
-    public SemanticDifference computeSemanticDifference(Atom childAtom, Unifier unifier) {
-        return new BasicSemanticProcessor().computeSemanticDifference(this, childAtom, unifier, ctx);
-    }
+    public abstract SemanticDifference computeSemanticDifference(Atom childAtom, Unifier unifier);
 }

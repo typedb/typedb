@@ -221,7 +221,13 @@ public class PropertyAtomicFactory {
 
     private Atomic sub(Variable var, SubProperty property, ReasonerQuery parent, Set<Statement> otherStatements) {
         Label label = getLabel(property.type().var(), property.type(), otherStatements, ctx.conceptManager());
-        return OntologicalAtom.create(var, property.type().var(), label, parent, OntologicalAtom.OntologicalAtomType.SubAtom, ctx);
+        boolean isDirect = property.isExplicit();
+        if (isDirect) {
+            return OntologicalAtom.create(var, property.type().var(), label, parent, OntologicalAtom.OntologicalAtomType.SubDirectAtom, ctx);
+        } else {
+            return OntologicalAtom.create(var, property.type().var(), label, parent, OntologicalAtom.OntologicalAtomType.SubAtom, ctx);
+        }
+
     }
 
     private Atomic relates(Variable var, RelatesProperty property, ReasonerQuery parent, Set<Statement> otherStatements) {

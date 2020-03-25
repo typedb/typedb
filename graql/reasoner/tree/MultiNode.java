@@ -23,6 +23,9 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Stream;
 
+/**
+ *
+ */
 public class MultiNode extends Node{
     private final Set<Node> nodes = new HashSet<>();
 

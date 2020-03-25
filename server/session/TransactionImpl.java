@@ -133,7 +133,6 @@ public class TransactionImpl implements Transaction {
     // reaching across threads in a single threaded janus transaction leads to errors
     private final ThreadLocal<Boolean> createdInCurrentThread = ThreadLocal.withInitial(() -> Boolean.FALSE);
 
-    protected final TraversalPlanFactory traversalPlanFactory;
     protected final JanusTraversalSourceProvider janusTraversalSourceProvider;
     protected final ReasonerQueryFactory reasonerQueryFactory;
     private final ReadWriteLock graphLock;
@@ -142,7 +141,7 @@ public class TransactionImpl implements Transaction {
                            JanusTraversalSourceProvider janusTraversalSourceProvider, TransactionCache transactionCache,
                            MultilevelSemanticCache queryCache, RuleCache ruleCache,
                            StatisticsDeltaImpl statisticsDelta, ExecutorFactory executorFactory,
-                           TraversalPlanFactory traversalPlanFactory, ReasonerQueryFactory reasonerQueryFactory,
+                            ReasonerQueryFactory reasonerQueryFactory,
                            ReadWriteLock graphLock, long typeShardThreshold) {
         createdInCurrentThread.set(true);
 
@@ -154,7 +153,6 @@ public class TransactionImpl implements Transaction {
 
         this.conceptManager = conceptManager;
         this.executorFactory = executorFactory;
-        this.traversalPlanFactory = traversalPlanFactory;
         this.reasonerQueryFactory = reasonerQueryFactory;
 
         this.transactionCache = transactionCache;

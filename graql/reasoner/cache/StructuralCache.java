@@ -26,6 +26,7 @@ import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
 import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.graql.executor.ExecutorFactory;
+import grakn.core.kb.graql.executor.TraversalExecutor;
 import grakn.core.kb.graql.planning.gremlin.GraqlTraversal;
 import grakn.core.kb.graql.planning.gremlin.TraversalPlanFactory;
 import grakn.core.kb.graql.reasoner.cache.CacheEntry;
@@ -49,12 +50,12 @@ public class StructuralCache<Q extends ReasonerQueryImpl>{
 
     private final ReasonerQueryEquivalence equivalence = ReasonerQueryEquivalence.StructuralEquivalence;
     private final Map<Equivalence.Wrapper<Q>, CacheEntry<Q, GraqlTraversal>> structCache;
-    private ExecutorFactory executorFactory;
     private TraversalPlanFactory traversalPlanFactory;
+    private TraversalExecutor traversalExecutor;
 
-    StructuralCache(ExecutorFactory executorFactory, TraversalPlanFactory traversalPlanFactory){
-        this.executorFactory = executorFactory;
+    StructuralCache(TraversalPlanFactory traversalPlanFactory, TraversalExecutor traversalExecutor){
         this.traversalPlanFactory = traversalPlanFactory;
+        this.traversalExecutor = traversalExecutor;
         this.structCache = new HashMap<>();
     }
 
@@ -75,7 +76,7 @@ public class StructuralCache<Q extends ReasonerQueryImpl>{
 
             ReasonerQueryImpl transformedQuery = equivalentQuery.transformIds(idTransform);
 
-            return executorFactory.transactional(true).traverse(transformedQuery.getPattern(), traversal.transform(idTransform))
+            return traversalExecutor.traverse(transformedQuery.getPattern(), traversal.transform(idTransform))
                     .map(unifier::apply)
                     .map(a -> a.explain(new LookupExplanation(), query.getPattern()));
         }
@@ -83,7 +84,7 @@ public class StructuralCache<Q extends ReasonerQueryImpl>{
         GraqlTraversal traversal = traversalPlanFactory.createTraversal(query.getPattern());
         structCache.put(structQuery, new CacheEntry<>(query, traversal));
 
-        return executorFactory.transactional(true).traverse(query.getPattern(), traversal)
+        return traversalExecutor.traverse(query.getPattern(), traversal)
                 .map(a -> a.explain(new LookupExplanation(), query.getPattern()));
     }
 
