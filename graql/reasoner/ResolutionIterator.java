@@ -128,7 +128,7 @@ public class ResolutionIterator extends ReasonerQueryIterator {
         if (reiterate()) {
             long dAns = answers.size() - oldAns;
             if (dAns != 0 || iter == 0) {
-                LOG.info("iter: {} answers: {} dAns = {} time = {}", iter, answers.size(), dAns, System.currentTimeMillis() - startTime);
+                LOG.debug("iter: {} answers: {} dAns = {} time = {}", iter, answers.size(), dAns, System.currentTimeMillis() - startTime);
                 iter++;
                 states.push(query.resolutionState(new ConceptMap(), new UnifierImpl(), null, new HashSet<>()));
 

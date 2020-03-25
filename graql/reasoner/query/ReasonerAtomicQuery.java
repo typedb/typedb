@@ -255,7 +255,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                 .iterator();
 
         Iterator<ResolutionState> dbCompletionIterator =
-                Iterators.singletonIterator(new CacheCompletionState(queryCache, this, new ConceptMap(), parent));
+                Iterators.singletonIterator(new CacheCompletionState(queryCache, this, new ConceptMap(), null));
 
         boolean visited = visitedSubGoals.contains(this);
         //if this is ground and exists in the db then do not resolve further
