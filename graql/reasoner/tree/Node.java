@@ -19,36 +19,42 @@
 package grakn.core.graql.reasoner.tree;
 
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.graql.reasoner.state.ResolutionState;
-import java.util.ArrayList;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Stream;
 
-public abstract class Node {
-    private final LinkedHashSet<Node> children = new LinkedHashSet<>();
-    private final LinkedHashSet<ConceptMap> answers = new LinkedHashSet<>();
-    private long totalTime;
+public interface Node {
 
-    public abstract Stream<ResolutionState> getStates();
+    /**
+     * @param child node to be added as a child of this node.
+     */
+    void addChild(Node child);
 
-    public void addChild(Node child){
-        child.getStates().forEach(state -> children.add(child));
-    }
+    /**
+     * @param answer to be associated with this node.
+     */
+    void addAnswer(ConceptMap answer);
 
-    public void addAnswer(ConceptMap answer){
-        answers.add(answer);
-    }
 
-    public long totalTime(){ return totalTime;}
-    public void updateTime(long extraTime){ totalTime += extraTime;}
+    /**
+     *
+     * @return total time spent on processing the state corresponding to this node
+     */
+    long totalTime();
 
-    public List<Node> children(){ return new ArrayList<>(children);}
-    public Set<ConceptMap> answers(){ return answers;}
-    public abstract void ackCompletion();
-    public boolean isMultiNode(){ return false;}
+    /**
+     *
+     * @return children nodes of this node
+     */
+    List<Node> children();
 
-    public MultiNode asMultiNode(){ throw new UnsupportedOperationException();}
+    /**
+     *
+     * @return answer associated with this node (corresponding state)
+     */
+    Set<ConceptMap> answers();
 
+    /**
+     * Acknowledge completion of processing of this node.
+     */
+    void ackCompletion();
 }

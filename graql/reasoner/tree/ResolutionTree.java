@@ -34,7 +34,7 @@ public class ResolutionTree {
     private final Map<ResolutionState, Node> mapping = new HashMap<>();
 
     public ResolutionTree(ResolutionState rootState){
-        this.rootNode = new NodeSingle(rootState);
+        this.rootNode = new NodeImpl(rootState);
         mapping.put(rootState, rootNode);
     }
 
@@ -46,20 +46,6 @@ public class ResolutionTree {
         return new HashSet<>(mapping.values());
     }
 
-    public Node addChildToNode(ResolutionState parent, ResolutionState child){
-        Node parentMatch = mapping.get(parent);
-        Node childMatch = mapping.get(child);
-        Node parentNode = parentMatch != null? parentMatch : createNode(parent);
-        Node childNode = childMatch != null? childMatch : createNode(child);
-
-        if (childNode == null || parentNode == null) return null;
-
-        parentNode.addChild(childNode);
-        if (parentMatch == null) mapping.put(parent, parentNode);
-        if (childMatch == null ) mapping.put(child, childNode);
-        return childNode;
-    }
-
     public void clear(){
         mapping.clear();
     }
@@ -68,8 +54,16 @@ public class ResolutionTree {
         TreeUpdater.updateTree(state, this);
     }
 
-    private Node createNode(ResolutionState state){
-        return TreeUpdater.createNode(state);
+    Node addChildToNode(ResolutionState parent, ResolutionState child){
+        Node parentMatch = mapping.get(parent);
+        Node childMatch = mapping.get(child);
+        Node parentNode = parentMatch != null? parentMatch : new NodeImpl(parent);
+        Node childNode = childMatch != null? childMatch : new NodeImpl(child);
+
+        parentNode.addChild(childNode);
+        if (parentMatch == null) mapping.put(parent, parentNode);
+        if (childMatch == null ) mapping.put(child, childNode);
+        return childNode;
     }
 }
 

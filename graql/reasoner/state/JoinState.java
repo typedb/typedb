@@ -39,17 +39,14 @@ import java.util.stream.Collectors;
 public class JoinState extends AnswerPropagatorState<ReasonerQueryImpl> {
 
     private final LinkedList<ReasonerQueryImpl> subQueries;
-    private final AnswerPropagatorState conjunctiveStateParent;
 
     public JoinState(List<ReasonerQueryImpl> qs,
                      ConceptMap sub,
                      Unifier u,
-                     AnswerPropagatorState immediateParent,
-                     AnswerPropagatorState CSParent,
+                     AnswerPropagatorState parent,
                      Set<ReasonerAtomicQuery> subGoals) {
-        super(Iterables.getFirst(qs, null), sub, u, immediateParent, subGoals);
+        super(Iterables.getFirst(qs, null), sub, u, parent, subGoals);
         this.subQueries = new LinkedList<>(qs);
-        this.conjunctiveStateParent = CSParent;
         subQueries.removeFirst();
     }
 
@@ -80,8 +77,9 @@ public class JoinState extends AnswerPropagatorState<ReasonerQueryImpl> {
                 merged.getPattern());
 
         if (answer.isEmpty()) return null;
-        if (subQueries.isEmpty()) return new AnswerState(answer, getUnifier(), conjunctiveStateParent);
-        return new JoinState(subQueries, answer, getUnifier(), getParentState(), conjunctiveStateParent, getVisitedSubGoals());
+        //NB: if we know that it is a final answer we pass it directly to the conjunctive query
+        if (subQueries.isEmpty()) return new AnswerState(answer, getUnifier(), getParentState());
+        return new JoinState(subQueries, answer, getUnifier(), getParentState(), getVisitedSubGoals());
     }
 
     @Override
