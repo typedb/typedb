@@ -94,7 +94,7 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
 
     @Override
     public Stream<Thing> rolePlayers(Role... roles) {
-        return castingsRelation(roles).map(Casting::getRolePlayer).distinct();
+        return castingsRelation(roles).map(Casting::getRolePlayer);//.distinct();
     }
 
     void removeRolePlayer(Role role, Thing thing) {
