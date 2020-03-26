@@ -46,8 +46,7 @@ public class ManagedReadWriteLock {
         boolean hasLock = false;
 
         public boolean block() {
-            if (!hasLock)
-                reentrantLock.readLock().lock();
+            if (!hasLock) reentrantLock.readLock().lock();
             return true;
         }
 
@@ -65,8 +64,7 @@ public class ManagedReadWriteLock {
         boolean hasLock = false;
 
         public boolean block() {
-            if (!hasLock)
-                reentrantLock.writeLock().lock();
+            if (!hasLock) reentrantLock.writeLock().lock();
             return true;
         }
 
