@@ -18,8 +18,12 @@
 
 package grakn.core.graql.reasoner.atom.task.materialise;
 
+import com.google.common.collect.HashMultiset;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Multimap;
+import com.google.common.collect.Multiset;
+import com.google.common.collect.Multisets;
+import com.google.common.collect.TreeMultiset;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.CacheCasting;
 import grakn.core.graql.reasoner.ReasoningContext;
@@ -31,11 +35,14 @@ import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.Relation;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
+import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.concept.manager.ConceptManager;
 import graql.lang.statement.Variable;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class RelationMaterialiser implements AtomMaterialiser<RelationAtom> {
@@ -64,7 +71,15 @@ public class RelationMaterialiser implements AtomMaterialiser<RelationAtom> {
 
         //NB: this will potentially reify existing implicit relationships
         roleVarMap.asMap()
-                .forEach((key, value) -> value.forEach(var -> relation.assign(key, substitution.get(var).asThing())));
+                .forEach((role, variables) -> {
+                    Multiset<Thing> existingPlayers = relation.rolePlayers(role).collect(Multisets.toMultiset(i -> i, i -> 1, HashMultiset::create));
+                    Multiset<Thing> requiredPlayers = HashMultiset.create();
+                    variables.forEach(var -> requiredPlayers.add(substitution.get(var).asThing()));
+                    Multisets.removeOccurrences(requiredPlayers, existingPlayers);
+
+                    requiredPlayers.forEach(newPlayer -> relation.assign(role, newPlayer));
+                });
+//                .forEach((role, variables) -> variables.forEach(var -> relation.assign(role, substitution.get(var).asThing())));
 
         ConceptMap relationSub = AnswerUtil.joinAnswers(
                 getRoleSubstitution(atom, ctx),
