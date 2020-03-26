@@ -34,7 +34,7 @@
         <appender-ref ref="STDOUT"/>
     </logger>
 
-    <logger name="grakn.core.graql.reasoner" level="TRACE">
+    <logger name="grakn.core.graql.reasoner" level="TRACE" additivity="false">
         <appender-ref ref="STDOUT"/>
     </logger>
 
