@@ -319,6 +319,12 @@ public class OntologicalQueryIT {
             //2 x ternary,
             //7 (3 reflexive) x reifying-relation
             //3 x has-description resource relation
+            System.out.println(answers);
+            answers.stream().forEach(ans -> {
+                Relation x = ans.get("x").asRelation();
+                List<Thing> players = x.rolePlayers().collect(Collectors.toList());
+                System.out.println("Instance " + x);
+            });
             assertEquals(13, answers.size());
 
 //            List<ConceptMap> reified = tx.execute(Graql.parse("match $x isa reifying-relation; get;").asGet());
