@@ -16,27 +16,25 @@
 #
 
 load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
+
 package(
     default_visibility = [
         "//:__pkg__",
-        "//core:__pkg__",
         "//cluster:__pkg__",
+        "//core:__pkg__",
         "//test:__subpackages__",
-    ]
+    ],
 )
 
 java_library(
     name = "traversal",
     srcs = glob(["*.java"]),
-    deps = [
-        "//common:common",
-        "//concept:concept",
-    ],
+    deps = ["//concept"],
 )
 
 checkstyle_test(
     name = "checkstyle",
     targets = [
         ":traversal",
-    ]
+    ],
 )
