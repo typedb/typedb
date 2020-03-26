@@ -63,15 +63,6 @@ jobs:
       - run-bazel-rbe:
           command: bazel test //test/integration/hypergraph:test-hypergraph --test_output=errors
 
-  test-connection:
-    machine: true
-    working_directory: ~/hypergraph
-    steps:
-      - install-bazel-linux-rbe
-      - checkout
-      - run-bazel-rbe:
-          command: bazel test //test/integration/hypergraph:test-connection --test_output=errors
-
   test-keyspace:
     machine: true
     working_directory: ~/hypergraph
@@ -123,7 +114,6 @@ workflows:
       - build
       - build-checkstyle
       - test-hypergraph
-      - test-connection
       - test-keyspace
       - test-session
       - test-transaction

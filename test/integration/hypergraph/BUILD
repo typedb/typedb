@@ -29,12 +29,6 @@ java_test(
 )
 
 java_test(
-    name = "test-connection",
-    srcs = ["ConnectionTest.java"],
-    test_class = "hypergraph.ConnectionTest",
-)
-
-java_test(
     name = "test-keyspace",
     srcs = [
         "KeyspaceTest.java",
@@ -70,7 +64,6 @@ checkstyle_test(
     name = "checkstyle",
     targets = [
         ":test-hypergraph",
-        ":test-connection",
         ":test-keyspace",
         ":test-session",
         ":test-transaction",
