@@ -36,9 +36,11 @@ import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 
 import javax.annotation.Nullable;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -81,13 +83,13 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
     }
 
     @Override
-    public Map<Role, Set<Thing>> allRolePlayers() {
-        HashMap<Role, Set<Thing>> roleMap = new HashMap<>();
+    public Map<Role, List<Thing>> allRolePlayers() {
+        HashMap<Role, List<Thing>> roleMap = new HashMap<>();
 
         //We add the role types explicitly so we can return them when there are no roleplayers
-        type().roles().forEach(roleType -> roleMap.put(roleType, new HashSet<>()));
+        type().roles().forEach(roleType -> roleMap.put(roleType, new ArrayList<Thing>()));
         //All castings are used here because we need to iterate over all of them anyway
-        castingsRelation().forEach(rp -> roleMap.computeIfAbsent(rp.getRole(), (k) -> new HashSet<>()).add(rp.getRolePlayer()));
+        castingsRelation().forEach(rp -> roleMap.computeIfAbsent(rp.getRole(), (k) -> new ArrayList<>()).add(rp.getRolePlayer()));
 
         return roleMap;
     }
@@ -170,7 +172,7 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
     public String innerToString() {
         StringBuilder description = new StringBuilder();
         description.append("ID [").append(id()).append("] Type [").append(type().label()).append("] Roles and Role Players: \n");
-        for (Map.Entry<Role, Set<Thing>> entry : allRolePlayers().entrySet()) {
+        for (Map.Entry<Role, List<Thing>> entry : allRolePlayers().entrySet()) {
             if (entry.getValue().isEmpty()) {
                 description.append("    Role [").append(entry.getKey().label()).append("] not played by any instance \n");
             } else {

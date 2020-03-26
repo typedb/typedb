@@ -19,8 +19,8 @@
 package grakn.core.kb.concept.api;
 
 import javax.annotation.CheckReturnValue;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Stream;
 
 /**
@@ -59,7 +59,7 @@ public interface Relation extends Thing {
      * see Role
      */
     @CheckReturnValue
-    Map<Role, Set<Thing>> rolePlayersMap();
+    Map<Role, List<Thing>> rolePlayersMap();
 
     /**
      * Retrieves a list of every Thing involved in the Relation, filtered by Role played.

@@ -269,7 +269,7 @@ public class AttributeIT {
         assertThat(relationStructureBefore, instanceOf(RelationEdge.class));
 
         //Get the roles and role players via the relation edge:
-        Map<Role, Set<Thing>> allRolePlayerBefore = relationStructureBefore.allRolePlayers();
+        Map<Role, List<Thing>> allRolePlayerBefore = relationStructureBefore.allRolePlayers();
 
         //Expand Schema to allow new role
         Role newRole = tx.putRole("My New Role");

@@ -22,7 +22,9 @@ import com.google.common.collect.Sets;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.kb.concept.api.EntityType;
 import grakn.core.kb.concept.api.Label;
+import grakn.core.kb.concept.api.Relation;
 import grakn.core.kb.concept.api.RelationType;
+import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import grakn.core.rule.GraknTestServer;
@@ -37,6 +39,7 @@ import org.junit.rules.ExpectedException;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static grakn.core.util.GraqlTestUtil.assertCollectionsNonTriviallyEqual;
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
@@ -308,7 +311,7 @@ public class OntologicalQueryIT {
         try(Transaction tx = session.readTransaction()) {
             String queryString = "match $x isa relation;get;";
 
-            List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());
+//            List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());
 
             //TODO? doesn't pick up attribute relations
             //one implicit,
@@ -316,7 +319,14 @@ public class OntologicalQueryIT {
             //2 x ternary,
             //7 (3 reflexive) x reifying-relation
             //3 x has-description resource relation
-            assertEquals(13, answers.size());
+//            assertEquals(13, answers.size());
+
+            List<ConceptMap> reified = tx.execute(Graql.parse("match $x isa reifying-relation; get;").asGet());
+            reified.stream().forEach(ans -> {
+                Relation x = ans.get("x").asRelation();
+                List<Thing> players = x.rolePlayers().collect(Collectors.toList());
+                System.out.println("Instance " + x);
+            });
         }
     }
 
