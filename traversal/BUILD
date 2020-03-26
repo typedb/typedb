@@ -20,7 +20,8 @@ package(
     default_visibility = [
         "//:__pkg__",
         "//core:__pkg__",
-        "//cluster:__pkg__"
+        "//cluster:__pkg__",
+        "//test:__subpackages__",
     ]
 )
 

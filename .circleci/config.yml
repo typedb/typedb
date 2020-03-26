@@ -1,0 +1,121 @@
+#
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+#
+
+version: 2.1
+commands:
+  install-bazel-linux-rbe:
+    steps:
+      - run: curl -OL https://raw.githubusercontent.com/graknlabs/build-tools/master/ci/install-bazel-linux.sh
+      - run: bash ./install-bazel-linux.sh && rm ./install-bazel-linux.sh
+      - run: curl -OL https://raw.githubusercontent.com/graknlabs/build-tools/master/ci/install-bazel-rbe.sh
+      - run: bash ./install-bazel-rbe.sh && rm ./install-bazel-rbe.sh
+
+  run-bazel-rbe:
+    parameters:
+      command:
+        type: string
+    steps:
+      - run: bazel run @graknlabs_build_tools//ci:run-bazel-rbe -- << parameters.command >>
+
+jobs:
+  build:
+    machine: true
+    working_directory: ~/hypergraph
+    steps:
+      - install-bazel-linux-rbe
+      - checkout
+      - run-bazel-rbe:
+          command: bazel build //...
+      - run: bazel run @graknlabs_build_tools//unused_deps -- list
+
+  build-checkstyle:
+    machine: true
+    working_directory: ~/hypergraph
+    steps:
+      - install-bazel-linux-rbe
+      - checkout
+      - run: bazel run @graknlabs_build_tools//checkstyle:test-coverage
+      - run-bazel-rbe:
+          command: bazel test $(bazel query 'kind(checkstyle_test, //...)')
+
+  test-connection:
+    machine: true
+    working_directory: ~/hypergraph
+    steps:
+      - install-bazel-linux-rbe
+      - checkout
+      - run-bazel-rbe:
+          command: bazel test //test/integration/hypergraph:test-connection --test_output=errors
+
+  test-keyspace:
+    machine: true
+    working_directory: ~/hypergraph
+    steps:
+      - install-bazel-linux-rbe
+      - checkout
+      - run-bazel-rbe:
+          command: bazel test //test/integration/hypergraph:test-keyspace --test_output=errors
+
+  test-session:
+    machine: true
+    working_directory: ~/hypergraph
+    steps:
+      - install-bazel-linux-rbe
+      - checkout
+      - run-bazel-rbe:
+          command: bazel test //test/integration/hypergraph:test-session --test_output=errors
+
+  test-transaction:
+    machine: true
+    working_directory: ~/hypergraph
+    steps:
+      - install-bazel-linux-rbe
+      - checkout
+      - run-bazel-rbe:
+          command: bazel test //test/integration/hypergraph:test-transaction --test_output=errors
+
+  test-concept:
+    machine: true
+    working_directory: ~/hypergraph
+    steps:
+      - install-bazel-linux-rbe
+      - checkout
+      - run-bazel-rbe:
+          command: bazel test //test/integration/hypergraph:test-concept --test_output=errors
+
+  test-traversal:
+    machine: true
+    working_directory: ~/hypergraph
+    steps:
+      - install-bazel-linux-rbe
+      - checkout
+      - run-bazel-rbe:
+          command: bazel test //test/integration/hypergraph:test-traversal --test_output=errors
+
+workflows:
+  hypergraph:
+    jobs:
+      - build
+      - build-checkstyle
+      - test-connection
+      - test-keyspace
+      - test-session
+      - test-transaction
+      - test-concept
+      - test-traversal
