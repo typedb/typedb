@@ -1027,8 +1027,7 @@ public class GraknClientIT {
             ImmutableMap<grakn.core.kb.concept.api.Role, ImmutableList<?>> expectedRolePlayers =
                     ImmutableMap.of(chaser, ImmutableList.of(dunstan), chased, ImmutableList.of());
 
-            Map<grakn.core.kb.concept.api.Role, List<grakn.core.kb.concept.api.Thing>> roleListMap = aChase.rolePlayersMap();
-            assertEquals(expectedRolePlayers, roleListMap);
+            assertEquals(expectedRolePlayers, aChase.rolePlayersMap(););
 
             assertEquals("(good|bad)-dog", id.regex());
 

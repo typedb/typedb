@@ -108,17 +108,6 @@ public class GraqlGetIT {
 
 
     @Test
-    public void test() {
-        List<ConceptMap> answers = tx.execute(Graql.parse("insert $x isa person; $r (actor: $x, actor: $x) isa has-cast;").asInsert());
-        tx.commit();
-        newTransaction();
-        System.out.println(answers);
-        List<ConceptMap> answersGet = tx.execute(Graql.parse("match $r (actor: $x, actor: $y) isa has-cast; $r id " + answers.get(0).get("r").id() + "; get;").asGet());
-        System.out.println(answersGet);
-    }
-
-
-    @Test
     public void testGetSortAscLimit() {
         List<ConceptMap> answers = tx.execute(
                 Graql.match(var("x").isa("person").has("name", var("y")))

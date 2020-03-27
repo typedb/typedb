@@ -96,7 +96,7 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
 
     @Override
     public Stream<Thing> rolePlayers(Role... roles) {
-        return castingsRelation(roles).map(Casting::getRolePlayer);//.distinct();
+        return castingsRelation(roles).map(Casting::getRolePlayer);
     }
 
     void removeRolePlayer(Role role, Thing thing) {
@@ -108,43 +108,17 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
                 });
     }
 
-    public void addRolePlayer(Role role, Thing thing) {
+    void addRolePlayer(Role role, Thing thing) {
         Objects.requireNonNull(role);
         Objects.requireNonNull(thing);
 
         if (Schema.MetaSchema.isMetaLabel(role.label())) throw GraknConceptException.metaTypeImmutable(role.label());
 
         //Do the actual put of the role and role player
-        putRolePlayerEdge(role, thing);
-    }
-
-    /**
-     * If the edge does not exist then it adds a Schema.EdgeLabel#ROLE_PLAYER edge from
-     * this Relation to a target Thing which is playing some Role.
-     * If the edge does exist nothing is done.
-     *
-     * @param role    The Role being played by the Thing in this Relation
-     * @param toThing The Thing playing a Role in this Relation
-     */
-    public void putRolePlayerEdge(Role role, Thing toThing) {
-        //Checking if the edge exists
-        boolean rolePlayerEdgeExists = vertex()
-                .rolePlayerEdgeExists(
-                        elementId().toString(),
-                        type(),
-                        role,
-                        ConceptVertex.from(toThing).elementId().toString()
-                );
-
-//        if (rolePlayerEdgeExists) {
-//            return;
-//        }
-
-        //Role player edge does not exist create a new one
-        EdgeElement edge = this.addEdge(ConceptVertex.from(toThing), Schema.EdgeLabel.ROLE_PLAYER);
+        EdgeElement edge = this.addEdge(ConceptVertex.from(thing), Schema.EdgeLabel.ROLE_PLAYER);
         edge.property(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID, this.type().labelId().getValue());
         edge.property(Schema.EdgeProperty.ROLE_LABEL_ID, role.labelId().getValue());
-        Casting casting = CastingImpl.create(edge, owner, role, toThing, conceptManager);
+        Casting casting = CastingImpl.create(edge, owner, role, thing, conceptManager);
         conceptNotificationChannel.rolePlayerCreated(casting);
     }
 
