@@ -27,13 +27,13 @@ import grakn.core.graql.reasoner.tree.Node;
 import grakn.core.graql.reasoner.tree.ResolutionTree;
 import grakn.core.graql.reasoner.unifier.UnifierImpl;
 import grakn.core.kb.graql.reasoner.cache.QueryCache;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import java.nio.file.Paths;
 import java.util.HashSet;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.Stack;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -79,13 +79,17 @@ public class ResolutionIterator extends ReasonerQueryIterator {
 
             ResolutionState newState = state.generateChildState();
             if (newState != null) {
-                logTree.updateTree(newState);
+                if (LOG.isTraceEnabled()) logTree.updateTree(newState);
 
                 if (!state.isAnswerState()) states.push(state);
                 states.push(newState);
             } else {
-                Node node = logTree.getNode(state);
-                if (node != null) node.ackCompletion();
+
+                if (LOG.isTraceEnabled()) {
+                    Node node = logTree.getNode(state);
+                    if (node != null) node.ackCompletion();
+                }
+
 
                 LOG.trace("new state: NULL");
             }
@@ -141,6 +145,8 @@ public class ResolutionIterator extends ReasonerQueryIterator {
         MultilevelSemanticCache queryCache = CacheCasting.queryCacheCast(this.queryCache);
         subGoals.forEach(queryCache::ackCompleteness);
         queryCache.propagateAnswers();
+
+        if (LOG.isTraceEnabled()) logTree.outputToFile(Paths.get("/tmp/query.profile"));
 
         return false;
     }

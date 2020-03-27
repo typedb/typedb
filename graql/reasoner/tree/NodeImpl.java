@@ -41,6 +41,11 @@ public class NodeImpl implements Node{
     }
 
     @Override
+    public String graphString() {
+        return "label=\"" + toString() + "\"";
+    }
+
+    @Override
     public String toString(){
         return state.getClass().getSimpleName() +
                 "@" + Integer.toHexString(state.hashCode()) +

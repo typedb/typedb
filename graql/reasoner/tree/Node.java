@@ -23,6 +23,9 @@ import java.util.Set;
 
 public interface Node {
 
+
+    String graphString();
+
     /**
      * @param child node to be added as a child of this node.
      */

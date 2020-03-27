@@ -21,6 +21,8 @@ package grakn.core.graql.reasoner.tree;
 
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.state.ResolutionState;
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -34,9 +36,11 @@ public class ResolutionTree {
     private final Node rootNode;
     private final Map<ResolutionState, Node> mapping = new HashMap<>();
 
+    private int nextId = 0;
+    private final Map<Node, Integer> ids = new HashMap<>();
+
     public ResolutionTree(ResolutionState rootState){
-        this.rootNode = new NodeImpl(rootState);
-        mapping.put(rootState, rootNode);
+        this.rootNode = putNode(rootState);
     }
 
     public Node getNode(ResolutionState state){
@@ -66,16 +70,29 @@ public class ResolutionTree {
         }
     }
 
-    Node addChildToNode(ResolutionState parent, ResolutionState child){
-        Node parentMatch = mapping.get(parent);
-        Node childMatch = mapping.get(child);
-        Node parentNode = parentMatch != null? parentMatch : new NodeImpl(parent);
-        Node childNode = childMatch != null? childMatch : new NodeImpl(child);
+    private Node putNode(ResolutionState state){
+        Node match = mapping.get(state);
+        Node node = match != null? match : new NodeImpl(state);
 
+        if (match == null){
+            mapping.put(state, node);
+            ids.put(node, nextId++);
+        }
+        return node;
+    }
+
+    private void addChildToNode(ResolutionState parent, ResolutionState child){
+        Node parentNode = putNode(parent);
+        Node childNode = putNode(child);
         parentNode.addChild(childNode);
-        if (parentMatch == null) mapping.put(parent, parentNode);
-        if (childMatch == null ) mapping.put(child, childNode);
-        return childNode;
+    }
+
+    public void outputToFile(Path outputPath) {
+        try {
+            new TreeWriter(outputPath).write(rootNode, ids);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }
 
