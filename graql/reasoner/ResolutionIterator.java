@@ -79,7 +79,7 @@ public class ResolutionIterator extends ReasonerQueryIterator {
 
             ResolutionState newState = state.generateChildState();
             if (newState != null) {
-                if (LOG.isTraceEnabled()) logTree.updateTree(newState);
+                if (LOG.isTraceEnabled()) logTree.addState(newState);
 
                 if (!state.isAnswerState()) states.push(state);
                 states.push(newState);

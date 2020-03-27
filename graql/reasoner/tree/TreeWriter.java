@@ -29,6 +29,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
 
+/**
+ * Writer class to output ResolutionTree to a file in Graph Description Language format (https://en.wikipedia.org/wiki/DOT_(graph_description_language))
+ */
 public class TreeWriter {
 
     private Path filePath;

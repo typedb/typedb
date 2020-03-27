@@ -29,6 +29,11 @@ import java.util.Map;
 import java.util.Set;
 
 /**
+ * Container class for holding the full resolution tree traversed in ResolutionIterator. The tree is built from nodes that
+ * are built from ResolutionStates. In addition to state information we additionally store:
+ * 
+ * - time required for processing of a state
+ * - the answers processing of a state leads to
  *
  */
 public class ResolutionTree {
@@ -55,7 +60,7 @@ public class ResolutionTree {
         mapping.clear();
     }
 
-    public void updateTree(ResolutionState state) {
+    public void addState(ResolutionState state) {
         ResolutionState parent = state.getParentState();
         if (parent == null) return;
 
