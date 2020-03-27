@@ -21,6 +21,7 @@ package grakn.core.graql.reasoner.state;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.rule.InferenceRule;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
+import java.util.Objects;
 
 /**
  *
@@ -43,6 +44,20 @@ public class AnswerState extends ResolutionState {
         super(sub, parent);
         this.unifier = u;
         this.rule = rule;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        AnswerState that = (AnswerState) o;
+        return Objects.equals(getSubstitution(), that.getSubstitution()) &&
+                Objects.equals(unifier, that.unifier);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(getSubstitution(), unifier);
     }
 
     @Override
