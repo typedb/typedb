@@ -67,6 +67,7 @@ import graql.lang.statement.Variable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -186,10 +187,21 @@ public class RelationAtom extends Atom {
     }
 
     @Override
-    public Set<Atom> rewriteToAtoms() {
-        return this.getRelationPlayers().stream()
-                .map(rp -> create(relationPattern(getVarName().asReturnedVar(), Sets.newHashSet(rp)), getPredicateVariable(), getTypeLabel(), null, getParentQuery(), context()))
-                .collect(Collectors.toSet());
+    public Stream<Atom> rewriteToAtoms() {
+        // we keep duplicate role players together as part of a single atom
+        // splitting them into sub-atoms would change the semantics (two of Relation[$x], Relation[$x] != Relation[$x, $x])
+        Map<RelationProperty.RolePlayer, List<RelationProperty.RolePlayer>> players = new HashMap<>();
+        this.getRelationPlayers()
+                .forEach(rp -> {
+                    players.putIfAbsent(rp, new ArrayList<>());
+                    players.get(rp).add(rp);
+                });
+
+        return players.values().stream()
+                .map(rolePlayers -> create(relationPattern(getVarName().asReturnedVar(), rolePlayers), getPredicateVariable(), getTypeLabel(), null, getParentQuery(), context()));
+
+//        return this.getRelationPlayers().stream()
+//                .map(rp -> create(relationPattern(getVarName().asReturnedVar(), Sets.newHashSet(rp)), getPredicateVariable(), getTypeLabel(), null, getParentQuery(), context()));
     }
 
     @Override

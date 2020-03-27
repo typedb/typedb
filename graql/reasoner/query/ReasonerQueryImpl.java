@@ -529,7 +529,7 @@ public class ReasonerQueryImpl extends ResolvableQuery {
         if (!requiresDecomposition()) return this;
         return new ReasonerQueryImpl(
                 this.selectAtoms()
-                        .flatMap(at -> at.rewriteToAtoms().stream())
+                        .flatMap(at -> at.rewriteToAtoms())
                         .collect(Collectors.toList()),
                 traversalPlanFactory,
                 traversalExecutor,

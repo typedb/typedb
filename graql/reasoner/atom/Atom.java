@@ -380,7 +380,7 @@ public abstract class Atom extends AtomicBase {
     /**
      * @return set of atoms this atom can be decomposed to
      */
-    public Set<Atom> rewriteToAtoms() { return Sets.newHashSet(this);}
+    public Stream<Atom> rewriteToAtoms() { return Stream.of(this);}
 
     /**
      * rewrites the atom to user-defined type variable

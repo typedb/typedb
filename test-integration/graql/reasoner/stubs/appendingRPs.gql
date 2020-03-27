@@ -79,6 +79,13 @@ then {
     $r (anotherRole: $y) isa baseRelation;
 };
 
+duplicateRole-DoubleRolePlayer sub rule,
+when {
+    $r (anotherRole: $y, andYetAnotherRole: $z) isa baseRelation;
+}, then {
+    $r (anotherRole: $y, anotherRole: $y) isa baseRelation;
+};
+
 insert
 
 $x isa baseEntity;
