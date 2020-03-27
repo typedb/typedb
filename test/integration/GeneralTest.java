@@ -16,8 +16,9 @@
  *
  */
 
-package hypergraph;
+package hypergraph.test.integration;
 
+import hypergraph.Hypergraph;
 import hypergraph.concept.type.AttributeType;
 import hypergraph.concept.type.EntityType;
 import hypergraph.concept.type.RelationType;
@@ -39,11 +40,11 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-public class HypergraphTest {
+public class GeneralTest {
 
-    @Test
-    public void test_hypergraph() throws IOException {
-        Path directory = Paths.get(System.getProperty("user.dir")).resolve("grakn");
+    private static Path directory = Paths.get(System.getProperty("user.dir")).resolve("grakn");
+
+    private static void resetDirectory() throws IOException {
         if (Files.exists(directory)) {
             System.out.println("Database directory exists!");
             Files.walk(directory)
@@ -56,6 +57,11 @@ public class HypergraphTest {
         Files.createDirectory(directory);
 
         System.out.println("Database Directory created: " + directory.toString());
+    }
+
+    @Test
+    public void test_hypergraph() throws IOException {
+        resetDirectory();
 
         try (Hypergraph graph = CoreHypergraph.open(directory.toString())) {
             graph.keyspaces().create("my_data_keyspace");

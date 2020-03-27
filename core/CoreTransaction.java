@@ -96,15 +96,17 @@ class CoreTransaction implements Hypergraph.Transaction {
     @Override
     public void commit() {
         if (type.equals(Type.READ)) throw new HypergraphException("Illegal Write Exception");
-
-        try {
-            graph.commit();
-            rocksTransaction.commit();
-        } catch (RocksDBException e) {
-            e.printStackTrace();
-            throw new HypergraphException(e);
+        else if (isOpen.compareAndSet(true, false)) {
+            try {
+                graph.commit();
+                rocksTransaction.commit();
+                closeResources();
+            } catch (RocksDBException e) {
+                throw new HypergraphException(e);
+            }
+        } else {
+            throw new HypergraphException("Invalid Commit Exception");
         }
-        close();
     }
 
     @Override
@@ -113,7 +115,6 @@ class CoreTransaction implements Hypergraph.Transaction {
             graph.clear();
             rocksTransaction.rollback();
         } catch (RocksDBException e) {
-            e.printStackTrace();
             throw new HypergraphException(e);
         }
     }
@@ -126,13 +127,17 @@ class CoreTransaction implements Hypergraph.Transaction {
     @Override
     public void close() {
         if (isOpen.compareAndSet(true, false)) {
-            storage.close();
-            optOptions.close();
-            writeOptions.close();
-            readOptions.close();
-            rocksTransaction.close();
-            session.remove(this);
+            closeResources();
         }
+    }
+
+    private void closeResources() {
+        storage.close();
+        optOptions.close();
+        writeOptions.close();
+        readOptions.close();
+        rocksTransaction.close();
+        session.remove(this);
     }
 
     class CoreStorage implements Storage {

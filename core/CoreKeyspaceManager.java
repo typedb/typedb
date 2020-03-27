@@ -28,7 +28,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-class CoreKeyspaceManager implements Hypergraph.KeyspaceManager {
+public class CoreKeyspaceManager implements Hypergraph.KeyspaceManager {
 
     private final CoreHypergraph core;
     private final Map<String, CoreKeyspace> keyspaces;
@@ -66,5 +66,9 @@ class CoreKeyspaceManager implements Hypergraph.KeyspaceManager {
     @Override
     public Set<CoreKeyspace> getAll() {
         return new HashSet<>(keyspaces.values());
+    }
+
+    void remove(CoreKeyspace keyspace) {
+        keyspaces.remove(keyspace.name());
     }
 }

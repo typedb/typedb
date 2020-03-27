@@ -16,11 +16,11 @@
  *
  */
 
-package hypergraph;
+package hypergraph.test.integration;
 
 import org.junit.Test;
 
-public class ConceptTest {
+public class TraversalTest {
 
     @Test
     public void hello_world() {

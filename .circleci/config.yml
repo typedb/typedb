@@ -54,14 +54,14 @@ jobs:
       - run-bazel-rbe:
           command: bazel test $(bazel query 'kind(checkstyle_test, //...)')
 
-  test-hypergraph:
+  test-general:
     machine: true
     working_directory: ~/hypergraph
     steps:
       - install-bazel-linux-rbe
       - checkout
       - run-bazel-rbe:
-          command: bazel test //test/integration/hypergraph:test-hypergraph --test_output=errors
+          command: bazel test //test/integration/hypergraph:test-general --test_output=errors
 
   test-keyspace:
     machine: true
@@ -70,7 +70,7 @@ jobs:
       - install-bazel-linux-rbe
       - checkout
       - run-bazel-rbe:
-          command: bazel test //test/integration/hypergraph:test-keyspace --test_output=errors
+          command: bazel test //test/behaviour/connection/keyspace:test --test_output=errors
 
   test-session:
     machine: true
@@ -79,7 +79,7 @@ jobs:
       - install-bazel-linux-rbe
       - checkout
       - run-bazel-rbe:
-          command: bazel test //test/integration/hypergraph:test-session --test_output=errors
+          command: bazel test //test/behaviour/connection/session:test --test_output=errors
 
   test-transaction:
     machine: true
@@ -88,7 +88,7 @@ jobs:
       - install-bazel-linux-rbe
       - checkout
       - run-bazel-rbe:
-          command: bazel test //test/integration/hypergraph:test-transaction --test_output=errors
+          command: bazel test //test/behaviour/connection/transaction:test --test_output=errors
 
   test-concept:
     machine: true
@@ -97,7 +97,7 @@ jobs:
       - install-bazel-linux-rbe
       - checkout
       - run-bazel-rbe:
-          command: bazel test //test/integration/hypergraph:test-concept --test_output=errors
+          command: bazel test //test/behaviour/connection/concept:test --test_output=errors
 
   test-traversal:
     machine: true
@@ -113,9 +113,9 @@ workflows:
     jobs:
       - build
       - build-checkstyle
-      - test-hypergraph
+      - test-general
       - test-keyspace
       - test-session
       - test-transaction
-      - test-concept
+#      - test-concept
       - test-traversal

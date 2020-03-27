@@ -38,3 +38,16 @@ dependencies:
     rocksdbjni:
       version: "6.6.4"
       lang: java
+
+  io.cucumber:
+    cucumber-java:
+      version: "5.1.3"
+      lang: java
+    cucumber-junit:
+      version: "5.1.3"
+      lang: java
+
+  junit:
+    junit:
+      version: "4.12"
+      lang: java

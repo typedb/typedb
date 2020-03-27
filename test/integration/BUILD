@@ -18,40 +18,14 @@
 load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
 java_test(
-    name = "test-hypergraph",
-    srcs = ["HypergraphTest.java"],
-    test_class = "hypergraph.HypergraphTest",
+    name = "test-general",
+    srcs = ["GeneralTest.java"],
+    test_class = "hypergraph.test.integration.GeneralTest",
     deps = [
         "//:hypergraph",
         "//concept",
         "//core:hypergraph",
     ],
-)
-
-java_test(
-    name = "test-keyspace",
-    srcs = [
-        "KeyspaceTest.java",
-    ],
-    test_class = "hypergraph.KeyspaceTest",
-)
-
-java_test(
-    name = "test-session",
-    srcs = ["SessionTest.java"],
-    test_class = "hypergraph.SessionTest",
-)
-
-java_test(
-    name = "test-transaction",
-    srcs = ["TransactionTest.java"],
-    test_class = "hypergraph.TransactionTest",
-)
-
-java_test(
-    name = "test-concept",
-    srcs = ["ConceptTest.java"],
-    test_class = "hypergraph.ConceptTest",
 )
 
 java_test(
@@ -63,11 +37,7 @@ java_test(
 checkstyle_test(
     name = "checkstyle",
     targets = [
-        ":test-hypergraph",
-        ":test-keyspace",
-        ":test-session",
-        ":test-transaction",
-        ":test-concept",
+        ":test-general",
         ":test-traversal",
     ],
 )

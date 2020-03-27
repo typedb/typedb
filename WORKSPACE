@@ -18,9 +18,10 @@
 workspace(name = "graknlabs_hypergraph")
 
 
-load("//dependencies/graknlabs:dependencies.bzl", "graknlabs_build_tools", "graknlabs_common")
+load("//dependencies/graknlabs:dependencies.bzl", "graknlabs_build_tools", "graknlabs_common", "graknlabs_verification")
 graknlabs_build_tools()
 graknlabs_common()
+graknlabs_verification()
 
 load("@graknlabs_build_tools//distribution:dependencies.bzl", "graknlabs_bazel_distribution")
 graknlabs_bazel_distribution()

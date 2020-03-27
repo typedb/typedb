@@ -32,3 +32,10 @@ def graknlabs_build_tools():
         remote = "https://github.com/graknlabs/build-tools",
         commit = "fb6e02f964e8f1742febe788ba3dbbcc17551cb0", # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_build_tools
     )
+
+def graknlabs_verification():
+    git_repository(
+        name = "graknlabs_verification",
+        remote = "https://github.com/graknlabs/verification",
+        commit = "7a7750f1d5c97bcb77954dc6b9697cfefacb2d48"
+    )

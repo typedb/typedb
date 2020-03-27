@@ -28,21 +28,15 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-class CoreSession implements Hypergraph.Session {
+public class CoreSession implements Hypergraph.Session {
 
     private final CoreKeyspace keyspace;
-    private final OptimisticTransactionDB rocksSession;
     private final Set<CoreTransaction> transactions;
     private final AtomicBoolean isOpen;
 
     CoreSession(CoreKeyspace keyspace) {
         this.keyspace = keyspace;
-        try {
-            rocksSession = OptimisticTransactionDB.open(keyspace.options(), keyspace.directory().toString());
-        } catch (RocksDBException e) {
-            e.printStackTrace();
-            throw new HypergraphException(e);
-        }
+
 
         transactions = ConcurrentHashMap.newKeySet();
         isOpen = new AtomicBoolean();
@@ -50,7 +44,7 @@ class CoreSession implements Hypergraph.Session {
     }
 
     OptimisticTransactionDB rocks() {
-        return rocksSession;
+        return keyspace.rocks();
     }
 
     KeyGenerator keyGenerator() {
@@ -82,8 +76,6 @@ class CoreSession implements Hypergraph.Session {
     public void close() {
         if (isOpen.compareAndSet(true, false)) {
             transactions.parallelStream().forEach(CoreTransaction::close);
-            rocksSession.close();
         }
     }
-
 }

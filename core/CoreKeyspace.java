@@ -22,17 +22,23 @@ import hypergraph.Hypergraph;
 import hypergraph.common.HypergraphException;
 import hypergraph.graph.KeyGenerator;
 import hypergraph.graph.Schema;
-import org.rocksdb.Options;
+import org.rocksdb.OptimisticTransactionDB;
+import org.rocksdb.RocksDBException;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Comparator;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-class CoreKeyspace implements Hypergraph.Keyspace {
+public class CoreKeyspace implements Hypergraph.Keyspace {
 
     private final String name;
     private final CoreHypergraph core;
+    private final OptimisticTransactionDB rocksDB;
     private final KeyGenerator keyGenerator;
     private final AtomicBoolean isOpen;
     private final Set<CoreSession> sessions;
@@ -43,6 +49,12 @@ class CoreKeyspace implements Hypergraph.Keyspace {
         keyGenerator = new KeyGenerator(Schema.Key.PERSISTED);
         sessions = ConcurrentHashMap.newKeySet();
         isOpen = new AtomicBoolean(false);
+
+        try {
+            rocksDB = OptimisticTransactionDB.open(this.core.options(), directory().toString());
+        } catch (RocksDBException e) {
+            throw new HypergraphException(e);
+        }
     }
 
     static CoreKeyspace createNewAndOpen(CoreHypergraph core, String name) {
@@ -73,18 +85,18 @@ class CoreKeyspace implements Hypergraph.Keyspace {
         return this;
     }
 
-    Options options() {
-        return core.options();
-    }
-
-    Path directory() {
-        return core.directory().resolve(name);
-    }
-
     CoreSession createSessionAndOpen() {
         CoreSession session = new CoreSession(this);
         sessions.add(session);
         return session;
+    }
+
+    private Path directory() {
+        return core.directory().resolve(name);
+    }
+
+    OptimisticTransactionDB rocks() {
+        return rocksDB;
     }
 
     KeyGenerator keyGenerator() {
@@ -94,6 +106,7 @@ class CoreKeyspace implements Hypergraph.Keyspace {
     void close() {
         if (isOpen.compareAndSet(true, false)) {
             sessions.parallelStream().forEach(CoreSession::close);
+            rocksDB.close();
         }
     }
 
@@ -104,6 +117,13 @@ class CoreKeyspace implements Hypergraph.Keyspace {
 
     @Override
     public void delete() {
-        // TODO
+        close();
+        core.keyspaces().remove(this);
+        try {
+            Files.walk(directory()).sorted(Comparator.reverseOrder())
+                    .map(Path::toFile).forEach(File::delete);
+        } catch (IOException e) {
+            throw new HypergraphException(e);
+        }
     }
 }

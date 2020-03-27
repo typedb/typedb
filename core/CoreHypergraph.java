@@ -86,7 +86,7 @@ public class CoreHypergraph implements Hypergraph {
     }
 
     @Override
-    public KeyspaceManager keyspaces() {
+    public CoreKeyspaceManager keyspaces() {
         return keyspaceMgr;
     }
 
