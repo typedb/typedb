@@ -42,7 +42,13 @@ public class NodeImpl implements Node{
 
     @Override
     public String graphString() {
-        return "label=\"" + toString() + "\"";
+        String stateString = state.toString()
+                .replaceAll("\"", "'")
+                .replaceAll("\n", "\\\\n");
+        return "label=\"" +
+                stateString +
+                " Cost: " + totalTime() + " answers: " + answers().size() +
+                "\"";
     }
 
     @Override
