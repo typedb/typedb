@@ -16,7 +16,7 @@
  *
  */
 
-package hypergraph.test.behaviour.connection.session;
+package hypergraph.test.behaviour.concept.thing.relation;
 
 import io.cucumber.junit.Cucumber;
 import io.cucumber.junit.CucumberOptions;
@@ -27,17 +27,17 @@ import org.junit.runner.RunWith;
         strict = true,
         plugin = "pretty",
         glue = "hypergraph.test.behaviour",
-        features = "external/graknlabs_verification/behaviour/connection/session.feature",
-        tags = "not @ignore and not @ignore-client-java"
+        features = "external/graknlabs_verification/behaviour/concept/thing/relation.feature",
+        tags = "not @ignore and not @ignore-hypergraph"
 )
-public class SessionTest {
+public class Test {
     // ATTENTION:
     // When you click RUN from within this class through Intellij IDE, it will fail.
     // You can fix it by doing:
     //
     // 1) Go to 'Run'
     // 2) Select 'Edit Configurations...'
-    // 3) Select 'Bazel test SessionTest'
+    // 3) Select 'Bazel test KeyspaceTest'
     //
     // 4) Ensure 'Target Expression' is set correctly: '//<this>/<package>/<name>:test'
     //

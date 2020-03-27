@@ -16,7 +16,7 @@
  *
  */
 
-package hypergraph.test.behaviour.connection.keyspace;
+package hypergraph.test.behaviour.concept.thing.entity;
 
 import io.cucumber.junit.Cucumber;
 import io.cucumber.junit.CucumberOptions;
@@ -27,10 +27,10 @@ import org.junit.runner.RunWith;
         strict = true,
         plugin = "pretty",
         glue = "hypergraph.test.behaviour",
-        features = "external/graknlabs_verification/behaviour/connection/keyspace.feature",
-        tags = "not @ignore and not @ignore-client-java"
+        features = "external/graknlabs_verification/behaviour/concept/thing/entity.feature",
+        tags = "not @ignore and not @ignore-hypergraph"
 )
-public class KeyspaceTest {
+public class Test {
     // ATTENTION:
     // When you click RUN from within this class through Intellij IDE, it will fail.
     // You can fix it by doing:
@@ -51,5 +51,4 @@ public class KeyspaceTest {
     //       --spawn_strategy=standalone : if you're on Mac and the tests need permission to access filesystem
     //
     // 6) Hit the RUN button by selecting the test from the dropdown menu on the top bar
-
 }

@@ -16,7 +16,7 @@
  *
  */
 
-package hypergraph.test.behaviour.debug;
+package hypergraph.test.behaviour.connection.transaction;
 
 import io.cucumber.junit.Cucumber;
 import io.cucumber.junit.CucumberOptions;
@@ -27,16 +27,17 @@ import org.junit.runner.RunWith;
         strict = true,
         plugin = "pretty",
         glue = "hypergraph.test.behaviour",
-        features = "test/behaviour/debug/debug.feature"
+        features = "external/graknlabs_verification/behaviour/connection/transaction.feature",
+        tags = "not @ignore and not @ignore-hypergraph"
 )
-public class DebugTest {
+public class Test {
     // ATTENTION:
     // When you click RUN from within this class through Intellij IDE, it will fail.
     // You can fix it by doing:
     //
     // 1) Go to 'Run'
     // 2) Select 'Edit Configurations...'
-    // 3) Select 'Bazel test DebugTest'
+    // 3) Select 'Bazel test TransactionTest'
     //
     // 4) Ensure 'Target Expression' is set correctly: '//<this>/<package>/<name>:test'
     //

@@ -41,7 +41,7 @@ java_test(
     srcs = [
         "Test.java"
     ],
-    test_class = "hypergraph.test.behaviour.connection.keyspace.Test",
+    test_class = "hypergraph.test.behaviour.concept.type.attributetype.Test",
     deps = [
         # External Maven Dependencies
         "//dependencies/maven/artifacts/io/cucumber:cucumber-junit",
@@ -50,7 +50,7 @@ java_test(
         ":steps"
     ],
     data = [
-        "@graknlabs_verification//behaviour/connection:keyspace.feature",
+        "@graknlabs_verification//behaviour/concept/type:attribute-type.feature",
     ],
     size = "medium",
 )
