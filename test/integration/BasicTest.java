@@ -40,7 +40,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-public class GeneralTest {
+public class BasicTest {
 
     private static Path directory = Paths.get(System.getProperty("user.dir")).resolve("grakn");
 

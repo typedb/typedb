@@ -18,9 +18,9 @@
 load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
 java_test(
-    name = "test-general",
-    srcs = ["GeneralTest.java"],
-    test_class = "hypergraph.test.integration.GeneralTest",
+    name = "test-basic",
+    srcs = ["BasicTest.java"],
+    test_class = "hypergraph.test.integration.BasicTest",
     deps = [
         "//:hypergraph",
         "//concept",
@@ -37,7 +37,7 @@ java_test(
 checkstyle_test(
     name = "checkstyle",
     targets = [
-        ":test-general",
+        ":test-basic",
         ":test-traversal",
     ],
 )
