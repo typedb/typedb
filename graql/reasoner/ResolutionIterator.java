@@ -27,7 +27,6 @@ import grakn.core.graql.reasoner.tree.Node;
 import grakn.core.graql.reasoner.tree.ResolutionTree;
 import grakn.core.graql.reasoner.unifier.UnifierImpl;
 import grakn.core.kb.graql.reasoner.cache.QueryCache;
-import java.nio.file.Paths;
 import java.util.HashSet;
 import java.util.NoSuchElementException;
 import java.util.Set;
@@ -84,12 +83,10 @@ public class ResolutionIterator extends ReasonerQueryIterator {
                 if (!state.isAnswerState()) states.push(state);
                 states.push(newState);
             } else {
-
                 if (LOG.isTraceEnabled()) {
                     Node node = logTree.getNode(state);
                     if (node != null) node.ackCompletion();
                 }
-
 
                 LOG.trace("new state: NULL");
             }
@@ -142,12 +139,16 @@ public class ResolutionIterator extends ReasonerQueryIterator {
             }
         }
 
+        finalise();
+
+        return false;
+    }
+
+    private void finalise(){
         MultilevelSemanticCache queryCache = CacheCasting.queryCacheCast(this.queryCache);
         subGoals.forEach(queryCache::ackCompleteness);
         queryCache.propagateAnswers();
 
-        if (LOG.isTraceEnabled()) logTree.outputToFile(Paths.get("/tmp/query.profile"));
-
-        return false;
+        if (LOG.isTraceEnabled()) logTree.outputToFile();
     }
 }

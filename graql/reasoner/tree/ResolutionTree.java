@@ -19,19 +19,24 @@
 
 package grakn.core.graql.reasoner.tree;
 
+import grakn.core.common.config.Config;
+import grakn.core.common.config.ConfigKey;
+import grakn.core.common.config.SystemProperty;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.state.ResolutionState;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 /**
  * Container class for holding the full resolution tree traversed in ResolutionIterator. The tree is built from nodes that
  * are built from ResolutionStates. In addition to state information we additionally store:
- * 
+ *
  * - time required for processing of a state
  * - the answers processing of a state leads to
  *
@@ -92,9 +97,15 @@ public class ResolutionTree {
         parentNode.addChild(childNode);
     }
 
-    public void outputToFile(Path outputPath) {
+    public void outputToFile() {
+        String fileName = "query.profile";
+        Config config = Config.create();
+        Path logPath = Paths.get(config.getProperty(ConfigKey.LOG_DIR), fileName);
+        Path homePath = Paths.get(Objects.requireNonNull(SystemProperty.CURRENT_DIRECTORY.value()));
+        Path profilePath = logPath.isAbsolute()? logPath : homePath.resolve(logPath);
+
         try {
-            new TreeWriter(outputPath).write(rootNode, ids);
+            new TreeWriter(profilePath).write(rootNode, ids);
         } catch (IOException e) {
             e.printStackTrace();
         }
