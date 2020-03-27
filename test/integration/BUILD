@@ -31,7 +31,7 @@ java_test(
 java_test(
     name = "test-traversal",
     srcs = ["TraversalTest.java"],
-    test_class = "hypergraph.TraversalTest",
+    test_class = "hypergraph.test.integration.TraversalTest",
 )
 
 checkstyle_test(

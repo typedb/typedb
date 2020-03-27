@@ -29,8 +29,6 @@ java_test(
 
         # TODO: Add your addition debugging dependencies here
         # e.g. "//test/behaviour/connection/session:steps",
-        "//test/behaviour/connection/keyspace:steps",
-        "//test/behaviour/connection/session:steps",
 
         # External Maven Dependencies
         "//dependencies/maven/artifacts/io/cucumber:cucumber-java",

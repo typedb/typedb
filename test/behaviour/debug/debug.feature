@@ -7,13 +7,3 @@ Feature: Debugging Space
 
   # Paste any scenarios below for debugging.
   # Do not commit any changes to this file.
-
-  Scenario: one keyspace, one session, re-committing transaction throws
-    When connection create keyspace:
-      | grakn   |
-    Given connection open session for keyspace:
-      | grakn   |
-    When for each session, open transaction of type:
-      | write   |
-    Then for each session, transaction commits successfully: true
-    Then for each session, transaction commits successfully: false
