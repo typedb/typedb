@@ -555,7 +555,8 @@ public class AtomicQueryUnificationIT {
             unification(query, potentialEquivalent, true, UnifierType.RULE, testTx);
             unification(potentialEquivalent, query, true, UnifierType.RULE, testTx);
 
-            unification(query, potentialEquivalent, true, UnifierType.SUBSUMPTIVE, testTx);
+            // we block subtype checking by tying the type of $role in the potentialEquivalent
+            unification(query, potentialEquivalent, false, UnifierType.SUBSUMPTIVE, testTx);
             unification(potentialEquivalent, query, true, UnifierType.SUBSUMPTIVE, testTx);
         }
     }
