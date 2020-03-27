@@ -54,7 +54,7 @@ then {
     (inferredRole: $x, inferredRole: $y, inferredRole: $z) isa derivedRelation;
 };
 
-degenerateRole sub rule,
+duplicateRole sub rule,
 when {
     $r(someRole: $x, anotherRole: $y) isa baseRelation;
     $z isa someEntity;
@@ -63,7 +63,7 @@ then {
     $r(anotherRole: $z) isa baseRelation;
 };
 
-degenerateRolePlayer sub rule,
+duplicateRolePlayer sub rule,
 when {
     $r (someRole: $x, andYetAnotherRole: $y) isa baseRelation;
 },
@@ -71,7 +71,7 @@ then {
     $r (yetAnotherRole: $y) isa baseRelation;
 };
 
-degenerateRole-RolePlayer sub rule,
+duplicateRole-RolePlayer sub rule,
 when {
     $r (anotherRole: $y, andYetAnotherRole: $z) isa baseRelation;
 },
