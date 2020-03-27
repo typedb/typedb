@@ -61,7 +61,7 @@ jobs:
       - install-bazel-linux-rbe
       - checkout
       - run-bazel-rbe:
-          command: bazel test //test/integration/hypergraph:test-basic --test_output=errors
+          command: bazel test //test/integration:test-basic --test_output=errors
 
   test-keyspace:
     machine: true
@@ -106,7 +106,7 @@ jobs:
       - install-bazel-linux-rbe
       - checkout
       - run-bazel-rbe:
-          command: bazel test //test/integration/hypergraph:test-traversal --test_output=errors
+          command: bazel test //test/integration:test-traversal --test_output=errors
 
 workflows:
   hypergraph:
