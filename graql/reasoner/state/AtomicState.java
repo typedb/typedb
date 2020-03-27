@@ -37,7 +37,6 @@ import grakn.core.kb.graql.reasoner.cache.QueryCache;
 import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
 import graql.lang.statement.Variable;
-
 import java.util.Iterator;
 import java.util.Set;
 

@@ -26,7 +26,6 @@ import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
 import grakn.core.graql.reasoner.utils.AnswerUtil;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
-
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -78,6 +77,7 @@ public class JoinState extends AnswerPropagatorState<ReasonerQueryImpl> {
                 merged.getPattern());
 
         if (answer.isEmpty()) return null;
+        //NB: if we know that it is a final answer we pass it directly to the conjunctive query
         if (subQueries.isEmpty()) return new AnswerState(answer, getUnifier(), getParentState());
         return new JoinState(subQueries, answer, getUnifier(), getParentState(), getVisitedSubGoals());
     }
