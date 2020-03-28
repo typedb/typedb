@@ -23,7 +23,6 @@ import hypergraph.core.CoreHypergraph;
 import hypergraph.core.CoreKeyspace;
 import io.cucumber.java.After;
 import io.cucumber.java.en.Given;
-import org.junit.BeforeClass;
 
 import java.io.File;
 import java.io.IOException;
@@ -59,23 +58,18 @@ public class ConnectionSteps {
     private static void resetDirectory() throws IOException {
         if (Files.exists(directory)) {
             System.out.println("Database directory exists!");
-            Files.walk(directory)
-                    .sorted(Comparator.reverseOrder())
-                    .map(Path::toFile)
-                    .forEach(File::delete);
+            Files.walk(directory).sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
             System.out.println("Database directory deleted!");
         }
 
         Files.createDirectory(directory);
-
         System.out.println("Database Directory created: " + directory.toString());
     }
     private static synchronized void connect_to_grakn() throws IOException {
         if (!isNull(hypergraph)) return;
 
         resetDirectory();
-        System.out.println("Connecting to Grakn ...");
-
+        System.out.println("Connecting to Hypergraph ...");
         hypergraph = CoreHypergraph.open(directory.toString());
         assertNotNull(hypergraph);
     }

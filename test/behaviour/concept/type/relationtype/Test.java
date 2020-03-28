@@ -27,7 +27,7 @@ import org.junit.runner.RunWith;
         strict = true,
         plugin = "pretty",
         glue = "hypergraph.test.behaviour",
-        features = "external/graknlabs_verification/behaviour/concept/type/relation-type.feature",
+        features = "external/graknlabs_verification/behaviour/concept/type/relationtype.feature",
         tags = "not @ignore and not @ignore-hypergraph"
 )
 public class Test {

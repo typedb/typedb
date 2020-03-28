@@ -25,6 +25,8 @@ java_library(
     ],
     deps = [
         # Internal Package Dependencies
+        "//:hypergraph",
+        "//concept:concept",
         "//test/behaviour/connection:steps",
 
         # Internal Repository Dependencies
@@ -47,10 +49,14 @@ java_test(
         "//dependencies/maven/artifacts/io/cucumber:cucumber-junit",
     ],
     runtime_deps = [
-        ":steps"
+        ":steps",
+        "//test/behaviour/config:parameters",
+        "//test/behaviour/connection/keyspace:steps",
+        "//test/behaviour/connection/session:steps",
+        "//test/behaviour/connection/transaction:steps",
     ],
     data = [
-        "@graknlabs_verification//behaviour/concept/type:entity-type.feature",
+        "@graknlabs_verification//behaviour/concept/type:entitytype.feature",
     ],
     size = "medium",
 )

@@ -18,6 +18,41 @@
 
 package hypergraph.test.behaviour.concept.type.entitytype;
 
+import hypergraph.Hypergraph;
+import hypergraph.concept.type.EntityType;
+import io.cucumber.java.en.Then;
+import io.cucumber.java.en.When;
+
+import static hypergraph.test.behaviour.connection.ConnectionSteps.sessions;
+import static hypergraph.test.behaviour.connection.ConnectionSteps.sessionsToTransactions;
+import static java.util.Objects.isNull;
+import static org.junit.Assert.assertEquals;
+
 public class Steps {
 
+    private static Hypergraph.Transaction tx() {
+        return sessionsToTransactions.get(sessions.get(0)).get(0);
+    }
+
+    @When("put entity type: {word}")
+    public void put_entity_type(String type) {
+        tx().concepts().putEntityType(type);
+    }
+
+    @When("entity\\( ?{word} ?) subtypes: {word}")
+    public void entity_subtypes(String type, String superType) {
+        EntityType parent = tx().concepts().getEntityType(superType);
+        tx().concepts().getEntityType(type).sup(parent);
+    }
+
+    @Then("entity\\( ?{word} ?) is null: {bool}")
+    public void entity_is_null(String label, boolean isNull) {
+        assertEquals(isNull, isNull(tx().concepts().getEntityType(label)));
+    }
+
+    @Then("entity\\( ?{word} ?) has super type: {word}")
+    public void entity_has_super_type(String type, String superType) {
+        EntityType parent = tx().concepts().getEntityType(superType);
+        assertEquals(parent, tx().concepts().getEntityType(type).sup());
+    }
 }

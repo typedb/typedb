@@ -50,7 +50,7 @@ java_test(
         ":steps"
     ],
     data = [
-        "@graknlabs_verification//behaviour/concept/type:attribute-type.feature",
+        "@graknlabs_verification//behaviour/concept/type:attributetype.feature",
     ],
     size = "medium",
 )

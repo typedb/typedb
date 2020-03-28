@@ -19,7 +19,6 @@
 package hypergraph.test.behaviour.connection.transaction;
 
 import hypergraph.Hypergraph;
-import hypergraph.test.behaviour.connection.ConnectionSteps;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 
@@ -29,6 +28,14 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
+import static grakn.common.util.Collections.list;
+import static hypergraph.test.behaviour.connection.ConnectionSteps.THREAD_POOL_SIZE;
+import static hypergraph.test.behaviour.connection.ConnectionSteps.sessions;
+import static hypergraph.test.behaviour.connection.ConnectionSteps.sessionsParallel;
+import static hypergraph.test.behaviour.connection.ConnectionSteps.sessionsParallelToTransactionsParallel;
+import static hypergraph.test.behaviour.connection.ConnectionSteps.sessionsToTransactions;
+import static hypergraph.test.behaviour.connection.ConnectionSteps.sessionsToTransactionsParallel;
+import static hypergraph.test.behaviour.connection.ConnectionSteps.threadPool;
 import static java.util.Objects.isNull;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -40,15 +47,20 @@ public class Steps {
     // sequential sessions, sequential transactions //
     // =============================================//
 
+    @When("session open transaction of type: {transaction_type}")
+    public void session_opens_transaction_of_type(Hypergraph.Transaction.Type type) {
+        for_each_session_open_transactions_of_type(list(type));
+    }
+
     @When("for each session, open transaction(s) of type:")
     public void for_each_session_open_transactions_of_type(List<Hypergraph.Transaction.Type> types) {
-        for (Hypergraph.Session session : ConnectionSteps.sessions) {
+        for (Hypergraph.Session session : sessions) {
             List<Hypergraph.Transaction> transactions = new ArrayList<>();
             for (Hypergraph.Transaction.Type type : types) {
                 Hypergraph.Transaction transaction = session.transaction(type);
                 transactions.add(transaction);
             }
-            ConnectionSteps.sessionsToTransactions.put(session, transactions);
+            sessionsToTransactions.put(session, transactions);
         }
     }
 
@@ -64,8 +76,8 @@ public class Steps {
 
     @Then("for each session, transaction commits successfully: {bool}")
     public void for_each_session_transaction_commit(boolean successfully) {
-        for (Hypergraph.Session session : ConnectionSteps.sessions) {
-            for (Hypergraph.Transaction transaction : ConnectionSteps.sessionsToTransactions.get(session)) {
+        for (Hypergraph.Session session : sessions) {
+            for (Hypergraph.Transaction transaction : sessionsToTransactions.get(session)) {
                 boolean hasException = false;
                 try {
                     transaction.commit();
@@ -83,16 +95,16 @@ public class Steps {
 
     @Then("for each session, transaction close")
     public void for_each_session_transaction_close() {
-        for (Hypergraph.Session session : ConnectionSteps.sessions) {
-            for (Hypergraph.Transaction transaction : ConnectionSteps.sessionsToTransactions.get(session)) {
+        for (Hypergraph.Session session : sessions) {
+            for (Hypergraph.Transaction transaction : sessionsToTransactions.get(session)) {
                 transaction.close();
             }
         }
     }
 
     private void for_each_session_transactions_are(Consumer<Hypergraph.Transaction> assertion) {
-        for (Hypergraph.Session session : ConnectionSteps.sessions) {
-            for (Hypergraph.Transaction transaction : ConnectionSteps.sessionsToTransactions.get(session)) {
+        for (Hypergraph.Session session : sessions) {
+            for (Hypergraph.Transaction transaction : sessionsToTransactions.get(session)) {
                 assertion.accept(transaction);
             }
         }
@@ -100,13 +112,13 @@ public class Steps {
 
     @Then("for each session, transaction(s) has/have type:")
     public void for_each_session_transactions_have_type(List<Hypergraph.Transaction.Type> types) {
-        for (Hypergraph.Session session : ConnectionSteps.sessions) {
-            List<Hypergraph.Transaction> transactions = ConnectionSteps.sessionsToTransactions.get(session);
+        for (Hypergraph.Session session : sessions) {
+            List<Hypergraph.Transaction> transactions = sessionsToTransactions.get(session);
             assertEquals(types.size(), transactions.size());
 
             Iterator<Hypergraph.Transaction.Type> typesIterator = types.iterator();
             Iterator<Hypergraph.Transaction> transactionIterator = transactions.iterator();
-            while (typesIterator.hasNext()){
+            while (typesIterator.hasNext()) {
                 assertEquals(typesIterator.next(), transactionIterator.next().type());
             }
         }
@@ -118,16 +130,13 @@ public class Steps {
 
     @When("for each session, open transaction(s) in parallel of type:")
     public void for_each_session_open_transactions_in_parallel_of_type(List<Hypergraph.Transaction.Type> types) {
-        assertTrue(ConnectionSteps.THREAD_POOL_SIZE >= types.size());
-        for (Hypergraph.Session session : ConnectionSteps.sessions) {
+        assertTrue(THREAD_POOL_SIZE >= types.size());
+        for (Hypergraph.Session session : sessions) {
             List<CompletableFuture<Hypergraph.Transaction>> transactionsParallel = new ArrayList<>();
             for (Hypergraph.Transaction.Type type : types) {
-                transactionsParallel.add(CompletableFuture.supplyAsync(
-                        () -> session.transaction(type),
-                        ConnectionSteps.threadPool
-                ));
+                transactionsParallel.add(CompletableFuture.supplyAsync(() -> session.transaction(type), threadPool));
             }
-            ConnectionSteps.sessionsToTransactionsParallel.put(session, transactionsParallel);
+            sessionsToTransactionsParallel.put(session, transactionsParallel);
         }
     }
 
@@ -143,9 +152,9 @@ public class Steps {
 
     private void for_each_session_transactions_in_parallel_are(Consumer<Hypergraph.Transaction> assertion) {
         List<CompletableFuture<Void>> assertions = new ArrayList<>();
-        for (Hypergraph.Session session : ConnectionSteps.sessions) {
+        for (Hypergraph.Session session : sessions) {
             for (CompletableFuture<Hypergraph.Transaction> futureTransaction :
-                    ConnectionSteps.sessionsToTransactionsParallel.get(session)) {
+                    sessionsToTransactionsParallel.get(session)) {
 
                 assertions.add(futureTransaction.thenApply(transaction -> {
                     assertion.accept(transaction);
@@ -159,9 +168,9 @@ public class Steps {
     @Then("for each session, transactions in parallel have type:")
     public void for_each_session_transactions_in_parallel_have_type(List<Hypergraph.Transaction.Type> types) {
         List<CompletableFuture<Void>> assertions = new ArrayList<>();
-        for (Hypergraph.Session session : ConnectionSteps.sessions) {
+        for (Hypergraph.Session session : sessions) {
             List<CompletableFuture<Hypergraph.Transaction>> futureTxs =
-                    ConnectionSteps.sessionsToTransactionsParallel.get(session);
+                    sessionsToTransactionsParallel.get(session);
 
             assertEquals(types.size(), futureTxs.size());
 
@@ -196,8 +205,8 @@ public class Steps {
 
     private void for_each_session_in_parallel_transactions_in_parallel_are(Consumer<Hypergraph.Transaction> assertion) {
         List<CompletableFuture<Void>> assertions = new ArrayList<>();
-        for (CompletableFuture<Hypergraph.Session> futureSession : ConnectionSteps.sessionsParallel) {
-            for (CompletableFuture<Hypergraph.Transaction> futureTransaction : ConnectionSteps.sessionsParallelToTransactionsParallel.get(futureSession)) {
+        for (CompletableFuture<Hypergraph.Session> futureSession : sessionsParallel) {
+            for (CompletableFuture<Hypergraph.Transaction> futureTransaction : sessionsParallelToTransactionsParallel.get(futureSession)) {
                 assertions.add(futureTransaction.thenApply(transaction -> {
                     assertion.accept(transaction);
                     return null;

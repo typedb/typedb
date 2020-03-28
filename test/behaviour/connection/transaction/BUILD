@@ -28,6 +28,9 @@ java_library(
         "//:hypergraph",
         "//test/behaviour/connection:steps",
 
+        # Internal Repository Dependencies
+        "@graknlabs_common//:common",
+
         # External Maven Dependencies
         "//dependencies/maven/artifacts/junit:junit",
         "//dependencies/maven/artifacts/io/cucumber:cucumber-java",

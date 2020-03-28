@@ -18,7 +18,6 @@
 
 package hypergraph.test.behaviour.connection.keyspace;
 
-import hypergraph.test.behaviour.connection.ConnectionSteps;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 
@@ -26,31 +25,37 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
+import static grakn.common.util.Collections.list;
 import static grakn.common.util.Collections.set;
+import static hypergraph.test.behaviour.connection.ConnectionSteps.THREAD_POOL_SIZE;
+import static hypergraph.test.behaviour.connection.ConnectionSteps.hypergraph;
+import static hypergraph.test.behaviour.connection.ConnectionSteps.threadPool;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 public class Steps {
 
+    @When("connection create keyspace: {word}")
+    public void connection_create_keyspace(String name) {
+        connection_create_keyspaces(list(name));
+    }
+
     @When("connection create keyspace(s):")
     public void connection_create_keyspaces(List<String> names) {
         for (String name : names) {
-            ConnectionSteps.hypergraph.keyspaces().create(name);
+            hypergraph.keyspaces().create(name);
         }
     }
 
     @When("connection create keyspaces in parallel:")
     public void connection_create_keyspaces_in_parallel(List<String> names) {
-        assertTrue(ConnectionSteps.THREAD_POOL_SIZE >= names.size());
+        assertTrue(THREAD_POOL_SIZE >= names.size());
 
         CompletableFuture[] creations = new CompletableFuture[names.size()];
         int i = 0;
         for (String name : names) {
-            creations[i++] = CompletableFuture.supplyAsync(
-                    () -> ConnectionSteps.hypergraph.keyspaces().create(name),
-                    ConnectionSteps.threadPool
-            );
+            creations[i++] = CompletableFuture.supplyAsync(() -> hypergraph.keyspaces().create(name), threadPool);
         }
 
         CompletableFuture.allOf(creations).join();
@@ -59,23 +64,23 @@ public class Steps {
     @When("connection delete keyspace(s):")
     public void connection_delete_keyspaces(List<String> names) {
         for (String keyspaceName : names) {
-            ConnectionSteps.hypergraph.keyspaces().get(keyspaceName).delete();
+            hypergraph.keyspaces().get(keyspaceName).delete();
         }
     }
 
     @When("connection delete keyspaces in parallel:")
     public void connection_delete_keyspaces_in_parallel(List<String> names) {
-        assertTrue(ConnectionSteps.THREAD_POOL_SIZE >= names.size());
+        assertTrue(THREAD_POOL_SIZE >= names.size());
 
         CompletableFuture[] deletions = new CompletableFuture[names.size()];
         int i = 0;
         for (String name : names) {
             deletions[i++] = CompletableFuture.supplyAsync(
                     () -> {
-                        ConnectionSteps.hypergraph.keyspaces().get(name).delete();
+                        hypergraph.keyspaces().get(name).delete();
                         return null;
                     },
-                    ConnectionSteps.threadPool
+                    threadPool
             );
         }
 
@@ -85,7 +90,7 @@ public class Steps {
     @Then("connection has keyspace(s):")
     public void connection_has_keyspaces(List<String> names) {
         assertEquals(set(names),
-                     ConnectionSteps.hypergraph.keyspaces().getAll().stream()
+                     hypergraph.keyspaces().getAll().stream()
                              .map(keyspace -> keyspace.name())
                              .collect(Collectors.toSet()));
     }
@@ -93,7 +98,7 @@ public class Steps {
     @Then("connection does not have keyspace(s):")
     public void connection_does_not_have_keyspaces(List<String> names) {
         for (String name : names) {
-            assertNull(ConnectionSteps.hypergraph.keyspaces().get(name));
+            assertNull(hypergraph.keyspaces().get(name));
         }
     }
 }
