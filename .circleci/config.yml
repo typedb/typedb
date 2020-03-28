@@ -83,7 +83,7 @@ jobs:
       - install-bazel-linux-rbe
       - checkout
       - run-bazel-rbe:
-          command: bazel test //test/behaviour/connection/concept/type/entitytype:test --test_output=errors
+          command: bazel test //test/behaviour/concept/type/entitytype:test --test_output=errors
 
   test-traversal:
     machine: true
