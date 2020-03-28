@@ -63,7 +63,7 @@ jobs:
       - run-bazel-rbe:
           command: bazel test //test/integration:test-basic --test_output=errors
 
-  test-keyspace:
+  test-connection:
     machine: true
     working_directory: ~/hypergraph
     steps:
@@ -71,22 +71,8 @@ jobs:
       - checkout
       - run-bazel-rbe:
           command: bazel test //test/behaviour/connection/keyspace:test --test_output=errors
-
-  test-session:
-    machine: true
-    working_directory: ~/hypergraph
-    steps:
-      - install-bazel-linux-rbe
-      - checkout
       - run-bazel-rbe:
           command: bazel test //test/behaviour/connection/session:test --test_output=errors
-
-  test-transaction:
-    machine: true
-    working_directory: ~/hypergraph
-    steps:
-      - install-bazel-linux-rbe
-      - checkout
       - run-bazel-rbe:
           command: bazel test //test/behaviour/connection/transaction:test --test_output=errors
 
@@ -97,7 +83,7 @@ jobs:
       - install-bazel-linux-rbe
       - checkout
       - run-bazel-rbe:
-          command: bazel test //test/behaviour/connection/concept:test --test_output=errors
+          command: bazel test //test/behaviour/connection/concept/type/entitytype:test --test_output=errors
 
   test-traversal:
     machine: true
@@ -114,8 +100,6 @@ workflows:
       - build
       - build-checkstyle
       - test-basic
-      - test-keyspace
-      - test-session
-      - test-transaction
-#      - test-concept
+      - test-connection
+      - test-concept
       - test-traversal
