@@ -4,6 +4,7 @@ digraph mygraph {
   "//cluster:hypergraph" -> "//:hypergraph"
   "//core:hypergraph"
   "//core:hypergraph" -> "//:hypergraph"
+  "//core:hypergraph" -> "//common:common"
   "//core:hypergraph" -> "//concept:concept"
   "//core:hypergraph" -> "//graph:graph"
   "//core:hypergraph" -> "//traversal:traversal"
@@ -13,6 +14,9 @@ digraph mygraph {
   "//traversal:traversal"
   "//traversal:traversal" -> "//concept:concept"
   "//concept:concept"
+  "//concept:concept" -> "//common:common"
   "//concept:concept" -> "//graph:graph"
   "//graph:graph"
+  "//graph:graph" -> "//common:common"
+  "//common:common"
 }
