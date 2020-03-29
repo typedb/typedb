@@ -41,10 +41,10 @@ public abstract class Type {
     }
 
     Type newInstance(TypeVertex vertex) {
-        if (vertex.schema().equals(Schema.Vertex.Type.ATTRIBUTE_TYPE)) return new AttributeType(vertex);
-        if (vertex.schema().equals(Schema.Vertex.Type.ENTITY_TYPE)) return new EntityType(vertex);
-        if (vertex.schema().equals(Schema.Vertex.Type.RELATION_TYPE)) return new RelationType(vertex);
-        if (vertex.schema().equals(Schema.Vertex.Type.ROLE_TYPE)) return new RoleType(vertex);
+        if (vertex.schema().equals(Schema.Vertex.Type.ATTRIBUTE_TYPE)) return AttributeType.of(vertex);
+        if (vertex.schema().equals(Schema.Vertex.Type.ENTITY_TYPE)) return EntityType.of(vertex);
+        if (vertex.schema().equals(Schema.Vertex.Type.RELATION_TYPE)) return RelationType.of(vertex);
+        if (vertex.schema().equals(Schema.Vertex.Type.ROLE_TYPE)) return RoleType.of(vertex);
         return null;
     }
 

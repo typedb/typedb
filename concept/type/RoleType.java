@@ -24,12 +24,21 @@ import hypergraph.graph.vertex.TypeVertex;
 
 public class RoleType extends Type.Tree<RoleType> {
 
-    public RoleType(TypeVertex vertex) {
+    public static RoleType of(TypeVertex vertex) {
+        if (vertex.label().equals(Schema.Vertex.Type.Root.ROLE.label())) return new RoleType.Root(vertex);
+        else return new RoleType(vertex);
+    }
+
+    public static RoleType of(Graph graph, String label) {
+        return new RoleType(graph, label);
+    }
+
+    private RoleType(TypeVertex vertex) {
         super(vertex);
         assert(vertex.schema() == Schema.Vertex.Type.ROLE_TYPE);
     }
 
-    public RoleType(Graph graph, String label) {
+    private RoleType(Graph graph, String label) {
         super(graph, label, Schema.Vertex.Type.ROLE_TYPE);
     }
 
@@ -41,5 +50,12 @@ public class RoleType extends Type.Tree<RoleType> {
     @Override
     RoleType getThis() {
         return this;
+    }
+
+    public static class Root extends RoleType {
+
+        Root(TypeVertex vertex) {
+            super(vertex);
+        }
     }
 }

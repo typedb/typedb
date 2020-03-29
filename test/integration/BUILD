@@ -23,7 +23,7 @@ java_test(
     test_class = "hypergraph.test.integration.BasicTest",
     deps = [
         "//:hypergraph",
-        "//concept",
+        "//concept:concept",
         "//core:hypergraph",
     ],
 )

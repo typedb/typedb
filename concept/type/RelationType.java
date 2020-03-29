@@ -24,22 +24,38 @@ import hypergraph.graph.vertex.TypeVertex;
 
 public class RelationType extends Type.Tree<RelationType> {
 
-    public RelationType(TypeVertex vertex) {
+    public static RelationType of(TypeVertex vertex) {
+        if (vertex.label().equals(Schema.Vertex.Type.Root.RELATION.label())) return new RelationType.Root(vertex);
+        else return new RelationType(vertex);
+    }
+
+    public static RelationType of(Graph graph, String label) {
+        return new RelationType(graph, label);
+    }
+
+    private RelationType(TypeVertex vertex) {
         super(vertex);
         assert(vertex.schema() == Schema.Vertex.Type.RELATION_TYPE);
     }
 
-    public RelationType(Graph graph, String label) {
+    private RelationType(Graph graph, String label) {
         super(graph, label, Schema.Vertex.Type.RELATION_TYPE);
     }
 
     @Override
     RelationType newInstance(TypeVertex vertex) {
-        return new RelationType(vertex);
+        return of(vertex);
     }
 
     @Override
     RelationType getThis() {
         return this;
+    }
+
+    public static class Root extends RelationType {
+
+        Root(TypeVertex vertex) {
+            super(vertex);
+        }
     }
 }

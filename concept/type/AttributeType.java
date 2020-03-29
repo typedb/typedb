@@ -24,18 +24,27 @@ import hypergraph.graph.vertex.TypeVertex;
 
 public class AttributeType extends Type.Tree<AttributeType> {
 
-    public AttributeType(TypeVertex vertex) {
+    public static AttributeType of(TypeVertex vertex) {
+        if (vertex.label().equals(Schema.Vertex.Type.Root.ATTRIBUTE.label())) return new AttributeType.Root(vertex);
+        else return new AttributeType(vertex);
+    }
+
+    public static AttributeType of(Graph graph, String label) {
+        return new AttributeType(graph, label);
+    }
+
+    private AttributeType(TypeVertex vertex) {
         super(vertex);
         assert(vertex.schema() == Schema.Vertex.Type.ATTRIBUTE_TYPE);
     }
 
-    public AttributeType(Graph graph, String label) {
+    private AttributeType(Graph graph, String label) {
         super(graph, label, Schema.Vertex.Type.ATTRIBUTE_TYPE);
     }
 
     @Override
     AttributeType newInstance(TypeVertex vertex) {
-        return new AttributeType(vertex);
+        return of(vertex);
     }
 
     @Override
@@ -43,5 +52,10 @@ public class AttributeType extends Type.Tree<AttributeType> {
         return this;
     }
 
+    public static class Root extends AttributeType {
 
+        Root(TypeVertex vertex) {
+            super(vertex);
+        }
+    }
 }

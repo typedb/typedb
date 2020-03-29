@@ -24,22 +24,39 @@ import hypergraph.graph.vertex.TypeVertex;
 
 public class EntityType extends Type.Tree<EntityType> {
 
-    public EntityType(TypeVertex vertex) {
+    public static EntityType of(TypeVertex vertex) {
+        if (vertex.label().equals(Schema.Vertex.Type.Root.ENTITY.label())) return new EntityType.Root(vertex);
+        else return new EntityType(vertex);
+    }
+
+    public static EntityType of(Graph graph, String label) {
+        return new EntityType(graph, label);
+    }
+
+    private EntityType(TypeVertex vertex) {
         super(vertex);
         assert(vertex.schema() == Schema.Vertex.Type.ENTITY_TYPE);
     }
 
-    public EntityType(Graph graph, String label) {
+    private EntityType(Graph graph, String label) {
         super(graph, label, Schema.Vertex.Type.ENTITY_TYPE);
+        assert(!label.equals(Schema.Vertex.Type.Root.ENTITY.label()));
     }
 
     @Override
     EntityType newInstance(TypeVertex vertex) {
-        return new EntityType(vertex);
+        return of(vertex);
     }
 
     @Override
     EntityType getThis() {
         return this;
+    }
+
+    public static class Root extends EntityType {
+
+        Root(TypeVertex vertex) {
+            super(vertex);
+        }
     }
 }
