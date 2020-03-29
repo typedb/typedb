@@ -25,19 +25,19 @@ import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
 
-public class CoreIterator<G> implements Iterator<G> {
+public class CoreIterator<T> implements Iterator<T> {
 
     private final byte[] prefix;
     private final CoreTransaction.CoreStorage storage;
     private final AtomicBoolean isOpen;
-    private final BiFunction<byte[], byte[], G> constructor;
+    private final BiFunction<byte[], byte[], T> constructor;
     private RocksIterator rocksIterator;
     private State state;
-    private G next;
+    private T next;
 
-    private enum State {INIT, EMPTY, RETRIEVED, COMPLETED}
+    private enum State {INIT, EMPTY, FETCHED, COMPLETED}
 
-    CoreIterator(CoreTransaction.CoreStorage storage, byte[] prefix, BiFunction<byte[], byte[], G> constructor) {
+    CoreIterator(CoreTransaction.CoreStorage storage, byte[] prefix, BiFunction<byte[], byte[], T> constructor) {
         this.storage = storage;
         this.prefix = prefix;
         this.constructor = constructor;
@@ -51,7 +51,7 @@ public class CoreIterator<G> implements Iterator<G> {
         this.rocksIterator.seek(prefix);
     }
 
-    private boolean retrieveAndCheckHasNext() {
+    private boolean fetchAndCheck() {
         byte[] key;
         if (!rocksIterator.isValid() || !keyHasPrefix(key = rocksIterator.key(), prefix)) {
             state = State.COMPLETED;
@@ -60,7 +60,7 @@ public class CoreIterator<G> implements Iterator<G> {
         }
 
         next = constructor.apply(key, rocksIterator.value());
-        state = State.RETRIEVED;
+        state = State.FETCHED;
         return true;
     }
 
@@ -72,7 +72,7 @@ public class CoreIterator<G> implements Iterator<G> {
         return true;
     }
 
-    public final G peek() {
+    public final T peek() {
         if (!hasNext()) throw new NoSuchElementException();
         return next;
     }
@@ -89,20 +89,20 @@ public class CoreIterator<G> implements Iterator<G> {
         switch (state) {
             case COMPLETED:
                 return false;
-            case RETRIEVED:
+            case FETCHED:
                 return true;
             case EMPTY:
-                return retrieveAndCheckHasNext();
+                return fetchAndCheck();
             case INIT:
                 initalise();
-                return retrieveAndCheckHasNext();
+                return fetchAndCheck();
             default: // This should never be reached
                 return false;
         }
     }
 
     @Override
-    public final G next() {
+    public final T next() {
         if (!hasNext()) throw new NoSuchElementException();
         state = State.EMPTY;
         return next;

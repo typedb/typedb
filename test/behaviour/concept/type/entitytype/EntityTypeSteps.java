@@ -20,16 +20,20 @@ package hypergraph.test.behaviour.concept.type.entitytype;
 
 import hypergraph.Hypergraph;
 import hypergraph.concept.type.EntityType;
+import hypergraph.concept.type.Type;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 
 import java.util.List;
+import java.util.Set;
 
 import static grakn.common.util.Collections.list;
 import static hypergraph.test.behaviour.connection.ConnectionSteps.sessions;
 import static hypergraph.test.behaviour.connection.ConnectionSteps.sessionsToTransactions;
 import static java.util.Objects.isNull;
+import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class EntityTypeSteps {
 
@@ -66,7 +70,8 @@ public class EntityTypeSteps {
 
     @Then("entity\\( ?{word} ?) get supertypes contain:")
     public void entity_get_supertypes_contain(String label, List<String> superLabels) {
-
+        Set<String> actuals = tx().concepts().getEntityType(label).sups().map(Type::label).collect(toSet());
+        assertTrue(actuals.containsAll(superLabels));
     }
 
     @Then("entity\\( ?{word} ?) get subtypes contain: {word}")

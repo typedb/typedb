@@ -20,10 +20,17 @@ package hypergraph.concept.type;
 
 import hypergraph.graph.Graph;
 import hypergraph.graph.Schema;
+import hypergraph.graph.util.Iterators;
 import hypergraph.graph.vertex.TypeVertex;
 
 import java.util.Iterator;
 import java.util.Objects;
+import java.util.stream.Stream;
+
+import static java.util.Spliterator.IMMUTABLE;
+import static java.util.Spliterator.ORDERED;
+import static java.util.Spliterators.spliteratorUnknownSize;
+import static java.util.stream.StreamSupport.stream;
 
 public abstract class Type {
 
@@ -31,6 +38,18 @@ public abstract class Type {
 
     public Type(TypeVertex vertex) {
         this.vertex = Objects.requireNonNull(vertex);
+    }
+
+    Type newInstance(TypeVertex vertex) {
+        if (vertex.schema().equals(Schema.Vertex.Type.ATTRIBUTE_TYPE)) return new AttributeType(vertex);
+        if (vertex.schema().equals(Schema.Vertex.Type.ENTITY_TYPE)) return new EntityType(vertex);
+        if (vertex.schema().equals(Schema.Vertex.Type.RELATION_TYPE)) return new RelationType(vertex);
+        if (vertex.schema().equals(Schema.Vertex.Type.ROLE_TYPE)) return new RoleType(vertex);
+        return null;
+    }
+
+    public String label() {
+        return vertex.label();
     }
 
     @Override
@@ -73,6 +92,7 @@ public abstract class Type {
             parent = newInstance(parentVertex);
         }
 
+        @Override
         abstract TYPE newInstance(TypeVertex vertex);
 
         abstract TYPE getThis();
@@ -98,5 +118,17 @@ public abstract class Type {
             return parent;
         }
 
+        public Stream<TYPE> sups() {
+            Iterator<TYPE> sups = Iterators.loop(
+                    vertex,
+                    v -> v != null && v.schema().equals(this.vertex.schema()),
+                    v -> {
+                        Iterator<TypeVertex> p = v.outs().get(Schema.Edge.Type.SUB);
+                        if (p.hasNext()) return p.next();
+                        else return null;
+                    }).apply(this::newInstance);
+
+            return stream(spliteratorUnknownSize(sups, ORDERED | IMMUTABLE), false);
+        }
     }
 }

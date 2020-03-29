@@ -18,5 +18,28 @@
 
 package hypergraph.concept.type;
 
-public class RoleType {
+import hypergraph.graph.Graph;
+import hypergraph.graph.Schema;
+import hypergraph.graph.vertex.TypeVertex;
+
+public class RoleType extends Type.Tree<RoleType> {
+
+    public RoleType(TypeVertex vertex) {
+        super(vertex);
+        assert(vertex.schema() == Schema.Vertex.Type.ROLE_TYPE);
+    }
+
+    public RoleType(Graph graph, String label) {
+        super(graph, label, Schema.Vertex.Type.ROLE_TYPE);
+    }
+
+    @Override
+    RoleType newInstance(TypeVertex vertex) {
+        return new RoleType(vertex);
+    }
+
+    @Override
+    RoleType getThis() {
+        return this;
+    }
 }
