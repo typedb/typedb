@@ -148,4 +148,14 @@ public class Steps {
     public void entity_remove_plays_role(String label, String roleLabel) {
 
     }
+
+    @When("entity\\( ?{word} ?) get playing roles contain: {word}")
+    public void entity_get_playing_roles_contain(String label, String roleLabel) {
+        entity_get_playing_roles_contain(label, list(roleLabel));
+    }
+
+    @When("entity\\( ?{word} ?) get playing roles contain:")
+    public void entity_get_playing_roles_contain(String label, List<String> roleLabels) {
+
+    }
 }

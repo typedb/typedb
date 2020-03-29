@@ -18,7 +18,6 @@
 
 package hypergraph.concept.type;
 
-import hypergraph.common.HypergraphException;
 import hypergraph.graph.Graph;
 import hypergraph.graph.Schema;
 import hypergraph.graph.vertex.TypeVertex;
@@ -27,10 +26,7 @@ public class EntityType extends Type.Tree<EntityType> {
 
     public EntityType(TypeVertex vertex) {
         super(vertex);
-        if (vertex.schema() != Schema.Vertex.Type.ENTITY_TYPE) {
-            // TODO: REMOVE THIS ONCE TESTED
-            throw new HypergraphException("Invalid TypeVertex for EntityType");
-        }
+        assert(vertex.schema() == Schema.Vertex.Type.ENTITY_TYPE);
     }
 
     public EntityType(Graph graph, String label) {

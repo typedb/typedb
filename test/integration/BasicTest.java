@@ -261,4 +261,25 @@ public class BasicTest {
             assertNull(object);
         }
     }
+
+    @Test
+    public void test_subtyping() throws IOException {
+        resetDirectory();
+
+        try (Hypergraph graph = CoreHypergraph.open(directory.toString())) {
+            graph.keyspaces().create("my_data_keyspace");
+
+            try (Hypergraph.Session session = graph.session("my_data_keyspace")) {
+                try (Hypergraph.Transaction tx = session.transaction(Hypergraph.Transaction.Type.WRITE)) {
+                    String type = "man";
+                    String superType = "person";
+                    tx.concepts().putEntityType(type);
+                    tx.concepts().putEntityType(superType);
+                    EntityType parent = tx.concepts().getEntityType(superType);
+                    assertNotNull(parent);
+                    tx.concepts().getEntityType(type).sup(parent);
+                }
+            }
+        }
+    }
 }

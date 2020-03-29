@@ -38,7 +38,6 @@ import static hypergraph.test.behaviour.connection.ConnectionSteps.sessionsToTra
 import static hypergraph.test.behaviour.connection.ConnectionSteps.threadPool;
 import static java.util.Objects.isNull;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class Steps {
@@ -47,7 +46,7 @@ public class Steps {
     // sequential sessions, sequential transactions //
     // =============================================//
 
-    @When("session open transaction of type: {transaction_type}")
+    @When("session opens transaction of type: {transaction_type}")
     public void session_opens_transaction_of_type(Hypergraph.Transaction.Type type) {
         for_each_session_open_transactions_of_type(list(type));
     }
@@ -74,8 +73,22 @@ public class Steps {
         for_each_session_transactions_are(transaction -> assertEquals(isOpen, transaction.isOpen()));
     }
 
-    @Then("for each session, transaction commits successfully: {bool}")
-    public void for_each_session_transaction_commit(boolean successfully) {
+    @Then("transaction commits")
+    public void transaction_commits() {
+        sessionsToTransactions.get(sessions.get(0)).get(0).commit();
+    }
+
+    @Then("for each session, transaction(s) commit(s)")
+    public void for_each_session_transactions_commit() {
+        for (Hypergraph.Session session : sessions) {
+            for (Hypergraph.Transaction transaction : sessionsToTransactions.get(session)) {
+                transaction.commit();
+            }
+        }
+    }
+
+    @Then("for each session, transaction(s) commit(s) successfully: {bool}")
+    public void for_each_session_transactions_commit(boolean successfully) {
         for (Hypergraph.Session session : sessions) {
             for (Hypergraph.Transaction transaction : sessionsToTransactions.get(session)) {
                 boolean hasException = false;
@@ -84,11 +97,7 @@ public class Steps {
                 } catch (RuntimeException commitException) {
                     hasException = true;
                 }
-                if (successfully) {
-                    assertFalse(hasException);
-                } else {
-                    assertTrue(hasException);
-                }
+                assertEquals(successfully, !hasException);
             }
         }
     }

@@ -18,7 +18,6 @@
 
 package hypergraph.concept.type;
 
-import hypergraph.common.HypergraphException;
 import hypergraph.graph.Graph;
 import hypergraph.graph.Schema;
 import hypergraph.graph.vertex.TypeVertex;
@@ -27,10 +26,7 @@ public class RelationType extends Type.Tree<RelationType> {
 
     public RelationType(TypeVertex vertex) {
         super(vertex);
-        if (vertex.schema() != Schema.Vertex.Type.RELATION_TYPE) {
-            // TODO: REMOVE THIS ONCE TESTED
-            throw new HypergraphException("Invalid TypeVertex for EntityType");
-        }
+        assert(vertex.schema() == Schema.Vertex.Type.RELATION_TYPE);
     }
 
     public RelationType(Graph graph, String label) {
