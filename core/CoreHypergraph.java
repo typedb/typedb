@@ -19,7 +19,7 @@
 package hypergraph.core;
 
 import hypergraph.Hypergraph;
-import hypergraph.common.HypergraphException;
+import hypergraph.common.exception.HypergraphException;
 import org.rocksdb.Options;
 import org.rocksdb.RocksDB;
 

@@ -18,7 +18,7 @@
 
 package hypergraph.graph;
 
-import hypergraph.graph.util.ByteArrays;
+import hypergraph.common.collection.ByteArrays;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;

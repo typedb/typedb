@@ -16,7 +16,7 @@
  *
  */
 
-package hypergraph.graph.util;
+package hypergraph.common.collection;
 
 public class ByteArrays {
 

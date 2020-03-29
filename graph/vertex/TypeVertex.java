@@ -23,7 +23,7 @@ import hypergraph.graph.KeyGenerator;
 import hypergraph.graph.Schema;
 import hypergraph.graph.edge.Edge;
 import hypergraph.graph.edge.TypeEdge;
-import hypergraph.graph.util.Iterators;
+import hypergraph.common.iterator.Iterators;
 
 import java.util.Collections;
 import java.util.Iterator;
@@ -31,7 +31,7 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
-import static hypergraph.graph.util.ByteArrays.join;
+import static hypergraph.common.collection.ByteArrays.join;
 
 public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, TypeVertex, Schema.Edge.Type, TypeEdge> {
 

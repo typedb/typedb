@@ -20,7 +20,7 @@ package hypergraph.concept.type;
 
 import hypergraph.graph.Graph;
 import hypergraph.graph.Schema;
-import hypergraph.graph.util.Iterators;
+import hypergraph.common.iterator.Iterators;
 import hypergraph.graph.vertex.TypeVertex;
 
 import java.util.Iterator;

@@ -16,16 +16,29 @@
  *
  */
 
-package hypergraph.common;
+package hypergraph.common.iterator;
 
-public class HypergraphException extends RuntimeException {
+import java.util.Iterator;
+import java.util.function.Function;
 
-    public HypergraphException(String error) {
-        super(error);
+public class AppliedIterator<T, U> implements Iterators.Composable<U> {
+
+    private final Iterator<T> iterator;
+
+    private final Function<T,U> function;
+
+    AppliedIterator(Iterator<T> iterator, Function<T, U> function) {
+        this.iterator = iterator;
+        this.function = function;
     }
 
-    public HypergraphException(Exception e) {
-        super(e);
+    @Override
+    public boolean hasNext() {
+        return iterator.hasNext();
+    }
+    @Override
+    public U next() {
+        return function.apply(iterator.next());
     }
 
 }

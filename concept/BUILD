@@ -33,6 +33,7 @@ java_library(
         "*/*.java",
     ]),
     deps = [
+        "//common:common",
         "//graph:graph",
     ],
 )

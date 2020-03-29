@@ -19,10 +19,8 @@
 package hypergraph.core;
 
 import hypergraph.Hypergraph;
-import hypergraph.common.HypergraphException;
 import hypergraph.graph.KeyGenerator;
 import org.rocksdb.OptimisticTransactionDB;
-import org.rocksdb.RocksDBException;
 
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;

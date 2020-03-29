@@ -18,8 +18,8 @@
 
 package hypergraph.graph;
 
-import hypergraph.common.HypergraphException;
-import hypergraph.common.ManagedReadWriteLock;
+import hypergraph.common.exception.HypergraphException;
+import hypergraph.common.concurrent.ManagedReadWriteLock;
 import hypergraph.graph.vertex.ThingVertex;
 import hypergraph.graph.vertex.TypeVertex;
 import hypergraph.graph.vertex.Vertex;

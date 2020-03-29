@@ -26,7 +26,7 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static hypergraph.graph.util.ByteArrays.join;
+import static hypergraph.common.collection.ByteArrays.join;
 import static java.util.Arrays.copyOfRange;
 
 public abstract class TypeEdge extends Edge<Schema.Edge.Type, TypeVertex> {
