@@ -30,7 +30,7 @@ import org.junit.runner.RunWith;
         features = "external/graknlabs_verification/behaviour/connection/session.feature",
         tags = "not @ignore and not @ignore-hypergraph"
 )
-public class Test {
+public class SessionTest {
     // ATTENTION:
     // When you click RUN from within this class through Intellij IDE, it will fail.
     // You can fix it by doing:

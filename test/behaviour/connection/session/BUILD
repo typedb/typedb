@@ -21,7 +21,7 @@ load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 java_library(
     name = "steps",
     srcs = [
-        "Steps.java",
+        "SessionSteps.java",
     ],
     deps = [
         # Internal Package Dependencies
@@ -40,9 +40,9 @@ java_library(
 java_test(
     name = "test",
     srcs = [
-        "Test.java"
+        "SessionTest.java"
     ],
-    test_class = "hypergraph.test.behaviour.connection.session.Test",
+    test_class = "hypergraph.test.behaviour.connection.session.SessionTest",
     deps = [
         # External Maven Dependencies
         "//dependencies/maven/artifacts/io/cucumber:cucumber-junit",

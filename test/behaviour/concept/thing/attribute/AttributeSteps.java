@@ -16,8 +16,8 @@
  *
  */
 
-package hypergraph.test.behaviour.concept.type.attributetype;
+package hypergraph.test.behaviour.concept.thing.attribute;
 
-public class Steps {
+public class AttributeSteps {
 
 }

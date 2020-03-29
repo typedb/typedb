@@ -40,7 +40,7 @@ import static java.util.Objects.isNull;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class Steps {
+public class TransactionSteps {
 
     // =============================================//
     // sequential sessions, sequential transactions //

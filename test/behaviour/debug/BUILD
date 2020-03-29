@@ -21,9 +21,9 @@ load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 java_test(
     name = "test",
     srcs = [
-        "Test.java",
+        "DebugTest.java",
     ],
-    test_class = "hypergraph.test.behaviour.debug.Test",
+    test_class = "hypergraph.test.behaviour.debug.DebugTest",
     deps = [
         # Internal Package Dependencies
 

@@ -16,8 +16,8 @@
  *
  */
 
-package hypergraph.test.behaviour.concept.thing.relation;
+package hypergraph.test.behaviour.concept.type.relationtype;
 
-public class Steps {
+public class RelationTypeSteps {
 
 }

@@ -16,8 +16,8 @@
  *
  */
 
-package hypergraph.test.behaviour.concept.thing.attribute;
+package hypergraph.test.behaviour.concept.thing.entity;
 
-public class Steps {
+public class EntitySteps {
 
 }

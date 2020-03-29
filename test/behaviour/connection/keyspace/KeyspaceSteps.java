@@ -34,7 +34,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-public class Steps {
+public class KeyspaceSteps {
 
     @When("connection create keyspace: {word}")
     public void connection_create_keyspace(String name) {

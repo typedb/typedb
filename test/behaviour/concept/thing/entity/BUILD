@@ -21,7 +21,7 @@ load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 java_library(
     name = "steps",
     srcs = [
-        "Steps.java"
+        "EntitySteps.java"
     ],
     deps = [
 #        # Internal Package Dependencies
@@ -39,9 +39,9 @@ java_library(
 java_test(
     name = "test",
     srcs = [
-        "Test.java"
+        "EntityTest.java"
     ],
-    test_class = "hypergraph.test.behaviour.concept.thing.entity.Test",
+    test_class = "hypergraph.test.behaviour.concept.thing.entity.EntityTest",
     deps = [
         # External Maven Dependencies
         "//dependencies/maven/artifacts/io/cucumber:cucumber-junit",

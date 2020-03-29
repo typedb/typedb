@@ -37,7 +37,7 @@ import static java.util.Objects.isNull;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class Steps {
+public class SessionSteps {
 
     @When("connection open session for keyspace: {word}")
     public void connection_open_session_for_keyspace(String name) {

@@ -31,7 +31,7 @@ import static hypergraph.test.behaviour.connection.ConnectionSteps.sessionsToTra
 import static java.util.Objects.isNull;
 import static org.junit.Assert.assertEquals;
 
-public class Steps {
+public class EntityTypeSteps {
 
     private static Hypergraph.Transaction tx() {
         return sessionsToTransactions.get(sessions.get(0)).get(0);
