@@ -23,15 +23,8 @@ import grakn.core.common.config.Config;
 import grakn.core.common.config.ConfigKey;
 import grakn.core.common.config.SystemProperty;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.graql.reasoner.query.ResolvableQuery;
-import grakn.core.graql.reasoner.rule.InferenceRule;
 import grakn.core.graql.reasoner.state.AnswerPropagatorState;
-import grakn.core.graql.reasoner.state.AnswerState;
-import grakn.core.graql.reasoner.state.AtomicState;
 import grakn.core.graql.reasoner.state.ResolutionState;
-import grakn.core.graql.reasoner.utils.AnswerUtil;
-import grakn.core.kb.graql.reasoner.unifier.Unifier;
-import graql.lang.statement.Variable;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -73,34 +66,26 @@ public class ResolutionTree {
         mapping.clear();
     }
 
-    public void addState(ResolutionState state) {
-        AnswerPropagatorState parent = state.getParentState();
-        if (parent == null) return;
-
-        if (state.isAnswerState()) {
-            addAnswerState((AnswerState) state, parent);
-        } else {
-            addChildToNode(parent, state);
+    public void addState(ResolutionState newState, ResolutionState previousState) {
+        if (!newState.isAnswerState()) addState(newState);
+        else {
+            //NB: by doing this we ensure the newState answer is the previousState answer that has been consumed -
+            //all answer information is present
+            if (previousState.isAnswerState()){
+                addAnswer(newState.getSubstitution(), previousState.getParentState());
+            }
         }
     }
 
-    private void addAnswerState(AnswerState state, AnswerPropagatorState parent){
+    private void addState(ResolutionState state) {
+        AnswerPropagatorState parent = state.getParentState();
+        if (parent == null) return;
+        addChildToNode(parent, state);
+    }
+
+    private void addAnswer(ConceptMap answer, AnswerPropagatorState parent){
         Node parentNode = getNode(parent);
-        if (parentNode != null){
-            ConceptMap sub = state.getSubstitution();
-            ResolvableQuery query = parent.getQuery();
-            Set<Variable> vars = query.getVarNames();
-            InferenceRule rule = state.getRule();
-            if((parent instanceof AtomicState) &&  rule != null){
-                Unifier unifier = state.getUnifier();
-                sub = AnswerUtil.joinAnswers(
-                        sub,
-                        rule.getHead().getRoleSubstitution()
-                );
-                sub = unifier.apply(sub);
-            }
-            parentNode.addAnswer(sub.project(vars));
-        }
+        if (parentNode != null) parentNode.addAnswer(answer);
     }
 
     private Node putNode(ResolutionState state){
