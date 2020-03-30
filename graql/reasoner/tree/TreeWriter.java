@@ -52,13 +52,13 @@ public class TreeWriter {
     private void writeEdge(Node from, Node to, Map<Node, Integer> ids, BufferedWriter writer) throws IOException {
         Integer nodeId = ids.get(from);
         Integer childId = ids.get(to);
-        writer.write(nodeId + " -- " + childId + ";");
+        writer.write(nodeId + " -> " + childId + ";");
         writer.newLine();
     }
 
     void write(Node root, Map<Node, Integer> ids) throws IOException {
         try(BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(filePath.toFile())))){
-            writer.write("graph {");
+            writer.write("digraph {");
             writer.newLine();
 
             Stack<Node> nodes = new Stack<>();
