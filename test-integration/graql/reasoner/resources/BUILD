@@ -104,3 +104,8 @@ filegroup(
     name = "resolution-plan",
     srcs = ["resolutionPlanTest.gql"],
 )
+
+filegroup(
+    name = "reasoner-logback-test",
+    srcs = ["logback.xml"],
+)

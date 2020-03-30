@@ -19,13 +19,20 @@
 
 package grakn.core.graql.reasoner.tree;
 
+import com.google.common.collect.Sets;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.graql.reasoner.query.ResolvableQuery;
+import grakn.core.graql.reasoner.state.AnswerPropagatorState;
 import grakn.core.graql.reasoner.state.ResolutionState;
+import grakn.core.kb.graql.reasoner.ReasonerException;
+import grakn.core.kb.graql.reasoner.atom.Atomic;
+import graql.lang.statement.Variable;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  *
@@ -84,7 +91,24 @@ public class NodeImpl implements Node{
 
     @Override
     public void addAnswer(ConceptMap answer){
+        if (answer.isEmpty()) return;
+        validateAnswer(answer);
         answers.add(answer);
+    }
+
+    private void validateAnswer(ConceptMap answer){
+        if (state instanceof AnswerPropagatorState){
+            ResolvableQuery query = ((AnswerPropagatorState) state).getQuery();
+            Set<Variable> atomVars = query.getAtoms().stream()
+                    .filter(at -> at.isRelation() || at.isAttribute())
+                    .map(Atomic::getVarName)
+                    .collect(Collectors.toSet());
+            Set<Variable> vars = query.getVarNames();
+            Set<Variable> answerVars = answer.vars();
+           if(Sets.difference(vars, answerVars).stream().anyMatch(v -> !atomVars.contains(v))){
+                throw ReasonerException.invalidResolutionProfilerAnswer(query, answer);
+            }
+        }
     }
 
     @Override

@@ -23,7 +23,15 @@ import grakn.core.common.config.Config;
 import grakn.core.common.config.ConfigKey;
 import grakn.core.common.config.SystemProperty;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.graql.reasoner.query.ResolvableQuery;
+import grakn.core.graql.reasoner.rule.InferenceRule;
+import grakn.core.graql.reasoner.state.AnswerPropagatorState;
+import grakn.core.graql.reasoner.state.AnswerState;
+import grakn.core.graql.reasoner.state.AtomicState;
 import grakn.core.graql.reasoner.state.ResolutionState;
+import grakn.core.graql.reasoner.utils.AnswerUtil;
+import grakn.core.kb.graql.reasoner.unifier.Unifier;
+import graql.lang.statement.Variable;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -66,17 +74,32 @@ public class ResolutionTree {
     }
 
     public void addState(ResolutionState state) {
-        ResolutionState parent = state.getParentState();
+        AnswerPropagatorState parent = state.getParentState();
         if (parent == null) return;
 
         if (state.isAnswerState()) {
-            Node parentNode = getNode(parent);
-            if (parentNode != null){
-                ConceptMap sub = state.getSubstitution();
-                parentNode.addAnswer(sub);
-            }
+            addAnswerState((AnswerState) state, parent);
         } else {
             addChildToNode(parent, state);
+        }
+    }
+
+    private void addAnswerState(AnswerState state, AnswerPropagatorState parent){
+        Node parentNode = getNode(parent);
+        if (parentNode != null){
+            ConceptMap sub = state.getSubstitution();
+            ResolvableQuery query = parent.getQuery();
+            Set<Variable> vars = query.getVarNames();
+            InferenceRule rule = state.getRule();
+            if((parent instanceof AtomicState) &&  rule != null){
+                Unifier unifier = state.getUnifier();
+                sub = AnswerUtil.joinAnswers(
+                        sub,
+                        rule.getHead().getRoleSubstitution()
+                );
+                sub = unifier.apply(sub);
+            }
+            parentNode.addAnswer(sub.project(vars));
         }
     }
 
