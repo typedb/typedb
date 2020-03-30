@@ -60,6 +60,7 @@ public class CoreIterator<T> implements Iterator<T> {
         }
 
         next = constructor.apply(key, rocksIterator.value());
+        rocksIterator.next();
         state = State.FETCHED;
         return true;
     }

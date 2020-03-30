@@ -27,6 +27,10 @@ import java.util.function.UnaryOperator;
 
 public class Iterators {
 
+    public static <T> TreeIterator<T> tree(T root, Function<T, Iterator<T>> childrenFn) {
+        return new TreeIterator<>(root, childrenFn);
+    }
+
     public static <T> LoopIterator<T> loop(T seed, Predicate<T> predicate, UnaryOperator<T> function) {
         return new LoopIterator<>(seed, predicate, function);
     }

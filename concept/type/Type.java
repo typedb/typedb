@@ -18,9 +18,9 @@
 
 package hypergraph.concept.type;
 
+import hypergraph.common.iterator.Iterators;
 import hypergraph.graph.Graph;
 import hypergraph.graph.Schema;
-import hypergraph.common.iterator.Iterators;
 import hypergraph.graph.vertex.TypeVertex;
 
 import java.util.Iterator;
@@ -50,6 +50,11 @@ public abstract class Type {
 
     public String label() {
         return vertex.label();
+    }
+
+    public Stream<? extends Type> subs() {
+        Iterator<Type> sups = Iterators.tree(vertex, v -> v.ins().get(Schema.Edge.Type.SUB)).apply(this::newInstance);
+        return stream(spliteratorUnknownSize(sups, ORDERED), false);
     }
 
     @Override

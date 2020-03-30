@@ -18,18 +18,19 @@
 
 package hypergraph.graph.vertex;
 
+import hypergraph.common.iterator.Iterators;
 import hypergraph.graph.Graph;
 import hypergraph.graph.KeyGenerator;
 import hypergraph.graph.Schema;
 import hypergraph.graph.edge.Edge;
 import hypergraph.graph.edge.TypeEdge;
-import hypergraph.common.iterator.Iterators;
 
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 import static hypergraph.common.collection.ByteArrays.join;
 
@@ -183,14 +184,18 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, TypeVertex, 
 
             @Override
             public Iterator<TypeVertex> get(Schema.Edge.Type schema) {
-                if (edges.get(schema) != null) return Iterators.apply(edges.get(schema).iterator(), Edge::to);
+                Function<TypeEdge, TypeVertex> vertexFn = direction.isOut() ? Edge::to : Edge::from;
+                if (edges.get(schema) != null) return Iterators.apply(edges.get(schema).iterator(), vertexFn);
                 return Collections.emptyIterator();
             }
 
             @Override
             public void remove(Schema.Edge.Type schema, TypeVertex adjacent) {
                 if (edges.containsKey(schema)) {
-                    edges.get(schema).parallelStream().filter(e -> e.to().equals(adjacent)).forEach(Edge::delete);
+                    Predicate<TypeEdge> predicate = direction.isOut()
+                            ? e -> e.to().equals(adjacent)
+                            : e -> e.from().equals(adjacent);
+                    edges.get(schema).parallelStream().filter(predicate).forEach(Edge::delete);
                 }
             }
 
@@ -200,6 +205,7 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, TypeVertex, 
             }
         }
     }
+
     public static class Persisted extends TypeVertex {
 
 
@@ -287,14 +293,20 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, TypeVertex, 
                         (iid, value) -> new TypeEdge.Persisted(graph, iid)
                 );
 
-                if (edges.get(schema) != null) return Iterators.link(edges.get(schema).iterator(), storageIterator).apply(vertexFn);
+                if (edges.get(schema) != null) return Iterators.link(edges.get(schema).iterator(),
+                                                                     storageIterator).apply(vertexFn);
                 else return Iterators.apply(storageIterator, vertexFn);
             }
 
             @Override
             public void remove(Schema.Edge.Type schema, TypeVertex adjacent) {
                 Optional<TypeEdge> container;
-                if (edges.containsKey(schema) && (container = edges.get(schema).stream().filter(e -> e.to().equals(adjacent)).findAny()).isPresent()) {
+                Predicate<TypeEdge> predicate = direction.isOut()
+                        ? e -> e.to().equals(adjacent)
+                        : e -> e.from().equals(adjacent);
+
+                if (edges.containsKey(schema) &&
+                        (container = edges.get(schema).stream().filter(predicate).findAny()).isPresent()) {
                     edges.get(schema).remove(container.get());
                 } else {
                     Schema.Infix infix = direction.isOut() ? schema.out() : schema.in();

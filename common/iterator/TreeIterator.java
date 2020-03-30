@@ -18,31 +18,38 @@
 
 package hypergraph.common.iterator;
 
+import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.NoSuchElementException;
-import java.util.function.Predicate;
-import java.util.function.UnaryOperator;
+import java.util.function.Function;
 
-public class LoopIterator<T> implements Iterators.Composable<T> {
+public class TreeIterator<T> implements Iterators.Composable<T> {
 
-    private final Predicate<T> predicate;
-    private final UnaryOperator<T> function;
+    private final Function<T, Iterator<T>> childrenFn;
+
     private T next;
     private State state;
+    private LinkedList<Iterator<T>> families;
+
     private enum State {EMPTY, FETCHED, COMPLETED}
 
-    LoopIterator(T seed, Predicate<T> predicate, UnaryOperator<T> function) {
-        state = State.FETCHED; // because first result is 'seed'
-        this.next = seed;
-        this.predicate = predicate;
-        this.function = function;
+    TreeIterator(T root, Function<T, Iterator<T>> childrenFn) {
+        this.next = root;
+        this.childrenFn = childrenFn;
+
+        state = State.FETCHED; // because first result is 'root'
+        families = new LinkedList<>();
+        families.add(childrenFn.apply(next));
     }
 
     private boolean fetchAndCheck() {
-        next = function.apply(next);
-        if (!predicate.test(next)) {
+        while (!families.isEmpty() && !families.getFirst().hasNext()) families.removeFirst();
+        if (families.isEmpty()) {
             state = State.COMPLETED;
             return false;
         }
+        next = families.getFirst().next();
+        families.addLast(childrenFn.apply(next));
         state = State.FETCHED;
         return true;
     }

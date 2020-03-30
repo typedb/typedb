@@ -81,7 +81,8 @@ public class EntityTypeSteps {
 
     @Then("entity\\( ?{word} ?) get subtypes contain:")
     public void entity_get_subtypes_contain(String label, List<String> subLabels) {
-
+        Set<String> actuals = tx().concepts().getEntityType(label).subs().map(Type::label).collect(toSet());
+        assertTrue(actuals.containsAll(subLabels));
     }
 
     @When("entity\\( ?{word} ?) set label: {word}")
