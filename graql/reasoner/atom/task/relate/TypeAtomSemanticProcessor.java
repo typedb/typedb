@@ -36,6 +36,8 @@ import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
 import graql.lang.statement.Variable;
+
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -109,7 +111,7 @@ public class TypeAtomSemanticProcessor implements SemanticProcessor<TypeAtom> {
                     .flatMap(vp -> vp.unify(unifierInverse).stream()).collect(toSet());
             parentAtom.getPredicates(parentVar, ValuePredicate.class).forEach(predicatesToSatisfy::remove);
 
-            diff.add(new VariableDefinition(parentVar, requiredType, null, new HashSet<>(), predicatesToSatisfy));
+            diff.add(new VariableDefinition(parentVar, requiredType, null, new ArrayList<>(), predicatesToSatisfy));
         });
         return new SemanticDifference(diff);
     }

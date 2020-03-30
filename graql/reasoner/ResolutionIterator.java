@@ -73,6 +73,7 @@ public class ResolutionIterator extends ReasonerQueryIterator {
             LOG.trace("state: {}", state);
 
             if (state.isAnswerState() && state.isTopState()) {
+                if (LOG.isTraceEnabled()) logTree.outputToFile();
                 return state.getSubstitution();
             }
 
@@ -149,6 +150,6 @@ public class ResolutionIterator extends ReasonerQueryIterator {
         subGoals.forEach(queryCache::ackCompleteness);
         queryCache.propagateAnswers();
 
-        if (LOG.isTraceEnabled()) logTree.outputToFile();
+//        if (LOG.isTraceEnabled()) logTree.outputToFile();
     }
 }

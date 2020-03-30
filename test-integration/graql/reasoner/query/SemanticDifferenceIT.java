@@ -47,7 +47,10 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -103,7 +106,7 @@ public class SemanticDifferenceIT {
 
             SemanticDifference expected = new SemanticDifference(
                     ImmutableSet.of(
-                            new VariableDefinition(new Variable("z"), subRoleEntity, null, new HashSet<>(), new HashSet<>())
+                            new VariableDefinition(new Variable("z"), subRoleEntity, null, new ArrayList<>(), new HashSet<>())
                     )
             );
             assertEquals(expected, semanticPair.second());
@@ -135,7 +138,7 @@ public class SemanticDifferenceIT {
 
             SemanticDifference expected = new SemanticDifference(
                     ImmutableSet.of(
-                            new VariableDefinition(new Variable("z"), subRoleEntity, null, new HashSet<>(), new HashSet<>())
+                            new VariableDefinition(new Variable("z"), subRoleEntity, null, new ArrayList<>(), new HashSet<>())
                     )
             );
             assertEquals(expected, semanticPair.second());
@@ -188,8 +191,8 @@ public class SemanticDifferenceIT {
 
             SemanticDifference expected = new SemanticDifference(
                     ImmutableSet.of(
-                            new VariableDefinition(new Variable("role"), null, role, new HashSet<>(), new HashSet<>()),
-                            new VariableDefinition(new Variable("z"), null, null, Sets.newHashSet(role), new HashSet<>())
+                            new VariableDefinition(new Variable("role"), null, role, new ArrayList<>(), new HashSet<>()),
+                            new VariableDefinition(new Variable("z"), null, null, Arrays.asList(role), new HashSet<>())
                     )
             );
             assertEquals(expected, semanticPair.second());
@@ -220,7 +223,7 @@ public class SemanticDifferenceIT {
 
             SemanticDifference expected = new SemanticDifference(
                     ImmutableSet.of(
-                            new VariableDefinition(new Variable("z"), null, null, Sets.newHashSet(subRole), new HashSet<>())
+                            new VariableDefinition(new Variable("z"), null, null, Arrays.asList(subRole), new HashSet<>())
                     )
             );
             assertEquals(expected, semanticPair.second());
@@ -276,7 +279,7 @@ public class SemanticDifferenceIT {
 
             SemanticDifference expected = new SemanticDifference(
                     ImmutableSet.of(
-                            new VariableDefinition(new Variable("z"), null, null, Sets.newHashSet(subRole1, subRole2), new HashSet<>())
+                            new VariableDefinition(new Variable("z"), null, null, Arrays.asList(subRole1, subRole2), new HashSet<>())
                     )
             );
             assertEquals(expected, semanticPair.second());
@@ -321,8 +324,8 @@ public class SemanticDifferenceIT {
 
             SemanticDifference expected = new SemanticDifference(
                     ImmutableSet.of(
-                            new VariableDefinition(new Variable("z"), null, null, Sets.newHashSet(subRole1), new HashSet<>()),
-                            new VariableDefinition(new Variable("w"), null, null, Sets.newHashSet(subRole2), new HashSet<>())
+                            new VariableDefinition(new Variable("z"), null, null, Arrays.asList(subRole1), new HashSet<>()),
+                            new VariableDefinition(new Variable("w"), null, null,Arrays.asList(subRole2), new HashSet<>())
                     )
             );
             assertEquals(expected, semanticPair.second());
@@ -372,7 +375,7 @@ public class SemanticDifferenceIT {
 
             SemanticDifference expected = new SemanticDifference(
                     ImmutableSet.of(
-                            new VariableDefinition(parentAtom.getAttributeVariable(),null, null, new HashSet<>(), predicatesToSatisfy)
+                            new VariableDefinition(parentAtom.getAttributeVariable(),null, null, new ArrayList<>(), predicatesToSatisfy)
                     )
             );
             assertEquals(expected, semanticPair.second());
@@ -403,7 +406,7 @@ public class SemanticDifferenceIT {
 
             SemanticDifference expected = new SemanticDifference(
                     ImmutableSet.of(
-                            new VariableDefinition(parentAtom.getAttributeVariable(),null, null, new HashSet<>(), predicatesToSatisfy)
+                            new VariableDefinition(parentAtom.getAttributeVariable(),null, null, new ArrayList<>(), predicatesToSatisfy)
                     )
             );
             assertEquals(expected, semanticPair.second());
@@ -432,7 +435,7 @@ public class SemanticDifferenceIT {
                     .collect(toSet());
             SemanticDifference expected = new SemanticDifference(
                     ImmutableSet.of(
-                            new VariableDefinition(parent.getAtom().getVarName(),null, null, new HashSet<>(), predicatesToSatisfy)
+                            new VariableDefinition(parent.getAtom().getVarName(),null, null, new ArrayList<>(), predicatesToSatisfy)
                     )
             );
             assertEquals(expected, semanticPair.second());
@@ -461,7 +464,7 @@ public class SemanticDifferenceIT {
                     .collect(toSet());
             SemanticDifference expected = new SemanticDifference(
                     ImmutableSet.of(
-                            new VariableDefinition(parent.getAtom().getVarName(),null, null, new HashSet<>(), predicatesToSatisfy)
+                            new VariableDefinition(parent.getAtom().getVarName(),null, null, new ArrayList<>(), predicatesToSatisfy)
                     )
             );
             assertEquals(expected, semanticPair.second());
@@ -485,6 +488,29 @@ public class SemanticDifferenceIT {
             multiUnifier.stream()
                     .map(u -> parent.getAtom().computeSemanticDifference(child.getAtom(), u))
                     .forEach(sd -> assertTrue(sd.isTrivial()));
+        }
+    }
+
+    @Test
+    public void whenChildSpecialisesWithDuplicateRole_differenceExists() {
+        try(TestTransaction tx = ((TestTransaction) genericSchemaSession.writeTransaction())) {
+            ReasonerQueryFactory reasonerQueryFactory = tx.reasonerQueryFactory();
+            Pattern childPattern = var().rel("baseRole1", var("x")).rel("baseRole1", var("x")).isa("binary");
+            Pattern parentPattern = var().rel("baseRole1", var("x")).isa("binary");
+
+            ReasonerAtomicQuery parent = reasonerQueryFactory.atomic(conjunction(parentPattern));
+            ReasonerAtomicQuery child = reasonerQueryFactory.atomic(conjunction(childPattern));
+            Set<Pair<Unifier, SemanticDifference>> semanticPairs = parent.getMultiUnifierWithSemanticDiff(child);
+            Pair<Unifier, SemanticDifference> semanticPair = Iterables.getOnlyElement(semanticPairs);
+
+            List<Role> expectedRoles = Arrays.asList(tx.getRole("baseRole1"));
+            SemanticDifference expected = new SemanticDifference(
+                    ImmutableSet.of(
+                            new VariableDefinition(new Variable("x"), null, null, expectedRoles, new HashSet<>())
+                    )
+            );
+
+            assertEquals(expected, semanticPair.second());
         }
     }
 

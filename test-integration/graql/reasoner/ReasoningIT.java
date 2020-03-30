@@ -614,20 +614,23 @@ public class ReasoningIT {
 
     @Test
     public void whenAppendingRolePlayers_DuplicatesAreCreated() {
-        try (Session session = server.sessionWithNewKeyspace()) {
-            loadFromFileAndCommit(resourcePath, "appendingRPs.gql", session);
-            try (Transaction tx = session.readTransaction()) {
-                Stream<ConceptMap> answers = tx.stream(Graql.parse("match " +
-                        "$r (anotherRole: $x, anotherRole: $x) isa baseRelation;get;").asGet());
-                answers.forEach(answer -> {
-                    Relation baseRelation = answer.get("r").asRelation();
-                    Thing player = answer.get("x").asThing();
+        for (int i = 0; i < 2; i++) {
+            System.out.println("repetition: " + i);
+            try (Session session = server.sessionWithNewKeyspace()) {
+                loadFromFileAndCommit(resourcePath, "appendingRPs.gql", session);
+                try (Transaction tx = session.readTransaction()) {
+                    Stream<ConceptMap> answers = tx.stream(Graql.parse("match " +
+                            "$r (anotherRole: $x, anotherRole: $x) isa baseRelation;get;").asGet());
+                    answers.forEach(answer -> {
+                        Relation baseRelation = answer.get("r").asRelation();
+                        Thing player = answer.get("x").asThing();
 
-                    List<Thing> identicalRolePlayers = baseRelation.rolePlayers(tx.getRole("anotherRole"))
-                            .filter(thing -> thing.equals(player))
-                            .collect(Collectors.toList());
-                    assertTrue( identicalRolePlayers.size() >= 2);
-                });
+                        List<Thing> identicalRolePlayers = baseRelation.rolePlayers(tx.getRole("anotherRole"))
+                                .filter(thing -> thing.equals(player))
+                                .collect(Collectors.toList());
+                        assertTrue(identicalRolePlayers.size() >= 2);
+                    });
+                }
             }
         }
     }
@@ -779,3 +782,4 @@ public class ReasoningIT {
         }
     }
 }
+

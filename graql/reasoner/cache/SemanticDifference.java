@@ -34,6 +34,7 @@ import graql.lang.statement.Variable;
 import javax.annotation.CheckReturnValue;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -74,7 +75,7 @@ public class SemanticDifference {
 
     public boolean isTrivial(){ return definition.isEmpty();}
 
-    private Set<Relation> rolesToRels(Variable var, Set<Role> roles, ConceptMap answer) {
+    private Set<Relation> rolesToRels(Variable var, List<Role> roles, ConceptMap answer) {
         if (!answer.containsVar(var)) return new HashSet<>();
         Set<Role> roleAndTheirSubs = roles.stream().flatMap(Role::subs).collect(Collectors.toSet());
         return answer.get(var).asThing()
@@ -85,21 +86,21 @@ public class SemanticDifference {
     private boolean satisfiedBy(ConceptMap answer) {
         if (isEmpty()) return true;
 
-        Map<Variable, Set<Role>> roleRequirements = this.definition.stream()
+        Map<Variable, List<Role>> roleRequirements = this.definition.stream()
                 .filter(vd -> !vd.playedRoles().isEmpty())
                 .collect(Collectors.toMap(VariableDefinition::var, VariableDefinition::playedRoles));
 
         //check for role compatibility
-        Iterator<Map.Entry<Variable, Set<Role>>> reqIterator = roleRequirements.entrySet().iterator();
+        Iterator<Map.Entry<Variable, List<Role>>> reqIterator = roleRequirements.entrySet().iterator();
         Set<Relation> relations;
         if (reqIterator.hasNext()) {
-            Map.Entry<Variable, Set<Role>> req = reqIterator.next();
+            Map.Entry<Variable, List<Role>> req = reqIterator.next();
             relations = rolesToRels(req.getKey(), req.getValue(), answer);
         } else {
             relations = new HashSet<>();
         }
         while (!relations.isEmpty() && reqIterator.hasNext()) {
-            Map.Entry<Variable, Set<Role>> req = reqIterator.next();
+            Map.Entry<Variable, List<Role>> req = reqIterator.next();
             relations = Sets.intersection(relations, rolesToRels(req.getKey(), req.getValue(), answer));
         }
         if (relations.isEmpty() && !roleRequirements.isEmpty()) return false;

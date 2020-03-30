@@ -34,6 +34,8 @@ import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
 import graql.lang.statement.Variable;
+
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -105,7 +107,7 @@ public class AttributeSemanticProcessor implements SemanticProcessor<AttributeAt
                 .flatMap(vp -> vp.unify(unifierInverse).stream()).collect(toSet());
         parent.getMultiPredicate().forEach(predicatesToSatisfy::remove);
 
-        diff.add(new VariableDefinition(parentVar, null, null, new HashSet<>(), predicatesToSatisfy));
+        diff.add(new VariableDefinition(parentVar, null, null, new ArrayList<>(), predicatesToSatisfy));
         return baseDiff.merge(new SemanticDifference(diff));
     }
 }

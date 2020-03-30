@@ -100,11 +100,13 @@ public class ResolutionTree {
     public void outputToFile() {
         String fileName = "query.profile";
         Config config = Config.create();
-        Path logPath = Paths.get(config.getProperty(ConfigKey.LOG_DIR), fileName);
-        Path homePath = Paths.get(Objects.requireNonNull(SystemProperty.CURRENT_DIRECTORY.value()));
-        Path profilePath = logPath.isAbsolute()? logPath : homePath.resolve(logPath);
+//        Path logPath = Paths.get(config.getProperty(ConfigKey.LOG_DIR), fileName);
+//        Path homePath = Paths.get(Objects.requireNonNull(SystemProperty.CURRENT_DIRECTORY.value()));
+//        Path profilePath = logPath.isAbsolute()? logPath : homePath.resolve(logPath);
+        Path profilePath = Paths.get("/tmp/query/" + fileName);
 
         try {
+            profilePath.getParent().toFile().mkdirs();
             new TreeWriter(profilePath).write(rootNode, ids);
         } catch (IOException e) {
             e.printStackTrace();

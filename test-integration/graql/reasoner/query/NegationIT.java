@@ -21,6 +21,7 @@ package grakn.core.graql.reasoner.query;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import grakn.core.common.config.Config;
+import grakn.core.common.util.ListsUtil;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.graph.ReachabilityGraph;
 import grakn.core.graql.reasoner.utils.ReasonerUtils;
@@ -567,7 +568,7 @@ public class NegationIT {
                     var("r").isa("recipe"),
                     not(basePattern)
             ).get());
-            assertEquals(ReasonerUtils.listDifference(allRecipes, recipesContainingAllergens), recipesWithoutAllergenIngredients);
+            assertEquals(ListsUtil.listDifference(allRecipes, recipesContainingAllergens), recipesWithoutAllergenIngredients);
         }
     }
 
@@ -615,7 +616,7 @@ public class NegationIT {
 
             assertCollectionsNonTriviallyEqual(recipesWithAllIngredientsAvailableExplicit, recipesWithAllIngredientsAvailable);
             assertCollectionsNonTriviallyEqual(recipesWithAllIngredientsAvailableExplicit, recipesWithAllIngredientsAvailableSimple);
-            assertCollectionsNonTriviallyEqual(recipesWithAllIngredientsAvailable, ReasonerUtils.listDifference(allRecipes, recipesWithUnavailableIngredients));
+            assertCollectionsNonTriviallyEqual(recipesWithAllIngredientsAvailable, ListsUtil.listDifference(allRecipes, recipesWithUnavailableIngredients));
         }
     }
 

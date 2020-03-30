@@ -24,6 +24,7 @@ java_library(
     srcs = ["ConceptUtils.java"],
     tags = ["maven_coordinates=io.grakn.core:grakn-concept-util:{pom_version}"],
     deps = [
+        "//common",
         "//kb/concept/api",
         "//kb/concept/structure",
         "//concept/impl",

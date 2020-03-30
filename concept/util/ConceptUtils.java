@@ -19,6 +19,7 @@
 package grakn.core.concept.util;
 
 import com.google.common.collect.Sets;
+import grakn.core.common.util.ListsUtil;
 import grakn.core.concept.impl.SchemaConceptImpl;
 import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.SchemaConcept;
@@ -28,10 +29,12 @@ import grakn.core.kb.concept.structure.PropertyNotUniqueException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.Stack;
 import java.util.stream.Stream;
 
+import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
 public class ConceptUtils {
@@ -54,6 +57,19 @@ public class ConceptUtils {
         return schemaConcepts.stream()
                 .filter(t -> Sets.intersection(t.subs().filter(t2 -> !t.equals(t2)).collect(toSet()), schemaConcepts).isEmpty())
                 .collect(toSet());
+    }
+
+    /**
+     * @param schemaConcepts entry SchemaConcept set
+     * @return bottom (most specific) non-meta SchemaConcepts from within the provided set
+     */
+    public static <T extends SchemaConcept> List<T> bottom(List<T> schemaConcepts) {
+        return schemaConcepts.stream()
+                .filter(t -> {
+                    List<SchemaConcept> filteredSubs = t.subs().filter(t2 -> !t.equals(t2)).collect(toList());
+                    return schemaConcepts.stream().noneMatch(filteredSubs::contains);
+                })
+                .collect(toList());
     }
 
     /**

@@ -561,6 +561,55 @@ public class AtomicQueryUnificationIT {
     }
 
     @Test
+    public void testUnification_repeatedRolePlayers() {
+        try (Transaction tx = genericSchemaSession.readTransaction()) {
+            TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction) tx);
+            String query = "{ (baseRole1: $x);};";
+            String potentialEquivalent = "{ (baseRole1: $x, baseRole1: $x);};";
+
+            unification(query, potentialEquivalent, false, UnifierType.EXACT, testTx);
+            unification(potentialEquivalent, query, false, UnifierType.EXACT, testTx);
+
+            unification(query, potentialEquivalent, false, UnifierType.STRUCTURAL, testTx);
+            unification(potentialEquivalent, query, false, UnifierType.STRUCTURAL, testTx);
+
+            unification(query, potentialEquivalent, false, UnifierType.RULE, testTx);
+            unification(potentialEquivalent, query, true, UnifierType.RULE, testTx);
+
+            unification(query, potentialEquivalent, false, UnifierType.SUBSUMPTIVE, testTx);
+            unification(potentialEquivalent, query, true, UnifierType.SUBSUMPTIVE, testTx);
+
+            unification(query, potentialEquivalent, false, UnifierType.STRUCTURAL_SUBSUMPTIVE, testTx);
+            unification(potentialEquivalent, query, true, UnifierType.STRUCTURAL_SUBSUMPTIVE, testTx);
+        }
+    }
+
+    @Test
+    public void testUnification_repeatedRoles() {
+        try (Transaction tx = genericSchemaSession.readTransaction()) {
+            TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction) tx);
+            String query = "{ (baseRole1: $z);};";
+            String potentialEquivalent = "{ (baseRole1: $x, baseRole1: $y);};";
+
+            unification(query, potentialEquivalent, false, UnifierType.EXACT, testTx);
+            unification(potentialEquivalent, query, false, UnifierType.EXACT, testTx);
+
+            unification(query, potentialEquivalent, false, UnifierType.STRUCTURAL, testTx);
+            unification(potentialEquivalent, query, false, UnifierType.STRUCTURAL, testTx);
+
+            unification(query, potentialEquivalent, false, UnifierType.RULE, testTx);
+            unification(potentialEquivalent, query, true, UnifierType.RULE, testTx);
+
+            unification(query, potentialEquivalent, false, UnifierType.SUBSUMPTIVE, testTx);
+            unification(potentialEquivalent, query, true, UnifierType.SUBSUMPTIVE, testTx);
+
+            unification(query, potentialEquivalent, false, UnifierType.STRUCTURAL_SUBSUMPTIVE, testTx);
+            unification(potentialEquivalent, query, true, UnifierType.STRUCTURAL_SUBSUMPTIVE, testTx);
+        }
+    }
+
+
+    @Test
     public void testUnification_differentRelationVariants_EXACT() {
         try (Transaction tx = genericSchemaSession.readTransaction()) {
             unification(

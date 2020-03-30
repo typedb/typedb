@@ -18,10 +18,13 @@
 
 package grakn.core.graql.reasoner.atom.binary;
 
+import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
@@ -104,7 +107,7 @@ public class RelationAtom extends Atom {
     private boolean alphaEquivalenceHashCodeMemoized;
     private Multimap<Role, String> roleConceptIdMap = null;
     private Multimap<Role, Type> roleTypeMap = null;
-    private Multimap<Role, Variable> roleVarMap = null;
+    private ListMultimap<Role, Variable> roleVarMap = null;
 
     private RelationAtom(
             Variable varName,
@@ -584,15 +587,15 @@ public class RelationAtom extends Atom {
     /**
      * @return map containing roleType - (rolePlayer var - rolePlayer type) pairs
      */
-    public Multimap<Role, Variable> getRoleVarMap() {
+    public ListMultimap<Role, Variable> getRoleVarMap() {
         if (roleVarMap == null) {
             roleVarMap = computeRoleVarMap();
         }
         return roleVarMap;
     }
 
-    private Multimap<Role, Variable> computeRoleVarMap() {
-        ImmutableMultimap.Builder<Role, Variable> builder = ImmutableMultimap.builder();
+    private ListMultimap<Role, Variable> computeRoleVarMap() {
+        ImmutableListMultimap.Builder<Role, Variable> builder = ImmutableListMultimap.builder();
         ConceptManager conceptManager = context().conceptManager();
 
         getRelationPlayers().forEach(c -> {
@@ -632,8 +635,8 @@ public class RelationAtom extends Atom {
         return semanticProcessor.computeSemanticDifference(this, child, unifier, context());
     }
 
-    public HashMultimap<Variable, Role> getVarRoleMap() {
-        HashMultimap<Variable, Role> map = HashMultimap.create();
+    public ListMultimap<Variable, Role> getVarRoleMap() {
+        ListMultimap<Variable, Role> map = ArrayListMultimap.create();
         getRoleVarMap().asMap().forEach((key, value) -> value.forEach(var -> map.put(var, key)));
         return map;
     }
