@@ -96,6 +96,10 @@ public class NodeImpl implements Node{
         answers.add(answer);
     }
 
+    /**
+     * Validates answer to be attached in flight -> as the tree is constructed. This is how we test it for now.
+     * @param answer
+     */
     private void validateAnswer(ConceptMap answer){
         if (state instanceof AnswerPropagatorState){
             ResolvableQuery query = ((AnswerPropagatorState) state).getQuery();
