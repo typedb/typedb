@@ -18,6 +18,7 @@
 
 package hypergraph.concept.type;
 
+import hypergraph.common.exception.HypergraphException;
 import hypergraph.graph.Graph;
 import hypergraph.graph.Schema;
 import hypergraph.graph.vertex.TypeVertex;
@@ -56,6 +57,17 @@ public class RoleType extends Type.Tree<RoleType> {
 
         Root(TypeVertex vertex) {
             super(vertex);
+            assert(vertex.label().equals(Schema.Vertex.Type.Root.ROLE.label()));
+        }
+
+        @Override
+        public RoleType sup() {
+            return null;
+        }
+
+        @Override
+        public RoleType sup(RoleType superType) {
+            throw new HypergraphException("Invalid Operation Exception: root types are immutable");
         }
     }
 }

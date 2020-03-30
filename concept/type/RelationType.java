@@ -18,6 +18,7 @@
 
 package hypergraph.concept.type;
 
+import hypergraph.common.exception.HypergraphException;
 import hypergraph.graph.Graph;
 import hypergraph.graph.Schema;
 import hypergraph.graph.vertex.TypeVertex;
@@ -56,6 +57,17 @@ public class RelationType extends Type.Tree<RelationType> {
 
         Root(TypeVertex vertex) {
             super(vertex);
+            assert(vertex.label().equals(Schema.Vertex.Type.Root.RELATION.label()));
+        }
+
+        @Override
+        public RelationType sup() {
+            return null;
+        }
+
+        @Override
+        public RelationType sup(RelationType superType) {
+            throw new HypergraphException("Invalid Operation Exception: root types are immutable");
         }
     }
 }

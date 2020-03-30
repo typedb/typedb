@@ -107,14 +107,9 @@ public abstract class Type {
         public TYPE sup() {
             if (parent != null) return parent;
 
-            Iterator<TypeVertex> iterator = vertex.outs().get(Schema.Edge.Type.SUB);
-            if (iterator != null && iterator.hasNext()) {
-                TypeVertex parentVertex = iterator.next();
-                if (parentVertex.schema().equals(vertex.schema())) {
-                    parent = newInstance(parentVertex);
-                }
-            }
-
+            Iterator<TypeVertex> iterator = Iterators.filter(vertex.outs().get(Schema.Edge.Type.SUB),
+                                                             v -> v.schema().equals(vertex.schema()));
+            if (iterator.hasNext()) parent = newInstance(iterator.next());
             return parent;
         }
 

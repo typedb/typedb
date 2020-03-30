@@ -18,6 +18,7 @@
 
 package hypergraph.concept.type;
 
+import hypergraph.common.exception.HypergraphException;
 import hypergraph.graph.Graph;
 import hypergraph.graph.Schema;
 import hypergraph.graph.vertex.TypeVertex;
@@ -57,6 +58,17 @@ public class EntityType extends Type.Tree<EntityType> {
 
         Root(TypeVertex vertex) {
             super(vertex);
+            assert(vertex.label().equals(Schema.Vertex.Type.Root.ENTITY.label()));
+        }
+
+        @Override
+        public EntityType sup() {
+            return null;
+        }
+
+        @Override
+        public EntityType sup(EntityType superType) {
+            throw new HypergraphException("Invalid Operation Exception: root types are immutable");
         }
     }
 }

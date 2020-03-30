@@ -36,6 +36,7 @@ public class AppliedIterator<T, U> implements Iterators.Composable<U> {
     public boolean hasNext() {
         return iterator.hasNext();
     }
+
     @Override
     public U next() {
         return function.apply(iterator.next());
