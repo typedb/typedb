@@ -61,6 +61,11 @@ public class AttributeType extends Type.Tree<AttributeType> {
         }
 
         @Override
+        public AttributeType label(String label) {
+            throw new HypergraphException("Invalid Operation Exception: root types are immutable");
+        }
+
+        @Override
         public AttributeType sup() {
             return null;
         }

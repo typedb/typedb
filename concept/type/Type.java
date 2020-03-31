@@ -91,7 +91,7 @@ public abstract class Type {
         }
 
         Tree(Graph graph, String label, Schema.Vertex.Type schema) {
-            super(graph.type().createVertex(schema, label));
+            super(graph.type().putVertex(schema, label));
             TypeVertex parentVertex = graph.type().getVertex(schema.root().label());
             vertex.outs().add(Schema.Edge.Type.SUB, parentVertex);
             parent = newInstance(parentVertex);
@@ -101,6 +101,11 @@ public abstract class Type {
         abstract TYPE newInstance(TypeVertex vertex);
 
         abstract TYPE getThis();
+
+        public TYPE label(String label) {
+            vertex.label(label);
+            return getThis();
+        }
 
         public TYPE sup(TYPE parent) {
             vertex.outs().remove(Schema.Edge.Type.SUB, sup().vertex);

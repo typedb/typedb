@@ -62,6 +62,11 @@ public class EntityType extends Type.Tree<EntityType> {
         }
 
         @Override
+        public EntityType label(String label) {
+            throw new HypergraphException("Invalid Operation Exception: root types are immutable");
+        }
+
+        @Override
         public EntityType sup() {
             return null;
         }

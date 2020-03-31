@@ -46,6 +46,16 @@ public class EntityTypeSteps {
         tx().concepts().putEntityType(type);
     }
 
+    @When("entity\\( ?{word} ?) set label: {word}")
+    public void entity_set_label(String label, String newLabel) {
+        tx().concepts().getEntityType(label).label(newLabel);
+    }
+
+    @Then("entity\\( ?{word} ?) get label: {word}")
+    public void entity_get_label(String label, String getLabel) {
+        assertEquals(getLabel, tx().concepts().getEntityType(label).label());
+    }
+
     @Then("entity\\( ?{word} ?) is null: {bool}")
     public void entity_is_null(String label, boolean isNull) {
         assertEquals(isNull, isNull(tx().concepts().getEntityType(label)));
@@ -83,16 +93,6 @@ public class EntityTypeSteps {
     public void entity_get_subtypes_contain(String label, List<String> subLabels) {
         Set<String> actuals = tx().concepts().getEntityType(label).subs().map(Type::label).collect(toSet());
         assertTrue(actuals.containsAll(subLabels));
-    }
-
-    @When("entity\\( ?{word} ?) set label: {word}")
-    public void entity_set_label(String label, String newLabel) {
-
-    }
-
-    @Then("entity\\( ?{word} ?) get label: {word}")
-    public void entity_get_label(String label, String getLabel) {
-
     }
 
     @When("entity\\( ?{word} ?) set abstract: {bool}")

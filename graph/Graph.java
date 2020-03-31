@@ -76,11 +76,13 @@ public class Graph {
         private final Map<String, TypeVertex> typeByLabel;
         private final Map<byte[], TypeVertex> typeByIID;
         private final Map<String, ManagedReadWriteLock> labelLocks;
+        private final ManagedReadWriteLock globalLock;
 
         private Type() {
             typeByLabel = new ConcurrentHashMap<>();
             typeByIID = new ConcurrentHashMap<>();
             labelLocks = new ConcurrentHashMap<>();
+            globalLock = new ManagedReadWriteLock();
         }
 
         public Storage storage() {
@@ -92,11 +94,11 @@ public class Graph {
         }
 
         private void initialise() {
-            TypeVertex rootType = createVertex(Schema.Vertex.Type.TYPE, Schema.Vertex.Type.Root.THING.label()).setAbstract(true);
-            TypeVertex rootEntityType = createVertex(Schema.Vertex.Type.ENTITY_TYPE, Schema.Vertex.Type.Root.ENTITY.label()).setAbstract(true);
-            TypeVertex rootRelationType = createVertex(Schema.Vertex.Type.RELATION_TYPE, Schema.Vertex.Type.Root.RELATION.label()).setAbstract(true);
-            TypeVertex rootRoleType = createVertex(Schema.Vertex.Type.ROLE_TYPE, Schema.Vertex.Type.Root.ROLE.label()).setAbstract(true);
-            TypeVertex rootAttributeType = createVertex(Schema.Vertex.Type.ATTRIBUTE_TYPE, Schema.Vertex.Type.Root.ATTRIBUTE.label()).setAbstract(true);
+            TypeVertex rootType = putVertex(Schema.Vertex.Type.TYPE, Schema.Vertex.Type.Root.THING.label()).setAbstract(true);
+            TypeVertex rootEntityType = putVertex(Schema.Vertex.Type.ENTITY_TYPE, Schema.Vertex.Type.Root.ENTITY.label()).setAbstract(true);
+            TypeVertex rootRelationType = putVertex(Schema.Vertex.Type.RELATION_TYPE, Schema.Vertex.Type.Root.RELATION.label()).setAbstract(true);
+            TypeVertex rootRoleType = putVertex(Schema.Vertex.Type.ROLE_TYPE, Schema.Vertex.Type.Root.ROLE.label()).setAbstract(true);
+            TypeVertex rootAttributeType = putVertex(Schema.Vertex.Type.ATTRIBUTE_TYPE, Schema.Vertex.Type.Root.ATTRIBUTE.label()).setAbstract(true);
 
             rootEntityType.outs().add(Schema.Edge.Type.SUB, rootType);
             rootRelationType.outs().add(Schema.Edge.Type.SUB, rootType);
@@ -112,8 +114,23 @@ public class Graph {
             clear(); // we now flush the indexes after commit, and we do not expect this Graph.Type to be used again
         }
 
-        public TypeVertex createVertex(Schema.Vertex.Type type, String label) {
+        public TypeVertex updateVertex(TypeVertex vertex, String newLabel) {
             try {
+                globalLock.lockWrite();
+                if (typeByLabel.containsKey(newLabel)) throw new HypergraphException(
+                        String.format("Invalid Write Operation: label '%s' is already in use", newLabel));
+                typeByLabel.remove(vertex.label());
+                typeByLabel.put(newLabel, vertex);
+                return vertex;
+            } catch (InterruptedException e) {
+                throw new HypergraphException(e);
+            } finally {
+                globalLock.unlockWrite();
+            }
+        }
+        public TypeVertex putVertex(Schema.Vertex.Type type, String label) {
+            try {
+                globalLock.lockRead(); // we use READ mode on global lock for PUTTING vertex
                 labelLocks.computeIfAbsent(label, x -> new ManagedReadWriteLock()).lockWrite();
                 TypeVertex typeVertex = typeByLabel.computeIfAbsent(
                         label, l -> new TypeVertex.Buffered(this, type, TypeVertex.generateIID(keyGenerator, type), l)
@@ -124,17 +141,19 @@ public class Graph {
                 throw new HypergraphException(e);
             } finally {
                 labelLocks.get(label).unlockWrite();
+                globalLock.unlockRead();
             }
         }
 
         public TypeVertex getVertex(String label) {
             try {
+                globalLock.lockRead();
                 labelLocks.computeIfAbsent(label, x -> new ManagedReadWriteLock()).lockRead();
 
                 TypeVertex vertex = typeByLabel.get(label);
                 if (vertex != null) return vertex;
 
-                byte[] iid = storage.get(TypeVertex.generateIndex(label));
+                byte[] iid = storage.get(TypeVertex.index(label));
                 if (iid != null) {
                     vertex = typeByIID.computeIfAbsent(iid, x -> new TypeVertex.Persisted(this, x, label));
                     typeByLabel.putIfAbsent(label, vertex);
@@ -145,6 +164,7 @@ public class Graph {
                 throw new HypergraphException(e);
             } finally {
                 labelLocks.get(label).unlockRead();
+                globalLock.unlockRead();
             }
         }
 

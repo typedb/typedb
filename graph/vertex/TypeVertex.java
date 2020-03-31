@@ -53,13 +53,15 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, TypeVertex, 
         return join(schema.prefix().key(), keyGenerator.forType(schema.root()));
     }
 
-    public static byte[] generateIndex(String label) {
+    public static byte[] index(String label) {
         return join(Schema.Index.TYPE.prefix().key(), label.getBytes());
     }
 
     public String label() {
         return label;
     }
+
+    public abstract TypeVertex label(String label);
 
     public abstract boolean isAbstract();
 
@@ -98,6 +100,13 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, TypeVertex, 
 
         public Buffered(Graph.Type graph, Schema.Vertex.Type schema, byte[] iid, String label) {
             super(graph, schema, iid, label);
+        }
+
+        @Override
+        public TypeVertex label(String label) {
+            graph.updateVertex(this, label);
+            this.label = label;
+            return null;
         }
 
         @Override
@@ -226,6 +235,15 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, TypeVertex, 
         @Override
         public Schema.Status status() {
             return Schema.Status.PERSISTED;
+        }
+
+        @Override
+        public TypeVertex label(String label) {
+            graph.updateVertex(this, label);
+            graph.storage().put(join(iid, Schema.Property.LABEL.infix().key()), label.getBytes());
+            graph.storage().put(join(Schema.Index.TYPE.prefix().key(), label.getBytes()), iid);
+            this.label = label;
+            return this;
         }
 
         @Override
