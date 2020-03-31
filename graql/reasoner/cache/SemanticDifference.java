@@ -19,6 +19,7 @@
 package grakn.core.graql.reasoner.cache;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Multiset;
 import com.google.common.collect.Sets;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.planning.gremlin.value.ValueOperation;
@@ -77,7 +78,7 @@ public class SemanticDifference {
 
     public boolean isTrivial(){ return definition.isEmpty();}
 
-    private Set<Relation> rolesToRels(Variable var, List<Role> roles, ConceptMap answer) {
+    private Set<Relation> rolesToRels(Variable var, Multiset<Role> roles, ConceptMap answer) {
         if (!answer.containsVar(var)) return new HashSet<>();
 
         // we will require each role to be played a specific number of times
@@ -109,21 +110,21 @@ public class SemanticDifference {
     boolean satisfiedBy(ConceptMap answer) {
         if (isEmpty()) return true;
 
-        Map<Variable, List<Role>> roleRequirements = this.definition.stream()
+        Map<Variable, Multiset<Role>> roleRequirements = this.definition.stream()
                 .filter(vd -> !vd.playedRoles().isEmpty())
                 .collect(Collectors.toMap(VariableDefinition::var, VariableDefinition::playedRoles));
 
         //check for role compatibility
-        Iterator<Map.Entry<Variable, List<Role>>> reqIterator = roleRequirements.entrySet().iterator();
+        Iterator<Map.Entry<Variable, Multiset<Role>>> reqIterator = roleRequirements.entrySet().iterator();
         Set<Relation> relations;
         if (reqIterator.hasNext()) {
-            Map.Entry<Variable, List<Role>> req = reqIterator.next();
+            Map.Entry<Variable, Multiset<Role>> req = reqIterator.next();
             relations = rolesToRels(req.getKey(), req.getValue(), answer);
         } else {
             relations = new HashSet<>();
         }
         while (!relations.isEmpty() && reqIterator.hasNext()) {
-            Map.Entry<Variable, List<Role>> req = reqIterator.next();
+            Map.Entry<Variable, Multiset<Role>> req = reqIterator.next();
             relations = Sets.intersection(relations, rolesToRels(req.getKey(), req.getValue(), answer));
         }
         if (relations.isEmpty() && !roleRequirements.isEmpty()) return false;
@@ -144,8 +145,6 @@ public class SemanticDifference {
                     ));
         });
     }
-
-
 
     public SemanticDifference merge(SemanticDifference diff) {
         Map<Variable, VariableDefinition> mergedDefinition = definition.stream().collect(Collectors.toMap(VariableDefinition::var, vd -> vd));
