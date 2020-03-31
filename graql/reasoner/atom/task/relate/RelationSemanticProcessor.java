@@ -141,7 +141,7 @@ public class RelationSemanticProcessor implements SemanticProcessor<RelationAtom
 
         //establish compatible castings for each parent casting
         List<Set<Pair<RelationProperty.RolePlayer, RelationProperty.RolePlayer>>> compatibleMappingsPerParentRP = new ArrayList<>();
-        if ((new HashSet<>(parentAtom.getRelationPlayers()).size() > new HashSet<>(childAtom.getRelationPlayers()).size())) return new HashSet<>();
+//        if ((new HashSet<>(parentAtom.getRelationPlayers()).size() > new HashSet<>(childAtom.getRelationPlayers()).size())) return new HashSet<>();
 
         //child query is rule body + head here
         ReasonerQuery childQuery = childAtom.getParentQuery();
