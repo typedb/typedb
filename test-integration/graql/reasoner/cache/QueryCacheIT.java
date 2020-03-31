@@ -44,17 +44,17 @@ import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.query.GraqlGet;
 import graql.lang.statement.Statement;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
-
+import graql.lang.statement.Variable;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Test;
 
 import static grakn.core.util.GraqlTestUtil.assertCollectionsNonTriviallyEqual;
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
@@ -193,13 +193,20 @@ public class QueryCacheIT {
             tx.execute(parentQuery.getQuery()).stream()
                     .map(ans -> ans.explain(new LookupExplanation(), parentQuery.getPattern()))
                     .forEach(ans -> cache.record(parentQuery, ans));
+
+            //add a mocked answer to be able to check we actually retrieve from cache
+            Concept concept = tx.getEntityType("baseRoleEntity").instances().iterator().next();
+            ConceptMap mockedAnswer = new ConceptMap(ImmutableMap.of(new Variable("x"), concept, new Variable("y"), concept))
+                    .explain(new LookupExplanation(), parentQuery.getPattern());
+            cache.record(parentQuery, mockedAnswer);
             cache.ackDBCompleteness(parentQuery);
 
             //retrieve child
-            ReasonerAtomicQuery childQuery = testTx.reasonerQueryFactory().atomic(conjunction("(subRole1: $x, subRole2: $y) isa binary;"));
-            Set<ConceptMap> cacheAnswers = cache.getAnswers(childQuery);
-            assertEquals(tx.stream(childQuery.getQuery()).collect(toSet()), cacheAnswers);
-            assertEquals(cacheAnswers, cache.getEntry(childQuery).cachedElement().getAll());
+            ReasonerAtomicQuery childQuery = testTx.reasonerQueryFactory().atomic(conjunction("{(role: $x, role: $y) isa binary;$x isa baseEntity;};"));
+            Set<ConceptMap> cachedAnswers = cache.getAnswers(childQuery);
+            assertTrue(cachedAnswers.contains(mockedAnswer));
+            assertTrue(cachedAnswers.containsAll(tx.execute(childQuery.getQuery())));
+            assertEquals(cachedAnswers, cache.getEntry(childQuery).cachedElement().getAll());
         }
     }
 
