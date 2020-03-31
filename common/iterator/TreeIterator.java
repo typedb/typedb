@@ -30,6 +30,7 @@ public class TreeIterator<T> implements Iterators.Composable<T> {
     private T next;
     private State state;
     private LinkedList<Iterator<T>> families;
+    // a 'family' is [an iterator for a] collection of children from the same parent
 
     private enum State {EMPTY, FETCHED, COMPLETED}
 

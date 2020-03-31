@@ -67,6 +67,11 @@ public class EntityType extends Type.Tree<EntityType> {
         }
 
         @Override
+        public EntityType setAbstract(boolean isAbstract) {
+            throw new HypergraphException("Invalid Operation Exception: root types are immutable");
+        }
+
+        @Override
         public EntityType sup() {
             return null;
         }

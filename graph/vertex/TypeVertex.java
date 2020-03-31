@@ -159,7 +159,7 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, TypeVertex, 
 
         void commitProperties() {
             commitPropertyLabel();
-            if (isAbstract != null && !isAbstract) commitPropertyAbstract();
+            if (isAbstract != null && isAbstract) commitPropertyAbstract();
             if (dataType != null) commitPropertyDataType();
             if (regex != null && !regex.isEmpty()) commitPropertyRegex();
         }
@@ -249,8 +249,8 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, TypeVertex, 
         @Override
         public boolean isAbstract() {
             if (isAbstract != null) return isAbstract;
-            byte[] abs = graph.storage().get(join(iid, Schema.Property.ABSTRACT.infix().key()));
-            isAbstract = abs != null;
+            byte[] flag = graph.storage().get(join(iid, Schema.Property.ABSTRACT.infix().key()));
+            isAbstract = flag != null;
             return isAbstract;
         }
 

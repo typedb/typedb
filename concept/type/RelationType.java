@@ -66,6 +66,11 @@ public class RelationType extends Type.Tree<RelationType> {
         }
 
         @Override
+        public RelationType setAbstract(boolean isAbstract) {
+            throw new HypergraphException("Invalid Operation Exception: root types are immutable");
+        }
+
+        @Override
         public RelationType sup() {
             return null;
         }

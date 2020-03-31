@@ -19,6 +19,7 @@
 package hypergraph.concept.type;
 
 import hypergraph.common.iterator.Iterators;
+import hypergraph.concept.thing.Thing;
 import hypergraph.graph.Graph;
 import hypergraph.graph.Schema;
 import hypergraph.graph.vertex.TypeVertex;
@@ -50,6 +51,10 @@ public abstract class Type {
 
     public String label() {
         return vertex.label();
+    }
+
+    public boolean isAbstract() {
+        return vertex.isAbstract();
     }
 
     public Stream<? extends Type> subs() {
@@ -104,6 +109,11 @@ public abstract class Type {
 
         public TYPE label(String label) {
             vertex.label(label);
+            return getThis();
+        }
+
+        public TYPE setAbstract(boolean isAbstract) {
+            vertex.setAbstract(isAbstract);
             return getThis();
         }
 

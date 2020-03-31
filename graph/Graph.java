@@ -75,14 +75,14 @@ public class Graph {
 
         private final Map<String, TypeVertex> typeByLabel;
         private final Map<byte[], TypeVertex> typeByIID;
-        private final Map<String, ManagedReadWriteLock> labelLocks;
-        private final ManagedReadWriteLock globalLock;
+        private final Map<String, ManagedReadWriteLock> singleLabelLocks;
+        private final ManagedReadWriteLock multiLabelLock;
 
         private Type() {
             typeByLabel = new ConcurrentHashMap<>();
             typeByIID = new ConcurrentHashMap<>();
-            labelLocks = new ConcurrentHashMap<>();
-            globalLock = new ManagedReadWriteLock();
+            singleLabelLocks = new ConcurrentHashMap<>();
+            multiLabelLock = new ManagedReadWriteLock();
         }
 
         public Storage storage() {
@@ -116,7 +116,7 @@ public class Graph {
 
         public TypeVertex updateVertex(TypeVertex vertex, String newLabel) {
             try {
-                globalLock.lockWrite();
+                multiLabelLock.lockWrite();
                 if (typeByLabel.containsKey(newLabel)) throw new HypergraphException(
                         String.format("Invalid Write Operation: label '%s' is already in use", newLabel));
                 typeByLabel.remove(vertex.label());
@@ -125,13 +125,15 @@ public class Graph {
             } catch (InterruptedException e) {
                 throw new HypergraphException(e);
             } finally {
-                globalLock.unlockWrite();
+                multiLabelLock.unlockWrite();
             }
         }
+
         public TypeVertex putVertex(Schema.Vertex.Type type, String label) {
-            try {
-                globalLock.lockRead(); // we use READ mode on global lock for PUTTING vertex
-                labelLocks.computeIfAbsent(label, x -> new ManagedReadWriteLock()).lockWrite();
+            try { // we intentionally use READ on multiLabelLock, as putVertex only concerns one label
+                multiLabelLock.lockRead();
+                singleLabelLocks.computeIfAbsent(label, x -> new ManagedReadWriteLock()).lockWrite();
+
                 TypeVertex typeVertex = typeByLabel.computeIfAbsent(
                         label, l -> new TypeVertex.Buffered(this, type, TypeVertex.generateIID(keyGenerator, type), l)
                 );
@@ -140,15 +142,15 @@ public class Graph {
             } catch (InterruptedException e) {
                 throw new HypergraphException(e);
             } finally {
-                labelLocks.get(label).unlockWrite();
-                globalLock.unlockRead();
+                singleLabelLocks.get(label).unlockWrite();
+                multiLabelLock.unlockRead();
             }
         }
 
         public TypeVertex getVertex(String label) {
             try {
-                globalLock.lockRead();
-                labelLocks.computeIfAbsent(label, x -> new ManagedReadWriteLock()).lockRead();
+                multiLabelLock.lockRead();
+                singleLabelLocks.computeIfAbsent(label, x -> new ManagedReadWriteLock()).lockRead();
 
                 TypeVertex vertex = typeByLabel.get(label);
                 if (vertex != null) return vertex;
@@ -163,8 +165,8 @@ public class Graph {
             } catch (InterruptedException e) {
                 throw new HypergraphException(e);
             } finally {
-                labelLocks.get(label).unlockRead();
-                globalLock.unlockRead();
+                singleLabelLocks.get(label).unlockRead();
+                multiLabelLock.unlockRead();
             }
         }
 

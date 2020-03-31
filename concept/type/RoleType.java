@@ -66,6 +66,11 @@ public class RoleType extends Type.Tree<RoleType> {
         }
 
         @Override
+        public RoleType setAbstract(boolean isAbstract) {
+            throw new HypergraphException("Invalid Operation Exception: root types are immutable");
+        }
+
+        @Override
         public RoleType sup() {
             return null;
         }

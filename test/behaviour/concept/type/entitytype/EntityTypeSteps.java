@@ -46,6 +46,11 @@ public class EntityTypeSteps {
         tx().concepts().putEntityType(type);
     }
 
+    @Then("entity\\( ?{word} ?) is null: {bool}")
+    public void entity_is_null(String label, boolean isNull) {
+        assertEquals(isNull, isNull(tx().concepts().getEntityType(label)));
+    }
+
     @When("entity\\( ?{word} ?) set label: {word}")
     public void entity_set_label(String label, String newLabel) {
         tx().concepts().getEntityType(label).label(newLabel);
@@ -56,9 +61,14 @@ public class EntityTypeSteps {
         assertEquals(getLabel, tx().concepts().getEntityType(label).label());
     }
 
-    @Then("entity\\( ?{word} ?) is null: {bool}")
-    public void entity_is_null(String label, boolean isNull) {
-        assertEquals(isNull, isNull(tx().concepts().getEntityType(label)));
+    @When("entity\\( ?{word} ?) set abstract: {bool}")
+    public void entity_set_abstract(String label, boolean isAbstract) {
+        tx().concepts().getEntityType(label).setAbstract(isAbstract);
+    }
+
+    @Then("entity\\( ?{word} ?) is abstract: {bool}")
+    public void entity_is_abstract(String label, boolean isAbstract) {
+        assertEquals(isAbstract, tx().concepts().getEntityType(label).isAbstract());
     }
 
     @When("entity\\( ?{word} ?) set supertype: {word}")
@@ -93,16 +103,6 @@ public class EntityTypeSteps {
     public void entity_get_subtypes_contain(String label, List<String> subLabels) {
         Set<String> actuals = tx().concepts().getEntityType(label).subs().map(Type::label).collect(toSet());
         assertTrue(actuals.containsAll(subLabels));
-    }
-
-    @When("entity\\( ?{word} ?) set abstract: {bool}")
-    public void entity_set_abstract(String label, boolean isAbstract) {
-
-    }
-
-    @Then("entity\\( ?{word} ?) is abstract: {bool}")
-    public void entity_is_abstract(String label, boolean isAbstract) {
-
     }
 
     @When("entity\\( ?{word} ?) set key attribute: {word}")
@@ -163,5 +163,10 @@ public class EntityTypeSteps {
     @When("entity\\( ?{word} ?) get playing roles contain:")
     public void entity_get_playing_roles_contain(String label, List<String> roleLabels) {
 
+    }
+
+    @Then("entity\\( ?{word} ?) creates instance successfully: {bool}")
+    public void entity_creates_instance_successfully(String label, boolean isSuccessful) {
+        // TODO: implement this
     }
 }

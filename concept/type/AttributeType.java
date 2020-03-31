@@ -66,6 +66,11 @@ public class AttributeType extends Type.Tree<AttributeType> {
         }
 
         @Override
+        public AttributeType setAbstract(boolean isAbstract) {
+            throw new HypergraphException("Invalid Operation Exception: root types are immutable");
+        }
+
+        @Override
         public AttributeType sup() {
             return null;
         }
