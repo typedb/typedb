@@ -202,7 +202,7 @@ public class QueryCacheIT {
             cache.ackDBCompleteness(parentQuery);
 
             //retrieve child
-            ReasonerAtomicQuery childQuery = testTx.reasonerQueryFactory().atomic(conjunction("{(role: $x, role: $y) isa binary;$x isa entity;};"));
+            ReasonerAtomicQuery childQuery = testTx.reasonerQueryFactory().atomic(conjunction("{(role: $x, role: $y) isa binary;$x isa baseEntity;};"));
             Set<ConceptMap> cachedAnswers = cache.getAnswers(childQuery);
             assertTrue(cachedAnswers.contains(mockedAnswer));
             assertTrue(cachedAnswers.containsAll(tx.execute(childQuery.getQuery())));
