@@ -27,6 +27,7 @@ import grakn.core.graql.reasoner.utils.AnswerUtil;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.Relation;
 import grakn.core.kb.concept.api.Role;
+import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
 import graql.lang.statement.Variable;
@@ -80,17 +81,27 @@ public class SemanticDifference {
         if (!answer.containsVar(var)) return new HashSet<>();
 
         // we will require each role to be played a specific number of times
-        Map<Role, Integer> rolePlayedMultiplicity = new HashMap<>();
+        Map<Role, Integer> requiredRoleCounts = new HashMap<>();
         for (Role r : roles) {
-            rolePlayedMultiplicity.put(r, 1 + rolePlayedMultiplicity.getOrDefault(r, 0));
+            requiredRoleCounts.put(r, 1 + requiredRoleCounts.getOrDefault(r, 0));
         }
 
+        Thing player = answer.get(var).asThing();
+
         Set<Role> roleAndTheirSubs = roles.stream().flatMap(Role::subs).collect(Collectors.toSet());
-        return answer.get(var).asThing()
+        return player
                 .relations(roleAndTheirSubs.toArray(new Role[0]))
                 .filter(relation ->
-                    rolePlayedMultiplicity.keySet().stream()
-                            .allMatch(requiredRole -> relation.rolePlayers(requiredRole).filter(player -> player.equals(answer.get(var))).limit(rolePlayedMultiplicity.get(requiredRole)).count() == rolePlayedMultiplicity.get(requiredRole))
+                        // keep the relation if it has the concept corresponding to 'var' playing the each requried role or a role subtype a sufficient number of times
+                    requiredRoleCounts.keySet().stream()
+                            .allMatch(requiredRole -> {
+                                Integer requiredCount = requiredRoleCounts.get(requiredRole);
+                                Set<Role> roleSubtypes = requiredRole.subs().collect(Collectors.toSet());
+                                return relation.rolePlayers(roleSubtypes.toArray(new Role[0]))
+                                        .filter(foundPlayer -> foundPlayer.equals(player))
+                                        .limit(requiredCount) // don't need to read more than this to be able to return, optimisation
+                                        .count() == requiredCount;
+                            })
                 )
                 .collect(Collectors.toSet());
     }
