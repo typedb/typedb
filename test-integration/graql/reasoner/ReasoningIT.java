@@ -614,7 +614,7 @@ public class ReasoningIT {
 
     @Test
     public void whenAppendingRolePlayers_DuplicatesAreCreated() {
-        for (int i = 0; i < 2; i++) {
+        for (int i = 0; i < 10; i++) {
             System.out.println("repetition: " + i);
             try (Session session = server.sessionWithNewKeyspace()) {
                 loadFromFileAndCommit(resourcePath, "appendingRPs.gql", session);

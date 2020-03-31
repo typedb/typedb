@@ -260,12 +260,12 @@ public class RelationSemanticProcessor implements SemanticProcessor<RelationAtom
                 }
             }
             List<Role> childRoles = childVarRoleMap.get(childVar);
-            List<Role> parentRoles = parentVarRoleMap.get(parentVar);
-            List<Role> playedRoles = bottom(ListsUtil.listDifference(childRoles, parentRoles)).stream()
-                    .filter(playedRole -> !Schema.MetaSchema.isMetaLabel(playedRole.label()))
-                    .filter(playedRole -> ListsUtil.listDifference(parentRoles, playedRole.subs().collect(Collectors.toList())).isEmpty())
-                    .collect(Collectors.toList());
-            diff.add(new VariableDefinition(parentVar, null, requiredRole, playedRoles, new HashSet<>()));
+//            List<Role> parentRoles = parentVarRoleMap.get(parentVar);
+//            List<Role> playedRoles = bottom(ListsUtil.listDifference(childRoles, parentRoles)).stream()
+//                    .filter(playedRole -> !Schema.MetaSchema.isMetaLabel(playedRole.label()))
+//                    .filter(playedRole -> ListsUtil.listDifference(parentRoles, playedRole.subs().collect(Collectors.toList())).isEmpty())
+//                    .collect(Collectors.toList());
+            diff.add(new VariableDefinition(parentVar, null, requiredRole, childRoles, new HashSet<>()));
         });
         return baseDiff.merge(new SemanticDifference(diff));
     }

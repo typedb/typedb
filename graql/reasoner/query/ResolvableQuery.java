@@ -20,6 +20,7 @@ package grakn.core.graql.reasoner.query;
 
 import com.google.common.annotations.VisibleForTesting;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.graql.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.kb.graql.executor.TraversalExecutor;
 import grakn.core.graql.reasoner.ReasoningContext;
 import grakn.core.graql.reasoner.ResolutionIterator;
@@ -38,9 +39,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 /**
- *
  * Interface for resolvable reasoner queries.
- *
  */
 public abstract class ResolvableQuery implements ReasonerQuery {
 
@@ -59,7 +58,9 @@ public abstract class ResolvableQuery implements ReasonerQuery {
     public abstract Stream<Atom> selectAtoms();
 
     @CheckReturnValue
-    public ReasoningContext context(){ return ctx;}
+    public ReasoningContext context() {
+        return ctx;
+    }
 
     /**
      * @return this query in the composite form
@@ -102,6 +103,7 @@ public abstract class ResolvableQuery implements ReasonerQuery {
     /**
      * reiteration might be required if rule graph contains loops with negative flux
      * or there exists a rule which head satisfies body
+     *
      * @return true if because of the rule graph form, the resolution of this query may require reiteration
      */
     @CheckReturnValue
@@ -123,21 +125,21 @@ public abstract class ResolvableQuery implements ReasonerQuery {
 
     /**
      * resolves the query
+     *
      * @return stream of answers
      */
     @CheckReturnValue
     @VisibleForTesting
-    public Stream<ConceptMap> resolve(boolean infer){
+    public Stream<ConceptMap> resolve(boolean infer) {
         return resolve(new HashSet<>(), infer);
     }
 
     /**
-     *
      * @param subGoals already visited subgoals
      * @return stream of resolved answers
      */
     @CheckReturnValue
-    public Stream<ConceptMap> resolve(Set<ReasonerAtomicQuery> subGoals, boolean infer){
+    public Stream<ConceptMap> resolve(Set<ReasonerAtomicQuery> subGoals, boolean infer) {
         boolean doNotResolve = !infer || getAtoms().isEmpty() || (isPositive() && !isRuleResolvable());
         if (doNotResolve) {
             return traversalExecutor.traverse(getPattern());
@@ -147,9 +149,9 @@ public abstract class ResolvableQuery implements ReasonerQuery {
     }
 
     /**
-     * @param sub partial substitution
-     * @param u unifier with parent state
-     * @param parent parent state
+     * @param sub      partial substitution
+     * @param u        unifier with parent state
+     * @param parent   parent state
      * @param subGoals set of visited sub goals
      * @return resolution state formed from this query
      */
@@ -157,7 +159,7 @@ public abstract class ResolvableQuery implements ReasonerQuery {
     public abstract ResolutionState resolutionState(ConceptMap sub, Unifier u, AnswerPropagatorState parent, Set<ReasonerAtomicQuery> subGoals);
 
     /**
-     * @param parent parent state
+     * @param parent   parent state
      * @param subGoals set of visited sub goals
      * @return inner query state iterator (db iter + unifier + state iter) for this query
      */

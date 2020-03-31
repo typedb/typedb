@@ -32,6 +32,7 @@ import grakn.core.kb.graql.reasoner.unifier.Unifier;
 import graql.lang.statement.Variable;
 
 import javax.annotation.CheckReturnValue;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -77,13 +78,24 @@ public class SemanticDifference {
 
     private Set<Relation> rolesToRels(Variable var, List<Role> roles, ConceptMap answer) {
         if (!answer.containsVar(var)) return new HashSet<>();
+
+        // we will require each role to be played a specific number of times
+        Map<Role, Integer> rolePlayedMultiplicity = new HashMap<>();
+        for (Role r : roles) {
+            rolePlayedMultiplicity.put(r, 1 + rolePlayedMultiplicity.getOrDefault(r, 0));
+        }
+
         Set<Role> roleAndTheirSubs = roles.stream().flatMap(Role::subs).collect(Collectors.toSet());
         return answer.get(var).asThing()
                 .relations(roleAndTheirSubs.toArray(new Role[0]))
+                .filter(relation ->
+                    rolePlayedMultiplicity.keySet().stream()
+                            .allMatch(requiredRole -> relation.rolePlayers(requiredRole).filter(player -> player.equals(answer.get(var))).limit(rolePlayedMultiplicity.get(requiredRole)).count() == rolePlayedMultiplicity.get(requiredRole))
+                )
                 .collect(Collectors.toSet());
     }
 
-    private boolean satisfiedBy(ConceptMap answer) {
+    boolean satisfiedBy(ConceptMap answer) {
         if (isEmpty()) return true;
 
         Map<Variable, List<Role>> roleRequirements = this.definition.stream()
@@ -121,6 +133,8 @@ public class SemanticDifference {
                     ));
         });
     }
+
+
 
     public SemanticDifference merge(SemanticDifference diff) {
         Map<Variable, VariableDefinition> mergedDefinition = definition.stream().collect(Collectors.toMap(VariableDefinition::var, vd -> vd));
