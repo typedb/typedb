@@ -23,6 +23,7 @@ import grakn.core.common.config.Config;
 import grakn.core.common.config.ConfigKey;
 import grakn.core.common.config.SystemProperty;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.graql.reasoner.state.AnswerPropagatorState;
 import grakn.core.graql.reasoner.state.ResolutionState;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -65,19 +66,26 @@ public class ResolutionTree {
         mapping.clear();
     }
 
-    public void addState(ResolutionState state) {
-        ResolutionState parent = state.getParentState();
-        if (parent == null) return;
-
-        if (state.isAnswerState()) {
-            Node parentNode = getNode(parent);
-            if (parentNode != null){
-                ConceptMap sub = state.getSubstitution();
-                parentNode.addAnswer(sub);
+    public void addState(ResolutionState newState, ResolutionState previousState) {
+        if (!newState.isAnswerState()) addState(newState);
+        else {
+            //NB: by doing this we ensure the newState answer is the previousState answer that has been consumed -
+            //all answer information is present
+            if (previousState.isAnswerState()){
+                addAnswer(newState.getSubstitution(), previousState.getParentState());
             }
-        } else {
-            addChildToNode(parent, state);
         }
+    }
+
+    private void addState(ResolutionState state) {
+        AnswerPropagatorState parent = state.getParentState();
+        if (parent == null) return;
+        addChildToNode(parent, state);
+    }
+
+    private void addAnswer(ConceptMap answer, AnswerPropagatorState parent){
+        Node parentNode = getNode(parent);
+        if (parentNode != null) parentNode.addAnswer(answer);
     }
 
     private Node putNode(ResolutionState state){
