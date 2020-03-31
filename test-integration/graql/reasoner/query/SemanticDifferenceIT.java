@@ -231,26 +231,6 @@ public class SemanticDifferenceIT {
         }
     }
 
-    @Test
-    public void whenChildGeneralisesRoleButInheritanceBlocked_semanticDifferenceDoesNotExist(){
-        try(TestTransaction tx = ((TestTransaction) genericSchemaSession.writeTransaction())) {
-            ReasonerQueryFactory reasonerQueryFactory = tx.reasonerQueryFactory();
-            Role baseRole = tx.getRole("baseRole1");
-            Role metaRole = tx.getMetaRole();
-
-            Pattern parentPattern = and(
-                    var().rel(var("role"), var("z")).rel("baseRole2", var("w")).isa("binary"),
-                    var("role").type(baseRole.label().getValue()));
-            Pattern childPattern = and(
-                    var().rel(var("role"), var("x")).rel("baseRole2", var("y")).isa("binary"),
-                    var("role").type(metaRole.label().getValue()));
-            ReasonerAtomicQuery parent = reasonerQueryFactory.atomic(conjunction(parentPattern));
-            ReasonerAtomicQuery child = reasonerQueryFactory.atomic(conjunction(childPattern));
-
-            Unifier unifier = parent.getMultiUnifier(child, UnifierType.SUBSUMPTIVE).getUnifier();
-            assertFalse(parent.getAtom().computeSemanticDifference(child.getAtom(), unifier).isTrivial());
-        }
-    }
 
     @Test
     public void whenChildSpecialisesRole_rolePlayersPlayingMultipleRoles_differenceIsCalculatedCorrectly(){
