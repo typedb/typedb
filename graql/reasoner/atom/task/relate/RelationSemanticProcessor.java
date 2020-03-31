@@ -264,7 +264,10 @@ public class RelationSemanticProcessor implements SemanticProcessor<RelationAtom
             if (ListsUtil.listDifference(childRoles, parentRoles).isEmpty()) {
                 diff.add(new VariableDefinition(parentVar, null, requiredRole, new ArrayList<>(), new HashSet<>()));
             } else {
-                diff.add(new VariableDefinition(parentVar, null, requiredRole, childRoles, new HashSet<>()));
+                List<Role> filteredChildRoles = childRoles.stream()
+                    .filter(playedRole -> !Schema.MetaSchema.isMetaLabel(playedRole.label()))
+                    .collect(Collectors.toList());
+                diff.add(new VariableDefinition(parentVar, null, requiredRole, filteredChildRoles, new HashSet<>()));
             }
 //            List<Role> playedRoles = bottom(ListsUtil.listDifference(childRoles, parentRoles)).stream()
 //                    .filter(playedRole -> !Schema.MetaSchema.isMetaLabel(playedRole.label()))
