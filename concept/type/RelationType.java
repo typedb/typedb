@@ -23,7 +23,7 @@ import hypergraph.graph.Graph;
 import hypergraph.graph.Schema;
 import hypergraph.graph.vertex.TypeVertex;
 
-public class RelationType extends Type.Tree<RelationType> {
+public class RelationType extends Type<RelationType> {
 
     public static RelationType of(TypeVertex vertex) {
         if (vertex.label().equals(Schema.Vertex.Type.Root.RELATION.label())) return new RelationType.Root(vertex);

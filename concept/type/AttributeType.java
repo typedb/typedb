@@ -23,7 +23,7 @@ import hypergraph.graph.Graph;
 import hypergraph.graph.Schema;
 import hypergraph.graph.vertex.TypeVertex;
 
-public class AttributeType extends Type.Tree<AttributeType> {
+public class AttributeType extends Type<AttributeType> {
 
     public static AttributeType of(TypeVertex vertex) {
         if (vertex.label().equals(Schema.Vertex.Type.Root.ATTRIBUTE.label())) return new AttributeType.Root(vertex);

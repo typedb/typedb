@@ -18,8 +18,8 @@
 
 package hypergraph.concept.type;
 
+import hypergraph.common.exception.HypergraphException;
 import hypergraph.common.iterator.Iterators;
-import hypergraph.concept.thing.Thing;
 import hypergraph.graph.Graph;
 import hypergraph.graph.Schema;
 import hypergraph.graph.vertex.TypeVertex;
@@ -33,20 +33,63 @@ import static java.util.Spliterator.ORDERED;
 import static java.util.Spliterators.spliteratorUnknownSize;
 import static java.util.stream.StreamSupport.stream;
 
-public abstract class Type {
+public abstract class Type<TYPE extends Type> {
 
     protected final TypeVertex vertex;
+    protected TYPE parent;
 
-    public Type(TypeVertex vertex) {
+    Type(TypeVertex vertex) {
         this.vertex = Objects.requireNonNull(vertex);
     }
 
-    Type newInstance(TypeVertex vertex) {
-        if (vertex.schema().equals(Schema.Vertex.Type.ATTRIBUTE_TYPE)) return AttributeType.of(vertex);
-        if (vertex.schema().equals(Schema.Vertex.Type.ENTITY_TYPE)) return EntityType.of(vertex);
-        if (vertex.schema().equals(Schema.Vertex.Type.RELATION_TYPE)) return RelationType.of(vertex);
-        if (vertex.schema().equals(Schema.Vertex.Type.ROLE_TYPE)) return RoleType.of(vertex);
-        return null;
+    Type(Graph graph, String label, Schema.Vertex.Type schema) {
+        this.vertex = graph.type().putVertex(schema, label);
+        TypeVertex parentVertex = graph.type().getVertex(schema.root().label());
+        vertex.outs().add(Schema.Edge.Type.SUB, parentVertex);
+        parent = newInstance(parentVertex);
+    }
+
+    abstract TYPE newInstance(TypeVertex vertex);
+
+    abstract TYPE getThis();
+
+    public TYPE label(String label) {
+        vertex.label(label);
+        return getThis();
+    }
+
+    public TYPE setAbstract(boolean isAbstract) {
+        vertex.setAbstract(isAbstract);
+        return getThis();
+    }
+
+    public TYPE sup(TYPE parent) {
+        vertex.outs().remove(Schema.Edge.Type.SUB, sup().vertex);
+        vertex.outs().add(Schema.Edge.Type.SUB, parent.vertex);
+        this.parent = parent;
+        return getThis();
+    }
+
+    public TYPE sup() {
+        if (parent != null) return parent;
+
+        Iterator<TypeVertex> iterator = Iterators.filter(vertex.outs().get(Schema.Edge.Type.SUB),
+                                                         v -> v.schema().equals(vertex.schema()));
+        if (iterator.hasNext()) parent = newInstance(iterator.next());
+        return parent;
+    }
+
+    public Stream<TYPE> sups() {
+        Iterator<TYPE> sups = Iterators.loop(
+                vertex,
+                v -> v != null && v.schema().equals(this.vertex.schema()),
+                v -> {
+                    Iterator<TypeVertex> p = v.outs().get(Schema.Edge.Type.SUB);
+                    if (p.hasNext()) return p.next();
+                    else return null;
+                }).apply(this::newInstance);
+
+        return stream(spliteratorUnknownSize(sups, ORDERED | IMMUTABLE), false);
     }
 
     public String label() {
@@ -84,66 +127,41 @@ public abstract class Type {
 
         public Root(TypeVertex vertex) {
             super(vertex);
-        }
-    }
-
-    public static abstract class Tree<TYPE extends Tree> extends Type {
-
-        protected TYPE parent;
-
-        Tree(TypeVertex vertex) {
-            super(vertex);
-        }
-
-        Tree(Graph graph, String label, Schema.Vertex.Type schema) {
-            super(graph.type().putVertex(schema, label));
-            TypeVertex parentVertex = graph.type().getVertex(schema.root().label());
-            vertex.outs().add(Schema.Edge.Type.SUB, parentVertex);
-            parent = newInstance(parentVertex);
+            assert(vertex.label().equals(Schema.Vertex.Type.Root.THING.label()));
         }
 
         @Override
-        abstract TYPE newInstance(TypeVertex vertex);
-
-        abstract TYPE getThis();
-
-        public TYPE label(String label) {
-            vertex.label(label);
-            return getThis();
+        Type newInstance(TypeVertex vertex) {
+            if (vertex.schema().equals(Schema.Vertex.Type.ATTRIBUTE_TYPE)) return AttributeType.of(vertex);
+            if (vertex.schema().equals(Schema.Vertex.Type.ENTITY_TYPE)) return EntityType.of(vertex);
+            if (vertex.schema().equals(Schema.Vertex.Type.RELATION_TYPE)) return RelationType.of(vertex);
+            if (vertex.schema().equals(Schema.Vertex.Type.ROLE_TYPE)) return RoleType.of(vertex);
+            return null;
         }
 
-        public TYPE setAbstract(boolean isAbstract) {
-            vertex.setAbstract(isAbstract);
-            return getThis();
+        @Override
+        Type getThis() {
+            return this;
         }
 
-        public TYPE sup(TYPE parent) {
-            vertex.outs().remove(Schema.Edge.Type.SUB, sup().vertex);
-            vertex.outs().add(Schema.Edge.Type.SUB, parent.vertex);
-            this.parent = parent;
-            return getThis();
+        @Override
+        public Type label(String label) {
+            throw new HypergraphException("Invalid Operation Exception: root types are immutable");
         }
 
-        public TYPE sup() {
-            if (parent != null) return parent;
-
-            Iterator<TypeVertex> iterator = Iterators.filter(vertex.outs().get(Schema.Edge.Type.SUB),
-                                                             v -> v.schema().equals(vertex.schema()));
-            if (iterator.hasNext()) parent = newInstance(iterator.next());
-            return parent;
+        @Override
+        public Type setAbstract(boolean isAbstract) {
+            throw new HypergraphException("Invalid Operation Exception: root types are immutable");
         }
 
-        public Stream<TYPE> sups() {
-            Iterator<TYPE> sups = Iterators.loop(
-                    vertex,
-                    v -> v != null && v.schema().equals(this.vertex.schema()),
-                    v -> {
-                        Iterator<TypeVertex> p = v.outs().get(Schema.Edge.Type.SUB);
-                        if (p.hasNext()) return p.next();
-                        else return null;
-                    }).apply(this::newInstance);
+        @Override
+        public Type sup() {
+            return null;
+        }
 
-            return stream(spliteratorUnknownSize(sups, ORDERED | IMMUTABLE), false);
+        @Override
+        public Type sup(Type superType) {
+            throw new HypergraphException("Invalid Operation Exception: root types are immutable");
         }
     }
 }
