@@ -81,7 +81,7 @@ public class SemanticDifference {
     private Set<Relation> rolesToRels(Variable var, Multiset<Role> roles, ConceptMap answer) {
         if (!answer.containsVar(var)) return new HashSet<>();
 
-        // we will require each role to be played a specific number of times
+        // we will require each role to be played a specific number of times in every relation we find
         Map<Role, Integer> requiredRoleCounts = new HashMap<>();
         for (Role r : roles) {
             requiredRoleCounts.put(r, 1 + requiredRoleCounts.getOrDefault(r, 0));
@@ -89,22 +89,51 @@ public class SemanticDifference {
 
         Thing player = answer.get(var).asThing();
 
-        Set<Role> roleAndTheirSubs = roles.stream().flatMap(Role::subs).collect(Collectors.toSet());
-        return player
-                .relations(roleAndTheirSubs.toArray(new Role[0]))
-                .filter(relation ->
-                        // keep the relation if it has the concept corresponding to 'var' playing the each requried role or a role subtype a sufficient number of times
-                    requiredRoleCounts.keySet().stream()
-                            .allMatch(requiredRole -> {
-                                Integer requiredCount = requiredRoleCounts.get(requiredRole);
-                                Set<Role> roleSubtypes = requiredRole.subs().collect(Collectors.toSet());
-                                return relation.rolePlayers(roleSubtypes.toArray(new Role[0]))
-                                        .filter(foundPlayer -> foundPlayer.equals(player))
-                                        .limit(requiredCount) // don't need to read more than this to be able to return, optimisation
-                                        .count() == requiredCount;
-                            })
-                )
-                .collect(Collectors.toSet());
+        Set<Relation> potentialRelations = null;
+        Set<Relation> filteredRelations = null;
+
+        for (Role r : requiredRoleCounts.keySet()) {
+            filteredRelations = new HashSet<>();
+            Set<Role> roleAndSubs = r.subs().collect(Collectors.toSet());
+            Integer requiredRoleCount = requiredRoleCounts.get(r);
+            Role[] rolesAsArray = roleAndSubs.toArray(new Role[0]);
+            if (potentialRelations == null) {
+                // initialise potential relations to those satisfying a single required role
+                potentialRelations = player.relations(roleAndSubs.toArray(rolesAsArray)).collect(Collectors.toSet());
+            }
+
+            // filter step: check all surviving potential relations if they actually have the role player the required number of times
+            for (Relation potentialRelation : potentialRelations) {
+                long rolePlayedCount = potentialRelation.rolePlayers(rolesAsArray)
+                        .filter(foundPlayer -> foundPlayer.equals(player))
+                        .limit(requiredRoleCount) // don't need to read more players than strictly required, optimisation
+                        .count();
+                if (rolePlayedCount >= requiredRoleCount) {
+                    filteredRelations.add(potentialRelation);
+                }
+            }
+            // keep the filtered relations and repeat if necessary
+            potentialRelations = filteredRelations;
+        }
+
+        return filteredRelations;
+//
+//        Set<Role> roleAndTheirSubs = roles.stream().flatMap(Role::subs).collect(Collectors.toSet());
+//        return player
+//                .relations(roleAndTheirSubs.toArray(new Role[0]))
+//                .filter(relation ->
+//                        // keep the relation if it has the concept corresponding to 'var' playing the each required role or a role subtype a sufficient number of times
+//                    requiredRoleCounts.keySet().stream()
+//                            .allMatch(requiredRole -> {
+//                                Integer requiredCount = requiredRoleCounts.get(requiredRole);
+//                                Set<Role> roleSubtypes = requiredRole.subs().collect(Collectors.toSet());
+//                                return relation.rolePlayers(roleSubtypes.toArray(new Role[0]))
+//                                        .filter(foundPlayer -> foundPlayer.equals(player))
+//                                        .limit(requiredCount) // don't need to read more than this to be able to return, optimisation
+//                                        .count() == requiredCount;
+//                            })
+//                )
+//                .collect(Collectors.toSet());
     }
 
     boolean satisfiedBy(ConceptMap answer) {

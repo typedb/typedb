@@ -74,6 +74,8 @@ public class RelationMaterialiser implements AtomMaterialiser<RelationAtom> {
                     variables.forEach(var -> requiredPlayers.add(substitution.get(var).asThing()));
                     relation.rolePlayers(role)
                             .forEach(player -> {
+                                // TODO if we have fast neighbor pairwise lookup, we can check if each required player is already in this relation
+                                // TODO without looping over all relation players and filtering
                                 if (requiredPlayers.isEmpty()) {
                                     // we can short circuit the retrieval of all role players if requirements are satisfied
                                     return;

@@ -191,20 +191,20 @@ public class RelationAtom extends Atom {
 
     @Override
     public Stream<Atom> rewriteToAtoms() {
-        // we keep duplicate role players together as part of a single atom
-        // splitting them into sub-atoms would change the semantics (two of Relation[$x], Relation[$x] != Relation[$x, $x])
+        // we keep duplicate role players together as part of a single atom, as the alternative,
+        // splitting them into sub-atoms, would change the semantics
+        // for example: {Relation[$x], Relation[$x]} != {Relation[$x, $x]}
         Map<RelationProperty.RolePlayer, List<RelationProperty.RolePlayer>> players = new HashMap<>();
         this.getRelationPlayers()
                 .forEach(rp -> {
-                    players.putIfAbsent(rp, new ArrayList<>());
-                    players.get(rp).add(rp);
+                    players.getOrDefault(rp, new ArrayList<>()).add(rp);
                 });
 
         return players.values().stream()
-                .map(rolePlayers -> create(relationPattern(getVarName().asReturnedVar(), rolePlayers), getPredicateVariable(), getTypeLabel(), null, getParentQuery(), context()));
-
-//        return this.getRelationPlayers().stream()
-//                .map(rp -> create(relationPattern(getVarName().asReturnedVar(), Sets.newHashSet(rp)), getPredicateVariable(), getTypeLabel(), null, getParentQuery(), context()));
+                .map(rolePlayers ->
+                        create(relationPattern(getVarName().asReturnedVar(), rolePlayers),
+                                getPredicateVariable(), getTypeLabel(), null, getParentQuery(), context())
+                );
     }
 
     @Override
