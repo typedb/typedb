@@ -55,8 +55,10 @@ def graknlabs_client_java():
 def graknlabs_console():
     git_repository(
         name = "graknlabs_console",
-        remote = "https://github.com/graknlabs/console",
-        tag = "1.0.3",
+#        remote = "https://github.com/graknlabs/console",
+#        tag = "1.0.3",
+        remote = "https://github.com/flyingsilverfin/consol",
+        commit = "58ca8e3dcbdcd1fa9b2f4ee443adaa5c7d8031f3"
     )
 
 def graknlabs_benchmark():
