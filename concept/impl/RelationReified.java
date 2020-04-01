@@ -89,7 +89,7 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
         //We add the role types explicitly so we can return them when there are no roleplayers
         type().roles().forEach(roleType -> roleMap.put(roleType, new ArrayList<>()));
         //All castings are used here because we need to iterate over all of them anyway
-        castingsRelation().forEach(rp -> roleMap.get(rp.getRole()).add(rp.getRolePlayer()));
+        castingsRelation().forEach(rp -> roleMap.computeIfAbsent(rp.getRole(), (k) -> new ArrayList<>()).add(rp.getRolePlayer()));
 
         return roleMap;
     }
