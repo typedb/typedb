@@ -57,7 +57,7 @@ def graknlabs_console():
         name = "graknlabs_console",
 #        remote = "https://github.com/graknlabs/console",
 #        tag = "1.0.3",
-        remote = "https://github.com/flyingsilverfin/consol",
+        remote = "https://github.com/flyingsilverfin/console",
         commit = "41a836f621819cd51964d8e8d232bac6ca087009"
     )
 
