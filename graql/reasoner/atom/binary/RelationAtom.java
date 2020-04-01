@@ -197,7 +197,8 @@ public class RelationAtom extends Atom {
         Map<RelationProperty.RolePlayer, List<RelationProperty.RolePlayer>> players = new HashMap<>();
         this.getRelationPlayers()
                 .forEach(rp -> {
-                    players.getOrDefault(rp, new ArrayList<>()).add(rp);
+                    players.putIfAbsent(rp, new ArrayList<>());
+                    players.get(rp).add(rp);
                 });
 
         return players.values().stream()
