@@ -70,10 +70,18 @@ public class RelationMaterialiser implements AtomMaterialiser<RelationAtom> {
         // we make the relation conform to the required number and quantity of each role player
         roleVarMap.asMap()
                 .forEach((role, variables) -> {
-                    Multiset<Thing> existingPlayers = relation.rolePlayers(role).collect(Multisets.toMultiset(i -> i, i -> 1, HashMultiset::create));
                     Multiset<Thing> requiredPlayers = HashMultiset.create();
                     variables.forEach(var -> requiredPlayers.add(substitution.get(var).asThing()));
-                    Multisets.removeOccurrences(requiredPlayers, existingPlayers);
+                    relation.rolePlayers(role)
+                            .forEach(player -> {
+                                if (requiredPlayers.isEmpty()) {
+                                    // we can short circuit the retrieval of all role players if requirements are satisfied
+                                    return;
+                                }
+                                requiredPlayers.remove(player, 1); // remove single occurence of this player if it exists
+                            });
+
+                    // we create each of the remaining required ones
                     requiredPlayers.forEach(newPlayer -> relation.assign(role, newPlayer));
                 });
 

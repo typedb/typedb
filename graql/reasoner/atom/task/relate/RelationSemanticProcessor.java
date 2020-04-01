@@ -141,7 +141,6 @@ public class RelationSemanticProcessor implements SemanticProcessor<RelationAtom
 
         //establish compatible castings for each parent casting
         List<Set<Pair<RelationProperty.RolePlayer, RelationProperty.RolePlayer>>> compatibleMappingsPerParentRP = new ArrayList<>();
-//        if ((new HashSet<>(parentAtom.getRelationPlayers()).size() > new HashSet<>(childAtom.getRelationPlayers()).size())) return new HashSet<>();
 
         //child query is rule body + head here
         ReasonerQuery childQuery = childAtom.getParentQuery();
@@ -261,19 +260,23 @@ public class RelationSemanticProcessor implements SemanticProcessor<RelationAtom
             }
             List<Role> childRoles = childVarRoleMap.get(childVar);
             List<Role> parentRoles = parentVarRoleMap.get(parentVar);
+            // if the child and parent roles are exactly the same, the semantic difference is exactly 0
             if (ListsUtil.listDifference(childRoles, parentRoles).isEmpty()) {
                 diff.add(new VariableDefinition(parentVar, null, requiredRole, new ArrayList<>(), new HashSet<>()));
             } else {
+                // if the child and parent roles are not exactly the same, then we check all required role players
+                // this is because we can't distinguish using a semantic difference, the following:
+                // parent: 1 role player, child: 2 repeated role players
+                // vs
+                // parent: 2 role player, child: 3 repeated role players
+                // both would end up with a single required role. Applying this semantic difference could be satisfied
+                // by either case. We therefore explicitly require N role players to be repeatedly present
+                // this is less efficient, but also less common
                 List<Role> filteredChildRoles = childRoles.stream()
                     .filter(playedRole -> !Schema.MetaSchema.isMetaLabel(playedRole.label()))
                     .collect(Collectors.toList());
                 diff.add(new VariableDefinition(parentVar, null, requiredRole, filteredChildRoles, new HashSet<>()));
             }
-//            List<Role> playedRoles = bottom(ListsUtil.listDifference(childRoles, parentRoles)).stream()
-//                    .filter(playedRole -> !Schema.MetaSchema.isMetaLabel(playedRole.label()))
-//                    .filter(playedRole -> ListsUtil.listDifference(parentRoles, playedRole.subs().collect(Collectors.toList())).isEmpty())
-//                    .collect(Collectors.toList());
-//            diff.add(new VariableDefinition(parentVar, null, requiredRole, childRoles, new HashSet<>()));
         });
         return baseDiff.merge(new SemanticDifference(diff));
     }
