@@ -58,7 +58,7 @@ def graknlabs_console():
 #        remote = "https://github.com/graknlabs/console",
 #        tag = "1.0.3",
         remote = "https://github.com/flyingsilverfin/console",
-        commit = "41a836f621819cd51964d8e8d232bac6ca087009"
+        commit = "de2eb04250f26f0576ea9e669e6cfa0b5aa8f613"
     )
 
 def graknlabs_benchmark():
