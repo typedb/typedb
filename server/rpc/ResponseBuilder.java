@@ -184,6 +184,35 @@ public class ResponseBuilder {
                     .build();
         }
 
+        public static ConceptProto.Concept conceptPrefilled(grakn.core.kb.concept.api.Concept concept) {
+            ConceptProto.Concept.Builder builder = ConceptProto.Concept.newBuilder()
+                    .setId(concept.id().getValue())
+                    .setBaseType(getBaseType(concept))
+                    .setIsPrefilled(true);
+
+            if (concept.isSchemaConcept()) {
+                builder.setLabelRes(ConceptProto.SchemaConcept.GetLabel.Res.newBuilder()
+                        .setLabel(concept.asSchemaConcept().label().getValue()));
+                builder.setIsImplicitRes(ConceptProto.SchemaConcept.IsImplicit.Res.newBuilder()
+                        .setImplicit(concept.asSchemaConcept().isImplicit()));
+
+            } else if (concept.isThing()) {
+                builder.setTypeRes(ConceptProto.Thing.Type.Res.newBuilder()
+                        .setType(conceptPrefilled(concept.asThing().type())));
+                builder.setInferredRes(ConceptProto.Thing.IsInferred.Res.newBuilder()
+                        .setInferred(concept.asThing().isInferred()));
+
+                if (concept.isAttribute()) {
+                    builder.setValueRes(ConceptProto.Attribute.Value.Res.newBuilder()
+                            .setValue(attributeValue(concept.asAttribute().value())));
+                    builder.setDataTypeRes(ConceptProto.AttributeType.DataType.Res.newBuilder()
+                            .setDataType(DATA_TYPE(concept.asAttribute().dataType())));
+                }
+            }
+
+            return builder.build();
+        }
+
         private static ConceptProto.Concept.BASE_TYPE getBaseType(grakn.core.kb.concept.api.Concept concept) {
             if (concept.isEntityType()) {
                 return ConceptProto.Concept.BASE_TYPE.ENTITY_TYPE;
@@ -313,7 +342,7 @@ public class ResponseBuilder {
         static AnswerProto.ConceptMap conceptMap(ConceptMap answer) {
             AnswerProto.ConceptMap.Builder conceptMapProto = AnswerProto.ConceptMap.newBuilder();
             answer.map().forEach((var, concept) -> {
-                ConceptProto.Concept conceptProto = ResponseBuilder.Concept.concept(concept);
+                ConceptProto.Concept conceptProto = ResponseBuilder.Concept.conceptPrefilled(concept); // Pre-fill concept map answers!
                 conceptMapProto.putMap(var.name(), conceptProto);
             });
 
