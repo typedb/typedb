@@ -343,11 +343,21 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
             int createStreamSpanId = ServerTracing.startScopedChildSpan("Creating query stream");
 
             Stream<Transaction.Res> responseStream = tx().stream(query, request.getInfer().equals(Transaction.Query.INFER.TRUE)).map(ResponseBuilder.Transaction.Iter::query);
-            Transaction.Res response = ResponseBuilder.Transaction.queryIterator(iterators.add(responseStream.iterator()));
+
+            Transaction.Res response = null;
+            int iteratorId = request.getId();
+            if (iteratorId != 0) {
+                iterators.add(responseStream.iterator(), iteratorId);
+            } else {
+                iteratorId = iterators.add(responseStream.iterator());
+                response = ResponseBuilder.Transaction.queryIterator(iteratorId);
+            }
 
             ServerTracing.closeScopedChildSpan(createStreamSpanId);
 
-            onNextResponse(response);
+            if (response != null) {
+                onNextResponse(response);
+            }
         }
 
         private void getSchemaConcept(Transaction.GetSchemaConcept.Req request) {
@@ -456,14 +466,24 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
      * Contains a mutable map of iterators of Transaction.Res for gRPC. These iterators are used for returning
      * lazy, streaming responses such as for Graql query results.
      */
-    class Iterators {
-        private final AtomicInteger iteratorIdCounter = new AtomicInteger(1);
+    static class Iterators {
+        private int highestIteratorId = 0;
         private final Map<Integer, Iterator<Transaction.Res>> iterators = new ConcurrentHashMap<>();
 
         public int add(Iterator<Transaction.Res> iterator) {
-            int iteratorId = iteratorIdCounter.getAndIncrement();
+            iterators.put(++highestIteratorId, iterator);
+            return highestIteratorId;
+        }
+
+        public void add(Iterator<Transaction.Res> iterator, int iteratorId) {
+            if (iteratorId > highestIteratorId) {
+                highestIteratorId = iteratorId;
+            } else {
+                if (iterators.containsKey(iteratorId)) {
+                    throw ResponseBuilder.exception(Status.FAILED_PRECONDITION);
+                }
+            }
             iterators.put(iteratorId, iterator);
-            return iteratorId;
         }
 
         public Transaction.Res next(int iteratorId) {
