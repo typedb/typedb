@@ -22,7 +22,7 @@ import hypergraph.Hypergraph;
 import hypergraph.concept.type.AttributeType;
 import hypergraph.concept.type.EntityType;
 import hypergraph.concept.type.RelationType;
-import hypergraph.concept.type.Type;
+import hypergraph.concept.type.ThingType;
 import hypergraph.core.CoreHypergraph;
 import org.junit.Test;
 
@@ -81,7 +81,7 @@ public class BasicTest {
 
                     Stream<Consumer<Hypergraph.Transaction>> rootTypeAssertions = Stream.of(
                             tx -> {
-                                Type rootType = tx.concepts().getRootType();
+                                ThingType rootType = tx.concepts().getRootType();
                                 assertNotNull(rootType);
                             },
                             tx -> {
@@ -108,7 +108,7 @@ public class BasicTest {
                     assertTrue(transaction.isOpen());
                     assertEquals(CoreHypergraph.Transaction.Type.WRITE, transaction.type());
 
-                    Type rootType = transaction.concepts().getRootType();
+                    ThingType rootType = transaction.concepts().getRootType();
                     EntityType rootEntityType = transaction.concepts().getRootEntityType();
                     RelationType rootRelationType = transaction.concepts().getRootRelationType();
                     AttributeType rootAttributeType = transaction.concepts().getRootAttributeType();
@@ -194,7 +194,7 @@ public class BasicTest {
         assertTrue(transaction.isOpen());
         assertEquals(CoreHypergraph.Transaction.Type.READ, transaction.type());
 
-        Type rootType = transaction.concepts().getRootType();
+        ThingType rootType = transaction.concepts().getRootType();
         EntityType rootEntityType = transaction.concepts().getRootEntityType();
         RelationType rootRelationType = transaction.concepts().getRootRelationType();
         AttributeType rootAttributeType = transaction.concepts().getRootAttributeType();

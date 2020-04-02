@@ -33,16 +33,16 @@ import static java.util.Spliterator.ORDERED;
 import static java.util.Spliterators.spliteratorUnknownSize;
 import static java.util.stream.StreamSupport.stream;
 
-public abstract class Type<TYPE extends Type> {
+public abstract class ThingType<TYPE extends ThingType> {
 
     protected final TypeVertex vertex;
     protected TYPE parent;
 
-    Type(TypeVertex vertex) {
+    ThingType(TypeVertex vertex) {
         this.vertex = Objects.requireNonNull(vertex);
     }
 
-    Type(Graph graph, String label, Schema.Vertex.Type schema) {
+    ThingType(Graph graph, String label, Schema.Vertex.Type schema) {
         this.vertex = graph.type().putVertex(schema, label);
         TypeVertex parentVertex = graph.type().getVertex(schema.root().label());
         vertex.outs().add(Schema.Edge.Type.SUB, parentVertex);
@@ -53,9 +53,17 @@ public abstract class Type<TYPE extends Type> {
 
     abstract TYPE getThis();
 
+    public String label() {
+        return vertex.label();
+    }
+
     public TYPE label(String label) {
         vertex.label(label);
         return getThis();
+    }
+
+    public boolean isAbstract() {
+        return vertex.isAbstract();
     }
 
     public TYPE setAbstract(boolean isAbstract) {
@@ -92,16 +100,8 @@ public abstract class Type<TYPE extends Type> {
         return stream(spliteratorUnknownSize(sups, ORDERED | IMMUTABLE), false);
     }
 
-    public String label() {
-        return vertex.label();
-    }
-
-    public boolean isAbstract() {
-        return vertex.isAbstract();
-    }
-
-    public Stream<? extends Type> subs() {
-        Iterator<Type> sups = Iterators.tree(vertex, v -> v.ins().get(Schema.Edge.Type.SUB)).apply(this::newInstance);
+    public Stream<TYPE> subs() {
+        Iterator<TYPE> sups = Iterators.tree(vertex, v -> v.ins().get(Schema.Edge.Type.SUB)).apply(this::newInstance);
         return stream(spliteratorUnknownSize(sups, ORDERED), false);
     }
 
@@ -114,7 +114,7 @@ public abstract class Type<TYPE extends Type> {
     public boolean equals(Object object) {
         if (this == object) return true;
         if (object == null || getClass() != object.getClass()) return false;
-        Type that = (Type) object;
+        ThingType that = (ThingType) object;
         return this.vertex.equals(that.vertex);
     }
 
@@ -123,7 +123,7 @@ public abstract class Type<TYPE extends Type> {
         return vertex.hashCode();
     }
 
-    public static class Root extends Type {
+    public static class Root extends ThingType {
 
         public Root(TypeVertex vertex) {
             super(vertex);
@@ -131,7 +131,7 @@ public abstract class Type<TYPE extends Type> {
         }
 
         @Override
-        Type newInstance(TypeVertex vertex) {
+        ThingType newInstance(TypeVertex vertex) {
             if (vertex.schema().equals(Schema.Vertex.Type.ATTRIBUTE_TYPE)) return AttributeType.of(vertex);
             if (vertex.schema().equals(Schema.Vertex.Type.ENTITY_TYPE)) return EntityType.of(vertex);
             if (vertex.schema().equals(Schema.Vertex.Type.RELATION_TYPE)) return RelationType.of(vertex);
@@ -140,27 +140,27 @@ public abstract class Type<TYPE extends Type> {
         }
 
         @Override
-        Type getThis() {
+        ThingType getThis() {
             return this;
         }
 
         @Override
-        public Type label(String label) {
+        public ThingType label(String label) {
             throw new HypergraphException("Invalid Operation Exception: root types are immutable");
         }
 
         @Override
-        public Type setAbstract(boolean isAbstract) {
+        public ThingType setAbstract(boolean isAbstract) {
             throw new HypergraphException("Invalid Operation Exception: root types are immutable");
         }
 
         @Override
-        public Type sup() {
+        public ThingType sup() {
             return null;
         }
 
         @Override
-        public Type sup(Type superType) {
+        public ThingType sup(ThingType superType) {
             throw new HypergraphException("Invalid Operation Exception: root types are immutable");
         }
     }

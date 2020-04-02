@@ -2,7 +2,7 @@ digraph hypergraph {
     graph [splines = true]
 
     {
-        GRAKN_HIERARCHY [shape = none, label = "Grakn Concept Hierarchy", pos = "3,7.25!"]
+        GRAKN_HIERARCHY [shape = none, label = "Grakn Type Hierarchy", pos = "3,7.25!"]
         node [shape = ellipse]
 
         {

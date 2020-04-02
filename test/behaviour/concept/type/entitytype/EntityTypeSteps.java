@@ -20,7 +20,7 @@ package hypergraph.test.behaviour.concept.type.entitytype;
 
 import hypergraph.Hypergraph;
 import hypergraph.concept.type.EntityType;
-import hypergraph.concept.type.Type;
+import hypergraph.concept.type.ThingType;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 
@@ -90,7 +90,7 @@ public class EntityTypeSteps {
 
     @Then("entity\\( ?{word} ?) get supertypes contain:")
     public void entity_get_supertypes_contain(String label, List<String> superLabels) {
-        Set<String> actuals = tx().concepts().getEntityType(label).sups().map(Type::label).collect(toSet());
+        Set<String> actuals = tx().concepts().getEntityType(label).sups().map(ThingType::label).collect(toSet());
         assertTrue(actuals.containsAll(superLabels));
     }
 
@@ -101,7 +101,7 @@ public class EntityTypeSteps {
 
     @Then("entity\\( ?{word} ?) get subtypes contain:")
     public void entity_get_subtypes_contain(String label, List<String> subLabels) {
-        Set<String> actuals = tx().concepts().getEntityType(label).subs().map(Type::label).collect(toSet());
+        Set<String> actuals = tx().concepts().getEntityType(label).subs().map(ThingType::label).collect(toSet());
         assertTrue(actuals.containsAll(subLabels));
     }
 

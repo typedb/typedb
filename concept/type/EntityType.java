@@ -23,7 +23,7 @@ import hypergraph.graph.Graph;
 import hypergraph.graph.Schema;
 import hypergraph.graph.vertex.TypeVertex;
 
-public class EntityType extends Type<EntityType> {
+public class EntityType extends ThingType<EntityType> {
 
     public static EntityType of(TypeVertex vertex) {
         if (vertex.label().equals(Schema.Vertex.Type.Root.ENTITY.label())) return new EntityType.Root(vertex);

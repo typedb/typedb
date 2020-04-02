@@ -23,7 +23,7 @@ import hypergraph.graph.Graph;
 import hypergraph.graph.Schema;
 import hypergraph.graph.vertex.TypeVertex;
 
-public class RoleType extends Type<RoleType> {
+public class RoleType extends ThingType<RoleType> {
 
     public static RoleType of(TypeVertex vertex) {
         if (vertex.label().equals(Schema.Vertex.Type.Root.ROLE.label())) return new RoleType.Root(vertex);
