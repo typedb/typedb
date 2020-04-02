@@ -555,15 +555,12 @@ public class AtomicQueryUnificationIT {
             unification(query, potentialEquivalent, true, UnifierType.RULE, testTx);
             unification(potentialEquivalent, query, true, UnifierType.RULE, testTx);
 
-            // we block subtype checking by tying the type of $role in the potentialEquivalent
+            // 'query' has answers that are not a subset of 'potentialEquivalent' because of the extra returned variable
             unification(query, potentialEquivalent, false, UnifierType.SUBSUMPTIVE, testTx);
             unification(potentialEquivalent, query, true, UnifierType.SUBSUMPTIVE, testTx);
         }
     }
 
-    /**
-     * An example of a test where we have different levels of relaxed-ness of the unifiers
-     */
     @Test
     public void testUnification_RelationRolesNotIdentical() {
         try (Transaction tx = genericSchemaSession.writeTransaction()) {
@@ -584,7 +581,7 @@ public class AtomicQueryUnificationIT {
             // structural_subsumptive is the most relaxed unifier - we don't care about IDs if they don't exist
             // and if they do, then they don't have to match
             unification(query, potentiallyParent, true, UnifierType.STRUCTURAL_SUBSUMPTIVE, testTx);
-            unification(potentiallyParent, query, false, UnifierType.STRUCTURAL_SUBSUMPTIVE, testTx);
+            unification(potentiallyParent, query, true, UnifierType.STRUCTURAL_SUBSUMPTIVE, testTx);
         }
     }
 
