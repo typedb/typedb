@@ -92,6 +92,8 @@ public class SemanticDifference {
         Set<Relation> potentialRelations = null;
         Set<Relation> filteredRelations = null;
 
+        // after finding an initial set of relations that are connected via the role to this player
+        // we filter the candidates down from there to make sure the relations satisfy ALL role requirements for this player
         for (Role r : requiredRoleCounts.keySet()) {
             filteredRelations = new HashSet<>();
             Set<Role> roleAndSubs = r.subs().collect(Collectors.toSet());
@@ -117,23 +119,6 @@ public class SemanticDifference {
         }
 
         return filteredRelations;
-//
-//        Set<Role> roleAndTheirSubs = roles.stream().flatMap(Role::subs).collect(Collectors.toSet());
-//        return player
-//                .relations(roleAndTheirSubs.toArray(new Role[0]))
-//                .filter(relation ->
-//                        // keep the relation if it has the concept corresponding to 'var' playing the each required role or a role subtype a sufficient number of times
-//                    requiredRoleCounts.keySet().stream()
-//                            .allMatch(requiredRole -> {
-//                                Integer requiredCount = requiredRoleCounts.get(requiredRole);
-//                                Set<Role> roleSubtypes = requiredRole.subs().collect(Collectors.toSet());
-//                                return relation.rolePlayers(roleSubtypes.toArray(new Role[0]))
-//                                        .filter(foundPlayer -> foundPlayer.equals(player))
-//                                        .limit(requiredCount) // don't need to read more than this to be able to return, optimisation
-//                                        .count() == requiredCount;
-//                            })
-//                )
-//                .collect(Collectors.toSet());
     }
 
     boolean satisfiedBy(ConceptMap answer) {

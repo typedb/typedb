@@ -67,6 +67,7 @@ import graql.lang.statement.Statement;
 import graql.lang.statement.StatementInstance;
 import graql.lang.statement.StatementThing;
 import graql.lang.statement.Variable;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -163,11 +164,17 @@ public class RelationAtom extends Atom {
         return create(this, parent);
     }
 
-    public IsaAtom isaAtom(){ return isaAtom;}
+    public IsaAtom isaAtom() {
+        return isaAtom;
+    }
 
-    public ImmutableList<RelationProperty.RolePlayer> getRelationPlayers() { return relationPlayers; }
+    public ImmutableList<RelationProperty.RolePlayer> getRelationPlayers() {
+        return relationPlayers;
+    }
 
-    public ImmutableSet<Label> getRoleLabels() { return roleLabels; }
+    public ImmutableSet<Label> getRoleLabels() {
+        return roleLabels;
+    }
 
     @Override
     public Class<? extends VarProperty> getVarPropertyClass() {
@@ -201,16 +208,21 @@ public class RelationAtom extends Atom {
                     players.get(rp).add(rp);
                 });
 
-        return players.values().stream()
-                .map(rolePlayers ->
-                        create(relationPattern(getVarName().asReturnedVar(), rolePlayers),
-                                getPredicateVariable(), getTypeLabel(), null, getParentQuery(), context())
-                );
+
+        // we also keep this
+        return Stream.concat(
+                Stream.of(this),
+                players.values().stream()
+                        .map(rolePlayers ->
+                                create(relationPattern(getVarName().asReturnedVar(), rolePlayers),
+                                        getPredicateVariable(), getTypeLabel(), null, getParentQuery(), context())
+                )
+        );
     }
 
     @Override
     public String toString() {
-        String typeString = getTypeLabel() != null? getTypeLabel() .getValue() : "{*}";
+        String typeString = getTypeLabel() != null ? getTypeLabel().getValue() : "{*}";
         String relationString = (isUserDefined() ? getVarName() + " " : "") +
                 typeString +
                 (getPredicateVariable().isReturned() ? "(" + getPredicateVariable() + ")" : "") +
@@ -228,10 +240,14 @@ public class RelationAtom extends Atom {
     }
 
     @Override
-    public SchemaConcept getSchemaConcept() { return isaAtom.getSchemaConcept();}
+    public SchemaConcept getSchemaConcept() {
+        return isaAtom.getSchemaConcept();
+    }
 
     @Override
-    public Variable getPredicateVariable() { return isaAtom.getPredicateVariable();}
+    public Variable getPredicateVariable() {
+        return isaAtom.getPredicateVariable();
+    }
 
     //NB: overriding as these require a derived property
     @Override
@@ -392,10 +408,14 @@ public class RelationAtom extends Atom {
     }
 
     @Override
-    public boolean isRelation() { return true; }
+    public boolean isRelation() {
+        return true;
+    }
 
     @Override
-    public boolean isSelectable() { return true; }
+    public boolean isSelectable() {
+        return true;
+    }
 
     @Override
     public boolean isType() {
@@ -413,7 +433,9 @@ public class RelationAtom extends Atom {
     }
 
     @Override
-    public void checkValid() { validator.checkValid(this, context()); }
+    public void checkValid() {
+        validator.checkValid(this, context());
+    }
 
     @Override
     public Set<String> validateAsRuleHead(Rule rule) {
@@ -425,15 +447,15 @@ public class RelationAtom extends Atom {
         return validator.validateAsRuleBody(this, ruleLabel, context());
     }
 
-    public boolean typesRoleCompatibleWithMatchSemantics(Variable typedVar, Set<Type> parentTypes){
+    public boolean typesRoleCompatibleWithMatchSemantics(Variable typedVar, Set<Type> parentTypes) {
         return parentTypes.stream().allMatch(parentType -> isTypeRoleCompatible(typedVar, parentType, true));
     }
 
-    public boolean typesRoleCompatibleWithInsertSemantics(Variable typedVar, Set<Type> parentTypes){
+    public boolean typesRoleCompatibleWithInsertSemantics(Variable typedVar, Set<Type> parentTypes) {
         return parentTypes.stream().allMatch(parentType -> isTypeRoleCompatible(typedVar, parentType, false));
     }
 
-    private boolean isTypeRoleCompatible(Variable typedVar, Type parentType, boolean includeRoleHierarchy){
+    private boolean isTypeRoleCompatible(Variable typedVar, Type parentType, boolean includeRoleHierarchy) {
         if (parentType == null || Schema.MetaSchema.isMetaLabel(parentType.label())) return true;
 
         List<Role> roleRequirements = getRoleVarMap().entries().stream()
@@ -448,7 +470,7 @@ public class RelationAtom extends Atom {
         Set<Type> parentTypes = parentType.subs().collect(Collectors.toSet());
         return roleRequirements.stream()
                 //include sub roles
-                .flatMap(role -> includeRoleHierarchy? role.subs() : Stream.of(role))
+                .flatMap(role -> includeRoleHierarchy ? role.subs() : Stream.of(role))
                 //check if it can play it
                 .flatMap(Role::players)
                 .anyMatch(parentTypes::contains);
@@ -519,7 +541,7 @@ public class RelationAtom extends Atom {
 
     @Override
     public boolean isRuleApplicableViaAtom(Atom ruleAtom) {
-        if (ruleAtom instanceof RelationAtom || ruleAtom instanceof AttributeAtom)  {
+        if (ruleAtom instanceof RelationAtom || ruleAtom instanceof AttributeAtom) {
             RelationAtom atomWithType = typeReasoner.inferTypes(this.addType(ruleAtom.toRelationAtom().getSchemaConcept()), new ConceptMap(), context());
             return ruleAtom.isUnifiableWith(atomWithType);
         }
@@ -569,7 +591,7 @@ public class RelationAtom extends Atom {
     }
 
     @Override
-    public Stream<Predicate> getInnerPredicates(){
+    public Stream<Predicate> getInnerPredicates() {
         ConceptManager conceptManager = context().conceptManager();
         return Stream.concat(
                 isaAtom.getInnerPredicates(),

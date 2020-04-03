@@ -614,23 +614,48 @@ public class ReasoningIT {
 
     @Test
     public void whenAppendingRolePlayers_DuplicatesAreCreated() {
-        for (int i = 0; i < 10; i++) {
-            System.out.println("repetition: " + i);
-            try (Session session = server.sessionWithNewKeyspace()) {
-                loadFromFileAndCommit(resourcePath, "appendingRPs.gql", session);
-                try (Transaction tx = session.readTransaction()) {
-                    Stream<ConceptMap> answers = tx.stream(Graql.parse("match " +
-                            "$r (anotherRole: $x, anotherRole: $x) isa baseRelation;get;").asGet());
-                    answers.forEach(answer -> {
-                        Relation baseRelation = answer.get("r").asRelation();
-                        Thing player = answer.get("x").asThing();
+        try (Session session = server.sessionWithNewKeyspace()) {
+            loadFromFileAndCommit(resourcePath, "appendingRPs.gql", session);
+            try (Transaction tx = session.readTransaction()) {
+                Stream<ConceptMap> answers = tx.stream(Graql.parse("match " +
+                        "$r (anotherRole: $x, anotherRole: $x) isa baseRelation;get;").asGet());
+                answers.forEach(answer -> {
+                    Relation baseRelation = answer.get("r").asRelation();
+                    Thing player = answer.get("x").asThing();
 
-                        List<Thing> identicalRolePlayers = baseRelation.rolePlayers(tx.getRole("anotherRole"))
-                                .filter(thing -> thing.equals(player))
-                                .collect(Collectors.toList());
-                        assertTrue(identicalRolePlayers.size() >= 2);
-                    });
-                }
+                    List<Thing> identicalRolePlayers = baseRelation.rolePlayers(tx.getRole("anotherRole"))
+                            .filter(thing -> thing.equals(player))
+                            .collect(Collectors.toList());
+                    assertTrue(identicalRolePlayers.size() >= 2);
+                });
+            }
+        }
+    }
+
+    @Test
+    public void whenCopyingRolePlayer_DuplicateRoleRetrievedCorrectly() {
+        try (Session session = server.sessionWithNewKeyspace()) {
+            try (Transaction tx = session.writeTransaction()) {
+                // copies a role player to also play another role
+                tx.execute(Graql.parse("define " +
+                        "baseEntity sub entity, plays someRole, plays anotherRole; " +
+                        "baseRelation sub relation, relates someRole, relates anotherRole;" +
+                        "duplicateRole-CopyPlayer sub rule, " +
+                        "when { " +
+                        "    $r (someRole: $y, anotherRole: $z) isa baseRelation; " +
+                        "}, " +
+                        "then { " +
+                        "    $r (anotherRole: $y) isa baseRelation; " +
+                        "};").asDefine());
+                tx.execute(Graql.parse("insert $x isa baseEntity; $y isa baseEntity;" +
+                        " (someRole: $x, anotherRole: $y) isa baseRelation; ").asInsert());
+                tx.commit();
+            }
+
+            try (Transaction tx = session.writeTransaction()) {
+                List<ConceptMap> answers = tx.execute(Graql.parse("match $r (anotherRole: $x, anotherRole: $y) isa baseRelation; get;").asGet());
+                System.out.println(answers);
+                assertEquals(2, answers.size());
             }
         }
     }
