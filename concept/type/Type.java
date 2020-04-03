@@ -32,7 +32,7 @@ import static java.util.Spliterator.ORDERED;
 import static java.util.Spliterators.spliteratorUnknownSize;
 import static java.util.stream.StreamSupport.stream;
 
-abstract class Type<TYPE extends Type> {
+public abstract class Type<TYPE extends Type> {
 
     protected final TypeVertex vertex;
     protected TYPE parent;
@@ -44,7 +44,7 @@ abstract class Type<TYPE extends Type> {
     Type(Graph graph, String label, Schema.Vertex.Type schema) {
         this.vertex = graph.type().putVertex(schema, label);
         TypeVertex parentVertex = graph.type().getVertex(schema.root().label());
-        vertex.outs().add(Schema.Edge.Type.SUB, parentVertex);
+        vertex.outs().put(Schema.Edge.Type.SUB, parentVertex);
         parent = newInstance(parentVertex);
     }
 
@@ -72,7 +72,7 @@ abstract class Type<TYPE extends Type> {
 
     public TYPE sup(TYPE parent) {
         vertex.outs().remove(Schema.Edge.Type.SUB, sup().vertex);
-        vertex.outs().add(Schema.Edge.Type.SUB, parent.vertex);
+        vertex.outs().put(Schema.Edge.Type.SUB, parent.vertex);
         this.parent = parent;
         return getThis();
     }

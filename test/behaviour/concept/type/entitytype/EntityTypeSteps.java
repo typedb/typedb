@@ -18,9 +18,10 @@
 
 package hypergraph.test.behaviour.concept.type.entitytype;
 
-import hypergraph.Hypergraph;
+import hypergraph.concept.type.AttributeType;
 import hypergraph.concept.type.EntityType;
 import hypergraph.concept.type.ThingType;
+import hypergraph.concept.type.Type;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 
@@ -28,18 +29,13 @@ import java.util.List;
 import java.util.Set;
 
 import static grakn.common.util.Collections.list;
-import static hypergraph.test.behaviour.connection.ConnectionSteps.sessions;
-import static hypergraph.test.behaviour.connection.ConnectionSteps.sessionsToTransactions;
+import static hypergraph.test.behaviour.connection.ConnectionSteps.tx;
 import static java.util.Objects.isNull;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class EntityTypeSteps {
-
-    private static Hypergraph.Transaction tx() {
-        return sessionsToTransactions.get(sessions.get(0)).get(0);
-    }
 
     @When("put entity type: {word}")
     public void put_entity_type(String type) {
@@ -107,22 +103,25 @@ public class EntityTypeSteps {
 
     @When("entity\\( ?{word} ?) set key attribute: {word}")
     public void entity_set_key_attribute(String label, String attributeLabel) {
-
+        AttributeType attributeType = tx().concepts().putAttributeType(attributeLabel);
+        tx().concepts().getEntityType(label).key(attributeType);
     }
 
     @When("entity\\( ?{word} ?) remove key attribute: {word}")
-    public void entity_remove_key_attribute(String label, String attributeLabe) {
-
+    public void entity_remove_key_attribute(String label, String attributeLabel) {
+        AttributeType attributeType = tx().concepts().putAttributeType(attributeLabel);
+        tx().concepts().getEntityType(label).unkey(attributeType);
     }
 
     @Then("entity\\( ?{word} ?) get key attributes contain: {word}")
     public void entity_get_key_attributes_contain(String label, String attributeLabel) {
-        entity_get_has_attributes_contain(label, list(attributeLabel));
+        entity_get_key_attributes_contain(label, list(attributeLabel));
     }
 
     @Then("entity\\( ?{word} ?) get key attributes contain:")
     public void entity_get_key_attributes_contain(String label, List<String> attributeLabels) {
-
+        Set<String> actuals = tx().concepts().getEntityType(label).keys().map(Type::label).collect(toSet());
+        assertTrue(actuals.containsAll(attributeLabels));
     }
 
     @When("entity\\( ?{word} ?) set has attribute: {word}")
@@ -155,12 +154,12 @@ public class EntityTypeSteps {
 
     }
 
-    @When("entity\\( ?{word} ?) get playing roles contain: {word}")
+    @Then("entity\\( ?{word} ?) get playing roles contain: {word}")
     public void entity_get_playing_roles_contain(String label, String roleLabel) {
         entity_get_playing_roles_contain(label, list(roleLabel));
     }
 
-    @When("entity\\( ?{word} ?) get playing roles contain:")
+    @Then("entity\\( ?{word} ?) get playing roles contain:")
     public void entity_get_playing_roles_contain(String label, List<String> roleLabels) {
 
     }

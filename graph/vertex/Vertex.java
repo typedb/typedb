@@ -126,7 +126,7 @@ public abstract class Vertex<
 
         public abstract Iterator<DIR_VERTEX> get(DIR_EDGE_SCHEMA schema);
 
-        public abstract void add(DIR_EDGE_SCHEMA schema, DIR_VERTEX to);
+        public abstract void put(DIR_EDGE_SCHEMA schema, DIR_VERTEX to);
 
         public abstract void remove(DIR_EDGE_SCHEMA schema, DIR_VERTEX to);
 

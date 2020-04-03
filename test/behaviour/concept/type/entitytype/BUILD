@@ -25,7 +25,6 @@ java_library(
     ],
     deps = [
         # Internal Package Dependencies
-        "//:hypergraph",
         "//concept:concept",
         "//test/behaviour/connection:steps",
 
@@ -50,6 +49,7 @@ java_test(
     ],
     runtime_deps = [
         ":steps",
+        "//test/behaviour/concept/type/attributetype:steps",
         "//test/behaviour/config:parameters",
         "//test/behaviour/connection/keyspace:steps",
         "//test/behaviour/connection/session:steps",

@@ -74,6 +74,10 @@ public class ConnectionSteps {
         assertNotNull(hypergraph);
     }
 
+    public static Hypergraph.Transaction tx() {
+        return sessionsToTransactions.get(sessions.get(0)).get(0);
+    }
+
     @Given("connection has been opened")
     public void connection_has_been_opened() throws IOException {
         if (isNull(hypergraph)) {

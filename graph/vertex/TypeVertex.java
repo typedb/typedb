@@ -82,7 +82,7 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, TypeVertex, 
         }
 
         @Override
-        public void add(Schema.Edge.Type schema, TypeVertex adjacent) {
+        public void put(Schema.Edge.Type schema, TypeVertex adjacent) {
             TypeVertex from = direction.isOut() ? TypeVertex.this : adjacent;
             TypeVertex to = direction.isOut() ? adjacent : TypeVertex.this;
             TypeEdge edge = new TypeEdge.Buffered(graph, schema, from, to);

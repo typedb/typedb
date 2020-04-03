@@ -19,9 +19,24 @@
 package hypergraph.concept.type;
 
 import hypergraph.common.exception.HypergraphException;
+import hypergraph.common.iterator.Iterators;
 import hypergraph.graph.Graph;
 import hypergraph.graph.Schema;
 import hypergraph.graph.vertex.TypeVertex;
+
+import java.util.Iterator;
+import java.util.Optional;
+import java.util.Spliterator;
+import java.util.Spliterators;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
+
+import static hypergraph.common.iterator.Iterators.apply;
+import static hypergraph.common.iterator.Iterators.filter;
+import static java.util.Spliterator.IMMUTABLE;
+import static java.util.Spliterator.ORDERED;
+import static java.util.Spliterators.spliteratorUnknownSize;
+import static java.util.stream.StreamSupport.stream;
 
 public abstract class ThingType<TYPE extends ThingType> extends Type<TYPE> {
 
@@ -32,6 +47,27 @@ public abstract class ThingType<TYPE extends ThingType> extends Type<TYPE> {
     ThingType(Graph graph, String label, Schema.Vertex.Type schema) {
         super(graph, label, schema);
     }
+
+    public TYPE key(AttributeType attributeType) {
+        if (filter(vertex.outs().get(Schema.Edge.Type.HAS), v -> v.equals(attributeType.vertex)).hasNext()) {
+            throw new HypergraphException("Invalide Key Assignment: " + attributeType.label() +
+                                                  " is already used non-key attribute");
+        }
+
+        vertex.outs().put(Schema.Edge.Type.KEY, attributeType.vertex);
+        return getThis();
+    }
+
+    public TYPE unkey(AttributeType attributeType) {
+        vertex.outs().remove(Schema.Edge.Type.KEY, attributeType.vertex);
+        return getThis();
+    }
+
+    public Stream<AttributeType> keys() {
+        Iterator<AttributeType> keys = apply(vertex.outs().get(Schema.Edge.Type.KEY), AttributeType::of);
+        return stream(spliteratorUnknownSize(keys, ORDERED | IMMUTABLE), false);
+    }
+
 
     public static class Root extends ThingType<ThingType> {
 
