@@ -158,6 +158,7 @@ public class EntityTypeSteps {
     @Then("entity\\( ?{word} ?) get has attributes contain:")
     public void entity_get_has_attributes_contain(String label, List<String> attributeLabels) {
         Set<String> actuals = tx().concepts().getEntityType(label).attributes().map(Type::label).collect(toSet());
+        assertTrue(actuals.containsAll(attributeLabels));
     }
 
     @Then("entity\\( ?{word} ?) get has attributes does not contain: {word}")

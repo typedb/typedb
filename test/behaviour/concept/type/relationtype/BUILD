@@ -24,15 +24,16 @@ java_library(
         "RelationTypeSteps.java"
     ],
     deps = [
-#        # Internal Package Dependencies
-#        "//test/behaviour/connection:steps",
-#
-#        # Internal Repository Dependencies
-#        "@graknlabs_common//:common",
-#
-#        # External Maven Dependencies
-#        "//dependencies/maven/artifacts/junit:junit",
-#        "//dependencies/maven/artifacts/io/cucumber:cucumber-java",
+        # Internal Package Dependencies
+        "//concept:concept",
+        "//test/behaviour/connection:steps",
+
+        # Internal Repository Dependencies
+        "@graknlabs_common//:common",
+
+        # External Maven Dependencies
+        "//dependencies/maven/artifacts/junit:junit",
+        "//dependencies/maven/artifacts/io/cucumber:cucumber-java",
     ]
 )
 
