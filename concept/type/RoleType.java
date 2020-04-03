@@ -37,6 +37,10 @@ public class RoleType extends Type<RoleType> {
     private RoleType(TypeVertex vertex) {
         super(vertex);
         assert(vertex.schema() == Schema.Vertex.Type.ROLE_TYPE);
+        if (vertex.schema() != Schema.Vertex.Type.ROLE_TYPE) {
+            throw new HypergraphException("Invalid Role Type: " + vertex.label() +
+                                                  " subtypes " + vertex.schema().root().label());
+        }
     }
 
     private RoleType(Graph graph, String label) {

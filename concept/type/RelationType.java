@@ -42,7 +42,10 @@ public class RelationType extends ThingType<RelationType> {
     private RelationType(TypeVertex vertex) {
         super(vertex);
         roleTypes = new HashSet<>();
-        assert(vertex.schema() == Schema.Vertex.Type.RELATION_TYPE);
+        if (vertex.schema() != Schema.Vertex.Type.RELATION_TYPE) {
+            throw new HypergraphException("Invalid Relation Type: " + vertex.label() +
+                                                  " subtypes " + vertex.schema().root().label());
+        }
     }
 
     private RelationType(Graph graph, String label) {

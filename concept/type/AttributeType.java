@@ -37,6 +37,10 @@ public class AttributeType extends ThingType<AttributeType> {
     private AttributeType(TypeVertex vertex) {
         super(vertex);
         assert(vertex.schema() == Schema.Vertex.Type.ATTRIBUTE_TYPE);
+        if (vertex.schema() != Schema.Vertex.Type.ATTRIBUTE_TYPE) {
+            throw new HypergraphException("Invalid Attribute Type: " + vertex.label() +
+                                                  " subtypes " + vertex.schema().root().label());
+        }
     }
 
     private AttributeType(Graph graph, String label) {

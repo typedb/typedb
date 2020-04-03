@@ -36,7 +36,10 @@ public class EntityType extends ThingType<EntityType> {
 
     private EntityType(TypeVertex vertex) {
         super(vertex);
-        assert(vertex.schema() == Schema.Vertex.Type.ENTITY_TYPE);
+        if (vertex.schema() != Schema.Vertex.Type.ENTITY_TYPE) {
+            throw new HypergraphException("Invalid Entity Type: " + vertex.label() +
+                                                  " subtypes " + vertex.schema().root().label());
+        }
     }
 
     private EntityType(Graph graph, String label) {
