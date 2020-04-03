@@ -23,7 +23,12 @@ import hypergraph.graph.Graph;
 import hypergraph.graph.Schema;
 import hypergraph.graph.vertex.TypeVertex;
 
+import java.util.HashSet;
+import java.util.Set;
+
 public class RelationType extends ThingType<RelationType> {
+
+    private final Set<RoleType> roleTypes;
 
     public static RelationType of(TypeVertex vertex) {
         if (vertex.label().equals(Schema.Vertex.Type.Root.RELATION.label())) return new RelationType.Root(vertex);
@@ -36,11 +41,13 @@ public class RelationType extends ThingType<RelationType> {
 
     private RelationType(TypeVertex vertex) {
         super(vertex);
+        roleTypes = new HashSet<>();
         assert(vertex.schema() == Schema.Vertex.Type.RELATION_TYPE);
     }
 
     private RelationType(Graph graph, String label) {
         super(graph, label, Schema.Vertex.Type.RELATION_TYPE);
+        roleTypes = new HashSet<>();
     }
 
     @Override

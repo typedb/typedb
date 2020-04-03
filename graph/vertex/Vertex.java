@@ -134,7 +134,7 @@ public abstract class Vertex<
 
         public abstract void removeNonRecursive(DIR_EDGE edge);
 
-        protected void addNonRecursive(DIR_EDGE edge) {
+        public void addNonRecursive(DIR_EDGE edge) {
             edges.computeIfAbsent(edge.schema(), e -> ConcurrentHashMap.newKeySet()).add(edge);
         }
 

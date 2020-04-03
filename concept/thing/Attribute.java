@@ -18,5 +18,5 @@
 
 package hypergraph.concept.thing;
 
-public class Attribute {
+public class Attribute extends Thing {
 }

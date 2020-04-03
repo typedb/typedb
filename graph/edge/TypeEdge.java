@@ -156,6 +156,7 @@ public abstract class TypeEdge extends Edge<Schema.Edge.Type, TypeVertex> {
         public TypeVertex from() {
             if (from != null) return from;
             from = graph.getVertex(fromIID);
+            from.outs().addNonRecursive(this);
             return from;
         }
 
@@ -163,6 +164,7 @@ public abstract class TypeEdge extends Edge<Schema.Edge.Type, TypeVertex> {
         public TypeVertex to() {
             if (to != null) return to;
             to = graph.getVertex(toIID);
+            to.ins().addNonRecursive(this);
             return to;
         }
 
