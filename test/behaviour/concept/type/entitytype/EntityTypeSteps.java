@@ -33,6 +33,7 @@ import static hypergraph.test.behaviour.connection.ConnectionSteps.tx;
 import static java.util.Objects.isNull;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class EntityTypeSteps {
@@ -124,6 +125,19 @@ public class EntityTypeSteps {
         assertTrue(actuals.containsAll(attributeLabels));
     }
 
+    @Then("entity\\( ?{word} ?) get key attributes does not contain: {word}")
+    public void entity_get_key_attributes_does_not_contain(String label, String attributeLabel) {
+        entity_get_key_attributes_does_not_contain(label, list(attributeLabel));
+    }
+
+    @Then("entity\\( ?{word} ?) get key attributes does not contain:")
+    public void entity_get_key_attributes_does_not_contain(String label, List<String> attributeLabels) {
+        Set<String> actuals = tx().concepts().getEntityType(label).keys().map(Type::label).collect(toSet());
+        for (String attributeLabel : attributeLabels) {
+            assertFalse(actuals.contains(attributeLabel));
+        }
+    }
+
     @When("entity\\( ?{word} ?) set has attribute: {word}")
     public void entity_set_has_attribute(String label, String attributeLabel) {
         AttributeType attributeType = tx().concepts().getAttributeType(attributeLabel);
@@ -144,6 +158,19 @@ public class EntityTypeSteps {
     @Then("entity\\( ?{word} ?) get has attributes contain:")
     public void entity_get_has_attributes_contain(String label, List<String> attributeLabels) {
         Set<String> actuals = tx().concepts().getEntityType(label).attributes().map(Type::label).collect(toSet());
+    }
+
+    @Then("entity\\( ?{word} ?) get has attributes does not contain: {word}")
+    public void entity_get_has_attributes_does_not_contain(String label, String attributeLabel) {
+        entity_get_has_attributes_does_not_contain(label, list(attributeLabel));
+    }
+
+    @Then("entity\\( ?{word} ?) get has attributes does not contain:")
+    public void entity_get_has_attributes_does_not_contain(String label, List<String> attributeLabels) {
+        Set<String> actuals = tx().concepts().getEntityType(label).keys().map(Type::label).collect(toSet());
+        for (String attributeLabel : attributeLabels) {
+            assertFalse(actuals.contains(attributeLabel));
+        }
     }
 
     @When("entity\\( ?{word} ?) set plays role: {word}")
