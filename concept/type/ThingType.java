@@ -19,20 +19,16 @@
 package hypergraph.concept.type;
 
 import hypergraph.common.exception.HypergraphException;
-import hypergraph.common.iterator.Iterators;
 import hypergraph.graph.Graph;
 import hypergraph.graph.Schema;
 import hypergraph.graph.vertex.TypeVertex;
 
 import java.util.Iterator;
-import java.util.Optional;
-import java.util.Spliterator;
-import java.util.Spliterators;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 import static hypergraph.common.iterator.Iterators.apply;
 import static hypergraph.common.iterator.Iterators.filter;
+import static hypergraph.common.iterator.Iterators.link;
 import static java.util.Spliterator.IMMUTABLE;
 import static java.util.Spliterator.ORDERED;
 import static java.util.Spliterators.spliteratorUnknownSize;
@@ -50,8 +46,8 @@ public abstract class ThingType<TYPE extends ThingType> extends Type<TYPE> {
 
     public TYPE key(AttributeType attributeType) {
         if (filter(vertex.outs().get(Schema.Edge.Type.HAS), v -> v.equals(attributeType.vertex)).hasNext()) {
-            throw new HypergraphException("Invalide Key Assignment: " + attributeType.label() +
-                                                  " is already used non-key attribute");
+            throw new HypergraphException("Invalid Key Assignment: " + attributeType.label() +
+                                                  " is already used as an attribute");
         }
 
         vertex.outs().put(Schema.Edge.Type.KEY, attributeType.vertex);
@@ -68,12 +64,32 @@ public abstract class ThingType<TYPE extends ThingType> extends Type<TYPE> {
         return stream(spliteratorUnknownSize(keys, ORDERED | IMMUTABLE), false);
     }
 
+    public TYPE has(AttributeType attributeType) {
+        if (filter(vertex.outs().get(Schema.Edge.Type.KEY), v -> v.equals(attributeType.vertex)).hasNext()) {
+            throw new HypergraphException("Invalid Attribute Assignment: " + attributeType.label() +
+                                                  " is already used as a Key");
+        }
+
+        vertex.outs().put(Schema.Edge.Type.HAS, attributeType.vertex);
+        return getThis();
+    }
+
+    public TYPE unhas(AttributeType attributeType) {
+        vertex.outs().remove(Schema.Edge.Type.HAS, attributeType.vertex);
+        return getThis();
+    }
+
+    public Stream<AttributeType> attributes() {
+        Iterator<AttributeType> attributes = link(vertex.outs().get(Schema.Edge.Type.KEY),
+                                                  vertex.outs().get(Schema.Edge.Type.HAS)).apply(AttributeType::of);
+        return stream(spliteratorUnknownSize(attributes, ORDERED | IMMUTABLE), false);
+    }
 
     public static class Root extends ThingType<ThingType> {
 
         public Root(TypeVertex vertex) {
             super(vertex);
-            assert(vertex.label().equals(Schema.Vertex.Type.Root.THING.label()));
+            assert (vertex.label().equals(Schema.Vertex.Type.Root.THING.label()));
         }
 
         @Override

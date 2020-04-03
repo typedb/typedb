@@ -126,12 +126,14 @@ public class EntityTypeSteps {
 
     @When("entity\\( ?{word} ?) set has attribute: {word}")
     public void entity_set_has_attribute(String label, String attributeLabel) {
-
+        AttributeType attributeType = tx().concepts().putAttributeType(attributeLabel);
+        tx().concepts().getEntityType(label).has(attributeType);
     }
 
     @When("entity\\( ?{word} ?) remove has attribute: {word}")
     public void entity_remove_has_attribute(String label, String attributeLabel) {
-
+        AttributeType attributeType = tx().concepts().putAttributeType(attributeLabel);
+        tx().concepts().getEntityType(label).unhas(attributeType);
     }
 
     @Then("entity\\( ?{word} ?) get has attributes contain: {word}")
@@ -141,7 +143,7 @@ public class EntityTypeSteps {
 
     @Then("entity\\( ?{word} ?) get has attributes contain:")
     public void entity_get_has_attributes_contain(String label, List<String> attributeLabels) {
-
+        Set<String> actuals = tx().concepts().getEntityType(label).attributes().map(Type::label).collect(toSet());
     }
 
     @When("entity\\( ?{word} ?) set plays role: {word}")
