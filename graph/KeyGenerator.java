@@ -41,7 +41,7 @@ public class KeyGenerator {
 
     public byte[] forType(Schema.Vertex.Type.Root root) {
         if (typeKeys.containsKey(root)) {
-            return ByteArrays.toShortBytes(typeKeys.get(root).getAndIncrement());
+            return ByteArrays.toShortBytes(typeKeys.get(root).getAndAdd(delta));
         } else {
             AtomicInteger zero = new AtomicInteger(initialValue);
             typeKeys.put(root, zero);
@@ -51,7 +51,7 @@ public class KeyGenerator {
 
     public byte[] forThing(Schema.Vertex.Type type) {
         if (thingKeys.containsKey(type)) {
-            return ByteArrays.toLongBytes(thingKeys.get(type).getAndIncrement());
+            return ByteArrays.toLongBytes(thingKeys.get(type).getAndAdd(delta));
         } else {
             AtomicLong zero = new AtomicLong(initialValue);
             thingKeys.put(type, zero);

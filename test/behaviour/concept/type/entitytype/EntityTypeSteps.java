@@ -38,8 +38,8 @@ import static org.junit.Assert.assertTrue;
 public class EntityTypeSteps {
 
     @When("put entity type: {word}")
-    public void put_entity_type(String type) {
-        tx().concepts().putEntityType(type);
+    public void put_entity_type(String label) {
+        tx().concepts().putEntityType(label);
     }
 
     @Then("entity\\( ?{word} ?) is null: {bool}")
@@ -103,13 +103,13 @@ public class EntityTypeSteps {
 
     @When("entity\\( ?{word} ?) set key attribute: {word}")
     public void entity_set_key_attribute(String label, String attributeLabel) {
-        AttributeType attributeType = tx().concepts().putAttributeType(attributeLabel);
+        AttributeType attributeType = tx().concepts().getAttributeType(attributeLabel);
         tx().concepts().getEntityType(label).key(attributeType);
     }
 
     @When("entity\\( ?{word} ?) remove key attribute: {word}")
     public void entity_remove_key_attribute(String label, String attributeLabel) {
-        AttributeType attributeType = tx().concepts().putAttributeType(attributeLabel);
+        AttributeType attributeType = tx().concepts().getAttributeType(attributeLabel);
         tx().concepts().getEntityType(label).unkey(attributeType);
     }
 
@@ -126,13 +126,13 @@ public class EntityTypeSteps {
 
     @When("entity\\( ?{word} ?) set has attribute: {word}")
     public void entity_set_has_attribute(String label, String attributeLabel) {
-        AttributeType attributeType = tx().concepts().putAttributeType(attributeLabel);
+        AttributeType attributeType = tx().concepts().getAttributeType(attributeLabel);
         tx().concepts().getEntityType(label).has(attributeType);
     }
 
     @When("entity\\( ?{word} ?) remove has attribute: {word}")
     public void entity_remove_has_attribute(String label, String attributeLabel) {
-        AttributeType attributeType = tx().concepts().putAttributeType(attributeLabel);
+        AttributeType attributeType = tx().concepts().getAttributeType(attributeLabel);
         tx().concepts().getEntityType(label).unhas(attributeType);
     }
 
