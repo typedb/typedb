@@ -43,6 +43,11 @@ public class EntityTypeSteps {
         tx().concepts().putEntityType(label);
     }
 
+    @When("delete entity type: {word}")
+    public void delete_entity_type(String label) {
+        tx().concepts().getEntityType(label).delete();
+    }
+
     @Then("entity\\( ?{word} ?) is null: {bool}")
     public void entity_is_null(String label, boolean isNull) {
         assertEquals(isNull, isNull(tx().concepts().getEntityType(label)));
@@ -91,6 +96,19 @@ public class EntityTypeSteps {
         assertTrue(actuals.containsAll(superLabels));
     }
 
+    @Then("entity\\( ?{word} ?) get supertypes do not contain: {word}")
+    public void entity_get_supertypes_do_not_contain(String label, String superLabel) {
+        entity_get_supertypes_do_not_contain(label, list(superLabel));
+    }
+
+    @Then("entity\\( ?{word} ?) get supertypes do not contain:")
+    public void entity_get_supertypes_do_not_contain(String label, List<String> superLabels) {
+        Set<String> actuals = tx().concepts().getEntityType(label).sups().map(ThingType::label).collect(toSet());
+        for (String superLabel : superLabels) {
+            assertFalse(actuals.contains(superLabel));
+        }
+    }
+
     @Then("entity\\( ?{word} ?) get subtypes contain: {word}")
     public void entity_get_subtypes_contain(String label, String subLabel) {
         entity_get_subtypes_contain(label, list(subLabel));
@@ -100,6 +118,19 @@ public class EntityTypeSteps {
     public void entity_get_subtypes_contain(String label, List<String> subLabels) {
         Set<String> actuals = tx().concepts().getEntityType(label).subs().map(ThingType::label).collect(toSet());
         assertTrue(actuals.containsAll(subLabels));
+    }
+
+    @Then("entity\\( ?{word} ?) get subtypes do not contain: {word}")
+    public void entity_get_subtypes_do_not_contain(String label, String subLabel) {
+        entity_get_subtypes_do_not_contain(label, list(subLabel));
+    }
+
+    @Then("entity\\( ?{word} ?) get subtypes do not contain:")
+    public void entity_get_subtypes_do_not_contain(String label, List<String> subLabels) {
+        Set<String> actuals = tx().concepts().getEntityType(label).subs().map(ThingType::label).collect(toSet());
+        for (String subLabel : subLabels) {
+            assertFalse(actuals.contains(subLabel));
+        }
     }
 
     @When("entity\\( ?{word} ?) set key attribute: {word}")
@@ -125,13 +156,13 @@ public class EntityTypeSteps {
         assertTrue(actuals.containsAll(attributeLabels));
     }
 
-    @Then("entity\\( ?{word} ?) get key attributes does not contain: {word}")
-    public void entity_get_key_attributes_does_not_contain(String label, String attributeLabel) {
-        entity_get_key_attributes_does_not_contain(label, list(attributeLabel));
+    @Then("entity\\( ?{word} ?) get key attributes do not contain: {word}")
+    public void entity_get_key_attributes_do_not_contain(String label, String attributeLabel) {
+        entity_get_key_attributes_do_not_contain(label, list(attributeLabel));
     }
 
-    @Then("entity\\( ?{word} ?) get key attributes does not contain:")
-    public void entity_get_key_attributes_does_not_contain(String label, List<String> attributeLabels) {
+    @Then("entity\\( ?{word} ?) get key attributes do not contain:")
+    public void entity_get_key_attributes_do_not_contain(String label, List<String> attributeLabels) {
         Set<String> actuals = tx().concepts().getEntityType(label).keys().map(Type::label).collect(toSet());
         for (String attributeLabel : attributeLabels) {
             assertFalse(actuals.contains(attributeLabel));
@@ -161,13 +192,13 @@ public class EntityTypeSteps {
         assertTrue(actuals.containsAll(attributeLabels));
     }
 
-    @Then("entity\\( ?{word} ?) get has attributes does not contain: {word}")
-    public void entity_get_has_attributes_does_not_contain(String label, String attributeLabel) {
-        entity_get_has_attributes_does_not_contain(label, list(attributeLabel));
+    @Then("entity\\( ?{word} ?) get has attributes do not contain: {word}")
+    public void entity_get_has_attributes_do_not_contain(String label, String attributeLabel) {
+        entity_get_has_attributes_do_not_contain(label, list(attributeLabel));
     }
 
-    @Then("entity\\( ?{word} ?) get has attributes does not contain:")
-    public void entity_get_has_attributes_does_not_contain(String label, List<String> attributeLabels) {
+    @Then("entity\\( ?{word} ?) get has attributes do not contain:")
+    public void entity_get_has_attributes_do_not_contain(String label, List<String> attributeLabels) {
         Set<String> actuals = tx().concepts().getEntityType(label).keys().map(Type::label).collect(toSet());
         for (String attributeLabel : attributeLabels) {
             assertFalse(actuals.contains(attributeLabel));
@@ -196,6 +227,6 @@ public class EntityTypeSteps {
 
     @Then("entity\\( ?{word} ?) creates instance successfully: {bool}")
     public void entity_creates_instance_successfully(String label, boolean isSuccessful) {
-        // TODO: implement this
+
     }
 }

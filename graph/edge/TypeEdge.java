@@ -78,8 +78,8 @@ public abstract class TypeEdge extends Edge<Schema.Edge.Type, TypeVertex> {
 
         @Override
         public void delete() {
-            from.outs().removeNonRecursive(this);
-            to.ins().removeNonRecursive(this);
+            from.outs().deleteNonRecursive(this);
+            to.ins().deleteNonRecursive(this);
         }
 
         @Override
@@ -155,24 +155,24 @@ public abstract class TypeEdge extends Edge<Schema.Edge.Type, TypeVertex> {
         @Override
         public TypeVertex from() {
             if (from != null) return from;
-            from = graph.getVertex(fromIID);
-            from.outs().addNonRecursive(this);
+            from = graph.get(fromIID);
+            from.outs().putNonRecursive(this);
             return from;
         }
 
         @Override
         public TypeVertex to() {
             if (to != null) return to;
-            to = graph.getVertex(toIID);
-            to.ins().addNonRecursive(this);
+            to = graph.get(toIID);
+            to.ins().putNonRecursive(this);
             return to;
         }
 
         @Override
         public void delete() {
             if (isDeleted.compareAndSet(false, true)) {
-                if (from != null) from.outs().removeNonRecursive(this);
-                if (to != null) to.ins().removeNonRecursive(this);
+                if (from != null) from.outs().deleteNonRecursive(this);
+                if (to != null) to.ins().deleteNonRecursive(this);
                 graph.storage().delete(this.outIID);
                 graph.storage().delete(this.inIID);
             }

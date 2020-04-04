@@ -58,6 +58,8 @@ public abstract class Vertex<
 
     public abstract void commit();
 
+    public abstract void delete();
+
     public DirectedEdges<VERTEX, EDGE_SCHEMA, EDGE> outs() {
         return outs;
     }
@@ -128,13 +130,15 @@ public abstract class Vertex<
 
         public abstract void put(DIR_EDGE_SCHEMA schema, DIR_VERTEX to);
 
-        public abstract void remove(DIR_EDGE_SCHEMA schema, DIR_VERTEX to);
+        public abstract void delete(DIR_EDGE_SCHEMA schema, DIR_VERTEX to);
 
-        public abstract void remove(DIR_EDGE_SCHEMA schema);
+        public abstract void delete(DIR_EDGE_SCHEMA schema);
 
-        public abstract void removeNonRecursive(DIR_EDGE edge);
+        public abstract void deleteNonRecursive(DIR_EDGE edge);
 
-        public void addNonRecursive(DIR_EDGE edge) {
+        protected abstract void deleteAll();
+
+        public void putNonRecursive(DIR_EDGE edge) {
             edges.computeIfAbsent(edge.schema(), e -> ConcurrentHashMap.newKeySet()).add(edge);
         }
 

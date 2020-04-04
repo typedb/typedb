@@ -87,12 +87,17 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, TypeVertex, 
             TypeVertex to = direction.isOut() ? adjacent : TypeVertex.this;
             TypeEdge edge = new TypeEdge.Buffered(graph, schema, from, to);
             edges.computeIfAbsent(edge.schema(), e -> ConcurrentHashMap.newKeySet()).add(edge);
-            to.ins().addNonRecursive(edge);
+            to.ins().putNonRecursive(edge);
         }
 
         @Override
-        public void removeNonRecursive(TypeEdge edge) {
+        public void deleteNonRecursive(TypeEdge edge) {
             if (edges.containsKey(edge.schema())) edges.get(edge.schema()).remove(edge);
+        }
+
+        @Override
+        protected void deleteAll() {
+            for (Schema.Edge.Type schema : Schema.Edge.Type.values()) delete(schema);
         }
     }
 
@@ -104,7 +109,7 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, TypeVertex, 
 
         @Override
         public TypeVertex label(String label) {
-            graph.updateVertex(this, label);
+            graph.update(this, label);
             this.label = label;
             return null;
         }
@@ -153,6 +158,13 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, TypeVertex, 
             commitEdges();
         }
 
+        @Override
+        public void delete() {
+            ins.deleteAll();
+            outs.deleteAll();
+            graph.delete(this);
+        }
+
         void commitIndex() {
             graph.storage().put(join(Schema.Index.TYPE.prefix().key(), label.getBytes()), iid);
         }
@@ -199,7 +211,7 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, TypeVertex, 
             }
 
             @Override
-            public void remove(Schema.Edge.Type schema, TypeVertex adjacent) {
+            public void delete(Schema.Edge.Type schema, TypeVertex adjacent) {
                 if (edges.containsKey(schema)) {
                     Predicate<TypeEdge> predicate = direction.isOut()
                             ? e -> e.to().equals(adjacent)
@@ -209,7 +221,7 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, TypeVertex, 
             }
 
             @Override
-            public void remove(Schema.Edge.Type schema) {
+            public void delete(Schema.Edge.Type schema) {
                 if (edges.containsKey(schema)) edges.get(schema).parallelStream().forEach(Edge::delete);
             }
         }
@@ -239,7 +251,7 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, TypeVertex, 
 
         @Override
         public TypeVertex label(String label) {
-            graph.updateVertex(this, label);
+            graph.update(this, label);
             graph.storage().put(join(iid, Schema.Property.LABEL.infix().key()), label.getBytes());
             graph.storage().put(join(Schema.Index.TYPE.prefix().key(), label.getBytes()), iid);
             this.label = label;
@@ -290,6 +302,16 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, TypeVertex, 
             commitEdges();
         }
 
+        @Override
+        public void delete() {
+            ins.deleteAll();
+            outs.deleteAll();
+            graph.delete(this);
+            graph.storage().delete(index(label));
+            Iterator<byte[]> keys = graph.storage().iterate(iid, (iid, value) -> iid);
+            while (keys.hasNext()) graph.storage().delete(keys.next());
+        }
+
         private void commitEdges() {
             outs.forEach(Edge::commit);
             ins.forEach(Edge::commit);
@@ -317,7 +339,7 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, TypeVertex, 
             }
 
             @Override
-            public void remove(Schema.Edge.Type schema, TypeVertex adjacent) {
+            public void delete(Schema.Edge.Type schema, TypeVertex adjacent) {
                 Optional<TypeEdge> container;
                 Predicate<TypeEdge> predicate = direction.isOut()
                         ? e -> e.to().equals(adjacent)
@@ -336,7 +358,7 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, TypeVertex, 
             }
 
             @Override
-            public void remove(Schema.Edge.Type schema) {
+            public void delete(Schema.Edge.Type schema) {
                 if (edges.containsKey(schema)) edges.get(schema).parallelStream().forEach(Edge::delete);
                 Iterator<TypeEdge> storageIterator = graph.storage().iterate(
                         join(iid, direction.isOut() ? schema.out().key() : schema.in().key()),

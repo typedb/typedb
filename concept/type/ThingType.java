@@ -55,7 +55,7 @@ public abstract class ThingType<TYPE extends ThingType> extends Type<TYPE> {
     }
 
     public TYPE unkey(AttributeType attributeType) {
-        vertex.outs().remove(Schema.Edge.Type.KEY, attributeType.vertex);
+        vertex.outs().delete(Schema.Edge.Type.KEY, attributeType.vertex);
         return getThis();
     }
 
@@ -75,7 +75,7 @@ public abstract class ThingType<TYPE extends ThingType> extends Type<TYPE> {
     }
 
     public TYPE unhas(AttributeType attributeType) {
-        vertex.outs().remove(Schema.Edge.Type.HAS, attributeType.vertex);
+        vertex.outs().delete(Schema.Edge.Type.HAS, attributeType.vertex);
         return getThis();
     }
 

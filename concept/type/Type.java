@@ -42,8 +42,8 @@ public abstract class Type<TYPE extends Type> {
     }
 
     Type(Graph graph, String label, Schema.Vertex.Type schema) {
-        this.vertex = graph.type().putVertex(schema, label);
-        TypeVertex parentVertex = graph.type().getVertex(schema.root().label());
+        this.vertex = graph.type().put(schema, label);
+        TypeVertex parentVertex = graph.type().get(schema.root().label());
         vertex.outs().put(Schema.Edge.Type.SUB, parentVertex);
         parent = newInstance(parentVertex);
     }
@@ -71,7 +71,7 @@ public abstract class Type<TYPE extends Type> {
     }
 
     public TYPE sup(TYPE parent) {
-        vertex.outs().remove(Schema.Edge.Type.SUB, sup().vertex);
+        vertex.outs().delete(Schema.Edge.Type.SUB, sup().vertex);
         vertex.outs().put(Schema.Edge.Type.SUB, parent.vertex);
         this.parent = parent;
         return getThis();
@@ -120,5 +120,9 @@ public abstract class Type<TYPE extends Type> {
     @Override
     public final int hashCode() {
         return vertex.hashCode();
+    }
+
+    public void delete() {
+        vertex.delete();
     }
 }

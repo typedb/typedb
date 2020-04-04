@@ -18,8 +18,8 @@
 
 package hypergraph.graph;
 
-import hypergraph.common.exception.HypergraphException;
 import hypergraph.common.concurrent.ManagedReadWriteLock;
+import hypergraph.common.exception.HypergraphException;
 import hypergraph.graph.vertex.ThingVertex;
 import hypergraph.graph.vertex.TypeVertex;
 import hypergraph.graph.vertex.Vertex;
@@ -90,15 +90,15 @@ public class Graph {
         }
 
         private boolean isInitialised() {
-            return getVertex(Schema.Vertex.Type.Root.THING.label()) != null;
+            return get(Schema.Vertex.Type.Root.THING.label()) != null;
         }
 
         private void initialise() {
-            TypeVertex rootType = putVertex(Schema.Vertex.Type.TYPE, Schema.Vertex.Type.Root.THING.label()).setAbstract(true);
-            TypeVertex rootEntityType = putVertex(Schema.Vertex.Type.ENTITY_TYPE, Schema.Vertex.Type.Root.ENTITY.label()).setAbstract(true);
-            TypeVertex rootRelationType = putVertex(Schema.Vertex.Type.RELATION_TYPE, Schema.Vertex.Type.Root.RELATION.label()).setAbstract(true);
-            TypeVertex rootRoleType = putVertex(Schema.Vertex.Type.ROLE_TYPE, Schema.Vertex.Type.Root.ROLE.label()).setAbstract(true);
-            TypeVertex rootAttributeType = putVertex(Schema.Vertex.Type.ATTRIBUTE_TYPE, Schema.Vertex.Type.Root.ATTRIBUTE.label()).setAbstract(true);
+            TypeVertex rootType = put(Schema.Vertex.Type.TYPE, Schema.Vertex.Type.Root.THING.label()).setAbstract(true);
+            TypeVertex rootEntityType = put(Schema.Vertex.Type.ENTITY_TYPE, Schema.Vertex.Type.Root.ENTITY.label()).setAbstract(true);
+            TypeVertex rootRelationType = put(Schema.Vertex.Type.RELATION_TYPE, Schema.Vertex.Type.Root.RELATION.label()).setAbstract(true);
+            TypeVertex rootRoleType = put(Schema.Vertex.Type.ROLE_TYPE, Schema.Vertex.Type.Root.ROLE.label()).setAbstract(true);
+            TypeVertex rootAttributeType = put(Schema.Vertex.Type.ATTRIBUTE_TYPE, Schema.Vertex.Type.Root.ATTRIBUTE.label()).setAbstract(true);
 
             rootEntityType.outs().put(Schema.Edge.Type.SUB, rootType);
             rootRelationType.outs().put(Schema.Edge.Type.SUB, rootType);
@@ -114,7 +114,7 @@ public class Graph {
             clear(); // we now flush the indexes after commit, and we do not expect this Graph.Type to be used again
         }
 
-        public TypeVertex updateVertex(TypeVertex vertex, String newLabel) {
+        public TypeVertex update(TypeVertex vertex, String newLabel) {
             try {
                 multiLabelLock.lockWrite();
                 if (typeByLabel.containsKey(newLabel)) throw new HypergraphException(
@@ -129,8 +129,8 @@ public class Graph {
             }
         }
 
-        public TypeVertex putVertex(Schema.Vertex.Type type, String label) {
-            try { // we intentionally use READ on multiLabelLock, as putVertex only concerns one label
+        public TypeVertex put(Schema.Vertex.Type type, String label) {
+            try { // we intentionally use READ on multiLabelLock, as put() only concerns one label
                 multiLabelLock.lockRead();
                 singleLabelLocks.computeIfAbsent(label, x -> new ManagedReadWriteLock()).lockWrite();
 
@@ -147,7 +147,7 @@ public class Graph {
             }
         }
 
-        public TypeVertex getVertex(String label) {
+        public TypeVertex get(String label) {
             try {
                 multiLabelLock.lockRead();
                 singleLabelLocks.computeIfAbsent(label, x -> new ManagedReadWriteLock()).lockRead();
@@ -170,7 +170,7 @@ public class Graph {
             }
         }
 
-        public TypeVertex getVertex(byte[] iid) {
+        public TypeVertex get(byte[] iid) {
             TypeVertex vertex = typeByIID.get(iid);
             if (vertex != null) return vertex;
 
@@ -179,6 +179,22 @@ public class Graph {
 
             return vertex;
         }
+
+        public void delete(TypeVertex vertex) {
+            try { // we intentionally use READ on multiLabelLock, as delete() only concerns one label
+                multiLabelLock.lockRead();
+                singleLabelLocks.computeIfAbsent(vertex.label(), x -> new ManagedReadWriteLock()).lockWrite();
+
+                typeByLabel.remove(vertex.label());
+                typeByIID.remove(vertex.iid());
+            } catch (InterruptedException e) {
+                throw new HypergraphException(e);
+            } finally {
+                singleLabelLocks.get(vertex.label()).unlockWrite();
+                multiLabelLock.unlockRead();
+            }
+        }
+
 
         private void clear() {
             typeByIID.clear();
