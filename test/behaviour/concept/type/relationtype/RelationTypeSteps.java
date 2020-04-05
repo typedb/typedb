@@ -44,6 +44,11 @@ public class RelationTypeSteps {
         tx().concepts().putRelationType(label);
     }
 
+    @When("delete relation type: {word}")
+    public void delete_relation_type(String label) {
+        tx().concepts().getRelationType(label).delete();
+    }
+
     @Then("relation\\( ?{word} ?) is null: {bool}")
     public void relation_is_null(String label, boolean isNull) {
         assertEquals(isNull, isNull(tx().concepts().getRelationType(label)));
@@ -92,6 +97,19 @@ public class RelationTypeSteps {
         assertTrue(actuals.containsAll(superLabels));
     }
 
+    @Then("relation\\( ?{word} ?) get supertypes do not contain: {word}")
+    public void relation_get_supertypes_do_not_contain(String label, String superLabel) {
+        relation_get_supertypes_do_not_contain(label, list(superLabel));
+    }
+
+    @Then("relation\\( ?{word} ?) get supertypes do not contain:")
+    public void relation_get_supertypes_do_not_contain(String label, List<String> superLabels) {
+        Set<String> actuals = tx().concepts().getRelationType(label).sups().map(ThingType::label).collect(toSet());
+        for (String superLabel : superLabels) {
+            assertFalse(actuals.contains(superLabel));
+        }
+    }
+
     @Then("relation\\( ?{word} ?) get subtypes contain: {word}")
     public void relation_get_subtypes_contain(String label, String subLabel) {
         relation_get_subtypes_contain(label, list(subLabel));
@@ -101,6 +119,19 @@ public class RelationTypeSteps {
     public void relation_get_subtypes_contain(String label, List<String> subLabels) {
         Set<String> actuals = tx().concepts().getRelationType(label).subs().map(ThingType::label).collect(toSet());
         assertTrue(actuals.containsAll(subLabels));
+    }
+
+    @Then("relation\\( ?{word} ?) get subtypes do not contain: {word}")
+    public void relation_get_subtypes_do_not_contain(String label, String subLabel) {
+        relation_get_subtypes_do_not_contain(label, list(subLabel));
+    }
+
+    @Then("relation\\( ?{word} ?) get subtypes do not contain:")
+    public void relation_get_subtypes_do_not_contain(String label, List<String> subLabels) {
+        Set<String> actuals = tx().concepts().getRelationType(label).subs().map(ThingType::label).collect(toSet());
+        for (String subLabel : subLabels) {
+            assertFalse(actuals.contains(subLabel));
+        }
     }
 
     @When("relation\\( ?{word} ?) set key attribute: {word}")
@@ -126,13 +157,13 @@ public class RelationTypeSteps {
         assertTrue(actuals.containsAll(attributeLabels));
     }
 
-    @Then("relation\\( ?{word} ?) get key attributes does not contain: {word}")
-    public void relation_get_key_attributes_does_not_contain(String label, String attributeLabel) {
-        relation_get_key_attributes_does_not_contain(label, list(attributeLabel));
+    @Then("relation\\( ?{word} ?) get key attributes do not contain: {word}")
+    public void relation_get_key_attributes_do_not_contain(String label, String attributeLabel) {
+        relation_get_key_attributes_do_not_contain(label, list(attributeLabel));
     }
 
-    @Then("relation\\( ?{word} ?) get key attributes does not contain:")
-    public void relation_get_key_attributes_does_not_contain(String label, List<String> attributeLabels) {
+    @Then("relation\\( ?{word} ?) get key attributes do not contain:")
+    public void relation_get_key_attributes_do_not_contain(String label, List<String> attributeLabels) {
         Set<String> actuals = tx().concepts().getRelationType(label).keys().map(Type::label).collect(toSet());
         for (String attributeLabel : attributeLabels) {
             assertFalse(actuals.contains(attributeLabel));
@@ -162,13 +193,13 @@ public class RelationTypeSteps {
         assertTrue(actuals.containsAll(attributeLabels));
     }
 
-    @Then("relation\\( ?{word} ?) get has attributes does not contain: {word}")
-    public void relation_get_has_attributes_does_not_contain(String label, String attributeLabel) {
-        relation_get_has_attributes_does_not_contain(label, list(attributeLabel));
+    @Then("relation\\( ?{word} ?) get has attributes do not contain: {word}")
+    public void relation_get_has_attributes_do_not_contain(String label, String attributeLabel) {
+        relation_get_has_attributes_do_not_contain(label, list(attributeLabel));
     }
 
-    @Then("relation\\( ?{word} ?) get has attributes does not contain:")
-    public void relation_get_has_attributes_does_not_contain(String label, List<String> attributeLabels) {
+    @Then("relation\\( ?{word} ?) get has attributes do not contain:")
+    public void relation_get_has_attributes_do_not_contain(String label, List<String> attributeLabels) {
         Set<String> actuals = tx().concepts().getRelationType(label).keys().map(Type::label).collect(toSet());
         for (String attributeLabel : attributeLabels) {
             assertFalse(actuals.contains(attributeLabel));
@@ -197,6 +228,6 @@ public class RelationTypeSteps {
 
     @Then("relation\\( ?{word} ?) creates instance successfully: {bool}")
     public void relation_creates_instance_successfully(String label, boolean isSuccessful) {
-        // TODO: implement this
+
     }
 }

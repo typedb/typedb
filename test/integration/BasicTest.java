@@ -23,7 +23,6 @@ import hypergraph.concept.type.AttributeType;
 import hypergraph.concept.type.EntityType;
 import hypergraph.concept.type.RelationType;
 import hypergraph.concept.type.ThingType;
-import hypergraph.concept.type.Type;
 import hypergraph.core.CoreHypergraph;
 import org.junit.Test;
 
@@ -34,7 +33,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Comparator;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.junit.Assert.assertEquals;
