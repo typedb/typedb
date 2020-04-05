@@ -38,3 +38,10 @@ java_library(
         "//dependencies/maven/artifacts/io/cucumber:cucumber-java",
     ],
 )
+
+checkstyle_test(
+    name = "checkstyle",
+    targets = [
+        ":steps",
+    ],
+)
