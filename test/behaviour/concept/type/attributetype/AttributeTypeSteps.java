@@ -18,14 +18,9 @@
 
 package hypergraph.test.behaviour.concept.type.attributetype;
 
-import io.cucumber.java.en.When;
-
-import static hypergraph.test.behaviour.connection.ConnectionSteps.tx;
-
+/**
+ * Behaviour Steps specific to AttributeSteps
+ */
 public class AttributeTypeSteps {
 
-    @When("put attribute type: {word}")
-    public void put_attribute_type(String label) {
-        tx().concepts().putAttributeType(label);
-    }
 }

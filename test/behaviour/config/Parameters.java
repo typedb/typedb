@@ -29,6 +29,30 @@ import static org.junit.Assert.assertNotNull;
 
 public class Parameters {
 
+    public enum RootLabel {
+        ENTITY("entity"),
+        ATTRIBUTE("attribute"),
+        RELATION("relation");
+
+        private final String label;
+
+        RootLabel(String label) {
+            this.label = label;
+        }
+
+        public String label() {
+            return label;
+        }
+
+        public static RootLabel of(String label) {
+            for (RootLabel t : RootLabel.values()) {
+                if (t.label.equals(label)) {
+                    return t;
+                }
+            }
+            return null;
+        }
+    }
     @ParameterType("true|false")
     public Boolean bool(String bool) {
         return Boolean.parseBoolean(bool);
@@ -37,6 +61,16 @@ public class Parameters {
     @ParameterType("[0-9]+")
     public Integer number(String number) {
         return Integer.parseInt(number);
+    }
+
+    @ParameterType("entity|attribute|relation")
+    public RootLabel root_label(String type){
+        return RootLabel.of(type);
+    }
+
+    @ParameterType("[a-zA-Z0-9-_]+")
+    public String type_label(String typeLabel){
+        return typeLabel;
     }
 
     @ParameterType("read|write")
