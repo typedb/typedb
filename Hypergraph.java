@@ -18,7 +18,7 @@
 
 package hypergraph;
 
-import hypergraph.concept.ConceptManager;
+import hypergraph.concept.Concepts;
 import hypergraph.traversal.Traversal;
 
 import java.util.Set;
@@ -87,7 +87,7 @@ public interface Hypergraph extends AutoCloseable {
 
         Traversal traversal();
 
-        ConceptManager concepts();
+        Concepts concepts();
 
         void commit();
 

@@ -18,13 +18,13 @@
 
 package hypergraph.traversal;
 
-import hypergraph.concept.ConceptManager;
+import hypergraph.concept.Concepts;
 
 public class Traversal {
 
-    private final ConceptManager conceptMgr;
+    private final Concepts concepts;
 
-    public Traversal(ConceptManager conceptMgr) {
-        this.conceptMgr = conceptMgr;
+    public Traversal(Concepts concepts) {
+        this.concepts = concepts;
     }
 }

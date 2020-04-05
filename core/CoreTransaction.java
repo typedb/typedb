@@ -21,7 +21,7 @@ package hypergraph.core;
 import hypergraph.Hypergraph;
 import hypergraph.common.exception.HypergraphException;
 import hypergraph.common.concurrent.ManagedReadWriteLock;
-import hypergraph.concept.ConceptManager;
+import hypergraph.concept.Concepts;
 import hypergraph.graph.Graph;
 import hypergraph.graph.KeyGenerator;
 import hypergraph.graph.Storage;
@@ -49,7 +49,7 @@ class CoreTransaction implements Hypergraph.Transaction {
     private final Type type;
     private final CoreStorage storage;
     private final Graph graph;
-    private final ConceptManager concepts;
+    private final Concepts concepts;
     private final Traversal traversal;
     private final AtomicBoolean isOpen;
 
@@ -67,7 +67,7 @@ class CoreTransaction implements Hypergraph.Transaction {
 
         storage = new CoreStorage();
         graph = new Graph(storage);
-        concepts = new ConceptManager(graph);
+        concepts = new Concepts(graph);
         traversal = new Traversal(concepts);
 
         isOpen = new AtomicBoolean();
@@ -89,7 +89,7 @@ class CoreTransaction implements Hypergraph.Transaction {
     }
 
     @Override
-    public ConceptManager concepts() {
+    public Concepts concepts() {
         return concepts;
     }
 

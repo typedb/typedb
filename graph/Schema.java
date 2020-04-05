@@ -68,13 +68,13 @@ public class Schema {
         INDEX_VALUE(5),
         VERTEX_TYPE(10),
         VERTEX_ENTITY_TYPE(20),
-        VERTEX_RELATION_TYPE(30),
-        VERTEX_ROLE_TYPE(40),
-        VERTEX_ATTRIBUTE_TYPE(50),
+        VERTEX_ATTRIBUTE_TYPE(30),
+        VERTEX_RELATION_TYPE(40),
+        VERTEX_ROLE_TYPE(50),
         VERTEX_ENTITY(60),
-        VERTEX_RELATION(70),
-        VERTEX_ROLE(80),
-        VERTEX_ATTRIBUTE(90),
+        VERTEX_ATTRIBUTE(70),
+        VERTEX_RELATION(80),
+        VERTEX_ROLE(90),
         VERTEX_VALUE(100),
         VERTEX_RULE(110);
 
@@ -242,9 +242,9 @@ public class Schema {
         enum Type implements Vertex {
             TYPE(Prefix.VERTEX_TYPE, Root.THING),
             ENTITY_TYPE(Prefix.VERTEX_ENTITY_TYPE, Root.ENTITY),
+            ATTRIBUTE_TYPE(Prefix.VERTEX_ATTRIBUTE_TYPE, Root.ATTRIBUTE),
             RELATION_TYPE(Prefix.VERTEX_RELATION_TYPE, Root.RELATION),
-            ROLE_TYPE(Prefix.VERTEX_ROLE_TYPE, Root.ROLE),
-            ATTRIBUTE_TYPE(Prefix.VERTEX_ATTRIBUTE_TYPE, Root.ATTRIBUTE);
+            ROLE_TYPE(Prefix.VERTEX_ROLE_TYPE, Root.ROLE);
 
             private final Prefix prefix;
             private final Root root;
@@ -275,9 +275,9 @@ public class Schema {
             public enum Root {
                 THING("thing"),
                 ENTITY("entity"),
+                ATTRIBUTE("attribute"),
                 RELATION("relation"),
-                ROLE("role"),
-                ATTRIBUTE("attribute");
+                ROLE("role");
 
                 private final String label;
 
@@ -293,9 +293,9 @@ public class Schema {
 
         enum Thing implements Vertex {
             ENTITY(Prefix.VERTEX_ENTITY),
+            ATTRIBUTE(Prefix.VERTEX_ATTRIBUTE),
             RELATION(Prefix.VERTEX_RELATION),
             ROLE(Prefix.VERTEX_ROLE),
-            ATTRIBUTE(Prefix.VERTEX_ATTRIBUTE),
             RULE(Prefix.VERTEX_RULE);
 
             private final Prefix prefix;

@@ -26,11 +26,11 @@ import hypergraph.graph.Graph;
 import hypergraph.graph.Schema;
 import hypergraph.graph.vertex.TypeVertex;
 
-public class ConceptManager {
+public class Concepts {
 
     private final Graph graph;
 
-    public ConceptManager(Graph graph) {
+    public Concepts(Graph graph) {
         this.graph = graph;
     }
 
