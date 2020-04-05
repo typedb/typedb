@@ -52,11 +52,6 @@ public class AttributeType extends ThingType<AttributeType> {
         return of(vertex);
     }
 
-    @Override
-    AttributeType getThis() {
-        return this;
-    }
-
     public static class Root extends AttributeType {
 
         Root(TypeVertex vertex) {
@@ -65,12 +60,12 @@ public class AttributeType extends ThingType<AttributeType> {
         }
 
         @Override
-        public AttributeType label(String label) {
+        public void label(String label) {
             throw new HypergraphException("Invalid Operation Exception: root types are immutable");
         }
 
         @Override
-        public AttributeType setAbstract(boolean isAbstract) {
+        public void setAbstract(boolean isAbstract) {
             throw new HypergraphException("Invalid Operation Exception: root types are immutable");
         }
 
@@ -80,7 +75,7 @@ public class AttributeType extends ThingType<AttributeType> {
         }
 
         @Override
-        public AttributeType sup(AttributeType superType) {
+        public void sup(AttributeType superType) {
             throw new HypergraphException("Invalid Operation Exception: root types are immutable");
         }
     }

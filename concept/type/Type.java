@@ -50,31 +50,26 @@ public abstract class Type<TYPE extends Type> {
 
     abstract TYPE newInstance(TypeVertex vertex);
 
-    abstract TYPE getThis();
-
     public String label() {
         return vertex.label();
     }
 
-    public TYPE label(String label) {
+    public void label(String label) {
         vertex.label(label);
-        return getThis();
     }
 
     public boolean isAbstract() {
         return vertex.isAbstract();
     }
 
-    public TYPE setAbstract(boolean isAbstract) {
+    public void setAbstract(boolean isAbstract) {
         vertex.setAbstract(isAbstract);
-        return getThis();
     }
 
-    public TYPE sup(TYPE parent) {
+    public void sup(TYPE parent) {
         vertex.outs().delete(Schema.Edge.Type.SUB, sup().vertex);
         vertex.outs().put(Schema.Edge.Type.SUB, parent.vertex);
         this.parent = parent;
-        return getThis();
     }
 
     public TYPE sup() {

@@ -44,19 +44,17 @@ public abstract class ThingType<TYPE extends ThingType> extends Type<TYPE> {
         super(graph, label, schema);
     }
 
-    public TYPE key(AttributeType attributeType) {
+    public void key(AttributeType attributeType) {
         if (filter(vertex.outs().get(Schema.Edge.Type.HAS), v -> v.equals(attributeType.vertex)).hasNext()) {
             throw new HypergraphException("Invalid Key Assignment: " + attributeType.label() +
                                                   " is already used as an attribute");
         }
 
         vertex.outs().put(Schema.Edge.Type.KEY, attributeType.vertex);
-        return getThis();
     }
 
-    public TYPE unkey(AttributeType attributeType) {
+    public void unkey(AttributeType attributeType) {
         vertex.outs().delete(Schema.Edge.Type.KEY, attributeType.vertex);
-        return getThis();
     }
 
     public Stream<AttributeType> keys() {
@@ -64,19 +62,17 @@ public abstract class ThingType<TYPE extends ThingType> extends Type<TYPE> {
         return stream(spliteratorUnknownSize(keys, ORDERED | IMMUTABLE), false);
     }
 
-    public TYPE has(AttributeType attributeType) {
+    public void has(AttributeType attributeType) {
         if (filter(vertex.outs().get(Schema.Edge.Type.KEY), v -> v.equals(attributeType.vertex)).hasNext()) {
             throw new HypergraphException("Invalid Attribute Assignment: " + attributeType.label() +
                                                   " is already used as a Key");
         }
 
         vertex.outs().put(Schema.Edge.Type.HAS, attributeType.vertex);
-        return getThis();
     }
 
-    public TYPE unhas(AttributeType attributeType) {
+    public void unhas(AttributeType attributeType) {
         vertex.outs().delete(Schema.Edge.Type.HAS, attributeType.vertex);
-        return getThis();
     }
 
     public Stream<AttributeType> attributes() {
@@ -101,17 +97,12 @@ public abstract class ThingType<TYPE extends ThingType> extends Type<TYPE> {
         }
 
         @Override
-        ThingType getThis() {
-            return this;
-        }
-
-        @Override
-        public ThingType label(String label) {
+        public void label(String label) {
             throw new HypergraphException("Invalid Operation Exception: root types are immutable");
         }
 
         @Override
-        public ThingType setAbstract(boolean isAbstract) {
+        public void setAbstract(boolean isAbstract) {
             throw new HypergraphException("Invalid Operation Exception: root types are immutable");
         }
 
@@ -121,7 +112,7 @@ public abstract class ThingType<TYPE extends ThingType> extends Type<TYPE> {
         }
 
         @Override
-        public ThingType sup(ThingType superType) {
+        public void sup(ThingType superType) {
             throw new HypergraphException("Invalid Operation Exception: root types are immutable");
         }
     }

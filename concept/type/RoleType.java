@@ -52,11 +52,6 @@ public class RoleType extends Type<RoleType> {
         return new RoleType(vertex);
     }
 
-    @Override
-    RoleType getThis() {
-        return this;
-    }
-
     public static class Root extends RoleType {
 
         Root(TypeVertex vertex) {
@@ -65,12 +60,12 @@ public class RoleType extends Type<RoleType> {
         }
 
         @Override
-        public RoleType label(String label) {
+        public void label(String label) {
             throw new HypergraphException("Invalid Operation Exception: root types are immutable");
         }
 
         @Override
-        public RoleType setAbstract(boolean isAbstract) {
+        public void setAbstract(boolean isAbstract) {
             throw new HypergraphException("Invalid Operation Exception: root types are immutable");
         }
 
@@ -80,7 +75,7 @@ public class RoleType extends Type<RoleType> {
         }
 
         @Override
-        public RoleType sup(RoleType superType) {
+        public void sup(RoleType superType) {
             throw new HypergraphException("Invalid Operation Exception: root types are immutable");
         }
     }

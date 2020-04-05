@@ -52,11 +52,6 @@ public class EntityType extends ThingType<EntityType> {
         return of(vertex);
     }
 
-    @Override
-    EntityType getThis() {
-        return this;
-    }
-
     public static class Root extends EntityType {
 
         Root(TypeVertex vertex) {
@@ -65,12 +60,12 @@ public class EntityType extends ThingType<EntityType> {
         }
 
         @Override
-        public EntityType label(String label) {
+        public void label(String label) {
             throw new HypergraphException("Invalid Operation Exception: root types are immutable");
         }
 
         @Override
-        public EntityType setAbstract(boolean isAbstract) {
+        public void setAbstract(boolean isAbstract) {
             throw new HypergraphException("Invalid Operation Exception: root types are immutable");
         }
 
@@ -80,7 +75,7 @@ public class EntityType extends ThingType<EntityType> {
         }
 
         @Override
-        public EntityType sup(EntityType superType) {
+        public void sup(EntityType superType) {
             throw new HypergraphException("Invalid Operation Exception: root types are immutable");
         }
     }

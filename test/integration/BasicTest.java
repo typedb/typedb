@@ -142,12 +142,14 @@ public class BasicTest {
 
                                 Stream<Consumer<Hypergraph.Transaction>> subPersonAssertions = Stream.of(
                                         tx2 -> {
-                                            EntityType man = tx2.concepts().putEntityType("man").sup(person);
+                                            EntityType man = tx2.concepts().putEntityType("man");
+                                            man.sup(person);
                                             notNulls(man);
                                             assertEquals(man.sup(), person);
                                         },
                                         tx2 -> {
-                                            EntityType woman = tx2.concepts().putEntityType("woman").sup(person);
+                                            EntityType woman = tx2.concepts().putEntityType("woman");
+                                            woman.sup(person);
                                             notNulls(woman);
                                             assertEquals(woman.sup(), person);
                                         }

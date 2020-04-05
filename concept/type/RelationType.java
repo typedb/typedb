@@ -58,11 +58,6 @@ public class RelationType extends ThingType<RelationType> {
         return of(vertex);
     }
 
-    @Override
-    RelationType getThis() {
-        return this;
-    }
-
     public static class Root extends RelationType {
 
         Root(TypeVertex vertex) {
@@ -71,12 +66,12 @@ public class RelationType extends ThingType<RelationType> {
         }
 
         @Override
-        public RelationType label(String label) {
+        public void label(String label) {
             throw new HypergraphException("Invalid Operation Exception: root types are immutable");
         }
 
         @Override
-        public RelationType setAbstract(boolean isAbstract) {
+        public void setAbstract(boolean isAbstract) {
             throw new HypergraphException("Invalid Operation Exception: root types are immutable");
         }
 
@@ -86,7 +81,7 @@ public class RelationType extends ThingType<RelationType> {
         }
 
         @Override
-        public RelationType sup(RelationType superType) {
+        public void sup(RelationType superType) {
             throw new HypergraphException("Invalid Operation Exception: root types are immutable");
         }
     }
