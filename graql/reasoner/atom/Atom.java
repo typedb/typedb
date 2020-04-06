@@ -220,7 +220,8 @@ public abstract class Atom extends AtomicBase {
     public abstract boolean isRuleApplicableViaAtom(Atom headAtom);
 
     public boolean isRuleResolvable() {
-        return getApplicableRules().findFirst().isPresent();
+        return rewriteToAtoms().anyMatch(atom -> atom.getApplicableRules().findFirst().isPresent());
+//        return getApplicableRules().findFirst().isPresent();
     }
 
     /**
@@ -228,6 +229,7 @@ public abstract class Atom extends AtomicBase {
      */
     public Stream<Rule> getPotentialRules() {
         RuleCache ruleCache = ctx.ruleCache();
+        // TODO we may need another isDirect for SUB here?
         boolean isDirect = getPattern().getProperties(IsaProperty.class).findFirst()
                 .map(IsaProperty::isExplicit).orElse(false);
 
@@ -245,7 +247,7 @@ public abstract class Atom extends AtomicBase {
             applicableRules = new HashSet<>();
             getPotentialRules()
                     .map(rule -> CacheCasting.ruleCacheCast(ruleCache).getRule(rule))
-//                    .filter(this::isRuleApplicable)
+                    .filter(this::isRuleApplicable)
                     .map(r -> r.rewrite(this))
                     .forEach(applicableRules::add);
         }

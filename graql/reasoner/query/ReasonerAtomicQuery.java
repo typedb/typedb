@@ -233,10 +233,6 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                 .map(ans -> ans.explain(answer.explanation(), this.getPattern()));
     }
 
-    public Stream<ReasonerAtomicQuery> rewriteAsSimplerAtomicQueries() {
-        return getAtom().rewriteToAtoms().map(atom -> context().queryFactory().atomic(atom)).filter(aq -> !aq.equals(this));
-    }
-
     @Override
     public ResolutionState resolutionState(ConceptMap sub, Unifier u, AnswerPropagatorState parent, Set<ReasonerAtomicQuery> subGoals){
         if (getAtom().getSchemaConcept() == null) return new AtomicStateProducer(this, sub, u, parent, subGoals);

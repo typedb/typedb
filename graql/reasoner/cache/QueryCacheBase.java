@@ -19,6 +19,7 @@
 package grakn.core.graql.reasoner.cache;
 
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.answer.Explanation;
 import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
 import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.kb.graql.executor.ExecutorFactory;
@@ -127,10 +128,10 @@ public abstract class QueryCacheBase<
 
     static <T extends ReasonerQueryImpl> void validateAnswer(ConceptMap answer, T query, Set<Variable> expectedVars){
         if (!answer.vars().equals(expectedVars)
-                || answer.explanation() == null
-                || (
-                        !answer.explanation().isRuleExplanation()
-                                && !answer.explanation().isLookupExplanation())){
+                || answer.explanation().getClass().equals(Explanation.class)) {
+//                || (
+//                        !answer.explanation().isRuleExplanation()
+//                                && !answer.explanation().isLookupExplanation())){
             throw ReasonerException.invalidQueryCacheEntry(query, answer);
         }
     }
