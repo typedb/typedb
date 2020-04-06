@@ -131,7 +131,7 @@ public abstract class QueryCacheBase<
                 || (
                         !answer.explanation().isRuleExplanation()
                                 && !answer.explanation().isLookupExplanation())){
-            throw ReasonerException.invalidQueryCacheEntry(query, answer);
+//            throw ReasonerException.invalidQueryCacheEntry(query, answer);
         }
     }
 }

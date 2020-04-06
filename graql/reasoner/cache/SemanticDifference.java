@@ -121,7 +121,7 @@ public class SemanticDifference {
         return filteredRelations;
     }
 
-    boolean satisfiedBy(ConceptMap answer) {
+    public boolean satisfiedBy(ConceptMap answer) {
         if (isEmpty()) return true;
 
         Map<Variable, Multiset<Role>> roleRequirements = this.definition.stream()

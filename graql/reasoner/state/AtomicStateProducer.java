@@ -44,7 +44,6 @@ public class AtomicStateProducer extends AnswerPropagatorState<ReasonerAtomicQue
         return getQuery().expandedStates(getSubstitution(), getUnifier(), getParentState(), getVisitedSubGoals()).iterator();
     }
 
-
     @Override
     ResolutionState propagateAnswer(AnswerState state) {
         return new AnswerState(state.getSubstitution(), state.getUnifier(), getParentState());

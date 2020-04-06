@@ -208,15 +208,11 @@ public class RelationAtom extends Atom {
                     players.get(rp).add(rp);
                 });
 
-
         // we also keep this
-        return Stream.concat(
-                Stream.of(this),
-                players.values().stream()
-                        .map(rolePlayers ->
-                                create(relationPattern(getVarName().asReturnedVar(), rolePlayers),
-                                        getPredicateVariable(), getTypeLabel(), null, getParentQuery(), context())
-                )
+        return players.values().stream()
+                .map(rolePlayers ->
+                        create(relationPattern(getVarName().asReturnedVar(), rolePlayers),
+                                getPredicateVariable(), getTypeLabel(), null, getParentQuery(), context())
         );
     }
 
