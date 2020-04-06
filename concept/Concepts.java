@@ -61,7 +61,7 @@ public class Concepts {
     public EntityType putEntityType(String label) {
         TypeVertex vertex = graph.type().get(label);
         if (vertex != null) return EntityType.of(vertex);
-        else return EntityType.of(graph, label);
+        else return EntityType.of(graph.type(), label);
     }
 
     public EntityType getEntityType(String label) {
@@ -73,7 +73,7 @@ public class Concepts {
     public RelationType putRelationType(String label) {
         TypeVertex vertex = graph.type().get(label);
         if (vertex != null) return RelationType.of(vertex);
-        else return RelationType.of(graph, label);
+        else return RelationType.of(graph.type(), label);
     }
 
     public RelationType getRelationType(String label) {
@@ -85,7 +85,7 @@ public class Concepts {
     public AttributeType putAttributeType(String label) {
         TypeVertex vertex = graph.type().get(label);
         if (vertex != null) return AttributeType.of(vertex);
-        else return AttributeType.of(graph, label);
+        else return AttributeType.of(graph.type(), label);
     }
 
     public AttributeType getAttributeType(String label) {

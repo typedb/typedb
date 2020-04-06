@@ -30,7 +30,7 @@ public class EntityType extends ThingType<EntityType> {
         else return new EntityType(vertex);
     }
 
-    public static EntityType of(Graph graph, String label) {
+    public static EntityType of(Graph.Type graph, String label) {
         return new EntityType(graph, label);
     }
 
@@ -42,9 +42,9 @@ public class EntityType extends ThingType<EntityType> {
         }
     }
 
-    private EntityType(Graph graph, String label) {
+    private EntityType(Graph.Type graph, String label) {
         super(graph, label, Schema.Vertex.Type.ENTITY_TYPE);
-        assert(!label.equals(Schema.Vertex.Type.Root.ENTITY.label()));
+        assert !label.equals(Schema.Vertex.Type.Root.ENTITY.label());
     }
 
     @Override
@@ -56,7 +56,7 @@ public class EntityType extends ThingType<EntityType> {
 
         Root(TypeVertex vertex) {
             super(vertex);
-            assert(vertex.label().equals(Schema.Vertex.Type.Root.ENTITY.label()));
+            assert vertex.label().equals(Schema.Vertex.Type.Root.ENTITY.label());
         }
 
         @Override

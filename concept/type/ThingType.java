@@ -40,8 +40,13 @@ public abstract class ThingType<TYPE extends ThingType> extends Type<TYPE> {
         super(vertex);
     }
 
-    ThingType(Graph graph, String label, Schema.Vertex.Type schema) {
+    ThingType(Graph.Type graph, String label, Schema.Vertex.Type schema) {
         super(graph, label, schema);
+    }
+
+    @Override
+    public void sup(TYPE superType) {
+        super.sup(superType);
     }
 
     public void key(AttributeType attributeType) {
@@ -85,7 +90,7 @@ public abstract class ThingType<TYPE extends ThingType> extends Type<TYPE> {
 
         public Root(TypeVertex vertex) {
             super(vertex);
-            assert (vertex.label().equals(Schema.Vertex.Type.Root.THING.label()));
+            assert vertex.label().equals(Schema.Vertex.Type.Root.THING.label());
         }
 
         @Override

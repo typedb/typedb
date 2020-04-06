@@ -30,20 +30,20 @@ public class RoleType extends Type<RoleType> {
         else return new RoleType(vertex);
     }
 
-    public static RoleType of(Graph graph, String label) {
+    public static RoleType of(Graph.Type graph, String label) {
         return new RoleType(graph, label);
     }
 
     private RoleType(TypeVertex vertex) {
         super(vertex);
-        assert(vertex.schema() == Schema.Vertex.Type.ROLE_TYPE);
+        assert vertex.schema() == Schema.Vertex.Type.ROLE_TYPE;
         if (vertex.schema() != Schema.Vertex.Type.ROLE_TYPE) {
             throw new HypergraphException("Invalid Role Type: " + vertex.label() +
                                                   " subtypes " + vertex.schema().root().label());
         }
     }
 
-    private RoleType(Graph graph, String label) {
+    private RoleType(Graph.Type graph, String label) {
         super(graph, label, Schema.Vertex.Type.ROLE_TYPE);
     }
 
@@ -56,7 +56,7 @@ public class RoleType extends Type<RoleType> {
 
         Root(TypeVertex vertex) {
             super(vertex);
-            assert(vertex.label().equals(Schema.Vertex.Type.Root.ROLE.label()));
+            assert vertex.label().equals(Schema.Vertex.Type.Root.ROLE.label());
         }
 
         @Override

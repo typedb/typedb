@@ -35,7 +35,7 @@ public class RelationType extends ThingType<RelationType> {
         else return new RelationType(vertex);
     }
 
-    public static RelationType of(Graph graph, String label) {
+    public static RelationType of(Graph.Type graph, String label) {
         return new RelationType(graph, label);
     }
 
@@ -48,7 +48,7 @@ public class RelationType extends ThingType<RelationType> {
         }
     }
 
-    private RelationType(Graph graph, String label) {
+    private RelationType(Graph.Type graph, String label) {
         super(graph, label, Schema.Vertex.Type.RELATION_TYPE);
         roleTypes = new HashSet<>();
     }
@@ -62,7 +62,7 @@ public class RelationType extends ThingType<RelationType> {
 
         Root(TypeVertex vertex) {
             super(vertex);
-            assert(vertex.label().equals(Schema.Vertex.Type.Root.RELATION.label()));
+            assert vertex.label().equals(Schema.Vertex.Type.Root.RELATION.label());
         }
 
         @Override

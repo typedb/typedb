@@ -30,20 +30,19 @@ public class AttributeType extends ThingType<AttributeType> {
         else return new AttributeType(vertex);
     }
 
-    public static AttributeType of(Graph graph, String label) {
+    public static AttributeType of(Graph.Type graph, String label) {
         return new AttributeType(graph, label);
     }
 
     private AttributeType(TypeVertex vertex) {
         super(vertex);
-        assert(vertex.schema() == Schema.Vertex.Type.ATTRIBUTE_TYPE);
         if (vertex.schema() != Schema.Vertex.Type.ATTRIBUTE_TYPE) {
             throw new HypergraphException("Invalid Attribute Type: " + vertex.label() +
                                                   " subtypes " + vertex.schema().root().label());
         }
     }
 
-    private AttributeType(Graph graph, String label) {
+    private AttributeType(Graph.Type graph, String label) {
         super(graph, label, Schema.Vertex.Type.ATTRIBUTE_TYPE);
     }
 
@@ -56,7 +55,7 @@ public class AttributeType extends ThingType<AttributeType> {
 
         Root(TypeVertex vertex) {
             super(vertex);
-            assert(vertex.label().equals(Schema.Vertex.Type.Root.ATTRIBUTE.label()));
+            assert vertex.label().equals(Schema.Vertex.Type.Root.ATTRIBUTE.label());
         }
 
         @Override

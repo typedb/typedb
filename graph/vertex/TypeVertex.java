@@ -57,6 +57,10 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, TypeVertex, 
         return join(Schema.Index.TYPE.prefix().key(), label.getBytes());
     }
 
+    public Graph.Type graph() {
+        return graph;
+    }
+
     public String label() {
         return label;
     }

@@ -35,17 +35,17 @@ import static java.util.stream.StreamSupport.stream;
 public abstract class Type<TYPE extends Type> {
 
     protected final TypeVertex vertex;
-    protected TYPE parent;
+    protected TYPE superType;
 
     protected Type(TypeVertex vertex) {
         this.vertex = Objects.requireNonNull(vertex);
     }
 
-    Type(Graph graph, String label, Schema.Vertex.Type schema) {
-        this.vertex = graph.type().put(schema, label);
-        TypeVertex parentVertex = graph.type().get(schema.root().label());
-        vertex.outs().put(Schema.Edge.Type.SUB, parentVertex);
-        parent = newInstance(parentVertex);
+    Type(Graph.Type graph, String label, Schema.Vertex.Type schema) {
+        this.vertex = graph.put(schema, label);
+        TypeVertex superTypeVertex = graph.get(schema.root().label());
+        vertex.outs().put(Schema.Edge.Type.SUB, superTypeVertex);
+        superType = newInstance(superTypeVertex);
     }
 
     abstract TYPE newInstance(TypeVertex vertex);
@@ -66,19 +66,19 @@ public abstract class Type<TYPE extends Type> {
         vertex.setAbstract(isAbstract);
     }
 
-    public void sup(TYPE parent) {
+    protected void sup(TYPE superType) {
         vertex.outs().delete(Schema.Edge.Type.SUB, sup().vertex);
-        vertex.outs().put(Schema.Edge.Type.SUB, parent.vertex);
-        this.parent = parent;
+        vertex.outs().put(Schema.Edge.Type.SUB, superType.vertex);
+        this.superType = superType;
     }
 
     public TYPE sup() {
-        if (parent != null) return parent;
+        if (superType != null) return superType;
 
         Iterator<TypeVertex> iterator = Iterators.filter(vertex.outs().get(Schema.Edge.Type.SUB),
                                                          v -> v.schema().equals(vertex.schema()));
-        if (iterator.hasNext()) parent = newInstance(iterator.next());
-        return parent;
+        if (iterator.hasNext()) superType = newInstance(iterator.next());
+        return superType;
     }
 
     public Stream<TYPE> sups() {

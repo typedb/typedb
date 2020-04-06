@@ -53,6 +53,7 @@ public class Parameters {
             return null;
         }
     }
+
     @ParameterType("true|false")
     public Boolean bool(String bool) {
         return Boolean.parseBoolean(bool);
@@ -64,17 +65,17 @@ public class Parameters {
     }
 
     @ParameterType("entity|attribute|relation")
-    public RootLabel root_label(String type){
+    public RootLabel root_label(String type) {
         return RootLabel.of(type);
     }
 
     @ParameterType("[a-zA-Z0-9-_]+")
-    public String type_label(String typeLabel){
+    public String type_label(String typeLabel) {
         return typeLabel;
     }
 
     @ParameterType("read|write")
-    public Hypergraph.Transaction.Type transaction_type(String type){
+    public Hypergraph.Transaction.Type transaction_type(String type) {
         return Hypergraph.Transaction.Type.of(type);
     }
 
