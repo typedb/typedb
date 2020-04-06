@@ -53,11 +53,11 @@ public class PartialAtomicState extends AnswerPropagatorState<ReasonerAtomicQuer
 
     @Override
     ResolutionState propagateAnswer(AnswerState state) {
-        // we take the provided answer, and try to apply it to the non-rewritten/simplified Atomic query
-        // if it satisfies
-        Optional<ConceptMap> answer = getQuery().withSubstitution(state.getSubstitution()).resolve(false).findFirst();
-        if (answer.isPresent()) {
-            return new AnswerState(state.getSubstitution(), getUnifier(), getParentState());
+        // we take the provided answer, and apply it to the non-rewritten/simplified Atomic query
+        ConceptMap answer = consumeAnswer(state);
+        Optional<ConceptMap> satisfiesFullQuery = getQuery().withSubstitution(answer).resolve(false).findFirst();
+        if (satisfiesFullQuery.isPresent()) {
+            return new AnswerState(answer, state.getUnifier(), getParentState());
         } else {
             return null;
         }
@@ -65,6 +65,8 @@ public class PartialAtomicState extends AnswerPropagatorState<ReasonerAtomicQuer
 
     @Override
     ConceptMap consumeAnswer(AnswerState state) {
-        return state.getSubstitution();
+        // rewrite the pattern that is present
+        ConceptMap answer = state.getSubstitution();
+        return answer.withPattern(getQuery().getPattern());
     }
 }
