@@ -187,8 +187,7 @@ public class ResponseBuilder {
         public static ConceptProto.Concept conceptPrefilled(grakn.core.kb.concept.api.Concept concept) {
             ConceptProto.Concept.Builder builder = ConceptProto.Concept.newBuilder()
                     .setId(concept.id().getValue())
-                    .setBaseType(getBaseType(concept))
-                    .setIsPrefilled(true);
+                    .setBaseType(getBaseType(concept));
 
             if (concept.isSchemaConcept()) {
                 builder.setLabelRes(ConceptProto.SchemaConcept.GetLabel.Res.newBuilder()
@@ -342,7 +341,7 @@ public class ResponseBuilder {
         static AnswerProto.ConceptMap conceptMap(ConceptMap answer) {
             AnswerProto.ConceptMap.Builder conceptMapProto = AnswerProto.ConceptMap.newBuilder();
             answer.map().forEach((var, concept) -> {
-                ConceptProto.Concept conceptProto = ResponseBuilder.Concept.conceptPrefilled(concept); // Pre-fill concept map answers!
+                ConceptProto.Concept conceptProto = ResponseBuilder.Concept.conceptPrefilled(concept);
                 conceptMapProto.putMap(var.name(), conceptProto);
             });
 

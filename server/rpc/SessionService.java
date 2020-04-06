@@ -60,7 +60,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
@@ -344,20 +343,10 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
 
             Stream<Transaction.Res> responseStream = tx().stream(query, request.getInfer().equals(Transaction.Query.INFER.TRUE)).map(ResponseBuilder.Transaction.Iter::query);
 
-            Transaction.Res response = null;
             int iteratorId = request.getId();
-            if (iteratorId != 0) {
-                iterators.add(responseStream.iterator(), iteratorId);
-            } else {
-                iteratorId = iterators.add(responseStream.iterator());
-                response = ResponseBuilder.Transaction.queryIterator(iteratorId);
-            }
+            iterators.add(responseStream.iterator(), iteratorId);
 
             ServerTracing.closeScopedChildSpan(createStreamSpanId);
-
-            if (response != null) {
-                onNextResponse(response);
-            }
         }
 
         private void getSchemaConcept(Transaction.GetSchemaConcept.Req request) {
@@ -467,21 +456,11 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
      * lazy, streaming responses such as for Graql query results.
      */
     static class Iterators {
-        private int highestIteratorId = 0;
         private final Map<Integer, Iterator<Transaction.Res>> iterators = new ConcurrentHashMap<>();
 
-        public int add(Iterator<Transaction.Res> iterator) {
-            iterators.put(++highestIteratorId, iterator);
-            return highestIteratorId;
-        }
-
         public void add(Iterator<Transaction.Res> iterator, int iteratorId) {
-            if (iteratorId > highestIteratorId) {
-                highestIteratorId = iteratorId;
-            } else {
-                if (iterators.containsKey(iteratorId)) {
-                    throw ResponseBuilder.exception(Status.FAILED_PRECONDITION);
-                }
+            if (iterators.containsKey(iteratorId)) {
+                throw ResponseBuilder.exception(Status.FAILED_PRECONDITION);
             }
             iterators.put(iteratorId, iterator);
         }
