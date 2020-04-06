@@ -69,12 +69,6 @@ public class ResponseBuilder {
                     .build();
         }
 
-        static SessionProto.Transaction.Res queryIterator(int iteratorId) {
-            return SessionProto.Transaction.Res.newBuilder()
-                    .setQueryIter(SessionProto.Transaction.Query.Iter.newBuilder().setId(iteratorId))
-                    .build();
-        }
-
         static SessionProto.Transaction.Res getSchemaConcept(@Nullable grakn.core.kb.concept.api.Concept concept) {
             SessionProto.Transaction.GetSchemaConcept.Res.Builder res = SessionProto.Transaction.GetSchemaConcept.Res.newBuilder();
             if (concept == null) {
@@ -93,12 +87,6 @@ public class ResponseBuilder {
                 res.setConcept(ResponseBuilder.Concept.concept(concept));
             }
             return SessionProto.Transaction.Res.newBuilder().setGetConceptRes(res).build();
-        }
-
-        static SessionProto.Transaction.Res getAttributesIterator(int iteratorId) {
-            SessionProto.Transaction.GetAttributes.Iter.Builder res = SessionProto.Transaction.GetAttributes.Iter.newBuilder()
-                    .setId(iteratorId);
-            return SessionProto.Transaction.Res.newBuilder().setGetAttributesIter(res).build();
         }
 
         static SessionProto.Transaction.Res putEntityType(grakn.core.kb.concept.api.Concept concept) {
