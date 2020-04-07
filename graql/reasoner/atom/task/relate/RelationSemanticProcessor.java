@@ -23,6 +23,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
+import com.sun.javafx.beans.IDProperty;
 import grakn.common.util.Pair;
 import grakn.core.common.util.Streams;
 import grakn.core.core.Schema;
@@ -166,7 +167,17 @@ public class RelationSemanticProcessor implements SemanticProcessor<RelationAtom
 
                                 boolean varCompatibility = unifierType.equivalence() == null
                                         || parentRolePattern.var().isReturned() == childRolePattern.var().isReturned();
-                                return varCompatibility && unifierType.roleCompatibility(parentRole, childRole);
+
+                                // if we have IDs for both variables' types for the role players
+                                // we use that for checking role compatibility rather than the type labels
+                                boolean checkedByIdCompatibility = false;
+                                if (crp.getRole().isPresent() && prp.getRole().isPresent()) {
+                                    Variable childRPVar = crp.getRole().get().var();
+                                    Variable parentRPVar = prp.getRole().get().var();
+                                    checkedByIdCompatibility = parentAtom.getAllPredicates(parentRPVar, IdPredicate.class).findAny().isPresent() &&
+                                            childAtom.getAllPredicates(childRPVar, IdPredicate.class).findAny().isPresent();
+                                }
+                                return checkedByIdCompatibility || (varCompatibility && unifierType.roleCompatibility(parentRole, childRole));
                             })
                             //check for inter-type compatibility
                             .filter(crp -> {
@@ -186,7 +197,6 @@ public class RelationSemanticProcessor implements SemanticProcessor<RelationAtom
                             .filter(crp -> {
                                 Set<Atomic> parentIds = parentAtom.getPredicates(prp.getPlayer().var(), IdPredicate.class).collect(Collectors.toSet());
                                 Set<Atomic> childIds = childAtom.getPredicates(crp.getPlayer().var(), IdPredicate.class).collect(Collectors.toSet());
-
 
                                 Set<Atomic> parentRoleIds = new HashSet<>();
                                 if (prp.getRole().isPresent()) {
