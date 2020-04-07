@@ -23,7 +23,6 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
-import com.sun.javafx.beans.IDProperty;
 import grakn.common.util.Pair;
 import grakn.core.common.util.Streams;
 import grakn.core.core.Schema;
