@@ -263,6 +263,8 @@ public class GraknClientIT {
                 assertNotNull(ans.queryPattern());
                 if (ans.hasExplanation()) {
                     assertEquals("transitive-location", ans.explanation().getRule().label().toString());
+                    assertEquals("{ (contained: $x, container: $y) isa contains; (contained: $y, container: $z) isa contains; };", ans.explanation().getRule().when().toString());
+                    assertEquals("{ (contained: $x, container: $z) isa contains; };", ans.explanation().getRule().then().toString());
                     return true;
                 }
                 return false;
