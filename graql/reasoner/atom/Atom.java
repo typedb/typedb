@@ -221,7 +221,6 @@ public abstract class Atom extends AtomicBase {
 
     public boolean isRuleResolvable() {
         return rewriteToAtoms().anyMatch(atom -> atom.getApplicableRules().findFirst().isPresent());
-//        return getApplicableRules().findFirst().isPresent();
     }
 
     /**
