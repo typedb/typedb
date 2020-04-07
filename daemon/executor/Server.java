@@ -70,14 +70,14 @@ public class Server {
         return Grakn.class;
     }
 
-    public void startIfNotRunning(String benchmarkFlag) {
+    public void startIfNotRunning(List<String> args) {
         boolean isProcessRunning = executor.isProcessRunning(SERVER_PIDFILE);
         boolean isGraknProcess = executor.isAGraknProcess(SERVER_PIDFILE, Grakn.class.getName());
 
         if (isProcessRunning && isGraknProcess) {
             System.out.println(DISPLAY_NAME + " is already running");
         } else {
-            start(benchmarkFlag);
+            start(args);
         }
     }
 
@@ -109,11 +109,11 @@ public class Server {
         return executor.isProcessRunning(SERVER_PIDFILE);
     }
 
-    private void start(String benchmarkFlag) {
+    private void start(List<String> args) {
         System.out.print("Starting " + DISPLAY_NAME + "...");
         System.out.flush();
 
-        Future<Executor.Result> startServerAsync = executor.executeAsync(serverCommand(benchmarkFlag), graknHome.toFile());
+        Future<Executor.Result> startServerAsync = executor.executeAsync(serverCommand(args), graknHome.toFile());
 
         LocalDateTime timeout = LocalDateTime.now().plusSeconds(SERVER_STARTUP_TIMEOUT_S);
 
@@ -148,7 +148,7 @@ public class Server {
         }
     }
 
-    private List<String> serverCommand(String benchmarkFlag) {
+    private List<String> serverCommand(List<String> args) {
         ArrayList<String> serverCommand = new ArrayList<>();
         serverCommand.add("java");
         serverCommand.add("-cp");
@@ -163,8 +163,8 @@ public class Server {
         }
         serverCommand.add(getServerMainClass().getName());
 
-        // benchmarking flag
-        serverCommand.add(benchmarkFlag);
+        serverCommand.addAll(args);
+
         return serverCommand;
     }
 

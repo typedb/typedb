@@ -38,7 +38,7 @@ java_test(
     name = "geo-inference-it",
     size = "medium",
     srcs = ["GeoInferenceIT.java"],
-    classpath_resources = ["//test-integration/resources:logback-test"],
+    classpath_resources = ["//test-integration/graql/reasoner/resources:reasoner-logback-test"],
     test_class = "grakn.core.graql.reasoner.GeoInferenceIT",
     deps = [
         "//concept/answer",
