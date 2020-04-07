@@ -25,6 +25,7 @@ import hypergraph.graph.Schema;
 import hypergraph.graph.edge.Edge;
 import hypergraph.graph.edge.TypeEdge;
 
+import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Optional;
@@ -38,23 +39,29 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, TypeVertex, 
 
     protected final Graph.Type graph;
     protected String label;
+    protected String scope;
     protected Boolean isAbstract;
     protected Schema.DataType dataType;
     protected String regex;
 
-
-    TypeVertex(Graph.Type graph, Schema.Vertex.Type type, byte[] iid, String label) {
+    TypeVertex(Graph.Type graph, Schema.Vertex.Type type, byte[] iid, String label, @Nullable String scope) {
         super(iid, type);
         this.graph = graph;
         this.label = label;
+        this.scope = scope;
+    }
+
+    public static String scopedLabel(String label, @Nullable String scope) {
+        if (scope == null) return label;
+        else return scope + ":" + label;
+    }
+
+    public static byte[] index(String label, @Nullable String scope) {
+        return join(Schema.Index.TYPE.prefix().key(), scopedLabel(label, scope).getBytes());
     }
 
     public static byte[] generateIID(KeyGenerator keyGenerator, Schema.Vertex.Type schema) {
         return join(schema.prefix().key(), keyGenerator.forType(schema.root()));
-    }
-
-    public static byte[] index(String label) {
-        return join(Schema.Index.TYPE.prefix().key(), label.getBytes());
     }
 
     public Graph.Type graph() {
@@ -65,7 +72,17 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, TypeVertex, 
         return label;
     }
 
+    public String scopedLabel() {
+        return scopedLabel(label, scope);
+    }
+
+    protected byte[] index() {
+        return index(label, scope);
+    }
+
     public abstract TypeVertex label(String label);
+
+    public abstract TypeVertex scope(String scope);
 
     public abstract boolean isAbstract();
 
@@ -107,15 +124,22 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, TypeVertex, 
 
     public static class Buffered extends TypeVertex {
 
-        public Buffered(Graph.Type graph, Schema.Vertex.Type schema, byte[] iid, String label) {
-            super(graph, schema, iid, label);
+        public Buffered(Graph.Type graph, Schema.Vertex.Type schema, byte[] iid, String label, @Nullable String scope) {
+            super(graph, schema, iid, label, scope);
         }
 
         @Override
         public TypeVertex label(String label) {
-            graph.update(this, label);
+            graph.update(this, this.label, scope, label, scope);
             this.label = label;
-            return null;
+            return this;
+        }
+
+        @Override
+        public TypeVertex scope(String scope) {
+            graph.update(this, label, this.scope, label, scope);
+            this.scope = scope;
+            return this;
         }
 
         @Override
@@ -170,7 +194,7 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, TypeVertex, 
         }
 
         void commitIndex() {
-            graph.storage().put(join(Schema.Index.TYPE.prefix().key(), label.getBytes()), iid);
+            graph.storage().put(index(), iid);
         }
 
         void commitProperties() {
@@ -234,13 +258,21 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, TypeVertex, 
     public static class Persisted extends TypeVertex {
 
 
-        public Persisted(Graph.Type graph, byte[] iid, String label) {
-            super(graph, Schema.Vertex.Type.of(iid[0]), iid, label);
+        public Persisted(Graph.Type graph, byte[] iid, String label, @Nullable String scope) {
+            super(graph, Schema.Vertex.Type.of(iid[0]), iid, label, scope);
         }
 
         public Persisted(Graph.Type graph, byte[] iid) {
             super(graph, Schema.Vertex.Type.of(iid[0]), iid,
-                  new String(graph.storage().get(join(iid, Schema.Property.LABEL.infix().key()))));
+                  new String(graph.storage().get(join(iid, Schema.Property.LABEL.infix().key()))),
+                  getScope(graph, iid));
+        }
+
+        @Nullable
+        private static String getScope(Graph.Type graph, byte[] iid) {
+            byte[] scopeBytes = graph.storage().get(join(iid, Schema.Property.SCOPE.infix().key()));
+            if (scopeBytes != null) return new String(scopeBytes);
+            else return null;
         }
 
         @Override
@@ -255,10 +287,21 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, TypeVertex, 
 
         @Override
         public TypeVertex label(String label) {
-            graph.update(this, label);
+            graph.update(this, this.label, scope, label, scope);
             graph.storage().put(join(iid, Schema.Property.LABEL.infix().key()), label.getBytes());
-            graph.storage().put(join(Schema.Index.TYPE.prefix().key(), label.getBytes()), iid);
+            graph.storage().delete(index(this.label, scope));
+            graph.storage().put(index(label, scope), iid);
             this.label = label;
+            return this;
+        }
+
+        @Override
+        public TypeVertex scope(String scope) {
+            graph.update(this, label, this.scope, label, scope);
+            graph.storage().put(join(iid, Schema.Property.SCOPE.infix().key()), scope.getBytes());
+            graph.storage().delete(index(label, this.scope));
+            graph.storage().put(index(label, scope), iid);
+            this.scope = scope;
             return this;
         }
 
@@ -311,7 +354,7 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, TypeVertex, 
             ins.deleteAll();
             outs.deleteAll();
             graph.delete(this);
-            graph.storage().delete(index(label));
+            graph.storage().delete(index());
             Iterator<byte[]> keys = graph.storage().iterate(iid, (iid, value) -> iid);
             while (keys.hasNext()) graph.storage().delete(keys.next());
         }

@@ -34,9 +34,9 @@ options:
 
 dependencies:
 
-  org.rocksdb:
-    rocksdbjni:
-      version: "6.6.4"
+  com.google.code.findbugs:
+    jsr305:
+      version: "3.0.2"
       lang: java
 
   io.cucumber:
@@ -50,4 +50,9 @@ dependencies:
   junit:
     junit:
       version: "4.12"
+      lang: java
+
+  org.rocksdb:
+    rocksdbjni:
+      version: "6.6.4"
       lang: java

@@ -30,6 +30,9 @@ java_library(
     deps = [
         # Internal Package Dependencies
         "//common:common",
+
+        # External Maven Dependencies
+        "//dependencies/maven/artifacts/com/google/code/findbugs:jsr305",
     ]
 )
 

@@ -66,7 +66,7 @@ public class Schema {
     public enum Prefix {
         INDEX_TYPE(0),
         INDEX_VALUE(5),
-        VERTEX_TYPE(10),
+        VERTEX_THING_TYPE(10),
         VERTEX_ENTITY_TYPE(20),
         VERTEX_ATTRIBUTE_TYPE(30),
         VERTEX_RELATION_TYPE(40),
@@ -97,13 +97,14 @@ public class Schema {
      */
     public enum Infix {
         PROPERTY_LABEL(0),
-        PROPERTY_ABSTRACT(1),
-        PROPERTY_DATATYPE(2),
-        PROPERTY_REGEX(3),
-        PROPERTY_VALUE(4),
-        PROPERTY_VALUE_REF(5),
-        PROPERTY_WHEN(6),
-        PROPERTY_THEN(7),
+        PROPERTY_SCOPE(1),
+        PROPERTY_ABSTRACT(2),
+        PROPERTY_DATATYPE(3),
+        PROPERTY_REGEX(4),
+        PROPERTY_VALUE(5),
+        PROPERTY_VALUE_REF(6),
+        PROPERTY_WHEN(7),
+        PROPERTY_THEN(8),
         EDGE_SUB_OUT(20),
         EDGE_SUB_IN(-20),
         EDGE_KEY_OUT(30),
@@ -139,7 +140,7 @@ public class Schema {
             this.prefix = prefix;
         }
 
-        public Prefix prefix(){
+        public Prefix prefix() {
             return prefix;
         }
     }
@@ -150,6 +151,7 @@ public class Schema {
         PERSISTED(2);
 
         private int status;
+
         Status(int status) {
             this.status = status;
         }
@@ -161,6 +163,7 @@ public class Schema {
 
     public enum Property {
         LABEL(Infix.PROPERTY_LABEL),
+        SCOPE(Infix.PROPERTY_SCOPE),
         ABSTRACT(Infix.PROPERTY_ABSTRACT),
         DATATYPE(Infix.PROPERTY_DATATYPE),
         REGEX(Infix.PROPERTY_REGEX),
@@ -179,6 +182,7 @@ public class Schema {
             return infix;
         }
     }
+
     public enum DataType {
         LONG(0),
         DOUBLE(2),
@@ -224,6 +228,7 @@ public class Schema {
                 return prefix;
             }
         }
+
         enum Rule implements Vertex {
             RULE(Prefix.VERTEX_RULE);
 
@@ -240,7 +245,7 @@ public class Schema {
         }
 
         enum Type implements Vertex {
-            TYPE(Prefix.VERTEX_TYPE, Root.THING),
+            THING_TYPE(Prefix.VERTEX_THING_TYPE, Root.THING),
             ENTITY_TYPE(Prefix.VERTEX_ENTITY_TYPE, Root.ENTITY),
             ATTRIBUTE_TYPE(Prefix.VERTEX_ATTRIBUTE_TYPE, Root.ATTRIBUTE),
             RELATION_TYPE(Prefix.VERTEX_RELATION_TYPE, Root.RELATION),

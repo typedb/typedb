@@ -24,6 +24,7 @@ import hypergraph.graph.vertex.ThingVertex;
 import hypergraph.graph.vertex.TypeVertex;
 import hypergraph.graph.vertex.Vertex;
 
+import javax.annotation.Nullable;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -94,16 +95,16 @@ public class Graph {
         }
 
         private void initialise() {
-            TypeVertex rootType = put(Schema.Vertex.Type.TYPE, Schema.Vertex.Type.Root.THING.label()).setAbstract(true);
+            TypeVertex rootThingType = put(Schema.Vertex.Type.THING_TYPE, Schema.Vertex.Type.Root.THING.label()).setAbstract(true);
             TypeVertex rootEntityType = put(Schema.Vertex.Type.ENTITY_TYPE, Schema.Vertex.Type.Root.ENTITY.label()).setAbstract(true);
             TypeVertex rootAttributeType = put(Schema.Vertex.Type.ATTRIBUTE_TYPE, Schema.Vertex.Type.Root.ATTRIBUTE.label()).setAbstract(true);
             TypeVertex rootRelationType = put(Schema.Vertex.Type.RELATION_TYPE, Schema.Vertex.Type.Root.RELATION.label()).setAbstract(true);
             TypeVertex rootRoleType = put(Schema.Vertex.Type.ROLE_TYPE, Schema.Vertex.Type.Root.ROLE.label()).setAbstract(true);
 
-            rootEntityType.outs().put(Schema.Edge.Type.SUB, rootType);
-            rootAttributeType.outs().put(Schema.Edge.Type.SUB, rootType);
-            rootRelationType.outs().put(Schema.Edge.Type.SUB, rootType);
-            rootRoleType.outs().put(Schema.Edge.Type.SUB, rootType);
+            rootEntityType.outs().put(Schema.Edge.Type.SUB, rootThingType);
+            rootAttributeType.outs().put(Schema.Edge.Type.SUB, rootThingType);
+            rootRelationType.outs().put(Schema.Edge.Type.SUB, rootThingType);
+            rootRoleType.outs().put(Schema.Edge.Type.SUB, rootThingType);
         }
 
         public void commit() {
@@ -114,13 +115,15 @@ public class Graph {
             clear(); // we now flush the indexes after commit, and we do not expect this Graph.Type to be used again
         }
 
-        public TypeVertex update(TypeVertex vertex, String newLabel) {
+        public TypeVertex update(TypeVertex vertex, String oldLabel, @Nullable String oldScope, String newLabel, @Nullable String newScope) {
+            String oldScopedLabel = TypeVertex.scopedLabel(oldLabel, oldScope);
+            String newScopedLabel = TypeVertex.scopedLabel(newLabel, newScope);
             try {
                 multiLabelLock.lockWrite();
-                if (typeByLabel.containsKey(newLabel)) throw new HypergraphException(
-                        String.format("Invalid Write Operation: label '%s' is already in use", newLabel));
-                typeByLabel.remove(vertex.label());
-                typeByLabel.put(newLabel, vertex);
+                if (typeByLabel.containsKey(newScopedLabel)) throw new HypergraphException(
+                        String.format("Invalid Write Operation: index '%s' is already in use", newScopedLabel));
+                typeByLabel.remove(oldScopedLabel);
+                typeByLabel.put(newScopedLabel, vertex);
                 return vertex;
             } catch (InterruptedException e) {
                 throw new HypergraphException(e);
@@ -130,42 +133,52 @@ public class Graph {
         }
 
         public TypeVertex put(Schema.Vertex.Type type, String label) {
+            return put(type, label, null);
+        }
+
+        public TypeVertex put(Schema.Vertex.Type type, String label, @Nullable String scope) {
+            String scopedLabel = TypeVertex.scopedLabel(label, scope);
             try { // we intentionally use READ on multiLabelLock, as put() only concerns one label
                 multiLabelLock.lockRead();
-                singleLabelLocks.computeIfAbsent(label, x -> new ManagedReadWriteLock()).lockWrite();
+                singleLabelLocks.computeIfAbsent(scopedLabel, x -> new ManagedReadWriteLock()).lockWrite();
 
                 TypeVertex typeVertex = typeByLabel.computeIfAbsent(
-                        label, l -> new TypeVertex.Buffered(this, type, TypeVertex.generateIID(keyGenerator, type), l)
+                        scopedLabel, i -> new TypeVertex.Buffered(this, type, TypeVertex.generateIID(keyGenerator, type), label, scope)
                 );
                 typeByIID.put(typeVertex.iid(), typeVertex);
                 return typeVertex;
             } catch (InterruptedException e) {
                 throw new HypergraphException(e);
             } finally {
-                singleLabelLocks.get(label).unlockWrite();
+                singleLabelLocks.get(scopedLabel).unlockWrite();
                 multiLabelLock.unlockRead();
             }
         }
 
         public TypeVertex get(String label) {
+            return get(label, null);
+        }
+
+        public TypeVertex get(String label, @Nullable String scope) {
+            String scopedLabel = TypeVertex.scopedLabel(label, scope);
             try {
                 multiLabelLock.lockRead();
-                singleLabelLocks.computeIfAbsent(label, x -> new ManagedReadWriteLock()).lockRead();
+                singleLabelLocks.computeIfAbsent(scopedLabel, x -> new ManagedReadWriteLock()).lockRead();
 
-                TypeVertex vertex = typeByLabel.get(label);
+                TypeVertex vertex = typeByLabel.get(scopedLabel);
                 if (vertex != null) return vertex;
 
-                byte[] iid = storage.get(TypeVertex.index(label));
+                byte[] iid = storage.get(TypeVertex.index(label, scope));
                 if (iid != null) {
-                    vertex = typeByIID.computeIfAbsent(iid, x -> new TypeVertex.Persisted(this, x, label));
-                    typeByLabel.putIfAbsent(label, vertex);
+                    vertex = typeByIID.computeIfAbsent(iid, x -> new TypeVertex.Persisted(this, x, label, scope));
+                    typeByLabel.putIfAbsent(scopedLabel, vertex);
                 }
 
                 return vertex;
             } catch (InterruptedException e) {
                 throw new HypergraphException(e);
             } finally {
-                singleLabelLocks.get(label).unlockRead();
+                singleLabelLocks.get(scopedLabel).unlockRead();
                 multiLabelLock.unlockRead();
             }
         }
@@ -174,8 +187,8 @@ public class Graph {
             TypeVertex vertex = typeByIID.get(iid);
             if (vertex != null) return vertex;
 
-            vertex = typeByIID.computeIfAbsent(iid, x -> new TypeVertex.Persisted(this, x));
-            typeByLabel.putIfAbsent(vertex.label(), vertex);
+            vertex = typeByIID.computeIfAbsent(iid, i -> new TypeVertex.Persisted(this, i));
+            typeByLabel.putIfAbsent(vertex.scopedLabel(), vertex);
 
             return vertex;
         }
@@ -183,14 +196,14 @@ public class Graph {
         public void delete(TypeVertex vertex) {
             try { // we intentionally use READ on multiLabelLock, as delete() only concerns one label
                 multiLabelLock.lockRead();
-                singleLabelLocks.computeIfAbsent(vertex.label(), x -> new ManagedReadWriteLock()).lockWrite();
+                singleLabelLocks.computeIfAbsent(vertex.scopedLabel(), x -> new ManagedReadWriteLock()).lockWrite();
 
-                typeByLabel.remove(vertex.label());
+                typeByLabel.remove(vertex.scopedLabel());
                 typeByIID.remove(vertex.iid());
             } catch (InterruptedException e) {
                 throw new HypergraphException(e);
             } finally {
-                singleLabelLocks.get(vertex.label()).unlockWrite();
+                singleLabelLocks.get(vertex.scopedLabel()).unlockWrite();
                 multiLabelLock.unlockRead();
             }
         }
