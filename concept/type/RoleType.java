@@ -30,8 +30,8 @@ public class RoleType extends Type<RoleType> {
         else return new RoleType(vertex);
     }
 
-    public static RoleType of(Graph.Type graph, String label) {
-        return new RoleType(graph, label);
+    public static RoleType of(Graph.Type graph, String label, String relation) {
+        return new RoleType(graph, label, relation);
     }
 
     private RoleType(TypeVertex vertex) {
@@ -43,13 +43,13 @@ public class RoleType extends Type<RoleType> {
         }
     }
 
-    private RoleType(Graph.Type graph, String label) {
-        super(graph, label, Schema.Vertex.Type.ROLE_TYPE);
+    private RoleType(Graph.Type graph, String label, String relation) {
+        super(graph, label, Schema.Vertex.Type.ROLE_TYPE, relation);
     }
 
     @Override
     RoleType newInstance(TypeVertex vertex) {
-        return new RoleType(vertex);
+        return of(vertex);
     }
 
     public static class Root extends RoleType {

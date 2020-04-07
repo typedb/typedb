@@ -199,28 +199,33 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, TypeVertex, 
 
         void commitProperties() {
             commitPropertyLabel();
+            if (scope != null) commitPropertyScope();
             if (isAbstract != null && isAbstract) commitPropertyAbstract();
             if (dataType != null) commitPropertyDataType();
             if (regex != null && !regex.isEmpty()) commitPropertyRegex();
         }
 
-        void commitPropertyAbstract() {
+        private void commitPropertyScope() {
+            graph.storage().put(join(iid, Schema.Property.SCOPE.infix().key()), scope.getBytes());
+        }
+
+        private void commitPropertyAbstract() {
             graph.storage().put(join(iid, Schema.Property.ABSTRACT.infix().key()));
         }
 
-        void commitPropertyLabel() {
+        private void commitPropertyLabel() {
             graph.storage().put(join(iid, Schema.Property.LABEL.infix().key()), label.getBytes());
         }
 
-        void commitPropertyDataType() {
+        private void commitPropertyDataType() {
             graph.storage().put(join(iid, Schema.Property.DATATYPE.infix().key()), dataType.value());
         }
 
-        void commitPropertyRegex() {
+        private void commitPropertyRegex() {
             graph.storage().put(join(iid, Schema.Property.REGEX.infix().key()), regex.getBytes());
         }
 
-        void commitEdges() {
+        private void commitEdges() {
             outs.forEach(Edge::commit);
             ins.forEach(Edge::commit);
         }

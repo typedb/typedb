@@ -54,6 +54,25 @@ public class Parameters {
         }
     }
 
+    public static class ScopedLabel {
+        private final String scope;
+        private final String role;
+
+        ScopedLabel(String scope, String role) {
+            this.scope = scope;
+            this.role = role;
+        }
+
+        public String scope() {
+            return scope;
+        }
+
+        public String role() {
+            return role;
+        }
+    }
+
+
     @ParameterType("true|false")
     public Boolean bool(String bool) {
         return Boolean.parseBoolean(bool);
@@ -72,6 +91,12 @@ public class Parameters {
     @ParameterType("[a-zA-Z0-9-_]+")
     public String type_label(String typeLabel) {
         return typeLabel;
+    }
+
+    @ParameterType("[a-zA-Z0-9-_]+:[a-zA-Z0-9-_]+")
+    public ScopedLabel scoped_label(String roleLabel) {
+        String[] labels = roleLabel.split(":");
+        return new ScopedLabel(labels[0], labels[1]);
     }
 
     @ParameterType("read|write")

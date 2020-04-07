@@ -18,6 +18,8 @@
 
 package hypergraph.graph;
 
+import javax.annotation.Nullable;
+
 public class Schema {
 
     public enum Key {
@@ -282,16 +284,26 @@ public class Schema {
                 ENTITY("entity"),
                 ATTRIBUTE("attribute"),
                 RELATION("relation"),
-                ROLE("role");
+                ROLE("role", "relation");
 
                 private final String label;
+                private final String scope;
 
                 Root(String label) {
+                    this(label, null);
+                }
+
+                Root(String label, @Nullable String scope) {
                     this.label = label;
+                    this.scope = scope;
                 }
 
                 public String label() {
                     return label;
+                }
+
+                public String scope() {
+                    return scope;
                 }
             }
         }

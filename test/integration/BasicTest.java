@@ -22,6 +22,7 @@ import hypergraph.Hypergraph;
 import hypergraph.concept.type.AttributeType;
 import hypergraph.concept.type.EntityType;
 import hypergraph.concept.type.RelationType;
+import hypergraph.concept.type.RoleType;
 import hypergraph.concept.type.ThingType;
 import hypergraph.core.CoreHypergraph;
 import org.junit.Test;
@@ -261,6 +262,25 @@ public class BasicTest {
     private static void nulls(Object... objects) {
         for (Object object : objects) {
             assertNull(object);
+        }
+    }
+
+    @Test
+    public void debug() throws IOException {
+        resetDirectory();
+
+        try (Hypergraph graph = CoreHypergraph.open(directory.toString())) {
+            graph.keyspaces().create("my_data_keyspace");
+            try (Hypergraph.Session session = graph.session("my_data_keyspace")) {
+                try (Hypergraph.Transaction transaction = session.transaction(Hypergraph.Transaction.Type.WRITE)) {
+                    RelationType marriage = transaction.concepts().putRelationType("marriage");
+                    marriage.relates("husband");
+                    RoleType rootRole = transaction.concepts().getRootRelationType().roles().findFirst().get();
+                    RoleType actualSup = marriage.role("husband").sup();
+                    assertEquals(rootRole, actualSup);
+                    transaction.commit();
+                }
+            }
         }
     }
 }

@@ -42,8 +42,12 @@ public abstract class Type<TYPE extends Type> {
     }
 
     Type(Graph.Type graph, String label, Schema.Vertex.Type schema) {
-        this.vertex = graph.put(schema, label);
-        TypeVertex superTypeVertex = graph.get(schema.root().label());
+        this(graph, label, schema, null);
+    }
+
+    Type(Graph.Type graph, String label, Schema.Vertex.Type schema, String scope) {
+        this.vertex = graph.put(schema, label, scope);
+        TypeVertex superTypeVertex = graph.get(schema.root().label(), schema.root().scope());
         vertex.outs().put(Schema.Edge.Type.SUB, superTypeVertex);
         superType = newInstance(superTypeVertex);
     }
@@ -108,7 +112,7 @@ public abstract class Type<TYPE extends Type> {
     public boolean equals(Object object) {
         if (this == object) return true;
         if (object == null || getClass() != object.getClass()) return false;
-        ThingType that = (ThingType) object;
+        Type<?> that = (Type<?>) object;
         return this.vertex.equals(that.vertex);
     }
 
