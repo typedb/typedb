@@ -252,18 +252,20 @@ public class SemanticDifferenceIT {
             ReasonerAtomicQuery parent = reasonerQueryFactory.atomic(conjunction(parentPattern));
             ReasonerAtomicQuery child = reasonerQueryFactory.atomic(conjunction(childPattern));
 
+            // this is
             Set<Pair<Unifier, SemanticDifference>> semanticPairs = parent.getMultiUnifierWithSemanticDiff(child);
-            Pair<Unifier, SemanticDifference> semanticPair = Iterables.getOnlyElement(semanticPairs);
 
-            SemanticDifference expected = new SemanticDifference(
-                    ImmutableSet.of(
-                            new VariableDefinition(new Variable("z"), null, null, Sets.newHashSet(subRole1, subRole2), new HashSet<>())
-                    )
-            );
-            assertEquals(expected, semanticPair.second());
-            Set<ConceptMap> childAnswers = tx.stream(child.getQuery(), false).collect(Collectors.toSet());
-            Set<ConceptMap> propagatedAnswers = projectAnswersToChild(tx, child, parent, semanticPair.first(), semanticPair.second());
-            assertCollectionsEqual(propagatedAnswers + "\n!=\n" + childAnswers + "\n", childAnswers, propagatedAnswers);
+            for (Pair<Unifier, SemanticDifference> semanticPair : semanticPairs) {
+                SemanticDifference expected = new SemanticDifference(
+                        ImmutableSet.of(
+                                new VariableDefinition(new Variable("z"), null, null, Sets.newHashSet(subRole1, subRole2), new HashSet<>())
+                        )
+                );
+                assertEquals(expected, semanticPair.second());
+                Set<ConceptMap> childAnswers = tx.stream(child.getQuery(), false).collect(Collectors.toSet());
+                Set<ConceptMap> propagatedAnswers = projectAnswersToChild(tx, child, parent, semanticPair.first(), semanticPair.second());
+                assertCollectionsEqual(propagatedAnswers + "\n!=\n" + childAnswers + "\n", childAnswers, propagatedAnswers);
+            }
         }
     }
 
