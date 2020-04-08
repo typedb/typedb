@@ -71,6 +71,12 @@ public class RelationType extends ThingType<RelationType> {
         vertex.outs().get(Schema.Edge.Type.RELATES).forEachRemaining(v -> v.scope(label));
     }
 
+    @Override
+    public void setAbstract(boolean isAbstract) {
+        vertex.setAbstract(isAbstract);
+        vertex.outs().get(Schema.Edge.Type.RELATES).forEachRemaining(v -> v.setAbstract(isAbstract));
+    }
+
     public RelationType.Builder relates(String roleLabel) {
         TypeVertex roleTypeVertex = vertex.graph().get(roleLabel, vertex.label());
         if (roleTypeVertex != null) {
