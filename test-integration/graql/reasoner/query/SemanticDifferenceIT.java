@@ -252,7 +252,7 @@ public class SemanticDifferenceIT {
             ReasonerAtomicQuery parent = reasonerQueryFactory.atomic(conjunction(parentPattern));
             ReasonerAtomicQuery child = reasonerQueryFactory.atomic(conjunction(childPattern));
 
-            // this is
+            // uses STRUCTURAL_SUBSUMPTIVE, so we have two different unifiers from role - role and role - role2 (the role vars are not distinct, so any combination possible)
             Set<Pair<Unifier, SemanticDifference>> semanticPairs = parent.getMultiUnifierWithSemanticDiff(child);
 
             for (Pair<Unifier, SemanticDifference> semanticPair : semanticPairs) {
