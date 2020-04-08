@@ -617,16 +617,16 @@ public class ReasoningIT {
         try (Session session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "appendingRPs.gql", session);
             try (Transaction tx = session.readTransaction()) {
-                Stream<ConceptMap> answers = tx.stream(Graql.parse("match " +
+                List<ConceptMap> answers = tx.execute(Graql.parse("match " +
                         "$r (anotherRole: $x, anotherRole: $x) isa baseRelation;get;").asGet());
+                assertEquals(1, answers.size());
                 answers.forEach(answer -> {
                     Relation baseRelation = answer.get("r").asRelation();
                     Thing player = answer.get("x").asThing();
-
                     List<Thing> identicalRolePlayers = baseRelation.rolePlayers(tx.getRole("anotherRole"))
                             .filter(thing -> thing.equals(player))
                             .collect(Collectors.toList());
-                    assertTrue(identicalRolePlayers.size() >= 2);
+                    assertTrue(identicalRolePlayers.size() == 2);
                 });
             }
         }
@@ -654,7 +654,6 @@ public class ReasoningIT {
 
             try (Transaction tx = session.writeTransaction()) {
                 List<ConceptMap> answers = tx.execute(Graql.parse("match $r (anotherRole: $x, anotherRole: $y) isa baseRelation; get;").asGet());
-                System.out.println(answers);
                 assertEquals(2, answers.size());
             }
         }
