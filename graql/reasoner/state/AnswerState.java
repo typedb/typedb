@@ -22,6 +22,7 @@ import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.rule.InferenceRule;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
 import java.util.Objects;
+import javax.annotation.CheckReturnValue;
 
 /**
  *
@@ -75,7 +76,9 @@ public class AnswerState extends ResolutionState {
         return getParentState().propagateAnswer(this);
     }
 
-    InferenceRule getRule(){ return rule;}
+    @CheckReturnValue
+    public InferenceRule getRule(){ return rule;}
 
-    Unifier getUnifier(){ return unifier;}
+    @CheckReturnValue
+    public Unifier getUnifier(){ return unifier;}
 }

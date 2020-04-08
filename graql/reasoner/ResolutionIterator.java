@@ -78,12 +78,12 @@ public class ResolutionIterator extends ReasonerQueryIterator {
 
             ResolutionState newState = state.generateChildState();
             if (newState != null) {
-                if (LOG.isTraceEnabled()) logTree.addState(newState);
+                if (LOG.isDebugEnabled()) logTree.addState(newState, state);
 
                 if (!state.isAnswerState()) states.push(state);
                 states.push(newState);
             } else {
-                if (LOG.isTraceEnabled()) {
+                if (LOG.isDebugEnabled()) {
                     Node node = logTree.getNode(state);
                     if (node != null) node.ackCompletion();
                 }
@@ -149,6 +149,6 @@ public class ResolutionIterator extends ReasonerQueryIterator {
         subGoals.forEach(queryCache::ackCompleteness);
         queryCache.propagateAnswers();
 
-        if (LOG.isTraceEnabled()) logTree.outputToFile();
+        if (LOG.isDebugEnabled()) logTree.outputToFile();
     }
 }

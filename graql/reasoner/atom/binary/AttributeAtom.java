@@ -216,7 +216,9 @@ public class AttributeAtom extends Atom{
         AttributeAtom a2 = (AttributeAtom) obj;
         return Objects.equals(this.getTypeLabel(), a2.getTypeLabel())
                 && this.getVarName().equals(a2.getVarName())
+                && this.getAttributeVariable().equals(a2.getAttributeVariable())
                 && this.multiPredicateEqual(a2);
+
     }
 
     @Override
@@ -250,6 +252,7 @@ public class AttributeAtom extends Atom{
     public final int hashCode() {
         int hashCode = this.alphaEquivalenceHashCode();
         hashCode = hashCode * 37 + this.getVarName().hashCode();
+        hashCode = hashCode * 37 + this.getAttributeVariable().hashCode();
         return hashCode;
     }
 

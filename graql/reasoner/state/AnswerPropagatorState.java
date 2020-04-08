@@ -20,6 +20,7 @@ package grakn.core.graql.reasoner.state;
 
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
+import grakn.core.graql.reasoner.query.ReasonerQueryEquivalence;
 import grakn.core.graql.reasoner.query.ResolvableQuery;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
 import java.util.Iterator;
@@ -67,7 +68,7 @@ public abstract class AnswerPropagatorState<Q extends ResolvableQuery> extends R
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         AnswerPropagatorState<?> that = (AnswerPropagatorState<?>) o;
-        return Objects.equals(query, that.query) &&
+        return ReasonerQueryEquivalence.Equality.equivalent(query, that.query) &&
                 Objects.equals(getSubstitution(), that.getSubstitution()) &&
                 Objects.equals(unifier, that.unifier);
     }

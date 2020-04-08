@@ -26,8 +26,10 @@ import grakn.core.concept.answer.ConceptSetMeasure;
 import grakn.core.concept.answer.Explanation;
 import grakn.core.concept.answer.Numeric;
 import grakn.core.concept.answer.Void;
+import grakn.core.graql.reasoner.explanation.RuleExplanation;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.ConceptId;
+import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.structure.PropertyNotUniqueException;
 import grakn.core.kb.graql.exception.GraqlSemanticException;
 import grakn.core.kb.server.exception.GraknServerException;
@@ -141,6 +143,13 @@ public class ResponseBuilder {
             AnswerProto.Explanation.Res.Builder explanationBuilder = AnswerProto.Explanation.Res.newBuilder()
                     .addAllExplanation(explanation.getAnswers().stream().map(Answer::conceptMap)
                             .collect(Collectors.toList()));
+
+            if (explanation.isRuleExplanation()) {
+                Rule rule = ((RuleExplanation) explanation).getRule();
+                ConceptProto.Concept ruleProto = Concept.concept(rule);
+                explanationBuilder.setRule(ruleProto);
+            }
+
             res.setExplanationRes(explanationBuilder.build());
             return res.build();
         }
@@ -317,9 +326,12 @@ public class ResponseBuilder {
                 conceptMapProto.putMap(var.name(), conceptProto);
             });
 
+            if (answer.getPattern() != null) {
+                conceptMapProto.setPattern(answer.getPattern().toString());
+            }
+
             if (answer.explanation() != null && !answer.explanation().isEmpty()) {
                 conceptMapProto.setHasExplanation(true);
-                conceptMapProto.setPattern(answer.getPattern().toString());
             } else {
                 conceptMapProto.setHasExplanation(false);
             }
