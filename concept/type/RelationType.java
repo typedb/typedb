@@ -68,13 +68,13 @@ public class RelationType extends ThingType<RelationType> {
     @Override
     public void label(String label) {
         vertex.label(label);
-        vertex.outs().get(Schema.Edge.Type.RELATES).forEachRemaining(v -> v.scope(label));
+        vertex.outs().edge(Schema.Edge.Type.RELATES).to().forEachRemaining(v -> v.scope(label));
     }
 
     @Override
     public void setAbstract(boolean isAbstract) {
         vertex.setAbstract(isAbstract);
-        vertex.outs().get(Schema.Edge.Type.RELATES).forEachRemaining(v -> v.setAbstract(isAbstract));
+        vertex.outs().edge(Schema.Edge.Type.RELATES).to().forEachRemaining(v -> v.setAbstract(isAbstract));
     }
 
     public RelationType.Builder relates(String roleLabel) {
@@ -89,7 +89,7 @@ public class RelationType extends ThingType<RelationType> {
     }
 
     public Stream<RoleType> roles() {
-        Iterator<RoleType> iterator = Iterators.apply(vertex.outs().get(Schema.Edge.Type.RELATES), RoleType::of);
+        Iterator<RoleType> iterator = Iterators.apply(vertex.outs().edge(Schema.Edge.Type.RELATES).to(), RoleType::of);
         if (sup() == null) {
             return stream(spliteratorUnknownSize(iterator, ORDERED | IMMUTABLE), false);
         } else {

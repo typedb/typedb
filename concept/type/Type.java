@@ -79,7 +79,7 @@ public abstract class Type<TYPE extends Type> {
     public TYPE sup() {
         if (superType != null) return superType;
 
-        Iterator<TypeVertex> iterator = Iterators.filter(vertex.outs().get(Schema.Edge.Type.SUB),
+        Iterator<TypeVertex> iterator = Iterators.filter(vertex.outs().edge(Schema.Edge.Type.SUB).to(),
                                                          v -> v.schema().equals(vertex.schema()));
         if (iterator.hasNext()) superType = newInstance(iterator.next());
         return superType;
@@ -90,7 +90,7 @@ public abstract class Type<TYPE extends Type> {
                 vertex,
                 v -> v != null && v.schema().equals(this.vertex.schema()),
                 v -> {
-                    Iterator<TypeVertex> p = v.outs().get(Schema.Edge.Type.SUB);
+                    Iterator<TypeVertex> p = v.outs().edge(Schema.Edge.Type.SUB).to();
                     if (p.hasNext()) return p.next();
                     else return null;
                 }).apply(this::newInstance);
@@ -99,7 +99,7 @@ public abstract class Type<TYPE extends Type> {
     }
 
     public Stream<TYPE> subs() {
-        Iterator<TYPE> sups = Iterators.tree(vertex, v -> v.ins().get(Schema.Edge.Type.SUB)).apply(this::newInstance);
+        Iterator<TYPE> sups = Iterators.tree(vertex, v -> v.ins().edge(Schema.Edge.Type.SUB).from()).apply(this::newInstance);
         return stream(spliteratorUnknownSize(sups, ORDERED), false);
     }
 

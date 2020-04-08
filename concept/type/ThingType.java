@@ -50,7 +50,7 @@ public abstract class ThingType<TYPE extends ThingType> extends Type<TYPE> {
     }
 
     public void key(AttributeType attributeType) {
-        if (filter(vertex.outs().get(Schema.Edge.Type.HAS), v -> v.equals(attributeType.vertex)).hasNext()) {
+        if (filter(vertex.outs().edge(Schema.Edge.Type.HAS).to(), v -> v.equals(attributeType.vertex)).hasNext()) {
             throw new HypergraphException("Invalid Key Assignment: " + attributeType.label() +
                                                   " is already used as an attribute");
         }
@@ -63,12 +63,12 @@ public abstract class ThingType<TYPE extends ThingType> extends Type<TYPE> {
     }
 
     public Stream<AttributeType> keys() {
-        Iterator<AttributeType> keys = apply(vertex.outs().get(Schema.Edge.Type.KEY), AttributeType::of);
+        Iterator<AttributeType> keys = apply(vertex.outs().edge(Schema.Edge.Type.KEY).to(), AttributeType::of);
         return stream(spliteratorUnknownSize(keys, ORDERED | IMMUTABLE), false);
     }
 
     public void has(AttributeType attributeType) {
-        if (filter(vertex.outs().get(Schema.Edge.Type.KEY), v -> v.equals(attributeType.vertex)).hasNext()) {
+        if (filter(vertex.outs().edge(Schema.Edge.Type.KEY).to(), v -> v.equals(attributeType.vertex)).hasNext()) {
             throw new HypergraphException("Invalid Attribute Assignment: " + attributeType.label() +
                                                   " is already used as a Key");
         }
@@ -81,8 +81,8 @@ public abstract class ThingType<TYPE extends ThingType> extends Type<TYPE> {
     }
 
     public Stream<AttributeType> attributes() {
-        Iterator<AttributeType> attributes = link(vertex.outs().get(Schema.Edge.Type.KEY),
-                                                  vertex.outs().get(Schema.Edge.Type.HAS)).apply(AttributeType::of);
+        Iterator<AttributeType> attributes = link(vertex.outs().edge(Schema.Edge.Type.KEY).to(),
+                                                  vertex.outs().edge(Schema.Edge.Type.HAS).to()).apply(AttributeType::of);
         return stream(spliteratorUnknownSize(attributes, ORDERED | IMMUTABLE), false);
     }
 

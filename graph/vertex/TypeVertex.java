@@ -29,11 +29,12 @@ import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static hypergraph.common.collection.ByteArrays.join;
+import static hypergraph.common.iterator.Iterators.link;
 
 public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, TypeVertex, Schema.Edge.Type, TypeEdge> {
 
@@ -119,6 +120,17 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, TypeVertex, 
         @Override
         protected void deleteAll() {
             for (Schema.Edge.Type schema : Schema.Edge.Type.values()) delete(schema);
+        }
+
+        public class TypeVertexIterator extends DirectedEdges.VertexIterator<TypeVertex, TypeEdge> {
+
+            TypeVertexIterator(Iterator<TypeEdge> edgeIterator) {
+                super(edgeIterator);
+            }
+
+            public Iterator<TypeVertex> overridden() {
+                return Iterators.apply(edgeIterator, TypeEdge::overridden);
+            }
         }
     }
 
@@ -237,10 +249,10 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, TypeVertex, 
             }
 
             @Override
-            public Iterator<TypeVertex> get(Schema.Edge.Type schema) {
-                Function<TypeEdge, TypeVertex> vertexFn = direction.isOut() ? Edge::to : Edge::from;
-                if (edges.get(schema) != null) return Iterators.apply(edges.get(schema).iterator(), vertexFn);
-                return Collections.emptyIterator();
+            public TypeVertexIterator edge(Schema.Edge.Type schema) {
+                Set<TypeEdge> t;
+                if ((t = edges.get(schema)) != null) return new TypeVertexIterator(t.iterator());
+                return new TypeVertexIterator(Collections.emptyIterator());
             }
 
             @Override
@@ -376,18 +388,17 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, TypeVertex, 
             }
 
             @Override
-            public Iterator<TypeVertex> get(Schema.Edge.Type schema) {
-                Schema.Infix edgeInfix = direction.isOut() ? schema.out() : schema.in();
-                Function<TypeEdge, TypeVertex> vertexFn = direction.isOut() ? Edge::to : Edge::from;
-
+            public TypeVertexIterator edge(Schema.Edge.Type schema) {
                 Iterator<TypeEdge> storageIterator = graph.storage().iterate(
-                        join(iid, edgeInfix.key()),
+                        join(iid, direction.isOut() ? schema.out().key() : schema.in().key()),
                         (iid, value) -> new TypeEdge.Persisted(graph, iid)
                 );
 
-                if (edges.get(schema) != null) return Iterators.link(edges.get(schema).iterator(),
-                                                                     storageIterator).apply(vertexFn);
-                else return Iterators.apply(storageIterator, vertexFn);
+                if (edges.get(schema) == null) {
+                    return new TypeVertexIterator(storageIterator);
+                } else {
+                    return new TypeVertexIterator(link(edges.get(schema).iterator(), storageIterator));
+                }
             }
 
             @Override

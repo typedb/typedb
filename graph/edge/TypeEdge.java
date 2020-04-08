@@ -38,6 +38,8 @@ public abstract class TypeEdge extends Edge<Schema.Edge.Type, TypeVertex> {
         this.graph = graph;
     }
 
+    public abstract TypeVertex overridden();
+
     public static class Buffered extends TypeEdge {
 
         private AtomicBoolean committed;
@@ -74,6 +76,11 @@ public abstract class TypeEdge extends Edge<Schema.Edge.Type, TypeVertex> {
         @Override
         public TypeVertex to() {
             return to;
+        }
+
+        @Override
+        public TypeVertex overridden() {
+            return null;
         }
 
         @Override
@@ -166,6 +173,11 @@ public abstract class TypeEdge extends Edge<Schema.Edge.Type, TypeVertex> {
             to = graph.get(toIID);
             to.ins().putNonRecursive(this);
             return to;
+        }
+
+        @Override
+        public TypeVertex overridden() {
+            return null;
         }
 
         @Override

@@ -18,6 +18,7 @@
 
 package hypergraph.graph.vertex;
 
+import hypergraph.common.iterator.Iterators;
 import hypergraph.graph.Schema;
 import hypergraph.graph.edge.Edge;
 
@@ -126,7 +127,24 @@ public abstract class Vertex<
             edges = new ConcurrentHashMap<>();
         }
 
-        public abstract Iterator<DIR_VERTEX> get(DIR_EDGE_SCHEMA schema);
+        public static class VertexIterator<ITER_VERTEX extends Vertex, ITER_EDGE extends Edge<?, ITER_VERTEX>> {
+
+            protected final Iterator<ITER_EDGE> edgeIterator;
+
+            VertexIterator(Iterator<ITER_EDGE> edgeIterator) {
+                this.edgeIterator = edgeIterator;
+            }
+
+            public Iterator<ITER_VERTEX> to() {
+                return Iterators.apply(edgeIterator, Edge::to);
+            }
+
+            public Iterator<ITER_VERTEX> from() {
+                return Iterators.apply(edgeIterator, Edge::from);
+            }
+        }
+
+        public abstract VertexIterator<DIR_VERTEX, DIR_EDGE> edge(DIR_EDGE_SCHEMA schema);
 
         public abstract void put(DIR_EDGE_SCHEMA schema, DIR_VERTEX to);
 
