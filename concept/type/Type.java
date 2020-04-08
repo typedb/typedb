@@ -54,6 +54,10 @@ public abstract class Type<TYPE extends Type> {
 
     abstract TYPE newInstance(TypeVertex vertex);
 
+    void overridden(Schema.Edge.Type schema, Type type, Type overridden) {
+        vertex.outs().edge(schema, type.vertex).overridden(overridden.vertex);
+    }
+
     public String label() {
         return vertex.label();
     }
@@ -68,10 +72,6 @@ public abstract class Type<TYPE extends Type> {
 
     public void setAbstract(boolean isAbstract) {
         vertex.setAbstract(isAbstract);
-    }
-
-    protected void overridden(Schema.Edge.Type schema, Type type, Type overridden) {
-        vertex.outs().edge(schema, type.vertex).overridden(overridden.vertex);
     }
 
     protected void sup(TYPE superType) {
