@@ -23,7 +23,11 @@ import hypergraph.graph.KeyGenerator;
 import hypergraph.graph.Schema;
 import hypergraph.graph.edge.ThingEdge;
 
-public abstract class ThingVertex extends Vertex<Schema.Vertex.Thing, ThingVertex, Schema.Edge.Thing, ThingEdge> {
+import java.util.Iterator;
+
+public abstract class ThingVertex extends Vertex<
+        Schema.Vertex.Thing, ThingVertex, Schema.Edge.Thing, ThingEdge,
+        ThingVertex.DirectedThingEdges.ThingVertexIterator> {
 
     protected final Graph.Thing graph;
 
@@ -36,4 +40,19 @@ public abstract class ThingVertex extends Vertex<Schema.Vertex.Thing, ThingVerte
         return null; // TODO
     }
 
+    public abstract class DirectedThingEdges extends DirectedEdges<
+            ThingVertex, Schema.Edge.Thing, ThingEdge, DirectedThingEdges.ThingVertexIterator> {
+
+
+        DirectedThingEdges(Direction direction) {
+            super(direction);
+        }
+
+        public class ThingVertexIterator extends DirectedEdges.VertexIterator<ThingVertex, ThingEdge> {
+
+            ThingVertexIterator(Iterator<ThingEdge> edgeIterator) {
+                super(edgeIterator);
+            }
+        }
+    }
 }

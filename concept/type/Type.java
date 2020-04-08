@@ -70,6 +70,10 @@ public abstract class Type<TYPE extends Type> {
         vertex.setAbstract(isAbstract);
     }
 
+    protected void overridden(Schema.Edge.Type schema, Type type, Type overridden) {
+        vertex.outs().edge(schema, type.vertex).overridden(overridden.vertex);
+    }
+
     protected void sup(TYPE superType) {
         vertex.outs().delete(Schema.Edge.Type.SUB, sup().vertex);
         vertex.outs().put(Schema.Edge.Type.SUB, superType.vertex);

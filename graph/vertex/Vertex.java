@@ -33,12 +33,13 @@ public abstract class Vertex<
         VERTEX_SCHEMA extends Schema.Vertex,
         VERTEX extends Vertex,
         EDGE_SCHEMA extends Schema.Edge,
-        EDGE extends Edge<EDGE_SCHEMA, VERTEX>> {
+        EDGE extends Edge<EDGE_SCHEMA, VERTEX>,
+        VERTEX_ITER extends Vertex.DirectedEdges.VertexIterator<VERTEX, EDGE>> {
 
     protected final VERTEX_SCHEMA schema;
 
-    protected final DirectedEdges<VERTEX, EDGE_SCHEMA, EDGE> outs;
-    protected final DirectedEdges<VERTEX, EDGE_SCHEMA, EDGE> ins;
+    protected final DirectedEdges<VERTEX, EDGE_SCHEMA, EDGE, VERTEX_ITER> outs;
+    protected final DirectedEdges<VERTEX, EDGE_SCHEMA, EDGE, VERTEX_ITER> ins;
 
     protected byte[] iid;
 
@@ -49,7 +50,7 @@ public abstract class Vertex<
         ins = newDirectedEdges(DirectedEdges.Direction.IN);
     }
 
-    protected abstract DirectedEdges<VERTEX, EDGE_SCHEMA, EDGE> newDirectedEdges(DirectedEdges.Direction direction);
+    protected abstract DirectedEdges<VERTEX, EDGE_SCHEMA, EDGE, VERTEX_ITER> newDirectedEdges(DirectedEdges.Direction direction);
 
     public abstract Schema.Status status();
 
@@ -61,11 +62,11 @@ public abstract class Vertex<
 
     public abstract void delete();
 
-    public DirectedEdges<VERTEX, EDGE_SCHEMA, EDGE> outs() {
+    public DirectedEdges<VERTEX, EDGE_SCHEMA, EDGE, VERTEX_ITER> outs() {
         return outs;
     }
 
-    public DirectedEdges<VERTEX, EDGE_SCHEMA, EDGE> ins() {
+    public DirectedEdges<VERTEX, EDGE_SCHEMA, EDGE, VERTEX_ITER> ins() {
         return ins;
     }
 
@@ -98,7 +99,8 @@ public abstract class Vertex<
     public abstract static class DirectedEdges<
             DIR_VERTEX extends Vertex,
             DIR_EDGE_SCHEMA extends Schema.Edge,
-            DIR_EDGE extends Edge<DIR_EDGE_SCHEMA, DIR_VERTEX>> {
+            DIR_EDGE extends Edge<DIR_EDGE_SCHEMA, DIR_VERTEX>,
+            DIR_VERTEX_ITER extends DirectedEdges.VertexIterator<DIR_VERTEX, DIR_EDGE>> {
 
         protected final Map<DIR_EDGE_SCHEMA, Set<DIR_EDGE>> edges;
         protected final Direction direction;
@@ -127,28 +129,30 @@ public abstract class Vertex<
             edges = new ConcurrentHashMap<>();
         }
 
-        public static class VertexIterator<ITER_VERTEX extends Vertex, ITER_EDGE extends Edge<?, ITER_VERTEX>> {
+        public static class VertexIterator<VERTEX_ITER extends Vertex, EDGE_ITER extends Edge<?, VERTEX_ITER>> {
 
-            protected final Iterator<ITER_EDGE> edgeIterator;
+            protected final Iterator<EDGE_ITER> edgeIterator;
 
-            VertexIterator(Iterator<ITER_EDGE> edgeIterator) {
+            VertexIterator(Iterator<EDGE_ITER> edgeIterator) {
                 this.edgeIterator = edgeIterator;
             }
 
-            public Iterator<ITER_VERTEX> to() {
+            public Iterator<VERTEX_ITER> to() {
                 return Iterators.apply(edgeIterator, Edge::to);
             }
 
-            public Iterator<ITER_VERTEX> from() {
+            public Iterator<VERTEX_ITER> from() {
                 return Iterators.apply(edgeIterator, Edge::from);
             }
         }
 
-        public abstract VertexIterator<DIR_VERTEX, DIR_EDGE> edge(DIR_EDGE_SCHEMA schema);
+        public abstract DIR_VERTEX_ITER edge(DIR_EDGE_SCHEMA schema);
 
-        public abstract void put(DIR_EDGE_SCHEMA schema, DIR_VERTEX to);
+        public abstract DIR_EDGE edge(DIR_EDGE_SCHEMA schema, DIR_VERTEX adjacent);
 
-        public abstract void delete(DIR_EDGE_SCHEMA schema, DIR_VERTEX to);
+        public abstract void put(DIR_EDGE_SCHEMA schema, DIR_VERTEX adjacent);
+
+        public abstract void delete(DIR_EDGE_SCHEMA schema, DIR_VERTEX adjacent);
 
         public abstract void delete(DIR_EDGE_SCHEMA schema);
 

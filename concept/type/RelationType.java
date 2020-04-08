@@ -31,6 +31,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import static hypergraph.common.iterator.Iterators.apply;
+import static hypergraph.common.iterator.Iterators.filter;
 import static java.util.Spliterator.IMMUTABLE;
 import static java.util.Spliterator.ORDERED;
 import static java.util.Spliterators.spliteratorUnknownSize;
@@ -89,13 +91,15 @@ public class RelationType extends ThingType<RelationType> {
     }
 
     public Stream<RoleType> roles() {
-        Iterator<RoleType> iterator = Iterators.apply(vertex.outs().edge(Schema.Edge.Type.RELATES).to(), RoleType::of);
+        Iterator<RoleType> iterator = apply(vertex.outs().edge(Schema.Edge.Type.RELATES).to(), RoleType::of);
         if (sup() == null) {
             return stream(spliteratorUnknownSize(iterator, ORDERED | IMMUTABLE), false);
         } else {
-            Set<RoleType> direct = new HashSet<>();
+            Set<RoleType> direct = new HashSet<>(), overridden = new HashSet<>();
             iterator.forEachRemaining(direct::add);
-            Set<RoleType> overridden = direct.stream().map(Type::sup).filter(Objects::nonNull).collect(toSet());
+            filter(vertex.outs().edge(Schema.Edge.Type.RELATES).overridden(), Objects::nonNull)
+                    .apply(RoleType::of)
+                    .forEachRemaining(overridden::add);
             return Stream.concat(direct.stream(), sup().roles().filter(r -> !overridden.contains(r)));
         }
     }
@@ -118,6 +122,7 @@ public class RelationType extends ThingType<RelationType> {
             Optional<RoleType> inherited = sup().roles().filter(role -> role.label().equals(roleLabel)).findFirst();
             if (inherited.isPresent()) {
                 roleType.sup(inherited.get());
+                RelationType.this.overridden(Schema.Edge.Type.RELATES, roleType, inherited.get());
             } else {
                 throw new HypergraphException("Invalid Role Type Overriding: inherited roles does not contain " + roleLabel);
             }

@@ -22,12 +22,13 @@ import hypergraph.graph.Graph;
 import hypergraph.graph.Schema;
 import hypergraph.graph.vertex.TypeVertex;
 
+import javax.annotation.Nullable;
 import java.util.Arrays;
-import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static hypergraph.common.collection.ByteArrays.join;
 import static java.util.Arrays.copyOfRange;
+import static java.util.Objects.hash;
 
 public abstract class TypeEdge extends Edge<Schema.Edge.Type, TypeVertex> {
 
@@ -40,11 +41,14 @@ public abstract class TypeEdge extends Edge<Schema.Edge.Type, TypeVertex> {
 
     public abstract TypeVertex overridden();
 
+    public abstract void overridden(TypeVertex overridden);
+
     public static class Buffered extends TypeEdge {
 
-        private AtomicBoolean committed;
+        private final AtomicBoolean committed;
         private final TypeVertex from;
         private final TypeVertex to;
+        private TypeVertex overridden;
 
         public Buffered(Graph.Type graph, Schema.Edge.Type schema, TypeVertex from, TypeVertex to) {
             super(graph, schema);
@@ -80,7 +84,12 @@ public abstract class TypeEdge extends Edge<Schema.Edge.Type, TypeVertex> {
 
         @Override
         public TypeVertex overridden() {
-            return null;
+            return overridden;
+        }
+
+        @Override
+        public void overridden(TypeVertex overridden) {
+            this.overridden = overridden;
         }
 
         @Override
@@ -93,11 +102,10 @@ public abstract class TypeEdge extends Edge<Schema.Edge.Type, TypeVertex> {
         public void commit() {
             if (committed.compareAndSet(false, true)) {
                 if (schema.out() != null) {
-                    graph.storage().put(outIID());
+                    if (overridden != null) graph.storage().put(outIID(), overridden.iid());
+                    else graph.storage().put((outIID()));
                 }
-                if (schema.in() != null) {
-                    graph.storage().put(inIID());
-                }
+                if (schema.in() != null) graph.storage().put(inIID());
             }
         }
 
@@ -113,7 +121,7 @@ public abstract class TypeEdge extends Edge<Schema.Edge.Type, TypeVertex> {
 
         @Override
         public final int hashCode() {
-            return Objects.hash(schema, from, to);
+            return hash(schema, from, to);
         }
     }
 
@@ -127,8 +135,10 @@ public abstract class TypeEdge extends Edge<Schema.Edge.Type, TypeVertex> {
 
         private TypeVertex from;
         private TypeVertex to;
+        private TypeVertex overridden;
+        private byte[] overriddenIID;
 
-        public Persisted(Graph.Type graph, byte[] iid) {
+        public Persisted(Graph.Type graph, byte[] iid, @Nullable byte[] overriddenIID) {
             super(graph, Schema.Edge.Type.of(iid[Schema.IID.TYPE.length()]));
             byte[] start = copyOfRange(iid, 0, Schema.IID.TYPE.length());
             byte[] end = copyOfRange(iid, Schema.IID.TYPE.length() + 1, iid.length);
@@ -136,9 +146,11 @@ public abstract class TypeEdge extends Edge<Schema.Edge.Type, TypeVertex> {
             if (Schema.Edge.isOut(iid[Schema.IID.TYPE.length()])) {
                 fromIID = start; toIID = end; outIID = iid;
                 inIID = join(end, schema.in().key(), start);
+                this.overriddenIID = overriddenIID;
             } else {
                 fromIID = end; toIID = start; inIID = iid;
                 outIID = join(end, schema().out().key(), start);
+                this.overriddenIID = null;
             }
 
             isDeleted = new AtomicBoolean(false);
@@ -177,7 +189,18 @@ public abstract class TypeEdge extends Edge<Schema.Edge.Type, TypeVertex> {
 
         @Override
         public TypeVertex overridden() {
-            return null;
+            if (overridden != null) return overridden;
+            if (overriddenIID == null || overriddenIID.length == 0) return null;
+
+            overridden = graph.get(overriddenIID);
+            return overridden;
+        }
+
+        @Override
+        public void overridden(TypeVertex overridden) {
+            this.overridden = overridden;
+            overriddenIID = overridden.iid();
+            graph.storage().put(outIID, overriddenIID);
         }
 
         @Override
@@ -200,12 +223,13 @@ public abstract class TypeEdge extends Edge<Schema.Edge.Type, TypeVertex> {
             TypeEdge.Persisted that = (TypeEdge.Persisted) object;
             return (this.schema.equals(that.schema) &&
                     Arrays.equals(this.fromIID, that.fromIID) &&
-                    Arrays.equals(this.toIID, that.toIID));
+                    Arrays.equals(this.toIID, that.toIID) &&
+                    Arrays.equals(this.overriddenIID, that.overriddenIID));
         }
 
         @Override
         public final int hashCode() {
-            return Objects.hash(schema, Arrays.hashCode(fromIID), Arrays.hashCode(toIID));
+            return hash(schema, Arrays.hashCode(fromIID), Arrays.hashCode(toIID), Arrays.hashCode(overriddenIID));
         }
     }
 }
