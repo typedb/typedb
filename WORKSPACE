@@ -33,6 +33,7 @@ load(
     "graknlabs_benchmark",
     "graknlabs_simulation",
     "graknlabs_verification",
+    "graknlabs_grabl_tracing",
 )
 graknlabs_build_tools()
 graknlabs_common()
@@ -43,6 +44,7 @@ graknlabs_console()
 graknlabs_benchmark()
 graknlabs_simulation()
 graknlabs_verification()
+graknlabs_grabl_tracing()
 
 load("@graknlabs_build_tools//distribution:dependencies.bzl", "graknlabs_bazel_distribution")
 graknlabs_bazel_distribution()
@@ -171,8 +173,14 @@ load("@graknlabs_simulation//dependencies/maven:dependencies.bzl",
 graknlabs_simulation_dependencies = "maven_dependencies")
 graknlabs_simulation_dependencies()
 
-load("@graknlabs_simulation//dependencies/graknlabs:dependencies.bzl", "graknlabs_grabl_tracing")
-graknlabs_grabl_tracing()
+
+###################################
+# Load Grabl Tracing dependencies #
+###################################
+
+load("@graknlabs_grabl_tracing//dependencies/maven:dependencies.bzl",
+graknlabs_grabl_tracing_dependencies = "maven_dependencies")
+graknlabs_grabl_tracing_dependencies()
 
 
 #####################################
