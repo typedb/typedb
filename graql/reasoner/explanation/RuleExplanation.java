@@ -20,7 +20,7 @@ package grakn.core.graql.reasoner.explanation;
 
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.answer.Explanation;
-import grakn.core.kb.concept.api.ConceptId;
+import grakn.core.kb.concept.api.Rule;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -31,14 +31,14 @@ import java.util.List;
  */
 public class RuleExplanation extends Explanation {
 
-    private final ConceptId ruleId;
+    private final Rule rule;
 
-    public RuleExplanation(ConceptId ruleId){
-        this.ruleId = ruleId;
+    public RuleExplanation(Rule rule){
+        this.rule = rule;
     }
-    private RuleExplanation(List<ConceptMap> answers, ConceptId ruleId){
+    private RuleExplanation(List<ConceptMap> answers, Rule rule){
         super(answers);
-        this.ruleId = ruleId;
+        this.rule = rule;
     }
 
     @Override
@@ -50,11 +50,13 @@ public class RuleExplanation extends Explanation {
                         Collections.singletonList(ans) :
                         explanation.getAnswers()
         );
-        return new RuleExplanation(answerList, getRuleId());
+        return new RuleExplanation(answerList, rule);
     }
 
     @Override
     public boolean isRuleExplanation(){ return true;}
 
-    public ConceptId getRuleId(){ return ruleId;}
+    public Rule getRule() {
+        return rule;
+    }
 }
