@@ -293,8 +293,7 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
 
         @Override
         public boolean idCompatibility(Atomic parent, Atomic child) {
-            return parent == null
-                    || child != null && child.isSubsumedBy(parent);
+            return parent == null || child != null && child.isSubsumedBy(parent);
         }
 
         @Override
