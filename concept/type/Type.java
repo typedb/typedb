@@ -58,6 +58,8 @@ public abstract class Type<TYPE extends Type> {
         vertex.outs().edge(schema, type.vertex).overridden(overridden.vertex);
     }
 
+    boolean isRoot() { return false; }
+
     public String label() {
         return vertex.label();
     }

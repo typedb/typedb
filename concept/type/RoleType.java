@@ -60,6 +60,9 @@ public class RoleType extends Type<RoleType> {
         }
 
         @Override
+        boolean isRoot() { return true; }
+
+        @Override
         public void label(String label) {
             throw new HypergraphException("Invalid Operation Exception: root types are immutable");
         }

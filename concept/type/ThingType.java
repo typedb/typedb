@@ -23,7 +23,10 @@ import hypergraph.graph.Graph;
 import hypergraph.graph.Schema;
 import hypergraph.graph.vertex.TypeVertex;
 
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import static hypergraph.common.iterator.Iterators.apply;
@@ -34,7 +37,7 @@ import static java.util.Spliterator.ORDERED;
 import static java.util.Spliterators.spliteratorUnknownSize;
 import static java.util.stream.StreamSupport.stream;
 
-public abstract class ThingType<TYPE extends ThingType> extends Type<TYPE> {
+public abstract class ThingType<TYPE extends ThingType<TYPE>> extends Type<TYPE> {
 
     ThingType(TypeVertex vertex) {
         super(vertex);
@@ -64,7 +67,16 @@ public abstract class ThingType<TYPE extends ThingType> extends Type<TYPE> {
 
     public Stream<AttributeType> keys() {
         Iterator<AttributeType> keys = apply(vertex.outs().edge(Schema.Edge.Type.KEY).to(), AttributeType::of);
-        return stream(spliteratorUnknownSize(keys, ORDERED | IMMUTABLE), false);
+        if (isRoot()) {
+            return stream(spliteratorUnknownSize(keys, ORDERED | IMMUTABLE), false);
+        } else {
+            Set<AttributeType> direct = new HashSet<>(), overridden = new HashSet<>();
+            keys.forEachRemaining(direct::add);
+            filter(vertex.outs().edge(Schema.Edge.Type.KEY).overridden(), Objects::nonNull)
+                    .apply(AttributeType::of)
+                    .forEachRemaining(overridden::add);
+            return Stream.concat(direct.stream(), sup().keys().filter(key -> !overridden.contains(key)));
+        }
     }
 
     public void has(AttributeType attributeType) {
@@ -83,10 +95,19 @@ public abstract class ThingType<TYPE extends ThingType> extends Type<TYPE> {
     public Stream<AttributeType> attributes() {
         Iterator<AttributeType> attributes = link(vertex.outs().edge(Schema.Edge.Type.KEY).to(),
                                                   vertex.outs().edge(Schema.Edge.Type.HAS).to()).apply(AttributeType::of);
-        return stream(spliteratorUnknownSize(attributes, ORDERED | IMMUTABLE), false);
+        if (isRoot()) {
+            return stream(spliteratorUnknownSize(attributes, ORDERED | IMMUTABLE), false);
+        } else {
+            Set<AttributeType> direct = new HashSet<>(), overridden = new HashSet<>();
+            attributes.forEachRemaining(direct::add);
+            link(vertex.outs().edge(Schema.Edge.Type.KEY).overridden(),
+                 vertex.outs().edge(Schema.Edge.Type.HAS).overridden()
+            ).filter(Objects::nonNull).apply(AttributeType::of).forEachRemaining(overridden::add);
+            return Stream.concat(direct.stream(), sup().attributes().filter(att -> !overridden.contains(att)));
+        }
     }
 
-    public static class Root extends ThingType<ThingType> {
+    public static class Root extends ThingType {
 
         public Root(TypeVertex vertex) {
             super(vertex);
@@ -94,12 +115,15 @@ public abstract class ThingType<TYPE extends ThingType> extends Type<TYPE> {
         }
 
         @Override
-        ThingType newInstance(TypeVertex vertex) {
+        ThingType<?> newInstance(TypeVertex vertex) {
             if (vertex.schema().equals(Schema.Vertex.Type.ATTRIBUTE_TYPE)) return AttributeType.of(vertex);
             if (vertex.schema().equals(Schema.Vertex.Type.ENTITY_TYPE)) return EntityType.of(vertex);
             if (vertex.schema().equals(Schema.Vertex.Type.RELATION_TYPE)) return RelationType.of(vertex);
             return null;
         }
+
+        @Override
+        boolean isRoot() { return true; }
 
         @Override
         public void label(String label) {

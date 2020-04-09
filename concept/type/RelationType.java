@@ -91,16 +91,16 @@ public class RelationType extends ThingType<RelationType> {
     }
 
     public Stream<RoleType> roles() {
-        Iterator<RoleType> iterator = apply(vertex.outs().edge(Schema.Edge.Type.RELATES).to(), RoleType::of);
-        if (sup() == null) {
-            return stream(spliteratorUnknownSize(iterator, ORDERED | IMMUTABLE), false);
+        Iterator<RoleType> roles = apply(vertex.outs().edge(Schema.Edge.Type.RELATES).to(), RoleType::of);
+        if (isRoot()) {
+            return stream(spliteratorUnknownSize(roles, ORDERED | IMMUTABLE), false);
         } else {
             Set<RoleType> direct = new HashSet<>(), overridden = new HashSet<>();
-            iterator.forEachRemaining(direct::add);
+            roles.forEachRemaining(direct::add);
             filter(vertex.outs().edge(Schema.Edge.Type.RELATES).overridden(), Objects::nonNull)
                     .apply(RoleType::of)
                     .forEachRemaining(overridden::add);
-            return Stream.concat(direct.stream(), sup().roles().filter(r -> !overridden.contains(r)));
+            return Stream.concat(direct.stream(), sup().roles().filter(role -> !overridden.contains(role)));
         }
     }
 
@@ -136,6 +136,9 @@ public class RelationType extends ThingType<RelationType> {
             super(vertex);
             assert vertex.label().equals(Schema.Vertex.Type.Root.RELATION.label());
         }
+
+        @Override
+        boolean isRoot() { return true; }
 
         @Override
         public void label(String label) {
