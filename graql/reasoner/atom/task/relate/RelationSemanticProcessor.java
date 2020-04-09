@@ -169,6 +169,8 @@ public class RelationSemanticProcessor implements SemanticProcessor<RelationAtom
 
                                 // if we have IDs for both variables' types for the role players
                                 // we use that for checking role compatibility rather than the type labels
+                                // in other words, we allow ID compatibility to take precedence over role type compatibility
+                                // TODO, in the future, the behaviors should be explicit and aligned
                                 boolean checkedByIdCompatibility = false;
                                 if (crp.getRole().isPresent() && prp.getRole().isPresent()) {
                                     Variable childRPVar = crp.getRole().get().var();
