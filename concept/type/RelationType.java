@@ -81,6 +81,8 @@ public class RelationType extends ThingType<RelationType> {
         TypeVertex roleTypeVertex = vertex.graph().get(roleLabel, vertex.label());
         if (roleTypeVertex != null) {
             return new RelatesOverrider(RoleType.of(roleTypeVertex));
+        } else if (sups().flatMap(RelationType::roles).anyMatch(role -> role.label().equals(roleLabel))) {
+            throw new HypergraphException("Invalid RoleType Assignment: role type already exists in a supertype relation");
         } else {
             RoleType roleType = RoleType.of(vertex.graph(), roleLabel, vertex.label());
             vertex.outs().put(Schema.Edge.Type.RELATES, roleType.vertex);
@@ -117,22 +119,25 @@ public class RelationType extends ThingType<RelationType> {
         }
 
         public void as(String roleLabel) {
-            Optional<RoleType> inherited = sup().roles().filter(role -> role.label().equals(roleLabel)).findFirst();
+            Optional<RoleType> inherited = sup().roles().filter(role -> role.label().equals(roleLabel)).findAny();
             if (inherited.isPresent()) {
                 roleType.sup(inherited.get());
-                RelationType.this.overridden(Schema.Edge.Type.RELATES, this.roleType, inherited.get());
+                vertex.outs().edge(Schema.Edge.Type.RELATES, this.roleType.vertex)
+                        .overridden(inherited.get().vertex);
             } else {
-                throw new HypergraphException("Invalid Role Type Overriding: inherited roles do not contain " + roleLabel);
+                throw new HypergraphException(
+                        "Invalid Role Type Overriding: inherited roles do not contain " + roleLabel);
             }
         }
 
         public void as(RoleType roleType) {
-            Optional<RoleType> inherited = sup().roles().filter(prop -> prop.equals(roleType)).findFirst();
-            if (inherited.isPresent()) {
-                roleType.sup(inherited.get());
-                roleType.overridden(Schema.Edge.Type.RELATES, this.roleType, inherited.get());
+            if (sup().roles().anyMatch(prop -> prop.equals(roleType))) {
+                this.roleType.sup(roleType);
+                this.roleType.vertex.outs().edge(Schema.Edge.Type.RELATES, this.roleType.vertex)
+                        .overridden(roleType.vertex);
             } else {
-                throw new HypergraphException("Invalid Role Type Overriding: inherited roles do not contain " + roleType.label());
+                throw new HypergraphException(
+                        "Invalid Role Type Overriding: inherited roles do not contain " + roleType.label());
             }
         }
     }

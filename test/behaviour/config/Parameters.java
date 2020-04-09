@@ -23,9 +23,12 @@ import io.cucumber.java.DataTableType;
 import io.cucumber.java.ParameterType;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
+import static java.util.Objects.hash;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
 
 public class Parameters {
 
@@ -58,7 +61,7 @@ public class Parameters {
         private final String scope;
         private final String role;
 
-        ScopedLabel(String scope, String role) {
+        public ScopedLabel(String scope, String role) {
             this.scope = scope;
             this.role = role;
         }
@@ -69,6 +72,20 @@ public class Parameters {
 
         public String role() {
             return role;
+        }
+
+        @Override
+        public boolean equals(Object object) {
+            if (this == object) return true;
+            if (object == null || getClass() != object.getClass()) return false;
+            ScopedLabel that = (ScopedLabel) object;
+            return (this.scope.equals(that.scope) &&
+                    this.role.equals(that.role));
+        }
+
+        @Override
+        public final int hashCode() {
+            return hash(scope, role);
         }
     }
 
@@ -97,6 +114,20 @@ public class Parameters {
     public ScopedLabel scoped_label(String roleLabel) {
         String[] labels = roleLabel.split(":");
         return new ScopedLabel(labels[0], labels[1]);
+    }
+
+    @DataTableType
+    public List<ScopedLabel> scoped_labels(List<String> values) {
+        Iterator<String> valuesIter = values.iterator();
+        String next;
+        List<ScopedLabel> scopedLabels = new ArrayList<>();
+        while (valuesIter.hasNext() && (next = valuesIter.next()).matches("[a-zA-Z0-9-_]+:[a-zA-Z0-9-_]+")) {
+            String[] labels = next.split(":");
+            scopedLabels.add(new ScopedLabel(labels[0], labels[1]));
+        }
+
+        if (valuesIter.hasNext()) fail("Values do not match Scoped Labels regular expression");
+        return scopedLabels;
     }
 
     @ParameterType("read|write")

@@ -263,7 +263,7 @@ public abstract class TypeVertex extends Vertex<
                     Predicate<TypeEdge> predicate = direction.isOut()
                             ? e -> e.to().equals(adjacent)
                             : e -> e.from().equals(adjacent);
-                    return edges.get(schema).stream().filter(predicate).findFirst().orElse(null);
+                    return edges.get(schema).stream().filter(predicate).findAny().orElse(null);
                 }
                 return null;
             }
@@ -422,7 +422,7 @@ public abstract class TypeVertex extends Vertex<
                         : e -> e.from().equals(adjacent);
 
                 if (edges.containsKey(schema) &&
-                        (container = edges.get(schema).stream().filter(predicate).findFirst()).isPresent()) {
+                        (container = edges.get(schema).stream().filter(predicate).findAny()).isPresent()) {
                     return container.get();
                 } else {
                     Schema.Infix infix = direction.isOut() ? schema.out() : schema.in();

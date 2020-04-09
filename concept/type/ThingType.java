@@ -37,6 +37,7 @@ import static hypergraph.common.iterator.Iterators.link;
 import static java.util.Spliterator.IMMUTABLE;
 import static java.util.Spliterator.ORDERED;
 import static java.util.Spliterators.spliteratorUnknownSize;
+import static java.util.stream.Stream.concat;
 import static java.util.stream.StreamSupport.stream;
 
 public abstract class ThingType<TYPE extends ThingType<TYPE>> extends Type<TYPE> {
@@ -78,7 +79,7 @@ public abstract class ThingType<TYPE extends ThingType<TYPE>> extends Type<TYPE>
             filter(vertex.outs().edge(Schema.Edge.Type.KEY).overridden(), Objects::nonNull)
                     .apply(AttributeType::of)
                     .forEachRemaining(overridden::add);
-            return Stream.concat(direct.stream(), sup().keys().filter(key -> !overridden.contains(key)));
+            return concat(direct.stream(), sup().keys().filter(key -> !overridden.contains(key)));
         }
     }
 
@@ -107,7 +108,29 @@ public abstract class ThingType<TYPE extends ThingType<TYPE>> extends Type<TYPE>
             link(vertex.outs().edge(Schema.Edge.Type.KEY).overridden(),
                  vertex.outs().edge(Schema.Edge.Type.HAS).overridden()
             ).filter(Objects::nonNull).apply(AttributeType::of).forEachRemaining(overridden::add);
-            return Stream.concat(direct.stream(), sup().attributes().filter(att -> !overridden.contains(att)));
+            return concat(direct.stream(), sup().attributes().filter(att -> !overridden.contains(att)));
+        }
+    }
+
+    public PlaysOverrider plays(RoleType roleType) {
+        vertex.outs().put(Schema.Edge.Type.PLAYS, roleType.vertex);
+        return new PlaysOverrider(roleType);
+    }
+
+    public void unplay(RoleType roleType) {
+        vertex.outs().delete(Schema.Edge.Type.PLAYS, roleType.vertex);
+    }
+
+    public Stream<RoleType> plays() {
+        Iterator<RoleType> roles = apply(vertex.outs().edge(Schema.Edge.Type.PLAYS).to(), RoleType::of);
+        if (isRoot()) {
+            return stream(spliteratorUnknownSize(roles, ORDERED | IMMUTABLE), false);
+        } else {
+            Set<RoleType> direct = new HashSet<>(), overridden = new HashSet<>();
+            roles.forEachRemaining(direct::add);
+            filter(vertex.outs().edge(Schema.Edge.Type.PLAYS).overridden(), Objects::nonNull)
+                    .apply(RoleType::of).forEachRemaining(overridden::add);
+            return concat(direct.stream(), sup().plays().filter(att -> !overridden.contains(att)));
         }
     }
 
@@ -162,6 +185,12 @@ public abstract class ThingType<TYPE extends ThingType<TYPE>> extends Type<TYPE>
         }
     }
 
+    public class PlaysOverrider extends Overrider<RoleType> {
+        PlaysOverrider(RoleType roleType) {
+            super(roleType, ThingType::plays, Schema.Edge.Type.PLAYS);
+        }
+    }
+
     public class Overrider<P extends Type<P>> {
 
         private final P property;
@@ -175,9 +204,9 @@ public abstract class ThingType<TYPE extends ThingType<TYPE>> extends Type<TYPE>
         }
 
         public void as(P property) {
-            Optional<P> inherited = propertyFn.apply(sup()).filter(prop -> prop.equals(property)).findFirst();
+            Optional<P> inherited = propertyFn.apply(sup()).filter(prop -> prop.equals(property)).findAny();
             if (inherited.isPresent()) {
-                ThingType.this.overridden(schema, this.property, inherited.get());
+                vertex.outs().edge(schema, this.property.vertex).overridden(inherited.get().vertex);
             } else {
                 throw new HypergraphException("Invalid Property Overriding: inherited properties do not contain " +
                                                       property.label());

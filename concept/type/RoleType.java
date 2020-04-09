@@ -52,6 +52,10 @@ public class RoleType extends Type<RoleType> {
         return of(vertex);
     }
 
+    public String scopedLabel() {
+        return vertex.scopedLabel();
+    }
+
     public static class Root extends RoleType {
 
         Root(TypeVertex vertex) {

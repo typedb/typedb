@@ -22,8 +22,10 @@ import hypergraph.common.exception.HypergraphException;
 import hypergraph.concept.type.AttributeType;
 import hypergraph.concept.type.EntityType;
 import hypergraph.concept.type.RelationType;
+import hypergraph.concept.type.RoleType;
 import hypergraph.concept.type.ThingType;
 import hypergraph.concept.type.Type;
+import hypergraph.test.behaviour.config.Parameters;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 
@@ -261,24 +263,55 @@ public class ThingTypeSteps {
         }
     }
 
-    @When("{root_label}\\( ?{type_label} ?) set plays role: {type_label}")
-    public void thing_set_plays_role(RootLabel rootLabel, String typeLabel, String roleLabel) {
-
+    @When("{root_label}\\( ?{type_label} ?) set plays role: {scoped_label}")
+    public void thing_set_plays_role(RootLabel rootLabel, String typeLabel, Parameters.ScopedLabel roleLabel) {
+        RoleType roleType = tx().concepts().getRelationType(roleLabel.scope()).role(roleLabel.role());
+        get_thing_type(rootLabel, typeLabel).plays(roleType);
     }
 
-    @When("{root_label}\\( ?{type_label} ?) remove plays role: {type_label}")
-    public void thing_remove_plays_role(RootLabel rootLabel, String typeLabel, String roleLabel) {
-
+    @When("{root_label}\\( ?{type_label} ?) set plays role: {scoped_label} as {type_label}")
+    public void thing_set_plays_role_as(RootLabel rootLabel, String typeLabel, Parameters.ScopedLabel roleLabel, String overriddenLabel) {
+        RoleType roleType = tx().concepts().getRelationType(roleLabel.scope()).role(roleLabel.role());
+        RoleType overriddenType = tx().concepts().getRelationType(roleLabel.scope()).sups()
+                .flatMap(RelationType::roles).filter(r -> r.label().equals(overriddenLabel)).findAny().get();
+        get_thing_type(rootLabel, typeLabel).plays(roleType).as(overriddenType);
     }
 
-    @Then("{root_label}\\( ?{type_label} ?) get playing roles contain: {type_label}")
-    public void thing_get_playing_roles_contain(RootLabel rootLabel, String typeLabel, String roleLabel) {
+    @When("{root_label}\\( ?{type_label} ?) remove plays role: {scoped_label}")
+    public void thing_remove_plays_role(RootLabel rootLabel, String typeLabel, Parameters.ScopedLabel roleLabel) {
+        RoleType roleType = tx().concepts().getRelationType(roleLabel.scope()).role(roleLabel.role());
+        get_thing_type(rootLabel, typeLabel).unplay(roleType);
+    }
+
+    @Then("{root_label}\\( ?{type_label} ?) get playing roles contain: {scoped_label}")
+    public void thing_get_playing_roles_contain(RootLabel rootLabel, String typeLabel, Parameters.ScopedLabel roleLabel) {
         thing_get_playing_roles_contain(rootLabel, typeLabel, list(roleLabel));
     }
 
     @Then("{root_label}\\( ?{type_label} ?) get playing roles contain:")
-    public void thing_get_playing_roles_contain(RootLabel rootLabel, String typeLabel, List<String> roleLabels) {
+    public void thing_get_playing_roles_contain(RootLabel rootLabel, String typeLabel, List<Parameters.ScopedLabel> roleLabels) {
+        Set<Parameters.ScopedLabel> actuals = get_thing_type(rootLabel, typeLabel).plays().map(r -> {
+            String[] labels = r.scopedLabel().split(":");
+            return new Parameters.ScopedLabel(labels[0], labels[1]);
+        }).collect(toSet());
+        assertTrue(actuals.containsAll(roleLabels));
+    }
 
+    @Then("{root_label}\\( ?{type_label} ?) get playing roles do not contain: {scoped_label}")
+    public void thing_get_playing_roles_do_not_contain(RootLabel rootLabel, String typeLabel, Parameters.ScopedLabel roleLabel) {
+        thing_get_playing_roles_do_not_contain(rootLabel, typeLabel, list(roleLabel));
+    }
+
+    @Then("{root_label}\\( ?{type_label} ?) get playing roles do not contain:")
+    public void thing_get_playing_roles_do_not_contain(RootLabel rootLabel, String typeLabel, List<Parameters.ScopedLabel> roleLabels) {
+        Set<Parameters.ScopedLabel> actuals = get_thing_type(rootLabel, typeLabel).plays().map(r -> {
+            String[] labels = r.scopedLabel().split(":");
+            return new Parameters.ScopedLabel(labels[0], labels[1]);
+        }).collect(toSet());
+        assertTrue(actuals.containsAll(roleLabels));
+        for (Parameters.ScopedLabel roleLabel : roleLabels) {
+            assertFalse(actuals.contains(roleLabel));
+        }
     }
 
     @Then("{root_label}\\( ?{type_label} ?) creates instance successfully: {bool}")

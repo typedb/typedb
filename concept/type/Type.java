@@ -54,10 +54,6 @@ public abstract class Type<TYPE extends Type<TYPE>> {
 
     abstract TYPE newInstance(TypeVertex vertex);
 
-    void overridden(Schema.Edge.Type schema, Type type, Type overridden) {
-        vertex.outs().edge(schema, type.vertex).overridden(overridden.vertex);
-    }
-
     boolean isRoot() { return false; }
 
     public String label() {

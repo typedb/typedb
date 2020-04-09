@@ -275,7 +275,7 @@ public class BasicTest {
                 try (Hypergraph.Transaction transaction = session.transaction(Hypergraph.Transaction.Type.WRITE)) {
                     RelationType marriage = transaction.concepts().putRelationType("marriage");
                     marriage.relates("husband");
-                    RoleType rootRole = transaction.concepts().getRootRelationType().roles().findFirst().get();
+                    RoleType rootRole = transaction.concepts().getRootRelationType().roles().findAny().get();
                     RoleType actualSup = marriage.role("husband").sup();
                     assertEquals(rootRole, actualSup);
                     transaction.commit();
