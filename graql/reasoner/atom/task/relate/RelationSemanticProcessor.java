@@ -20,10 +20,12 @@ package grakn.core.graql.reasoner.atom.task.relate;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
 import grakn.common.util.Pair;
+import grakn.core.common.util.ListsUtil;
 import grakn.core.common.util.Streams;
 import grakn.core.core.Schema;
 import grakn.core.graql.reasoner.ReasoningContext;
@@ -139,7 +141,6 @@ public class RelationSemanticProcessor implements SemanticProcessor<RelationAtom
 
         //establish compatible castings for each parent casting
         List<Set<Pair<RelationProperty.RolePlayer, RelationProperty.RolePlayer>>> compatibleMappingsPerParentRP = new ArrayList<>();
-        if (parentAtom.getRelationPlayers().size() > childAtom.getRelationPlayers().size()) return new HashSet<>();
 
         //child query is rule body + head here
         ReasonerQuery childQuery = childAtom.getParentQuery();
@@ -241,7 +242,7 @@ public class RelationSemanticProcessor implements SemanticProcessor<RelationAtom
                 .filter(list -> {
                     List<RelationProperty.RolePlayer> listChildRps = list.stream().map(Pair::first).collect(Collectors.toList());
                     //NB: this preserves cardinality instead of removing all occurring instances which is what we want
-                    return ReasonerUtils.listDifference(listChildRps, childAtom.getRelationPlayers()).isEmpty();
+                    return ListsUtil.listDifference(listChildRps, childAtom.getRelationPlayers()).isEmpty();
                 })
                 //check all parent rps mapped
                 .filter(list -> {
@@ -261,8 +262,8 @@ public class RelationSemanticProcessor implements SemanticProcessor<RelationAtom
 
         ConceptManager conceptManager = ctx.conceptManager();
         Set<Variable> parentRoleVars = parent.getRoleExpansionVariables();
-        HashMultimap<Variable, Role> childVarRoleMap = childAtom.getVarRoleMap();
-        HashMultimap<Variable, Role> parentVarRoleMap = parent.getVarRoleMap();
+        ListMultimap<Variable, Role> childVarRoleMap = childAtom.getVarRoleMap();
+        ListMultimap<Variable, Role> parentVarRoleMap = parent.getVarRoleMap();
         unifier.mappings().forEach(m -> {
             Variable childVar = m.getValue();
             Variable parentVar = m.getKey();
@@ -280,13 +281,25 @@ public class RelationSemanticProcessor implements SemanticProcessor<RelationAtom
                     requiredRole = conceptManager.getRole(Iterables.getOnlyElement(roleLabels).getValue());
                 }
             }
-            Set<Role> childRoles = childVarRoleMap.get(childVar);
-            Set<Role> parentRoles = parentVarRoleMap.get(parentVar);
-            Set<Role> playedRoles = bottom(Sets.difference(childRoles, parentRoles)).stream()
+            List<Role> childRoles = childVarRoleMap.get(childVar);
+            List<Role> parentRoles = parentVarRoleMap.get(parentVar);
+            // if the child and parent roles are exactly the same, the semantic difference is exactly 0
+            if (ListsUtil.listDifference(childRoles, parentRoles).isEmpty()) {
+                diff.add(new VariableDefinition(parentVar, null, requiredRole, new ArrayList<>(), new HashSet<>()));
+            } else {
+                // if the child and parent roles are not exactly the same, then we check all required role players
+                // this is because we can't distinguish using a semantic difference, the following:
+                // parent: 1 role player, child: 2 repeated role players
+                // vs
+                // parent: 2 role player, child: 3 repeated role players
+                // both would end up with a single required role. Applying this semantic difference could be satisfied
+                // by either case. We therefore explicitly require N role players to be repeatedly present
+                // this is less efficient, but also less common
+                List<Role> filteredChildRoles = childRoles.stream()
                     .filter(playedRole -> !Schema.MetaSchema.isMetaLabel(playedRole.label()))
-                    .filter(playedRole -> Sets.intersection(parentRoles, playedRole.subs().collect(Collectors.toSet())).isEmpty())
-                    .collect(Collectors.toSet());
-            diff.add(new VariableDefinition(parentVar, null, requiredRole, playedRoles, new HashSet<>()));
+                    .collect(Collectors.toList());
+                diff.add(new VariableDefinition(parentVar, null, requiredRole, filteredChildRoles, new HashSet<>()));
+            }
         });
         return baseDiff.merge(new SemanticDifference(diff));
     }

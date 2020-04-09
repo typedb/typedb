@@ -34,4 +34,9 @@
         <appender-ref ref="STDOUT"/>
     </logger>
 
+    <!-- Increase this if wanting to see more verbose reasoner output -->
+    <logger name="grakn.core.graql.reasoner" level="INFO" additivity="false">
+        <appender-ref ref="STDOUT"/>
+    </logger>
+
 </configuration>

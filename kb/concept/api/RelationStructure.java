@@ -18,6 +18,7 @@
 
 package grakn.core.kb.concept.api;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -55,7 +56,7 @@ public interface RelationStructure {
     /**
      * @return All the Roles and the Things which play them
      */
-    Map<Role, Set<Thing>> allRolePlayers();
+    Map<Role, List<Thing>> allRolePlayers();
 
     /**
      * @param roles The Roles which are played in this relation

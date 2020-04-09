@@ -17,6 +17,7 @@
 
 package grakn.core.server;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
@@ -70,6 +71,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -1069,8 +1071,8 @@ public class GraknClientIT {
 
             assertEquals("good-dog", Iterables.getOnlyElement(dunstan.keys(id).collect(toSet())).value());
 
-            ImmutableMap<grakn.core.kb.concept.api.Role, ImmutableSet<?>> expectedRolePlayers =
-                    ImmutableMap.of(chaser, ImmutableSet.of(dunstan), chased, ImmutableSet.of());
+            ImmutableMap<grakn.core.kb.concept.api.Role, ImmutableList<?>> expectedRolePlayers =
+                    ImmutableMap.of(chaser, ImmutableList.of(dunstan), chased, ImmutableList.of());
 
             assertEquals(expectedRolePlayers, aChase.rolePlayersMap());
 

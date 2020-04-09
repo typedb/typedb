@@ -34,9 +34,11 @@ import grakn.core.kb.concept.structure.VertexElement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -111,10 +113,10 @@ public class RelationEdge implements RelationStructure {
     }
 
     @Override
-    public Map<Role, Set<Thing>> allRolePlayers() {
-        HashMap<Role, Set<Thing>> result = new HashMap<>();
-        result.put(ownerRole(), Collections.singleton(owner()));
-        result.put(valueRole(), Collections.singleton(value()));
+    public Map<Role, List<Thing>> allRolePlayers() {
+        HashMap<Role, List<Thing>> result = new HashMap<>();
+        result.put(ownerRole(), Collections.singletonList(owner()));
+        result.put(valueRole(), Collections.singletonList(value()));
         return result;
     }
 

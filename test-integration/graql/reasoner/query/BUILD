@@ -231,30 +231,6 @@ java_test(
 )
 
 java_test(
-    name = "semantic-difference-it",
-    size = "medium",
-    srcs = ["SemanticDifferenceIT.java"],
-    classpath_resources = ["//test-integration/resources:logback-test"],
-    resources = [
-        "//test-integration/graql/reasoner/resources:generic-schema",
-    ],
-    test_class = "grakn.core.graql.reasoner.query.SemanticDifferenceIT",
-    deps = [
-        "//common",
-        "//concept/answer",
-        "//dependencies/maven/artifacts/com/google/guava",
-        "//graql/reasoner",
-        "//kb/concept/api",
-        "//kb/graql/reasoner",
-        "//kb/server",
-        "//test-integration/rule:grakn-test-server",
-        "//test-integration/util:graql-test-util",
-        "@graknlabs_common//:common",
-        "@graknlabs_graql//java:graql",
-    ],
-)
-
-java_test(
     name = "generative-operational-it",
     size = "enormous",
     srcs = [
@@ -321,7 +297,6 @@ checkstyle_test(
         ":query-it",
         ":ontological-query-it",
         ":resolution-plan-it",
-        ":semantic-difference-it",
         ":subsumption-it",
         ":generative-operational-it",
     ],

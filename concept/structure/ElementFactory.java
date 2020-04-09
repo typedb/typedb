@@ -238,7 +238,6 @@ public final class ElementFactory {
     }
 
     EdgeElement edgeBetweenVertices(String startVertexId, String endVertexId, Schema.EdgeLabel edgeLabel) {
-        // TODO try not to access the tinker traversal directly
         GraphTraversal<Vertex, Edge> traversal = traversalSourceProvider.getTinkerTraversal()
                 .V(startVertexId)
                 .outE(edgeLabel.getLabel()).as("edge").otherV()

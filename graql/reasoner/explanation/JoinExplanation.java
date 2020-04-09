@@ -18,6 +18,7 @@
 
 package grakn.core.graql.reasoner.explanation;
 
+import grakn.core.common.util.ListsUtil;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.answer.Explanation;
 import grakn.core.graql.reasoner.utils.ReasonerUtils;
@@ -35,7 +36,7 @@ public class JoinExplanation extends Explanation {
 
     @Override
     public JoinExplanation childOf(ConceptMap ans) {
-        return new JoinExplanation(ReasonerUtils.listUnion(this.getAnswers(), ans.explanation().getAnswers()));
+        return new JoinExplanation(ListsUtil.listUnion(this.getAnswers(), ans.explanation().getAnswers()));
     }
 
     @Override

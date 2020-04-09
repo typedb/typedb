@@ -106,6 +106,7 @@ public class GraqlGetIT {
         assertEquals("Kermit The Frog", answers.get(3).get("y").asAttribute().value());
     }
 
+
     @Test
     public void testGetSortAscLimit() {
         List<ConceptMap> answers = tx.execute(

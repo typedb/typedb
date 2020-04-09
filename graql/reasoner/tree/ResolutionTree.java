@@ -113,6 +113,7 @@ public class ResolutionTree {
         Path profilePath = logPath.isAbsolute()? logPath : homePath.resolve(logPath);
 
         try {
+            profilePath.getParent().toFile().mkdirs();
             new TreeWriter(profilePath).write(rootNode, ids);
         } catch (IOException e) {
             e.printStackTrace();
