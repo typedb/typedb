@@ -555,8 +555,33 @@ public class AtomicQueryUnificationIT {
             unification(query, potentialEquivalent, true, UnifierType.RULE, testTx);
             unification(potentialEquivalent, query, true, UnifierType.RULE, testTx);
 
-            unification(query, potentialEquivalent, true, UnifierType.SUBSUMPTIVE, testTx);
+            // 'query' has answers that are not a subset of 'potentialEquivalent' because of the extra returned variable
+            unification(query, potentialEquivalent, false, UnifierType.SUBSUMPTIVE, testTx);
             unification(potentialEquivalent, query, true, UnifierType.SUBSUMPTIVE, testTx);
+        }
+    }
+
+    @Test
+    public void testUnification_RelationRolesNotIdentical() {
+        try (Transaction tx = genericSchemaSession.writeTransaction()) {
+            TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction) tx);
+            String query = "{ ($r1 : $a, $r2: $b); $r1 type baseRole1; };";
+            String potentiallyParent = "{ ($r1: $x, $r2: $y); $r1 type role;};";
+            unification(query, potentiallyParent, false, UnifierType.EXACT, testTx);
+
+            unification(query, potentiallyParent, false, UnifierType.RULE, testTx);
+            unification(potentiallyParent, query, false, UnifierType.RULE, testTx);
+            // structural requires IDs to be present in all the same places, but may not have to match
+            // this is false because of role inference - we rewrite $r1 to be specific role
+            unification(query, potentiallyParent, false, UnifierType.STRUCTURAL, testTx);
+            unification(potentiallyParent, query, false, UnifierType.STRUCTURAL, testTx);
+
+            unification(query, potentiallyParent, false, UnifierType.SUBSUMPTIVE, testTx);
+            unification(potentiallyParent, query, false, UnifierType.SUBSUMPTIVE, testTx);
+            // structural_subsumptive is the most relaxed unifier - we don't care about IDs if they don't exist
+            // and if they do, then they don't have to match
+            unification(query, potentiallyParent, true, UnifierType.STRUCTURAL_SUBSUMPTIVE, testTx);
+            unification(potentiallyParent, query, true, UnifierType.STRUCTURAL_SUBSUMPTIVE, testTx);
         }
     }
 

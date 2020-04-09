@@ -60,6 +60,7 @@ import static graql.lang.Graql.val;
 import static graql.lang.Graql.var;
 import static java.util.stream.Collectors.toSet;
 import static junit.framework.TestCase.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 @SuppressWarnings("Duplicates")
@@ -230,26 +231,6 @@ public class SemanticDifferenceIT {
         }
     }
 
-    @Test
-    public void whenChildGeneralisesRole_semanticDifferenceIsTrivial(){
-        try(TestTransaction tx = ((TestTransaction) genericSchemaSession.writeTransaction())) {
-            ReasonerQueryFactory reasonerQueryFactory = tx.reasonerQueryFactory();
-            Role baseRole = tx.getRole("baseRole1");
-            Role metaRole = tx.getMetaRole();
-
-            Pattern parentPattern = and(
-                    var().rel(var("role"), var("z")).rel("baseRole2", var("w")).isa("binary"),
-                    var("role").type(baseRole.label().getValue()));
-            Pattern childPattern = and(
-                    var().rel(var("role"), var("x")).rel("baseRole2", var("y")).isa("binary"),
-                    var("role").type(metaRole.label().getValue()));
-            ReasonerAtomicQuery parent = reasonerQueryFactory.atomic(conjunction(parentPattern));
-            ReasonerAtomicQuery child = reasonerQueryFactory.atomic(conjunction(childPattern));
-
-            Unifier unifier = parent.getMultiUnifier(child, UnifierType.SUBSUMPTIVE).getUnifier();
-            assertTrue(parent.getAtom().computeSemanticDifference(child.getAtom(), unifier).isTrivial());
-        }
-    }
 
     @Test
     public void whenChildSpecialisesRole_rolePlayersPlayingMultipleRoles_differenceIsCalculatedCorrectly(){
@@ -271,18 +252,20 @@ public class SemanticDifferenceIT {
             ReasonerAtomicQuery parent = reasonerQueryFactory.atomic(conjunction(parentPattern));
             ReasonerAtomicQuery child = reasonerQueryFactory.atomic(conjunction(childPattern));
 
+            // uses STRUCTURAL_SUBSUMPTIVE, so we have two different unifiers from role - role and role - role2 (the role vars are not distinct, so any combination possible)
             Set<Pair<Unifier, SemanticDifference>> semanticPairs = parent.getMultiUnifierWithSemanticDiff(child);
-            Pair<Unifier, SemanticDifference> semanticPair = Iterables.getOnlyElement(semanticPairs);
 
-            SemanticDifference expected = new SemanticDifference(
-                    ImmutableSet.of(
-                            new VariableDefinition(new Variable("z"), null, null, Sets.newHashSet(subRole1, subRole2), new HashSet<>())
-                    )
-            );
-            assertEquals(expected, semanticPair.second());
-            Set<ConceptMap> childAnswers = tx.stream(child.getQuery(), false).collect(Collectors.toSet());
-            Set<ConceptMap> propagatedAnswers = projectAnswersToChild(tx, child, parent, semanticPair.first(), semanticPair.second());
-            assertCollectionsEqual(propagatedAnswers + "\n!=\n" + childAnswers + "\n", childAnswers, propagatedAnswers);
+            for (Pair<Unifier, SemanticDifference> semanticPair : semanticPairs) {
+                SemanticDifference expected = new SemanticDifference(
+                        ImmutableSet.of(
+                                new VariableDefinition(new Variable("z"), null, null, Sets.newHashSet(subRole1, subRole2), new HashSet<>())
+                        )
+                );
+                assertEquals(expected, semanticPair.second());
+                Set<ConceptMap> childAnswers = tx.stream(child.getQuery(), false).collect(Collectors.toSet());
+                Set<ConceptMap> propagatedAnswers = projectAnswersToChild(tx, child, parent, semanticPair.first(), semanticPair.second());
+                assertCollectionsEqual(propagatedAnswers + "\n!=\n" + childAnswers + "\n", childAnswers, propagatedAnswers);
+            }
         }
     }
 
