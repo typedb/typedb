@@ -35,10 +35,8 @@ import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.exception.TransactionException;
 import grakn.protocol.session.AnswerProto;
-import grakn.protocol.session.ConceptProto;
 import grakn.protocol.session.SessionProto;
 import grakn.protocol.session.SessionProto.Transaction;
-import grakn.protocol.session.SessionProto.Transaction.Batch;
 import grakn.protocol.session.SessionServiceGrpc;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
@@ -231,20 +229,14 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
                     case COMMIT_REQ:
                         commit();
                         break;
-                    case QUERY_REQ:
-                        query(request.getQueryReq());
-                        break;
-                    case BATCH_REQ:
-                        next(request.getBatchReq());
+                    case ITER_REQ:
+                        handleIterRequest(request.getIterReq());
                         break;
                     case GETSCHEMACONCEPT_REQ:
                         getSchemaConcept(request.getGetSchemaConceptReq());
                         break;
                     case GETCONCEPT_REQ:
                         getConcept(request.getGetConceptReq());
-                        break;
-                    case GETATTRIBUTES_REQ:
-                        getAttributes(request.getGetAttributesReq());
                         break;
                     case PUTENTITYTYPE_REQ:
                         putEntityType(request.getPutEntityTypeReq());
@@ -267,6 +259,29 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
                     case EXPLANATION_REQ:
                         explanation(request.getExplanationReq());
                         break;
+                    default:
+                    case REQ_NOT_SET:
+                        throw ResponseBuilder.exception(Status.INVALID_ARGUMENT);
+                }
+            } catch (Throwable e) {
+                close(e);
+            }
+        }
+
+        public void handleIterRequest(Transaction.Iter.Req request) {
+            try {
+                switch (request.getReqCase()) {
+                    case ITERATORID:
+                        iterators.resumeBatchIterating(request.getIteratorId(), request.getOptions());
+                        break;
+                    case QUERY_ITER_REQ:
+                        query(request.getQueryIterReq(), request.getOptions());
+                        break;
+                    case CONCEPTMETHOD_ITER_REQ:
+                        conceptIterMethod(request.getConceptMethodIterReq(), request.getOptions());
+                        break;
+                    case GETATTRIBUTES_ITER_REQ:
+                        getAttributes(request.getGetAttributesIterReq(), request.getOptions());
                     default:
                     case REQ_NOT_SET:
                         throw ResponseBuilder.exception(Status.INVALID_ARGUMENT);
@@ -338,7 +353,7 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
             onNextResponse(ResponseBuilder.Transaction.commit());
         }
 
-        private void query(SessionProto.Transaction.Query.Req request) {
+        private void query(SessionProto.Transaction.Query.Iter.Req request, SessionProto.Transaction.Iter.Req.Options options) {
             /* permanent tracing hooks, as performance here varies depending on query and what's in the graph */
             int parseQuerySpanId = ServerTracing.startScopedChildSpan("Parsing Graql Query");
 
@@ -350,7 +365,7 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
 
             Stream<Transaction.Res> responseStream = tx().stream(query, request.getInfer().equals(Transaction.Query.INFER.TRUE)).map(ResponseBuilder.Transaction.Iter::query);
 
-            iterators.startBatchIterating(responseStream.iterator(), request.getBatchOptions());
+            iterators.startBatchIterating(responseStream.iterator(), options);
 
             ServerTracing.closeScopedChildSpan(createStreamSpanId);
         }
@@ -367,12 +382,12 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
             onNextResponse(response);
         }
 
-        private void getAttributes(Transaction.GetAttributes.Req request) {
+        private void getAttributes(Transaction.GetAttributes.Iter.Req request, Transaction.Iter.Req.Options options) {
             Object value = request.getValue().getAllFields().values().iterator().next();
             Collection<Attribute<Object>> attributes = tx().getAttributesByValue(value);
 
             Iterator<Transaction.Res> iterator = attributes.stream().map(ResponseBuilder.Transaction.Iter::getAttributes).iterator();
-            iterators.startBatchIterating(iterator, null);
+            iterators.startBatchIterating(iterator, options);
         }
 
         private void putEntityType(Transaction.PutEntityType.Req request) {
@@ -421,6 +436,11 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
             ConceptMethod.run(concept, request.getMethod(), iterators, tx(), this::onNextResponse);
         }
 
+        private void conceptIterMethod(Transaction.ConceptMethod.Iter.Req request, Transaction.Iter.Req.Options options) {
+            Concept concept = nonNull(tx().getConcept(ConceptId.of(request.getId())));
+            ConceptMethod.iter(concept, request.getMethod(), iterators, tx(), this::onNextResponse, options);
+        }
+
         /**
          * Reconstruct and return the explanation associated with the ConceptMap provided by the user
          */
@@ -433,8 +453,8 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
             onNextResponse(response);
         }
 
-        private void next(Batch.Req batchReq) {
-            iterators.resumeBatchIterating(batchReq);
+        private void next(int iteratorId, Transaction.Iter.Req.Options options) {
+            iterators.resumeBatchIterating(iteratorId, options);
         }
 
         private void onNextResponse(Transaction.Res response) {
@@ -462,34 +482,20 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
 
         /**
          * Hand off an iterator and begin batch iterating.
-         *
-         * @param iterator The underlying query iterator.
-         * @param batchOptions Options for this batch.
          */
-        public void startBatchIterating(Iterator<Transaction.Res> iterator, @Nullable Batch.Options batchOptions) {
-            new BatchingIterator(iterator).iterateBatch(batchOptions);
-        }
-
-        /**
-         * Hand off an iterator and begin batch iterating.
-         *
-         * @param iterator The underlying query iterator.
-         */
-        public void startBatchIterating(Iterator<Transaction.Res> iterator) {
-            startBatchIterating(iterator, null);
+        public void startBatchIterating(Iterator<Transaction.Res> iterator, @Nullable Transaction.Iter.Req.Options options) {
+            new BatchingIterator(iterator).iterateBatch(options);
         }
 
         /**
          * Iterate the next batch of an existing iterator.
-         *
-         * @param req The request containing the id of the iterator to iterate and any options.
          */
-        public void resumeBatchIterating(Batch.Req req) {
-            BatchingIterator iterator = iterators.get(req.getId());
+        public void resumeBatchIterating(int iteratorId, Transaction.Iter.Req.Options options) {
+            BatchingIterator iterator = iterators.get(iteratorId);
             if (iterator == null) {
                 throw ResponseBuilder.exception(Status.FAILED_PRECONDITION);
             }
-            iterator.iterateBatch(req.getBatchOptions());
+            iterator.iterateBatch(options);
         }
 
         public void stop(int iteratorId) {
@@ -526,8 +532,8 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
                 }
             }
 
-            public void iterateBatch(@Nullable Batch.Options batchOptions) {
-                int batchSize = getSizeFrom(batchOptions);
+            public void iterateBatch(@Nullable Transaction.Iter.Req.Options options) {
+                int batchSize = getSizeFrom(options);
                 for (int i = 0; i < batchSize && iterator.hasNext(); i++){
                     responseSender.accept(iterator.next());
                 }
@@ -535,26 +541,26 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
                 if (iterator.hasNext()) {
                     save();
                     responseSender.accept(SessionProto.Transaction.Res.newBuilder()
-                            .setIterateRes(SessionProto.Transaction.Iter.Res.newBuilder()
-                                    .setDone(true)).build());
+                            .setIterRes(SessionProto.Transaction.Iter.Res.newBuilder()
+                                    .setIteratorId(id)).build());
                 } else {
                     end();
                     responseSender.accept(SessionProto.Transaction.Res.newBuilder()
-                            .setIterateRes(SessionProto.Transaction.Iter.Res.newBuilder()
+                            .setIterRes(SessionProto.Transaction.Iter.Res.newBuilder()
                                     .setDone(true)).build());
                 }
             }
         }
 
-        private static int getSizeFrom(@Nullable Batch.Options batchOptions) {
-            if (batchOptions == null) {
+        private static int getSizeFrom(@Nullable Transaction.Iter.Req.Options options) {
+            if (options == null) {
                 return DEFAULT_BATCH_SIZE;
             }
-            switch (batchOptions.getBatchSizeCase()) {
+            switch (options.getBatchSizeCase()) {
                 case ALL:
                     return Integer.MAX_VALUE;
                 case NUMBER:
-                    return batchOptions.getNumber();
+                    return options.getNumber();
                 case BATCHSIZE_NOT_SET:
                 default:
                     return DEFAULT_BATCH_SIZE;

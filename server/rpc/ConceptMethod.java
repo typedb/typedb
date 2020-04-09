@@ -43,7 +43,7 @@ public class ConceptMethod {
 
     public static void run(Concept concept, ConceptProto.Method.Req req,
                                       SessionService.Iterators iterators, grakn.core.kb.server.Transaction tx, Consumer<Transaction.Res> responseSender) {
-        ConceptHolder con = new ConceptHolder(concept, tx, iterators, responseSender);
+        ConceptHolder con = new ConceptHolder(concept, tx, iterators, responseSender, null);
         switch (req.getReqCase()) {
             // Concept methods
             case CONCEPT_DELETE_REQ:
@@ -67,12 +67,6 @@ public class ConceptMethod {
             case SCHEMACONCEPT_SETSUP_REQ:
                 con.asSchemaConcept().sup(req.getSchemaConceptSetSupReq().getSchemaConcept());
                 return;
-            case SCHEMACONCEPT_SUPS_REQ:
-                con.asSchemaConcept().sups();
-                return;
-            case SCHEMACONCEPT_SUBS_REQ:
-                con.asSchemaConcept().subs();
-                return;
 
             // Rule methods
             case RULE_WHEN_REQ:
@@ -82,32 +76,12 @@ public class ConceptMethod {
                 con.asRule().then();
                 return;
 
-            // Role methods
-            case ROLE_RELATIONS_REQ:
-                con.asRole().relations();
-                return;
-            case ROLE_PLAYERS_REQ:
-                con.asRole().players();
-                return;
-
             // Type methods
-            case TYPE_INSTANCES_REQ:
-                con.asType().instances();
-                return;
             case TYPE_ISABSTRACT_REQ:
                 con.asType().isAbstract();
                 return;
             case TYPE_SETABSTRACT_REQ:
                 con.asType().isAbstract(req.getTypeSetAbstractReq().getAbstract());
-                return;
-            case TYPE_KEYS_REQ:
-                con.asType().keys();
-                return;
-            case TYPE_ATTRIBUTES_REQ:
-                con.asType().attributes();
-                return;
-            case TYPE_PLAYING_REQ:
-                con.asType().playing();
                 return;
             case TYPE_KEY_REQ:
                 con.asType().key(req.getTypeKeyReq().getAttributeType());
@@ -136,9 +110,6 @@ public class ConceptMethod {
             // RelationType methods
             case RELATIONTYPE_CREATE_REQ:
                 con.asRelationType().create();
-                return;
-            case RELATIONTYPE_ROLES_REQ:
-                con.asRelationType().roles();
                 return;
             case RELATIONTYPE_RELATES_REQ:
                 con.asRelationType().relates(req.getRelationTypeRelatesReq().getRole());
@@ -171,18 +142,6 @@ public class ConceptMethod {
             case THING_TYPE_REQ:
                 con.asThing().type();
                 return;
-            case THING_KEYS_REQ:
-                con.asThing().keys(req.getThingKeysReq().getAttributeTypesList());
-                return;
-            case THING_ATTRIBUTES_REQ:
-                con.asThing().attributes(req.getThingAttributesReq().getAttributeTypesList());
-                return;
-            case THING_RELATIONS_REQ:
-                con.asThing().relations(req.getThingRelationsReq().getRolesList());
-                return;
-            case THING_ROLES_REQ:
-                con.asThing().roles();
-                return;
             case THING_RELHAS_REQ:
                 con.asThing().relhas(req.getThingRelhasReq().getAttribute());
                 return;
@@ -191,12 +150,6 @@ public class ConceptMethod {
                 return;
 
             // Relation methods
-            case RELATION_ROLEPLAYERSMAP_REQ:
-                con.asRelation().rolePlayersMap();
-                return;
-            case RELATION_ROLEPLAYERS_REQ:
-                con.asRelation().rolePlayers(req.getRelationRolePlayersReq().getRolesList());
-                return;
             case RELATION_ASSIGN_REQ:
                 con.asRelation().assign(req.getRelationAssignReq());
                 return;
@@ -208,7 +161,77 @@ public class ConceptMethod {
             case ATTRIBUTE_VALUE_REQ:
                 con.asAttribute().value();
                 return;
-            case ATTRIBUTE_OWNERS_REQ:
+
+            default:
+            case REQ_NOT_SET:
+                throw new IllegalArgumentException("Unrecognised " + req);
+        }
+    }
+
+    public static void iter(Concept concept, ConceptProto.Method.Iter.Req req,
+                            SessionService.Iterators iterators, grakn.core.kb.server.Transaction tx, Consumer<Transaction.Res> responseSender, Transaction.Iter.Req.Options options)
+    {
+        ConceptHolder con = new ConceptHolder(concept, tx, iterators, responseSender, options);
+        switch (req.getReqCase()) {
+            // SchemaConcept methods
+            case SCHEMACONCEPT_SUPS_ITER_REQ:
+                con.asSchemaConcept().sups();
+                return;
+            case SCHEMACONCEPT_SUBS_ITER_REQ:
+                con.asSchemaConcept().subs();
+                return;
+
+            // Role methods
+            case ROLE_RELATIONS_ITER_REQ:
+                con.asRole().relations();
+                return;
+            case ROLE_PLAYERS_ITER_REQ:
+                con.asRole().players();
+                return;
+
+            // Type methods
+            case TYPE_INSTANCES_ITER_REQ:
+                con.asType().instances();
+                return;
+            case TYPE_KEYS_ITER_REQ:
+                con.asType().keys();
+                return;
+            case TYPE_ATTRIBUTES_ITER_REQ:
+                con.asType().attributes();
+                return;
+            case TYPE_PLAYING_ITER_REQ:
+                con.asType().playing();
+                return;
+
+            // RelationType methods
+            case RELATIONTYPE_ROLES_ITER_REQ:
+                con.asRelationType().roles();
+                return;
+
+            // Thing methods
+            case THING_KEYS_ITER_REQ:
+                con.asThing().keys(req.getThingKeysIterReq().getAttributeTypesList());
+                return;
+            case THING_ATTRIBUTES_ITER_REQ:
+                con.asThing().attributes(req.getThingAttributesIterReq().getAttributeTypesList());
+                return;
+            case THING_RELATIONS_ITER_REQ:
+                con.asThing().relations(req.getThingRelationsIterReq().getRolesList());
+                return;
+            case THING_ROLES_ITER_REQ:
+                con.asThing().roles();
+                return;
+
+            // Relation methods
+            case RELATION_ROLEPLAYERSMAP_ITER_REQ:
+                con.asRelation().rolePlayersMap();
+                return;
+            case RELATION_ROLEPLAYERS_ITER_REQ:
+                con.asRelation().rolePlayers(req.getRelationRolePlayersIterReq().getRolesList());
+                return;
+
+            // Attribute methods
+            case ATTRIBUTE_OWNERS_ITER_REQ:
                 con.asAttribute().owners();
                 return;
 
@@ -227,12 +250,14 @@ public class ConceptMethod {
         private grakn.core.kb.server.Transaction tx;
         private SessionService.Iterators iterators;
         private Consumer<Transaction.Res> responseSender;
+        private Transaction.Iter.Req.Options options;
 
-        ConceptHolder(grakn.core.kb.concept.api.Concept concept, grakn.core.kb.server.Transaction tx, SessionService.Iterators iterators, Consumer<Transaction.Res> responseSender) {
+        ConceptHolder(grakn.core.kb.concept.api.Concept concept, grakn.core.kb.server.Transaction tx, SessionService.Iterators iterators, Consumer<Transaction.Res> responseSender, Transaction.Iter.Req.Options options) {
             this.concept = concept;
             this.tx = tx;
             this.iterators = iterators;
             this.responseSender = responseSender;
+            this.options = options;
         }
 
         private grakn.core.kb.concept.api.Concept convert(ConceptProto.Concept protoConcept) {
@@ -377,7 +402,7 @@ public class ConceptMethod {
                     return ResponseBuilder.Transaction.Iter.conceptMethod(res);
                 });
 
-                iterators.startBatchIterating(responses.iterator());
+                iterators.startBatchIterating(responses.iterator(), options);
             }
 
             private void subs() {
@@ -390,7 +415,7 @@ public class ConceptMethod {
                     return ResponseBuilder.Transaction.Iter.conceptMethod(res);
                 });
 
-                iterators.startBatchIterating(responses.iterator());
+                iterators.startBatchIterating(responses.iterator(), options);
             }
         }
 
@@ -441,7 +466,7 @@ public class ConceptMethod {
                     return ResponseBuilder.Transaction.Iter.conceptMethod(res);
                 });
 
-                iterators.startBatchIterating(responses.iterator(), null);
+                iterators.startBatchIterating(responses.iterator(), options);
             }
 
             private void players() {
@@ -454,7 +479,7 @@ public class ConceptMethod {
                     return ResponseBuilder.Transaction.Iter.conceptMethod(res);
                 });
 
-                iterators.startBatchIterating(responses.iterator());
+                iterators.startBatchIterating(responses.iterator(), options);
             }
         }
 
@@ -473,7 +498,7 @@ public class ConceptMethod {
                     return ResponseBuilder.Transaction.Iter.conceptMethod(res);
                 });
 
-                iterators.startBatchIterating(responses.iterator());
+                iterators.startBatchIterating(responses.iterator(), options);
             }
 
             private void isAbstract() {
@@ -500,7 +525,7 @@ public class ConceptMethod {
                     return ResponseBuilder.Transaction.Iter.conceptMethod(res);
                 });
 
-                iterators.startBatchIterating(responses.iterator());
+                iterators.startBatchIterating(responses.iterator(), options);
             }
 
             private void attributes() {
@@ -513,7 +538,7 @@ public class ConceptMethod {
                     return ResponseBuilder.Transaction.Iter.conceptMethod(res);
                 });
 
-                iterators.startBatchIterating(responses.iterator());
+                iterators.startBatchIterating(responses.iterator(), options);
             }
 
             private void playing() {
@@ -526,7 +551,7 @@ public class ConceptMethod {
                     return ResponseBuilder.Transaction.Iter.conceptMethod(res);
                 });
 
-                iterators.startBatchIterating(responses.iterator());
+                iterators.startBatchIterating(responses.iterator(), options);
             }
 
             private void key(ConceptProto.Concept protoKey) {
@@ -607,7 +632,7 @@ public class ConceptMethod {
                     return ResponseBuilder.Transaction.Iter.conceptMethod(res);
                 });
 
-                iterators.startBatchIterating(responses.iterator());
+                iterators.startBatchIterating(responses.iterator(), options);
             }
 
             private void relates(ConceptProto.Concept protoRole) {
@@ -747,7 +772,7 @@ public class ConceptMethod {
                     return ResponseBuilder.Transaction.Iter.conceptMethod(res);
                 });
 
-                iterators.startBatchIterating(responses.iterator());
+                iterators.startBatchIterating(responses.iterator(), options);
             }
 
             private void attributes(List<ConceptProto.Concept> protoTypes) {
@@ -763,7 +788,7 @@ public class ConceptMethod {
                     return ResponseBuilder.Transaction.Iter.conceptMethod(res);
                 });
 
-                iterators.startBatchIterating(responses.iterator());
+                iterators.startBatchIterating(responses.iterator(), options);
             }
 
             private void relations(List<ConceptProto.Concept> protoRoles) {
@@ -779,7 +804,7 @@ public class ConceptMethod {
                     return ResponseBuilder.Transaction.Iter.conceptMethod(res);
                 });
 
-                iterators.startBatchIterating(responses.iterator());
+                iterators.startBatchIterating(responses.iterator(), options);
             }
 
             private void roles() {
@@ -792,7 +817,7 @@ public class ConceptMethod {
                     return ResponseBuilder.Transaction.Iter.conceptMethod(res);
                 });
 
-                iterators.startBatchIterating(responses.iterator());
+                iterators.startBatchIterating(responses.iterator(), options);
             }
 
             private void relhas(ConceptProto.Concept protoAttribute) {
@@ -833,7 +858,7 @@ public class ConceptMethod {
                     }
                 }
 
-                iterators.startBatchIterating(responses.build().iterator());
+                iterators.startBatchIterating(responses.build().iterator(), options);
             }
 
             private void rolePlayers(List<ConceptProto.Concept> protoRoles) {
@@ -849,7 +874,7 @@ public class ConceptMethod {
                     return ResponseBuilder.Transaction.Iter.conceptMethod(res);
                 });
 
-                iterators.startBatchIterating(responses.iterator());
+                iterators.startBatchIterating(responses.iterator(), options);
             }
 
             private void assign(ConceptProto.Relation.Assign.Req request) {
@@ -892,7 +917,7 @@ public class ConceptMethod {
                     return ResponseBuilder.Transaction.Iter.conceptMethod(res);
                 });
 
-                iterators.startBatchIterating(responses.iterator());
+                iterators.startBatchIterating(responses.iterator(), options);
             }
         }
     }

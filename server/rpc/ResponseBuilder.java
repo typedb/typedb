@@ -140,22 +140,23 @@ public class ResponseBuilder {
 
             static SessionProto.Transaction.Res query(Object object) {
                 return SessionProto.Transaction.Res.newBuilder()
-                        .setIterateRes(SessionProto.Transaction.Iter.Res.newBuilder()
+                        .setIterRes(SessionProto.Transaction.Iter.Res.newBuilder()
                                 .setQueryIterRes(SessionProto.Transaction.Query.Iter.Res.newBuilder()
                                         .setAnswer(Answer.answer(object)))).build();
             }
 
             static SessionProto.Transaction.Res getAttributes(grakn.core.kb.concept.api.Concept concept) {
                 return SessionProto.Transaction.Res.newBuilder()
-                        .setIterateRes(SessionProto.Transaction.Iter.Res.newBuilder()
+                        .setIterRes(SessionProto.Transaction.Iter.Res.newBuilder()
                                 .setGetAttributesIterRes(SessionProto.Transaction.GetAttributes.Iter.Res.newBuilder()
                                         .setAttribute(Concept.concept(concept)))).build();
             }
 
             static SessionProto.Transaction.Res conceptMethod(ConceptProto.Method.Iter.Res methodResponse) {
                 return SessionProto.Transaction.Res.newBuilder()
-                        .setIterateRes(SessionProto.Transaction.Iter.Res.newBuilder()
-                                .setConceptMethodIterRes(methodResponse)).build();
+                        .setIterRes(SessionProto.Transaction.Iter.Res.newBuilder()
+                                .setConceptMethodIterRes(SessionProto.Transaction.ConceptMethod.Iter.Res.newBuilder()
+                                        .setResponse(methodResponse))).build();
             }
         }
     }
