@@ -167,7 +167,19 @@ public class RelationSemanticProcessor implements SemanticProcessor<RelationAtom
 
                                 boolean varCompatibility = unifierType.equivalence() == null
                                         || parentRolePattern.var().isReturned() == childRolePattern.var().isReturned();
-                                return varCompatibility && unifierType.roleCompatibility(parentRole, childRole);
+
+                                // if we have IDs for both variables' types for the role players
+                                // we use that for checking role compatibility rather than the type labels
+                                // in other words, we allow ID compatibility to take precedence over role type compatibility
+                                // TODO, in the future, the behaviors should be explicit and aligned
+                                boolean checkedByIdCompatibility = false;
+                                if (crp.getRole().isPresent() && prp.getRole().isPresent()) {
+                                    Variable childRPVar = crp.getRole().get().var();
+                                    Variable parentRPVar = prp.getRole().get().var();
+                                    checkedByIdCompatibility = parentAtom.getAllPredicates(parentRPVar, IdPredicate.class).findAny().isPresent() &&
+                                            childAtom.getAllPredicates(childRPVar, IdPredicate.class).findAny().isPresent();
+                                }
+                                return checkedByIdCompatibility || (varCompatibility && unifierType.roleCompatibility(parentRole, childRole));
                             })
                             //check for inter-type compatibility
                             .filter(crp -> {
@@ -187,7 +199,18 @@ public class RelationSemanticProcessor implements SemanticProcessor<RelationAtom
                             .filter(crp -> {
                                 Set<Atomic> parentIds = parentAtom.getPredicates(prp.getPlayer().var(), IdPredicate.class).collect(Collectors.toSet());
                                 Set<Atomic> childIds = childAtom.getPredicates(crp.getPlayer().var(), IdPredicate.class).collect(Collectors.toSet());
-                                return unifierType.idCompatibility(parentIds, childIds);
+
+                                Set<Atomic> parentRoleIds = new HashSet<>();
+                                if (prp.getRole().isPresent()) {
+                                    parentAtom.getAllPredicates(prp.getRole().get().var(), IdPredicate.class).forEach(parentRoleIds::add);
+                                }
+
+                                Set<Atomic> childRoleIds = new HashSet<>();
+                                if (crp.getRole().isPresent()) {
+                                    childAtom.getAllPredicates(crp.getRole().get().var(), IdPredicate.class).forEach(childRoleIds::add);
+                                }
+
+                                return unifierType.idCompatibility(parentIds, childIds) && unifierType.idCompatibility(parentRoleIds, childRoleIds);
                             })
                             //check for value predicate compatibility
                             .filter(crp -> {
