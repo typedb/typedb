@@ -19,8 +19,8 @@
 package hypergraph.core;
 
 import hypergraph.Hypergraph;
-import hypergraph.common.exception.HypergraphException;
 import hypergraph.common.concurrent.ManagedReadWriteLock;
+import hypergraph.common.exception.HypergraphException;
 import hypergraph.concept.Concepts;
 import hypergraph.graph.Graph;
 import hypergraph.graph.KeyGenerator;

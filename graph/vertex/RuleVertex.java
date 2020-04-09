@@ -18,10 +18,6 @@
 
 package hypergraph.graph.vertex;
 
-import hypergraph.graph.Schema;
-import hypergraph.graph.Storage;
-import hypergraph.graph.edge.TypeEdge;
-
 //public abstract class RuleVertex extends Vertex<Schema.Vertex.Rule, Schema.Edge.Type, TypeEdge> {
 //
 //    RuleVertex(Storage storage, Schema.Status status, byte[] iid) {

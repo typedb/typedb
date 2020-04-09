@@ -18,10 +18,6 @@
 
 package hypergraph.graph.vertex;
 
-import hypergraph.graph.Schema;
-import hypergraph.graph.Storage;
-import hypergraph.graph.edge.ThingEdge;
-
 //public abstract class ValueVertex extends Vertex<Schema.Vertex.Value, Schema.Edge.Thing, ThingEdge> {
 //
 //    private final Object value;
