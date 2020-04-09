@@ -26,7 +26,9 @@ import hypergraph.graph.vertex.TypeVertex;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static hypergraph.common.iterator.Iterators.apply;
@@ -52,13 +54,14 @@ public abstract class ThingType<TYPE extends ThingType<TYPE>> extends Type<TYPE>
         super.sup(superType);
     }
 
-    public void key(AttributeType attributeType) {
+    public KeyOverrider key(AttributeType attributeType) {
         if (filter(vertex.outs().edge(Schema.Edge.Type.HAS).to(), v -> v.equals(attributeType.vertex)).hasNext()) {
             throw new HypergraphException("Invalid Key Assignment: " + attributeType.label() +
                                                   " is already used as an attribute");
         }
 
         vertex.outs().put(Schema.Edge.Type.KEY, attributeType.vertex);
+        return new KeyOverrider(attributeType);
     }
 
     public void unkey(AttributeType attributeType) {
@@ -79,13 +82,14 @@ public abstract class ThingType<TYPE extends ThingType<TYPE>> extends Type<TYPE>
         }
     }
 
-    public void has(AttributeType attributeType) {
+    public HasOverrider has(AttributeType attributeType) {
         if (filter(vertex.outs().edge(Schema.Edge.Type.KEY).to(), v -> v.equals(attributeType.vertex)).hasNext()) {
             throw new HypergraphException("Invalid Attribute Assignment: " + attributeType.label() +
                                                   " is already used as a Key");
         }
 
         vertex.outs().put(Schema.Edge.Type.HAS, attributeType.vertex);
+        return new HasOverrider(attributeType);
     }
 
     public void unhas(AttributeType attributeType) {
@@ -143,6 +147,41 @@ public abstract class ThingType<TYPE extends ThingType<TYPE>> extends Type<TYPE>
         @Override
         public void sup(ThingType superType) {
             throw new HypergraphException("Invalid Operation Exception: root types are immutable");
+        }
+    }
+
+    public class KeyOverrider extends Overrider<AttributeType> {
+        KeyOverrider(AttributeType attributeType) {
+            super(attributeType, ThingType::attributes, Schema.Edge.Type.KEY);
+        }
+    }
+
+    public class HasOverrider extends Overrider<AttributeType> {
+        HasOverrider(AttributeType attributeType) {
+            super(attributeType, ThingType::attributes, Schema.Edge.Type.HAS);
+        }
+    }
+
+    public class Overrider<P extends Type<P>> {
+
+        private final P property;
+        private final Function<TYPE, Stream<P>> propertyFn;
+        private final Schema.Edge.Type schema;
+
+        Overrider(P property, Function<TYPE, Stream<P>> propertyFn, Schema.Edge.Type schema) {
+            this.property = property;
+            this.propertyFn = propertyFn;
+            this.schema = schema;
+        }
+
+        public void as(P property) {
+            Optional<P> inherited = propertyFn.apply(sup()).filter(prop -> prop.equals(property)).findFirst();
+            if (inherited.isPresent()) {
+                ThingType.this.overridden(schema, this.property, inherited.get());
+            } else {
+                throw new HypergraphException("Invalid Property Overriding: inherited properties do not contain " +
+                                                      property.label());
+            }
         }
     }
 }

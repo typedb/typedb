@@ -19,7 +19,6 @@
 package hypergraph.concept.type;
 
 import hypergraph.common.exception.HypergraphException;
-import hypergraph.common.iterator.Iterators;
 import hypergraph.graph.Graph;
 import hypergraph.graph.Schema;
 import hypergraph.graph.vertex.TypeVertex;
@@ -36,7 +35,6 @@ import static hypergraph.common.iterator.Iterators.filter;
 import static java.util.Spliterator.IMMUTABLE;
 import static java.util.Spliterator.ORDERED;
 import static java.util.Spliterators.spliteratorUnknownSize;
-import static java.util.stream.Collectors.toSet;
 import static java.util.stream.StreamSupport.stream;
 
 public class RelationType extends ThingType<RelationType> {
@@ -79,14 +77,14 @@ public class RelationType extends ThingType<RelationType> {
         vertex.outs().edge(Schema.Edge.Type.RELATES).to().forEachRemaining(v -> v.setAbstract(isAbstract));
     }
 
-    public RelationType.Builder relates(String roleLabel) {
+    public RelatesOverrider relates(String roleLabel) {
         TypeVertex roleTypeVertex = vertex.graph().get(roleLabel, vertex.label());
         if (roleTypeVertex != null) {
-            return new Builder(RoleType.of(roleTypeVertex));
+            return new RelatesOverrider(RoleType.of(roleTypeVertex));
         } else {
             RoleType roleType = RoleType.of(vertex.graph(), roleLabel, vertex.label());
             vertex.outs().put(Schema.Edge.Type.RELATES, roleType.vertex);
-            return new Builder(roleType);
+            return new RelatesOverrider(roleType);
         }
     }
 
@@ -110,11 +108,11 @@ public class RelationType extends ThingType<RelationType> {
         else return null;
     }
 
-    public class Builder {
+    public class RelatesOverrider {
 
         private final RoleType roleType;
 
-        Builder(RoleType roleType) {
+        RelatesOverrider(RoleType roleType) {
             this.roleType = roleType;
         }
 
@@ -122,12 +120,21 @@ public class RelationType extends ThingType<RelationType> {
             Optional<RoleType> inherited = sup().roles().filter(role -> role.label().equals(roleLabel)).findFirst();
             if (inherited.isPresent()) {
                 roleType.sup(inherited.get());
-                RelationType.this.overridden(Schema.Edge.Type.RELATES, roleType, inherited.get());
+                RelationType.this.overridden(Schema.Edge.Type.RELATES, this.roleType, inherited.get());
             } else {
-                throw new HypergraphException("Invalid Role Type Overriding: inherited roles does not contain " + roleLabel);
+                throw new HypergraphException("Invalid Role Type Overriding: inherited roles do not contain " + roleLabel);
             }
         }
 
+        public void as(RoleType roleType) {
+            Optional<RoleType> inherited = sup().roles().filter(prop -> prop.equals(roleType)).findFirst();
+            if (inherited.isPresent()) {
+                roleType.sup(inherited.get());
+                roleType.overridden(Schema.Edge.Type.RELATES, this.roleType, inherited.get());
+            } else {
+                throw new HypergraphException("Invalid Role Type Overriding: inherited roles do not contain " + roleType.label());
+            }
+        }
     }
 
     public static class Root extends RelationType {

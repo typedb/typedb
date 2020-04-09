@@ -181,6 +181,13 @@ public class ThingTypeSteps {
         get_thing_type(rootLabel, typeLabel).key(attributeType);
     }
 
+    @When("{root_label}\\( ?{type_label} ?) set key attribute: {type_label} as {type_label}")
+    public void thing_set_key_attribute_as(RootLabel rootLabel, String typeLabel, String attributeLabel, String overriddenLabel) {
+        AttributeType attributeType = tx().concepts().getAttributeType(attributeLabel);
+        AttributeType overriddenType = tx().concepts().getAttributeType(overriddenLabel);
+        get_thing_type(rootLabel, typeLabel).key(attributeType).as(overriddenType);
+    }
+
     @When("{root_label}\\( ?{type_label} ?) remove key attribute: {type_label}")
     public void thing_remove_key_attribute(RootLabel rootLabel, String typeLabel, String attributeLabel) {
         AttributeType attributeType = tx().concepts().getAttributeType(attributeLabel);
@@ -215,6 +222,13 @@ public class ThingTypeSteps {
     public void thing_set_has_attribute(RootLabel rootLabel, String typeLabel, String attributeLabel) {
         AttributeType attributeType = tx().concepts().getAttributeType(attributeLabel);
         get_thing_type(rootLabel, typeLabel).has(attributeType);
+    }
+
+    @When("{root_label}\\( ?{type_label} ?) set has attribute: {type_label} as {type_label}")
+    public void thing_set_has_attribute_as(RootLabel rootLabel, String typeLabel, String attributeLabel, String overriddenLabel) {
+        AttributeType attributeType = tx().concepts().getAttributeType(attributeLabel);
+        AttributeType overriddenType = tx().concepts().getAttributeType(overriddenLabel);
+        get_thing_type(rootLabel, typeLabel).has(attributeType).as(overriddenType);
     }
 
     @When("{root_label}\\( ?{type_label} ?) remove has attribute: {type_label}")

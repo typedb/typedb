@@ -32,7 +32,7 @@ import static java.util.Spliterator.ORDERED;
 import static java.util.Spliterators.spliteratorUnknownSize;
 import static java.util.stream.StreamSupport.stream;
 
-public abstract class Type<TYPE extends Type> {
+public abstract class Type<TYPE extends Type<TYPE>> {
 
     protected final TypeVertex vertex;
     protected TYPE superType;
