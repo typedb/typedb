@@ -308,7 +308,6 @@ public class ThingTypeSteps {
             String[] labels = r.scopedLabel().split(":");
             return new Parameters.ScopedLabel(labels[0], labels[1]);
         }).collect(toSet());
-        assertTrue(actuals.containsAll(roleLabels));
         for (Parameters.ScopedLabel roleLabel : roleLabels) {
             assertFalse(actuals.contains(roleLabel));
         }
