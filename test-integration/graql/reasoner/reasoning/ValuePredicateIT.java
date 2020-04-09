@@ -20,6 +20,7 @@ package grakn.core.graql.reasoner.reasoning;
 import com.google.common.collect.Iterables;
 import grakn.common.util.Pair;
 import grakn.core.common.config.Config;
+import grakn.core.common.util.ListsUtil;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.atom.binary.AttributeAtom;
 import grakn.core.graql.reasoner.atom.predicate.VariableValuePredicate;
@@ -511,7 +512,7 @@ public class ValuePredicateIT {
 
             List<ConceptMap> complement = tx.execute(Graql.match(Graql.parsePattern(complementQueryPattern)).get());
             List<ConceptMap> complete = tx.execute(Graql.match(Graql.parsePattern(completeQueryPattern)).get());
-            List<ConceptMap> expectedAnswers = ReasonerUtils.listDifference(complete, complement);
+            List<ConceptMap> expectedAnswers = ListsUtil.listDifference(complete, complement);
 
             assertCollectionsNonTriviallyEqual(expectedAnswers, answers);
 

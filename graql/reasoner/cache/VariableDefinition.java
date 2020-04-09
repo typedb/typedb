@@ -18,13 +18,20 @@
 
 package grakn.core.graql.reasoner.cache;
 
+import com.google.common.collect.HashMultiset;
+import com.google.common.collect.Multiset;
+import com.google.common.collect.Multisets;
 import com.google.common.collect.Sets;
+import grakn.core.common.util.ListsUtil;
 import grakn.core.graql.reasoner.atom.predicate.ValuePredicate;
+import grakn.core.graql.reasoner.utils.ReasonerUtils;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Type;
 import graql.lang.statement.Variable;
 
 import javax.annotation.Nullable;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
@@ -40,14 +47,14 @@ public class VariableDefinition {
     final private Variable var;
     final private Type type;
     final private Role role;
-    final private Set<Role> playedRoles;
+    final private Multiset<Role> playedRoles; //multiset instead of list because order independent
     final private Set<ValuePredicate> vps;
 
-    public VariableDefinition(Variable var, @Nullable Type type, @Nullable Role role, Set<Role> playedRoles, Set<ValuePredicate> vps) {
+    public VariableDefinition(Variable var, @Nullable Type type, @Nullable Role role, List<Role> playedRoles, Set<ValuePredicate> vps) {
         this.var = var;
         this.type = type;
         this.role = role;
-        this.playedRoles = playedRoles;
+        this.playedRoles = HashMultiset.create(playedRoles);
         this.vps = vps;
     }
 
@@ -84,7 +91,7 @@ public class VariableDefinition {
 
     public Role role() { return role;}
 
-    public Set<Role> playedRoles() { return playedRoles;}
+    public Multiset<Role> playedRoles() { return playedRoles;}
 
     public Set<ValuePredicate> valuePredicates() { return vps;}
 
@@ -92,11 +99,14 @@ public class VariableDefinition {
         if (!var().equals(def.var())) {
             throw new IllegalStateException("Illegal variable definition merge between:\n" + this + "and\n" + def);
         }
+        List<Role> mergedPlayedRoles = new ArrayList<>();
+        mergedPlayedRoles.addAll(this.playedRoles());
+        mergedPlayedRoles.addAll(def.playedRoles());
         return new VariableDefinition(
                 var,
                 def.type() != null ? def.type() : this.type(),
                 def.role() != null ? def.role() : this.role(),
-                Sets.union(def.playedRoles(), this.playedRoles()),
+                mergedPlayedRoles,
                 Sets.union(def.valuePredicates(), this.valuePredicates())
         );
     }

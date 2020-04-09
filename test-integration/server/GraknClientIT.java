@@ -17,6 +17,7 @@
 
 package grakn.core.server;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
@@ -30,6 +31,7 @@ import grakn.client.answer.ConceptList;
 import grakn.client.answer.ConceptMap;
 import grakn.client.answer.ConceptSet;
 import grakn.client.answer.ConceptSetMeasure;
+import grakn.client.answer.Explanation;
 import grakn.client.answer.Numeric;
 import grakn.client.concept.Attribute;
 import grakn.client.concept.AttributeType;
@@ -69,6 +71,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -222,6 +225,52 @@ public class GraknClientIT {
                 assertThat(answer.map().keySet(), contains(new Variable("x")));
                 assertNotNull(tx.getConcept(grakn.core.kb.concept.api.ConceptId.of(answer.get("x").id().getValue())));
             }
+        }
+    }
+
+    @Test
+    public void explanationIsGivenWithRule() {
+        try (GraknClient.Transaction tx = remoteSession.transaction().write()) {
+            tx.execute(Graql.define(
+                    type("name").sub("attribute").datatype("string"),
+                    type("content").sub("entity").key("name").plays("contained").plays("container"),
+                    type("contains").sub("relation").relates("contained").relates("container"),
+                    type("transitive-location").sub("rule")
+                            .when(and(
+                                    rel("contained", "x").rel("container", "y").isa("contains"),
+                                    rel("contained", "y").rel("container", "z").isa("contains")
+                            ))
+                            .then(rel("contained", "x").rel("container", "z").isa("contains"))
+            ));
+            tx.execute(Graql.insert(
+                    var("x").isa("content").has("name", "x"),
+                    var("y").isa("content").has("name", "y"),
+                    var("z").isa("content").has("name", "z"),
+                    rel("contained", "x").rel("container", "y").isa("contains"),
+                    rel("contained", "y").rel("container", "z").isa("contains")
+            ));
+            tx.commit();
+        }
+
+        try (GraknClient.Transaction tx = remoteSession.transaction().write()) {
+            List<Pattern> patterns = Lists.newArrayList(
+                    Graql.var("x").isa("content").has("name", "x"),
+                    var("z").isa("content").has("name", "z"),
+                    var("infer").rel("contained", "x").rel("container", "z").isa("contains")
+            );
+            ConceptMap answer = Iterables.getOnlyElement(tx.execute(Graql.match(patterns).get()));
+
+            Set<ConceptMap> deductions = deductions(answer);
+            assertTrue(deductions.stream().anyMatch(ans -> {
+                assertNotNull(ans.queryPattern());
+                if (ans.hasExplanation()) {
+                    assertEquals("transitive-location", ans.explanation().getRule().label().toString());
+                    assertEquals("{ (contained: $x, container: $y) isa contains; (contained: $y, container: $z) isa contains; };", ans.explanation().getRule().when().toString());
+                    assertEquals("{ (contained: $x, container: $z) isa contains; };", ans.explanation().getRule().then().toString());
+                    return true;
+                }
+                return false;
+            }));
         }
     }
 
@@ -1022,8 +1071,8 @@ public class GraknClientIT {
 
             assertEquals("good-dog", Iterables.getOnlyElement(dunstan.keys(id).collect(toSet())).value());
 
-            ImmutableMap<grakn.core.kb.concept.api.Role, ImmutableSet<?>> expectedRolePlayers =
-                    ImmutableMap.of(chaser, ImmutableSet.of(dunstan), chased, ImmutableSet.of());
+            ImmutableMap<grakn.core.kb.concept.api.Role, ImmutableList<?>> expectedRolePlayers =
+                    ImmutableMap.of(chaser, ImmutableList.of(dunstan), chased, ImmutableList.of());
 
             assertEquals(expectedRolePlayers, aChase.rolePlayersMap());
 

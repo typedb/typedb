@@ -44,17 +44,17 @@ import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.query.GraqlGet;
 import graql.lang.statement.Statement;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
-
+import graql.lang.statement.Variable;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Test;
 
 import static grakn.core.util.GraqlTestUtil.assertCollectionsNonTriviallyEqual;
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
@@ -193,13 +193,20 @@ public class QueryCacheIT {
             tx.execute(parentQuery.getQuery()).stream()
                     .map(ans -> ans.explain(new LookupExplanation(), parentQuery.getPattern()))
                     .forEach(ans -> cache.record(parentQuery, ans));
+
+            //add a mocked answer to be able to check we actually retrieve from cache
+            Concept concept = tx.getEntityType("baseRoleEntity").instances().iterator().next();
+            ConceptMap mockedAnswer = new ConceptMap(ImmutableMap.of(new Variable("x"), concept, new Variable("y"), concept))
+                    .explain(new LookupExplanation(), parentQuery.getPattern());
+            cache.record(parentQuery, mockedAnswer);
             cache.ackDBCompleteness(parentQuery);
 
             //retrieve child
-            ReasonerAtomicQuery childQuery = testTx.reasonerQueryFactory().atomic(conjunction("(subRole1: $x, subRole2: $y) isa binary;"));
-            Set<ConceptMap> cacheAnswers = cache.getAnswers(childQuery);
-            assertEquals(tx.stream(childQuery.getQuery()).collect(toSet()), cacheAnswers);
-            assertEquals(cacheAnswers, cache.getEntry(childQuery).cachedElement().getAll());
+            ReasonerAtomicQuery childQuery = testTx.reasonerQueryFactory().atomic(conjunction("{(role: $x, role: $y) isa binary;$x isa baseEntity;};"));
+            Set<ConceptMap> cachedAnswers = cache.getAnswers(childQuery);
+            assertTrue(cachedAnswers.contains(mockedAnswer));
+            assertTrue(cachedAnswers.containsAll(tx.execute(childQuery.getQuery())));
+            assertEquals(cachedAnswers, cache.getEntry(childQuery).cachedElement().getAll());
         }
     }
 
@@ -221,7 +228,7 @@ public class QueryCacheIT {
 
             //record parent, mark the answers to be explained by a rule so that we can distinguish them
             tx.execute(parentQuery.getQuery(), false).stream()
-                    .map(ans -> ans.explain(new RuleExplanation(tx.getMetaRule().id()), parentQuery.getPattern()))
+                    .map(ans -> ans.explain(new RuleExplanation(tx.getMetaRule()), parentQuery.getPattern()))
                     .forEach(ans -> cache.record(parentQuery, ans));
 
             //NB: WE ACK COMPLETENESS
@@ -344,7 +351,7 @@ public class QueryCacheIT {
                             Graql.var("x").var(), mConcept,
                             Graql.var("y").var(), fConcept
                     ),
-                    new RuleExplanation(tx.getMetaRule().id()),
+                    new RuleExplanation(tx.getMetaRule()),
                     parentQuery.getPattern()
             );
             cache.record(parentQuery, inferredAnswer);
@@ -472,7 +479,7 @@ public class QueryCacheIT {
             ConceptMap inferredAnswer = new ConceptMap(ImmutableMap.of(
                     Graql.var("x").var(), tx.getEntityType("entity").instances().iterator().next(),
                     Graql.var("y").var(), tx.getEntityType("entity").instances().iterator().next()),
-                    new RuleExplanation(tx.getMetaRule().id()),
+                    new RuleExplanation(tx.getMetaRule()),
                     query.getPattern()
             );
             cache.record(query, inferredAnswer);
@@ -511,7 +518,7 @@ public class QueryCacheIT {
                     .forEach(ans -> cache.record(query, ans));
 
             //mock a rule explained answer that is equal to a dbAnswer
-            ConceptMap inferredAnswer = dbAnswer.explain(new RuleExplanation(tx.getMetaRule().id()), query.getPattern());
+            ConceptMap inferredAnswer = dbAnswer.explain(new RuleExplanation(tx.getMetaRule()), query.getPattern());
             cache.record(query, inferredAnswer);
 
             //retrieve
@@ -597,7 +604,7 @@ public class QueryCacheIT {
             ConceptMap inferredAnswer = new ConceptMap(ImmutableMap.of(
                     Graql.var("x").var(), mConcept,
                     Graql.var("y").var(), tx.getEntityType("entity").instances().iterator().next()),
-                    new RuleExplanation(tx.getMetaRule().id()),
+                    new RuleExplanation(tx.getMetaRule()),
                     childQuery.getPattern()
             );
 

@@ -26,16 +26,15 @@
         <appender-ref ref="STDOUT"/>
     </root>
 
+    <logger name="grakn.core.graql.reasoner" level="DEBUG" additivity="false">
+        <appender-ref ref="STDOUT"/>
+    </logger>
+
     <logger name="grakn.core" level="INFO" additivity="false">
         <appender-ref ref="STDOUT"/>
     </logger>
 
     <logger name="server.Server" level="WARN">
-        <appender-ref ref="STDOUT"/>
-    </logger>
-
-    <!-- Increase this if wanting to see more verbose reasoner output -->
-    <logger name="grakn.core.graql.reasoner" level="INFO" additivity="false">
         <appender-ref ref="STDOUT"/>
     </logger>
 

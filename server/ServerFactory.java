@@ -20,6 +20,8 @@ package grakn.core.server;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import grabl.tracing.client.GrablTracing;
+import grabl.tracing.client.GrablTracingThreadStatic;
 import grakn.benchmark.lib.instrumentation.ServerTracing;
 import grakn.core.common.config.Config;
 import grakn.core.common.config.ConfigKey;
@@ -37,6 +39,8 @@ import grakn.core.server.util.LockManager;
 import io.grpc.netty.NettyServerBuilder;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.ExecutorService;
@@ -48,6 +52,8 @@ import java.util.concurrent.TimeUnit;
  */
 public class ServerFactory {
 
+    private static final Logger LOG = LoggerFactory.getLogger(ServerFactory.class);
+
     private static final int GRPC_EXECUTOR_THREADS = Runtime.getRuntime().availableProcessors() * 2; // default Netty way of assigning threads, probably expose in config in future
     private static final int ELG_THREADS = 4; // this could also be 1, but to avoid risks set it to 4, probably expose in config in future
 
@@ -56,7 +62,7 @@ public class ServerFactory {
      *
      * @return a Server instance configured for Grakn Core
      */
-    public static Server createServer(boolean benchmark) {
+    public static Server createServer(Grakn.Arguments arguments) {
         // Grakn Server configuration
         Config config = Config.create();
 
@@ -80,8 +86,26 @@ public class ServerFactory {
         SessionFactory sessionFactory = new SessionFactory(lockManager, janusGraphFactory, hadoopGraphFactory, config);
 
         // Enable server tracing
-        if (benchmark) {
+        if (arguments.isBenchmark()) {
             ServerTracing.initInstrumentation("server-instrumentation");
+        }
+        if (arguments.isGrablTracing()) {
+            LOG.info("Grabl tracing is enabled!");
+
+            GrablTracing grablTracingClient;
+            if (arguments.getGrablTracing().isSecureMode()) {
+                LOG.info("Using Grabl tracing secure mode");
+                grablTracingClient = GrablTracing.withLogging(GrablTracing.tracing(
+                        arguments.getGrablTracing().getUri(),
+                        arguments.getGrablTracing().getUsername(),
+                        arguments.getGrablTracing().getAccessToken()
+                ));
+            } else {
+                LOG.warn("Using Grabl tracing UNSECURED mode!!!");
+                grablTracingClient = GrablTracing.withLogging(GrablTracing.tracing(arguments.getGrablTracing().getUri()));
+            }
+            GrablTracingThreadStatic.setGlobalTracingClient(grablTracingClient);
+            LOG.info("Completed tracing setup");
         }
 
         // create gRPC server

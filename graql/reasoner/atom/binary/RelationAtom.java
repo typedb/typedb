@@ -18,10 +18,13 @@
 
 package grakn.core.graql.reasoner.atom.binary;
 
+import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
@@ -64,9 +67,11 @@ import graql.lang.statement.Statement;
 import graql.lang.statement.StatementInstance;
 import graql.lang.statement.StatementThing;
 import graql.lang.statement.Variable;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -103,7 +108,7 @@ public class RelationAtom extends Atom {
     private boolean alphaEquivalenceHashCodeMemoized;
     private Multimap<Role, String> roleConceptIdMap = null;
     private Multimap<Role, Type> roleTypeMap = null;
-    private Multimap<Role, Variable> roleVarMap = null;
+    private ListMultimap<Role, Variable> roleVarMap = null;
 
     private RelationAtom(
             Variable varName,
@@ -159,11 +164,17 @@ public class RelationAtom extends Atom {
         return create(this, parent);
     }
 
-    public IsaAtom isaAtom(){ return isaAtom;}
+    public IsaAtom isaAtom() {
+        return isaAtom;
+    }
 
-    public ImmutableList<RelationProperty.RolePlayer> getRelationPlayers() { return relationPlayers; }
+    public ImmutableList<RelationProperty.RolePlayer> getRelationPlayers() {
+        return relationPlayers;
+    }
 
-    public ImmutableSet<Label> getRoleLabels() { return roleLabels; }
+    public ImmutableSet<Label> getRoleLabels() {
+        return roleLabels;
+    }
 
     @Override
     public Class<? extends VarProperty> getVarPropertyClass() {
@@ -186,15 +197,28 @@ public class RelationAtom extends Atom {
     }
 
     @Override
-    public Set<Atom> rewriteToAtoms() {
-        return this.getRelationPlayers().stream()
-                .map(rp -> create(relationPattern(getVarName().asReturnedVar(), Sets.newHashSet(rp)), getPredicateVariable(), getTypeLabel(), null, getParentQuery(), context()))
-                .collect(Collectors.toSet());
+    public Stream<Atom> rewriteToAtoms() {
+        // we keep duplicate role players together as part of a single atom, as the alternative,
+        // splitting them into sub-atoms, would change the semantics
+        // for example: {Relation[$x], Relation[$x]} != {Relation[$x, $x]}
+        Map<RelationProperty.RolePlayer, List<RelationProperty.RolePlayer>> players = new HashMap<>();
+        this.getRelationPlayers()
+                .forEach(rp -> {
+                    players.putIfAbsent(rp, new ArrayList<>());
+                    players.get(rp).add(rp);
+                });
+
+        // we also keep this
+        return players.values().stream()
+                .map(rolePlayers ->
+                        create(relationPattern(getVarName().asReturnedVar(), rolePlayers),
+                                getPredicateVariable(), getTypeLabel(), null, getParentQuery(), context())
+        );
     }
 
     @Override
     public String toString() {
-        String typeString = getTypeLabel() != null? getTypeLabel() .getValue() : "{*}";
+        String typeString = getTypeLabel() != null ? getTypeLabel().getValue() : "{*}";
         String relationString = (isUserDefined() ? getVarName() + " " : "") +
                 typeString +
                 (getPredicateVariable().isReturned() ? "(" + getPredicateVariable() + ")" : "") +
@@ -212,10 +236,14 @@ public class RelationAtom extends Atom {
     }
 
     @Override
-    public SchemaConcept getSchemaConcept() { return isaAtom.getSchemaConcept();}
+    public SchemaConcept getSchemaConcept() {
+        return isaAtom.getSchemaConcept();
+    }
 
     @Override
-    public Variable getPredicateVariable() { return isaAtom.getPredicateVariable();}
+    public Variable getPredicateVariable() {
+        return isaAtom.getPredicateVariable();
+    }
 
     //NB: overriding as these require a derived property
     @Override
@@ -376,10 +404,14 @@ public class RelationAtom extends Atom {
     }
 
     @Override
-    public boolean isRelation() { return true; }
+    public boolean isRelation() {
+        return true;
+    }
 
     @Override
-    public boolean isSelectable() { return true; }
+    public boolean isSelectable() {
+        return true;
+    }
 
     @Override
     public boolean isType() {
@@ -397,7 +429,9 @@ public class RelationAtom extends Atom {
     }
 
     @Override
-    public void checkValid() { validator.checkValid(this, context()); }
+    public void checkValid() {
+        validator.checkValid(this, context());
+    }
 
     @Override
     public Set<String> validateAsRuleHead(Rule rule) {
@@ -409,15 +443,15 @@ public class RelationAtom extends Atom {
         return validator.validateAsRuleBody(this, ruleLabel, context());
     }
 
-    public boolean typesRoleCompatibleWithMatchSemantics(Variable typedVar, Set<Type> parentTypes){
+    public boolean typesRoleCompatibleWithMatchSemantics(Variable typedVar, Set<Type> parentTypes) {
         return parentTypes.stream().allMatch(parentType -> isTypeRoleCompatible(typedVar, parentType, true));
     }
 
-    public boolean typesRoleCompatibleWithInsertSemantics(Variable typedVar, Set<Type> parentTypes){
+    public boolean typesRoleCompatibleWithInsertSemantics(Variable typedVar, Set<Type> parentTypes) {
         return parentTypes.stream().allMatch(parentType -> isTypeRoleCompatible(typedVar, parentType, false));
     }
 
-    private boolean isTypeRoleCompatible(Variable typedVar, Type parentType, boolean includeRoleHierarchy){
+    private boolean isTypeRoleCompatible(Variable typedVar, Type parentType, boolean includeRoleHierarchy) {
         if (parentType == null || Schema.MetaSchema.isMetaLabel(parentType.label())) return true;
 
         List<Role> roleRequirements = getRoleVarMap().entries().stream()
@@ -432,7 +466,7 @@ public class RelationAtom extends Atom {
         Set<Type> parentTypes = parentType.subs().collect(Collectors.toSet());
         return roleRequirements.stream()
                 //include sub roles
-                .flatMap(role -> includeRoleHierarchy? role.subs() : Stream.of(role))
+                .flatMap(role -> includeRoleHierarchy ? role.subs() : Stream.of(role))
                 //check if it can play it
                 .flatMap(Role::players)
                 .anyMatch(parentTypes::contains);
@@ -503,7 +537,7 @@ public class RelationAtom extends Atom {
 
     @Override
     public boolean isRuleApplicableViaAtom(Atom ruleAtom) {
-        if (ruleAtom instanceof RelationAtom || ruleAtom instanceof AttributeAtom)  {
+        if (ruleAtom instanceof RelationAtom || ruleAtom instanceof AttributeAtom) {
             RelationAtom atomWithType = typeReasoner.inferTypes(this.addType(ruleAtom.toRelationAtom().getSchemaConcept()), new ConceptMap(), context());
             return ruleAtom.isUnifiableWith(atomWithType);
         }
@@ -553,7 +587,7 @@ public class RelationAtom extends Atom {
     }
 
     @Override
-    public Stream<Predicate> getInnerPredicates(){
+    public Stream<Predicate> getInnerPredicates() {
         ConceptManager conceptManager = context().conceptManager();
         return Stream.concat(
                 isaAtom.getInnerPredicates(),
@@ -572,15 +606,15 @@ public class RelationAtom extends Atom {
     /**
      * @return map containing roleType - (rolePlayer var - rolePlayer type) pairs
      */
-    public Multimap<Role, Variable> getRoleVarMap() {
+    public ListMultimap<Role, Variable> getRoleVarMap() {
         if (roleVarMap == null) {
             roleVarMap = computeRoleVarMap();
         }
         return roleVarMap;
     }
 
-    private Multimap<Role, Variable> computeRoleVarMap() {
-        ImmutableMultimap.Builder<Role, Variable> builder = ImmutableMultimap.builder();
+    private ListMultimap<Role, Variable> computeRoleVarMap() {
+        ImmutableListMultimap.Builder<Role, Variable> builder = ImmutableListMultimap.builder();
         ConceptManager conceptManager = context().conceptManager();
 
         getRelationPlayers().forEach(c -> {
@@ -620,8 +654,8 @@ public class RelationAtom extends Atom {
         return semanticProcessor.computeSemanticDifference(this, child, unifier, context());
     }
 
-    public HashMultimap<Variable, Role> getVarRoleMap() {
-        HashMultimap<Variable, Role> map = HashMultimap.create();
+    public ListMultimap<Variable, Role> getVarRoleMap() {
+        ListMultimap<Variable, Role> map = ArrayListMultimap.create();
         getRoleVarMap().asMap().forEach((key, value) -> value.forEach(var -> map.put(var, key)));
         return map;
     }

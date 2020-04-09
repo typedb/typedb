@@ -30,8 +30,8 @@ import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.concept.structure.VertexElement;
 
 import javax.annotation.Nullable;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -73,7 +73,7 @@ public class RelationImpl implements Relation, ConceptVertex {
         if (relationStructure.isReified()) return (RelationReified) relationStructure.reify();
 
         //Get the role players to transfer
-        Map<Role, Set<Thing>> rolePlayers = structure().allRolePlayers();
+        Map<Role, List<Thing>> rolePlayers = structure().allRolePlayers();
 
         //Now Reify
         relationStructure = relationStructure.reify();
@@ -144,7 +144,7 @@ public class RelationImpl implements Relation, ConceptVertex {
      * see Role
      */
     @Override
-    public Map<Role, Set<Thing>> rolePlayersMap() {
+    public Map<Role, List<Thing>> rolePlayersMap() {
         return structure().allRolePlayers();
     }
 

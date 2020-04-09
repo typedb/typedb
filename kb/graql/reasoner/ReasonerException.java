@@ -82,6 +82,10 @@ public class ReasonerException extends GraknException {
         return new ReasonerException(ErrorMessage.INVALID_CACHE_ENTRY.getMessage(query.toString(), answer.toString()));
     }
 
+    public static ReasonerException invalidResolutionProfilerAnswer(ReasonerQuery query, ConceptMap answer) {
+        return new ReasonerException(ErrorMessage.INVALID_RESOLUTION_PROFILER_ANSWER.getMessage(query.toString(), answer.toString()));
+    }
+
     public static ReasonerException nonRoleIdAssignedToRoleVariable(Statement var) {
         return new ReasonerException(ErrorMessage.ROLE_ID_IS_NOT_ROLE.getMessage(var.toString()));
     }

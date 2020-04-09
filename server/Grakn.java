@@ -35,7 +35,9 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * The main class of the 'grakn' command. This class is not a class responsible
@@ -61,8 +63,7 @@ public class Grakn {
 
             // Start Server with timer
             Stopwatch timer = Stopwatch.createStarted();
-            boolean benchmark = parseBenchmarkArg(args);
-            Server server = ServerFactory.createServer(benchmark);
+            Server server = ServerFactory.createServer(new Arguments(args));
             server.start();
             LOG.info("Grakn started in {}", timer.stop());
             try {
@@ -78,28 +79,115 @@ public class Grakn {
         }
     }
 
-    private static boolean parseBenchmarkArg(String[] args){
-        Option enableBenchmark = Option.builder("b")
-                .longOpt("benchmark")
-                .hasArg(false)
-                .desc("Enable benchmarking via Zipkin on the server")
-                .required(false)
-                .type(Boolean.class)
-                .build();
+    public static class Arguments {
+        private final boolean benchmark;
+        private final Tracing grablTracing;
 
-        Options options = new Options();
-        options.addOption(enableBenchmark);
+        private Arguments(String[] args) {
+            Options options = new Options();
 
-        CommandLineParser parser = new DefaultParser();
-        CommandLine arguments;
-        try {
-            arguments = parser.parse(options, args);
-        } catch (ParseException e) {
-            (new HelpFormatter()).printHelp("Grakn options", options);
-            throw new RuntimeException(e.getMessage());
+            options.addOption(Option.builder("b")
+                    .longOpt("benchmark")
+                    .hasArg(false)
+                    .desc("Enable benchmarking via Zipkin on the server")
+                    .required(false)
+                    .type(Boolean.class)
+                    .build());
+
+            options.addOption(Option.builder("t")
+                    .longOpt("tracing-enabled")
+                    .desc("Enable grabl tracing")
+                    .required(false)
+                    .type(Boolean.class)
+                    .build());
+
+            options.addOption(Option.builder()
+                    .longOpt("tracing-uri")
+                    .hasArg()
+                    .desc("Grabl tracing URI")
+                    .required(false)
+                    .type(String.class)
+                    .build());
+
+            options.addOption(Option.builder()
+                    .longOpt("tracing-username")
+                    .hasArg()
+                    .desc("Grabl tracing username")
+                    .required(false)
+                    .type(String.class)
+                    .build());
+
+            options.addOption(Option.builder()
+                    .longOpt("tracing-access-token")
+                    .hasArg()
+                    .desc("Grabl tracing access-token")
+                    .required(false)
+                    .type(String.class)
+                    .build());
+
+            CommandLineParser parser = new DefaultParser();
+            CommandLine arguments;
+            try {
+                arguments = parser.parse(options, args);
+            } catch (ParseException e) {
+                (new HelpFormatter()).printHelp("Grakn options", options);
+                throw new RuntimeException(e.getMessage());
+            }
+
+            benchmark = arguments.hasOption("benchmark");
+            if (arguments.hasOption("tracing-enabled")) {
+                if (benchmark) {
+                    throw new RuntimeException("Cannot run with both benchmark and tracing at the same time");
+                }
+                grablTracing = new Tracing(
+                        arguments.getOptionValue("tracing-uri"),
+                        arguments.getOptionValue("tracing-username"),
+                        arguments.getOptionValue("tracing-access-token")
+                );
+            } else {
+                grablTracing = null;
+            }
         }
 
-        return arguments.hasOption("benchmark");
+        public boolean isBenchmark() {
+            return benchmark;
+        }
+
+        public boolean isGrablTracing() {
+            return grablTracing != null;
+        }
+
+        public Tracing getGrablTracing() {
+            return grablTracing;
+        }
+
+        public static class Tracing {
+            private final String uri;
+            private final String username;
+            private final String accessToken;
+
+            private Tracing(String uri, String username, String accessToken) {
+                this.uri = uri;
+                this.username = username;
+                this.accessToken = accessToken;
+            }
+
+            public String getUri() {
+                return uri;
+            }
+
+            public String getUsername() {
+                return username;
+            }
+
+            public String getAccessToken() {
+                return accessToken;
+            }
+
+            public boolean isSecureMode() {
+                return username != null;
+            }
+        }
     }
 }
 

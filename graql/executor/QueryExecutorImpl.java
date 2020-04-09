@@ -105,7 +105,7 @@ public class QueryExecutorImpl implements QueryExecutor {
             // custom workaround to deal with non-lazy Java 8 flatMap() functions is in LazyMergingStream
             Stream<Conjunction<Pattern>> conjunctions = matchClause.getPatterns().getNegationDNF().getPatterns().stream();
             Stream<Stream<ConceptMap>> answerStreams = conjunctions
-                    .map(p -> reasonerQueryFactory.resolvable(p).rewrite())
+                    .map(p -> reasonerQueryFactory.resolvable(p))
                     // we return an answer with the substituted IDs in the pattern
                     .map(q -> q.resolve(infer).map(ans -> ans.withPattern(q.withSubstitution(ans).getPattern())));
 

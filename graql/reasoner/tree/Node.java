@@ -15,30 +15,48 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
  */
+package grakn.core.graql.reasoner.tree;
 
-package grakn.core.graql.reasoner.explanation;
-
-import grakn.core.common.util.ListsUtil;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concept.answer.Explanation;
-import grakn.core.graql.reasoner.utils.ReasonerUtils;
-
 import java.util.List;
+import java.util.Set;
 
-/**
- * Explanation class for a join explanation - resulting from merging atoms in a conjunction.
- */
-public class JoinExplanation extends Explanation {
+public interface Node {
 
-    public JoinExplanation(List<ConceptMap> partialAnswers){
-        super(partialAnswers);
-    }
 
-    @Override
-    public JoinExplanation childOf(ConceptMap ans) {
-        return new JoinExplanation(ListsUtil.listUnion(this.getAnswers(), ans.explanation().getAnswers()));
-    }
+    String graphString();
 
-    @Override
-    public boolean isJoinExplanation(){ return true;}
+    /**
+     * @param child node to be added as a child of this node.
+     */
+    void addChild(Node child);
+
+    /**
+     * @param answer to be associated with this node.
+     */
+    void addAnswer(ConceptMap answer);
+
+
+    /**
+     *
+     * @return total time spent on processing the state corresponding to this node
+     */
+    long totalTime();
+
+    /**
+     *
+     * @return children nodes of this node
+     */
+    List<Node> children();
+
+    /**
+     *
+     * @return answer associated with this node (corresponding state)
+     */
+    Set<ConceptMap> answers();
+
+    /**
+     * Acknowledge completion of processing of this node.
+     */
+    void ackCompletion();
 }

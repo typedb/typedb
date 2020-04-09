@@ -102,7 +102,7 @@ attributed-relation sub relation,
     name sub attribute, datatype string;
     description sub attribute, datatype string;
 
-#Rules
+##Rules
 
 #3 instances in total
 binary-transitivity sub rule,

@@ -18,8 +18,11 @@
 
 package grakn.core.graql.reasoner.atom.task.materialise;
 
+import com.google.common.collect.HashMultiset;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Multimap;
+import com.google.common.collect.Multiset;
+import com.google.common.collect.Multisets;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.CacheCasting;
 import grakn.core.graql.reasoner.ReasoningContext;
@@ -31,6 +34,7 @@ import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.Relation;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
+import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.concept.manager.ConceptManager;
 import graql.lang.statement.Variable;
 
@@ -63,8 +67,25 @@ public class RelationMaterialiser implements AtomMaterialiser<RelationAtom> {
         }
 
         //NB: this will potentially reify existing implicit relationships
+        // we make the relation conform to the required number and quantity of each role player
         roleVarMap.asMap()
-                .forEach((key, value) -> value.forEach(var -> relation.assign(key, substitution.get(var).asThing())));
+                .forEach((role, variables) -> {
+                    Multiset<Thing> requiredPlayers = HashMultiset.create();
+                    variables.forEach(var -> requiredPlayers.add(substitution.get(var).asThing()));
+                    relation.rolePlayers(role)
+                            .forEach(player -> {
+                                // TODO if we have fast neighbor pairwise lookup, we can check if each required player is already in this relation
+                                // TODO without looping over all relation players and filtering
+                                if (requiredPlayers.isEmpty()) {
+                                    // we can short circuit the retrieval of all role players if requirements are satisfied
+                                    return;
+                                }
+                                requiredPlayers.remove(player, 1); // remove single occurence of this player if it exists
+                            });
+
+                    // we create each of the remaining required ones
+                    requiredPlayers.forEach(newPlayer -> relation.assign(role, newPlayer));
+                });
 
         ConceptMap relationSub = AnswerUtil.joinAnswers(
                 getRoleSubstitution(atom, ctx),

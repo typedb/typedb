@@ -844,10 +844,10 @@ public class ConceptMethod {
         private class Relation {
 
             private void rolePlayersMap() {
-                Map<grakn.core.kb.concept.api.Role, Set<grakn.core.kb.concept.api.Thing>> rolePlayersMap = concept.asRelation().rolePlayersMap();
+                Map<grakn.core.kb.concept.api.Role, List<grakn.core.kb.concept.api.Thing>> rolePlayersMap = concept.asRelation().rolePlayersMap();
                 Stream.Builder<SessionProto.Transaction.Res> responses = Stream.builder();
 
-                for (Map.Entry<grakn.core.kb.concept.api.Role, Set<grakn.core.kb.concept.api.Thing>> rolePlayers : rolePlayersMap.entrySet()) {
+                for (Map.Entry<grakn.core.kb.concept.api.Role, List<grakn.core.kb.concept.api.Thing>> rolePlayers : rolePlayersMap.entrySet()) {
                     for (grakn.core.kb.concept.api.Thing player : rolePlayers.getValue()) {
                         ConceptProto.Method.Iter.Res res = ConceptProto.Method.Iter.Res.newBuilder()
                                 .setRelationRolePlayersMapIterRes(ConceptProto.Relation.RolePlayersMap.Iter.Res.newBuilder()
