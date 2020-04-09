@@ -36,6 +36,8 @@ java_test(
     ],
     runtime_deps = [
         "//test/behaviour/config:parameters",
+        "//test/behaviour/concept/type/relationtype:steps",
+        "//test/behaviour/concept/type/thingtype:steps",
         "//test/behaviour/connection/keyspace:steps",
         "//test/behaviour/connection/session:steps",
         "//test/behaviour/connection/transaction:steps",
