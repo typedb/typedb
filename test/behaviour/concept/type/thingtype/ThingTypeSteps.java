@@ -32,7 +32,6 @@ import io.cucumber.java.en.When;
 import java.util.List;
 import java.util.Set;
 
-import static grakn.common.util.Collections.list;
 import static hypergraph.test.behaviour.config.Parameters.RootLabel;
 import static hypergraph.test.behaviour.connection.ConnectionSteps.tx;
 import static java.util.Objects.isNull;
@@ -129,20 +128,10 @@ public class ThingTypeSteps {
         assertEquals(supertype, get_thing_type(rootLabel, typeLabel).sup());
     }
 
-    @Then("{root_label}\\( ?{type_label} ?) get supertypes contain: {type_label}")
-    public void thing_get_supertypes_contain(RootLabel rootLabel, String typeLabel, String superLabel) {
-        thing_get_supertypes_contain(rootLabel, typeLabel, list(superLabel));
-    }
-
     @Then("{root_label}\\( ?{type_label} ?) get supertypes contain:")
     public void thing_get_supertypes_contain(RootLabel rootLabel, String typeLabel, List<String> superLabels) {
         Set<String> actuals = get_thing_type(rootLabel, typeLabel).sups().map(ThingType::label).collect(toSet());
         assertTrue(actuals.containsAll(superLabels));
-    }
-
-    @Then("{root_label}\\( ?{type_label} ?) get supertypes do not contain: {type_label}")
-    public void thing_get_supertypes_do_not_contain(RootLabel rootLabel, String typeLabel, String superLabel) {
-        thing_get_supertypes_do_not_contain(rootLabel, typeLabel, list(superLabel));
     }
 
     @Then("{root_label}\\( ?{type_label} ?) get supertypes do not contain:")
@@ -153,20 +142,10 @@ public class ThingTypeSteps {
         }
     }
 
-    @Then("{root_label}\\( ?{type_label} ?) get subtypes contain: {type_label}")
-    public void thing_get_subtypes_contain(RootLabel rootLabel, String typeLabel, String subLabel) {
-        thing_get_subtypes_contain(rootLabel, typeLabel, list(subLabel));
-    }
-
     @Then("{root_label}\\( ?{type_label} ?) get subtypes contain:")
     public void thing_get_subtypes_contain(RootLabel rootLabel, String typeLabel, List<String> subLabels) {
         Set<String> actuals = get_thing_type(rootLabel, typeLabel).subs().map(ThingType::label).collect(toSet());
         assertTrue(actuals.containsAll(subLabels));
-    }
-
-    @Then("{root_label}\\( ?{type_label} ?) get subtypes do not contain: {type_label}")
-    public void thing_get_subtypes_do_not_contain(RootLabel rootLabel, String typeLabel, String subLabel) {
-        thing_get_subtypes_do_not_contain(rootLabel, typeLabel, list(subLabel));
     }
 
     @Then("{root_label}\\( ?{type_label} ?) get subtypes do not contain:")
@@ -196,20 +175,10 @@ public class ThingTypeSteps {
         get_thing_type(rootLabel, typeLabel).unkey(attributeType);
     }
 
-    @Then("{root_label}\\( ?{type_label} ?) get key attributes contain: {type_label}")
-    public void thing_get_key_attributes_contain(RootLabel rootLabel, String typeLabel, String attributeLabel) {
-        thing_get_key_attributes_contain(rootLabel, typeLabel, list(attributeLabel));
-    }
-
     @Then("{root_label}\\( ?{type_label} ?) get key attributes contain:")
     public void thing_get_key_attributes_contain(RootLabel rootLabel, String typeLabel, List<String> attributeLabels) {
         Set<String> actuals = get_thing_type(rootLabel, typeLabel).keys().map(Type::label).collect(toSet());
         assertTrue(actuals.containsAll(attributeLabels));
-    }
-
-    @Then("{root_label}\\( ?{type_label} ?) get key attributes do not contain: {type_label}")
-    public void thing_get_key_attributes_do_not_contain(RootLabel rootLabel, String typeLabel, String attributeLabel) {
-        thing_get_key_attributes_do_not_contain(rootLabel, typeLabel, list(attributeLabel));
     }
 
     @Then("{root_label}\\( ?{type_label} ?) get key attributes do not contain:")
@@ -239,20 +208,10 @@ public class ThingTypeSteps {
         get_thing_type(rootLabel, typeLabel).unhas(attributeType);
     }
 
-    @Then("{root_label}\\( ?{type_label} ?) get has attributes contain: {type_label}")
-    public void thing_get_has_attributes_contain(RootLabel rootLabel, String typeLabel, String attributeLabel) {
-        thing_get_has_attributes_contain(rootLabel, typeLabel, list(attributeLabel));
-    }
-
     @Then("{root_label}\\( ?{type_label} ?) get has attributes contain:")
     public void thing_get_has_attributes_contain(RootLabel rootLabel, String typeLabel, List<String> attributeLabels) {
         Set<String> actuals = get_thing_type(rootLabel, typeLabel).attributes().map(Type::label).collect(toSet());
         assertTrue(actuals.containsAll(attributeLabels));
-    }
-
-    @Then("{root_label}\\( ?{type_label} ?) get has attributes do not contain: {type_label}")
-    public void thing_get_has_attributes_do_not_contain(RootLabel rootLabel, String typeLabel, String attributeLabel) {
-        thing_get_has_attributes_do_not_contain(rootLabel, typeLabel, list(attributeLabel));
     }
 
     @Then("{root_label}\\( ?{type_label} ?) get has attributes do not contain:")
@@ -283,11 +242,6 @@ public class ThingTypeSteps {
         get_thing_type(rootLabel, typeLabel).unplay(roleType);
     }
 
-    @Then("{root_label}\\( ?{type_label} ?) get playing roles contain: {scoped_label}")
-    public void thing_get_playing_roles_contain(RootLabel rootLabel, String typeLabel, Parameters.ScopedLabel roleLabel) {
-        thing_get_playing_roles_contain(rootLabel, typeLabel, list(roleLabel));
-    }
-
     @Then("{root_label}\\( ?{type_label} ?) get playing roles contain:")
     public void thing_get_playing_roles_contain(RootLabel rootLabel, String typeLabel, List<Parameters.ScopedLabel> roleLabels) {
         Set<Parameters.ScopedLabel> actuals = get_thing_type(rootLabel, typeLabel).plays().map(r -> {
@@ -295,11 +249,6 @@ public class ThingTypeSteps {
             return new Parameters.ScopedLabel(labels[0], labels[1]);
         }).collect(toSet());
         assertTrue(actuals.containsAll(roleLabels));
-    }
-
-    @Then("{root_label}\\( ?{type_label} ?) get playing roles do not contain: {scoped_label}")
-    public void thing_get_playing_roles_do_not_contain(RootLabel rootLabel, String typeLabel, Parameters.ScopedLabel roleLabel) {
-        thing_get_playing_roles_do_not_contain(rootLabel, typeLabel, list(roleLabel));
     }
 
     @Then("{root_label}\\( ?{type_label} ?) get playing roles do not contain:")
