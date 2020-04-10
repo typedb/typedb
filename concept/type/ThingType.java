@@ -26,7 +26,6 @@ import hypergraph.graph.vertex.TypeVertex;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -194,19 +193,22 @@ public abstract class ThingType<TYPE extends ThingType<TYPE>> extends Type<TYPE>
     public class Overrider<P extends Type<P>> {
 
         private final P property;
-        private final Function<TYPE, Stream<P>> propertyFn;
+        private final Function<TYPE, Stream<P>> function;
         private final Schema.Edge.Type schema;
 
-        Overrider(P property, Function<TYPE, Stream<P>> propertyFn, Schema.Edge.Type schema) {
+        Overrider(P property, Function<TYPE, Stream<P>> function, Schema.Edge.Type schema) {
             this.property = property;
-            this.propertyFn = propertyFn;
+            this.function = function;
             this.schema = schema;
         }
 
         public void as(P property) {
-            Optional<P> inherited = propertyFn.apply(sup()).filter(prop -> prop.equals(property)).findAny();
-            if (inherited.isPresent()) {
-                vertex.outs().edge(schema, this.property.vertex).overridden(inherited.get().vertex);
+            if (function.apply(sup()).anyMatch(prop -> prop.equals(property))) {
+                if (this.property.sups().anyMatch(prop -> prop.equals(property))) {
+                    vertex.outs().edge(schema, this.property.vertex).overridden(property.vertex);
+                } else {
+                    throw new HypergraphException("Invalid Property Overriding: " + property.label() + " is not a supertype");
+                }
             } else {
                 throw new HypergraphException("Invalid Property Overriding: inherited properties do not contain " +
                                                       property.label());
