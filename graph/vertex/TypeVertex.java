@@ -63,7 +63,7 @@ public abstract class TypeVertex extends Vertex<
     }
 
     public static byte[] generateIID(KeyGenerator keyGenerator, Schema.Vertex.Type schema) {
-        return join(schema.prefix().key(), keyGenerator.forType(schema.root()));
+        return join(schema.prefix().key(), keyGenerator.forType(schema.prefix().key()));
     }
 
     public Graph.Type graph() {

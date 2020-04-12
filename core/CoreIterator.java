@@ -25,6 +25,8 @@ import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
 
+import static hypergraph.common.collection.ByteArrays.bytesHavePrefix;
+
 public class CoreIterator<T> implements Iterator<T> {
 
     private final byte[] prefix;
@@ -53,7 +55,7 @@ public class CoreIterator<T> implements Iterator<T> {
 
     private boolean fetchAndCheck() {
         byte[] key;
-        if (!rocksIterator.isValid() || !keyHasPrefix(key = rocksIterator.key(), prefix)) {
+        if (!rocksIterator.isValid() || !bytesHavePrefix(key = rocksIterator.key(), prefix)) {
             state = State.COMPLETED;
             rocksIterator.close();
             return false;
@@ -62,14 +64,6 @@ public class CoreIterator<T> implements Iterator<T> {
         next = constructor.apply(key, rocksIterator.value());
         rocksIterator.next();
         state = State.FETCHED;
-        return true;
-    }
-
-    private boolean keyHasPrefix(byte[] key, byte[] prefix) {
-        if (key.length < prefix.length) return false;
-        for (int i = 0; i < prefix.length; i++) {
-            if (key[i] != prefix[i]) return false;
-        }
         return true;
     }
 

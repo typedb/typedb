@@ -21,7 +21,6 @@ package hypergraph.core;
 import hypergraph.Hypergraph;
 import hypergraph.common.exception.HypergraphException;
 import hypergraph.graph.KeyGenerator;
-import hypergraph.graph.Schema;
 import org.rocksdb.OptimisticTransactionDB;
 import org.rocksdb.RocksDBException;
 
@@ -39,14 +38,14 @@ public class CoreKeyspace implements Hypergraph.Keyspace {
     private final String name;
     private final CoreHypergraph core;
     private final OptimisticTransactionDB rocksDB;
-    private final KeyGenerator keyGenerator;
+    private final KeyGenerator.Persisted keyGenerator;
     private final AtomicBoolean isOpen;
     private final Set<CoreSession> sessions;
 
     private CoreKeyspace(CoreHypergraph core, String name) {
         this.name = name;
         this.core = core;
-        keyGenerator = new KeyGenerator(Schema.Key.PERSISTED);
+        keyGenerator = new KeyGenerator.Persisted();
         sessions = ConcurrentHashMap.newKeySet();
         isOpen = new AtomicBoolean(false);
 
@@ -80,7 +79,11 @@ public class CoreKeyspace implements Hypergraph.Keyspace {
     }
 
     private CoreKeyspace loadAndOpen() {
-        // TODO load keyGenerator
+        try (CoreSession session = createSessionAndOpen()) {
+            try (CoreTransaction txn = session.transaction(Hypergraph.Transaction.Type.READ)) {
+                keyGenerator.sync(txn.storage());
+            }
+        }
         isOpen.set(true);
         return this;
     }

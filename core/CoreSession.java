@@ -35,7 +35,6 @@ public class CoreSession implements Hypergraph.Session {
     CoreSession(CoreKeyspace keyspace) {
         this.keyspace = keyspace;
 
-
         transactions = ConcurrentHashMap.newKeySet();
         isOpen = new AtomicBoolean();
         isOpen.set(true);

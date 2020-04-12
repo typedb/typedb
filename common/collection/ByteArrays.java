@@ -36,14 +36,22 @@ public class ByteArrays {
         return joint;
     }
 
-    public static byte[] toShortBytes(int num) {
+    public static boolean bytesHavePrefix(byte[] bytes, byte[] prefix) {
+        if (bytes.length < prefix.length) return false;
+        for (int i = 0; i < prefix.length; i++) {
+            if (bytes[i] != prefix[i]) return false;
+        }
+        return true;
+    }
+
+    public static byte[] shortToBytes(int num) {
         byte[] bytes = new byte[2];
         bytes[1] = (byte) (num);
         bytes[0] = (byte) (num >> 8);
         return bytes;
     }
 
-    public static byte[] toIntegerBytes(int num) {
+    public static byte[] integerToBytes(int num) {
         byte[] bytes = new byte[4];
         bytes[3] = (byte) (num);
         bytes[2] = (byte) (num >>= 8);
@@ -52,7 +60,7 @@ public class ByteArrays {
         return bytes;
     }
 
-    public static byte[] toLongBytes(long num) {
+    public static byte[] longToBytes(long num) {
         byte[] bytes = new byte[8];
         bytes[7] = (byte) (num);
         bytes[6] = (byte) (num >>= 8);

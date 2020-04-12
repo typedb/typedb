@@ -27,6 +27,8 @@ public interface Storage {
 
     byte[] get(byte[] key);
 
+    byte[] getLastKey(byte[] prefix);
+
     void delete(byte[] key);
 
     void put(byte[] key);
@@ -34,5 +36,4 @@ public interface Storage {
     void put(byte[] key, byte[] value);
 
     <G> Iterator<G> iterate(byte[] key, BiFunction<byte[], byte[], G> constructor);
-
 }

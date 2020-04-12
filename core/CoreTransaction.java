@@ -33,11 +33,14 @@ import org.rocksdb.RocksIterator;
 import org.rocksdb.Transaction;
 import org.rocksdb.WriteOptions;
 
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
+
+import static hypergraph.common.collection.ByteArrays.bytesHavePrefix;
 
 class CoreTransaction implements Hypergraph.Transaction {
 
@@ -140,6 +143,10 @@ class CoreTransaction implements Hypergraph.Transaction {
         session.remove(this);
     }
 
+    public CoreStorage storage() {
+        return storage;
+    }
+
     class CoreStorage implements Storage {
 
         private final ManagedReadWriteLock readWriteLock;
@@ -164,6 +171,19 @@ class CoreTransaction implements Hypergraph.Transaction {
                 throw new HypergraphException(e);
             } finally {
                 if (type.isWrite()) readWriteLock.unlockRead();
+            }
+        }
+
+        @Override
+        public byte[] getLastKey(byte[] prefix) {
+            byte[] upperBound = Arrays.copyOf(prefix, prefix.length);
+            upperBound[upperBound.length-1] = (byte) (upperBound[upperBound.length-1] + 1);
+            assert upperBound[upperBound.length-1] != Byte.MIN_VALUE;
+
+            try (RocksIterator iterator = newRocksIterator()) {
+                iterator.seekForPrev(upperBound);
+                if (bytesHavePrefix(iterator.key(), prefix)) return iterator.key();
+                else return null;
             }
         }
 

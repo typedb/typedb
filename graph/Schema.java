@@ -272,9 +272,14 @@ public class Schema {
 
             public static Type of(byte prefix) {
                 for (Type t : Type.values()) {
-                    if (t.prefix.key == prefix) {
-                        return t;
-                    }
+                    if (t.prefix.key == prefix) return t;
+                }
+                return null;
+            }
+
+            public static Type of(Thing thing) {
+                for (Type t : Type.values()) {
+                    if (t.root.name().equals(thing.name())) return t;
                 }
                 return null;
             }
@@ -312,8 +317,7 @@ public class Schema {
             ENTITY(Prefix.VERTEX_ENTITY),
             ATTRIBUTE(Prefix.VERTEX_ATTRIBUTE),
             RELATION(Prefix.VERTEX_RELATION),
-            ROLE(Prefix.VERTEX_ROLE),
-            RULE(Prefix.VERTEX_RULE);
+            ROLE(Prefix.VERTEX_ROLE);
 
             private final Prefix prefix;
 
@@ -328,9 +332,14 @@ public class Schema {
 
             public static Thing of(byte prefix) {
                 for (Thing t : Thing.values()) {
-                    if (t.prefix.key == prefix) {
-                        return t;
-                    }
+                    if (t.prefix.key == prefix) return t;
+                }
+                return null;
+            }
+
+            public static Thing of(Type type) {
+                for (Thing t : Thing.values()) {
+                    if (t.name().equals(type.root().label())) return t;
                 }
                 return null;
             }

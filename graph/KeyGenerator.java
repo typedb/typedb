@@ -18,44 +18,95 @@
 
 package hypergraph.graph;
 
-import hypergraph.common.collection.ByteArrays;
+import hypergraph.common.collection.ByteArray;
 
+import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-public class KeyGenerator {
+import static hypergraph.common.collection.ByteArrays.join;
+import static hypergraph.common.collection.ByteArrays.longToBytes;
+import static hypergraph.common.collection.ByteArrays.shortToBytes;
+import static java.nio.ByteBuffer.wrap;
+import static java.util.Arrays.copyOfRange;
 
-    private final Map<Schema.Vertex.Type.Root, AtomicInteger> typeKeys;
-    private final Map<Schema.Vertex.Type, AtomicLong> thingKeys;
-    private final int initialValue;
-    private final int delta;
+public abstract class KeyGenerator {
 
-    public KeyGenerator(Schema.Key schema) {
+    protected final Map<ByteArray, AtomicInteger> typeKeys;
+    protected final Map<ByteArray, AtomicLong> thingKeys;
+    protected final int initialValue;
+    protected final int delta;
+
+    KeyGenerator(int initialValue, int delta) {
         typeKeys = new ConcurrentHashMap<>();
         thingKeys = new ConcurrentHashMap<>();
-        initialValue = schema.initialValue();
-        delta = schema.isIncrement() ? 1 : -1;
+        this.initialValue = initialValue;
+        this.delta = delta;
     }
 
-    public byte[] forType(Schema.Vertex.Type.Root root) {
-        if (typeKeys.containsKey(root)) {
-            return ByteArrays.toShortBytes(typeKeys.get(root).getAndAdd(delta));
+    public byte[] forType(byte[] root) {
+        if (typeKeys.containsKey(ByteArray.of(root))) {
+            return shortToBytes(typeKeys.get(ByteArray.of(root)).getAndAdd(delta));
         } else {
             AtomicInteger zero = new AtomicInteger(initialValue);
-            typeKeys.put(root, zero);
-            return ByteArrays.toShortBytes(zero.getAndAdd(delta));
+            typeKeys.put(ByteArray.of(root), zero);
+            return shortToBytes(zero.getAndAdd(delta));
         }
     }
 
-    public byte[] forThing(Schema.Vertex.Type type) {
-        if (thingKeys.containsKey(type)) {
-            return ByteArrays.toLongBytes(thingKeys.get(type).getAndAdd(delta));
+    public byte[] forThing(byte[] type) {
+        if (thingKeys.containsKey(ByteArray.of(type))) {
+            return longToBytes(thingKeys.get(ByteArray.of(type)).getAndAdd(delta));
         } else {
             AtomicLong zero = new AtomicLong(initialValue);
-            thingKeys.put(type, zero);
-            return ByteArrays.toLongBytes(zero.getAndAdd(delta));
+            thingKeys.put(ByteArray.of(type), zero);
+            return longToBytes(zero.getAndAdd(delta));
+        }
+    }
+
+    static class Buffered extends KeyGenerator {
+        Buffered() {
+            super(Schema.Key.BUFFERED.initialValue(), Schema.Key.BUFFERED.isIncrement() ? 1 : -1);
+        }
+    }
+
+    public static class Persisted extends KeyGenerator {
+
+        public Persisted() {
+            super(Schema.Key.PERSISTED.initialValue(), Schema.Key.PERSISTED.isIncrement() ? 1 : -1);
+        }
+
+        public void sync(Storage storage) {
+            syncTypeKeys(storage);
+            syncThingKeys(storage);
+        }
+
+        private void syncTypeKeys(Storage storage) {
+            for (Schema.Vertex.Type schema : Schema.Vertex.Type.values()) {
+                byte[] prefix = schema.prefix().key();
+                byte[] lastIID = storage.getLastKey(prefix);
+                AtomicInteger nextValue = lastIID != null ?
+                        new AtomicInteger(wrap(copyOfRange(lastIID, prefix.length, lastIID.length)).getShort() + delta) :
+                        new AtomicInteger(initialValue);
+                typeKeys.put(ByteArray.of(schema.prefix().key()), nextValue);
+            }
+        }
+
+        private void syncThingKeys(Storage storage) {
+            for (Schema.Vertex.Thing thingSchema : Schema.Vertex.Thing.values()) {
+                byte[] typeIID = Schema.Vertex.Type.of(thingSchema).prefix().key();
+                Iterator<byte[]> typeIterator = storage.iterate(typeIID, (iid, value) -> iid);
+                while (typeIterator.hasNext()) {
+                    byte[] prefix = join(thingSchema.prefix().key(), typeIterator.next());
+                    byte[] lastIID = storage.getLastKey(prefix);
+                    AtomicLong nextValue = lastIID != null ?
+                            new AtomicLong(wrap(copyOfRange(lastIID, prefix.length, lastIID.length)).getShort() + delta) :
+                            new AtomicLong(initialValue);
+                    thingKeys.put(ByteArray.of(typeIID), nextValue);
+                }
+            }
         }
     }
 }

@@ -128,11 +128,15 @@ public class BasicTest {
                             },
                             tx -> {
                                 RelationType marriage = tx.concepts().putRelationType("marriage");
+                                marriage.relates("husband");
+                                marriage.relates("wife");
                                 notNulls(marriage);
                                 assertEquals(marriage.sup(), rootRelationType);
                             },
                             tx -> {
                                 RelationType employment = tx.concepts().putRelationType("employment");
+                                employment.relates("employee");
+                                employment.relates("employer");
                                 notNulls(employment);
                                 assertEquals(employment.sup(), rootRelationType);
                             },
@@ -189,6 +193,28 @@ public class BasicTest {
                 try (Hypergraph.Transaction transaction = session.transaction(Hypergraph.Transaction.Type.READ)) {
                     assertTransactionRead(transaction);
                 }
+
+                try (Hypergraph.Transaction transaction = session.transaction(Hypergraph.Transaction.Type.WRITE)) {
+                    AttributeType gender = transaction.concepts().putAttributeType("gender");
+                    EntityType school = transaction.concepts().putEntityType("school");
+                    RelationType teaching = transaction.concepts().putRelationType("teaching");
+                    teaching.relates("teacher");
+                    teaching.relates("student");
+                    RoleType teacher = teaching.role("teacher");
+                    RoleType student = teaching.role("student");
+                    notNulls(gender, school, teaching, teacher, student);
+                    transaction.commit();
+                }
+
+                try (Hypergraph.Transaction transaction = session.transaction(Hypergraph.Transaction.Type.READ)) {
+                    assertTransactionRead(transaction);
+                    AttributeType gender = transaction.concepts().getAttributeType("gender");
+                    EntityType school = transaction.concepts().getEntityType("school");
+                    RelationType teaching = transaction.concepts().getRelationType("teaching");
+                    RoleType teacher = teaching.role("teacher");
+                    RoleType student = teaching.role("student");
+                    notNulls(gender, school, teaching, teacher, student);
+                }
             }
         }
     }
@@ -216,12 +242,18 @@ public class BasicTest {
                 },
                 tx -> {
                     RelationType marriage = tx.concepts().getRelationType("marriage");
-                    notNulls(marriage);
-                    assertEquals(marriage.sup(), rootRelationType);
+                    RoleType husband = marriage.role("husband");
+                    RoleType wife = marriage.role("wife");
+                    notNulls(marriage, husband, wife);
+                    assertEquals(rootRelationType, marriage.sup());
+                    assertEquals(rootRelationType.role("role"), husband.sup());
+                    assertEquals(rootRelationType.role("role"), wife.sup());
                 },
                 tx -> {
                     RelationType employment = tx.concepts().getRelationType("employment");
-                    notNulls(employment);
+                    RoleType employee = employment.role("employee");
+                    RoleType employer = employment.role("employer");
+                    notNulls(employment, employee, employer);
                     assertEquals(employment.sup(), rootRelationType);
                 },
                 tx -> {

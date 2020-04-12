@@ -18,6 +18,7 @@
 
 package hypergraph.graph;
 
+import hypergraph.common.collection.ByteArray;
 import hypergraph.common.concurrent.ManagedReadWriteLock;
 import hypergraph.common.exception.HypergraphException;
 import hypergraph.graph.vertex.ThingVertex;
@@ -37,7 +38,7 @@ public class Graph {
 
     public Graph(Storage storage) {
         this.storage = storage;
-        keyGenerator = new KeyGenerator(Schema.Key.BUFFERED);
+        keyGenerator = new KeyGenerator.Buffered();
         typeGraph = new Graph.Type();
         thingGraph = new Graph.Thing();
     }
@@ -75,7 +76,7 @@ public class Graph {
     public class Type {
 
         private final Map<String, TypeVertex> typeByLabel;
-        private final Map<byte[], TypeVertex> typeByIID;
+        private final Map<ByteArray, TypeVertex> typeByIID;
         private final Map<String, ManagedReadWriteLock> singleLabelLocks;
         private final ManagedReadWriteLock multiLabelLock;
 
@@ -152,7 +153,7 @@ public class Graph {
                 TypeVertex typeVertex = typeByLabel.computeIfAbsent(
                         scopedLabel, i -> new TypeVertex.Buffered(this, type, TypeVertex.generateIID(keyGenerator, type), label, scope)
                 );
-                typeByIID.put(typeVertex.iid(), typeVertex);
+                typeByIID.put(ByteArray.of(typeVertex.iid()), typeVertex);
                 return typeVertex;
             } catch (InterruptedException e) {
                 throw new HypergraphException(e);
@@ -177,7 +178,9 @@ public class Graph {
 
                 byte[] iid = storage.get(TypeVertex.index(label, scope));
                 if (iid != null) {
-                    vertex = typeByIID.computeIfAbsent(iid, x -> new TypeVertex.Persisted(this, x, label, scope));
+                    vertex = typeByIID.computeIfAbsent(
+                            ByteArray.of(iid), i -> new TypeVertex.Persisted(this, i.bytes(), label, scope)
+                    );
                     typeByLabel.putIfAbsent(scopedLabel, vertex);
                 }
 
@@ -191,10 +194,12 @@ public class Graph {
         }
 
         public TypeVertex get(byte[] iid) {
-            TypeVertex vertex = typeByIID.get(iid);
+            TypeVertex vertex = typeByIID.get(ByteArray.of(iid));
             if (vertex != null) return vertex;
 
-            vertex = typeByIID.computeIfAbsent(iid, i -> new TypeVertex.Persisted(this, i));
+            vertex = typeByIID.computeIfAbsent(
+                    ByteArray.of(iid), i -> new TypeVertex.Persisted(this, i.bytes())
+            );
             typeByLabel.putIfAbsent(vertex.scopedLabel(), vertex);
 
             return vertex;
@@ -206,7 +211,7 @@ public class Graph {
                 singleLabelLocks.computeIfAbsent(vertex.scopedLabel(), x -> new ManagedReadWriteLock()).lockWrite();
 
                 typeByLabel.remove(vertex.scopedLabel());
-                typeByIID.remove(vertex.iid());
+                typeByIID.remove(ByteArray.of(vertex.iid()));
             } catch (InterruptedException e) {
                 throw new HypergraphException(e);
             } finally {
@@ -224,7 +229,7 @@ public class Graph {
 
     public class Thing {
 
-        private final Map<byte[], ThingVertex> thingByIID;
+        private final Map<ByteArray, ThingVertex> thingByIID;
 
         Thing() {
             thingByIID = new ConcurrentHashMap<>();
