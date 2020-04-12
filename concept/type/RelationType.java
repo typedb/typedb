@@ -86,7 +86,17 @@ public class RelationType extends ThingType<RelationType> {
         } else {
             RoleType roleType = RoleType.of(vertex.graph(), roleLabel, vertex.label());
             vertex.outs().put(Schema.Edge.Type.RELATES, roleType.vertex);
+            vertex.outs().edge(Schema.Edge.Type.RELATES, roleType.vertex).overridden(roleType.sup().vertex);
             return new RelatesOverrider(roleType);
+        }
+    }
+
+    public void unrelate(String roleLabel) {
+        TypeVertex roleTypeVertex = vertex.graph().get(roleLabel, vertex.label());
+        if (roleTypeVertex != null) {
+            RoleType.of(roleTypeVertex).delete();
+        } else {
+            throw new HypergraphException("Invalid RoleType Removal: " + roleLabel + " does not exist in " + vertex.label());
         }
     }
 
@@ -104,10 +114,25 @@ public class RelationType extends ThingType<RelationType> {
         }
     }
 
+    private Stream<RoleType> declaredRoles() {
+        Iterator<RoleType> roles = apply(vertex.outs().edge(Schema.Edge.Type.RELATES).to(), RoleType::of);
+        return stream(spliteratorUnknownSize(roles, ORDERED | IMMUTABLE), false);
+    }
+
     public RoleType role(String roleLabel) {
         TypeVertex roleTypeVertex = vertex.graph().get(roleLabel, vertex.label());
         if (roleTypeVertex != null) return RoleType.of(roleTypeVertex);
         else return null;
+    }
+
+    @Override
+    public void delete() {
+        if (subs().findAny().isPresent()) {
+            declaredRoles().forEach(Type::delete);
+            vertex.delete();
+        } else {
+            throw new HypergraphException("Invalid RoleType Removal: " + label() + " has subtypes");
+        }
     }
 
     public class RelatesOverrider {
@@ -118,24 +143,24 @@ public class RelationType extends ThingType<RelationType> {
             this.roleType = roleType;
         }
 
-        public void as(String roleLabel) {
-            Optional<RoleType> inherited = sup().roles().filter(role -> role.label().equals(roleLabel)).findAny();
+        public void as(String superLabel) {
+            Optional<RoleType> inherited = sup().roles().filter(role -> role.label().equals(superLabel)).findAny();
             if (inherited.isPresent()) {
                 roleType.sup(inherited.get());
-                vertex.outs().edge(Schema.Edge.Type.RELATES, this.roleType.vertex).overridden(inherited.get().vertex);
+                vertex.outs().edge(Schema.Edge.Type.RELATES, roleType.vertex).overridden(inherited.get().vertex);
             } else {
                 throw new HypergraphException(
-                        "Invalid Role Type Overriding: inherited roles do not contain " + roleLabel);
+                        "Invalid Role Type Overriding: inherited roles do not contain " + superLabel);
             }
         }
 
-        public void as(RoleType roleType) {
-            if (sup().roles().anyMatch(prop -> prop.equals(roleType))) {
-                this.roleType.sup(roleType);
-                this.roleType.vertex.outs().edge(Schema.Edge.Type.RELATES, this.roleType.vertex).overridden(roleType.vertex);
+        public void as(RoleType superType) {
+            if (sup().roles().anyMatch(rt -> rt.equals(superType))) {
+                roleType.sup(superType);
+                vertex.outs().edge(Schema.Edge.Type.RELATES, roleType.vertex).overridden(superType.vertex);
             } else {
                 throw new HypergraphException(
-                        "Invalid Role Type Overriding: inherited roles do not contain " + roleType.label());
+                        "Invalid Role Type Overriding: inherited roles do not contain " + superType.label());
             }
         }
     }

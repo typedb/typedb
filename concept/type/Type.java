@@ -18,6 +18,7 @@
 
 package hypergraph.concept.type;
 
+import hypergraph.common.exception.HypergraphException;
 import hypergraph.common.iterator.Iterators;
 import hypergraph.graph.Graph;
 import hypergraph.graph.Schema;
@@ -105,6 +106,15 @@ public abstract class Type<TYPE extends Type<TYPE>> {
         return stream(spliteratorUnknownSize(sups, ORDERED), false);
     }
 
+    public void delete() {
+        // TODO: Check if a type has any intances too
+        if (subs().findAny().isPresent()) {
+            vertex.delete();
+        } else {
+            throw new HypergraphException("Invalid RoleType Removal: " + label() + " has subtypes");
+        }
+    }
+
     @Override
     public String toString() {
         return this.getClass().getSimpleName() + " {" + vertex.toString() + "}";
@@ -121,9 +131,5 @@ public abstract class Type<TYPE extends Type<TYPE>> {
     @Override
     public final int hashCode() {
         return vertex.hashCode();
-    }
-
-    public void delete() {
-        vertex.delete();
     }
 }
