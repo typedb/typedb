@@ -58,7 +58,17 @@ public class RelationTypeSteps {
         assertEquals(isNull, isNull(tx().concepts().putRelationType(relationLabel).role(roleLabel)));
     }
 
-    public Set<Parameters.ScopedLabel> relation_get_related_roles_actuals(String relationLabel) {
+    @When("relation\\( ?{type_label} ?) get role\\( ?{type_label} ?) set label: {type_label}")
+    public void relation_get_role_set_label(String relationLabel, String roleLabel, String newLabel) {
+        tx().concepts().getRelationType(relationLabel).role(roleLabel).label(newLabel);
+    }
+
+    @When("relation\\( ?{type_label} ?) get role\\( ?{type_label} ?) get label: {type_label}")
+    public void relation_get_role_get_label(String relationLabel, String roleLabel, String getLabel) {
+        assertEquals(getLabel, tx().concepts().getRelationType(relationLabel).role(roleLabel).label());
+    }
+
+    private Set<Parameters.ScopedLabel> relation_get_related_roles_actuals(String relationLabel) {
         return tx().concepts().getRelationType(relationLabel).roles()
                 .map(role -> new Parameters.ScopedLabel(role.scopedLabel().split(":")[0],
                                                         role.scopedLabel().split(":")[1])).collect(toSet());
@@ -123,6 +133,4 @@ public class RelationTypeSteps {
             assertFalse(actuals.contains(subLabel));
         }
     }
-
-
 }
