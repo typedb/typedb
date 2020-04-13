@@ -166,7 +166,7 @@ public abstract class TypeVertex extends Vertex<
         }
 
         public boolean isAbstract() {
-            return isAbstract;
+            return isAbstract != null ? isAbstract : false;
         }
 
         public TypeVertex setAbstract(boolean isAbstract) {

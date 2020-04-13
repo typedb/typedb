@@ -50,6 +50,11 @@ public abstract class ThingType<TYPE extends ThingType<TYPE>> extends Type<TYPE>
     }
 
     @Override
+    public void setAbstract(boolean isAbstract) {
+        vertex.setAbstract(isAbstract);
+    }
+
+    @Override
     public void sup(TYPE superType) {
         super.sup(superType);
     }

@@ -74,7 +74,7 @@ public class RelationType extends ThingType<RelationType> {
     @Override
     public void setAbstract(boolean isAbstract) {
         vertex.setAbstract(isAbstract);
-        vertex.outs().edge(Schema.Edge.Type.RELATES).to().forEachRemaining(v -> v.setAbstract(isAbstract));
+        declaredRoles().forEach(role -> role.setAbstract(true));
     }
 
     public RelatesOverrider relates(String roleLabel) {

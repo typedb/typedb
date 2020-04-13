@@ -69,7 +69,7 @@ public abstract class Type<TYPE extends Type<TYPE>> {
         return vertex.isAbstract();
     }
 
-    public void setAbstract(boolean isAbstract) {
+    protected void setAbstract(boolean isAbstract) {
         vertex.setAbstract(isAbstract);
     }
 
