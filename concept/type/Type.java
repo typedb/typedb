@@ -57,20 +57,20 @@ public abstract class Type<TYPE extends Type<TYPE>> {
 
     boolean isRoot() { return false; }
 
-    public String label() {
-        return vertex.label();
-    }
-
     public void label(String label) {
         vertex.label(label);
     }
 
-    public boolean isAbstract() {
-        return vertex.isAbstract();
+    public String label() {
+        return vertex.label();
     }
 
     protected void setAbstract(boolean isAbstract) {
         vertex.setAbstract(isAbstract);
+    }
+
+    public boolean isAbstract() {
+        return vertex.isAbstract();
     }
 
     protected void sup(TYPE superType) {

@@ -120,8 +120,14 @@ public class RelationType extends ThingType<RelationType> {
     }
 
     public RoleType role(String roleLabel) {
+        Optional<RoleType> roleType;
         TypeVertex roleTypeVertex = vertex.graph().get(roleLabel, vertex.label());
-        if (roleTypeVertex != null) return RoleType.of(roleTypeVertex);
+        if (roleTypeVertex != null) {
+            return RoleType.of(roleTypeVertex);
+        }
+        else if ((roleType = roles().filter(role -> role.label().equals(roleLabel)).findAny()).isPresent()) {
+            return roleType.get();
+        }
         else return null;
     }
 
