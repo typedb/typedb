@@ -68,6 +68,16 @@ public class RelationTypeSteps {
         assertEquals(getLabel, tx().concepts().getRelationType(relationLabel).role(roleLabel).label());
     }
 
+    @When("relation\\( ?{type_label} ?) get role\\( ?{type_label} ?) set abstract: {bool}")
+    public void relation_get_role_set_abstract(String relationLabel, String roleLabel, boolean isAbstract) {
+        tx().concepts().getRelationType(relationLabel).role(roleLabel).setAbstract(isAbstract);
+    }
+
+    @When("relation\\( ?{type_label} ?) get role\\( ?{type_label} ?) is abstract: {bool}")
+    public void relation_get_role_is_abstract(String relationLabel, String roleLabel, boolean isAbstract) {
+        assertEquals(isAbstract, tx().concepts().getRelationType(relationLabel).role(roleLabel).isAbstract());
+    }
+
     private Set<Parameters.ScopedLabel> relation_get_related_roles_actuals(String relationLabel) {
         return tx().concepts().getRelationType(relationLabel).roles()
                 .map(role -> new Parameters.ScopedLabel(role.scopedLabel().split(":")[0],
