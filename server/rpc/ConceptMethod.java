@@ -513,6 +513,8 @@ public class ConceptMethod {
 
             private void isAbstract(boolean isAbstract) {
                 concept.asType().isAbstract(isAbstract);
+
+                responseSender.accept(null);
             }
 
             private void keys() {
