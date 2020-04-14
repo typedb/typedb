@@ -22,7 +22,6 @@ import com.datastax.oss.driver.api.core.CqlSession;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import grabl.tracing.client.GrablTracing;
 import grabl.tracing.client.GrablTracingThreadStatic;
-import grakn.benchmark.lib.instrumentation.ServerTracing;
 import grakn.core.common.config.Config;
 import grakn.core.common.config.ConfigKey;
 import grakn.core.server.keyspace.KeyspaceManager;
@@ -85,10 +84,6 @@ public class ServerFactory {
         // session factory
         SessionFactory sessionFactory = new SessionFactory(lockManager, janusGraphFactory, hadoopGraphFactory, config);
 
-        // Enable server tracing
-        if (arguments.isBenchmark()) {
-            ServerTracing.initInstrumentation("server-instrumentation");
-        }
         if (arguments.isGrablTracing()) {
             LOG.info("Grabl tracing is enabled!");
 

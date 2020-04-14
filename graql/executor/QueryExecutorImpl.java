@@ -20,7 +20,6 @@ package grakn.core.graql.executor;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
-import grakn.benchmark.lib.instrumentation.ServerTracing;
 import grakn.core.concept.answer.Answer;
 import grakn.core.concept.answer.AnswerGroup;
 import grakn.core.concept.answer.ConceptMap;
@@ -94,7 +93,6 @@ public class QueryExecutorImpl implements QueryExecutor {
     @Override
     public Stream<ConceptMap> match(MatchClause matchClause) {
 
-        int createStreamSpanId = ServerTracing.startScopedChildSpan("QueryExecutor.match create stream");
 
         Stream<ConceptMap> answerStream;
 
@@ -117,7 +115,6 @@ public class QueryExecutorImpl implements QueryExecutor {
             answerStream = Stream.empty();
         }
 
-        ServerTracing.closeScopedChildSpan(createStreamSpanId);
         return answerStream;
     }
 
@@ -187,7 +184,6 @@ public class QueryExecutorImpl implements QueryExecutor {
 
     @Override
     public Stream<ConceptMap> insert(GraqlInsert query) {
-        int createExecSpanId = ServerTracing.startScopedChildSpan("QueryExecutor.insert create executors");
 
         Collection<Statement> statements = query.statements().stream()
                 .flatMap(statement -> statement.innerStatements().stream())
@@ -200,9 +196,6 @@ public class QueryExecutorImpl implements QueryExecutor {
             }
         }
 
-        ServerTracing.closeScopedChildSpan(createExecSpanId);
-
-        int answerStreamSpanId = ServerTracing.startScopedChildSpan("QueryExecutor.insert create answer stream");
 
         Stream<ConceptMap> answerStream;
         if (query.match() != null) {
@@ -221,8 +214,6 @@ public class QueryExecutorImpl implements QueryExecutor {
         } else {
             answerStream = WriteExecutorImpl.create(conceptManager, executors.build()).write();
         }
-
-        ServerTracing.closeScopedChildSpan(answerStreamSpanId);
 
         return answerStream;
     }

@@ -59,13 +59,6 @@ def graknlabs_console():
         commit = "27409b68d86b0b08ece1300b62dadd24baefe78b",
     )
 
-def graknlabs_benchmark():
-    git_repository(
-        name = "graknlabs_benchmark",
-        remote = "https://github.com/graknlabs/benchmark.git",
-        commit = "78869c68a2b6073917f7d6ee085ffd0b0d6a29b0",  # keep in sync with protocol changes
-    )
-
 def graknlabs_simulation():
     git_repository(
         name = "graknlabs_simulation",

@@ -47,7 +47,6 @@ public class GraknDaemon {
     private static final String STORAGE = "storage";
     private static final String EMPTY_STRING = "";
     private static final String OPTIONS = "--";
-    private static final String BENCHMARK_FLAG = "--benchmark";
     private static final String VERSION_LABEL = "Version: ";
 
 
@@ -133,7 +132,6 @@ public class GraknDaemon {
      * Accepts various Grakn commands (eg., 'grakn server start')
      *
      * @param args arrays of arguments, eg., { 'server', 'start' }
-     *             option may be eg., `--benchmark`
      */
     public void run(String[] args) {
         String action = args.length > 1 ? args[1] : "";
@@ -195,10 +193,6 @@ public class GraknDaemon {
             case STORAGE:
                 storageExecutor.startIfNotRunning();
                 break;
-            case BENCHMARK_FLAG:
-                storageExecutor.startIfNotRunning();
-                serverExecutor.startIfNotRunning(Collections.singletonList(BENCHMARK_FLAG));
-                break;
             case OPTIONS:
             case EMPTY_STRING:
                 storageExecutor.startIfNotRunning();
@@ -213,7 +207,7 @@ public class GraknDaemon {
         System.out.println("Usage: grakn server COMMAND\n" +
                                    "\n" +
                                    "COMMAND:\n" +
-                                   "start [" + SERVER + "|" + STORAGE + "|--benchmark] Start Grakn (or optionally, only one of the component, or with benchmarking enabled)\n" +
+                                   "start [" + SERVER + "|" + STORAGE + "] Start Grakn (or optionally, only one of the component)\n" +
                                    "stop [" + SERVER + "|" + STORAGE + "]   Stop Grakn (or optionally, only one of the component)\n" +
                                    "status                         Check if Grakn is running\n" +
                                    "clean                          DANGEROUS: wipe data completely\n" +
@@ -221,8 +215,7 @@ public class GraknDaemon {
                                    "\n" +
                                    "Tips:\n" +
                                    "- Start Grakn with 'grakn server start'\n" +
-                                   "- Start or stop only one component with, e.g. 'grakn server start storage' or 'grakn server stop storage', respectively\n" +
-                                   "- Start Grakn with Zipkin-enabled benchmarking with `grakn server start --benchmark`");
+                                   "- Start or stop only one component with, e.g. 'grakn server start storage' or 'grakn server stop storage', respectively\n");
     }
 
     private void serverStatus() {
