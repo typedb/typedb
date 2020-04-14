@@ -401,161 +401,164 @@ jobs:
       - run: git push --delete https://$REPO_GITHUB_TOKEN@github.com/graknlabs/grakn $CIRCLE_BRANCH
 
 workflows:
-  grakn-core:
+  test:
     jobs:
-      - build:
-          filters:
-            branches:
-              ignore: grakn-release-branch
-      - build-checkstyle:
-          filters:
-            branches:
-              ignore: grakn-release-branch
-      - build-analysis:
-          filters:
-            branches:
-              only:
-                - master
-                - rewrite
-      - test-common:
-          filters:
-            branches:
-              ignore: grakn-release-branch
-      - test-server:
-          filters:
-            branches:
-              ignore: grakn-release-branch
-      - test-integration:
-          filters:
-            branches:
-              ignore: grakn-release-branch
-      - test-integration-reasoner:
-          filters:
-            branches:
-              ignore: grakn-release-branch
-      - test-integration-analytics:
-          filters:
-            branches:
-              ignore: grakn-release-branch
-      - test-end-to-end:
-          filters:
-            branches:
-              ignore: grakn-release-branch
-      - test-assembly-mac-zip:
-          filters:
-            branches:
-              only:
-                - master
-                - rewrite
-          requires:
-            - build
-            - build-checkstyle
-            - build-analysis
-            - test-common
-            - test-server
-            - test-integration
-            - test-integration-reasoner
-            - test-integration-analytics
-            - test-end-to-end
-      - test-assembly-windows-zip:
-          filters:
-            branches:
-              only:
-                - master
-                - rewrite
-          requires:
-            - build
-            - build-checkstyle
-            - build-analysis
-            - test-common
-            - test-server
-            - test-integration
-            - test-integration-reasoner
-            - test-integration-analytics
-            - test-end-to-end
-      - test-assembly-linux-targz:
-          filters:
-            branches:
-              only:
-                - master
-                - rewrite
-          requires:
-            - build
-            - build-checkstyle
-            - build-analysis
-            - test-common
-            - test-server
-            - test-integration
-            - test-integration-reasoner
-            - test-integration-analytics
-            - test-end-to-end
-      - test-assembly-docker:
-          filters:
-            branches:
-              only:
-                - master
-                - rewrite
-          requires:
-            - build
-            - build-checkstyle
-            - build-analysis
-            - test-common
-            - test-server
-            - test-integration
-            - test-integration-reasoner
-            - test-integration-analytics
-            - test-end-to-end
-      - deploy-apt-snapshot:
-          filters:
-            branches:
-              only:
-                - master
-                - rewrite
-          requires:
-            - test-assembly-mac-zip
-            - test-assembly-windows-zip
-            - test-assembly-linux-targz
-            - test-assembly-docker
-      - deploy-rpm-snapshot:
-          filters:
-            branches:
-              only:
-                - master
-                - rewrite
-          requires:
-            - test-assembly-mac-zip
-            - test-assembly-windows-zip
-            - test-assembly-linux-targz
-            - test-assembly-docker
-      - test-deployment-linux-apt:
-          filters:
-            branches:
-              only:
-                - master
-                - rewrite
-          requires:
-            - deploy-apt-snapshot
-      - test-deployment-linux-rpm:
-          filters:
-            branches:
-              only:
-                - master
-                - rewrite
-          requires:
-            - deploy-rpm-snapshot
-      - sync-dependencies-snapshot:
-          filters:
-            branches:
-              only: master
-          requires:
-            - test-deployment-linux-apt
-            - test-deployment-linux-rpm
-      - release-approval:
-          filters:
-            branches:
-              only: master
-          requires:
-            - sync-dependencies-snapshot
+      - test-assembly-windows-zip
+  # grakn-core:
+  #   jobs:
+  #     - build:
+  #         filters:
+  #           branches:
+  #             ignore: grakn-release-branch
+  #     - build-checkstyle:
+  #         filters:
+  #           branches:
+  #             ignore: grakn-release-branch
+  #     - build-analysis:
+  #         filters:
+  #           branches:
+  #             only:
+  #               - master
+  #               - rewrite
+  #     - test-common:
+  #         filters:
+  #           branches:
+  #             ignore: grakn-release-branch
+  #     - test-server:
+  #         filters:
+  #           branches:
+  #             ignore: grakn-release-branch
+  #     - test-integration:
+  #         filters:
+  #           branches:
+  #             ignore: grakn-release-branch
+  #     - test-integration-reasoner:
+  #         filters:
+  #           branches:
+  #             ignore: grakn-release-branch
+  #     - test-integration-analytics:
+  #         filters:
+  #           branches:
+  #             ignore: grakn-release-branch
+  #     - test-end-to-end:
+  #         filters:
+  #           branches:
+  #             ignore: grakn-release-branch
+  #     - test-assembly-mac-zip:
+  #         filters:
+  #           branches:
+  #             only:
+  #               - master
+  #               - rewrite
+  #         requires:
+  #           - build
+  #           - build-checkstyle
+  #           - build-analysis
+  #           - test-common
+  #           - test-server
+  #           - test-integration
+  #           - test-integration-reasoner
+  #           - test-integration-analytics
+  #           - test-end-to-end
+  #     - test-assembly-windows-zip:
+  #         filters:
+  #           branches:
+  #             only:
+  #               - master
+  #               - rewrite
+  #         requires:
+  #           - build
+  #           - build-checkstyle
+  #           - build-analysis
+  #           - test-common
+  #           - test-server
+  #           - test-integration
+  #           - test-integration-reasoner
+  #           - test-integration-analytics
+  #           - test-end-to-end
+  #     - test-assembly-linux-targz:
+  #         filters:
+  #           branches:
+  #             only:
+  #               - master
+  #               - rewrite
+  #         requires:
+  #           - build
+  #           - build-checkstyle
+  #           - build-analysis
+  #           - test-common
+  #           - test-server
+  #           - test-integration
+  #           - test-integration-reasoner
+  #           - test-integration-analytics
+  #           - test-end-to-end
+  #     - test-assembly-docker:
+  #         filters:
+  #           branches:
+  #             only:
+  #               - master
+  #               - rewrite
+  #         requires:
+  #           - build
+  #           - build-checkstyle
+  #           - build-analysis
+  #           - test-common
+  #           - test-server
+  #           - test-integration
+  #           - test-integration-reasoner
+  #           - test-integration-analytics
+  #           - test-end-to-end
+  #     - deploy-apt-snapshot:
+  #         filters:
+  #           branches:
+  #             only:
+  #               - master
+  #               - rewrite
+  #         requires:
+  #           - test-assembly-mac-zip
+  #           - test-assembly-windows-zip
+  #           - test-assembly-linux-targz
+  #           - test-assembly-docker
+  #     - deploy-rpm-snapshot:
+  #         filters:
+  #           branches:
+  #             only:
+  #               - master
+  #               - rewrite
+  #         requires:
+  #           - test-assembly-mac-zip
+  #           - test-assembly-windows-zip
+  #           - test-assembly-linux-targz
+  #           - test-assembly-docker
+  #     - test-deployment-linux-apt:
+  #         filters:
+  #           branches:
+  #             only:
+  #               - master
+  #               - rewrite
+  #         requires:
+  #           - deploy-apt-snapshot
+  #     - test-deployment-linux-rpm:
+  #         filters:
+  #           branches:
+  #             only:
+  #               - master
+  #               - rewrite
+  #         requires:
+  #           - deploy-rpm-snapshot
+  #     - sync-dependencies-snapshot:
+  #         filters:
+  #           branches:
+  #             only: master
+  #         requires:
+  #           - test-deployment-linux-apt
+  #           - test-deployment-linux-rpm
+  #     - release-approval:
+  #         filters:
+  #           branches:
+  #             only: master
+  #         requires:
+  #           - sync-dependencies-snapshot
 
   grakn-core-release:
     jobs:
