@@ -80,19 +80,10 @@ public class Grakn {
     }
 
     public static class Arguments {
-        private final boolean benchmark;
         private final Tracing grablTracing;
 
         private Arguments(String[] args) {
             Options options = new Options();
-
-            options.addOption(Option.builder("b")
-                    .longOpt("benchmark")
-                    .hasArg(false)
-                    .desc("Enable benchmarking via Zipkin on the server")
-                    .required(false)
-                    .type(Boolean.class)
-                    .build());
 
             options.addOption(Option.builder("t")
                     .longOpt("tracing-enabled")
@@ -134,11 +125,7 @@ public class Grakn {
                 throw new RuntimeException(e.getMessage());
             }
 
-            benchmark = arguments.hasOption("benchmark");
             if (arguments.hasOption("tracing-enabled")) {
-                if (benchmark) {
-                    throw new RuntimeException("Cannot run with both benchmark and tracing at the same time");
-                }
                 grablTracing = new Tracing(
                         arguments.getOptionValue("tracing-uri"),
                         arguments.getOptionValue("tracing-username"),
@@ -147,10 +134,6 @@ public class Grakn {
             } else {
                 grablTracing = null;
             }
-        }
-
-        public boolean isBenchmark() {
-            return benchmark;
         }
 
         public boolean isGrablTracing() {

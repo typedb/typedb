@@ -29,7 +29,6 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
 import com.google.common.collect.Sets;
-import grakn.benchmark.lib.instrumentation.ServerTracing;
 import grakn.core.common.util.Partition;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.kb.concept.api.Concept;
@@ -231,34 +230,15 @@ public class WriteExecutorImpl implements WriteExecutor {
     public Stream<ConceptMap> write(ConceptMap preExisting) {
         concepts.putAll(preExisting.map());
 
-        // time to execute writers for properties
-        int executeWritersSpanId = ServerTracing.startScopedChildSpan("WriteExecutor.write execute writers");
-
-
         for (Writer writer : sortedWriters()) {
             writer.execute(this);
         }
-
-        ServerTracing.closeScopedChildSpan(executeWritersSpanId);
-        // time to delete concepts marked for deletion
-
-        int deleteConceptsSpanId = ServerTracing.startScopedChildSpan("WriteExecutor.write delete concepts");
-
 
         for (Concept concept : conceptsToDelete) {
             concept.delete();
         }
 
-        ServerTracing.closeScopedChildSpan(deleteConceptsSpanId);
-
-        // time to build concepts
-        int buildConceptsSpanId = ServerTracing.startScopedChildSpan("WriteExecutor.write build concepts for answer");
-
         conceptBuilders.forEach((var, builder) -> buildConcept(var, builder));
-
-        ServerTracing.closeScopedChildSpan(buildConceptsSpanId);
-
-        int answerAndPersistId = ServerTracing.startScopedChildSpan("WriteExecutor.write create answers and persist dependent inferred concepts");
 
         ImmutableMap.Builder<Variable, Concept> allConcepts = ImmutableMap.<Variable, Concept>builder().putAll(concepts);
 
@@ -268,9 +248,6 @@ public class WriteExecutorImpl implements WriteExecutor {
         }
 
         Map<Variable, Concept> namedConcepts = Maps.filterKeys(allConcepts.build(), Variable::isReturned);
-
-
-        ServerTracing.closeScopedChildSpan(answerAndPersistId);
 
         return Stream.of(new ConceptMap(namedConcepts));
     }

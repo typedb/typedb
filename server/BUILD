@@ -71,7 +71,6 @@ java_library(
         "@graknlabs_graql//java:graql",
         "@graknlabs_common//:common",
         "@graknlabs_protocol//grpc/java:protocol",
-        "@graknlabs_benchmark//lib:server-instrumentation",
         "@graknlabs_grabl_tracing//client",
 
         # External dependencies from Maven

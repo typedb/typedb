@@ -30,7 +30,6 @@ load(
     "graknlabs_protocol",
     "graknlabs_client_java",
     "graknlabs_console",
-    "graknlabs_benchmark",
     "graknlabs_simulation",
     "graknlabs_verification",
     "graknlabs_grabl_tracing",
@@ -41,7 +40,6 @@ graknlabs_graql()
 graknlabs_protocol()
 graknlabs_client_java()
 graknlabs_console()
-graknlabs_benchmark()
 graknlabs_simulation()
 graknlabs_verification()
 graknlabs_grabl_tracing()
@@ -111,14 +109,6 @@ antlr_dependencies()
 load("@graknlabs_graql//dependencies/maven:dependencies.bzl",
 graknlabs_graql_maven_dependencies = "maven_dependencies")
 graknlabs_graql_maven_dependencies()
-
-
-###############################
-# Load Benchmark dependencies #
-###############################
-load("@graknlabs_benchmark//dependencies/maven:dependencies.bzl",
-graknlabs_benchmark_maven_dependencies = "maven_dependencies")
-graknlabs_benchmark_maven_dependencies()
 
 
 #######################################

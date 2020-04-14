@@ -295,7 +295,6 @@ public class GraqlDeleteIT {
     @Test
     public void whenDeletingAResourceOwnerAndImplicitRelation_NoErrorIsThrown() {
         /*
-        Failure was discovered from this exact insert, followed by deleting all the returned IDs in benchmark
         Because we delete relations first, if a relation with a non-reified attribute relation is deleted, the
         Janus edge representing the non-reified attribute relation is deleted automatically
 

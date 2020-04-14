@@ -43,7 +43,6 @@ java_library(
 
         # External dependencies from @graknlabs
         "@graknlabs_graql//java:graql",
-        "@graknlabs_benchmark//lib:server-instrumentation",
 
         # External dependencies from Maven
         "//dependencies/maven/artifacts/com/google/code/findbugs:jsr305",
