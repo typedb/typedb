@@ -18,6 +18,7 @@
 
 package hypergraph.concept.type;
 
+import hypergraph.common.collection.Streams;
 import hypergraph.common.exception.HypergraphException;
 import hypergraph.graph.Graph;
 import hypergraph.graph.Schema;
@@ -30,6 +31,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import static hypergraph.common.collection.Streams.compareSize;
 import static hypergraph.common.iterator.Iterators.apply;
 import static hypergraph.common.iterator.Iterators.filter;
 import static java.util.Spliterator.IMMUTABLE;
@@ -133,7 +135,7 @@ public class RelationType extends ThingType<RelationType> {
 
     @Override
     public void delete() {
-        if (subs().findAny().isPresent()) {
+        if (compareSize(subs(), 1) == 0) {
             declaredRoles().forEach(Type::delete);
             vertex.delete();
         } else {
