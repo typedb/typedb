@@ -22,11 +22,12 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 import grakn.client.GraknClient;
 import grakn.client.answer.ConceptMap;
-import grakn.client.concept.AttributeType;
+import grakn.client.concept.DataType;
+import grakn.client.concept.type.AttributeType;
 import grakn.client.concept.ConceptId;
 import grakn.client.concept.Label;
-import grakn.client.concept.RelationType;
-import grakn.client.concept.Role;
+import grakn.client.concept.type.RelationType;
+import grakn.client.concept.type.Role;
 import grakn.core.rule.GraknTestServer;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
@@ -161,7 +162,7 @@ public class BenchmarkBigIT {
             try (GraknClient.Transaction transaction = session.transaction().write()) {
                 Role fromRole = transaction.putRole(fromRoleLabel);
                 Role toRole = transaction.putRole(toRoleLabel);
-                AttributeType<String> index = transaction.putAttributeType(attributeLabel, AttributeType.DataType.STRING);
+                AttributeType<String> index = transaction.putAttributeType(attributeLabel, DataType.STRING);
                 transaction.putEntityType(entityLabel)
                         .plays(fromRole)
                         .plays(toRole)

@@ -19,10 +19,10 @@ package grakn.core.distribution;
 
 import grakn.client.GraknClient;
 import grakn.client.answer.ConceptMap;
-import grakn.client.concept.Attribute;
-import grakn.client.concept.AttributeType;
+import grakn.client.concept.DataType;
+import grakn.client.concept.thing.Attribute;
 import grakn.client.concept.Concept;
-import grakn.client.concept.EntityType;
+import grakn.client.concept.type.EntityType;
 import grakn.core.distribution.element.AttributeElement;
 import grakn.core.distribution.element.Element;
 import grakn.core.distribution.element.Record;
@@ -133,10 +133,11 @@ public class ConcurrencyE2E {
         // ghost vertex (which is might be introduced while merging 2 attribute nodes)
         tx = session.transaction().write();
         List<ConceptMap> conceptMaps = tx.execute(Graql.parse("match $x isa person; get;").asGet());
+        GraknClient.Transaction innerTx = tx;
         conceptMaps.forEach(map -> {
-            Collection<Concept> concepts = map.map().values();
+            Collection<Concept<?>> concepts = map.map().values();
             concepts.forEach(concept -> {
-                Set<Attribute<?>> collect = (Set<Attribute<?>>) concept.asThing().attributes().collect(toSet());
+                Set<Attribute<?>> collect = concept.asThing().asRemote(innerTx).attributes().collect(toSet());
                 collect.forEach(attribute -> {
                     String value = attribute.value().toString();
                 });
@@ -217,12 +218,12 @@ public class ConcurrencyE2E {
         final int noOfAttributes = 10;
 
         try(GraknClient.Transaction tx = session.transaction().write()){
-            tx.stream(Graql.parse("match $x isa thing;get;").asGet()).forEach(ans -> ans.get("x").delete());
-            EntityType someEntity = tx.putEntityType("someEntity");
-            someEntity.has(tx.putAttributeType("attribute0", AttributeType.DataType.INTEGER));
-            someEntity.has(tx.putAttributeType("attribute1", AttributeType.DataType.STRING));
+            tx.stream(Graql.parse("match $x isa thing;get;").asGet()).forEach(ans -> ans.get("x").asRemote(tx).delete());
+            EntityType.Remote someEntity = tx.putEntityType("someEntity").asRemote(tx);
+            someEntity.has(tx.putAttributeType("attribute0", DataType.INTEGER));
+            someEntity.has(tx.putAttributeType("attribute1", DataType.STRING));
             for(int attributeNo = 2; attributeNo < noOfAttributes ; attributeNo++){
-                someEntity.has(tx.putAttributeType("attribute" + attributeNo, AttributeType.DataType.STRING));
+                someEntity.has(tx.putAttributeType("attribute" + attributeNo, DataType.STRING));
             }
             tx.commit();
         }
