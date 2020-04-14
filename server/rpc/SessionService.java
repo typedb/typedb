@@ -378,7 +378,7 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
             onNextResponse(ResponseBuilder.Transaction.commit());
         }
 
-        private void query(SessionProto.Transaction.Query.Req request, SessionProto.Transaction.Iter.Req.Options options) {
+        private void query(SessionProto.Transaction.Query.Iter.Req request, SessionProto.Transaction.Iter.Req.Options options) {
             Transaction.Res response;
             try (ThreadTrace trace = traceOnThread("query")) {
                 /* permanent tracing hooks, as performance here varies depending on query and what's in the graph */
