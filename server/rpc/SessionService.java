@@ -486,10 +486,6 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
             onNextResponse(response);
         }
 
-        private void next(int iteratorId, Transaction.Iter.Req.Options options) {
-            iterators.resumeBatchIterating(iteratorId, options);
-        }
-
         private void onNextResponse(Transaction.Res response) {
             if (ServerTracing.tracingActive()) {
                 ServerTracing.currentSpan().finish();
