@@ -17,14 +17,10 @@
 
 package grakn.core.server.rpc;
 
-import brave.ScopedSpan;
-import brave.Span;
-import brave.propagation.TraceContext;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import grabl.tracing.client.GrablTracing;
 import grabl.tracing.client.GrablTracingThreadStatic;
 import grabl.tracing.client.GrablTracingThreadStatic.ThreadTrace;
-import grakn.benchmark.lib.instrumentation.ServerTracing;
 import grakn.core.concept.answer.Explanation;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
@@ -189,17 +185,7 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
                     return;
                 }
             }
-            if (ServerTracing.tracingEnabledFromMessage(request)) {
-                TraceContext receivedTraceContext = ServerTracing.extractTraceContext(request);
-                Span queueSpan = ServerTracing.createChildSpanWithParentContext("Server receive queue", receivedTraceContext);
-                queueSpan.start();
-                queueSpan.tag("childNumber", "0");
-
-                // hop context & active Span across thread boundaries
-                submit(() -> handleRequest(request, queueSpan, receivedTraceContext));
-            } else {
-                submit(() -> handleRequest(request));
-            }
+            submit(() -> handleRequest(request));
         }
 
         @Override
@@ -223,24 +209,11 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
             close(null);
         }
 
-        private void handleRequest(Transaction.Req request, Span queueSpan, TraceContext context) {
-            // this method variant is only called if tracing is active
-
-            // close the Span from gRPC thread
-            queueSpan.finish(); // time spent in queue
-
-            // create a new scoped span
-            ScopedSpan span = ServerTracing.startScopedChildSpanWithParentContext("Server handle request", context);
-            span.tag("childNumber", "1");
-            handleRequest(request);
-        }
-
         private void handleRequest(Transaction.Req request, GrablTracing.Trace queueTrace) {
             try (ThreadTrace trace = GrablTracingThreadStatic.continueTraceOnThread(
                     queueTrace.getRootId(), queueTrace.getId(), "handle")
             ) {
                 queueTrace.end();
-
                 handleRequest(request);
             }
         }
@@ -329,11 +302,6 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
                     responseSender.onCompleted();
                 }
 
-                // just in case there's a trailing span, let's close it
-                if (ServerTracing.tracingActive()) {
-                    ServerTracing.currentSpan().finish();
-                }
-
                 threadExecutor.shutdownNow();
                 try {
                     boolean terminated = threadExecutor.awaitTermination(30, TimeUnit.SECONDS);
@@ -370,8 +338,7 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
             }
 
             Transaction.Res response = ResponseBuilder.Transaction.open();
-            onNextResponse(response);
-        }
+            responseSender.onNext(response);        }
 
         private void commit() {
             tx().commit();
@@ -381,25 +348,16 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
         private void query(SessionProto.Transaction.Query.Iter.Req request, SessionProto.Transaction.Iter.Req.Options options) {
             Transaction.Res response;
             try (ThreadTrace trace = traceOnThread("query")) {
-                /* permanent tracing hooks, as performance here varies depending on query and what's in the graph */
-                int parseQuerySpanId = ServerTracing.startScopedChildSpan("Parsing Graql Query");
-
                 GraqlQuery query;
                 try (ThreadTrace parse = traceOnThread("parse")) {
                     query = Graql.parse(request.getQuery());
                 }
-
-                ServerTracing.closeScopedChildSpan(parseQuerySpanId);
-              
-                int createStreamSpanId = ServerTracing.startScopedChildSpan("Creating query stream");
 
                 try (ThreadTrace stream = traceOnThread("stream")) {
                     Stream<Transaction.Res> responseStream = tx().stream(query, request.getInfer().equals(Transaction.Query.INFER.TRUE)).map(ResponseBuilder.Transaction.Iter::query);
 
                     iterators.startBatchIterating(responseStream.iterator(), options);
                 }
-
-                ServerTracing.closeScopedChildSpan(createStreamSpanId);
             }
         }
 
@@ -487,9 +445,6 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
         }
 
         private void onNextResponse(Transaction.Res response) {
-            if (ServerTracing.tracingActive()) {
-                ServerTracing.currentSpan().finish();
-            }
             responseSender.onNext(response);
         }
     }
