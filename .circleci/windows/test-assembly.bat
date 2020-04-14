@@ -25,8 +25,8 @@ REM build grakn-core-all-windows archive
 bazel build //:assemble-windows-zip || GOTO :error
 
 REM unpack and start Grakn server
-unzip bazel-genfiles\grakn-core-all-windows.zip -d bazel-genfiles\dist\ || GOTO :error
-PUSHD bazel-genfiles\dist\grakn-core-all-windows\
+unzip bazel-bin\grakn-core-all-windows.zip -d bazel-bin\dist\ || GOTO :error
+PUSHD bazel-bin\dist\grakn-core-all-windows\
 CALL grakn.bat server start || GOTO :error
 POPD
 
@@ -34,7 +34,7 @@ REM run application test
 bazel test //test/common:grakn-application-test --test_output=streamed --spawn_strategy=standalone --cache_test_results=no || GOTO :error
 
 REM stop Grakn server
-PUSHD bazel-genfiles\dist\grakn-core-all-windows\
+PUSHD bazel-bin\dist\grakn-core-all-windows\
 CALL grakn.bat server stop
 POPD
 
