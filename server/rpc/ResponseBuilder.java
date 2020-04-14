@@ -71,12 +71,6 @@ public class ResponseBuilder {
                     .build();
         }
 
-        static SessionProto.Transaction.Res queryIterator(int iteratorId) {
-            return SessionProto.Transaction.Res.newBuilder()
-                    .setQueryIter(SessionProto.Transaction.Query.Iter.newBuilder().setId(iteratorId))
-                    .build();
-        }
-
         static SessionProto.Transaction.Res getSchemaConcept(@Nullable grakn.core.kb.concept.api.Concept concept) {
             SessionProto.Transaction.GetSchemaConcept.Res.Builder res = SessionProto.Transaction.GetSchemaConcept.Res.newBuilder();
             if (concept == null) {
@@ -95,12 +89,6 @@ public class ResponseBuilder {
                 res.setConcept(ResponseBuilder.Concept.concept(concept));
             }
             return SessionProto.Transaction.Res.newBuilder().setGetConceptRes(res).build();
-        }
-
-        static SessionProto.Transaction.Res getAttributesIterator(int iteratorId) {
-            SessionProto.Transaction.GetAttributes.Iter.Builder res = SessionProto.Transaction.GetAttributes.Iter.newBuilder()
-                    .setId(iteratorId);
-            return SessionProto.Transaction.Res.newBuilder().setGetAttributesIter(res).build();
         }
 
         static SessionProto.Transaction.Res putEntityType(grakn.core.kb.concept.api.Concept concept) {
@@ -161,22 +149,23 @@ public class ResponseBuilder {
 
             static SessionProto.Transaction.Res query(Object object) {
                 return SessionProto.Transaction.Res.newBuilder()
-                        .setIterateRes(SessionProto.Transaction.Iter.Res.newBuilder()
+                        .setIterRes(SessionProto.Transaction.Iter.Res.newBuilder()
                                 .setQueryIterRes(SessionProto.Transaction.Query.Iter.Res.newBuilder()
                                         .setAnswer(Answer.answer(object)))).build();
             }
 
             static SessionProto.Transaction.Res getAttributes(grakn.core.kb.concept.api.Concept concept) {
                 return SessionProto.Transaction.Res.newBuilder()
-                        .setIterateRes(SessionProto.Transaction.Iter.Res.newBuilder()
+                        .setIterRes(SessionProto.Transaction.Iter.Res.newBuilder()
                                 .setGetAttributesIterRes(SessionProto.Transaction.GetAttributes.Iter.Res.newBuilder()
                                         .setAttribute(Concept.concept(concept)))).build();
             }
 
             static SessionProto.Transaction.Res conceptMethod(ConceptProto.Method.Iter.Res methodResponse) {
                 return SessionProto.Transaction.Res.newBuilder()
-                        .setIterateRes(SessionProto.Transaction.Iter.Res.newBuilder()
-                                .setConceptMethodIterRes(methodResponse)).build();
+                        .setIterRes(SessionProto.Transaction.Iter.Res.newBuilder()
+                                .setConceptMethodIterRes(SessionProto.Transaction.ConceptMethod.Iter.Res.newBuilder()
+                                        .setResponse(methodResponse))).build();
             }
         }
     }
@@ -191,6 +180,34 @@ public class ResponseBuilder {
                     .setId(concept.id().getValue())
                     .setBaseType(getBaseType(concept))
                     .build();
+        }
+
+        public static ConceptProto.Concept conceptPrefilled(grakn.core.kb.concept.api.Concept concept) {
+            ConceptProto.Concept.Builder builder = ConceptProto.Concept.newBuilder()
+                    .setId(concept.id().getValue())
+                    .setBaseType(getBaseType(concept));
+
+            if (concept.isSchemaConcept()) {
+                builder.setLabelRes(ConceptProto.SchemaConcept.GetLabel.Res.newBuilder()
+                        .setLabel(concept.asSchemaConcept().label().getValue()));
+                builder.setIsImplicitRes(ConceptProto.SchemaConcept.IsImplicit.Res.newBuilder()
+                        .setImplicit(concept.asSchemaConcept().isImplicit()));
+
+            } else if (concept.isThing()) {
+                builder.setTypeRes(ConceptProto.Thing.Type.Res.newBuilder()
+                        .setType(conceptPrefilled(concept.asThing().type())));
+                builder.setInferredRes(ConceptProto.Thing.IsInferred.Res.newBuilder()
+                        .setInferred(concept.asThing().isInferred()));
+
+                if (concept.isAttribute()) {
+                    builder.setValueRes(ConceptProto.Attribute.Value.Res.newBuilder()
+                            .setValue(attributeValue(concept.asAttribute().value())));
+                    builder.setDataTypeRes(ConceptProto.AttributeType.DataType.Res.newBuilder()
+                            .setDataType(DATA_TYPE(concept.asAttribute().dataType())));
+                }
+            }
+
+            return builder.build();
         }
 
         private static ConceptProto.Concept.BASE_TYPE getBaseType(grakn.core.kb.concept.api.Concept concept) {
@@ -322,7 +339,7 @@ public class ResponseBuilder {
         static AnswerProto.ConceptMap conceptMap(ConceptMap answer) {
             AnswerProto.ConceptMap.Builder conceptMapProto = AnswerProto.ConceptMap.newBuilder();
             answer.map().forEach((var, concept) -> {
-                ConceptProto.Concept conceptProto = ResponseBuilder.Concept.concept(concept);
+                ConceptProto.Concept conceptProto = ResponseBuilder.Concept.conceptPrefilled(concept);
                 conceptMapProto.putMap(var.name(), conceptProto);
             });
 

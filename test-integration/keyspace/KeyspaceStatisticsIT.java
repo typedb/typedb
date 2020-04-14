@@ -316,8 +316,8 @@ public class KeyspaceStatisticsIT {
 
 
              */
-            grakn.client.concept.AttributeType ageT = tx1.getAttributeType("age");
-            grakn.client.concept.EntityType personT = tx1.getEntityType("person");
+            grakn.client.concept.type.AttributeType.Remote<Integer> ageT = tx1.<Integer>getAttributeType("age").asRemote(tx1);
+            grakn.client.concept.type.EntityType.Remote personT = tx1.getEntityType("person").asRemote(tx1);
             ageT.create(2);
             ageT.create(3);
             personT.create();
@@ -327,8 +327,8 @@ public class KeyspaceStatisticsIT {
 
         CompletableFuture<Void> future2 = CompletableFuture.supplyAsync(() -> {
             GraknClient.Transaction tx2 = remoteSession.transaction().write();
-            grakn.client.concept.AttributeType ageT = tx2.getAttributeType("age");
-            grakn.client.concept.EntityType personT = tx2.getEntityType("person");
+            grakn.client.concept.type.AttributeType.Remote<Integer> ageT = tx2.<Integer>getAttributeType("age").asRemote(tx2);
+            grakn.client.concept.type.EntityType.Remote personT = tx2.getEntityType("person").asRemote(tx2);
             ageT.create(3); // tricky case - this will be merge
             ageT.create(4);
             personT.create();
