@@ -55,7 +55,7 @@ def graknlabs_client_java():
 def graknlabs_console():
     git_repository(
         name = "graknlabs_console",
-        remote = "https://github.com/graknlabs/console",
+        remote = "https://github.com/graknlabs/console", # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_console
         tag = "1.0.4",
     )
 
