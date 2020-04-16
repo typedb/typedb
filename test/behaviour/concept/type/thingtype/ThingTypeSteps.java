@@ -172,7 +172,7 @@ public class ThingTypeSteps {
     }
 
     @Then("{root_label}\\( ?{type_label} ?) fails at setting key attribute: {type_label} as {type_label}")
-    public void thing_fails_at_setting_key_attribute(RootLabel rootLabel, String typeLabel, String attributeLabel, String overriddenLabel) {
+    public void thing_fails_at_setting_key_attribute_as(RootLabel rootLabel, String typeLabel, String attributeLabel, String overriddenLabel) {
         AttributeType attributeType = tx().concepts().getAttributeType(attributeLabel);
         AttributeType overriddenType = tx().concepts().getAttributeType(overriddenLabel);
         try{
@@ -217,7 +217,7 @@ public class ThingTypeSteps {
     }
 
     @Then("{root_label}\\( ?{type_label} ?) fails at setting has attribute: {type_label} as {type_label}")
-    public void thing_fails_at_setting_has_attribute(RootLabel rootLabel, String typeLabel, String attributeLabel, String overriddenLabel) {
+    public void thing_fails_at_setting_has_attribute_as(RootLabel rootLabel, String typeLabel, String attributeLabel, String overriddenLabel) {
         AttributeType attributeType = tx().concepts().getAttributeType(attributeLabel);
         AttributeType overriddenType = tx().concepts().getAttributeType(overriddenLabel);
         try {
@@ -260,6 +260,18 @@ public class ThingTypeSteps {
         RoleType overriddenType = tx().concepts().getRelationType(roleLabel.scope()).sups()
                 .flatMap(RelationType::roles).filter(r -> r.label().equals(overriddenLabel)).findAny().get();
         get_thing_type(rootLabel, typeLabel).plays(roleType).as(overriddenType);
+    }
+
+    @When("{root_label}\\( ?{type_label} ?) fails at setting plays role: {scoped_label} as {scoped_label}")
+    public void thing_fails_at_setting_plays_role_as(RootLabel rootLabel, String typeLabel, Parameters.ScopedLabel roleLabel, Parameters.ScopedLabel overriddenLabel) {
+        RoleType roleType = tx().concepts().getRelationType(roleLabel.scope()).role(roleLabel.role());
+        RoleType overriddenType = tx().concepts().getRelationType(overriddenLabel.scope()).role(overriddenLabel.role());
+        try {
+            get_thing_type(rootLabel, typeLabel).plays(roleType).as(overriddenType);
+            fail();
+        } catch(HypergraphException ignore) {
+            assertTrue(true);
+        }
     }
 
     @When("{root_label}\\( ?{type_label} ?) remove plays role: {scoped_label}")
