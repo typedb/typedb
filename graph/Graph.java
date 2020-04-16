@@ -26,8 +26,8 @@ import hypergraph.graph.vertex.TypeVertex;
 import hypergraph.graph.vertex.Vertex;
 
 import javax.annotation.Nullable;
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 public class Graph {
 
@@ -75,9 +75,9 @@ public class Graph {
 
     public class Type {
 
-        private final Map<String, TypeVertex> typeByLabel;
-        private final Map<ByteArray, TypeVertex> typeByIID;
-        private final Map<String, ManagedReadWriteLock> singleLabelLocks;
+        private final ConcurrentMap<String, TypeVertex> typeByLabel;
+        private final ConcurrentMap<ByteArray, TypeVertex> typeByIID;
+        private final ConcurrentMap<String, ManagedReadWriteLock> singleLabelLocks;
         private final ManagedReadWriteLock multiLabelLock;
 
         private Type() {
@@ -229,7 +229,7 @@ public class Graph {
 
     public class Thing {
 
-        private final Map<ByteArray, ThingVertex> thingByIID;
+        private final ConcurrentMap<ByteArray, ThingVertex> thingByIID;
 
         Thing() {
             thingByIID = new ConcurrentHashMap<>();

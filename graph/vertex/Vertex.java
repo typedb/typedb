@@ -24,9 +24,9 @@ import hypergraph.graph.edge.Edge;
 
 import java.util.Arrays;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.function.Consumer;
 
 public abstract class Vertex<
@@ -102,7 +102,7 @@ public abstract class Vertex<
             DIR_EDGE extends Edge<DIR_EDGE_SCHEMA, DIR_VERTEX>,
             DIR_VERTEX_ITER extends DirectedEdges.VertexIterator<DIR_VERTEX, DIR_EDGE>> {
 
-        protected final Map<DIR_EDGE_SCHEMA, Set<DIR_EDGE>> edges;
+        protected final ConcurrentMap<DIR_EDGE_SCHEMA, Set<DIR_EDGE>> edges;
         protected final Direction direction;
 
         enum Direction {

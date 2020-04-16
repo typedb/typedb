@@ -24,14 +24,14 @@ import hypergraph.common.exception.HypergraphException;
 import java.io.File;
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 public class CoreKeyspaceManager implements Hypergraph.KeyspaceManager {
 
     private final CoreHypergraph core;
-    private final Map<String, CoreKeyspace> keyspaces;
+    private final ConcurrentMap<String, CoreKeyspace> keyspaces;
 
     CoreKeyspaceManager(CoreHypergraph core) {
         this.core = core;
