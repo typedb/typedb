@@ -28,6 +28,7 @@ import hypergraph.concept.type.Type;
 import hypergraph.test.behaviour.config.Parameters;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
+import org.junit.Assert;
 
 import java.util.List;
 import java.util.Set;
@@ -39,6 +40,7 @@ import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /**
  * Behaviour Steps generic to all ThingTypes
@@ -169,6 +171,18 @@ public class ThingTypeSteps {
         get_thing_type(rootLabel, typeLabel).key(attributeType).as(overriddenType);
     }
 
+    @Then("{root_label}\\( ?{type_label} ?) fails at setting key attribute: {type_label} as {type_label}")
+    public void thing_fails_at_setting_key_attribute(RootLabel rootLabel, String typeLabel, String attributeLabel, String overriddenLabel) {
+        AttributeType attributeType = tx().concepts().getAttributeType(attributeLabel);
+        AttributeType overriddenType = tx().concepts().getAttributeType(overriddenLabel);
+        try{
+            get_thing_type(rootLabel, typeLabel).key(attributeType).as(overriddenType);
+            fail();
+        } catch (HypergraphException ignored) {
+            assertTrue(true);
+        }
+    }
+
     @When("{root_label}\\( ?{type_label} ?) remove key attribute: {type_label}")
     public void thing_remove_key_attribute(RootLabel rootLabel, String typeLabel, String attributeLabel) {
         AttributeType attributeType = tx().concepts().getAttributeType(attributeLabel);
@@ -200,6 +214,18 @@ public class ThingTypeSteps {
         AttributeType attributeType = tx().concepts().getAttributeType(attributeLabel);
         AttributeType overriddenType = tx().concepts().getAttributeType(overriddenLabel);
         get_thing_type(rootLabel, typeLabel).has(attributeType).as(overriddenType);
+    }
+
+    @Then("{root_label}\\( ?{type_label} ?) fails at setting has attribute: {type_label} as {type_label}")
+    public void thing_fails_at_setting_has_attribute(RootLabel rootLabel, String typeLabel, String attributeLabel, String overriddenLabel) {
+        AttributeType attributeType = tx().concepts().getAttributeType(attributeLabel);
+        AttributeType overriddenType = tx().concepts().getAttributeType(overriddenLabel);
+        try {
+            get_thing_type(rootLabel, typeLabel).has(attributeType).as(overriddenType);
+            fail();
+        } catch (HypergraphException ignore) {
+            assertTrue(true);
+        }
     }
 
     @When("{root_label}\\( ?{type_label} ?) remove has attribute: {type_label}")

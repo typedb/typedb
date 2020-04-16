@@ -88,7 +88,7 @@ public class TransactionSteps {
     }
 
     @Then("for each session, transaction(s) commit(s) successfully: {bool}")
-    public void for_each_session_transactions_commit(boolean successfully) {
+    public void for_each_session_transactions_commits_successfully(boolean successfully) {
         for (Hypergraph.Session session : sessions) {
             for (Hypergraph.Transaction transaction : sessionsToTransactions.get(session)) {
                 boolean hasException = false;
