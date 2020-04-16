@@ -28,6 +28,7 @@ import java.util.Iterator;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import static hypergraph.common.iterator.Iterators.apply;
@@ -73,6 +74,11 @@ public abstract class ThingType<TYPE extends ThingType<TYPE>> extends Type<TYPE>
         vertex.outs().delete(Schema.Edge.Type.KEY, attributeType.vertex);
     }
 
+    private Stream<AttributeType> declaredKeys() {
+        Iterator<AttributeType> keys = apply(vertex.outs().edge(Schema.Edge.Type.KEY).to(), AttributeType::of);
+        return stream(spliteratorUnknownSize(keys, ORDERED | IMMUTABLE), false);
+    }
+
     public Stream<AttributeType> keys() {
         Iterator<AttributeType> keys = apply(vertex.outs().edge(Schema.Edge.Type.KEY).to(), AttributeType::of);
         if (isRoot()) {
@@ -101,6 +107,12 @@ public abstract class ThingType<TYPE extends ThingType<TYPE>> extends Type<TYPE>
         vertex.outs().delete(Schema.Edge.Type.HAS, attributeType.vertex);
     }
 
+    private Stream<AttributeType> declaredAttributes() {
+        Iterator<AttributeType> attributes = link(vertex.outs().edge(Schema.Edge.Type.KEY).to(),
+                                                  vertex.outs().edge(Schema.Edge.Type.HAS).to()).apply(AttributeType::of);
+        return stream(spliteratorUnknownSize(attributes, ORDERED | IMMUTABLE), false);
+    }
+
     public Stream<AttributeType> attributes() {
         Iterator<AttributeType> attributes = link(vertex.outs().edge(Schema.Edge.Type.KEY).to(),
                                                   vertex.outs().edge(Schema.Edge.Type.HAS).to()).apply(AttributeType::of);
@@ -123,6 +135,11 @@ public abstract class ThingType<TYPE extends ThingType<TYPE>> extends Type<TYPE>
 
     public void unplay(RoleType roleType) {
         vertex.outs().delete(Schema.Edge.Type.PLAYS, roleType.vertex);
+    }
+
+    private Stream<RoleType> declaredPlays() {
+        Iterator<RoleType> roles = apply(vertex.outs().edge(Schema.Edge.Type.PLAYS).to(), RoleType::of);
+        return stream(spliteratorUnknownSize(roles, ORDERED | IMMUTABLE), false);
     }
 
     public Stream<RoleType> plays() {
@@ -179,45 +196,46 @@ public abstract class ThingType<TYPE extends ThingType<TYPE>> extends Type<TYPE>
 
     public class KeyOverrider extends Overrider<AttributeType> {
         KeyOverrider(AttributeType attributeType) {
-            super(attributeType, ThingType::attributes, Schema.Edge.Type.KEY);
+            super(attributeType, ThingType.this::attributes, ThingType.this::declaredAttributes, Schema.Edge.Type.KEY);
         }
     }
 
     public class HasOverrider extends Overrider<AttributeType> {
         HasOverrider(AttributeType attributeType) {
-            super(attributeType, ThingType::attributes, Schema.Edge.Type.HAS);
+            super(attributeType, ThingType.this::attributes, ThingType.this::declaredAttributes, Schema.Edge.Type.HAS);
         }
     }
 
     public class PlaysOverrider extends Overrider<RoleType> {
         PlaysOverrider(RoleType roleType) {
-            super(roleType, ThingType::plays, Schema.Edge.Type.PLAYS);
+            super(roleType, ThingType.this::plays, ThingType.this::declaredPlays, Schema.Edge.Type.PLAYS);
         }
     }
 
     public class Overrider<P extends Type<P>> {
 
         private final P property;
-        private final Function<TYPE, Stream<P>> function;
+        private final Supplier<Stream<P>> inheritedProperties;
+        private final Supplier<Stream<P>> declaredProperties;
         private final Schema.Edge.Type schema;
 
-        Overrider(P property, Function<TYPE, Stream<P>> function, Schema.Edge.Type schema) {
+        Overrider(P property, Supplier<Stream<P>> inheritedProperties, Supplier<Stream<P>> declaredProperties, Schema.Edge.Type schema) {
             this.property = property;
-            this.function = function;
+            this.inheritedProperties = inheritedProperties;
+            this.declaredProperties = declaredProperties;
             this.schema = schema;
         }
 
         public void as(P property) {
-            if (function.apply(sup()).anyMatch(prop -> prop.equals(property))) {
-                if (this.property.sups().anyMatch(prop -> prop.equals(property))) {
-                    vertex.outs().edge(schema, this.property.vertex).overridden(property.vertex);
-                } else {
-                    throw new HypergraphException("Invalid Property Overriding: " + property.label() + " is not a supertype");
-                }
-            } else {
-                throw new HypergraphException("Invalid Property Overriding: inherited properties do not contain " +
-                                                      property.label());
+            if (declaredProperties.get().anyMatch(prop -> prop.equals(property))) {
+                throw new HypergraphException("Invalid Property Overriding: " + property.label() + " is in declared properties");
+            } else if (inheritedProperties.get().noneMatch(prop -> prop.equals(property))) {
+                throw new HypergraphException("Invalid Property Overriding: inherited properties do not contain " + property.label());
+            } else if (this.property.sups().noneMatch(prop -> prop.equals(property))) {
+                throw new HypergraphException("Invalid Property Overriding: " + property.label() + " is not a supertype");
             }
+
+            vertex.outs().edge(schema, this.property.vertex).overridden(property.vertex);
         }
     }
 }
