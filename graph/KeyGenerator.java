@@ -21,8 +21,8 @@ package hypergraph.graph;
 import hypergraph.common.collection.ByteArray;
 
 import java.util.Iterator;
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -34,8 +34,8 @@ import static java.util.Arrays.copyOfRange;
 
 public abstract class KeyGenerator {
 
-    protected final Map<ByteArray, AtomicInteger> typeKeys;
-    protected final Map<ByteArray, AtomicLong> thingKeys;
+    protected final ConcurrentMap<ByteArray, AtomicInteger> typeKeys;
+    protected final ConcurrentMap<ByteArray, AtomicLong> thingKeys;
     protected final int initialValue;
     protected final int delta;
 
@@ -47,23 +47,15 @@ public abstract class KeyGenerator {
     }
 
     public byte[] forType(byte[] root) {
-        if (typeKeys.containsKey(ByteArray.of(root))) {
-            return shortToBytes(typeKeys.get(ByteArray.of(root)).getAndAdd(delta));
-        } else {
-            AtomicInteger zero = new AtomicInteger(initialValue);
-            typeKeys.put(ByteArray.of(root), zero);
-            return shortToBytes(zero.getAndAdd(delta));
-        }
+        return shortToBytes(typeKeys.computeIfAbsent(
+                ByteArray.of(root), k -> new AtomicInteger(initialValue)
+        ).getAndAdd(delta));
     }
 
     public byte[] forThing(byte[] type) {
-        if (thingKeys.containsKey(ByteArray.of(type))) {
-            return longToBytes(thingKeys.get(ByteArray.of(type)).getAndAdd(delta));
-        } else {
-            AtomicLong zero = new AtomicLong(initialValue);
-            thingKeys.put(ByteArray.of(type), zero);
-            return longToBytes(zero.getAndAdd(delta));
-        }
+        return longToBytes(thingKeys.computeIfAbsent(
+                ByteArray.of(type), k -> new AtomicLong(initialValue)
+        ).getAndAdd(delta));
     }
 
     static class Buffered extends KeyGenerator {

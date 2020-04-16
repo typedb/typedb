@@ -18,7 +18,6 @@
 
 package hypergraph.concept.type;
 
-import hypergraph.common.collection.Streams;
 import hypergraph.common.exception.HypergraphException;
 import hypergraph.graph.Graph;
 import hypergraph.graph.Schema;
@@ -126,11 +125,9 @@ public class RelationType extends ThingType<RelationType> {
         TypeVertex roleTypeVertex = vertex.graph().get(roleLabel, vertex.label());
         if (roleTypeVertex != null) {
             return RoleType.of(roleTypeVertex);
-        }
-        else if ((roleType = roles().filter(role -> role.label().equals(roleLabel)).findAny()).isPresent()) {
+        } else if ((roleType = roles().filter(role -> role.label().equals(roleLabel)).findAny()).isPresent()) {
             return roleType.get();
-        }
-        else return null;
+        } else return null;
     }
 
     @Override

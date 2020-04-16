@@ -61,6 +61,14 @@ public class BasicTest {
     }
 
     @Test
+    public void loop_test_hypergraph() throws IOException {
+        for (int i=0; i<1000; i++) {
+            System.out.println(i + " ---- ");
+            test_hypergraph();
+        }
+    }
+
+    @Test
     public void test_hypergraph() throws IOException {
         resetDirectory();
 
