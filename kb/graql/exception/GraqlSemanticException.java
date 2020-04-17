@@ -103,6 +103,10 @@ public class GraqlSemanticException extends GraknException {
         return GraqlSemanticException.create("inserting property '%s' is not supported, try `define`", propertyName);
     }
 
+    public static GraqlSemanticException deleteUnsupportedProperty(String propertyName) {
+        return GraqlSemanticException.create("deleting property '%s' is not supported, try `define`", propertyName);
+    }
+
     public static GraqlSemanticException defineUnsupportedProperty(String propertyName) {
         return GraqlSemanticException.create("defining property '%s' is not supported, try `insert`", propertyName);
     }

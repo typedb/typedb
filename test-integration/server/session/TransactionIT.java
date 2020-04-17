@@ -594,7 +594,7 @@ public class TransactionIT {
         tx.commit();
         tx = session.writeTransaction();
         String relId = tx.execute(Graql.parse("insert $x isa person; $y isa person; $r (friend: $x, friend: $y) isa friendship;").asInsert()).get(0).get("r").id().getValue();
-        tx.execute(Graql.parse("match $r id " + relId + "; delete $r;").asDelete());
+        tx.execute(Graql.parse("match $r id " + relId + "; delete $r isa relation;").asDelete());
         tx.commit();
 
         tx = session.writeTransaction();
@@ -612,9 +612,8 @@ public class TransactionIT {
         String relId = tx.execute(Graql.parse("insert $x isa person; $y isa person; $r (friend: $x, friend: $y) isa friendship;").asInsert()).get(0).get("r").id().getValue();
         tx.commit();
         tx = session.writeTransaction();
-        tx.execute(Graql.parse("match $r id " + relId + "; delete $r;").asDelete());
+        tx.execute(Graql.parse("match $r id " + relId + "; delete $r isa relation;").asDelete());
         tx.commit();
-
 
         tx = session.writeTransaction();
         List<ConceptMap> rolePlayersResult = tx.execute(Graql.parse("match $x isa person; get;").asGet());

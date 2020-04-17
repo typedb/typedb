@@ -69,7 +69,7 @@ public class PropertyExecutorFactoryImpl implements PropertyExecutorFactory {
         if (executor instanceof PropertyExecutor.Deletable) {
             return (PropertyExecutor.Deletable) executor;
         } else {
-            throw GraqlSemanticException.insertUnsupportedProperty(property.keyword());
+            throw GraqlSemanticException.deleteUnsupportedProperty(property.keyword());
         }
     }
 

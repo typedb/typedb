@@ -33,6 +33,7 @@ import grakn.core.kb.concept.api.GraknConceptException;
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.exception.GraqlSemanticException;
 import grakn.core.kb.graql.executor.QueryExecutor;
+import grakn.core.kb.graql.executor.WriteExecutor;
 import grakn.core.kb.graql.executor.property.PropertyExecutor;
 import grakn.core.kb.graql.executor.property.PropertyExecutorFactory;
 import grakn.core.kb.graql.reasoner.ReasonerCheckedException;
@@ -226,11 +227,17 @@ public class QueryExecutorImpl implements QueryExecutor {
 
         ImmutableSet.Builder<PropertyExecutor.Writer> executors = ImmutableSet.builder();
         for (Statement statement : statements) {
-            for (VarProperty property : statement.properties()) {
-                executors.addAll(propertyExecutorFactory.deletable(statement.var(), property).deleteExecutors());
+            // we only operate on statements written by the user
+            if (statement.var().isReturned()) {
+                for (VarProperty property : statement.properties()) {
+                    executors.addAll(propertyExecutorFactory.deletable(statement.var(), property).deleteExecutors());
+                }
             }
         }
+        WriteExecutor writeExecutor = WriteExecutorImpl.create(conceptManager, executors.build());
 
+        Stream<ConceptMap> answers = get(query.match().get());
+        get(query.match().get()).forEach(writeExecutor::write);
         return new Void("Delete successful.");
     }
 
