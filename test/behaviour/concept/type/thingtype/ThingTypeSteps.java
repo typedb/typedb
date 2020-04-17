@@ -275,6 +275,17 @@ public class ThingTypeSteps {
         get_thing_type(rootLabel, typeLabel).plays(roleType);
     }
 
+    @When("{root_label}\\( ?{type_label} ?) fails at setting plays role: {scoped_label}")
+    public void thing_fails_at_setting_plays_role(RootLabel rootLabel, String typeLabel, Parameters.ScopedLabel roleLabel) {
+        RoleType roleType = tx().concepts().getRelationType(roleLabel.scope()).role(roleLabel.role());
+        try {
+            get_thing_type(rootLabel, typeLabel).plays(roleType);
+            fail();
+        } catch(HypergraphException ignore) {
+            assertTrue(true);
+        }
+    }
+
     @When("{root_label}\\( ?{type_label} ?) set plays role: {scoped_label} as {type_label}")
     public void thing_set_plays_role_as(RootLabel rootLabel, String typeLabel, Parameters.ScopedLabel roleLabel, String overriddenLabel) {
         RoleType roleType = tx().concepts().getRelationType(roleLabel.scope()).role(roleLabel.role());

@@ -61,8 +61,8 @@ public abstract class ThingType<TYPE extends ThingType<TYPE>> extends Type<TYPE>
     public KeyOverrider key(AttributeType attributeType) {
         if (filter(vertex.outs().edge(Schema.Edge.Type.HAS).to(), v -> v.equals(attributeType.vertex)).hasNext()) {
             throw new HypergraphException("Invalid Key Assignment: " + attributeType.label() + " is already used as an attribute");
-        } else if (sup().attributes().anyMatch(a -> a.equals(attributeType))) {
-            throw new HypergraphException("Invalid Attribute Assignment: " + attributeType.label() + " is already inherited");
+        } else if (sups().flatMap(ThingType::attributes).anyMatch(a -> a.equals(attributeType))) {
+            throw new HypergraphException("Invalid Attribute Assignment: " + attributeType.label() + " is already inherited and/or overridden ");
         }
 
         vertex.outs().put(Schema.Edge.Type.KEY, attributeType.vertex);
@@ -94,9 +94,9 @@ public abstract class ThingType<TYPE extends ThingType<TYPE>> extends Type<TYPE>
 
     public HasOverrider has(AttributeType attributeType) {
         if (filter(vertex.outs().edge(Schema.Edge.Type.KEY).to(), v -> v.equals(attributeType.vertex)).hasNext()) {
-            throw new HypergraphException("Invalid Attribute Assignment: " + attributeType.label() + " is already used as a Key");
-        } else if (sup().attributes().anyMatch(a -> a.equals(attributeType))) {
-            throw new HypergraphException("Invalid Attribute Assignment: " + attributeType.label() + " is already inherited");
+            throw new HypergraphException("Invalid Attribute Assignment: " + attributeType.label() + " is already used as a key");
+        } else if (sups().flatMap(ThingType::attributes).anyMatch(a -> a.equals(attributeType))) {
+            throw new HypergraphException("Invalid Attribute Assignment: " + attributeType.label() + " is already inherited or overridden ");
         }
 
         vertex.outs().put(Schema.Edge.Type.HAS, attributeType.vertex);
@@ -129,6 +129,9 @@ public abstract class ThingType<TYPE extends ThingType<TYPE>> extends Type<TYPE>
     }
 
     public PlaysOverrider plays(RoleType roleType) {
+        if (sups().flatMap(ThingType::plays).anyMatch(a -> a.equals(roleType))) {
+            throw new HypergraphException("Invalid Attribute Assignment: " + roleType.label() + " is already inherited or overridden ");
+        }
         vertex.outs().put(Schema.Edge.Type.PLAYS, roleType.vertex);
         return new PlaysOverrider(roleType);
     }
