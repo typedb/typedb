@@ -48,6 +48,7 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -115,82 +116,6 @@ public class GraqlDeleteIT {
     @AfterClass
     public static void closeSession() {
         session.close();
-    }
-
-    @Test
-    public void testGetSort() {
-        List<ConceptMap> answers = tx.execute(
-                Graql.match(var("x").isa("person").has("name", var("y")))
-                        .get().sort("y")
-        );
-
-        assertEquals("Al Pacino", answers.get(0).get("y").asAttribute().value());
-        assertEquals("Bette Midler", answers.get(1).get("y").asAttribute().value());
-        assertEquals("Jude Law", answers.get(2).get("y").asAttribute().value());
-        assertEquals("Kermit The Frog", answers.get(3).get("y").asAttribute().value());
-
-        Set<Concept> toDelete = answers.stream().map(answer -> answer.get("x")).collect(Collectors.toSet());
-
-        Void deleted = tx.execute(
-                Graql.match(var("x").isa("person").has("name", var("y")))
-                        .delete().sort("y")
-        ).get(0);
-
-        assertTrue(deleted.message().contains("success"));
-        for (Concept concept : toDelete) {
-            assertTrue(concept.isDeleted());
-        }
-    }
-
-    @Test
-    public void testGetSortAscLimit() {
-        List<ConceptMap> answers = tx.execute(
-                Graql.match(var("x").isa("person").has("name", var("y")))
-                        .get().sort("y", "asc").limit(3)
-        );
-
-        assertEquals(3, answers.size());
-        assertEquals("Al Pacino", answers.get(0).get("y").asAttribute().value());
-        assertEquals("Bette Midler", answers.get(1).get("y").asAttribute().value());
-        assertEquals("Jude Law", answers.get(2).get("y").asAttribute().value());
-
-        Set<Concept> toDelete = answers.stream().map(answer -> answer.get("x")).collect(Collectors.toSet());
-
-        Void deleted = tx.execute(
-                Graql.match(var("x").isa("person").has("name", var("y")))
-                        .delete().sort("y", "asc").limit(3)
-        ).get(0);
-
-        assertTrue(deleted.message().contains("success"));
-        for (Concept concept : toDelete) {
-            assertTrue(concept.isDeleted());
-        }
-    }
-
-    @Test
-    public void testGetSortDescOffsetLimit() {
-        List<ConceptMap> answers = tx.execute(
-                Graql.match(var("x").isa("person").has("name", var("y")))
-                        .get().sort("y", "desc").offset(3).limit(4)
-        );
-
-        assertEquals(4, answers.size());
-        assertEquals("Miranda Heart", answers.get(0).get("y").asAttribute().value());
-        assertEquals("Martin Sheen", answers.get(1).get("y").asAttribute().value());
-        assertEquals("Marlon Brando", answers.get(2).get("y").asAttribute().value());
-        assertEquals("Kermit The Frog", answers.get(3).get("y").asAttribute().value());
-
-        Set<Concept> toDelete = answers.stream().map(answer -> answer.get("x")).collect(Collectors.toSet());
-
-        Void deleted = tx.execute(
-                Graql.match(var("x").isa("person").has("name", var("y")))
-                        .delete().sort("y", "desc").offset(3).limit(4)
-        ).get(0);
-
-        assertTrue(deleted.message().contains("success"));
-        for (Concept concept : toDelete) {
-            assertTrue(concept.isDeleted());
-        }
     }
 
     @Test
@@ -291,6 +216,20 @@ public class GraqlDeleteIT {
         assertExists(tx, var().has("title", "Godfather"));
         assertNotExists(tx, var().id(id.getValue()));
         assertNotExists(tx, var().val(1000L).isa("tmdb-vote-count"));
+    }
+
+
+    @Test
+    public void whenDeletingAttributeOwnership_onlyOwnershipIsDeleted() {
+        List<ConceptMap> answers = tx.execute(Graql.parse("match $x isa thing, has attribute $a; get; limit 1;").asGet());
+        ConceptId ownerId = answers.get(0).get("x").id();
+        ConceptId attrId = answers.get(0).get("a").id();
+
+        tx.execute(Graql.parse("match $x id " + ownerId + "; $x has attribute $a; $a id " + attrId + "; delete $x has attribute $a;").asDelete());
+
+        assertExists(tx, var().id(ownerId.toString()));
+        assertExists(tx, var().id(attrId.toString()));
+        assertNotExists(tx, Graql.and(var().id(ownerId.toString()).has("attribute", "a"), var("a").id(attrId.toString())));
     }
 
     @Test
@@ -529,14 +468,8 @@ public class GraqlDeleteIT {
         tx.execute(Graql.match(var()).delete((Statement) null));
     }
 
-    @Test
-    public void whenSortVarIsNotInQuery_Throw() {
-        exception.expect(GraqlException.class);
-        exception.expectMessage(VARIABLE_OUT_OF_SCOPE.getMessage(new Variable("z")));
-        tx.execute(Graql.match(var("x").isa("movie").has("title", var("y"))).get().sort("z"));
-    }
 
-
+    @Ignore
     @Test
     public void whenLimitingDelete_CorrectNumberAreDeleted() {
         Session session = graknServer.sessionWithNewKeyspace();

@@ -225,8 +225,6 @@ public class QueryExecutorImpl implements QueryExecutor {
                 .map(result -> result.project(query.vars()))
                 .distinct();
 
-        answers = filter(query, answers);
-
         // TODO: We should not need to collect toSet, once we fix ConceptId.id() to not use cache.
         List<Concept> conceptsToDelete = answers
                 .flatMap(answer -> answer.concepts().stream())
