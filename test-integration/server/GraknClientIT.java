@@ -480,7 +480,7 @@ public class GraknClientIT {
             tx.commit();
         }
         try (GraknClient.Transaction tx = remoteSession.transaction().write()) {
-            GraqlDelete deleteQuery = Graql.match(var("g").rel("x").rel("y").isa("has-cast")).delete("x", "y");
+            GraqlDelete deleteQuery = Graql.match(var("g").rel("x").rel("y").isa("has-cast")).delete(var("x").isa("thing"), var("y").isa("thing"));
             tx.execute(deleteQuery);
             assertTrue(tx.execute(Graql.match(var().rel("x").rel("y").isa("has-cast")).get("x", "y")).isEmpty());
 

@@ -62,6 +62,7 @@ import static grakn.core.util.GraqlTestUtil.assertExists;
 import static grakn.core.util.GraqlTestUtil.assertNotExists;
 import static graql.lang.Graql.type;
 import static graql.lang.Graql.var;
+import static graql.lang.exception.ErrorMessage.UNBOUND_DELETE_VARIABLE;
 import static graql.lang.exception.ErrorMessage.VARIABLE_OUT_OF_SCOPE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -199,7 +200,7 @@ public class GraqlDeleteIT {
 
         assertEquals(2, tx.stream(Graql.match(x.isa("fake-type"))).count());
 
-        tx.execute(Graql.match(x.isa("fake-type")).delete(x.var()));
+        tx.execute(Graql.match(x.isa("fake-type")).delete(x.isa("fake-type")));
 
         assertNotExists(tx, var().isa("fake-type"));
     }
@@ -211,7 +212,7 @@ public class GraqlDeleteIT {
         assertExists(tx, x.has("title", "Godfather"), var().rel(x).rel(y).isa("has-cast"));
         assertExists(tx, var().has("name", "Don Vito Corleone"));
 
-        tx.execute(Graql.match(x.has("title", "Godfather")).delete(x.var()));
+        tx.execute(Graql.match(x.has("title", "Godfather")).delete(x.isa("thing")));
 
         assertNotExists(tx, var().has("title", "Godfather"));
         assertNotExists(tx, x.has("title", "Godfather"), var().rel(x).rel(y).isa("has-cast"));
@@ -225,7 +226,7 @@ public class GraqlDeleteIT {
         assertExists(tx, apocalypseNow);
         assertExists(tx, kurtzCastRelation);
 
-        tx.execute(kurtzCastRelation.delete("a"));
+        tx.execute(kurtzCastRelation.delete(var("a").isa("thing")));
 
         assertExists(tx, kurtz);
         assertExists(tx, marlonBrando);
@@ -242,21 +243,21 @@ public class GraqlDeleteIT {
         assertExists(tx, apocalypseNow);
         assertTrue(checkIdExists(tx, id));
 
-        tx.execute(kurtz.delete(x.var()));
+        tx.execute(kurtz.delete(x.isa("thing")));
 
         assertNotExists(tx, kurtz);
         assertExists(tx, marlonBrando);
         assertExists(tx, apocalypseNow);
         assertTrue(checkIdExists(tx, id));
 
-        tx.execute(marlonBrando.delete(x.var()));
+        tx.execute(marlonBrando.delete(x.isa("thing")));
 
         assertNotExists(tx, kurtz);
         assertNotExists(tx, marlonBrando);
         assertExists(tx, apocalypseNow);
         assertTrue(checkIdExists(tx, id));
 
-        tx.execute(apocalypseNow.delete(x.var()));
+        tx.execute(apocalypseNow.delete(x.isa("thing")));
 
         assertNotExists(tx, kurtz);
         assertNotExists(tx, marlonBrando);
@@ -285,7 +286,7 @@ public class GraqlDeleteIT {
         assertExists(tx, var().id(id.getValue()));
         assertExists(tx, var().val(1000L).isa("tmdb-vote-count"));
 
-        tx.execute(Graql.match(x.val(1000L).isa("tmdb-vote-count")).delete(x.var()));
+        tx.execute(Graql.match(x.val(1000L).isa("tmdb-vote-count")).delete(x.isa(Schema.ImplicitType.HAS.getLabel("tmdb-vote-count").getValue())));
 
         assertExists(tx, var().has("title", "Godfather"));
         assertNotExists(tx, var().id(id.getValue()));
@@ -344,14 +345,17 @@ public class GraqlDeleteIT {
         tx = session.writeTransaction();
 
         List<Pattern> idPatterns = new ArrayList<>();
+        List<Statement> deletePatterns = new ArrayList<>();
         for (int i = 0; i < insertedIds.size(); i++) {
             StatementThing id = var("v" + i).id(insertedIds.get(i).toString());
+            Statement delete = var("v" + i).isa("thing");
             idPatterns.add(id);
+            deletePatterns.add(delete);
         }
         List<ConceptMap> answersById = tx.execute(Graql.match(idPatterns).get());
         assertEquals(answersById.size(), 1);
 
-        tx.execute(Graql.match(idPatterns).delete(idPatterns.stream().flatMap(pattern -> pattern.variables().stream()).collect(Collectors.toList())));
+        tx.execute(Graql.match(idPatterns).delete(deletePatterns));
         tx.commit();
 
     }
@@ -381,13 +385,15 @@ public class GraqlDeleteIT {
         tx = session.writeTransaction();
 
         List<Pattern> idPatterns = new ArrayList<>();
+        List<Statement> deletePatterns = new ArrayList<>();
         for (int i = 0; i < insertedIds.size(); i++) {
             StatementThing id = var("v" + i).id(insertedIds.get(i).toString());
+            Statement delete = var("v" + i).isa("thing");
             idPatterns.add(id);
+            deletePatterns.add(delete);
         }
-
         // clean up, delete the IDs we inserted for this test
-        tx.execute(Graql.match(idPatterns).delete(idPatterns.stream().flatMap(pattern -> pattern.variables().stream()).collect(Collectors.toList())));
+        tx.execute(Graql.match(idPatterns).delete(deletePatterns));
         tx.commit();
     }
 
@@ -468,7 +474,7 @@ public class GraqlDeleteIT {
         assertNotNull(tx.getEntityType("movie"));
         assertExists(tx, movie);
 
-        tx.execute(movie.delete(x.var()));
+        tx.execute(movie.delete(x.isa("movie")));
 
         assertNotNull(tx.getEntityType("movie"));
         assertNotExists(tx, movie);
@@ -485,7 +491,7 @@ public class GraqlDeleteIT {
 
         assertEquals(2, tx.stream(Graql.match(x.isa("fake-type"))).count());
 
-        tx.execute(Graql.match(x.isa("fake-type"), y.isa("fake-type"), x.not(y.var())).delete(x.var(), y.var()));
+        tx.execute(Graql.match(x.isa("fake-type"), y.isa("fake-type"), x.not(y.var())).delete(x.isa("fake-type"), y.isa("take-type")));
 
         assertNotExists(tx, var().isa("fake-type"));
     }
@@ -505,8 +511,8 @@ public class GraqlDeleteIT {
     @Test
     public void whenDeletingAVariableNotInTheQuery_Throw() {
         exception.expect(GraqlException.class);
-        exception.expectMessage(VARIABLE_OUT_OF_SCOPE.getMessage(y.var()));
-        tx.execute(Graql.match(x.isa("movie")).delete(y.var()));
+        exception.expectMessage(UNBOUND_DELETE_VARIABLE.getMessage(y.var()));
+        tx.execute(Graql.match(x.isa("movie")).delete(y.isa("thing")));
     }
 
     @Test
@@ -515,12 +521,12 @@ public class GraqlDeleteIT {
 
         exception.expect(GraqlSemanticException.class);
         exception.expectMessage(GraqlSemanticException.deleteSchemaConcept(newType).getMessage());
-        tx.execute(Graql.match(x.type("new-type")).delete(x.var()));
+        tx.execute(Graql.match(x.type("new-type")).delete(x.isa("thing")));
     }
 
     @Test(expected = Exception.class)
     public void whenDeleteIsPassedNull_Throw() {
-        tx.execute(Graql.match(var()).delete((String) null));
+        tx.execute(Graql.match(var()).delete((Statement) null));
     }
 
     @Test

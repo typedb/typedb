@@ -269,7 +269,7 @@ public class ClientJavaE2E {
 
         localhostGraknTx(tx -> {
             LOG.info("clientJavaE2E() - match delete...");
-            GraqlDelete deleteQuery = Graql.match(var("m").isa("mating")).delete("m");
+            GraqlDelete deleteQuery = Graql.match(var("m").isa("mating")).delete(var("m").isa("mating"));
             LOG.info("clientJavaE2E() - '" + deleteQuery + "'");
             tx.execute(deleteQuery);
             List<ConceptMap> matings = tx.execute(Graql.match(var("m").isa("mating")).get());

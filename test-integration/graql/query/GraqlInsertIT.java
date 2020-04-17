@@ -169,7 +169,7 @@ public class GraqlInsertIT {
         tx.execute(Graql.insert(vars));
         assertExists(tx, patterns);
 
-        tx.execute(Graql.match(patterns).delete("r"));
+        tx.execute(Graql.match(patterns).delete(var("r").isa("has-genre")));
         assertNotExists(tx, patterns);
     }
 
@@ -195,7 +195,7 @@ public class GraqlInsertIT {
         tx.execute(query);
         assertEquals(3, tx.stream(Graql.match(language)).count());
 
-        tx.execute(Graql.match(language).delete("x"));
+        tx.execute(Graql.match(language).delete(var("x").isa("language")));
         assertEquals(0, tx.stream(Graql.match(language)).count());
     }
 
@@ -212,7 +212,7 @@ public class GraqlInsertIT {
         assertExists(tx, var("x").isa("language").has("name", "123").has("name", "HELLO"));
         assertExists(tx, var("x").isa("language").has("name", "456").has("name", "HELLO"));
 
-        tx.execute(Graql.match(var("x").isa("language")).delete("x"));
+        tx.execute(Graql.match(var("x").isa("language")).delete(var("x").isa("language")));
         assertNotExists(tx, language1);
         assertNotExists(tx, language2);
     }
@@ -717,7 +717,7 @@ public class GraqlInsertIT {
 
         // Delete all vars
         for (Statement var : vars) {
-            tx.execute(Graql.match(var).delete(var.var()));
+            tx.execute(Graql.match(var).delete(var.isa("thing")));
         }
 
         // Make sure vars don't exist
