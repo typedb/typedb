@@ -28,7 +28,6 @@ import hypergraph.concept.type.Type;
 import hypergraph.test.behaviour.config.Parameters;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
-import org.junit.Assert;
 
 import java.util.List;
 import java.util.Set;
@@ -171,6 +170,17 @@ public class ThingTypeSteps {
         get_thing_type(rootLabel, typeLabel).key(attributeType).as(overriddenType);
     }
 
+    @Then("{root_label}\\( ?{type_label} ?) fails at setting key attribute: {type_label}")
+    public void thing_fails_at_setting_key_attribute(RootLabel rootLabel, String typeLabel, String attributeLabel) {
+        AttributeType attributeType = tx().concepts().getAttributeType(attributeLabel);
+        try{
+            get_thing_type(rootLabel, typeLabel).key(attributeType);
+            fail();
+        } catch (HypergraphException ignored) {
+            assertTrue(true);
+        }
+    }
+
     @Then("{root_label}\\( ?{type_label} ?) fails at setting key attribute: {type_label} as {type_label}")
     public void thing_fails_at_setting_key_attribute_as(RootLabel rootLabel, String typeLabel, String attributeLabel, String overriddenLabel) {
         AttributeType attributeType = tx().concepts().getAttributeType(attributeLabel);
@@ -207,6 +217,17 @@ public class ThingTypeSteps {
     public void thing_set_has_attribute(RootLabel rootLabel, String typeLabel, String attributeLabel) {
         AttributeType attributeType = tx().concepts().getAttributeType(attributeLabel);
         get_thing_type(rootLabel, typeLabel).has(attributeType);
+    }
+
+    @Then("{root_label}\\( ?{type_label} ?) fails at setting has attribute: {type_label}")
+    public void thing_fails_at_setting_has_attribute(RootLabel rootLabel, String typeLabel, String attributeLabel) {
+        AttributeType attributeType = tx().concepts().getAttributeType(attributeLabel);
+        try{
+            get_thing_type(rootLabel, typeLabel).has(attributeType);
+            fail();
+        } catch (HypergraphException ignored) {
+            assertTrue(true);
+        }
     }
 
     @When("{root_label}\\( ?{type_label} ?) set has attribute: {type_label} as {type_label}")

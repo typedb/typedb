@@ -27,7 +27,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -62,8 +61,9 @@ public abstract class ThingType<TYPE extends ThingType<TYPE>> extends Type<TYPE>
 
     public KeyOverrider key(AttributeType attributeType) {
         if (filter(vertex.outs().edge(Schema.Edge.Type.HAS).to(), v -> v.equals(attributeType.vertex)).hasNext()) {
-            throw new HypergraphException("Invalid Key Assignment: " + attributeType.label() +
-                                                  " is already used as an attribute");
+            throw new HypergraphException("Invalid Key Assignment: " + attributeType.label() + " is already used as an attribute");
+        } else if (sup().attributes().anyMatch(a -> a.equals(attributeType))) {
+            throw new HypergraphException("Invalid Attribute Assignment: " + attributeType.label() + " is already inherited");
         }
 
         vertex.outs().put(Schema.Edge.Type.KEY, attributeType.vertex);
@@ -95,8 +95,9 @@ public abstract class ThingType<TYPE extends ThingType<TYPE>> extends Type<TYPE>
 
     public HasOverrider has(AttributeType attributeType) {
         if (filter(vertex.outs().edge(Schema.Edge.Type.KEY).to(), v -> v.equals(attributeType.vertex)).hasNext()) {
-            throw new HypergraphException("Invalid Attribute Assignment: " + attributeType.label() +
-                                                  " is already used as a Key");
+            throw new HypergraphException("Invalid Attribute Assignment: " + attributeType.label() + " is already used as a Key");
+        } else if (sup().attributes().anyMatch(a -> a.equals(attributeType))) {
+            throw new HypergraphException("Invalid Attribute Assignment: " + attributeType.label() + " is already inherited");
         }
 
         vertex.outs().put(Schema.Edge.Type.HAS, attributeType.vertex);
