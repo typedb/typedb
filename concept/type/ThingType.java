@@ -27,7 +27,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import static hypergraph.common.iterator.Iterators.apply;
@@ -197,46 +196,53 @@ public abstract class ThingType<TYPE extends ThingType<TYPE>> extends Type<TYPE>
 
     public class KeyOverrider extends Overrider<AttributeType> {
         KeyOverrider(AttributeType attributeType) {
-            super(attributeType, ThingType.this::attributes, ThingType.this::declaredAttributes, Schema.Edge.Type.KEY);
+            super(Schema.Edge.Type.KEY, attributeType,
+                  ThingType.this.sup().attributes(),
+                  ThingType.this.declaredAttributes()
+            );
         }
     }
 
     public class HasOverrider extends Overrider<AttributeType> {
         HasOverrider(AttributeType attributeType) {
-            super(attributeType, ThingType.this::attributes, ThingType.this::declaredAttributes, Schema.Edge.Type.HAS);
+            super(Schema.Edge.Type.HAS, attributeType,
+                  ThingType.this.sup().attributes(),
+                  concat(ThingType.this.sup().keys(), ThingType.this.declaredAttributes())
+            );
         }
     }
 
     public class PlaysOverrider extends Overrider<RoleType> {
         PlaysOverrider(RoleType roleType) {
-            super(roleType, ThingType.this::plays, ThingType.this::declaredPlays, Schema.Edge.Type.PLAYS);
+            super(Schema.Edge.Type.PLAYS, roleType,
+                  ThingType.this.sup().plays(),
+                  ThingType.this.declaredPlays()
+            );
         }
     }
 
     public class Overrider<P extends Type<P>> {
 
-        private final P property;
-        private final Supplier<Stream<P>> inheritedProperties;
-        private final Supplier<Stream<P>> declaredProperties;
+        private final P type;
+        private final Stream<P> overridable;
+        private final Stream<P> notOverridable;
         private final Schema.Edge.Type schema;
 
-        Overrider(P property, Supplier<Stream<P>> inheritedProperties, Supplier<Stream<P>> declaredProperties, Schema.Edge.Type schema) {
-            this.property = property;
-            this.inheritedProperties = inheritedProperties;
-            this.declaredProperties = declaredProperties;
+        Overrider(Schema.Edge.Type schema, P type, Stream<P> overridable, Stream<P> notOverridable) {
             this.schema = schema;
+            this.type = type;
+            this.overridable = overridable;
+            this.notOverridable = notOverridable;
         }
 
         public void as(P property) {
-            if (declaredProperties.get().anyMatch(prop -> prop.equals(property))) {
-                throw new HypergraphException("Invalid Property Overriding: " + property.label() + " is in declared properties");
-            } else if (inheritedProperties.get().noneMatch(prop -> prop.equals(property))) {
-                throw new HypergraphException("Invalid Property Overriding: inherited properties do not contain " + property.label());
-            } else if (this.property.sups().noneMatch(prop -> prop.equals(property))) {
-                throw new HypergraphException("Invalid Property Overriding: " + property.label() + " is not a supertype");
+            if (notOverridable.anyMatch(prop -> prop.equals(property)) || overridable.noneMatch(prop -> prop.equals(property))) {
+                throw new HypergraphException("Invalid Type Overriding: " + property.label() + " is not overridable");
+            } else if (this.type.sups().noneMatch(prop -> prop.equals(property))) {
+                throw new HypergraphException("Invalid Type Overriding: " + property.label() + " is not a supertype");
             }
 
-            vertex.outs().edge(schema, this.property.vertex).overridden(property.vertex);
+            vertex.outs().edge(schema, this.type.vertex).overridden(property.vertex);
         }
     }
 }
