@@ -23,6 +23,7 @@ import grakn.core.kb.graql.executor.WriteExecutor;
 import grakn.core.kb.graql.planning.gremlin.EquivalentFragmentSet;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
+import javafx.beans.property.Property;
 
 import java.util.Set;
 
@@ -61,6 +62,10 @@ public interface PropertyExecutor {
     interface Insertable extends PropertyExecutor {
 
         Set<Writer> insertExecutors();
+    }
+
+    interface Deletable extends PropertyExecutor {
+        Set<Writer> deleteExecutors();
     }
 
     interface Writer {

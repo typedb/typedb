@@ -218,7 +218,6 @@ public class GraqlDeleteIT {
         assertNotExists(tx, var().val(1000L).isa("tmdb-vote-count"));
     }
 
-
     @Test
     public void whenDeletingAttributeOwnership_onlyOwnershipIsDeleted() {
         List<ConceptMap> answers = tx.execute(Graql.parse("match $x isa thing, has attribute $a; get; limit 1;").asGet());

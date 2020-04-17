@@ -179,7 +179,8 @@ public enum ErrorMessage {
     INVALID_SUPER_TYPE("'%s' cannot be a subtype of '%s'"),
     INSERT_RECURSIVE("%s should not refer to itself"),
     INSERT_ABSTRACT_NOT_TYPE("the concept [%s] is not a type and cannot be set to abstract"),
-    INSERT_RELATION_WITHOUT_ROLE_TYPE("attempted to insert a relation without all role types specified"),
+    INSERT_RELATION_WITHOUT_ROLE_TYPE("attempted to insert a relation players [%s] without all role types specified"),
+    DELETE_RELATION_PLAYER_WITHOUT_ROLE_TYPE("attempted to delete a role player [%s] from a relation without specifying role"),
 
     INVALID_STATEMENT("Value [%s] not of type [%s] in data [%s]"),
 

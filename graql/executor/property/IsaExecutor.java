@@ -33,7 +33,7 @@ import graql.lang.statement.Variable;
 
 import java.util.Set;
 
-public class IsaExecutor implements PropertyExecutor.Insertable {
+public class IsaExecutor implements PropertyExecutor.Insertable, PropertyExecutor.Deletable {
 
     private final Variable var;
     private final IsaProperty property;
@@ -61,6 +61,11 @@ public class IsaExecutor implements PropertyExecutor.Insertable {
     @Override
     public Set<PropertyExecutor.Writer> insertExecutors() {
         return ImmutableSet.of(new InsertIsa());
+    }
+
+    @Override
+    public Set<Writer> deleteExecutors() {
+        return ImmutableSet.of(new DeleteIsa());
     }
 
     private class InsertIsa implements PropertyExecutor.Writer {
@@ -99,6 +104,37 @@ public class IsaExecutor implements PropertyExecutor.Insertable {
             } else {
                 executor.getBuilder(var).isa(type);
             }
+        }
+    }
+
+
+    private class DeleteIsa implements PropertyExecutor.Writer {
+
+        @Override
+        public Variable var() {
+            return var;
+        }
+
+        @Override
+        public VarProperty property() {
+            return property;
+        }
+
+        @Override
+        public Set<Variable> requiredVars() {
+            return ImmutableSet.of();
+        }
+
+        @Override
+        public Set<Variable> producedVars() {
+            return ImmutableSet.of();
+        }
+
+        @Override
+        public void execute(WriteExecutor executor) {
+            Concept concept = executor.getConcept(var);
+            // TODO ensure that the concept is an instance of the required type by the delete
+            concept.delete();
         }
     }
 }

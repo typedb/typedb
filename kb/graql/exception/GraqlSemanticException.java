@@ -249,8 +249,12 @@ public class GraqlSemanticException extends GraknException {
         return create("'has' argument '%s' requires a label", var);
     }
 
-    public static GraqlSemanticException insertRolePlayerWithoutRoleType() {
-        return new GraqlSemanticException(ErrorMessage.INSERT_RELATION_WITHOUT_ROLE_TYPE.getMessage());
+    public static GraqlSemanticException insertRolePlayerWithoutRoleType(String relationPlayer) {
+        return new GraqlSemanticException(ErrorMessage.INSERT_RELATION_WITHOUT_ROLE_TYPE.getMessage(relationPlayer));
+    }
+
+    public static GraqlSemanticException deleteRolePlayerWithoutRoleType(String relationPlayer) {
+        return new GraqlSemanticException(ErrorMessage.DELETE_RELATION_PLAYER_WITHOUT_ROLE_TYPE.getMessage(relationPlayer));
     }
 
     public static GraqlSemanticException insertAbstractOnNonType(SchemaConcept concept) {

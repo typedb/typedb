@@ -43,7 +43,7 @@ import java.util.stream.Stream;
 
 import static grakn.core.graql.planning.gremlin.sets.EquivalentFragmentSets.rolePlayer;
 
-public class RelationExecutor  implements PropertyExecutor.Insertable {
+public class RelationExecutor implements PropertyExecutor.Insertable, PropertyExecutor.Deletable {
 
     private final Variable var;
     private final RelationProperty property;
@@ -95,6 +95,11 @@ public class RelationExecutor  implements PropertyExecutor.Insertable {
         return ImmutableSet.of(new InsertRelation());
     }
 
+    @Override
+    public Set<Writer> deleteExecutors() {
+        return ImmutableSet.of(new DeleteRelation());
+    }
+
     class InsertRelation implements PropertyExecutor.Writer {
 
         @Override
@@ -137,7 +142,52 @@ public class RelationExecutor  implements PropertyExecutor.Insertable {
         }
 
         private Statement getRole(RelationProperty.RolePlayer relationPlayer) {
-            return relationPlayer.getRole().orElseThrow(GraqlSemanticException::insertRolePlayerWithoutRoleType);
+            return relationPlayer.getRole().orElseThrow(() -> GraqlSemanticException.insertRolePlayerWithoutRoleType(relationPlayer.toString()));
+        }
+    }
+
+    class DeleteRelation implements PropertyExecutor.Writer {
+
+        @Override
+        public Variable var() {
+            return var;
+        }
+
+        @Override
+        public VarProperty property() {
+            return property;
+        }
+
+        @Override
+        public Set<Variable> requiredVars() {
+            Set<Variable> relationPlayers = property.relationPlayers().stream()
+                    .flatMap(relationPlayer -> Stream.of(relationPlayer.getPlayer(), getRole(relationPlayer)))
+                    .map(statement -> statement.var())
+                    .collect(Collectors.toSet());
+
+            relationPlayers.add(var);
+            return Collections.unmodifiableSet(relationPlayers);
+        }
+
+        @Override
+        public Set<Variable> producedVars() {
+            return ImmutableSet.of();
+        }
+
+        @Override
+        public void execute(WriteExecutor executor) {
+            Relation relation = executor.getConcept(var).asRelation();
+            property.relationPlayers().forEach(relationPlayer -> {
+                Statement roleVar = getRole(relationPlayer);
+                Role role = executor.getConcept(roleVar.var()).asRole();
+                Thing roleplayer = executor.getConcept(relationPlayer.getPlayer().var()).asThing();
+                // TODO ensure that the relation and player are allowed to relate/play this role
+                relation.unassign(role, roleplayer);
+            });
+        }
+
+        private Statement getRole(RelationProperty.RolePlayer relationPlayer) {
+            return relationPlayer.getRole().orElseThrow(() -> GraqlSemanticException.deleteRolePlayerWithoutRoleType(relationPlayer.toString()));
         }
     }
 }

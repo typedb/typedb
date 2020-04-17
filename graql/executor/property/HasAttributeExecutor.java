@@ -38,7 +38,7 @@ import java.util.Set;
 import static grakn.core.graql.planning.gremlin.sets.EquivalentFragmentSets.neq;
 import static grakn.core.graql.planning.gremlin.sets.EquivalentFragmentSets.rolePlayer;
 
-public class HasAttributeExecutor  implements PropertyExecutor.Insertable {
+public class HasAttributeExecutor  implements PropertyExecutor.Insertable, PropertyExecutor.Deletable {
 
     private final Variable var;
     private final HasAttributeProperty property;
@@ -80,6 +80,11 @@ public class HasAttributeExecutor  implements PropertyExecutor.Insertable {
         return ImmutableSet.of(new InsertHasAttribute());
     }
 
+    @Override
+    public Set<Writer> deleteExecutors() {
+        return ImmutableSet.of(new DeleteHasAttribute());
+    }
+
     private class InsertHasAttribute implements PropertyExecutor.Writer {
 
         @Override
@@ -111,6 +116,40 @@ public class HasAttributeExecutor  implements PropertyExecutor.Insertable {
             Thing thing = executor.getConcept(var).asThing();
             ConceptId relationId = thing.relhas(attributeConcept).id();
             executor.getBuilder(property.relation().var()).id(relationId);
+        }
+    }
+
+    private class DeleteHasAttribute implements PropertyExecutor.Writer {
+
+        @Override
+        public Variable var() {
+            return var;
+        }
+
+        @Override
+        public VarProperty property() {
+            return property;
+        }
+
+        @Override
+        public Set<Variable> requiredVars() {
+            Set<Variable> required = new HashSet<>();
+            required.add(var);
+            required.add(property.attribute().var());
+            return Collections.unmodifiableSet(required);
+        }
+
+        @Override
+        public Set<Variable> producedVars() {
+            return ImmutableSet.of();
+        }
+
+        @Override
+        public void execute(WriteExecutor executor) {
+            Attribute attribute = executor.getConcept(property.attribute().var()).asAttribute();
+            Thing thing = executor.getConcept(var).asThing();
+            // TODO check that the thing can and does have the given attribute
+            thing.unhas(attribute);
         }
     }
 }
