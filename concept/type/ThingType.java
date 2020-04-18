@@ -240,7 +240,7 @@ public abstract class ThingType<TYPE extends ThingType<TYPE>> extends Type<TYPE>
 
         public void as(P property) {
             if (notOverridable.anyMatch(prop -> prop.equals(property)) || overridable.noneMatch(prop -> prop.equals(property))) {
-                throw new HypergraphException("Invalid Type Overriding: " + property.label() + " is not overridable");
+                throw new HypergraphException("Invalid Type Overriding: " + property.label() + " cannot be overridden");
             } else if (this.type.sups().noneMatch(prop -> prop.equals(property))) {
                 throw new HypergraphException("Invalid Type Overriding: " + property.label() + " is not a supertype");
             }

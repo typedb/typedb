@@ -26,6 +26,7 @@ java_library(
     deps = [
         # Internal Package Dependencies
         "//concept:concept",
+        "//common:common",
         "//test/behaviour/config:parameters",
         "//test/behaviour/connection:steps",
 

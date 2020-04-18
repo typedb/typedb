@@ -149,14 +149,14 @@ public class RelationType extends ThingType<RelationType> {
         }
 
         public void as(String superLabel) {
-            Optional<RoleType> inherited = sup().roles().filter(role -> role.label().equals(superLabel)).findAny();
-            if (inherited.isPresent()) {
-                roleType.sup(inherited.get());
-                vertex.outs().edge(Schema.Edge.Type.RELATES, roleType.vertex).overridden(inherited.get().vertex);
-            } else {
-                throw new HypergraphException(
-                        "Invalid Role Type Overriding: inherited roles do not contain " + superLabel);
+            Optional<RoleType> inherited;
+            if (declaredRoles().anyMatch(r -> r.label().equals(superLabel)) ||
+                    !(inherited = sup().roles().filter(role -> role.label().equals(superLabel)).findAny()).isPresent()) {
+                throw new HypergraphException("Invalid Role Type Overriding: " + superLabel + " cannot be overridden");
             }
+
+            roleType.sup(inherited.get());
+            vertex.outs().edge(Schema.Edge.Type.RELATES, roleType.vertex).overridden(inherited.get().vertex);
         }
 
         public void as(RoleType superType) {
