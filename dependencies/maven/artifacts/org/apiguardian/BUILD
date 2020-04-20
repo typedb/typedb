@@ -1,7 +1,7 @@
 java_library(
-    name = "zipkin",
+    name = "apiguardian-api",
     exports = [
-        "//external:jar/io/zipkin/zipkin2/zipkin"
+        "//external:jar/org/apiguardian/apiguardian-api"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"

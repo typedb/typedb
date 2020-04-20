@@ -75,7 +75,7 @@ java_library(
         ":netty-transport"
     ],
     visibility = [
-        "//dependencies/maven/artifacts:__subpackages__"
+        "//visibility:public"
     ]
 )
 
