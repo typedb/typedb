@@ -18,15 +18,9 @@
 
 package grakn.core.test.behaviour.debug;
 
-import grakn.client.test.setup.GraknSetup;
 import io.cucumber.junit.Cucumber;
 import io.cucumber.junit.CucumberOptions;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
-
-import java.io.IOException;
-import java.util.concurrent.TimeoutException;
 
 @RunWith(Cucumber.class)
 @CucumberOptions(

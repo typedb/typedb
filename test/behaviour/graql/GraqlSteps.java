@@ -19,12 +19,13 @@
 package grakn.core.test.behaviour.graql;
 
 import com.google.common.collect.Iterators;
-import grakn.client.GraknClient;
-import grakn.client.answer.Answer;
-import grakn.client.answer.ConceptMap;
-import grakn.client.concept.Concept;
-import grakn.client.concept.type.AttributeType;
-import grakn.client.test.behaviour.connection.ConnectionSteps;
+import grakn.core.concept.answer.Answer;
+import grakn.core.concept.answer.ConceptMap;
+import grakn.core.kb.concept.api.AttributeType;
+import grakn.core.kb.concept.api.Concept;
+import grakn.core.kb.server.Session;
+import grakn.core.kb.server.Transaction;
+import grakn.core.test.behaviour.connection.ConnectionSteps;
 import graql.lang.Graql;
 import graql.lang.query.GraqlDefine;
 import graql.lang.query.GraqlGet;
@@ -61,7 +62,7 @@ public class GraqlSteps {
     @Given("transaction is initialised")
     public void transaction_is_initialised() {
         session = Iterators.getOnlyElement(ConnectionSteps.sessions.iterator());
-        tx = session.transaction().write();
+        tx = session.transaction(Transaction.Type.WRITE);
         assertTrue(tx.isOpen());
     }
 
@@ -77,7 +78,7 @@ public class GraqlSteps {
         GraqlDefine graqlQuery = Graql.parse(String.join("\n", defineQueryStatements)).asDefine();
         tx.execute(graqlQuery);
         tx.commit();
-        tx = session.transaction().write();
+        tx = session.transaction(Transaction.Type.WRITE);
     }
 
     @Given("graql undefine")
@@ -85,7 +86,7 @@ public class GraqlSteps {
         GraqlUndefine graqlQuery = Graql.parse(String.join("\n", undefineQueryStatements)).asUndefine();
         tx.execute(graqlQuery);
         tx.commit();
-        tx = session.transaction().write();
+        tx = session.transaction(Transaction.Type.WRITE);
     }
 
     @Given("graql undefine throws")
@@ -99,7 +100,7 @@ public class GraqlSteps {
             threw = true;
         } finally {
             tx.close();
-            tx = session.transaction().write();
+            tx = session.transaction(Transaction.Type.WRITE);
         }
 
         assertTrue(threw);
@@ -110,7 +111,7 @@ public class GraqlSteps {
         GraqlQuery graqlQuery = Graql.parse(String.join("\n", insertQueryStatements));
         tx.execute(graqlQuery);
         tx.commit();
-        tx = session.transaction().write();
+        tx = session.transaction(Transaction.Type.WRITE);
     }
 
 
@@ -125,7 +126,7 @@ public class GraqlSteps {
             threw = true;
         } finally {
             tx.close();
-            tx = session.transaction().write();
+            tx = session.transaction(Transaction.Type.WRITE);
         }
         assertTrue(threw);
     }
@@ -161,10 +162,10 @@ public class GraqlSteps {
         for (ConceptMap answer : answers) {
 
             Map<String, String> answerKeys = new HashMap<>();
-            AttributeType.Remote<?> keyType = tx.getAttributeType(answerConceptKey);
+            AttributeType keyType = tx.getAttributeType(answerConceptKey);
             // remap each concept and save its key value into the map from variable to key value
             answer.map().forEach((var, concept) -> {
-                            answerKeys.put(var.name(), concept.asThing().asRemote(tx)
+                            answerKeys.put(var.name(), concept.asThing()
                                     .attributes(keyType).findFirst().get().value().toString());
             });
 
@@ -223,7 +224,7 @@ public class GraqlSteps {
         while (matcher.find()) {
             String matched = matcher.group(0);
             String requiredVariable = variableFromTemplatePlaceholder(matched.substring(1, matched.length() - 1));
-            Concept<?> concept = templateFiller.get(requiredVariable);
+            Concept concept = templateFiller.get(requiredVariable);
 
             builder.append(template, i, matcher.start());
             if (concept == null) {

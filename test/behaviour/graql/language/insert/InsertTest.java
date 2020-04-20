@@ -18,7 +18,6 @@
 
 package grakn.core.test.behaviour.graql.language.insert;
 
-import grakn.client.test.setup.GraknSetup;
 import io.cucumber.junit.Cucumber;
 import io.cucumber.junit.CucumberOptions;
 import org.junit.AfterClass;
@@ -59,14 +58,4 @@ public class InsertTest {
     //       --spawn_strategy=standalone : if you're on Mac, tests need permission to access filesystem (to run Grakn)
     //
     // 6) Hit the RUN button by selecting the test from the dropdown menu on the top bar
-
-    @BeforeClass
-    public static void beforeClass() throws InterruptedException, TimeoutException, IOException {
-        GraknSetup.bootup();
-    }
-
-    @AfterClass
-    public static void afterClass() throws InterruptedException, IOException, TimeoutException {
-        GraknSetup.shutdown();
-    }
 }

@@ -92,7 +92,7 @@ public class SemanticDifferenceIT {
 
     @Test
     public void whenChildSpecifiesType_typesAreFilteredCorrectly() {
-        try (TestTransaction tx = ((TestTransaction) genericSchemasession.transaction(Transaction.Type.WRITE))) {
+        try (TestTransaction tx = ((TestTransaction) genericSchemaSession.transaction(Transaction.Type.WRITE))) {
             ReasonerQueryFactory reasonerQueryFactory = tx.reasonerQueryFactory();
             EntityType subRoleEntity = tx.getEntityType("subRoleEntity");
 
@@ -122,7 +122,7 @@ public class SemanticDifferenceIT {
 
     @Test
     public void whenChildSpecialisesType_typesAreFilteredCorrectly() {
-        try (TestTransaction tx = ((TestTransaction) genericSchemasession.transaction(Transaction.Type.WRITE))) {
+        try (TestTransaction tx = ((TestTransaction) genericSchemaSession.transaction(Transaction.Type.WRITE))) {
             ReasonerQueryFactory reasonerQueryFactory = tx.reasonerQueryFactory();
             EntityType baseRoleEntity = tx.getEntityType("baseRoleEntity");
             EntityType subRoleEntity = tx.getEntityType("subRoleEntity");
@@ -154,7 +154,7 @@ public class SemanticDifferenceIT {
 
     @Test
     public void whenChildGeneralisesType_semanticDifferenceIsTrivial() {
-        try (TestTransaction tx = ((TestTransaction) genericSchemasession.transaction(Transaction.Type.WRITE))) {
+        try (TestTransaction tx = ((TestTransaction) genericSchemaSession.transaction(Transaction.Type.WRITE))) {
             ReasonerQueryFactory reasonerQueryFactory = tx.reasonerQueryFactory();
             EntityType baseRoleEntity = tx.getEntityType("baseRoleEntity");
             EntityType metaEntityType = tx.getMetaEntityType();
@@ -178,7 +178,7 @@ public class SemanticDifferenceIT {
 
     @Test
     public void whenChildSpecifiesRole_rolesAreFilteredCorrectly() {
-        try (TestTransaction tx = ((TestTransaction) genericSchemasession.transaction(Transaction.Type.WRITE))) {
+        try (TestTransaction tx = ((TestTransaction) genericSchemaSession.transaction(Transaction.Type.WRITE))) {
             ReasonerQueryFactory reasonerQueryFactory = tx.reasonerQueryFactory();
             Role role = tx.getRole("baseRole1");
             Pattern parentPattern =
@@ -208,7 +208,7 @@ public class SemanticDifferenceIT {
 
     @Test
     public void whenChildSpecialisesRole_rolesAreFilteredCorrectly() {
-        try (TestTransaction tx = ((TestTransaction) genericSchemasession.transaction(Transaction.Type.WRITE))) {
+        try (TestTransaction tx = ((TestTransaction) genericSchemaSession.transaction(Transaction.Type.WRITE))) {
             ReasonerQueryFactory reasonerQueryFactory = tx.reasonerQueryFactory();
             Role baseRole = tx.getRole("baseRole1");
             Role subRole = tx.getRole("subRole1");
@@ -239,7 +239,7 @@ public class SemanticDifferenceIT {
 
     @Test
     public void whenChildSpecialisesRole_rolePlayersPlayingMultipleRoles_differenceIsCalculatedCorrectly() {
-        try (TestTransaction tx = ((TestTransaction) genericSchemasession.transaction(Transaction.Type.WRITE))) {
+        try (TestTransaction tx = ((TestTransaction) genericSchemaSession.transaction(Transaction.Type.WRITE))) {
             ReasonerQueryFactory reasonerQueryFactory = tx.reasonerQueryFactory();
             Role baseRole1 = tx.getRole("baseRole1");
             Role subRole1 = tx.getRole("subRole1");
@@ -276,7 +276,7 @@ public class SemanticDifferenceIT {
 
     @Test
     public void whenChildAndParentHaveVariableRoles_differenceIsCalculatedCorrectly() {
-        try (TestTransaction tx = ((TestTransaction) genericSchemasession.transaction(Transaction.Type.WRITE))) {
+        try (TestTransaction tx = ((TestTransaction) genericSchemaSession.transaction(Transaction.Type.WRITE))) {
             ReasonerQueryFactory reasonerQueryFactory = tx.reasonerQueryFactory();
             Pattern parentPattern =
                     var().rel(var("role"), var("z")).rel(var("role2"), var("w")).isa("binary");
@@ -295,7 +295,7 @@ public class SemanticDifferenceIT {
 
     @Test
     public void whenChildSpecialisesPlayedRole_RPsAreFilteredCorrectly() {
-        try (TestTransaction tx = ((TestTransaction) genericSchemasession.transaction(Transaction.Type.WRITE))) {
+        try (TestTransaction tx = ((TestTransaction) genericSchemaSession.transaction(Transaction.Type.WRITE))) {
             ReasonerQueryFactory reasonerQueryFactory = tx.reasonerQueryFactory();
             Role subRole1 = tx.getRole("subRole1");
             Role subRole2 = tx.getRole("subSubRole2");
@@ -322,7 +322,7 @@ public class SemanticDifferenceIT {
 
     @Test
     public void whenChildGeneralisesRoles_semanticDifferenceIsTrivial() {
-        try (TestTransaction tx = ((TestTransaction) genericSchemasession.transaction(Transaction.Type.WRITE))) {
+        try (TestTransaction tx = ((TestTransaction) genericSchemaSession.transaction(Transaction.Type.WRITE))) {
             ReasonerQueryFactory reasonerQueryFactory = tx.reasonerQueryFactory();
             Role metaRole = tx.getMetaRole();
             Pattern parentPattern = var().rel("baseRole1", var("z")).rel("baseRole2", var("w")).isa("binary");
@@ -340,7 +340,7 @@ public class SemanticDifferenceIT {
 
     @Test
     public void whenChildSpecifiesResourceValuePredicate_valuesAreFilteredCorrectly() {
-        try (TestTransaction tx = ((TestTransaction) genericSchemasession.transaction(Transaction.Type.WRITE))) {
+        try (TestTransaction tx = ((TestTransaction) genericSchemaSession.transaction(Transaction.Type.WRITE))) {
             ReasonerQueryFactory reasonerQueryFactory = tx.reasonerQueryFactory();
             final String value = "m";
             Pattern parentPattern = var("z").has("resource", var("r"));
@@ -372,7 +372,7 @@ public class SemanticDifferenceIT {
 
     @Test
     public void whenChildSpecialisesResourceValuePredicate_valuesAreFilteredCorrectly() {
-        try (TestTransaction tx = ((TestTransaction) genericSchemasession.transaction(Transaction.Type.WRITE))) {
+        try (TestTransaction tx = ((TestTransaction) genericSchemaSession.transaction(Transaction.Type.WRITE))) {
             ReasonerQueryFactory reasonerQueryFactory = tx.reasonerQueryFactory();
             final String value = "b";
             Pattern parentPattern = var("z").has("resource", neq("m"));
@@ -403,7 +403,7 @@ public class SemanticDifferenceIT {
 
     @Test
     public void whenChildSpecifiesValuePredicateOnType_valuesAreFilteredCorrectly() {
-        try (TestTransaction tx = ((TestTransaction) genericSchemasession.transaction(Transaction.Type.WRITE))) {
+        try (TestTransaction tx = ((TestTransaction) genericSchemaSession.transaction(Transaction.Type.WRITE))) {
             ReasonerQueryFactory reasonerQueryFactory = tx.reasonerQueryFactory();
             final long value = 0;
             Pattern parentPattern = var("z").isa("resource-long");
@@ -432,7 +432,7 @@ public class SemanticDifferenceIT {
 
     @Test
     public void whenChildSpecialisesValuePredicateOnType_valuesAreFilteredCorrectly2() {
-        try (TestTransaction tx = ((TestTransaction) genericSchemasession.transaction(Transaction.Type.WRITE))) {
+        try (TestTransaction tx = ((TestTransaction) genericSchemaSession.transaction(Transaction.Type.WRITE))) {
             ReasonerQueryFactory reasonerQueryFactory = tx.reasonerQueryFactory();
             final long value = 1;
             Pattern parentPattern = var("z").isa("resource-long").gt(0);
@@ -461,7 +461,7 @@ public class SemanticDifferenceIT {
 
     @Test
     public void whenChildGeneralisesValuePredicateOnType_semanticDifferenceIsTrivial() {
-        try (TestTransaction tx = ((TestTransaction) genericSchemasession.transaction(Transaction.Type.WRITE))) {
+        try (TestTransaction tx = ((TestTransaction) genericSchemaSession.transaction(Transaction.Type.WRITE))) {
             ReasonerQueryFactory reasonerQueryFactory = tx.reasonerQueryFactory();
             final long value = 1;
             Pattern parentPattern = var("z").has("resource-long", value);
@@ -478,7 +478,7 @@ public class SemanticDifferenceIT {
 
     @Test
     public void whenChildSpecialisesWithDuplicateRole_differenceExists() {
-        try (TestTransaction tx = ((TestTransaction) genericSchemasession.transaction(Transaction.Type.WRITE))) {
+        try (TestTransaction tx = ((TestTransaction) genericSchemaSession.transaction(Transaction.Type.WRITE))) {
             ReasonerQueryFactory reasonerQueryFactory = tx.reasonerQueryFactory();
             Pattern childPattern = var().rel("baseRole1", var("x")).rel("baseRole1", var("x")).isa("binary");
             Pattern parentPattern = var().rel("baseRole1", var("x")).isa("binary");
@@ -515,7 +515,7 @@ public class SemanticDifferenceIT {
 
     @Test
     public void whenChildSpecialisesWithQuadrupleRole_differenceExists() {
-        try (TestTransaction tx = ((TestTransaction) genericSchemasession.transaction(Transaction.Type.WRITE))) {
+        try (TestTransaction tx = ((TestTransaction) genericSchemaSession.transaction(Transaction.Type.WRITE))) {
             ReasonerQueryFactory reasonerQueryFactory = tx.reasonerQueryFactory();
             Pattern childPattern = var().rel("baseRole1", var("x")).rel("baseRole1", var("x")).rel("baseRole1", var("x")).rel("baseRole1", var("x")).isa("binary");
             Pattern parentPattern = var().rel("baseRole1", var("x")).isa("binary");
@@ -553,7 +553,7 @@ public class SemanticDifferenceIT {
 
     @Test
     public void whenChildSpecialisesWithQuadrupleRole_differenceExistsAndIsSatisfiable() {
-        try (TestTransaction tx = ((TestTransaction) genericSchemasession.transaction(Transaction.Type.WRITE))) {
+        try (TestTransaction tx = ((TestTransaction) genericSchemaSession.transaction(Transaction.Type.WRITE))) {
             ReasonerQueryFactory reasonerQueryFactory = tx.reasonerQueryFactory();
             Pattern childPattern = var().rel("baseRole1", var("x")).rel("baseRole1", var("x")).rel("baseRole1", var("x")).rel("baseRole1", var("x")).isa("binary");
             Pattern parentPattern = var().rel("baseRole1", var("x")).isa("binary");

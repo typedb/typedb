@@ -77,7 +77,7 @@ public class RoleInferenceIT {
 
     @Test
     public void testRoleInference_TypedBinaryRelation(){
-        Transaction tx = roleInferenceSetsession.transaction(Transaction.Type.WRITE);
+        Transaction tx = roleInferenceSetSession.transaction(Transaction.Type.WRITE);
         ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
         String patternString = "{ ($x, $y); $x isa entity1; $y isa entity2; };";
@@ -93,7 +93,7 @@ public class RoleInferenceIT {
 
     @Test
     public void testRoleInference_TypedBinaryRelation_SingleTypeMissing(){
-        Transaction tx = roleInferenceSetsession.transaction(Transaction.Type.WRITE);
+        Transaction tx = roleInferenceSetSession.transaction(Transaction.Type.WRITE);
         ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
         String patternString = "{ ($x, $y); $x isa entity1; };";
@@ -109,7 +109,7 @@ public class RoleInferenceIT {
 
     @Test //each type maps to a specific role
     public void testRoleInference_TypedTernaryRelationWithKnownRole(){
-        Transaction tx = roleInferenceSetsession.transaction(Transaction.Type.WRITE);
+        Transaction tx = roleInferenceSetSession.transaction(Transaction.Type.WRITE);
         ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
         String patternString = "{  ($x, $y, role3: $z);$x isa entity1;$y isa entity2;  };";
@@ -126,7 +126,7 @@ public class RoleInferenceIT {
 
     @Test //without cardinality constraints the $y variable can be mapped to any of the three roles hence metarole is assigned
     public void testRoleInference_TypedTernaryRelation(){
-        Transaction tx = roleInferenceSetsession.transaction(Transaction.Type.WRITE);
+        Transaction tx = roleInferenceSetSession.transaction(Transaction.Type.WRITE);
         ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
         String patternString = "{ ($x, $y, $z);$x isa entity1;$y isa entity2; };";
@@ -143,7 +143,7 @@ public class RoleInferenceIT {
 
     @Test
     public void testRoleInference_TernaryRelationWithRepeatingRolePlayers(){
-        Transaction tx = roleInferenceSetsession.transaction(Transaction.Type.WRITE);
+        Transaction tx = roleInferenceSetSession.transaction(Transaction.Type.WRITE);
         ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
         String patternString = "{ (role1: $x, role2: $y, $y); };";
@@ -160,7 +160,7 @@ public class RoleInferenceIT {
 
     @Test
     public void testRoleInference_TypedTernaryRelation_TypesPlaySubRoles_SubRolesAreCorrectlyIdentified(){
-        Transaction tx = roleInferenceSetsession.transaction(Transaction.Type.WRITE);
+        Transaction tx = roleInferenceSetSession.transaction(Transaction.Type.WRITE);
         ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
         String patternString = "{ (role: $x, role: $y, role: $z); $x isa anotherEntity1; $y isa anotherEntity2; $z isa anotherEntity3; };";
@@ -177,7 +177,7 @@ public class RoleInferenceIT {
 
     @Test
     public void testRoleInference_TypedTernaryRelationWithMetaRoles_MetaRolesShouldBeOverwritten(){
-        Transaction tx = roleInferenceSetsession.transaction(Transaction.Type.WRITE);
+        Transaction tx = roleInferenceSetSession.transaction(Transaction.Type.WRITE);
         ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
         String patternString = "{ (role: $x, role: $y, role: $z); $x isa entity1; $y isa entity2; $z isa entity3; };";
@@ -194,7 +194,7 @@ public class RoleInferenceIT {
 
     @Test
     public void testRoleInference_TypedTernaryRelation_TypesAreSubTypes_TopRolesShouldBeChosen(){
-        Transaction tx = roleInferenceSetsession.transaction(Transaction.Type.WRITE);
+        Transaction tx = roleInferenceSetSession.transaction(Transaction.Type.WRITE);
         ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
         String patternString = "{ (role: $x, role: $y, role: $z); $x isa subEntity1; $y isa subEntity2; $z isa subEntity3; };";
@@ -211,7 +211,7 @@ public class RoleInferenceIT {
 
     @Test
     public void testRoleInference_TypedTernaryRelation_TypesCanPlayMultipleRoles_MetaRoleIsChosen(){
-        Transaction tx = roleInferenceSetsession.transaction(Transaction.Type.WRITE);
+        Transaction tx = roleInferenceSetSession.transaction(Transaction.Type.WRITE);
         ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
         String patternString = "{ ($x, $y, $z); $x isa genericEntity; $y isa genericEntity; $z isa genericEntity; };";
@@ -228,7 +228,7 @@ public class RoleInferenceIT {
 
     @Test //for each role player role mapping is ambiguous so metarole has to be assigned
     public void testRoleInference_NoInformationPresent(){
-        Transaction tx = roleInferenceSetsession.transaction(Transaction.Type.WRITE);
+        Transaction tx = roleInferenceSetSession.transaction(Transaction.Type.WRITE);
         ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
         String relationString = "{ ($x, $y); };";
         RelationAtom relation = (RelationAtom) reasonerQueryFactory.atomic(conjunction(relationString)).getAtom();
@@ -238,7 +238,7 @@ public class RoleInferenceIT {
 
     @Test //for each role player role mapping is ambiguous so metarole has to be assigned
     public void testRoleInference_MetaRelationType(){
-        Transaction tx = roleInferenceSetsession.transaction(Transaction.Type.WRITE);
+        Transaction tx = roleInferenceSetSession.transaction(Transaction.Type.WRITE);
         ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
         String relationString = "{ ($x, $y) isa relation; };";
@@ -249,7 +249,7 @@ public class RoleInferenceIT {
 
     @Test //missing role is ambiguous without cardinality constraints
     public void testRoleInference_RoleHierarchyInvolved() {
-        Transaction tx = genericSchemasession.transaction(Transaction.Type.WRITE);
+        Transaction tx = genericSchemaSession.transaction(Transaction.Type.WRITE);
         ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
         String relationString = "{ ($p, subRole2: $gc) isa binary; };";
@@ -272,7 +272,7 @@ public class RoleInferenceIT {
 
     @Test //entity1 plays role1 but entity2 plays roles role1, role2 hence ambiguous and metarole has to be assigned, EXPECTED TO CHANGE WITH CARDINALITY CONSTRAINTS
     public void testRoleInference_WithMetaType(){
-        Transaction tx = ruleApplicabilitySetsession.transaction(Transaction.Type.WRITE);
+        Transaction tx = ruleApplicabilitySetSession.transaction(Transaction.Type.WRITE);
         ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
         String relationString = "{ ($x, $y, $z) isa ternary; $x isa singleRoleEntity; $y isa twoRoleEntity; $z isa entity; };";
@@ -287,7 +287,7 @@ public class RoleInferenceIT {
 
     @Test //entity1 plays role1, entity2 plays 2 roles, entity3 plays 3 roles hence ambiguous and metarole has to be assigned, EXPECTED TO CHANGE WITH CARDINALITY CONSTRAINTS
     public void testRoleInference_RoleMappingUnambiguous(){
-        Transaction tx = ruleApplicabilitySetsession.transaction(Transaction.Type.WRITE);
+        Transaction tx = ruleApplicabilitySetSession.transaction(Transaction.Type.WRITE);
         ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
         String relationString = "{ ($x, $y, $z) isa ternary;$x isa singleRoleEntity; $y isa twoRoleEntity; $z isa threeRoleEntity; };";
@@ -302,7 +302,7 @@ public class RoleInferenceIT {
 
     @Test //for each role player role mapping is ambiguous so metarole has to be assigned
     public void testRoleInference_AllRolePlayersHaveAmbiguousRoles(){
-        Transaction tx = ruleApplicabilitySetsession.transaction(Transaction.Type.WRITE);
+        Transaction tx = ruleApplicabilitySetSession.transaction(Transaction.Type.WRITE);
         ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
         String relationString = "{ ($x, $y, $z) isa ternary;$x isa twoRoleEntity; $y isa threeRoleEntity; $z isa anotherTwoRoleEntity; };";
@@ -313,7 +313,7 @@ public class RoleInferenceIT {
 
     @Test //relation relates a single role so instead of assigning metarole this role should be assigned
     public void testRoleInference_RelationHasVerticalRoleHierarchy(){
-        Transaction tx = ruleApplicabilitySetsession.transaction(Transaction.Type.WRITE);
+        Transaction tx = ruleApplicabilitySetSession.transaction(Transaction.Type.WRITE);
         ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
         String relationString = "{ ($x, $y) isa reifying-relation; };";

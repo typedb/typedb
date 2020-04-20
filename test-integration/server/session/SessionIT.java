@@ -137,7 +137,7 @@ public class SessionIT {
 
         executor.submit(() -> {
             Session localSession = server.sessionFactory().session(session.keyspace());
-            Transaction tx2 = localsession.transaction(Transaction.Type.WRITE);
+            Transaction tx2 = localSession.transaction(Transaction.Type.WRITE);
             SchemaConcept concept = tx2.getSchemaConcept(Label.of("person"));
             assertEquals("person", concept.label().toString());
             tx2.close();
@@ -146,7 +146,7 @@ public class SessionIT {
 
         executor.submit(() -> {
             Session localSession = server.sessionFactory().session(session.keyspace());
-            Transaction tx2 = localsession.transaction(Transaction.Type.WRITE);
+            Transaction tx2 = localSession.transaction(Transaction.Type.WRITE);
             SchemaConcept concept = tx2.getSchemaConcept(Label.of("person"));
             assertEquals("person", concept.label().toString());
             tx2.close();
@@ -158,7 +158,7 @@ public class SessionIT {
     @Test
     public void whenClosingSession_transactionIsAlsoClosed() {
         Session localSession = server.sessionFactory().session(new KeyspaceImpl("test"));
-        Transaction tx1 = localsession.transaction(Transaction.Type.WRITE);
+        Transaction tx1 = localSession.transaction(Transaction.Type.WRITE);
         assertTrue(tx1.isOpen());
         localSession.close();
         assertFalse(tx1.isOpen());
@@ -167,7 +167,7 @@ public class SessionIT {
     @Test
     public void whenClosingSession_tryingToUseTransactionThrowsException() {
         Session localSession = server.sessionFactory().session(new KeyspaceImpl("test"));
-        Transaction tx1 = localsession.transaction(Transaction.Type.WRITE);
+        Transaction tx1 = localSession.transaction(Transaction.Type.WRITE);
         assertTrue(tx1.isOpen());
         localSession.close();
         expectedException.expect(TransactionException.class);

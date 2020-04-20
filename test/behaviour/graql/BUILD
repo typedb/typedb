@@ -25,7 +25,10 @@ java_library(
     ],
     deps = [
         # Package dependencies
+        "//kb/server",
+        "//kb/concept/api",
         "//test/behaviour/connection:steps",
+        "//concept/answer",
 
         # Grakn Labs dependencies
         "@graknlabs_graql//java:graql",

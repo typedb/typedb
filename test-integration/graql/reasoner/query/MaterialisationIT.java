@@ -75,7 +75,7 @@ public class MaterialisationIT {
 
     @Test
     public void whenMaterialisingRelations_newRelationsAreInsertedInTheGraph() {
-        try(Transaction tx = materialisationTestsession.transaction(Transaction.Type.WRITE)) {
+        try(Transaction tx = materialisationTestSession.transaction(Transaction.Type.WRITE)) {
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
             Iterator<Entity> entityIterator = tx.getMetaEntityType().instances().iterator();
@@ -96,7 +96,7 @@ public class MaterialisationIT {
 
     @Test
     public void whenMaterialisingAttributes_newAttributesAreInsertedInTheGraph() {
-        try(Transaction tx = materialisationTestsession.transaction(Transaction.Type.WRITE)) {
+        try(Transaction tx = materialisationTestSession.transaction(Transaction.Type.WRITE)) {
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
             Entity entity = tx.getMetaEntityType().instances().iterator().next();
@@ -109,7 +109,7 @@ public class MaterialisationIT {
 
     @Test
     public void whenMaterialisingEntities_newEntitiesAreInsertedInTheGraph() {
-        try(Transaction tx = materialisationTestsession.transaction(Transaction.Type.WRITE)) {
+        try(Transaction tx = materialisationTestSession.transaction(Transaction.Type.WRITE)) {
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
             Statement entity = Graql.var("x").isa("newEntity");
             Conjunction<Statement> pattern = Graql.and(Collections.singleton(entity));
@@ -122,7 +122,7 @@ public class MaterialisationIT {
 
     @Test
     public void whenMaterialisingRelationsThatAlreadyExist_noNewRelationsAreInsertedInTheGraph() {
-        try(Transaction tx = materialisationTestsession.transaction(Transaction.Type.WRITE)) {
+        try(Transaction tx = materialisationTestSession.transaction(Transaction.Type.WRITE)) {
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
             Iterator<Entity> entityIterator = tx.getMetaEntityType().instances().iterator();
@@ -143,7 +143,7 @@ public class MaterialisationIT {
 
     @Test
     public void whenMaterialisingAttributesThatAlreadyExist_noNewAttributesAreInsertedInTheGraph() {
-        try(Transaction tx = materialisationTestsession.transaction(Transaction.Type.WRITE)) {
+        try(Transaction tx = materialisationTestSession.transaction(Transaction.Type.WRITE)) {
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
             Entity entity = tx.getMetaEntityType().instances().iterator().next();
@@ -156,7 +156,7 @@ public class MaterialisationIT {
 
     @Test
     public void whenMaterialisingImplicitRelations_appropriateAttributeIsCorrectlyCreatedAndAttached() {
-        try(Transaction tx = materialisationTestsession.transaction(Transaction.Type.WRITE)) {
+        try(Transaction tx = materialisationTestSession.transaction(Transaction.Type.WRITE)) {
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
             Iterator<Entity> entityIterator = tx.getMetaEntityType().instances().iterator();
@@ -174,7 +174,7 @@ public class MaterialisationIT {
 
     @Test
     public void whenMaterialisingEntity_MaterialisedInformationIsCorrectlyFlaggedAsInferred() {
-        try(Transaction tx = materialisationTestsession.transaction(Transaction.Type.WRITE)) {
+        try(Transaction tx = materialisationTestSession.transaction(Transaction.Type.WRITE)) {
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
             ReasonerAtomicQuery entityQuery = reasonerQueryFactory.atomic(conjunction("$x isa newEntity;"));
             assertTrue(entityQuery.materialise(new ConceptMap()).findFirst().orElse(null).get("x").asEntity().isInferred());
@@ -183,7 +183,7 @@ public class MaterialisationIT {
 
     @Test
     public void whenMaterialisingAttributes_MaterialisedInformationIsCorrectlyFlaggedAsInferred() {
-        try(Transaction tx = materialisationTestsession.transaction(Transaction.Type.WRITE)) {
+        try(Transaction tx = materialisationTestSession.transaction(Transaction.Type.WRITE)) {
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
             Concept firstEntity = Iterables.getOnlyElement(tx.execute(Graql.parse("match $x isa someEntity; get;").asGet(), false)).get("x");
@@ -219,7 +219,7 @@ public class MaterialisationIT {
 
     @Test
     public void whenMaterialisingAttributesWithCompatibleValues_noDuplicatesAreCreated() {
-        try(Transaction tx = materialisationTestsession.transaction(Transaction.Type.WRITE)) {
+        try(Transaction tx = materialisationTestSession.transaction(Transaction.Type.WRITE)) {
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
             Entity entity = tx.getMetaEntityType().instances().iterator().next();
@@ -243,7 +243,7 @@ public class MaterialisationIT {
 
     @Test
     public void whenMaterialisingRelations_MaterialisedInformationIsCorrectlyFlaggedAsInferred() {
-        try(Transaction tx = materialisationTestsession.transaction(Transaction.Type.WRITE)) {
+        try(Transaction tx = materialisationTestSession.transaction(Transaction.Type.WRITE)) {
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
             Concept firstEntity = Iterables.getOnlyElement(tx.execute(Graql.parse("match $x isa someEntity; get;").asGet(), false)).get("x");

@@ -184,7 +184,7 @@ public class QueryErrorIT {
     public void testExceptionWhenNoHasResourceRelation() throws InvalidKBException {
         // Create a fresh graph, with no has between person and name
         Session newSession = graknServer.sessionWithNewKeyspace();
-        try (Transaction newTx = newsession.transaction(Transaction.Type.WRITE)) {
+        try (Transaction newTx = newSession.transaction(Transaction.Type.WRITE)) {
             newTx.execute(Graql.define(
                     type("person").sub("entity"),
                     type("name").sub(Graql.Token.Type.ATTRIBUTE).datatype(Graql.Token.DataType.STRING)

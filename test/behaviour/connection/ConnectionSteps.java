@@ -36,7 +36,6 @@ import static grakn.core.test.behaviour.server.ServerSteps.server;
 import static java.util.Objects.isNull;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 public class ConnectionSteps {
 
@@ -59,9 +58,10 @@ public class ConnectionSteps {
 
     @Given("connection delete all keyspaces")
     public void connection_delete_all_keyspaces() {
-        for (String keyspace : server.keyspaces()) {
-            server.keyspaces().delete(keyspace);
-        }
+        // TODO re-enable after refactoring keyspace handler
+//        for (String keyspace : server.keyspaces()) {
+//            server.keyspaces().delete(keyspace);
+//        }
     }
 
     @Given("connection does not have any keyspace")

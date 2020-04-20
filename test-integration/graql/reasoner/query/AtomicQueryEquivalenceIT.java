@@ -72,7 +72,7 @@ public class AtomicQueryEquivalenceIT {
 
     @Before
     public void setUp(){
-        tx = genericSchemasession.transaction(Transaction.Type.WRITE);
+        tx = genericSchemaSession.transaction(Transaction.Type.WRITE);
         reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
     }
 

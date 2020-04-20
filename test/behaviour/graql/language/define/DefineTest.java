@@ -18,21 +18,15 @@
 
 package grakn.core.test.behaviour.graql.language.define;
 
-import grakn.client.test.setup.GraknSetup;
 import io.cucumber.junit.Cucumber;
 import io.cucumber.junit.CucumberOptions;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
-
-import java.io.IOException;
-import java.util.concurrent.TimeoutException;
 
 @RunWith(Cucumber.class)
 @CucumberOptions(
         strict = true,
         plugin = "pretty",
-        glue = "grakn.client.test.behaviour",
+        glue = "grakn.core.test.behaviour",
         features = "external/graknlabs_verification/behaviour/graql/language/define.feature",
         tags = "not @ignore and not @ignore-client-java"
 )
@@ -59,14 +53,4 @@ public class DefineTest {
     //       --spawn_strategy=standalone : if you're on Mac, tests need permission to access filesystem (to run Grakn)
     //
     // 6) Hit the RUN button by selecting the test from the dropdown menu on the top bar
-
-    @BeforeClass
-    public static void beforeClass() throws InterruptedException, TimeoutException, IOException {
-        GraknSetup.bootup();
-    }
-
-    @AfterClass
-    public static void afterClass() throws InterruptedException, IOException, TimeoutException {
-        GraknSetup.shutdown();
-    }
 }

@@ -32,6 +32,7 @@ java_test(
         "//dependencies/maven/artifacts/io/cucumber:cucumber-junit",
     ],
     runtime_deps = [
+        "//test/behaviour/server:steps",
         "//test/behaviour/graql:steps",
         "//test/behaviour/connection:steps",
         "//test/behaviour/connection/session:steps",

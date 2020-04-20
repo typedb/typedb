@@ -32,6 +32,7 @@ import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.server.Session;
+import grakn.core.kb.server.Transaction;
 import grakn.core.kb.server.cache.TransactionCache;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.rule.SessionUtil;

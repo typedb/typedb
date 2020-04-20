@@ -547,7 +547,7 @@ public class TransactionIT {
 
         executor.submit(() -> {
             //Resources
-            try (Transaction tx = localsession.transaction(Transaction.Type.WRITE)) {
+            try (Transaction tx = localSession.transaction(Transaction.Type.WRITE)) {
                 AttributeType<Long> int_ = tx.putAttributeType("int", AttributeType.DataType.LONG);
                 AttributeType<Long> foo = tx.putAttributeType("foo", AttributeType.DataType.LONG).sup(int_);
                 tx.putAttributeType("bar", AttributeType.DataType.LONG).sup(int_);
@@ -558,7 +558,7 @@ public class TransactionIT {
         }).get();
 
         //Relation Which Has Resources
-        try (Transaction tx = localsession.transaction(Transaction.Type.WRITE)) {
+        try (Transaction tx = localSession.transaction(Transaction.Type.WRITE)) {
             tx.putEntityType("BAR").has(tx.getAttributeType("bar"));
             tx.commit();
         }

@@ -71,7 +71,7 @@ public class RuleCacheIT {
 
     @Test
     public void whenGettingRulesWithType_correctRulesAreObtained(){
-        try(Transaction tx = ruleApplicabilitysession.transaction(Transaction.Type.WRITE)) {
+        try(Transaction tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE)) {
             TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction)tx;
             RuleCacheImpl ruleCache = testTx.ruleCache();
 
@@ -94,7 +94,7 @@ public class RuleCacheIT {
 
     @Test
     public void whenAddingARule_cacheContainsUpdatedEntry(){
-        try(Transaction tx = ruleApplicabilitysession.transaction(Transaction.Type.WRITE)) {
+        try(Transaction tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE)) {
             Pattern when = Graql.parsePattern("{ $x isa entity;$y isa entity; };");
             Pattern then = Graql.parsePattern("{ (someRole: $x, subRole: $y) isa binary; };");
             Rule dummyRule = tx.putRule("dummyRule", when, then);
@@ -109,7 +109,7 @@ public class RuleCacheIT {
 
     @Test
     public void whenAddingARuleAfterClosingTx_cacheContainsConsistentEntry(){
-        try(Transaction tx = ruleApplicabilitysession.transaction(Transaction.Type.WRITE)) {
+        try(Transaction tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE)) {
 
             Pattern when = Graql.parsePattern("{ $x isa entity;$y isa entity; };");
             Pattern then = Graql.parsePattern("{ (someRole: $x, subRole: $y) isa binary; };");
@@ -126,11 +126,11 @@ public class RuleCacheIT {
 
     @Test
     public void whenDeletingARule_cacheContainsUpdatedEntry(){
-        try(Transaction tx = ruleApplicabilitysession.transaction(Transaction.Type.WRITE)) {
+        try(Transaction tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE)) {
             tx.execute(Graql.undefine(type("binary-transitivity").sub("rule")));
             tx.commit();
         }
-        try(Transaction tx = ruleApplicabilitysession.transaction(Transaction.Type.WRITE)) {
+        try(Transaction tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE)) {
             TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction)tx;
 
             Type binary = tx.getType(Label.of("binary"));
@@ -141,7 +141,7 @@ public class RuleCacheIT {
 
     @Test
     public void whenFetchingRules_fruitlessRulesAreNotReturned(){
-        try(Transaction tx = ruleApplicabilitysession.transaction(Transaction.Type.WRITE)) {
+        try(Transaction tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE)) {
             TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction)tx;
 
             Type description = tx.getType(Label.of("description"));
@@ -160,7 +160,7 @@ public class RuleCacheIT {
 
     @Test
     public void whenTypeHasDirectInstances_itIsNotAbsent(){
-        try(Transaction tx = ruleApplicabilitysession.transaction(Transaction.Type.WRITE)) {
+        try(Transaction tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE)) {
             TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction)tx;
 
             EntityType anotherNoRoleEntity = tx.getEntityType("anotherNoRoleEntity");
@@ -170,7 +170,7 @@ public class RuleCacheIT {
 
     @Test
     public void whenTypeHasIndirectInstances_itIsNotAbsent(){
-        try(Transaction tx = ruleApplicabilitysession.transaction(Transaction.Type.WRITE)) {
+        try(Transaction tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE)) {
             TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction)tx;
 
             //no direct instances present, however anotherTwoRoleEntity subs anotherSingleRoleEntity and has instances
@@ -181,7 +181,7 @@ public class RuleCacheIT {
 
     @Test
     public void whenTypeHasFruitfulRulesButNotDirectInstances_itIsNotAbsent(){
-        try(Transaction tx = ruleApplicabilitysession.transaction(Transaction.Type.WRITE)) {
+        try(Transaction tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE)) {
             TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction)tx;
 
             Type description = tx.getType(Label.of("description"));
@@ -192,7 +192,7 @@ public class RuleCacheIT {
 
     @Test
     public void whenTypeSubTypeHasFruitfulRulesButNotDirectInstances_itIsNotAbsent(){
-        try(Transaction tx = ruleApplicabilitysession.transaction(Transaction.Type.WRITE)) {
+        try(Transaction tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE)) {
             TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction)tx;
 
             RelationType binary = tx.getRelationType("binary");
@@ -206,7 +206,7 @@ public class RuleCacheIT {
 
     @Test
     public void whenInsertHappensDuringTransaction_extraInstanceIsAcknowledged(){
-        try(Transaction tx = ruleApplicabilitysession.transaction(Transaction.Type.WRITE)) {
+        try(Transaction tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE)) {
             TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction)tx;
 
             EntityType singleRoleEntity = tx.getEntityType("singleRoleEntity");
