@@ -59,13 +59,4 @@ public class DebugTest {
     //
     // 6) Hit the RUN button by selecting the test from the dropdown menu on the top bar
 
-    @BeforeClass
-    public static void graknStart() throws InterruptedException, IOException, TimeoutException {
-        GraknSetup.bootup();
-    }
-
-    @AfterClass
-    public static void graknStop() throws InterruptedException, TimeoutException, IOException {
-        GraknSetup.shutdown();
-    }
 }

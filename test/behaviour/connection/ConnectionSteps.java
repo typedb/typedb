@@ -18,7 +18,6 @@
 
 package grakn.core.test.behaviour.connection;
 
-import grakn.client.test.setup.GraknProperties;
 import io.cucumber.java.After;
 import io.cucumber.java.en.Given;
 
@@ -47,47 +46,6 @@ public class ConnectionSteps {
     public static Map<GraknClient.Session, List<GraknClient.Transaction>> sessionsToTransactions = new HashMap<>();
     public static Map<GraknClient.Session, List<CompletableFuture<GraknClient.Transaction>>> sessionsToTransactionsParallel = new HashMap<>();
     public static Map<CompletableFuture<GraknClient.Session>, List<CompletableFuture<GraknClient.Transaction>>> sessionsParallelToTransactionsParallel = new HashMap<>();
-
-    private static GraknClient connect_to_grakn_core() {
-        System.out.println("Establishing Connection to Grakn Core");
-        String address = System.getProperty(GraknProperties.GRAKN_ADDRESS);
-        assertNotNull(address);
-
-        System.out.println("Connection to Grakn Core established");
-        return new GraknClient(address);
-    }
-
-    private static GraknClient connect_to_grakn_kgms() {
-        System.out.println("Establishing Connection to Grakn");
-        String address = System.getProperty(GraknProperties.GRAKN_ADDRESS);
-        String username = System.getProperty(GraknProperties.GRAKN_USERNAME);
-        String password = System.getProperty(GraknProperties.GRAKN_PASSWORD);
-        assertNotNull(address);
-        assertNotNull(username);
-        assertNotNull(password);
-
-        System.out.println("Connection to Grakn KGMS established");
-        return new GraknClient(address, username, password);
-    }
-
-    private static synchronized void connect_to_grakn() {
-        if (!isNull(client)) return;
-
-        System.out.println("Connecting to Grakn ...");
-
-        String graknType = System.getProperty(GraknProperties.GRAKN_TYPE);
-        assertNotNull(graknType);
-
-        if (graknType.equals(GraknProperties.GRAKN_CORE)) {
-            client = connect_to_grakn_core();
-        } else if (graknType.equals(GraknProperties.GRAKN_KGMS)) {
-            client = connect_to_grakn_kgms();
-        } else {
-            fail("Invalid type of Grakn database: ");
-        }
-
-        assertNotNull(client);
-    }
 
     @Given("connection has been opened")
     public void connection_has_been_opened() {

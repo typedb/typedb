@@ -47,6 +47,7 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -66,6 +67,7 @@ public class GraknTestServer extends ExternalResource {
     protected Server graknServer;
     private int grpcPort;
     private SessionFactory sessionFactory;
+    private KeyspaceManager keyspaceManager;
 
     /**
      * Construct Grakn Server and Grakn Storage with default configurations
@@ -132,6 +134,10 @@ public class GraknTestServer extends ExternalResource {
         return sessionFactory.session(keyspace);
     }
 
+    public Session session(String name) {
+        return sessionFactory.session(new KeyspaceImpl(name));
+    }
+
     public SessionFactory sessionFactory() {
         return sessionFactory;
     }
@@ -178,7 +184,7 @@ public class GraknTestServer extends ExternalResource {
                 .withLocalDatacenter("datacenter1")
                 .build();
 
-        KeyspaceManager keyspaceManager = new KeyspaceManager(cqlSession);
+        keyspaceManager = new KeyspaceManager(cqlSession);
         sessionFactory = new SessionFactory(lockManager, janusGraphFactory, hadoopGraphFactory, serverConfig);
 
         OpenRequest requestOpener = new ServerOpenRequest(sessionFactory);

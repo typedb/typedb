@@ -14,42 +14,28 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
-
-
-package(default_visibility = ["//visibility:__subpackages__"])
+package(default_visibility = ["//test/behaviour:__subpackages__"])
 load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
-java_test(
-    name = "test",
+java_library(
+    name = "steps",
     srcs = [
-        "DebugTest.java",
+        "ServerSteps.java"
     ],
-    test_class = "grakn.client.test.behaviour.debug.DebugTest",
     deps = [
         # Package dependencies
-
-        # TODO: Add your addition debugging dependencies here
-        # e.g. "//test/behaviour/connection/steps:connection-keyspace",
+        "//test-integration/rule:grakn-test-server",
 
         # External dependencies from Maven
-        "//dependencies/maven/artifacts/io/cucumber:cucumber-java",
-        "//dependencies/maven/artifacts/io/cucumber:cucumber-junit",
+        "//dependencies/maven/artifacts/junit:junit",
     ],
-    runtime_deps = [
-        "//test/behaviour/connection:steps",
-        "//test/behaviour/config:parameters",
-    ],
-    data = [
-        ":debug.feature",
-    ],
-#    classpath_resources = ["//test/setup:logback"],
-    size = "medium",
+    visibility = ["//visibility:public"]
 )
 
 checkstyle_test(
     name = "checkstyle",
     targets = [
-        ":test"
+        ":steps",
     ],
     license_type = "apache"
 )

@@ -32,7 +32,6 @@ public class ServerKeyspaceRequestsHandler implements KeyspaceRequestsHandler {
     private final SessionFactory sessionFactory;
     private final JanusGraphFactory janusGraphFactory;
 
-
     public ServerKeyspaceRequestsHandler(KeyspaceManager keyspaceManager, SessionFactory sessionFactory, JanusGraphFactory janusGraphFactory) {
         this.keyspaceManager = keyspaceManager;
         this.sessionFactory = sessionFactory;
