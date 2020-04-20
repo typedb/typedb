@@ -27,6 +27,7 @@ java_test(
     test_class = "grakn.core.test.behaviour.debug.DebugTest",
     deps = [
         # Package dependencies
+        "//kb/server",
         "//test/behaviour/server:setup",
 
         # TODO: Add your addition debugging dependencies here

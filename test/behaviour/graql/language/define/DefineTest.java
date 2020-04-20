@@ -18,7 +18,6 @@
 
 package grakn.core.test.behaviour.graql.language.define;
 
-import grakn.core.test.behaviour.server.ServerSetup;
 import io.cucumber.junit.Cucumber;
 import io.cucumber.junit.CucumberOptions;
 import org.junit.runner.RunWith;

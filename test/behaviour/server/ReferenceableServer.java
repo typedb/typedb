@@ -25,11 +25,12 @@ import java.lang.reflect.Method;
 
 /**
  * Run Grakn Core and Cassandra using the GraknTestServer
- * The static 'server' field allows us to create sessions as needed in other BDD steps
+ * The static 'server' field gives us a handle to the test server
  */
-public class ServerSetup {
+public class ReferenceableServer {
     public static GraknTestServer server;
-    public static void setup() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+
+    public static void start() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
         // use reflection to call the uninstallIfInstalled method on GoogleSecurityManager
         // this is not an issue if we use a @ClassRule from JUnit to run cassandra, because cassandra's manager installs first
         // however, running this setup method allows bazel test runner to install its own GoogleSecurityManager first
@@ -39,5 +40,9 @@ public class ServerSetup {
         uninstallGoogleManager.invoke(null);
         server = new GraknTestServer();
         server.before();
+    }
+
+    public static void stop() {
+        server.after();
     }
 }

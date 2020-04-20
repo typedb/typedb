@@ -31,7 +31,7 @@ import java.util.stream.Collectors;
 import static grakn.common.util.Collections.list;
 import static grakn.core.test.behaviour.connection.ConnectionSteps.THREAD_POOL_SIZE;
 import static grakn.core.test.behaviour.connection.ConnectionSteps.threadPool;
-import static grakn.core.test.behaviour.server.ServerSetup.server;
+import static grakn.core.test.behaviour.server.ReferenceableServer.server;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;

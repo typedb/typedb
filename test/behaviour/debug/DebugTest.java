@@ -18,9 +18,10 @@
 
 package grakn.core.test.behaviour.debug;
 
-import grakn.core.test.behaviour.server.ServerSetup;
+import grakn.core.test.behaviour.server.ReferenceableServer;
 import io.cucumber.junit.Cucumber;
 import io.cucumber.junit.CucumberOptions;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 
@@ -59,6 +60,11 @@ public class DebugTest {
 
     @BeforeClass
     public static void setup() throws NoSuchMethodException, IllegalAccessException, InvocationTargetException {
-        ServerSetup.setup();
+        ReferenceableServer.start();
+    }
+
+    @AfterClass
+    public static void tearDown() {
+        ReferenceableServer.stop();
     }
 }

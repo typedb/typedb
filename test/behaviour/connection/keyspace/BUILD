@@ -26,6 +26,7 @@ java_library(
     ],
     deps = [
         # Internal Package Dependencies
+        "//kb/server",
         "//test/behaviour/connection:steps",
         "//test/behaviour/server:setup",
 

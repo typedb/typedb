@@ -28,7 +28,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 
 import static grakn.core.test.behaviour.connection.ConnectionSteps.THREAD_POOL_SIZE;
-import static grakn.core.test.behaviour.server.ServerSetup.server;
+import static grakn.core.test.behaviour.server.ReferenceableServer.server;
 import static grakn.core.test.behaviour.connection.ConnectionSteps.sessions;
 import static grakn.core.test.behaviour.connection.ConnectionSteps.sessionsParallel;
 import static grakn.core.test.behaviour.connection.ConnectionSteps.threadPool;

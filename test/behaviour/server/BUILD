@@ -20,7 +20,7 @@ load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 java_library(
     name = "setup",
     srcs = [
-        "ServerSetup.java"
+        "ReferenceableServer.java"
     ],
     deps = [
         # Package dependencies
