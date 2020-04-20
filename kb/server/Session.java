@@ -45,6 +45,8 @@ public interface Session extends AutoCloseable {
 
     void invalidate();
 
+    boolean isOpen();
+
     Keyspace keyspace();
 
     KeyspaceStatistics keyspaceStatistics();

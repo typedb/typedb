@@ -58,7 +58,7 @@ public class SessionImpl implements Session {
     private final ShardManager shardManager;
     private Consumer<Session> onClose;
 
-    private boolean isClosed = false;
+    private boolean isOpen = true;
     private final TransactionProvider transactionProvider;
 
     /**
@@ -169,7 +169,7 @@ public class SessionImpl implements Session {
      */
     @Override
     public void invalidate() {
-        isClosed = true;
+        isOpen = false;
     }
 
     /**
@@ -178,7 +178,7 @@ public class SessionImpl implements Session {
      **/
     @Override
     public void close() {
-        if (isClosed) {
+        if (!isOpen) {
             return;
         }
 
@@ -192,7 +192,12 @@ public class SessionImpl implements Session {
             this.onClose.accept(this);
         }
 
-        isClosed = true;
+        isOpen = false;
+    }
+
+    @Override
+    public boolean isOpen() {
+        return isOpen;
     }
 
     @Override
