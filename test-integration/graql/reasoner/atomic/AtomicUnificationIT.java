@@ -92,7 +92,7 @@ public class AtomicUnificationIT {
 
     @Before
     public void setUp(){
-        tx = genericSchemaSession.writeTransaction();
+        tx = genericSchemasession.transaction(Transaction.Type.WRITE);
         TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction) tx);
         reasonerQueryFactory = testTx.reasonerQueryFactory();
     }

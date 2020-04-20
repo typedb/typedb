@@ -69,7 +69,7 @@ public class ValidatorIT {
     @Before
     public void setUp(){
         session = server.sessionWithNewKeyspace();
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
     }
 
     @After
@@ -211,7 +211,7 @@ public class ValidatorIT {
         }
 
         tx.commit();
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
 
         // now try to delete all assertions and then the movie
         godfather = tx.getEntityType("movie").instances().iterator().next();
@@ -225,7 +225,7 @@ public class ValidatorIT {
         godfather.delete();
 
         tx.commit();
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
 
         assertionIds.forEach(id -> assertNull(tx.getConcept(id)));
 
@@ -625,7 +625,7 @@ public class ValidatorIT {
         tx.execute(insert);
         tx.commit();
 
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
 
         insert = Graql.insert(var().isa("person").has("email", "unique@email.com"));
         tx.execute(insert);

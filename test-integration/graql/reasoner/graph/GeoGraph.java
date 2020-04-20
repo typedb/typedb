@@ -51,7 +51,7 @@ public class GeoGraph {
     }
 
     public void load() {
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
         buildSchema();
         buildInstances();
         buildRelations();

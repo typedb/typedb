@@ -55,7 +55,7 @@ public class EdgeIT {
     public void setUp(){
         Config mockServerConfig = storage.createCompatibleServerConfig();
         session = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig);
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
 
         // Create Edge
         entityType = tx.putEntityType("My Entity Type");

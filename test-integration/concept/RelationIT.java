@@ -91,7 +91,7 @@ public class RelationIT {
     public void setUp(){
         Config mockServerConfig = storage.createCompatibleServerConfig();
         session = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig);
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
         role1 = tx.putRole("Role 1");
         role2 = tx.putRole("Role 2");
         role3 = tx.putRole("Role 3");
@@ -309,7 +309,7 @@ public class RelationIT {
         rel2.has(r2);
 
         tx.commit();
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
 
         assertThat(tx.getMetaRelationType().instances().collect(toSet()), Matchers.hasItem(rel1));
         assertThat(tx.getMetaRelationType().instances().collect(toSet()), Matchers.hasItem(rel2));
@@ -428,7 +428,7 @@ public class RelationIT {
         tx.commit();
 
         // try to delete the inferred relationship
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
         GraqlDelete delete = Graql.parse("match $r isa aunthood; delete $r;").asDelete();
         List<Void> deletedConcepts = tx.execute(delete);
 

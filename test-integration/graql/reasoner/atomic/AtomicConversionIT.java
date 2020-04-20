@@ -96,7 +96,7 @@ public class AtomicConversionIT {
 
     @Test
     public void whenConvertingAttributeToIsaAtom_predicatesArePreserved(){
-        try(Transaction tx = session.readTransaction()){
+        try(Transaction tx = session.transaction(Transaction.Type.READ)){
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
             Atom attribute = reasonerQueryFactory.atomic(attributePattern).getAtom();
             IsaAtom isa = attribute.toIsaAtom();
@@ -110,7 +110,7 @@ public class AtomicConversionIT {
 
     @Test
     public void whenConvertingRelationToIsaAtom_predicatesArePreserved(){
-        try(Transaction tx = session.readTransaction()){
+        try(Transaction tx = session.transaction(Transaction.Type.READ)){
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
             Atom relation = reasonerQueryFactory.atomic(relationPattern).getAtom();
             IsaAtom isa = relation.toIsaAtom();
@@ -124,7 +124,7 @@ public class AtomicConversionIT {
 
     @Test (expected = ReasonerException.class)
     public void whenConvertingNonImplicitRelationToAttribute_weThrow(){
-        try(Transaction tx = session.readTransaction()){
+        try(Transaction tx = session.transaction(Transaction.Type.READ)){
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
             Atom relation = reasonerQueryFactory.atomic(relationPattern).getAtom();
@@ -138,7 +138,7 @@ public class AtomicConversionIT {
 
     @Test
     public void whenConvertingImplicitRelationToAttribute_predicatesArePreserved(){
-        try(Transaction tx = session.readTransaction()){
+        try(Transaction tx = session.transaction(Transaction.Type.READ)){
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
             Atom relation = reasonerQueryFactory.atomic(implicitRelationPattern).getAtom();
@@ -153,7 +153,7 @@ public class AtomicConversionIT {
 
     @Test
     public void whenConvertingAttributeToRelation_predicatesArePreserved(){
-        try(Transaction tx = session.readTransaction()){
+        try(Transaction tx = session.transaction(Transaction.Type.READ)){
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
             Atom attribute = reasonerQueryFactory.atomic(attributePattern).getAtom();
@@ -173,7 +173,7 @@ public class AtomicConversionIT {
 
     @Test
     public void whenPerformingAttributeRelationIdentityConversion_equivalenceIsPreserved(){
-        try(Transaction tx = session.readTransaction()){
+        try(Transaction tx = session.transaction(Transaction.Type.READ)){
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
             Atom attribute = reasonerQueryFactory.atomic(attributePattern).getAtom();
@@ -186,7 +186,7 @@ public class AtomicConversionIT {
 
     @Test
     public void whenPerformingRelationAttributeIdentityConversion_equivalenceIsPreserved(){
-        try(Transaction tx = session.readTransaction()){
+        try(Transaction tx = session.transaction(Transaction.Type.READ)){
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
             Atom relation = reasonerQueryFactory.atomic(implicitRelationPattern).getAtom();
             AttributeAtom intermittentAtom = relation.toAttributeAtom();

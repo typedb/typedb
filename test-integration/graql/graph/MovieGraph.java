@@ -56,7 +56,7 @@ public class MovieGraph {
 
 
     public static void load(Session session) {
-        try (Transaction transaction = session.writeTransaction()) {
+        try (Transaction transaction = session.transaction(Transaction.Type.WRITE)) {
             buildSchema(transaction);
             buildInstances(transaction);
             buildRelations();

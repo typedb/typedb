@@ -62,14 +62,14 @@ public class KeyspaceSchemaCacheIT {
 
     @Test
     public void addEntityWithLocalSession_possibleToRetrieveItWithSameLocalSession(){
-        try (Transaction tx = localSession.writeTransaction()) {
+        try (Transaction tx = localsession.transaction(Transaction.Type.WRITE)) {
             tx.putEntityType("animal");
             Role role1 = tx.putRole("role1");
             Role role2 = tx.putRole("role2");
             tx.putRelationType("test-relationship").relates(role1).relates(role2);
             tx.commit();
         }
-        try (Transaction tx = localSession.readTransaction()) {
+        try (Transaction tx = localsession.transaction(Transaction.Type.READ)) {
             Set<String> entityTypeSubs = tx.getMetaEntityType().subs().map(et -> et.label().getValue()).collect(toSet());
             assertTrue(entityTypeSubs.contains("animal"));
             Set<String> relationshipTypeSubs = tx.getMetaRelationType().subs().map(et -> et.label().getValue()).collect(toSet());
@@ -84,7 +84,7 @@ public class KeyspaceSchemaCacheIT {
      */
     @Test
     public void addEntityWithLocalSession_possibleToRetrieveItWithNewLocalSessionAfterSchemaIsDefined(){
-        try (Transaction tx = localSession.writeTransaction()) {
+        try (Transaction tx = localsession.transaction(Transaction.Type.WRITE)) {
             tx.putEntityType("animal");
             Role role1 = tx.putRole("role1");
             Role role2 = tx.putRole("role2");
@@ -92,7 +92,7 @@ public class KeyspaceSchemaCacheIT {
             tx.commit();
         }
         Session testSession = server.sessionFactory().session(localSession.keyspace());
-        try (Transaction tx = testSession.readTransaction()) {
+        try (Transaction tx = testsession.transaction(Transaction.Type.READ)) {
             Set<String> entityTypeSubs = tx.getMetaEntityType().subs().map(et -> et.label().getValue()).collect(toSet());
             assertTrue(entityTypeSubs.contains("animal"));
             Set<String> relationshipTypeSubs = tx.getMetaRelationType().subs().map(et -> et.label().getValue()).collect(toSet());
@@ -108,14 +108,14 @@ public class KeyspaceSchemaCacheIT {
     @Test
     public void addEntityWithLocalSession_possibleToRetrieveItWithNewLocalSessionBeforeSchemaIsDefined(){
         Session testSession = server.sessionFactory().session(localSession.keyspace());
-        try (Transaction tx = localSession.writeTransaction()) {
+        try (Transaction tx = localsession.transaction(Transaction.Type.WRITE)) {
             tx.putEntityType("animal");
             Role role1 = tx.putRole("role1");
             Role role2 = tx.putRole("role2");
             tx.putRelationType("test-relationship").relates(role1).relates(role2);
             tx.commit();
         }
-        try (Transaction tx = testSession.readTransaction()) {
+        try (Transaction tx = testsession.transaction(Transaction.Type.READ)) {
             Set<String> entityTypeSubs = tx.getMetaEntityType().subs().map(et -> et.label().getValue()).collect(toSet());
             assertTrue(entityTypeSubs.contains("animal"));
             Set<String> relationshipTypeSubs = tx.getMetaRelationType().subs().map(et -> et.label().getValue()).collect(toSet());
@@ -126,7 +126,7 @@ public class KeyspaceSchemaCacheIT {
 
     @Test
     public void addEntityWithLocalSession_possibleToRetrieveItWithNewLocalSessionClosingPreviousOne(){
-        try (Transaction tx = localSession.writeTransaction()) {
+        try (Transaction tx = localsession.transaction(Transaction.Type.WRITE)) {
             tx.putEntityType("animal");
             Role role1 = tx.putRole("role1");
             Role role2 = tx.putRole("role2");
@@ -135,7 +135,7 @@ public class KeyspaceSchemaCacheIT {
         }
         localSession.close();
         Session testSession = server.sessionFactory().session(localSession.keyspace());
-        try (Transaction tx = testSession.readTransaction()) {
+        try (Transaction tx = testsession.transaction(Transaction.Type.READ)) {
             Set<String> entityTypeSubs = tx.getMetaEntityType().subs().map(et -> et.label().getValue()).collect(toSet());
             assertTrue(entityTypeSubs.contains("animal"));
             Set<String> relationshipTypeSubs = tx.getMetaRelationType().subs().map(et -> et.label().getValue()).collect(toSet());
@@ -146,7 +146,7 @@ public class KeyspaceSchemaCacheIT {
 
     @Test
     public void addEntityWithLocalSession_possibleToRetrieveItWithRemoteSession(){
-        try (Transaction tx = localSession.writeTransaction()) {
+        try (Transaction tx = localsession.transaction(Transaction.Type.WRITE)) {
             tx.putEntityType("animal");
             Role role1 = tx.putRole("role1");
             Role role2 = tx.putRole("role2");
@@ -163,7 +163,7 @@ public class KeyspaceSchemaCacheIT {
 
     @Test
     public void addEntityWithLocalSession_possibleToRetrieveItWithNewRemoteSession(){
-        try (Transaction tx = localSession.writeTransaction()) {
+        try (Transaction tx = localsession.transaction(Transaction.Type.WRITE)) {
             tx.putEntityType("animal");
             Role role1 = tx.putRole("role1");
             Role role2 = tx.putRole("role2");
@@ -182,7 +182,7 @@ public class KeyspaceSchemaCacheIT {
 
     @Test
     public void addEntityWithLocalSession_possibleToRetrieveItWithNewRemoteSessionClosingPreviousOne(){
-        try (Transaction tx = localSession.writeTransaction()) {
+        try (Transaction tx = localsession.transaction(Transaction.Type.WRITE)) {
             tx.putEntityType("animal");
             Role role1 = tx.putRole("role1");
             Role role2 = tx.putRole("role2");

@@ -41,7 +41,7 @@ public class NguyenGraph{
     }
 
     public final void load(int n) {
-        Transaction tx = session.writeTransaction();
+        Transaction tx = session.transaction(Transaction.Type.WRITE);
         loadFromFile(gqlPath, gqlFile, tx);
         buildExtensionalDB(n, tx);
         tx.commit();

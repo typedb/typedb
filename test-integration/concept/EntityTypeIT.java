@@ -74,7 +74,7 @@ public class EntityTypeIT {
     @Before
     public void setUp(){
         session = server.sessionWithNewKeyspace();
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
         EntityType top = tx.putEntityType("top");
         EntityType middle1 = tx.putEntityType("mid1");
         EntityType middle2 = tx.putEntityType("mid2");

@@ -65,7 +65,7 @@ public class ConceptIT {
     @Before
     public void setUp() {
         session = SessionUtil.serverlessSessionWithNewKeyspace(storage.createCompatibleServerConfig());
-        tx = (TestTransactionProvider.TestTransaction)session.writeTransaction();
+        tx = (TestTransactionProvider.TestTransaction)session.transaction(Transaction.Type.WRITE);
     }
 
     @After

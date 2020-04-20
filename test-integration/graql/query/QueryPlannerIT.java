@@ -82,7 +82,7 @@ public class QueryPlannerIT {
     public static void newSession() {
         Config mockServerConfig = storage.createCompatibleServerConfig();
         session = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig);
-        Transaction graph = session.writeTransaction();
+        Transaction graph = session.transaction(Transaction.Type.WRITE);
 
         EntityType entityType0 = graph.putEntityType(thingy0);
         EntityType entityType1 = graph.putEntityType(thingy1);
@@ -129,7 +129,7 @@ public class QueryPlannerIT {
 
     @Before
     public void newTransaction() {
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
     }
 
     @After

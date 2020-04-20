@@ -65,7 +65,7 @@ public class SchemaConceptIT {
     @Before
     public void setUp(){
         session = server.sessionWithNewKeyspace();
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
     }
 
     @After

@@ -80,7 +80,7 @@ public class AtomicEquivalenceIT {
 
     @Before
     public void setUp() {
-        tx = genericSchemaSession.writeTransaction();
+        tx = genericSchemasession.transaction(Transaction.Type.WRITE);
     }
 
     @After

@@ -57,7 +57,7 @@ public class RoleIT {
     @Before
     public void setUp(){
         session = server.sessionWithNewKeyspace();
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
         role = tx.putRole("My Role");
         relationType = tx.putRelationType("RelationType");
     }

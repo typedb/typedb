@@ -90,7 +90,7 @@ public class TypeInferenceIT {
 
     @Before
     public void setup() {
-        tx = testContextSession.writeTransaction();
+        tx = testContextsession.transaction(Transaction.Type.WRITE);
     }
 
     @After

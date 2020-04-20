@@ -78,7 +78,7 @@ public class SessionImpl implements Session {
         this.attributeManager = attributeManager;
         this.shardManager = shardManager;
 
-        Transaction tx = writeTransaction();
+        Transaction tx = transaction(Transaction.Type.WRITE);
 
         if (!keyspaceHasBeenInitialised(tx)) {
             initialiseMetaConcepts(tx);
@@ -92,16 +92,7 @@ public class SessionImpl implements Session {
     }
 
     @Override
-    public Transaction readTransaction() {
-        return transaction(Transaction.Type.READ);
-    }
-
-    @Override
-    public Transaction writeTransaction() {
-        return transaction(Transaction.Type.WRITE);
-    }
-
-    private Transaction transaction(Transaction.Type type) {
+    public Transaction transaction(Transaction.Type type) {
 
         // If graph is closed it means the session was already closed
         if (graph.isClosed()) {

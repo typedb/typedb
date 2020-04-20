@@ -51,7 +51,7 @@ public class DirectSubIT {
 
     @Before
     public void newTransaction() {
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
     }
 
     @After
@@ -69,7 +69,7 @@ public class DirectSubIT {
         tx.execute(Graql.parse("define person sub entity; child sub person;").asDefine());
         tx.commit();
 
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
         List<ConceptMap> directSubs = tx.execute(Graql.match(Graql.var("x").subX("entity")).get(), false);
         assertEquals(2, directSubs.size());
         assertFalse(directSubs.stream().anyMatch(conceptMap -> conceptMap.get("x").asType().label().equals(Label.of("child"))));
@@ -80,7 +80,7 @@ public class DirectSubIT {
         tx.execute(Graql.parse("define person sub entity; child sub person;").asDefine());
         tx.commit();
 
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
         List<ConceptMap> directSubs = tx.execute(Graql.match(Graql.var("x").subX("entity")).get());
         assertEquals(2, directSubs.size());
         assertFalse(directSubs.stream().anyMatch(conceptMap -> conceptMap.get("x").asType().label().equals(Label.of("child"))));

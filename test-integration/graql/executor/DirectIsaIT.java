@@ -70,7 +70,7 @@ public class DirectIsaIT {
         Config mockServerConfig = storage.createCompatibleServerConfig();
         session = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig);
 
-        TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction)session.writeTransaction();
+        TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction)session.transaction(Transaction.Type.WRITE);
         traversalPlanFactory = new TraversalPlanFactoryImpl(
                 testTx.janusTraversalSourceProvider(),
                 testTx.conceptManager(),
