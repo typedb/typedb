@@ -18,9 +18,9 @@ package(default_visibility = ["//test/behaviour:__subpackages__"])
 load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
 java_library(
-    name = "steps",
+    name = "setup",
     srcs = [
-        "ServerSteps.java"
+        "ServerSetup.java"
     ],
     deps = [
         # Package dependencies
@@ -28,6 +28,7 @@ java_library(
 
         # External dependencies from Maven
         "//dependencies/maven/artifacts/junit:junit",
+        "//dependencies/maven/artifacts/io/cucumber:cucumber-java",
     ],
     visibility = ["//visibility:public"]
 )

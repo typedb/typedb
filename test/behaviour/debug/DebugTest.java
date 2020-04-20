@@ -18,15 +18,19 @@
 
 package grakn.core.test.behaviour.debug;
 
+import grakn.core.test.behaviour.server.ServerSetup;
 import io.cucumber.junit.Cucumber;
 import io.cucumber.junit.CucumberOptions;
+import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
+
+import java.lang.reflect.InvocationTargetException;
 
 @RunWith(Cucumber.class)
 @CucumberOptions(
         strict = true,
         plugin = "pretty",
-        glue = "grakn.client.test.behaviour",
+        glue = "grakn.core.test.behaviour",
         features = "test/behaviour/debug/debug.feature"
 )
 public class DebugTest {
@@ -53,4 +57,8 @@ public class DebugTest {
     //
     // 6) Hit the RUN button by selecting the test from the dropdown menu on the top bar
 
+    @BeforeClass
+    public static void setup() throws NoSuchMethodException, IllegalAccessException, InvocationTargetException {
+        ServerSetup.setup();
+    }
 }

@@ -27,7 +27,7 @@ import java.util.concurrent.CompletableFuture;
 import static grakn.common.util.Collections.list;
 import static grakn.core.test.behaviour.connection.ConnectionSteps.THREAD_POOL_SIZE;
 import static grakn.core.test.behaviour.connection.ConnectionSteps.threadPool;
-import static grakn.core.test.behaviour.server.ServerSteps.server;
+import static grakn.core.test.behaviour.server.ServerSetup.server;
 import static org.junit.Assert.assertTrue;
 
 public class KeyspaceSteps {

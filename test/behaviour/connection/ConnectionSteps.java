@@ -32,7 +32,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import static grakn.core.test.behaviour.server.ServerSteps.server;
+import static grakn.core.test.behaviour.server.ServerSetup.server;
 import static java.util.Objects.isNull;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;

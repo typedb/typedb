@@ -27,7 +27,7 @@ java_library(
     deps = [
         # Internal Package Dependencies
         "//test/behaviour/connection:steps",
-        "//test/behaviour/server:steps",
+        "//test/behaviour/server:setup",
 
         # Internal Repository Dependencies
         "@graknlabs_common//:common",

@@ -88,7 +88,7 @@ public class GraknTestServer extends ExternalResource {
     }
 
     @Override
-    protected void before() {
+    public void before() {
         try {
             // Start Cassandra
             graknTestStorage.before();
@@ -108,7 +108,7 @@ public class GraknTestServer extends ExternalResource {
     }
 
     @Override
-    protected void after() {
+    public void after() {
         try {
             graknTestStorage.after();
             graknServer.close();

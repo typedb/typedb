@@ -24,15 +24,15 @@ java_test(
     srcs = [
         "DefineTest.java",
     ],
-    test_class = "grakn.client.test.behaviour.graql.language.define.DefineTest",
+    test_class = "grakn.core.test.behaviour.graql.language.define.DefineTest",
     deps = [
         # Package dependencies
+        "//test/behaviour/server:setup",
 
         # External dependencies from Maven
         "//dependencies/maven/artifacts/io/cucumber:cucumber-junit",
     ],
     runtime_deps = [
-        "//test/behaviour/server:steps",
         "//test/behaviour/graql:steps",
         "//test/behaviour/connection:steps",
         "//test/behaviour/connection/session:steps",

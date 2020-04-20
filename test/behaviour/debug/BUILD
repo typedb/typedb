@@ -24,9 +24,10 @@ java_test(
     srcs = [
         "DebugTest.java",
     ],
-    test_class = "grakn.client.test.behaviour.debug.DebugTest",
+    test_class = "grakn.core.test.behaviour.debug.DebugTest",
     deps = [
         # Package dependencies
+        "//test/behaviour/server:setup",
 
         # TODO: Add your addition debugging dependencies here
         # e.g. "//test/behaviour/connection/steps:connection-keyspace",
@@ -36,9 +37,13 @@ java_test(
         "//dependencies/maven/artifacts/io/cucumber:cucumber-junit",
     ],
     runtime_deps = [
+        "//test/behaviour/graql:steps",
         "//test/behaviour/connection:steps",
+        "//test/behaviour/connection/session:steps",
+        "//test/behaviour/connection/transaction:steps",
         "//test/behaviour/config:parameters",
     ],
+    classpath_resources = ["//test-integration/resources:logback-test"],
     data = [
         ":debug.feature",
     ],
