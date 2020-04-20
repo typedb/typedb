@@ -47,8 +47,8 @@ import static org.junit.Assert.assertTrue;
 
 public class GraqlSteps {
 
-    private static GraknClient.Session session = null;
-    private static GraknClient.Transaction tx = null;
+    private static Session session = null;
+    private static Transaction tx = null;
 
     private static List<ConceptMap> answers;
     private static String answerConceptKey = null;

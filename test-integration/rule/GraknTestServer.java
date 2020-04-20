@@ -47,8 +47,10 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * This rule is a test server rule which starts Cassandra and Grakn Core Server on random, unused ports.
@@ -146,6 +148,9 @@ public class GraknTestServer extends ExternalResource {
         return serverConfig;
     }
 
+    public List<Keyspace> keyspaces() {
+        return new ArrayList<>(keyspaceManager.keyspaces());
+    }
 
     private synchronized static int findUnusedLocalPort() throws IOException {
         try (ServerSocket serverSocket = new ServerSocket(0)) {

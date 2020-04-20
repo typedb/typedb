@@ -20,12 +20,7 @@ package grakn.core.test.behaviour.connection.session;
 
 import io.cucumber.junit.Cucumber;
 import io.cucumber.junit.CucumberOptions;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
-
-import java.io.IOException;
-import java.util.concurrent.TimeoutException;
 
 @RunWith(Cucumber.class)
 @CucumberOptions(
@@ -58,14 +53,4 @@ public class SessionTest {
     //       --spawn_strategy=standalone : if you're on Mac, tests need permission to access filesystem (to run Grakn)
     //
     // 6) Hit the RUN button by selecting the test from the dropdown menu on the top bar
-
-    @BeforeClass
-    public static void beforeClass() throws InterruptedException, TimeoutException, IOException {
-        GraknSetup.bootup();
-    }
-
-    @AfterClass
-    public static void afterClass() throws InterruptedException, IOException, TimeoutException {
-        GraknSetup.shutdown();
-    }
 }
