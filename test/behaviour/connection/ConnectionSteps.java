@@ -20,6 +20,7 @@ package grakn.core.test.behaviour.connection;
 
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
+import grakn.core.kb.server.keyspace.Keyspace;
 import io.cucumber.java.After;
 import io.cucumber.java.en.Given;
 
@@ -59,9 +60,9 @@ public class ConnectionSteps {
     @Given("connection delete all keyspaces")
     public void connection_delete_all_keyspaces() {
         // TODO re-enable after refactoring keyspace handler
-//        for (String keyspace : server.keyspaces()) {
-//            server.keyspaces().delete(keyspace);
-//        }
+        for (Keyspace keyspace : server.keyspaces()) {
+            server.deleteKeyspace(keyspace.name());
+        }
     }
 
     @Given("connection does not have any keyspace")

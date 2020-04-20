@@ -18,16 +18,22 @@
 
 package grakn.core.test.behaviour.connection.keyspace;
 
+import grakn.core.kb.server.keyspace.Keyspace;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 import static grakn.common.util.Collections.list;
 import static grakn.core.test.behaviour.connection.ConnectionSteps.THREAD_POOL_SIZE;
 import static grakn.core.test.behaviour.connection.ConnectionSteps.threadPool;
 import static grakn.core.test.behaviour.server.ServerSetup.server;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class KeyspaceSteps {
@@ -39,7 +45,6 @@ public class KeyspaceSteps {
 
     @When("connection create keyspace(s):")
     public void connection_create_keyspaces(List<String> names) {
-        // TODO: This step should be rewritten once we can create keypsaces without opening sessions
         for (String name : names) {
             server.session(name);
         }
@@ -59,42 +64,42 @@ public class KeyspaceSteps {
         CompletableFuture.allOf(creations).join();
     }
 
-    // TODO re-enable these when we refactor `KeyspaceHandler` to not read gRPC messages directly, exposing it in the TestServer
-
     @When("connection delete keyspace(s):")
     public void connection_delete_keyspaces(List<String> names) {
-//        for (String keyspaceName : names) {
-//            server.keyspaces().delete(keyspaceName);
-//        }
+        for (String keyspaceName : names) {
+            server.deleteKeyspace(keyspaceName);
+        }
     }
 
     @When("connection delete keyspaces in parallel:")
     public void connection_delete_keyspaces_in_parallel(List<String> names) {
-//        assertTrue(THREAD_POOL_SIZE >= names.size());
-//
-//        // TODO: This step should be rewritten once we can create keyspaces without opening sessions
-//        CompletableFuture[] deletions = new CompletableFuture[names.size()];
-//        int i = 0;
-//        for (String name : names) {
-//            deletions[i++] = CompletableFuture.supplyAsync(
-//                    () -> { server.keyspaces().delete(name); return null; },
-//                    threadPool
-//            );
-//        }
-//
-//        CompletableFuture.allOf(deletions).join();
+        assertTrue(THREAD_POOL_SIZE >= names.size());
+
+        // TODO: This step should be rewritten once we can create keyspaces without opening sessions
+        CompletableFuture[] deletions = new CompletableFuture[names.size()];
+        int i = 0;
+        for (String name : names) {
+            deletions[i++] = CompletableFuture.supplyAsync(
+                    () -> { server.deleteKeyspace(name); return null; },
+                    threadPool
+            );
+        }
+
+        CompletableFuture.allOf(deletions).join();
     }
 
     @Then("connection has keyspace(s):")
     public void connection_has_keyspaces(List<String> names) {
-//        assertEquals(set(names), set(server.keyspaces().retrieve()));
+        Set<String> namesSet = new HashSet<>(names);
+        Set<String> existingKeyspaces = server.keyspaces().stream().map(Keyspace::name).collect(Collectors.toSet());
+        assertEquals(namesSet, existingKeyspaces);
     }
 
     @Then("connection does not have keyspace(s):")
     public void connection_does_not_have_keyspaces(List<String> names) {
-//        Set<String> keyspaces = set(server.keyspaces().retrieve());
-//        for (String keyspaceName : names) {
-//            assertFalse(keyspaces.contains(keyspaceName));
-//        }
+        Set<String> keyspaces = server.keyspaces().stream().map(Keyspace::name).collect(Collectors.toSet());
+        for (String keyspaceName : names) {
+            assertFalse(keyspaces.contains(keyspaceName));
+        }
     }
 }
