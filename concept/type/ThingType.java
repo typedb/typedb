@@ -49,8 +49,8 @@ public abstract class ThingType<TYPE extends ThingType<TYPE>> extends Type<TYPE>
     }
 
     @Override
-    public void setAbstract(boolean isAbstract) {
-        vertex.setAbstract(isAbstract);
+    public void isAbstract(boolean isAbstract) {
+        vertex.isAbstract(isAbstract);
     }
 
     @Override
@@ -182,7 +182,7 @@ public abstract class ThingType<TYPE extends ThingType<TYPE>> extends Type<TYPE>
         }
 
         @Override
-        public void setAbstract(boolean isAbstract) {
+        public void isAbstract(boolean isAbstract) {
             throw new HypergraphException("Invalid Operation Exception: root types are immutable");
         }
 

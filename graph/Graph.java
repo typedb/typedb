@@ -97,16 +97,16 @@ public class Graph {
 
         private void initialise() {
             TypeVertex rootThingType = put(Schema.Vertex.Type.THING_TYPE,
-                                           Schema.Vertex.Type.Root.THING.label()).setAbstract(true);
+                                           Schema.Vertex.Type.Root.THING.label()).isAbstract(true);
             TypeVertex rootEntityType = put(Schema.Vertex.Type.ENTITY_TYPE,
-                                            Schema.Vertex.Type.Root.ENTITY.label()).setAbstract(true);
+                                            Schema.Vertex.Type.Root.ENTITY.label()).isAbstract(true);
             TypeVertex rootAttributeType = put(Schema.Vertex.Type.ATTRIBUTE_TYPE,
-                                               Schema.Vertex.Type.Root.ATTRIBUTE.label()).setAbstract(true);
+                                               Schema.Vertex.Type.Root.ATTRIBUTE.label()).isAbstract(true);
             TypeVertex rootRelationType = put(Schema.Vertex.Type.RELATION_TYPE,
-                                              Schema.Vertex.Type.Root.RELATION.label()).setAbstract(true);
+                                              Schema.Vertex.Type.Root.RELATION.label()).isAbstract(true);
             TypeVertex rootRoleType = put(Schema.Vertex.Type.ROLE_TYPE,
                                           Schema.Vertex.Type.Root.ROLE.label(),
-                                          Schema.Vertex.Type.Root.RELATION.label()).setAbstract(true);
+                                          Schema.Vertex.Type.Root.RELATION.label()).isAbstract(true);
 
             rootEntityType.outs().put(Schema.Edge.Type.SUB, rootThingType);
             rootAttributeType.outs().put(Schema.Edge.Type.SUB, rootThingType);

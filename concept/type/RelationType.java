@@ -73,9 +73,9 @@ public class RelationType extends ThingType<RelationType> {
     }
 
     @Override
-    public void setAbstract(boolean isAbstract) {
-        vertex.setAbstract(isAbstract);
-        declaredRoles().forEach(role -> role.setAbstract(true));
+    public void isAbstract(boolean isAbstract) {
+        vertex.isAbstract(isAbstract);
+        declaredRoles().forEach(role -> role.isAbstract(true));
     }
 
     public RelatesOverrider relates(String roleLabel) {
@@ -186,7 +186,7 @@ public class RelationType extends ThingType<RelationType> {
         }
 
         @Override
-        public void setAbstract(boolean isAbstract) {
+        public void isAbstract(boolean isAbstract) {
             throw new HypergraphException("Invalid Operation Exception: root types are immutable");
         }
 

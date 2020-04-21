@@ -98,7 +98,7 @@ public class ThingTypeSteps {
 
     @When("{root_label}\\( ?{type_label} ?) set abstract: {bool}")
     public void thing_set_abstract(RootLabel rootLabel, String typeLabel, boolean isAbstract) {
-        get_thing_type(rootLabel, typeLabel).setAbstract(isAbstract);
+        get_thing_type(rootLabel, typeLabel).isAbstract(isAbstract);
     }
 
     @Then("{root_label}\\( ?{type_label} ?) is abstract: {bool}")

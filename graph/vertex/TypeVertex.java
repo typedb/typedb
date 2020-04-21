@@ -88,7 +88,7 @@ public abstract class TypeVertex extends Vertex<
 
     public abstract boolean isAbstract();
 
-    public abstract TypeVertex setAbstract(boolean isAbstract);
+    public abstract TypeVertex isAbstract(boolean isAbstract);
 
     public abstract Schema.DataType dataType();
 
@@ -169,7 +169,7 @@ public abstract class TypeVertex extends Vertex<
             return isAbstract != null ? isAbstract : false;
         }
 
-        public TypeVertex setAbstract(boolean isAbstract) {
+        public TypeVertex isAbstract(boolean isAbstract) {
             this.isAbstract = isAbstract;
             return this;
         }
@@ -344,8 +344,11 @@ public abstract class TypeVertex extends Vertex<
         }
 
         @Override
-        public TypeVertex setAbstract(boolean isAbstract) {
-            return null; // TODO
+        public TypeVertex isAbstract(boolean isAbstract) {
+            if (isAbstract) graph.storage().put(join(iid, Schema.Property.ABSTRACT.infix().key()));
+            else graph.storage().delete(join(iid, Schema.Property.ABSTRACT.infix().key()));
+            this.isAbstract = isAbstract;
+            return this;
         }
 
         @Override
@@ -358,7 +361,9 @@ public abstract class TypeVertex extends Vertex<
 
         @Override
         public TypeVertex dataType(Schema.DataType dataType) {
-            return null; // TODO
+            graph.storage().put(join(iid, Schema.Property.DATATYPE.infix().key()), dataType.value());
+            this.dataType = dataType;
+            return this;
         }
 
         @Override
@@ -371,7 +376,9 @@ public abstract class TypeVertex extends Vertex<
 
         @Override
         public TypeVertex regex(String regex) {
-            return null; // TODO
+            graph.storage().put(join(iid, Schema.Property.REGEX.infix().key()), regex.getBytes());
+            this.regex = regex;
+            return this;
         }
 
         @Override

@@ -68,7 +68,7 @@ public class EntityType extends ThingType<EntityType> {
         }
 
         @Override
-        public void setAbstract(boolean isAbstract) {
+        public void isAbstract(boolean isAbstract) {
             throw new HypergraphException("Invalid Operation Exception: root types are immutable");
         }
 

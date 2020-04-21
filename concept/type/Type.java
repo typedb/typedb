@@ -65,8 +65,8 @@ public abstract class Type<TYPE extends Type<TYPE>> {
         return vertex.label();
     }
 
-    protected void setAbstract(boolean isAbstract) {
-        vertex.setAbstract(isAbstract);
+    protected void isAbstract(boolean isAbstract) {
+        vertex.isAbstract(isAbstract);
     }
 
     public boolean isAbstract() {
