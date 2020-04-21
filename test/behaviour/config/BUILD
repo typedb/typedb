@@ -32,5 +32,4 @@ java_library(
 checkstyle_test(
     name = "checkstyle",
     targets = [":parameters"],
-    license_type = "apache"
 )

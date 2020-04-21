@@ -52,5 +52,4 @@ checkstyle_test(
         ":test",
 
     ],
-    license_type = "apache"
 )
