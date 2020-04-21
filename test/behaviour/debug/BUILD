@@ -38,10 +38,11 @@ java_test(
         "//dependencies/maven/artifacts/io/cucumber:cucumber-junit",
     ],
     runtime_deps = [
-        "//test/behaviour/graql:steps",
+#        "//test/behaviour/graql:steps",
         "//test/behaviour/connection:steps",
         "//test/behaviour/connection/session:steps",
         "//test/behaviour/connection/transaction:steps",
+        "//test/behaviour/connection/keyspace:steps",
         "//test/behaviour/config:parameters",
     ],
     classpath_resources = ["//test-integration/resources:logback-test"],

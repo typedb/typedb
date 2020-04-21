@@ -28,6 +28,7 @@ import grakn.core.kb.keyspace.ShardManager;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import grakn.core.kb.server.TransactionProvider;
+import grakn.core.kb.server.exception.GraknServerException;
 import grakn.core.kb.server.exception.SessionException;
 import grakn.core.kb.server.exception.TransactionException;
 import grakn.core.kb.server.keyspace.Keyspace;
@@ -184,6 +185,19 @@ public class SessionImpl implements Session {
         }
 
         isOpen = false;
+    }
+
+    /**
+     * When a transaction is closed, we set the thread local to be null
+     * this allows the thread to be re-used for a fresh transaction
+     */
+    @Override
+    public void transactionClosed(Transaction tx) {
+        Transaction localTx = localOLTPTransactionContainer.get();
+        if (localTx == null || !localTx.equals(tx)) {
+            throw GraknServerException.transactionClosedOnDifferentThread();
+        }
+        localOLTPTransactionContainer.set(null);
     }
 
     @Override

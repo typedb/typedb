@@ -14,173 +14,600 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
-Feature: Graql Match Clause
 
-  Background: Create a simple schema that is extensible for each scenario
+Feature: Connection Transaction
+
+  Background:
     Given connection has been opened
     Given connection delete all keyspaces
-    Given connection open sessions for keyspaces:
-      | test_match |
-    Given transaction is initialised
-    Given the integrity is validated
+    Given connection does not have any keyspace
 
-  Scenario: Disjunctions return the union of composing query statements
+  Scenario: one keyspace, one session, one transaction to read
+    When connection create keyspace:
+      | grakn   |
+    Given connection open session for keyspace:
+      | grakn   |
+    When for each session, open transaction of type:
+      | read    |
+    Then for each session, transaction is null: false
+    Then for each session, transaction is open: true
+    Then for each session, transaction has type:
+      | read    |
 
-  Scenario: a relation is matchable from role players without specifying relation type
-    Given graql define
-      """
-      define
-      person sub entity,
-        plays employee,
-        key ref;
-      company sub entity,
-        plays employer,
-        key ref;
-      employment sub relation,
-        relates employee,
-        relates employer,
-        key ref;
-      ref sub attribute, datatype long;
-      """
-    Given the integrity is validated
+  Scenario: one keyspace, one session, one transaction to write
+    When connection create keyspace:
+      | grakn   |
+    Given connection open session for keyspace:
+      | grakn   |
+    When for each session, open transaction of type:
+      | write   |
+    Then for each session, transaction is null: false
+    Then for each session, transaction is open: true
+    Then for each session, transaction has type:
+      | write   |
 
-    When graql insert
-      """
-      insert
-      $x isa person, has ref 0;
-      $y isa company, has ref 1;
-      $r (employee: $x, employer: $y) isa employment,
-         has ref 2;
-      """
-    When the integrity is validated
+  Scenario: one keyspace, one session, one committed write transaction is closed
+    When connection create keyspace:
+      | grakn   |
+    Given connection open session for keyspace:
+      | grakn   |
+    When for each session, open transaction of type:
+      | write   |
+    Then for each session, transaction commits successfully: true
+    Then for each session, transaction is open: false
 
-    Then get answers of graql query
-      """
-      match $x isa person; $r (employee: $x) isa relation; get;
-      """
-    Then answer concepts all have key: ref
-    Then answer keys are
-      | x    | r    |
-      | 0    | 2    |
+  Scenario: one keyspace, one session, re-committing transaction throws
+    When connection create keyspace:
+      | grakn   |
+    Given connection open session for keyspace:
+      | grakn   |
+    When for each session, open transaction of type:
+      | write   |
+    Then for each session, transaction commits successfully: true
+    Then for each session, transaction commits successfully: false
 
-    Then get answers of graql query
-      | match $y isa company; $r (employer: $y) isa relation; get; |
-    Then answer concepts all have key: ref
-    Then answer keys are
-      | y    | r    |
-      | 1    | 2    |
+  Scenario: one keyspace, one session, transaction close is idempotent
+    When connection create keyspace:
+      | grakn   |
+    Given connection open session for keyspace:
+      | grakn   |
+    When for each session, open transaction of type:
+      | write   |
+    Then for each session, transaction close
+    Then for each session, transaction is open: false
+    Then for each session, transaction close
+    Then for each session, transaction is open: false
+
+  Scenario: one keyspace, one session, many transactions to read
+    When connection create keyspace:
+      | grakn   |
+    Given connection open session for keyspace:
+      | grakn   |
+    When for each session, open transactions of type:
+      | read    |
+      | read    |
+      | read    |
+      | read    |
+      | read    |
+      | read    |
+      | read    |
+      | read    |
+      | read    |
+      | read    |
+      | read    |
+      | read    |
+    Then for each session, transactions are null: false
+    Then for each session, transactions are open: true
+    Then for each session, transactions have type:
+      | read    |
+      | read    |
+      | read    |
+      | read    |
+      | read    |
+      | read    |
+      | read    |
+      | read    |
+      | read    |
+      | read    |
+      | read    |
+      | read    |
+
+  Scenario: one keyspace, one session, many transactions to write
+    When connection create keyspace:
+      | grakn   |
+    Given connection open session for keyspace:
+      | grakn   |
+    When for each session, open transactions of type:
+      | write   |
+      | write   |
+      | write   |
+      | write   |
+      | write   |
+      | write   |
+      | write   |
+      | write   |
+      | write   |
+      | write   |
+      | write   |
+      | write   |
+    Then for each session, transactions are null: false
+    Then for each session, transactions are open: true
+    Then for each session, transactions have type:
+      | write   |
+      | write   |
+      | write   |
+      | write   |
+      | write   |
+      | write   |
+      | write   |
+      | write   |
+      | write   |
+      | write   |
+      | write   |
+      | write   |
+
+  Scenario: one keyspace, one session, many transactions to read and write
+    When connection create keyspace:
+      | grakn   |
+    Given connection open session for keyspace:
+      | grakn   |
+    When for each session, open transactions of type:
+      | read    |
+      | write   |
+      | read    |
+      | write   |
+      | read    |
+      | write   |
+      | read    |
+      | write   |
+      | read    |
+      | write   |
+      | read    |
+      | write   |
+    Then for each session, transactions are null: false
+    Then for each session, transactions are open: true
+    Then for each session, transactions have type:
+      | read    |
+      | write   |
+      | read    |
+      | write   |
+      | read    |
+      | write   |
+      | read    |
+      | write   |
+      | read    |
+      | write   |
+      | read    |
+      | write   |
+
+  Scenario: one keyspace, one session, many transactions in parallel to read
+    When connection create keyspace:
+      | grakn   |
+    Given connection open session for keyspace:
+      | grakn   |
+    When for each session, open transactions in parallel of type:
+      | read    |
+      | read    |
+      | read    |
+      | read    |
+      | read    |
+      | read    |
+      | read    |
+      | read    |
+      | read    |
+      | read    |
+      | read    |
+      | read    |
+    Then for each session, transactions in parallel are null: false
+    Then for each session, transactions in parallel are open: true
+    Then for each session, transactions in parallel have type:
+      | read    |
+      | read    |
+      | read    |
+      | read    |
+      | read    |
+      | read    |
+      | read    |
+      | read    |
+      | read    |
+      | read    |
+      | read    |
+      | read    |
+
+  Scenario: one keyspace, one session, many transactions in parallel to write
+    When connection create keyspace:
+      | grakn   |
+    Given connection open session for keyspace:
+      | grakn   |
+    When for each session, open transactions in parallel of type:
+      | write   |
+      | write   |
+      | write   |
+      | write   |
+      | write   |
+      | write   |
+      | write   |
+      | write   |
+      | write   |
+      | write   |
+      | write   |
+      | write   |
+    Then for each session, transactions in parallel are null: false
+    Then for each session, transactions in parallel are open: true
+    Then for each session, transactions in parallel have type:
+      | write   |
+      | write   |
+      | write   |
+      | write   |
+      | write   |
+      | write   |
+      | write   |
+      | write   |
+      | write   |
+      | write   |
+      | write   |
+      | write   |
+
+  Scenario: one keyspace, one session, many transactions in parallel to read and write
+    When connection create keyspace:
+      | grakn   |
+    Given connection open session for keyspace:
+      | grakn   |
+    When for each session, open transactions in parallel of type:
+      | read    |
+      | write   |
+      | read    |
+      | write   |
+      | read    |
+      | write   |
+      | read    |
+      | write   |
+      | read    |
+      | write   |
+      | read    |
+      | write   |
+    Then for each session, transactions in parallel are null: false
+    Then for each session, transactions in parallel are open: true
+    Then for each session, transactions in parallel have type:
+      | read    |
+      | write   |
+      | read    |
+      | write   |
+      | read    |
+      | write   |
+      | read    |
+      | write   |
+      | read    |
+      | write   |
+      | read    |
+      | write   |
+
+  Scenario: one keyspace, many sessions, one transaction to read
+    When connection create keyspace:
+      | grakn   |
+    Given connection open sessions for keyspace:
+      | grakn   |
+      | grakn   |
+      | grakn   |
+      | grakn   |
+      | grakn   |
+      | grakn   |
+      | grakn   |
+      | grakn   |
+      | grakn   |
+      | grakn   |
+      | grakn   |
+      | grakn   |
+    When for each session, open transaction of type:
+      | read    |
+    Then for each session, transaction is null: false
+    Then for each session, transaction is open: true
+    Then for each session, transaction has type:
+      | read    |
+
+  Scenario: one keyspace, many sessions, one transaction to write
+    When connection create keyspace:
+      | grakn   |
+    Given connection open sessions for keyspace:
+      | grakn   |
+      | grakn   |
+      | grakn   |
+      | grakn   |
+      | grakn   |
+      | grakn   |
+      | grakn   |
+      | grakn   |
+      | grakn   |
+      | grakn   |
+      | grakn   |
+      | grakn   |
+    When for each session, open transaction of type:
+      | write   |
+    Then for each session, transaction is null: false
+    Then for each session, transaction is open: true
+    Then for each session, transaction has type:
+      | write   |
+
+  Scenario: one keyspace, many sessions, many transactions to read
+    When connection create keyspace:
+      | grakn   |
+    Given connection open sessions for keyspace:
+      | grakn   |
+      | grakn   |
+      | grakn   |
+      | grakn   |
+      | grakn   |
+      | grakn   |
+      | grakn   |
+      | grakn   |
+      | grakn   |
+      | grakn   |
+      | grakn   |
+      | grakn   |
+    When for each session, open transactions of type:
+      | read    |
+      | read    |
+      | read    |
+      | read    |
+      | read    |
+      | read    |
+      | read    |
+      | read    |
+      | read    |
+      | read    |
+      | read    |
+      | read    |
+    Then for each session, transactions are null: false
+    Then for each session, transactions are open: true
+    Then for each session, transactions have type:
+      | read    |
+      | read    |
+      | read    |
+      | read    |
+      | read    |
+      | read    |
+      | read    |
+      | read    |
+      | read    |
+      | read    |
+      | read    |
+      | read    |
+
+  Scenario: one keyspace, many sessions, many transactions to write
+    When connection create keyspace:
+      | grakn   |
+    Given connection open sessions for keyspace:
+      | grakn   |
+      | grakn   |
+      | grakn   |
+      | grakn   |
+      | grakn   |
+      | grakn   |
+      | grakn   |
+      | grakn   |
+      | grakn   |
+      | grakn   |
+      | grakn   |
+      | grakn   |
+    When for each session, open transactions of type:
+      | write   |
+      | write   |
+      | write   |
+      | write   |
+      | write   |
+      | write   |
+      | write   |
+      | write   |
+      | write   |
+      | write   |
+      | write   |
+      | write   |
+    Then for each session, transactions are null: false
+    Then for each session, transactions are open: true
+    Then for each session, transactions have type:
+      | write   |
+      | write   |
+      | write   |
+      | write   |
+      | write   |
+      | write   |
+      | write   |
+      | write   |
+      | write   |
+      | write   |
+      | write   |
+      | write   |
+
+  Scenario: one keyspace, many sessions, many transactions to read and write
+    When connection create keyspace:
+      | grakn   |
+    Given connection open sessions for keyspace:
+      | grakn   |
+      | grakn   |
+      | grakn   |
+      | grakn   |
+      | grakn   |
+      | grakn   |
+      | grakn   |
+      | grakn   |
+      | grakn   |
+      | grakn   |
+      | grakn   |
+      | grakn   |
+    When for each session, open transactions of type:
+      | read    |
+      | write   |
+      | read    |
+      | write   |
+      | read    |
+      | write   |
+      | read    |
+      | write   |
+      | read    |
+      | write   |
+      | read    |
+      | write   |
+    Then for each session, transactions are null: false
+    Then for each session, transactions are open: true
+    Then for each session, transactions have type:
+      | read    |
+      | write   |
+      | read    |
+      | write   |
+      | read    |
+      | write   |
+      | read    |
+      | write   |
+      | read    |
+      | write   |
+      | read    |
+      | write   |
+
+  Scenario: one keyspace, many sessions, many transactions in parallel to read
+    When connection create keyspace:
+      | grakn   |
+    Given connection open sessions for keyspace:
+      | grakn   |
+      | grakn   |
+      | grakn   |
+      | grakn   |
+      | grakn   |
+      | grakn   |
+      | grakn   |
+      | grakn   |
+      | grakn   |
+      | grakn   |
+      | grakn   |
+      | grakn   |
+    When for each session, open transactions in parallel of type:
+      | read    |
+      | read    |
+      | read    |
+      | read    |
+      | read    |
+      | read    |
+      | read    |
+      | read    |
+      | read    |
+      | read    |
+      | read    |
+      | read    |
+    Then for each session, transactions in parallel are null: false
+    Then for each session, transactions in parallel are open: true
+    Then for each session, transactions in parallel have type:
+      | read    |
+      | read    |
+      | read    |
+      | read    |
+      | read    |
+      | read    |
+      | read    |
+      | read    |
+      | read    |
+      | read    |
+      | read    |
+      | read    |
+
+  Scenario: one keyspace, many sessions, many transactions in parallel to write
+    When connection create keyspace:
+      | grakn   |
+    Given connection open sessions for keyspace:
+      | grakn   |
+      | grakn   |
+      | grakn   |
+      | grakn   |
+      | grakn   |
+      | grakn   |
+      | grakn   |
+      | grakn   |
+      | grakn   |
+      | grakn   |
+      | grakn   |
+      | grakn   |
+    When for each session, open transactions in parallel of type:
+      | write   |
+      | write   |
+      | write   |
+      | write   |
+      | write   |
+      | write   |
+      | write   |
+      | write   |
+      | write   |
+      | write   |
+      | write   |
+      | write   |
+    Then for each session, transactions in parallel are null: false
+    Then for each session, transactions in parallel are open: true
+    Then for each session, transactions in parallel have type:
+      | write   |
+      | write   |
+      | write   |
+      | write   |
+      | write   |
+      | write   |
+      | write   |
+      | write   |
+      | write   |
+      | write   |
+      | write   |
+      | write   |
+
+  Scenario: one keyspace, many sessions, many transactions in parallel to read and write
+    When connection create keyspace:
+      | grakn   |
+    Given connection open sessions for keyspace:
+      | grakn   |
+      | grakn   |
+      | grakn   |
+      | grakn   |
+      | grakn   |
+      | grakn   |
+      | grakn   |
+      | grakn   |
+      | grakn   |
+      | grakn   |
+      | grakn   |
+      | grakn   |
+    When for each session, open transactions in parallel of type:
+      | read    |
+      | write   |
+      | read    |
+      | write   |
+      | read    |
+      | write   |
+      | read    |
+      | write   |
+      | read    |
+      | write   |
+      | read    |
+      | write   |
+    Then for each session, transactions in parallel are null: false
+    Then for each session, transactions in parallel are open: true
+    Then for each session, transactions in parallel have type:
+      | read    |
+      | write   |
+      | read    |
+      | write   |
+      | read    |
+      | write   |
+      | read    |
+      | write   |
+      | read    |
+      | write   |
+      | read    |
+      | write   |
+
+#  Scenario: one keyspace, many sessions in parallel, one transactions to read
+#
+#  Scenario: one keyspace, many sessions in parallel, one transactions to write
+#
+#  Scenario: one keyspace, many sessions in parallel, many transactions to read
+#
+#  Scenario: one keyspace, many sessions in parallel, many transactions to write
+#
+#  Scenario: one keyspace, many sessions in parallel, many transactions in parallel to read
+#
+#  Scenario: one keyspace, many sessions in parallel, many transactions in parallel to write
 
 
-  Scenario: retrieve all combinations of players in a relation
-    Given graql define
-      """
-      define
-      person sub entity,
-        plays employee,
-        key ref;
-      company sub entity,
-        plays employer,
-        key ref;
-      employment sub relation,
-        relates employee,
-        relates employer,
-        key ref;
-      ref sub attribute, datatype long;
-      """
-    Given the integrity is validated
-
-    When graql insert
-      """
-      insert $p isa person, has ref 0;
-      $c isa company, has ref 1;
-      $c2 isa company, has ref 2;
-      $r (employee: $p, employer: $c, employer: $c2) isa employment, has ref 3;
-      """
-    When the integrity is validated
-
-    Then get answers of graql query
-      """
-      match $r ($x, $y) isa employment; get; 
-      """
-    Then answer concepts all have key: ref
-    Then answer keys are
-      | x    | y    | r    |
-      | 0    | 1    | 3    |
-      | 1    | 0    | 3    |
-      | 0    | 2    | 3    |
-      | 2    | 0    | 3    |
-      | 1    | 2    | 3    |
-      | 2    | 1    | 3    |
-
-
-  Scenario: subtype hierarchy satisfies transitive sub assertions
-    Given graql define
-      """
-      define
-      sub1 sub entity;
-      sub2 sub sub1;
-      sub3 sub sub1;
-      sub4 sub sub2;
-      sub5 sub sub4;
-      sub6 sub sub5;
-      """
-    Given the integrity is validated
-
-    When get answers of graql query
-      """
-      match $x sub $y; $y sub $z; get;
-      """
-    Then each answer satisfies
-      """
-      match $x sub $z; $x id <answer.x.id>; $z id <answer.z.id>; get;
-      """
-
-  Scenario: duplicate role players are retrieved singly when queried doubly
-    Given graql define
-      """
-      define
-        some-entity sub entity, plays player, key ref;
-        symmetric sub relation, relates player, key ref;
-        ref sub attribute, datatype long;
-      """
-    Given the integrity is validated
-
-    Given graql insert
-      """
-      insert $x isa some-entity, has ref 0; (player: $x, player: $x) isa symmetric, has ref 1;
-      """
-    Given the integrity is validated
-
-    When get answers of graql query
-      """
-      match $r (player: $x, player: $x) isa relation; get;
-      """
-    Then answer concepts all have key: ref
-    Then answer keys are
-      | x    |  r    |
-      | 0    |  1    |
-
-  Scenario: duplicate role players are retrieved singly when queried singly
-    Given graql define
-      """
-      define
-        some-entity sub entity, plays player, key ref;
-        symmetric sub relation, relates player, key ref;
-        ref sub attribute, datatype long;
-      """
-    Given the integrity is validated
-
-    Given graql insert
-      """
-      insert $x isa some-entity, has ref 0; (player: $x, player: $x) isa symmetric, has ref 1;
-      """
-    Given the integrity is validated
-
-    When get answers of graql query
-      """
-      match $r (player: $x) isa relation; get;
-      """
-    Then answer concepts all have key: ref
-    Then answer keys are
-      | x    |  r    |
-      | 0    |  1    |
