@@ -44,9 +44,10 @@ java_test(
     srcs = [
         "TransactionTest.java",
     ],
-    test_class = "grakn.client.test.behaviour.connection.transaction.TransactionTest",
+    test_class = "grakn.core.test.behaviour.connection.transaction.TransactionTest",
     deps = [
         # Package dependencies
+        "//test/behaviour/server:server",
 
         # External dependencies from Maven
         "//dependencies/maven/artifacts/io/cucumber:cucumber-junit",
@@ -60,7 +61,7 @@ java_test(
     data = [
         "@graknlabs_verification//behaviour/connection:transaction.feature",
     ],
-#    classpath_resources = ["//test/setup:logback"],
+    classpath_resources = ["//test-integration/resources:logback-test"],
     size = "large",
 )
 

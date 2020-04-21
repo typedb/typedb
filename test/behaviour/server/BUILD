@@ -25,12 +25,7 @@ java_library(
     deps = [
         # Package dependencies
         "//test-integration/rule:grakn-test-server",
-
-        # External dependencies from Maven
-        "//dependencies/maven/artifacts/junit:junit",
-        "//dependencies/maven/artifacts/io/cucumber:cucumber-java",
     ],
-    visibility = ["//visibility:public"]
 )
 
 checkstyle_test(

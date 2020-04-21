@@ -23,9 +23,10 @@ java_test(
     srcs = [
         "MatchTest.java",
     ],
-    test_class = "grakn.client.test.behaviour.graql.language.match.MatchTest",
+    test_class = "grakn.core.test.behaviour.graql.language.match.MatchTest",
     deps = [
         # Package dependencies
+        "//test/behaviour/server:server",
 
         # External dependencies from Maven
         "//dependencies/maven/artifacts/io/cucumber:cucumber-junit",
@@ -39,7 +40,7 @@ java_test(
     data = [
         "@graknlabs_verification//behaviour/graql/language:match.feature",
     ],
-#    classpath_resources = ["//test/setup:logback"],
+    classpath_resources = ["//test-integration/resources:logback-test"],
     size = "medium",
     visibility = ["//visibility:public"]
 )

@@ -18,6 +18,7 @@
 
 package grakn.core.test.behaviour.graql.language.undefine;
 
+import grakn.core.test.behaviour.server.SingletonTestServer;
 import io.cucumber.junit.Cucumber;
 import io.cucumber.junit.CucumberOptions;
 import org.junit.AfterClass;
@@ -25,15 +26,16 @@ import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.util.concurrent.TimeoutException;
 
 @RunWith(Cucumber.class)
 @CucumberOptions(
         strict = true,
         plugin = "pretty",
-        glue = "grakn.client.test.behaviour",
+        glue = "grakn.core.test.behaviour",
         features = "external/graknlabs_verification/behaviour/graql/language/undefine.feature",
-        tags = "not @ignore and not @ignore-client-java"
+        tags = "not @ignore and not @ignore-grakn-core"
 )
 public class UndefineTest {
     // ATTENTION:
@@ -49,7 +51,7 @@ public class UndefineTest {
     //    b) Use '//<this>/<package>/<name>:test-kgms' to test against grakn-kgms
     //
     // 5) Update 'Bazel Flags':
-    //    a) Remove the line that says: '--test_filter=grakn.client.*'
+    //    a) Remove the line that says: '--test_filter=grakn.core.*'
     //    b) Use the following Bazel flags:
     //       --cache_test_results=no : to make sure you're not using cache
     //       --test_output=streamed : to make sure all output is printed
@@ -58,5 +60,15 @@ public class UndefineTest {
     //       --spawn_strategy=standalone : if you're on Mac, tests need permission to access filesystem (to run Grakn)
     //
     // 6) Hit the RUN button by selecting the test from the dropdown menu on the top bar
+
+    @BeforeClass
+    public static void setup() throws NoSuchMethodException, IllegalAccessException, InvocationTargetException {
+        SingletonTestServer.start();
+    }
+
+    @AfterClass
+    public static void tearDown() {
+        SingletonTestServer.shutdown();
+    }
 
 }

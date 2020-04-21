@@ -30,6 +30,8 @@ import java.lang.reflect.Method;
 public class SingletonTestServer {
     private static GraknTestServer server = null;
 
+    private SingletonTestServer() {}
+
     public static GraknTestServer get() {
         return server;
     }

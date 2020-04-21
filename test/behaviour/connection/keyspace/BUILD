@@ -44,9 +44,10 @@ java_test(
     srcs = [
         "KeyspaceTest.java"
     ],
-    test_class = "grakn.client.test.behaviour.connection.keyspace.KeyspaceTest",
+    test_class = "grakn.core.test.behaviour.connection.keyspace.KeyspaceTest",
     deps = [
         # Package dependencies
+        "//test/behaviour/server:server",
 
         # External dependencies from Maven
         "//dependencies/maven/artifacts/io/cucumber:cucumber-junit",
@@ -57,7 +58,7 @@ java_test(
     data = [
         "@graknlabs_verification//behaviour/connection:keyspace.feature",
     ],
-#    classpath_resources = ["//test/setup:logback"],
+    classpath_resources = ["//test-integration/resources:logback-test"],
     size = "large",
 )
 

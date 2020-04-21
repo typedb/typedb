@@ -27,7 +27,7 @@ java_library(
         # Internal Package Dependencies
         "//kb/server",
         "//test/behaviour/connection:steps",
-        "//test/behaviour/server:server",
+        "//test/behaviour/server",
 
         # Internal Repository Dependencies
         "@graknlabs_common//:common",
@@ -43,8 +43,11 @@ java_test(
     srcs = [
         "SessionTest.java"
     ],
-    test_class = "grakn.client.test.behaviour.connection.session.SessionTest",
+    test_class = "grakn.core.test.behaviour.connection.session.SessionTest",
     deps = [
+        # Internal Package Dependencies
+        "//test/behaviour/server:server",
+
         # External dependencies from Maven
         "//dependencies/maven/artifacts/io/cucumber:cucumber-junit",
     ],
@@ -56,7 +59,7 @@ java_test(
     data = [
         "@graknlabs_verification//behaviour/connection:session.feature",
     ],
-#    classpath_resources = ["//test/setup:logback"],
+    classpath_resources = ["//test-integration/resources:logback-test"],
     size = "medium",
 )
 

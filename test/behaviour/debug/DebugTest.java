@@ -48,7 +48,7 @@ public class DebugTest {
     // 2) Use '//<this>/<package>/<name>:test-kgms' to test against grakn-kgms
     //
     // 5) Update 'Bazel Flags':
-    //    a) Remove the line that says: '--test_filter=grakn.client.*'
+    //    a) Remove the line that says: '--test_filter=grakn.core.*'
     //    b) Use the following Bazel flags:
     //       --cache_test_results=no : to make sure you're not using cache
     //       --test_output=streamed : to make sure all output is printed

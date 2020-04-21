@@ -24,9 +24,10 @@ java_test(
     srcs = [
         "InsertTest.java",
     ],
-    test_class = "grakn.client.test.behaviour.graql.language.insert.InsertTest",
+    test_class = "grakn.core.test.behaviour.graql.language.insert.InsertTest",
     deps = [
         # Package dependencies
+        "//test/behaviour/server:server",
 
         # External dependencies from Maven
         "//dependencies/maven/artifacts/io/cucumber:cucumber-junit",
@@ -40,7 +41,7 @@ java_test(
     data = [
         "@graknlabs_verification//behaviour/graql/language:insert.feature",
     ],
-#    classpath_resources = ["//test/setup:logback"],
+    classpath_resources = ["//test-integration/resources:logback-test"],
     size = "medium",
     visibility = ["//visibility:public"]
 )
