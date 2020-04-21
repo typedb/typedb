@@ -19,6 +19,7 @@
 package grakn.core.test.behaviour.connection.session;
 
 import grakn.core.kb.server.Session;
+import grakn.core.test.behaviour.server.SingletonTestServer;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 
@@ -28,7 +29,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 
 import static grakn.core.test.behaviour.connection.ConnectionSteps.THREAD_POOL_SIZE;
-import static grakn.core.test.behaviour.server.ReferenceableServer.server;
 import static grakn.core.test.behaviour.connection.ConnectionSteps.sessions;
 import static grakn.core.test.behaviour.connection.ConnectionSteps.sessionsParallel;
 import static grakn.core.test.behaviour.connection.ConnectionSteps.threadPool;
@@ -47,7 +47,7 @@ public class SessionSteps {
     @When("connection open session(s) for keyspace(s):")
     public void connection_open_sessions_for_keyspaces(List<String> names) {
         for (String name : names) {
-            sessions.add(server.session(name));
+            sessions.add(SingletonTestServer.get().session(name));
         }
     }
 
@@ -56,7 +56,7 @@ public class SessionSteps {
         assertTrue(THREAD_POOL_SIZE >= names.size());
 
         for (String name : names) {
-            sessionsParallel.add(CompletableFuture.supplyAsync(() -> server.session(name), threadPool));
+            sessionsParallel.add(CompletableFuture.supplyAsync(() -> SingletonTestServer.get().session(name), threadPool));
         }
     }
 

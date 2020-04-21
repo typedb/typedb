@@ -18,9 +18,9 @@ package(default_visibility = ["//test/behaviour:__subpackages__"])
 load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
 java_library(
-    name = "setup",
+    name = "server",
     srcs = [
-        "ReferenceableServer.java"
+        "SingletonTestServer.java"
     ],
     deps = [
         # Package dependencies
@@ -36,7 +36,7 @@ java_library(
 checkstyle_test(
     name = "checkstyle",
     targets = [
-        ":steps",
+        ":server",
     ],
     license_type = "apache"
 )

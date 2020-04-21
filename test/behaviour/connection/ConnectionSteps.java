@@ -21,6 +21,7 @@ package grakn.core.test.behaviour.connection;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import grakn.core.kb.server.keyspace.Keyspace;
+import grakn.core.test.behaviour.server.SingletonTestServer;
 import io.cucumber.java.After;
 import io.cucumber.java.en.Given;
 
@@ -33,7 +34,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import static grakn.core.test.behaviour.server.ReferenceableServer.server;
 import static java.util.Objects.isNull;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -51,23 +51,23 @@ public class ConnectionSteps {
 
     @Given("connection has been opened")
     public void connection_has_been_opened() {
-        if (isNull(server)) {
-            throw new RuntimeException("Reference to GraknTestServer is null");
+        if (isNull(SingletonTestServer.get())) {
+            throw new RuntimeException("GraknTestServer is null");
         }
-        assertNotNull(server);
+        assertNotNull(SingletonTestServer.get());
     }
 
     @Given("connection delete all keyspaces")
     public void connection_delete_all_keyspaces() {
         // TODO re-enable after refactoring keyspace handler
-        for (Keyspace keyspace : server.keyspaces()) {
-            server.deleteKeyspace(keyspace.name());
+        for (Keyspace keyspace : SingletonTestServer.get().keyspaces()) {
+            SingletonTestServer.get().deleteKeyspace(keyspace.name());
         }
     }
 
     @Given("connection does not have any keyspace")
     public void connection_does_not_have_any_keyspace() {
-        assertTrue(server.keyspaces().isEmpty());
+        assertTrue(SingletonTestServer.get().keyspaces().isEmpty());
     }
 
     @After

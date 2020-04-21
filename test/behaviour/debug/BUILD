@@ -28,7 +28,7 @@ java_test(
     deps = [
         # Package dependencies
         "//kb/server",
-        "//test/behaviour/server:setup",
+        "//test/behaviour/server:server",
 
         # TODO: Add your addition debugging dependencies here
         # e.g. "//test/behaviour/connection/steps:connection-keyspace",

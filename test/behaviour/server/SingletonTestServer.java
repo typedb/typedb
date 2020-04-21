@@ -27,8 +27,16 @@ import java.lang.reflect.Method;
  * Run Grakn Core and Cassandra using the GraknTestServer
  * The static 'server' field gives us a handle to the test server
  */
-public class ReferenceableServer {
-    public static GraknTestServer server;
+public class SingletonTestServer {
+    private static GraknTestServer server = null;
+
+    public static GraknTestServer get() {
+        return server;
+    }
+
+    public static void shutdown() {
+        server.after();
+    }
 
     public static void start() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
         // use reflection to call the uninstallIfInstalled method on GoogleSecurityManager
@@ -40,9 +48,5 @@ public class ReferenceableServer {
         uninstallGoogleManager.invoke(null);
         server = new GraknTestServer();
         server.before();
-    }
-
-    public static void stop() {
-        server.after();
     }
 }

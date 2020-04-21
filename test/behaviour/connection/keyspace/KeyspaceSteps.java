@@ -19,6 +19,7 @@
 package grakn.core.test.behaviour.connection.keyspace;
 
 import grakn.core.kb.server.keyspace.Keyspace;
+import grakn.core.test.behaviour.server.SingletonTestServer;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 
@@ -31,7 +32,6 @@ import java.util.stream.Collectors;
 import static grakn.common.util.Collections.list;
 import static grakn.core.test.behaviour.connection.ConnectionSteps.THREAD_POOL_SIZE;
 import static grakn.core.test.behaviour.connection.ConnectionSteps.threadPool;
-import static grakn.core.test.behaviour.server.ReferenceableServer.server;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -46,7 +46,7 @@ public class KeyspaceSteps {
     @When("connection create keyspace(s):")
     public void connection_create_keyspaces(List<String> names) {
         for (String name : names) {
-            server.session(name);
+            SingletonTestServer.get().session(name);
         }
     }
 
@@ -58,7 +58,7 @@ public class KeyspaceSteps {
         CompletableFuture[] creations = new CompletableFuture[names.size()];
         int i = 0;
         for (String name : names) {
-            creations[i++] = CompletableFuture.supplyAsync(() -> server.session(name), threadPool);
+            creations[i++] = CompletableFuture.supplyAsync(() -> SingletonTestServer.get().session(name), threadPool);
         }
 
         CompletableFuture.allOf(creations).join();
@@ -67,7 +67,7 @@ public class KeyspaceSteps {
     @When("connection delete keyspace(s):")
     public void connection_delete_keyspaces(List<String> names) {
         for (String keyspaceName : names) {
-            server.deleteKeyspace(keyspaceName);
+            SingletonTestServer.get().deleteKeyspace(keyspaceName);
         }
     }
 
@@ -80,7 +80,7 @@ public class KeyspaceSteps {
         int i = 0;
         for (String name : names) {
             deletions[i++] = CompletableFuture.supplyAsync(
-                    () -> { server.deleteKeyspace(name); return null; },
+                    () -> { SingletonTestServer.get().deleteKeyspace(name); return null; },
                     threadPool
             );
         }
@@ -91,13 +91,13 @@ public class KeyspaceSteps {
     @Then("connection has keyspace(s):")
     public void connection_has_keyspaces(List<String> names) {
         Set<String> namesSet = new HashSet<>(names);
-        Set<String> existingKeyspaces = server.keyspaces().stream().map(Keyspace::name).collect(Collectors.toSet());
+        Set<String> existingKeyspaces = SingletonTestServer.get().keyspaces().stream().map(Keyspace::name).collect(Collectors.toSet());
         assertEquals(namesSet, existingKeyspaces);
     }
 
     @Then("connection does not have keyspace(s):")
     public void connection_does_not_have_keyspaces(List<String> names) {
-        Set<String> keyspaces = server.keyspaces().stream().map(Keyspace::name).collect(Collectors.toSet());
+        Set<String> keyspaces = SingletonTestServer.get().keyspaces().stream().map(Keyspace::name).collect(Collectors.toSet());
         for (String keyspaceName : names) {
             assertFalse(keyspaces.contains(keyspaceName));
         }

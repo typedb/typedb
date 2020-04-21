@@ -27,7 +27,7 @@ java_test(
     test_class = "grakn.core.test.behaviour.graql.language.define.DefineTest",
     deps = [
         # Package dependencies
-        "//test/behaviour/server:setup",
+        "//test/behaviour/server:server",
 
         # External dependencies from Maven
         "//dependencies/maven/artifacts/io/cucumber:cucumber-junit",

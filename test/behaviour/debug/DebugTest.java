@@ -18,7 +18,7 @@
 
 package grakn.core.test.behaviour.debug;
 
-import grakn.core.test.behaviour.server.ReferenceableServer;
+import grakn.core.test.behaviour.server.SingletonTestServer;
 import io.cucumber.junit.Cucumber;
 import io.cucumber.junit.CucumberOptions;
 import org.junit.AfterClass;
@@ -60,11 +60,11 @@ public class DebugTest {
 
     @BeforeClass
     public static void setup() throws NoSuchMethodException, IllegalAccessException, InvocationTargetException {
-        ReferenceableServer.start();
+        SingletonTestServer.start();
     }
 
     @AfterClass
     public static void tearDown() {
-        ReferenceableServer.stop();
+        SingletonTestServer.shutdown();
     }
 }

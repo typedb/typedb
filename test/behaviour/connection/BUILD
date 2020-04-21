@@ -27,7 +27,7 @@ java_library(
     deps = [
         # Package dependencies
         "//kb/server",
-        "//test/behaviour/server:setup",
+        "//test/behaviour/server:server",
 
         # External dependencies from Maven
         "//dependencies/maven/artifacts/junit:junit",
