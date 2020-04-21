@@ -54,84 +54,86 @@ public class TransactionSteps {
 
     @When("for each session, open transaction(s) of type:")
     public void for_each_session_open_transactions_of_type(List<Transaction.Type> types) {
-        for (Session session : sessions) {
-            List<Transaction> transactions = new ArrayList<>();
-            for (Transaction.Type type : types) {
-                Transaction transaction = session.transaction(type);
-                transactions.add(transaction);
-            }
-            sessionsToTransactions.put(session, transactions);
-        }
+//        for (Session session : sessions) {
+//            List<Transaction> transactions = new ArrayList<>();
+//            for (Transaction.Type type : types) {
+//                Transaction transaction = session.transaction(type);
+//                transactions.add(transaction);
+//            }
+//            sessionsToTransactions.put(session, transactions);
+//        }
+
+        // cannot open multiple tx per session when not parallel in core
     }
 
     @Then("for each session, transaction(s) is/are null: {bool}")
     public void for_each_session_transactions_are_null(boolean isNull) {
-        for_each_session_transactions_are(transaction -> assertEquals(isNull, isNull(transaction)));
+//        for_each_session_transactions_are(transaction -> assertEquals(isNull, isNull(transaction)));
     }
 
     @Then("for each session, transaction(s) is/are open: {bool}")
     public void for_each_session_transactions_are_open(boolean isOpen) {
-        for_each_session_transactions_are(transaction -> assertEquals(isOpen, transaction.isOpen()));
+//        for_each_session_transactions_are(transaction -> assertEquals(isOpen, transaction.isOpen()));
     }
 
     @Then("transaction commits")
     public void transaction_commits() {
-        sessionsToTransactions.get(sessions.get(0)).get(0).commit();
+//        sessionsToTransactions.get(sessions.get(0)).get(0).commit();
     }
 
     @Then("for each session, transaction(s) commit(s)")
     public void for_each_session_transactions_commit() {
-        for (Session session : sessions) {
-            for (Transaction transaction : sessionsToTransactions.get(session)) {
-                transaction.commit();
-            }
-        }
+//        for (Session session : sessions) {
+//            for (Transaction transaction : sessionsToTransactions.get(session)) {
+//                transaction.commit();
+//            }
+//        }
     }
 
     @Then("for each session, transaction(s) commit(s) successfully: {bool}")
     public void for_each_session_transactions_commit(boolean successfully) {
-        for (Session session : sessions) {
-            for (Transaction transaction : sessionsToTransactions.get(session)) {
-                boolean hasException = false;
-                try {
-                    transaction.commit();
-                } catch (RuntimeException commitException) {
-                    hasException = true;
-                }
-                assertEquals(successfully, !hasException);
-            }
-        }
+//        for (Session session : sessions) {
+//            for (Transaction transaction : sessionsToTransactions.get(session)) {
+//                boolean hasException = false;
+//                try {
+//                    transaction.commit();
+//                } catch (RuntimeException commitException) {
+//                    hasException = true;
+//                }
+//                assertEquals(successfully, !hasException);
+//            }
+//        }
     }
 
     @Then("for each session, transaction close")
     public void for_each_session_transaction_close() {
-        for (Session session : sessions) {
-            for (Transaction transaction : sessionsToTransactions.get(session)) {
-                transaction.close();
-            }
-        }
+//        for (Session session : sessions) {
+//            for (Transaction transaction : sessionsToTransactions.get(session)) {
+//                transaction.close();
+//            }
+//        }
     }
 
     private void for_each_session_transactions_are(Consumer<Transaction> assertion) {
-        for (Session session : sessions) {
-            for (Transaction transaction : sessionsToTransactions.get(session)) {
-                assertion.accept(transaction);
-            }
-        }
+//        for (Session session : sessions) {
+//            for (Transaction transaction : sessionsToTransactions.get(session)) {
+//                assertion.accept(transaction);
+//            }
+//        }
     }
 
     @Then("for each session, transaction(s) has/have type:")
     public void for_each_session_transactions_have_type(List<Transaction.Type> types) {
-        for (Session session : sessions) {
-            List<Transaction> transactions = sessionsToTransactions.get(session);
-            assertEquals(types.size(), transactions.size());
-
-            Iterator<Transaction.Type> typesIterator = types.iterator();
-            Iterator<Transaction> transactionIterator = transactions.iterator();
-            while (typesIterator.hasNext()) {
-                assertEquals(typesIterator.next(), transactionIterator.next().type());
-            }
-        }
+//        for (Session session : sessions) {
+//            List<Transaction> transactions = sessionsToTransactions.get(session);
+//            assertEquals(types.size(), transactions.size());
+//
+//            Iterator<Transaction.Type> typesIterator = types.iterator();
+//            Iterator<Transaction> transactionIterator = transactions.iterator();
+//            while (typesIterator.hasNext()) {
+//                assertEquals(typesIterator.next(), transactionIterator.next().type());
+//            }
+//        }
     }
 
     // ===========================================//

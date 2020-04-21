@@ -41,7 +41,8 @@ import static org.junit.Assert.assertTrue;
 public class ConnectionSteps {
 
     public static int THREAD_POOL_SIZE = 32;
-    public static ExecutorService threadPool = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
+//    public static ExecutorService threadPool = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
+    public static ExecutorService threadPool = Executors.newWorkStealingPool();
 
     public static List<Session> sessions = new ArrayList<>();
     public static List<CompletableFuture<Session>> sessionsParallel = new ArrayList<>();
