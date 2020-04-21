@@ -87,6 +87,70 @@ jobs:
       - run-bazel-rbe:
           command: bazel test //common/... --test_output=errors
 
+  test-behavior-keyspace:
+    machine: true
+    working_directory: ~/grakn
+    steps:
+      - install-bazel-linux-rbe
+      - checkout
+      - run-bazel-rbe:
+          command: bazel test //test/behaviour/connection/keyspace:test --test_output=errors
+
+  test-behavior-session:
+    machine: true
+    working_directory: ~/grakn
+    steps:
+      - install-bazel-linux-rbe
+      - checkout
+      - run-bazel-rbe:
+          command: bazel test //test/behaviour/connection/session:test --test_output=errors
+
+  test-behavior-transaction:
+    machine: true
+    working_directory: ~/grakn
+    steps:
+      - install-bazel-linux-rbe
+      - checkout
+      - run-bazel-rbe:
+          command: bazel test //test/behaviour/connection/transaction:test --test_output=errors
+
+  test-behavior-graql-define:
+    machine: true
+    working_directory: ~/grakn
+    steps:
+      - install-bazel-linux-rbe
+      - checkout
+      - run-bazel-rbe:
+          command: bazel test //test/behaviour/graql/language/define:test --test_output=errors
+
+  test-behavior-graql-undefine:
+    machine: true
+    working_directory: ~/grakn
+    steps:
+      - install-bazel-linux-rbe
+      - checkout
+      - run-bazel-rbe:
+          command: bazel test //test/behaviour/graql/language/undefine:test --test_output=errors
+
+  test-behavior-graql-insert:
+    machine: true
+    working_directory: ~/grakn
+    steps:
+      - install-bazel-linux-rbe
+      - checkout
+      - run-bazel-rbe:
+          command: bazel test //test/behaviour/graql/language/insert:test --test_output=errors
+
+  test-behavior-graql-match:
+    machine: true
+    working_directory: ~/grakn
+    steps:
+      - install-bazel-linux-rbe
+      - checkout
+      - run-bazel-rbe:
+          command: bazel test //test/behaviour/graql/language/match:test --test_output=errors
+
+
   test-server:
     machine: true
     working_directory: ~/grakn
@@ -418,6 +482,34 @@ workflows:
                 - master
                 - rewrite
       - test-common:
+          filters:
+            branches:
+              ignore: grakn-release-branch
+      - test-behavior-keyspace:
+          filters:
+            branches:
+              ignore: grakn-release-branch
+      - test-behavior-session:
+          filters:
+            branches:
+              ignore: grakn-release-branch
+      - test-behavior-transaction:
+          filters:
+            branches:
+              ignore: grakn-release-branch
+      - test-behavior-graql-define:
+          filters:
+            branches:
+              ignore: grakn-release-branch
+      - test-behavior-graql-define:
+          filters:
+            branches:
+              ignore: grakn-release-branch
+      - test-behavior-graql-insert:
+          filters:
+            branches:
+              ignore: grakn-release-branch
+      - test-behavior-graql-match:
           filters:
             branches:
               ignore: grakn-release-branch
