@@ -307,7 +307,7 @@ public class GraqlSteps {
             assertEquals(String.format("Explanation entry %d should have as many children as it has answers. Instead, %d children were declared, and %d answers were found.", entryId, children.length, explAnswers.size()), children.length, explAnswers.size());
 
             if (expectedRule.equals("join")) {
-                assertNull(String.format("Explanation entry %d is declared as a join, and should not have a rule attached, but one was found", entryId), ((RuleExplanation)explanation).getRule());
+                assertNull(String.format("Explanation entry %d is declared as a join, and should not have a rule attached, but one was found", entryId), explanation.isRuleExplanation() ? ((RuleExplanation)explanation).getRule() : null);
             } else {
                 // rule
                 Rule rule = ((RuleExplanation)explanation).getRule();

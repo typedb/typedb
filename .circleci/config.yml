@@ -149,7 +149,16 @@ jobs:
       - checkout
       - run-bazel-rbe:
           command: bazel test //test/behaviour/graql/language/match:test --test_output=errors
+      - test-behavior-reasoner-explanation:
 
+  test-behavior-reasoner-explanation:
+    machine: true
+    working_directory: ~/grakn
+    steps:
+      - install-bazel-linux-rbe
+      - checkout
+      - run-bazel-rbe:
+          command: bazel test //test/behaviour/graql/reasoner/explanation:test --test_output=errors
 
   test-server:
     machine: true
@@ -510,6 +519,10 @@ workflows:
             branches:
               ignore: grakn-release-branch
       - test-behavior-graql-match:
+          filters:
+            branches:
+              ignore: grakn-release-branch
+      - test-behavior-reasoner-explanation:
           filters:
             branches:
               ignore: grakn-release-branch
