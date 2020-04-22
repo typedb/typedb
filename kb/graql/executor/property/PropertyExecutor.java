@@ -23,7 +23,6 @@ import grakn.core.kb.graql.executor.WriteExecutor;
 import grakn.core.kb.graql.planning.gremlin.EquivalentFragmentSet;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
-import javafx.beans.property.Property;
 
 import java.util.Set;
 
