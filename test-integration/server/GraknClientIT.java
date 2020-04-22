@@ -484,7 +484,7 @@ public class GraknClientIT {
             tx.execute(deleteQuery);
             assertTrue(tx.execute(Graql.match(var().rel("x").rel("y").isa("has-cast")).get("x", "y")).isEmpty());
 
-            deleteQuery = Graql.match(var("x").isa("person")).delete();
+            deleteQuery = Graql.match(var("x").isa("person")).delete(var("x").isa("person"));
             tx.execute(deleteQuery);
             assertTrue(tx.execute(Graql.match(var("x").isa("person")).get()).isEmpty());
         }
