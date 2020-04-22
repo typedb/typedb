@@ -27,7 +27,6 @@ java_test(
     test_class = "grakn.core.test.behaviour.debug.DebugTest",
     deps = [
         # Package dependencies
-        "//kb/server",
         "//test/behaviour/server:server",
 
         # TODO: Add your addition debugging dependencies here
@@ -39,17 +38,16 @@ java_test(
     ],
     runtime_deps = [
 #        "//test/behaviour/graql:steps",
-        "//test/behaviour/connection:steps",
-        "//test/behaviour/connection/session:steps",
-        "//test/behaviour/connection/transaction:steps",
-        "//test/behaviour/connection/keyspace:steps",
-        "//test/behaviour/config:parameters",
+#        "//test/behaviour/connection:steps",
+#        "//test/behaviour/connection/session:steps",
+#        "//test/behaviour/connection/transaction:steps",
+#        "//test/behaviour/connection/keyspace:steps",
+#        "//test/behaviour/config:parameters",
     ],
     classpath_resources = ["//test-integration/resources:logback-test"],
     data = [
         ":debug.feature",
     ],
-#    classpath_resources = ["//test/setup:logback"],
     size = "medium",
 )
 
