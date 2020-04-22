@@ -52,7 +52,7 @@ public class TransactionSteps {
 
     @When("for each session, open transaction(s) of type:")
     public void for_each_session_open_transactions_of_type(List<Transaction.Type> types) {
-//        if (types.size() == 1) {
+        if (types.size() == 1) {
             for (Session session : sessions) {
                 List<Transaction> transactions = new ArrayList<>();
                 for (Transaction.Type type : types) {
@@ -61,9 +61,9 @@ public class TransactionSteps {
                 }
                 sessionsToTransactions.put(session, transactions);
             }
-//        }
+        }
 
-        // cannot open multiple tx per session when not parallel in core
+        // NOTE: cannot open multiple tx per session when not parallel in core
     }
 
     @Then("for each session, transaction(s) is/are null: {bool}")
@@ -141,7 +141,7 @@ public class TransactionSteps {
     // ===========================================//
 
     @When("for each session, open transaction(s) in parallel of type:")
-    public void for_each_session_open_transactions_in_parallel_of_type(List<Transaction.Type> types) throws InterruptedException {
+    public void for_each_session_open_transactions_in_parallel_of_type(List<Transaction.Type> types) {
         for (Session session : sessions) {
             List<CompletableFuture<Transaction>> transactionsParallel = new ArrayList<>();
             for (Transaction.Type type : types) {

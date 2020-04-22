@@ -1112,9 +1112,9 @@ public class TransactionImpl implements Transaction {
      * @throws InvalidKBException if graph does not comply with the grakn validation rules
      */
     @Override
-    public void commit() throws InvalidKBException {
+    public void commit() throws TransactionException {
         if (!isOpen()) {
-            throw new RuntimeException("tx is already closed");
+            throw TransactionException.transactionClosed(this, null);
         }
         try {
             checkMutationAllowed();

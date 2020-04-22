@@ -244,11 +244,13 @@ public class TransactionIT {
     }
 
     @Test
-    public void whenCommittingATxWhichWasJustCommitted_DoNothing() {
+    public void whenCommittingATxWhichWasJustCommitted_Throw() {
         tx.commit();
         assertTrue("Graph is still open after commit", !tx.isOpen());
+        expectedException.expect(TransactionException.class);
+        expectedException.expectMessage("Transaction is already closed");
         tx.commit();
-        assertTrue("Graph is somehow open after 2nd commit", !tx.isOpen());
+        assertFalse(tx.isOpen());
     }
 
     @Test
