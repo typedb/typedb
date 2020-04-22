@@ -59,7 +59,6 @@ public interface PropertyExecutor {
     }
 
     interface Insertable extends PropertyExecutor {
-
         Set<Writer> insertExecutors();
     }
 
@@ -81,7 +80,6 @@ public interface PropertyExecutor {
     }
 
     interface Referrer extends Writer{
-
         @Override
         default Set<Variable> requiredVars() {
             return ImmutableSet.of();
