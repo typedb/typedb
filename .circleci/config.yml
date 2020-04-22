@@ -149,7 +149,6 @@ jobs:
       - checkout
       - run-bazel-rbe:
           command: bazel test //test/behaviour/graql/language/match:test --test_output=errors
-      - test-behavior-reasoner-explanation:
 
   test-behavior-reasoner-explanation:
     machine: true
