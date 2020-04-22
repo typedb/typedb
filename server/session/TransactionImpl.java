@@ -1114,7 +1114,7 @@ public class TransactionImpl implements Transaction {
     @Override
     public void commit() throws InvalidKBException {
         if (!isOpen()) {
-            return;
+            throw new RuntimeException("tx is already closed");
         }
         try {
             checkMutationAllowed();
