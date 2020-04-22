@@ -101,9 +101,6 @@ public class SessionImpl implements Session {
         }
 
         Transaction localTx = localOLTPTransactionContainer.get();
-        if (localTx != null) {
-            System.out.println("local tx that is stored: " + localTx.toString() + " is open: " + localTx.isOpen());
-        }
         // If transaction is already open in current thread throw exception
         if (localTx != null && localTx.isOpen()) throw TransactionException.transactionOpen(localTx);
 

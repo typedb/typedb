@@ -100,7 +100,7 @@ public class SessionIT {
         } catch (ExecutionException e) {
             Throwable transactionException = e.getCause();
             assertThat(transactionException, instanceOf(TransactionException.class));
-            assertEquals("The transaction is no longer on the thread it was spawned on, this is not allowed", transactionException.getMessage());
+            assertEquals("The transaction is no longer on the thread it was spawned on", transactionException.getMessage());
         }
     }
 
