@@ -101,6 +101,9 @@ public class SessionImpl implements Session {
         }
 
         Transaction localTx = localOLTPTransactionContainer.get();
+        if (localTx != null) {
+            System.out.println("local tx that is stored: " + localTx.toString() + " is open: " + localTx.isOpen());
+        }
         // If transaction is already open in current thread throw exception
         if (localTx != null && localTx.isOpen()) throw TransactionException.transactionOpen(localTx);
 
@@ -185,19 +188,6 @@ public class SessionImpl implements Session {
         }
 
         isOpen = false;
-    }
-
-    /**
-     * When a transaction is closed, we set the thread local to be null
-     * this allows the thread to be re-used for a fresh transaction
-     */
-    @Override
-    public void transactionClosed(Transaction tx) {
-        Transaction localTx = localOLTPTransactionContainer.get();
-        if (localTx == null || !localTx.equals(tx)) {
-            throw GraknServerException.transactionClosedOnDifferentThread();
-        }
-        localOLTPTransactionContainer.set(null);
     }
 
     @Override

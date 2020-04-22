@@ -27,19 +27,16 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 
-import static grakn.core.test.behaviour.connection.ConnectionSteps.THREAD_POOL_SIZE;
+import static grakn.common.util.Collections.list;
 import static grakn.core.test.behaviour.connection.ConnectionSteps.sessions;
 import static grakn.core.test.behaviour.connection.ConnectionSteps.sessionsParallel;
 import static grakn.core.test.behaviour.connection.ConnectionSteps.sessionsParallelToTransactionsParallel;
-import static grakn.core.test.behaviour.connection.ConnectionSteps.sessionsToTransactions;
 import static grakn.core.test.behaviour.connection.ConnectionSteps.sessionsToTransactionsParallel;
-import static grakn.core.test.behaviour.connection.ConnectionSteps.threadPool;
-import static grakn.common.util.Collections.list;
 import static java.util.Objects.isNull;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 public class TransactionSteps {
 
@@ -141,12 +138,14 @@ public class TransactionSteps {
     // ===========================================//
 
     @When("for each session, open transaction(s) in parallel of type:")
-    public void for_each_session_open_transactions_in_parallel_of_type(List<Transaction.Type> types) {
-        assertTrue(THREAD_POOL_SIZE >= types.size());
+    public void for_each_session_open_transactions_in_parallel_of_type(List<Transaction.Type> types) throws InterruptedException {
         for (Session session : sessions) {
             List<CompletableFuture<Transaction>> transactionsParallel = new ArrayList<>();
             for (Transaction.Type type : types) {
-                transactionsParallel.add(CompletableFuture.supplyAsync(() -> session.transaction(type), threadPool));
+                transactionsParallel.add(
+                        CompletableFuture.supplyAsync(() ->  session.transaction(type),
+                        Executors.newSingleThreadExecutor())
+                );
             }
             sessionsToTransactionsParallel.put(session, transactionsParallel);
         }
@@ -168,7 +167,7 @@ public class TransactionSteps {
             for (CompletableFuture<Transaction> futureTransaction :
                     sessionsToTransactionsParallel.get(session)) {
 
-                assertions.add(futureTransaction.thenApply(transaction -> { assertion.accept(transaction); return null; }));
+                assertions.add(futureTransaction.thenAccept(transaction -> assertion.accept(transaction)));
             }
         }
         CompletableFuture.allOf(assertions.toArray(new CompletableFuture[0])).join();
@@ -188,10 +187,9 @@ public class TransactionSteps {
 
             while (typesIter.hasNext()) {
                 Transaction.Type type = typesIter.next();
-                futureTxsIter.next().thenApplyAsync(tx -> {
-                    assertEquals(type, tx.type());
-                    return null;
-                });
+                assertions.add(
+                        futureTxsIter.next().thenAccept(tx -> assertEquals(type, tx.type()))
+                );
             }
         }
 
@@ -216,10 +214,7 @@ public class TransactionSteps {
         List<CompletableFuture<Void>> assertions = new ArrayList<>();
         for (CompletableFuture<Session> futureSession : sessionsParallel) {
             for (CompletableFuture<Transaction> futureTransaction : sessionsParallelToTransactionsParallel.get(futureSession)) {
-                assertions.add(futureTransaction.thenApply(transaction -> {
-                    assertion.accept(transaction);
-                    return null;
-                }));
+                assertions.add(futureTransaction.thenAccept(assertion::accept));
             }
         }
         CompletableFuture.allOf(assertions.toArray(new CompletableFuture[0])).join();

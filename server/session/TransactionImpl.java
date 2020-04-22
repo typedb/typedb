@@ -1136,7 +1136,6 @@ public class TransactionImpl implements Transaction {
         this.isTxOpen = false;
         ruleCache.clear();
         queryCache.clear();
-        session.transactionClosed(this);
     }
 
     private void removeInferredConcepts() {

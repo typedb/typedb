@@ -42,8 +42,6 @@ public interface Session extends AutoCloseable {
      **/
     void close();
 
-    void transactionClosed(Transaction tx);
-
     void invalidate();
 
     boolean isOpen();

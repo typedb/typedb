@@ -84,7 +84,10 @@ public class ConnectionSteps {
 
                 if (sessionsToTransactionsParallel.containsKey(session)) {
                     for (CompletableFuture<Transaction> futureTransaction : sessionsToTransactionsParallel.get(session)) {
-                        futureTransaction.get().close();
+                        futureTransaction.thenAccept(tx -> {
+                            System.out.println("Closing tx: " + tx);
+                            tx.close();
+                        }).get();
                     }
                     sessionsToTransactionsParallel.remove(session);
                 }
@@ -102,15 +105,16 @@ public class ConnectionSteps {
             for (CompletableFuture<Session> futureSession : sessionsParallel) {
                 if (sessionsParallelToTransactionsParallel.containsKey(futureSession)) {
                     for (CompletableFuture<Transaction> futureTransaction : sessionsParallelToTransactionsParallel.get(futureSession)) {
-                        futureTransaction.get().close();
+                        futureTransaction.thenAccept(Transaction::close).get();
                     }
                     sessionsParallelToTransactionsParallel.remove(futureSession);
                 }
-                futureSession.get().close();
+                futureSession.thenAccept(Session::close).get();
             }
             assertTrue(sessionsParallelToTransactionsParallel.isEmpty());
             sessionsParallel = new ArrayList<>();
             sessionsParallelToTransactionsParallel = new HashMap<>();
         }
+        Thread.sleep(100);
     }
 }

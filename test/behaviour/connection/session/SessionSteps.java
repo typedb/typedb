@@ -29,9 +29,9 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 
 import static grakn.core.test.behaviour.connection.ConnectionSteps.THREAD_POOL_SIZE;
+import static grakn.core.test.behaviour.connection.ConnectionSteps.threadPool;
 import static grakn.core.test.behaviour.connection.ConnectionSteps.sessions;
 import static grakn.core.test.behaviour.connection.ConnectionSteps.sessionsParallel;
-import static grakn.core.test.behaviour.connection.ConnectionSteps.threadPool;
 import static grakn.common.util.Collections.list;
 import static java.util.Objects.isNull;
 import static org.junit.Assert.assertEquals;
@@ -77,7 +77,7 @@ public class SessionSteps {
     @Then("sessions in parallel are null: {bool}")
     public void sessions_in_parallel_are_null(Boolean isNull) {
         Stream<CompletableFuture<Void>> assertions = sessionsParallel
-                .stream().map(futureSession -> futureSession.thenApplyAsync(session -> {
+                .stream().map(futureSession -> futureSession.thenApply(session -> {
                     assertEquals(isNull, isNull(session));
                     return null;
                 }));
@@ -88,7 +88,7 @@ public class SessionSteps {
     @Then("sessions in parallel are open: {bool}")
     public void sessions_in_parallel_are_open(Boolean isOpen) {
         Stream<CompletableFuture<Void>> assertions = sessionsParallel
-                .stream().map(futureSession -> futureSession.thenApplyAsync(session -> {
+                .stream().map(futureSession -> futureSession.thenApply(session -> {
                     assertEquals(isOpen, session.isOpen()); return null;
                 }));
 
@@ -113,7 +113,7 @@ public class SessionSteps {
 
         int i = 0;
         for (String name : names) {
-            assertions[i++] = futureSessionIter.next().thenApplyAsync(session -> {
+            assertions[i++] = futureSessionIter.next().thenApply(session -> {
                 assertEquals(name, session.keyspace().name()); return null;
             });
         }
