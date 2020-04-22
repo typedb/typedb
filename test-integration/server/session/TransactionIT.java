@@ -248,7 +248,8 @@ public class TransactionIT {
         tx.commit();
         assertTrue("Graph is still open after commit", !tx.isOpen());
         expectedException.expect(TransactionException.class);
-        expectedException.expectMessage("Transaction is already closed");
+        expectedException.expectMessage("The transaction for keyspace");
+        expectedException.expectMessage("is closed");
         tx.commit();
         assertFalse(tx.isOpen());
     }
