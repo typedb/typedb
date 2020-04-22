@@ -15,36 +15,40 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-package(default_visibility = ["//test/behaviour/graql/language/define:__subpackages__"])
+
+package(default_visibility = ["//visibility:__subpackages__"])
 load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
-java_library(
-    name = "steps",
+java_test(
+    name = "test",
     srcs = [
-        "GraqlSteps.java"
+        "ExplanationTest.java",
     ],
+    test_class = "grakn.core.test.behaviour.graql.reasoner.explanation.ExplanationTest",
     deps = [
         # Package dependencies
-        "//kb/server",
-        "//kb/concept/api",
-        "//graql/reasoner",
-        "//test/behaviour/connection:steps",
-        "//concept/answer",
-
-        # Grakn Labs dependencies
-        "@graknlabs_graql//java:graql",
+        "//test/behaviour/server:server",
 
         # External dependencies from Maven
-        "//dependencies/maven/artifacts/junit:junit",
-        "//dependencies/maven/artifacts/io/cucumber:cucumber-java",
-        "//dependencies/maven/artifacts/com/google/guava:guava",
+        "//dependencies/maven/artifacts/io/cucumber:cucumber-junit",
     ],
-    visibility = ["//visibility:public"],
+    runtime_deps = [
+        "//test/behaviour/graql:steps",
+        "//test/behaviour/connection:steps",
+        "//test/behaviour/connection/session:steps",
+        "//test/behaviour/config:parameters",
+    ],
+    data = [
+        "@graknlabs_verification//behaviour/graql/reasoner:explanation.feature",
+    ],
+    classpath_resources = ["//test-integration/resources:logback-test"],
+    size = "medium",
+    visibility = ["//visibility:public"]
 )
 
 checkstyle_test(
     name = "checkstyle",
     targets = [
-        ":steps",
+        ":test",
     ],
 )
