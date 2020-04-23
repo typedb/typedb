@@ -87,7 +87,7 @@ jobs:
       - run-bazel-rbe:
           command: bazel test //common/... --test_output=errors
 
-  test-behavior-keyspace:
+  test-behavior-connection:
     machine: true
     working_directory: ~/grakn
     steps:
@@ -95,26 +95,12 @@ jobs:
       - checkout
       - run-bazel-rbe:
           command: bazel test //test/behaviour/connection/keyspace:test --test_output=errors
-
-  test-behavior-session:
-    machine: true
-    working_directory: ~/grakn
-    steps:
-      - install-bazel-linux-rbe
-      - checkout
       - run-bazel-rbe:
           command: bazel test //test/behaviour/connection/session:test --test_output=errors
-
-  test-behavior-transaction:
-    machine: true
-    working_directory: ~/grakn
-    steps:
-      - install-bazel-linux-rbe
-      - checkout
       - run-bazel-rbe:
           command: bazel test //test/behaviour/connection/transaction:test --test_output=errors
 
-  test-behavior-graql-define:
+  test-behavior-graql:
     machine: true
     working_directory: ~/grakn
     steps:
@@ -122,35 +108,14 @@ jobs:
       - checkout
       - run-bazel-rbe:
           command: bazel test //test/behaviour/graql/language/define:test --test_output=errors
-
-  test-behavior-graql-undefine:
-    machine: true
-    working_directory: ~/grakn
-    steps:
-      - install-bazel-linux-rbe
-      - checkout
       - run-bazel-rbe:
-          command: bazel test //test/behaviour/graql/language/undefine:test --test_output=errors
-
-  test-behavior-graql-insert:
-    machine: true
-    working_directory: ~/grakn
-    steps:
-      - install-bazel-linux-rbe
-      - checkout
+          command: bazel test //test/behaviour/connection/transaction:test --test_output=errors
       - run-bazel-rbe:
           command: bazel test //test/behaviour/graql/language/insert:test --test_output=errors
-
-  test-behavior-graql-match:
-    machine: true
-    working_directory: ~/grakn
-    steps:
-      - install-bazel-linux-rbe
-      - checkout
       - run-bazel-rbe:
           command: bazel test //test/behaviour/graql/language/match:test --test_output=errors
 
-  test-behavior-reasoner-explanation:
+  test-behavior-reasoner:
     machine: true
     working_directory: ~/grakn
     steps:
@@ -493,35 +458,15 @@ workflows:
           filters:
             branches:
               ignore: grakn-release-branch
-      - test-behavior-keyspace:
+      - test-behavior-connection:
           filters:
             branches:
               ignore: grakn-release-branch
-      - test-behavior-session:
+      - test-behavior-graql:
           filters:
             branches:
               ignore: grakn-release-branch
-      - test-behavior-transaction:
-          filters:
-            branches:
-              ignore: grakn-release-branch
-      - test-behavior-graql-define:
-          filters:
-            branches:
-              ignore: grakn-release-branch
-      - test-behavior-graql-define:
-          filters:
-            branches:
-              ignore: grakn-release-branch
-      - test-behavior-graql-insert:
-          filters:
-            branches:
-              ignore: grakn-release-branch
-      - test-behavior-graql-match:
-          filters:
-            branches:
-              ignore: grakn-release-branch
-      - test-behavior-reasoner-explanation:
+      - test-behavior-reasoner:
           filters:
             branches:
               ignore: grakn-release-branch
