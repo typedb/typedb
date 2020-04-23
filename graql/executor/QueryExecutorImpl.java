@@ -234,7 +234,6 @@ public class QueryExecutorImpl implements QueryExecutor {
         }
         WriteExecutor writeExecutor = WriteExecutorImpl.create(conceptManager, executors.build());
 
-        Stream<ConceptMap> answers = get(query.match().get());
         get(query.match().get()).forEach(writeExecutor::write);
         return new Void("Delete successful.");
     }

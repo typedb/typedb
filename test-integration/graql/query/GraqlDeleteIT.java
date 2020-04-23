@@ -17,6 +17,7 @@
 
 package grakn.core.graql.query;
 
+import com.google.common.collect.Iterators;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.answer.Numeric;
 import grakn.core.concept.answer.Void;
@@ -459,7 +460,6 @@ public class GraqlDeleteIT {
     @Test
     public void whenDeletingASchemaConcept_Throw() {
         SchemaConcept newType = tx.execute(Graql.define(x.type("new-type").sub(ENTITY))).get(0).get(x.var()).asSchemaConcept();
-
         exception.expect(GraqlQueryException.class);
 //        exception.expectMessage(GraqlSemanticException.deleteSchemaConcept(newType).getMessage());
         // TODO error message, better reporting for deleting schema concepts
@@ -489,13 +489,45 @@ public class GraqlDeleteIT {
     // TODO removing instances, instances with subtyping
     @Test
     public void whenDeletingSingleRolePlayer_RelationSurvives() {
-
+        tx.execute(Graql.parse("match $r (production-being-directed: $x, director: $y) isa directed-by; delete $r (role: $x);").asDelete());
+        List<ConceptMap> answers = tx.execute(Graql.parse("match $r ($y) isa directed-by; get;").asGet());
+        assertEquals(1, answers.size());
+        assertEquals(1, answers.get(0).get("r").asRelation().rolePlayers().count());
     }
 
     @Test
-    public void whenDeletingDuplicateRolePlayer_BothAreDeleted() {
-
+    public void whenDeletingRolePlayerMatchesAllCombinations_RelationIsDeleted() {
+        tx.execute(Graql.parse("match $r ($x, $y) isa directed-by; delete $r (role: $x);").asDelete());
+        List<ConceptMap> answers = tx.execute(Graql.parse("match $r isa directed-by; get;").asGet());
+        assertEquals(0, answers.size());
     }
+
+    @Test
+    public void whenDeletingSomeDuplicateRolePlayers_SomeAreDeleted() {
+        tx.execute(Graql.parse("define reflexive sub relation, relates refl; athing sub entity, plays refl;").asDefine());
+        tx.execute(Graql.insert(
+                var("r")
+                        .isa("reflexive")
+                        .rel("refl", "p")
+                        .rel("refl", "p")
+                        .rel("refl", "p"),
+                var("p").isa("athing"))
+        );
+
+        List<ConceptMap> answers = tx.execute(Graql.match(var("r").isa("reflexive").rel("refl", "x").rel("refl", "x")).get());
+        assertEquals(1, answers.size());
+        assertEquals(3, Iterators.getOnlyElement(answers.get(0).get("r").asRelation().rolePlayersMap().values().iterator()).size());
+
+        tx.execute(Graql.match(var("r").isa("reflexive").rel("refl", "x").rel("refl", "x"))
+                .delete(var("r").rel("refl", "x").rel("refl", "x")));
+
+        answers = tx.execute(Graql.match(var("r").isa("reflexive").rel("refl", "x")).get());
+        assertEquals(1, answers.size());
+        assertEquals(1, Iterators.getOnlyElement(answers.get(0).get("r").asRelation().rolePlayersMap().values().iterator()).size());
+    }
+
+    // TODO deleting too many duplicate role players fails
+    // TODO able to delete duplicate role players in separate statements, but fails if not enough duplicates
 
 
     @Ignore

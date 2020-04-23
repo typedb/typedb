@@ -21,6 +21,7 @@ package grakn.core.graql.executor.property;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import grakn.core.graql.planning.gremlin.sets.EquivalentFragmentSets;
+import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Relation;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Thing;
@@ -185,22 +186,35 @@ public class RelationExecutor implements PropertyExecutor.Insertable, PropertyEx
             }
             Relation relation = executor.getConcept(var).asRelation();
             property.relationPlayers().forEach(relationPlayer -> {
-                Variable roleVar = getRoleVar(relationPlayer);
-                Role role = executor.getConcept(roleVar).asRole();
+                Role requiredRole = getRole(relationPlayer, executor);
                 Variable rolePlayerVar = relationPlayer.getPlayer().var();
                 Thing rolePlayer = executor.getConcept(rolePlayerVar).asThing();
 
                 // validate that the role player plays this role in this relation
-                boolean roleIsPlayed = relation.rolePlayers(role).anyMatch(rolePlayer::equals);
+                boolean roleIsPlayed = relation.rolePlayers(requiredRole).anyMatch(rolePlayer::equals);
                 if (!roleIsPlayed) {
                     // TODO better exception
                     throw GraqlQueryException.create(
                             String.format("Concept %s [%s] does not play a role %s in relation %s [%s], so cannot unassign from relation.",
-                                    rolePlayer, rolePlayerVar, role, relation, var));
+                                    rolePlayer, rolePlayerVar, requiredRole, relation, var));
                 }
 
-                relation.unassign(role, rolePlayer);
+                relation.unassign(requiredRole, rolePlayer);
             });
+        }
+
+        private Role getRole(RelationProperty.RolePlayer relationPlayer, WriteExecutor executor) {
+            boolean roleExists = relationPlayer.getRole().isPresent();
+            if (!roleExists) {
+                throw GraqlSemanticException.deleteRolePlayerWithoutRoleType(relationPlayer.toString());
+            } else {
+                Statement roleStatement = relationPlayer.getRole().get();
+                Variable roleVar = roleStatement.var();
+                if (roleStatement.getType().isPresent()) {
+                    executor.getBuilder(roleVar).label(Label.of(roleStatement.getType().get()));
+                }
+                return executor.getConcept(roleVar).asRole();
+            }
         }
 
         private Variable getRoleVar(RelationProperty.RolePlayer relationPlayer) {
