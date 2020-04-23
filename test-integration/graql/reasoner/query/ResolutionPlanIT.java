@@ -108,7 +108,7 @@ public class ResolutionPlanIT {
 
     @Before
     public void setUp(){
-        tx = planSession.writeTransaction();
+        tx = planSession.transaction(Transaction.Type.WRITE);
         TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
         reasonerQueryFactory = testTx.reasonerQueryFactory();
         traversalPlanFactory = testTx.traversalPlanFactory();

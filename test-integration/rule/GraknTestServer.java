@@ -26,10 +26,8 @@ import grakn.core.server.Server;
 import grakn.core.server.ServerFactory;
 import grakn.core.server.keyspace.KeyspaceImpl;
 import grakn.core.server.keyspace.KeyspaceManager;
-import grakn.core.server.rpc.KeyspaceRequestsHandler;
 import grakn.core.server.rpc.KeyspaceService;
 import grakn.core.server.rpc.OpenRequest;
-import grakn.core.server.rpc.ServerKeyspaceRequestsHandler;
 import grakn.core.server.rpc.ServerOpenRequest;
 import grakn.core.server.rpc.SessionService;
 import grakn.core.server.session.HadoopGraphFactory;
@@ -47,6 +45,8 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -66,6 +66,7 @@ public class GraknTestServer extends ExternalResource {
     protected Server graknServer;
     private int grpcPort;
     private SessionFactory sessionFactory;
+    private KeyspaceManager keyspaceManager;
 
     /**
      * Construct Grakn Server and Grakn Storage with default configurations
@@ -84,7 +85,7 @@ public class GraknTestServer extends ExternalResource {
     }
 
     @Override
-    protected void before() {
+    public void before() {
         try {
             // Start Cassandra
             graknTestStorage.before();
@@ -104,7 +105,7 @@ public class GraknTestServer extends ExternalResource {
     }
 
     @Override
-    protected void after() {
+    public void after() {
         try {
             graknTestStorage.after();
             graknServer.close();
@@ -132,6 +133,10 @@ public class GraknTestServer extends ExternalResource {
         return sessionFactory.session(keyspace);
     }
 
+    public Session session(String name) {
+        return sessionFactory.session(new KeyspaceImpl(name));
+    }
+
     public SessionFactory sessionFactory() {
         return sessionFactory;
     }
@@ -140,6 +145,13 @@ public class GraknTestServer extends ExternalResource {
         return serverConfig;
     }
 
+    public List<Keyspace> keyspaces() {
+        return new ArrayList<>(keyspaceManager.keyspaces());
+    }
+
+    public void deleteKeyspace(String keyspace) {
+        keyspaceManager.delete(new KeyspaceImpl(keyspace));
+    }
 
     private synchronized static int findUnusedLocalPort() throws IOException {
         try (ServerSocket serverSocket = new ServerSocket(0)) {
@@ -178,17 +190,14 @@ public class GraknTestServer extends ExternalResource {
                 .withLocalDatacenter("datacenter1")
                 .build();
 
-        KeyspaceManager keyspaceManager = new KeyspaceManager(cqlSession);
         sessionFactory = new SessionFactory(lockManager, janusGraphFactory, hadoopGraphFactory, serverConfig);
+        keyspaceManager = new KeyspaceManager(cqlSession, janusGraphFactory, sessionFactory);
 
         OpenRequest requestOpener = new ServerOpenRequest(sessionFactory);
 
-        KeyspaceRequestsHandler requestsHandler = new ServerKeyspaceRequestsHandler(
-                keyspaceManager, sessionFactory, janusGraphFactory);
-
         io.grpc.Server serverRPC = ServerBuilder.forPort(grpcPort)
                 .addService(new SessionService(requestOpener))
-                .addService(new KeyspaceService(requestsHandler))
+                .addService(new KeyspaceService(keyspaceManager))
                 .build();
 
         return ServerFactory.createServer(serverRPC);

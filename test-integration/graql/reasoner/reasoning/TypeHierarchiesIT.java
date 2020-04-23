@@ -45,7 +45,7 @@ public class TypeHierarchiesIT {
     public void roleUnificationWithRoleHierarchiesInvolved() {
         try(Session session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "testSet8.gql", session);
-            try (Transaction tx = session.writeTransaction()) {
+            try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
                                 String queryString = "match (role2:$x, role3:$y) isa relation2; get;";
                 List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());
                 assertThat(answers, empty());
@@ -57,7 +57,7 @@ public class TypeHierarchiesIT {
     public void rulesInteractingWithTypeHierarchy() {
         try(Session session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "testSet13.gql", session);
-            try (Transaction tx = session.writeTransaction()) {
+            try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
                                 String queryString = "match (role1:$x, role2:$y) isa relation2; get;";
                 List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());
                 assertEquals(1, answers.size());
@@ -69,7 +69,7 @@ public class TypeHierarchiesIT {
     public void instanceTypeHierarchyRespected_queryHasSuperTypes(){
         try(Session session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "testSet19.gql", session);
-            try (Transaction tx = session.writeTransaction()) {
+            try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
                                 String baseTypeQuery = "match " +
                         "$x isa entity1;" +
                         "$y isa entity1;" +
@@ -108,7 +108,7 @@ public class TypeHierarchiesIT {
     public void instanceTypeHierarchyRespected_queryHasSuperTypes_recursiveRule() {
         try (Session session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "testSet19-recursive.gql", session);
-            try (Transaction tx = session.writeTransaction()) {
+            try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
                                 String baseTypeQuery = "match " +
                         "$x isa entity1;" +
                         "$y isa entity1;" +
@@ -149,7 +149,7 @@ public class TypeHierarchiesIT {
     public void reasoningOverRelationHierarchy(){
         try(Session session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "testSet20.gql", session);
-            try (Transaction tx = session.writeTransaction()) {
+            try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
                                 String queryString = "match (role1: $x, role2: $y) isa relation1; get;";
                 String queryString2 = "match (role1: $x, role2: $y) isa sub-relation1; get;";
                 List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());
@@ -165,7 +165,7 @@ public class TypeHierarchiesIT {
     public void reasoningOverEntityHierarchy(){
         try(Session session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "testSet21.gql", session);
-            try (Transaction tx = session.writeTransaction()) {
+            try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
                                 String queryString = "match $x isa baseEntity; get;";
                 String queryString2 = "match $x isa subEntity; get;";
                 List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());

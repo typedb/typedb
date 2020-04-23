@@ -51,13 +51,13 @@ public class StatisticsDeltaIT {
     @Before
     public void setUp() {
         session = SessionUtil.serverlessSessionWithNewKeyspace(storage.createCompatibleServerConfig());
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
         AttributeType age = tx.putAttributeType("age", AttributeType.DataType.LONG);
         Role friend = tx.putRole("friend");
         EntityType personType = tx.putEntityType("person").plays(friend).has(age);
         RelationType friendshipType = tx.putRelationType("friendship").relates(friend);
         tx.commit();
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
     }
 
     @After
@@ -173,7 +173,7 @@ public class StatisticsDeltaIT {
         ConceptId id3 = personType.create().id();
         tx.commit();
 
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
         TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
         StatisticsDelta statisticsDelta = testTx.uncomittedStatisticsDelta();
 
@@ -202,7 +202,7 @@ public class StatisticsDeltaIT {
 
         tx.commit();
 
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
         TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
         StatisticsDelta statisticsDelta = testTx.uncomittedStatisticsDelta();
 
@@ -227,7 +227,7 @@ public class StatisticsDeltaIT {
         }
         tx.commit();
 
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
         TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
         StatisticsDelta statisticsDelta = testTx.uncomittedStatisticsDelta();
 
@@ -257,7 +257,7 @@ public class StatisticsDeltaIT {
 
         tx.commit();
 
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
         TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
         StatisticsDelta statisticsDelta = testTx.uncomittedStatisticsDelta();
 

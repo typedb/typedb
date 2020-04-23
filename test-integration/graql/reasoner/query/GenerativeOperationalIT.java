@@ -82,7 +82,7 @@ public class GenerativeOperationalIT {
         String resourcePath = "test-integration/graql/reasoner/resources/";
         loadFromFileAndCommit(resourcePath, "genericSchema.gql", genericSchemaSession);
 
-        try(Transaction tx = genericSchemaSession.readTransaction()) {
+        try(Transaction tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
             String id = tx.getEntityType("baseRoleEntity").instances().iterator().next().id().getValue();
             String subId = tx.getEntityType("subRoleEntity").instances().iterator().next().id().getValue();
             String subSubId = tx.getEntityType("subSubRoleEntity").instances().iterator().next().id().getValue();
@@ -196,7 +196,7 @@ public class GenerativeOperationalIT {
                 UnifierType.STRUCTURAL_SUBSUMPTIVE
         );
 
-        try (Transaction tx = genericSchemaSession.readTransaction()) {
+        try (Transaction tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction) tx).reasonerQueryFactory();
             TransactionContext ctx = new TransactionContext(tx);
 
@@ -257,7 +257,7 @@ public class GenerativeOperationalIT {
 
     @Test
     public void whenFuzzyingVariablesWithBindingsPreserved_AlphaEquivalenceIsNotAffected(){
-        try (Transaction tx = genericSchemaSession.readTransaction()) {
+        try (Transaction tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
             TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction) tx;
             ReasonerQueryFactory reasonerQueryFactory = testTx.reasonerQueryFactory();
             TransactionContext txCtx = new TransactionContext(tx);
@@ -290,7 +290,7 @@ public class GenerativeOperationalIT {
 
     @Test
     public void whenFuzzyingIdsWithBindingsPreserved_StructuralEquivalenceIsNotAffected(){
-        try (Transaction tx = genericSchemaSession.readTransaction()) {
+        try (Transaction tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
             TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction) tx;
             ReasonerQueryFactory reasonerQueryFactory = testTx.reasonerQueryFactory();
             TransactionContext txCtx = new TransactionContext(tx);
@@ -329,7 +329,7 @@ public class GenerativeOperationalIT {
             List<Pair<Pattern, Pattern>> subList = testPairs.subList(startIndex, endIndex);
             System.out.println("Subset to test: " + subList.size());
             CompletableFuture<Void> testChunk = CompletableFuture.supplyAsync(() -> {
-                try (Transaction tx = genericSchemaSession.readTransaction()) {
+                try (Transaction tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
                     ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction) tx).reasonerQueryFactory();
 
                     for (Pair<Pattern, Pattern> pair : subList) {

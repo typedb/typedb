@@ -51,7 +51,7 @@ public class NumberCastingIT {
     @Before
     public void newSession() {
         session = graknServer.sessionWithNewKeyspace();
-        try (Transaction tx = session.writeTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             tx.putAttributeType("attr-long", AttributeType.DataType.LONG);
             tx.putAttributeType("attr-double", AttributeType.DataType.DOUBLE);
             tx.putAttributeType("attr-date", AttributeType.DataType.DATE);
@@ -66,7 +66,7 @@ public class NumberCastingIT {
 
     private void verifyWrite(Session session, Pattern pattern) {
         GraqlInsert insert = Graql.insert(pattern.statements());
-        try (Transaction tx = session.writeTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             tx.execute(insert);
             tx.commit();
         }
@@ -74,7 +74,7 @@ public class NumberCastingIT {
 
     private void verifyRead(Session session, Pattern pattern) {
         MatchClause match = Graql.match(pattern.statements());
-        try (Transaction tx = session.writeTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             List<ConceptMap> answers = tx.execute(match);
             assertFalse(answers.isEmpty());
         }
@@ -82,7 +82,7 @@ public class NumberCastingIT {
 
     private void cleanup(Session session, Pattern pattern) {
         MatchClause match = Graql.match(pattern.statements());
-        try (Transaction tx = session.writeTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             tx.execute(match.delete());
             tx.commit();
         }
@@ -183,14 +183,14 @@ public class NumberCastingIT {
         int one_int = 1, two_int = 2;
         double one_double = 1.0, two_double = 2.0;
 
-        try (Transaction tx = session.writeTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             tx.execute(Graql.insert(Graql.val(one_int).isa("attr-long")));
             tx.execute(Graql.insert(Graql.val(two_double).isa("attr-double")));
             tx.commit();
         }
 
         List<ConceptMap> answers;
-        try (Transaction tx = session.readTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
             answers = tx.execute(Graql.match(Graql.var("x").eq(one_int).isa("attr-long")).get());
             assertEquals(1, answers.size());
 
@@ -198,7 +198,7 @@ public class NumberCastingIT {
             assertEquals(1, answers.size());
         }
 
-        try (Transaction tx = session.readTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
             answers = tx.execute(Graql.match(Graql.var("x").eq(two_int).isa("attr-double")).get());
             assertEquals(1, answers.size());
 
@@ -206,7 +206,7 @@ public class NumberCastingIT {
             assertEquals(1, answers.size());
         }
 
-        try (Transaction tx = session.readTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
             answers = tx.execute(Graql.match(Graql.var("x").val(one_double).isa("attr-long")).get());
             assertEquals(1, answers.size());
 
@@ -214,7 +214,7 @@ public class NumberCastingIT {
             assertEquals(1, answers.size());
         }
 
-        try (Transaction tx = session.readTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
             answers = tx.execute(Graql.match(Graql.var("x").gte(one_int).isa("attribute")).get());
             assertEquals(2, answers.size());
 
@@ -222,7 +222,7 @@ public class NumberCastingIT {
             assertEquals(2, answers.size());
         }
 
-        try (Transaction tx = session.readTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
             answers = tx.execute(Graql.match(Graql.var("x").lt(two_int).isa("attribute")).get());
             assertEquals(1, answers.size());
 

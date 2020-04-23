@@ -60,7 +60,7 @@ public class GenericSchemaGraph {
     public GenericSchemaGraph(Session session){
         loadFromFileAndCommit(gqlPath, gqlFile, session);
 
-        Transaction tx = session.readTransaction();
+        Transaction tx = session.transaction(Transaction.Type.READ);
         EntityType subRoleEntityType = tx.getEntityType("subRoleEntity");
         EntityType subSubRoleEntity = tx.getEntityType("subSubRoleEntity");
         EntityType entityType = tx.getEntityType("baseRoleEntity");

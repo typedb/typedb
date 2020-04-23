@@ -25,10 +25,8 @@ import grabl.tracing.client.GrablTracingThreadStatic;
 import grakn.core.common.config.Config;
 import grakn.core.common.config.ConfigKey;
 import grakn.core.server.keyspace.KeyspaceManager;
-import grakn.core.server.rpc.KeyspaceRequestsHandler;
 import grakn.core.server.rpc.KeyspaceService;
 import grakn.core.server.rpc.OpenRequest;
-import grakn.core.server.rpc.ServerKeyspaceRequestsHandler;
 import grakn.core.server.rpc.ServerOpenRequest;
 import grakn.core.server.rpc.SessionService;
 import grakn.core.server.session.HadoopGraphFactory;
@@ -78,11 +76,9 @@ public class ServerFactory {
                 .withLocalDatacenter("datacenter1")
                 .build();
 
-        KeyspaceManager keyspaceManager = new KeyspaceManager(cqlSession);
         HadoopGraphFactory hadoopGraphFactory = new HadoopGraphFactory(config);
-
-        // session factory
         SessionFactory sessionFactory = new SessionFactory(lockManager, janusGraphFactory, hadoopGraphFactory, config);
+        KeyspaceManager keyspaceManager = new KeyspaceManager(cqlSession, janusGraphFactory, sessionFactory);
 
         if (arguments.isGrablTracing()) {
             LOG.info("Grabl tracing is enabled!");
@@ -104,7 +100,7 @@ public class ServerFactory {
         }
 
         // create gRPC server
-        io.grpc.Server serverRPC = createServerRPC(config, sessionFactory, keyspaceManager, janusGraphFactory);
+        io.grpc.Server serverRPC = createServerRPC(config, sessionFactory, keyspaceManager);
 
         return createServer(serverRPC);
     }
@@ -148,14 +144,11 @@ public class ServerFactory {
      * <p>
      * More info here: https://groups.google.com/d/msg/grpc-io/LrnAbWFozb0/VYCVarkWBQAJ
      */
-    private static io.grpc.Server createServerRPC(Config config, SessionFactory sessionFactory, KeyspaceManager keyspaceManager, JanusGraphFactory janusGraphFactory) {
+    private static io.grpc.Server createServerRPC(Config config, SessionFactory sessionFactory, KeyspaceManager keyspaceManager) {
         int grpcPort = config.getProperty(ConfigKey.GRPC_PORT);
         OpenRequest requestOpener = new ServerOpenRequest(sessionFactory);
 
         SessionService sessionService = new SessionService(requestOpener);
-
-        KeyspaceRequestsHandler requestsHandler = new ServerKeyspaceRequestsHandler(
-                keyspaceManager, sessionFactory, janusGraphFactory);
 
         Runtime.getRuntime().addShutdownHook(new Thread(sessionService::shutdown, "session-service-shutdown"));
 
@@ -170,7 +163,7 @@ public class ServerFactory {
                 .maxConnectionIdle(1, TimeUnit.HOURS)
                 .channelType(NioServerSocketChannel.class)
                 .addService(sessionService)
-                .addService(new KeyspaceService(requestsHandler))
+                .addService(new KeyspaceService(keyspaceManager))
                 .build();
     }
 

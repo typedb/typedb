@@ -62,7 +62,6 @@ import grakn.core.kb.concept.structure.PropertyNotUniqueException;
 import grakn.core.kb.concept.structure.VertexElement;
 import grakn.core.kb.graql.executor.ExecutorFactory;
 import grakn.core.kb.graql.executor.QueryExecutor;
-import grakn.core.kb.graql.planning.gremlin.TraversalPlanFactory;
 import grakn.core.kb.graql.reasoner.ReasonerException;
 import grakn.core.kb.graql.reasoner.cache.RuleCache;
 import grakn.core.kb.server.Session;
@@ -113,7 +112,7 @@ public class TransactionImpl implements Transaction {
     private final long typeShardThreshold;
 
     // Shared Variables
-    protected final Session  session;
+    protected final Session session;
     protected final ConceptManager conceptManager;
     protected final ExecutorFactory executorFactory;
 
@@ -1113,9 +1112,9 @@ public class TransactionImpl implements Transaction {
      * @throws InvalidKBException if graph does not comply with the grakn validation rules
      */
     @Override
-    public void commit() throws InvalidKBException {
+    public void commit() throws TransactionException {
         if (!isOpen()) {
-            return;
+            throw TransactionException.transactionClosed(this, null);
         }
         try {
             checkMutationAllowed();

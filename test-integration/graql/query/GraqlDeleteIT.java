@@ -97,7 +97,7 @@ public class GraqlDeleteIT {
 
     @Before
     public void newTransaction() {
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
 
         kurtz = Graql.match(x.has("name", "Colonel Walter E. Kurtz"));
         marlonBrando = Graql.match(x.has("name", "Marlon Brando"));
@@ -303,7 +303,7 @@ public class GraqlDeleteIT {
         */
 
         Session session = graknServer.sessionWithNewKeyspace();
-        Transaction tx = session.writeTransaction();
+        Transaction tx = session.transaction(Transaction.Type.WRITE);
 
         tx.execute(Graql.parse("define" +
                 "    unique-key sub attribute, datatype long;" +
@@ -324,7 +324,7 @@ public class GraqlDeleteIT {
                 "    @has-region-code key unique-key;").asDefine());
 
         tx.commit();
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
 
         List<ConceptMap> answers = tx.execute(Graql.parse("insert" +
                 "      $intersection1 (endpoint: $r1, endpoint: $r2, endpoint: $r3) isa intersection, has unique-key $k1, has region-code $rc via $imp1; $k1 -128;" +
@@ -341,7 +341,7 @@ public class GraqlDeleteIT {
         List<ConceptId> insertedIds = answers.stream().flatMap(conceptMap -> conceptMap.concepts().stream()).map(Concept::id).collect(Collectors.toList());
 
         tx.commit();
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
 
         List<Pattern> idPatterns = new ArrayList<>();
         for (int i = 0; i < insertedIds.size(); i++) {
@@ -359,7 +359,7 @@ public class GraqlDeleteIT {
     @Test
     public void deleteRelationWithReifiedImplicitWithAttribute() {
         Session session = graknServer.sessionWithNewKeyspace();
-        Transaction tx = session.writeTransaction();
+        Transaction tx = session.transaction(Transaction.Type.WRITE);
 
         AttributeType<String> name = tx.putAttributeType("name", AttributeType.DataType.STRING);
         AttributeType<Long> year = tx.putAttributeType("year", AttributeType.DataType.LONG);
@@ -378,7 +378,7 @@ public class GraqlDeleteIT {
 
         List<ConceptId> insertedIds = answers.flatMap(conceptMap -> conceptMap.concepts().stream().map(Concept::id)).collect(Collectors.toList());
         tx.commit();
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
 
         List<Pattern> idPatterns = new ArrayList<>();
         for (int i = 0; i < insertedIds.size(); i++) {
@@ -394,7 +394,7 @@ public class GraqlDeleteIT {
     @Test
     public void deleteRelation_AttributeOwnershipsDeleted() {
         Session session = graknServer.sessionWithNewKeyspace();
-        Transaction tx = session.writeTransaction();
+        Transaction tx = session.transaction(Transaction.Type.WRITE);
 
         Role author = tx.putRole("author");
         Role work = tx.putRole("work");
@@ -412,7 +412,7 @@ public class GraqlDeleteIT {
         ConceptId relationId = aRelation.id();
 
         tx.commit();
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
 
         aProvenance = tx.getAttributesByValue("hello").iterator().next();
         assertTrue(aProvenance.type().label().toString().equals("provenance"));
@@ -428,7 +428,7 @@ public class GraqlDeleteIT {
     @Test
     public void deleteLastRolePlayer_RelationAndAttrOwnershipIsRemoved() {
         Session session = graknServer.sessionWithNewKeyspace();
-        Transaction tx = session.writeTransaction();
+        Transaction tx = session.transaction(Transaction.Type.WRITE);
 
         Role author = tx.putRole("author");
         Role work = tx.putRole("work");
@@ -447,7 +447,7 @@ public class GraqlDeleteIT {
         ConceptId relationId = aRelation.id();
 
         tx.commit();
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
 
         aProvenance = tx.getAttributesByValue("hello").iterator().next();
         assertTrue(aProvenance.type().label().toString().equals("provenance"));
@@ -524,25 +524,17 @@ public class GraqlDeleteIT {
     }
 
     @Test
-    public void whenSortVarIsNotInQuery_Throw() {
-        exception.expect(GraqlException.class);
-        exception.expectMessage(VARIABLE_OUT_OF_SCOPE.getMessage(new Variable("z")));
-        tx.execute(Graql.match(var("x").isa("movie").has("title", var("y"))).get().sort("z"));
-    }
-
-
-    @Test
     public void whenLimitingDelete_CorrectNumberAreDeleted() {
         Session session = graknServer.sessionWithNewKeyspace();
         // load some schema and data
-        try (Transaction tx = session.writeTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             tx.execute(Graql.parse("define person sub entity;").asDefine());
             tx.execute(Graql.parse("insert $x isa person; $y isa person; $z isa person; $a isa person; $b isa person;").asInsert());
             tx.commit();
         }
 
         // try and delete two of the five
-        try (Transaction tx = session.writeTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             List<ConceptMap> toDelete = tx.execute(Graql.parse("match $x isa person; get; limit 2;").asGet());
             List<Void> deleted = tx.execute(Graql.parse("match $x isa person; delete $x; limit 2;").asDelete());
             long conceptsDeleted = toDelete.stream().filter(conceptMap -> conceptMap.get("x").isDeleted()).count();
@@ -552,7 +544,6 @@ public class GraqlDeleteIT {
             assertEquals(3, count.get(0).number().intValue());
         }
 
-        session.close()
-        ;
+        session.close();
     }
 }

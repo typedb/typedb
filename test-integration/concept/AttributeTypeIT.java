@@ -58,7 +58,7 @@ public class AttributeTypeIT {
     @Before
     public void setUp() {
         session = server.sessionWithNewKeyspace();
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
         attributeType = tx.putAttributeType("Attribute Type", AttributeType.DataType.STRING);
     }
 
@@ -175,7 +175,7 @@ public class AttributeTypeIT {
         LocalDateTime rightNow = LocalDateTime.now();
         // now add the timezone to the graph
         try (Session session = server.sessionWithNewKeyspace()) {
-            try (Transaction graph = session.writeTransaction()) {
+            try (Transaction graph = session.transaction(Transaction.Type.WRITE)) {
                 AttributeType<LocalDateTime> aTime = graph.putAttributeType("aTime", AttributeType.DataType.DATE);
                 aTime.create(rightNow);
                 graph.commit();
@@ -183,7 +183,7 @@ public class AttributeTypeIT {
             // offset the time to GMT where the colleague is working
             TimeZone.setDefault(TimeZone.getTimeZone("GMT"));
             // the colleague extracts the LocalTime which should be the same
-            try (Transaction graph = session.writeTransaction()) {
+            try (Transaction graph = session.transaction(Transaction.Type.WRITE)) {
                 AttributeType aTime = graph.getAttributeType("aTime");
                 LocalDateTime databaseTime = (LocalDateTime) ((Attribute) aTime.instances().iterator().next()).value();
 
@@ -203,7 +203,7 @@ public class AttributeTypeIT {
         person.create().has(attribute);
         tx.commit();
 
-        tx = session.readTransaction();
+        tx = session.transaction(Transaction.Type.READ);
         tx.execute(Graql.parse("match $x isa @has-attribute; get;").asGet());
         tx.execute(Graql.parse("match $x isa @has-value; get;").asGet());
         tx.execute(Graql.parse("match (@has-value-value: $attr, @has-value-owner: $person) isa @has-value; get;").asGet());
@@ -218,7 +218,7 @@ public class AttributeTypeIT {
         person.create().has(attribute);
         tx.commit();
 
-        tx = session.readTransaction();
+        tx = session.transaction(Transaction.Type.READ);
         tx.execute(Graql.parse("match $x isa @has-attribute; get;").asGet());
         tx.execute(Graql.parse("match $x isa @has-owner; get;").asGet());
         tx.execute(Graql.parse("match (@has-owner-value: $attr, @has-owner-owner: $person) isa @has-owner; get;").asGet());

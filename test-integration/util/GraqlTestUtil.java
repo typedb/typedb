@@ -101,7 +101,7 @@ public class GraqlTestUtil {
     }
 
     public static void loadFromFileAndCommit(String gqlPath, String file, Session session) {
-        Transaction tx = session.writeTransaction();
+        Transaction tx = session.transaction(Transaction.Type.WRITE);
         loadFromFile(gqlPath, file, tx);
         tx.commit();
     }
@@ -140,7 +140,7 @@ public class GraqlTestUtil {
             System.out.println("indices: " + startIndex + "-" + endIndex + " , size: " + subList.size());
             CompletableFuture<Void> asyncInsert = CompletableFuture.supplyAsync(() -> {
                 long start2 = System.currentTimeMillis();
-                Transaction tx = session.writeTransaction();
+                Transaction tx = session.transaction(Transaction.Type.WRITE);
                 int inserted = 0;
                 for (Statement statement : subList) {
                     GraqlInsert insert = Graql.insert(statement);
@@ -149,7 +149,7 @@ public class GraqlTestUtil {
                     if (inserted % insertsPerCommit == 0) {
                         tx.commit();
                         inserted = 0;
-                        tx = session.writeTransaction();
+                        tx = session.transaction(Transaction.Type.WRITE);
                     }
                 }
                 if (inserted != 0) tx.commit();

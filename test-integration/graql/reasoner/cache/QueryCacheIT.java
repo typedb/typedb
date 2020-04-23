@@ -89,7 +89,7 @@ public class QueryCacheIT {
 
     @Test
     public void whenRecordingAndMatchExists_entryIsUpdated(){
-        try(Transaction tx = genericSchemaSession.readTransaction()) {
+        try(Transaction tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
             TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
             MultilevelSemanticCache cache = new MultilevelSemanticCache(testTx.traversalPlanFactory(), testTx.traversalExecutor());
 
@@ -123,7 +123,7 @@ public class QueryCacheIT {
 
     @Test
     public void whenRecordingAndMatchDoesntExist_answersArePropagatedFromParents(){
-        try(Transaction tx = genericSchemaSession.readTransaction()) {
+        try(Transaction tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
             TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
 
             MultilevelSemanticCache cache = new MultilevelSemanticCache(testTx.traversalPlanFactory(), testTx.traversalExecutor());
@@ -168,7 +168,7 @@ public class QueryCacheIT {
 
     @Test
     public void whenGettingAndMatchDoesntExist_answersFetchedFromDB(){
-        try(Transaction tx = genericSchemaSession.readTransaction()) {
+        try(Transaction tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
             TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
 
             MultilevelSemanticCache cache = new MultilevelSemanticCache(testTx.traversalPlanFactory(), testTx.traversalExecutor());
@@ -183,7 +183,7 @@ public class QueryCacheIT {
 
     @Test
     public void whenGettingAndMatchDoesntExist_parentAvailable_answersFetchedFromParents(){
-        try(Transaction tx = genericSchemaSession.readTransaction()) {
+        try(Transaction tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
             TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
 
             MultilevelSemanticCache cache = new MultilevelSemanticCache(testTx.traversalPlanFactory(), testTx.traversalExecutor());
@@ -212,7 +212,7 @@ public class QueryCacheIT {
 
     @Test
     public void whenGettingAndMatchDoesntExist_prospectiveParentCached_childQueriesAreEquivalent_answersFetchedFromDB(){
-        try(Transaction tx = genericSchemaSession.readTransaction()) {
+        try(Transaction tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
             TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
             MultilevelSemanticCache cache = new MultilevelSemanticCache(testTx.traversalPlanFactory(), testTx.traversalExecutor());
 
@@ -269,7 +269,7 @@ public class QueryCacheIT {
 
     @Test
     public void whenGettingAndMatchDoesntExist_prospectiveParentCached_childQueriesAreNotEquivalent_answersFetchedFromDB(){
-        try(Transaction tx = genericSchemaSession.readTransaction()) {
+        try(Transaction tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
             TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
             MultilevelSemanticCache cache = new MultilevelSemanticCache(testTx.traversalPlanFactory(), testTx.traversalExecutor());
 
@@ -325,7 +325,7 @@ public class QueryCacheIT {
 
     @Test
     public void whenGettingAndMatchExists_queryGround_queryDBComplete_answerNotFound_answersFetchedFromDbAndCache(){
-        try(Transaction tx = genericSchemaSession.readTransaction()) {
+        try(Transaction tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
             TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
             MultilevelSemanticCache cache = new MultilevelSemanticCache(testTx.traversalPlanFactory(), testTx.traversalExecutor());
 
@@ -384,7 +384,7 @@ public class QueryCacheIT {
 
     @Test
     public void whenGettingAndMatchDoesntExist_prospectiveParentNotComplete_childQueriesAreNotEquivalent_answersFetchedFromDB(){
-        try(Transaction tx = genericSchemaSession.readTransaction()) {
+        try(Transaction tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
             TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
 
             MultilevelSemanticCache cache = new MultilevelSemanticCache(testTx.traversalPlanFactory(), testTx.traversalExecutor());
@@ -442,7 +442,7 @@ public class QueryCacheIT {
 
     @Test
     public void whenGettingAndMatchExists_queryNotGround_queryDBComplete_answersFetchedFromCache(){
-        try(Transaction tx = genericSchemaSession.readTransaction()) {
+        try(Transaction tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
             TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
 
             MultilevelSemanticCache cache = new MultilevelSemanticCache(testTx.traversalPlanFactory(), testTx.traversalExecutor());
@@ -463,7 +463,7 @@ public class QueryCacheIT {
 
     @Test
     public void whenGettingAndMatchExists_queryNotGround_queryNotDBComplete_answersFetchedFromDBAndCache(){
-        try(Transaction tx = genericSchemaSession.readTransaction()) {
+        try(Transaction tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
             TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
 
             MultilevelSemanticCache cache = new MultilevelSemanticCache(testTx.traversalPlanFactory(), testTx.traversalExecutor());
@@ -498,7 +498,7 @@ public class QueryCacheIT {
 
     @Test
     public void whenGettingAndMatchExistsAndAnswersFetchedFromDBAndCache_weDontReturnDuplicateAnswers(){
-        try(Transaction tx = genericSchemaSession.readTransaction()) {
+        try(Transaction tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
             TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
             MultilevelSemanticCache cache = new MultilevelSemanticCache(testTx.traversalPlanFactory(), testTx.traversalExecutor());
             Concept sConcept = tx.stream(Graql.<GraqlGet>parse("match $x has resource 's';get;")).iterator().next().get("x");
@@ -529,7 +529,7 @@ public class QueryCacheIT {
 
     @Test
     public void whenGettingAndMatchExists_queryGround_answerFound_answersFetchedFromCache(){
-        try(Transaction tx = genericSchemaSession.readTransaction()) {
+        try(Transaction tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
             TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
             MultilevelSemanticCache cache = new MultilevelSemanticCache(testTx.traversalPlanFactory(), testTx.traversalExecutor());
 
@@ -579,7 +579,7 @@ public class QueryCacheIT {
 
     @Test
     public void whenGettingAndMatchExists_queryGround_queryNotDBComplete_answerNotFound_answersFetchedFromDbAndCache(){
-        try(Transaction tx = genericSchemaSession.readTransaction()) {
+        try(Transaction tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
             TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
             MultilevelSemanticCache cache = new MultilevelSemanticCache(testTx.traversalPlanFactory(), testTx.traversalExecutor());
 
@@ -642,7 +642,7 @@ public class QueryCacheIT {
 
     @Test
     public void whenExecutingSameQueryTwice_secondTimeWeFetchResultFromCache(){
-        try(Transaction tx = genericSchemaSession.readTransaction()) {
+        try(Transaction tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
             TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
             MultilevelSemanticCache cache = new MultilevelSemanticCache(testTx.traversalPlanFactory(), testTx.traversalExecutor());
             ReasonerAtomicQuery query = testTx.reasonerQueryFactory().atomic(conjunction("(role: $x, role: $y) isa binary;"));
@@ -667,7 +667,7 @@ public class QueryCacheIT {
 
     @Test
     public void whenFullyResolvingAQuery_allSubgoalsAreMarkedAsComplete(){
-        try(Transaction tx = genericSchemaSession.readTransaction()) {
+        try(Transaction tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
             TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
             MultilevelSemanticCache cache = testTx.queryCache();
             ReasonerAtomicQuery query = testTx.reasonerQueryFactory().atomic(conjunction("(role: $x, role: $y) isa baseRelation;"));
@@ -679,7 +679,7 @@ public class QueryCacheIT {
 
     @Test
     public void whenResolvingASequenceOfQueries_onlyFullyResolvedSubgoalsAreMarkedAsComplete(){
-        try(Transaction tx = genericSchemaSession.readTransaction()) {
+        try(Transaction tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
             TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
             MultilevelSemanticCache cache = testTx.queryCache();
             ReasonerAtomicQuery query = testTx.reasonerQueryFactory().atomic(conjunction("(symmetricRole: $x, symmetricRole: $y) isa binary-symmetric;"));
@@ -706,7 +706,7 @@ public class QueryCacheIT {
 
     @Test
     public void whenExecutingConjunctionWithPartialQueriesComplete_weExploitCache(){
-        try(Transaction tx = genericSchemaSession.readTransaction()) {
+        try(Transaction tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
             TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
             ReasonerQueryImpl query = testTx.reasonerQueryFactory().create(conjunction(
                     "{" +
@@ -734,7 +734,7 @@ public class QueryCacheIT {
 
     @Test
     public void whenInstancesAreInserted_weUpdateCompleteness(){
-        try(Transaction tx = genericSchemaSession.readTransaction()) {
+        try(Transaction tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
             TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
             MultilevelSemanticCache cache = testTx.queryCache();
             ReasonerAtomicQuery query = testTx.reasonerQueryFactory().atomic(conjunction(
@@ -764,7 +764,7 @@ public class QueryCacheIT {
 
     @Test
     public void whenInferredInstancesAreInserted_weDoNotUpdateCompleteness(){
-        try(Transaction tx = genericSchemaSession.readTransaction()) {
+        try(Transaction tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
             TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
             MultilevelSemanticCache cache = testTx.queryCache();
             Entity entity = tx.getEntityType("anotherBaseRoleEntity").instances().iterator().next();
@@ -790,7 +790,7 @@ public class QueryCacheIT {
 
     @Test
     public void whenInstancesAreDeleted_weUpdateCompleteness(){
-        try(Transaction tx = genericSchemaSession.readTransaction()) {
+        try(Transaction tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
             TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
             MultilevelSemanticCache cache = testTx.queryCache();
             Entity subRoleEntity = tx.getEntityType("subRoleEntity").instances().iterator().next();
@@ -832,7 +832,7 @@ public class QueryCacheIT {
 
     @Test
     public void whenRecordingQueryWithUniqueAnswer_weAckCompleteness(){
-        try(Transaction tx = genericSchemaSession.readTransaction()) {
+        try(Transaction tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
             TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
             MultilevelSemanticCache cache = testTx.queryCache();
             ReasonerQueryImpl baseQuery = testTx.reasonerQueryFactory().create(conjunction("{$x has resource $r via $rel;};"));
@@ -890,7 +890,7 @@ public class QueryCacheIT {
 
     @Test
     public void whenParentQueryIsComplete_onlyChildrenThatStrictlySubsumeParentAreComplete(){
-        try(Transaction tx = genericSchemaSession.readTransaction()) {
+        try(Transaction tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
             TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction) tx);
             MultilevelSemanticCache cache = testTx.queryCache();
 

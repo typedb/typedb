@@ -86,7 +86,7 @@ public class GraqlUndefineIT {
     public void newTransaction() {
         session = graknServer.sessionWithNewKeyspace();
         MovieGraph.load(session);
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
     }
 
     @After
@@ -99,7 +99,7 @@ public class GraqlUndefineIT {
     public void whenUndefiningDataType_DoNothing() {
         tx.execute(Graql.undefine(type("name").datatype(Graql.Token.DataType.STRING)));
         tx.commit();
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
         assertEquals(AttributeType.DataType.STRING, tx.getAttributeType("name").dataType());
     }
 
@@ -107,12 +107,12 @@ public class GraqlUndefineIT {
     public void whenUndefiningHas_TheHasLinkIsDeleted() {
         tx.execute(Graql.define(type(NEW_TYPE.getValue()).sub(ENTITY).has("name")));
         tx.commit();
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
         assertThat(tx.getType(NEW_TYPE).attributes().toArray(), hasItemInArray(tx.getAttributeType("name")));
 
         tx.execute(Graql.undefine(type(NEW_TYPE.getValue()).has("name")));
         tx.commit();
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
         assertThat(tx.getType(NEW_TYPE).attributes().toArray(), not(hasItemInArray(tx.getAttributeType("name"))));
     }
 
@@ -120,12 +120,12 @@ public class GraqlUndefineIT {
     public void whenUndefiningHasWhichDoesntExist_DoNothing() {
         tx.execute(Graql.define(type(NEW_TYPE.getValue()).sub(ENTITY).has("name")));
         tx.commit();
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
         assertThat(tx.getType(NEW_TYPE).attributes().toArray(), hasItemInArray(tx.getAttributeType("name")));
 
         tx.execute(Graql.undefine(type(NEW_TYPE.getValue()).has("title")));
         tx.commit();
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
         assertThat(tx.getType(NEW_TYPE).attributes().toArray(), hasItemInArray(tx.getAttributeType("name")));
     }
 
@@ -133,12 +133,12 @@ public class GraqlUndefineIT {
     public void whenUndefiningKey_TheKeyLinkIsDeleted() {
         tx.execute(Graql.define(type(NEW_TYPE.getValue()).sub(ENTITY).key("name")));
         tx.commit();
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
         assertThat(tx.getType(NEW_TYPE).keys().toArray(), hasItemInArray(tx.getAttributeType("name")));
 
         tx.execute(Graql.undefine(type(NEW_TYPE.getValue()).key("name")));
         tx.commit();
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
         assertThat(tx.getType(NEW_TYPE).keys().toArray(), not(hasItemInArray(tx.getAttributeType("name"))));
     }
 
@@ -146,12 +146,12 @@ public class GraqlUndefineIT {
     public void whenUndefiningKeyWhichDoesntExist_DoNothing() {
         tx.execute(Graql.define(type(NEW_TYPE.getValue()).sub(ENTITY).key("name")));
         tx.commit();
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
         assertThat(tx.getType(NEW_TYPE).keys().toArray(), hasItemInArray(tx.getAttributeType("name")));
 
         tx.execute(Graql.undefine(type(NEW_TYPE.getValue()).key("title")));
         tx.commit();
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
         assertThat(tx.getType(NEW_TYPE).keys().toArray(), hasItemInArray(tx.getAttributeType("name")));
     }
 
@@ -159,12 +159,12 @@ public class GraqlUndefineIT {
     public void whenUndefiningById_TheSchemaConceptIsDeleted() {
         Type newType = tx.execute(Graql.define(x.type(NEW_TYPE.getValue()).sub(ENTITY))).get(0).get(x.var()).asType();
         tx.commit();
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
         assertNotNull(tx.getType(NEW_TYPE));
 
         tx.execute(Graql.undefine(var().id(newType.id().getValue()).sub(ENTITY)));
         tx.commit();
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
         assertNull(tx.getType(NEW_TYPE));
     }
 
@@ -172,12 +172,12 @@ public class GraqlUndefineIT {
     public void whenUndefiningIsAbstract_TheTypeIsNoLongerAbstract() {
         tx.execute(Graql.define(type(NEW_TYPE.getValue()).sub(ENTITY).isAbstract()));
         tx.commit();
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
         assertTrue(tx.getType(NEW_TYPE).isAbstract());
 
         tx.execute(Graql.undefine(type(NEW_TYPE.getValue()).isAbstract()));
         tx.commit();
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
         assertFalse(tx.getType(NEW_TYPE).isAbstract());
     }
 
@@ -185,12 +185,12 @@ public class GraqlUndefineIT {
     public void whenUndefiningIsAbstractOnNonAbstractType_DoNothing() {
         tx.execute(Graql.define(type(NEW_TYPE.getValue()).sub(ENTITY)));
         tx.commit();
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
         assertFalse(tx.getType(NEW_TYPE).isAbstract());
 
         tx.execute(Graql.undefine(type(NEW_TYPE.getValue()).isAbstract()));
         tx.commit();
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
         assertFalse(tx.getType(NEW_TYPE).isAbstract());
     }
 
@@ -198,12 +198,12 @@ public class GraqlUndefineIT {
     public void whenUndefiningPlays_TheTypeNoLongerPlaysTheRole() {
         tx.execute(Graql.define(type(NEW_TYPE.getValue()).sub(ENTITY).plays("actor")));
         tx.commit();
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
         assertThat(tx.getType(NEW_TYPE).playing().toArray(), hasItemInArray(tx.getRole("actor")));
 
         tx.execute(Graql.undefine(type(NEW_TYPE.getValue()).plays("actor")));
         tx.commit();
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
         assertThat(tx.getType(NEW_TYPE).playing().toArray(), not(hasItemInArray(tx.getRole("actor"))));
     }
 
@@ -211,12 +211,12 @@ public class GraqlUndefineIT {
     public void whenUndefiningPlaysWhichDoesntExist_DoNothing() {
         tx.execute(Graql.define(type(NEW_TYPE.getValue()).sub(ENTITY).plays("production-with-cast")));
         tx.commit();
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
         assertThat(tx.getType(NEW_TYPE).playing().toArray(), hasItemInArray(tx.getRole("production-with-cast")));
 
         tx.execute(Graql.undefine(type(NEW_TYPE.getValue()).plays("actor")));
         tx.commit();
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
         assertThat(tx.getType(NEW_TYPE).playing().toArray(), hasItemInArray(tx.getRole("production-with-cast")));
     }
 
@@ -224,12 +224,12 @@ public class GraqlUndefineIT {
     public void whenUndefiningRegexProperty_TheAttributeTypeHasNoRegex() {
         tx.execute(Graql.define(type(NEW_TYPE.getValue()).sub(ATTRIBUTE).datatype(Graql.Token.DataType.STRING).regex("abc")));
         tx.commit();
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
         assertEquals("abc", tx.<AttributeType>getType(NEW_TYPE).regex());
 
         tx.execute(Graql.undefine(type(NEW_TYPE.getValue()).regex("abc")));
         tx.commit();
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
         assertNull(tx.<AttributeType>getType(NEW_TYPE).regex());
     }
 
@@ -237,12 +237,12 @@ public class GraqlUndefineIT {
     public void whenUndefiningRegexPropertyWithWrongRegex_DoNothing() {
         tx.execute(Graql.define(type(NEW_TYPE.getValue()).sub(ATTRIBUTE).datatype(Graql.Token.DataType.STRING).regex("abc")));
         tx.commit();
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
         assertEquals("abc", tx.<AttributeType>getType(NEW_TYPE).regex());
 
         tx.execute(Graql.undefine(type(NEW_TYPE.getValue()).regex("xyz")));
         tx.commit();
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
         assertEquals("abc", tx.<AttributeType>getType(NEW_TYPE).regex());
     }
 
@@ -250,7 +250,7 @@ public class GraqlUndefineIT {
     public void whenUndefiningRelatesPropertyWithoutCommit_TheRelationTypeNoLongerRelatesTheRole() {
         tx.execute(Graql.define(type(NEW_TYPE.getValue()).sub(RELATION).relates("actor")));
         tx.commit();
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
         assertThat(tx.<RelationType>getType(NEW_TYPE).roles().toArray(), hasItemInArray(tx.getRole("actor")));
 
         tx.execute(Graql.undefine(type(NEW_TYPE.getValue()).relates("actor")));
@@ -261,12 +261,12 @@ public class GraqlUndefineIT {
     public void whenUndefiningSub_TheSchemaConceptIsDeleted() {
         tx.execute(Graql.define(type(NEW_TYPE.getValue()).sub(ENTITY)));
         tx.commit();
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
         assertNotNull(tx.getType(NEW_TYPE));
 
         tx.execute(Graql.undefine(type(NEW_TYPE.getValue()).sub(ENTITY)));
         tx.commit();
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
         assertNull(tx.getType(NEW_TYPE));
     }
 
@@ -274,12 +274,12 @@ public class GraqlUndefineIT {
     public void whenUndefiningSubWhichDoesntExist_DoNothing() {
         tx.execute(Graql.define(type(NEW_TYPE.getValue()).sub(ENTITY)));
         tx.commit();
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
         assertNotNull(tx.getType(NEW_TYPE));
 
         tx.execute(Graql.undefine(type(NEW_TYPE.getValue()).sub(THING)));
         tx.commit();
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
         assertNotNull(tx.getType(NEW_TYPE));
     }
 
@@ -287,7 +287,7 @@ public class GraqlUndefineIT {
     public void undefineRelationAndRoles() {
         tx.execute(Graql.define(type("employment").sub("relation").relates("employee")));
         tx.commit();
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
         assertNotNull(tx.getType(Label.of("employment")));
 
         GraqlUndefine undefineQuery = Graql.undefine(
@@ -297,7 +297,7 @@ public class GraqlUndefineIT {
 
         tx.execute(undefineQuery);
         tx.commit();
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
         assertNull(tx.getType(Label.of("employment")));
     }
 
@@ -308,7 +308,7 @@ public class GraqlUndefineIT {
                 type("registration").sub("attribute").datatype(Graql.Token.DataType.STRING)
         ));
         tx.commit();
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
         assertNotNull(tx.getType(Label.of("company")));
         assertNotNull(tx.getType(Label.of("registration")));
 
@@ -319,7 +319,7 @@ public class GraqlUndefineIT {
 
         tx.execute(undefineQuery);
         tx.commit();
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
         assertNull(tx.getType(Label.of("company")));
         assertNull(tx.getType(Label.of("registration")));
     }
@@ -335,7 +335,7 @@ public class GraqlUndefineIT {
         );
         tx.execute(Graql.define(schema));
         tx.commit();
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
 
         EntityType pokemon = tx.getEntityType("pokemon");
         RelationType evolution = tx.getRelationType("evolution");
@@ -349,7 +349,7 @@ public class GraqlUndefineIT {
 
         tx.execute(Graql.undefine(schema));
         tx.commit();
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
 
         assertNull(tx.getEntityType("pokemon"));
         assertNull(tx.getEntityType("evolution"));
@@ -368,7 +368,7 @@ public class GraqlUndefineIT {
                 var("x").isa("company").has("registration", "12345")
         ));
         tx.commit();
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
         assertNotNull(tx.getType(Label.of("company")));
         assertNotNull(tx.getType(Label.of("registration")));
         assertTrue(tx.getType(Label.of("company")).instances().iterator().hasNext());
@@ -387,7 +387,7 @@ public class GraqlUndefineIT {
                 type("sub-company").sub("company")
         ));
         tx.commit();
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
         assertNotNull(tx.getType(Label.of("company")));
         assertNotNull(tx.getType(Label.of("sub-company")));
         assertNotNull(tx.getType(Label.of("registration")));

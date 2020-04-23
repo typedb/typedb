@@ -42,7 +42,7 @@ public class TransitivityMatrixGraph{
     }
 
     public final void load(int n, int m) {
-        Transaction tx = session.writeTransaction();
+        Transaction tx = session.transaction(Transaction.Type.WRITE);
         loadFromFile(gqlPath, gqlFile, tx);
         buildExtensionalDB(n, m, tx);
         tx.commit();

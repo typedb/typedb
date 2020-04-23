@@ -46,7 +46,7 @@ public class QueryValidityIT {
     @BeforeClass
     public static void loadContext(){
         genericSchemaSession = server.sessionWithNewKeyspace();
-        tx = genericSchemaSession.writeTransaction();
+        tx = genericSchemaSession.transaction(Transaction.Type.WRITE);
         tx.execute(Graql.parse("define " +
                 "anotherRole sub role;" +
                 "someRel sub relation, relates anotherRole; " +
@@ -54,7 +54,7 @@ public class QueryValidityIT {
                 "binary sub relation, relates role1;" +
                 "name sub attribute, datatype string;").asDefine());
         tx.commit();
-        tx = genericSchemaSession.writeTransaction();
+        tx = genericSchemaSession.transaction(Transaction.Type.WRITE);
     }
 
     @AfterClass

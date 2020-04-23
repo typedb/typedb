@@ -86,7 +86,7 @@ public class RuleValidationIT {
 
     @Test
     public void whenCreatingRulesWithNullValues_Throw() throws NullPointerException {
-        try (Transaction tx = session.writeTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             expectedException.expect(NullPointerException.class);
             tx.putRule("A Thing", null, null);
         }
@@ -94,7 +94,7 @@ public class RuleValidationIT {
 
     @Test
     public void whenCreatingRulesWithNonExistentEntityType_Throw() throws InvalidKBException {
-        try (Transaction tx = session.writeTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             tx.putEntityType("My-Type");
 
             Pattern when = Graql.parsePattern("$x isa Your-Type;");
@@ -111,7 +111,7 @@ public class RuleValidationIT {
 
     @Test
     public void whenCreatingDistinctRulesWithSimilarStringHashes_EnsureRulesDoNotClash() {
-        try (Transaction tx = session.writeTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             String productRefused = "productRefused";
             Pattern when1 = Graql.parsePattern("{$step has step-id 9; $e (process-case: $case) isa process-record; $case has consent false;};");
             Pattern then1 = Graql.parsePattern("{(record: $e, step: $step) isa record-step;};");
@@ -217,7 +217,7 @@ public class RuleValidationIT {
 
     @Test
     public void whenAddingARuleThatCopiesValuesBetweenIncompatibleAttributes_Throw() throws InvalidKBException {
-        try (Transaction tx = session.writeTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             initTx(tx);
             Rule rule = tx.putRule(
                     UUID.randomUUID().toString(),
@@ -481,7 +481,7 @@ public class RuleValidationIT {
 
     @Test
     public void whenAddingASimpleRuleWithNegationCycle_Throw() throws InvalidKBException {
-        try (Transaction tx = session.writeTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             Pattern when = Graql.parsePattern(
                     "{" +
                             "$x isa entity;" +
@@ -503,7 +503,7 @@ public class RuleValidationIT {
 
     @Test
     public void whenAddingNonStratifiableRules_Throw() throws InvalidKBException {
-        try (Transaction tx = session.writeTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             EntityType p = tx.putEntityType("p");
             EntityType q = tx.putEntityType("q");
             EntityType r = tx.putEntityType("r");
@@ -533,7 +533,7 @@ public class RuleValidationIT {
 
     @Test
     public void whenAdditionOfRuleWithMetaTypeMakesRulesNonstratifiable_Throw() throws InvalidKBException {
-        try (Transaction tx = session.writeTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             tx.putEntityType("p");
             tx.putEntityType("q");
             tx.putEntityType("r");
@@ -549,7 +549,7 @@ public class RuleValidationIT {
             tx.commit();
         }
 
-        try (Transaction tx = session.writeTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             EntityType p = tx.putEntityType("p");
             EntityType q = tx.putEntityType("q");
             EntityType r = tx.putEntityType("r");
@@ -572,7 +572,7 @@ public class RuleValidationIT {
 
     @Test
     public void whenAdditionOfRuleMakesRulesNonstratifiable_Throw() throws InvalidKBException {
-        try (Transaction tx = session.writeTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             tx.putEntityType("p");
             tx.putEntityType("q");
             tx.putEntityType("r");
@@ -588,7 +588,7 @@ public class RuleValidationIT {
             tx.commit();
         }
 
-        try (Transaction tx = session.writeTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             EntityType p = tx.putEntityType("p");
             EntityType q = tx.putEntityType("q");
             EntityType r = tx.putEntityType("r");
@@ -612,7 +612,7 @@ public class RuleValidationIT {
 
     @Test
     public void whenAddingAddingStratifiableRules_correctStratificationIsProduced() {
-        try (Transaction tx = session.writeTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             EntityType p = tx.putEntityType("p");
             EntityType q = tx.putEntityType("q");
             EntityType r = tx.putEntityType("r");
@@ -638,7 +638,7 @@ public class RuleValidationIT {
 
             tx.commit();
         }
-        try (Transaction tx = session.writeTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction) tx;
             List<Rule> rules = RuleUtils.stratifyRules(
                     testTx.ruleCache().getRules()
@@ -659,7 +659,7 @@ public class RuleValidationIT {
 
     @Test
     public void whenAddingARuleWithMultipleNegationBlocks_Throw() throws InvalidKBException {
-        try (Transaction tx = session.writeTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             Pattern when = Graql.parsePattern(
                     "{" +
                             "$x isa thing;" +
@@ -678,7 +678,7 @@ public class RuleValidationIT {
 
     @Test
     public void whenAddingARuleWithNestedNegationBlock_Throw() throws InvalidKBException {
-        try (Transaction tx = session.writeTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             Pattern when = Graql.parsePattern(
                     "{" +
                             "$x isa entity;" +
@@ -700,7 +700,7 @@ public class RuleValidationIT {
 
     @Test
     public void whenAddingARuleWithDisjunctiveNegationBlock_Throw() throws InvalidKBException {
-        try (Transaction tx = session.writeTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             Pattern when = Graql.parsePattern(
                     "{" +
                             "$x isa entity;" +
@@ -724,7 +724,7 @@ public class RuleValidationIT {
 
     @Test
     public void whenCreatingRules_EnsureHypothesisAndConclusionTypesAreFilledOnCommit() throws InvalidKBException {
-        try (Transaction tx = session.writeTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             tx.putEntityType("someType");
             tx.putEntityType("anotherType");
 
@@ -737,7 +737,7 @@ public class RuleValidationIT {
 
             tx.commit();
         }
-        Transaction tx = session.readTransaction();
+        Transaction tx = session.transaction(Transaction.Type.READ);
         EntityType t1 = tx.getEntityType("someType");
         EntityType t2 = tx.getEntityType("anotherType");
         Rule rule = tx.getRule("My-Happy-Rule");
@@ -749,7 +749,7 @@ public class RuleValidationIT {
 
     @Test
     public void whenCreatingRules_EnsureWhenTypesAndSignAreLinkedCorrectlyOnCommit() throws InvalidKBException {
-        try (Transaction tx = session.writeTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             tx.putEntityType("p");
             tx.putEntityType("q");
             tx.putEntityType("r");
@@ -772,7 +772,7 @@ public class RuleValidationIT {
 
             tx.commit();
         }
-        Transaction tx = session.readTransaction();
+        Transaction tx = session.transaction(Transaction.Type.READ);
         Type p = tx.getEntityType("p");
         Type q = tx.getEntityType("q");
         Type r = tx.getEntityType("r");
@@ -789,7 +789,7 @@ public class RuleValidationIT {
 
     @Test
     public void whenCreatingRules_EnsureTypesAreCorrectlyConnectedToRulesOnCommit() throws InvalidKBException {
-        try (Transaction tx = session.writeTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             Type p = tx.putEntityType("p");
             Type q = tx.putEntityType("q");
             Type r = tx.putEntityType("r");
@@ -819,7 +819,7 @@ public class RuleValidationIT {
 
             tx.commit();
         }
-        Transaction tx = session.readTransaction();
+        Transaction tx = session.transaction(Transaction.Type.READ);
         Type p = tx.getEntityType("p");
         Type q = tx.getEntityType("q");
         Type r = tx.getEntityType("r");
@@ -842,7 +842,7 @@ public class RuleValidationIT {
 
     @Test
     public void whenAddingDuplicateRulesOfTheSameTypeWithTheSamePattern_ReturnTheSameRule() {
-        try (Transaction tx = session.writeTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             tx.putEntityType("someType");
             Pattern when = Graql.parsePattern("$x isa someType;");
             Pattern then = Graql.parsePattern("$x isa someType;");
@@ -857,7 +857,7 @@ public class RuleValidationIT {
     @Ignore("This is ignored because we currently have no way to determine if patterns with different variables name are equivalent")
     @Test
     public void whenAddingDuplicateRulesOfTheSameTypeWithDifferentPatternVariables_ReturnTheSameRule() {
-        try (Transaction tx = session.writeTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             tx.putEntityType("someType");
             Pattern when = Graql.parsePattern("$x isa someType;");
             Pattern then = Graql.parsePattern("$y isa someType;");
@@ -871,7 +871,7 @@ public class RuleValidationIT {
 
     @Test
     public void whenCreatingRuleWithImpossibleRole_rejectRule() {
-        try (Transaction tx = session.writeTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             tx.execute(Graql.parse("define " +
                     "valid-rel sub relation, relates left, relates right;" +
                     "other-rel sub relation, relates unplayed;" +
@@ -899,7 +899,7 @@ public class RuleValidationIT {
     }
 
     private void validateOntologicallyIllegalRule(Pattern when, Pattern then, ErrorMessage message, String... outputParams) {
-        try (Transaction tx = session.writeTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             initTx(tx);
             Rule rule = tx.putRule(UUID.randomUUID().toString(), when, then);
 
@@ -913,7 +913,7 @@ public class RuleValidationIT {
     }
 
     private void validateIllegalRule(Pattern when, Pattern then, ErrorMessage message) {
-        try (Transaction tx = session.writeTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             initTx(tx);
             Rule rule = tx.putRule(UUID.randomUUID().toString(), when, then);
 
@@ -924,7 +924,7 @@ public class RuleValidationIT {
     }
 
     private void validateIllegalHead(Pattern when, Pattern then, ErrorMessage message) {
-        try (Transaction tx = session.writeTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             initTx(tx);
             Rule rule = tx.putRule(UUID.randomUUID().toString(), when, then);
 
@@ -935,7 +935,7 @@ public class RuleValidationIT {
     }
 
     private void validateLegalHead(Pattern when, Pattern then) {
-        try (Transaction tx = session.writeTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             initTx(tx);
             tx.putRule(UUID.randomUUID().toString(), when, then);
             tx.commit();

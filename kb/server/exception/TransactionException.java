@@ -68,13 +68,6 @@ public class TransactionException extends GraknException {
     }
 
     /**
-     * Thrown when attempting to open an invalid type of transaction
-     */
-    public static TransactionException transactionInvalid(Object tx) {
-        return create("Unknown type of transaction [" + tx + "]");
-    }
-
-    /**
      * Thrown when attempting to mutate a read only transaction
      */
     public static TransactionException transactionReadOnly(Transaction tx) {

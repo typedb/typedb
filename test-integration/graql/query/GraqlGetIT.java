@@ -80,7 +80,7 @@ public class GraqlGetIT {
 
     @Before
     public void newTransaction() {
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
     }
 
     @After
@@ -161,6 +161,7 @@ public class GraqlGetIT {
         assertEquals("Al Pacino", answers.get(3).get("x").asAttribute().value());
         assertEquals("Benjamin L. Willard", answers.get(4).get("x").asAttribute().value());
     }
+
 
     @Test
     public void testGetContainsStringIgnoreCase() {

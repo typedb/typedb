@@ -104,7 +104,7 @@ public class TransactionIT {
     public void setUp() {
         Config mockServerConfig = storage.createCompatibleServerConfig();
         session = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig);
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
     }
 
     @After
@@ -191,7 +191,7 @@ public class TransactionIT {
         final long threshold = 333333L;
         Config mockServerConfig = storage.createCompatibleServerConfig();
         try(Session session = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig, threshold)) {
-            try (Transaction tx = session.readTransaction()) {
+            try (Transaction tx = session.transaction(Transaction.Type.READ)) {
                 assertEquals(threshold, ((TestTransactionProvider.TestTransaction)tx).shardingThreshold());
             }
         }
@@ -230,7 +230,7 @@ public class TransactionIT {
         }
         assertTrue("Graph not correctly closed", errorThrown);
 
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
         tx.putEntityType("A Thing");
     }
 
@@ -244,11 +244,14 @@ public class TransactionIT {
     }
 
     @Test
-    public void whenCommittingATxWhichWasJustCommitted_DoNothing() {
+    public void whenCommittingATxWhichWasJustCommitted_Throw() {
         tx.commit();
         assertTrue("Graph is still open after commit", !tx.isOpen());
+        expectedException.expect(TransactionException.class);
+        expectedException.expectMessage("The transaction for keyspace");
+        expectedException.expectMessage("is closed");
         tx.commit();
-        assertTrue("Graph is somehow open after 2nd commit", !tx.isOpen());
+        assertFalse(tx.isOpen());
     }
 
     @Test
@@ -259,17 +262,17 @@ public class TransactionIT {
         String relationType1 = "My Relation Type 1";
 
         //Fail Some Mutations
-        tx = session.readTransaction();
+        tx = session.transaction(Transaction.Type.READ);
         tx.putEntityType(entityType);
         expectedException.expectMessage(ErrorMessage.TRANSACTION_READ_ONLY.getMessage(tx.keyspace()));
         tx.commit();
 
-        tx = session.readTransaction();
+        tx = session.transaction(Transaction.Type.READ);
         tx.putRole(roleType1);
         expectedException.expectMessage(ErrorMessage.TRANSACTION_READ_ONLY.getMessage(tx.keyspace()));
         tx.commit();
 
-        tx = session.readTransaction();
+        tx = session.transaction(Transaction.Type.READ);
         tx.putRelationType(relationType1);
         expectedException.expectMessage(ErrorMessage.TRANSACTION_READ_ONLY.getMessage(tx.keyspace()));
         tx.commit();
@@ -281,11 +284,11 @@ public class TransactionIT {
         tx.close();
         String entityType = "person";
 
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
         tx.putEntityType(entityType);
         tx.commit();
 
-        tx = session.readTransaction();
+        tx = session.transaction(Transaction.Type.READ);
         EntityType person = tx.getEntityType("person");
         Entity human = person.create();
         expectedException.expectMessage(ErrorMessage.TRANSACTION_READ_ONLY.getMessage(tx.keyspace()));
@@ -298,7 +301,7 @@ public class TransactionIT {
         failAtOpeningTx(session, true, keyspace);
         tx.close();
 
-        session.writeTransaction();
+        session.transaction(Transaction.Type.WRITE);
         failAtOpeningTx(session, false, keyspace);
     }
 
@@ -307,9 +310,9 @@ public class TransactionIT {
         try {
             //noinspection ResultOfMethodCallIgnored
             if (write) {
-                session.writeTransaction();
+                session.transaction(Transaction.Type.WRITE);
             } else {
-                session.readTransaction();
+                session.transaction(Transaction.Type.READ);
             }
         } catch (TransactionException e) {
             exception = e;
@@ -365,7 +368,7 @@ public class TransactionIT {
         JanusGraphFactory janusGraphFactory = new JanusGraphFactory(mockServerConfig);
         String newKeyspaceName = "a" + UUID.randomUUID().toString().replaceAll("-", "");
         try (Session session = SessionUtil.serverlessSession(mockServerConfig,janusGraphFactory, newKeyspaceName,1L)) {
-            try (Transaction tx = session.writeTransaction()) {
+            try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
                 tx.execute(define(type("person").sub("entity")).asDefine());
                 tx.commit();
             }
@@ -379,7 +382,7 @@ public class TransactionIT {
         }
         ConceptId p1;
         try (Session session = SessionUtil.serverlessSession(mockServerConfig,janusGraphFactory, newKeyspaceName,1L)) {
-            try (Transaction tx = session.writeTransaction()) {
+            try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
                 p1 = tx.execute(insert(var("p1").isa("person")).asInsert()).get(0).get("p1").id();
                 tx.commit();
             }
@@ -395,7 +398,7 @@ public class TransactionIT {
         }
         ConceptId p2;
         try (Session session = SessionUtil.serverlessSession(mockServerConfig,janusGraphFactory, newKeyspaceName,1L)) {
-            try (Transaction tx = session.writeTransaction()) {
+            try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
                 p2 = tx.execute(insert(var("p2").isa("person")).asInsert()).get(0).get("p2").id();
                 tx.commit();
             }
@@ -416,26 +419,26 @@ public class TransactionIT {
         JanusGraphFactory janusGraphFactory = new JanusGraphFactory(mockServerConfig);
         String newKeyspaceName = "a" + UUID.randomUUID().toString().replaceAll("-", "");
         try (Session session = SessionUtil.serverlessSession(mockServerConfig,janusGraphFactory, newKeyspaceName,1L)) {
-            try (Transaction tx = session.writeTransaction()) {
+            try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
                 tx.execute(define(type("person").sub("entity")).asDefine());
                 tx.execute(define(type("company").sub("entity")).asDefine());
                 tx.commit();
             }
         }
         try (Session session = SessionUtil.serverlessSession(mockServerConfig,janusGraphFactory, newKeyspaceName,1L)) {
-            try (Transaction tx = session.writeTransaction()) {
+            try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
                 tx.execute(insert(var("p").isa("person")).asInsert());
                 tx.commit();
             }
         }
         try (Session session = SessionUtil.serverlessSession(mockServerConfig,janusGraphFactory, newKeyspaceName,1L)) {
-            try (Transaction tx = session.writeTransaction()) {
+            try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
                 tx.execute(insert(var("p").isa("person")).asInsert());
                 tx.commit();
             }
         }
         try (Session session = SessionUtil.serverlessSession(mockServerConfig,janusGraphFactory, newKeyspaceName,1L)) {
-            try (Transaction tx = session.writeTransaction()) {
+            try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
                 tx.execute(insert(var("c").isa("company")).asInsert());
                 tx.commit();
             }
@@ -455,7 +458,7 @@ public class TransactionIT {
         Session session = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig, shardingThreshold);
 
         String entityLabel = "someEntity";
-        try(Transaction tx = session.writeTransaction()){
+        try(Transaction tx = session.transaction(Transaction.Type.WRITE)){
             tx.putEntityType(entityLabel);
             tx.commit();
         }
@@ -464,7 +467,7 @@ public class TransactionIT {
             statements.add(Graql.var().isa(entityLabel));
         }
         GraqlTestUtil.insertStatementsConcurrently(session, statements, threads, insertsPerCommit);
-        try(Transaction tx = session.writeTransaction()) {
+        try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             final long noOfConcepts = tx.execute(Graql.parse("compute count in someEntity;").asComputeStatistics()).get(0).number().longValue();
             TestCase.assertEquals(noOfEntities, noOfConcepts);
             //NB one extra shard comes from the fact that if we have <shardThreshold> number of instances we will have 2 shards (instance count equal to thresh triggers sharding)
@@ -511,7 +514,7 @@ public class TransactionIT {
         Session session = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig);
         String entityLabel = "someEntity";
         String attributeLabel = "someAttribute";
-        try(Transaction tx = session.writeTransaction()){
+        try(Transaction tx = session.transaction(Transaction.Type.WRITE)){
             AttributeType<Long> someAtttribute = tx.putAttributeType(attributeLabel, AttributeType.DataType.LONG);
             tx.putEntityType(entityLabel).has(someAtttribute);
             tx.commit();
@@ -529,7 +532,7 @@ public class TransactionIT {
             statements.add(Graql.var("x" + i).isa(attributeLabel).val(value));
         }
         GraqlTestUtil.insertStatementsConcurrently(session, statements, threads, insertsPerCommit);
-        try(Transaction tx = session.writeTransaction()) {
+        try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             final long noOfAttributes = tx.execute(Graql.parse("compute count in someAttribute;").asComputeStatistics()).get(0).number().longValue();
             TestCase.assertEquals(values.size(), noOfAttributes);
         }
@@ -547,7 +550,7 @@ public class TransactionIT {
 
         executor.submit(() -> {
             //Resources
-            try (Transaction tx = localSession.writeTransaction()) {
+            try (Transaction tx = localSession.transaction(Transaction.Type.WRITE)) {
                 AttributeType<Long> int_ = tx.putAttributeType("int", AttributeType.DataType.LONG);
                 AttributeType<Long> foo = tx.putAttributeType("foo", AttributeType.DataType.LONG).sup(int_);
                 tx.putAttributeType("bar", AttributeType.DataType.LONG).sup(int_);
@@ -558,7 +561,7 @@ public class TransactionIT {
         }).get();
 
         //Relation Which Has Resources
-        try (Transaction tx = localSession.writeTransaction()) {
+        try (Transaction tx = localSession.transaction(Transaction.Type.WRITE)) {
             tx.putEntityType("BAR").has(tx.getAttributeType("bar"));
             tx.commit();
         }
@@ -592,12 +595,12 @@ public class TransactionIT {
     public void insertAndDeleteRelationInSameTransaction_relationIsCorrectlyDeletedAndRolePlayersAreInserted(){
         tx.execute(Graql.parse("define person sub entity, plays friend; friendship sub relation, relates friend;").asDefine());
         tx.commit();
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
         String relId = tx.execute(Graql.parse("insert $x isa person; $y isa person; $r (friend: $x, friend: $y) isa friendship;").asInsert()).get(0).get("r").id().getValue();
         tx.execute(Graql.parse("match $r id " + relId + "; delete $r;").asDelete());
         tx.commit();
 
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
         List<ConceptMap> rolePlayersResult = tx.execute(Graql.parse("match $x isa person; get;").asGet());
         assertEquals(2, rolePlayersResult.size());
         List<ConceptMap> relationResult = tx.execute(Graql.parse("match $r id " + relId + "; get;").asGet());
@@ -608,15 +611,15 @@ public class TransactionIT {
     public void insertAndDeleteSameRelationInDifferentTransactions_relationIsCorrectlyDeletedAndRolePlayersAreInserted(){
         tx.execute(Graql.parse("define person sub entity, plays friend; friendship sub relation, relates friend;").asDefine());
         tx.commit();
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
         String relId = tx.execute(Graql.parse("insert $x isa person; $y isa person; $r (friend: $x, friend: $y) isa friendship;").asInsert()).get(0).get("r").id().getValue();
         tx.commit();
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
         tx.execute(Graql.parse("match $r id " + relId + "; delete $r;").asDelete());
         tx.commit();
 
 
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
         List<ConceptMap> rolePlayersResult = tx.execute(Graql.parse("match $x isa person; get;").asGet());
         assertEquals(2, rolePlayersResult.size());
         List<ConceptMap> relationResult = tx.execute(Graql.parse("match $r id " + relId + "; get;").asGet());
@@ -640,15 +643,15 @@ public class TransactionIT {
             ));
         tx.commit();
 
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
         tx.execute(Graql.<GraqlInsert>parse("insert $p isa person, has score 10.0;"));
         tx.commit();
 
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
         tx.execute(Graql.<GraqlGet>parse("match $p isa person, has name $n; get;"));
         tx.commit();
 
-        tx = session.readTransaction();
+        tx = session.transaction(Transaction.Type.READ);
         List<ConceptMap> answers = tx.execute(Graql.<GraqlGet>parse("match $p isa person, has name $n; get;"), false);
         assertTrue(answers.isEmpty());
     }
@@ -669,17 +672,17 @@ public class TransactionIT {
         ));
         tx.commit();
 
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
         tx.execute(Graql.<GraqlInsert>parse("insert $p isa person, has score 10.0;"));
         tx.execute(Graql.<GraqlInsert>parse("insert $q isa person;"));
         tx.commit();
 
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
         List<ConceptMap> answers = tx.execute(Graql.<GraqlGet>parse("match $p isa person, has score $score; get;"), true);
         assertEquals(2, answers.size());
         tx.commit();
 
-        tx = session.readTransaction();
+        tx = session.transaction(Transaction.Type.READ);
         answers = tx.execute(Graql.<GraqlGet>parse("match $p isa person, has score $score; get;"), false);
         assertEquals(1, answers.size());
     }
@@ -710,7 +713,7 @@ public class TransactionIT {
         ));
         tx.commit();
 
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
         List<ConceptMap> relationsWithInferredRolePlayer = tx.execute(Graql.<GraqlInsert>parse(
                 "match " +
                         "$p isa someEntity;" +
@@ -728,7 +731,7 @@ public class TransactionIT {
         ));
         tx.commit();
 
-        tx = session.readTransaction();
+        tx = session.transaction(Transaction.Type.READ);
         List<ConceptMap> relationsWithInferredRolePlayerPostCommit = tx.execute(Graql.parse(
                 "match " +
                         "$p isa someEntity;" +
@@ -780,7 +783,7 @@ public class TransactionIT {
         ));
         tx.commit();
 
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
         List<ConceptMap> relationsWithInferredRolePlayer = tx.execute(Graql.<GraqlInsert>parse(
                 "match " +
                         "$finalRel (someRole: $p, anotherRole: $q) isa yetAnotherInferredRelation;" +
@@ -789,7 +792,7 @@ public class TransactionIT {
         ));
         tx.commit();
 
-        tx = session.readTransaction();
+        tx = session.transaction(Transaction.Type.READ);
         List<ConceptMap> relationsWithInferredRolePlayerPostCommit = tx.execute(Graql.parse(
                 "match " +
                         "$rel  (someRole: $p, anotherRole: $q) isa inferredRelation;" +
@@ -825,7 +828,7 @@ public class TransactionIT {
         ));
         tx.commit();
 
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
         tx.execute(Graql.<GraqlInsert>parse(
                 "match " +
                         "$p isa someEntity;" +
@@ -836,7 +839,7 @@ public class TransactionIT {
         ));
         tx.commit();
 
-        tx = session.readTransaction();
+        tx = session.transaction(Transaction.Type.READ);
         tx.execute(Graql.<GraqlGet>parse(
                 "match " +
                         "$rel (someRole: $p, anotherRole: $r) isa someRelation;" +
@@ -872,7 +875,7 @@ public class TransactionIT {
         ));
         tx.commit();
 
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
         List<ConceptMap> relationsWithInferredRolePlayer = tx.execute(Graql.<GraqlInsert>parse(
                 "match " +
                         "$p isa someEntity;" +
@@ -884,7 +887,7 @@ public class TransactionIT {
 
         tx.commit();
 
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
         List<ConceptMap> relationsWithInferredRolePlayerPostCommitWithoutInference = tx.execute(Graql.parse(
                 "match $r isa inferrableAttribute; get;")
                 .asGet(), false);
@@ -894,7 +897,7 @@ public class TransactionIT {
         assertCollectionsNonTriviallyEqual(relationsWithInferredRolePlayerPostCommitWithoutInference, relationsWithInferredRolePlayerPostCommit);
         tx.commit();
 
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
         List<ConceptMap> relationsWithInferredRolePlayerRequeriedWithoutInference = tx.execute(Graql.parse(
                 "match $r isa inferrableAttribute; get;")
                 .asGet(), false);
