@@ -21,6 +21,7 @@ package grakn.core.kb.graql.exception;
 
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
+import graql.lang.query.GraqlQuery;
 import graql.lang.statement.Statement;
 
 import javax.annotation.CheckReturnValue;
@@ -39,6 +40,10 @@ public class GraqlQueryException extends GraknException {
         super(error, e);
     }
 
+    // TODO remove
+    public static GraqlQueryException create(String error) {
+        return new GraqlQueryException(error);
+    }
 
     @Override
     public String getName() { return NAME; }

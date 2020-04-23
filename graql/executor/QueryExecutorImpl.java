@@ -221,9 +221,7 @@ public class QueryExecutorImpl implements QueryExecutor {
     @Override
     public Void delete(GraqlDelete query) {
 
-        Collection<Statement> statements = query.statements().stream()
-                .flatMap(statement -> statement.innerStatements().stream())
-                .collect(Collectors.toList());
+        Collection<Statement> statements = new ArrayList<>(query.statements());
 
         ImmutableSet.Builder<PropertyExecutor.Writer> executors = ImmutableSet.builder();
         for (Statement statement : statements) {

@@ -19,18 +19,28 @@
 package grakn.core.graql.executor.property;
 
 import com.google.common.collect.ImmutableSet;
+import grakn.core.core.Schema;
 import grakn.core.graql.planning.gremlin.sets.EquivalentFragmentSets;
+import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.Concept;
+import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.SchemaConcept;
+import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.concept.api.Type;
+import grakn.core.kb.graql.exception.GraqlQueryException;
 import grakn.core.kb.graql.exception.GraqlSemanticException;
 import grakn.core.kb.graql.executor.WriteExecutor;
 import grakn.core.kb.graql.executor.property.PropertyExecutor;
 import grakn.core.kb.graql.planning.gremlin.EquivalentFragmentSet;
+import graql.lang.Graql;
 import graql.lang.property.IsaProperty;
 import graql.lang.property.VarProperty;
+import graql.lang.query.GraqlQuery;
+import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
 
 public class IsaExecutor implements PropertyExecutor.Insertable, PropertyExecutor.Deletable {
@@ -105,6 +115,11 @@ public class IsaExecutor implements PropertyExecutor.Insertable, PropertyExecuto
                 executor.getBuilder(var).isa(type);
             }
         }
+
+        public Set<String> validateAgainst(WriteExecutor executor) {
+            // used to validate concepts already retrieved against this writer
+            return Collections.emptySet();
+        }
     }
 
 
@@ -132,8 +147,26 @@ public class IsaExecutor implements PropertyExecutor.Insertable, PropertyExecuto
 
         @Override
         public void execute(WriteExecutor executor) {
-            Concept concept = executor.getConcept(var);
-            // TODO ensure that the concept is an instance of the required type by the delete
+            if (!executor.getConcept(var).isThing()) {
+                throw GraqlQueryException.create(String.format("Cannot delete %s [%s], as it is not Thing concept", var, executor.getConcept(var)));
+            }
+            Thing concept = executor.getConcept(var).asThing();
+
+            Label expectedType;
+            Statement expectedTypeStatement = property.type();
+            if (expectedTypeStatement.getType().isPresent()) {
+                expectedType = Label.of(expectedTypeStatement.getType().get());
+            } else {
+                Variable typeVar = expectedTypeStatement.var();
+                expectedType = executor.getConcept(typeVar).asType().label();
+            }
+
+            // ensure that the concept is an instance of the required type by the delete
+            if (!expectedType.equals(Label.of(Graql.Token.Type.THING.toString())) &&
+                   concept.type().sups().noneMatch(sub -> sub.label().equals(expectedType))) {
+                throw GraqlQueryException.create(String.format("%s [%s] does not satisfy requirement: isa %s", concept, var, expectedType));
+            }
+
             concept.delete();
         }
     }

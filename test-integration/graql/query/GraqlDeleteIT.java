@@ -32,6 +32,7 @@ import grakn.core.kb.concept.api.Relation;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.SchemaConcept;
+import grakn.core.kb.graql.exception.GraqlQueryException;
 import grakn.core.kb.graql.exception.GraqlSemanticException;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
@@ -39,6 +40,7 @@ import grakn.core.rule.GraknTestServer;
 import graql.lang.Graql;
 import graql.lang.exception.GraqlException;
 import graql.lang.pattern.Pattern;
+import graql.lang.query.GraqlQuery;
 import graql.lang.query.MatchClause;
 import graql.lang.statement.Statement;
 import graql.lang.statement.StatementThing;
@@ -211,7 +213,7 @@ public class GraqlDeleteIT {
         assertExists(tx, var().id(id.getValue()));
         assertExists(tx, var().val(1000L).isa("tmdb-vote-count"));
 
-        tx.execute(Graql.match(x.val(1000L).isa("tmdb-vote-count")).delete(x.isa(Schema.ImplicitType.HAS.getLabel("tmdb-vote-count").getValue())));
+        tx.execute(Graql.match(x.val(1000L).isa("tmdb-vote-count")).delete(x.isa("tmdb-vote-count")));
 
         assertExists(tx, var().has("title", "Godfather"));
         assertNotExists(tx, var().id(id.getValue()));
@@ -429,7 +431,7 @@ public class GraqlDeleteIT {
 
         assertEquals(2, tx.stream(Graql.match(x.isa("fake-type"))).count());
 
-        tx.execute(Graql.match(x.isa("fake-type"), y.isa("fake-type"), x.not(y.var())).delete(x.isa("fake-type"), y.isa("take-type")));
+        tx.execute(Graql.match(x.isa("fake-type"), y.isa("fake-type"), x.not(y.var())).delete(x.isa("fake-type"), y.isa("fake-type")));
 
         assertNotExists(tx, var().isa("fake-type"));
     }
@@ -441,7 +443,8 @@ public class GraqlDeleteIT {
 
         assertEquals(2, tx.stream(Graql.match(x.isa("fake-type"))).count());
 
-        tx.execute(Graql.match(x.isa("fake-type"), y.isa("fake-type"), x.not(y.var())).delete());
+        tx.execute(Graql.match(x.isa("fake-type"), y.isa("fake-type"), x.not(y.var()))
+                .delete(var("x").isa("fake-type"), var("y").isa("fake-type")));
 
         assertNotExists(tx, var().isa("fake-type"));
     }
@@ -457,14 +460,41 @@ public class GraqlDeleteIT {
     public void whenDeletingASchemaConcept_Throw() {
         SchemaConcept newType = tx.execute(Graql.define(x.type("new-type").sub(ENTITY))).get(0).get(x.var()).asSchemaConcept();
 
-        exception.expect(GraqlSemanticException.class);
-        exception.expectMessage(GraqlSemanticException.deleteSchemaConcept(newType).getMessage());
+        exception.expect(GraqlQueryException.class);
+//        exception.expectMessage(GraqlSemanticException.deleteSchemaConcept(newType).getMessage());
+        // TODO error message, better reporting for deleting schema concepts
         tx.execute(Graql.match(x.type("new-type")).delete(x.isa("thing")));
     }
 
     @Test(expected = Exception.class)
     public void whenDeleteIsPassedNull_Throw() {
         tx.execute(Graql.match(var()).delete((Statement) null));
+    }
+
+
+    @Test
+    public void whenTypeDoesNotMatch_Throw() {
+        tx.execute(Graql.insert(var().isa("production")));
+
+        exception.expect(GraqlQueryException.class);
+//        exception.expectMessage("Type does not match");
+        // TODO error message
+        tx.execute(Graql.match(var("x").isa("production")).delete(var("x").isa("movie")));
+    }
+
+
+
+    // TODO tests with variable roles, supertypes in roles, throw if subtypes in roles
+    // TODO tests removing attribute ownerships, ownerships with supertypes, throw if subtypes
+    // TODO removing instances, instances with subtyping
+    @Test
+    public void whenDeletingSingleRolePlayer_RelationSurvives() {
+
+    }
+
+    @Test
+    public void whenDeletingDuplicateRolePlayer_BothAreDeleted() {
+
     }
 
 

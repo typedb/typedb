@@ -24,6 +24,7 @@ import grakn.core.graql.planning.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.kb.concept.api.Relation;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Thing;
+import grakn.core.kb.graql.exception.GraqlQueryException;
 import grakn.core.kb.graql.exception.GraqlSemanticException;
 import grakn.core.kb.graql.executor.WriteExecutor;
 import grakn.core.kb.graql.executor.property.PropertyExecutor;
@@ -59,10 +60,10 @@ public class RelationExecutor implements PropertyExecutor.Insertable, PropertyEx
 
         ImmutableSet<EquivalentFragmentSet> traversals =
                 property.relationPlayers().stream().flatMap(relationPlayer -> {
-            Variable castingName = new Variable();
-            castingNames.add(castingName);
-            return fragmentSetsFromRolePlayer(castingName, relationPlayer);
-        }).collect(ImmutableSet.toImmutableSet());
+                    Variable castingName = new Variable();
+                    castingNames.add(castingName);
+                    return fragmentSetsFromRolePlayer(castingName, relationPlayer);
+                }).collect(ImmutableSet.toImmutableSet());
 
         ImmutableSet<EquivalentFragmentSet> distinctCastingTraversals = castingNames.stream().flatMap(
                 castingName -> castingNames.stream()
@@ -80,13 +81,13 @@ public class RelationExecutor implements PropertyExecutor.Insertable, PropertyEx
         if (roleType.isPresent()) {
             // Patterns for variable of a relation with a role player of a given type
             return Stream.of(rolePlayer(property, var, castingName,
-                                        relationPlayer.getPlayer().var(),
-                                        roleType.get().var()));
+                    relationPlayer.getPlayer().var(),
+                    roleType.get().var()));
         } else {
             // Patterns for variable of a relation with a role player of a any type
             return Stream.of(rolePlayer(property, var, castingName,
-                                        relationPlayer.getPlayer().var(),
-                                        null));
+                    relationPlayer.getPlayer().var(),
+                    null));
         }
     }
 
@@ -115,8 +116,7 @@ public class RelationExecutor implements PropertyExecutor.Insertable, PropertyEx
         @Override
         public Set<Variable> requiredVars() {
             Set<Variable> relationPlayers = property.relationPlayers().stream()
-                    .flatMap(relationPlayer -> Stream.of(relationPlayer.getPlayer(), getRole(relationPlayer)))
-                    .map(statement -> statement.var())
+                    .flatMap(relationPlayer -> Stream.of(relationPlayer.getPlayer().var(), getRoleVar(relationPlayer)))
                     .collect(Collectors.toSet());
 
             relationPlayers.add(var);
@@ -133,16 +133,21 @@ public class RelationExecutor implements PropertyExecutor.Insertable, PropertyEx
         public void execute(WriteExecutor executor) {
             Relation relation = executor.getConcept(var).asRelation();
             property.relationPlayers().forEach(relationPlayer -> {
-                Statement roleVar = getRole(relationPlayer);
-
-                Role role = executor.getConcept(roleVar.var()).asRole();
+                Variable roleVar = getRoleVar(relationPlayer);
+                Role role = executor.getConcept(roleVar).asRole();
                 Thing roleplayer = executor.getConcept(relationPlayer.getPlayer().var()).asThing();
                 relation.assign(role, roleplayer);
             });
         }
 
-        private Statement getRole(RelationProperty.RolePlayer relationPlayer) {
-            return relationPlayer.getRole().orElseThrow(() -> GraqlSemanticException.insertRolePlayerWithoutRoleType(relationPlayer.toString()));
+        private Variable getRoleVar(RelationProperty.RolePlayer relationPlayer) {
+            boolean roleExists = relationPlayer.getRole().isPresent();
+            if (!roleExists) {
+                throw GraqlSemanticException.deleteRolePlayerWithoutRoleType(relationPlayer.toString());
+            } else {
+                Statement role = relationPlayer.getRole().get();
+                return role.var();
+            }
         }
     }
 
@@ -161,8 +166,7 @@ public class RelationExecutor implements PropertyExecutor.Insertable, PropertyEx
         @Override
         public Set<Variable> requiredVars() {
             Set<Variable> relationPlayers = property.relationPlayers().stream()
-                    .flatMap(relationPlayer -> Stream.of(relationPlayer.getPlayer(), getRole(relationPlayer)))
-                    .map(statement -> statement.var())
+                    .flatMap(relationPlayer -> Stream.of(relationPlayer.getPlayer().var(), getRoleVar(relationPlayer)))
                     .collect(Collectors.toSet());
 
             relationPlayers.add(var);
@@ -176,18 +180,37 @@ public class RelationExecutor implements PropertyExecutor.Insertable, PropertyEx
 
         @Override
         public void execute(WriteExecutor executor) {
+            if (!executor.getConcept(var).isRelation()) {
+                throw GraqlQueryException.create(String.format("Expect %s [%s] to be a relation.", var, executor.getConcept(var)));
+            }
             Relation relation = executor.getConcept(var).asRelation();
             property.relationPlayers().forEach(relationPlayer -> {
-                Statement roleVar = getRole(relationPlayer);
-                Role role = executor.getConcept(roleVar.var()).asRole();
-                Thing roleplayer = executor.getConcept(relationPlayer.getPlayer().var()).asThing();
-                // TODO ensure that the relation and player are allowed to relate/play this role
-                relation.unassign(role, roleplayer);
+                Variable roleVar = getRoleVar(relationPlayer);
+                Role role = executor.getConcept(roleVar).asRole();
+                Variable rolePlayerVar = relationPlayer.getPlayer().var();
+                Thing rolePlayer = executor.getConcept(rolePlayerVar).asThing();
+
+                // validate that the role player plays this role in this relation
+                boolean roleIsPlayed = relation.rolePlayers(role).anyMatch(rolePlayer::equals);
+                if (!roleIsPlayed) {
+                    // TODO better exception
+                    throw GraqlQueryException.create(
+                            String.format("Concept %s [%s] does not play a role %s in relation %s [%s], so cannot unassign from relation.",
+                                    rolePlayer, rolePlayerVar, role, relation, var));
+                }
+
+                relation.unassign(role, rolePlayer);
             });
         }
 
-        private Statement getRole(RelationProperty.RolePlayer relationPlayer) {
-            return relationPlayer.getRole().orElseThrow(() -> GraqlSemanticException.deleteRolePlayerWithoutRoleType(relationPlayer.toString()));
+        private Variable getRoleVar(RelationProperty.RolePlayer relationPlayer) {
+            boolean roleExists = relationPlayer.getRole().isPresent();
+            if (!roleExists) {
+                throw GraqlSemanticException.deleteRolePlayerWithoutRoleType(relationPlayer.toString());
+            } else {
+                Statement role = relationPlayer.getRole().get();
+                return role.var();
+            }
         }
     }
 }

@@ -21,9 +21,11 @@ package grakn.core.graql.executor.property;
 import com.google.common.collect.ImmutableSet;
 import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.Attribute;
+import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Thing;
+import grakn.core.kb.graql.exception.GraqlQueryException;
 import grakn.core.kb.graql.executor.WriteExecutor;
 import grakn.core.kb.graql.executor.property.PropertyExecutor;
 import grakn.core.kb.graql.planning.gremlin.EquivalentFragmentSet;
@@ -146,9 +148,18 @@ public class HasAttributeExecutor  implements PropertyExecutor.Insertable, Prope
 
         @Override
         public void execute(WriteExecutor executor) {
-            Attribute attribute = executor.getConcept(property.attribute().var()).asAttribute();
+            Variable attributeVar = property.attribute().var();
+            Concept concept = executor.getConcept(attributeVar);
+            if (!concept.isAttribute()) {
+                throw GraqlQueryException.create(String.format("When removing attribute ownership, require %s to be an attribute, but is %s.", attributeVar, concept));
+            }
+            Attribute<?> attribute = concept.asAttribute();
             Thing thing = executor.getConcept(var).asThing();
-            // TODO check that the thing can and does have the given attribute
+
+            // deleting the ownership of an instance of a type 'type' should throw if matched concept is not that type
+            if (attribute.type().sups().noneMatch(sub -> sub.label().equals(type))) {
+                throw GraqlQueryException.create(String.format("When removing attribute ownership, [%s] %s does not satisfy requirement: instance of %s", var, attribute, type));
+            }
             thing.unhas(attribute);
         }
     }
