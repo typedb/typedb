@@ -162,6 +162,7 @@ public class GraqlGetIT {
         assertEquals("Benjamin L. Willard", answers.get(4).get("x").asAttribute().value());
     }
 
+
     @Test
     public void testGetContainsStringIgnoreCase() {
         List<ConceptMap> answers = tx.execute(

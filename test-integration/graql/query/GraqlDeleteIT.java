@@ -524,14 +524,6 @@ public class GraqlDeleteIT {
     }
 
     @Test
-    public void whenSortVarIsNotInQuery_Throw() {
-        exception.expect(GraqlException.class);
-        exception.expectMessage(VARIABLE_OUT_OF_SCOPE.getMessage(new Variable("z")));
-        tx.execute(Graql.match(var("x").isa("movie").has("title", var("y"))).get().sort("z"));
-    }
-
-
-    @Test
     public void whenLimitingDelete_CorrectNumberAreDeleted() {
         Session session = graknServer.sessionWithNewKeyspace();
         // load some schema and data
@@ -552,7 +544,6 @@ public class GraqlDeleteIT {
             assertEquals(3, count.get(0).number().intValue());
         }
 
-        session.close()
-        ;
+        session.close();
     }
 }
