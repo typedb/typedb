@@ -47,7 +47,6 @@ public class IdExecutor implements PropertyExecutor.Referrable {
         return ImmutableSet.of(EquivalentFragmentSets.id(property, var, id));
     }
 
-
     @Override
     public Referrer referrer() {
         return new IdReferrer();

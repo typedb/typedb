@@ -127,8 +127,8 @@ public class ConceptNotificationChannelImpl implements ConceptNotificationChanne
     }
 
     @Override
-    public void roleDeleted(Role role) {
-        conceptListener.roleDeleted(role);
+    public void roleUndefined(Role role) {
+        conceptListener.roleUndefined(role);
     }
 
     @Override

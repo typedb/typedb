@@ -56,7 +56,7 @@ public interface ConceptNotificationChannel {
     void deleteReifiedOwner(Relation owner);
 
     void schemaConceptDeleted(SchemaConcept schemaConcept);
-    void roleDeleted(Role role);
+    void roleUndefined(Role role);
     void relationRoleUnrelated(RelationType relationType, Role role, List<Casting> conceptsPlayingRole);
 
     <D> void attributeCreated(Attribute<D> attribute, D value, boolean isInferred);

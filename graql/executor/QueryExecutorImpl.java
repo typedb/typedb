@@ -183,7 +183,6 @@ public class QueryExecutorImpl implements QueryExecutor {
 
     @Override
     public Stream<ConceptMap> insert(GraqlInsert query) {
-
         Collection<Statement> statements = query.statements().stream()
                 .flatMap(statement -> statement.innerStatements().stream())
                 .collect(Collectors.toList());
@@ -226,15 +225,12 @@ public class QueryExecutorImpl implements QueryExecutor {
         ImmutableSet.Builder<PropertyExecutor.Writer> executors = ImmutableSet.builder();
         for (Statement statement : statements) {
             // we only operate on statements written by the user
-            if (statement.var().isReturned()) {
-                for (VarProperty property : statement.properties()) {
-                    executors.addAll(propertyExecutorFactory.deletable(statement.var(), property).deleteExecutors());
-                }
+            for (VarProperty property : statement.properties()) {
+                executors.addAll(propertyExecutorFactory.deletable(statement.var(), property).deleteExecutors());
             }
         }
-        WriteExecutor writeExecutor = WriteExecutorImpl.create(conceptManager, executors.build());
 
-        get(query.match().get()).forEach(writeExecutor::write);
+        get(query.match().get()).forEach(answer -> WriteExecutorImpl.create(conceptManager, executors.build()).write(answer));
         return new Void("Delete successful.");
     }
 

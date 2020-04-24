@@ -44,6 +44,7 @@ import grakn.core.kb.keyspace.StatisticsDelta;
 import grakn.core.kb.server.cache.TransactionCache;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Supplier;
 
 /**
@@ -239,6 +240,10 @@ public class ConceptListenerImpl implements ConceptListener {
     @Override
     public void castingDeleted(Casting casting) {
        transactionCache.deleteCasting(casting);
+        Optional<Thing> relationHasAnyRolePlayers = casting.getRelation().rolePlayers().findAny();
+        if (!relationHasAnyRolePlayers.isPresent()) {
+            casting.getRelation().delete();
+        }
     }
 
     @Override
@@ -257,7 +262,7 @@ public class ConceptListenerImpl implements ConceptListener {
     }
 
     @Override
-    public void roleDeleted(Role role) {
+    public void roleUndefined(Role role) {
         transactionCache.trackForValidation(role);
     }
 

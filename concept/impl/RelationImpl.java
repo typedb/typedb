@@ -182,7 +182,7 @@ public class RelationImpl implements Relation, ConceptVertex {
     public void unassign(Role role, Thing player) {
         RelationReified relationReified = reified();
         if (relationReified != null){
-            relationReified.removeRolePlayer(role, player);
+            relationReified.removeRolePlayerIfPresent(role, player);
         }
     }
 

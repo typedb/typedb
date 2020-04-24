@@ -182,7 +182,6 @@ public class GraqlSemanticException extends GraknException {
         return create("Missing an expected property `%s` in `%s`", property, var);
     }
 
-
     /**
      * Thrown when attempting to insert a concept that already exists.
      * <p>

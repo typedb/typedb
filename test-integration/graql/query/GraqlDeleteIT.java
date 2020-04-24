@@ -487,18 +487,21 @@ public class GraqlDeleteIT {
     // TODO tests with variable roles, supertypes in roles, throw if subtypes in roles
     // TODO tests removing attribute ownerships, ownerships with supertypes, throw if subtypes
     // TODO removing instances, instances with subtyping
+    // TODO query: match $r ($x, $y) isa relation; delete $r (role: $x); - test if dynamic changes are reflected in the stream
     @Test
     public void whenDeletingSingleRolePlayer_RelationSurvives() {
-        tx.execute(Graql.parse("match $r (production-being-directed: $x, director: $y) isa directed-by; delete $r (role: $x);").asDelete());
-        List<ConceptMap> answers = tx.execute(Graql.parse("match $r ($y) isa directed-by; get;").asGet());
+        tx.execute(Graql.parse("match $r (production-being-directed: $x, director: $y, production-being-directed: $z) isa directed-by; delete $r (role: $x);").asDelete());
+        List<ConceptMap> answers = tx.execute(Graql.parse("match $r (director: $y, production-being-directed: $z) isa directed-by; get;").asGet());
         assertEquals(1, answers.size());
-        assertEquals(1, answers.get(0).get("r").asRelation().rolePlayers().count());
+        assertEquals(2, answers.get(0).get("r").asRelation().rolePlayers().count());
     }
 
     @Test
-    public void whenDeletingRolePlayerMatchesAllCombinations_RelationIsDeleted() {
-        tx.execute(Graql.parse("match $r ($x, $y) isa directed-by; delete $r (role: $x);").asDelete());
+    public void whenDeletingRolePlayerIndividually_RelationIsDeleted() {
         List<ConceptMap> answers = tx.execute(Graql.parse("match $r isa directed-by; get;").asGet());
+        assertEquals(1, answers.size());
+        tx.execute(Graql.parse("match $r ($x) isa directed-by; delete $r (role: $x);").asDelete());
+        answers = tx.execute(Graql.parse("match $r isa directed-by; get;").asGet());
         assertEquals(0, answers.size());
     }
 
@@ -526,6 +529,26 @@ public class GraqlDeleteIT {
         assertEquals(1, Iterators.getOnlyElement(answers.get(0).get("r").asRelation().rolePlayersMap().values().iterator()).size());
     }
 
+    @Test
+    public void whenDeletingTooManyDuplicateRolePlayers_Throw() {
+        tx.execute(Graql.parse("define reflexive sub relation, relates refl; athing sub entity, plays refl;").asDefine());
+        tx.execute(Graql.insert(
+                var("r")
+                        .isa("reflexive")
+                        .rel("refl", "p"),
+                var("p").isa("athing"))
+        );
+
+        List<ConceptMap> answers = tx.execute(Graql.match(var("r").isa("reflexive").rel("refl", "x")).get());
+        assertEquals(1, answers.size());
+        assertEquals(1, Iterators.getOnlyElement(answers.get(0).get("r").asRelation().rolePlayersMap().values().iterator()).size());
+
+        exception.expect(GraqlQueryException.class);
+        // TODO error message
+        // match it once, delete it as a duplicate but we only have a single player! Should throw
+        tx.execute(Graql.match(var("r").isa("reflexive"))
+                .delete(var("r").rel("refl", "x").rel("refl", "x")));
+    }
     // TODO deleting too many duplicate role players fails
     // TODO able to delete duplicate role players in separate statements, but fails if not enough duplicates
 

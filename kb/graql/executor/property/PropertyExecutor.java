@@ -90,5 +90,4 @@ public interface PropertyExecutor {
             return ImmutableSet.of(var());
         }
     }
-
 }

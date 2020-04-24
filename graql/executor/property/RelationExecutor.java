@@ -38,11 +38,13 @@ import graql.lang.statement.Variable;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static grakn.core.graql.planning.gremlin.sets.EquivalentFragmentSets.optimiseFragmentSets;
 import static grakn.core.graql.planning.gremlin.sets.EquivalentFragmentSets.rolePlayer;
 
 public class RelationExecutor implements PropertyExecutor.Insertable, PropertyExecutor.Deletable {
@@ -166,6 +168,17 @@ public class RelationExecutor implements PropertyExecutor.Insertable, PropertyEx
 
         @Override
         public Set<Variable> requiredVars() {
+            return allVars();
+
+        }
+
+        @Override
+        public Set<Variable> producedVars() {
+//            return allVars();
+            return Collections.emptySet();
+        }
+
+        private Set<Variable> allVars() {
             Set<Variable> relationPlayers = property.relationPlayers().stream()
                     .flatMap(relationPlayer -> Stream.of(relationPlayer.getPlayer().var(), getRoleVar(relationPlayer)))
                     .collect(Collectors.toSet());
@@ -175,31 +188,51 @@ public class RelationExecutor implements PropertyExecutor.Insertable, PropertyEx
         }
 
         @Override
-        public Set<Variable> producedVars() {
-            return ImmutableSet.of();
-        }
-
-        @Override
         public void execute(WriteExecutor executor) {
             if (!executor.getConcept(var).isRelation()) {
                 throw GraqlQueryException.create(String.format("Expect %s [%s] to be a relation.", var, executor.getConcept(var)));
             }
+
             Relation relation = executor.getConcept(var).asRelation();
+
+            /*
+            As of Grakn 2.0, with Hypergraph backend, we will no longer allow a relation relate both a role,
+            AND any of its supertypes, because roles will either be inherited OR overriden with the `as` keyword.
+            So, when we have queries like:
+
+            ```
+            match $r (sub-role: $x) isa relation;
+            delete $r (super-role: $x);
+            ```
+
+            Then this is no longer ambiguous: the relation $r can only have 1 "subtype" of `super-role` in roles played
+
+            In prior versions, this delete could be ambigous in the case where the following could be written:
+            ```
+            match $r (sub-role: $x, super-role: $x) isa relation;
+            delete $r (super-role: $x)
+            ```
+            in this example, we don't know which one to delete - the sub-role role player or the super-role player
+             */
             property.relationPlayers().forEach(relationPlayer -> {
+                // (super-role: $x)
                 Role requiredRole = getRole(relationPlayer, executor);
                 Variable rolePlayerVar = relationPlayer.getPlayer().var();
                 Thing rolePlayer = executor.getConcept(rolePlayerVar).asThing();
 
-                // validate that the role player plays this role in this relation
-                boolean roleIsPlayed = relation.rolePlayers(requiredRole).anyMatch(rolePlayer::equals);
-                if (!roleIsPlayed) {
-                    // TODO better exception
+                // find the first role subtype that is the actual role being played
+                Optional<Role> concreteRolePlayed = requiredRole.subs()
+                        .filter(role -> relation.rolePlayers(role).anyMatch(rolePlayer::equals))
+                        .findFirst();
+
+                if (!concreteRolePlayed.isPresent()) {
+                    // TODO better exception message
                     throw GraqlQueryException.create(
                             String.format("Concept %s [%s] does not play a role %s in relation %s [%s], so cannot unassign from relation.",
                                     rolePlayer, rolePlayerVar, requiredRole, relation, var));
                 }
 
-                relation.unassign(requiredRole, rolePlayer);
+                relation.unassign(concreteRolePlayed.get(), rolePlayer);
             });
         }
 

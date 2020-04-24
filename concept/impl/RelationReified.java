@@ -103,10 +103,11 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
      * Remove a single single instance of specific role player playing a given role in this relation
      * We could have duplicates, so we only operate on a single casting that is found
      */
-    void removeRolePlayer(Role role, Thing thing) {
-        castingsRelation().filter(casting -> casting.getRole().equals(role) && casting.getRolePlayer().equals(thing)).
-                findAny().
-                ifPresent(casting -> {
+    void removeRolePlayerIfPresent(Role role, Thing thing) {
+        castingsRelation(role)
+                .filter(casting -> casting.getRole().equals(role) && casting.getRolePlayer().equals(thing))
+                .findAny()
+                .ifPresent(casting -> {
                     casting.delete();
                     conceptNotificationChannel.castingDeleted(casting);
                 });
