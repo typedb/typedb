@@ -240,10 +240,6 @@ public class ConceptListenerImpl implements ConceptListener {
     @Override
     public void castingDeleted(Casting casting) {
        transactionCache.deleteCasting(casting);
-        Optional<Thing> relationHasAnyRolePlayers = casting.getRelation().rolePlayers().findAny();
-        if (!relationHasAnyRolePlayers.isPresent()) {
-            casting.getRelation().delete();
-        }
     }
 
     @Override

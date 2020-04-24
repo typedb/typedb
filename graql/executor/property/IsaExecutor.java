@@ -19,9 +19,7 @@
 package grakn.core.graql.executor.property;
 
 import com.google.common.collect.ImmutableSet;
-import grakn.core.core.Schema;
 import grakn.core.graql.planning.gremlin.sets.EquivalentFragmentSets;
-import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.SchemaConcept;
@@ -35,15 +33,17 @@ import grakn.core.kb.graql.planning.gremlin.EquivalentFragmentSet;
 import graql.lang.Graql;
 import graql.lang.property.IsaProperty;
 import graql.lang.property.VarProperty;
-import graql.lang.query.GraqlQuery;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Set;
 
 public class IsaExecutor implements PropertyExecutor.Insertable, PropertyExecutor.Deletable {
+
+    private static final Logger LOG = LoggerFactory.getLogger(IsaExecutor.class);
 
     private final Variable var;
     private final IsaProperty property;
@@ -167,6 +167,10 @@ public class IsaExecutor implements PropertyExecutor.Insertable, PropertyExecuto
                 throw GraqlQueryException.create(String.format("%s [%s] does not satisfy requirement: isa %s", concept, var, expectedType));
             }
 
+            if (concept.isDeleted()) {
+                LOG.trace("Skipping deletion of concept " + concept + ", is already deleted");
+                return;
+            }
             concept.delete();
         }
     }

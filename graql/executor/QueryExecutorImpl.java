@@ -231,7 +231,6 @@ public class QueryExecutorImpl implements QueryExecutor {
         }
 
         get(query.match().get()).forEach(answer -> {
-            System.out.println(answer);
             WriteExecutorImpl.create(conceptManager, executors.build()).write(answer);
         });
         return new Void("Delete successful.");

@@ -184,14 +184,15 @@ public class RelationImpl implements Relation, ConceptVertex {
         if (relationReified != null){
             relationReified.removeRolePlayerIfPresent(role, player);
         }
+        // may need to clean up relation
+        cleanUp();
     }
 
     /**
-     * When a relation is deleted this cleans up any solitary casting and resources.
+     * Remove this relation if there are no more role player present
      */
     void cleanUp() {
-        Stream<Thing> rolePlayers = rolePlayers();
-        boolean performDeletion = rolePlayers.noneMatch(thing -> thing != null && thing.id() != null);
+        boolean performDeletion = !rolePlayers().findAny().isPresent();
         if (performDeletion) delete();
     }
 

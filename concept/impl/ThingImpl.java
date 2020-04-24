@@ -102,7 +102,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
             return relation;
         }).collect(toSet());
 
-        if (!isDeleted())  {
+        if (!isDeleted()) {
             // must happen before deleteNode() so we can access properties on the vertex
             conceptNotificationChannel.thingDeleted(this);
         }
@@ -111,15 +111,17 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
 
         deleteNode();
 
-        relations.forEach(relation -> {
-            //NB: this only deletes reified implicit relations
-            if (relation.type().isImplicit()) {
-                relation.delete();
-            } else {
-                RelationImpl rel = (RelationImpl) relation;
-                rel.cleanUp();
-            }
-        });
+        relations.stream()
+                .filter(rel -> !rel.isDeleted())
+                .forEach(relation -> {
+                    //NB: this only deletes reified implicit relations
+                    if (relation.type().isImplicit()) {
+                        relation.delete();
+                    } else {
+                        RelationImpl rel = (RelationImpl) relation;
+                        rel.cleanUp();
+                    }
+                });
     }
 
     /**
@@ -241,7 +243,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
             stream = stream.filter(edge -> {
                 Set<Role> edgeRoles = new HashSet<>();
                 edgeRoles.add(conceptManager.getSchemaConcept(LabelId.of(edge.property(Schema.EdgeProperty.RELATION_ROLE_OWNER_LABEL_ID))));
-                if (this.isAttribute()){
+                if (this.isAttribute()) {
                     edgeRoles.add(conceptManager.getSchemaConcept(LabelId.of(edge.property(Schema.EdgeProperty.RELATION_ROLE_VALUE_LABEL_ID))));
                 }
                 return !Sets.intersection(roleSet, edgeRoles).isEmpty();
