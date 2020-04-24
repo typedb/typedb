@@ -163,7 +163,7 @@ public class ThingTypeSteps {
         get_thing_type(rootLabel, typeLabel).key(attributeType);
     }
 
-    @When("{root_label}\\( ?{type_label} ?) set key attribute: {type_label} as {type_label}")
+    @When("{root_label}\\( ?{type_label} ?) set key attribute: {type_label}, as {type_label}")
     public void thing_set_key_attribute_as(RootLabel rootLabel, String typeLabel, String attributeLabel, String overriddenLabel) {
         AttributeType attributeType = tx().concepts().getAttributeType(attributeLabel);
         AttributeType overriddenType = tx().concepts().getAttributeType(overriddenLabel);
@@ -181,7 +181,7 @@ public class ThingTypeSteps {
         }
     }
 
-    @Then("{root_label}\\( ?{type_label} ?) fails at setting key attribute: {type_label} as {type_label}")
+    @Then("{root_label}\\( ?{type_label} ?) fails at setting key attribute: {type_label}, as {type_label}")
     public void thing_fails_at_setting_key_attribute_as(RootLabel rootLabel, String typeLabel, String attributeLabel, String overriddenLabel) {
         AttributeType attributeType = tx().concepts().getAttributeType(attributeLabel);
         AttributeType overriddenType = tx().concepts().getAttributeType(overriddenLabel);
@@ -230,14 +230,14 @@ public class ThingTypeSteps {
         }
     }
 
-    @When("{root_label}\\( ?{type_label} ?) set has attribute: {type_label} as {type_label}")
+    @When("{root_label}\\( ?{type_label} ?) set has attribute: {type_label}, as {type_label}")
     public void thing_set_has_attribute_as(RootLabel rootLabel, String typeLabel, String attributeLabel, String overriddenLabel) {
         AttributeType attributeType = tx().concepts().getAttributeType(attributeLabel);
         AttributeType overriddenType = tx().concepts().getAttributeType(overriddenLabel);
         get_thing_type(rootLabel, typeLabel).has(attributeType).as(overriddenType);
     }
 
-    @Then("{root_label}\\( ?{type_label} ?) fails at setting has attribute: {type_label} as {type_label}")
+    @Then("{root_label}\\( ?{type_label} ?) fails at setting has attribute: {type_label}, as {type_label}")
     public void thing_fails_at_setting_has_attribute_as(RootLabel rootLabel, String typeLabel, String attributeLabel, String overriddenLabel) {
         AttributeType attributeType = tx().concepts().getAttributeType(attributeLabel);
         AttributeType overriddenType = tx().concepts().getAttributeType(overriddenLabel);
@@ -286,7 +286,7 @@ public class ThingTypeSteps {
         }
     }
 
-    @When("{root_label}\\( ?{type_label} ?) set plays role: {scoped_label} as {type_label}")
+    @When("{root_label}\\( ?{type_label} ?) set plays role: {scoped_label}, as {type_label}")
     public void thing_set_plays_role_as(RootLabel rootLabel, String typeLabel, Parameters.ScopedLabel roleLabel, String overriddenLabel) {
         RoleType roleType = tx().concepts().getRelationType(roleLabel.scope()).role(roleLabel.role());
         RoleType overriddenType = tx().concepts().getRelationType(roleLabel.scope()).sups()
@@ -294,7 +294,7 @@ public class ThingTypeSteps {
         get_thing_type(rootLabel, typeLabel).plays(roleType).as(overriddenType);
     }
 
-    @When("{root_label}\\( ?{type_label} ?) fails at setting plays role: {scoped_label} as {scoped_label}")
+    @When("{root_label}\\( ?{type_label} ?) fails at setting plays role: {scoped_label}, as {scoped_label}")
     public void thing_fails_at_setting_plays_role_as(RootLabel rootLabel, String typeLabel, Parameters.ScopedLabel roleLabel, Parameters.ScopedLabel overriddenLabel) {
         RoleType roleType = tx().concepts().getRelationType(roleLabel.scope()).role(roleLabel.role());
         RoleType overriddenType = tx().concepts().getRelationType(overriddenLabel.scope()).role(overriddenLabel.role());

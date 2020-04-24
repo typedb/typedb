@@ -55,12 +55,12 @@ public class RelationTypeSteps {
         }
     }
 
-    @When("relation\\( ?{type_label} ?) set relates role: {type_label} as {type_label}")
+    @When("relation\\( ?{type_label} ?) set relates role: {type_label}, as {type_label}")
     public void relation_set_relates_role_as(String relationLabel, String roleLabel, String superRole) {
         tx().concepts().putRelationType(relationLabel).relates(roleLabel).as(superRole);
     }
 
-    @When("relation\\( ?{type_label} ?) fails at setting relates role: {type_label} as {type_label}")
+    @When("relation\\( ?{type_label} ?) fails at setting relates role: {type_label}, as {type_label}")
     public void thing_fails_at_setting_relates_role_as(String relationLabel, String roleLabel, String superRole) {
         try {
             tx().concepts().putRelationType(relationLabel).relates(roleLabel).as(superRole);
