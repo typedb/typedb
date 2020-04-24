@@ -280,6 +280,7 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
                         break;
                     case GETATTRIBUTES_ITER_REQ:
                         getAttributes(request.getGetAttributesIterReq(), request.getOptions());
+                        break;
                     default:
                     case REQ_NOT_SET:
                         throw ResponseBuilder.exception(Status.INVALID_ARGUMENT);
