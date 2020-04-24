@@ -158,7 +158,7 @@ public class HasAttributeExecutor  implements PropertyExecutor.Insertable, Prope
 
             // deleting the ownership of an instance of a type 'type' should throw if matched concept is not that type
             if (attribute.type().sups().noneMatch(sub -> sub.label().equals(type))) {
-                throw GraqlQueryException.create(String.format("When removing attribute ownership, [%s] %s does not satisfy requirement: instance of %s", var, attribute, type));
+                throw GraqlQueryException.create(String.format("%s is not a supertype of [%s] %s", var, attribute, type));
             }
             thing.unhas(attribute);
         }
