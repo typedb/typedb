@@ -390,9 +390,9 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
 
         private void putAttributeType(Transaction.PutAttributeType.Req request) {
             Label label = Label.of(request.getLabel());
-            AttributeType.DataType<?> dataType = ResponseBuilder.Concept.DATA_TYPE(request.getDataType());
+            AttributeType.ValueType<?> valueType = ResponseBuilder.Concept.VALUE_TYPE(request.getDataType());
 
-            AttributeType<?> attributeType = tx().putAttributeType(label, dataType);
+            AttributeType<?> attributeType = tx().putAttributeType(label, valueType);
             Transaction.Res response = ResponseBuilder.Transaction.putAttributeType(attributeType);
             onNextResponse(response);
         }

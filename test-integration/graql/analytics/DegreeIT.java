@@ -197,9 +197,9 @@ public class DegreeIT {
 
         EntityType person = tx.putEntityType("person").plays(owner);
         EntityType animal = tx.putEntityType("animal").plays(pet);
-        AttributeType<String> name = tx.putAttributeType("name", AttributeType.DataType.STRING);
+        AttributeType<String> name = tx.putAttributeType("name", AttributeType.ValueType.STRING);
         AttributeType<String> altName =
-                tx.putAttributeType("alternate-name", AttributeType.DataType.STRING);
+                tx.putAttributeType("alternate-name", AttributeType.ValueType.STRING);
 
         animal.has(name).has(altName);
 
@@ -288,7 +288,7 @@ public class DegreeIT {
         RelationType hasOwnershipResource = tx.putRelationType("has-ownership-resource")
                 .relates(ownership).relates(ownershipResource);
 
-        AttributeType<String> startDate = tx.putAttributeType("start-date", AttributeType.DataType.STRING);
+        AttributeType<String> startDate = tx.putAttributeType("start-date", AttributeType.ValueType.STRING);
         startDate.plays(ownershipResource);
         mansBestFriend.plays(ownership);
 

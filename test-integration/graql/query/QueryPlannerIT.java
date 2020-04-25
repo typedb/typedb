@@ -90,7 +90,7 @@ public class QueryPlannerIT {
         EntityType entityType3 = graph.putEntityType(thingy3);
         EntityType entityType4 = graph.putEntityType(thingy4);
 
-        AttributeType<String> attributeType = graph.putAttributeType(resourceType, AttributeType.DataType.STRING);
+        AttributeType<String> attributeType = graph.putAttributeType(resourceType, AttributeType.ValueType.STRING);
         entityType4.has(attributeType);
 
         EntityType superType1 = graph.putEntityType(thingy);

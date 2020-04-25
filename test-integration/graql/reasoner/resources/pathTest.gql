@@ -21,7 +21,7 @@ path sub relation, relates path-from, relates path-to;
 vertex plays path-from, plays path-to;
 start-vertex plays path-from;
 
-index sub attribute, datatype string;
+index sub attribute, value string;
 
 ####################################################
 ##################RULES#############################

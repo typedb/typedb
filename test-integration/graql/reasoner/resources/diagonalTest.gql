@@ -19,7 +19,7 @@ diagonal sub relation,
 
 rel-from sub role;
 rel-to sub role;
-name sub attribute, datatype string;
+name sub attribute, value string;
 
 rule-1 sub rule,
 when {

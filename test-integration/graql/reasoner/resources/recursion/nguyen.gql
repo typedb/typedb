@@ -30,7 +30,7 @@ P-rB sub role;
 P sub relation, relates P-rA, relates P-rB;
 entity2 plays P-rA, plays P-rB;
 
-index sub attribute, datatype string;
+index sub attribute, value string;
 
 ####################################################
 ##################RULES#############################

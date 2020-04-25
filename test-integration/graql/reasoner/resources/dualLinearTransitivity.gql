@@ -37,7 +37,7 @@ P-from sub role;
 P-to sub role;
 P sub relation, relates P-from, relates P-to;
 
-index sub attribute, datatype string;
+index sub attribute, value string;
 
 insert
 

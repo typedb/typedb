@@ -24,7 +24,7 @@ S-from sub role;
 S-to sub role;
 S sub relation, relates S-from, relates S-to;
 
-index sub attribute, datatype string;
+index sub attribute, value string;
 
 ####################################################
 ##################RULES#############################

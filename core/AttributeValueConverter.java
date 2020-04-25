@@ -31,20 +31,20 @@ import java.util.Map;
  */
 public abstract class AttributeValueConverter<SOURCE, TARGET>{
 
-    private static Map<AttributeType.DataType<?>, AttributeValueConverter<?, ?>> converters = ImmutableMap.<AttributeType.DataType<?>, AttributeValueConverter<?, ?>>builder()
-            .put(AttributeType.DataType.BOOLEAN, new IdentityConverter<Boolean, Boolean>())
-            .put(AttributeType.DataType.DATE, new DateConverter())
-            .put(AttributeType.DataType.DOUBLE, new DoubleConverter())
-            .put(AttributeType.DataType.FLOAT, new FloatConverter())
-            .put(AttributeType.DataType.INTEGER, new IntegerConverter())
-            .put(AttributeType.DataType.LONG, new LongConverter())
-            .put(AttributeType.DataType.STRING, new IdentityConverter<String, String>())
+    private static Map<AttributeType.ValueType<?>, AttributeValueConverter<?, ?>> converters = ImmutableMap.<AttributeType.ValueType<?>, AttributeValueConverter<?, ?>>builder()
+            .put(AttributeType.ValueType.BOOLEAN, new IdentityConverter<Boolean, Boolean>())
+            .put(AttributeType.ValueType.DATE, new DateConverter())
+            .put(AttributeType.ValueType.DOUBLE, new DoubleConverter())
+            .put(AttributeType.ValueType.FLOAT, new FloatConverter())
+            .put(AttributeType.ValueType.INTEGER, new IntegerConverter())
+            .put(AttributeType.ValueType.LONG, new LongConverter())
+            .put(AttributeType.ValueType.STRING, new IdentityConverter<String, String>())
             .build();
 
-    public static <SOURCE, TARGET> AttributeValueConverter<SOURCE, TARGET> of(AttributeType.DataType<TARGET> dataType) {
-        AttributeValueConverter<?, ?> converter = converters.get(dataType);
+    public static <SOURCE, TARGET> AttributeValueConverter<SOURCE, TARGET> of(AttributeType.ValueType<TARGET> valueType) {
+        AttributeValueConverter<?, ?> converter = converters.get(valueType);
         if (converter == null){
-            throw new UnsupportedOperationException("Unsupported DataType: " + dataType.toString());
+            throw new UnsupportedOperationException("Unsupported ValueType: " + valueType.toString());
         }
         return (AttributeValueConverter<SOURCE, TARGET>) converter;
     }

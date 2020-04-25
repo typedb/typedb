@@ -75,14 +75,14 @@ public class MovieGraph {
 
     private static void buildSchema(Transaction tx) {
 
-        tmdbVoteCount = tx.putAttributeType("tmdb-vote-count", AttributeType.DataType.LONG);
-        tmdbVoteAverage = tx.putAttributeType("tmdb-vote-average", AttributeType.DataType.DOUBLE);
-        releaseDate = tx.putAttributeType("release-date", AttributeType.DataType.DATE);
-        runtime = tx.putAttributeType("runtime", AttributeType.DataType.LONG);
-        gender = tx.putAttributeType("gender", AttributeType.DataType.STRING).regex("(fe)?male");
-        realName = tx.putAttributeType("real-name", AttributeType.DataType.STRING);
-        name = tx.putAttributeType("name", AttributeType.DataType.STRING);
-        provenance = tx.putAttributeType("provenance", AttributeType.DataType.STRING);
+        tmdbVoteCount = tx.putAttributeType("tmdb-vote-count", AttributeType.ValueType.LONG);
+        tmdbVoteAverage = tx.putAttributeType("tmdb-vote-average", AttributeType.ValueType.DOUBLE);
+        releaseDate = tx.putAttributeType("release-date", AttributeType.ValueType.DATE);
+        runtime = tx.putAttributeType("runtime", AttributeType.ValueType.LONG);
+        gender = tx.putAttributeType("gender", AttributeType.ValueType.STRING).regex("(fe)?male");
+        realName = tx.putAttributeType("real-name", AttributeType.ValueType.STRING);
+        name = tx.putAttributeType("name", AttributeType.ValueType.STRING);
+        provenance = tx.putAttributeType("provenance", AttributeType.ValueType.STRING);
 
         work = tx.putRole("work");
         author = tx.putRole("author");
@@ -109,7 +109,7 @@ public class MovieGraph {
         hasCluster = tx.putRelationType("has-cluster")
                 .relates(clusterOfProduction).relates(productionWithCluster);
 
-        title = tx.putAttributeType("title", AttributeType.DataType.STRING);
+        title = tx.putAttributeType("title", AttributeType.ValueType.STRING);
         title.has(title);
 
         production = tx.putEntityType("production")

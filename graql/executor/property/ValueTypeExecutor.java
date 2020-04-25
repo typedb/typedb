@@ -26,21 +26,21 @@ import grakn.core.kb.graql.executor.WriteExecutor;
 import grakn.core.kb.graql.executor.property.PropertyExecutor;
 import grakn.core.kb.graql.planning.gremlin.EquivalentFragmentSet;
 import graql.lang.Graql;
-import graql.lang.property.DataTypeProperty;
+import graql.lang.property.ValueTypeProperty;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 
 import java.util.Collections;
 import java.util.Set;
 
-public class DataTypeExecutor implements PropertyExecutor.Definable {
+public class ValueTypeExecutor implements PropertyExecutor.Definable {
 
     private final Variable var;
-    private final DataTypeProperty property;
-    private final AttributeType.DataType dataType;
-    private static final ImmutableMap<Graql.Token.DataType, AttributeType.DataType<?>> DATA_TYPES = dataTypes();
+    private final ValueTypeProperty property;
+    private final AttributeType.ValueType valueType;
+    private static final ImmutableMap<Graql.Token.ValueType, AttributeType.ValueType<?>> DATA_TYPES = valueTypes();
 
-    DataTypeExecutor(Variable var, DataTypeProperty property) {
+    ValueTypeExecutor(Variable var, ValueTypeProperty property) {
         if (var == null) {
             throw new NullPointerException("Variable is null");
         }
@@ -51,42 +51,42 @@ public class DataTypeExecutor implements PropertyExecutor.Definable {
         }
         this.property = property;
 
-        if (!DATA_TYPES.containsKey(property.dataType())) {
-            throw new IllegalArgumentException("Unrecognised Attribute data type");
+        if (!DATA_TYPES.containsKey(property.valueType())) {
+            throw new IllegalArgumentException("Unrecognised Attribute value type");
         }
-        this.dataType = DATA_TYPES.get(property.dataType());
+        this.valueType = DATA_TYPES.get(property.valueType());
     }
 
-    private static ImmutableMap<Graql.Token.DataType, AttributeType.DataType<?>> dataTypes() {
-        ImmutableMap.Builder<Graql.Token.DataType, AttributeType.DataType<?>> dataTypes = new ImmutableMap.Builder<>();
-        dataTypes.put(Graql.Token.DataType.BOOLEAN, AttributeType.DataType.BOOLEAN);
-        dataTypes.put(Graql.Token.DataType.DATE, AttributeType.DataType.DATE);
-        dataTypes.put(Graql.Token.DataType.DOUBLE, AttributeType.DataType.DOUBLE);
-        dataTypes.put(Graql.Token.DataType.LONG, AttributeType.DataType.LONG);
-        dataTypes.put(Graql.Token.DataType.STRING, AttributeType.DataType.STRING);
+    private static ImmutableMap<Graql.Token.ValueType, AttributeType.ValueType<?>> valueTypes() {
+        ImmutableMap.Builder<Graql.Token.ValueType, AttributeType.ValueType<?>> valueTypes = new ImmutableMap.Builder<>();
+        valueTypes.put(Graql.Token.ValueType.BOOLEAN, AttributeType.ValueType.BOOLEAN);
+        valueTypes.put(Graql.Token.ValueType.DATE, AttributeType.ValueType.DATE);
+        valueTypes.put(Graql.Token.ValueType.DOUBLE, AttributeType.ValueType.DOUBLE);
+        valueTypes.put(Graql.Token.ValueType.LONG, AttributeType.ValueType.LONG);
+        valueTypes.put(Graql.Token.ValueType.STRING, AttributeType.ValueType.STRING);
 
-        return dataTypes.build();
+        return valueTypes.build();
     }
 
     @Override
     public Set<EquivalentFragmentSet> matchFragments() {
         return Collections.unmodifiableSet(Collections.singleton(
-                EquivalentFragmentSets.dataType(property, var, dataType)
+                EquivalentFragmentSets.valueType(property, var, valueType)
         ));
     }
 
 
     @Override
     public Set<PropertyExecutor.Writer> defineExecutors() {
-        return ImmutableSet.of(new DefineDataType());
+        return ImmutableSet.of(new DefineValueType());
     }
 
     @Override
     public Set<PropertyExecutor.Writer> undefineExecutors() {
-        return ImmutableSet.of(new UndefineDataType());
+        return ImmutableSet.of(new UndefineValueType());
     }
 
-    private abstract class DataTypeWriter {
+    private abstract class ValueTypeWriter {
 
         public Variable var() {
             return var;
@@ -101,11 +101,11 @@ public class DataTypeExecutor implements PropertyExecutor.Definable {
         }
     }
 
-    private class DefineDataType extends DataTypeWriter implements PropertyExecutor.Writer {
+    private class DefineValueType extends ValueTypeWriter implements PropertyExecutor.Writer {
 
         @Override
         public void execute(WriteExecutor executor) {
-            executor.getBuilder(var).dataType(dataType);
+            executor.getBuilder(var).valueType(valueType);
         }
 
         @Override
@@ -114,7 +114,7 @@ public class DataTypeExecutor implements PropertyExecutor.Definable {
         }
     }
 
-    private class UndefineDataType extends DataTypeWriter implements PropertyExecutor.Writer {
+    private class UndefineValueType extends ValueTypeWriter implements PropertyExecutor.Writer {
 
         @Override
         public Set<Variable> producedVars() {
@@ -124,15 +124,15 @@ public class DataTypeExecutor implements PropertyExecutor.Definable {
         @Override
         public void execute(WriteExecutor executor) {
             // TODO: resolve the below issue correctly
-            // undefine for datatype must be supported, because it is supported in define.
+            // undefine for valueType must be supported, because it is supported in define.
             // However, making it do the right thing is difficult. Ideally we want the same as define:
             //
-            //    undefine name datatype string, sub attribute; <- Remove `name`
+            //    undefine name valueType string, sub attribute; <- Remove `name`
             //    undefine first-name sub name;                 <- Remove `first-name`
-            //    undefine name datatype string;                <- FAIL
+            //    undefine name valueType string;                <- FAIL
             //    undefine name sub attribute;                  <- FAIL
             //
-            // Doing this is tough because it means the `datatype` property needs to be aware of the context somehow.
+            // Doing this is tough because it means the `valueType` property needs to be aware of the context somehow.
             // As a compromise, we make all the cases succeed (where some do nothing)
         }
     }

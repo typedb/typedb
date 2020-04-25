@@ -203,7 +203,7 @@ public class ResponseBuilder {
                     builder.setValueRes(ConceptProto.Attribute.Value.Res.newBuilder()
                             .setValue(attributeValue(concept.asAttribute().value())));
                     builder.setDataTypeRes(ConceptProto.AttributeType.DataType.Res.newBuilder()
-                            .setDataType(DATA_TYPE(concept.asAttribute().dataType())));
+                            .setDataType(VALUE_TYPE(concept.asAttribute().valueType())));
                 }
             }
 
@@ -234,45 +234,45 @@ public class ResponseBuilder {
             }
         }
 
-        static ConceptProto.AttributeType.DATA_TYPE DATA_TYPE(AttributeType.DataType<?> dataType) {
-            if (dataType.equals(AttributeType.DataType.STRING)) {
+        static ConceptProto.AttributeType.DATA_TYPE VALUE_TYPE(AttributeType.ValueType<?> valueType) {
+            if (valueType.equals(AttributeType.ValueType.STRING)) {
                 return ConceptProto.AttributeType.DATA_TYPE.STRING;
-            } else if (dataType.equals(AttributeType.DataType.BOOLEAN)) {
+            } else if (valueType.equals(AttributeType.ValueType.BOOLEAN)) {
                 return ConceptProto.AttributeType.DATA_TYPE.BOOLEAN;
-            } else if (dataType.equals(AttributeType.DataType.INTEGER)) {
+            } else if (valueType.equals(AttributeType.ValueType.INTEGER)) {
                 return ConceptProto.AttributeType.DATA_TYPE.INTEGER;
-            } else if (dataType.equals(AttributeType.DataType.LONG)) {
+            } else if (valueType.equals(AttributeType.ValueType.LONG)) {
                 return ConceptProto.AttributeType.DATA_TYPE.LONG;
-            } else if (dataType.equals(AttributeType.DataType.FLOAT)) {
+            } else if (valueType.equals(AttributeType.ValueType.FLOAT)) {
                 return ConceptProto.AttributeType.DATA_TYPE.FLOAT;
-            } else if (dataType.equals(AttributeType.DataType.DOUBLE)) {
+            } else if (valueType.equals(AttributeType.ValueType.DOUBLE)) {
                 return ConceptProto.AttributeType.DATA_TYPE.DOUBLE;
-            } else if (dataType.equals(AttributeType.DataType.DATE)) {
+            } else if (valueType.equals(AttributeType.ValueType.DATE)) {
                 return ConceptProto.AttributeType.DATA_TYPE.DATE;
             } else {
-                throw GraknServerException.unreachableStatement("Unrecognised " + dataType);
+                throw GraknServerException.unreachableStatement("Unrecognised " + valueType);
             }
         }
 
-        public static AttributeType.DataType<?> DATA_TYPE(ConceptProto.AttributeType.DATA_TYPE dataType) {
-            switch (dataType) {
+        public static AttributeType.ValueType<?> VALUE_TYPE(ConceptProto.AttributeType.DATA_TYPE valueType) {
+            switch (valueType) {
                 case STRING:
-                    return AttributeType.DataType.STRING;
+                    return AttributeType.ValueType.STRING;
                 case BOOLEAN:
-                    return AttributeType.DataType.BOOLEAN;
+                    return AttributeType.ValueType.BOOLEAN;
                 case INTEGER:
-                    return AttributeType.DataType.INTEGER;
+                    return AttributeType.ValueType.INTEGER;
                 case LONG:
-                    return AttributeType.DataType.LONG;
+                    return AttributeType.ValueType.LONG;
                 case FLOAT:
-                    return AttributeType.DataType.FLOAT;
+                    return AttributeType.ValueType.FLOAT;
                 case DOUBLE:
-                    return AttributeType.DataType.DOUBLE;
+                    return AttributeType.ValueType.DOUBLE;
                 case DATE:
-                    return AttributeType.DataType.DATE;
+                    return AttributeType.ValueType.DATE;
                 default:
                 case UNRECOGNIZED:
-                    throw new IllegalArgumentException("Unrecognised " + dataType);
+                    throw new IllegalArgumentException("Unrecognised " + valueType);
             }
         }
 

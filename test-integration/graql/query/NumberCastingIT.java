@@ -52,9 +52,9 @@ public class NumberCastingIT {
     public void newSession() {
         session = graknServer.sessionWithNewKeyspace();
         try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-            tx.putAttributeType("attr-long", AttributeType.DataType.LONG);
-            tx.putAttributeType("attr-double", AttributeType.DataType.DOUBLE);
-            tx.putAttributeType("attr-date", AttributeType.DataType.DATE);
+            tx.putAttributeType("attr-long", AttributeType.ValueType.LONG);
+            tx.putAttributeType("attr-double", AttributeType.ValueType.DOUBLE);
+            tx.putAttributeType("attr-date", AttributeType.ValueType.DATE);
             tx.commit();
         }
     }
@@ -156,7 +156,7 @@ public class NumberCastingIT {
         double value = 10000000.0;
         Pattern pattern = Graql.var("x").val(value).isa("attr-date");
         expectedException.expect(GraknConceptException.class);
-        expectedException.expectMessage("The value [" + value + "] of type [Double] must be of datatype [java.time.LocalDateTime]");
+        expectedException.expectMessage("The value [" + value + "] of type [Double] must be of value type [java.time.LocalDateTime]");
         verifyWrite(session, pattern);
     }
 
@@ -165,7 +165,7 @@ public class NumberCastingIT {
         boolean value = true;
         Pattern pattern = Graql.var("x").val(value).isa("attr-double");
         expectedException.expect(GraknConceptException.class);
-        expectedException.expectMessage("The value [" + value + "] of type [Boolean] must be of datatype [java.lang.Double]");
+        expectedException.expectMessage("The value [" + value + "] of type [Boolean] must be of value type [java.lang.Double]");
         verifyWrite(session, pattern);
     }
 
@@ -174,7 +174,7 @@ public class NumberCastingIT {
         double value = 10.1;
         Pattern pattern = Graql.var("x").val(value).isa("attr-long");
         expectedException.expect(GraknConceptException.class);
-        expectedException.expectMessage("The value [" + value + "] of type [Double] must be of datatype [java.lang.Long]");
+        expectedException.expectMessage("The value [" + value + "] of type [Double] must be of value type [java.lang.Long]");
         verifyWrite(session, pattern);
     }
 

@@ -789,30 +789,30 @@ public class TransactionImpl implements Transaction {
 
     /**
      * @param label    A unique label for the AttributeType
-     * @param dataType The data type of the AttributeType.
-     *                 Supported types include: DataType.STRING, DataType.LONG, DataType.DOUBLE, and DataType.BOOLEAN
+     * @param valueType The data type of the AttributeType.
+     *                 Supported types include: ValueType.STRING, ValueType.LONG, ValueType.DOUBLE, and ValueType.BOOLEAN
      * @param <V>
      * @return A new or existing AttributeType with the provided label and data type.
      * @throws TransactionException       if the graph is closed
      * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-AttributeType.
      * @throws GraknElementException       if the {@param label} is already in use by an existing AttributeType which is
-     *                                    unique or has a different datatype.
+     *                                    unique or has a different ValueType.
      */
     @Override
     @SuppressWarnings("unchecked")
-    public <V> AttributeType<V> putAttributeType(Label label, AttributeType.DataType<V> dataType) {
+    public <V> AttributeType<V> putAttributeType(Label label, AttributeType.ValueType<V> valueType) {
         checkGraphIsOpen();
         AttributeType<V> attributeType = conceptManager.getSchemaConcept(label);
         if (attributeType == null) {
-            attributeType = conceptManager.createAttributeType(label, getMetaAttributeType(), dataType);
+            attributeType = conceptManager.createAttributeType(label, getMetaAttributeType(), valueType);
         } else {
             ConceptUtils.validateBaseType(SchemaConceptImpl.from(attributeType), Schema.BaseType.ATTRIBUTE_TYPE);
-            //These checks is needed here because caching will return a type by label without checking the datatype
+            //These checks is needed here because caching will return a type by label without checking the ValueType
 
             if (Schema.MetaSchema.isMetaLabel(label)) {
                 throw GraknConceptException.metaTypeImmutable(label);
-            } else if (!dataType.equals(attributeType.dataType())) {
-                throw GraknElementException.immutableProperty(attributeType.dataType(), dataType, Schema.VertexProperty.DATA_TYPE);
+            } else if (!valueType.equals(attributeType.valueType())) {
+                throw GraknElementException.immutableProperty(attributeType.valueType(), valueType, Schema.VertexProperty.DATA_TYPE);
             }
         }
 
@@ -820,8 +820,8 @@ public class TransactionImpl implements Transaction {
     }
 
     @Override
-    public <V> AttributeType<V> putAttributeType(String label, AttributeType.DataType<V> dataType) {
-        return putAttributeType(Label.of(label), dataType);
+    public <V> AttributeType<V> putAttributeType(String label, AttributeType.ValueType<V> valueType) {
+        return putAttributeType(Label.of(label), valueType);
     }
 
     /**
@@ -953,15 +953,15 @@ public class TransactionImpl implements Transaction {
         checkGraphIsOpen();
         if (value == null) return Collections.emptySet();
 
-        // TODO: Remove this forced casting once we replace DataType to be Parameterised Generic Enum
-        AttributeType.DataType<V> dataType =
-                (AttributeType.DataType<V>) AttributeType.DataType.of(value.getClass());
-        if (dataType == null) {
-            throw TransactionException.unsupportedDataType(value);
+        // TODO: Remove this forced casting once we replace ValueType to be Parameterised Generic Enum
+        AttributeType.ValueType<V> valueType =
+                (AttributeType.ValueType<V>) AttributeType.ValueType.of(value.getClass());
+        if (valueType == null) {
+            throw TransactionException.unsupportedValueType(value);
         }
 
         HashSet<Attribute<V>> attributes = new HashSet<>();
-        conceptManager.getConcepts(Schema.VertexProperty.ofDataType(dataType), AttributeSerialiser.of(dataType).serialise(value))
+        conceptManager.getConcepts(Schema.VertexProperty.ofValueType(valueType), AttributeSerialiser.of(valueType).serialise(value))
                 .forEach(concept -> {
                     if (concept != null && concept.isAttribute()) {
                         attributes.add(concept.asAttribute());

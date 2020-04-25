@@ -283,8 +283,8 @@ public class EntityTypeIT {
         Label superLabel = Label.of("Super Attribute Type");
         Label label = Label.of("Attribute Type");
 
-        AttributeType superAttributeType = tx.putAttributeType(superLabel, AttributeType.DataType.STRING);
-        AttributeType attributeType = tx.putAttributeType(label, AttributeType.DataType.STRING).sup(superAttributeType);
+        AttributeType superAttributeType = tx.putAttributeType(superLabel, AttributeType.ValueType.STRING);
+        AttributeType attributeType = tx.putAttributeType(label, AttributeType.ValueType.STRING).sup(superAttributeType);
         AttributeType metaType = tx.getMetaAttributeType();
 
         entityType1.has(superAttributeType);
@@ -326,8 +326,8 @@ public class EntityTypeIT {
         Label superLabel = Label.of("Abstract Super Attribute Type");
         Label label = Label.of("Attribute Type");
 
-        AttributeType superAttributeType = tx.putAttributeType(superLabel, AttributeType.DataType.STRING);
-        AttributeType attributeType = tx.putAttributeType(label, AttributeType.DataType.STRING).sup(superAttributeType);
+        AttributeType superAttributeType = tx.putAttributeType(superLabel, AttributeType.ValueType.STRING);
+        AttributeType attributeType = tx.putAttributeType(label, AttributeType.ValueType.STRING).sup(superAttributeType);
         AttributeType metaType = tx.getMetaAttributeType();
 
         entityType.has(attributeType);
@@ -413,9 +413,9 @@ public class EntityTypeIT {
     @Test
     public void checkThatResourceTypesCanBeRetrievedFromTypes(){
         EntityType e1 = tx.putEntityType("e1");
-        AttributeType r1 = tx.putAttributeType("r1", AttributeType.DataType.STRING);
-        AttributeType r2 = tx.putAttributeType("r2", AttributeType.DataType.LONG);
-        AttributeType r3 = tx.putAttributeType("r3", AttributeType.DataType.BOOLEAN);
+        AttributeType r1 = tx.putAttributeType("r1", AttributeType.ValueType.STRING);
+        AttributeType r2 = tx.putAttributeType("r2", AttributeType.ValueType.LONG);
+        AttributeType r3 = tx.putAttributeType("r3", AttributeType.ValueType.BOOLEAN);
 
         assertTrue("Entity is linked to resources when it shouldn't", e1.attributes().collect(toSet()).isEmpty());
         e1.has(r1);
@@ -426,8 +426,8 @@ public class EntityTypeIT {
 
     @Test
     public void addResourceTypeAsKeyToOneEntityTypeAndAsResourceToAnotherEntityType(){
-        AttributeType<String> attributeType1 = tx.putAttributeType("Shared Attribute 1", AttributeType.DataType.STRING);
-        AttributeType<String> attributeType2 = tx.putAttributeType("Shared Attribute 2", AttributeType.DataType.STRING);
+        AttributeType<String> attributeType1 = tx.putAttributeType("Shared Attribute 1", AttributeType.ValueType.STRING);
+        AttributeType<String> attributeType2 = tx.putAttributeType("Shared Attribute 2", AttributeType.ValueType.STRING);
 
         EntityType entityType1 = tx.putEntityType("EntityType 1");
         EntityType entityType2 = tx.putEntityType("EntityType 2");
@@ -469,7 +469,7 @@ public class EntityTypeIT {
 
     @Test
     public void whenAddingResourceTypeAsKeyAfterResource_Throw(){
-        AttributeType<String> attributeType = tx.putAttributeType("Shared Attribute", AttributeType.DataType.STRING);
+        AttributeType<String> attributeType = tx.putAttributeType("Shared Attribute", AttributeType.ValueType.STRING);
         EntityType entityType = tx.putEntityType("EntityType");
 
         entityType.has(attributeType);
@@ -482,7 +482,7 @@ public class EntityTypeIT {
 
     @Test
     public void whenAddingResourceTypeAsResourceAfterResource_Throw(){
-        AttributeType<String> attributeType = tx.putAttributeType("Shared Attribute", AttributeType.DataType.STRING);
+        AttributeType<String> attributeType = tx.putAttributeType("Shared Attribute", AttributeType.ValueType.STRING);
         EntityType entityType = tx.putEntityType("EntityType");
 
         entityType.key(attributeType);
@@ -524,8 +524,8 @@ public class EntityTypeIT {
 
     @Test
     public void whenRemovingAttributesFromAType_EnsureTheTypeNoLongerHasThoseAttributes(){
-        AttributeType<String> name = tx.putAttributeType("name", AttributeType.DataType.STRING);
-        AttributeType<Integer> age = tx.putAttributeType("age", AttributeType.DataType.INTEGER);
+        AttributeType<String> name = tx.putAttributeType("name", AttributeType.ValueType.STRING);
+        AttributeType<Integer> age = tx.putAttributeType("age", AttributeType.ValueType.INTEGER);
         EntityType person = tx.putEntityType("person").has(name).has(age);
         assertThat(person.attributes().collect(toSet()), containsInAnyOrder(name, age));
         person.unhas(name);
@@ -534,9 +534,9 @@ public class EntityTypeIT {
 
     @Test
     public void whenRemovingKeysFromAType_EnsureKeysAreRemovedt(){
-        AttributeType<String> name = tx.putAttributeType("name", AttributeType.DataType.STRING);
-        AttributeType<Integer> age = tx.putAttributeType("age", AttributeType.DataType.INTEGER);
-        AttributeType<Integer> id = tx.putAttributeType("id", AttributeType.DataType.INTEGER);
+        AttributeType<String> name = tx.putAttributeType("name", AttributeType.ValueType.STRING);
+        AttributeType<Integer> age = tx.putAttributeType("age", AttributeType.ValueType.INTEGER);
+        AttributeType<Integer> id = tx.putAttributeType("id", AttributeType.ValueType.INTEGER);
         EntityType person = tx.putEntityType("person").has(name).has(age).key(id);
 
         assertThat(person.attributes().collect(toSet()), containsInAnyOrder(name, age, id));
@@ -550,9 +550,9 @@ public class EntityTypeIT {
 
     @Test
     public void whenRemovingKeyAsHas_Throw(){
-        AttributeType<String> name = tx.putAttributeType("name", AttributeType.DataType.STRING);
-        AttributeType<Integer> age = tx.putAttributeType("age", AttributeType.DataType.INTEGER);
-        AttributeType<Integer> id = tx.putAttributeType("id", AttributeType.DataType.INTEGER);
+        AttributeType<String> name = tx.putAttributeType("name", AttributeType.ValueType.STRING);
+        AttributeType<Integer> age = tx.putAttributeType("age", AttributeType.ValueType.INTEGER);
+        AttributeType<Integer> id = tx.putAttributeType("id", AttributeType.ValueType.INTEGER);
         EntityType person = tx.putEntityType("person").has(name).has(age).key(id);
 
         assertThat(person.attributes().collect(toSet()), containsInAnyOrder(name, age, id));

@@ -136,8 +136,8 @@ public class TransactionIT {
         String targetValue = "Geralt";
         assertTrue(tx.getAttributesByValue(targetValue).isEmpty());
 
-        AttributeType<String> t1 = tx.putAttributeType("Parent 1", AttributeType.DataType.STRING);
-        AttributeType<String> t2 = tx.putAttributeType("Parent 2", AttributeType.DataType.STRING);
+        AttributeType<String> t1 = tx.putAttributeType("Parent 1", AttributeType.ValueType.STRING);
+        AttributeType<String> t2 = tx.putAttributeType("Parent 2", AttributeType.ValueType.STRING);
 
         Attribute<String> r1 = t1.create(targetValue);
         Attribute<String> r2 = t2.create(targetValue);
@@ -163,7 +163,7 @@ public class TransactionIT {
         EntityType entityType = tx.putEntityType(entityTypeLabel);
         RelationType relationType = tx.putRelationType(relationTypeLabel);
         Role role = tx.putRole(roleTypeLabel);
-        AttributeType attributeType = tx.putAttributeType(resourceTypeLabel, AttributeType.DataType.STRING);
+        AttributeType attributeType = tx.putAttributeType(resourceTypeLabel, AttributeType.ValueType.STRING);
 
         assertEquals(entityType, tx.getEntityType(entityTypeLabel));
         assertEquals(relationType, tx.getRelationType(relationTypeLabel));
@@ -515,7 +515,7 @@ public class TransactionIT {
         String entityLabel = "someEntity";
         String attributeLabel = "someAttribute";
         try(Transaction tx = session.transaction(Transaction.Type.WRITE)){
-            AttributeType<Long> someAtttribute = tx.putAttributeType(attributeLabel, AttributeType.DataType.LONG);
+            AttributeType<Long> someAtttribute = tx.putAttributeType(attributeLabel, AttributeType.ValueType.LONG);
             tx.putEntityType(entityLabel).has(someAtttribute);
             tx.commit();
         }
@@ -551,9 +551,9 @@ public class TransactionIT {
         executor.submit(() -> {
             //Resources
             try (Transaction tx = localSession.transaction(Transaction.Type.WRITE)) {
-                AttributeType<Long> int_ = tx.putAttributeType("int", AttributeType.DataType.LONG);
-                AttributeType<Long> foo = tx.putAttributeType("foo", AttributeType.DataType.LONG).sup(int_);
-                tx.putAttributeType("bar", AttributeType.DataType.LONG).sup(int_);
+                AttributeType<Long> int_ = tx.putAttributeType("int", AttributeType.ValueType.LONG);
+                AttributeType<Long> foo = tx.putAttributeType("foo", AttributeType.ValueType.LONG).sup(int_);
+                tx.putAttributeType("bar", AttributeType.ValueType.LONG).sup(int_);
                 tx.putEntityType("FOO").has(foo);
 
                 tx.commit();
@@ -630,8 +630,8 @@ public class TransactionIT {
     public void whenCommitingInferredConcepts_InferredConceptsAreNotPersisted(){
         tx.execute(Graql.<GraqlDefine>parse(
                     "define " +
-                            "name sub attribute, datatype string;" +
-                            "score sub attribute, datatype double;" +
+                            "name sub attribute, value string;" +
+                            "score sub attribute, value double;" +
                             "person sub entity, has name, has score;" +
                             "infer-attr sub rule," +
                             "when {" +
@@ -660,7 +660,7 @@ public class TransactionIT {
     public void whenCommitingInferredAttributeEdge_EdgeIsNotPersisted(){
         tx.execute(Graql.<GraqlDefine>parse(
                 "define " +
-                        "score sub attribute, datatype double;" +
+                        "score sub attribute, value double;" +
                         "person sub entity, has score;" +
                         "infer-attr sub rule," +
                         "when {" +
@@ -692,8 +692,8 @@ public class TransactionIT {
         String inferrableSchema = "define " +
                 "baseEntity sub entity, has inferrableAttribute, has nonInferrableAttribute, plays someRole, plays anotherRole;" +
                 "someEntity sub baseEntity;" +
-                "nonInferrableAttribute sub attribute, datatype string;" +
-                "inferrableAttribute sub attribute, datatype string, plays anotherRole;" +
+                "nonInferrableAttribute sub attribute, value string;" +
+                "inferrableAttribute sub attribute, value string, plays anotherRole;" +
                 "inferrableRelation sub relation, has nonInferrableAttribute, relates someRole, relates anotherRole;" +
 
                 "infer-attr sub rule," +
@@ -811,8 +811,8 @@ public class TransactionIT {
         String inferrableSchema = "define " +
                 "baseEntity sub entity, has inferrableAttribute, has nonInferrableAttribute, plays someRole, plays anotherRole;" +
                 "someEntity sub baseEntity;" +
-                "nonInferrableAttribute sub attribute, datatype string;" +
-                "inferrableAttribute sub attribute, datatype string, plays anotherRole;" +
+                "nonInferrableAttribute sub attribute, value string;" +
+                "inferrableAttribute sub attribute, value string, plays anotherRole;" +
                 "someRelation sub relation, has nonInferrableAttribute, relates someRole, relates anotherRole;" +
 
                 "infer-attr sub rule," +
@@ -858,8 +858,8 @@ public class TransactionIT {
         String inferrableSchema = "define " +
                 "baseEntity sub entity, has inferrableAttribute, has nonInferrableAttribute, plays someRole, plays anotherRole;" +
                 "someEntity sub baseEntity;" +
-                "nonInferrableAttribute sub attribute, datatype string;" +
-                "inferrableAttribute sub attribute, datatype string, plays anotherRole;" +
+                "nonInferrableAttribute sub attribute, value string;" +
+                "inferrableAttribute sub attribute, value string, plays anotherRole;" +
                 "someRelation sub relation, has nonInferrableAttribute, relates someRole, relates anotherRole;" +
 
                 "infer-attr sub rule," +

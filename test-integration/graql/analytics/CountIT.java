@@ -133,7 +133,7 @@ public class CountIT {
     public void testHasResourceEdges() {
         try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             EntityType person = tx.putEntityType("person");
-            AttributeType<String> name = tx.putAttributeType("name", AttributeType.DataType.STRING);
+            AttributeType<String> name = tx.putAttributeType("name", AttributeType.ValueType.STRING);
             person.has(name);
             Entity aPerson = person.create();
             aPerson.has(name.create("jason"));
@@ -166,7 +166,7 @@ public class CountIT {
             // manually construct the relation type and instance
             EntityType person = tx.getEntityType("person");
             Entity aPerson = person.create();
-            AttributeType<String> name = tx.putAttributeType("name", AttributeType.DataType.STRING);
+            AttributeType<String> name = tx.putAttributeType("name", AttributeType.ValueType.STRING);
             Attribute jason = name.create("jason");
 
             Role resourceOwner = tx.putRole(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of("name")));
@@ -211,7 +211,7 @@ public class CountIT {
             // manually construct the relation type and instance
             EntityType person = tx.putEntityType("person");
             Entity aPerson = person.create();
-            AttributeType<String> name = tx.putAttributeType("name", AttributeType.DataType.STRING);
+            AttributeType<String> name = tx.putAttributeType("name", AttributeType.ValueType.STRING);
             Attribute jason = name.create("jason");
 
             person.has(name);
@@ -252,7 +252,7 @@ public class CountIT {
 
         try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             EntityType person = tx.getEntityType("person");
-            AttributeType<String> name = tx.putAttributeType("name", AttributeType.DataType.STRING);
+            AttributeType<String> name = tx.putAttributeType("name", AttributeType.ValueType.STRING);
             Entity aPerson = person.create();
             aPerson.has(name.attribute("jason"));
             tx.commit();

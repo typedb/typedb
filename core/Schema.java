@@ -221,30 +221,30 @@ public final class Schema {
         VALUE_INTEGER(Integer.class), VALUE_FLOAT(Float.class),
         VALUE_DATE(Long.class);
 
-        private final Class dataType;
+        private final Class valueType;
 
-        private static Map<AttributeType.DataType, VertexProperty> dataTypeVertexProperty = map(
-                pair(AttributeType.DataType.BOOLEAN, VertexProperty.VALUE_BOOLEAN),
-                pair(AttributeType.DataType.DATE, VertexProperty.VALUE_DATE),
-                pair(AttributeType.DataType.DOUBLE, VertexProperty.VALUE_DOUBLE),
-                pair(AttributeType.DataType.FLOAT, VertexProperty.VALUE_FLOAT),
-                pair(AttributeType.DataType.INTEGER, VertexProperty.VALUE_INTEGER),
-                pair(AttributeType.DataType.LONG, VertexProperty.VALUE_LONG),
-                pair(AttributeType.DataType.STRING, VertexProperty.VALUE_STRING)
+        private static Map<AttributeType.ValueType, VertexProperty> valueTypeVertexProperty = map(
+                pair(AttributeType.ValueType.BOOLEAN, VertexProperty.VALUE_BOOLEAN),
+                pair(AttributeType.ValueType.DATE, VertexProperty.VALUE_DATE),
+                pair(AttributeType.ValueType.DOUBLE, VertexProperty.VALUE_DOUBLE),
+                pair(AttributeType.ValueType.FLOAT, VertexProperty.VALUE_FLOAT),
+                pair(AttributeType.ValueType.INTEGER, VertexProperty.VALUE_INTEGER),
+                pair(AttributeType.ValueType.LONG, VertexProperty.VALUE_LONG),
+                pair(AttributeType.ValueType.STRING, VertexProperty.VALUE_STRING)
         );
 
-        VertexProperty(Class dataType) {
-            this.dataType = dataType;
+        VertexProperty(Class valueType) {
+            this.valueType = valueType;
         }
 
         @CheckReturnValue
         public Class getPropertyClass() {
-            return dataType;
+            return valueType;
         }
 
         // TODO: This method feels out of place
-        public static VertexProperty ofDataType(AttributeType.DataType dataType) {
-            return dataTypeVertexProperty.get(dataType);
+        public static VertexProperty ofValueType(AttributeType.ValueType valueType) {
+            return valueTypeVertexProperty.get(valueType);
         }
     }
 
@@ -259,15 +259,15 @@ public final class Schema {
         REQUIRED(Boolean.class),
         IS_INFERRED(Boolean.class);
 
-        private final Class dataType;
+        private final Class valueType;
 
-        EdgeProperty(Class dataType) {
-            this.dataType = dataType;
+        EdgeProperty(Class valueType) {
+            this.valueType = valueType;
         }
 
         @CheckReturnValue
         public Class getPropertyClass() {
-            return dataType;
+            return valueType;
         }
     }
 

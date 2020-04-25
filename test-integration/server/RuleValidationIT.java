@@ -367,7 +367,7 @@ public class RuleValidationIT {
         );
         validateIllegalHead(
                 Graql.parsePattern("$x has someAttribute $y;"),
-                Graql.parsePattern("$y datatype string;"),
+                Graql.parsePattern("$y value string;"),
                 ErrorMessage.VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD
         );
         validateIllegalHead(
@@ -943,9 +943,9 @@ public class RuleValidationIT {
     }
 
     private void initTx(Transaction tx) {
-        AttributeType<Integer> someAttribute = tx.putAttributeType("someAttribute", AttributeType.DataType.INTEGER);
-        AttributeType<Integer> anotherAttribute = tx.putAttributeType("anotherAttribute", AttributeType.DataType.INTEGER);
-        AttributeType<String> stringAttribute = tx.putAttributeType("stringAttribute", AttributeType.DataType.STRING);
+        AttributeType<Integer> someAttribute = tx.putAttributeType("someAttribute", AttributeType.ValueType.INTEGER);
+        AttributeType<Integer> anotherAttribute = tx.putAttributeType("anotherAttribute", AttributeType.ValueType.INTEGER);
+        AttributeType<String> stringAttribute = tx.putAttributeType("stringAttribute", AttributeType.ValueType.STRING);
         Role someRole = tx.putRole("someRole");
         Role anotherRole = tx.putRole("anotherRole");
         Role singleRole = tx.putRole("singleRole");

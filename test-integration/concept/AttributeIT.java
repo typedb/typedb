@@ -50,7 +50,6 @@ import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
@@ -89,8 +88,8 @@ public class AttributeIT {
 
     @Test
     public void whenSubTypeSharesAttributes_noDuplicatesAreProducedWhenRetrievingAttributes(){
-        AttributeType<String> resource = tx.putAttributeType("resource", AttributeType.DataType.STRING);
-        AttributeType<String> anotherResource = tx.putAttributeType("anotherResource", AttributeType.DataType.STRING);
+        AttributeType<String> resource = tx.putAttributeType("resource", AttributeType.ValueType.STRING);
+        AttributeType<String> anotherResource = tx.putAttributeType("anotherResource", AttributeType.ValueType.STRING);
         EntityType someEntity = tx.putEntityType("someEntity")
                 .has(resource)
                 .has(anotherResource);
@@ -105,16 +104,16 @@ public class AttributeIT {
     }
 
     @Test
-    public void whenCreatingResource_EnsureTheResourcesDataTypeIsTheSameAsItsType() throws Exception {
-        AttributeType<String> attributeType = tx.putAttributeType("attributeType", AttributeType.DataType.STRING);
+    public void whenCreatingResource_EnsureTheResourcesValueTypeIsTheSameAsItsType() throws Exception {
+        AttributeType<String> attributeType = tx.putAttributeType("attributeType", AttributeType.ValueType.STRING);
         Attribute attribute = attributeType.create("resource");
-        assertEquals(AttributeType.DataType.STRING, attribute.dataType());
+        assertEquals(AttributeType.ValueType.STRING, attribute.valueType());
     }
 
     @Test
     public void whenAttachingResourcesToInstances_EnsureInstancesAreReturnedAsOwners() throws Exception {
         EntityType randomThing = tx.putEntityType("A Thing");
-        AttributeType<String> attributeType = tx.putAttributeType("A Attribute Thing", AttributeType.DataType.STRING);
+        AttributeType<String> attributeType = tx.putAttributeType("A Attribute Thing", AttributeType.ValueType.STRING);
         RelationType hasResource = tx.putRelationType("Has Attribute");
         Role resourceRole = tx.putRole("Attribute Role");
         Role actorRole = tx.putRole("Actor");
@@ -142,11 +141,11 @@ public class AttributeIT {
     // this is due to the generic of getResourcesByValue
     @SuppressWarnings("unchecked")
     @Test
-    public void whenCreatingResources_EnsureDataTypesAreEnforced() {
-        AttributeType<String> strings = tx.putAttributeType("String Type", AttributeType.DataType.STRING);
-        AttributeType<Long> longs = tx.putAttributeType("Long Type", AttributeType.DataType.LONG);
-        AttributeType<Double> doubles = tx.putAttributeType("Double Type", AttributeType.DataType.DOUBLE);
-        AttributeType<Boolean> booleans = tx.putAttributeType("Boolean Type", AttributeType.DataType.BOOLEAN);
+    public void whenCreatingResources_EnsureValueTypesAreEnforced() {
+        AttributeType<String> strings = tx.putAttributeType("String Type", AttributeType.ValueType.STRING);
+        AttributeType<Long> longs = tx.putAttributeType("Long Type", AttributeType.ValueType.LONG);
+        AttributeType<Double> doubles = tx.putAttributeType("Double Type", AttributeType.ValueType.DOUBLE);
+        AttributeType<Boolean> booleans = tx.putAttributeType("Boolean Type", AttributeType.ValueType.BOOLEAN);
 
         Attribute<String> attribute1 = strings.create("1");
         Attribute<Long> attribute2 = longs.create(1L);
@@ -172,30 +171,30 @@ public class AttributeIT {
     // this is deliberately an incorrect type for the test
     @SuppressWarnings("unchecked")
     @Test
-    public void whenCreatingResourceWithAnInvalidDataType_Throw() {
+    public void whenCreatingResourceWithAnInvalidValueType_Throw() {
         String invalidThing = "Invalid Thing";
-        AttributeType longAttributeType = tx.putAttributeType("long", AttributeType.DataType.LONG);
+        AttributeType longAttributeType = tx.putAttributeType("long", AttributeType.ValueType.LONG);
         expectedException.expect(GraknConceptException.class);
-        expectedException.expectMessage(GraknConceptException.invalidAttributeValue(longAttributeType, invalidThing, AttributeType.DataType.LONG).getMessage());
+        expectedException.expectMessage(GraknConceptException.invalidAttributeValue(longAttributeType, invalidThing, AttributeType.ValueType.LONG).getMessage());
         longAttributeType.create(invalidThing);
     }
 
     // this is deliberately an incorrect type for the test
     @SuppressWarnings("unchecked")
     @Test
-    public void whenCreatingResourceWithAnInvalidDataTypeOnADate_Throw() {
+    public void whenCreatingResourceWithAnInvalidValueTypeOnADate_Throw() {
         String invalidThing = "Invalid Thing";
-        AttributeType dateAttributeType = tx.putAttributeType("date", AttributeType.DataType.DATE);
+        AttributeType dateAttributeType = tx.putAttributeType("date", AttributeType.ValueType.DATE);
         expectedException.expect(GraknConceptException.class);
-        expectedException.expectMessage(GraknConceptException.invalidAttributeValue(dateAttributeType, invalidThing, AttributeType.DataType.DATE).getMessage());
+        expectedException.expectMessage(GraknConceptException.invalidAttributeValue(dateAttributeType, invalidThing, AttributeType.ValueType.DATE).getMessage());
         dateAttributeType.create(invalidThing);
     }
 
     // this is deliberately an incorrect type for the test
     @SuppressWarnings("unchecked")
     @Test
-    public void whenCreatingResourceWithAnInvalidDataType_DoNotCreateTheResource() {
-        AttributeType longAttributeType = tx.putAttributeType("long", AttributeType.DataType.LONG);
+    public void whenCreatingResourceWithAnInvalidValueType_DoNotCreateTheResource() {
+        AttributeType longAttributeType = tx.putAttributeType("long", AttributeType.ValueType.LONG);
 
         try {
             longAttributeType.create("Invalid Thing");
@@ -212,7 +211,7 @@ public class AttributeIT {
     @Test
     public void whenSavingDateIntoResource_DateIsReturnedInSameFormat() {
         LocalDateTime date = LocalDateTime.now();
-        AttributeType<LocalDateTime> attributeType = tx.putAttributeType("My Birthday", AttributeType.DataType.DATE);
+        AttributeType<LocalDateTime> attributeType = tx.putAttributeType("My Birthday", AttributeType.ValueType.DATE);
         Attribute<LocalDateTime> myBirthday = attributeType.create(date);
 
         assertEquals(date, myBirthday.value());
@@ -222,8 +221,8 @@ public class AttributeIT {
 
     @Test
     public void whenCreatingAttributeInstancesWithHierarchies_HierarchyOfImplicitRelationsIsPreserved(){
-        AttributeType<String> baseAttribute = tx.putAttributeType("baseAttribute", AttributeType.DataType.STRING);
-        AttributeType<String> subAttribute = tx.putAttributeType("subAttribute", AttributeType.DataType.STRING).sup(baseAttribute);
+        AttributeType<String> baseAttribute = tx.putAttributeType("baseAttribute", AttributeType.ValueType.STRING);
+        AttributeType<String> subAttribute = tx.putAttributeType("subAttribute", AttributeType.ValueType.STRING).sup(baseAttribute);
 
         tx.putEntityType("someEntity")
                 .has(baseAttribute)
@@ -239,7 +238,7 @@ public class AttributeIT {
 
     @Test
     public void whenLinkingResourcesToThings_EnsureTheRelationIsAnEdge() {
-        AttributeType<String> attributeType = tx.putAttributeType("My attribute type", AttributeType.DataType.STRING);
+        AttributeType<String> attributeType = tx.putAttributeType("My attribute type", AttributeType.ValueType.STRING);
         Attribute<String> attribute = attributeType.create("A String");
 
         EntityType entityType = tx.putEntityType("My entity type").has(attributeType);
@@ -257,7 +256,7 @@ public class AttributeIT {
     @Test
     public void whenAddingRolePlayerToRelationEdge_RelationAutomaticallyReifies() {
         //Create boring attribute which creates a relation edge
-        AttributeType<String> attributeType = tx.putAttributeType("My attribute type", AttributeType.DataType.STRING);
+        AttributeType<String> attributeType = tx.putAttributeType("My attribute type", AttributeType.ValueType.STRING);
         Attribute<String> attribute = attributeType.create("A String");
         EntityType entityType = tx.putEntityType("My entity type").has(attributeType);
         Entity entity = entityType.create();
@@ -300,7 +299,7 @@ public class AttributeIT {
 
     @Test
     public void whenInsertingAThingWithTwoKeys_Throw() {
-        AttributeType<String> attributeType = tx.putAttributeType("Key Thingy", AttributeType.DataType.STRING);
+        AttributeType<String> attributeType = tx.putAttributeType("Key Thingy", AttributeType.ValueType.STRING);
         EntityType entityType = tx.putEntityType("Entity Type Thingy").key(attributeType);
         Entity entity = entityType.create();
 
@@ -317,7 +316,7 @@ public class AttributeIT {
 
     @Test
     public void whenGettingTheRelationsOfResources_EnsureIncomingResourceEdgesAreTakingIntoAccount() {
-        AttributeType<String> attributeType = tx.putAttributeType("Attribute Type Thingy", AttributeType.DataType.STRING);
+        AttributeType<String> attributeType = tx.putAttributeType("Attribute Type Thingy", AttributeType.ValueType.STRING);
         Attribute<String> attribute = attributeType.create("Thingy");
 
         EntityType entityType = tx.putEntityType("Entity Type Thingy").key(attributeType);
@@ -337,7 +336,7 @@ public class AttributeIT {
 
     @Test
     public void whenCreatingAnInferredAttribute_EnsureMarkedAsInferred() {
-        AttributeTypeImpl at = AttributeTypeImpl.from(tx.putAttributeType("at", AttributeType.DataType.STRING));
+        AttributeTypeImpl at = AttributeTypeImpl.from(tx.putAttributeType("at", AttributeType.ValueType.STRING));
         Attribute attribute = at.create("blergh");
         Attribute attributeInferred = at.putAttributeInferred("bloorg");
         assertFalse(attribute.isInferred());
@@ -346,7 +345,7 @@ public class AttributeIT {
 
     @Test
     public void whenDeletingAnAttribute_associatedEdgeRelationsAreDeleted() {
-        AttributeType<String> attributeType = tx.putAttributeType("resource", AttributeType.DataType.STRING);
+        AttributeType<String> attributeType = tx.putAttributeType("resource", AttributeType.ValueType.STRING);
         Attribute<String> attribute = attributeType.create("polok");
 
         EntityType entityType = tx.putEntityType("someEntity").has(attributeType);

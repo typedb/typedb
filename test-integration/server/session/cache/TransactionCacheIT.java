@@ -227,7 +227,7 @@ public class TransactionCacheIT {
         String index = Schema.generateAttributeIndex(Label.of(testAttributeLabel), testAttributeValue);
 
         // define the schema
-        tx.execute(Graql.define(type(testAttributeLabel).sub("attribute").datatype(Graql.Token.DataType.STRING)));
+        tx.execute(Graql.define(type(testAttributeLabel).sub("attribute").value(Graql.Token.ValueType.STRING)));
         tx.commit();
 
 
@@ -252,7 +252,7 @@ public class TransactionCacheIT {
 
         Role work = tx.putRole("work");
         Role author = tx.putRole("author");
-        AttributeType<String> provenance = tx.putAttributeType("provenance", AttributeType.DataType.STRING);
+        AttributeType<String> provenance = tx.putAttributeType("provenance", AttributeType.ValueType.STRING);
         EntityType somework = tx.putEntityType("somework").plays(work);
         EntityType person = tx.putEntityType("person").plays(author);
         RelationType authoredBy = tx.putRelationType("authored-by").relates(work).relates(author).has(provenance);
@@ -307,7 +307,7 @@ public class TransactionCacheIT {
 
         Role work = tx.putRole("work");
         Role author = tx.putRole("author");
-        AttributeType<String> provenance = tx.putAttributeType("provenance", AttributeType.DataType.STRING);
+        AttributeType<String> provenance = tx.putAttributeType("provenance", AttributeType.ValueType.STRING);
         EntityType somework = tx.putEntityType("somework").plays(work);
         EntityType person = tx.putEntityType("person").plays(author);
         RelationType authoredBy = tx.putRelationType("authored-by").relates(work).relates(author).has(provenance);
@@ -370,7 +370,7 @@ public class TransactionCacheIT {
 
     @Test
     public void whenInsertingAndDeletingInferredAttribute_instanceIsTracked(){
-        AttributeType<String> attributeType = tx.putAttributeType("resource", AttributeType.DataType.STRING);
+        AttributeType<String> attributeType = tx.putAttributeType("resource", AttributeType.ValueType.STRING);
         Attribute attribute = attributeType.putAttributeInferred("banana");
         assertTrue(tx.cache().getInferredInstances().anyMatch(inst -> inst.equals(attribute)));
         attribute.delete();
@@ -379,7 +379,7 @@ public class TransactionCacheIT {
 
     @Test
     public void whenInsertingAndDeletingAttribute_attributeCachedIsUpdated(){
-        AttributeType<String> attributeType = tx.putAttributeType("resource", AttributeType.DataType.STRING);
+        AttributeType<String> attributeType = tx.putAttributeType("resource", AttributeType.ValueType.STRING);
         String value = "banana";
         Attribute attribute = attributeType.create(value);
         String index = Schema.generateAttributeIndex(attributeType.label(), value);
@@ -395,7 +395,7 @@ public class TransactionCacheIT {
 
     @Test
     public void whenInsertingAndDeletingInferredImplicitRelation_instanceIsTracked(){
-        AttributeType<String> attributeType = tx.putAttributeType("resource", AttributeType.DataType.STRING);
+        AttributeType<String> attributeType = tx.putAttributeType("resource", AttributeType.ValueType.STRING);
         EntityType someEntity = tx.putEntityType("someEntity").has(attributeType);
         Entity owner = someEntity.create();
         Attribute<String> attribute = attributeType.create("banana");

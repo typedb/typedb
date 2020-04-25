@@ -28,7 +28,7 @@ import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.reasoner.atom.predicate.NeqIdPredicate;
 import grakn.core.graql.reasoner.atom.predicate.ValuePredicate;
 import grakn.core.graql.reasoner.atom.predicate.VariableValuePredicate;
-import grakn.core.graql.reasoner.atom.property.DataTypeAtom;
+import grakn.core.graql.reasoner.atom.property.ValueTypeAtom;
 import grakn.core.graql.reasoner.atom.property.IsAbstractAtom;
 import grakn.core.graql.reasoner.atom.property.RegexAtom;
 import grakn.core.graql.reasoner.query.ReasonerQueryFactory;
@@ -46,7 +46,7 @@ import grakn.core.kb.keyspace.KeyspaceStatistics;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.property.AbstractProperty;
-import graql.lang.property.DataTypeProperty;
+import graql.lang.property.ValueTypeProperty;
 import graql.lang.property.HasAttributeProperty;
 import graql.lang.property.HasAttributeTypeProperty;
 import graql.lang.property.IdProperty;
@@ -91,8 +91,8 @@ public class PropertyAtomicFactory {
     }
 
     private Atomic createAtom(Variable var, VarProperty property, ReasonerQuery parent, Statement statement, Set<Statement> otherStatements) {
-        if (property instanceof DataTypeProperty) {
-            return dataType(var, (DataTypeProperty) property, parent);
+        if (property instanceof ValueTypeProperty) {
+            return valueType(var, (ValueTypeProperty) property, parent);
 
         } else if (property instanceof HasAttributeProperty) {
             return hasAttribute(var, (HasAttributeProperty) property, parent, otherStatements);
@@ -273,15 +273,15 @@ public class PropertyAtomicFactory {
     }
 
 
-    private DataTypeAtom dataType(Variable var, DataTypeProperty property, ReasonerQuery parent) {
-        ImmutableMap.Builder<Graql.Token.DataType, AttributeType.DataType<?>> dataTypesBuilder = new ImmutableMap.Builder<>();
-        dataTypesBuilder.put(Graql.Token.DataType.BOOLEAN, AttributeType.DataType.BOOLEAN);
-        dataTypesBuilder.put(Graql.Token.DataType.DATE, AttributeType.DataType.DATE);
-        dataTypesBuilder.put(Graql.Token.DataType.DOUBLE, AttributeType.DataType.DOUBLE);
-        dataTypesBuilder.put(Graql.Token.DataType.LONG, AttributeType.DataType.LONG);
-        dataTypesBuilder.put(Graql.Token.DataType.STRING, AttributeType.DataType.STRING);
-        ImmutableMap<Graql.Token.DataType, AttributeType.DataType<?>> dataTypes = dataTypesBuilder.build();
-        return DataTypeAtom.create(var, property, parent, dataTypes.get(property.dataType()));
+    private ValueTypeAtom valueType(Variable var, ValueTypeProperty property, ReasonerQuery parent) {
+        ImmutableMap.Builder<Graql.Token.ValueType, AttributeType.ValueType<?>> valueTypesBuilder = new ImmutableMap.Builder<>();
+        valueTypesBuilder.put(Graql.Token.ValueType.BOOLEAN, AttributeType.ValueType.BOOLEAN);
+        valueTypesBuilder.put(Graql.Token.ValueType.DATE, AttributeType.ValueType.DATE);
+        valueTypesBuilder.put(Graql.Token.ValueType.DOUBLE, AttributeType.ValueType.DOUBLE);
+        valueTypesBuilder.put(Graql.Token.ValueType.LONG, AttributeType.ValueType.LONG);
+        valueTypesBuilder.put(Graql.Token.ValueType.STRING, AttributeType.ValueType.STRING);
+        ImmutableMap<Graql.Token.ValueType, AttributeType.ValueType<?>> valueTypes = valueTypesBuilder.build();
+        return ValueTypeAtom.create(var, property, parent, valueTypes.get(property.valueType()));
     }
 
     private Atomic isAbstract(Variable var, ReasonerQuery parent) {

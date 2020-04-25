@@ -86,7 +86,7 @@ public interface ConceptManager {
 
     EntityType createEntityType(Label label, EntityType superType);
     RelationType createRelationType(Label label, RelationType superType);
-    <V> AttributeType<V> createAttributeType(Label label, AttributeType<V> superType, AttributeType.DataType<V> dataType);
+    <V> AttributeType<V> createAttributeType(Label label, AttributeType<V> superType, AttributeType.ValueType<V> valueType);
     Rule createRule(Label label, Pattern when, Pattern then, Rule superType);
     Role createRole(Label label, Role superType);
 

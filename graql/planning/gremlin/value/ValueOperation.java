@@ -78,9 +78,9 @@ public abstract class ValueOperation<T, U> {
 
     public <S, E> GraphTraversal<S, E> apply(GraphTraversal<S, E> traversal) {
         List<GraphTraversal<?, E>> valueTraversals = new ArrayList<>();
-        AttributeType.DataType<?> dataType = AttributeType.DataType.of(value().getClass());
-        for (AttributeType.DataType<?> comparableDataType : dataType.comparableDataTypes()) {
-            Schema.VertexProperty property = Schema.VertexProperty.ofDataType(comparableDataType);
+        AttributeType.ValueType<?> valueType = AttributeType.ValueType.of(value().getClass());
+        for (AttributeType.ValueType<?> comparableValueType : valueType.comparableValueTypes()) {
+            Schema.VertexProperty property = Schema.VertexProperty.ofValueType(comparableValueType);
             valueTraversals.add(__.has(property.name(), predicate()));
         }
 
@@ -92,8 +92,8 @@ public abstract class ValueOperation<T, U> {
     public boolean test(Object otherValue) {
         if (this.value().getClass().isInstance(otherValue)) {
             // TODO: Remove this forced casting
-            AttributeType.DataType<T> dataType = (AttributeType.DataType<T>) AttributeType.DataType.of(value().getClass());
-            return predicate().test((U) AttributeSerialiser.of(dataType).serialise((T) otherValue));
+            AttributeType.ValueType<T> valueType = (AttributeType.ValueType<T>) AttributeType.ValueType.of(value().getClass());
+            return predicate().test((U) AttributeSerialiser.of(valueType).serialise((T) otherValue));
         } else {
             return false;
         }

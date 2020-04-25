@@ -52,7 +52,7 @@ public class StatisticsDeltaIT {
     public void setUp() {
         session = SessionUtil.serverlessSessionWithNewKeyspace(storage.createCompatibleServerConfig());
         tx = session.transaction(Transaction.Type.WRITE);
-        AttributeType age = tx.putAttributeType("age", AttributeType.DataType.LONG);
+        AttributeType age = tx.putAttributeType("age", AttributeType.ValueType.LONG);
         Role friend = tx.putRole("friend");
         EntityType personType = tx.putEntityType("person").plays(friend).has(age);
         RelationType friendshipType = tx.putRelationType("friendship").relates(friend);
