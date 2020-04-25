@@ -8,9 +8,9 @@ baseEntity sub entity,
 startEntity sub baseEntity;
 bulkEntity sub baseEntity;
 
-index sub attribute, valuetype long;
-nonInferredAttribute sub attribute, valuetype string;
-inferredAttribute sub attribute, valuetype string, plays anotherRole;
+index sub attribute, value long;
+nonInferredAttribute sub attribute, value string;
+inferredAttribute sub attribute, value string, plays anotherRole;
 
 inferredRelation sub relation, has inferredAttribute, relates someRole, relates anotherRole;
 

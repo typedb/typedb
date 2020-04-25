@@ -43,7 +43,7 @@ public enum ErrorMessage {
     SUPER_LOOP_DETECTED("By setting the super of concept [%s] to [%s]. You will be creating a loop. This is prohibited"),
     INVALID_UNIQUE_PROPERTY_MUTATION("Property [%s] of Concept [%s] cannot be changed to [%s] as it is already taken by Concept [%s]"),
     UNIQUE_PROPERTY_TAKEN("Property [%s] with value [%s] is already taken by concept [%s]"),
-    INVALID_VALUETYPE("The value [%s] of type [%s] must be of valuetype [%s] for attribute type [%s]"),
+    INVALID_VALUETYPE("The value [%s] of type [%s] must be of value type [%s] for attribute type [%s]"),
     INVALID_OBJECT_TYPE("The concept [%s] is not of type [%s]"),
     REGEX_INSTANCE_FAILURE("The regex [%s] of Attribute Type [%s] cannot be applied because value [%s] " +
             "does not conform to the regular expression"),
@@ -136,7 +136,7 @@ public enum ErrorMessage {
 
     VALIDATION_RULE_ILLEGAL_HEAD_REWRITING_TYPE_TO_RELATION("Rule [%s] attempts to rewrite type to a relation type\n"),
 
-    VALIDATION_RULE_ILLEGAL_HEAD_REWRITING_TYPE_VALUETYPE_INCOMPATIBLE("Rule [%s] attempts to convert attribute to a new valuetype [%s]\n"),
+    VALIDATION_RULE_ILLEGAL_HEAD_REWRITING_TYPE_VALUETYPE_INCOMPATIBLE("Rule [%s] attempts to convert attribute to a new value type [%s]\n"),
 
     VALIDATION_RULE_ILLEGAL_HEAD_REWRITING_META_TYPE("Rule [%s] changes meta type for variable [%s]\n"),
 

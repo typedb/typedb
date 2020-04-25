@@ -51,7 +51,7 @@ public class IsaAtomValidator implements AtomValidator<IsaAtom> {
         An IsaAtom is ok as the head of a rule when:
 
         1. The atom is NOT a relation type (must specify roles, making it a RelationAtom
-        2. If it is an attribute type, the valuetype must match
+        2. If it is an attribute type, the value type must match
         3. Types between rule head and body must be of same meta type
         */
 

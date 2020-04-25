@@ -48,7 +48,7 @@ ternary sub relation,
     relates role2,
     relates role3;
 
-resource sub attribute, valuetype string;
+resource sub attribute, value string;
 
 insert
 

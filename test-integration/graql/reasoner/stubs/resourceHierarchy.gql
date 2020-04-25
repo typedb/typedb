@@ -11,15 +11,15 @@ genericRole sub role;
 relation0 sub relation,
     relates genericRole;
 
-baseResource sub attribute, valuetype string,
+baseResource sub attribute, value string,
     plays genericRole;
 
-extendedResource sub baseResource, valuetype string;
-anotherExtendedResource sub baseResource, valuetype string;
+extendedResource sub baseResource, value string;
+anotherExtendedResource sub baseResource, value string;
 
-furtherExtendedResource sub extendedResource, valuetype string;
+furtherExtendedResource sub extendedResource, value string;
 
-simpleResource sub attribute, valuetype string;
+simpleResource sub attribute, value string;
 
 
 insert

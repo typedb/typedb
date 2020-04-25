@@ -46,11 +46,11 @@ anotherDerivedRelation sub relation,
     relates otherRole;
 
 
-resource sub attribute, valuetype string;
-anotherResource sub attribute, valuetype string;
-yetAnotherResource sub attribute, valuetype string;
-derivedResource sub attribute, valuetype string;
-anotherDerivedResource sub attribute, valuetype string;
+resource sub attribute, value string;
+anotherResource sub attribute, value string;
+yetAnotherResource sub attribute, value string;
+derivedResource sub attribute, value string;
+anotherDerivedResource sub attribute, value string;
 
 simple-relation-rule
 when {

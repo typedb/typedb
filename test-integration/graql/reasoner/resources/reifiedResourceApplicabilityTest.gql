@@ -9,13 +9,13 @@ someEntity sub entity,
 
 
 #Resources
-res-string sub attribute, valuetype string,
+res-string sub attribute, value string,
     plays resource-value;
-res-double sub attribute, valuetype double,
+res-double sub attribute, value double,
     plays resource-value;
-res-long sub attribute, valuetype long,
+res-long sub attribute, value long,
     plays resource-value;
-res-boolean sub attribute, valuetype boolean,
+res-boolean sub attribute, value boolean,
     plays resource-value;
 
 resource-owner sub role;

@@ -4,8 +4,8 @@ generic-entity sub entity,
     has detailed-resource,
     plays resource-owner;
 
-detailed-resource sub attribute, valuetype long;
-resource sub attribute, valuetype string,
+detailed-resource sub attribute, value long;
+resource sub attribute, value string,
     plays resource-value;
 
 resource-owner sub role;

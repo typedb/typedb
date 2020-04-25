@@ -156,7 +156,7 @@ public class NumberCastingIT {
         double value = 10000000.0;
         Pattern pattern = Graql.var("x").val(value).isa("attr-date");
         expectedException.expect(GraknConceptException.class);
-        expectedException.expectMessage("The value [" + value + "] of type [Double] must be of valuetype [java.time.LocalDateTime]");
+        expectedException.expectMessage("The value [" + value + "] of type [Double] must be of value [java.time.LocalDateTime]");
         verifyWrite(session, pattern);
     }
 
@@ -165,7 +165,7 @@ public class NumberCastingIT {
         boolean value = true;
         Pattern pattern = Graql.var("x").val(value).isa("attr-double");
         expectedException.expect(GraknConceptException.class);
-        expectedException.expectMessage("The value [" + value + "] of type [Boolean] must be of valuetype [java.lang.Double]");
+        expectedException.expectMessage("The value [" + value + "] of type [Boolean] must be of value type [java.lang.Double]");
         verifyWrite(session, pattern);
     }
 
@@ -174,7 +174,7 @@ public class NumberCastingIT {
         double value = 10.1;
         Pattern pattern = Graql.var("x").val(value).isa("attr-long");
         expectedException.expect(GraknConceptException.class);
-        expectedException.expectMessage("The value [" + value + "] of type [Double] must be of valuetype [java.lang.Long]");
+        expectedException.expectMessage("The value [" + value + "] of type [Double] must be of value type [java.lang.Long]");
         verifyWrite(session, pattern);
     }
 

@@ -97,10 +97,10 @@ attributed-relation sub relation,
     relates anotherRole;
 
 #Resources
-    resource-string sub attribute, valuetype string;
-    resource-long sub attribute, valuetype long;
-    name sub attribute, valuetype string;
-    description sub attribute, valuetype string;
+    resource-string sub attribute, value string;
+    resource-long sub attribute, value long;
+    name sub attribute, value string;
+    description sub attribute, value string;
 
 ##Rules
 

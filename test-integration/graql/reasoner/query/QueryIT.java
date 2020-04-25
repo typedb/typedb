@@ -227,7 +227,7 @@ public class QueryIT {
                 tx.execute(Graql.parse("define " +
                         "someEntity sub entity," +
                         "has derivedResource;" +
-                        "derivedResource sub attribute, valuetype long;" +
+                        "derivedResource sub attribute, value long;" +
                         "rule1 sub rule, when{ $x isa someEntity;}, then { $x has derivedResource 1337;};"
                 ).asDefine());
                 tx.execute(Graql.parse("insert " +

@@ -27,7 +27,7 @@ containes sub relation,
     relates contained-ingredient,
     relates containing-pantry;
 
-name sub attribute, valuetype string;
+name sub attribute, value string;
 
 
 available-ingredient-occuring-in-recipe sub ingredientBase;

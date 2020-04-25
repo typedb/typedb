@@ -33,7 +33,7 @@ relation1 sub relation,
     relates role1,
     relates role2;
 
-name sub attribute, valuetype string;
+name sub attribute, value string;
 
 #Rules
 

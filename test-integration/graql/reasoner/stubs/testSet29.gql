@@ -48,7 +48,7 @@ quaternary sub quaternary-base,
     relates role3,
     relates role4;
 
-name sub attribute, valuetype string;
+name sub attribute, value string;
 
 #Rules
 

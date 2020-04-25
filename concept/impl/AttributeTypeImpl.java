@@ -133,7 +133,7 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
      * @throws GraknConceptException when the value does not conform to the regex of its types
      */
     private void checkConformsToRegexes(String value) {
-        //Not checking the valuetype because the regex will always be null for non strings.
+        //Not checking the value type because the regex will always be null for non strings.
         this.sups().forEach(sup -> {
             String regex = sup.regex();
             if (regex != null && !Pattern.matches(regex, value)) {

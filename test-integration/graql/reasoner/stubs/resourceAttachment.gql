@@ -24,11 +24,11 @@ relation0 sub relation,
     has reattachable-resource-string;
 
 #Resources
-derivable-resource-string sub attribute, valuetype string;
-reattachable-resource-string sub derivable-resource-string, valuetype string;
-derived-resource-string sub derivable-resource-string, valuetype string;
-resource-long sub attribute, valuetype long;
-derived-resource-boolean sub attribute, valuetype boolean;
+derivable-resource-string sub attribute, value string;
+reattachable-resource-string sub derivable-resource-string, value string;
+derived-resource-string sub derivable-resource-string, value string;
+resource-long sub attribute, value long;
+derived-resource-boolean sub attribute, value boolean;
 subResource sub reattachable-resource-string;
 
 #Rules

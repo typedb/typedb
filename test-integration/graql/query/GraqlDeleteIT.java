@@ -305,10 +305,10 @@ public class GraqlDeleteIT {
         Transaction tx = session.transaction(Transaction.Type.WRITE);
 
         tx.execute(Graql.parse("define" +
-                "    unique-key sub attribute, valuetype long;" +
-                "    name sub attribute, valuetype string," +
+                "    unique-key sub attribute, value long;" +
+                "    name sub attribute, value string," +
                 "        key unique-key;" +
-                "    region-code sub attribute, valuetype long," +
+                "    region-code sub attribute, value long," +
                 "        key unique-key;" +
                 "    road sub entity," +
                 "        plays endpoint," +

@@ -405,7 +405,7 @@ public class RelationIT {
                 "motherhood sub relation, relates mother, relates son;" +
                 "sisterhood sub relation, relates sister;" +
                 "aunthood sub relation, relates aunt, relates nephew, has number;" +
-                "number sub attribute, valuetype long;" +
+                "number sub attribute, value long;" +
                 "auntie-rule sub rule, " +
                 "when { " +
                 "$mother isa person; " +

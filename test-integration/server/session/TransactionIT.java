@@ -630,8 +630,8 @@ public class TransactionIT {
     public void whenCommitingInferredConcepts_InferredConceptsAreNotPersisted(){
         tx.execute(Graql.<GraqlDefine>parse(
                     "define " +
-                            "name sub attribute, valuetype string;" +
-                            "score sub attribute, valuetype double;" +
+                            "name sub attribute, value string;" +
+                            "score sub attribute, value double;" +
                             "person sub entity, has name, has score;" +
                             "infer-attr sub rule," +
                             "when {" +
@@ -660,7 +660,7 @@ public class TransactionIT {
     public void whenCommitingInferredAttributeEdge_EdgeIsNotPersisted(){
         tx.execute(Graql.<GraqlDefine>parse(
                 "define " +
-                        "score sub attribute, valuetype double;" +
+                        "score sub attribute, value double;" +
                         "person sub entity, has score;" +
                         "infer-attr sub rule," +
                         "when {" +
@@ -692,8 +692,8 @@ public class TransactionIT {
         String inferrableSchema = "define " +
                 "baseEntity sub entity, has inferrableAttribute, has nonInferrableAttribute, plays someRole, plays anotherRole;" +
                 "someEntity sub baseEntity;" +
-                "nonInferrableAttribute sub attribute, valuetype string;" +
-                "inferrableAttribute sub attribute, valuetype string, plays anotherRole;" +
+                "nonInferrableAttribute sub attribute, value string;" +
+                "inferrableAttribute sub attribute, value string, plays anotherRole;" +
                 "inferrableRelation sub relation, has nonInferrableAttribute, relates someRole, relates anotherRole;" +
 
                 "infer-attr sub rule," +
@@ -811,8 +811,8 @@ public class TransactionIT {
         String inferrableSchema = "define " +
                 "baseEntity sub entity, has inferrableAttribute, has nonInferrableAttribute, plays someRole, plays anotherRole;" +
                 "someEntity sub baseEntity;" +
-                "nonInferrableAttribute sub attribute, valuetype string;" +
-                "inferrableAttribute sub attribute, valuetype string, plays anotherRole;" +
+                "nonInferrableAttribute sub attribute, value string;" +
+                "inferrableAttribute sub attribute, value string, plays anotherRole;" +
                 "someRelation sub relation, has nonInferrableAttribute, relates someRole, relates anotherRole;" +
 
                 "infer-attr sub rule," +
@@ -858,8 +858,8 @@ public class TransactionIT {
         String inferrableSchema = "define " +
                 "baseEntity sub entity, has inferrableAttribute, has nonInferrableAttribute, plays someRole, plays anotherRole;" +
                 "someEntity sub baseEntity;" +
-                "nonInferrableAttribute sub attribute, valuetype string;" +
-                "inferrableAttribute sub attribute, valuetype string, plays anotherRole;" +
+                "nonInferrableAttribute sub attribute, value string;" +
+                "inferrableAttribute sub attribute, value string, plays anotherRole;" +
                 "someRelation sub relation, has nonInferrableAttribute, relates someRole, relates anotherRole;" +
 
                 "infer-attr sub rule," +

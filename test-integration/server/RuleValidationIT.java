@@ -367,7 +367,7 @@ public class RuleValidationIT {
         );
         validateIllegalHead(
                 Graql.parsePattern("$x has someAttribute $y;"),
-                Graql.parsePattern("$y valuetype string;"),
+                Graql.parsePattern("$y value string;"),
                 ErrorMessage.VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD
         );
         validateIllegalHead(

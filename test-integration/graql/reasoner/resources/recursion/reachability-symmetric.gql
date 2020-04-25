@@ -14,7 +14,7 @@ vertex plays coordinate;
 reachable sub relation, relates coordinate;
 vertex plays coordinate;
 
-index sub attribute, valuetype string;
+index sub attribute, value string;
 
 ####################################################
 ##################RULES#############################

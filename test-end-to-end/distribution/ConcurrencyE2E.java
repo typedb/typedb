@@ -98,9 +98,9 @@ public class ConcurrencyE2E {
         GraknClient.Transaction tx = session.transaction().write();
         tx.execute(Graql.parse("define " +
                 "person sub entity, has name, has surname, has age; " +
-                "name sub attribute, valuetype string;" +
-                "surname sub attribute, valuetype string;" +
-                "age sub attribute, valuetype long;").asDefine());
+                "name sub attribute, value string;" +
+                "surname sub attribute, value string;" +
+                "age sub attribute, value long;").asDefine());
 
         tx.commit();
         ExecutorService executorService = Executors.newFixedThreadPool(36);

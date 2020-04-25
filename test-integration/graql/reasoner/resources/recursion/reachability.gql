@@ -15,7 +15,7 @@ indirect-link sub relation, relates from, relates to;
 reachable sub relation, relates from, relates to;
 unreachable sub relation, relates from, relates to;
 
-index sub attribute, valuetype string;
+index sub attribute, value string;
 
 reachability-transitivityA
 when {

@@ -22,7 +22,7 @@ C4 sub relation, relates fromRole, relates toRole;
 D1 sub relation, relates fromRole, relates toRole;
 D2 sub relation, relates fromRole, relates toRole;
 
-index sub attribute, valuetype long;
+index sub attribute, value long;
 
 ####################################################
 ##################RULES#############################

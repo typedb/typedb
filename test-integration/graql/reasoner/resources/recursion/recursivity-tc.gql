@@ -23,7 +23,7 @@ P-roleB sub role;
 P sub relation, relates P-roleA, relates P-roleB;
 entity2 plays P-roleA, plays P-roleB;
 
-index sub attribute, valuetype string;
+index sub attribute, value string;
 
 insert
 

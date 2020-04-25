@@ -32,7 +32,7 @@ flat-to sub role;
 flat sub relation, relates flat-to, relates flat-from;
 person plays flat-from, plays flat-to;
 
-name sub attribute, valuetype string;
+name sub attribute, value string;
 
 insert
 

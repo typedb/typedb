@@ -85,7 +85,7 @@ public class ValuePredicateIT {
             tx.execute(Graql.parse("define " +
                     "someEntity sub entity," +
                     "has derivedResource;" +
-                    "derivedResource sub attribute, valuetype long;" +
+                    "derivedResource sub attribute, value long;" +
                     "rule1 sub rule, when{ $x isa someEntity;}, then { $x has derivedResource 1337;};" +
                     "rule2 sub rule, when{ $x isa someEntity;}, then { $x has derivedResource 1667;};" +
                     "rule3 sub rule, when{ $x isa someEntity;}, then { $x has derivedResource 1997;};"
@@ -143,7 +143,7 @@ public class ValuePredicateIT {
             tx.execute(Graql.parse("define " +
                     "someEntity sub entity," +
                     "has derivedResource;" +
-                    "derivedResource sub attribute, valuetype long;" +
+                    "derivedResource sub attribute, value long;" +
                     "rule1 sub rule, when{ $x isa someEntity;}, then { $x has derivedResource 1337;};" +
                     "rule2 sub rule, when{ $x isa someEntity;}, then { $x has derivedResource 1667;};"
 
@@ -216,7 +216,7 @@ public class ValuePredicateIT {
             tx.execute(Graql.parse("define " +
                     "someEntity sub entity," +
                     "has derivedResource;" +
-                    "derivedResource sub attribute, valuetype long;" +
+                    "derivedResource sub attribute, value long;" +
                     "rule1 sub rule, when{ $x isa someEntity;}, then { $x has derivedResource 1337;};" +
                     "rule2 sub rule, when{ $x isa someEntity;}, then { $x has derivedResource 1667;};" +
                     "rule3 sub rule, when{ $x isa someEntity;}, then { $x has derivedResource 1997;};"

@@ -52,7 +52,7 @@ class ValueTypeFragment extends FragmentImpl {
 
     @Override
     public String name() {
-        return "[valuetype:" + valueType().name() + "]";
+        return "[value:" + valueType().name() + "]";
     }
 
     @Override

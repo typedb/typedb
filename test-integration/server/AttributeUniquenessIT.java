@@ -101,7 +101,7 @@ public class AttributeUniquenessIT {
         Transaction tx = session.transaction(Transaction.Type.WRITE);
         tx.execute(Graql.parse("define \n" +
                 "name sub attribute, \n" +
-                "    valuetype string;\n" +
+                "    value string;\n" +
                 "person sub entity, \n" +
                 "    key name;").asDefine());
         tx.commit();
@@ -129,7 +129,7 @@ public class AttributeUniquenessIT {
         Transaction tx = session.transaction(Transaction.Type.WRITE);
         tx.execute(Graql.parse("define \n" +
                 "name sub attribute, \n" +
-                "    valuetype string;\n" +
+                "    value string;\n" +
                 "person sub entity, \n" +
                 "    key name;").asDefine());
         tx.commit();

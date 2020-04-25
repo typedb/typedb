@@ -29,8 +29,8 @@ pair sub relation,
     has typ,
     has name;
 
-name sub attribute, valuetype string;
-typ sub attribute, valuetype string;
+name sub attribute, value string;
+typ sub attribute, value string;
 
 ##################################################################
 # Inference: all pairs;
