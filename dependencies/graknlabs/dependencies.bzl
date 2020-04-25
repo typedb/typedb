@@ -48,8 +48,8 @@ def graknlabs_protocol():
 def graknlabs_client_java():
     git_repository(
         name = "graknlabs_client_java",
-        remote = "https://github.com/haikalpribadi/client-java",
-        commit = "04e318d512bfbaff4385e0b738b486311948e5d2",
+        remote = "https://github.com/graknlabs/client-java",
+        commit = "18c4f726ce7b32ae1b9c151794d1eed937898e23",
     )
 
 def graknlabs_console():
@@ -69,8 +69,8 @@ def graknlabs_simulation():
 def graknlabs_verification():
     git_repository(
         name = "graknlabs_verification",
-        remote = "git@github.com:haikalpribadi/verification.git",
-        commit = "1c5324a6741a86963d4757cbc33ab6d9a1da6b64",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_verification
+        remote = "git@github.com:graknlabs/verification.git",
+        commit = "fdda1f33f7c09d488754cd8df22bc42409432e62",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_verification
     )
 
 def graknlabs_grabl_tracing():
