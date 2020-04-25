@@ -52,7 +52,7 @@ public class ValueTypeExecutor implements PropertyExecutor.Definable {
         this.property = property;
 
         if (!DATA_TYPES.containsKey(property.valueType())) {
-            throw new IllegalArgumentException("Unrecognised Attribute data type");
+            throw new IllegalArgumentException("Unrecognised Attribute value type");
         }
         this.valueType = DATA_TYPES.get(property.valueType());
     }

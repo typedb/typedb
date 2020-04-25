@@ -156,7 +156,7 @@ public class NumberCastingIT {
         double value = 10000000.0;
         Pattern pattern = Graql.var("x").val(value).isa("attr-date");
         expectedException.expect(GraknConceptException.class);
-        expectedException.expectMessage("The value [" + value + "] of type [Double] must be of value [java.time.LocalDateTime]");
+        expectedException.expectMessage("The value [" + value + "] of type [Double] must be of value type [java.time.LocalDateTime]");
         verifyWrite(session, pattern);
     }
 

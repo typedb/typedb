@@ -330,9 +330,9 @@ public class GraqlDefineIT {
     public void whenDefiningAttributeTypeWithoutValueType_weThrow() {
         exception.expect(GraqlSemanticException.class);
         exception.expectMessage(
-                allOf(containsString("my-resource"), containsString("value type"), containsString("resource"))
+                allOf(containsString("my-att"), containsString("value"), containsString("attribute"))
         );
-        tx.execute(Graql.define(type("my-resource").sub(Graql.Token.Type.ATTRIBUTE)));
+        tx.execute(Graql.define(type("my-att").sub(Graql.Token.Type.ATTRIBUTE)));
     }
 
     @Test
@@ -379,7 +379,7 @@ public class GraqlDefineIT {
     public void whenSpecifyingValueTypeOnAnEntityType_Throw() {
         exception.expect(GraqlSemanticException.class);
         exception.expectMessage(
-                allOf(containsString("Unexpected property"), containsString("value type"), containsString("my-type"))
+                allOf(containsString("Unexpected property"), containsString("value"), containsString("my-type"))
         );
 
         tx.execute(Graql.define(type("my-type").sub("entity").value(Graql.Token.ValueType.BOOLEAN)));
