@@ -294,7 +294,7 @@ public class GraqlInsertIT {
     public void testKeyCorrectUsage() throws InvalidKBException {
         tx.execute(Graql.define(
                 type("a-new-type").sub("entity").key("a-new-resource-type"),
-                type("a-new-resource-type").sub(Graql.Token.Type.ATTRIBUTE).valueType(Graql.Token.ValueType.STRING)
+                type("a-new-resource-type").sub(Graql.Token.Type.ATTRIBUTE).value(Graql.Token.ValueType.STRING)
         ));
 
         tx.execute(Graql.insert(var().isa("a-new-type").has("a-new-resource-type", "hello")));
@@ -304,7 +304,7 @@ public class GraqlInsertIT {
     public void whenInsertingAThingWithTwoKeyResources_Throw() throws InvalidKBException {
         tx.execute(Graql.define(
                 type("a-new-type").sub("entity").key("a-new-attribute-type"),
-                type("a-new-attribute-type").sub(Graql.Token.Type.ATTRIBUTE).valueType(Graql.Token.ValueType.STRING)
+                type("a-new-attribute-type").sub(Graql.Token.Type.ATTRIBUTE).value(Graql.Token.ValueType.STRING)
         ));
 
         tx.execute(Graql.insert(
@@ -322,7 +322,7 @@ public class GraqlInsertIT {
                 type("a-new-type").sub("entity").key("a-new-resource-type"),
                 type("a-new-resource-type")
                         .sub(Graql.Token.Type.ATTRIBUTE)
-                        .valueType(Graql.Token.ValueType.STRING)
+                        .value(Graql.Token.ValueType.STRING)
         ));
 
         tx.execute(Graql.insert(
@@ -338,7 +338,7 @@ public class GraqlInsertIT {
     public void testKeyRequiredOwner() throws InvalidKBException {
         tx.execute(Graql.define(
                 type("a-new-type").sub("entity").key("a-new-resource-type"),
-                type("a-new-resource-type").sub(Graql.Token.Type.ATTRIBUTE).valueType(Graql.Token.ValueType.STRING)
+                type("a-new-resource-type").sub(Graql.Token.Type.ATTRIBUTE).value(Graql.Token.ValueType.STRING)
         ));
 
         tx.execute(Graql.insert(var().isa("a-new-type")));

@@ -40,7 +40,7 @@ public class ValueTypeAtom extends AtomicBase {
 
     public static ValueTypeAtom create(Variable var, ValueTypeProperty prop, ReasonerQuery parent, AttributeType.ValueType<?> dataType) {
         Variable varName = var.asReturnedVar();
-        return new ValueTypeAtom(varName, new Statement(varName).valueType(prop.valueType()), parent, dataType);
+        return new ValueTypeAtom(varName, new Statement(varName).value(prop.valueType()), parent, dataType);
     }
 
     private static ValueTypeAtom create(ValueTypeAtom a, ReasonerQuery parent) {

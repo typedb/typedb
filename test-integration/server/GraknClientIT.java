@@ -231,7 +231,7 @@ public class GraknClientIT {
     public void explanationIsGivenWithRule() {
         try (GraknClient.Transaction tx = remoteSession.transaction().write()) {
             tx.execute(Graql.define(
-                    type("name").sub("attribute").valueType("string"),
+                    type("name").sub("attribute").value("string"),
                     type("content").sub("entity").key("name").plays("contained").plays("container"),
                     type("contains").sub("relation").relates("contained").relates("container"),
                     type("transitive-location").sub("rule")
@@ -277,7 +277,7 @@ public class GraknClientIT {
     public void testExecutingAQuery_ExplanationsAreReturned() {
         try (GraknClient.Transaction tx = remoteSession.transaction().write()) {
             tx.execute(Graql.define(
-                    type("name").sub("attribute").valueType("string"),
+                    type("name").sub("attribute").value("string"),
                     type("content").sub("entity").has("name").plays("contained").plays("container"),
                     type("contains").sub("relation").relates("contained").relates("container"),
                     type("transitive-location").sub("rule")
@@ -321,7 +321,7 @@ public class GraknClientIT {
     public void testExecutingAlphaEquivalentQueries_CorrectPatternsAreReturned() {
         try (GraknClient.Transaction tx = remoteSession.transaction().write()) {
             tx.execute(Graql.define(
-                    type("name").sub("attribute").valueType("string"),
+                    type("name").sub("attribute").value("string"),
                     type("content").sub("entity").has("name").plays("contained").plays("container"),
                     type("contains").sub("relation").relates("contained").relates("container"),
                     type("transitive-location").sub("rule")

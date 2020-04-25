@@ -227,7 +227,7 @@ public class TransactionCacheIT {
         String index = Schema.generateAttributeIndex(Label.of(testAttributeLabel), testAttributeValue);
 
         // define the schema
-        tx.execute(Graql.define(type(testAttributeLabel).sub("attribute").valueType(Graql.Token.ValueType.STRING)));
+        tx.execute(Graql.define(type(testAttributeLabel).sub("attribute").value(Graql.Token.ValueType.STRING)));
         tx.commit();
 
 

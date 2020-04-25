@@ -78,7 +78,7 @@ public class AttributeUniquenessIT {
 
         // define the schema
         try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-            tx.execute(Graql.define(type(testAttributeLabel).sub("attribute").valueType(Graql.Token.ValueType.STRING)));
+            tx.execute(Graql.define(type(testAttributeLabel).sub("attribute").value(Graql.Token.ValueType.STRING)));
             tx.commit();
         }
 
@@ -164,7 +164,7 @@ public class AttributeUniquenessIT {
         // define the schema
         try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             tx.execute(Graql.define(
-                    type(ownedAttributeLabel).sub("attribute").valueType(Graql.Token.ValueType.STRING),
+                    type(ownedAttributeLabel).sub("attribute").value(Graql.Token.ValueType.STRING),
                     type("owner").sub("entity").has(ownedAttributeLabel)
             ));
             tx.commit();
@@ -202,8 +202,8 @@ public class AttributeUniquenessIT {
         // define the schema
         try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             tx.execute(Graql.define(
-                    type(ownedAttributeLabel).sub("attribute").valueType(Graql.Token.ValueType.STRING),
-                    type(ownerLabel).sub("attribute").valueType(Graql.Token.ValueType.STRING).has(ownedAttributeLabel)
+                    type(ownedAttributeLabel).sub("attribute").value(Graql.Token.ValueType.STRING),
+                    type(ownerLabel).sub("attribute").value(Graql.Token.ValueType.STRING).has(ownedAttributeLabel)
             ));
             tx.commit();
         }
@@ -239,7 +239,7 @@ public class AttributeUniquenessIT {
         // define the schema
         try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             tx.execute(Graql.define(
-                    type(ownedAttributeLabel).sub("attribute").valueType(Graql.Token.ValueType.STRING),
+                    type(ownedAttributeLabel).sub("attribute").value(Graql.Token.ValueType.STRING),
                     type("owner").sub("entity").has(ownedAttributeLabel)
             ));
             tx.commit();
@@ -275,7 +275,7 @@ public class AttributeUniquenessIT {
         // define the schema
         try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             tx.execute(Graql.define(
-                    type(ownedAttributeLabel).sub("attribute").valueType(Graql.Token.ValueType.STRING),
+                    type(ownedAttributeLabel).sub("attribute").value(Graql.Token.ValueType.STRING),
                     type("owner").sub("entity").has(ownedAttributeLabel)
             ));
             tx.commit();
@@ -314,7 +314,7 @@ public class AttributeUniquenessIT {
             tx.execute(Graql.define(
                     type("owner").sub("relation").relates("entity-role-player").relates("attribute-role-player"),
                     type("owned-entity").sub("entity").plays("entity-role-player"),
-                    type(ownedAttributeLabel).sub("attribute").plays("attribute-role-player").valueType(Graql.Token.ValueType.STRING)
+                    type(ownedAttributeLabel).sub("attribute").plays("attribute-role-player").value(Graql.Token.ValueType.STRING)
             ));
             tx.commit();
         }
@@ -350,7 +350,7 @@ public class AttributeUniquenessIT {
 
         // define the schema
         try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-            tx.execute(Graql.define(type(testAttributeLabel).sub("attribute").valueType(Graql.Token.ValueType.STRING)));
+            tx.execute(Graql.define(type(testAttributeLabel).sub("attribute").value(Graql.Token.ValueType.STRING)));
             tx.commit();
         }
 
@@ -386,7 +386,7 @@ public class AttributeUniquenessIT {
 
         // define the schema
         try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-            tx.execute(Graql.define(type(testAttributeLabel).sub("attribute").valueType(Graql.Token.ValueType.STRING)));
+            tx.execute(Graql.define(type(testAttributeLabel).sub("attribute").value(Graql.Token.ValueType.STRING)));
             tx.commit();
         }
         String oldAttributeId;
@@ -418,7 +418,7 @@ public class AttributeUniquenessIT {
 
         // define the schema
         try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-            tx.execute(Graql.define(type(testAttributeLabel).sub("attribute").valueType(Graql.Token.ValueType.STRING)));
+            tx.execute(Graql.define(type(testAttributeLabel).sub("attribute").value(Graql.Token.ValueType.STRING)));
             tx.commit();
         }
 

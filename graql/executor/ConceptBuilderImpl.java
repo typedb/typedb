@@ -275,7 +275,7 @@ public class ConceptBuilderImpl implements ConceptBuilder {
     private static final BuilderParam<Label> LABEL = BuilderParam.of(Graql.Token.Property.TYPE);
     private static final BuilderParam<ConceptId> ID = BuilderParam.of(Graql.Token.Property.ID);
     private static final BuilderParam<Object> VALUE = BuilderParam.of(Graql.Token.Property.VALUE);
-    private static final BuilderParam<AttributeType.ValueType<?>> DATA_TYPE = BuilderParam.of(Graql.Token.Property.VALUETYPE);
+    private static final BuilderParam<AttributeType.ValueType<?>> DATA_TYPE = BuilderParam.of(Graql.Token.Property.VALUE_TYPE);
     private static final BuilderParam<Pattern> WHEN = BuilderParam.of(Graql.Token.Property.WHEN);
     private static final BuilderParam<Pattern> THEN = BuilderParam.of(Graql.Token.Property.THEN);
     private static final BuilderParam<Unit> IS_ROLE = BuilderParam.of("role"); // TODO: replace this with a value registered in an enum

@@ -97,7 +97,7 @@ public class GraqlUndefineIT {
 
     @Test
     public void whenUndefiningValueType_DoNothing() {
-        tx.execute(Graql.undefine(type("name").valueType(Graql.Token.ValueType.STRING)));
+        tx.execute(Graql.undefine(type("name").value(Graql.Token.ValueType.STRING)));
         tx.commit();
         tx = session.transaction(Transaction.Type.WRITE);
         assertEquals(AttributeType.ValueType.STRING, tx.getAttributeType("name").valueType());
@@ -222,7 +222,7 @@ public class GraqlUndefineIT {
 
     @Test
     public void whenUndefiningRegexProperty_TheAttributeTypeHasNoRegex() {
-        tx.execute(Graql.define(type(NEW_TYPE.getValue()).sub(ATTRIBUTE).valueType(Graql.Token.ValueType.STRING).regex("abc")));
+        tx.execute(Graql.define(type(NEW_TYPE.getValue()).sub(ATTRIBUTE).value(Graql.Token.ValueType.STRING).regex("abc")));
         tx.commit();
         tx = session.transaction(Transaction.Type.WRITE);
         assertEquals("abc", tx.<AttributeType>getType(NEW_TYPE).regex());
@@ -235,7 +235,7 @@ public class GraqlUndefineIT {
 
     @Test
     public void whenUndefiningRegexPropertyWithWrongRegex_DoNothing() {
-        tx.execute(Graql.define(type(NEW_TYPE.getValue()).sub(ATTRIBUTE).valueType(Graql.Token.ValueType.STRING).regex("abc")));
+        tx.execute(Graql.define(type(NEW_TYPE.getValue()).sub(ATTRIBUTE).value(Graql.Token.ValueType.STRING).regex("abc")));
         tx.commit();
         tx = session.transaction(Transaction.Type.WRITE);
         assertEquals("abc", tx.<AttributeType>getType(NEW_TYPE).regex());
@@ -305,7 +305,7 @@ public class GraqlUndefineIT {
     public void undefineTypeAndTheirAttributes() {
         tx.execute(Graql.define(
                 type("company").sub("entity").has("registration"),
-                type("registration").sub("attribute").valueType(Graql.Token.ValueType.STRING)
+                type("registration").sub("attribute").value(Graql.Token.ValueType.STRING)
         ));
         tx.commit();
         tx = session.transaction(Transaction.Type.WRITE);
@@ -328,7 +328,7 @@ public class GraqlUndefineIT {
     public void undefineTypeAndTheirAttributeAndRolesAndRelations() {
         Collection<Statement> schema = ImmutableList.of(
                 type("pokemon").sub(ENTITY).has("pokedex-no").plays("ancestor").plays("descendant"),
-                type("pokedex-no").sub(ATTRIBUTE).valueType(Graql.Token.ValueType.LONG),
+                type("pokedex-no").sub(ATTRIBUTE).value(Graql.Token.ValueType.LONG),
                 type("evolution").sub(RELATION).relates("ancestor").relates("descendant"),
                 type("ancestor").sub(ROLE),
                 type("descendant").sub(ROLE)
@@ -361,7 +361,7 @@ public class GraqlUndefineIT {
     @Test
     public void undefineTypeAndTheirAttributeWhenThereIsAnInstanceOfThem_Throw() {
         tx.execute(Graql.define(
-                type("registration").sub("attribute").valueType(Graql.Token.ValueType.STRING),
+                type("registration").sub("attribute").value(Graql.Token.ValueType.STRING),
                 type("company").sub("entity").has("registration")
         ));
         tx.execute(Graql.insert(
@@ -382,7 +382,7 @@ public class GraqlUndefineIT {
     @Test
     public void whenUndefiningATypeAndTheirInheritedAttribute_Throw() {
         tx.execute(Graql.define(
-                type("registration").sub("attribute").valueType(Graql.Token.ValueType.STRING),
+                type("registration").sub("attribute").value(Graql.Token.ValueType.STRING),
                 type("company").sub("entity").has("registration"),
                 type("sub-company").sub("company")
         ));
