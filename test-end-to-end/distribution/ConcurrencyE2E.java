@@ -19,7 +19,7 @@ package grakn.core.distribution;
 
 import grakn.client.GraknClient;
 import grakn.client.answer.ConceptMap;
-import grakn.client.concept.DataType;
+import grakn.client.concept.ValueType;
 import grakn.client.concept.thing.Attribute;
 import grakn.client.concept.Concept;
 import grakn.client.concept.type.EntityType;
@@ -220,10 +220,10 @@ public class ConcurrencyE2E {
         try(GraknClient.Transaction tx = session.transaction().write()){
             tx.stream(Graql.parse("match $x isa thing;get;").asGet()).forEach(ans -> ans.get("x").asRemote(tx).delete());
             EntityType.Remote someEntity = tx.putEntityType("someEntity").asRemote(tx);
-            someEntity.has(tx.putAttributeType("attribute0", DataType.INTEGER));
-            someEntity.has(tx.putAttributeType("attribute1", DataType.STRING));
+            someEntity.has(tx.putAttributeType("attribute0",  ValueType.INTEGER));
+            someEntity.has(tx.putAttributeType("attribute1",  ValueType.STRING));
             for(int attributeNo = 2; attributeNo < noOfAttributes ; attributeNo++){
-                someEntity.has(tx.putAttributeType("attribute" + attributeNo, DataType.STRING));
+                someEntity.has(tx.putAttributeType("attribute" + attributeNo,  ValueType.STRING));
             }
             tx.commit();
         }

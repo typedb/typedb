@@ -36,7 +36,7 @@ import grakn.client.concept.thing.Attribute;
 import grakn.client.concept.type.AttributeType;
 import grakn.client.concept.Concept;
 import grakn.client.concept.ConceptId;
-import grakn.client.concept.DataType;
+import grakn.client.concept.ValueType;
 import grakn.client.concept.thing.Entity;
 import grakn.client.concept.type.EntityType;
 import grakn.client.concept.Label;
@@ -759,11 +759,11 @@ public class GraknClientIT {
              Transaction localTx = localSession.transaction(Transaction.Type.READ)
         ) {
             GraqlGet query = Graql.match(var("x").type("title")).get();
-            AttributeType.Remote<String> remoteConcept = (AttributeType.Remote<String>) remoteTx.stream(query).findAny().get().get("x").asAttributeType().asRemote(remoteTx);
+            AttributeType.Remote<String> remoteConcept = remoteTx.stream(query).findAny().get().get("x").<String>asAttributeType().asRemote(remoteTx);
             grakn.core.kb.concept.api.ConceptId localId = grakn.core.kb.concept.api.ConceptId.of(remoteConcept.id().getValue());
             grakn.core.kb.concept.api.AttributeType<String> localConcept = localTx.getConcept(localId).asAttributeType();
 
-            assertEquals(localConcept.valueType().valueClass(), remoteConcept.dataType().dataClass());
+            assertEquals(localConcept.valueType().valueClass(), remoteConcept.valueType().valueClass());
             assertEquals(localConcept.regex(), remoteConcept.regex());
             assertEquals(
                     localConcept.attribute("The Muppets").id().toString(),
@@ -811,7 +811,7 @@ public class GraknClientIT {
             grakn.core.kb.concept.api.ConceptId localId = grakn.core.kb.concept.api.ConceptId.of(remoteConcept.id().getValue());
             grakn.core.kb.concept.api.Attribute<?> localConcept = localTx.getConcept(localId).asAttribute();
 
-            assertEquals(localConcept.valueType().valueClass(), remoteConcept.dataType().dataClass());
+            assertEquals(localConcept.valueType().valueClass(), remoteConcept.valueType().valueClass());
             assertEquals(localConcept.value(), remoteConcept.value());
             assertEquals(localConcept.owner().id().toString(), remoteConcept.owners().findFirst().get().id().toString());
             assertEqualConcepts(localConcept, remoteConcept,
@@ -895,9 +895,9 @@ public class GraknClientIT {
     public void testExecutingAggregateQueries_theResultsAreCorrect() {
         try (GraknClient.Transaction tx = remoteSession.transaction().write()) {
             EntityType.Remote person = tx.putEntityType("person");
-            AttributeType.Remote<String> name = tx.putAttributeType("name", DataType.STRING);
-            AttributeType.Remote<Integer> age = tx.putAttributeType("age", DataType.INTEGER);
-            AttributeType.Remote<Double> rating = tx.putAttributeType("rating", DataType.DOUBLE);
+            AttributeType.Remote<String> name = tx.putAttributeType("name",  ValueType.STRING);
+            AttributeType.Remote<Integer> age = tx.putAttributeType("age",  ValueType.INTEGER);
+            AttributeType.Remote<Double> rating = tx.putAttributeType("rating",  ValueType.DOUBLE);
 
             person.has(name).has(age).has(rating);
 
@@ -1014,9 +1014,9 @@ public class GraknClientIT {
             dog.plays(chaser);
             cat.plays(chased);
 
-            AttributeType.Remote<String> name = tx.putAttributeType("name", DataType.STRING);
-            AttributeType.Remote<String> id = tx.putAttributeType("id", DataType.STRING).regex("(good|bad)-dog");
-            AttributeType.Remote<Long> age = tx.putAttributeType("age", DataType.LONG);
+            AttributeType.Remote<String> name = tx.putAttributeType("name",  ValueType.STRING);
+            AttributeType.Remote<String> id = tx.putAttributeType("id",  ValueType.STRING).regex("(good|bad)-dog");
+            AttributeType.Remote<Long> age = tx.putAttributeType("age",  ValueType.LONG);
 
             animal.has(name);
             animal.key(id);
@@ -1210,8 +1210,8 @@ public class GraknClientIT {
         EntityType.Remote company = tx1.putEntityType("company");
         EntityType.Remote person = tx2.putEntityType("person");
 
-        AttributeType.Remote<String> name1 = tx1.putAttributeType("name", DataType.STRING);
-        AttributeType.Remote<String> name2 = tx2.putAttributeType("name", DataType.STRING);
+        AttributeType.Remote<String> name1 = tx1.putAttributeType("name",  ValueType.STRING);
+        AttributeType.Remote<String> name2 = tx2.putAttributeType("name",  ValueType.STRING);
 
         company.has(name1);
         person.has(name2);
@@ -1241,7 +1241,7 @@ public class GraknClientIT {
     @Test
     public void setAttributeValueWithDatatypeDate() {
         try (GraknClient.Transaction tx = remoteSession.transaction().write()) {
-            AttributeType.Remote<LocalDateTime> birthDateType = tx.putAttributeType("birth-date", DataType.DATE);
+            AttributeType.Remote<LocalDateTime> birthDateType = tx.putAttributeType("birth-date",  ValueType.DATE);
             LocalDateTime date = LocalDateTime.now();
             Attribute<LocalDateTime> dateAttribute = birthDateType.create(date);
             assertEquals(date, dateAttribute.value());
