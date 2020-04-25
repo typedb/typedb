@@ -97,7 +97,7 @@ public class KeyspaceStatisticsIT {
     @Test
     public void keyspaceStatisticsUpdatedOnCommit() {
         Transaction tx = localSession.transaction(Transaction.Type.WRITE);
-        AttributeType ageType = tx.putAttributeType("age", AttributeType.DataType.LONG);
+        AttributeType ageType = tx.putAttributeType("age", AttributeType.ValueType.LONG);
         Role friend = tx.putRole("friend");
         EntityType personType = tx.putEntityType("person").plays(friend).has(ageType);
         RelationType friendshipType = tx.putRelationType("friendship").relates(friend);
@@ -185,7 +185,7 @@ public class KeyspaceStatisticsIT {
     @Test
     public void keyspaceStatisticsNotUpdatedIfNotcommitted() {
         Transaction tx = localSession.transaction(Transaction.Type.WRITE);
-        AttributeType ageType = tx.putAttributeType("age", AttributeType.DataType.LONG);
+        AttributeType ageType = tx.putAttributeType("age", AttributeType.ValueType.LONG);
         Role friend = tx.putRole("friend");
         EntityType personType = tx.putEntityType("person").plays(friend).has(ageType);
         RelationType friendshipType = tx.putRelationType("friendship").relates(friend);
@@ -227,7 +227,7 @@ public class KeyspaceStatisticsIT {
     @Test
     public void reopeningSessionRetrievesStatistics() {
         Transaction tx = localSession.transaction(Transaction.Type.WRITE);
-        AttributeType ageType = tx.putAttributeType("age", AttributeType.DataType.LONG);
+        AttributeType ageType = tx.putAttributeType("age", AttributeType.ValueType.LONG);
         Role friend = tx.putRole("friend");
         EntityType personType = tx.putEntityType("person").plays(friend).has(ageType);
         RelationType friendshipType = tx.putRelationType("friendship").relates(friend);
@@ -292,7 +292,7 @@ public class KeyspaceStatisticsIT {
     @Test
     public void concurrentTransactionsUpdateStatisticsCorrectly() throws InterruptedException, ExecutionException {
         TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction)localSession.transaction(Transaction.Type.WRITE);
-        AttributeType ageType = testTx.putAttributeType("age", AttributeType.DataType.LONG);
+        AttributeType ageType = testTx.putAttributeType("age", AttributeType.ValueType.LONG);
         Role friend = testTx.putRole("friend");
         EntityType personType = testTx.putEntityType("person").plays(friend).has(ageType);
         RelationType friendshipType = testTx.putRelationType("friendship").relates(friend);
@@ -364,7 +364,7 @@ public class KeyspaceStatisticsIT {
     public void attachingAttributesViaRulesDoesntAlterConceptCountsAfterCommit() {
         // test concept API insertion
         Transaction tx = localSession.transaction(Transaction.Type.WRITE);
-        AttributeType<Long> age = tx.putAttributeType("age", AttributeType.DataType.LONG);
+        AttributeType<Long> age = tx.putAttributeType("age", AttributeType.ValueType.LONG);
         EntityType person = tx.putEntityType("person").has(age);
 
         person.create();

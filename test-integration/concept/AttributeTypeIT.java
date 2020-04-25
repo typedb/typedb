@@ -59,7 +59,7 @@ public class AttributeTypeIT {
     public void setUp() {
         session = server.sessionWithNewKeyspace();
         tx = session.transaction(Transaction.Type.WRITE);
-        attributeType = tx.putAttributeType("Attribute Type", AttributeType.DataType.STRING);
+        attributeType = tx.putAttributeType("Attribute Type", AttributeType.ValueType.STRING);
     }
 
     @After
@@ -70,8 +70,8 @@ public class AttributeTypeIT {
 
 
     @Test
-    public void whenCreatingResourceTypeOfTypeString_DataTypeIsString() throws Exception {
-        assertEquals(AttributeType.DataType.STRING, attributeType.dataType());
+    public void whenCreatingResourceTypeOfTypeString_ValueTypeIsString() throws Exception {
+        assertEquals(AttributeType.ValueType.STRING, attributeType.valueType());
     }
 
     @Test
@@ -90,7 +90,7 @@ public class AttributeTypeIT {
 
     @Test
     public void whenSettingRegexOnNonStringResourceType_Throw() {
-        AttributeType<Long> thing = tx.putAttributeType("Random ID", AttributeType.DataType.LONG);
+        AttributeType<Long> thing = tx.putAttributeType("Random ID", AttributeType.ValueType.LONG);
         expectedException.expect(GraknConceptException.class);
         expectedException.expectMessage(GraknConceptException.cannotSetRegex(thing).getMessage());
         thing.regex("blab");
@@ -115,8 +115,8 @@ public class AttributeTypeIT {
 
     @Test
     public void whenGettingTheResourceFromAResourceType_ReturnTheResource() {
-        AttributeType<String> t1 = tx.putAttributeType("t1", AttributeType.DataType.STRING);
-        AttributeType<String> t2 = tx.putAttributeType("t2", AttributeType.DataType.STRING);
+        AttributeType<String> t1 = tx.putAttributeType("t1", AttributeType.ValueType.STRING);
+        AttributeType<String> t2 = tx.putAttributeType("t2", AttributeType.ValueType.STRING);
 
         Attribute c1 = t1.create("1");
         Attribute c2 = t2.create("2");
@@ -130,8 +130,8 @@ public class AttributeTypeIT {
 
     @Test
     public void whenCreatingMultipleResourceTypesWithDifferentRegexes_EnsureAllRegexesAreChecked() {
-        AttributeType<String> t1 = tx.putAttributeType("t1", AttributeType.DataType.STRING).regex("[b]");
-        AttributeType<String> t2 = tx.putAttributeType("t2", AttributeType.DataType.STRING).regex("[abc]").sup(t1);
+        AttributeType<String> t1 = tx.putAttributeType("t1", AttributeType.ValueType.STRING).regex("[b]");
+        AttributeType<String> t2 = tx.putAttributeType("t2", AttributeType.ValueType.STRING).regex("[abc]").sup(t1);
 
         //Valid Attribute
         Attribute<String> attribute = t2.create("b");
@@ -144,8 +144,8 @@ public class AttributeTypeIT {
 
     @Test
     public void whenSettingTheSuperTypeOfAStringResourceType_EnsureAllRegexesAreAppliedToResources() {
-        AttributeType<String> t1 = tx.putAttributeType("t1", AttributeType.DataType.STRING).regex("[b]");
-        AttributeType<String> t2 = tx.putAttributeType("t2", AttributeType.DataType.STRING).regex("[abc]");
+        AttributeType<String> t1 = tx.putAttributeType("t1", AttributeType.ValueType.STRING).regex("[b]");
+        AttributeType<String> t2 = tx.putAttributeType("t2", AttributeType.ValueType.STRING).regex("[abc]");
 
         //Future Invalid
         t2.create("a");
@@ -157,8 +157,8 @@ public class AttributeTypeIT {
 
     @Test
     public void whenSettingRegexOfSuperType_EnsureAllRegexesAreApplied() {
-        AttributeType<String> t1 = tx.putAttributeType("t1", AttributeType.DataType.STRING);
-        AttributeType<String> t2 = tx.putAttributeType("t2", AttributeType.DataType.STRING).regex("[abc]").sup(t1);
+        AttributeType<String> t1 = tx.putAttributeType("t1", AttributeType.ValueType.STRING);
+        AttributeType<String> t2 = tx.putAttributeType("t2", AttributeType.ValueType.STRING).regex("[abc]").sup(t1);
         t2.create("a");
 
         expectedException.expect(GraknConceptException.class);
@@ -176,7 +176,7 @@ public class AttributeTypeIT {
         // now add the timezone to the graph
         try (Session session = server.sessionWithNewKeyspace()) {
             try (Transaction graph = session.transaction(Transaction.Type.WRITE)) {
-                AttributeType<LocalDateTime> aTime = graph.putAttributeType("aTime", AttributeType.DataType.DATE);
+                AttributeType<LocalDateTime> aTime = graph.putAttributeType("aTime", AttributeType.ValueType.DATE);
                 aTime.create(rightNow);
                 graph.commit();
             }
@@ -196,7 +196,7 @@ public class AttributeTypeIT {
 
     @Test
     public void whenNamingAttributeTypeValue_NoErrorsThrown() {
-        AttributeType<String> valueAttributeType = tx.putAttributeType("value", AttributeType.DataType.STRING);
+        AttributeType<String> valueAttributeType = tx.putAttributeType("value", AttributeType.ValueType.STRING);
 
         Attribute<String> attribute = valueAttributeType.create("testing");
         EntityType person = tx.putEntityType("person").has(valueAttributeType);
@@ -211,7 +211,7 @@ public class AttributeTypeIT {
 
     @Test
     public void whenNamingAttributeTypeOwner_NoErrorsThrown() {
-        AttributeType<String> ownerAttributeType = tx.putAttributeType("owner", AttributeType.DataType.STRING);
+        AttributeType<String> ownerAttributeType = tx.putAttributeType("owner", AttributeType.ValueType.STRING);
 
         Attribute<String> attribute = ownerAttributeType.create("testing");
         EntityType person = tx.putEntityType("person").has(ownerAttributeType);

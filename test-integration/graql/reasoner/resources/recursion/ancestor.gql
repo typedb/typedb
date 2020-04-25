@@ -18,7 +18,7 @@ descendant sub role;
 Ancestor sub relation, relates ancestor, relates descendant;
 person plays ancestor, plays descendant;
 
-name sub attribute, datatype string;
+name sub attribute, valuetype string;
 
 insert
 

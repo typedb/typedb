@@ -93,8 +93,8 @@ public class Fragments {
         return new OutIsaFragment(varProperty, start, end);
     }
 
-    public static Fragment dataType(VarProperty varProperty, Variable start, AttributeType.DataType dataType) {
-        return new DataTypeFragment(varProperty, start, dataType);
+    public static Fragment valueType(VarProperty varProperty, Variable start, AttributeType.ValueType valueType) {
+        return new ValueTypeFragment(varProperty, start, valueType);
     }
 
     public static Fragment inPlays(VarProperty varProperty, Variable start, Variable end, boolean required) {

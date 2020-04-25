@@ -39,8 +39,8 @@ public class SumMapReduce extends StatisticsMapReduce<Number> {
     public SumMapReduce() {
     }
 
-    public SumMapReduce(Set<LabelId> selectedLabelIds, AttributeType.DataType resourceDataType, String degreePropertyKey) {
-        super(selectedLabelIds, resourceDataType, degreePropertyKey);
+    public SumMapReduce(Set<LabelId> selectedLabelIds, AttributeType.ValueType valueType, String degreePropertyKey) {
+        super(selectedLabelIds, valueType, degreePropertyKey);
     }
 
     @Override

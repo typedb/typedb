@@ -1,8 +1,8 @@
 define
 
-name sub attribute, datatype string;
+name sub attribute, valuetype string;
 
-indicator sub attribute, datatype string,
+indicator sub attribute, valuetype string,
   plays action;
 
 specific-indicator sub indicator;

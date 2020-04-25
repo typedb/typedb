@@ -22,7 +22,7 @@ ancestor-friend sub role;
 Ancestor-friend sub relation, relates ancestor, relates ancestor-friend;
 person plays ancestor, plays ancestor-friend;
 
-name sub attribute, datatype string;
+name sub attribute, valuetype string;
 
 insert
 

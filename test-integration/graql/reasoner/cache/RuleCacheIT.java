@@ -222,8 +222,8 @@ public class RuleCacheIT {
     public void whenRulesWithPositiveAndNegativePremiseArePresent_lackOfInstancesOnlyPrunesOne(){
         Session session = SessionUtil.serverlessSessionWithNewKeyspace(storage.createCompatibleServerConfig());
         try (Transaction tx = session.transaction(Transaction.Type.WRITE)){
-            AttributeType<String> resource = tx.putAttributeType("resource", AttributeType.DataType.STRING);
-            AttributeType<String> derivedResource = tx.putAttributeType("derivedResource", AttributeType.DataType.STRING);
+            AttributeType<String> resource = tx.putAttributeType("resource", AttributeType.ValueType.STRING);
+            AttributeType<String> derivedResource = tx.putAttributeType("derivedResource", AttributeType.ValueType.STRING);
             tx.putEntityType("someEntity").has(resource).has(derivedResource);
             tx.putEntityType("derivedEntity");
             tx.putRule("positiveRule",

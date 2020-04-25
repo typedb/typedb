@@ -71,13 +71,13 @@ public class AttributeAtomValidator implements AtomValidator<AttributeAtom> {
                 errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_ATOM_WITH_UNBOUND_VARIABLE.getMessage(rule.then(), rule.label()));
             }
 
-            AttributeType.DataType<Object> dataType = type.asAttributeType().dataType();
+            AttributeType.ValueType<Object> valueType = type.asAttributeType().valueType();
             ResolvableQuery body = CacheCasting.ruleCacheCast(ctx.ruleCache()).getRule(rule).getBody();
             ErrorMessage incompatibleValuesMsg = ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_COPYING_INCOMPATIBLE_ATTRIBUTE_VALUES;
             body.getAtoms(AttributeAtom.class)
                     .filter(at -> at.getAttributeVariable().equals(attributeVar))
                     .map(AttributeAtom::getSchemaConcept)
-                    .filter(t -> !t.asAttributeType().dataType().equals(dataType))
+                    .filter(t -> !t.asAttributeType().valueType().equals(valueType))
                     .forEach(t -> errors.add(incompatibleValuesMsg.getMessage(type.label(), rule.label(), t.label())));
         }
 

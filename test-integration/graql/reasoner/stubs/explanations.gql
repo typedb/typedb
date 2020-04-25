@@ -28,7 +28,7 @@ inferredRelation sub relation,
 
 #Resources
 
-name sub attribute, datatype string;
+name sub attribute, valuetype string;
 
 rule-1 sub rule,
     when {
@@ -88,7 +88,7 @@ owns sub relation,
     relates owned,
     relates owner;
 
-value sub attribute, datatype string;
+value sub attribute, valuetype string;
 
 carryRelation sub rule,
 when {
@@ -131,7 +131,7 @@ tagging sub relation,
 same-tag-column-link sub relation,
     relates linked-column;
 
-tag-type sub attribute, datatype string;
+tag-type sub attribute, valuetype string;
 
 same-tag-column-linking sub rule,
 when {

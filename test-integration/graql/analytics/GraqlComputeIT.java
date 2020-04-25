@@ -114,7 +114,7 @@ public class GraqlComputeIT {
             Label resourceTypeId = Label.of("degree");
             EntityType thingy = tx.putEntityType("thingy");
 
-            AttributeType<Long> attribute = tx.putAttributeType(resourceTypeId, AttributeType.DataType.LONG);
+            AttributeType<Long> attribute = tx.putAttributeType(resourceTypeId, AttributeType.ValueType.LONG);
             thingy.has(attribute);
 
             Role degreeOwner = tx.getRole(Schema.ImplicitType.HAS_OWNER.getLabel(resourceTypeId).getValue());
@@ -311,7 +311,7 @@ public class GraqlComputeIT {
         try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             Label resourceTypeId = Label.of("my-resource");
 
-            AttributeType<Long> resource = tx.putAttributeType(resourceTypeId, AttributeType.DataType.LONG);
+            AttributeType<Long> resource = tx.putAttributeType(resourceTypeId, AttributeType.ValueType.LONG);
             EntityType thingy = tx.putEntityType("thingy");
             thingy.has(resource);
 
@@ -421,7 +421,7 @@ public class GraqlComputeIT {
     @Test
     public void testAnalyticsDoesNotCommitByMistake() throws InvalidKBException {
         try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-            tx.putAttributeType("number", AttributeType.DataType.LONG);
+            tx.putAttributeType("number", AttributeType.ValueType.LONG);
             tx.commit();
         }
 
@@ -447,7 +447,7 @@ public class GraqlComputeIT {
 
     private void addSchemaAndEntities() throws InvalidKBException {
         try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-            AttributeType<Long> attributeType = tx.putAttributeType(someAttribute, AttributeType.DataType.LONG);
+            AttributeType<Long> attributeType = tx.putAttributeType(someAttribute, AttributeType.ValueType.LONG);
             EntityType entityType1 = tx.putEntityType(thingy).has(attributeType);
             EntityType entityType2 = tx.putEntityType(anotherThing);
             EntityType subEntityType = tx.putEntityType(subThingy).sup(entityType1);

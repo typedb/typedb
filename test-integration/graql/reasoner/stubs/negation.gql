@@ -36,12 +36,12 @@ derived-ternary sub relation,
     relates anotherRole;
 
 #Resources
-resource-string sub attribute, datatype string;
-resource-long sub attribute, datatype long;
-absent-resource sub attribute, datatype string;
+resource-string sub attribute, valuetype string;
+resource-long sub attribute, valuetype long;
+absent-resource sub attribute, valuetype string;
 
-derived-resource-string sub attribute, datatype string;
-derived-resource-boolean sub attribute, datatype boolean;
+derived-resource-string sub attribute, valuetype string;
+derived-resource-boolean sub attribute, valuetype boolean;
 
 #Rules
 

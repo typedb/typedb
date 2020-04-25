@@ -58,8 +58,8 @@ public class RuleScalingIT {
                             "   has inferredAttribute, has anotherInferredAttribute," +
                             "   relates someRole, relates anotherRole;" +
                             "indexingRelation sub relation, relates someRole, relates anotherRole;" +
-                            "inferredAttribute sub attribute, datatype string;" +
-                            "anotherInferredAttribute sub attribute, datatype string;"
+                            "inferredAttribute sub attribute, valuetype string;" +
+                            "anotherInferredAttribute sub attribute, valuetype string;"
             ));
 
             for (int i = 0; i < N; i++) {

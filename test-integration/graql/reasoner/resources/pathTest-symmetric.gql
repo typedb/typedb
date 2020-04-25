@@ -18,7 +18,7 @@ path sub relation, relates coordinate;
 vertex plays coordinate;
 start-vertex plays coordinate;
 
-index sub attribute, datatype string;
+index sub attribute, valuetype string;
 
 ####################################################
 ##################RULES#############################

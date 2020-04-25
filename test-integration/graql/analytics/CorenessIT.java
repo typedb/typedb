@@ -155,7 +155,7 @@ public class CorenessIT {
         try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             String aResourceTypeLabel = "aResourceTypeLabel";
             AttributeType<String> attributeType =
-                    tx.putAttributeType(aResourceTypeLabel, AttributeType.DataType.STRING);
+                    tx.putAttributeType(aResourceTypeLabel, AttributeType.ValueType.STRING);
             tx.getEntityType(thing).has(attributeType);
             tx.getEntityType(anotherThing).has(attributeType);
 

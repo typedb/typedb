@@ -139,28 +139,28 @@ public class GraqlDefineIT {
     }
 
     @Test
-    public void testDefineDataType() {
+    public void testDefineValueType() {
         tx.execute(Graql.define(
-                type("my-type").sub(Graql.Token.Type.ATTRIBUTE).datatype(Graql.Token.DataType.LONG)
+                type("my-type").sub(Graql.Token.Type.ATTRIBUTE).valueType(Graql.Token.ValueType.LONG)
         ));
 
         MatchClause match = Graql.match(var("x").type("my-type"));
-        AttributeType.DataType datatype = tx.stream(match).iterator().next().get("x").asAttributeType().dataType();
+        AttributeType.ValueType valuetype = tx.stream(match).iterator().next().get("x").asAttributeType().valueType();
 
-        Assert.assertEquals(AttributeType.DataType.LONG, datatype);
+        Assert.assertEquals(AttributeType.ValueType.LONG, valuetype);
     }
 
     @Test
     public void testDefineSubResourceType() {
         tx.execute(Graql.define(
-                type("my-type").sub(Graql.Token.Type.ATTRIBUTE).datatype(Graql.Token.DataType.STRING),
+                type("my-type").sub(Graql.Token.Type.ATTRIBUTE).valueType(Graql.Token.ValueType.STRING),
                 type("sub-type").sub("my-type")
         ));
 
         MatchClause match = Graql.match(var("x").type("sub-type"));
-        AttributeType.DataType datatype = tx.stream(match).iterator().next().get("x").asAttributeType().dataType();
+        AttributeType.ValueType valuetype = tx.stream(match).iterator().next().get("x").asAttributeType().valueType();
 
-        Assert.assertEquals(AttributeType.DataType.STRING, datatype);
+        Assert.assertEquals(AttributeType.ValueType.STRING, valuetype);
     }
 
     @Test
@@ -218,8 +218,8 @@ public class GraqlDefineIT {
 
         tx.execute(Graql.define(
                 type("a-new-type").sub("entity").has(resourceType),
-                type(resourceType).sub(Graql.Token.Type.ATTRIBUTE).datatype(Graql.Token.DataType.STRING),
-                type("an-unconnected-resource-type").sub(Graql.Token.Type.ATTRIBUTE).datatype(Graql.Token.DataType.LONG)
+                type(resourceType).sub(Graql.Token.Type.ATTRIBUTE).valueType(Graql.Token.ValueType.STRING),
+                type("an-unconnected-resource-type").sub(Graql.Token.Type.ATTRIBUTE).valueType(Graql.Token.ValueType.LONG)
         ));
 
         // Make sure a-new-type can have the given resource type, but not other resource types
@@ -248,7 +248,7 @@ public class GraqlDefineIT {
 
         tx.execute(Graql.define(
                 type("a-new-type").sub("entity").key(resourceType),
-                type(resourceType).sub(Graql.Token.Type.ATTRIBUTE).datatype(Graql.Token.DataType.STRING)
+                type(resourceType).sub(Graql.Token.Type.ATTRIBUTE).valueType(Graql.Token.ValueType.STRING)
         ));
 
         // Make sure a-new-type can have the given resource type as a key or otherwise
@@ -273,7 +273,7 @@ public class GraqlDefineIT {
 
     @Test
     public void whenDefiningResourceTypeWithRegex_regexIsAppliedCorrectly() {
-        tx.execute(Graql.define(type("greeting").sub(Graql.Token.Type.ATTRIBUTE).datatype(Graql.Token.DataType.STRING).regex("hello|good day")));
+        tx.execute(Graql.define(type("greeting").sub(Graql.Token.Type.ATTRIBUTE).valueType(Graql.Token.ValueType.STRING).regex("hello|good day")));
 
         MatchClause match = Graql.match(var("x").type("greeting"));
         assertEquals("hello|good day", tx.stream(match.get("x")).map(ans -> ans.get("x")).findFirst().get().asAttributeType().regex());
@@ -327,10 +327,10 @@ public class GraqlDefineIT {
     }
 
     @Test
-    public void whenDefiningAttributeTypeWithoutDataType_weThrow() {
+    public void whenDefiningAttributeTypeWithoutValueType_weThrow() {
         exception.expect(GraqlSemanticException.class);
         exception.expectMessage(
-                allOf(containsString("my-resource"), containsString("datatype"), containsString("resource"))
+                allOf(containsString("my-resource"), containsString("valuetype"), containsString("resource"))
         );
         tx.execute(Graql.define(type("my-resource").sub(Graql.Token.Type.ATTRIBUTE)));
     }
@@ -364,25 +364,25 @@ public class GraqlDefineIT {
     }
 
     @Test
-    public void whenSpecifyingExistingTypeWithIncorrectDataType_Throw() {
+    public void whenSpecifyingExistingTypeWithIncorrectValueType_Throw() {
         AttributeType name = tx.getAttributeType("name");
 
         exception.expect(GraqlSemanticException.class);
         exception.expectMessage(
-                GraqlSemanticException.insertPropertyOnExistingConcept("datatype", AttributeType.DataType.BOOLEAN, name).getMessage()
+                GraqlSemanticException.insertPropertyOnExistingConcept("valuetype", AttributeType.ValueType.BOOLEAN, name).getMessage()
         );
 
-        tx.execute(Graql.define(type("name").datatype(Graql.Token.DataType.BOOLEAN)));
+        tx.execute(Graql.define(type("name").valueType(Graql.Token.ValueType.BOOLEAN)));
     }
 
     @Test
-    public void whenSpecifyingDataTypeOnAnEntityType_Throw() {
+    public void whenSpecifyingValueTypeOnAnEntityType_Throw() {
         exception.expect(GraqlSemanticException.class);
         exception.expectMessage(
-                allOf(containsString("Unexpected property"), containsString("datatype"), containsString("my-type"))
+                allOf(containsString("Unexpected property"), containsString("valuetype"), containsString("my-type"))
         );
 
-        tx.execute(Graql.define(type("my-type").sub("entity").datatype(Graql.Token.DataType.BOOLEAN)));
+        tx.execute(Graql.define(type("my-type").sub("entity").valueType(Graql.Token.ValueType.BOOLEAN)));
     }
 
     @Test

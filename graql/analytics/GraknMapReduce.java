@@ -51,9 +51,9 @@ public abstract class GraknMapReduce<T> extends CommonOLAP
         this.selectedTypes = selectedTypes;
     }
 
-    GraknMapReduce(Set<LabelId> selectedTypes, AttributeType.DataType resourceDataType) {
+    GraknMapReduce(Set<LabelId> selectedTypes, AttributeType.ValueType valueType) {
         this(selectedTypes);
-        persistentProperties.put(RESOURCE_DATA_TYPE_KEY, resourceDataType.name());
+        persistentProperties.put(RESOURCE_DATA_TYPE_KEY, valueType.name());
     }
 
     // Needed internally for OLAP tasks
@@ -136,6 +136,6 @@ public abstract class GraknMapReduce<T> extends CommonOLAP
     }
 
     final boolean usingLong() {
-        return persistentProperties.get(RESOURCE_DATA_TYPE_KEY).equals(AttributeType.DataType.LONG.name());
+        return persistentProperties.get(RESOURCE_DATA_TYPE_KEY).equals(AttributeType.ValueType.LONG.name());
     }
 }

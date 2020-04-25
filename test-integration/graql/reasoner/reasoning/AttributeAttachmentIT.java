@@ -73,7 +73,7 @@ public class AttributeAttachmentIT {
 
     @Test
     //Expected result: When the head of a rule contains attribute assertions, the respective unique attributes should be generated or reused.
-    public void whenUsingNonPersistedDataType_noDuplicatesAreCreated() {
+    public void whenUsingNonPersistedValueType_noDuplicatesAreCreated() {
         try(Transaction tx = attributeAttachmentSession.transaction(Transaction.Type.WRITE)) {
 
             String queryString = "match $x isa genericEntity, has reattachable-resource-string $y; get;";

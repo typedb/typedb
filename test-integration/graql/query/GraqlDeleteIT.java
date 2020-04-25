@@ -42,7 +42,6 @@ import graql.lang.pattern.Pattern;
 import graql.lang.query.MatchClause;
 import graql.lang.statement.Statement;
 import graql.lang.statement.StatementThing;
-import graql.lang.statement.Variable;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -306,10 +305,10 @@ public class GraqlDeleteIT {
         Transaction tx = session.transaction(Transaction.Type.WRITE);
 
         tx.execute(Graql.parse("define" +
-                "    unique-key sub attribute, datatype long;" +
-                "    name sub attribute, datatype string," +
+                "    unique-key sub attribute, valuetype long;" +
+                "    name sub attribute, valuetype string," +
                 "        key unique-key;" +
-                "    region-code sub attribute, datatype long," +
+                "    region-code sub attribute, valuetype long," +
                 "        key unique-key;" +
                 "    road sub entity," +
                 "        plays endpoint," +
@@ -361,8 +360,8 @@ public class GraqlDeleteIT {
         Session session = graknServer.sessionWithNewKeyspace();
         Transaction tx = session.transaction(Transaction.Type.WRITE);
 
-        AttributeType<String> name = tx.putAttributeType("name", AttributeType.DataType.STRING);
-        AttributeType<Long> year = tx.putAttributeType("year", AttributeType.DataType.LONG);
+        AttributeType<String> name = tx.putAttributeType("name", AttributeType.ValueType.STRING);
+        AttributeType<Long> year = tx.putAttributeType("year", AttributeType.ValueType.LONG);
         Role work = tx.putRole("work");
         EntityType somework = tx.putEntityType("somework").plays(work);
         Role author = tx.putRole("author");
@@ -401,7 +400,7 @@ public class GraqlDeleteIT {
         RelationType authoredBy = tx.putRelationType("authored-by").relates(author).relates(work);
         EntityType person = tx.putEntityType("person").plays(author);
         EntityType production = tx.putEntityType("production").plays(work);
-        AttributeType<String> provenance = tx.putAttributeType("provenance", AttributeType.DataType.STRING);
+        AttributeType<String> provenance = tx.putAttributeType("provenance", AttributeType.ValueType.STRING);
         authoredBy.has(provenance);
 
         Entity aPerson = person.create();
@@ -435,7 +434,7 @@ public class GraqlDeleteIT {
         RelationType authoredBy = tx.putRelationType("authored-by").relates(author).relates(work);
         EntityType person = tx.putEntityType("person").plays(author);
         EntityType production = tx.putEntityType("production").plays(work);
-        AttributeType<String> provenance = tx.putAttributeType("provenance", AttributeType.DataType.STRING);
+        AttributeType<String> provenance = tx.putAttributeType("provenance", AttributeType.ValueType.STRING);
         authoredBy.has(provenance);
 
         Entity aPerson = person.create();

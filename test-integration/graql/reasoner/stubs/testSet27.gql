@@ -21,7 +21,7 @@ prior sub relation,
 holds sub relation,
     relates related-state;
 
-name sub attribute, datatype string;
+name sub attribute, valuetype string;
 
 rule-1 sub rule,
     when {

@@ -52,7 +52,7 @@ public class QueryValidityIT {
                 "someRel sub relation, relates anotherRole; " +
                 "anotherNoRoleEntity sub entity, plays role1;" +
                 "binary sub relation, relates role1;" +
-                "name sub attribute, datatype string;").asDefine());
+                "name sub attribute, valuetype string;").asDefine());
         tx.commit();
         tx = genericSchemaSession.transaction(Transaction.Type.WRITE);
     }

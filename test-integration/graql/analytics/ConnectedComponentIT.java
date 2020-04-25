@@ -156,7 +156,7 @@ public class ConnectedComponentIT {
 
         try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             AttributeType<String> attributeType =
-                    tx.putAttributeType(aResourceTypeLabel, AttributeType.DataType.STRING);
+                    tx.putAttributeType(aResourceTypeLabel, AttributeType.ValueType.STRING);
             tx.getEntityType(thing).has(attributeType);
             tx.getEntityType(anotherThing).has(attributeType);
             Attribute aAttribute = attributeType.create("blah");
@@ -291,13 +291,13 @@ public class ConnectedComponentIT {
                     .assign(role2, entity4).id();
 
             List<AttributeType> attributeTypeList = new ArrayList<>();
-            attributeTypeList.add(tx.putAttributeType(resourceType1, AttributeType.DataType.DOUBLE));
-            attributeTypeList.add(tx.putAttributeType(resourceType2, AttributeType.DataType.LONG));
-            attributeTypeList.add(tx.putAttributeType(resourceType3, AttributeType.DataType.LONG));
-            attributeTypeList.add(tx.putAttributeType(resourceType4, AttributeType.DataType.STRING));
-            attributeTypeList.add(tx.putAttributeType(resourceType5, AttributeType.DataType.LONG));
-            attributeTypeList.add(tx.putAttributeType(resourceType6, AttributeType.DataType.DOUBLE));
-            attributeTypeList.add(tx.putAttributeType(resourceType7, AttributeType.DataType.DOUBLE));
+            attributeTypeList.add(tx.putAttributeType(resourceType1, AttributeType.ValueType.DOUBLE));
+            attributeTypeList.add(tx.putAttributeType(resourceType2, AttributeType.ValueType.LONG));
+            attributeTypeList.add(tx.putAttributeType(resourceType3, AttributeType.ValueType.LONG));
+            attributeTypeList.add(tx.putAttributeType(resourceType4, AttributeType.ValueType.STRING));
+            attributeTypeList.add(tx.putAttributeType(resourceType5, AttributeType.ValueType.LONG));
+            attributeTypeList.add(tx.putAttributeType(resourceType6, AttributeType.ValueType.DOUBLE));
+            attributeTypeList.add(tx.putAttributeType(resourceType7, AttributeType.ValueType.DOUBLE));
 
             attributeTypeList.forEach(attributeType -> {
                 entityType1.has(attributeType);

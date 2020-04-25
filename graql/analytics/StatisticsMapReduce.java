@@ -38,8 +38,8 @@ public abstract class StatisticsMapReduce<T> extends GraknMapReduce<T> {
 
     StatisticsMapReduce() {}
 
-    StatisticsMapReduce(Set<LabelId> selectedLabelIds, AttributeType.DataType resourceDataType, String degreePropertyKey) {
-        super(selectedLabelIds, resourceDataType);
+    StatisticsMapReduce(Set<LabelId> selectedLabelIds, AttributeType.ValueType valueType, String degreePropertyKey) {
+        super(selectedLabelIds, valueType);
         this.degreePropertyKey = degreePropertyKey;
         this.persistentProperties.put(DegreeVertexProgram.DEGREE, degreePropertyKey);
     }

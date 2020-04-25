@@ -3,7 +3,7 @@ define
 someEntity sub entity,
   has name;
 
-name sub attribute, datatype string,
+name sub attribute, valuetype string,
   plays applicable-name;
 
 step sub entity,

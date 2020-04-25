@@ -60,7 +60,7 @@ public class AttributeManagerIT {
     @Test
     public void whenTxsInsertDifferentAttributes_weDontLock() throws ExecutionException, InterruptedException {
         try(Transaction tx = session.transaction(Transaction.Type.WRITE)){
-            AttributeType<Long> someAttribute = tx.putAttributeType("someAttribute", AttributeType.DataType.LONG);
+            AttributeType<Long> someAttribute = tx.putAttributeType("someAttribute", AttributeType.ValueType.LONG);
             tx.putEntityType("someEntity").has(someAttribute);
             tx.commit();
         }
@@ -94,7 +94,7 @@ public class AttributeManagerIT {
     @Test
     public void whenTxsInsertDifferentKeys_weDontLock() throws ExecutionException, InterruptedException {
         try(Transaction tx = session.transaction(Transaction.Type.WRITE)){
-            AttributeType<Long> someAttribute = tx.putAttributeType("someAttribute", AttributeType.DataType.LONG);
+            AttributeType<Long> someAttribute = tx.putAttributeType("someAttribute", AttributeType.ValueType.LONG);
             tx.putEntityType("someEntity").key(someAttribute);
             tx.commit();
         }
@@ -128,7 +128,7 @@ public class AttributeManagerIT {
     @Test
     public void whenMultipleTxsInsertDifferentAttributesAsAKeyOrNot_weDontLock() throws ExecutionException, InterruptedException {
         try(Transaction tx = session.transaction(Transaction.Type.WRITE)){
-            AttributeType<Long> someAttribute = tx.putAttributeType("someAttribute", AttributeType.DataType.LONG);
+            AttributeType<Long> someAttribute = tx.putAttributeType("someAttribute", AttributeType.ValueType.LONG);
             tx.putEntityType("someEntity").has(someAttribute);
             tx.putEntityType("keyEntity").key(someAttribute);
             tx.commit();
@@ -165,7 +165,7 @@ public class AttributeManagerIT {
     @Test
     public void whenMultipleTxsInsertExistingAttributes_weDontLock() throws ExecutionException, InterruptedException {
         try(Transaction tx = session.transaction(Transaction.Type.WRITE)){
-            AttributeType<Long> someAttribute = tx.putAttributeType("someAttribute", AttributeType.DataType.LONG);
+            AttributeType<Long> someAttribute = tx.putAttributeType("someAttribute", AttributeType.ValueType.LONG);
             tx.putEntityType("someEntity").has(someAttribute);
             someAttribute.create(1337L);
             someAttribute.create(1667L);
@@ -203,7 +203,7 @@ public class AttributeManagerIT {
     @Test
     public void whenMultipleTxsInsertSameAttribute_weLock() throws ExecutionException, InterruptedException {
         try(Transaction tx = session.transaction(Transaction.Type.WRITE)){
-            AttributeType<Long> someAttribute = tx.putAttributeType("someAttribute", AttributeType.DataType.LONG);
+            AttributeType<Long> someAttribute = tx.putAttributeType("someAttribute", AttributeType.ValueType.LONG);
             tx.putEntityType("someEntity").has(someAttribute);
             tx.commit();
         }
@@ -237,7 +237,7 @@ public class AttributeManagerIT {
     @Test
     public void whenMultipleTxsInsertSameAttributeAsAKeyOrNot_weLock() throws ExecutionException, InterruptedException {
         try(Transaction tx = session.transaction(Transaction.Type.WRITE)){
-            AttributeType<Long> someAttribute = tx.putAttributeType("someAttribute", AttributeType.DataType.LONG);
+            AttributeType<Long> someAttribute = tx.putAttributeType("someAttribute", AttributeType.ValueType.LONG);
             tx.putEntityType("someEntity").has(someAttribute);
             tx.putEntityType("keyEntity").key(someAttribute);
             tx.commit();
@@ -277,7 +277,7 @@ public class AttributeManagerIT {
     public void whenMultipleTxsAttachExistingAttributesAsKeys_weLock() throws ExecutionException, InterruptedException {
         int threads = 8;
         try(Transaction tx = session.transaction(Transaction.Type.WRITE)){
-            AttributeType<Long> someAttribute = tx.putAttributeType("someAttribute", AttributeType.DataType.LONG);
+            AttributeType<Long> someAttribute = tx.putAttributeType("someAttribute", AttributeType.ValueType.LONG);
             tx.putEntityType("someEntity").key(someAttribute);
             for (int threadNo = 0; threadNo < threads; threadNo++) {
                 GraqlInsert query = Graql.parse("insert $x " + threadNo + " isa someAttribute;").asInsert();

@@ -23,11 +23,11 @@ someRelation sub relation,
     has resource-string;
 
 #Resources
-resource-string sub attribute, datatype string;
-resource-long sub attribute, datatype long;
-resource-double sub attribute, datatype double;
-resource-boolean sub attribute, datatype boolean;
-resource-date sub attribute, datatype date;
+resource-string sub attribute, valuetype string;
+resource-long sub attribute, valuetype long;
+resource-double sub attribute, valuetype double;
+resource-boolean sub attribute, valuetype boolean;
+resource-date sub attribute, valuetype date;
 
 insert
 

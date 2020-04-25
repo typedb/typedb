@@ -141,7 +141,7 @@ public class SchemaMutationIT {
     @Test
     public void whenAddingResourceToSubTypeOfEntityType_EnsureNoValidationErrorsOccur() {
         //Create initial Schema
-        AttributeType<String> name = tx.putAttributeType("name", AttributeType.DataType.STRING);
+        AttributeType<String> name = tx.putAttributeType("name", AttributeType.ValueType.STRING);
         EntityType person = tx.putEntityType("person").has(name);
         EntityType animal = tx.putEntityType("animal").sup(person);
         Attribute bob = name.create("Bob");
@@ -176,7 +176,7 @@ public class SchemaMutationIT {
 
     @Test
     public void whenChangingTheSuperTypeOfAnEntityTypeWhichHasAResource_EnsureTheResourceIsStillAccessibleViaTheRelationTypeInstances_ByPreventingChange() {
-        AttributeType<String> name = tx.putAttributeType("name", AttributeType.DataType.STRING);
+        AttributeType<String> name = tx.putAttributeType("name", AttributeType.ValueType.STRING);
 
         //Create a animal and allow animal to have a name
         EntityType animal = tx.putEntityType("animal").has(name);

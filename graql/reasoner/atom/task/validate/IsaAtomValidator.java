@@ -51,7 +51,7 @@ public class IsaAtomValidator implements AtomValidator<IsaAtom> {
         An IsaAtom is ok as the head of a rule when:
 
         1. The atom is NOT a relation type (must specify roles, making it a RelationAtom
-        2. If it is an attribute type, the datatype must match
+        2. If it is an attribute type, the valuetype must match
         3. Types between rule head and body must be of same meta type
         */
 
@@ -61,19 +61,19 @@ public class IsaAtomValidator implements AtomValidator<IsaAtom> {
         if (type.isRelationType()) {
             errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_REWRITING_TYPE_TO_RELATION.getMessage(rule.label()));
         } else if (type.isAttributeType()) {
-            AttributeType.DataType<Object> datatypeInHead = type.asAttributeType().dataType();
+            AttributeType.ValueType<Object> valueTypeInHead = type.asAttributeType().valueType();
 
             // parent query is the combined rule head and body
 
-            boolean datatypeMatchesBody = atom.getParentQuery().getAtoms(Atom.class)
+            boolean valueTypeMatchesBody = atom.getParentQuery().getAtoms(Atom.class)
                     .filter(ruleAtom -> ruleAtom instanceof AttributeAtom || ruleAtom instanceof IsaAtom)
                     .map(ruleAtom -> ruleAtom.getSchemaConcept())
                     .filter(Objects::nonNull)
                     .filter(SchemaConcept::isAttributeType)
-                    .anyMatch(schemaConcept -> schemaConcept.asAttributeType().dataType().equals(datatypeInHead));
+                    .anyMatch(schemaConcept -> schemaConcept.asAttributeType().valueType().equals(valueTypeInHead));
 
-            if (!datatypeMatchesBody) {
-                errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_REWRITING_TYPE_DATATYPE_INCOMPATIBLE.getMessage(rule, datatypeInHead));
+            if (!valueTypeMatchesBody) {
+                errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_REWRITING_TYPE_VALUETYPE_INCOMPATIBLE.getMessage(rule, valueTypeInHead));
             }
         } else {
             boolean typeMatchesBody = atom.getParentQuery().getAtoms(IsaAtom.class)

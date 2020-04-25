@@ -34,7 +34,7 @@ import static grakn.common.util.Collections.set;
  * An ontological element which models and categorises the various Attribute in the graph.
  * This ontological element behaves similarly to Type when defining how it relates to other
  * types. It has two additional functions to be aware of:
- * 1. It has a DataType constraining the data types of the values it's instances may take.
+ * 1. It has a ValueType constraining the data types of the values it's instances may take.
  * 2. Any of it's instances are unique to the type.
  * For example if you have an AttributeType modelling month throughout the year there can only be one January.
  *
@@ -193,7 +193,7 @@ public interface AttributeType<D> extends Type {
      */
     @Nullable
     @CheckReturnValue
-    DataType<D> dataType();
+    ValueType<D> valueType();
 
     /**
      * Retrieve the regular expression to which instances of this AttributeType must conform, or {@code null} if no
@@ -228,57 +228,57 @@ public interface AttributeType<D> extends Type {
      *
      * @param <D> The data type.
      */
-    abstract class DataType<D> {
-        public static final DataType<Boolean> BOOLEAN = new DataType<Boolean>(Boolean.class){
+    abstract class ValueType<D> {
+        public static final ValueType<Boolean> BOOLEAN = new ValueType<Boolean>(Boolean.class){
             @Override
-            public Set<DataType<?>> comparableDataTypes() { return Collections.singleton(DataType.BOOLEAN); }
+            public Set<ValueType<?>> comparableValueTypes() { return Collections.singleton(ValueType.BOOLEAN); }
         };
-        public static final DataType<LocalDateTime> DATE = new DataType<LocalDateTime>(LocalDateTime.class){
+        public static final ValueType<LocalDateTime> DATE = new ValueType<LocalDateTime>(LocalDateTime.class){
             @Override
-            public Set<DataType<?>> comparableDataTypes() { return Collections.singleton(DataType.DATE); }
+            public Set<ValueType<?>> comparableValueTypes() { return Collections.singleton(ValueType.DATE); }
         };
-        public static final DataType<Double> DOUBLE = new DataType<Double>(Double.class){
+        public static final ValueType<Double> DOUBLE = new ValueType<Double>(Double.class){
             @Override
-            public Set<DataType<?>> comparableDataTypes() {
-                return set(DataType.DOUBLE,
-                        //DataType.FLOAT,
-                        //DataType.INTEGER,
-                        DataType.LONG);
+            public Set<ValueType<?>> comparableValueTypes() {
+                return set(ValueType.DOUBLE,
+                           //ValueType.FLOAT,
+                           //ValueType.INTEGER,
+                           ValueType.LONG);
             }
         };
 
-        public static final DataType<Float> FLOAT = new DataType<Float>(Float.class){
+        public static final ValueType<Float> FLOAT = new ValueType<Float>(Float.class){
             @Override
-            public Set<DataType<?>> comparableDataTypes() { return new HashSet<>(); }
+            public Set<ValueType<?>> comparableValueTypes() { return new HashSet<>(); }
         };
-        public static final DataType<Integer> INTEGER = new DataType<Integer>(Integer.class){
+        public static final ValueType<Integer> INTEGER = new ValueType<Integer>(Integer.class){
             @Override
-            public Set<DataType<?>> comparableDataTypes() { return new HashSet<>(); }
+            public Set<ValueType<?>> comparableValueTypes() { return new HashSet<>(); }
         };
-        public static final DataType<Long> LONG = new DataType<Long>(Long.class){
+        public static final ValueType<Long> LONG = new ValueType<Long>(Long.class){
             @Override
-            public Set<DataType<?>> comparableDataTypes() {
-                return set(DataType.DOUBLE,
-                        //DataType.FLOAT,
-                        //DataType.INTEGER,
-                        DataType.LONG);
+            public Set<ValueType<?>> comparableValueTypes() {
+                return set(ValueType.DOUBLE,
+                           //ValueType.FLOAT,
+                           //ValueType.INTEGER,
+                           ValueType.LONG);
             }
         };
-        public static final DataType<String> STRING = new DataType<String>(String.class){
+        public static final ValueType<String> STRING = new ValueType<String>(String.class){
             @Override
-            public Set<DataType<?>> comparableDataTypes() { return Collections.singleton(DataType.STRING); }
+            public Set<ValueType<?>> comparableValueTypes() { return Collections.singleton(ValueType.STRING); }
         };
 
-        private static final List<DataType<?>> values = list(BOOLEAN, DATE, DOUBLE, FLOAT, INTEGER, LONG, STRING);
+        private static final List<ValueType<?>> values = list(BOOLEAN, DATE, DOUBLE, FLOAT, INTEGER, LONG, STRING);
 
         private final Class<D> dataClass;
 
-        private DataType(Class<D> dataClass) {
+        private ValueType(Class<D> dataClass) {
             this.dataClass = dataClass;
         }
 
         @CheckReturnValue
-        public Class<D> dataClass() {
+        public Class<D> valueClass() {
             return dataClass;
         }
 
@@ -293,19 +293,19 @@ public interface AttributeType<D> extends Type {
         }
 
         @CheckReturnValue
-        public static List<DataType<?>> values() {
+        public static List<ValueType<?>> values() {
             return values;
         }
 
         @CheckReturnValue
-        public abstract Set<DataType<?>> comparableDataTypes();
+        public abstract Set<ValueType<?>> comparableValueTypes();
 
         @SuppressWarnings("unchecked")
         @CheckReturnValue
-        public static <D> DataType<D> of(Class<D> name) {
-            for (DataType<?> dc : DataType.values()) {
+        public static <D> ValueType<D> of(Class<D> name) {
+            for (ValueType<?> dc : ValueType.values()) {
                 if (dc.dataClass.equals(name)) {
-                    return (DataType<D>) dc;
+                    return (ValueType<D>) dc;
                 }
             }
             return null;
@@ -316,9 +316,9 @@ public interface AttributeType<D> extends Type {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
 
-            DataType<?> that = (DataType<?>) o;
+            ValueType<?> that = (ValueType<?>) o;
 
-            return (this.dataClass().equals(that.dataClass()));
+            return (this.valueClass().equals(that.valueClass()));
         }
 
         @Override

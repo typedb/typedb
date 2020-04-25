@@ -89,17 +89,17 @@ ternary sub baseRelation,
 
 #Resources
 
-resource sub attribute, datatype string,
+resource sub attribute, valuetype string,
     plays baseRole1,
     plays baseRole2;
 
-resource-long sub attribute, datatype long,
+resource-long sub attribute, valuetype long,
     plays baseRole1,
     plays baseRole2;
 
-resource-double sub attribute, datatype double;
-resource-date sub attribute, datatype date;
-resource-boolean sub attribute, datatype boolean;
+resource-double sub attribute, valuetype double;
+resource-date sub attribute, valuetype date;
+resource-boolean sub attribute, valuetype boolean;
 
 
 binarySymmetricity sub rule,

@@ -227,7 +227,7 @@ public class QueryIT {
                 tx.execute(Graql.parse("define " +
                         "someEntity sub entity," +
                         "has derivedResource;" +
-                        "derivedResource sub attribute, datatype long;" +
+                        "derivedResource sub attribute, valuetype long;" +
                         "rule1 sub rule, when{ $x isa someEntity;}, then { $x has derivedResource 1337;};"
                 ).asDefine());
                 tx.execute(Graql.parse("insert " +
@@ -255,7 +255,7 @@ public class QueryIT {
         try (Session session = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig)) {
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
 
-                AttributeType<Long> resource = tx.putAttributeType("resource", AttributeType.DataType.LONG);
+                AttributeType<Long> resource = tx.putAttributeType("resource", AttributeType.ValueType.LONG);
                 resource.create(1337L);
                 resource.create(1667L);
                 tx.putEntityType("someEntity")

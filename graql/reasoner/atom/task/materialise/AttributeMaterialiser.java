@@ -55,7 +55,7 @@ public class AttributeMaterialiser implements AtomMaterialiser<AttributeAtom> {
         if (atom.isValueEquality()) {
             ValuePredicate vp = Iterables.getOnlyElement(atom.getMultiPredicate());
             Object value = vp.getPredicate().value();
-            Object persistedValue = AttributeValueConverter.of(attributeType.dataType()).convert(value);
+            Object persistedValue = AttributeValueConverter.of(attributeType.valueType()).convert(value);
             Attribute existingAttribute = attributeType.attribute(persistedValue);
             attribute = existingAttribute == null ? attributeType.putAttributeInferred(persistedValue) : existingAttribute;
         } else {

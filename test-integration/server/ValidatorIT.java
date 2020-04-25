@@ -599,7 +599,7 @@ public class ValidatorIT {
     @Test
     public void testInsertDuplicateUseOfKeysInOneCommit() {
         GraqlDefine define = Graql.define(
-                type("email").sub("attribute").datatype("string"),
+                type("email").sub("attribute").valueType("string"),
                 type("person").sub("entity").key("email")
         );
         tx.execute(define);
@@ -617,7 +617,7 @@ public class ValidatorIT {
     @Test
     public void testInsertDuplicateUseOfKeysInSeparateCommits() {
         GraqlDefine define = Graql.define(
-                type("email").sub("attribute").datatype("string"),
+                type("email").sub("attribute").valueType("string"),
                 type("person").sub("entity").key("email")
         );
         tx.execute(define);
@@ -638,7 +638,7 @@ public class ValidatorIT {
     @Test
     public void testInsertDuplicateUseOfKeysAmongSubTypes() {
         GraqlDefine define = Graql.define(
-                type("email").sub("attribute").datatype("string"),
+                type("email").sub("attribute").valueType("string"),
                 type("person").sub("entity").key("email"),
                 type("man").sub("person"),
                 type("woman").sub("person")

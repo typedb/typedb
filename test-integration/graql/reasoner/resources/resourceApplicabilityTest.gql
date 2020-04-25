@@ -10,11 +10,11 @@ anotherEntity sub entity,
     has resource;
 
 #Resources
-resource sub attribute, datatype string;
-res-string sub attribute, datatype string;
-res-double sub attribute, datatype double;
-res-long sub attribute, datatype long;
-res-boolean sub attribute, datatype boolean;
+resource sub attribute, valuetype string;
+res-string sub attribute, valuetype string;
+res-double sub attribute, valuetype double;
+res-long sub attribute, valuetype long;
+res-boolean sub attribute, valuetype boolean;
 
 #Rules
 

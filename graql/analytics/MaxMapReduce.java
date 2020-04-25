@@ -38,8 +38,8 @@ public class MaxMapReduce extends StatisticsMapReduce<Number> {
     public MaxMapReduce() {
     }
 
-    public MaxMapReduce(Set<LabelId> selectedLabelIds, AttributeType.DataType resourceDataType, String degreePropertyKey) {
-        super(selectedLabelIds, resourceDataType, degreePropertyKey);
+    public MaxMapReduce(Set<LabelId> selectedLabelIds, AttributeType.ValueType valueType, String degreePropertyKey) {
+        super(selectedLabelIds, valueType, degreePropertyKey);
     }
 
     @Override

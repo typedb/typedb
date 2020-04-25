@@ -97,7 +97,7 @@ public class AttributeUniquenessE2E {
     private void defineParentChildSchema(GraknClient.Session session) {
         try (GraknClient.Transaction tx = session.transaction().write()) {
             List<grakn.client.answer.ConceptMap> answer = tx.execute(Graql.define(
-                    type("name").sub("attribute").datatype(Graql.Token.DataType.STRING),
+                    type("name").sub("attribute").valueType(Graql.Token.ValueType.STRING),
                     type("parent").sub("role"),
                     type("child").sub("role"),
                     type("person").sub("entity").has("name").plays("parent").plays("child"),

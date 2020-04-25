@@ -182,19 +182,18 @@ public interface Transaction extends AutoCloseable {
 
     /**
      * @param label    A unique label for the AttributeType
-     * @param dataType The data type of the AttributeType.
-     *                 Supported types include: DataType.STRING, DataType.LONG, DataType.DOUBLE, and DataType.BOOLEAN
+     * @param valueType The data type of the AttributeType.
+     *                 Supported types include: ValueType.STRING, ValueType.LONG, ValueType.DOUBLE, and ValueType.BOOLEAN
      * @param <V>
      * @return A new or existing AttributeType with the provided label and data type.
      * @throws TransactionException       if the graph is closed
      * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-AttributeType.
      * @throws GraknElementException if the {@param label} is already in use by an existing AttributeType which is
-     *                                    unique or has a different datatype.
+     *                                    unique or has a different ValueType.
      */
-    @SuppressWarnings("unchecked")
-    <V> AttributeType<V> putAttributeType(Label label, AttributeType.DataType<V> dataType);
+    <V> AttributeType<V> putAttributeType(Label label, AttributeType.ValueType<V> valueType);
 
-    <V> AttributeType<V> putAttributeType(String label, AttributeType.DataType<V> dataType);
+    <V> AttributeType<V> putAttributeType(String label, AttributeType.ValueType<V> valueType);
 
     /**
      * @param label A unique label for the Rule

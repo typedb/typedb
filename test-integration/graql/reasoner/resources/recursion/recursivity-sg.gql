@@ -17,7 +17,7 @@ SG-role sub role;
 SameGen sub relation, relates SG-role;
 entity2 plays SG-role;
 
-name sub attribute, datatype string;
+name sub attribute, valuetype string;
 
 ####################################################
 ##################RULES#############################

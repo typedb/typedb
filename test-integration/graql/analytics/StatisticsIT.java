@@ -506,7 +506,7 @@ public class StatisticsIT {
         try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
 
             // manually construct the relation type and instance
-            AttributeType<Long> power = tx.putAttributeType("power", AttributeType.DataType.LONG);
+            AttributeType<Long> power = tx.putAttributeType("power", AttributeType.ValueType.LONG);
             EntityType person = tx.putEntityType("person").has(power);
             Role resourceOwner = tx.getRole(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of("power")).getValue());
             Role resourceValue = tx.getRole(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of("power")).getValue());
@@ -585,13 +585,13 @@ public class StatisticsIT {
                     .assign(relation1, entity2)
                     .assign(relation2, entity4);
 
-            AttributeType<Double> attribute1 = tx.putAttributeType(resourceType1, AttributeType.DataType.DOUBLE);
-            AttributeType<Long> attribute2 = tx.putAttributeType(resourceType2, AttributeType.DataType.LONG);
-            AttributeType<Long> attribute3 = tx.putAttributeType(resourceType3, AttributeType.DataType.LONG);
-            AttributeType<String> attribute4 = tx.putAttributeType(resourceType4, AttributeType.DataType.STRING);
-            AttributeType<Long> attribute5 = tx.putAttributeType(resourceType5, AttributeType.DataType.LONG);
-            AttributeType<Double> attribute6 = tx.putAttributeType(resourceType6, AttributeType.DataType.DOUBLE);
-            AttributeType<Double> attribute7 = tx.putAttributeType(resourceType7, AttributeType.DataType.DOUBLE);
+            AttributeType<Double> attribute1 = tx.putAttributeType(resourceType1, AttributeType.ValueType.DOUBLE);
+            AttributeType<Long> attribute2 = tx.putAttributeType(resourceType2, AttributeType.ValueType.LONG);
+            AttributeType<Long> attribute3 = tx.putAttributeType(resourceType3, AttributeType.ValueType.LONG);
+            AttributeType<String> attribute4 = tx.putAttributeType(resourceType4, AttributeType.ValueType.STRING);
+            AttributeType<Long> attribute5 = tx.putAttributeType(resourceType5, AttributeType.ValueType.LONG);
+            AttributeType<Double> attribute6 = tx.putAttributeType(resourceType6, AttributeType.ValueType.DOUBLE);
+            AttributeType<Double> attribute7 = tx.putAttributeType(resourceType7, AttributeType.ValueType.DOUBLE);
 
             entityType1.has(attribute1);
             entityType1.has(attribute2);

@@ -29,7 +29,6 @@ import grakn.core.graql.reasoner.query.ReasonerQueryEquivalence;
 import grakn.core.graql.reasoner.query.ReasonerQueryFactory;
 import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
 import grakn.core.graql.reasoner.query.ResolvableQuery;
-import grakn.core.graql.reasoner.utils.ReasonerUtils;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.server.Session;
@@ -86,7 +85,7 @@ public class ValuePredicateIT {
             tx.execute(Graql.parse("define " +
                     "someEntity sub entity," +
                     "has derivedResource;" +
-                    "derivedResource sub attribute, datatype long;" +
+                    "derivedResource sub attribute, valuetype long;" +
                     "rule1 sub rule, when{ $x isa someEntity;}, then { $x has derivedResource 1337;};" +
                     "rule2 sub rule, when{ $x isa someEntity;}, then { $x has derivedResource 1667;};" +
                     "rule3 sub rule, when{ $x isa someEntity;}, then { $x has derivedResource 1997;};"
@@ -144,7 +143,7 @@ public class ValuePredicateIT {
             tx.execute(Graql.parse("define " +
                     "someEntity sub entity," +
                     "has derivedResource;" +
-                    "derivedResource sub attribute, datatype long;" +
+                    "derivedResource sub attribute, valuetype long;" +
                     "rule1 sub rule, when{ $x isa someEntity;}, then { $x has derivedResource 1337;};" +
                     "rule2 sub rule, when{ $x isa someEntity;}, then { $x has derivedResource 1667;};"
 
@@ -217,7 +216,7 @@ public class ValuePredicateIT {
             tx.execute(Graql.parse("define " +
                     "someEntity sub entity," +
                     "has derivedResource;" +
-                    "derivedResource sub attribute, datatype long;" +
+                    "derivedResource sub attribute, valuetype long;" +
                     "rule1 sub rule, when{ $x isa someEntity;}, then { $x has derivedResource 1337;};" +
                     "rule2 sub rule, when{ $x isa someEntity;}, then { $x has derivedResource 1667;};" +
                     "rule3 sub rule, when{ $x isa someEntity;}, then { $x has derivedResource 1997;};"

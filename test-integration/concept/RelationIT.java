@@ -225,7 +225,7 @@ public class RelationIT {
         Role entityRole = tx.putRole("Entity Role");
         Role degreeRole = tx.putRole("Degree Role");
         EntityType entityType = tx.putEntityType("Entity Type").plays(entityRole);
-        AttributeType<Long> degreeType = tx.putAttributeType("Attribute Type", AttributeType.DataType.LONG).plays(degreeRole);
+        AttributeType<Long> degreeType = tx.putAttributeType("Attribute Type", AttributeType.ValueType.LONG).plays(degreeRole);
 
         RelationType hasDegree = tx.putRelationType("Has Degree").relates(entityRole).relates(degreeRole);
 
@@ -274,7 +274,7 @@ public class RelationIT {
 
     @Test
     public void whenAttemptingToLinkTheInstanceOfAResourceRelationToTheResourceWhichCreatedIt_ThrowIfTheRelationTypeDoesNotHavePermissionToPlayTheNecessaryRole(){
-        AttributeType<String> attributeType = tx.putAttributeType("what a pain", AttributeType.DataType.STRING);
+        AttributeType<String> attributeType = tx.putAttributeType("what a pain", AttributeType.ValueType.STRING);
         Attribute<String> attribute = attributeType.create("a real pain");
 
         EntityType entityType = tx.putEntityType("yay").has(attributeType);
@@ -291,7 +291,7 @@ public class RelationIT {
     public void whenAddingDuplicateRelationsWithDifferentKeys_EnsureTheyCanBeCommitted(){
         Role role1 = tx.putRole("dark");
         Role role2 = tx.putRole("souls");
-        AttributeType<Long> attributeType = tx.putAttributeType("Death Number", AttributeType.DataType.LONG);
+        AttributeType<Long> attributeType = tx.putAttributeType("Death Number", AttributeType.ValueType.LONG);
         RelationType relationType = tx.putRelationType("Dark Souls").relates(role1).relates(role2).key(attributeType);
         EntityType entityType = tx.putEntityType("Dead Guys").plays(role1).plays(role2);
 
@@ -343,7 +343,7 @@ public class RelationIT {
 
     @Test
     public void whenAttributeLinkedToRelationIsInferred_EnsureItIsMarkedAsInferred(){
-        AttributeType attributeType = tx.putAttributeType("Another thing of sorts", AttributeType.DataType.STRING);
+        AttributeType attributeType = tx.putAttributeType("Another thing of sorts", AttributeType.ValueType.STRING);
         RelationType relationType = tx.putRelationType("A thing of sorts").has(attributeType);
 
         Attribute attribute = attributeType.create("Things");
@@ -371,7 +371,7 @@ public class RelationIT {
 
         Role member = tx.putRole("member");
         Role member_of = tx.putRole("member_of");
-        AttributeType<String> name = tx.putAttributeType("name", AttributeType.DataType.STRING);
+        AttributeType<String> name = tx.putAttributeType("name", AttributeType.ValueType.STRING);
         RelationType membership = tx.putRelationType("membership")
                 .relates(member)
                 .relates(member_of)
@@ -405,7 +405,7 @@ public class RelationIT {
                 "motherhood sub relation, relates mother, relates son;" +
                 "sisterhood sub relation, relates sister;" +
                 "aunthood sub relation, relates aunt, relates nephew, has number;" +
-                "number sub attribute, datatype long;" +
+                "number sub attribute, valuetype long;" +
                 "auntie-rule sub rule, " +
                 "when { " +
                 "$mother isa person; " +

@@ -402,7 +402,7 @@ public class PathIT {
         ConceptId endId;
         try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             EntityType person = tx.putEntityType("person");
-            AttributeType<String> name = tx.putAttributeType("name", AttributeType.DataType.STRING);
+            AttributeType<String> name = tx.putAttributeType("name", AttributeType.ValueType.STRING);
             person.has(name);
             Entity aPerson = person.create();
             startId = aPerson.id();
@@ -446,7 +446,7 @@ public class PathIT {
 
         try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             EntityType person = tx.putEntityType("person");
-            AttributeType<Long> power = tx.putAttributeType("power", AttributeType.DataType.LONG);
+            AttributeType<Long> power = tx.putAttributeType("power", AttributeType.ValueType.LONG);
 
             person.has(power);
 

@@ -151,9 +151,9 @@ public class ConceptManagerImpl implements ConceptManager {
 
 
     @Override
-    public <V> AttributeType<V> createAttributeType(Label label, AttributeType<V> superType, AttributeType.DataType<V> dataType) {
+    public <V> AttributeType<V> createAttributeType(Label label, AttributeType<V> superType, AttributeType.ValueType<V> valueType) {
         VertexElement vertexElement = createSchemaVertex(label, ATTRIBUTE_TYPE, false);
-        vertexElement.propertyImmutable(Schema.VertexProperty.DATA_TYPE, dataType, null, AttributeType.DataType::name);
+        vertexElement.propertyImmutable(Schema.VertexProperty.DATA_TYPE, valueType, null, AttributeType.ValueType::name);
         AttributeType<V> attributeType = new AttributeTypeImpl<>(vertexElement, this, conceptNotificationChannel);
         attributeType.createShard();
         attributeType.sup(superType);
@@ -261,18 +261,18 @@ public class ConceptManagerImpl implements ConceptManager {
 
         VertexElement vertex = createInstanceVertex(ATTRIBUTE, isInferred);
 
-        AttributeType.DataType<V> dataType = type.dataType();
+        AttributeType.ValueType<V> dataType = type.valueType();
 
         V convertedValue;
         try {
-            convertedValue = AttributeValueConverter.of(type.dataType()).convert(value);
+            convertedValue = AttributeValueConverter.of(type.valueType()).convert(value);
         } catch (ClassCastException e){
             throw GraknConceptException.invalidAttributeValue(type, value, dataType);
         }
 
         // set persisted value
         Object valueToPersist = AttributeSerialiser.of(dataType).serialise(convertedValue);
-        Schema.VertexProperty property = Schema.VertexProperty.ofDataType(dataType);
+        Schema.VertexProperty property = Schema.VertexProperty.ofValueType(dataType);
         vertex.propertyImmutable(property, valueToPersist, null);
 
         // set unique index - combination of type and value to an indexed Janus property, used for lookups

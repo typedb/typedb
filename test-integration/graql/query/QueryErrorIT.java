@@ -187,7 +187,7 @@ public class QueryErrorIT {
         try (Transaction newTx = newSession.transaction(Transaction.Type.WRITE)) {
             newTx.execute(Graql.define(
                     type("person").sub("entity"),
-                    type("name").sub(Graql.Token.Type.ATTRIBUTE).datatype(Graql.Token.DataType.STRING)
+                    type("name").sub(Graql.Token.Type.ATTRIBUTE).valueType(Graql.Token.ValueType.STRING)
             ));
 
             exception.expect(GraknConceptException.class);
