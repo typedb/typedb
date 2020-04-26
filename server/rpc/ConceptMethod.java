@@ -124,7 +124,7 @@ public class ConceptMethod {
             case ATTRIBUTETYPE_ATTRIBUTE_REQ:
                 con.asAttributeType().attribute(req.getAttributeTypeAttributeReq().getValue());
                 return;
-            case ATTRIBUTETYPE_DATATYPE_REQ:
+            case ATTRIBUTETYPE_VALUETYPE_REQ:
                 con.asAttributeType().valueType();
                 return;
             case ATTRIBUTETYPE_GETREGEX_REQ:
@@ -709,14 +709,14 @@ public class ConceptMethod {
             private void valueType() {
                 grakn.core.kb.concept.api.AttributeType.ValueType<?> valueType = concept.asAttributeType().valueType();
 
-                ConceptProto.AttributeType.DataType.Res.Builder methodResponse =
-                        ConceptProto.AttributeType.DataType.Res.newBuilder();
+                ConceptProto.AttributeType.ValueType.Res.Builder methodResponse =
+                        ConceptProto.AttributeType.ValueType.Res.newBuilder();
 
                 if (valueType == null) methodResponse.setNull(ConceptProto.Null.getDefaultInstance()).build();
-                else methodResponse.setDataType(ResponseBuilder.Concept.VALUE_TYPE(valueType)).build();
+                else methodResponse.setValueType(ResponseBuilder.Concept.VALUE_TYPE(valueType)).build();
 
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setAttributeTypeDataTypeRes(methodResponse).build();
+                        .setAttributeTypeValueTypeRes(methodResponse).build();
 
                 responseSender.accept(transactionRes(response));
             }
