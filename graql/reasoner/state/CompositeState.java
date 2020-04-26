@@ -82,7 +82,6 @@ public class CompositeState extends AnswerPropagatorState<CompositeQuery> {
     @Override
     public ResolutionState propagateAnswer(AnswerState state) {
         ConceptMap answer = consumeAnswer(state);
-        //System.out.println("Testing answer: " + answer + " for query: " + getQuery());
 
         /*
         NB:negation queries are not executed till completion so we want to leave the global subGoals intact - make a copy.
