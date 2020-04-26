@@ -23,7 +23,7 @@ import grakn.core.graql.reasoner.query.CompositeQuery;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.reasoner.query.ResolvableQuery;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
-
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
@@ -82,10 +82,17 @@ public class CompositeState extends AnswerPropagatorState<CompositeQuery> {
     @Override
     public ResolutionState propagateAnswer(AnswerState state) {
         ConceptMap answer = consumeAnswer(state);
+        //System.out.println("Testing answer: " + answer + " for query: " + getQuery());
 
+        /*
+        NB:negation queries are not executed till completion so we want to leave the global subGoals intact - make a copy.
+        If  we used the same subgoals, we could end up with a query which answers weren't fully consumed but that was marked as visited.
+        As a result, if it happens that a negated query has multiple answers and is visited more than a single time - because of the admissibility check, answers might be missed.
+        */
+        Set<ReasonerAtomicQuery> subGoals = new HashSet<>(getVisitedSubGoals());
         boolean isNegationSatisfied = complements.stream()
                 .map(q -> q.withSubstitution(answer))
-                .noneMatch(q -> q.resolve(getVisitedSubGoals(), true).findFirst().isPresent());
+                .noneMatch(q -> q.resolve(subGoals, true).findFirst().isPresent());
 
         return isNegationSatisfied?
                 new AnswerState(answer, getUnifier(), getParentState()) :

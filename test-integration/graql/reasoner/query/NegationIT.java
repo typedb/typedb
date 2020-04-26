@@ -24,7 +24,6 @@ import grakn.core.common.config.Config;
 import grakn.core.common.util.ListsUtil;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.graph.ReachabilityGraph;
-import grakn.core.graql.reasoner.utils.ReasonerUtils;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.EntityType;
@@ -47,17 +46,17 @@ import graql.lang.pattern.Negation;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlGet;
 import graql.lang.statement.Statement;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.junit.AfterClass;
+import org.junit.Assert;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import static grakn.core.util.GraqlTestUtil.assertCollectionsEqual;
 import static grakn.core.util.GraqlTestUtil.assertCollectionsNonTriviallyEqual;
@@ -79,6 +78,7 @@ public class NegationIT {
     @ClassRule
     public static final GraknTestStorage storage = new GraknTestStorage();
 
+    private static String resourcePath = "test-integration/graql/reasoner/stubs/";
     private static Session negationSession;
     private static Session recipeSession;
     private static Session reachabilitySession;
@@ -87,7 +87,7 @@ public class NegationIT {
     public static void loadContext(){
         Config mockServerConfig = storage.createCompatibleServerConfig();
         negationSession = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig);
-        String resourcePath = "test-integration/graql/reasoner/stubs/";
+
         loadFromFileAndCommit(resourcePath,"negation.gql", negationSession);
         recipeSession = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig);
         loadFromFileAndCommit(resourcePath,"recipeTest.gql", recipeSession);
@@ -99,6 +99,8 @@ public class NegationIT {
     @AfterClass
     public static void closeSession(){
         negationSession.close();
+        recipeSession.close();
+        reachabilitySession.close();
     }
 
     @org.junit.Rule
@@ -509,6 +511,31 @@ public class NegationIT {
                     expectedAnswers,
                     answersWithoutSpecificTypeAndValue
             );
+        }
+    }
+
+    @Test
+    /**
+     * The test highlights a potential issue with eagerly updating global subgoals when branching out to determine whether
+     * negation conditions are met. When checking negation satisfiability, we are interested in a first answer that can
+     * prove us wrong - we are not exhaustively exploring all answer options.
+     *
+     * Consequently, if if we use the same subgoals as for the main loop, we can end up with a query which answers weren't fully consumed but that was marked as visited.
+     *
+     * As a result, if it happens that a negated query has multiple answers and is visited more than a single time - because of the admissibility check, answers might be missed.
+     */
+    public void whenBranchingOutToCheckNegationIsSatisfied_weDoNotUpdateGlobalSubGoals(){
+        Config mockServerConfig = storage.createCompatibleServerConfig();
+        //NB: we are unable to highlight the issue deterministically atm so multiple runs are required
+        for(int i = 0 ; i < 5 ; i++) {
+            try (Session session = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig)) {
+                loadFromFileAndCommit(resourcePath, "negationGoalPropagation.gql", session);
+                String query = "match (diagnosed-fault: $flt, parent-session: $ts) isa diagnosis; get;";
+                try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+                    List<ConceptMap> answers = tx.execute(Graql.parse(query).asGet());
+                    Assert.assertTrue(answers.isEmpty());
+                }
+            }
         }
     }
 
