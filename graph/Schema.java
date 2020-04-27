@@ -19,6 +19,7 @@
 package hypergraph.graph;
 
 import javax.annotation.Nullable;
+import java.time.LocalDateTime;
 
 public class Schema {
 
@@ -101,10 +102,10 @@ public class Schema {
         PROPERTY_LABEL(0),
         PROPERTY_SCOPE(1),
         PROPERTY_ABSTRACT(2),
-        PROPERTY_DATATYPE(3),
-        PROPERTY_REGEX(4),
-        PROPERTY_VALUE(5),
-        PROPERTY_VALUE_REF(6),
+        PROPERTY_REGEX(3),
+        PROPERTY_VALUE_TYPE(4),
+        PROPERTY_VALUE_REF(5),
+        PROPERTY_VALUE(6),
         PROPERTY_WHEN(7),
         PROPERTY_THEN(8),
         EDGE_SUB_OUT(20),
@@ -167,10 +168,10 @@ public class Schema {
         LABEL(Infix.PROPERTY_LABEL),
         SCOPE(Infix.PROPERTY_SCOPE),
         ABSTRACT(Infix.PROPERTY_ABSTRACT),
-        DATATYPE(Infix.PROPERTY_DATATYPE),
         REGEX(Infix.PROPERTY_REGEX),
-        VALUE(Infix.PROPERTY_VALUE),
+        VALUE_TYPE(Infix.PROPERTY_VALUE_TYPE),
         VALUE_REF(Infix.PROPERTY_VALUE_REF),
+        VALUE(Infix.PROPERTY_VALUE),
         WHEN(Infix.PROPERTY_WHEN),
         THEN(Infix.PROPERTY_THEN);
 
@@ -185,26 +186,28 @@ public class Schema {
         }
     }
 
-    public enum DataType {
-        LONG(0),
-        DOUBLE(2),
-        STRING(4),
-        BOOLEAN(6),
-        DATE(8);
+    public enum ValueType {
+        INTEGER(0, Integer.class),
+        LONG(1, Long.class),
+        FLOAT(2, Float.class),
+        DOUBLE(3, Double.class),
+        STRING(4, String.class),
+        BOOLEAN(5, Boolean.class),
+        DATE(6, LocalDateTime.class);
 
-        private final byte value;
+        private final byte key;
 
-        DataType(int value) {
-            this.value = (byte) value;
+        ValueType(int key, Class<?> valueClass) {
+            this.key = (byte) key;
         }
 
         public byte[] value() {
-            return new byte[]{value};
+            return new byte[]{key};
         }
 
-        public static DataType of(byte value) {
-            for (DataType t : DataType.values()) {
-                if (t.value == value) {
+        public static ValueType of(byte value) {
+            for (ValueType t : ValueType.values()) {
+                if (t.key == value) {
                     return t;
                 }
             }
