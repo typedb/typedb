@@ -187,7 +187,7 @@ public class Storage {
      * @throws GraknDaemonException
      */
     private void start() {
-        System.out.print("Starting " + DISPLAY_NAME + "...");
+        System.out.println("Starting " + DISPLAY_NAME + "...");
         System.out.flush();
 
         // Consume configuration from Grakn config file into Cassandra config file
@@ -195,7 +195,16 @@ public class Storage {
 
         Future<Executor.Result> result = daemonExecutor.executeAsync(storageCommand(), graknHome.toFile());
 
-        LocalDateTime timeout = LocalDateTime.now().plusSeconds(STORAGE_STARTUP_TIMEOUT_SECOND);
+        // form storage timeout (default or ENV-value)
+        long startupTimeoutCalculated = STORAGE_STARTUP_TIMEOUT_SECOND;
+        String timeoutEnvValue = System.getenv("STORAGE_STARTUP_TIMEOUT_SECOND");
+        if (timeoutEnvValue != null && !timeoutEnvValue.isEmpty()) {
+          startupTimeoutCalculated = Long.parseLong(timeoutEnvValue, 10);
+        }
+        System.out.println(DISPLAY_NAME + " timeout is configured to " + startupTimeoutCalculated + " seconds");
+        System.out.flush();
+
+        LocalDateTime timeout = LocalDateTime.now().plusSeconds(startupTimeoutCalculated);
 
         while (LocalDateTime.now().isBefore(timeout) && !result.isDone()) {
             System.out.print(".");
