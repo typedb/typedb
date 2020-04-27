@@ -60,7 +60,7 @@ import static grakn.core.daemon.executor.Executor.WAIT_INTERVAL_SECOND;
 public class Storage {
 
     private static final String DISPLAY_NAME = "Storage";
-    private static final long STORAGE_STARTUP_TIMEOUT_SECOND = 60;
+    private static final long STORAGE_STARTUP_TIMEOUT_SECOND = 180;
     private static final Path STORAGE_PIDFILE = Paths.get(System.getProperty("java.io.tmpdir"), "grakn-storage.pid");
     private static final String JAVA_OPTS = SystemProperty.STORAGE_JAVAOPTS.value();
 
