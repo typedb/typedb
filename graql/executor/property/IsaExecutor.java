@@ -38,6 +38,7 @@ import graql.lang.statement.Variable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.util.Collections;
 import java.util.Set;
 
@@ -100,6 +101,7 @@ public class IsaExecutor implements PropertyExecutor.Insertable, PropertyExecuto
             return ImmutableSet.of(var);
         }
 
+
         @Override
         public void execute(WriteExecutor executor) {
             Type type = executor.getConcept(property.type().var()).asType();
@@ -114,11 +116,6 @@ public class IsaExecutor implements PropertyExecutor.Insertable, PropertyExecuto
             } else {
                 executor.getBuilder(var).isa(type);
             }
-        }
-
-        public Set<String> validateAgainst(WriteExecutor executor) {
-            // used to validate concepts already retrieved against this writer
-            return Collections.emptySet();
         }
     }
 
@@ -146,6 +143,20 @@ public class IsaExecutor implements PropertyExecutor.Insertable, PropertyExecuto
         }
 
         @Override
+        public TiebreakDeletionOrdering ordering(WriteExecutor executor) {
+            Concept concept = executor.getConcept(var);
+            if (concept.isRelation()) {
+                if (concept.asThing().type().isImplicit()) {
+                    return TiebreakDeletionOrdering.EDGE;
+                } else {
+                    return TiebreakDeletionOrdering.RELATION_INSTANCE;
+                }
+            } else {
+                return TiebreakDeletionOrdering.NON_RELATION_INSTANCE;
+            }
+        }
+
+        @Override
         public void execute(WriteExecutor executor) {
             if (!executor.getConcept(var).isThing()) {
                 throw GraqlQueryException.create(String.format("Cannot delete %s [%s], as it is not Thing concept", var, executor.getConcept(var)));
@@ -167,6 +178,7 @@ public class IsaExecutor implements PropertyExecutor.Insertable, PropertyExecuto
                 throw GraqlQueryException.create(String.format("%s [%s] does not satisfy requirement: isa %s", concept, var, expectedType));
             }
 
+            // do this after type checks to ensure that we throw and abort if something is the wrong type
             if (concept.isDeleted()) {
                 LOG.trace("Skipping deletion of concept " + concept + ", is already deleted");
                 return;

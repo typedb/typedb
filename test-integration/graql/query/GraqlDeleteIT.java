@@ -218,7 +218,6 @@ public class GraqlDeleteIT {
     }
 
 
-    @Ignore // TODO re-enable when we remove implicit ownership relations
     @Test
     public void whenDeletingAResourceOwnerAndImplicitRelation_NoErrorIsThrown() {
         /*

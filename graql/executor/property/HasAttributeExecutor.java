@@ -76,7 +76,6 @@ public class HasAttributeExecutor  implements PropertyExecutor.Insertable, Prope
         );
     }
 
-
     @Override
     public Set<PropertyExecutor.Writer> insertExecutors() {
         return ImmutableSet.of(new InsertHasAttribute());
@@ -144,6 +143,11 @@ public class HasAttributeExecutor  implements PropertyExecutor.Insertable, Prope
         @Override
         public Set<Variable> producedVars() {
             return ImmutableSet.of();
+        }
+
+        @Override
+        public TiebreakDeletionOrdering ordering(WriteExecutor executor) {
+            return TiebreakDeletionOrdering.EDGE;
         }
 
         @Override

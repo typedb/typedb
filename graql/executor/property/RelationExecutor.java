@@ -38,13 +38,11 @@ import graql.lang.statement.Variable;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static grakn.core.graql.planning.gremlin.sets.EquivalentFragmentSets.optimiseFragmentSets;
 import static grakn.core.graql.planning.gremlin.sets.EquivalentFragmentSets.rolePlayer;
 
 public class RelationExecutor implements PropertyExecutor.Insertable, PropertyExecutor.Deletable {
@@ -130,6 +128,11 @@ public class RelationExecutor implements PropertyExecutor.Insertable, PropertyEx
         @Override
         public Set<Variable> producedVars() {
             return ImmutableSet.of();
+        }
+
+        @Override
+        public TiebreakDeletionOrdering ordering(WriteExecutor executor) {
+            return TiebreakDeletionOrdering.EDGE;
         }
 
         @Override

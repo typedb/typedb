@@ -45,11 +45,14 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Queue;
@@ -278,18 +281,23 @@ public class WriteExecutorImpl implements WriteExecutor {
         Multimap<Writer, Writer> invertedDependencies = HashMultimap.create();
         Multimaps.invertFrom(dependencies, invertedDependencies);
 
-        Queue<Writer> writerWithoutDependencies =
-                new ArrayDeque<>(Sets.filter(writers, property -> dependencies.get(property).isEmpty()));
+        Set<Writer> writersWithoutDependencies = Sets.filter(writers, property -> dependencies.get(property).isEmpty());
+        Set<Writer> writersWithoutDependants = Sets.filter(writers, property -> invertedDependencies.get(property).isEmpty());
+        Set<Writer> unorderedWriters = Sets.intersection(writersWithoutDependencies, writersWithoutDependants).immutableCopy();
+
+        Queue<Writer> connectedWritersWithoutDependencies =
+                new ArrayDeque<>(Sets.filter(writers, property -> !unorderedWriters.contains(property) && dependencies.get(property).isEmpty()));
 
         Writer property;
 
         // Retrieve the next property without any dependencies
-        while ((property = writerWithoutDependencies.poll()) != null) {
+        while ((property = connectedWritersWithoutDependencies.poll()) != null) {
             sorted.add(property);
 
             // We copy this into a new list because the underlying collection gets modified during iteration
             Collection<Writer> dependents = Lists.newArrayList(invertedDependencies.get(property));
 
+            List<Writer> unblockedWriters = new ArrayList<>();
             for (Writer dependent : dependents) {
                 // Because the property has been removed, the dependent no longer needs to depend on it
                 dependencies.remove(dependent, property);
@@ -298,10 +306,20 @@ public class WriteExecutorImpl implements WriteExecutor {
                 boolean hasNoDependencies = dependencies.get(dependent).isEmpty();
 
                 if (hasNoDependencies) {
-                    writerWithoutDependencies.add(dependent);
+                    if (writersWithoutDependants.contains(dependent)) {
+                        unblockedWriters.add(dependent);
+                    } else {
+                        connectedWritersWithoutDependencies.add(dependent);
+                    }
                 }
             }
+            unblockedWriters.sort(Comparator.comparing((w) -> w.ordering(this)));
+            connectedWritersWithoutDependencies.addAll(unblockedWriters);
         }
+
+        unorderedWriters.stream()
+                .sorted(Comparator.comparing((w) -> w.ordering(this)))
+                .forEach(sorted::add);
 
         if (!dependencies.isEmpty()) {
             // This means there must have been a loop. Pick an arbitrary remaining var to display
@@ -311,6 +329,7 @@ public class WriteExecutorImpl implements WriteExecutor {
 
         return sorted.build();
     }
+
 
     /**
      * Return a ConceptBuilder for given Variable. This can be used to provide information for how to create
