@@ -353,7 +353,7 @@ public class QueryExecutorImpl implements QueryExecutor {
         return answerGroups;
     }
 
-    @SuppressWarnings("unchecked") // All attribute values are comparable data types
+    @SuppressWarnings("unchecked") // All attribute values are comparable value types
     private Stream<ConceptMap> filter(Filterable query, Stream<ConceptMap> answers) {
         if (query.sort().isPresent()) {
             Variable var = query.sort().get().var();

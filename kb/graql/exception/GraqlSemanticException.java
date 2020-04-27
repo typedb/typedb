@@ -222,11 +222,11 @@ public class GraqlSemanticException extends GraknException {
     }
 
     public static GraqlSemanticException attributeMustBeANumber(AttributeType.ValueType valueType, Label attributeType) {
-        return new GraqlSemanticException(attributeType + " must have data type of `long` or `double`, but was " + valueType.name());
+        return new GraqlSemanticException(attributeType + " must have value type of `long` or `double`, but was " + valueType.name());
     }
 
     public static GraqlSemanticException attributesWithDifferentValueTypes(Collection<String> attributeTypes) {
-        return new GraqlSemanticException("resource types " + attributeTypes + " have different data types");
+        return new GraqlSemanticException("resource types " + attributeTypes + " have different value types");
     }
 
     public static GraqlSemanticException usingNegationWithReasoningOff(Pattern pattern) {

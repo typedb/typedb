@@ -147,7 +147,7 @@ public class ModifiableConfigurationHadoop extends ModifiableConfiguration {
                         throw new IllegalArgumentException("Cannot parse time duration from: " + s);
                 }
                 return (O) Duration.of(Long.valueOf(comps[0]), unit);
-            } else throw new IllegalArgumentException("Unsupported data type: " + dataType);
+            } else throw new IllegalArgumentException("Unsupported value type: " + dataType);
         }
 
         @Override
@@ -206,7 +206,7 @@ public class ModifiableConfigurationHadoop extends ModifiableConfiguration {
                 // This is a conceptual leak; the config layer should ideally only handle standard library types
                 String millis = String.valueOf(((Duration) value).toMillis());
                 config.set(internalKey, millis);
-            } else throw new IllegalArgumentException("Unsupported data type: " + dataType);
+            } else throw new IllegalArgumentException("Unsupported value type: " + dataType);
         }
 
         @Override

@@ -34,11 +34,11 @@ import static grakn.common.util.Collections.set;
  * An ontological element which models and categorises the various Attribute in the graph.
  * This ontological element behaves similarly to Type when defining how it relates to other
  * types. It has two additional functions to be aware of:
- * 1. It has a ValueType constraining the data types of the values it's instances may take.
+ * 1. It has a ValueType constraining the value types of the values it's instances may take.
  * 2. Any of it's instances are unique to the type.
  * For example if you have an AttributeType modelling month throughout the year there can only be one January.
  *
- * @param <D> The data type of this resource type.
+ * @param <D> The value type of this resource type.
  *            Supported Types include: String, Long, Double, and Boolean
  */
 public interface AttributeType<D> extends Type {
@@ -187,9 +187,9 @@ public interface AttributeType<D> extends Type {
     Stream<Attribute<D>> instances();
 
     /**
-     * Get the data type to which instances of the AttributeType must conform.
+     * Get the value type to which instances of the AttributeType must conform.
      *
-     * @return The data type to which instances of this Attribute  must conform.
+     * @return The value type to which instances of this Attribute  must conform.
      */
     @Nullable
     @CheckReturnValue
@@ -223,10 +223,10 @@ public interface AttributeType<D> extends Type {
     }
 
     /**
-     * A class used to hold the supported data types of resources and any other concepts.
-     * This is used tp constrain value data types to only those we explicitly support.
+     * A class used to hold the supported value types of resources and any other concepts.
+     * This is used tp constrain value value types to only those we explicitly support.
      *
-     * @param <D> The data type.
+     * @param <D> The value type.
      */
     abstract class ValueType<D> {
         public static final ValueType<Boolean> BOOLEAN = new ValueType<Boolean>(Boolean.class){

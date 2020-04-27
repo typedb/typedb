@@ -38,7 +38,7 @@ public class ValueTypeExecutor implements PropertyExecutor.Definable {
     private final Variable var;
     private final ValueTypeProperty property;
     private final AttributeType.ValueType valueType;
-    private static final ImmutableMap<Graql.Token.ValueType, AttributeType.ValueType<?>> DATA_TYPES = valueTypes();
+    private static final ImmutableMap<Graql.Token.ValueType, AttributeType.ValueType<?>> VALUE_TYPES = valueTypes();
 
     ValueTypeExecutor(Variable var, ValueTypeProperty property) {
         if (var == null) {
@@ -51,10 +51,10 @@ public class ValueTypeExecutor implements PropertyExecutor.Definable {
         }
         this.property = property;
 
-        if (!DATA_TYPES.containsKey(property.valueType())) {
+        if (!VALUE_TYPES.containsKey(property.valueType())) {
             throw new IllegalArgumentException("Unrecognised Attribute value type");
         }
-        this.valueType = DATA_TYPES.get(property.valueType());
+        this.valueType = VALUE_TYPES.get(property.valueType());
     }
 
     private static ImmutableMap<Graql.Token.ValueType, AttributeType.ValueType<?>> valueTypes() {
