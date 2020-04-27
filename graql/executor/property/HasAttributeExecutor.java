@@ -151,16 +151,16 @@ public class HasAttributeExecutor  implements PropertyExecutor.Insertable, Prope
             Variable attributeVar = property.attribute().var();
             Concept concept = executor.getConcept(attributeVar);
             if (!concept.isAttribute()) {
-                throw GraqlQueryException.create(String.format("When removing attribute ownership, require %s to be an attribute, but is %s.", attributeVar, concept));
+                throw GraqlQueryException.cannotDeleteOwnershipOfNonAttributes(attributeVar, concept);
             }
             Attribute<?> attribute = concept.asAttribute();
-            Thing thing = executor.getConcept(var).asThing();
 
             // deleting the ownership of an instance of a type 'type' should throw if matched concept is not that type
             if (attribute.type().sups().noneMatch(sub -> sub.label().equals(type))) {
-                throw GraqlQueryException.create(String.format("%s is not a supertype of [%s] %s", var, attribute, type));
+                throw GraqlQueryException.cannotDeleteOwnershipTypeNotSatisfied(attributeVar, attribute, type);
             }
-            thing.unhas(attribute);
+            Thing owner = executor.getConcept(var).asThing();
+            owner.unhas(attribute);
         }
     }
 }

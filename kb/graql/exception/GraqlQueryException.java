@@ -21,8 +21,15 @@ package grakn.core.kb.graql.exception;
 
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
+import grakn.core.kb.concept.api.Attribute;
+import grakn.core.kb.concept.api.Concept;
+import grakn.core.kb.concept.api.Label;
+import grakn.core.kb.concept.api.Relation;
+import grakn.core.kb.concept.api.Role;
+import grakn.core.kb.concept.api.Thing;
 import graql.lang.query.GraqlQuery;
 import graql.lang.statement.Statement;
+import graql.lang.statement.Variable;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
@@ -69,5 +76,18 @@ public class GraqlQueryException extends GraknException {
     @CheckReturnValue
     private static GraqlQueryException unreachableStatement(@Nullable String message, Exception cause) {
         return new GraqlQueryException("Statement expected to be unreachable: " + message, cause);
+    }
+
+    public static GraqlQueryException cannotDeleteOwnershipOfNonAttributes(Variable var, Concept concept) {
+        return new GraqlQueryException(ErrorMessage.DELETE_OWNERSHIP_NOT_AN_ATTRIBUTE.getMessage(var, concept));
+    }
+
+    public static GraqlQueryException cannotDeleteOwnershipTypeNotSatisfied(Variable var, Attribute attribute, Label requiredType) {
+        return new GraqlQueryException(ErrorMessage.DELETE_OWNERSHIP_TYPE_NOT_SATISFIED.getMessage(var, attribute, requiredType));
+    }
+
+    public static GraqlQueryException cannotDeleteRPNoCompatiblePlayer(Variable rolePlayerVar, Thing rolePlayer, Variable relationVar,
+                                                                       Relation relation, Label requiredRoleLabel) {
+        return new GraqlQueryException(ErrorMessage.DELETE_ROLE_PLAYER_NO_COMPATIBLE_PLAYER.getMessage(rolePlayerVar, rolePlayer, relationVar, relation, requiredRoleLabel));
     }
 }

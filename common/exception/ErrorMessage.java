@@ -185,6 +185,10 @@ public enum ErrorMessage {
     INVALID_STATEMENT("Value [%s] not of type [%s] in data [%s]"),
 
     NOT_A_TYPE("Concept with id [%s] is not a concept type and has base type [%s]."),
+
+    DELETE_OWNERSHIP_NOT_AN_ATTRIBUTE("Cannot remove ownership of [%s] (%s), required to be an attribute"),
+    DELETE_OWNERSHIP_TYPE_NOT_SATISFIED("Cannot delete attribute ownership, concept [%s] (%s) is not of required attribute type [%s]"),
+    DELETE_ROLE_PLAYER_NO_COMPATIBLE_PLAYER("Cannot delete role player [%s] (%s) from [%s] (%s), it does not play required role (or subtypes of) [%s]"),
     UNHANDLED_CONCEPT_DELETION("Deletion of concept [%s] is not handled."),
 
     //Templating

@@ -226,11 +226,8 @@ public class RelationExecutor implements PropertyExecutor.Insertable, PropertyEx
                         .findFirst();
 
                 if (!concreteRolePlayed.isPresent()) {
-                    // TODO better exception message
-                    throw GraqlQueryException.create(
-                            String.format("Concept %s [%s] does not play a role %s in relation %s [%s], so cannot unassign from relation.",
-                                    rolePlayer, rolePlayerVar, requiredRole, relation, var));
-                }
+                    throw GraqlQueryException.cannotDeleteRPNoCompatiblePlayer(rolePlayerVar, rolePlayer, var, relation, requiredRole.label());
+               }
 
                 relation.unassign(concreteRolePlayed.get(), rolePlayer);
             });

@@ -218,6 +218,7 @@ public class GraqlDeleteIT {
     }
 
 
+    @Ignore // TODO re-enable when we remove implicit ownership relations
     @Test
     public void whenDeletingAResourceOwnerAndImplicitRelation_NoErrorIsThrown() {
         /*
@@ -507,11 +508,9 @@ public class GraqlDeleteIT {
         attrId = answers.get(0).get("a").id();
 
         exception.expect(GraqlQueryException.class);
-        // TODO exception message
+        exception.expectMessage("Cannot delete attribute ownership, concept [$a]");
+        exception.expectMessage("is not of required attribute type [thing]");
         tx.execute(Graql.parse("match $x id " + ownerId + "; $x has title $a; $a id " + attrId + "; delete $x has thing $a;").asDelete());
-        assertExists(tx, var().id(ownerId.toString()));
-        assertExists(tx, var().id(attrId.toString()));
-        assertNotExists(tx, Graql.and(var().id(ownerId.toString()).has("title", "a"), var("a").id(attrId.toString())));
     }
 
     @Test
@@ -527,9 +526,10 @@ public class GraqlDeleteIT {
         answers = tx.execute(Graql.parse("match $x isa person, has name $n; get;").asGet());
         assertEquals(11, answers.size());
 
-
+        // `first-name` will not be satisfied by all `name` attributes
         exception.expect(GraqlQueryException.class);
-        // TODO message
+        exception.expectMessage("Cannot delete attribute ownership, concept [$n]");
+        exception.expectMessage("is not of required attribute type [first-name]");
         tx.execute(Graql.parse("match $x isa person, has name $n; delete $x has first-name $n;").asDelete());
     }
 
@@ -550,7 +550,7 @@ public class GraqlDeleteIT {
     }
 
 
-    @Ignore //re-enable when Hypergraph Backend is used
+    @Ignore //TODO re-enable when Hypergraph Backend is used
     @Test
     public void whenDeletingPartOfMatchQuery_UpdateIsReflected() {
         List<ConceptMap> answers = tx.execute(Graql.parse("match $r ($x, $y) isa has-genre; get;").asGet());
@@ -621,7 +621,8 @@ public class GraqlDeleteIT {
         assertEquals(1, Iterators.getOnlyElement(answers.get(0).get("r").asRelation().rolePlayersMap().values().iterator()).size());
 
         exception.expect(GraqlQueryException.class);
-        // TODO error message
+        exception.expectMessage("Cannot delete role player [$x]");
+        exception.expectMessage("it does not play required role (or subtypes of) [refl]");
         // match it once, delete it as a duplicate but we only have a single player! Should throw
         tx.execute(Graql.match(var("r").isa("reflexive").rel("refl", "x"))
                 .delete(var("r").rel("refl", "x").rel("refl", "x")));
@@ -646,7 +647,8 @@ public class GraqlDeleteIT {
     @Test
     public void whenDeletingRolePlayerAsSubRole_Throw() {
         exception.expect(GraqlQueryException.class);
-        // TODO message
+        exception.expectMessage("Cannot delete role player [$x]");
+        exception.expectMessage("it does not play required role (or subtypes of) [production-being-directed]");
         tx.execute(Graql.parse("match $r (role: $x) isa directed-by; delete $r (production-being-directed: $x);").asDelete());
     }
 
