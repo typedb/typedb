@@ -99,7 +99,7 @@ public class StatisticsIT {
             assertExceptionThrown(tx, Graql.compute().std().in(thing));
             assertExceptionThrown(tx, Graql.compute().median().in(thing));
 
-            // if it's not a resource-type
+            // if it's not an attribute-type
             assertExceptionThrown(tx, Graql.compute().max().of(thing));
             assertExceptionThrown(tx, Graql.compute().min().of(thing));
             assertExceptionThrown(tx, Graql.compute().mean().of(thing));
@@ -107,7 +107,7 @@ public class StatisticsIT {
             assertExceptionThrown(tx, Graql.compute().std().of(thing));
             assertExceptionThrown(tx, Graql.compute().median().of(thing));
 
-            // resource-type has no instance
+            // attribute-type has no instance
             assertTrue(tx.execute(Graql.compute().max().of(resourceType7)).isEmpty());
             assertTrue(tx.execute(Graql.compute().min().of(resourceType7)).isEmpty());
             assertTrue(tx.execute(Graql.compute().sum().of(resourceType7)).isEmpty());
@@ -115,7 +115,7 @@ public class StatisticsIT {
             assertTrue(tx.execute(Graql.compute().median().of(resourceType7)).isEmpty());
             assertTrue(tx.execute(Graql.compute().mean().of(resourceType7)).isEmpty());
 
-            // resources are not connected to any entities
+            // attributes are not connected to any entities
             assertTrue(tx.execute(Graql.compute().max().of(resourceType3)).isEmpty());
             assertTrue(tx.execute(Graql.compute().min().of(resourceType3)).isEmpty());
             assertTrue(tx.execute(Graql.compute().sum().of(resourceType3)).isEmpty());
@@ -123,7 +123,7 @@ public class StatisticsIT {
             assertTrue(tx.execute(Graql.compute().median().of(resourceType3)).isEmpty());
             assertTrue(tx.execute(Graql.compute().mean().of(resourceType3)).isEmpty());
 
-            // resource-type has incorrect data type
+            // attribute-type has incorrect value type
             assertExceptionThrown(tx, Graql.compute().max().of(resourceType4));
             assertExceptionThrown(tx, Graql.compute().min().of(resourceType4));
             assertExceptionThrown(tx, Graql.compute().mean().of(resourceType4));
@@ -131,7 +131,7 @@ public class StatisticsIT {
             assertExceptionThrown(tx, Graql.compute().std().of(resourceType4));
             assertExceptionThrown(tx, Graql.compute().median().of(resourceType4));
 
-            // resource-types have different data types
+            // attribute-types have different value types
             Set<String> resourceTypes = Sets.newHashSet(resourceType1, resourceType2);
             assertExceptionThrown(tx, Graql.compute().max().of(resourceTypes));
             assertExceptionThrown(tx, Graql.compute().min().of(resourceTypes));
@@ -156,7 +156,7 @@ public class StatisticsIT {
     public void testMinAndMax() {
         List<Numeric> result;
 
-        // resource-type has no instance
+        // attribute-type has no instance
         addSchemaAndEntities();
 
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
@@ -195,7 +195,7 @@ public class StatisticsIT {
             assertTrue(result.isEmpty());
         }
 
-        // add resources, but resources are not connected to any entities
+        // add attributes, but attributes are not connected to any entities
         addResourcesInstances();
 
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
@@ -218,7 +218,7 @@ public class StatisticsIT {
             assertTrue(result.isEmpty());
         }
 
-        // connect entity and resources
+        // connect entity and attributes
         addResourceRelations();
 
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
@@ -248,7 +248,7 @@ public class StatisticsIT {
     public void testSum() {
         List<Numeric> result;
 
-        // resource-type has no instance
+        // attribute-type has no instance
         addSchemaAndEntities();
 
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
@@ -270,7 +270,7 @@ public class StatisticsIT {
             assertTrue(result.isEmpty());
         }
 
-        // add resources, but resources are not connected to any entities
+        // add attributes, but attributes are not connected to any entities
         addResourcesInstances();
 
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
@@ -284,7 +284,7 @@ public class StatisticsIT {
             assertTrue(result.isEmpty());
         }
 
-        // connect entity and resources
+        // connect entity and attributes
         addResourceRelations();
 
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
@@ -305,7 +305,7 @@ public class StatisticsIT {
     public void testMean() {
         List<Numeric> result;
 
-        // resource-type has no instance
+        // attribute-type has no instance
         addSchemaAndEntities();
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
             result = tx.execute(Graql.compute().mean().of(resourceType1).in(Collections.emptyList()));
@@ -326,7 +326,7 @@ public class StatisticsIT {
             assertTrue(result.isEmpty());
         }
 
-        // add resources, but resources are not connected to any entities
+        // add attributes, but attributes are not connected to any entities
         addResourcesInstances();
 
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
@@ -340,7 +340,7 @@ public class StatisticsIT {
             assertTrue(result.isEmpty());
         }
 
-        // connect entity and resources
+        // connect entity and attributes
         addResourceRelations();
 
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
@@ -361,7 +361,7 @@ public class StatisticsIT {
     public void testStd() {
         List<Numeric> result;
 
-        // resource-type has no instance
+        // attribute-type has no instance
         addSchemaAndEntities();
 
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
@@ -383,7 +383,7 @@ public class StatisticsIT {
             assertTrue(result.isEmpty());
         }
 
-        // add resources, but resources are not connected to any entities
+        // add attributes, but attributes are not connected to any entities
         addResourcesInstances();
 
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
@@ -397,7 +397,7 @@ public class StatisticsIT {
             assertTrue(result.isEmpty());
         }
 
-        // connect entity and resources
+        // connect entity and attributes
         addResourceRelations();
 
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
@@ -431,7 +431,7 @@ public class StatisticsIT {
     public void testMedian() {
         List<Numeric> result;
 
-        // resource-type has no instance
+        // attribute-type has no instance
         addSchemaAndEntities();
 
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
@@ -453,7 +453,7 @@ public class StatisticsIT {
             assertTrue(result.isEmpty());
         }
 
-        // add resources, but resources are not connected to any entities
+        // add attributes, but attributes are not connected to any entities
         addResourcesInstances();
 
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
@@ -467,7 +467,7 @@ public class StatisticsIT {
             assertTrue(result.isEmpty());
         }
 
-        // connect entity and resources
+        // connect entity and attributes
         addResourceRelations();
 
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
@@ -706,7 +706,7 @@ public class StatisticsIT {
                     .assign(resourceOwner6, entity4)
                     .assign(resourceValue6, tx.<Double>getAttributeType(resourceType6).create(7.5));
 
-            // some resources in, but not connect them to any instances
+            // some attributes in, but not connect them to any instances
             tx.<Double>getAttributeType(resourceType1).create(2.8);
             tx.<Long>getAttributeType(resourceType2).create(-5L);
             tx.<Long>getAttributeType(resourceType5).create(10L);
