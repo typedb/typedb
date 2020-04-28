@@ -41,6 +41,7 @@ import grakn.core.rule.GraknTestServer;
 import graql.lang.Graql;
 import graql.lang.exception.GraqlException;
 import graql.lang.pattern.Pattern;
+import graql.lang.query.GraqlInsert;
 import graql.lang.query.MatchClause;
 import graql.lang.statement.Statement;
 import graql.lang.statement.StatementThing;
@@ -187,6 +188,14 @@ public class GraqlDeleteIT {
         assertNotExists(tx, marlonBrando);
         assertNotExists(tx, apocalypseNow);
         assertFalse(checkIdExists(tx, id));
+    }
+
+    @Ignore // TODO enable when Grakn 2.0 supports concurrent delete and insert
+    @Test
+    public void concurrentDeleteInTraversal() {
+        Statement statement = var("x").isa("movie").has("title", "Gladiator").has("runtime", 100L);
+        tx.execute(Graql.insert(statement));
+        tx.execute(Graql.match(statement).delete(Graql.var("x").isa("thing")));
     }
 
     private boolean checkIdExists(Transaction tx, ConceptId id) {

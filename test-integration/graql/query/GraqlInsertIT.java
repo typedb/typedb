@@ -634,6 +634,7 @@ public class GraqlInsertIT {
         tx.execute(Graql.match(matchStatement).insert(insertStatement));
         assertCollectionsNonTriviallyEqual(before, tx.execute(Graql.match(matchStatement)));
     }
+
     @Test
     public void whenMatchInsertingExistingEntity_weDoNoOp() {
         Statement matchStatement = var("x").isa("movie");
@@ -708,16 +709,24 @@ public class GraqlInsertIT {
         }
 
         // Insert all vars
-        tx.execute(Graql.insert(vars));
+        ConceptMap answer = tx.execute(Graql.insert(vars)).get(0);
 
         // Make sure all vars exist
         for (Statement var : vars) {
             assertExists(tx, var);
         }
 
+        // TODO restore prior implementation when we can delete and read at the same time
+//        for (Statement statement: vars) {
+//            tx.execute(Graql.match(statement).delete(Graql.var(statement.var()).isa("thing")));
+//        }
+
         // Delete all vars
-        for (Statement var : vars) {
-            tx.execute(Graql.match(var).delete(var.isa("thing")));
+        for (Statement statement : vars) {
+            // if we delete by ID instead of full traversal, traversals don't support modifications and deletions at the same time
+            Variable var = statement.var();
+            tx.execute(Graql.match(Graql.var(var).id(answer.get(var).id().toString()))
+                    .delete(Graql.var(var).isa("thing")));
         }
 
         // Make sure vars don't exist
