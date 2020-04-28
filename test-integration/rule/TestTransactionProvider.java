@@ -24,7 +24,6 @@ import grakn.core.concept.manager.ConceptManagerImpl;
 import grakn.core.concept.manager.ConceptNotificationChannelImpl;
 import grakn.core.concept.structure.ElementFactory;
 import grakn.core.core.JanusTraversalSourceProvider;
-import grakn.core.graph.core.JanusGraphTransaction;
 import grakn.core.graph.graphdb.database.StandardJanusGraph;
 import grakn.core.graph.graphdb.transaction.StandardJanusGraphTx;
 import grakn.core.graql.executor.ExecutorFactoryImpl;
@@ -149,7 +148,6 @@ public class TestTransactionProvider implements TransactionProvider {
                     reasonerQueryFactory, graphLock, typeShardThreshold);
             this.traversalPlanFactory = traversalPlanFactory;
             this.traversalExecutor = traversalExecutor;
-
 
             this.conceptNotificationChannel = conceptNotificationChannel;
             this.elementFactory = elementFactory;

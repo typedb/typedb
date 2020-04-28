@@ -64,29 +64,29 @@ public class CountIT {
         String nameAnotherThing = "another";
 
         // assert the tx is empty
-        try (Transaction tx = session.readTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
             assertEquals(0, tx.execute(Graql.compute().count()).get(0).number().intValue());
         }
 
         // add 2 instances
-        try (Transaction tx = session.writeTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             EntityType thingy = tx.putEntityType(nameThing);
             thingy.create();
             thingy.create();
             tx.commit();
         }
 
-        try (Transaction tx = session.readTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
             assertEquals(2, tx.execute(Graql.compute().count().in(nameThing)).get(0).number().intValue());
         }
 
-        try (Transaction tx = session.writeTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             EntityType anotherThing = tx.putEntityType(nameAnotherThing);
             anotherThing.create();
             tx.commit();
         }
 
-        try (Transaction tx = session.readTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
             // assert computer returns the correct count of instances
             assertEquals(2, tx.execute(Graql.compute().count().in(nameThing)).get(0).number().intValue());
             assertEquals(3, tx.execute(Graql.compute().count()).get(0).number().intValue());
@@ -98,7 +98,7 @@ public class CountIT {
         String nameThing = "thingy";
         String nameAnotherThing = "another";
 
-        try (Transaction tx = session.writeTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             EntityType thingy = tx.putEntityType(nameThing);
             thingy.create();
             thingy.create();
@@ -131,9 +131,9 @@ public class CountIT {
 
     @Test
     public void testHasResourceEdges() {
-        try (Transaction tx = session.writeTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             EntityType person = tx.putEntityType("person");
-            AttributeType<String> name = tx.putAttributeType("name", AttributeType.DataType.STRING);
+            AttributeType<String> name = tx.putAttributeType("name", AttributeType.ValueType.STRING);
             person.has(name);
             Entity aPerson = person.create();
             aPerson.has(name.create("jason"));
@@ -141,7 +141,7 @@ public class CountIT {
         }
 
         Numeric count;
-        try (Transaction tx = session.readTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
             count = tx.execute(Graql.compute().count()).get(0);
             assertEquals(3, count.number().intValue());
 
@@ -161,12 +161,12 @@ public class CountIT {
             assertEquals(1, count.number().intValue());
         }
 
-        try (Transaction tx = session.writeTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
 
             // manually construct the relation type and instance
             EntityType person = tx.getEntityType("person");
             Entity aPerson = person.create();
-            AttributeType<String> name = tx.putAttributeType("name", AttributeType.DataType.STRING);
+            AttributeType<String> name = tx.putAttributeType("name", AttributeType.ValueType.STRING);
             Attribute jason = name.create("jason");
 
             Role resourceOwner = tx.putRole(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of("name")));
@@ -183,7 +183,7 @@ public class CountIT {
             tx.commit();
         }
 
-        try (Transaction tx = session.readTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
             count = tx.execute(Graql.compute().count()).get(0);
             assertEquals(5, count.number().intValue());
 
@@ -206,12 +206,12 @@ public class CountIT {
 
     @Test
     public void testHasResourceVerticesAndEdges() {
-        try (Transaction tx = session.writeTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
 
             // manually construct the relation type and instance
             EntityType person = tx.putEntityType("person");
             Entity aPerson = person.create();
-            AttributeType<String> name = tx.putAttributeType("name", AttributeType.DataType.STRING);
+            AttributeType<String> name = tx.putAttributeType("name", AttributeType.ValueType.STRING);
             Attribute jason = name.create("jason");
 
             person.has(name);
@@ -233,7 +233,7 @@ public class CountIT {
         }
 
         Numeric count;
-        try (Transaction tx = session.readTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
             count = tx.execute(Graql.compute().count()).get(0);
             assertEquals(3, count.number().intValue());
 
@@ -250,15 +250,15 @@ public class CountIT {
             assertEquals(1, count.number().intValue());
         }
 
-        try (Transaction tx = session.writeTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             EntityType person = tx.getEntityType("person");
-            AttributeType<String> name = tx.putAttributeType("name", AttributeType.DataType.STRING);
+            AttributeType<String> name = tx.putAttributeType("name", AttributeType.ValueType.STRING);
             Entity aPerson = person.create();
             aPerson.has(name.attribute("jason"));
             tx.commit();
         }
 
-        try (Transaction tx = session.readTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
             count = tx.execute(Graql.compute().count()).get(0);
             assertEquals(5, count.number().intValue());
 
@@ -277,7 +277,7 @@ public class CountIT {
     }
 
     private Long executeCount(Session session) {
-        try (Transaction tx = session.readTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
             return tx.execute(Graql.compute().count()).get(0).number().longValue();
         }
     }

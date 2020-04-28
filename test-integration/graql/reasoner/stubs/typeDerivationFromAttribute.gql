@@ -6,7 +6,7 @@ baseEntity sub entity,
 derivedEntity sub entity,
     has baseAttribute;
 
-baseAttribute sub attribute, datatype string;
+baseAttribute sub attribute, value string;
 
 rule1
     when {

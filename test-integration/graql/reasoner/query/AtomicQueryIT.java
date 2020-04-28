@@ -63,7 +63,7 @@ public class AtomicQueryIT {
 
     @Test(expected = IllegalArgumentException.class)
     public void whenConstructingNonAtomicQuery_ExceptionIsThrown() {
-        try (Transaction tx = session.writeTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
             String patternString = "{ ($x, $y) isa binary;($y, $z) isa binary; };";
             ReasonerAtomicQuery atomicQuery = reasonerQueryFactory.atomic(conjunction(patternString));
@@ -72,7 +72,7 @@ public class AtomicQueryIT {
 
     @Test(expected = GraqlSemanticException.class)
     public void whenCreatingQueryWithNonexistentType_ExceptionIsThrown() {
-        try (Transaction tx = session.writeTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
             String patternString = "{ $x isa someType; };";
@@ -82,7 +82,7 @@ public class AtomicQueryIT {
 
     @Test(expected = GraqlSemanticException.class)
     public void whenCreatingAttributeQueryWithInvalidValueType_ExceptionIsThrown() {
-        try (Transaction tx = session.writeTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
             String patternString = "{ $x has resource-double '100'; };";
@@ -92,7 +92,7 @@ public class AtomicQueryIT {
 
     @Test
     public void whenCopyingQuery_TheCopyIsAlphaEquivalentToOriginal() {
-        try (Transaction tx = session.writeTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
             String patternString = "{ $x isa subRoleEntity;$y isa subSubRoleEntity;($x, $y) isa binary; };";
@@ -106,7 +106,7 @@ public class AtomicQueryIT {
 
     @Test
     public void whenQueryingForRelationsWithAmbiguousRoleTypes_answersArePermutedCorrectly() {
-        try (Transaction tx = session.writeTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
             String childString = "match (subRole1: $x, subRole2: $y) isa binary; get;";

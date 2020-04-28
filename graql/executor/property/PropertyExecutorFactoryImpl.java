@@ -22,7 +22,7 @@ import grakn.core.kb.graql.exception.GraqlSemanticException;
 import grakn.core.kb.graql.executor.property.PropertyExecutor;
 import grakn.core.kb.graql.executor.property.PropertyExecutorFactory;
 import graql.lang.property.AbstractProperty;
-import graql.lang.property.DataTypeProperty;
+import graql.lang.property.ValueTypeProperty;
 import graql.lang.property.HasAttributeProperty;
 import graql.lang.property.HasAttributeTypeProperty;
 import graql.lang.property.IdProperty;
@@ -74,8 +74,8 @@ public class PropertyExecutorFactoryImpl implements PropertyExecutorFactory {
     }
 
     public PropertyExecutor create(Variable var, VarProperty property) {
-        if (property instanceof DataTypeProperty) {
-            return new DataTypeExecutor(var, (DataTypeProperty) property);
+        if (property instanceof ValueTypeProperty) {
+            return new ValueTypeExecutor(var, (ValueTypeProperty) property);
 
         } else if (property instanceof HasAttributeProperty) {
             return new HasAttributeExecutor(var, (HasAttributeProperty) property);

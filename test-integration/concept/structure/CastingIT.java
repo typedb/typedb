@@ -58,7 +58,7 @@ public class CastingIT {
     @Before
     public void setUp(){
         session = server.sessionWithNewKeyspace();
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
         role1 = tx.putRole("role1");
         role2 = tx.putRole("role2");
         role3 = tx.putRole("role3");

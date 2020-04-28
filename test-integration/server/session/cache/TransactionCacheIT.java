@@ -32,6 +32,7 @@ import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.server.Session;
+import grakn.core.kb.server.Transaction;
 import grakn.core.kb.server.cache.TransactionCache;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.rule.SessionUtil;
@@ -89,7 +90,7 @@ public class TransactionCacheIT {
     public void setUp() {
         // disconnected session?
         session = SessionUtil.serverlessSessionWithNewKeyspace(server.serverConfig());
-        tx = (TestTransaction) session.writeTransaction();
+        tx = (TestTransaction) session.transaction(Transaction.Type.WRITE);
     }
 
     @After
@@ -120,7 +121,7 @@ public class TransactionCacheIT {
         tx.commit();
 
         // examine new transaction's cache
-        tx = (TestTransaction)session.readTransaction();
+        tx = (TestTransaction)session.transaction(Transaction.Type.READ);
         EntityType retrievedPerson = tx.getEntityType("person");
         Entity retrievedPersonInstance = retrievedPerson.instances().collect(Collectors.toList()).get(0);
 
@@ -139,7 +140,7 @@ public class TransactionCacheIT {
         tx.commit();
 
         // examine new transaction's cache
-        tx = (TestTransaction)session.readTransaction();
+        tx = (TestTransaction)session.transaction(Transaction.Type.READ);
         tx.getEntityType("person");
 
         TransactionCache transactionCache = tx.cache();
@@ -226,11 +227,11 @@ public class TransactionCacheIT {
         String index = Schema.generateAttributeIndex(Label.of(testAttributeLabel), testAttributeValue);
 
         // define the schema
-        tx.execute(Graql.define(type(testAttributeLabel).sub("attribute").datatype(Graql.Token.DataType.STRING)));
+        tx.execute(Graql.define(type(testAttributeLabel).sub("attribute").value(Graql.Token.ValueType.STRING)));
         tx.commit();
 
 
-        tx = (TestTransaction)session.writeTransaction();
+        tx = (TestTransaction)session.transaction(Transaction.Type.WRITE);
         tx.execute(Graql.insert(var("x").isa(testAttributeLabel).val(testAttributeValue)));
         tx.execute(Graql.match(var("x").isa(testAttributeLabel).val(testAttributeValue)).delete(var("x").isa(testAttributeLabel)));
         assertFalse(tx.cache().getNewAttributes().containsKey(new Pair<>(Label.of(testAttributeLabel), index)));
@@ -251,7 +252,7 @@ public class TransactionCacheIT {
 
         Role work = tx.putRole("work");
         Role author = tx.putRole("author");
-        AttributeType<String> provenance = tx.putAttributeType("provenance", AttributeType.DataType.STRING);
+        AttributeType<String> provenance = tx.putAttributeType("provenance", AttributeType.ValueType.STRING);
         EntityType somework = tx.putEntityType("somework").plays(work);
         EntityType person = tx.putEntityType("person").plays(author);
         RelationType authoredBy = tx.putRelationType("authored-by").relates(work).relates(author).has(provenance);
@@ -264,7 +265,7 @@ public class TransactionCacheIT {
         aRelation.has(aProvenance);
 
         tx.commit();
-        tx = (TestTransaction)session.writeTransaction();
+        tx = (TestTransaction)session.transaction(Transaction.Type.WRITE);
 
         // retrieve the vertex as a concept
         aRelation = tx.getConcept(relationId);
@@ -306,7 +307,7 @@ public class TransactionCacheIT {
 
         Role work = tx.putRole("work");
         Role author = tx.putRole("author");
-        AttributeType<String> provenance = tx.putAttributeType("provenance", AttributeType.DataType.STRING);
+        AttributeType<String> provenance = tx.putAttributeType("provenance", AttributeType.ValueType.STRING);
         EntityType somework = tx.putEntityType("somework").plays(work);
         EntityType person = tx.putEntityType("person").plays(author);
         RelationType authoredBy = tx.putRelationType("authored-by").relates(work).relates(author).has(provenance);
@@ -324,7 +325,7 @@ public class TransactionCacheIT {
             fillerJanusVertices.add(Schema.elementId(person.create().id()));
         }
         tx.commit();
-        tx = (TestTransaction)session.writeTransaction();
+        tx = (TestTransaction)session.transaction(Transaction.Type.WRITE);
 
         JanusTraversalSourceProvider janusTraversalSourceProvider = tx.janusTraversalSourceProvider();
 
@@ -369,7 +370,7 @@ public class TransactionCacheIT {
 
     @Test
     public void whenInsertingAndDeletingInferredAttribute_instanceIsTracked(){
-        AttributeType<String> attributeType = tx.putAttributeType("resource", AttributeType.DataType.STRING);
+        AttributeType<String> attributeType = tx.putAttributeType("resource", AttributeType.ValueType.STRING);
         Attribute attribute = attributeType.putAttributeInferred("banana");
         assertTrue(tx.cache().getInferredInstances().anyMatch(inst -> inst.equals(attribute)));
         attribute.delete();
@@ -378,7 +379,7 @@ public class TransactionCacheIT {
 
     @Test
     public void whenInsertingAndDeletingAttribute_attributeCachedIsUpdated(){
-        AttributeType<String> attributeType = tx.putAttributeType("resource", AttributeType.DataType.STRING);
+        AttributeType<String> attributeType = tx.putAttributeType("resource", AttributeType.ValueType.STRING);
         String value = "banana";
         Attribute attribute = attributeType.create(value);
         String index = Schema.generateAttributeIndex(attributeType.label(), value);
@@ -394,7 +395,7 @@ public class TransactionCacheIT {
 
     @Test
     public void whenInsertingAndDeletingInferredImplicitRelation_instanceIsTracked(){
-        AttributeType<String> attributeType = tx.putAttributeType("resource", AttributeType.DataType.STRING);
+        AttributeType<String> attributeType = tx.putAttributeType("resource", AttributeType.ValueType.STRING);
         EntityType someEntity = tx.putEntityType("someEntity").has(attributeType);
         Entity owner = someEntity.create();
         Attribute<String> attribute = attributeType.create("banana");

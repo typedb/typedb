@@ -80,7 +80,7 @@ public class AtomicEquivalenceIT {
 
     @Before
     public void setUp() {
-        tx = genericSchemaSession.writeTransaction();
+        tx = genericSchemaSession.transaction(Transaction.Type.WRITE);
     }
 
     @After
@@ -157,14 +157,14 @@ public class AtomicEquivalenceIT {
         atomicEquality(pattern, pattern8, false, reasonerQueryFactory);
     }
 
-    private static Map<AttributeType.DataType<?>, Object> testValues = ImmutableMap.<AttributeType.DataType<?>, Object>builder()
-            .put(AttributeType.DataType.BOOLEAN, true)
-            .put(AttributeType.DataType.DATE, LocalDateTime.now())
-            .put(AttributeType.DataType.DOUBLE, 10.0)
-            .put(AttributeType.DataType.FLOAT, 10.0)
-            .put(AttributeType.DataType.INTEGER, 10)
-            .put(AttributeType.DataType.LONG, 10L)
-            .put(AttributeType.DataType.STRING, "10")
+    private static Map<AttributeType.ValueType<?>, Object> testValues = ImmutableMap.<AttributeType.ValueType<?>, Object>builder()
+            .put(AttributeType.ValueType.BOOLEAN, true)
+            .put(AttributeType.ValueType.DATE, LocalDateTime.now())
+            .put(AttributeType.ValueType.DOUBLE, 10.0)
+            .put(AttributeType.ValueType.FLOAT, 10.0)
+            .put(AttributeType.ValueType.INTEGER, 10)
+            .put(AttributeType.ValueType.LONG, 10L)
+            .put(AttributeType.ValueType.STRING, "10")
             .build();
 
     @Test
@@ -174,17 +174,17 @@ public class AtomicEquivalenceIT {
 
         ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
-        AttributeType.DataType.values().stream()
-                .filter(dataType -> attributeTypes.stream().anyMatch(t -> t.dataType() != null && t.dataType().equals(dataType)))
-                .forEach(dataType -> {
-                    Object value = testValues.get(dataType);
+        AttributeType.ValueType.values().stream()
+                .filter(valueType -> attributeTypes.stream().anyMatch(t -> t.valueType() != null && t.valueType().equals(valueType)))
+                .forEach(valueType -> {
+                    Object value = testValues.get(valueType);
                     attributeTypes.stream()
-                            .filter(t -> Objects.nonNull(t.dataType()))
-                            .filter(t -> t.dataType().equals(dataType)).forEach(attributeType -> {
+                            .filter(t -> Objects.nonNull(t.valueType()))
+                            .filter(t -> t.valueType().equals(valueType)).forEach(attributeType -> {
 
                         Pattern basePattern = Graql.parsePattern("$x has " + attributeType.label().getValue() + " " + value + ";");
-                        dataType.comparableDataTypes().forEach(comparableDataType -> {
-                            AttributeValueConverter<Object, ?> converter = AttributeValueConverter.of(comparableDataType);
+                        valueType.comparableValueTypes().forEach(comparableValueType -> {
+                            AttributeValueConverter<Object, ?> converter = AttributeValueConverter.of(comparableValueType);
                             Pattern convertedPattern = Graql.parsePattern("$x has " + attributeType.label().getValue() + " " + converter.convert(value) + ";");
                             atomicEquivalence(basePattern.toString(), convertedPattern.toString(), true, AtomicEquivalence.AlphaEquivalence, reasonerQueryFactory);
                             atomicEquivalence(basePattern.toString(), convertedPattern.toString(), true, AtomicEquivalence.StructuralEquivalence, reasonerQueryFactory);

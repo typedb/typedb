@@ -29,27 +29,23 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
- * see EquivalentFragmentSets#dataType(VarProperty, Variable, AttributeType.DataType)
+ * see EquivalentFragmentSets#valueType(VarProperty, Variable, AttributeType.ValueType)
  *
  */
-class DataTypeFragmentSet extends EquivalentFragmentSetImpl {
+class ValueTypeFragmentSet extends EquivalentFragmentSetImpl {
     private final Variable attributeType;
-    private final AttributeType.DataType dataType;
+    private final AttributeType.ValueType valueType;
 
-    DataTypeFragmentSet(
-            @Nullable VarProperty varProperty,
-            Variable attributeType,
-            AttributeType.DataType dataType) {
+    ValueTypeFragmentSet(@Nullable VarProperty varProperty, Variable attributeType, AttributeType.ValueType valueType) {
         super(varProperty);
-
         this.attributeType = attributeType;
-        this.dataType = dataType;
+        this.valueType = valueType;
     }
 
 
     @Override
     public final Set<Fragment> fragments() {
-        return ImmutableSet.of(Fragments.dataType(varProperty(), attributeType, dataType));
+        return ImmutableSet.of(Fragments.valueType(varProperty(), attributeType, valueType));
     }
 
     @Override
@@ -57,17 +53,17 @@ class DataTypeFragmentSet extends EquivalentFragmentSetImpl {
         if (o == this) {
             return true;
         }
-        if (o instanceof DataTypeFragmentSet) {
-            DataTypeFragmentSet that = (DataTypeFragmentSet) o;
+        if (o instanceof ValueTypeFragmentSet) {
+            ValueTypeFragmentSet that = (ValueTypeFragmentSet) o;
             return ((this.varProperty() == null) ? (that.varProperty() == null) : this.varProperty().equals(that.varProperty()))
                     && (this.attributeType.equals(that.attributeType))
-                    && (this.dataType.equals(that.dataType));
+                    && (this.valueType.equals(that.valueType));
         }
         return false;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(varProperty(), attributeType, dataType);
+        return Objects.hash(varProperty(), attributeType, valueType);
     }
 }

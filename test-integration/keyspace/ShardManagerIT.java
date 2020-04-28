@@ -62,7 +62,7 @@ public class ShardManagerIT {
         int threads = 8;
         long shardThreshold = 10L;
         server.serverConfig().setConfigProperty(ConfigKey.TYPE_SHARD_THRESHOLD, shardThreshold);
-        try(Transaction tx = session.writeTransaction()){
+        try(Transaction tx = session.transaction(Transaction.Type.WRITE)){
             for (int threadNo = 0; threadNo < threads; threadNo++) {
                 tx.putEntityType("someEntity" + threadNo);
             }
@@ -75,7 +75,7 @@ public class ShardManagerIT {
         for (int threadNo = 0; threadNo < threads; threadNo++) {
             GraqlInsert query = Graql.parse("insert $x isa someEntity" + threadNo + ";").asInsert();
             CompletableFuture<Void> asyncInsert = CompletableFuture.supplyAsync(() -> {
-                TransactionImpl tx = (TransactionImpl) session.writeTransaction();
+                TransactionImpl tx = (TransactionImpl) session.transaction(Transaction.Type.WRITE);
                 for(int q = 0 ; q < shardThreshold; q++) tx.execute(query);
                 tx.computeShardCandidates();
                 try {
@@ -100,7 +100,7 @@ public class ShardManagerIT {
         int threads = 8;
         long shardThreshold = 10L;
         server.serverConfig().setConfigProperty(ConfigKey.TYPE_SHARD_THRESHOLD, shardThreshold);
-        try(Transaction tx = session.writeTransaction()){
+        try(Transaction tx = session.transaction(Transaction.Type.WRITE)){
             tx.putEntityType("someEntity");
             tx.commit();
         }
@@ -111,7 +111,7 @@ public class ShardManagerIT {
         for (int threadNo = 0; threadNo < threads; threadNo++) {
             GraqlInsert query = Graql.parse("insert $x isa someEntity;").asInsert();
             CompletableFuture<Void> asyncInsert = CompletableFuture.supplyAsync(() -> {
-                TransactionImpl tx = (TransactionImpl) session.writeTransaction();
+                TransactionImpl tx = (TransactionImpl) session.transaction(Transaction.Type.WRITE);
                 for(int q = 0 ; q < shardThreshold; q++) tx.execute(query);
                 tx.computeShardCandidates();
                 try {

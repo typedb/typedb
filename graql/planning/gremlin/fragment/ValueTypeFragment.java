@@ -29,35 +29,35 @@ import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Objects;
 
-import static grakn.core.core.Schema.VertexProperty.DATA_TYPE;
+import static grakn.core.core.Schema.VertexProperty.VALUE_TYPE;
 
-class DataTypeFragment extends FragmentImpl {
+class ValueTypeFragment extends FragmentImpl {
 
-    private final AttributeType.DataType dataType;
+    private final AttributeType.ValueType valueType;
 
-    DataTypeFragment(@Nullable VarProperty varProperty, Variable start, AttributeType.DataType dataType) {
+    ValueTypeFragment(@Nullable VarProperty varProperty, Variable start, AttributeType.ValueType valueType) {
         super(varProperty, start);
-        this.dataType = dataType;
+        this.valueType = valueType;
     }
 
-    private AttributeType.DataType dataType() {
-        return dataType;
+    private AttributeType.ValueType valueType() {
+        return valueType;
     }
 
     @Override
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
             GraphTraversal<Vertex, ? extends Element> traversal, ConceptManager conceptManager, Collection<Variable> vars) {
-        return traversal.has(DATA_TYPE.name(), dataType().name());
+        return traversal.has(VALUE_TYPE.name(), valueType().name());
     }
 
     @Override
     public String name() {
-        return "[datatype:" + dataType().name() + "]";
+        return "[value:" + valueType().name() + "]";
     }
 
     @Override
     public double internalFragmentCost() {
-        return COST_NODE_DATA_TYPE;
+        return COST_NODE_VALUE_TYPE;
     }
 
     @Override
@@ -65,17 +65,17 @@ class DataTypeFragment extends FragmentImpl {
         if (o == this) {
             return true;
         }
-        if (o instanceof DataTypeFragment) {
-            DataTypeFragment that = (DataTypeFragment) o;
+        if (o instanceof ValueTypeFragment) {
+            ValueTypeFragment that = (ValueTypeFragment) o;
             return ((this.varProperty == null) ? (that.varProperty() == null) : this.varProperty.equals(that.varProperty()))
                     && (this.start.equals(that.start()))
-                    && (this.dataType.equals(that.dataType()));
+                    && (this.valueType.equals(that.valueType()));
         }
         return false;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(varProperty, start, dataType);
+        return Objects.hash(varProperty, start, valueType);
     }
 }

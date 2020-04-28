@@ -77,8 +77,8 @@ public class AttributeUniquenessIT {
         String testAttributeValue = "test-attribute-value";
 
         // define the schema
-        try (Transaction tx = session.writeTransaction()) {
-            tx.execute(Graql.define(type(testAttributeLabel).sub("attribute").datatype(Graql.Token.DataType.STRING)));
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            tx.execute(Graql.define(type(testAttributeLabel).sub("attribute").value(Graql.Token.ValueType.STRING)));
             tx.commit();
         }
 
@@ -87,7 +87,7 @@ public class AttributeUniquenessIT {
 
         insertConcurrently(query, 16);
 
-        try (Transaction tx = session.readTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
             List<ConceptMap> conceptMaps = tx.execute(Graql.match(var(testAttributeLabel).isa(testAttributeLabel).val(testAttributeValue)).get());
             assertThat(conceptMaps, hasSize(1));
         }
@@ -98,10 +98,10 @@ public class AttributeUniquenessIT {
 
     @Test
     public void whenInsertingKeyConcurrently_onlyOneIsAccepted(){
-        Transaction tx = session.writeTransaction();
+        Transaction tx = session.transaction(Transaction.Type.WRITE);
         tx.execute(Graql.parse("define \n" +
                 "name sub attribute, \n" +
-                "    datatype string;\n" +
+                "    value string;\n" +
                 "person sub entity, \n" +
                 "    key name;").asDefine());
         tx.commit();
@@ -119,22 +119,22 @@ public class AttributeUniquenessIT {
             }
         }
 
-        tx = session.readTransaction();
+        tx = session.transaction(Transaction.Type.READ);
         List<ConceptMap> result = tx.execute(Graql.parse("match $x isa person, has name \"Marco\"; get;").asGet());
         assertEquals(1, result.size());
     }
 
     @Test
     public void whenAttemptingToConcurrentlyAttachExistingKey_onlyOneIsAccepted(){
-        Transaction tx = session.writeTransaction();
+        Transaction tx = session.transaction(Transaction.Type.WRITE);
         tx.execute(Graql.parse("define \n" +
                 "name sub attribute, \n" +
-                "    datatype string;\n" +
+                "    value string;\n" +
                 "person sub entity, \n" +
                 "    key name;").asDefine());
         tx.commit();
 
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
         tx.execute(Graql.parse("insert $x \"Marco\" isa name;").asInsert());
         tx.commit();
 
@@ -151,7 +151,7 @@ public class AttributeUniquenessIT {
             }
         }
 
-        tx = session.readTransaction();
+        tx = session.transaction(Transaction.Type.READ);
         List<ConceptMap> result = tx.execute(Graql.parse("match $x isa person, has name \"Marco\"; get;").asGet());
         assertEquals(1, result.size());
     }
@@ -162,9 +162,9 @@ public class AttributeUniquenessIT {
         String ownedAttributeValue = "owned-attribute-value";
 
         // define the schema
-        try (Transaction tx = session.writeTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             tx.execute(Graql.define(
-                    type(ownedAttributeLabel).sub("attribute").datatype(Graql.Token.DataType.STRING),
+                    type(ownedAttributeLabel).sub("attribute").value(Graql.Token.ValueType.STRING),
                     type("owner").sub("entity").has(ownedAttributeLabel)
             ));
             tx.commit();
@@ -175,7 +175,7 @@ public class AttributeUniquenessIT {
         insertConcurrently(query, 3);
 
         // verify there are 3 owners linked to only 1 attribute instance
-        try (Transaction tx = session.readTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
             Set<String> owned = new HashSet<>();
             Set<String> owner = new HashSet<>();
             List<ConceptMap> conceptMaps = tx.execute(Graql.match(
@@ -200,10 +200,10 @@ public class AttributeUniquenessIT {
         String ownerValue2 = "owner-value-2";
 
         // define the schema
-        try (Transaction tx = session.writeTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             tx.execute(Graql.define(
-                    type(ownedAttributeLabel).sub("attribute").datatype(Graql.Token.DataType.STRING),
-                    type(ownerLabel).sub("attribute").datatype(Graql.Token.DataType.STRING).has(ownedAttributeLabel)
+                    type(ownedAttributeLabel).sub("attribute").value(Graql.Token.ValueType.STRING),
+                    type(ownerLabel).sub("attribute").value(Graql.Token.ValueType.STRING).has(ownedAttributeLabel)
             ));
             tx.commit();
         }
@@ -215,7 +215,7 @@ public class AttributeUniquenessIT {
         insertConcurrently(Collections.list(query1, query2, query3));
 
         // verify
-        try (Transaction tx = session.readTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
             Set<String> owned = new HashSet<>();
             Set<String> owner = new HashSet<>();
             List<ConceptMap> conceptMaps = tx.execute(Graql.match(
@@ -237,9 +237,9 @@ public class AttributeUniquenessIT {
         String ownedAttributeValue = "owned-attribute-value";
 
         // define the schema
-        try (Transaction tx = session.writeTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             tx.execute(Graql.define(
-                    type(ownedAttributeLabel).sub("attribute").datatype(Graql.Token.DataType.STRING),
+                    type(ownedAttributeLabel).sub("attribute").value(Graql.Token.ValueType.STRING),
                     type("owner").sub("entity").has(ownedAttributeLabel)
             ));
             tx.commit();
@@ -251,7 +251,7 @@ public class AttributeUniquenessIT {
         insertConcurrently(Collections.list(query1, query2, query3));
 
         // verify
-        try (Transaction tx = session.readTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
             Set<String> owned = new HashSet<>();
             Set<String> owner = new HashSet<>();
             List<ConceptMap> conceptMaps = tx.execute(Graql.match(
@@ -273,9 +273,9 @@ public class AttributeUniquenessIT {
         String ownedAttributeValue = "owned-attribute-value";
 
         // define the schema
-        try (Transaction tx = session.writeTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             tx.execute(Graql.define(
-                    type(ownedAttributeLabel).sub("attribute").datatype(Graql.Token.DataType.STRING),
+                    type(ownedAttributeLabel).sub("attribute").value(Graql.Token.ValueType.STRING),
                     type("owner").sub("entity").has(ownedAttributeLabel)
             ));
             tx.commit();
@@ -288,7 +288,7 @@ public class AttributeUniquenessIT {
         insertConcurrently(Collections.list(query1, query2, query3));
 
         // verify
-        try (Transaction tx = session.readTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
             Set<String> owned = new HashSet<>();
             Set<String> owner = new HashSet<>();
             List<ConceptMap> conceptMaps = tx.execute(Graql.match(
@@ -310,11 +310,11 @@ public class AttributeUniquenessIT {
         String ownedAttributeValue = "owned-attribute-value";
 
         // define the schema
-        try (Transaction tx = session.writeTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             tx.execute(Graql.define(
                     type("owner").sub("relation").relates("entity-role-player").relates("attribute-role-player"),
                     type("owned-entity").sub("entity").plays("entity-role-player"),
-                    type(ownedAttributeLabel).sub("attribute").plays("attribute-role-player").datatype(Graql.Token.DataType.STRING)
+                    type(ownedAttributeLabel).sub("attribute").plays("attribute-role-player").value(Graql.Token.ValueType.STRING)
             ));
             tx.commit();
         }
@@ -326,7 +326,7 @@ public class AttributeUniquenessIT {
         insertConcurrently(Collections.list(query, query, query));
 
         // verify
-        try (Transaction tx = session.readTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
             List<ConceptMap> conceptMaps = tx.execute(Graql.match(var("owner").isa("owner")
                     .rel("attribute-role-player", var("arp"))
             ).get());
@@ -349,26 +349,27 @@ public class AttributeUniquenessIT {
         String index = Schema.generateAttributeIndex(Label.of(testAttributeLabel), testAttributeValue);
 
         // define the schema
-        try (Transaction tx = session.writeTransaction()) {
-            tx.execute(Graql.define(type(testAttributeLabel).sub("attribute").datatype(Graql.Token.DataType.STRING)));
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            tx.execute(Graql.define(type(testAttributeLabel).sub("attribute").value(Graql.Token.ValueType.STRING)));
             tx.commit();
         }
 
-        try (Transaction tx = session.writeTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             tx.execute(Graql.insert(var("x").isa(testAttributeLabel).val(testAttributeValue)));
             tx.commit();
         }
 
         assertNotNull(session.attributeManager().attributesCommitted().getIfPresent(index));
 
-        try (Transaction tx = session.writeTransaction()) {
+
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             tx.execute(Graql.match(var("x").isa(testAttributeLabel).val(testAttributeValue)).delete(var("x").isa(testAttributeLabel)));
             tx.commit();
         }
 
         assertNull(session.attributeManager().attributesCommitted().getIfPresent(index));
 
-        try (Transaction tx = session.writeTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             tx.execute(Graql.insert(var("x").isa(testAttributeLabel).val(testAttributeValue)));
             tx.commit();
         }
@@ -384,23 +385,23 @@ public class AttributeUniquenessIT {
         String index = Schema.generateAttributeIndex(Label.of(testAttributeLabel), testAttributeValue);
 
         // define the schema
-        try (Transaction tx = session.writeTransaction()) {
-            tx.execute(Graql.define(type(testAttributeLabel).sub("attribute").datatype(Graql.Token.DataType.STRING)));
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            tx.execute(Graql.define(type(testAttributeLabel).sub("attribute").value(Graql.Token.ValueType.STRING)));
             tx.commit();
         }
         String oldAttributeId;
-        try (Transaction tx = session.writeTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             List<ConceptMap> x = tx.execute(Graql.insert(var("x").isa(testAttributeLabel).val(testAttributeValue)));
             oldAttributeId = x.get(0).get("x").id().getValue();
             tx.commit();
         }
 
-        try (Transaction tx = session.writeTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             tx.execute(Graql.match(var("x").isa(testAttributeLabel).val(testAttributeValue)).delete(var("x").isa(testAttributeLabel)));
             tx.execute(Graql.insert(var("x").isa(testAttributeLabel).val(testAttributeValue)));
             tx.commit();
         }
-        try (Transaction tx = session.writeTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             List<ConceptMap> attribute = tx.execute(Graql.parse("match $x isa test-attribute; get;").asGet());
             assertEquals(1, attribute.size());
             String newAttributeId = attribute.get(0).get("x").id().getValue();
@@ -416,18 +417,18 @@ public class AttributeUniquenessIT {
         String index = Schema.generateAttributeIndex(Label.of(testAttributeLabel), testAttributeValue);
 
         // define the schema
-        try (Transaction tx = session.writeTransaction()) {
-            tx.execute(Graql.define(type(testAttributeLabel).sub("attribute").datatype(Graql.Token.DataType.STRING)));
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            tx.execute(Graql.define(type(testAttributeLabel).sub("attribute").value(Graql.Token.ValueType.STRING)));
             tx.commit();
         }
 
-        try (Transaction tx = session.writeTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             tx.execute(Graql.insert(var("x").isa(testAttributeLabel).val(testAttributeValue)));
             tx.execute(Graql.match(var("x").isa(testAttributeLabel).val(testAttributeValue)).delete(var("x").isa(testAttributeLabel)));
             tx.commit();
             assertNull(session.attributeManager().attributesCommitted().getIfPresent(index));
         }
-        try (Transaction tx = session.writeTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             List<ConceptMap> attribute = tx.execute(Graql.parse("match $x isa test-attribute; get;").asGet());
             assertEquals(0, attribute.size());
         }
@@ -448,7 +449,7 @@ public class AttributeUniquenessIT {
         List<Future> futures = new ArrayList<>();
         queries.forEach(query -> {
             futures.add(executorService.submit(() -> {
-                Transaction tx = session.writeTransaction();
+                Transaction tx = session.transaction(Transaction.Type.WRITE);
                 tx.execute(query);
                 commitLatch.countDown();
                 try {

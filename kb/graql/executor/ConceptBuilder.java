@@ -44,7 +44,7 @@ public interface ConceptBuilder {
 
     ConceptBuilder value(Object value);
 
-    ConceptBuilder dataType(AttributeType.DataType<?> dataType);
+    ConceptBuilder valueType(AttributeType.ValueType<?> valueType);
 
     ConceptBuilder when(Pattern when);
 

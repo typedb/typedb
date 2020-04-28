@@ -46,15 +46,15 @@ public class QueryValidityIT {
     @BeforeClass
     public static void loadContext(){
         genericSchemaSession = server.sessionWithNewKeyspace();
-        tx = genericSchemaSession.writeTransaction();
+        tx = genericSchemaSession.transaction(Transaction.Type.WRITE);
         tx.execute(Graql.parse("define " +
                 "anotherRole sub role;" +
                 "someRel sub relation, relates anotherRole; " +
                 "anotherNoRoleEntity sub entity, plays role1;" +
                 "binary sub relation, relates role1;" +
-                "name sub attribute, datatype string;").asDefine());
+                "name sub attribute, value string;").asDefine());
         tx.commit();
-        tx = genericSchemaSession.writeTransaction();
+        tx = genericSchemaSession.transaction(Transaction.Type.WRITE);
     }
 
     @AfterClass

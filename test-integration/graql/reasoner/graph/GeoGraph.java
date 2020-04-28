@@ -51,7 +51,7 @@ public class GeoGraph {
     }
 
     public void load() {
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
         buildSchema();
         buildInstances();
         buildRelations();
@@ -60,7 +60,7 @@ public class GeoGraph {
     }
 
     private void buildSchema() {
-        key = tx.putAttributeType("name", AttributeType.DataType.STRING);
+        key = tx.putAttributeType("name", AttributeType.ValueType.STRING);
 
         geoEntity = tx.putRole("geo-entity");
         entityLocation = tx.putRole("entity-location");

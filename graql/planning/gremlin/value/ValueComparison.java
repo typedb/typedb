@@ -193,8 +193,8 @@ public abstract class ValueComparison<T, U> extends ValueOperation<T, U> {
         private final java.lang.String gremlinVariable;
 
         private static final Map<Graql.Token.Comparator, Function<java.lang.String, P<java.lang.String>>> PREDICATES_VAR = varPredicates();
-        private static final java.lang.String[] VALUE_PROPERTIES = AttributeType.DataType.values().stream()
-                .map(Schema.VertexProperty::ofDataType).distinct()
+        private static final java.lang.String[] VALUE_PROPERTIES = AttributeType.ValueType.values().stream()
+                .map(Schema.VertexProperty::ofValueType).distinct()
                 .map(Enum::name).toArray(java.lang.String[]::new);
 
         Variable(Graql.Token.Comparator comparator, Statement value) {

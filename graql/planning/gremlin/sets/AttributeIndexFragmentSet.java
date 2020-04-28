@@ -111,11 +111,11 @@ public class AttributeIndexFragmentSet extends EquivalentFragmentSetImpl {
 
         Object value = valueSet.operation().value();
 
-        AttributeType.DataType<?> dataType = conceptManager.getAttributeType(label.getValue()).dataType();
-        if (Number.class.isAssignableFrom(dataType.dataClass())) {
-            if (dataType.dataClass() == Long.class && value instanceof Double && ((Double) value % 1 == 0)) {
+        AttributeType.ValueType<?> valueType = conceptManager.getAttributeType(label.getValue()).valueType();
+        if (Number.class.isAssignableFrom(valueType.valueClass())) {
+            if (valueType.valueClass() == Long.class && value instanceof Double && ((Double) value % 1 == 0)) {
                 value = ((Double) value).longValue();
-            } else if (dataType.dataClass() == Double.class && value instanceof Long) {
+            } else if (valueType.valueClass() == Double.class && value instanceof Long) {
                 value = ((Long) value).doubleValue();
             }
         }

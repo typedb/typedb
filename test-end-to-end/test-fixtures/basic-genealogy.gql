@@ -21,15 +21,15 @@ person sub entity,
 
 # Resources
 
-identifier sub attribute, datatype string;
-firstname sub attribute, datatype string;
-surname sub attribute, datatype string;
-middlename sub attribute, datatype string;
-picture sub attribute, datatype string;
-age sub attribute, datatype long;
-birth-date sub attribute, datatype date;
-death-date sub attribute, datatype date;
-gender sub attribute, datatype string;
+identifier sub attribute, value string;
+firstname sub attribute, value string;
+surname sub attribute, value string;
+middlename sub attribute, value string;
+picture sub attribute, value string;
+age sub attribute, value long;
+birth-date sub attribute, value date;
+death-date sub attribute, value date;
+gender sub attribute, value string;
 
 # Roles and Relations
 

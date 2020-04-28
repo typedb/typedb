@@ -44,7 +44,7 @@ public class RuleScalingIT {
         final int populatedChains = 3;
         Session session = server.sessionWithNewKeyspace();
 
-        try(Transaction tx = session.writeTransaction()) {
+        try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             tx.execute(Graql.<GraqlDefine>parse(
                     "define " +
                             "baseEntity sub entity, plays someRole, plays anotherRole;" +
@@ -58,8 +58,8 @@ public class RuleScalingIT {
                             "   has inferredAttribute, has anotherInferredAttribute," +
                             "   relates someRole, relates anotherRole;" +
                             "indexingRelation sub relation, relates someRole, relates anotherRole;" +
-                            "inferredAttribute sub attribute, datatype string;" +
-                            "anotherInferredAttribute sub attribute, datatype string;"
+                            "inferredAttribute sub attribute, value string;" +
+                            "anotherInferredAttribute sub attribute, value string;"
             ));
 
             for (int i = 0; i < N; i++) {
@@ -77,7 +77,7 @@ public class RuleScalingIT {
                         "(someRole: $x, anotherRole: $y) isa baseRelation;" +
                         "(someRole: $y, anotherRole: $link) isa anotherBaseRelation;";
 
-        try(Transaction tx = session.writeTransaction()) {
+        try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             for (int i = 0; i < N; i++) {
                 Pattern specificPattern = Graql.parsePattern(
                         "{" +
@@ -128,7 +128,7 @@ public class RuleScalingIT {
             tx.commit();
         }
 
-        try(Transaction tx = session.writeTransaction()) {
+        try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             for (int k = 0; k < populatedChains; k++) {
                 tx.execute(Graql.<GraqlInsert>parse(
                         "insert " +
@@ -146,7 +146,7 @@ public class RuleScalingIT {
             tx.commit();
         }
 
-        try( Transaction tx = session.writeTransaction()) {
+        try( Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             String query = "match " +
                     "$x isa someEntity;" +
                     "(someRole: $x, anotherRole: $y) isa baseRelation;" +

@@ -67,4 +67,8 @@ public class GraknServerException extends GraknException {
     public static GraknServerException fileWriteException(String filepath) {
         return create(ErrorMessage.FILE_WRITE_EXCEPTION.getMessage(filepath));
     }
+
+    public static GraknServerException transactionClosedOnDifferentThread() {
+        return create(ErrorMessage.TRANSACTION_CLOSED_ON_DIFFERENT_THREAD.getMessage());
+    }
 }

@@ -61,7 +61,7 @@ public class QueryBuilderIT {
 
     @Before
     public void newTransaction() {
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
     }
 
     @After

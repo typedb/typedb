@@ -64,7 +64,7 @@ public class BenchmarkSmallIT {
         Session session = server.sessionWithNewKeyspace();
 
         //NB: loading data here as defining it as KB and using graql api leads to circular dependencies
-        try(Transaction tx = session.writeTransaction()) {
+        try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             Role fromRole = tx.putRole("fromRole");
             Role toRole = tx.putRole("toRole");
 
@@ -114,7 +114,7 @@ public class BenchmarkSmallIT {
             tx.commit();
         }
 
-        try( Transaction tx = session.readTransaction()) {
+        try( Transaction tx = session.transaction(Transaction.Type.READ)) {
             final long limit = 1;
             String queryPattern = "(fromRole: $x, toRole: $y) isa relation" + N + ";";
             String queryString = "match " + queryPattern + " get;";
@@ -168,7 +168,7 @@ public class BenchmarkSmallIT {
         linearGraph.load(N, N);
 
         String queryString = "match (P-from: $x, P-to: $y) isa P; get;";
-        Transaction tx = session.writeTransaction();
+        Transaction tx = session.transaction(Transaction.Type.WRITE);
         executeQuery(queryString, tx, "full");
         executeQuery(Graql.parse(queryString).asGet().match().get().limit(limit), tx, "limit " + limit);
         tx.close();
@@ -199,7 +199,7 @@ public class BenchmarkSmallIT {
         System.out.println(new Object(){}.getClass().getEnclosingMethod().getName());
         TransitivityChainGraph transitivityChainGraph = new TransitivityChainGraph(session);
         transitivityChainGraph.load(N);
-        Transaction tx = session.writeTransaction();
+        Transaction tx = session.transaction(Transaction.Type.WRITE);
 
         String queryString = "match (Q-from: $x, Q-to: $y) isa Q; get;";
         GraqlGet query = Graql.parse(queryString).asGet();
@@ -251,7 +251,7 @@ public class BenchmarkSmallIT {
         //results @N = 30 216225    ?       ?      ?     30 s
         //results @N = 35 396900   ?        ?      ?     76 s
         transitivityMatrixGraph.load(N, N);
-        Transaction tx = session.writeTransaction();
+        Transaction tx = session.transaction(Transaction.Type.WRITE);
         
 
         //full result
@@ -311,7 +311,7 @@ public class BenchmarkSmallIT {
         //results @N = 40  1444  3.5s
         //results @N = 50  2304    8s    / 1s
         //results @N = 100 9604  loading takes ages
-        Transaction tx = session.writeTransaction();
+        Transaction tx = session.transaction(Transaction.Type.WRITE);
         
         String queryString = "match (rel-from: $x, rel-to: $y) isa diagonal; get;";
         GraqlGet query = Graql.parse(queryString).asGet();
@@ -368,7 +368,7 @@ public class BenchmarkSmallIT {
         int answers = 0;
         for(int i = 1 ; i <= N ; i++) answers += Math.pow(linksPerEntity, i);
 
-        Transaction tx = session.writeTransaction();
+        Transaction tx = session.transaction(Transaction.Type.WRITE);
 
         String queryString = "match (path-from: $x, path-to: $y) isa path;" +
                 "$x has index 'a0';" +

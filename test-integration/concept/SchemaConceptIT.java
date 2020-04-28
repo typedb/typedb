@@ -65,7 +65,7 @@ public class SchemaConceptIT {
     @Before
     public void setUp(){
         session = server.sessionWithNewKeyspace();
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
     }
 
     @After
@@ -102,7 +102,7 @@ public class SchemaConceptIT {
     public void whenSpecifyingTheResourceTypeOfAnEntityType_EnsureTheImplicitStructureIsCreated(){
         Label resourceLabel = Label.of("Attribute Type");
         EntityType entityType = tx.putEntityType("Entity1");
-        AttributeType attributeType = tx.putAttributeType("Attribute Type", AttributeType.DataType.STRING);
+        AttributeType attributeType = tx.putAttributeType("Attribute Type", AttributeType.ValueType.STRING);
 
         //Implicit Names
         Label hasResourceOwnerLabel = Schema.ImplicitType.HAS_OWNER.getLabel(resourceLabel);

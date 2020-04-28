@@ -82,7 +82,7 @@ public class GraqlGetIT {
 
     @Before
     public void newTransaction() {
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
     }
 
     @After
@@ -163,6 +163,7 @@ public class GraqlGetIT {
         assertEquals("Al Pacino", answers.get(3).get("x").asAttribute().value());
         assertEquals("Benjamin L. Willard", answers.get(4).get("x").asAttribute().value());
     }
+
 
     @Test
     public void testGetContainsStringIgnoreCase() {
@@ -302,7 +303,7 @@ public class GraqlGetIT {
 
     @Test
     public void testSumNull() {
-        tx.putAttributeType("random", AttributeType.DataType.INTEGER);
+        tx.putAttributeType("random", AttributeType.ValueType.INTEGER);
         GraqlGet.Aggregate query = Graql.match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("random")).get()
                 .sum("y");
 
@@ -327,7 +328,7 @@ public class GraqlGetIT {
 
     @Test
     public void testMaxNull() {
-        tx.putAttributeType("random", AttributeType.DataType.INTEGER);
+        tx.putAttributeType("random", AttributeType.ValueType.INTEGER);
         GraqlGet.Aggregate query = Graql.match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("random")).get()
                 .max("y");
 
@@ -344,7 +345,7 @@ public class GraqlGetIT {
 
     @Test
     public void testMinNull() {
-        tx.putAttributeType("random", AttributeType.DataType.INTEGER);
+        tx.putAttributeType("random", AttributeType.ValueType.INTEGER);
         GraqlGet.Aggregate query = Graql.match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("random")).get()
                 .min("y");
 
@@ -362,7 +363,7 @@ public class GraqlGetIT {
 
     @Test
     public void testMeanNull() {
-        tx.putAttributeType("random", AttributeType.DataType.INTEGER);
+        tx.putAttributeType("random", AttributeType.ValueType.INTEGER);
         GraqlGet.Aggregate query = Graql.match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("random")).get()
                 .mean("y");
 
@@ -391,7 +392,7 @@ public class GraqlGetIT {
 
     @Test
     public void testMedianNull() {
-        tx.putAttributeType("random", AttributeType.DataType.INTEGER);
+        tx.putAttributeType("random", AttributeType.ValueType.INTEGER);
         GraqlGet.Aggregate query = Graql.match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("random")).get()
                 .median("y");
 
@@ -426,7 +427,7 @@ public class GraqlGetIT {
 
     @Test
     public void testStdNull() {
-        tx.putAttributeType("random", AttributeType.DataType.INTEGER);
+        tx.putAttributeType("random", AttributeType.ValueType.INTEGER);
         GraqlGet.Aggregate query = Graql.match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("random")).get()
                 .std("y");
 
@@ -457,7 +458,7 @@ public class GraqlGetIT {
     }
 
     @Test(expected = Exception.class)
-    public void testIncorrectResourceDataType() {
+    public void testIncorrectAttributeValueType() {
         tx.execute(Graql.match(var("x").isa("movie").has("title", var("y"))).get().sum("y"));
     }
 
@@ -485,7 +486,7 @@ public class GraqlGetIT {
         EntityType somework = tx.putEntityType("somework").plays(work);
         Role author = tx.putRole("author");
         EntityType person = tx.putEntityType("person").plays(author);
-        AttributeType<Long> year = tx.putAttributeType("year", AttributeType.DataType.LONG);
+        AttributeType<Long> year = tx.putAttributeType("year", AttributeType.ValueType.LONG);
         tx.putRelationType("authored-by").relates(work).relates(author).has(year);
 
         Stream<ConceptMap> answers = tx.stream(Graql.parse("insert $x isa person;" +

@@ -68,7 +68,7 @@ public class EntityIT {
     @Before
     public void setUp(){
         session = server.sessionWithNewKeyspace();
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
     }
 
     @After
@@ -143,7 +143,7 @@ public class EntityIT {
     public void whenAddingResourceToAnEntity_EnsureTheicitStructureIsCreated(){
         Label resourceLabel = Label.of("A Attribute Thing");
         EntityType entityType = tx.putEntityType("A Thing");
-        AttributeType<String> attributeType = tx.putAttributeType(resourceLabel, AttributeType.DataType.STRING);
+        AttributeType<String> attributeType = tx.putAttributeType(resourceLabel, AttributeType.ValueType.STRING);
         entityType.has(attributeType);
 
         Entity entity = entityType.create();
@@ -158,7 +158,7 @@ public class EntityIT {
     @Test
     public void whenAddingResourceToEntityWithoutAllowingItBetweenTypes_Throw(){
         EntityType entityType = tx.putEntityType("A Thing");
-        AttributeType<String> attributeType = tx.putAttributeType("A Attribute Thing", AttributeType.DataType.STRING);
+        AttributeType<String> attributeType = tx.putAttributeType("A Attribute Thing", AttributeType.ValueType.STRING);
 
         Entity entity = entityType.create();
         Attribute attribute = attributeType.create("A attribute thing");
@@ -173,7 +173,7 @@ public class EntityIT {
     public void whenAddingMultipleResourcesToEntity_EnsureDifferentRelationsAreBuilt() throws InvalidKBException {
         String resourceTypeId = "A Attribute Thing";
         EntityType entityType = tx.putEntityType("A Thing");
-        AttributeType<String> attributeType = tx.putAttributeType(resourceTypeId, AttributeType.DataType.STRING);
+        AttributeType<String> attributeType = tx.putAttributeType(resourceTypeId, AttributeType.ValueType.STRING);
         entityType.has(attributeType);
 
         Entity entity = entityType.create();
@@ -193,7 +193,7 @@ public class EntityIT {
     public void checkKeyCreatesCorrectResourceStructure(){
         Label resourceLabel = Label.of("A Attribute Thing");
         EntityType entityType = tx.putEntityType("A Thing");
-        AttributeType<String> attributeType = tx.putAttributeType(resourceLabel, AttributeType.DataType.STRING);
+        AttributeType<String> attributeType = tx.putAttributeType(resourceLabel, AttributeType.ValueType.STRING);
         entityType.key(attributeType);
 
         Entity entity = entityType.create();
@@ -209,7 +209,7 @@ public class EntityIT {
     public void whenCreatingAnEntityAndNotLinkingARequiredKey_Throw() throws InvalidKBException {
         String resourceTypeId = "A Attribute Thing";
         EntityType entityType = tx.putEntityType("A Thing");
-        AttributeType<String> attributeType = tx.putAttributeType(resourceTypeId, AttributeType.DataType.STRING);
+        AttributeType<String> attributeType = tx.putAttributeType(resourceTypeId, AttributeType.ValueType.STRING);
         entityType.key(attributeType);
 
         entityType.create();
@@ -237,8 +237,8 @@ public class EntityIT {
 
     @Test
     public void whenGettingEntityKeys_EnsureKeysAreReturned(){
-        AttributeType<String> attributeType = tx.putAttributeType("An Attribute", AttributeType.DataType.STRING);
-        AttributeType<String> keyType = tx.putAttributeType("A Key", AttributeType.DataType.STRING);
+        AttributeType<String> attributeType = tx.putAttributeType("An Attribute", AttributeType.ValueType.STRING);
+        AttributeType<String> keyType = tx.putAttributeType("A Key", AttributeType.ValueType.STRING);
         EntityType entityType = tx.putEntityType("A Thing").has(attributeType).key(keyType);
 
         Attribute<String> a1 = attributeType.create("a1");
@@ -264,7 +264,7 @@ public class EntityIT {
 
     @Test
     public void whenRemovingAnAttributedFromAnEntity_EnsureTheAttributeIsNoLongerReturned(){
-        AttributeType<String> name = tx.putAttributeType("name", AttributeType.DataType.STRING);
+        AttributeType<String> name = tx.putAttributeType("name", AttributeType.ValueType.STRING);
         Attribute<String> fim = name.create("Fim");
         Attribute<String> tim = name.create("Tim");
         Attribute<String> pim = name.create("Pim");
@@ -280,7 +280,7 @@ public class EntityIT {
 
     @Test
     public void whenCreatingInferredAttributeLink_EnsureMarkedAsInferred(){
-        AttributeType<String> name = tx.putAttributeType("name", AttributeType.DataType.STRING);
+        AttributeType<String> name = tx.putAttributeType("name", AttributeType.ValueType.STRING);
         Attribute<String> attribute1 = name.create("An attribute 1");
         Attribute<String> attribute2 = name.create("An attribute 2");
         EntityType et = tx.putEntityType("et").has(name);

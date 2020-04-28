@@ -221,14 +221,14 @@ public class ComputeExecutorImpl implements ComputeExecutor {
      */
     @Nullable
     private <S> S runComputeStatistics(GraqlCompute.Statistics.Value query) {
-        AttributeType.DataType<?> targetDataType = validateAndGetTargetDataType(query);
+        AttributeType.ValueType<?> targetValueType = validateAndGetTargetValueType(query);
         if (!targetContainsInstance(query)) return null;
 
         Set<LabelId> extendedScopeTypes = convertLabelsToIds(extendedScopeTypeLabels(query));
         Set<LabelId> targetTypes = convertLabelsToIds(targetTypeLabels(query));
 
-        VertexProgram program = initStatisticsVertexProgram(query, targetTypes, targetDataType);
-        StatisticsMapReduce<?> mapReduce = initStatisticsMapReduce(query, targetTypes, targetDataType);
+        VertexProgram program = initStatisticsVertexProgram(query, targetTypes, targetValueType);
+        StatisticsMapReduce<?> mapReduce = initStatisticsMapReduce(query, targetTypes, targetValueType);
         ComputerResult computerResult = compute(program, mapReduce, extendedScopeTypes);
 
         if (query.method().equals(MEDIAN)) {
@@ -243,31 +243,31 @@ public class ComputeExecutorImpl implements ComputeExecutor {
     }
 
     /**
-     * Helper method to validate that the target types are of one data type, and get that data type
+     * Helper method to validate that the target types are of one value type, and get that value type
      *
-     * @return the DataType of the target types
+     * @return the ValueType of the target types
      */
     @Nullable
-    private AttributeType.DataType<?> validateAndGetTargetDataType(GraqlCompute.Statistics.Value query) {
-        AttributeType.DataType<?> dataType = null;
+    private AttributeType.ValueType<?> validateAndGetTargetValueType(GraqlCompute.Statistics.Value query) {
+        AttributeType.ValueType<?> valueType = null;
         for (Type type : targetTypes(query)) {
             // check if the selected type is a attribute type
             if (!type.isAttributeType()) throw GraqlSemanticException.mustBeAttributeType(type.label());
             AttributeType<?> attributeType = type.asAttributeType();
-            if (dataType == null) {
-                // check if the attribute type has data-type LONG or DOUBLE
-                dataType = attributeType.dataType();
-                if (!dataType.equals(AttributeType.DataType.LONG) && !dataType.equals(AttributeType.DataType.DOUBLE)) {
-                    throw GraqlSemanticException.attributeMustBeANumber(dataType, attributeType.label());
+            if (valueType == null) {
+                // check if the attribute type has value type LONG or DOUBLE
+                valueType = attributeType.valueType();
+                if (!valueType.equals(AttributeType.ValueType.LONG) && !valueType.equals(AttributeType.ValueType.DOUBLE)) {
+                    throw GraqlSemanticException.attributeMustBeANumber(valueType, attributeType.label());
                 }
             } else {
-                // check if all the attribute types have the same data-type
-                if (!dataType.equals(attributeType.dataType())) {
-                    throw GraqlSemanticException.attributesWithDifferentDataTypes(query.of());
+                // check if all the attribute types have the same value type
+                if (!valueType.equals(attributeType.valueType())) {
+                    throw GraqlSemanticException.attributesWithDifferentValueTypes(query.of());
                 }
             }
         }
-        return dataType;
+        return valueType;
     }
 
     /**
@@ -275,11 +275,11 @@ public class ComputeExecutorImpl implements ComputeExecutor {
      *
      * @param query          representing the compute query
      * @param targetTypes    representing the attribute types in which the statistics computation is targeted for
-     * @param targetDataType representing the data type of the target attribute types
+     * @param targetValueType representing the value type of the target attribute types
      * @return an object which is a subclass of VertexProgram
      */
-    private VertexProgram initStatisticsVertexProgram(GraqlCompute query, Set<LabelId> targetTypes, AttributeType.DataType<?> targetDataType) {
-        if (query.method().equals(MEDIAN)) return new MedianVertexProgram(targetTypes, targetDataType);
+    private VertexProgram initStatisticsVertexProgram(GraqlCompute query, Set<LabelId> targetTypes, AttributeType.ValueType<?> targetValueType) {
+        if (query.method().equals(MEDIAN)) return new MedianVertexProgram(targetTypes, targetValueType);
         else return new DegreeStatisticsVertexProgram(targetTypes);
     }
 
@@ -287,23 +287,23 @@ public class ComputeExecutorImpl implements ComputeExecutor {
      * Helper method to initialise the MapReduce algorithm for compute statistics queries
      *
      * @param targetTypes    representing the attribute types in which the statistics computation is targeted for
-     * @param targetDataType representing the data type of the target attribute types
+     * @param targetValueType representing the value type of the target attribute types
      * @return an object which is a subclass of StatisticsMapReduce
      */
     private StatisticsMapReduce<?> initStatisticsMapReduce(GraqlCompute.Statistics.Value query,
                                                            Set<LabelId> targetTypes,
-                                                           AttributeType.DataType<?> targetDataType) {
+                                                           AttributeType.ValueType<?> targetValueType) {
         Graql.Token.Compute.Method method = query.method();
         if (method.equals(MIN)) {
-            return new MinMapReduce(targetTypes, targetDataType, DegreeVertexProgram.DEGREE);
+            return new MinMapReduce(targetTypes, targetValueType, DegreeVertexProgram.DEGREE);
         } else if (method.equals(MAX)) {
-            return new MaxMapReduce(targetTypes, targetDataType, DegreeVertexProgram.DEGREE);
+            return new MaxMapReduce(targetTypes, targetValueType, DegreeVertexProgram.DEGREE);
         } else if (method.equals(MEAN)) {
-            return new MeanMapReduce(targetTypes, targetDataType, DegreeVertexProgram.DEGREE);
+            return new MeanMapReduce(targetTypes, targetValueType, DegreeVertexProgram.DEGREE);
         } else if (method.equals(STD)) {
-            return new StdMapReduce(targetTypes, targetDataType, DegreeVertexProgram.DEGREE);
+            return new StdMapReduce(targetTypes, targetValueType, DegreeVertexProgram.DEGREE);
         } else if (method.equals(SUM)) {
-            return new SumMapReduce(targetTypes, targetDataType, DegreeVertexProgram.DEGREE);
+            return new SumMapReduce(targetTypes, targetValueType, DegreeVertexProgram.DEGREE);
         }
 
         return null;

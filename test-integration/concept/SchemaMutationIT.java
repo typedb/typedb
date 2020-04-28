@@ -60,7 +60,7 @@ public class SchemaMutationIT {
     @Before
     public void setUp() {
         session = server.sessionWithNewKeyspace();
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
         Role husband = tx.putRole("husband");
         Role wife = tx.putRole("wife");
         Role driver = tx.putRole("driver");
@@ -81,7 +81,7 @@ public class SchemaMutationIT {
         Entity bmw = car.create();
         drives.create().assign(driver, alice).assign(driven, bmw);
         tx.commit();
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
     }
 
     @After
@@ -141,7 +141,7 @@ public class SchemaMutationIT {
     @Test
     public void whenAddingResourceToSubTypeOfEntityType_EnsureNoValidationErrorsOccur() {
         //Create initial Schema
-        AttributeType<String> name = tx.putAttributeType("name", AttributeType.DataType.STRING);
+        AttributeType<String> name = tx.putAttributeType("name", AttributeType.ValueType.STRING);
         EntityType person = tx.putEntityType("person").has(name);
         EntityType animal = tx.putEntityType("animal").sup(person);
         Attribute bob = name.create("Bob");
@@ -149,7 +149,7 @@ public class SchemaMutationIT {
         tx.commit();
 
         //Now make animal have the same resource type
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
         EntityType retrievedAnimal = tx.getEntityType("animal");
         AttributeType nameType = tx.getAttributeType("name");
         retrievedAnimal.has(nameType);
@@ -164,7 +164,7 @@ public class SchemaMutationIT {
         tx.commit();
 
         //Now delete the relation
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
         RelationType relationInNewTx = tx.getRelationType("my wonderful relation");
         relationInNewTx.delete();
 
@@ -176,7 +176,7 @@ public class SchemaMutationIT {
 
     @Test
     public void whenChangingTheSuperTypeOfAnEntityTypeWhichHasAResource_EnsureTheResourceIsStillAccessibleViaTheRelationTypeInstances_ByPreventingChange() {
-        AttributeType<String> name = tx.putAttributeType("name", AttributeType.DataType.STRING);
+        AttributeType<String> name = tx.putAttributeType("name", AttributeType.ValueType.STRING);
 
         //Create a animal and allow animal to have a name
         EntityType animal = tx.putEntityType("animal").has(name);

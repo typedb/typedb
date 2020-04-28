@@ -100,7 +100,7 @@ public class RuleApplicabilityIT {
         loadFromFileAndCommit(resourcePath,"ruleApplicabilityTest.gql", ruleApplicabilitySession);
 
         //add extra data so that all rules can be possibly triggered
-        try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
+        try(Transaction tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE)) {
             EntityType singleRoleEntity = tx.getEntityType("singleRoleEntity");
             EntityType twoRoleEntity = tx.getEntityType("twoRoleEntity");
             Thing x = putEntityWithResource(tx, singleRoleEntity, Label.of("resource-string"), "someValue");
@@ -126,7 +126,7 @@ public class RuleApplicabilityIT {
 
     @Test
     public void metaImplicitRelationMatchesAllAttributeRules(){
-        try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
+        try(Transaction tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE)) {
             TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction)tx;
             ReasonerQueryFactory reasonerQueryFactory = testTx.reasonerQueryFactory();
             Atom metaImplicitRelation = reasonerQueryFactory.atomic(conjunction("{ $x isa @has-attribute;};")).getAtom();
@@ -140,7 +140,7 @@ public class RuleApplicabilityIT {
 
     @Test
     public void ontologicalAtomsDoNotMatchAnyRules(){
-        try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
+        try(Transaction tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE)) {
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
             Atom subAtom = reasonerQueryFactory.atomic(conjunction("{ $x sub " + Schema.MetaSchema.RELATION.getLabel() + "; };")).getAtom();
@@ -159,7 +159,7 @@ public class RuleApplicabilityIT {
 
     @Test
     public void typeRelationMatchesAllRulesWithCorrespondingRelationType(){
-        try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
+        try(Transaction tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE)) {
             TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction)tx;
             ReasonerQueryFactory reasonerQueryFactory = testTx.reasonerQueryFactory();
 
@@ -193,7 +193,7 @@ public class RuleApplicabilityIT {
 
     @Test
     public void typeAttributeMatchesAllRulesWithCorrespondingAttributeType(){
-        try(Transaction tx = resourceApplicabilitySession.writeTransaction()) {
+        try(Transaction tx = resourceApplicabilitySession.transaction(Transaction.Type.WRITE)) {
             TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction)tx;
             ReasonerQueryFactory reasonerQueryFactory = testTx.reasonerQueryFactory();
 
@@ -212,7 +212,7 @@ public class RuleApplicabilityIT {
 
     @Test
     public void relationWithUnspecifiedRoles_typedRoleplayers_ambiguousRoleMapping(){
-        try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
+        try(Transaction tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE)) {
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
             //although singleRoleEntity plays only one role it can also play an implicit role of the resource so mapping ambiguous
@@ -229,7 +229,7 @@ public class RuleApplicabilityIT {
 
     @Test
     public void relationWithUnspecifiedRoles_typedRoleplayers_rolePlayerTypeMismatch(){
-        try(Transaction tx = ruleApplicabilitySession.writeTransaction()){
+        try(Transaction tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE)){
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
             //although singleRoleEntity plays only one role it can also play an implicit role of the resource so mapping ambiguous
@@ -246,7 +246,7 @@ public class RuleApplicabilityIT {
 
     @Test //threeRoleEntity subs twoRoleEntity -> (role, role, role)
     public void relationWithUnspecifiedRoles_typedRoleplayers_typeHierarchyEnablesExtraRule(){
-        try(Transaction tx = ruleApplicabilitySession.writeTransaction()){
+        try(Transaction tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE)){
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
             String relationString = "{ ($x, $y, $z);$x isa twoRoleEntity; $y isa threeRoleEntity; $z isa anotherTwoRoleEntity; };";
@@ -258,7 +258,7 @@ public class RuleApplicabilityIT {
 
     @Test
     public void relationWithUnspecifiedRoles_roleplayersBoundByAttributes(){
-        try(Transaction tx = ruleApplicabilitySession.writeTransaction()){
+        try(Transaction tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE)){
             TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction)tx;
             ReasonerQueryFactory reasonerQueryFactory = testTx.reasonerQueryFactory();
 
@@ -297,7 +297,7 @@ public class RuleApplicabilityIT {
 
     @Test
     public void relationWithUnspecifiedRoles_roleplayersBoundByAttributes2(){
-        try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
+        try(Transaction tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE)) {
             TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction)tx;
             ReasonerQueryFactory reasonerQueryFactory = testTx.reasonerQueryFactory();
 
@@ -342,7 +342,7 @@ public class RuleApplicabilityIT {
 
     @Test
     public void typedAttributes(){
-        try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
+        try(Transaction tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE)) {
             TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction)tx;
             ReasonerQueryFactory reasonerQueryFactory = testTx.reasonerQueryFactory();
 
@@ -369,7 +369,7 @@ public class RuleApplicabilityIT {
 
     @Test
     public void derivedTypes(){
-        try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
+        try(Transaction tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE)) {
             TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction)tx;
             ReasonerQueryFactory reasonerQueryFactory = testTx.reasonerQueryFactory();
 
@@ -395,7 +395,7 @@ public class RuleApplicabilityIT {
 
     @Test //should assign (role: $x, role: $y) which is compatible with all rules
     public void genericRelation(){
-        try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
+        try(Transaction tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE)) {
             TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction)tx;
             ReasonerQueryFactory reasonerQueryFactory = testTx.reasonerQueryFactory();
 
@@ -410,7 +410,7 @@ public class RuleApplicabilityIT {
 
     @Test
     public void genericTypeWithPossibleBounds(){
-        try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
+        try(Transaction tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE)) {
             TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction)tx;
             ReasonerQueryFactory reasonerQueryFactory = testTx.reasonerQueryFactory();
 
@@ -429,7 +429,7 @@ public class RuleApplicabilityIT {
 
     @Test
     public void genericTypeAsARoleplayer(){
-        try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
+        try(Transaction tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE)) {
             TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction)tx;
             ReasonerQueryFactory reasonerQueryFactory = testTx.reasonerQueryFactory();
 
@@ -447,7 +447,7 @@ public class RuleApplicabilityIT {
 
     @Test //should assign (role : $x, role1: $y, role: $z) which is compatible with 3 ternary rules
     public void relationWithUnspecifiedRoles_someRoleplayersTyped(){
-        try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
+        try(Transaction tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE)) {
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
             //although singleRoleEntity plays only one role it can also play an implicit role of the resource so mapping ambiguous
@@ -464,7 +464,7 @@ public class RuleApplicabilityIT {
 
     @Test
     public void relationWithUnspecifiedRoles_someRoleplayersTypes_missingMappings(){
-        try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
+        try(Transaction tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE)) {
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
             //although singleRoleEntity plays only one role it can also play an implicit role of the resource so mapping ambiguous
@@ -482,7 +482,7 @@ public class RuleApplicabilityIT {
 
     @Test //NB: subRole sub someRole
     public void relationWithRepeatingRoles_roleHierarchy(){
-        try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
+        try(Transaction tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE)) {
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
             String relationString = "{ (someRole: $x1, someRole: $x2, subRole: $x3); };";
@@ -499,7 +499,7 @@ public class RuleApplicabilityIT {
 
     @Test
     public void genericRelationWithGenericallyTypedRolePlayer(){
-        try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
+        try(Transaction tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE)) {
             TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction)tx;
             ReasonerQueryFactory reasonerQueryFactory = testTx.reasonerQueryFactory();
 
@@ -520,7 +520,7 @@ public class RuleApplicabilityIT {
 
     @Test
     public void reifiedRelationsWithTypedRolePlayer(){
-        try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
+        try(Transaction tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE)) {
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
             String relationString = "{ (someRole: $x, subRole: $y) isa reifying-relation; };";
@@ -541,7 +541,7 @@ public class RuleApplicabilityIT {
 
     @Test
     public void relationWithUnspecifiedRoles_typedRoleplayers_typePlayabilityDeterminesApplicability(){
-        try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
+        try(Transaction tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE)) {
             TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
             ReasonerQueryFactory reasonerQueryFactory = testTx.reasonerQueryFactory();
 
@@ -593,7 +593,7 @@ public class RuleApplicabilityIT {
 
     @Test
     public void typePlayabilityDeterminesRuleApplicability(){
-        try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
+        try(Transaction tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE)) {
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
             String relationString = "{ $y isa singleRoleEntity;(someRole:$x, role:$y, anotherRole: $z) isa ternary; };";
@@ -623,7 +623,7 @@ public class RuleApplicabilityIT {
     @Test
     public void typePlayabilityDeterminesRuleApplicability_matchSemantics() {
         Session session = SessionUtil.serverlessSessionWithNewKeyspace(storage.createCompatibleServerConfig());
-        try (Transaction tx = session.writeTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             String schema = "define " +
                     "sourceEntity sub entity, plays sourceSubRole, plays symmetricRole;" +
                     "targetEntity sub entity, plays targetSubRole;" +
@@ -649,7 +649,7 @@ public class RuleApplicabilityIT {
             tx.execute(Graql.parse(data).asInsert());
             tx.commit();
         }
-        try (Transaction tx = session.writeTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
             String id = tx.getEntityType("sourceEntity").instances().iterator().next().id().getValue();
             String basePattern = "{ (symmetricRole: $x, symmetricRole: $y) isa derivedRelation; };";
@@ -668,7 +668,7 @@ public class RuleApplicabilityIT {
 
     @Test
     public void relationWithUnspecifiedRoles_specifyingRolePlayerMakesRuleInapplicable(){
-        try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
+        try(Transaction tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE)) {
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
             Concept concept = getConcept(tx, "name", "noRoleEntity");
@@ -683,7 +683,7 @@ public class RuleApplicabilityIT {
 
     @Test
     public void relationWithUnspecifiedRoles_specifyingRolePlayerMakesRuleInapplicable_noRelationType(){
-        try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
+        try(Transaction tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE)) {
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
             Concept concept = getConcept(tx, "name", "noRoleEntity");
@@ -699,7 +699,7 @@ public class RuleApplicabilityIT {
 
     @Test
     public void whenMatchingDoubleAttributesWithDifferentValueRanges_rulesWithCompatibleRangesAreMatched(){
-        try(Transaction tx = resourceApplicabilitySession.writeTransaction()) {
+        try(Transaction tx = resourceApplicabilitySession.transaction(Transaction.Type.WRITE)) {
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
             String resourceString = "{ $x has res-double > 3.0; };";
@@ -733,7 +733,7 @@ public class RuleApplicabilityIT {
 
     @Test
     public void whenMatchingLongAttributesWithDifferentValueRanges_rulesWithCompatibleRangesAreMatched(){
-        try(Transaction tx = resourceApplicabilitySession.writeTransaction()) {
+        try(Transaction tx = resourceApplicabilitySession.transaction(Transaction.Type.WRITE)) {
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
             String resourceString = "{ $x has res-long > 100; };";
@@ -767,7 +767,7 @@ public class RuleApplicabilityIT {
 
     @Test
     public void whenMatchingStringAttributesWithDifferentValueDefinitions_rulesWithCompatibleValuesAreMatched(){
-        try(Transaction tx = resourceApplicabilitySession.writeTransaction()) {
+        try(Transaction tx = resourceApplicabilitySession.transaction(Transaction.Type.WRITE)) {
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
             String resourceString = "{ $x has res-string contains 'ing'; };";
@@ -789,7 +789,7 @@ public class RuleApplicabilityIT {
 
     @Test
     public void whenMatchingBooleanAttributes_rulesWithCompatibleValuesAreMatched(){
-        try(Transaction tx = resourceApplicabilitySession.writeTransaction()) {
+        try(Transaction tx = resourceApplicabilitySession.transaction(Transaction.Type.WRITE)) {
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
             String resourceString = "{ $x has res-boolean 'true'; };";
@@ -805,7 +805,7 @@ public class RuleApplicabilityIT {
 
     @Test
     public void whenMatchingTypesWithIllegalAttributes_noRulesAreMatched(){
-        try(Transaction tx = resourceApplicabilitySession.writeTransaction()) {
+        try(Transaction tx = resourceApplicabilitySession.transaction(Transaction.Type.WRITE)) {
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
             String resourceString = "{ $x isa someEntity, has resource $r; };";
@@ -824,7 +824,7 @@ public class RuleApplicabilityIT {
 
     @Test
     public void whenMatchingRelationsWithDoubleAttributeRolePlayers_rulesWithCompatibleValuesAreMatched(){
-        try(Transaction tx = reifiedResourceApplicabilitySession.writeTransaction()) {
+        try(Transaction tx = reifiedResourceApplicabilitySession.transaction(Transaction.Type.WRITE)) {
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
             String queryString = "{ $x > 3.0 isa res-double; ($x, $y); };";
@@ -858,7 +858,7 @@ public class RuleApplicabilityIT {
 
     @Test
     public void whenMatchingRelationsWithLongAttributeRolePlayers_rulesWithCompatibleValuesAreMatched(){
-        try(Transaction tx = reifiedResourceApplicabilitySession.writeTransaction()) {
+        try(Transaction tx = reifiedResourceApplicabilitySession.transaction(Transaction.Type.WRITE)) {
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
             String queryString = "{ $x > 100 isa res-long; ($x, $y); };";
@@ -892,7 +892,7 @@ public class RuleApplicabilityIT {
 
     @Test
     public void whenMatchingRelationsWithStringAttributeRolePlayers_rulesWithCompatibleValuesAreMatched(){
-        try(Transaction tx = reifiedResourceApplicabilitySession.writeTransaction()) {
+        try(Transaction tx = reifiedResourceApplicabilitySession.transaction(Transaction.Type.WRITE)) {
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
             String queryString = "{ $x contains 'val' isa res-string; ($x, $y); };";
@@ -914,7 +914,7 @@ public class RuleApplicabilityIT {
 
     @Test
     public void whenMatchingRelationsWithBooleanAttributeRolePlayers_rulesWithCompatibleValuesAreMatched() {
-        try(Transaction tx = reifiedResourceApplicabilitySession.writeTransaction()) {
+        try(Transaction tx = reifiedResourceApplicabilitySession.transaction(Transaction.Type.WRITE)) {
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
             String queryString = "{ $x 'true' isa res-boolean;($x, $y); };";
@@ -930,7 +930,7 @@ public class RuleApplicabilityIT {
 
     @Test
     public void whenMatchingRulesForGroundAtomRedefinedViaRule_ruleIsMatched(){
-        try(Transaction tx = ruleApplicabilitySession.readTransaction()) {
+        try(Transaction tx = ruleApplicabilitySession.transaction(Transaction.Type.READ)) {
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
             Relation instance = tx.getRelationType("reifiable-relation").instances().findFirst().orElse(null);
             String queryString = "{ $r has description 'typed-reified'; $r id " + instance.id().getValue() + "; };";
@@ -942,7 +942,7 @@ public class RuleApplicabilityIT {
 
     @Test
     public void whenMatchingRulesForGroundTypeWhichIsNotRedefined_noRulesAreMatched(){
-        try(Transaction tx = ruleApplicabilitySession.readTransaction()) {
+        try(Transaction tx = ruleApplicabilitySession.transaction(Transaction.Type.READ)) {
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
             Relation instance = tx.getRelationType("binary").instances().findFirst().orElse(null);
@@ -955,7 +955,7 @@ public class RuleApplicabilityIT {
 
     @Test
     public void whenMatchingRulesForASpecificRelation_noRulesAreMatched(){
-        try(Transaction tx = ruleApplicabilitySession.readTransaction()) {
+        try(Transaction tx = ruleApplicabilitySession.transaction(Transaction.Type.READ)) {
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
             Relation instance = tx.getRelationType("binary").instances().findFirst().orElse(null);

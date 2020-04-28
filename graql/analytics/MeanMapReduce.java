@@ -43,8 +43,8 @@ public class MeanMapReduce extends StatisticsMapReduce<Map<String, Double>> {
     public MeanMapReduce() {
     }
 
-    public MeanMapReduce(Set<LabelId> selectedLabelIds, AttributeType.DataType resourceDataType, String degreeKey) {
-        super(selectedLabelIds, resourceDataType, degreeKey);
+    public MeanMapReduce(Set<LabelId> selectedLabelIds, AttributeType.ValueType valueType, String degreeKey) {
+        super(selectedLabelIds, valueType, degreeKey);
     }
 
     @Override

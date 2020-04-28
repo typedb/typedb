@@ -62,7 +62,7 @@ public class VariableRolesIT {
 
     @Test
     public void binaryRelationWithDifferentVariantsOfVariableRoles(){
-        try(Transaction tx = variableRoleSession.writeTransaction()) {
+        try(Transaction tx = variableRoleSession.transaction(Transaction.Type.WRITE)) {
             //9 binary-base instances with {role, role2} = 2 roles for r2 -> 18 answers
             String queryString = "match " +
                     "(role1: $a, $r2: $b) isa binary-base;" +
@@ -182,7 +182,7 @@ public class VariableRolesIT {
     }
 
     private void ternaryNaryRelationWithVariableRoles(String label, int conceptDOF){
-        try(Transaction tx = variableRoleSession.writeTransaction()) {
+        try(Transaction tx = variableRoleSession.transaction(Transaction.Type.WRITE)) {
                         final int arity = (int) tx.getRelationType(label).roles().count();
 
             Statement resourcePattern = var("a1").has("name", "a");

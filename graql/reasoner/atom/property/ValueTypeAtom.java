@@ -22,33 +22,33 @@ import grakn.core.graql.reasoner.atom.AtomicBase;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
-import graql.lang.property.DataTypeProperty;
+import graql.lang.property.ValueTypeProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 
 /**
- * Atomic corresponding to DataTypeProperty.
+ * Atomic corresponding to ValueTypeProperty.
  */
-public class DataTypeAtom extends AtomicBase {
+public class ValueTypeAtom extends AtomicBase {
 
-    private final AttributeType.DataType<?> dataType;
+    private final AttributeType.ValueType<?> valueType;
 
-    private DataTypeAtom(Variable varName, Statement pattern, ReasonerQuery parentQuery, AttributeType.DataType<?> dataType) {
+    private ValueTypeAtom(Variable varName, Statement pattern, ReasonerQuery parentQuery, AttributeType.ValueType<?> valueType) {
         super(parentQuery, varName, pattern);
-        this.dataType = dataType;
+        this.valueType = valueType;
     }
 
-    public static DataTypeAtom create(Variable var, DataTypeProperty prop, ReasonerQuery parent, AttributeType.DataType<?> dataType) {
+    public static ValueTypeAtom create(Variable var, ValueTypeProperty prop, ReasonerQuery parent, AttributeType.ValueType<?> valueType) {
         Variable varName = var.asReturnedVar();
-        return new DataTypeAtom(varName, new Statement(varName).datatype(prop.dataType()), parent, dataType);
+        return new ValueTypeAtom(varName, new Statement(varName).value(prop.valueType()), parent, valueType);
     }
 
-    private static DataTypeAtom create(DataTypeAtom a, ReasonerQuery parent) {
-        return new DataTypeAtom(a.getVarName(), a.getPattern(), parent, a.getDataType());
+    private static ValueTypeAtom create(ValueTypeAtom a, ReasonerQuery parent) {
+        return new ValueTypeAtom(a.getVarName(), a.getPattern(), parent, a.getValueType());
     }
 
-    public AttributeType.DataType<?> getDataType() {
-        return dataType;
+    public AttributeType.ValueType<?> getValueType() {
+        return valueType;
     }
 
     @Override
@@ -58,13 +58,13 @@ public class DataTypeAtom extends AtomicBase {
     public boolean isAlphaEquivalent(Object obj) {
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
-        DataTypeAtom a2 = (DataTypeAtom) obj;
-        return this.getDataType().equals(a2.getDataType());
+        ValueTypeAtom a2 = (ValueTypeAtom) obj;
+        return this.getValueType().equals(a2.getValueType());
     }
 
     @Override
     public int alphaEquivalenceHashCode() {
-        return getDataType().hashCode();
+        return getValueType().hashCode();
     }
 
     @Override

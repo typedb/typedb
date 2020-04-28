@@ -94,7 +94,7 @@ public class PathIT {
     @Test(expected = GraqlSemanticException.class)
     public void testShortestPathExceptionIdNotFound() {
         // test on an empty tx
-        try (Transaction tx = session.readTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
             tx.execute(Graql.compute().path().from("V123").to("V234"));
         }
     }
@@ -102,7 +102,7 @@ public class PathIT {
     @Test(expected = GraqlSemanticException.class)
     public void testShortestPathExceptionIdNotFoundSubgraph() {
         addSchemaAndEntities();
-        try (Transaction tx = session.readTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
             tx.execute(Graql.compute().path().from(entityId1.getValue()).to(entityId4.getValue()).in(thing, related));
         }
     }
@@ -110,7 +110,7 @@ public class PathIT {
     @Test
     public void whenThereIsNoPath_PathReturnsEmptyOptional() {
         addSchemaAndEntities();
-        try (Transaction tx = session.readTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
             assertEquals(Collections.emptyList(), tx.execute(Graql.compute().path().from(entityId1.getValue()).to(entityId5.getValue())));
         }
     }
@@ -121,7 +121,7 @@ public class PathIT {
         List<ConceptList> allPaths;
         addSchemaAndEntities();
 
-        try (Transaction tx = session.readTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
             // directly connected vertices
             correctPath = Lists.newArrayList(entityId1, relationId12);
             ConceptList path = tx.execute(Graql.compute().path().from(entityId1.getValue()).to(relationId12.getValue())).get(0);
@@ -178,7 +178,7 @@ public class PathIT {
             list.add(i);
         }
         List<List<ConceptList>> result = list.parallelStream().map(i -> {
-            try (Transaction tx = session.readTransaction()) {
+            try (Transaction tx = session.transaction(Transaction.Type.READ)) {
                 return tx.execute(((Graql.compute().path().in(thing, related)).from(entityId2.getValue())).to(entityId1.getValue()));
             }
         }).collect(Collectors.toList());
@@ -196,7 +196,7 @@ public class PathIT {
         ConceptId endId;
 
         int numberOfPaths = 3;
-        try (Transaction tx = session.writeTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             EntityType entityType = tx.putEntityType(thing);
 
             Role role1 = tx.putRole("role1");
@@ -236,7 +236,7 @@ public class PathIT {
             tx.commit();
         }
 
-        try (Transaction tx = session.readTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
             List<ConceptList> allPaths = tx.execute(Graql.compute().path().from(startId.getValue()).to(endId.getValue()));
             assertEquals(numberOfPaths, allPaths.size());
 
@@ -251,7 +251,7 @@ public class PathIT {
         ConceptId endId;
         Set<List<ConceptId>> correctPaths = new HashSet<>();
 
-        try (Transaction tx = session.writeTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             EntityType entityType = tx.putEntityType(thing);
 
             Role role1 = tx.putRole("role1");
@@ -297,7 +297,7 @@ public class PathIT {
             tx.commit();
         }
 
-        try (Transaction tx = session.readTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
             List<ConceptList> allPaths = tx.execute(Graql.compute().path().from(startId.getValue()).to(endId.getValue()));
             assertEquals(correctPaths.size(), allPaths.size());
 
@@ -312,7 +312,7 @@ public class PathIT {
         ConceptId endId;
         Set<List<ConceptId>> correctPaths = new HashSet<>();
 
-        try (Transaction tx = session.writeTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             EntityType entityType = tx.putEntityType(thing);
 
             Role role1 = tx.putRole("role1");
@@ -367,7 +367,7 @@ public class PathIT {
             tx.commit();
         }
 
-        try (Transaction tx = session.readTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
             List<ConceptList> allPaths = tx.execute(Graql.compute().path().from(startId.getValue()).to(endId.getValue()));
             assertEquals(correctPaths.size(), allPaths.size());
             Set<List<ConceptId>> allPathsSet = allPaths.stream().map(ConceptList::list).collect(Collectors.toSet());
@@ -381,7 +381,7 @@ public class PathIT {
         List<ConceptList> allPaths;
         addSchemaAndEntities();
 
-        try (Transaction tx = session.readTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
             allPaths = tx.execute(((Graql.compute().path().in(thing, anotherThing)).to(entityId1.getValue())).from(entityId4.getValue()));
             assertEquals(0, allPaths.size());
 
@@ -400,9 +400,9 @@ public class PathIT {
     public void testResourceEdges() {
         ConceptId startId;
         ConceptId endId;
-        try (Transaction tx = session.writeTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             EntityType person = tx.putEntityType("person");
-            AttributeType<String> name = tx.putAttributeType("name", AttributeType.DataType.STRING);
+            AttributeType<String> name = tx.putAttributeType("name", AttributeType.ValueType.STRING);
             person.has(name);
             Entity aPerson = person.create();
             startId = aPerson.id();
@@ -413,7 +413,7 @@ public class PathIT {
             tx.commit();
         }
 
-        try (Transaction tx = session.readTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
             List<ConceptList> allPaths = tx.execute(Graql.compute().path().from(startId.getValue()).to(endId.getValue()).attributes(true));
             assertEquals(1, allPaths.size());
             assertEquals(3, allPaths.get(0).list().size());
@@ -444,9 +444,9 @@ public class PathIT {
         List<ConceptId> pathPower3Power1 = new ArrayList<>();
         List<ConceptId> pathPerson3Power3 = new ArrayList<>();
 
-        try (Transaction tx = session.writeTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             EntityType person = tx.putEntityType("person");
-            AttributeType<Long> power = tx.putAttributeType("power", AttributeType.DataType.LONG);
+            AttributeType<Long> power = tx.putAttributeType("power", AttributeType.ValueType.LONG);
 
             person.has(power);
 
@@ -495,7 +495,7 @@ public class PathIT {
             tx.commit();
         }
 
-        try (Transaction tx = session.readTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
             TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
             ConceptManager conceptManager = testTx.conceptManager();
             TraversalPlanFactory traversalPlanFactory = testTx.traversalPlanFactory();
@@ -563,7 +563,7 @@ public class PathIT {
     }
 
     private void addSchemaAndEntities() throws InvalidKBException {
-        try (Transaction tx = session.writeTransaction()) {
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             EntityType entityType1 = tx.putEntityType(thing);
             EntityType entityType2 = tx.putEntityType(anotherThing);
 

@@ -87,6 +87,43 @@ jobs:
       - run-bazel-rbe:
           command: bazel test //common/... --test_output=errors
 
+  test-behavior-connection:
+    machine: true
+    working_directory: ~/grakn
+    steps:
+      - install-bazel-linux-rbe
+      - checkout
+      - run-bazel-rbe:
+          command: bazel test //test/behaviour/connection/keyspace:test --test_output=errors
+      - run-bazel-rbe:
+          command: bazel test //test/behaviour/connection/session:test --test_output=errors
+      - run-bazel-rbe:
+          command: bazel test //test/behaviour/connection/transaction:test --test_output=errors
+
+  test-behavior-graql:
+    machine: true
+    working_directory: ~/grakn
+    steps:
+      - install-bazel-linux-rbe
+      - checkout
+      - run-bazel-rbe:
+          command: bazel test //test/behaviour/graql/language/define:test --test_output=errors
+      - run-bazel-rbe:
+          command: bazel test //test/behaviour/connection/transaction:test --test_output=errors
+      - run-bazel-rbe:
+          command: bazel test //test/behaviour/graql/language/insert:test --test_output=errors
+      - run-bazel-rbe:
+          command: bazel test //test/behaviour/graql/language/match:test --test_output=errors
+
+  test-behavior-reasoner:
+    machine: true
+    working_directory: ~/grakn
+    steps:
+      - install-bazel-linux-rbe
+      - checkout
+      - run-bazel-rbe:
+          command: bazel test //test/behaviour/graql/reasoner/explanation:test --test_output=errors
+
   test-server:
     machine: true
     working_directory: ~/grakn
@@ -418,6 +455,18 @@ workflows:
                 - master
                 - rewrite
       - test-common:
+          filters:
+            branches:
+              ignore: grakn-release-branch
+      - test-behavior-connection:
+          filters:
+            branches:
+              ignore: grakn-release-branch
+      - test-behavior-graql:
+          filters:
+            branches:
+              ignore: grakn-release-branch
+      - test-behavior-reasoner:
           filters:
             branches:
               ignore: grakn-release-branch

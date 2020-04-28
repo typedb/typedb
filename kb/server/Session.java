@@ -26,8 +26,7 @@ import grakn.core.kb.server.keyspace.Keyspace;
 import java.util.function.Consumer;
 
 public interface Session extends AutoCloseable {
-    Transaction readTransaction();
-    Transaction writeTransaction();
+    Transaction transaction(Transaction.Type type);
 
     /**
      * Method used by SessionFactory to register a callback function that has to be triggered when closing current session.
@@ -44,6 +43,8 @@ public interface Session extends AutoCloseable {
     void close();
 
     void invalidate();
+
+    boolean isOpen();
 
     Keyspace keyspace();
 

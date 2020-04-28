@@ -280,6 +280,7 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
                         break;
                     case GETATTRIBUTES_ITER_REQ:
                         getAttributes(request.getGetAttributesIterReq(), request.getOptions());
+                        break;
                     default:
                     case REQ_NOT_SET:
                         throw ResponseBuilder.exception(Status.INVALID_ARGUMENT);
@@ -330,9 +331,9 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
 
             Transaction.Type type = request.getType();
             if (type != null && type.equals(Transaction.Type.WRITE)) {
-                tx = session.writeTransaction();
+                tx = session.transaction(grakn.core.kb.server.Transaction.Type.WRITE);
             } else if (type != null && type.equals(Transaction.Type.READ)) {
-                tx = session.readTransaction();
+                tx = session.transaction(grakn.core.kb.server.Transaction.Type.WRITE);
             } else {
                 throw TransactionException.create("Invalid Transaction Type");
             }
@@ -389,9 +390,9 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
 
         private void putAttributeType(Transaction.PutAttributeType.Req request) {
             Label label = Label.of(request.getLabel());
-            AttributeType.DataType<?> dataType = ResponseBuilder.Concept.DATA_TYPE(request.getDataType());
+            AttributeType.ValueType<?> valueType = ResponseBuilder.Concept.VALUE_TYPE(request.getValueType());
 
-            AttributeType<?> attributeType = tx().putAttributeType(label, dataType);
+            AttributeType<?> attributeType = tx().putAttributeType(label, valueType);
             Transaction.Res response = ResponseBuilder.Transaction.putAttributeType(attributeType);
             onNextResponse(response);
         }

@@ -43,7 +43,7 @@ public enum ErrorMessage {
     SUPER_LOOP_DETECTED("By setting the super of concept [%s] to [%s]. You will be creating a loop. This is prohibited"),
     INVALID_UNIQUE_PROPERTY_MUTATION("Property [%s] of Concept [%s] cannot be changed to [%s] as it is already taken by Concept [%s]"),
     UNIQUE_PROPERTY_TAKEN("Property [%s] with value [%s] is already taken by concept [%s]"),
-    INVALID_DATATYPE("The value [%s] of type [%s] must be of datatype [%s] for attribute type [%s]"),
+    INVALID_VALUETYPE("The value [%s] of type [%s] must be of value type [%s] for attribute type [%s]"),
     INVALID_OBJECT_TYPE("The concept [%s] is not of type [%s]"),
     REGEX_INSTANCE_FAILURE("The regex [%s] of Attribute Type [%s] cannot be applied because value [%s] " +
             "does not conform to the regular expression"),
@@ -63,7 +63,8 @@ public enum ErrorMessage {
     TRANSACTION_ALREADY_OPEN("A transaction is already open on this thread for graph [%s]. Close the current transaction before opening a new one in the same thread."),
     TRANSACTION_READ_ONLY("This transaction on graph [%s] is read only"),
     TX_CLOSED_ON_ACTION("The transaction was %s and closed for graph [%s]. Use the session to get a new transaction for the graph."),
-    TRANSACTION_CHANGED_THREAD("The transaction is no longer on the thread it was spawned on, this is not allowed"),
+    TRANSACTION_CHANGED_THREAD("The transaction is no longer on the thread it was spawned on"),
+    TRANSACTION_CLOSED_ON_DIFFERENT_THREAD("The transaction is being closed on a different thread to the one it was started"),
     IS_ABSTRACT("The Type [%s] is abstract and cannot have any instances \n"),
     NO_TYPE("Concept [%s] does not have a type"),
     INVALID_DIRECTION("Cannot traverse an edge in direction [%s]"),
@@ -135,7 +136,7 @@ public enum ErrorMessage {
 
     VALIDATION_RULE_ILLEGAL_HEAD_REWRITING_TYPE_TO_RELATION("Rule [%s] attempts to rewrite type to a relation type\n"),
 
-    VALIDATION_RULE_ILLEGAL_HEAD_REWRITING_TYPE_DATATYPE_INCOMPATIBLE("Rule [%s] attempts to convert attribute to a new datatype [%s]\n"),
+    VALIDATION_RULE_ILLEGAL_HEAD_REWRITING_TYPE_VALUETYPE_INCOMPATIBLE("Rule [%s] attempts to convert attribute to a new value type [%s]\n"),
 
     VALIDATION_RULE_ILLEGAL_HEAD_REWRITING_META_TYPE("Rule [%s] changes meta type for variable [%s]\n"),
 

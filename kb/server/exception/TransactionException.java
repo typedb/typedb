@@ -50,14 +50,14 @@ public class TransactionException extends GraknException {
     }
 
     /**
-     * Thrown when using an unsupported datatype with resources
+     * Thrown when using an unsupported ValueType with resources
      */
-    public static TransactionException unsupportedDataType(Object value) {
-        return unsupportedDataType(value.getClass());
+    public static TransactionException unsupportedValueType(Object value) {
+        return unsupportedValueType(value.getClass());
     }
 
-    public static TransactionException unsupportedDataType(Class<?> clazz) {
-        return unsupportedDataType(clazz.getName());
+    public static TransactionException unsupportedValueType(Class<?> clazz) {
+        return unsupportedValueType(clazz.getName());
     }
 
     /**
@@ -65,13 +65,6 @@ public class TransactionException extends GraknException {
      */
     public static TransactionException transactionOpen(Transaction tx) {
         return create(ErrorMessage.TRANSACTION_ALREADY_OPEN.getMessage(tx.keyspace()));
-    }
-
-    /**
-     * Thrown when attempting to open an invalid type of transaction
-     */
-    public static TransactionException transactionInvalid(Object tx) {
-        return create("Unknown type of transaction [" + tx + "]");
     }
 
     /**

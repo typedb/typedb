@@ -22,7 +22,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 import grakn.client.GraknClient;
 import grakn.client.answer.ConceptMap;
-import grakn.client.concept.DataType;
+import grakn.client.concept.ValueType;
 import grakn.client.concept.type.AttributeType;
 import grakn.client.concept.ConceptId;
 import grakn.client.concept.Label;
@@ -162,7 +162,7 @@ public class BenchmarkBigIT {
             try (GraknClient.Transaction transaction = session.transaction().write()) {
                 Role fromRole = transaction.putRole(fromRoleLabel);
                 Role toRole = transaction.putRole(toRoleLabel);
-                AttributeType<String> index = transaction.putAttributeType(attributeLabel, DataType.STRING);
+                AttributeType<String> index = transaction.putAttributeType(attributeLabel,  ValueType.STRING);
                 transaction.putEntityType(entityLabel)
                         .plays(fromRole)
                         .plays(toRole)

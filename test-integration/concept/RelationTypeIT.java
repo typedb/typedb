@@ -56,7 +56,7 @@ public class RelationTypeIT {
     @Before
     public void setUp(){
         session = server.sessionWithNewKeyspace();
-        tx = session.writeTransaction();
+        tx = session.transaction(Transaction.Type.WRITE);
     }
 
     @After
@@ -91,7 +91,7 @@ public class RelationTypeIT {
 
     @Test
     public void whenCallingInstancesOnImplicitRelationType_RelationEdgesAreReturned(){
-        AttributeType<String> attributeType = tx.putAttributeType("My Special Attribute Type", AttributeType.DataType.STRING);
+        AttributeType<String> attributeType = tx.putAttributeType("My Special Attribute Type", AttributeType.ValueType.STRING);
         Attribute<String> attribute = attributeType.create("Ad thing");
 
         EntityType entityType = tx.putEntityType("My Special Entity Type").has(attributeType);
@@ -109,7 +109,7 @@ public class RelationTypeIT {
 
     @Test
     public void whenSettingAnImplicitRelationTypeWithInstancesAbstract_Throw(){
-        AttributeType<String> attributeType = tx.putAttributeType("My Special Attribute Type", AttributeType.DataType.STRING);
+        AttributeType<String> attributeType = tx.putAttributeType("My Special Attribute Type", AttributeType.ValueType.STRING);
         Attribute<String> attribute = attributeType.create("Ad thing");
 
         EntityType entityType = tx.putEntityType("My Special Entity Type").has(attributeType);

@@ -71,7 +71,7 @@ public class GraknConceptException extends GraknException {
 
     /**
      * Thrown when attempting to set a regex on a Attribute whose type AttributeType is not of the
-     * data type AttributeType.DataType#STRING
+     * value type AttributeType.ValueType#STRING
      */
     public static GraknConceptException cannotSetRegex(AttributeType attributeType) {
         return create(REGEX_NOT_STRING.getMessage(attributeType.label()));
@@ -93,9 +93,9 @@ public class GraknConceptException extends GraknException {
         return create(String.format("Thing {%s} was already created and cannot be set to inferred", thing));
     }
 
-    public static GraknConceptException unsupportedDataType(String name) {
-        String supported = AttributeType.DataType.values().stream().map(AttributeType.DataType::name).collect(Collectors.joining(","));
-        return create(ErrorMessage.INVALID_DATATYPE.getMessage(name, supported));
+    public static GraknConceptException unsupportedValueType(String name) {
+        String supported = AttributeType.ValueType.values().stream().map(AttributeType.ValueType::name).collect(Collectors.joining(","));
+        return create(ErrorMessage.INVALID_VALUETYPE.getMessage(name, supported));
     }
 
 
@@ -109,10 +109,10 @@ public class GraknConceptException extends GraknException {
 
 
     /**
-     * Thrown when creating an Attribute whose value Object does not match attribute data type
+     * Thrown when creating an Attribute whose value Object does not match attribute value type
      */
-    public static GraknConceptException invalidAttributeValue(AttributeType attributeType, Object object, AttributeType.DataType dataType) {
-        return create(ErrorMessage.INVALID_DATATYPE.getMessage(object, object.getClass().getSimpleName(), dataType.name(), attributeType.label()));
+    public static GraknConceptException invalidAttributeValue(AttributeType attributeType, Object object, AttributeType.ValueType valueType) {
+        return create(ErrorMessage.INVALID_VALUETYPE.getMessage(object, object.getClass().getSimpleName(), valueType.name(), attributeType.label()));
     }
 
     /**
