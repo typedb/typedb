@@ -47,11 +47,6 @@ public class GraqlQueryException extends GraknException {
         super(error, e);
     }
 
-    // TODO remove
-    public static GraqlQueryException create(String error) {
-        return new GraqlQueryException(error);
-    }
-
     @Override
     public String getName() { return NAME; }
 
@@ -89,5 +84,17 @@ public class GraqlQueryException extends GraknException {
     public static GraqlQueryException cannotDeleteRPNoCompatiblePlayer(Variable rolePlayerVar, Thing rolePlayer, Variable relationVar,
                                                                        Relation relation, Label requiredRoleLabel) {
         return new GraqlQueryException(ErrorMessage.DELETE_ROLE_PLAYER_NO_COMPATIBLE_PLAYER.getMessage(rolePlayerVar, rolePlayer, relationVar, relation, requiredRoleLabel));
+    }
+
+    public static GraqlQueryException cannotDeleteInstanceIncorrectType(Variable var, Concept concept, Label expectedType) {
+        return new GraqlQueryException((ErrorMessage.DELETE_INSTANCE_INCORRECT_TYPE.getMessage(var, concept, expectedType)));
+    }
+
+    public static GraqlQueryException notAThingInstance(Variable var, Concept concept) {
+        return new GraqlQueryException(ErrorMessage.NOT_A_THING.getMessage(var, concept));
+    }
+
+    public static GraqlQueryException notARelationInstance(Variable var, Concept concept) {
+        return new GraqlQueryException(ErrorMessage.NOT_A_RELATION_INSTANCE.getMessage(var, concept));
     }
 }

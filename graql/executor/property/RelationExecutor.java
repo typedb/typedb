@@ -193,7 +193,7 @@ public class RelationExecutor implements PropertyExecutor.Insertable, PropertyEx
         @Override
         public void execute(WriteExecutor executor) {
             if (!executor.getConcept(var).isRelation()) {
-                throw GraqlQueryException.create(String.format("Expect %s [%s] to be a relation.", var, executor.getConcept(var)));
+                throw GraqlQueryException.notARelationInstance(var, executor.getConcept(var));
             }
 
             Relation relation = executor.getConcept(var).asRelation();
@@ -218,7 +218,6 @@ public class RelationExecutor implements PropertyExecutor.Insertable, PropertyEx
             in this example, we don't know which one to delete - the sub-role role player or the super-role player
              */
             property.relationPlayers().forEach(relationPlayer -> {
-                // (super-role: $x)
                 Role requiredRole = getRole(relationPlayer, executor);
                 Variable rolePlayerVar = relationPlayer.getPlayer().var();
                 Thing rolePlayer = executor.getConcept(rolePlayerVar).asThing();

@@ -159,7 +159,7 @@ public class IsaExecutor implements PropertyExecutor.Insertable, PropertyExecuto
         @Override
         public void execute(WriteExecutor executor) {
             if (!executor.getConcept(var).isThing()) {
-                throw GraqlQueryException.create(String.format("Cannot delete %s [%s], as it is not Thing concept", var, executor.getConcept(var)));
+                throw GraqlQueryException.notAThingInstance(var, executor.getConcept(var));
             }
             Thing concept = executor.getConcept(var).asThing();
 
@@ -175,7 +175,7 @@ public class IsaExecutor implements PropertyExecutor.Insertable, PropertyExecuto
             // ensure that the concept is an instance of the required type by the delete
             if (!expectedType.equals(Label.of(Graql.Token.Type.THING.toString())) &&
                    concept.type().sups().noneMatch(sub -> sub.label().equals(expectedType))) {
-                throw GraqlQueryException.create(String.format("%s [%s] does not satisfy requirement: isa %s", concept, var, expectedType));
+                throw GraqlQueryException.cannotDeleteInstanceIncorrectType(var, concept, expectedType);
             }
 
             // do this after type checks to ensure that we throw and abort if something is the wrong type
