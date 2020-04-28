@@ -277,10 +277,17 @@ public class GraqlDeleteIT {
             idPatterns.add(id);
             deletePatterns.add(delete);
         }
+
+        System.out.println("Ids: " + idPatterns);
         List<ConceptMap> answersById = tx.execute(Graql.match(idPatterns).get());
         assertEquals(answersById.size(), 1);
 
-        tx.execute(Graql.match(idPatterns).delete(deletePatterns));
+        for (int i = 0; i < idPatterns.size(); i++) {
+            tx.execute(Graql.match(idPatterns.get(i)).delete(deletePatterns.get(i)));
+        }
+
+        // TODO re-enable this batch delete once implicit attribute relations are removed!
+//        tx.execute(Graql.match(idPatterns).delete(deletePatterns));
         tx.commit();
 
     }
