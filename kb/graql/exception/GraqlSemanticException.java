@@ -20,10 +20,13 @@ package grakn.core.kb.graql.exception;
 
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
+import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.Label;
+import grakn.core.kb.concept.api.Relation;
 import grakn.core.kb.concept.api.SchemaConcept;
+import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.concept.api.Type;
 import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;
@@ -258,6 +261,31 @@ public class GraqlSemanticException extends GraknException {
 
     public static GraqlSemanticException deleteRolePlayerWithoutRoleType(String relationPlayer) {
         return new GraqlSemanticException(ErrorMessage.DELETE_RELATION_PLAYER_WITHOUT_ROLE_TYPE.getMessage(relationPlayer));
+    }
+
+    public static GraqlSemanticException cannotDeleteOwnershipOfNonAttributes(Variable var, Concept concept) {
+        return new GraqlSemanticException(ErrorMessage.DELETE_OWNERSHIP_NOT_AN_ATTRIBUTE.getMessage(var, concept));
+    }
+
+    public static GraqlSemanticException cannotDeleteOwnershipTypeNotSatisfied(Variable var, Attribute attribute, Label requiredType) {
+        return new GraqlSemanticException(ErrorMessage.DELETE_OWNERSHIP_TYPE_NOT_SATISFIED.getMessage(var, attribute, requiredType));
+    }
+
+    public static GraqlSemanticException cannotDeleteRPNoCompatiblePlayer(Variable rolePlayerVar, Thing rolePlayer, Variable relationVar,
+                                                                          Relation relation, Label requiredRoleLabel) {
+        return new GraqlSemanticException(ErrorMessage.DELETE_ROLE_PLAYER_NO_COMPATIBLE_PLAYER.getMessage(rolePlayerVar, rolePlayer, relationVar, relation, requiredRoleLabel));
+    }
+
+    public static GraqlSemanticException cannotDeleteInstanceIncorrectTypeOrSubtype(Variable var, Concept concept, Label expectedType) {
+        return new GraqlSemanticException((ErrorMessage.DELETE_INSTANCE_INCORRECT_TYPE_OR_SUBTYPE.getMessage(var, concept, expectedType)));
+    }
+
+    public static GraqlSemanticException cannotDeleteInstanceIncorrectType(Variable var, Concept concept, Label expectedType) {
+        return new GraqlSemanticException((ErrorMessage.DELETE_INSTANCE_INCORRECT_TYPE.getMessage(var, concept, expectedType)));
+    }
+
+    public static GraqlSemanticException notARelationInstance(Variable var, Concept concept) {
+        return new GraqlSemanticException(ErrorMessage.NOT_A_RELATION_INSTANCE.getMessage(var, concept));
     }
 
     public static GraqlSemanticException insertAbstractOnNonType(SchemaConcept concept) {

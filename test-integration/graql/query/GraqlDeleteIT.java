@@ -33,7 +33,6 @@ import grakn.core.kb.concept.api.Relation;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.SchemaConcept;
-import grakn.core.kb.graql.exception.GraqlQueryException;
 import grakn.core.kb.graql.exception.GraqlSemanticException;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
@@ -41,7 +40,6 @@ import grakn.core.rule.GraknTestServer;
 import graql.lang.Graql;
 import graql.lang.exception.GraqlException;
 import graql.lang.pattern.Pattern;
-import graql.lang.query.GraqlInsert;
 import graql.lang.query.MatchClause;
 import graql.lang.statement.Statement;
 import graql.lang.statement.StatementThing;
@@ -196,6 +194,22 @@ public class GraqlDeleteIT {
         Statement statement = var("x").isa("movie").has("title", "Gladiator").has("runtime", 100L);
         tx.execute(Graql.insert(statement));
         tx.execute(Graql.match(statement).delete(Graql.var("x").isa("thing")));
+    }
+
+
+    @Ignore // TODO enable when Grakn 2.0 supports concurrent delete and insert
+    @Test
+    public void whenDeletingPartOfMatchQuery_UpdateIsReflected() {
+        List<ConceptMap> answers = tx.execute(Graql.parse("match $r ($x, $y) isa has-genre; get;").asGet());
+        assertEquals(34, answers.size()); // 17 x 2
+        // delete one of the two role players arbitrarily. This then leads to only 1 role player which doesn't match anymore
+        // so we shouldn't end up deleting the second RP too
+        tx.execute(Graql.parse("match $r ($x, $y) isa has-genre; delete $r (role: $x);").asDelete());
+        answers = tx.execute(Graql.parse("match $r ($x) isa has-genre; get;").asGet());
+        assertEquals(17, answers.size());
+        answers.forEach(conceptMap -> {
+            assertEquals(1, conceptMap.get("r").asRelation().rolePlayers().count());
+        });
     }
 
     private boolean checkIdExists(Transaction tx, ConceptId id) {
@@ -468,9 +482,8 @@ public class GraqlDeleteIT {
     @Test
     public void whenDeletingASchemaConcept_Throw() {
         SchemaConcept newType = tx.execute(Graql.define(x.type("new-type").sub(ENTITY))).get(0).get(x.var()).asSchemaConcept();
-        exception.expect(GraqlQueryException.class);
-//        exception.expectMessage(GraqlSemanticException.deleteSchemaConcept(newType).getMessage());
-        // TODO error message, better reporting for deleting schema concepts
+        exception.expect(GraqlSemanticException.class);
+        exception.expectMessage(GraqlSemanticException.deleteSchemaConcept(newType).getMessage());
         tx.execute(Graql.match(x.type("new-type")).delete(x.isa("thing")));
     }
 
@@ -484,9 +497,8 @@ public class GraqlDeleteIT {
     public void whenTypeDoesNotMatch_Throw() {
         tx.execute(Graql.insert(var().isa("production")));
 
-        exception.expect(GraqlQueryException.class);
-//        exception.expectMessage("Type does not match");
-        // TODO error message
+        exception.expect(GraqlSemanticException.class);
+        exception.expectMessage("it is not of the required type (or subtype of)");
         tx.execute(Graql.match(var("x").isa("production")).delete(var("x").isa("movie")));
     }
 
@@ -522,7 +534,7 @@ public class GraqlDeleteIT {
         ownerId = answers.get(0).get("x").id();
         attrId = answers.get(0).get("a").id();
 
-        exception.expect(GraqlQueryException.class);
+        exception.expect(GraqlSemanticException.class);
         exception.expectMessage("Cannot delete attribute ownership, concept [$a]");
         exception.expectMessage("is not of required attribute type [thing]");
         tx.execute(Graql.parse("match $x id " + ownerId + "; $x has title $a; $a id " + attrId + "; delete $x has thing $a;").asDelete());
@@ -542,7 +554,7 @@ public class GraqlDeleteIT {
         assertEquals(11, answers.size());
 
         // `first-name` will not be satisfied by all `name` attributes
-        exception.expect(GraqlQueryException.class);
+        exception.expect(GraqlSemanticException.class);
         exception.expectMessage("Cannot delete attribute ownership, concept [$n]");
         exception.expectMessage("is not of required attribute type [first-name]");
         tx.execute(Graql.parse("match $x isa person, has name $n; delete $x has first-name $n;").asDelete());
@@ -565,19 +577,13 @@ public class GraqlDeleteIT {
     }
 
 
-    @Ignore //TODO re-enable when Hypergraph Backend is used
     @Test
-    public void whenDeletingPartOfMatchQuery_UpdateIsReflected() {
-        List<ConceptMap> answers = tx.execute(Graql.parse("match $r ($x, $y) isa has-genre; get;").asGet());
-        assertEquals(34, answers.size()); // 17 x 2
-        // delete one of the two role players arbitrarily. This then leads to only 1 role player which doesn't match anymore
-        // so we shouldn't end up deleting the second RP too
-        tx.execute(Graql.parse("match $r ($x, $y) isa has-genre; delete $r (role: $x);").asDelete());
-        answers = tx.execute(Graql.parse("match $r ($x) isa has-genre; get;").asGet());
-        assertEquals(17, answers.size());
-        answers.forEach(conceptMap -> {
-            assertEquals(1, conceptMap.get("r").asRelation().rolePlayers().count());
-        });
+    public void deleteWithDirectType_ThrowsWhenNotDirectType() {
+        List<ConceptMap> answers = tx.execute(Graql.parse("match $m isa movie, has title \"Godfather\"; get;").asGet());
+        assertEquals(1, answers.size());
+        exception.expect(GraqlSemanticException.class);
+        exception.expectMessage("it is not of the required direct type [entity]");
+        tx.execute(Graql.parse("match $m isa movie, has title \"Godfather\"; delete $m isa! entity;").asDelete());
     }
 
     @Test
@@ -635,7 +641,7 @@ public class GraqlDeleteIT {
         assertEquals(1, answers.size());
         assertEquals(1, Iterators.getOnlyElement(answers.get(0).get("r").asRelation().rolePlayersMap().values().iterator()).size());
 
-        exception.expect(GraqlQueryException.class);
+        exception.expect(GraqlSemanticException.class);
         exception.expectMessage("Cannot delete role player [$x]");
         exception.expectMessage("it does not play required role (or subtypes of) [refl]");
         // match it once, delete it as a duplicate but we only have a single player! Should throw
@@ -661,7 +667,7 @@ public class GraqlDeleteIT {
      */
     @Test
     public void whenDeletingRolePlayerAsSubRole_Throw() {
-        exception.expect(GraqlQueryException.class);
+        exception.expect(GraqlSemanticException.class);
         exception.expectMessage("Cannot delete role player [$x]");
         exception.expectMessage("it does not play required role (or subtypes of) [production-being-directed]");
         tx.execute(Graql.parse("match $r (role: $x) isa directed-by; delete $r (production-being-directed: $x);").asDelete());
@@ -773,7 +779,6 @@ public class GraqlDeleteIT {
             List<Numeric> count = tx.execute(Graql.parse("match $x isa person; get $x; count;").asGetAggregate());
             assertEquals(3, count.get(0).number().intValue());
         }
-
         session.close();
     }
 }

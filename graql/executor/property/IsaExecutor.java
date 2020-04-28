@@ -38,8 +38,6 @@ import graql.lang.statement.Variable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.util.Collections;
 import java.util.Set;
 
 public class IsaExecutor implements PropertyExecutor.Insertable, PropertyExecutor.Deletable {
@@ -158,8 +156,8 @@ public class IsaExecutor implements PropertyExecutor.Insertable, PropertyExecuto
 
         @Override
         public void execute(WriteExecutor executor) {
-            if (!executor.getConcept(var).isThing()) {
-                throw GraqlQueryException.notAThingInstance(var, executor.getConcept(var));
+            if (executor.getConcept(var).isSchemaConcept()) {
+                throw GraqlSemanticException.deleteSchemaConcept(executor.getConcept(var).asSchemaConcept());
             }
             Thing concept = executor.getConcept(var).asThing();
 
@@ -173,9 +171,17 @@ public class IsaExecutor implements PropertyExecutor.Insertable, PropertyExecuto
             }
 
             // ensure that the concept is an instance of the required type by the delete
-            if (!expectedType.equals(Label.of(Graql.Token.Type.THING.toString())) &&
-                   concept.type().sups().noneMatch(sub -> sub.label().equals(expectedType))) {
-                throw GraqlQueryException.cannotDeleteInstanceIncorrectType(var, concept, expectedType);
+            if (property.isExplicit()) {
+                if (!concept.type().label().equals(expectedType)) {
+                    throw GraqlSemanticException.cannotDeleteInstanceIncorrectType(var, concept, expectedType);
+                }
+            } else {
+                // using THING always ok if not using isa!
+                // otherwise we have to check all parent types - if none match, then we throw
+                if (!expectedType.equals(Label.of(Graql.Token.Type.THING.toString())) &&
+                        concept.type().sups().noneMatch(sub -> sub.label().equals(expectedType))) {
+                    throw GraqlSemanticException.cannotDeleteInstanceIncorrectTypeOrSubtype(var, concept, expectedType);
+                }
             }
 
             // do this after type checks to ensure that we throw and abort if something is the wrong type

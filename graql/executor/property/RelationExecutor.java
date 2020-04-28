@@ -177,7 +177,6 @@ public class RelationExecutor implements PropertyExecutor.Insertable, PropertyEx
 
         @Override
         public Set<Variable> producedVars() {
-//            return allVars();
             return Collections.emptySet();
         }
 
@@ -193,7 +192,7 @@ public class RelationExecutor implements PropertyExecutor.Insertable, PropertyEx
         @Override
         public void execute(WriteExecutor executor) {
             if (!executor.getConcept(var).isRelation()) {
-                throw GraqlQueryException.notARelationInstance(var, executor.getConcept(var));
+                throw GraqlSemanticException.notARelationInstance(var, executor.getConcept(var));
             }
 
             Relation relation = executor.getConcept(var).asRelation();
@@ -228,7 +227,7 @@ public class RelationExecutor implements PropertyExecutor.Insertable, PropertyEx
                         .findFirst();
 
                 if (!concreteRolePlayed.isPresent()) {
-                    throw GraqlQueryException.cannotDeleteRPNoCompatiblePlayer(rolePlayerVar, rolePlayer, var, relation, requiredRole.label());
+                    throw GraqlSemanticException.cannotDeleteRPNoCompatiblePlayer(rolePlayerVar, rolePlayer, var, relation, requiredRole.label());
                }
 
                 relation.unassign(concreteRolePlayed.get(), rolePlayer);

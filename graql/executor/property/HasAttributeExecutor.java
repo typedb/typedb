@@ -26,6 +26,7 @@ import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.graql.exception.GraqlQueryException;
+import grakn.core.kb.graql.exception.GraqlSemanticException;
 import grakn.core.kb.graql.executor.WriteExecutor;
 import grakn.core.kb.graql.executor.property.PropertyExecutor;
 import grakn.core.kb.graql.planning.gremlin.EquivalentFragmentSet;
@@ -155,13 +156,13 @@ public class HasAttributeExecutor  implements PropertyExecutor.Insertable, Prope
             Variable attributeVar = property.attribute().var();
             Concept concept = executor.getConcept(attributeVar);
             if (!concept.isAttribute()) {
-                throw GraqlQueryException.cannotDeleteOwnershipOfNonAttributes(attributeVar, concept);
+                throw GraqlSemanticException.cannotDeleteOwnershipOfNonAttributes(attributeVar, concept);
             }
             Attribute<?> attribute = concept.asAttribute();
 
             // deleting the ownership of an instance of a type 'type' should throw if matched concept is not that type
             if (attribute.type().sups().noneMatch(sub -> sub.label().equals(type))) {
-                throw GraqlQueryException.cannotDeleteOwnershipTypeNotSatisfied(attributeVar, attribute, type);
+                throw GraqlSemanticException.cannotDeleteOwnershipTypeNotSatisfied(attributeVar, attribute, type);
             }
             Thing owner = executor.getConcept(var).asThing();
             owner.unhas(attribute);
