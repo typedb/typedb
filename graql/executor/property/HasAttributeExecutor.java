@@ -21,9 +21,12 @@ package grakn.core.graql.executor.property;
 import com.google.common.collect.ImmutableSet;
 import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.Attribute;
+import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Thing;
+import grakn.core.kb.graql.exception.GraqlQueryException;
+import grakn.core.kb.graql.exception.GraqlSemanticException;
 import grakn.core.kb.graql.executor.WriteExecutor;
 import grakn.core.kb.graql.executor.property.PropertyExecutor;
 import grakn.core.kb.graql.planning.gremlin.EquivalentFragmentSet;
@@ -38,7 +41,7 @@ import java.util.Set;
 import static grakn.core.graql.planning.gremlin.sets.EquivalentFragmentSets.neq;
 import static grakn.core.graql.planning.gremlin.sets.EquivalentFragmentSets.rolePlayer;
 
-public class HasAttributeExecutor  implements PropertyExecutor.Insertable {
+public class HasAttributeExecutor  implements PropertyExecutor.Insertable, PropertyExecutor.Deletable {
 
     private final Variable var;
     private final HasAttributeProperty property;
@@ -74,10 +77,14 @@ public class HasAttributeExecutor  implements PropertyExecutor.Insertable {
         );
     }
 
-
     @Override
     public Set<PropertyExecutor.Writer> insertExecutors() {
         return ImmutableSet.of(new InsertHasAttribute());
+    }
+
+    @Override
+    public Set<Writer> deleteExecutors() {
+        return ImmutableSet.of(new DeleteHasAttribute());
     }
 
     private class InsertHasAttribute implements PropertyExecutor.Writer {
@@ -111,6 +118,54 @@ public class HasAttributeExecutor  implements PropertyExecutor.Insertable {
             Thing thing = executor.getConcept(var).asThing();
             ConceptId relationId = thing.relhas(attributeConcept).id();
             executor.getBuilder(property.relation().var()).id(relationId);
+        }
+    }
+
+    private class DeleteHasAttribute implements PropertyExecutor.Writer {
+
+        @Override
+        public Variable var() {
+            return var;
+        }
+
+        @Override
+        public VarProperty property() {
+            return property;
+        }
+
+        @Override
+        public Set<Variable> requiredVars() {
+            Set<Variable> required = new HashSet<>();
+            required.add(var);
+            required.add(property.attribute().var());
+            return Collections.unmodifiableSet(required);
+        }
+
+        @Override
+        public Set<Variable> producedVars() {
+            return ImmutableSet.of();
+        }
+
+        @Override
+        public TiebreakDeletionOrdering ordering(WriteExecutor executor) {
+            return TiebreakDeletionOrdering.EDGE;
+        }
+
+        @Override
+        public void execute(WriteExecutor executor) {
+            Variable attributeVar = property.attribute().var();
+            Concept concept = executor.getConcept(attributeVar);
+            if (!concept.isAttribute()) {
+                throw GraqlSemanticException.cannotDeleteOwnershipOfNonAttributes(attributeVar, concept);
+            }
+            Attribute<?> attribute = concept.asAttribute();
+
+            // deleting the ownership of an instance of a type 'type' should throw if matched concept is not that type
+            if (attribute.type().sups().noneMatch(sub -> sub.label().equals(type))) {
+                throw GraqlSemanticException.cannotDeleteOwnershipTypeNotSatisfied(attributeVar, attribute, type);
+            }
+            Thing owner = executor.getConcept(var).asThing();
+            owner.unhas(attribute);
         }
     }
 }

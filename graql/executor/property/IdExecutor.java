@@ -30,7 +30,7 @@ import graql.lang.statement.Variable;
 
 import java.util.Set;
 
-public class IdExecutor  implements PropertyExecutor.Referrable {
+public class IdExecutor implements PropertyExecutor.Referrable {
 
     private final Variable var;
     private final IdProperty property;
@@ -46,7 +46,6 @@ public class IdExecutor  implements PropertyExecutor.Referrable {
     public Set<EquivalentFragmentSet> matchFragments() {
         return ImmutableSet.of(EquivalentFragmentSets.id(property, var, id));
     }
-
 
     @Override
     public Referrer referrer() {

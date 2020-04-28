@@ -33,6 +33,7 @@ import grakn.core.kb.concept.api.GraknConceptException;
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.exception.GraqlSemanticException;
 import grakn.core.kb.graql.executor.QueryExecutor;
+import grakn.core.kb.graql.executor.WriteExecutor;
 import grakn.core.kb.graql.executor.property.PropertyExecutor;
 import grakn.core.kb.graql.executor.property.PropertyExecutorFactory;
 import grakn.core.kb.graql.reasoner.ReasonerCheckedException;
@@ -92,8 +93,6 @@ public class QueryExecutorImpl implements QueryExecutor {
 
     @Override
     public Stream<ConceptMap> match(MatchClause matchClause) {
-
-
         Stream<ConceptMap> answerStream;
 
         try {
@@ -184,7 +183,6 @@ public class QueryExecutorImpl implements QueryExecutor {
 
     @Override
     public Stream<ConceptMap> insert(GraqlInsert query) {
-
         Collection<Statement> statements = query.statements().stream()
                 .flatMap(statement -> statement.innerStatements().stream())
                 .collect(Collectors.toList());
@@ -221,46 +219,19 @@ public class QueryExecutorImpl implements QueryExecutor {
 
     @Override
     public Void delete(GraqlDelete query) {
-        Stream<ConceptMap> answers = match(query.match())
-                .map(result -> result.project(query.vars()))
-                .distinct();
+        Collection<Statement> statements = new ArrayList<>(query.statements());
 
-        answers = filter(query, answers);
-
-        // TODO: We should not need to collect toSet, once we fix ConceptId.id() to not use cache.
-        List<Concept> conceptsToDelete = answers
-                .flatMap(answer -> answer.concepts().stream())
-                .distinct()
-                // delete relations first: if the RPs are deleted, the relation is removed, so null by the time we try to delete it
-                // this minimises number of `concept was already removed` exceptions
-                .sorted(Comparator.comparing(concept -> !concept.isRelation()))
-                .collect(Collectors.toList());
-
-
-        conceptsToDelete.forEach(concept -> {
-            // a concept is either a schema concept or a thing
-            if (concept.isSchemaConcept()) {
-                throw GraqlSemanticException.deleteSchemaConcept(concept.asSchemaConcept());
-            } else if (concept.isThing()) {
-                try {
-                    // a concept may have been cleaned up already
-                    // for instance if role players of an implicit attribute relation are deleted, the janus edge disappears
-                    concept.delete();
-                } catch (IllegalStateException janusVertexDeleted) {
-                    if (janusVertexDeleted.getMessage().contains("was removed")) {
-                        // Tinkerpop throws this exception if we try to operate on a vertex that was already deleted
-                        // With the ordering of deletes, this edge case should only be hit when relations play roles in relations
-                        LOG.debug("Trying to deleted concept that was already removed", janusVertexDeleted);
-                    } else {
-                        throw janusVertexDeleted;
-                    }
-                }
-            } else {
-                throw GraknConceptException.unhandledConceptDeletion(concept);
+        ImmutableSet.Builder<PropertyExecutor.Writer> executors = ImmutableSet.builder();
+        for (Statement statement : statements) {
+            // we only operate on statements written by the user
+            for (VarProperty property : statement.properties()) {
+                executors.addAll(propertyExecutorFactory.deletable(statement.var(), property).deleteExecutors());
             }
-        });
+        }
 
-        // TODO: return deleted Concepts instead of ConceptIds
+        get(query.match().get()).forEach(answer -> {
+            WriteExecutorImpl.create(conceptManager, executors.build()).write(answer);
+        });
         return new Void("Delete successful.");
     }
 

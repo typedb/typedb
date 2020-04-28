@@ -103,7 +103,7 @@ public class QueryErrorIT {
     public void testErrorNonExistentResourceType() {
         exception.expect(GraqlSemanticException.class);
         exception.expectMessage("thingy");
-        tx.execute(Graql.match(var("x").has("thingy", "value")).delete("x"));
+        tx.execute(Graql.match(var("x").has("thingy", "value")).delete(var("x").isa("thing")));
     }
 
     @Test @Ignore // TODO: enable this properly after fixing issue #4664

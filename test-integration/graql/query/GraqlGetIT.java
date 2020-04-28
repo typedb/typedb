@@ -35,6 +35,7 @@ import graql.lang.Graql;
 import graql.lang.exception.GraqlException;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlGet;
+import graql.lang.statement.Statement;
 import graql.lang.statement.StatementThing;
 import graql.lang.statement.Variable;
 import org.hamcrest.Matchers;
@@ -54,6 +55,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static graql.lang.Graql.insert;
 import static graql.lang.Graql.var;
 import static graql.lang.exception.ErrorMessage.VARIABLE_OUT_OF_SCOPE;
 import static java.lang.Math.pow;
@@ -497,15 +499,18 @@ public class GraqlGetIT {
         newTransaction();
 
         List<Pattern> idPatterns = new ArrayList<>();
+        List<Statement> deletePatterns = new ArrayList<>();
         for (int i = 0; i < insertedIds.size(); i++) {
             StatementThing id = var("v" + i).id(insertedIds.get(i).toString());
+            Statement isaThing = var("v" + i).isa("thing");
             idPatterns.add(id);
+            deletePatterns.add(isaThing);
         }
         List<ConceptMap> answersById = tx.execute(Graql.match(idPatterns).get());
         assertEquals(answersById.size(), 1);
 
         // clean up, delete the IDs we inserted for this test
-        tx.execute(Graql.match(idPatterns).delete(idPatterns.stream().flatMap(pattern -> pattern.variables().stream()).collect(Collectors.toList())));
+        tx.execute(Graql.match(idPatterns).delete(deletePatterns));
         tx.commit();
     }
 }

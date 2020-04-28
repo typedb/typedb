@@ -363,7 +363,7 @@ public class AttributeUniquenessIT {
 
 
         try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-            tx.execute(Graql.match(var("x").isa(testAttributeLabel).val(testAttributeValue)).delete());
+            tx.execute(Graql.match(var("x").isa(testAttributeLabel).val(testAttributeValue)).delete(var("x").isa(testAttributeLabel)));
             tx.commit();
         }
 
@@ -397,7 +397,7 @@ public class AttributeUniquenessIT {
         }
 
         try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-            tx.execute(Graql.match(var("x").isa(testAttributeLabel).val(testAttributeValue)).delete());
+            tx.execute(Graql.match(var("x").isa(testAttributeLabel).val(testAttributeValue)).delete(var("x").isa(testAttributeLabel)));
             tx.execute(Graql.insert(var("x").isa(testAttributeLabel).val(testAttributeValue)));
             tx.commit();
         }
@@ -424,7 +424,7 @@ public class AttributeUniquenessIT {
 
         try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             tx.execute(Graql.insert(var("x").isa(testAttributeLabel).val(testAttributeValue)));
-            tx.execute(Graql.match(var("x").isa(testAttributeLabel).val(testAttributeValue)).delete());
+            tx.execute(Graql.match(var("x").isa(testAttributeLabel).val(testAttributeValue)).delete(var("x").isa(testAttributeLabel)));
             tx.commit();
             assertNull(session.attributeManager().attributesCommitted().getIfPresent(index));
         }
