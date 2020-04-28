@@ -163,7 +163,7 @@ public class ConceptMap extends Answer {
      * @return explained answer
      */
     public ConceptMap explain(Explanation exp, Pattern pattern) {
-        return new ConceptMap(this.map, exp.childOf(this), pattern);
+        return new ConceptMap(this.map, exp, pattern);
     }
 
     /**
