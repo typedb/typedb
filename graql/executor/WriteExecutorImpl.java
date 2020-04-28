@@ -233,6 +233,9 @@ public class WriteExecutorImpl implements WriteExecutor {
     public Stream<ConceptMap> write(ConceptMap preExisting) {
         concepts.putAll(preExisting.map());
 
+        // note that we _must_ call sortedWriters() for each concept map we want to write for now
+        // because we have to order deletions whose order depends on the concepts they represent
+        // eg. batch deletion based on ID have no ordering from the query itself
         for (Writer writer : sortedWriters()) {
             writer.execute(this);
         }
@@ -313,10 +316,14 @@ public class WriteExecutorImpl implements WriteExecutor {
                     }
                 }
             }
+            // at this point, these writers are completely independent in their ordering
+            // we use a tie breaker based on the type of concept represented
             unblockedWriters.sort(Comparator.comparing((w) -> w.ordering(this)));
             connectedWritersWithoutDependencies.addAll(unblockedWriters);
         }
 
+        // these writers are completely independent in their ordering
+        // we use a tie breaker based on the type of concept represented
         unorderedWriters.stream()
                 .sorted(Comparator.comparing((w) -> w.ordering(this)))
                 .forEach(sorted::add);
