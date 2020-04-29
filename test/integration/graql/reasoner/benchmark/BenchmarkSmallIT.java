@@ -92,7 +92,7 @@ public class BenchmarkSmallIT {
                 Statement fromVar = new Statement(new Variable().asReturnedVar());
                 Statement toVar = new Statement(new Variable().asReturnedVar());
                 Statement rulePattern = Graql
-                        .type("test/rule" + i)
+                        .type("rule" + i)
                         .when(
                                 Graql.and(
                                         Graql.var()

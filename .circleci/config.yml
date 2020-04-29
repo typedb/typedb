@@ -164,7 +164,7 @@ jobs:
       - run-bazel-rbe:
           command: bazel test //test/integration/graql/analytics/... --test_output=errors
 
-  test-test-assembly:
+  test-assembly:
     machine: true
     working_directory: ~/grakn
     steps:
@@ -486,7 +486,7 @@ workflows:
           filters:
             branches:
               ignore: grakn-release-branch
-      - test-test-assembly:
+      - test-assembly:
           filters:
             branches:
               ignore: grakn-release-branch
@@ -508,7 +508,7 @@ workflows:
             - test-integration
             - test-integration-reasoner
             - test-integration-analytics
-            - test-test-assembly
+            - test-assembly
       - test-assembly-windows-zip:
           filters:
             branches:
@@ -527,7 +527,7 @@ workflows:
             - test-integration
             - test-integration-reasoner
             - test-integration-analytics
-            - test-test-assembly
+            - test-assembly
       - test-assembly-linux-targz:
           filters:
             branches:
@@ -546,7 +546,7 @@ workflows:
             - test-integration
             - test-integration-reasoner
             - test-integration-analytics
-            - test-test-assembly
+            - test-assembly
       - test-assembly-docker:
           filters:
             branches:
@@ -565,7 +565,7 @@ workflows:
             - test-integration
             - test-integration-reasoner
             - test-integration-analytics
-            - test-test-assembly
+            - test-assembly
       - deploy-apt-snapshot:
           filters:
             branches:

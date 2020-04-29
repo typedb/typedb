@@ -279,7 +279,7 @@ public class ConceptBuilderImpl implements ConceptBuilder {
     private static final BuilderParam<Pattern> WHEN = BuilderParam.of(Graql.Token.Property.WHEN);
     private static final BuilderParam<Pattern> THEN = BuilderParam.of(Graql.Token.Property.THEN);
     private static final BuilderParam<Unit> IS_ROLE = BuilderParam.of("role"); // TODO: replace this with a value registered in an enum
-    private static final BuilderParam<Unit> IS_RULE = BuilderParam.of("test/rule"); // TODO: replace this with a value registered in an enum
+    private static final BuilderParam<Unit> IS_RULE = BuilderParam.of("rule"); // TODO: replace this with a value registered in an enum
 
     private ConceptBuilderImpl(ConceptManager conceptManager, WriteExecutor writeExecutor, Variable var) {
         this.conceptManager = conceptManager;

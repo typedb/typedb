@@ -316,7 +316,7 @@ public class GraqlDefineIT {
     public void whenDefiningARuleUsingCoreAPI_ruleIsPersistedCorrectly(){
         tx.execute(Graql.define(type("good-movie").sub("movie")));
         GraqlDefine ruleDefinition = Graql.define(
-                type("high-average-movies-are-good").sub("test/rule")
+                type("high-average-movies-are-good").sub("rule")
                         .when(
                                 var("m").isa("movie").has("tmdb-vote-average", Graql.gte(7.5)))
                         .then(
@@ -388,14 +388,14 @@ public class GraqlDefineIT {
     @Test
     public void whenDefiningRuleWithoutWhen_Throw() {
         exception.expect(GraqlSemanticException.class);
-        exception.expectMessage(allOf(containsString("test/rule"), containsString("movie"), containsString("when")));
+        exception.expectMessage(allOf(containsString("rule"), containsString("movie"), containsString("when")));
         tx.execute(Graql.define(type("a-rule").sub(Graql.Token.Type.RULE).then(var("x").isa("movie"))));
     }
 
     @Test
     public void whenDefiningRuleWithoutThen_Throw() {
         exception.expect(GraqlSemanticException.class);
-        exception.expectMessage(allOf(containsString("test/rule"), containsString("movie"), containsString("then")));
+        exception.expectMessage(allOf(containsString("rule"), containsString("movie"), containsString("then")));
         tx.execute(Graql.define(type("a-rule").sub(Graql.Token.Type.RULE).when(var("x").isa("movie"))));
     }
 

@@ -234,7 +234,7 @@ public class GraknClientIT {
                     type("name").sub("attribute").value("string"),
                     type("content").sub("entity").key("name").plays("contained").plays("container"),
                     type("contains").sub("relation").relates("contained").relates("container"),
-                    type("transitive-location").sub("test/rule")
+                    type("transitive-location").sub("rule")
                             .when(and(
                                     rel("contained", "x").rel("container", "y").isa("contains"),
                                     rel("contained", "y").rel("container", "z").isa("contains")
@@ -280,7 +280,7 @@ public class GraknClientIT {
                     type("name").sub("attribute").value("string"),
                     type("content").sub("entity").has("name").plays("contained").plays("container"),
                     type("contains").sub("relation").relates("contained").relates("container"),
-                    type("transitive-location").sub("test/rule")
+                    type("transitive-location").sub("rule")
                             .when(and(
                                     rel("contained", "x").rel("container", "y").isa("contains"),
                                     rel("contained", "y").rel("container", "z").isa("contains")
@@ -324,7 +324,7 @@ public class GraknClientIT {
                     type("name").sub("attribute").value("string"),
                     type("content").sub("entity").has("name").plays("contained").plays("container"),
                     type("contains").sub("relation").relates("contained").relates("container"),
-                    type("transitive-location").sub("test/rule")
+                    type("transitive-location").sub("rule")
                             .when(and(
                                     rel("contained", "x").rel("container", "y").isa("contains"),
                                     rel("contained", "y").rel("container", "z").isa("contains")

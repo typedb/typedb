@@ -216,9 +216,9 @@ public class GraqlComputeIT {
     @Test
     public void testSubgraphContainingRuleDoesNotBreakAnalytics() {
         expectedEx.expect(GraqlSemanticException.class);
-        expectedEx.expectMessage(GraqlSemanticException.labelNotFound(Label.of("test/rule")).getMessage());
+        expectedEx.expectMessage(GraqlSemanticException.labelNotFound(Label.of("rule")).getMessage());
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-            tx.execute(Graql.compute().count().in("test/rule", "thing"));
+            tx.execute(Graql.compute().count().in("rule", "thing"));
         }
     }
 

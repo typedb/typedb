@@ -210,9 +210,9 @@ public class QueryErrorIT {
     @Test
     public void testExceptionInstanceOfRule() {
         exception.expect(GraqlSemanticException.class);
-        exception.expectMessage(GraqlSemanticException.cannotGetInstancesOfNonType(Label.of("test/rule")).getMessage());
+        exception.expectMessage(GraqlSemanticException.cannotGetInstancesOfNonType(Label.of("rule")).getMessage());
         //noinspection ResultOfMethodCallIgnored
-        tx.stream(Graql.match(var("x").isa("test/rule")));
+        tx.stream(Graql.match(var("x").isa("est/rule")));
     }
 
     @Test
