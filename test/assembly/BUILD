@@ -6,7 +6,7 @@ java_test(
         "AssemblyE2EConstants.java",
         "GraknGraqlCommandsE2E.java",
     ],
-    classpath_resources = ["//test-integration/resources:logback-test"],
+    classpath_resources = ["//test/integration/resources:logback-test"],
     data = ["//:assemble-mac-zip"],
     test_class = "grakn.core.assembly.GraknGraqlCommandsE2E",
     deps = [
@@ -24,7 +24,7 @@ java_test(
         "AssemblyE2EConstants.java",
         "GraknGraqlCommands_WithARunningGraknE2E.java",
     ],
-    classpath_resources = ["//test-integration/resources:logback-test"],
+    classpath_resources = ["//test/integration/resources:logback-test"],
     data = ["//:assemble-mac-zip"],
     test_class = "grakn.core.assembly.GraknGraqlCommands_WithARunningGraknE2E",
     deps = [

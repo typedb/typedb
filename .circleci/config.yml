@@ -140,11 +140,11 @@ jobs:
       - install-bazel-linux-rbe
       - checkout
       - run-bazel-rbe:
-          command: bazel test //test-integration/server/... --test_output=errors
+          command: bazel test //test/integration/server/... --test_output=errors
       - run-bazel-rbe:
-          command: bazel test //test-integration/graql/executor/... --test_output=errors
+          command: bazel test //test/integration/graql/executor/... --test_output=errors
       - run-bazel-rbe:
-          command: bazel test //test-integration/graql/query/... --test_output=errors
+          command: bazel test //test/integration/graql/query/... --test_output=errors
 
   test-integration-reasoner:
     machine: true
@@ -153,7 +153,7 @@ jobs:
       - install-bazel-linux-rbe
       - checkout
       - run-bazel-rbe:
-          command: bazel test //test-integration/graql/reasoner/... --test_output=errors
+          command: bazel test //test/integration/graql/reasoner/... --test_output=errors
 
   test-integration-analytics:
     machine: true
@@ -162,7 +162,7 @@ jobs:
       - install-bazel-linux-rbe
       - checkout
       - run-bazel-rbe:
-          command: bazel test //test-integration/graql/analytics/... --test_output=errors
+          command: bazel test //test/integration/graql/analytics/... --test_output=errors
 
   test-test-assembly:
     machine: true

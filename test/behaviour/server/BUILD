@@ -24,7 +24,7 @@ java_library(
     ],
     deps = [
         # Package dependencies
-        "//test-integration/rule:grakn-test-server",
+        "//test/integration/rule:grakn-test-server",
     ],
 )
 
