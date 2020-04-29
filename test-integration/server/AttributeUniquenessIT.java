@@ -17,6 +17,7 @@
 
 package grakn.core.server;
 
+import grakn.client.GraknClient;
 import grakn.common.util.Collections;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.core.Schema;
@@ -29,6 +30,7 @@ import grakn.core.rule.GraknTestServer;
 import graql.lang.Graql;
 import graql.lang.query.GraqlInsert;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -56,6 +58,10 @@ import static org.junit.Assert.assertNotEquals;
 
 @SuppressWarnings({"CheckReturnValue", "Duplicates"})
 public class AttributeUniquenessIT {
+
+    @org.junit.Rule
+    public final ExpectedException expectedException = ExpectedException.none();
+
     private Session session;
 
     @ClassRule
@@ -93,8 +99,26 @@ public class AttributeUniquenessIT {
         }
     }
 
-    @org.junit.Rule
-    public final ExpectedException expectedException = ExpectedException.none();
+
+    @Test
+    public void shouldMergeAttributesInConcurrentTransactions() throws InterruptedException, ExecutionException {
+        int numOfUniqueNames = 10;
+        int numOfDuplicatesPerName = 673;
+        ExecutorService executorServiceForParallelInsertion = Executors.newFixedThreadPool(8);
+
+        try (GraknClient.Session session = localhostGrakn.session("attribute_merging_e2e")) {
+            // insert attributes with duplicates
+            LOG.info("defining the schema...");
+            defineParentChildSchema(session);
+            LOG.info("inserting " + numOfUniqueNames + " unique attributes with " + numOfDuplicatesPerName + " duplicates per attribute....");
+            insertNameShuffled(session, numOfUniqueNames, numOfDuplicatesPerName, executorServiceForParallelInsertion);
+
+            LOG.info("verifying the number of attributes");
+            int countAfterMerging = countTotalNames(session);
+            Assert.assertEquals(numOfUniqueNames, countAfterMerging);
+            LOG.info("test completed successfully. there are " + countAfterMerging + " unique names found");
+        }
+    }
 
     @Test
     public void whenInsertingKeyConcurrently_onlyOneIsAccepted(){

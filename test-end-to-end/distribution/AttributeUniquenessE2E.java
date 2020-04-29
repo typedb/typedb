@@ -74,25 +74,6 @@ public class AttributeUniquenessE2E {
         FileUtils.deleteDirectory(GRAKN_UNZIPPED_DIRECTORY.toFile());
     }
 
-    @Test
-    public void shouldMergeAttributesInConcurrentTransactions() throws InterruptedException, ExecutionException {
-        int numOfUniqueNames = 10;
-        int numOfDuplicatesPerName = 673;
-        ExecutorService executorServiceForParallelInsertion = Executors.newFixedThreadPool(8);
-
-        try (GraknClient.Session session = localhostGrakn.session("attribute_merging_e2e")) {
-            // insert attributes with duplicates
-            LOG.info("defining the schema...");
-            defineParentChildSchema(session);
-            LOG.info("inserting " + numOfUniqueNames + " unique attributes with " + numOfDuplicatesPerName + " duplicates per attribute....");
-            insertNameShuffled(session, numOfUniqueNames, numOfDuplicatesPerName, executorServiceForParallelInsertion);
-
-            LOG.info("verifying the number of attributes");
-            int countAfterMerging = countTotalNames(session);
-            assertEquals(numOfUniqueNames, countAfterMerging);
-            LOG.info("test completed successfully. there are " + countAfterMerging + " unique names found");
-        }
-    }
 
     private void defineParentChildSchema(GraknClient.Session session) {
         try (GraknClient.Transaction tx = session.transaction().write()) {
