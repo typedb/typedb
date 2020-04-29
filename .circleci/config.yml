@@ -87,7 +87,7 @@ jobs:
       - run-bazel-rbe:
           command: bazel test //common/... --test_output=errors
 
-  test-behavior-connection:
+  test-behaviour-connection:
     machine: true
     working_directory: ~/grakn
     steps:
@@ -100,7 +100,7 @@ jobs:
       - run-bazel-rbe:
           command: bazel test //test/behaviour/connection/transaction:test --test_output=errors
 
-  test-behavior-graql:
+  test-behaviour-graql-language:
     machine: true
     working_directory: ~/grakn
     steps:
@@ -109,13 +109,13 @@ jobs:
       - run-bazel-rbe:
           command: bazel test //test/behaviour/graql/language/define:test --test_output=errors
       - run-bazel-rbe:
-          command: bazel test //test/behaviour/connection/transaction:test --test_output=errors
+          command: bazel test //test/behaviour/graql/language/undefine:test --test_output=errors
       - run-bazel-rbe:
           command: bazel test //test/behaviour/graql/language/insert:test --test_output=errors
       - run-bazel-rbe:
           command: bazel test //test/behaviour/graql/language/match:test --test_output=errors
 
-  test-behavior-reasoner:
+  test-behaviour-graql-reasoner:
     machine: true
     working_directory: ~/grakn
     steps:
@@ -458,15 +458,15 @@ workflows:
           filters:
             branches:
               ignore: grakn-release-branch
-      - test-behavior-connection:
+      - test-behaviour-connection:
           filters:
             branches:
               ignore: grakn-release-branch
-      - test-behavior-graql:
+      - test-behaviour-graql-language:
           filters:
             branches:
               ignore: grakn-release-branch
-      - test-behavior-reasoner:
+      - test-behaviour-graql-reasoner:
           filters:
             branches:
               ignore: grakn-release-branch
@@ -502,6 +502,9 @@ workflows:
             - build-analysis
             - test-common
             - test-server
+            - test-behaviour-connection
+            - test-behaviour-graql-language
+            - test-behaviour-graql-reasoner
             - test-integration
             - test-integration-reasoner
             - test-integration-analytics
@@ -518,6 +521,9 @@ workflows:
             - build-analysis
             - test-common
             - test-server
+            - test-behaviour-connection
+            - test-behaviour-graql-language
+            - test-behaviour-graql-reasoner
             - test-integration
             - test-integration-reasoner
             - test-integration-analytics
@@ -534,6 +540,9 @@ workflows:
             - build-analysis
             - test-common
             - test-server
+            - test-behaviour-connection
+            - test-behaviour-graql-language
+            - test-behaviour-graql-reasoner
             - test-integration
             - test-integration-reasoner
             - test-integration-analytics
@@ -550,6 +559,9 @@ workflows:
             - build-analysis
             - test-common
             - test-server
+            - test-behaviour-connection
+            - test-behaviour-graql-language
+            - test-behaviour-graql-reasoner
             - test-integration
             - test-integration-reasoner
             - test-integration-analytics
