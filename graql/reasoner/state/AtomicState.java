@@ -163,7 +163,7 @@ public class AtomicState extends AnswerPropagatorState<ReasonerAtomicQuery> {
         ConceptMap answer = baseAnswer;
         if (materialisedSub != null) {
             RuleExplanation ruleExplanation = new RuleExplanation(Collections.singletonList(baseAnswer), rule.getRule());
-            ConceptMap ruleAnswer = materialisedSub.explain(ruleExplanation, query.withSubstitution(materialisedSub).getPattern());
+            ConceptMap ruleAnswer = materialisedSub.explain(ruleExplanation, materialisedSub.getPattern());
             queryCache.record(ruleHead, ruleAnswer);
             Atom ruleAtom = ruleHead.getAtom();
             //if it's an implicit relation also record it as an attribute
@@ -178,6 +178,6 @@ public class AtomicState extends AnswerPropagatorState<ReasonerAtomicQuery> {
 
         return AnswerUtil.joinAnswers(answer, query.getSubstitution())
                 .project(query.getVarNames())
-                .explain(new RuleExplanation(answer.explanation().getAnswers(), rule.getRule()), query.withSubstitution(materialisedSub).getPattern());
+                .explain(new RuleExplanation(answer.explanation().getAnswers(), rule.getRule()), query.withSubstitution(answer).getPattern());
     }
 }

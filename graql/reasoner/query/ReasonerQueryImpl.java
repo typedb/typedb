@@ -632,7 +632,7 @@ public class ReasonerQueryImpl extends ResolvableQuery {
             if (fruitless) dbIterator = Collections.emptyIterator();
             else {
                 dbIterator = traversalExecutor.traverse(getPattern())
-                        .map(ans -> ans.explain(new JoinExplanation(this.splitToPartialAnswers(ans)), this.getPattern()))
+                        .map(ans -> ans.explain(new JoinExplanation(this.splitToPartialAnswers(ans)), this.withSubstitution(ans).getPattern()))
                         .map(ans -> new AnswerState(ans, parent.getUnifier(), parent))
                         .iterator();
             }
