@@ -198,7 +198,7 @@ public final class Schema {
         SCHEMA_LABEL(String.class), LABEL_ID(Integer.class), INSTANCE_COUNT(Long.class), TYPE_SHARD_CHECKPOINT(Long.class), IS_ABSTRACT(Boolean.class),
 
         // Attribute schema concept properties
-        REGEX(String.class), DATA_TYPE(String.class),
+        REGEX(String.class), VALUE_TYPE(String.class),
 
         // Attribute concept properties
         INDEX(String.class),
@@ -215,7 +215,7 @@ public final class Schema {
         // Relation properties
         IS_IMPLICIT(Boolean.class),
 
-        //Supported Data Types
+        //Supported Value Types
         VALUE_STRING(String.class), VALUE_LONG(Long.class),
         VALUE_DOUBLE(Double.class), VALUE_BOOLEAN(Boolean.class),
         VALUE_INTEGER(Integer.class), VALUE_FLOAT(Float.class),

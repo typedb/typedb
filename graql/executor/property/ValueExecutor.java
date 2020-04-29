@@ -32,7 +32,7 @@ import graql.lang.statement.Variable;
 
 import java.util.Set;
 
-public class ValueExecutor  implements PropertyExecutor.Insertable {
+public class ValueExecutor implements PropertyExecutor.Insertable {
 
     private final Variable var;
     private final ValueProperty property;

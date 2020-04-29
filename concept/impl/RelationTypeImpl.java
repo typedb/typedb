@@ -114,7 +114,7 @@ public class RelationTypeImpl extends TypeImpl<RelationType, Relation> implement
     public void delete() {
         cachedRelates.get().forEach(r -> {
             RoleImpl role = ((RoleImpl) r);
-            conceptNotificationChannel.roleDeleted(role);
+            conceptNotificationChannel.roleUndefined(role);
             ((RoleImpl) r).deleteCachedRelationType(this);
         });
 

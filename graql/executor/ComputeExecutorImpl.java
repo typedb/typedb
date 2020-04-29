@@ -243,7 +243,7 @@ public class ComputeExecutorImpl implements ComputeExecutor {
     }
 
     /**
-     * Helper method to validate that the target types are of one data type, and get that data type
+     * Helper method to validate that the target types are of one value type, and get that value type
      *
      * @return the ValueType of the target types
      */
@@ -255,13 +255,13 @@ public class ComputeExecutorImpl implements ComputeExecutor {
             if (!type.isAttributeType()) throw GraqlSemanticException.mustBeAttributeType(type.label());
             AttributeType<?> attributeType = type.asAttributeType();
             if (valueType == null) {
-                // check if the attribute type has data-type LONG or DOUBLE
+                // check if the attribute type has value type LONG or DOUBLE
                 valueType = attributeType.valueType();
                 if (!valueType.equals(AttributeType.ValueType.LONG) && !valueType.equals(AttributeType.ValueType.DOUBLE)) {
                     throw GraqlSemanticException.attributeMustBeANumber(valueType, attributeType.label());
                 }
             } else {
-                // check if all the attribute types have the same data-type
+                // check if all the attribute types have the same value type
                 if (!valueType.equals(attributeType.valueType())) {
                     throw GraqlSemanticException.attributesWithDifferentValueTypes(query.of());
                 }
@@ -275,7 +275,7 @@ public class ComputeExecutorImpl implements ComputeExecutor {
      *
      * @param query          representing the compute query
      * @param targetTypes    representing the attribute types in which the statistics computation is targeted for
-     * @param targetValueType representing the data type of the target attribute types
+     * @param targetValueType representing the value type of the target attribute types
      * @return an object which is a subclass of VertexProgram
      */
     private VertexProgram initStatisticsVertexProgram(GraqlCompute query, Set<LabelId> targetTypes, AttributeType.ValueType<?> targetValueType) {
@@ -287,7 +287,7 @@ public class ComputeExecutorImpl implements ComputeExecutor {
      * Helper method to initialise the MapReduce algorithm for compute statistics queries
      *
      * @param targetTypes    representing the attribute types in which the statistics computation is targeted for
-     * @param targetValueType representing the data type of the target attribute types
+     * @param targetValueType representing the value type of the target attribute types
      * @return an object which is a subclass of StatisticsMapReduce
      */
     private StatisticsMapReduce<?> initStatisticsMapReduce(GraqlCompute.Statistics.Value query,

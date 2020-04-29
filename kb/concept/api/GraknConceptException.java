@@ -71,7 +71,7 @@ public class GraknConceptException extends GraknException {
 
     /**
      * Thrown when attempting to set a regex on a Attribute whose type AttributeType is not of the
-     * data type AttributeType.ValueType#STRING
+     * value type AttributeType.ValueType#STRING
      */
     public static GraknConceptException cannotSetRegex(AttributeType attributeType) {
         return create(REGEX_NOT_STRING.getMessage(attributeType.label()));
@@ -109,7 +109,7 @@ public class GraknConceptException extends GraknException {
 
 
     /**
-     * Thrown when creating an Attribute whose value Object does not match attribute data type
+     * Thrown when creating an Attribute whose value Object does not match attribute value type
      */
     public static GraknConceptException invalidAttributeValue(AttributeType attributeType, Object object, AttributeType.ValueType valueType) {
         return create(ErrorMessage.INVALID_VALUETYPE.getMessage(object, object.getClass().getSimpleName(), valueType.name(), attributeType.label()));

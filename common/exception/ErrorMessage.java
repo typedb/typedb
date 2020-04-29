@@ -168,6 +168,7 @@ public enum ErrorMessage {
     NON_POSITIVE_LIMIT("limit %s should be positive"),
     NEGATIVE_OFFSET("offset %s should be non-negative"),
     INVALID_VALUE("unsupported attribute value type %s"),
+    NOT_A_RELATION_INSTANCE("Concept represented by [%s] (%s) is not a relation instance"),
 
     AGGREGATE_ARGUMENT_NUM("aggregate '%s' takes %s arguments, but got %s"),
     UNKNOWN_AGGREGATE("unknown aggregate '%s'"),
@@ -180,11 +181,18 @@ public enum ErrorMessage {
     INVALID_SUPER_TYPE("'%s' cannot be a subtype of '%s'"),
     INSERT_RECURSIVE("%s should not refer to itself"),
     INSERT_ABSTRACT_NOT_TYPE("the concept [%s] is not a type and cannot be set to abstract"),
-    INSERT_RELATION_WITHOUT_ROLE_TYPE("attempted to insert a relation without all role types specified"),
+    INSERT_RELATION_WITHOUT_ROLE_TYPE("attempted to insert a relation players [%s] without all role types specified"),
+    DELETE_RELATION_PLAYER_WITHOUT_ROLE_TYPE("attempted to delete a role player [%s] from a relation without specifying role"),
 
     INVALID_STATEMENT("Value [%s] not of type [%s] in data [%s]"),
 
     NOT_A_TYPE("Concept with id [%s] is not a concept type and has base type [%s]."),
+
+    DELETE_OWNERSHIP_NOT_AN_ATTRIBUTE("Cannot remove ownership of [%s] (%s), required to be an attribute"),
+    DELETE_OWNERSHIP_TYPE_NOT_SATISFIED("Cannot delete attribute ownership, concept [%s] (%s) is not of required attribute type [%s]"),
+    DELETE_ROLE_PLAYER_NO_COMPATIBLE_PLAYER("Cannot delete role player [%s] (%s) from [%s] (%s), it does not play required role (or subtypes of) [%s]"),
+    DELETE_INSTANCE_INCORRECT_TYPE_OR_SUBTYPE("Cannot delete instance [%s] (%s), it is not of the required type (or subtype of) [%s]"),
+    DELETE_INSTANCE_INCORRECT_TYPE("Cannot delete instance [%s] (%s), it is not of the required direct type [%s]"),
     UNHANDLED_CONCEPT_DELETION("Deletion of concept [%s] is not handled."),
 
     //Templating

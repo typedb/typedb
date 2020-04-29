@@ -38,7 +38,7 @@ import java.util.stream.Stream;
  * 1. It is unique to its AttributeType based on it's value.
  * 2. It has a AttributeType.ValueType associated with it which constrains the allowed values.
  *
- * @param <D> The data type of this resource type.
+ * @param <D> The value type of this attribute type.
  *            Supported Types include: String, Long, Double, and Boolean
  */
 public class AttributeImpl<D> extends ThingImpl<Attribute<D>, AttributeType<D>> implements Attribute<D> {
@@ -51,7 +51,7 @@ public class AttributeImpl<D> extends ThingImpl<Attribute<D>, AttributeType<D>> 
     }
 
     /**
-     * @return The data type of this Attribute's AttributeType.
+     * @return The value type of this Attribute's AttributeType.
      */
     @Override
     public AttributeType.ValueType<D> valueType() {

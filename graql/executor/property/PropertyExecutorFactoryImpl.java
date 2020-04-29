@@ -43,8 +43,7 @@ import graql.lang.statement.Variable;
 public class PropertyExecutorFactoryImpl implements PropertyExecutorFactory {
 
     public PropertyExecutor.Definable definable(Variable var, VarProperty property) {
-        PropertyExecutorFactory propertyExecutorFactory = new PropertyExecutorFactoryImpl();
-        PropertyExecutor executor = propertyExecutorFactory.create(var, property);
+        PropertyExecutor executor = create(var, property);
 
         if (executor instanceof PropertyExecutor.Definable) {
             return (PropertyExecutor.Definable) executor;
@@ -54,13 +53,23 @@ public class PropertyExecutorFactoryImpl implements PropertyExecutorFactory {
     }
 
     public PropertyExecutor.Insertable insertable(Variable var, VarProperty property) {
-        PropertyExecutorFactory propertyExecutorFactory = new PropertyExecutorFactoryImpl();
-        PropertyExecutor executor = propertyExecutorFactory.create(var, property);
+        PropertyExecutor executor = create(var, property);
 
         if (executor instanceof PropertyExecutor.Insertable) {
             return (PropertyExecutor.Insertable) executor;
         } else {
             throw GraqlSemanticException.insertUnsupportedProperty(property.keyword());
+        }
+    }
+
+    @Override
+    public PropertyExecutor.Deletable deletable(Variable var, VarProperty property) {
+        PropertyExecutor executor = create(var, property);
+
+        if (executor instanceof PropertyExecutor.Deletable) {
+            return (PropertyExecutor.Deletable) executor;
+        } else {
+            throw GraqlSemanticException.deleteUnsupportedProperty(property.keyword());
         }
     }
 

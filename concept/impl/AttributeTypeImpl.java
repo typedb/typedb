@@ -35,11 +35,11 @@ import java.util.regex.Pattern;
  * An ontological element which models and categorises the various Attribute in the graph.
  * This ontological element behaves similarly to Type when defining how it relates to other
  * types. It has two additional functions to be aware of:
- * 1. It has a AttributeType.ValueType constraining the data types of the values it's instances may take.
+ * 1. It has a AttributeType.ValueType constraining the value types of the values it's instances may take.
  * 2. Any of it's instances are unique to the type.
  * For example if you have a AttributeType modelling month throughout the year there can only be one January.
  *
- * @param <D> The data type of this resource type.
+ * @param <D> The value type of this resource type.
  *            Supported Types include: String, Long, Double, and Boolean
  */
 public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D>> implements AttributeType<D> {
@@ -167,7 +167,7 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
     @Nullable
     @Override
     public ValueType<D> valueType() {
-        String className = vertex().property(Schema.VertexProperty.DATA_TYPE);
+        String className = vertex().property(Schema.VertexProperty.VALUE_TYPE);
         if (className == null) return null;
 
         try {

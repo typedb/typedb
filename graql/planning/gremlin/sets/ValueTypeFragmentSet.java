@@ -29,7 +29,7 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
- * see EquivalentFragmentSets#valueType(VarProperty, Variable, AttributeType.DataType)
+ * see EquivalentFragmentSets#valueType(VarProperty, Variable, AttributeType.ValueType)
  *
  */
 class ValueTypeFragmentSet extends EquivalentFragmentSetImpl {

@@ -29,7 +29,7 @@ import java.util.stream.Stream;
  * 1. It is unique to its AttributeType based on it's value.
  * 2. It has an AttributeType.ValueType associated with it which constrains the allowed values.
  *
- * @param <D> The data type of this resource type.
+ * @param <D> The value type of this resource type.
  *            Supported Types include: String, Long, Double, and Boolean
  */
 public interface Attribute<D> extends Thing {
@@ -52,9 +52,9 @@ public interface Attribute<D> extends Thing {
     AttributeType<D> type();
 
     /**
-     * Retrieves the data type of this Attribute's AttributeType.
+     * Retrieves the value type of this Attribute's AttributeType.
      *
-     * @return The data type of this Attribute's type.
+     * @return The value type of this Attribute's type.
      */
     @CheckReturnValue
     AttributeType.ValueType<D> valueType();
