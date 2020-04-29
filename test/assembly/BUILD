@@ -37,7 +37,7 @@ java_test(
 )
 
 test_suite(
-    name = "test-assembly",
+    name = "test-assembly-functionality",
     tests = [
         "//test/assembly:grakn-graql-commands-e2e",
         "//test/assembly:grakn-graql-commands-with-a-running-grakn-e2e",
