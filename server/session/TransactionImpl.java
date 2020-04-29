@@ -789,10 +789,10 @@ public class TransactionImpl implements Transaction {
 
     /**
      * @param label    A unique label for the AttributeType
-     * @param valueType The data type of the AttributeType.
+     * @param valueType The value type of the AttributeType.
      *                 Supported types include: ValueType.STRING, ValueType.LONG, ValueType.DOUBLE, and ValueType.BOOLEAN
      * @param <V>
-     * @return A new or existing AttributeType with the provided label and data type.
+     * @return A new or existing AttributeType with the provided label and value type.
      * @throws TransactionException       if the graph is closed
      * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-AttributeType.
      * @throws GraknElementException       if the {@param label} is already in use by an existing AttributeType which is
@@ -812,7 +812,7 @@ public class TransactionImpl implements Transaction {
             if (Schema.MetaSchema.isMetaLabel(label)) {
                 throw GraknConceptException.metaTypeImmutable(label);
             } else if (!valueType.equals(attributeType.valueType())) {
-                throw GraknElementException.immutableProperty(attributeType.valueType(), valueType, Schema.VertexProperty.DATA_TYPE);
+                throw GraknElementException.immutableProperty(attributeType.valueType(), valueType, Schema.VertexProperty.VALUE_TYPE);
             }
         }
 

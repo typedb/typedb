@@ -44,6 +44,7 @@ import grakn.core.kb.keyspace.StatisticsDelta;
 import grakn.core.kb.server.cache.TransactionCache;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Supplier;
 
 /**
@@ -257,7 +258,7 @@ public class ConceptListenerImpl implements ConceptListener {
     }
 
     @Override
-    public void roleDeleted(Role role) {
+    public void roleUndefined(Role role) {
         transactionCache.trackForValidation(role);
     }
 

@@ -28,6 +28,7 @@ import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlInsert;
 import graql.lang.query.MatchClause;
+import graql.lang.statement.Variable;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -83,7 +84,9 @@ public class NumberCastingIT {
     private void cleanup(Session session, Pattern pattern) {
         MatchClause match = Graql.match(pattern.statements());
         try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-            tx.execute(match.delete());
+            for (Variable var : pattern.variables()) {
+                tx.execute(match.delete(Graql.var(var).isa("thing")));
+            }
             tx.commit();
         }
     }

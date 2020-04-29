@@ -300,7 +300,7 @@ public class GraknClientIT {
             List<Pattern> patterns = Lists.newArrayList(
                     Graql.var("x").isa("content").has("name", "x"),
                     var("z").isa("content").has("name", "z"),
-                    var("infer").rel("contained","x").rel("container","z").isa("contains")
+                    var("infer").rel("contained", "x").rel("container", "z").isa("contains")
             );
             ConceptMap answer = Iterables.getOnlyElement(tx.execute(Graql.match(patterns).get()));
 
@@ -344,7 +344,7 @@ public class GraknClientIT {
             List<Pattern> patterns = Lists.newArrayList(
                     Graql.var("x").isa("content").has("name", "x"),
                     var("z").isa("content").has("name", "z"),
-                    var("infer").rel("contained","x").rel("container","z").isa("contains")
+                    var("infer").rel("contained", "x").rel("container", "z").isa("contains")
             );
             ConceptMap answer = Iterables.getOnlyElement(tx.execute(Graql.match(patterns).get()));
 
@@ -352,7 +352,7 @@ public class GraknClientIT {
             List<Pattern> patterns2 = Lists.newArrayList(
                     Graql.var("x2").isa("content").has("name", "x"),
                     var("z2").isa("content").has("name", "z"),
-                    var().rel("contained","x2").rel("container","z2").isa("contains")
+                    var().rel("contained", "x2").rel("container", "z2").isa("contains")
             );
             ConceptMap answer2 = Iterables.getOnlyElement(tx.execute(Graql.match(patterns2).get()));
             testExplanation(answer2);
@@ -480,11 +480,12 @@ public class GraknClientIT {
             tx.commit();
         }
         try (GraknClient.Transaction tx = remoteSession.transaction().write()) {
-            GraqlDelete deleteQuery = Graql.match(var("g").rel("x").rel("y").isa("has-cast")).delete("x", "y");
+            GraqlDelete deleteQuery = Graql.match(var("g").rel("actor", "x").rel("character-being-played", "y").isa("has-cast"))
+                    .delete(var("x").isa("thing"), var("y").isa("thing"));
             tx.execute(deleteQuery);
             assertTrue(tx.execute(Graql.match(var().rel("x").rel("y").isa("has-cast")).get("x", "y")).isEmpty());
 
-            deleteQuery = Graql.match(var("x").isa("person")).delete();
+            deleteQuery = Graql.match(var("x").isa("person")).delete(var("x").isa("person"));
             tx.execute(deleteQuery);
             assertTrue(tx.execute(Graql.match(var("x").isa("person")).get()).isEmpty());
         }
@@ -520,7 +521,7 @@ public class GraknClientIT {
                     grakn.core.kb.concept.api.Relation::rolePlayers,
                     grakn.client.concept.thing.Relation.Remote::rolePlayers);
 
-                    ImmutableMultimap.Builder<String, String> localRolePlayers = ImmutableMultimap.builder();
+            ImmutableMultimap.Builder<String, String> localRolePlayers = ImmutableMultimap.builder();
             localConcept.rolePlayersMap().forEach((role, players) -> {
                 for (grakn.core.kb.concept.api.Thing player : players) {
                     localRolePlayers.put(role.id().toString(), player.id().toString());
@@ -1157,7 +1158,7 @@ public class GraknClientIT {
 
 
     private <T extends grakn.core.kb.concept.api.Concept, S extends Concept> void assertEqualConcepts(
-            T conceptLocal, S conceptRemote, Function<T,Stream<?extends grakn.core.kb.concept.api.Concept>> functionLocal,
+            T conceptLocal, S conceptRemote, Function<T, Stream<? extends grakn.core.kb.concept.api.Concept>> functionLocal,
             Function<S, Stream<? extends Concept>> functionRemote
     ) {
         assertEquals(
@@ -1239,7 +1240,7 @@ public class GraknClientIT {
     }
 
     @Test
-    public void setAttributeValueWithDatatypeDate() {
+    public void setAttributeValueWithValueTypeDate() {
         try (GraknClient.Transaction tx = remoteSession.transaction().write()) {
             AttributeType.Remote<LocalDateTime> birthDateType = tx.putAttributeType("birth-date",  ValueType.DATE);
             LocalDateTime date = LocalDateTime.now();

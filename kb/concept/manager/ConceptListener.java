@@ -81,7 +81,7 @@ public interface ConceptListener {
 
     void relationRoleUnrelated(RelationType relationType, Role role, List<Casting> conceptsPlayingRole);
 
-    void roleDeleted(Role role);
+    void roleUndefined(Role role);
 
     void rolePlayerCreated(Casting casting);
 }

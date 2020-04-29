@@ -21,7 +21,15 @@ package grakn.core.kb.graql.exception;
 
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
+import grakn.core.kb.concept.api.Attribute;
+import grakn.core.kb.concept.api.Concept;
+import grakn.core.kb.concept.api.Label;
+import grakn.core.kb.concept.api.Relation;
+import grakn.core.kb.concept.api.Role;
+import grakn.core.kb.concept.api.Thing;
+import graql.lang.query.GraqlQuery;
 import graql.lang.statement.Statement;
+import graql.lang.statement.Variable;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
@@ -38,7 +46,6 @@ public class GraqlQueryException extends GraknException {
     private GraqlQueryException(String error, Exception e) {
         super(error, e);
     }
-
 
     @Override
     public String getName() { return NAME; }
@@ -65,4 +72,6 @@ public class GraqlQueryException extends GraknException {
     private static GraqlQueryException unreachableStatement(@Nullable String message, Exception cause) {
         return new GraqlQueryException("Statement expected to be unreachable: " + message, cause);
     }
+
+
 }

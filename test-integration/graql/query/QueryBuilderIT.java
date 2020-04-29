@@ -89,7 +89,7 @@ public class QueryBuilderIT {
 
         assertExists(tx, var().has("title", "123"));
 
-        GraqlDelete query = Graql.match(x.has("title", "123")).delete(x.var());
+        GraqlDelete query = Graql.match(x.has("title", var("t")), var("t").isa("title").val("123")).delete(x.has("title", var("t")));
         tx.execute(query);
 
         assertNotExists(tx, var().has("title", "123"));

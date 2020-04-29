@@ -25,4 +25,5 @@ public interface PropertyExecutorFactory {
     PropertyExecutor create(Variable var, VarProperty property);
     PropertyExecutor.Definable definable(Variable var, VarProperty property);
     PropertyExecutor.Insertable insertable(Variable var, VarProperty property);
+    PropertyExecutor.Deletable deletable(Variable var, VarProperty property);
 }

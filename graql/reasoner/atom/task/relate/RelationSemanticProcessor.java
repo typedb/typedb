@@ -39,7 +39,6 @@ import grakn.core.graql.reasoner.query.ReasonerQueryEquivalence;
 import grakn.core.graql.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierType;
-import grakn.core.graql.reasoner.utils.ReasonerUtils;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Type;
@@ -58,8 +57,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
-
-import static grakn.core.concept.util.ConceptUtils.bottom;
 
 public class RelationSemanticProcessor implements SemanticProcessor<RelationAtom> {
 

@@ -169,7 +169,7 @@ public class GraqlInsertIT {
         tx.execute(Graql.insert(vars));
         assertExists(tx, patterns);
 
-        tx.execute(Graql.match(patterns).delete("r"));
+        tx.execute(Graql.match(patterns).delete(var("r").isa("has-genre")));
         assertNotExists(tx, patterns);
     }
 
@@ -195,7 +195,7 @@ public class GraqlInsertIT {
         tx.execute(query);
         assertEquals(3, tx.stream(Graql.match(language)).count());
 
-        tx.execute(Graql.match(language).delete("x"));
+        tx.execute(Graql.match(language).delete(var("x").isa("language")));
         assertEquals(0, tx.stream(Graql.match(language)).count());
     }
 
@@ -212,7 +212,7 @@ public class GraqlInsertIT {
         assertExists(tx, var("x").isa("language").has("name", "123").has("name", "HELLO"));
         assertExists(tx, var("x").isa("language").has("name", "456").has("name", "HELLO"));
 
-        tx.execute(Graql.match(var("x").isa("language")).delete("x"));
+        tx.execute(Graql.match(var("x").isa("language")).delete(var("x").isa("language")));
         assertNotExists(tx, language1);
         assertNotExists(tx, language2);
     }
@@ -634,6 +634,7 @@ public class GraqlInsertIT {
         tx.execute(Graql.match(matchStatement).insert(insertStatement));
         assertCollectionsNonTriviallyEqual(before, tx.execute(Graql.match(matchStatement)));
     }
+
     @Test
     public void whenMatchInsertingExistingEntity_weDoNoOp() {
         Statement matchStatement = var("x").isa("movie");
@@ -708,16 +709,24 @@ public class GraqlInsertIT {
         }
 
         // Insert all vars
-        tx.execute(Graql.insert(vars));
+        ConceptMap answer = tx.execute(Graql.insert(vars)).get(0);
 
         // Make sure all vars exist
         for (Statement var : vars) {
             assertExists(tx, var);
         }
 
+        // TODO restore prior implementation when we can delete and read at the same time
+//        for (Statement statement: vars) {
+//            tx.execute(Graql.match(statement).delete(Graql.var(statement.var()).isa("thing")));
+//        }
+
         // Delete all vars
-        for (Statement var : vars) {
-            tx.execute(Graql.match(var).delete(var.var()));
+        for (Statement statement : vars) {
+            // if we delete by ID instead of full traversal, traversals don't support modifications and deletions at the same time
+            Variable var = statement.var();
+            tx.execute(Graql.match(Graql.var(var).id(answer.get(var).id().toString()))
+                    .delete(Graql.var(var).isa("thing")));
         }
 
         // Make sure vars don't exist

@@ -29,7 +29,7 @@ import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Objects;
 
-import static grakn.core.core.Schema.VertexProperty.DATA_TYPE;
+import static grakn.core.core.Schema.VertexProperty.VALUE_TYPE;
 
 class ValueTypeFragment extends FragmentImpl {
 
@@ -47,7 +47,7 @@ class ValueTypeFragment extends FragmentImpl {
     @Override
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
             GraphTraversal<Vertex, ? extends Element> traversal, ConceptManager conceptManager, Collection<Variable> vars) {
-        return traversal.has(DATA_TYPE.name(), valueType().name());
+        return traversal.has(VALUE_TYPE.name(), valueType().name());
     }
 
     @Override
@@ -57,7 +57,7 @@ class ValueTypeFragment extends FragmentImpl {
 
     @Override
     public double internalFragmentCost() {
-        return COST_NODE_DATA_TYPE;
+        return COST_NODE_VALUE_TYPE;
     }
 
     @Override
