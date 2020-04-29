@@ -18,26 +18,6 @@
 load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
 java_test(
-    name = "attribute-uniqueness-it",
-    size = "large",
-    srcs = ["AttributeUniquenessIT.java"],
-    classpath_resources = ["//test-integration/resources:logback-test"],
-    test_class = "grakn.core.server.AttributeUniquenessIT",
-    deps = [
-        "//concept/answer",
-        "//core",
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
-        "//kb/server",
-        "//kb/concept/api",
-        "//test-integration/rule:grakn-test-server",
-        "@graknlabs_graql//java:graql",
-        "@graknlabs_common//:common",
-        "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
-
-    ],
-)
-
-java_test(
     name = "grakn-client-it",
     size = "large",
     srcs = ["GraknClientIT.java"],
@@ -124,7 +104,6 @@ java_test(
 checkstyle_test(
     name = "checkstyle",
     targets = [
-        ":attribute-uniqueness-it",
         ":grakn-client-it",
         ":validator-it",
         ":validate-global-rules-it",

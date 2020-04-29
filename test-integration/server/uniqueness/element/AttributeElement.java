@@ -15,7 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.distribution.element;
+package grakn.core.server.uniqueness.element;
 
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
