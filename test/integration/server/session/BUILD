@@ -41,9 +41,6 @@ java_test(
         "//concept/answer",
         "//concept/impl",
         "//core",
-        "//dependencies/maven/artifacts/com/google/guava",
-        "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//graph",
         "//kb/server",
         "//kb/concept/api",
@@ -53,6 +50,9 @@ java_test(
         "//test/integration/util:concept-downcasting",
         "//test/integration/util:graql-test-util",
         "@graknlabs_graql//java:graql",
+        "//dependencies/maven/artifacts/com/google/guava",
+        "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
+        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
     ],
 )
 
@@ -64,13 +64,13 @@ java_test(
     test_class = "grakn.core.server.session.cache.TransactionCacheIT",
     deps = [
         "//core",
-        "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//kb/server",
         "//kb/concept/api",
         "//test/rule:grakn-test-server",
         "@graknlabs_common//:common",
         "@graknlabs_graql//java:graql",
+        "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
+        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
     ],
 )
 
