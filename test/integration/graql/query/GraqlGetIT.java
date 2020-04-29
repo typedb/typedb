@@ -510,7 +510,13 @@ public class GraqlGetIT {
         assertEquals(answersById.size(), 1);
 
         // clean up, delete the IDs we inserted for this test
-        tx.execute(Graql.match(idPatterns).delete(deletePatterns));
+
+        // TODO re-enable batch deletion when we no longer have `via` and implicit attribute relations
+//        tx.execute(Graql.match(idPatterns).delete(deletePatterns));
+
+        for (int i = 0; i < insertedIds.size(); i++) {
+            tx.execute(Graql.match(idPatterns.get(i)).delete(deletePatterns.get(i)));
+        }
         tx.commit();
     }
 }
