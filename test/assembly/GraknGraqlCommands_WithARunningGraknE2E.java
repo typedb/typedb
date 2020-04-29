@@ -13,9 +13,10 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
  */
 
-package grakn.core.distribution;
+package grakn.core.assembly;
 
 import grakn.core.server.Version;
 import org.apache.commons.io.FileUtils;
@@ -33,12 +34,12 @@ import java.nio.file.Paths;
 import java.util.UUID;
 import java.util.concurrent.TimeoutException;
 
-import static grakn.core.distribution.DistributionE2EConstants.GRAKN_UNZIPPED_DIRECTORY;
-import static grakn.core.distribution.DistributionE2EConstants.assertGraknIsNotRunning;
-import static grakn.core.distribution.DistributionE2EConstants.assertGraknIsRunning;
-import static grakn.core.distribution.DistributionE2EConstants.assertZipExists;
-import static grakn.core.distribution.DistributionE2EConstants.getLogsPath;
-import static grakn.core.distribution.DistributionE2EConstants.unzipGrakn;
+import static grakn.core.assembly.AssemblyE2EConstants.GRAKN_UNZIPPED_DIRECTORY;
+import static grakn.core.assembly.AssemblyE2EConstants.assertGraknIsNotRunning;
+import static grakn.core.assembly.AssemblyE2EConstants.assertGraknIsRunning;
+import static grakn.core.assembly.AssemblyE2EConstants.assertZipExists;
+import static grakn.core.assembly.AssemblyE2EConstants.getLogsPath;
+import static grakn.core.assembly.AssemblyE2EConstants.unzipGrakn;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;

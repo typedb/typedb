@@ -13,9 +13,10 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
  */
 
-package grakn.core.distribution;
+package grakn.core.assembly;
 
 import grakn.core.common.config.Config;
 import grakn.core.common.config.ConfigKey;
@@ -31,10 +32,10 @@ import java.util.concurrent.TimeoutException;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 
-public class DistributionE2EConstants {
+public class AssemblyE2EConstants {
     public static final Path GRAKN_TARGET_DIRECTORY = Paths.get(".").toAbsolutePath();
     public static final Path ZIP_FULLPATH = Paths.get(GRAKN_TARGET_DIRECTORY.toString(), "grakn-core-all-mac.zip");
-    public static final Path GRAKN_UNZIPPED_DIRECTORY = Paths.get(GRAKN_TARGET_DIRECTORY.toString(), "distribution-test", "grakn-core-all-mac");
+    public static final Path GRAKN_UNZIPPED_DIRECTORY = Paths.get(GRAKN_TARGET_DIRECTORY.toString(), "assembly-test", "grakn-core-all-mac");
 
     public static void assertGraknIsRunning() {
         Config config = Config.read(GRAKN_UNZIPPED_DIRECTORY.resolve("server").resolve("conf").resolve("grakn.properties"));
