@@ -28,7 +28,7 @@ import grakn.core.kb.graql.exception.GraqlSemanticException;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import grakn.core.kb.server.exception.InvalidKBException;
-import grakn.core.rule.GraknTestServer;
+import grakn.core.test.rule.GraknTestServer;
 import graql.lang.Graql;
 import graql.lang.exception.GraqlException;
 import graql.lang.property.ValueProperty;
@@ -210,9 +210,9 @@ public class QueryErrorIT {
     @Test
     public void testExceptionInstanceOfRule() {
         exception.expect(GraqlSemanticException.class);
-        exception.expectMessage(GraqlSemanticException.cannotGetInstancesOfNonType(Label.of("rule")).getMessage());
+        exception.expectMessage(GraqlSemanticException.cannotGetInstancesOfNonType(Label.of("test/rule")).getMessage());
         //noinspection ResultOfMethodCallIgnored
-        tx.stream(Graql.match(var("x").isa("rule")));
+        tx.stream(Graql.match(var("x").isa("test/rule")));
     }
 
     @Test

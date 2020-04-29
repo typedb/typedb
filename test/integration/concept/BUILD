@@ -13,7 +13,7 @@ java_test(
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//kb/server",
         "//kb/concept/api",
-        "//test/integration/rule:grakn-test-server",
+        "//test/rule:grakn-test-server",
     ],
 )
 
@@ -27,7 +27,7 @@ java_test(
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//kb/server",
         "//kb/concept/api",
-        "//test/integration/rule:grakn-test-server",
+        "//test/rule:grakn-test-server",
         "@graknlabs_graql//java:graql",
     ],
 )
@@ -45,7 +45,7 @@ java_test(
         "//kb/server",
         "//kb/concept/api",
         "//kb/concept/structure",
-        "//test/integration/rule:grakn-test-server",
+        "//test/rule:grakn-test-server",
         "//test/integration/util:concept-downcasting",
     ],
 )
@@ -62,7 +62,7 @@ java_test(
         "//kb/server",
         "//kb/concept/api",
         "//kb/concept/structure",
-        "//test/integration/rule:grakn-test-server",
+        "//test/rule:grakn-test-server",
         "//test/integration/util:concept-downcasting",
     ],
 )
@@ -80,7 +80,7 @@ java_test(
         "//core",
         "//kb/concept/structure",
         "//kb/concept/api",
-        "//test/integration/rule:grakn-test-server",
+        "//test/rule:grakn-test-server",
         "//test/integration/util:concept-downcasting",
 
         # External dependencies from @graknlabs
@@ -108,7 +108,7 @@ java_test(
         "//kb/server",
         "//kb/concept/api",
         "//kb/concept/manager",
-        "//test/integration/rule:grakn-test-server",
+        "//test/rule:grakn-test-server",
         "@graknlabs_graql//java:graql",
     ],
 )
@@ -124,7 +124,7 @@ java_test(
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//kb/server",
         "//kb/concept/api",
-        "//test/integration/rule:grakn-test-server",
+        "//test/rule:grakn-test-server",
     ],
 )
 
@@ -138,7 +138,7 @@ java_test(
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//kb/server",
         "//kb/concept/api",
-        "//test/integration/rule:grakn-test-server",
+        "//test/rule:grakn-test-server",
     ],
 )
 
@@ -157,7 +157,7 @@ java_test(
         "//kb/server",
         "//kb/concept/api",
         "//kb/concept/structure",
-        "//test/integration/rule:grakn-test-server",
+        "//test/rule:grakn-test-server",
     ],
 )
 
@@ -173,7 +173,7 @@ java_test(
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//kb/server",
         "//kb/concept/api",
-        "//test/integration/rule:grakn-test-server",
+        "//test/rule:grakn-test-server",
     ],
 )
 

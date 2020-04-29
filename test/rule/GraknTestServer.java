@@ -15,7 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.rule;
+package grakn.core.test.rule;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import grakn.core.common.config.Config;

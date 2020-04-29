@@ -56,7 +56,7 @@ java_test(
         "//kb/concept/manager",
         "//kb/graql/planning",
         "//kb/server",
-        "//test/integration/rule:grakn-test-server",
+        "//test/rule:grakn-test-server",
         "@graknlabs_graql//java:graql",
     ],
 )

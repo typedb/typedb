@@ -20,7 +20,7 @@ package grakn.core.graql.reasoner.reasoning;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
-import grakn.core.rule.GraknTestServer;
+import grakn.core.test.rule.GraknTestServer;
 import graql.lang.Graql;
 import org.junit.ClassRule;
 import org.junit.Ignore;

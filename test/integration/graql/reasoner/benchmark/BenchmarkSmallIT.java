@@ -31,7 +31,7 @@ import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
-import grakn.core.rule.GraknTestServer;
+import grakn.core.test.rule.GraknTestServer;
 import graql.lang.Graql;
 import graql.lang.query.GraqlGet;
 import graql.lang.statement.Statement;
@@ -92,7 +92,7 @@ public class BenchmarkSmallIT {
                 Statement fromVar = new Statement(new Variable().asReturnedVar());
                 Statement toVar = new Statement(new Variable().asReturnedVar());
                 Statement rulePattern = Graql
-                        .type("rule" + i)
+                        .type("test/rule" + i)
                         .when(
                                 Graql.and(
                                         Graql.var()

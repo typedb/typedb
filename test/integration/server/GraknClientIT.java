@@ -50,7 +50,7 @@ import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import grakn.core.kb.server.exception.SessionException;
 import grakn.core.kb.server.keyspace.Keyspace;
-import grakn.core.rule.GraknTestServer;
+import grakn.core.test.rule.GraknTestServer;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlDelete;
@@ -234,7 +234,7 @@ public class GraknClientIT {
                     type("name").sub("attribute").value("string"),
                     type("content").sub("entity").key("name").plays("contained").plays("container"),
                     type("contains").sub("relation").relates("contained").relates("container"),
-                    type("transitive-location").sub("rule")
+                    type("transitive-location").sub("test/rule")
                             .when(and(
                                     rel("contained", "x").rel("container", "y").isa("contains"),
                                     rel("contained", "y").rel("container", "z").isa("contains")
@@ -280,7 +280,7 @@ public class GraknClientIT {
                     type("name").sub("attribute").value("string"),
                     type("content").sub("entity").has("name").plays("contained").plays("container"),
                     type("contains").sub("relation").relates("contained").relates("container"),
-                    type("transitive-location").sub("rule")
+                    type("transitive-location").sub("test/rule")
                             .when(and(
                                     rel("contained", "x").rel("container", "y").isa("contains"),
                                     rel("contained", "y").rel("container", "z").isa("contains")
@@ -324,7 +324,7 @@ public class GraknClientIT {
                     type("name").sub("attribute").value("string"),
                     type("content").sub("entity").has("name").plays("contained").plays("container"),
                     type("contains").sub("relation").relates("contained").relates("container"),
-                    type("transitive-location").sub("rule")
+                    type("transitive-location").sub("test/rule")
                             .when(and(
                                     rel("contained", "x").rel("container", "y").isa("contains"),
                                     rel("contained", "y").rel("container", "z").isa("contains")

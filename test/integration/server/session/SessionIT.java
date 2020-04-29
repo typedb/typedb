@@ -23,7 +23,7 @@ import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import grakn.core.kb.server.exception.SessionException;
 import grakn.core.kb.server.exception.TransactionException;
-import grakn.core.rule.GraknTestServer;
+import grakn.core.test.rule.GraknTestServer;
 import grakn.core.server.keyspace.KeyspaceImpl;
 import org.junit.After;
 import org.junit.Before;

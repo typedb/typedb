@@ -16,7 +16,7 @@
  *
  */
 
-package grakn.core.rule;
+package grakn.core.test.rule;
 
 import grakn.core.concept.impl.TypeImpl;
 import grakn.core.concept.manager.ConceptListenerImpl;

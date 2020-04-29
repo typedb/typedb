@@ -28,9 +28,9 @@ import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
-import grakn.core.rule.GraknTestStorage;
-import grakn.core.rule.SessionUtil;
-import grakn.core.rule.TestTransactionProvider;
+import grakn.core.test.rule.GraknTestStorage;
+import grakn.core.test.rule.SessionUtil;
+import grakn.core.test.rule.TestTransactionProvider;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import org.junit.AfterClass;
@@ -127,7 +127,7 @@ public class RuleCacheIT {
     @Test
     public void whenDeletingARule_cacheContainsUpdatedEntry(){
         try(Transaction tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE)) {
-            tx.execute(Graql.undefine(type("binary-transitivity").sub("rule")));
+            tx.execute(Graql.undefine(type("binary-transitivity").sub("test/rule")));
             tx.commit();
         }
         try(Transaction tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE)) {

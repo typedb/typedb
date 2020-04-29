@@ -27,7 +27,7 @@ java_test(
         "//kb/server",
         "//kb/concept/api",
         "//concept/answer",
-        "//test/integration/rule:grakn-test-server",
+        "//test/rule:grakn-test-server",
         "@graknlabs_graql//java:graql",
         "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
@@ -48,7 +48,7 @@ java_test(
         "//kb/concept/api",
         "//kb/graql/planning",
         "//kb/server",
-        "//test/integration/rule:grakn-test-server",
+        "//test/rule:grakn-test-server",
         "@graknlabs_graql//java:graql",
     ],
 )

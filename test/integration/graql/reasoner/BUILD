@@ -28,7 +28,7 @@ java_test(
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//kb/concept/api",
         "//kb/server",
-        "//test/integration/rule:grakn-test-server",
+        "//test/rule:grakn-test-server",
         "//test/integration/util:graql-test-util",
         "@graknlabs_graql//java:graql",
     ],
@@ -48,7 +48,7 @@ java_test(
         "//kb/concept/api",
         "//kb/server",
         "//test/integration/graql/reasoner/graph:geo-graph",
-        "//test/integration/rule:grakn-test-server",
+        "//test/rule:grakn-test-server",
         "@graknlabs_graql//java:graql",
     ],
 )

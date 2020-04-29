@@ -28,7 +28,7 @@ import grakn.client.concept.ConceptId;
 import grakn.client.concept.Label;
 import grakn.client.concept.type.RelationType;
 import grakn.client.concept.type.Role;
-import grakn.core.rule.GraknTestServer;
+import grakn.core.test.rule.GraknTestServer;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlInsert;
@@ -181,7 +181,7 @@ public class BenchmarkBigIT {
                     Statement intermedVar = new Statement(new Variable().asReturnedVar());
                     Statement toVar = new Statement(new Variable().asReturnedVar());
                     Statement rulePattern = Graql
-                            .type("rule" + i)
+                            .type("test/rule" + i)
                             .when(
                                     Graql.and(
                                             Graql.var()

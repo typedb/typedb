@@ -34,7 +34,7 @@ import grakn.core.kb.concept.structure.Shard;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import grakn.core.kb.server.exception.TransactionException;
-import grakn.core.rule.GraknTestServer;
+import grakn.core.test.rule.GraknTestServer;
 import grakn.core.util.ConceptDowncasting;
 import graql.lang.Graql;
 import org.apache.tinkerpop.gremlin.structure.Direction;

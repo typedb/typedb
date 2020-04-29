@@ -29,7 +29,7 @@ java_test(
         "//kb/graql/exception",
         "//kb/concept/api",
         "//test/integration/graql/graph:movie-graph",
-        "//test/integration/rule:grakn-test-server",
+        "//test/rule:grakn-test-server",
         "//test/integration/util:graql-test-util",
         "@graknlabs_graql//java:graql",
     ],

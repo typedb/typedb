@@ -16,7 +16,7 @@
  *
  */
 
-package grakn.core.rule;
+package grakn.core.test.rule;
 
 import grakn.core.common.config.Config;
 import grakn.core.common.config.ConfigKey;

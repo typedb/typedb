@@ -25,7 +25,7 @@ java_test(
     deps = [
         "//kb/server",
         "//kb/concept/api",
-        "//test/integration/rule:grakn-test-server",
+        "//test/rule:grakn-test-server",
         "@graknlabs_client_java//:client-java",
     ],
 )
@@ -41,7 +41,7 @@ java_test(
         "//kb/server",
         "//kb/concept/api",
         "//server",
-        "//test/integration/rule:grakn-test-server",
+        "//test/rule:grakn-test-server",
         "@graknlabs_graql//java:graql",
     ],
 )
@@ -57,7 +57,7 @@ java_test(
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//kb/server",
         "//server",
-        "//test/integration/rule:grakn-test-server",
+        "//test/rule:grakn-test-server",
         "@graknlabs_graql//java:graql",
     ],
 )
@@ -71,7 +71,7 @@ java_test(
         "//kb/concept/api",
         "//kb/keyspace",
         "//kb/server",
-        "//test/integration/rule:grakn-test-server",
+        "//test/rule:grakn-test-server",
         "@graknlabs_graql//java:graql",
     ],
 )
@@ -87,7 +87,7 @@ java_test(
         "//kb/concept/api",
         "//kb/keyspace",
         "//kb/server",
-        "//test/integration/rule:grakn-test-server",
+        "//test/rule:grakn-test-server",
         "@graknlabs_client_java//:client-java",
         "@graknlabs_graql//java:graql",
     ],

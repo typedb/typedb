@@ -13,7 +13,7 @@ java_test(
         "//kb/concept/api",
         "//kb/graql/exception",
         "//kb/server",
-        "//test/integration/rule:grakn-test-server",
+        "//test/rule:grakn-test-server",
         "@graknlabs_graql//java:graql",
     ],
 )
@@ -31,7 +31,7 @@ java_test(
         "//kb/concept/api",
         "//kb/graql/exception",
         "//kb/server",
-        "//test/integration/rule:grakn-test-server",
+        "//test/rule:grakn-test-server",
         "@graknlabs_graql//java:graql",
     ],
 )
@@ -47,7 +47,7 @@ java_test(
         "//kb/concept/api",
         "//kb/graql/exception",
         "//kb/server",
-        "//test/integration/rule:grakn-test-server",
+        "//test/rule:grakn-test-server",
         "@graknlabs_graql//java:graql",
     ],
 )
@@ -63,7 +63,7 @@ java_test(
         "//core",
         "//kb/concept/api",
         "//kb/server",
-        "//test/integration/rule:grakn-test-server",
+        "//test/rule:grakn-test-server",
         "@graknlabs_graql//java:graql",
     ],
 )
@@ -79,7 +79,7 @@ java_test(
         "//dependencies/maven/artifacts/com/google/guava",
         "//kb/concept/api",
         "//kb/server",
-        "//test/integration/rule:grakn-test-server",
+        "//test/rule:grakn-test-server",
         "@graknlabs_graql//java:graql",
     ],
 )
@@ -95,7 +95,7 @@ java_test(
         "//kb/concept/api",
         "//kb/graql/exception",
         "//kb/server",
-        "//test/integration/rule:grakn-test-server",
+        "//test/rule:grakn-test-server",
         "@graknlabs_graql//java:graql",
     ],
 )
@@ -120,7 +120,7 @@ java_test(
         "//kb/graql/planning",
         "//kb/graql/executor",
         "//kb/server",
-        "//test/integration/rule:grakn-test-server",
+        "//test/rule:grakn-test-server",
         "@graknlabs_graql//java:graql",
     ],
 )
@@ -138,7 +138,7 @@ java_test(
         "//kb/concept/api",
         "//kb/graql/exception",
         "//kb/server",
-        "//test/integration/rule:grakn-test-server",
+        "//test/rule:grakn-test-server",
         "@graknlabs_graql//java:graql",
     ],
 )

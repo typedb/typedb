@@ -38,7 +38,7 @@ import grakn.core.kb.graql.exception.GraqlSemanticException;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import grakn.core.kb.server.exception.InvalidKBException;
-import grakn.core.rule.GraknTestServer;
+import grakn.core.test.rule.GraknTestServer;
 import graql.lang.Graql;
 import graql.lang.exception.GraqlException;
 import graql.lang.query.GraqlCompute;
@@ -216,9 +216,9 @@ public class GraqlComputeIT {
     @Test
     public void testSubgraphContainingRuleDoesNotBreakAnalytics() {
         expectedEx.expect(GraqlSemanticException.class);
-        expectedEx.expectMessage(GraqlSemanticException.labelNotFound(Label.of("rule")).getMessage());
+        expectedEx.expectMessage(GraqlSemanticException.labelNotFound(Label.of("test/rule")).getMessage());
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-            tx.execute(Graql.compute().count().in("rule", "thing"));
+            tx.execute(Graql.compute().count().in("test/rule", "thing"));
         }
     }
 
