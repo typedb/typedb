@@ -128,22 +128,26 @@ public class ExplanationIT {
             assertEquals(queryAnswer4, answer4);
 
             assertEquals(0, queryAnswer1.explanation().deductions().size());
-            assertEquals(2, queryAnswer2.explanation().deductions().size());
-            assertEquals(4, queryAnswer3.explanation().deductions().size());
-            assertEquals(6, queryAnswer4.explanation().deductions().size());
+            assertEquals(3, queryAnswer2.explanation().deductions().size());
+            assertEquals(6, queryAnswer3.explanation().deductions().size());
+            assertEquals(9, queryAnswer4.explanation().deductions().size());
 
             assertTrue(queryAnswer1.explanation().isLookupExplanation());
 
             assertTrue(queryAnswer2.explanation().isRuleExplanation());
             assertEquals(2, getLookupExplanations(queryAnswer2).size());
+            assertEquals(1, getRuleExplanations(queryAnswer2).size());
+            assertEquals(1, getJoinExplanations(queryAnswer2).size());
             assertEquals(2, queryAnswer2.explanation().explicit().size());
 
             assertTrue(queryAnswer3.explanation().isRuleExplanation());
             assertEquals(2, getRuleExplanations(queryAnswer3).size());
+            assertEquals(2, getJoinExplanations(queryAnswer3).size());
             assertEquals(3, queryAnswer3.explanation().explicit().size());
 
             assertTrue(queryAnswer4.explanation().isRuleExplanation());
             assertEquals(3, getRuleExplanations(queryAnswer4).size());
+            assertEquals(3, getJoinExplanations(queryAnswer4).size());
             assertEquals(4, queryAnswer4.explanation().explicit().size());
         }
     }
@@ -176,14 +180,17 @@ public class ExplanationIT {
         (res), (uni, ctr) - (region, ctr)
                           - (uni, region) - {(city, region), (uni, city)
                           */
-            assertEquals(6, queryAnswer1.explanation().deductions().size());
-            assertEquals(6, queryAnswer2.explanation().deductions().size());
-
-            assertEquals(4, getLookupExplanations(queryAnswer1).size());
+            assertEquals(8, queryAnswer1.explanation().deductions().size());
             assertEquals(4, queryAnswer1.explanation().explicit().size());
+            assertEquals(4, getLookupExplanations(queryAnswer1).size());
+            assertEquals(2, getRuleExplanations(queryAnswer1).size());
+            assertEquals(3, getJoinExplanations(queryAnswer1).size());
 
-            assertEquals(4, getLookupExplanations(queryAnswer2).size());
+            assertEquals(8, queryAnswer2.explanation().deductions().size());
             assertEquals(4, queryAnswer2.explanation().explicit().size());
+            assertEquals(4, getLookupExplanations(queryAnswer2).size());
+            assertEquals(2, getRuleExplanations(queryAnswer2).size());
+            assertEquals(3, getJoinExplanations(queryAnswer2).size());
         }
     }
 
@@ -203,8 +210,9 @@ public class ExplanationIT {
 
             ConceptMap answer = answers.iterator().next();
             assertTrue(answer.explanation().isRuleExplanation());
-            assertEquals(2, answer.explanation().getAnswers().size());
+            assertEquals(1, answer.explanation().getAnswers().size());
             assertEquals(3, getRuleExplanations(answer).size());
+            assertEquals(3, getJoinExplanations(answer).size());
             assertEquals(4, answer.explanation().explicit().size());
             testExplanation(answers);
         }
@@ -346,14 +354,17 @@ public class ExplanationIT {
     }
 
     private void checkAnswerConnectedness(ConceptMap answer) {
-        List<ConceptMap> answers = answer.explanation().getAnswers();
-        answers.forEach(a -> {
-            assertTrue("Disconnected answer in explanation",
-                    answers.stream()
-                            .filter(a2 -> !a2.equals(a))
-                            .anyMatch(a2 -> !Sets.intersection(a.vars(), a2.vars()).isEmpty())
-            );
-        });
+        Explanation explanation = answer.explanation();
+        if (!explanation.isRuleExplanation()) {
+            List<ConceptMap> answers = explanation.getAnswers();
+            answers.forEach(a -> {
+                assertTrue("Disconnected answer in explanation",
+                        answers.stream()
+                                .filter(a2 -> !a2.equals(a))
+                                .anyMatch(a2 -> !Sets.intersection(a.vars(), a2.vars()).isEmpty())
+                );
+            });
+        }
     }
 
     private void answerHasConsistentExplanations(ConceptMap answer) {
@@ -378,6 +389,10 @@ public class ExplanationIT {
 
     private Set<Explanation> getRuleExplanations(ConceptMap a) {
         return a.explanations().stream().filter(Explanation::isRuleExplanation).collect(Collectors.toSet());
+    }
+
+    private Set<Explanation> getJoinExplanations(ConceptMap a) {
+        return a.explanations().stream().filter(Explanation::isJoinExplanation).collect(Collectors.toSet());
     }
 
     private Set<Explanation> getLookupExplanations(ConceptMap a) {
