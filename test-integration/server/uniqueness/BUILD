@@ -37,7 +37,7 @@ java_test(
 )
 
 java_test(
-    name = "concurrency-e2e",
+    name = "concurrency-it",
     size = "enormous",
     srcs = [
         "ConcurrencyIT.java",
@@ -66,5 +66,6 @@ checkstyle_test(
     name = "checkstyle",
     targets = [
         ":attribute-uniqueness-it",
+        ":concurrency-it"
     ],
 )
