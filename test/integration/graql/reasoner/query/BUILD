@@ -19,7 +19,7 @@ java_test(
     srcs = [
         "AtomicQueryEquivalenceIT.java",
     ],
-    classpath_resources = ["//test/integration/resources:logback-test"],
+    classpath_resources = ["//test/resources:logback-test"],
     resources = ["//test/integration/graql/reasoner/resources:generic-schema"],
     test_class = "grakn.core.graql.reasoner.query.AtomicQueryEquivalenceIT",
     deps = [
@@ -39,7 +39,7 @@ java_test(
     name = "atomic-query-it",
     size = "medium",
     srcs = ["AtomicQueryIT.java"],
-    classpath_resources = ["//test/integration/resources:logback-test"],
+    classpath_resources = ["//test/resources:logback-test"],
     resources = ["//test/integration/graql/reasoner/resources:generic-schema"],
     test_class = "grakn.core.graql.reasoner.query.AtomicQueryIT",
     deps = [
@@ -63,7 +63,7 @@ java_test(
     srcs = [
         "ExplanationIT.java",
     ],
-    classpath_resources = ["//test/integration/resources:logback-test"],
+    classpath_resources = ["//test/resources:logback-test"],
     resources = [
         "//test/integration/graql/reasoner/stubs:reasoning-stubs",
     ],
@@ -86,7 +86,7 @@ java_test(
     name = "materialisation-it",
     size = "medium",
     srcs = ["MaterialisationIT.java"],
-    classpath_resources = ["//test/integration/resources:logback-test"],
+    classpath_resources = ["//test/resources:logback-test"],
     resources = ["//test/integration/graql/reasoner/resources:materialisation"],
     test_class = "grakn.core.graql.reasoner.query.MaterialisationIT",
     deps = [
@@ -109,7 +109,7 @@ java_test(
     srcs = [
         "NegationIT.java",
     ],
-    classpath_resources = ["//test/integration/resources:logback-test"],
+    classpath_resources = ["//test/resources:logback-test"],
     resources = [
         "//test/integration/graql/reasoner/resources/recursion:recursion-schemas",
         "//test/integration/graql/reasoner/stubs:reasoning-stubs",
@@ -139,7 +139,7 @@ java_test(
     srcs = [
         "AtomicQueryUnificationIT.java",
     ],
-    classpath_resources = ["//test/integration/resources:logback-test"],
+    classpath_resources = ["//test/resources:logback-test"],
     resources = [
         "//test/integration/graql/reasoner/resources:generic-schema",
         "//test/integration/graql/reasoner/resources:unification-with-types",
@@ -168,7 +168,7 @@ java_test(
     name = "query-it",
     size = "medium",
     srcs = ["QueryIT.java"],
-    classpath_resources = ["//test/integration/resources:logback-test"],
+    classpath_resources = ["//test/resources:logback-test"],
     test_class = "grakn.core.graql.reasoner.query.QueryIT",
     deps = [
         "//common",
@@ -187,7 +187,7 @@ java_test(
     name = "ontological-query-it",
     size = "large",
     srcs = ["OntologicalQueryIT.java"],
-    classpath_resources = ["//test/integration/resources:logback-test"],
+    classpath_resources = ["//test/resources:logback-test"],
     resources = [
         "//test/integration/graql/reasoner/resources:matching-types",
         "//test/integration/graql/reasoner/resources:rule-applicability",
@@ -209,7 +209,7 @@ java_test(
     name = "resolution-plan-it",
     size = "medium",
     srcs = ["ResolutionPlanIT.java"],
-    classpath_resources = ["//test/integration/resources:logback-test"],
+    classpath_resources = ["//test/resources:logback-test"],
     resources = ["//test/integration/graql/reasoner/resources:resolution-plan"],
     test_class = "grakn.core.graql.reasoner.query.ResolutionPlanIT",
     deps = [
@@ -237,7 +237,7 @@ java_test(
         "GenerativeOperationalIT.java",
         "TransactionContext.java",
     ],
-    classpath_resources = ["//test/integration/resources:logback-test"],
+    classpath_resources = ["//test/resources:logback-test"],
     resources = [
         "//test/integration/graql/reasoner/resources:generic-schema",
     ],
@@ -264,7 +264,7 @@ java_test(
     name = "subsumption-it",
     size = "medium",
     srcs = ["SubsumptionIT.java"],
-    classpath_resources = ["//test/integration/resources:logback-test"],
+    classpath_resources = ["//test/resources:logback-test"],
     resources = [
         "//test/integration/graql/reasoner/resources:generic-schema",
     ],

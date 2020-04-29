@@ -4,7 +4,7 @@ java_test(
     name = "type-inference-it",
     size = "medium",
     srcs = ["TypeInferenceIT.java"],
-    classpath_resources = ["//test/integration/resources:logback-test"],
+    classpath_resources = ["//test/resources:logback-test"],
     resources = ["//test/integration/graql/reasoner/resources:type-inference"],
     test_class = "grakn.core.graql.reasoner.atomic.TypeInferenceIT",
     deps = [
@@ -26,7 +26,7 @@ java_test(
     name = "atomic-unification-it",
     size = "medium",
     srcs = ["AtomicUnificationIT.java"],
-    classpath_resources = ["//test/integration/resources:logback-test"],
+    classpath_resources = ["//test/resources:logback-test"],
     resources = ["//test/integration/graql/reasoner/resources:generic-schema"],
     test_class = "grakn.core.graql.reasoner.atomic.AtomicUnificationIT",
     deps = [
@@ -48,7 +48,7 @@ java_test(
     name = "atomic-conversion-it",
     size = "medium",
     srcs = ["AtomicConversionIT.java"],
-    classpath_resources = ["//test/integration/resources:logback-test"],
+    classpath_resources = ["//test/resources:logback-test"],
     resources = ["//test/integration/graql/reasoner/resources:generic-schema"],
     test_class = "grakn.core.graql.reasoner.atomic.AtomicConversionIT",
     deps = [
@@ -69,7 +69,7 @@ java_test(
     name = "rule-applicability-it",
     size = "medium",
     srcs = ["RuleApplicabilityIT.java"],
-    classpath_resources = ["//test/integration/resources:logback-test"],
+    classpath_resources = ["//test/resources:logback-test"],
     resources = [
         "//test/integration/graql/reasoner/resources:reified-resource-applicability",
         "//test/integration/graql/reasoner/resources:resource-applicability",
@@ -94,7 +94,7 @@ java_test(
     name = "role-inference-it",
     size = "medium",
     srcs = ["RoleInferenceIT.java"],
-    classpath_resources = ["//test/integration/resources:logback-test"],
+    classpath_resources = ["//test/resources:logback-test"],
     resources = [
         "//test/integration/graql/reasoner/resources:generic-schema",
         "//test/integration/graql/reasoner/resources:role-inference",
@@ -119,7 +119,7 @@ java_test(
     name = "atomic-equivalence-it",
     size = "medium",
     srcs = ["AtomicEquivalenceIT.java"],
-    classpath_resources = ["//test/integration/resources:logback-test"],
+    classpath_resources = ["//test/resources:logback-test"],
     resources = ["//test/integration/graql/reasoner/resources:generic-schema"],
     test_class = "grakn.core.graql.reasoner.atomic.AtomicEquivalenceIT",
     deps = [

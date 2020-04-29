@@ -4,7 +4,7 @@ java_test(
     name = "casting-it",
     size = "medium",
     srcs = ["CastingIT.java"],
-    classpath_resources = ["//test/integration/resources:logback-test"],
+    classpath_resources = ["//test/resources:logback-test"],
     test_class = "grakn.core.server.kb.structure.CastingIT",
     deps = [
         "//concept/impl",
@@ -21,7 +21,7 @@ java_test(
     name = "edge-it",
     size = "medium",
     srcs = ["EdgeIT.java"],
-    classpath_resources = ["//test/integration/resources:logback-test"],
+    classpath_resources = ["//test/resources:logback-test"],
     test_class = "grakn.core.server.kb.structure.EdgeIT",
     deps = [
         "//concept/structure",

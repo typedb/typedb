@@ -41,7 +41,7 @@ java_test(
     data = [
         "@graknlabs_verification//behaviour/graql/language:define.feature",
     ],
-    classpath_resources = ["//test/integration/resources:logback-test"],
+    classpath_resources = ["//test/resources:logback-test"],
     size = "medium",
     visibility = ["//visibility:public"]
 )

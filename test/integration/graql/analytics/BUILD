@@ -4,7 +4,7 @@ java_test(
     name = "graql-compute-it",
     size = "large",
     srcs = ["GraqlComputeIT.java"],
-    classpath_resources = ["//test/integration/resources:logback-test"],
+    classpath_resources = ["//test/resources:logback-test"],
     test_class = "grakn.core.graql.analytics.GraqlComputeIT",
     deps = [
         "//concept/answer",
@@ -22,7 +22,7 @@ java_test(
     name = "connected-component-it",
     size = "large",
     srcs = ["ConnectedComponentIT.java"],
-    classpath_resources = ["//test/integration/resources:logback-test"],
+    classpath_resources = ["//test/resources:logback-test"],
     test_class = "grakn.core.graql.analytics.ConnectedComponentIT",
     deps = [
         "//concept/answer",
@@ -40,7 +40,7 @@ java_test(
     name = "coreness-it",
     size = "large",
     srcs = ["CorenessIT.java"],
-    classpath_resources = ["//test/integration/resources:logback-test"],
+    classpath_resources = ["//test/resources:logback-test"],
     test_class = "grakn.core.graql.analytics.CorenessIT",
     deps = [
         "//concept/answer",
@@ -56,7 +56,7 @@ java_test(
     name = "count-it",
     size = "large",
     srcs = ["CountIT.java"],
-    classpath_resources = ["//test/integration/resources:logback-test"],
+    classpath_resources = ["//test/resources:logback-test"],
     test_class = "grakn.core.graql.analytics.CountIT",
     deps = [
         "//concept/answer",
@@ -72,7 +72,7 @@ java_test(
     name = "degree-it",
     size = "large",
     srcs = ["DegreeIT.java"],
-    classpath_resources = ["//test/integration/resources:logback-test"],
+    classpath_resources = ["//test/resources:logback-test"],
     test_class = "grakn.core.graql.analytics.DegreeIT",
     deps = [
         "//concept/answer",
@@ -88,7 +88,7 @@ java_test(
     name = "kcore-it",
     size = "large",
     srcs = ["KCoreIT.java"],
-    classpath_resources = ["//test/integration/resources:logback-test"],
+    classpath_resources = ["//test/resources:logback-test"],
     test_class = "grakn.core.graql.analytics.KCoreIT",
     deps = [
         "//concept/answer",
@@ -104,7 +104,7 @@ java_test(
     name = "path-it",
     size = "large",
     srcs = ["PathIT.java"],
-    classpath_resources = ["//test/integration/resources:logback-test"],
+    classpath_resources = ["//test/resources:logback-test"],
     test_class = "grakn.core.graql.analytics.PathIT",
     deps = [
         "//common",
@@ -129,7 +129,7 @@ java_test(
     name = "statistics-it",
     size = "large",
     srcs = ["StatisticsIT.java"],
-    classpath_resources = ["//test/integration/resources:logback-test"],
+    classpath_resources = ["//test/resources:logback-test"],
     test_class = "grakn.core.graql.analytics.StatisticsIT",
     deps = [
         "//concept/answer",

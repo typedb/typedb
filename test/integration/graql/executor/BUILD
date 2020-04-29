@@ -21,7 +21,7 @@ java_test(
     name = "direct-sub-it",
     size = "small",
     srcs = ["DirectSubIT.java"],
-    classpath_resources = ["//test/integration/resources:logback-test"],
+    classpath_resources = ["//test/resources:logback-test"],
     test_class = "grakn.core.graql.executor.DirectSubIT",
     deps = [
         "//kb/server",
@@ -38,7 +38,7 @@ java_test(
     name = "direct-isa-it",
     size = "medium",
     srcs = ["DirectIsaIT.java"],
-    classpath_resources = ["//test/integration/resources:logback-test"],
+    classpath_resources = ["//test/resources:logback-test"],
     test_class = "grakn.core.graql.executor.DirectIsaIT",
     deps = [
         "//common",

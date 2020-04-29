@@ -20,7 +20,7 @@ load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 java_test(
     name = "session-it",
     srcs = ["SessionIT.java"],
-    classpath_resources = ["//test/integration/resources:logback-test"],
+    classpath_resources = ["//test/resources:logback-test"],
     test_class = "grakn.core.server.session.SessionIT",
     deps = [
         "//kb/server",
@@ -34,7 +34,7 @@ java_test(
     name = "transaction-it",
     size = "large",
     srcs = ["TransactionIT.java"],
-    classpath_resources = ["//test/integration/resources:logback-test"],
+    classpath_resources = ["//test/resources:logback-test"],
     test_class = "grakn.core.server.session.TransactionIT",
     deps = [
         "//common",
@@ -59,8 +59,8 @@ java_test(
 java_test(
     name = "transaction-cache-it",
     srcs = ["cache/TransactionCacheIT.java"],
-    classpath_resources = ["//test/integration/resources:logback-test"],
-    data = ["//test/integration/resources:grakn-small-tx-cache"],
+    classpath_resources = ["//test/resources:logback-test"],
+    data = ["//test/resources:grakn-small-tx-cache"],
     test_class = "grakn.core.server.session.cache.TransactionCacheIT",
     deps = [
         "//core",

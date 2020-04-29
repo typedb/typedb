@@ -21,7 +21,7 @@ java_test(
     name = "attribute-uniqueness-it",
     size = "large",
     srcs = ["AttributeUniquenessIT.java"],
-    classpath_resources = ["//test/integration/resources:logback-test"],
+    classpath_resources = ["//test/resources:logback-test"],
     test_class = "grakn.core.server.uniqueness.AttributeUniquenessIT",
     deps = [
         "//concept/answer",
@@ -45,7 +45,7 @@ java_test(
         "element/Element.java",
         "element/Record.java"
     ],
-    classpath_resources = ["//test/integration/resources:logback-test"],
+    classpath_resources = ["//test/resources:logback-test"],
     data = ["//:assemble-mac-zip"],
     test_class = "grakn.core.server.uniqueness.ConcurrencyIT",
     deps = [

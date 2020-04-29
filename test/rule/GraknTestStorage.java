@@ -37,7 +37,7 @@ import java.util.Properties;
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.DB_CACHE;
 
 public class GraknTestStorage extends ExternalResource {
-    private static final Path DEFAULT_CASSANDRA_CONFIG_PATH = Paths.get("test/integration/resources/cassandra-embedded.yaml");
+    private static final Path DEFAULT_CASSANDRA_CONFIG_PATH = Paths.get("test/resources/cassandra-embedded.yaml");
 
     private final Path originalCassandraConfigPath;
     private File updatedCassandraConfigPath;

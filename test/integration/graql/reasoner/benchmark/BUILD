@@ -4,7 +4,7 @@ java_test(
     name = "rule-scaling-it",
     size = "small",
     srcs = ["RuleScalingIT.java"],
-    classpath_resources = ["//test/integration/resources:logback-test"],
+    classpath_resources = ["//test/resources:logback-test"],
     test_class = "grakn.core.graql.reasoner.benchmark.RuleScalingIT",
     deps = [
         "//concept/answer",
@@ -21,7 +21,7 @@ java_test(
     name = "benchmark-big-it",
     size = "enormous",
     srcs = ["BenchmarkBigIT.java"],
-    classpath_resources = ["//test/integration/resources:logback-test"],
+    classpath_resources = ["//test/resources:logback-test"],
     data = [
         "//test/integration/graql/reasoner/resources:linear-transivity",
         "//test/integration/graql/reasoner/resources:multi-join",
@@ -41,7 +41,7 @@ java_test(
     name = "benchmark-small-it",
     size = "large",
     srcs = ["BenchmarkSmallIT.java"],
-    classpath_resources = ["//test/integration/resources:logback-test"],
+    classpath_resources = ["//test/resources:logback-test"],
     resources = [
         "//test/integration/graql/reasoner/resources:generic-schema",
         "//test/integration/graql/reasoner/resources:unification-with-types",

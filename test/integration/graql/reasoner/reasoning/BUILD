@@ -4,7 +4,7 @@ java_test(
     name = "neq-idpredicate-it",
     size = "medium",
     srcs = ["NeqIdPredicateIT.java"],
-    classpath_resources = ["//test/integration/resources:logback-test"],
+    classpath_resources = ["//test/resources:logback-test"],
     resources = ["//test/integration/graql/reasoner/stubs:reasoning-stubs"],
     test_class = "grakn.core.graql.reasoner.reasoning.NeqIdPredicateIT",
     deps = [
@@ -20,7 +20,7 @@ java_test(
     name = "valuepredicate-it",
     size = "medium",
     srcs = ["ValuePredicateIT.java"],
-    classpath_resources = ["//test/integration/resources:logback-test"],
+    classpath_resources = ["//test/resources:logback-test"],
     resources = ["//test/integration/graql/reasoner/stubs:reasoning-stubs"],
     test_class = "grakn.core.graql.reasoner.reasoning.ValuePredicateIT",
     deps = [
@@ -42,8 +42,8 @@ java_test(
     size = "large",
     srcs = ["RecursionIT.java"],
     classpath_resources = [
-        "//test/integration/resources:logback-test",
-        "//test/integration/resources:cassandra-embedded",
+        "//test/resources:logback-test",
+        "//test/resources:cassandra-embedded",
     ],
     resources = [
         "//test/integration/graql/reasoner/resources/recursion:nguyen",
@@ -73,7 +73,7 @@ java_test(
     name = "attribute-attachment-it",
     size = "medium",
     srcs = ["AttributeAttachmentIT.java"],
-    classpath_resources = ["//test/integration/resources:logback-test"],
+    classpath_resources = ["//test/resources:logback-test"],
     resources = ["//test/integration/graql/reasoner/stubs:reasoning-stubs"],
     test_class = "grakn.core.graql.reasoner.reasoning.AttributeAttachmentIT",
     deps = [
@@ -93,7 +93,7 @@ java_test(
     name = "type-generation-it",
     size = "medium",
     srcs = ["TypeGenerationIT.java"],
-    classpath_resources = ["//test/integration/resources:logback-test"],
+    classpath_resources = ["//test/resources:logback-test"],
     resources = ["//test/integration/graql/reasoner/stubs:reasoning-stubs"],
     test_class = "grakn.core.graql.reasoner.reasoning.TypeGenerationIT",
     deps = [
@@ -109,7 +109,7 @@ java_test(
     name = "type-hierarchies-it",
     size = "medium",
     srcs = ["TypeHierarchiesIT.java"],
-    classpath_resources = ["//test/integration/resources:logback-test"],
+    classpath_resources = ["//test/resources:logback-test"],
     resources = ["//test/integration/graql/reasoner/stubs:reasoning-stubs"],
     test_class = "grakn.core.graql.reasoner.reasoning.TypeHierarchiesIT",
     deps = [
@@ -126,7 +126,7 @@ java_test(
     name = "variable-roles-it",
     size = "large",
     srcs = ["VariableRolesIT.java"],
-    classpath_resources = ["//test/integration/resources:logback-test"],
+    classpath_resources = ["//test/resources:logback-test"],
     resources = ["//test/integration/graql/reasoner/stubs:reasoning-stubs"],
     test_class = "grakn.core.graql.reasoner.reasoning.VariableRolesIT",
     deps = [

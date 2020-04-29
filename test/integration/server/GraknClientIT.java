@@ -103,7 +103,7 @@ public class GraknClientIT {
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer(
             Paths.get("server/conf/grakn.properties"),
-            Paths.get("test/integration/resources/cassandra-embedded.yaml")
+            Paths.get("test/resources/cassandra-embedded.yaml")
     );
 
     private static Session localSession;

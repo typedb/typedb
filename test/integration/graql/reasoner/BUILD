@@ -16,7 +16,7 @@ java_test(
     name = "reasoning-it",
     size = "large",
     srcs = ["ReasoningIT.java"],
-    classpath_resources = ["//test/integration/resources:logback-test"],
+    classpath_resources = ["//test/resources:logback-test"],
     resources = ["//test/integration/graql/reasoner/stubs:reasoning-stubs"],
     test_class = "grakn.core.graql.reasoner.ReasoningIT",
     deps = [

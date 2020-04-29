@@ -21,7 +21,7 @@ java_test(
     name = "graql-get-it",
     size = "medium",
     srcs = ["GraqlGetIT.java"],
-    classpath_resources = ["//test/integration/resources:logback-test"],
+    classpath_resources = ["//test/resources:logback-test"],
     test_class = "grakn.core.graql.query.GraqlGetIT",
     deps = [
         "//concept/answer",
@@ -39,7 +39,7 @@ java_test(
     name = "graql-define-it",
     size = "medium",
     srcs = ["GraqlDefineIT.java"],
-    classpath_resources = ["//test/integration/resources:logback-test"],
+    classpath_resources = ["//test/resources:logback-test"],
     test_class = "grakn.core.graql.query.GraqlDefineIT",
     deps = [
         "//common",
@@ -61,7 +61,7 @@ java_test(
     size = "medium",
     srcs = ["GraqlDeleteIT.java"],
     classpath_resources = [
-        "//test/integration/resources:logback-test",
+        "//test/resources:logback-test",
     ],
     test_class = "grakn.core.graql.query.GraqlDeleteIT",
     deps = [
@@ -81,7 +81,7 @@ java_test(
     name = "graql-insert-it",
     size = "medium",
     srcs = ["GraqlInsertIT.java"],
-    classpath_resources = ["//test/integration/resources:logback-test"],
+    classpath_resources = ["//test/resources:logback-test"],
     test_class = "grakn.core.graql.query.GraqlInsertIT",
     deps = [
         "//concept/answer",
@@ -101,7 +101,7 @@ java_test(
     name = "graql-undefine-it",
     size = "large",
     srcs = ["GraqlUndefineIT.java"],
-    classpath_resources = ["//test/integration/resources:logback-test"],
+    classpath_resources = ["//test/resources:logback-test"],
     test_class = "grakn.core.graql.query.GraqlUndefineIT",
     deps = [
         "//dependencies/maven/artifacts/com/google/guava",
@@ -120,7 +120,7 @@ java_test(
     name = "number-casting-it",
     size = "medium",
     srcs = ["NumberCastingIT.java"],
-    classpath_resources = ["//test/integration/resources:logback-test"],
+    classpath_resources = ["//test/resources:logback-test"],
     test_class = "grakn.core.graql.query.NumberCastingIT",
     deps = [
         "//concept/answer",
@@ -136,7 +136,7 @@ java_test(
     name = "query-builder-it",
     size = "medium",
     srcs = ["QueryBuilderIT.java"],
-    classpath_resources = ["//test/integration/resources:logback-test"],
+    classpath_resources = ["//test/resources:logback-test"],
     test_class = "grakn.core.graql.query.QueryBuilderIT",
     deps = [
         "//kb/graql/exception",
@@ -152,7 +152,7 @@ java_test(
     name = "query-admin-it",
     size = "medium",
     srcs = ["QueryAdminIT.java"],
-    classpath_resources = ["//test/integration/resources:logback-test"],
+    classpath_resources = ["//test/resources:logback-test"],
     test_class = "grakn.core.graql.query.QueryAdminIT",
     deps = [
         "//dependencies/maven/artifacts/com/google/guava",
@@ -167,7 +167,7 @@ java_test(
     name = "query-error-it",
     size = "medium",
     srcs = ["QueryErrorIT.java"],
-    classpath_resources = ["//test/integration/resources:logback-test"],
+    classpath_resources = ["//test/resources:logback-test"],
     test_class = "grakn.core.graql.query.QueryErrorIT",
     deps = [
         "//common",
@@ -185,7 +185,7 @@ java_test(
     name = "query-planner-it",
     size = "medium",
     srcs = ["QueryPlannerIT.java"],
-    classpath_resources = ["//test/integration/resources:logback-test"],
+    classpath_resources = ["//test/resources:logback-test"],
     test_class = "grakn.core.graql.query.QueryPlannerIT",
     deps = [
         "//common",
@@ -203,7 +203,7 @@ java_test(
     name = "query-validity-it",
     size = "medium",
     srcs = ["QueryValidityIT.java"],
-    classpath_resources = ["//test/integration/resources:logback-test"],
+    classpath_resources = ["//test/resources:logback-test"],
     test_class = "grakn.core.graql.query.QueryValidityIT",
     deps = [
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",

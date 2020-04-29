@@ -4,7 +4,7 @@ java_test(
     name = "query-cache-it",
     size = "medium",
     srcs = ["QueryCacheIT.java"],
-    classpath_resources = ["//test/integration/resources:logback-test"],
+    classpath_resources = ["//test/resources:logback-test"],
     resources = ["//test/integration/graql/reasoner/resources:generic-schema"],
     test_class = "grakn.core.graql.reasoner.cache.QueryCacheIT",
     deps = [
@@ -25,7 +25,7 @@ java_test(
     name = "rule-cache-it",
     size = "medium",
     srcs = ["RuleCacheIT.java"],
-    classpath_resources = ["//test/integration/resources:logback-test"],
+    classpath_resources = ["//test/resources:logback-test"],
     resources = ["//test/integration/graql/reasoner/resources:rule-applicability"],
     test_class = "grakn.core.graql.reasoner.cache.RuleCacheIT",
     deps = [
@@ -43,7 +43,7 @@ java_test(
     name = "semantic-difference-it",
     size = "medium",
     srcs = ["SemanticDifferenceIT.java"],
-    classpath_resources = ["//test/integration/resources:logback-test"],
+    classpath_resources = ["//test/resources:logback-test"],
     resources = [
         "//test/integration/graql/reasoner/resources:generic-schema",
     ],

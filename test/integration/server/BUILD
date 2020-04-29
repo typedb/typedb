@@ -22,8 +22,8 @@ java_test(
     size = "large",
     srcs = ["GraknClientIT.java"],
     classpath_resources = [
-        "//test/integration/resources:logback-test",
-        "//test/integration/resources:cassandra-embedded",
+        "//test/resources:logback-test",
+        "//test/resources:cassandra-embedded",
         "//server:conf/grakn.properties",
     ],
     test_class = "grakn.core.server.GraknClientIT",
@@ -52,7 +52,7 @@ java_test(
     name = "validator-it",
     size = "medium",
     srcs = ["ValidatorIT.java"],
-    classpath_resources = ["//test/integration/resources:logback-test"],
+    classpath_resources = ["//test/resources:logback-test"],
     test_class = "grakn.core.server.ValidatorIT",
     deps = [
         "//common:common",
@@ -68,7 +68,7 @@ java_test(
     name = "validate-global-rules-it",
     size = "medium",
     srcs = ["ValidateGlobalRulesIT.java"],
-    classpath_resources = ["//test/integration/resources:logback-test"],
+    classpath_resources = ["//test/resources:logback-test"],
     test_class = "grakn.core.server.ValidateGlobalRulesIT",
     deps = [
         "//concept/impl:impl",
@@ -85,7 +85,7 @@ java_test(
     name = "rule-validation-it",
     size = "large",
     srcs = ["RuleValidationIT.java"],
-    classpath_resources = ["//test/integration/resources:logback-test"],
+    classpath_resources = ["//test/resources:logback-test"],
     test_class = "grakn.core.server.RuleValidationIT",
     deps = [
         "//common:common",

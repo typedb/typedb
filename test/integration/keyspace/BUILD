@@ -20,7 +20,7 @@ load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 java_test(
     name = "keyspace-schema-cache-it",
     srcs = ["KeyspaceSchemaCacheIT.java"],
-    classpath_resources = ["//test/integration/resources:logback-test"],
+    classpath_resources = ["//test/resources:logback-test"],
     test_class = "grakn.core.keyspace.KeyspaceSchemaCacheIT",
     deps = [
         "//kb/server",
@@ -33,7 +33,7 @@ java_test(
 java_test(
     name = "attribute-manager-it",
     srcs = ["AttributeManagerIT.java"],
-    classpath_resources = ["//test/integration/resources:logback-test"],
+    classpath_resources = ["//test/resources:logback-test"],
     test_class = "grakn.core.keyspace.AttributeManagerIT",
     deps = [
         "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
@@ -49,7 +49,7 @@ java_test(
 java_test(
     name = "shard-manager-it",
     srcs = ["ShardManagerIT.java"],
-    classpath_resources = ["//test/integration/resources:logback-test"],
+    classpath_resources = ["//test/resources:logback-test"],
     test_class = "grakn.core.keyspace.ShardManagerIT",
     deps = [
         "//common",
@@ -65,7 +65,7 @@ java_test(
 java_test(
     name = "statistics-delta-it",
     srcs = ["StatisticsDeltaIT.java"],
-    classpath_resources = ["//test/integration/resources:logback-test"],
+    classpath_resources = ["//test/resources:logback-test"],
     test_class = "grakn.core.keyspace.StatisticsDeltaIT",
     deps = [
         "//kb/concept/api",
@@ -79,7 +79,7 @@ java_test(
 java_test(
     name = "keyspace-statistics-it",
     srcs = ["KeyspaceStatisticsIT.java"],
-    classpath_resources = ["//test/integration/resources:logback-test"],
+    classpath_resources = ["//test/resources:logback-test"],
     test_class = "grakn.core.keyspace.KeyspaceStatisticsIT",
     deps = [
         "//concept/answer",

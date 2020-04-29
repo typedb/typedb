@@ -75,8 +75,8 @@ import static org.junit.Assert.assertThat;
 @SuppressWarnings("CheckReturnValue")
 public class TransactionCacheIT {
     // TODO we don't need the server config for this test if we don't start the Grakn server
-    static final Path SERVER_SMALL_TX_CACHE_CONFIG_PATH = Paths.get("test/integration/resources/grakn-small-tx-cache.properties");
-    static final Path CASSANDRA_CONFIG_PATH = Paths.get("test/integration/resources/cassandra-embedded.yaml");
+    static final Path SERVER_SMALL_TX_CACHE_CONFIG_PATH = Paths.get("test/resources/grakn-small-tx-cache.properties");
+    static final Path CASSANDRA_CONFIG_PATH = Paths.get("test/resources/cassandra-embedded.yaml");
 
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer(SERVER_SMALL_TX_CACHE_CONFIG_PATH, CASSANDRA_CONFIG_PATH);

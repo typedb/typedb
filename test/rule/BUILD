@@ -22,9 +22,9 @@ java_library(
     srcs = glob(["*.java"]),
     data = [
         "//server:conf/grakn.properties",
-        "//test/integration/resources:cassandra-embedded",
+        "//test/resources:cassandra-embedded",
     ],
-    resources = ["//test/integration/resources:logback-test"],
+    resources = ["//test/resources:logback-test"],
     visibility = ["//visibility:public"],
     deps = [
         "//common",
