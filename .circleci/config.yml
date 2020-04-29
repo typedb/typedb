@@ -502,9 +502,9 @@ workflows:
             - build-analysis
             - test-common
             - test-server
-            - test-behavior-connection
-            - test-behavior-graql-language
-            - test-behavior-graql-reasoner
+            - test-behaviour-connection
+            - test-behaviour-graql-language
+            - test-behaviour-graql-reasoner
             - test-integration
             - test-integration-reasoner
             - test-integration-analytics
@@ -521,9 +521,9 @@ workflows:
             - build-analysis
             - test-common
             - test-server
-            - test-behavior-connection
-            - test-behavior-graql-language
-            - test-behavior-graql-reasoner
+            - test-behaviour-connection
+            - test-behaviour-graql-language
+            - test-behaviour-graql-reasoner
             - test-integration
             - test-integration-reasoner
             - test-integration-analytics
@@ -540,9 +540,9 @@ workflows:
             - build-analysis
             - test-common
             - test-server
-            - test-behavior-connection
-            - test-behavior-graql-language
-            - test-behavior-graql-reasoner
+            - test-behaviour-connection
+            - test-behaviour-graql-language
+            - test-behaviour-graql-reasoner
             - test-integration
             - test-integration-reasoner
             - test-integration-analytics
@@ -559,9 +559,9 @@ workflows:
             - build-analysis
             - test-common
             - test-server
-            - test-behavior-connection
-            - test-behavior-graql-language
-            - test-behavior-graql-reasoner
+            - test-behaviour-connection
+            - test-behaviour-graql-language
+            - test-behaviour-graql-reasoner
             - test-integration
             - test-integration-reasoner
             - test-integration-analytics
