@@ -389,12 +389,12 @@ public class GraqlSteps {
 
         @Override
         public boolean check(Concept concept) {
-            if (concept.isType()) {
-                return label.equals(concept.asType().label().toString());
+            if (concept.isSchemaConcept()) {
+                return label.equals(concept.asSchemaConcept().label().toString());
             } else if (concept.isRole()) {
                 return label.equals(concept.asRole().label().toString());
             } else {
-                throw new RuntimeException("Concept was checked for label uniqueness, but it is neither a role nor a type.");
+                throw new RuntimeException("Concept was checked for label uniqueness, but it is neither a schema concept nor a type.");
             }
         }
     }
