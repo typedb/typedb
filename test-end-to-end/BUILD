@@ -21,6 +21,5 @@ test_suite(
         "//test-end-to-end/distribution:grakn-graql-commands-e2e",
         "//test-end-to-end/distribution:grakn-graql-commands-with-a-running-grakn-e2e",
         "//test-end-to-end/distribution:concurrency-e2e",
-        "//test-end-to-end/distribution:attribute-uniqueness-e2e",
     ]
 )

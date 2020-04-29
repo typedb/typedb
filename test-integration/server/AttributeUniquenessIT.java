@@ -17,7 +17,6 @@
 
 package grakn.core.server;
 
-import grakn.client.GraknClient;
 import grakn.common.util.Collections;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.core.Schema;
@@ -35,12 +34,16 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -58,6 +61,8 @@ import static org.junit.Assert.assertNotEquals;
 
 @SuppressWarnings({"CheckReturnValue", "Duplicates"})
 public class AttributeUniquenessIT {
+
+    private static Logger LOG = LoggerFactory.getLogger(AttributeUniquenessIT.class);
 
     @org.junit.Rule
     public final ExpectedException expectedException = ExpectedException.none();
@@ -106,22 +111,66 @@ public class AttributeUniquenessIT {
         int numOfDuplicatesPerName = 673;
         ExecutorService executorServiceForParallelInsertion = Executors.newFixedThreadPool(8);
 
-        try (GraknClient.Session session = localhostGrakn.session("attribute_merging_e2e")) {
-            // insert attributes with duplicates
-            LOG.info("defining the schema...");
-            defineParentChildSchema(session);
-            LOG.info("inserting " + numOfUniqueNames + " unique attributes with " + numOfDuplicatesPerName + " duplicates per attribute....");
-            insertNameShuffled(session, numOfUniqueNames, numOfDuplicatesPerName, executorServiceForParallelInsertion);
+        // insert attributes with duplicates
+        LOG.info("defining the schema...");
+        defineParentChildSchema(session);
+        LOG.info("inserting " + numOfUniqueNames + " unique attributes with " + numOfDuplicatesPerName + " duplicates per attribute....");
+        insertNameShuffled(session, numOfUniqueNames, numOfDuplicatesPerName, executorServiceForParallelInsertion);
 
-            LOG.info("verifying the number of attributes");
-            int countAfterMerging = countTotalNames(session);
-            Assert.assertEquals(numOfUniqueNames, countAfterMerging);
-            LOG.info("test completed successfully. there are " + countAfterMerging + " unique names found");
+        LOG.info("verifying the number of attributes");
+        int countAfterMerging = countTotalNames(session);
+        Assert.assertEquals(numOfUniqueNames, countAfterMerging);
+        LOG.info("test completed successfully. there are " + countAfterMerging + " unique names found");
+    }
+
+    private void defineParentChildSchema(Session session) {
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            List<ConceptMap> answer = tx.execute(Graql.define(
+                    type("name").sub("attribute").value(Graql.Token.ValueType.STRING),
+                    type("parent").sub("role"),
+                    type("child").sub("role"),
+                    type("person").sub("entity").has("name").plays("parent").plays("child"),
+                    type("parentchild").sub("relation").relates("parent").relates("child")));
+            tx.commit();
+        }
+    }
+
+    private static void insertNameShuffled(Session session, int nameCount, int duplicatePerNameCount, ExecutorService executorService)
+            throws ExecutionException, InterruptedException {
+
+        List<String> duplicatedNames = new ArrayList<>();
+        for (int i = 0; i < nameCount; ++i) {
+            for (int j = 0; j < duplicatePerNameCount; ++j) {
+                String name = "lorem ipsum dolor sit amet " + i;
+                duplicatedNames.add(name);
+            }
+        }
+
+        java.util.Collections.shuffle(duplicatedNames, new Random(1));
+
+        List<CompletableFuture<Void>> asyncInsertions = new ArrayList<>();
+        for (String name : duplicatedNames) {
+            CompletableFuture<Void> asyncInsert = CompletableFuture.supplyAsync(() -> {
+                try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+                    List<ConceptMap> answer = tx.execute(Graql.insert(var().isa("name").val(name)));
+                    tx.commit();
+                }
+                return null;
+            }, executorService);
+            asyncInsertions.add(asyncInsert);
+        }
+
+        CompletableFuture.allOf(asyncInsertions.toArray(new CompletableFuture[]{})).get();
+    }
+
+    private int countTotalNames(Session session) {
+        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
+            return tx.execute(Graql.match(var("x").isa("name")).get().count()).get(0).number().intValue();
         }
     }
 
     @Test
-    public void whenInsertingKeyConcurrently_onlyOneIsAccepted(){
+    public void whenInsertingKeyConcurrently_onlyOneIsAccepted() {
         Transaction tx = session.transaction(Transaction.Type.WRITE);
         tx.execute(Graql.parse("define \n" +
                 "name sub attribute, \n" +
@@ -135,7 +184,7 @@ public class AttributeUniquenessIT {
         expectedException.expect(InvalidKBException.class);
         List<Future> queryFutures = createQueryFutures(Collections.list(keyQuery, keyQuery));
         for (Future future : queryFutures) {
-            try{
+            try {
                 future.get();
             } catch (Exception e) {
                 e.printStackTrace();
@@ -149,7 +198,7 @@ public class AttributeUniquenessIT {
     }
 
     @Test
-    public void whenAttemptingToConcurrentlyAttachExistingKey_onlyOneIsAccepted(){
+    public void whenAttemptingToConcurrentlyAttachExistingKey_onlyOneIsAccepted() {
         Transaction tx = session.transaction(Transaction.Type.WRITE);
         tx.execute(Graql.parse("define \n" +
                 "name sub attribute, \n" +
@@ -167,7 +216,7 @@ public class AttributeUniquenessIT {
         expectedException.expect(InvalidKBException.class);
         List<Future> queryFutures = createQueryFutures(Collections.list(keyQuery, keyQuery));
         for (Future future : queryFutures) {
-            try{
+            try {
                 future.get();
             } catch (Exception e) {
                 e.printStackTrace();
@@ -458,7 +507,7 @@ public class AttributeUniquenessIT {
         }
     }
 
-    private void insertConcurrently(GraqlInsert query, int repetitions){
+    private void insertConcurrently(GraqlInsert query, int repetitions) {
         List<GraqlInsert> queries = new ArrayList<>();
         for (int i = 0; i < repetitions; i++) {
             queries.add(query);

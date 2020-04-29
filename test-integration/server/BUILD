@@ -32,6 +32,8 @@ java_test(
         "//test-integration/rule:grakn-test-server",
         "@graknlabs_graql//java:graql",
         "@graknlabs_common//:common",
+        "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
+
     ],
 )
 

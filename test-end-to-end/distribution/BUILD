@@ -62,37 +62,11 @@ java_test(
     ],
 )
 
-java_test(
-    name = "attribute-uniqueness-e2e",
-    srcs = [
-        "AttributeUniquenessE2E.java",
-        "DistributionE2EConstants.java",
-    ],
-    classpath_resources = ["//test-integration/resources:logback-test"],
-    data = ["//:assemble-mac-zip"],
-    test_class = "grakn.core.distribution.AttributeUniquenessE2E",
-    deps = [
-        # Internal dependencies
-        "//common",
-
-        # External dependencies from @graknlabs
-        "@graknlabs_client_java//:client-java",
-        "@graknlabs_graql//java:graql",
-
-        # External dependencies from Maven
-        "//dependencies/maven/artifacts/commons-io",
-        "//dependencies/maven/artifacts/org/zeroturnaround:zt-exec",
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
-        "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
-    ],
-)
-
 checkstyle_test(
     name = "checkstyle",
     targets = [
         ":grakn-graql-commands-e2e",
         ":grakn-graql-commands-with-a-running-grakn-e2e",
-        ":attribute-uniqueness-e2e",
         "concurrency-e2e",
     ],
 )
