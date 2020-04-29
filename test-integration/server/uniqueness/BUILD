@@ -49,7 +49,6 @@ java_test(
     data = ["//:assemble-mac-zip"],
     test_class = "grakn.core.server.uniqueness.ConcurrencyIT",
     deps = [
-        "//common",
         "//concept/answer",
         "//kb/concept/api",
         "//kb/server",
