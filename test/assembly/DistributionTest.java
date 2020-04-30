@@ -32,6 +32,7 @@ import java.util.concurrent.TimeoutException;
 
 import static grakn.core.assembly.AssemblyConstants.GRAKN_UNZIPPED_DIRECTORY;
 import static grakn.core.assembly.AssemblyConstants.assertGraknIsNotRunning;
+import static grakn.core.assembly.AssemblyConstants.assertGraknIsRunning;
 import static grakn.core.assembly.AssemblyConstants.assertZipExists;
 import static grakn.core.assembly.AssemblyConstants.getLogsPath;
 import static grakn.core.assembly.AssemblyConstants.unzipGrakn;
@@ -88,7 +89,10 @@ public class DistributionTest {
      * make sure Grakn is properly writing logs inside grakn.log file
      */
     @Test
-    public void logMessagesArePrintedInLogFile() throws IOException {
+    public void logMessagesArePrintedInLogFile() throws IOException, TimeoutException, InterruptedException {
+        commandExecutor.command("./grakn", "server", "start").execute();
+        assertGraknIsRunning();
+
         Path logsPath = getLogsPath();
         Path graknLogFilePath = logsPath.resolve("grakn.log");
         String logsString = new String(Files.readAllBytes(graknLogFilePath), StandardCharsets.UTF_8);
