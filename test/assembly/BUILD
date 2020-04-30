@@ -50,7 +50,6 @@ java_test(
         "//dependencies/maven/artifacts/commons-io",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//dependencies/maven/artifacts/org/zeroturnaround:zt-exec",
-        "//server",
     ],
 )
 
