@@ -18,7 +18,7 @@
 load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
 java_test(
-    name = "daemon-test-assembly",
+    name = "test-daemon",
     srcs = [
         "AssemblyConstants.java",
         "DaemonTest.java",
@@ -37,7 +37,7 @@ java_test(
 )
 
 java_test(
-    name = "distribution-test-assembly",
+    name = "test-distribution",
     srcs = [
         "AssemblyConstants.java",
         "DistributionTest.java",
@@ -56,15 +56,15 @@ java_test(
 test_suite(
     name = "test-assembly",
     tests = [
-        "//test/assembly:daemon-test-assembly",
-        "//test/assembly:distribution-test-assembly",
+        "//test/assembly:test-daemon",
+        "//test/assembly:test-distribution",
     ]
 )
 
 checkstyle_test(
     name = "checkstyle",
     targets = [
-        ":daemon-test-assembly",
-        ":distribution-test-assembly",
+        ":test-daemon",
+        ":test-distribution"
     ],
 )
