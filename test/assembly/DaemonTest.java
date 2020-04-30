@@ -80,7 +80,7 @@ public class DaemonTest {
     Clean up state that may have been initialised in a test
      */
     @Before
-    public static void inCleanState() {
+    public void inCleanState() {
         assertGraknIsNotRunning();
     }
 
@@ -88,7 +88,7 @@ public class DaemonTest {
     Clean up state that may have been initialised in a test
      */
     @After
-    public static void stopGrakn() throws InterruptedException, TimeoutException, IOException {
+    public void stopGrakn() throws InterruptedException, TimeoutException, IOException {
         commandExecutor.command("./grakn", "server", "stop").execute();
         assertGraknIsNotRunning();
     }
