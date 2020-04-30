@@ -19,6 +19,7 @@
 package grakn.core.assembly;
 
 import org.apache.commons.io.FileUtils;
+import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -66,6 +67,15 @@ public class DistributionTest {
     public static void cleanup_cleanupDistribution() throws IOException {
         assertGraknIsNotRunning();
         FileUtils.deleteDirectory(GRAKN_UNZIPPED_DIRECTORY.toFile());
+    }
+
+    /*
+    Clean up state that may have been initialised in a test
+     */
+    @After
+    public void stopGrakn() throws InterruptedException, TimeoutException, IOException {
+        commandExecutor.command("./grakn", "server", "stop").execute();
+        assertGraknIsNotRunning();
     }
 
     @Test
