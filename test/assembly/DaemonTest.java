@@ -19,9 +19,10 @@
 package grakn.core.assembly;
 
 import grakn.client.GraknClient;
+import grakn.core.server.Version;
 import org.apache.commons.io.FileUtils;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.zeroturnaround.exec.ProcessExecutor;
 
@@ -36,59 +37,44 @@ import java.nio.file.Path;
 import java.util.Properties;
 import java.util.concurrent.TimeoutException;
 
-import static grakn.core.assembly.AssemblyE2EConstants.GRAKN_UNZIPPED_DIRECTORY;
-import static grakn.core.assembly.AssemblyE2EConstants.assertGraknIsNotRunning;
-import static grakn.core.assembly.AssemblyE2EConstants.assertGraknIsRunning;
-import static grakn.core.assembly.AssemblyE2EConstants.assertZipExists;
-import static grakn.core.assembly.AssemblyE2EConstants.unzipGrakn;
+import static grakn.core.assembly.AssemblyConstants.GRAKN_UNZIPPED_DIRECTORY;
+import static grakn.core.assembly.AssemblyConstants.assertGraknIsNotRunning;
+import static grakn.core.assembly.AssemblyConstants.assertGraknIsRunning;
+import static grakn.core.assembly.AssemblyConstants.assertZipExists;
+import static grakn.core.assembly.AssemblyConstants.unzipGrakn;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
 
-///**
-// * Grakn end to end test suite which verifies bootup functionalities, including:
-// * - 'grakn server start, stop, and clean'
-// * - 'graql console'
-// * If you are testing functionalities which needs a running Grakn, add it in GraknGraqlCommands_WithARunningGraknE2E instead.
-//// */
+/**
+ * Tests for bootup and shutdown, cleaning, help menus, and other user-facing functionality
+ * These functionalities are handled by the Grakn Daemon
+ */
+public class DaemonTest {
+    private static ProcessExecutor getCommandExecutor(Path directory) {
+        return new ProcessExecutor()
+                .directory(directory.toFile())
+                .redirectOutput(System.out)
+                .redirectError(System.err)
+                .readOutput(true);
+    }
 
-public class GraknGraqlCommandsE2E {
-    private ProcessExecutor commandExecutor = new ProcessExecutor()
-            .directory(GRAKN_UNZIPPED_DIRECTORY.toFile())
-            .redirectOutput(System.out)
-            .redirectError(System.err)
-            .readOutput(true);
+    private static ProcessExecutor commandExecutor = getCommandExecutor(GRAKN_UNZIPPED_DIRECTORY);
 
-    @Before
-    public void beforeEachTests_prepareDistribution() throws IOException, InterruptedException, TimeoutException {
+    @BeforeClass
+    public static void setup_prepareDistribution() throws IOException, InterruptedException, TimeoutException {
         assertZipExists();
         unzipGrakn();
         assertGraknIsNotRunning();
     }
 
-    @After
-    public void afterEachTests_cleanupDistribution() throws IOException {
+    @AfterClass
+    public static void cleanup_cleanupDistribution() throws IOException, InterruptedException, TimeoutException {
+        commandExecutor.command("./grakn", "server", "stop").execute();
         assertGraknIsNotRunning();
         FileUtils.deleteDirectory(GRAKN_UNZIPPED_DIRECTORY.toFile());
     }
 
-    @Test
-    public void verifyDistributionFiles() {
-        // assert files exist
-        final Path grakn = GRAKN_UNZIPPED_DIRECTORY.resolve("grakn");
-        final Path graknProperties = GRAKN_UNZIPPED_DIRECTORY.resolve("server").resolve("conf").resolve("grakn.properties");
-        final Path cassandraDirectory = GRAKN_UNZIPPED_DIRECTORY.resolve("server").resolve("services").resolve("cassandra");
-        final Path libDirectory = GRAKN_UNZIPPED_DIRECTORY.resolve("server").resolve("services").resolve("lib");
-
-        assertThat(grakn.toString() + " isn't present", grakn.toFile().exists(), equalTo(true));
-        assertThat(graknProperties + " isn't present", graknProperties.toFile().exists(), equalTo(true));
-        assertThat(cassandraDirectory.toString() + " isn't present", cassandraDirectory.toFile().exists(), equalTo(true));
-        assertThat(libDirectory.toString() + " isn't present", libDirectory.toFile().exists(), equalTo(true));
-
-        // assert if grakn and graql is chmod'ed properly
-        assertThat(grakn.toString() + " isn't an executable", grakn.toFile().canExecute(), equalTo(true));
-    }
 
     /**
      * test 'grakn server start' and 'grakn server stop'
@@ -102,10 +88,47 @@ public class GraknGraqlCommandsE2E {
     }
 
     /**
+     * test 'grakn server clean' 'y' while grakn is running
+     */
+    @Test
+    public void grakn_GraknServerCleanShouldNotBeAllowed_IfGraknIsRunning() throws IOException, InterruptedException, TimeoutException {
+        commandExecutor.command("./grakn", "server", "start").execute();
+        assertGraknIsRunning();
+
+        String userInput = "y";
+        String output = commandExecutor
+                .redirectInput(new ByteArrayInputStream(userInput.getBytes(StandardCharsets.UTF_8)))
+                .command("./grakn", "server", "clean").execute().outputUTF8();
+
+        assertThat(output, containsString("Grakn is still running! Please do a shutdown with 'grakn server stop' before performing a cleanup."));
+    }
+
+    /**
+     * test 'grakn server status' when started
+     */
+    @Test
+    public void grakn_testPrintStatus_whenCurrentlyRunning() throws IOException, InterruptedException, TimeoutException {
+        commandExecutor.command("./grakn", "server", "start").execute();
+        assertGraknIsRunning();
+
+        String output = commandExecutor.command("./grakn", "server", "status").execute().outputUTF8();
+        assertThat(output, allOf(containsString("Storage: RUNNING"), containsString("Grakn Core Server: RUNNING")));
+    }
+
+    @Test
+    public void graknServerVersion_shouldPrintCurrentVersion() throws InterruptedException, TimeoutException, IOException {
+        commandExecutor.command("./grakn", "server", "start").execute();
+        assertGraknIsRunning();
+
+        String output = commandExecutor.command("./grakn", "server", "version").execute().outputUTF8();
+        assertThat(output, containsString(Version.VERSION));
+    }
+
+    /**
      * test 'grakn server help'
      */
     @Test
-    public void grakn_testPrintServerHelp() throws IOException, InterruptedException, TimeoutException {
+    public void grakn_testPrintServerHelp_whenServerOff() throws IOException, InterruptedException, TimeoutException {
         String output = commandExecutor.command("./grakn", "server", "help").execute().outputUTF8();
         assertThat(output, containsString("Usage: grakn server COMMAND"));
     }
@@ -114,7 +137,7 @@ public class GraknGraqlCommandsE2E {
      * test 'grakn server status' when stopped
      */
     @Test
-    public void grakn_testPrintStatus_whenCurrentlyStopped() throws IOException, InterruptedException, TimeoutException {
+    public void grakn_testPrintStatus_whenServerOff() throws IOException, InterruptedException, TimeoutException {
         assertGraknIsNotRunning();
         String output = commandExecutor.command("./grakn", "server", "status").execute().outputUTF8();
         assertThat(output, allOf(containsString("Storage: NOT RUNNING"), containsString("Grakn Core Server: NOT RUNNING")));
@@ -124,7 +147,7 @@ public class GraknGraqlCommandsE2E {
      * test 'grakn server clean' 'y'
      */
     @Test
-    public void grakn_shouldBeAbleToExecuteGraknServerClean_Yes() throws IOException, InterruptedException, TimeoutException {
+    public void grakn_shouldBeAbleToExecuteGraknServerClean_Yes_whenServerOff() throws IOException, InterruptedException, TimeoutException {
         String userInput = "y";
         String output = commandExecutor
                 .redirectInput(new ByteArrayInputStream(userInput.getBytes(StandardCharsets.UTF_8)))
@@ -136,7 +159,7 @@ public class GraknGraqlCommandsE2E {
      * test 'grakn server clean' 'N'
      */
     @Test
-    public void grakn_shouldBeAbleToExecuteGraknServerClean_No() throws IOException, InterruptedException, TimeoutException {
+    public void grakn_shouldBeAbleToExecuteGraknServerClean_No_whenServerOff() throws IOException, InterruptedException, TimeoutException {
         String userInput = "N";
         String output = commandExecutor
                 .redirectInput(new ByteArrayInputStream(userInput.getBytes(StandardCharsets.UTF_8)))
@@ -148,7 +171,7 @@ public class GraknGraqlCommandsE2E {
      * test 'grakn server clean' 'n'
      */
     @Test
-    public void grakn_shouldBeAbleToExecuteGraknServerClean_Invalid() throws IOException, InterruptedException, TimeoutException {
+    public void grakn_shouldBeAbleToExecuteGraknServerClean_Invalid_whenServerOff() throws IOException, InterruptedException, TimeoutException {
         String userInput = "n";
         String output = commandExecutor
                 .redirectInput(new ByteArrayInputStream(userInput.getBytes(StandardCharsets.UTF_8)))
@@ -160,7 +183,7 @@ public class GraknGraqlCommandsE2E {
      * test 'grakn help'
      */
     @Test
-    public void grakn_shouldPrintHelp() throws IOException, InterruptedException, TimeoutException {
+    public void grakn_shouldPrintHelp_whenServerOff() throws IOException, InterruptedException, TimeoutException {
         String output = commandExecutor.command("./grakn", "help").execute().outputUTF8();
         assertThat(output, containsString("Invalid argument:"));
     }
@@ -169,7 +192,7 @@ public class GraknGraqlCommandsE2E {
      * test 'grakn <some-invalid-command>'
      */
     @Test
-    public void grakn_whenReceivingInvalidCommand_shouldPrintHelp() throws IOException, InterruptedException, TimeoutException {
+    public void grakn_whenReceivingInvalidCommand_shouldPrintHelp_whenServerOff() throws IOException, InterruptedException, TimeoutException {
         String output = commandExecutor.command("./grakn", "invalid-command").execute().outputUTF8();
         assertThat(output, containsString("Invalid argument:"));
     }
@@ -179,7 +202,7 @@ public class GraknGraqlCommandsE2E {
      * test 'grakn <some-invalid-command>'
      */
     @Test
-    public void grakn_whenReceivingInvalidServerCommand_shouldPrintHelp() throws IOException, InterruptedException, TimeoutException {
+    public void grakn_whenReceivingInvalidServerCommand_shouldPrintHelp_whenServerOff() throws IOException, InterruptedException, TimeoutException {
         String output = commandExecutor.command("./grakn", "server", "start", "storag").execute().outputUTF8();
         assertThat(output, containsString("Usage: grakn server COMMAND\n"));
     }

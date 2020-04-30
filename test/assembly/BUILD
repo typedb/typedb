@@ -1,16 +1,34 @@
+#
+# Copyright (C) 2020 Grakn Labs
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+
 load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
 java_test(
-    name = "grakn-graql-commands-e2e",
+    name = "daemon-test-assembly",
     srcs = [
-        "AssemblyE2EConstants.java",
-        "GraknGraqlCommandsE2E.java",
+        "AssemblyConstants.java",
+        "DaemonTest.java",
     ],
     classpath_resources = ["//test/resources:logback-test"],
     data = ["//:assemble-mac-zip"],
-    test_class = "grakn.core.assembly.GraknGraqlCommandsE2E",
+    test_class = "grakn.core.assembly.DaemonTest",
     deps = [
         "//common",
+        "//server",
         "//dependencies/maven/artifacts/commons-io",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//dependencies/maven/artifacts/org/zeroturnaround:zt-exec",
@@ -19,14 +37,14 @@ java_test(
 )
 
 java_test(
-    name = "grakn-graql-commands-with-a-running-grakn-e2e",
+    name = "distribution-test-assembly",
     srcs = [
-        "AssemblyE2EConstants.java",
-        "GraknGraqlCommands_WithARunningGraknE2E.java",
+        "AssemblyConstants.java",
+        "DistributionTest.java",
     ],
     classpath_resources = ["//test/resources:logback-test"],
     data = ["//:assemble-mac-zip"],
-    test_class = "grakn.core.assembly.GraknGraqlCommands_WithARunningGraknE2E",
+    test_class = "grakn.core.assembly.DistributionTest",
     deps = [
         "//common",
         "//dependencies/maven/artifacts/commons-io",
@@ -37,17 +55,17 @@ java_test(
 )
 
 test_suite(
-    name = "test-assembly-functionality",
+    name = "test-assembly",
     tests = [
-        "//test/assembly:grakn-graql-commands-e2e",
-        "//test/assembly:grakn-graql-commands-with-a-running-grakn-e2e",
+        "//test/assembly:daemon-test-assembly",
+        "//test/assembly:distribution-test-assembly",
     ]
 )
 
 checkstyle_test(
     name = "checkstyle",
     targets = [
-        ":grakn-graql-commands-e2e",
-        ":grakn-graql-commands-with-a-running-grakn-e2e",
+        ":daemon-test-assembly",
+        ":distribution-test-assembly",
     ],
 )
