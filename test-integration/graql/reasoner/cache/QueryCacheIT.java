@@ -105,7 +105,7 @@ public class QueryCacheIT {
 
             //record parent
             tx.execute(query.getQuery()).stream()
-                    .map(ans -> ans.explain(new LookupExplanation(), query.getPattern()))
+                    .map(ans -> ans.explain(new LookupExplanation()))
                     .filter(ans -> !ans.equals(specificAnswer))
                     .forEach(ans -> cache.record(query, ans));
 
@@ -150,7 +150,7 @@ public class QueryCacheIT {
 
             //record parent answers omitting specific answer
             tx.execute(parentQuery.getQuery()).stream()
-                    .map(ans -> ans.explain(new LookupExplanation(), parentQuery.getPattern()))
+                    .map(ans -> ans.explain(new LookupExplanation()))
                     .filter(ans -> !ans.equals(specificAnswer))
                     .forEach(ans -> cache.record(parentQuery, ans));
 
@@ -191,13 +191,13 @@ public class QueryCacheIT {
             ReasonerAtomicQuery parentQuery = testTx.reasonerQueryFactory().atomic(conjunction("(role: $x, role: $y) isa binary;"));
             //record parent
             tx.execute(parentQuery.getQuery()).stream()
-                    .map(ans -> ans.explain(new LookupExplanation(), parentQuery.getPattern()))
+                    .map(ans -> ans.explain(new LookupExplanation()))
                     .forEach(ans -> cache.record(parentQuery, ans));
 
             //add a mocked answer to be able to check we actually retrieve from cache
             Concept concept = tx.getEntityType("baseRoleEntity").instances().iterator().next();
             ConceptMap mockedAnswer = new ConceptMap(ImmutableMap.of(new Variable("x"), concept, new Variable("y"), concept))
-                    .explain(new LookupExplanation(), parentQuery.getPattern());
+                    .explain(new LookupExplanation());
             cache.record(parentQuery, mockedAnswer);
             cache.ackDBCompleteness(parentQuery);
 
@@ -228,7 +228,7 @@ public class QueryCacheIT {
 
             //record parent, mark the answers to be explained by a rule so that we can distinguish them
             tx.execute(parentQuery.getQuery(), false).stream()
-                    .map(ans -> ans.explain(new RuleExplanation(tx.getMetaRule()), parentQuery.getPattern()))
+                    .map(ans -> ans.explain(new RuleExplanation(tx.getMetaRule())))
                     .forEach(ans -> cache.record(parentQuery, ans));
 
             //NB: WE ACK COMPLETENESS
@@ -286,7 +286,7 @@ public class QueryCacheIT {
 
             //record parent, mark the answers to be explained by a rule so that we can distinguish them
             tx.execute(parentQuery.getQuery(), false).stream()
-                    .map(ans -> ans.explain(new LookupExplanation(), parentQuery.getPattern()))
+                    .map(ans -> ans.explain(new LookupExplanation()))
                     .forEach(ans -> cache.record(parentQuery, ans));
             cache.ackDBCompleteness(parentQuery);
 
@@ -342,7 +342,7 @@ public class QueryCacheIT {
 
             tx.stream(genericQuery.getQuery(), false)
                     .filter(ans -> ans.get("y").equals(sConcept))
-                    .map(ans -> ans.explain(new LookupExplanation(), parentQuery.getPattern()))
+                    .map(ans -> ans.explain(new LookupExplanation()))
                     .forEach(ans -> cache.record(parentQuery, ans));
 
             //mock a rule explained answer
@@ -370,7 +370,7 @@ public class QueryCacheIT {
                             "};"));
 
             tx.stream(childQuery.getQuery(), false)
-                    .map(ans -> ans.explain(new LookupExplanation(), childQuery.getPattern()))
+                    .map(ans -> ans.explain(new LookupExplanation()))
                     .forEach(ans -> cache.record(childQuery, ans));
 
             cache.ackDBCompleteness(childQuery);
@@ -402,7 +402,7 @@ public class QueryCacheIT {
 
             //record parent, mark the answers to be explained by a rule so that we can distinguish them
             tx.execute(parentQuery.getQuery(), false).stream()
-                    .map(ans -> ans.explain(new LookupExplanation(), parentQuery.getPattern()))
+                    .map(ans -> ans.explain(new LookupExplanation()))
                     .forEach(ans -> cache.record(parentQuery, ans));
 
             //fetch a query that isSubsumedBy parent
@@ -450,7 +450,7 @@ public class QueryCacheIT {
             ReasonerAtomicQuery query = testTx.reasonerQueryFactory().atomic(conjunction("(subRole1: $x, subRole2: $y) isa binary;"));
             //record
             tx.execute(query.getQuery()).stream()
-                    .map(ans -> ans.explain(new LookupExplanation(), query.getPattern()))
+                    .map(ans -> ans.explain(new LookupExplanation()))
                     .forEach(ans -> cache.record(query, ans));
             cache.ackDBCompleteness(query);
 
@@ -471,7 +471,7 @@ public class QueryCacheIT {
             ReasonerAtomicQuery query = testTx.reasonerQueryFactory().atomic(conjunction("(subRole1: $x, subRole2: $y) isa binary;"));
             //record
             tx.execute(query.getQuery()).stream()
-                    .map(ans -> ans.explain(new LookupExplanation(), query.getPattern()))
+                    .map(ans -> ans.explain(new LookupExplanation()))
                     .forEach(ans -> cache.record(query, ans));
             cache.ackDBCompleteness(query);
 
@@ -509,16 +509,16 @@ public class QueryCacheIT {
             ConceptMap dbAnswer = new ConceptMap(ImmutableMap.of(
                     Graql.var("x").var(), fConcept,
                     Graql.var("y").var(), sConcept)
-            ).explain(new LookupExplanation(), query.getPattern());
+            ).explain(new LookupExplanation());
 
             //record
             tx.execute(query.getQuery()).stream()
-                    .map(ans -> ans.explain(new LookupExplanation(), query.getPattern()))
+                    .map(ans -> ans.explain(new LookupExplanation()))
                     .filter(ans -> !ans.equals(dbAnswer))
                     .forEach(ans -> cache.record(query, ans));
 
             //mock a rule explained answer that is equal to a dbAnswer
-            ConceptMap inferredAnswer = dbAnswer.explain(new RuleExplanation(tx.getMetaRule()), query.getPattern());
+            ConceptMap inferredAnswer = dbAnswer.explain(new RuleExplanation(tx.getMetaRule()));
             cache.record(query, inferredAnswer);
 
             //retrieve
@@ -536,7 +536,7 @@ public class QueryCacheIT {
             ReasonerAtomicQuery parentQuery = testTx.reasonerQueryFactory().atomic(conjunction("(role: $x, role: $y) isa binary;"));
             //record parent
             tx.stream(parentQuery.getQuery())
-                    .map(ans -> ans.explain(new LookupExplanation(), parentQuery.getPattern()))
+                    .map(ans -> ans.explain(new LookupExplanation()))
                     .forEach(ans -> cache.record(parentQuery, ans));
             cache.ackDBCompleteness(parentQuery);
 
@@ -552,7 +552,7 @@ public class QueryCacheIT {
                             "$y id " + sConcept.id().getValue() + ";" +
                             "};"));
             tx.stream(preGroundChildQuery.getQuery())
-                    .map(ans -> ans.explain(new LookupExplanation(), preGroundChildQuery.getPattern()))
+                    .map(ans -> ans.explain(new LookupExplanation()))
                     .forEach(ans -> cache.record(preGroundChildQuery, ans));
 
             //retrieve child
@@ -615,13 +615,13 @@ public class QueryCacheIT {
                             "$x id " + fConcept.id().getValue() + ";" +
                             "};"));
             tx.stream(preChildQuery.getQuery())
-                    .map(ans -> ans.explain(new LookupExplanation(), preChildQuery.getPattern()))
+                    .map(ans -> ans.explain(new LookupExplanation()))
                     .forEach(ans -> cache.record(preChildQuery, ans));
 
             ReasonerAtomicQuery parentQuery = testTx.reasonerQueryFactory().atomic(conjunction("(role: $x, role: $y) isa binary;"));
             //record parent
             tx.stream(parentQuery.getQuery())
-                    .map(ans -> ans.explain(new LookupExplanation(), parentQuery.getPattern()))
+                    .map(ans -> ans.explain(new LookupExplanation()))
                     .filter(ans -> !ans.equals(specificAnswer))
                     .filter(ans -> !ans.equals(inferredAnswer))
                     .forEach(ans -> cache.record(parentQuery, ans));
@@ -648,7 +648,7 @@ public class QueryCacheIT {
             ReasonerAtomicQuery query = testTx.reasonerQueryFactory().atomic(conjunction("(role: $x, role: $y) isa binary;"));
             //record parent
             Set<ConceptMap> answers = tx.execute(query.getQuery()).stream()
-                    .map(ans -> ans.explain(new LookupExplanation(), query.getPattern()))
+                    .map(ans -> ans.explain(new LookupExplanation()))
                     .peek(ans -> cache.record(query, ans))
                     .collect(toSet());
             cache.ackCompleteness(query);
@@ -875,10 +875,10 @@ public class QueryCacheIT {
             assertFalse(ownerAndRelationMapped.hasUniqueAnswer());
 
             ownerAndValueMapped.resolve(true)
-                    .map(ans -> ans.explain(new LookupExplanation(), ownerAndValueMapped.getPattern()))
+                    .map(ans -> ans.explain(new LookupExplanation()))
                     .forEach(ans -> cache.record(ownerAndValueMapped, ans));
             allMapped.resolve(true)
-                    .map(ans -> ans.explain(new LookupExplanation(), allMapped.getPattern()))
+                    .map(ans -> ans.explain(new LookupExplanation()))
                     .forEach(ans -> cache.record(allMapped, ans));
 
             assertTrue(cache.isComplete(ownerAndValueMapped));

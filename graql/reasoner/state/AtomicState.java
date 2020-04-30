@@ -136,9 +136,11 @@ public class AtomicState extends AnswerPropagatorState<ReasonerAtomicQuery> {
         );
         if (answer.isEmpty()) return answer;
 
-        return AnswerUtil.joinAnswers(answer, query.getSubstitution())
-                .project(query.getVarNames())
-                .explain(new RuleExplanation(Collections.singletonList(baseAnswer), rule.getRule()), query.withSubstitution(baseAnswer).getPattern());
+        return new ConceptMap(
+                AnswerUtil.joinAnswers(answer, query.getSubstitution()).project(query.getVarNames()).map(),
+                new RuleExplanation(Collections.singletonList(baseAnswer), rule.getRule()),
+                query.withSubstitution(baseAnswer).getPattern()
+        );
     }
 
     private ConceptMap materialisedAnswer(ConceptMap baseAnswer, InferenceRule rule, Unifier unifier) {
@@ -163,7 +165,7 @@ public class AtomicState extends AnswerPropagatorState<ReasonerAtomicQuery> {
         ConceptMap answer = baseAnswer;
         if (materialisedSub != null) {
             RuleExplanation ruleExplanation = new RuleExplanation(Collections.singletonList(baseAnswer), rule.getRule());
-            ConceptMap ruleAnswer = materialisedSub.explain(ruleExplanation, materialisedSub.getPattern());
+            ConceptMap ruleAnswer = materialisedSub.explain(ruleExplanation);
             queryCache.record(ruleHead, ruleAnswer);
             Atom ruleAtom = ruleHead.getAtom();
             //if it's an implicit relation also record it as an attribute
@@ -176,8 +178,9 @@ public class AtomicState extends AnswerPropagatorState<ReasonerAtomicQuery> {
         }
         if (answer.isEmpty()) return answer;
 
-        return AnswerUtil.joinAnswers(answer, query.getSubstitution())
-                .project(query.getVarNames())
-                .explain(new RuleExplanation(answer.explanation().getAnswers(), rule.getRule()), query.withSubstitution(answer).getPattern());
+        return new ConceptMap(
+                AnswerUtil.joinAnswers(answer, query.getSubstitution()).project(query.getVarNames()).map(),
+                new RuleExplanation(answer.explanation().getAnswers(), rule.getRule()),
+                query.withSubstitution(answer).getPattern());
     }
 }

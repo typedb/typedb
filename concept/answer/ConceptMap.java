@@ -162,8 +162,8 @@ public class ConceptMap extends Answer {
      * @param exp explanation for this answer
      * @return explained answer
      */
-    public ConceptMap explain(Explanation exp, Pattern pattern) {
-        return new ConceptMap(this.map, exp, pattern);
+    public ConceptMap explain(Explanation exp) {
+        return new ConceptMap(this.map, exp, this.getPattern());
     }
 
     /**
