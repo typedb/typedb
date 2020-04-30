@@ -59,7 +59,7 @@ java_test(
     data = [
         "@graknlabs_verification//behaviour/connection:session.feature",
     ],
-    classpath_resources = ["//test-integration/resources:logback-test"],
+    classpath_resources = ["//test/resources:logback-test"],
     size = "medium",
 )
 
