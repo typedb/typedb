@@ -21,7 +21,9 @@ package grakn.core.assembly;
 import grakn.client.GraknClient;
 import grakn.core.server.Version;
 import org.apache.commons.io.FileUtils;
+import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.zeroturnaround.exec.ProcessExecutor;
@@ -70,9 +72,25 @@ public class DaemonTest {
 
     @AfterClass
     public static void cleanup_cleanupDistribution() throws IOException, InterruptedException, TimeoutException {
-        commandExecutor.command("./grakn", "server", "stop").execute();
         assertGraknIsNotRunning();
         FileUtils.deleteDirectory(GRAKN_UNZIPPED_DIRECTORY.toFile());
+    }
+
+    /*
+    Clean up state that may have been initialised in a test
+     */
+    @Before
+    public static void inCleanState() {
+        assertGraknIsNotRunning();
+    }
+
+    /*
+    Clean up state that may have been initialised in a test
+     */
+    @After
+    public static void stopGrakn() throws InterruptedException, TimeoutException, IOException {
+        commandExecutor.command("./grakn", "server", "stop").execute();
+        assertGraknIsNotRunning();
     }
 
 
