@@ -716,17 +716,8 @@ public class GraqlInsertIT {
             assertExists(tx, var);
         }
 
-        // TODO restore prior implementation when we can delete and read at the same time
-//        for (Statement statement: vars) {
-//            tx.execute(Graql.match(statement).delete(Graql.var(statement.var()).isa("thing")));
-//        }
-
-        // Delete all vars
-        for (Statement statement : vars) {
-            // if we delete by ID instead of full traversal, traversals don't support modifications and deletions at the same time
-            Variable var = statement.var();
-            tx.execute(Graql.match(Graql.var(var).id(answer.get(var).id().toString()))
-                    .delete(Graql.var(var).isa("thing")));
+        for (Statement statement: vars) {
+            tx.execute(Graql.match(statement).delete(Graql.var(statement.var()).isa("thing")));
         }
 
         // Make sure vars don't exist

@@ -188,30 +188,6 @@ public class GraqlDeleteIT {
         assertFalse(checkIdExists(tx, id));
     }
 
-    @Ignore // TODO enable when Grakn 2.0 supports concurrent delete and insert
-    @Test
-    public void concurrentDeleteInTraversal() {
-        Statement statement = var("x").isa("movie").has("title", "Gladiator").has("runtime", 100L);
-        tx.execute(Graql.insert(statement));
-        tx.execute(Graql.match(statement).delete(Graql.var("x").isa("thing")));
-    }
-
-
-    @Ignore // TODO enable when Grakn 2.0 supports concurrent delete and insert
-    @Test
-    public void whenDeletingPartOfMatchQuery_UpdateIsReflected() {
-        List<ConceptMap> answers = tx.execute(Graql.parse("match $r ($x, $y) isa has-genre; get;").asGet());
-        assertEquals(34, answers.size()); // 17 x 2
-        // delete one of the two role players arbitrarily. This then leads to only 1 role player which doesn't match anymore
-        // so we shouldn't end up deleting the second RP too
-        tx.execute(Graql.parse("match $r ($x, $y) isa has-genre; delete $r (role: $x);").asDelete());
-        answers = tx.execute(Graql.parse("match $r ($x) isa has-genre; get;").asGet());
-        assertEquals(17, answers.size());
-        answers.forEach(conceptMap -> {
-            assertEquals(1, conceptMap.get("r").asRelation().rolePlayers().count());
-        });
-    }
-
     private boolean checkIdExists(Transaction tx, ConceptId id) {
         boolean exists;
         try {
@@ -221,6 +197,17 @@ public class GraqlDeleteIT {
         }
         return exists;
     }
+
+    @Test
+    public void whenDeletingPartOfMatchQuery_UpdateIsReflected() {
+        List<ConceptMap> answers = tx.execute(Graql.parse("match $r ($x, $y) isa has-genre; get;").asGet());
+        assertEquals(34, answers.size()); // 17 x 2
+        // we should end up deleting every role player in the relations, leading to relation cleanup
+        tx.execute(Graql.parse("match $r ($x, $y) isa has-genre; delete $r (role: $x);").asDelete());
+        answers = tx.execute(Graql.parse("match $r isa has-genre; get;").asGet());
+        assertEquals(0, answers.size());
+    }
+
 
     @Test
     public void whenDeletingAResource_TheResourceAndImplicitRelationsAreDeleted() {
@@ -301,16 +288,10 @@ public class GraqlDeleteIT {
             deletePatterns.add(delete);
         }
 
-        System.out.println("Ids: " + idPatterns);
         List<ConceptMap> answersById = tx.execute(Graql.match(idPatterns).get());
         assertEquals(answersById.size(), 1);
 
-        for (int i = 0; i < idPatterns.size(); i++) {
-            tx.execute(Graql.match(idPatterns.get(i)).delete(deletePatterns.get(i)));
-        }
-
-        // TODO re-enable this batch delete once implicit attribute relations are removed!
-//        tx.execute(Graql.match(idPatterns).delete(deletePatterns));
+        tx.execute(Graql.match(idPatterns).delete(deletePatterns));
         tx.commit();
 
     }
@@ -681,21 +662,17 @@ public class GraqlDeleteIT {
     ```match $r ($role1: $x, director: $y) isa directed-by; // concrete instance matches: $r (production: $x, director: $y) isa directed-by;
     delete $r ($role1: $x);```
     We will match `$role1` = ROLE meta type. Using this first answer we will remove $x from $r via the `production role`.
-    This means the match clause is no longer satisfiable, and no error should be thrown!
+    This means the match clause is no longer satisfiable, and should throw the next (identical, up to role type) answer that is matched.
 
-    This test should pass in with Grakn 2.0's new backend
+    So, if the user does not specify a specific-enough roles, we may throw.
      */
-    @Ignore // TODO re-enable with Hypergraph backend
     @Test
-    public void whenDeletingRolePlayersWithVariableRoles_RemoveRolePlayer() {
+    public void whenDeletingRolePlayersWithVariableRoles_throwsIfMatchingMultipleTimes() {
         List<ConceptMap> answers0 = tx.execute(Graql.parse("match $r ($role1: $x, director: $y) isa directed-by; get;").asGet());
-        for (ConceptMap answer : answers0) {
-            System.out.println(answer.get("role1"));
-        }
+        // this should match 3 roles for the same role-playing: 'role', 'work', and 'production-being-directed'
+        exception.expect(GraqlSemanticException.class);
+        exception.expectMessage("it does not play required role (or subtypes of) [work]");
         tx.execute(Graql.parse("match $r ($role1: $x, director: $y) isa directed-by; delete $r ($role1: $x);").asDelete());
-        List<ConceptMap> answers = tx.execute(Graql.parse("match $r (director: $y) isa directed-by; get;").asGet());
-        assertEquals(1, answers.size());
-        assertEquals(1, answers.get(0).get("r").asRelation().rolePlayers().count());
     }
 
     /*
@@ -706,22 +683,17 @@ public class GraqlDeleteIT {
 
     For example
     ```
-    // concrete instance:  $r (production: $x, production: $x, director: $y) isa directed-by;
-    match $r ($role1: $x, director: $y) isa directed-by;
+    // concrete instance:  $r (production: $x, production: $x, production: $x, director: $y) isa directed-by;
+    match $r ($role1: $x, director: $y) isa directed-by; $type sub work;
     delete $r ($role1: $x);```
-    First, we will match `$role1` = ROLE meta type. Using this answer we will remove a single $x from $r via the `production`.
-    Next, we will match `$role1` = WORK role. Using this answer we will remove a the second $x from $r via the `production` role.
-    Now, the match clause is not satisfiable anymore.
-
-    This test should pass in with Grakn 2.0's new backend
-
+    First, we will match `$role1` = ROLE meta role. Using this answer we will remove a single $x from $r via the `production`.
+    Next, we will match `$role1` = WORK role, and we delete another `production` player. This repeats again for $role=`production`.
     */
-    @Ignore // TODO re-enable with Hypergraph backend
     @Test
     public void whenDeletingDuplicateRolePlayersWithVariableRoles_BothDuplicatesRemoved() {
         // update the directed-by to have a duplicate production
         tx.execute(Graql.parse("match $r (production-being-directed: $x, director: $y) isa directed-by; " +
-                "insert $r (production-being-directed: $x);").asInsert());
+                "insert $r (production-being-directed: $x, production-being-directed: $x);").asInsert());
         List<ConceptMap> answers = tx.execute(Graql.parse("match $r (production-being-directed: $x, production-being-directed: $x, director: $y) isa directed-by; get;").asGet());
         assertEquals(1, answers.size());
         tx.execute(Graql.parse("match $r ($role1: $x, director: $y) isa directed-by; delete $r ($role1: $x);").asDelete());
