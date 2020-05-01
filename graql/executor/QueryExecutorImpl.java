@@ -229,10 +229,11 @@ public class QueryExecutorImpl implements QueryExecutor {
             }
         }
 
-        get(query.match().get()).forEach(answer -> {
+        List<ConceptMap> toDelete = get(query.match().get()).collect(toList());
+        toDelete.forEach(answer -> {
             WriteExecutorImpl.create(conceptManager, executors.build()).write(answer);
         });
-        return new Void("Delete successful.");
+        return new Void(String.format("Deleted facts from %s matched answers.", toDelete.size()));
     }
 
     @Override
