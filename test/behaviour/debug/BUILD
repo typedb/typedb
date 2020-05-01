@@ -44,7 +44,7 @@ java_test(
 #        "//test/behaviour/connection/keyspace:steps",
 #        "//test/behaviour/config:parameters",
     ],
-    classpath_resources = ["//test-integration/resources:logback-test"],
+    classpath_resources = ["//test/resources:logback-test"],
     data = [
         ":debug.feature",
     ],
