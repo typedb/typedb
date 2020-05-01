@@ -18,7 +18,7 @@
 
 package grakn.core.test.behaviour.server;
 
-import grakn.core.rule.GraknTestServer;
+import grakn.core.test.rule.GraknTestServer;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
