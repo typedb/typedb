@@ -681,21 +681,17 @@ public class GraqlDeleteIT {
     ```match $r ($role1: $x, director: $y) isa directed-by; // concrete instance matches: $r (production: $x, director: $y) isa directed-by;
     delete $r ($role1: $x);```
     We will match `$role1` = ROLE meta type. Using this first answer we will remove $x from $r via the `production role`.
-    This means the match clause is no longer satisfiable, and no error should be thrown!
+    This means the match clause is no longer satisfiable, and should throw the next (identical, up to role type) answer that is matched.
 
-    This test should pass in with Grakn 2.0's new backend
+    So, if the user does not specify a specific-enough roles, we may throw.
      */
-    @Ignore // TODO re-enable with Hypergraph backend
     @Test
-    public void whenDeletingRolePlayersWithVariableRoles_RemoveRolePlayer() {
+    public void whenDeletingRolePlayersWithVariableRoles_throwsIfMatchingMultipleTimes() {
         List<ConceptMap> answers0 = tx.execute(Graql.parse("match $r ($role1: $x, director: $y) isa directed-by; get;").asGet());
-        for (ConceptMap answer : answers0) {
-            System.out.println(answer.get("role1"));
-        }
+        // this should match 3 roles for the same role-playing: 'role', 'work', and 'production-being-directed'
+        exception.expect(GraqlSemanticException.class);
+        exception.expectMessage("it does not play the required role");
         tx.execute(Graql.parse("match $r ($role1: $x, director: $y) isa directed-by; delete $r ($role1: $x);").asDelete());
-        List<ConceptMap> answers = tx.execute(Graql.parse("match $r (director: $y) isa directed-by; get;").asGet());
-        assertEquals(1, answers.size());
-        assertEquals(1, answers.get(0).get("r").asRelation().rolePlayers().count());
     }
 
     /*
@@ -706,22 +702,17 @@ public class GraqlDeleteIT {
 
     For example
     ```
-    // concrete instance:  $r (production: $x, production: $x, director: $y) isa directed-by;
-    match $r ($role1: $x, director: $y) isa directed-by;
+    // concrete instance:  $r (production: $x, production: $x, production: $x, director: $y) isa directed-by;
+    match $r ($role1: $x, director: $y) isa directed-by; $type sub work;
     delete $r ($role1: $x);```
-    First, we will match `$role1` = ROLE meta type. Using this answer we will remove a single $x from $r via the `production`.
-    Next, we will match `$role1` = WORK role. Using this answer we will remove a the second $x from $r via the `production` role.
-    Now, the match clause is not satisfiable anymore.
-
-    This test should pass in with Grakn 2.0's new backend
-
+    First, we will match `$role1` = ROLE meta role. Using this answer we will remove a single $x from $r via the `production`.
+    Next, we will match `$role1` = WORK role, and we delete another `production` player. This repeats again for $role=`production`.
     */
-    @Ignore // TODO re-enable with Hypergraph backend
     @Test
     public void whenDeletingDuplicateRolePlayersWithVariableRoles_BothDuplicatesRemoved() {
         // update the directed-by to have a duplicate production
         tx.execute(Graql.parse("match $r (production-being-directed: $x, director: $y) isa directed-by; " +
-                "insert $r (production-being-directed: $x);").asInsert());
+                "insert $r (production-being-directed: $x, production-being-directed: $x);").asInsert());
         List<ConceptMap> answers = tx.execute(Graql.parse("match $r (production-being-directed: $x, production-being-directed: $x, director: $y) isa directed-by; get;").asGet());
         assertEquals(1, answers.size());
         tx.execute(Graql.parse("match $r ($role1: $x, director: $y) isa directed-by; delete $r ($role1: $x);").asDelete());
