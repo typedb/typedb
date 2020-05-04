@@ -55,6 +55,8 @@ public interface ConceptListener {
 
     void hasAttributeRelationCreated(Relation hasAttributeRelation, boolean isInferred);
 
+    void hasAttributeRemoved(Thing owner, Attribute<?> owned);
+
     void ruleCreated(Rule rule);
 
     void roleCreated(Role role);
@@ -84,4 +86,5 @@ public interface ConceptListener {
     void roleUndefined(Role role);
 
     void rolePlayerCreated(Casting casting);
+
 }

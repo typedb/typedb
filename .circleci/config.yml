@@ -114,6 +114,8 @@ jobs:
           command: bazel test //test/behaviour/graql/language/insert:test --test_output=errors
       - run-bazel-rbe:
           command: bazel test //test/behaviour/graql/language/match:test --test_output=errors
+      - run-bazel-rbe:
+          command: bazel test //test/behaviour/graql/language/delete:test --test_output=errors
 
   test-behaviour-graql-reasoner:
     machine: true
