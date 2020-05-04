@@ -38,7 +38,7 @@ java_library(
         "//graph:graph",
 
         # Internal Repository Dependencies
-        "@graknlabs_common//:common",
+        # "@graknlabs_common//:common",
     ],
 )
 
