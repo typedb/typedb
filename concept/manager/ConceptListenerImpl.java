@@ -199,9 +199,6 @@ public class ConceptListenerImpl implements ConceptListener {
         transactionCache.trackForValidation(relationType);
     }
 
-    /*
-    TODO this pair of methods might be combinable somehow
-     */
     @Override
     public void labelRemoved(SchemaConcept schemaConcept) {
         transactionCache.remove(schemaConcept);
