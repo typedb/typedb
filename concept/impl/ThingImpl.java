@@ -309,11 +309,14 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
         Role roleHasValue = conceptManager.getSchemaConcept(Schema.ImplicitType.HAS_VALUE.getLabel(attribute.type().label()));
         Role roleKeyValue = conceptManager.getSchemaConcept(Schema.ImplicitType.KEY_VALUE.getLabel(attribute.type().label()));
 
+        // delete attribute ownerships between this Thing and the Attribute
         Stream<Relation> relations = relations(filterNulls(roleHasOwner, roleKeyOwner));
         relations.filter(relation -> {
             Stream<Thing> rolePlayers = relation.rolePlayers(filterNulls(roleHasValue, roleKeyValue));
             return rolePlayers.anyMatch(rolePlayer -> rolePlayer.equals(attribute));
         }).forEach(Concept::delete);
+
+        conceptNotificationChannel.hasAttributeRemoved(this, attribute);
 
         return getThis();
     }
