@@ -16,7 +16,7 @@
  *
  */
 
-package grakn.core.assembly;
+package grakn.core.test.assembly;
 
 import grakn.client.GraknClient;
 import grakn.core.server.Version;
@@ -39,11 +39,11 @@ import java.nio.file.Path;
 import java.util.Properties;
 import java.util.concurrent.TimeoutException;
 
-import static grakn.core.assembly.AssemblyConstants.GRAKN_UNZIPPED_DIRECTORY;
-import static grakn.core.assembly.AssemblyConstants.assertGraknIsNotRunning;
-import static grakn.core.assembly.AssemblyConstants.assertGraknIsRunning;
-import static grakn.core.assembly.AssemblyConstants.assertZipExists;
-import static grakn.core.assembly.AssemblyConstants.unzipGrakn;
+import static grakn.core.test.assembly.AssemblyConstants.GRAKN_UNZIPPED_DIRECTORY;
+import static grakn.core.test.assembly.AssemblyConstants.assertGraknIsNotRunning;
+import static grakn.core.test.assembly.AssemblyConstants.assertGraknIsRunning;
+import static grakn.core.test.assembly.AssemblyConstants.assertZipExists;
+import static grakn.core.test.assembly.AssemblyConstants.unzipGrakn;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
