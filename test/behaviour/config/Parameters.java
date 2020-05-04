@@ -22,6 +22,7 @@ import hypergraph.Hypergraph;
 import io.cucumber.java.DataTableType;
 import io.cucumber.java.ParameterType;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -128,6 +129,24 @@ public class Parameters {
 
         if (valuesIter.hasNext()) fail("Values do not match Scoped Labels regular expression");
         return scopedLabels;
+    }
+
+    @ParameterType("long|double|string|boolean|datetime")
+    public Class<?> value_class(String type) {
+        switch (type) {
+            case "long":
+                return Long.class;
+            case "double":
+                return Double.class;
+            case "string":
+                return String.class;
+            case "boolean":
+                return Boolean.class;
+            case "datetime":
+                return LocalDateTime.class;
+            default:
+                return null;
+        }
     }
 
     @ParameterType("read|write")

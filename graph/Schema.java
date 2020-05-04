@@ -103,7 +103,7 @@ public class Schema {
         PROPERTY_SCOPE(1),
         PROPERTY_ABSTRACT(2),
         PROPERTY_REGEX(3),
-        PROPERTY_VALUE_TYPE(4),
+        PROPERTY_VALUE_CLASS(4),
         PROPERTY_VALUE_REF(5),
         PROPERTY_VALUE(6),
         PROPERTY_WHEN(7),
@@ -169,7 +169,7 @@ public class Schema {
         SCOPE(Infix.PROPERTY_SCOPE),
         ABSTRACT(Infix.PROPERTY_ABSTRACT),
         REGEX(Infix.PROPERTY_REGEX),
-        VALUE_TYPE(Infix.PROPERTY_VALUE_TYPE),
+        VALUE_CLASS(Infix.PROPERTY_VALUE_CLASS),
         VALUE_REF(Infix.PROPERTY_VALUE_REF),
         VALUE(Infix.PROPERTY_VALUE),
         WHEN(Infix.PROPERTY_WHEN),
@@ -186,32 +186,53 @@ public class Schema {
         }
     }
 
-    public enum ValueType {
-        INTEGER(0, Integer.class),
-        LONG(1, Long.class),
-        FLOAT(2, Float.class),
-        DOUBLE(3, Double.class),
-        STRING(4, String.class),
-        BOOLEAN(5, Boolean.class),
-        DATE(6, LocalDateTime.class);
+    public enum ValueClass {
+        OBJECT(0, Object.class, null),
+        BOOLEAN(10, Boolean.class, "boolean"),
+        LONG(20, Long.class, "long"),
+        DOUBLE(30, Double.class, "double"),
+        STRING(40, String.class, "string"),
+        DATETIME(50, LocalDateTime.class, "datetime");
 
         private final byte key;
+        private final Class<?> valueClass;
+        private final String keyword;
 
-        ValueType(int key, Class<?> valueClass) {
+        ValueClass(int key, Class<?> valueClass, @Nullable String keyword) {
             this.key = (byte) key;
+            this.valueClass = valueClass;
+            this.keyword = keyword;
         }
 
-        public byte[] value() {
+        public byte[] key() {
             return new byte[]{key};
         }
 
-        public static ValueType of(byte value) {
-            for (ValueType t : ValueType.values()) {
+        public static ValueClass of(byte value) {
+            for (ValueClass t : ValueClass.values()) {
                 if (t.key == value) {
                     return t;
                 }
             }
             return null;
+        }
+
+        public static ValueClass of(Class<?> valueClass) {
+            for (ValueClass t : ValueClass.values()) {
+                if (t.valueClass == valueClass) {
+                    return t;
+                }
+            }
+            return null;
+        }
+
+        @Nullable
+        public String keyword() {
+            return keyword;
+        }
+
+        public Class<?> valueClass() {
+            return valueClass;
         }
     }
 

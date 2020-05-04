@@ -23,16 +23,9 @@ import hypergraph.graph.Graph;
 import hypergraph.graph.Schema;
 import hypergraph.graph.vertex.TypeVertex;
 
+import static hypergraph.common.exception.Error.TypeDefinition.INVALID_ROOT_TYPE_MUTATION;
+
 public class EntityType extends ThingType<EntityType> {
-
-    public static EntityType of(TypeVertex vertex) {
-        if (vertex.label().equals(Schema.Vertex.Type.Root.ENTITY.label())) return new EntityType.Root(vertex);
-        else return new EntityType(vertex);
-    }
-
-    public static EntityType of(Graph.Type graph, String label) {
-        return new EntityType(graph, label);
-    }
 
     private EntityType(TypeVertex vertex) {
         super(vertex);
@@ -47,10 +40,20 @@ public class EntityType extends ThingType<EntityType> {
         assert !label.equals(Schema.Vertex.Type.Root.ENTITY.label());
     }
 
-    @Override
-    EntityType newInstance(TypeVertex vertex) {
-        return of(vertex);
+    public static EntityType of(TypeVertex vertex) {
+        if (vertex.label().equals(Schema.Vertex.Type.Root.ENTITY.label())) return new EntityType.Root(vertex);
+        else return new EntityType(vertex);
     }
+
+    public static EntityType of(Graph.Type graph, String label) {
+        return new EntityType(graph, label);
+    }
+
+    @Override
+    EntityType getThis() { return this; }
+
+    @Override
+    EntityType newInstance(TypeVertex vertex) { return of(vertex); }
 
     public static class Root extends EntityType {
 
@@ -60,26 +63,18 @@ public class EntityType extends ThingType<EntityType> {
         }
 
         @Override
-        boolean isRoot() { return true; }
+        public boolean isRoot() { return true; }
 
         @Override
-        public void label(String label) {
-            throw new HypergraphException("Invalid Operation Exception: root types are immutable");
-        }
+        public void label(String label) { throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION); }
 
         @Override
-        public void isAbstract(boolean isAbstract) {
-            throw new HypergraphException("Invalid Operation Exception: root types are immutable");
-        }
+        public void isAbstract(boolean isAbstract) { throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION); }
 
         @Override
-        public EntityType sup() {
-            return null;
-        }
+        public EntityType.Root sup() { return null; }
 
         @Override
-        public void sup(EntityType superType) {
-            throw new HypergraphException("Invalid Operation Exception: root types are immutable");
-        }
+        public void sup(EntityType superType) { throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION); }
     }
 }

@@ -29,6 +29,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import static hypergraph.common.exception.Error.TypeDefinition.INVALID_ROOT_TYPE_MUTATION;
 import static hypergraph.common.iterator.Iterators.apply;
 import static hypergraph.common.iterator.Iterators.filter;
 import static hypergraph.common.iterator.Iterators.link;
@@ -58,7 +59,18 @@ public abstract class ThingType<TYPE extends ThingType<TYPE>> extends Type<TYPE>
         super.sup(superType);
     }
 
-    public KeyOverrider key(AttributeType attributeType) {
+    private <T extends Type<T>> void override(Schema.Edge.Type schema, T type, T overriddenType,
+                                              Stream<? extends Type> overridable, Stream<? extends Type> notOverridable) {
+        if (notOverridable.anyMatch(t -> t.equals(overriddenType)) || overridable.noneMatch(t -> t.equals(overriddenType))) {
+            throw new HypergraphException("Invalid Type Overriding: " + overriddenType.label() + " cannot be overridden");
+        } else if (type.sups().noneMatch(t -> t.equals(overriddenType))) {
+            throw new HypergraphException("Invalid Type Overriding: " + overriddenType.label() + " is not a supertype");
+        }
+
+        vertex.outs().edge(schema, type.vertex).overridden(overriddenType.vertex);
+    }
+
+    public TYPE key(AttributeType attributeType) {
         if (filter(vertex.outs().edge(Schema.Edge.Type.HAS).to(), v -> v.equals(attributeType.vertex)).hasNext()) {
             throw new HypergraphException("Invalid Key Assignment: " + attributeType.label() + " is already used as an attribute");
         } else if (sups().flatMap(ThingType::attributes).anyMatch(a -> a.equals(attributeType))) {
@@ -66,16 +78,23 @@ public abstract class ThingType<TYPE extends ThingType<TYPE>> extends Type<TYPE>
         }
 
         vertex.outs().put(Schema.Edge.Type.KEY, attributeType.vertex);
-        return new KeyOverrider(attributeType);
+        return getThis();
+    }
+
+    public <ATT_TYPE extends AttributeType<ATT_TYPE>> TYPE key(ATT_TYPE attributeType, ATT_TYPE overriddenType) {
+        this.key(attributeType);
+        Stream<AttributeType> overridable = sup().attributes();
+        Stream<AttributeType> notOverridable = declaredAttributes();
+        override(Schema.Edge.Type.KEY, attributeType, overriddenType, overridable, notOverridable);
+        return getThis();
     }
 
     public void unkey(AttributeType attributeType) {
         vertex.outs().delete(Schema.Edge.Type.KEY, attributeType.vertex);
     }
 
-    private Stream<AttributeType> declaredKeys() {
-        Iterator<AttributeType> keys = apply(vertex.outs().edge(Schema.Edge.Type.KEY).to(), AttributeType::of);
-        return stream(spliteratorUnknownSize(keys, ORDERED | IMMUTABLE), false);
+    public Stream<AttributeType> keys(Class<?> valueClass) {
+        return keys().filter(att -> att.valueClass().equals(valueClass));
     }
 
     public Stream<AttributeType> keys() {
@@ -92,7 +111,7 @@ public abstract class ThingType<TYPE extends ThingType<TYPE>> extends Type<TYPE>
         }
     }
 
-    public HasOverrider has(AttributeType attributeType) {
+    public TYPE has(AttributeType attributeType) {
         if (filter(vertex.outs().edge(Schema.Edge.Type.KEY).to(), v -> v.equals(attributeType.vertex)).hasNext()) {
             throw new HypergraphException("Invalid Attribute Assignment: " + attributeType.label() + " is already used as a key");
         } else if (sups().flatMap(ThingType::attributes).anyMatch(a -> a.equals(attributeType))) {
@@ -100,7 +119,15 @@ public abstract class ThingType<TYPE extends ThingType<TYPE>> extends Type<TYPE>
         }
 
         vertex.outs().put(Schema.Edge.Type.HAS, attributeType.vertex);
-        return new HasOverrider(attributeType);
+        return getThis();
+    }
+
+    public <ATT_TYPE extends AttributeType<ATT_TYPE>> TYPE has(ATT_TYPE attributeType, ATT_TYPE overriddenType) {
+        this.has(attributeType);
+        Stream<AttributeType> overridable = ThingType.this.sup().attributes(attributeType.valueClass());
+        Stream<AttributeType> notOverridable = concat(ThingType.this.sup().keys(), ThingType.this.declaredAttributes());
+        override(Schema.Edge.Type.HAS, attributeType, overriddenType, overridable, notOverridable);
+        return getThis();
     }
 
     public void unhas(AttributeType attributeType) {
@@ -111,6 +138,10 @@ public abstract class ThingType<TYPE extends ThingType<TYPE>> extends Type<TYPE>
         Iterator<AttributeType> attributes = link(vertex.outs().edge(Schema.Edge.Type.KEY).to(),
                                                   vertex.outs().edge(Schema.Edge.Type.HAS).to()).apply(AttributeType::of);
         return stream(spliteratorUnknownSize(attributes, ORDERED | IMMUTABLE), false);
+    }
+
+    public Stream<AttributeType> attributes(Class<?> valueClass) {
+        return attributes().filter(att -> att.valueClass().equals(valueClass));
     }
 
     public Stream<AttributeType> attributes() {
@@ -128,12 +159,20 @@ public abstract class ThingType<TYPE extends ThingType<TYPE>> extends Type<TYPE>
         }
     }
 
-    public PlaysOverrider plays(RoleType roleType) {
+    public TYPE plays(RoleType roleType) {
         if (sups().flatMap(ThingType::plays).anyMatch(a -> a.equals(roleType))) {
             throw new HypergraphException("Invalid Attribute Assignment: " + roleType.label() + " is already inherited or overridden ");
         }
         vertex.outs().put(Schema.Edge.Type.PLAYS, roleType.vertex);
-        return new PlaysOverrider(roleType);
+        return getThis();
+    }
+
+    public TYPE plays(RoleType roleType, RoleType overriddenType) {
+        this.plays(roleType);
+        Stream<RoleType> overridable = this.sup().plays();
+        Stream<RoleType> notOverridable = this.declaredPlays();
+        override(Schema.Edge.Type.PLAYS, roleType, overriddenType, overridable, notOverridable);
+        return getThis();
     }
 
     public void unplay(RoleType roleType) {
@@ -158,7 +197,7 @@ public abstract class ThingType<TYPE extends ThingType<TYPE>> extends Type<TYPE>
         }
     }
 
-    public static class Root extends ThingType {
+    public static class Root extends ThingType<ThingType.Root> {
 
         public Root(TypeVertex vertex) {
             super(vertex);
@@ -166,86 +205,19 @@ public abstract class ThingType<TYPE extends ThingType<TYPE>> extends Type<TYPE>
         }
 
         @Override
-        ThingType<?> newInstance(TypeVertex vertex) {
-            if (vertex.schema().equals(Schema.Vertex.Type.ATTRIBUTE_TYPE)) return AttributeType.of(vertex);
-            if (vertex.schema().equals(Schema.Vertex.Type.ENTITY_TYPE)) return EntityType.of(vertex);
-            if (vertex.schema().equals(Schema.Vertex.Type.RELATION_TYPE)) return RelationType.of(vertex);
-            return null;
-        }
+        ThingType.Root getThis() { return this; }
 
         @Override
-        boolean isRoot() { return true; }
+        ThingType.Root newInstance(TypeVertex vertex) { return new ThingType.Root(vertex); }
 
-        @Override
-        public void label(String label) {
-            throw new HypergraphException("Invalid Operation Exception: root types are immutable");
-        }
+        public boolean isRoot() { return true; }
 
-        @Override
-        public void isAbstract(boolean isAbstract) {
-            throw new HypergraphException("Invalid Operation Exception: root types are immutable");
-        }
+        public void label(String label) { throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION); }
 
-        @Override
-        public ThingType sup() {
-            return null;
-        }
+        public void isAbstract(boolean isAbstract) { throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION); }
 
-        @Override
-        public void sup(ThingType superType) {
-            throw new HypergraphException("Invalid Operation Exception: root types are immutable");
-        }
-    }
+        public ThingType.Root sup() { return null; }
 
-    public class KeyOverrider extends Overrider<AttributeType> {
-        KeyOverrider(AttributeType attributeType) {
-            super(Schema.Edge.Type.KEY, attributeType,
-                  ThingType.this.sup().attributes(),
-                  ThingType.this.declaredAttributes()
-            );
-        }
-    }
-
-    public class HasOverrider extends Overrider<AttributeType> {
-        HasOverrider(AttributeType attributeType) {
-            super(Schema.Edge.Type.HAS, attributeType,
-                  ThingType.this.sup().attributes(),
-                  concat(ThingType.this.sup().keys(), ThingType.this.declaredAttributes())
-            );
-        }
-    }
-
-    public class PlaysOverrider extends Overrider<RoleType> {
-        PlaysOverrider(RoleType roleType) {
-            super(Schema.Edge.Type.PLAYS, roleType,
-                  ThingType.this.sup().plays(),
-                  ThingType.this.declaredPlays()
-            );
-        }
-    }
-
-    public class Overrider<P extends Type<P>> {
-
-        private final P type;
-        private final Stream<P> overridable;
-        private final Stream<P> notOverridable;
-        private final Schema.Edge.Type schema;
-
-        Overrider(Schema.Edge.Type schema, P type, Stream<P> overridable, Stream<P> notOverridable) {
-            this.schema = schema;
-            this.type = type;
-            this.overridable = overridable;
-            this.notOverridable = notOverridable;
-        }
-
-        public void as(P property) {
-            if (notOverridable.anyMatch(prop -> prop.equals(property)) || overridable.noneMatch(prop -> prop.equals(property))) {
-                throw new HypergraphException("Invalid Type Overriding: " + property.label() + " cannot be overridden");
-            } else if (this.type.sups().noneMatch(prop -> prop.equals(property))) {
-                throw new HypergraphException("Invalid Type Overriding: " + property.label() + " is not a supertype");
-            }
-
-            vertex.outs().edge(schema, this.type.vertex).overridden(property.vertex);
-        }
+        public void sup(ThingType.Root superType) { throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION); }
     }
 }

@@ -31,6 +31,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import static hypergraph.common.collection.Streams.compareSize;
+import static hypergraph.common.exception.Error.TypeDefinition.INVALID_ROOT_TYPE_MUTATION;
 import static hypergraph.common.iterator.Iterators.apply;
 import static hypergraph.common.iterator.Iterators.filter;
 import static java.util.Spliterator.IMMUTABLE;
@@ -39,15 +40,6 @@ import static java.util.Spliterators.spliteratorUnknownSize;
 import static java.util.stream.StreamSupport.stream;
 
 public class RelationType extends ThingType<RelationType> {
-
-    public static RelationType of(TypeVertex vertex) {
-        if (vertex.label().equals(Schema.Vertex.Type.Root.RELATION.label())) return new RelationType.Root(vertex);
-        else return new RelationType(vertex);
-    }
-
-    public static RelationType of(Graph.Type graph, String label) {
-        return new RelationType(graph, label);
-    }
 
     private RelationType(TypeVertex vertex) {
         super(vertex);
@@ -61,10 +53,20 @@ public class RelationType extends ThingType<RelationType> {
         super(graph, label, Schema.Vertex.Type.RELATION_TYPE);
     }
 
-    @Override
-    RelationType newInstance(TypeVertex vertex) {
-        return of(vertex);
+    public static RelationType of(TypeVertex vertex) {
+        if (vertex.label().equals(Schema.Vertex.Type.Root.RELATION.label())) return new RelationType.Root(vertex);
+        else return new RelationType(vertex);
     }
+
+    public static RelationType of(Graph.Type graph, String label) {
+        return new RelationType(graph, label);
+    }
+
+    @Override
+    RelationType getThis() { return this; }
+
+    @Override
+    RelationType newInstance(TypeVertex vertex) { return of(vertex); }
 
     @Override
     public void label(String label) {
@@ -178,26 +180,18 @@ public class RelationType extends ThingType<RelationType> {
         }
 
         @Override
-        boolean isRoot() { return true; }
+        public boolean isRoot() { return true; }
 
         @Override
-        public void label(String label) {
-            throw new HypergraphException("Invalid Operation Exception: root types are immutable");
-        }
+        public void label(String label) { throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION); }
 
         @Override
-        public void isAbstract(boolean isAbstract) {
-            throw new HypergraphException("Invalid Operation Exception: root types are immutable");
-        }
+        public void isAbstract(boolean isAbstract) { throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION); }
 
         @Override
-        public RelationType sup() {
-            return null;
-        }
+        public RelationType.Root sup() { return null; }
 
         @Override
-        public void sup(RelationType superType) {
-            throw new HypergraphException("Invalid Operation Exception: root types are immutable");
-        }
+        public void sup(RelationType superType) { throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION); }
     }
 }

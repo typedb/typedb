@@ -23,16 +23,9 @@ import hypergraph.graph.Graph;
 import hypergraph.graph.Schema;
 import hypergraph.graph.vertex.TypeVertex;
 
+import static hypergraph.common.exception.Error.TypeDefinition.INVALID_ROOT_TYPE_MUTATION;
+
 public class RoleType extends Type<RoleType> {
-
-    public static RoleType of(TypeVertex vertex) {
-        if (vertex.label().equals(Schema.Vertex.Type.Root.ROLE.label())) return new RoleType.Root(vertex);
-        else return new RoleType(vertex);
-    }
-
-    public static RoleType of(Graph.Type graph, String label, String relation) {
-        return new RoleType(graph, label, relation);
-    }
 
     private RoleType(TypeVertex vertex) {
         super(vertex);
@@ -46,6 +39,18 @@ public class RoleType extends Type<RoleType> {
     private RoleType(Graph.Type graph, String label, String relation) {
         super(graph, label, Schema.Vertex.Type.ROLE_TYPE, relation);
     }
+
+    public static RoleType of(TypeVertex vertex) {
+        if (vertex.label().equals(Schema.Vertex.Type.Root.ROLE.label())) return new RoleType.Root(vertex);
+        else return new RoleType(vertex);
+    }
+
+    public static RoleType of(Graph.Type graph, String label, String relation) {
+        return new RoleType(graph, label, relation);
+    }
+
+    @Override
+    RoleType getThis() { return this; }
 
     @Override
     RoleType newInstance(TypeVertex vertex) {
@@ -64,26 +69,18 @@ public class RoleType extends Type<RoleType> {
         }
 
         @Override
-        boolean isRoot() { return true; }
+        public boolean isRoot() { return true; }
 
         @Override
-        public void label(String label) {
-            throw new HypergraphException("Invalid Operation Exception: root types are immutable");
-        }
+        public void label(String label) { throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION); }
 
         @Override
-        public void isAbstract(boolean isAbstract) {
-            throw new HypergraphException("Invalid Operation Exception: root types are immutable");
-        }
+        protected void isAbstract(boolean isAbstract) { throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION); }
 
         @Override
-        public RoleType sup() {
-            return null;
-        }
+        public RoleType sup() { return null; }
 
         @Override
-        public void sup(RoleType superType) {
-            throw new HypergraphException("Invalid Operation Exception: root types are immutable");
-        }
+        protected void sup(RoleType superType) { throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION); }
     }
 }

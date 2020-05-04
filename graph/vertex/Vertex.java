@@ -80,7 +80,7 @@ public abstract class Vertex<
 
     @Override
     public String toString() {
-        return this.getClass().getSimpleName() + ": [" + schema + "] " + Arrays.toString(iid);
+        return this.getClass().getCanonicalName() + ": [" + schema + "] " + Arrays.toString(iid);
     }
 
     @Override

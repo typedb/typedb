@@ -28,6 +28,7 @@ import java.util.Iterator;
 import java.util.Objects;
 import java.util.stream.Stream;
 
+import static hypergraph.common.exception.Error.TypeDefinition.INVALID_ROOT_TYPE_MUTATION;
 import static java.util.Spliterator.IMMUTABLE;
 import static java.util.Spliterator.ORDERED;
 import static java.util.Spliterators.spliteratorUnknownSize;
@@ -53,9 +54,11 @@ public abstract class Type<TYPE extends Type<TYPE>> {
         superType = newInstance(superTypeVertex);
     }
 
+    abstract TYPE getThis();
+
     abstract TYPE newInstance(TypeVertex vertex);
 
-    boolean isRoot() { return false; }
+    public boolean isRoot() { return false; }
 
     public void label(String label) {
         vertex.label(label);
@@ -117,7 +120,7 @@ public abstract class Type<TYPE extends Type<TYPE>> {
 
     @Override
     public String toString() {
-        return this.getClass().getSimpleName() + " {" + vertex.toString() + "}";
+        return this.getClass().getCanonicalName() + " {" + vertex.toString() + "}";
     }
 
     @Override

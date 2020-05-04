@@ -18,6 +18,7 @@
 
 package hypergraph.concept;
 
+import hypergraph.common.exception.HypergraphException;
 import hypergraph.concept.type.AttributeType;
 import hypergraph.concept.type.EntityType;
 import hypergraph.concept.type.RelationType;
@@ -25,6 +26,8 @@ import hypergraph.concept.type.ThingType;
 import hypergraph.graph.Graph;
 import hypergraph.graph.Schema;
 import hypergraph.graph.vertex.TypeVertex;
+
+import static hypergraph.common.exception.Error.TypeDefinition.INVALID_VALUE_CLASS;
 
 public class Concepts {
 
@@ -52,9 +55,9 @@ public class Concepts {
         else return null;
     }
 
-    public AttributeType getRootAttributeType() {
+    public AttributeType.Object getRootAttributeType() {
         TypeVertex vertex = graph.type().get(Schema.Vertex.Type.Root.ATTRIBUTE.label());
-        if (vertex != null) return AttributeType.of(vertex);
+        if (vertex != null) return new AttributeType.Object(vertex);
         else return null;
     }
 
@@ -82,10 +85,52 @@ public class Concepts {
         else return null;
     }
 
-    public AttributeType putAttributeType(String label) {
+    public AttributeType putAttributeType(String label, Class<?> valueClass) {
+        Schema.ValueClass schema = Schema.ValueClass.of(valueClass);
+        switch (schema) {
+            case BOOLEAN:
+                return putAttributeTypeBoolean(label);
+            case LONG:
+                return putAttributeTypeLong(label);
+            case DOUBLE:
+                return putAttributeTypeDouble(label);
+            case STRING:
+                return putAttributeTypeString(label);
+            case DATETIME:
+                return putAttributeTypeDateTime(label);
+            default:
+                throw new HypergraphException(INVALID_VALUE_CLASS.format(valueClass.getCanonicalName()));
+        }
+    }
+
+    public AttributeType.Boolean putAttributeTypeBoolean(String label) {
         TypeVertex vertex = graph.type().get(label);
-        if (vertex != null) return AttributeType.of(vertex);
-        else return AttributeType.of(graph.type(), label);
+        if (vertex != null) return AttributeType.Boolean.of(vertex);
+        else return new AttributeType.Boolean(graph.type(), label);
+    }
+
+    public AttributeType.Long putAttributeTypeLong(String label) {
+        TypeVertex vertex = graph.type().get(label);
+        if (vertex != null) return AttributeType.Long.of(vertex);
+        else return new AttributeType.Long(graph.type(), label);
+    }
+
+    public AttributeType.Double putAttributeTypeDouble(String label) {
+        TypeVertex vertex = graph.type().get(label);
+        if (vertex != null) return AttributeType.Double.of(vertex);
+        else return new AttributeType.Double(graph.type(), label);
+    }
+
+    public AttributeType.String putAttributeTypeString(String label) {
+        TypeVertex vertex = graph.type().get(label);
+        if (vertex != null) return AttributeType.String.of(vertex);
+        else return new AttributeType.String(graph.type(), label);
+    }
+
+    public AttributeType.DateTime putAttributeTypeDateTime(String label) {
+        TypeVertex vertex = graph.type().get(label);
+        if (vertex != null) return AttributeType.DateTime.of(vertex);
+        else return new AttributeType.DateTime(graph.type(), label);
     }
 
     public AttributeType getAttributeType(String label) {

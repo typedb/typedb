@@ -37,6 +37,8 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -125,12 +127,12 @@ public class BasicTest {
 
                     Stream<Consumer<Hypergraph.Transaction>> typeAssertions = Stream.of(
                             tx -> {
-                                AttributeType name = tx.concepts().putAttributeType("name");
+                                AttributeType name = tx.concepts().putAttributeTypeString("name");
                                 notNulls(name);
                                 assertEquals(name.sup(), rootAttributeType);
                             },
                             tx -> {
-                                AttributeType age = tx.concepts().putAttributeType("age");
+                                AttributeType.Long age = tx.concepts().putAttributeTypeLong("age");
                                 notNulls(age);
                                 assertEquals(age.sup(), rootAttributeType);
                             },
@@ -203,7 +205,7 @@ public class BasicTest {
                 }
 
                 try (Hypergraph.Transaction transaction = session.transaction(Hypergraph.Transaction.Type.WRITE)) {
-                    AttributeType gender = transaction.concepts().putAttributeType("gender");
+                    AttributeType.String gender = transaction.concepts().putAttributeTypeString("gender");
                     EntityType school = transaction.concepts().putEntityType("school");
                     RelationType teaching = transaction.concepts().putRelationType("teaching");
                     teaching.relates("teacher");
@@ -216,7 +218,7 @@ public class BasicTest {
 
                 try (Hypergraph.Transaction transaction = session.transaction(Hypergraph.Transaction.Type.READ)) {
                     assertTransactionRead(transaction);
-                    AttributeType gender = transaction.concepts().getAttributeType("gender");
+                    AttributeType.String gender = transaction.concepts().getAttributeType("gender").asString();
                     EntityType school = transaction.concepts().getEntityType("school");
                     RelationType teaching = transaction.concepts().getRelationType("teaching");
                     RoleType teacher = teaching.role("teacher");
@@ -239,12 +241,12 @@ public class BasicTest {
 
         Stream<Consumer<Hypergraph.Transaction>> typeAssertions = Stream.of(
                 tx -> {
-                    AttributeType name = tx.concepts().getAttributeType("name");
+                    AttributeType.String name = tx.concepts().getAttributeType("name").asString();
                     notNulls(name);
                     assertEquals(name.sup(), rootAttributeType);
                 },
                 tx -> {
-                    AttributeType age = tx.concepts().getAttributeType("age");
+                    AttributeType.Long age = tx.concepts().getAttributeType("age").asLong();
                     notNulls(age);
                     assertEquals(age.sup(), rootAttributeType);
                 },

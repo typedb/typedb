@@ -43,7 +43,7 @@ public abstract class TypeVertex extends Vertex<
     protected String label;
     protected String scope;
     protected Boolean isAbstract;
-    protected Schema.ValueType valueType;
+    protected Schema.ValueClass valueClass;
     protected String regex;
 
     TypeVertex(Graph.Type graph, Schema.Vertex.Type type, byte[] iid, String label, @Nullable String scope) {
@@ -90,9 +90,9 @@ public abstract class TypeVertex extends Vertex<
 
     public abstract TypeVertex isAbstract(boolean isAbstract);
 
-    public abstract Schema.ValueType valueType();
+    public abstract Schema.ValueClass valueClass();
 
-    public abstract TypeVertex valueType(Schema.ValueType valueType);
+    public abstract TypeVertex valueClass(Schema.ValueClass valueClass);
 
     public abstract String regex();
 
@@ -174,12 +174,12 @@ public abstract class TypeVertex extends Vertex<
             return this;
         }
 
-        public Schema.ValueType valueType() {
-            return valueType;
+        public Schema.ValueClass valueClass() {
+            return valueClass;
         }
 
-        public TypeVertex valueType(Schema.ValueType valueType) {
-            this.valueType = valueType;
+        public TypeVertex valueClass(Schema.ValueClass valueClass) {
+            this.valueClass = valueClass;
             return this;
         }
 
@@ -215,7 +215,7 @@ public abstract class TypeVertex extends Vertex<
             commitPropertyLabel();
             if (scope != null) commitPropertyScope();
             if (isAbstract != null && isAbstract) commitPropertyAbstract();
-            if (valueType != null) commitPropertyValueType();
+            if (valueClass != null) commitPropertyValueClass();
             if (regex != null && !regex.isEmpty()) commitPropertyRegex();
         }
 
@@ -231,8 +231,8 @@ public abstract class TypeVertex extends Vertex<
             graph.storage().put(join(iid, Schema.Property.LABEL.infix().key()), label.getBytes());
         }
 
-        private void commitPropertyValueType() {
-            graph.storage().put(join(iid, Schema.Property.VALUE_TYPE.infix().key()), valueType.value());
+        private void commitPropertyValueClass() {
+            graph.storage().put(join(iid, Schema.Property.VALUE_CLASS.infix().key()), valueClass.key());
         }
 
         private void commitPropertyRegex() {
@@ -352,17 +352,17 @@ public abstract class TypeVertex extends Vertex<
         }
 
         @Override
-        public Schema.ValueType valueType() {
-            if (valueType != null) return valueType;
-            byte[] val = graph.storage().get(join(iid, Schema.Property.VALUE_TYPE.infix().key()));
-            if (val != null) valueType = Schema.ValueType.of(val[0]);
-            return valueType;
+        public Schema.ValueClass valueClass() {
+            if (valueClass != null) return valueClass;
+            byte[] val = graph.storage().get(join(iid, Schema.Property.VALUE_CLASS.infix().key()));
+            if (val != null) valueClass = Schema.ValueClass.of(val[0]);
+            return valueClass;
         }
 
         @Override
-        public TypeVertex valueType(Schema.ValueType valueType) {
-            graph.storage().put(join(iid, Schema.Property.VALUE_TYPE.infix().key()), valueType.value());
-            this.valueType = valueType;
+        public TypeVertex valueClass(Schema.ValueClass valueClass) {
+            graph.storage().put(join(iid, Schema.Property.VALUE_CLASS.infix().key()), valueClass.key());
+            this.valueClass = valueClass;
             return this;
         }
 

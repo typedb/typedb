@@ -24,6 +24,11 @@ public class HypergraphException extends RuntimeException {
         super(error);
     }
 
+    public HypergraphException(Error error) {
+        super(error.toString());
+        assert !error.description().contains("%s");
+    }
+
     public HypergraphException(Exception e) {
         super(e);
     }

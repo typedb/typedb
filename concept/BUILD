@@ -33,8 +33,12 @@ java_library(
         "*/*.java",
     ]),
     deps = [
+        # Internal Package Dependencies
         "//common:common",
         "//graph:graph",
+
+        # Internal Repository Dependencies
+        "@graknlabs_common//:common",
     ],
 )
 
