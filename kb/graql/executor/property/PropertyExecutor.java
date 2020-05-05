@@ -76,9 +76,10 @@ public interface PropertyExecutor {
 
             // lower is higher priority
             NOT_APPLICABLE(0),
-            EDGE(1),
-            RELATION_INSTANCE(2),
-            NON_RELATION_INSTANCE(3);
+            HAS(1),
+            ROLE_PLAYER(2),
+            RELATION(3),
+            NON_RELATION(4);
             private final int priority;
             TiebreakDeletionOrdering(int priority) {
                 this.priority = priority;

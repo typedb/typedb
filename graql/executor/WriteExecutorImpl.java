@@ -236,6 +236,7 @@ public class WriteExecutorImpl implements WriteExecutor {
         // note that we _must_ call sortedWriters() for each concept map we want to write for now
         // because we have to order deletions whose order depends on the concepts they represent
         // eg. batch deletion based on ID have no ordering from the query itself
+
         for (Writer writer : sortedWriters()) {
             writer.execute(this);
         }
@@ -276,6 +277,7 @@ public class WriteExecutorImpl implements WriteExecutor {
      * This method uses a topological sort (Kahn's algorithm) in order to find a valid ordering.
      */
     private ImmutableList<Writer> sortedWriters() {
+
         ImmutableList.Builder<Writer> sorted = ImmutableList.builder();
 
         // invertedDependencies is intended to just be a 'view' on dependencies, so when dependencies is modified

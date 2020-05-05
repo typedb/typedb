@@ -25,7 +25,6 @@ import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Thing;
-import grakn.core.kb.graql.exception.GraqlQueryException;
 import grakn.core.kb.graql.exception.GraqlSemanticException;
 import grakn.core.kb.graql.executor.WriteExecutor;
 import grakn.core.kb.graql.executor.property.PropertyExecutor;
@@ -135,20 +134,24 @@ public class HasAttributeExecutor  implements PropertyExecutor.Insertable, Prope
 
         @Override
         public Set<Variable> requiredVars() {
-            Set<Variable> required = new HashSet<>();
-            required.add(var);
-            required.add(property.attribute().var());
-            return Collections.unmodifiableSet(required);
+            return Collections.unmodifiableSet(vars());
         }
 
         @Override
         public Set<Variable> producedVars() {
-            return ImmutableSet.of();
+            return Collections.emptySet();
+        }
+
+        private Set<Variable> vars() {
+            Set<Variable> vars = new HashSet<>();
+            vars.add(var);
+            vars.add(property.attribute().var());
+            return vars;
         }
 
         @Override
         public TiebreakDeletionOrdering ordering(WriteExecutor executor) {
-            return TiebreakDeletionOrdering.EDGE;
+            return TiebreakDeletionOrdering.HAS;
         }
 
         @Override
