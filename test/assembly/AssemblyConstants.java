@@ -16,7 +16,7 @@
  *
  */
 
-package grakn.core.assembly;
+package grakn.core.test.assembly;
 
 import grakn.core.common.config.Config;
 import grakn.core.common.config.ConfigKey;

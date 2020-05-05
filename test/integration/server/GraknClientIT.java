@@ -32,20 +32,21 @@ import grakn.client.answer.ConceptMap;
 import grakn.client.answer.ConceptSet;
 import grakn.client.answer.ConceptSetMeasure;
 import grakn.client.answer.Numeric;
-import grakn.client.concept.thing.Attribute;
-import grakn.client.concept.type.AttributeType;
 import grakn.client.concept.Concept;
 import grakn.client.concept.ConceptId;
-import grakn.client.concept.ValueType;
-import grakn.client.concept.thing.Entity;
-import grakn.client.concept.type.EntityType;
 import grakn.client.concept.Label;
+import grakn.client.concept.SchemaConcept;
+import grakn.client.concept.ValueType;
+import grakn.client.concept.thing.Attribute;
+import grakn.client.concept.thing.Entity;
 import grakn.client.concept.thing.Relation;
+import grakn.client.concept.thing.Thing;
+import grakn.client.concept.type.AttributeType;
+import grakn.client.concept.type.EntityType;
 import grakn.client.concept.type.RelationType;
 import grakn.client.concept.type.Role;
-import grakn.client.concept.SchemaConcept;
-import grakn.client.concept.thing.Thing;
 import grakn.client.concept.type.Type;
+import grakn.client.exception.GraknClientException;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import grakn.core.kb.server.exception.SessionException;
@@ -154,6 +155,19 @@ public class GraknClientIT {
             }
         }
     }
+
+    @Test
+    public void whenOpeningReadTransaction_writeThrows() {
+        try (GraknClient.Session session = graknClient.session(localSession.keyspace().name())) {
+            try (GraknClient.Transaction tx = session.transaction().read()) {
+                exception.expect(GraknClientException.class);
+                exception.expectMessage("is read only");
+                tx.execute(Graql.parse("define newentity sub entity;").asDefine());
+                tx.commit();
+            }
+        }
+    }
+
 
     @Test
     public void testPuttingEntityType_EnsureItIsAdded() {
