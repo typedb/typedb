@@ -25,11 +25,12 @@ java_library(
     ],
     deps = [
         # Internal Package Dependencies
-#        "//concept:concept",
+        "//concept:concept",
+        "//common:common",
         "//test/behaviour/connection:steps",
-#
-#        # Internal Repository Dependencies
-#        "@graknlabs_common//:common",
+
+        # Internal Repository Dependencies
+        # "@graknlabs_common//:common",
 
         # External Maven Dependencies
         "//dependencies/maven/artifacts/junit:junit",

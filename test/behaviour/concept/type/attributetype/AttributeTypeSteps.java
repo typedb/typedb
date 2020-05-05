@@ -18,11 +18,15 @@
 
 package hypergraph.test.behaviour.concept.type.attributetype;
 
+import hypergraph.common.exception.HypergraphException;
+import hypergraph.concept.type.AttributeType;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 
 import static hypergraph.test.behaviour.connection.ConnectionSteps.tx;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /**
  * Behaviour Steps specific to AttributeSteps
@@ -35,7 +39,18 @@ public class AttributeTypeSteps {
     }
 
     @Then("attribute\\( ?{type_label} ?) get value class: {value_class}")
-    public void thing_get_label(String typeLabel, Class<?> valueClass) {
+    public void attribute_get_value_class(String typeLabel, Class<?> valueClass) {
         assertEquals(valueClass, tx().concepts().getAttributeType(typeLabel).valueClass());
+    }
+
+    @Then("attribute\\( ?{type_label} ?) fails at setting supertype: {type_label}")
+    public void thing_fails_at_setting_key_attribute(String typeLabel, String superLabel) {
+        AttributeType superType = tx().concepts().getAttributeType(superLabel);
+        try {
+            tx().concepts().getAttributeType(typeLabel).sup(superType);
+            fail();
+        } catch (HypergraphException ignored) {
+            assertTrue(true);
+        }
     }
 }
