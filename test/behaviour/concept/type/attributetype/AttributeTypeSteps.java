@@ -18,9 +18,11 @@
 
 package hypergraph.test.behaviour.concept.type.attributetype;
 
+import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 
 import static hypergraph.test.behaviour.connection.ConnectionSteps.tx;
+import static org.junit.Assert.assertEquals;
 
 /**
  * Behaviour Steps specific to AttributeSteps
@@ -30,5 +32,10 @@ public class AttributeTypeSteps {
     @When("put attribute type: {type_label}, value class: {value_class}")
     public void put_attribute_type_value_class(String typeLabel, Class<?> valueClass) {
         tx().concepts().putAttributeType(typeLabel, valueClass);
+    }
+
+    @Then("attribute\\( ?{type_label} ?) get value class: {value_class}")
+    public void thing_get_label(String typeLabel, Class<?> valueClass) {
+        assertEquals(valueClass, tx().concepts().getAttributeType(typeLabel).valueClass());
     }
 }
