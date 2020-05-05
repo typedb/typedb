@@ -97,7 +97,7 @@ public class RolePlayerFragmentSetTest {
         Label magician = Label.of("magician");
 
         Collection<EquivalentFragmentSet> fragmentSets = Sets.newHashSet(
-                EquivalentFragmentSets.rolePlayer(null, a, b, c, d),
+                EquivalentFragmentSets.rolePlayer(null, a,  b, c, d),
                 EquivalentFragmentSets.label(null, d, ImmutableSet.of(magician))
         );
 

@@ -29,7 +29,6 @@ import grakn.core.graql.reasoner.atom.binary.AttributeAtom;
 import grakn.core.graql.reasoner.atom.predicate.ValuePredicate;
 import grakn.core.graql.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
-import grakn.core.graql.reasoner.utils.AnswerUtil;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Concept;
@@ -78,10 +77,7 @@ public class AttributeMaterialiser implements AtomMaterialiser<AttributeAtom> {
                     resourceVariable, attribute)
             );
 
-            Relation relation = putImplicitRelation(atom, answer, owner, attribute, ctx);
-            if (atom.getRelationVariable().isReturned()) {
-                answer = AnswerUtil.joinAnswers(answer, new ConceptMap(ImmutableMap.of(atom.getRelationVariable(), relation)));
-            }
+            putAttributeOwnership(atom, answer, owner, attribute, ctx);
             return Stream.of(answer);
         }
         return Stream.empty();
@@ -122,12 +118,9 @@ public class AttributeMaterialiser implements AtomMaterialiser<AttributeAtom> {
      * @param sub       partial substitution
      * @param owner     attribute owner
      * @param attribute attribute concept
-     * @return inserted implicit relation if didn't exist, null otherwise
      */
-    private Relation putImplicitRelation(AttributeAtom atom, ConceptMap sub, Concept owner, Attribute attribute, ReasoningContext ctx) {
+    private void putAttributeOwnership(AttributeAtom atom, ConceptMap sub, Concept owner, Attribute attribute, ReasoningContext ctx) {
         ConceptMap answer = findAnswer(atom, sub, ctx);
-        if (answer == null) return attachAttribute(owner, attribute);
-        Variable relationVariable = atom.getRelationVariable();
-        return relationVariable.isReturned() ? answer.get(relationVariable).asRelation() : null;
+        if (answer == null) attachAttribute(owner, attribute);
     }
 }

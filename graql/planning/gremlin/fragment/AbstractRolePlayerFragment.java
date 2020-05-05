@@ -68,12 +68,12 @@ abstract class AbstractRolePlayerFragment extends EdgeFragment {
         String roleString = role != null ? " role:" + role.symbol() : "";
         String rels = displayOptionalTypeLabels("rels", relationTypeLabels());
         String roles = displayOptionalTypeLabels("roles", roleLabels());
-        return "[" + Schema.EdgeLabel.ROLE_PLAYER.getLabel() + ":" + edge().symbol() + roleString + rels + roles + "]";
+        return "[" + Schema.EdgeLabel.ROLE_PLAYER.getLabel() + ":" + roleString + rels + roles + "]";
     }
 
     @Override
     final ImmutableSet<Variable> otherVars() {
-        ImmutableSet.Builder<Variable> builder = ImmutableSet.<Variable>builder().add(edge());
+        ImmutableSet.Builder<Variable> builder = ImmutableSet.<Variable>builder();
         Variable role = role();
         if (role != null) builder.add(role);
         return builder.build();
