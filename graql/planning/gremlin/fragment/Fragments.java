@@ -69,6 +69,15 @@ public class Fragments {
                 varProperty, relation, rolePlayer, edge, role, roleLabels, relationTypeLabels);
     }
 
+    public static Fragment inHas(VarProperty varProperty, Variable owner, Variable edge, Variable attribute) {
+        // TODO
+    }
+
+    public static Fragment outHas(VarProperty varProperty, Variable owner, Variable edge, Variable attribute) {
+        // TODO
+    }
+
+
     public static Fragment inSub(VarProperty varProperty, Variable start, Variable end, int subTraversalDepthlimit) {
         return new InSubFragment(varProperty, start, end, subTraversalDepthlimit);
     }

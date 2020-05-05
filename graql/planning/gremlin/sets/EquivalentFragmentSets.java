@@ -60,6 +60,18 @@ public class EquivalentFragmentSets {
     }
 
     /**
+     * An EquivalentFragmentSet that indicates a variable that is a Thing having an ownership of an Attribute instance
+     * @param varProperty
+     * @param owner
+     * @param attribute
+     * @return
+     */
+    public static EquivalentFragmentSet has(VarProperty varProperty, Variable owner, Variable attribute) {
+        return new HasFragmentSet(varProperty, owner, attribute);
+    }
+
+
+    /**
      * Describes the edge connecting a Relation to a role-player.
      * <p>
      * Can be constrained with information about the possible Roles or RelationTypes.
