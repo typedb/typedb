@@ -47,7 +47,7 @@ public abstract class AttributeType<ATT_TYPE extends AttributeType<ATT_TYPE>> ex
     public static AttributeType<? extends AttributeType> of(TypeVertex vertex) {
         switch (vertex.valueClass()) {
             case OBJECT:
-                return new AttributeType.Object(vertex);
+                return new Object(vertex);
             case BOOLEAN:
                 return AttributeType.Boolean.of(vertex);
             case LONG:
@@ -82,11 +82,20 @@ public abstract class AttributeType<ATT_TYPE extends AttributeType<ATT_TYPE>> ex
         super.sup(superType);
     }
 
+    @Override
+    @SuppressWarnings("unchecked")
+    ATT_TYPE newInstance(TypeVertex vertex) {
+        // This is only called by AttributeType.Object and ATT_TYPE is always AttributeType<?>
+        return (ATT_TYPE) of(vertex);
+    }
+
     public AttributeType.Object asObject() {
-        if (this.valueClass().equals(Object.class)) {
+        if (this.valueClass().equals(java.lang.Object.class)) {
             return (AttributeType.Object) this;
         } else {
-            throw new HypergraphException(INVALID_TYPE_CASTING.format(this.label(), Object.class.getCanonicalName()));
+            throw new HypergraphException(INVALID_TYPE_CASTING.format(
+                    this.label(), AttributeType.Object.class.getCanonicalName()
+            ));
         }
     }
 
@@ -94,7 +103,9 @@ public abstract class AttributeType<ATT_TYPE extends AttributeType<ATT_TYPE>> ex
         if (this.valueClass().equals(java.lang.Boolean.class) || this.isRoot()) {
             return (Boolean) this;
         } else {
-            throw new HypergraphException(INVALID_TYPE_CASTING.format(this.label(), Boolean.class.getCanonicalName()));
+            throw new HypergraphException(INVALID_TYPE_CASTING.format(
+                    this.label(), AttributeType.Boolean.class.getCanonicalName()
+            ));
         }
     }
 
@@ -102,7 +113,9 @@ public abstract class AttributeType<ATT_TYPE extends AttributeType<ATT_TYPE>> ex
         if (this.valueClass().equals(java.lang.Long.class) || this.isRoot()) {
             return (Long) this;
         } else {
-            throw new HypergraphException(INVALID_TYPE_CASTING.format(this.label(), Long.class.getCanonicalName()));
+            throw new HypergraphException(INVALID_TYPE_CASTING.format(
+                    this.label(), AttributeType.Long.class.getCanonicalName()
+            ));
         }
     }
 
@@ -110,7 +123,9 @@ public abstract class AttributeType<ATT_TYPE extends AttributeType<ATT_TYPE>> ex
         if (this.valueClass().equals(java.lang.Double.class) || this.isRoot()) {
             return (Double) this;
         } else {
-            throw new HypergraphException(INVALID_TYPE_CASTING.format(this.label(), Double.class.getCanonicalName()));
+            throw new HypergraphException(INVALID_TYPE_CASTING.format(
+                    this.label(), AttributeType.Double.class.getCanonicalName()
+            ));
         }
     }
 
@@ -118,7 +133,9 @@ public abstract class AttributeType<ATT_TYPE extends AttributeType<ATT_TYPE>> ex
         if (this.valueClass().equals(java.lang.String.class) || this.isRoot()) {
             return (String) this;
         } else {
-            throw new HypergraphException(INVALID_TYPE_CASTING.format(this.label(), Long.class.getCanonicalName()));
+            throw new HypergraphException(INVALID_TYPE_CASTING.format(
+                    this.label(), AttributeType.Long.class.getCanonicalName()
+            ));
         }
     }
 
@@ -126,7 +143,9 @@ public abstract class AttributeType<ATT_TYPE extends AttributeType<ATT_TYPE>> ex
         if (this.valueClass().equals(LocalDateTime.class) || this.isRoot()) {
             return (DateTime) this;
         } else {
-            throw new HypergraphException(INVALID_TYPE_CASTING.format(this.label(), DateTime.class.getCanonicalName()));
+            throw new HypergraphException(INVALID_TYPE_CASTING.format(
+                    this.label(), AttributeType.DateTime.class.getCanonicalName()
+            ));
         }
     }
 
@@ -149,10 +168,6 @@ public abstract class AttributeType<ATT_TYPE extends AttributeType<ATT_TYPE>> ex
         @Override
         AttributeType.Object getThis() { return this; }
 
-        @Override
-        AttributeType.Object newInstance(TypeVertex vertex) { return new AttributeType.Object(vertex); }
-
-        @Override
         public Class<java.lang.Object> valueClass() { return java.lang.Object.class; }
 
         @Override
