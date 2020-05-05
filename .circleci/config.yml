@@ -494,18 +494,18 @@ workflows:
               only:
                 - master
                 - rewrite
-            requires:
-              - build
-              - build-checkstyle
-              - build-analysis
-              - test-common
-              - test-server
-              - test-behaviour-connection
-              - test-behaviour-graql-language
-              - test-behaviour-graql-reasoner
-              - test-integration
-              - test-integration-reasoner
-              - test-integration-analytics
+          requires:
+            - build
+            - build-checkstyle
+            - build-analysis
+            - test-common
+            - test-server
+            - test-behaviour-connection
+            - test-behaviour-graql-language
+            - test-behaviour-graql-reasoner
+            - test-integration
+            - test-integration-reasoner
+            - test-integration-analytics
       - test-assembly-mac-zip:
           filters:
             branches:
