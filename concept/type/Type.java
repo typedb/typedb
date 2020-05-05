@@ -60,6 +60,10 @@ public abstract class Type<TYPE extends Type<TYPE>> {
 
     public boolean isRoot() { return false; }
 
+    public Long count() {
+        return 0L; // TODO: return total number of type instances
+    }
+
     public void label(String label) {
         vertex.label(label);
     }
