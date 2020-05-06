@@ -25,7 +25,7 @@ java_test(
     ],
     classpath_resources = ["//test/resources:logback-test"],
     data = ["//:assemble-mac-zip"],
-    test_class = "grakn.core.assembly.DaemonTest",
+    test_class = "grakn.core.test.assembly.DaemonTest",
     deps = [
         "//common",
         "//server",
@@ -44,7 +44,7 @@ java_test(
     ],
     classpath_resources = ["//test/resources:logback-test"],
     data = ["//:assemble-mac-zip"],
-    test_class = "grakn.core.assembly.DistributionTest",
+    test_class = "grakn.core.test.assembly.DistributionTest",
     deps = [
         "//common",
         "//dependencies/maven/artifacts/commons-io",

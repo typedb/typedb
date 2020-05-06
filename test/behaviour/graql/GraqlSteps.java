@@ -107,9 +107,9 @@ public class GraqlSteps {
 
     @Given("graql undefine throws")
     public void graql_undefine_throws(String undefineQueryStatements) {
-        GraqlUndefine graqlQuery = Graql.parse(String.join("\n", undefineQueryStatements)).asUndefine();
         boolean threw = false;
         try {
+            GraqlUndefine graqlQuery = Graql.parse(String.join("\n", undefineQueryStatements)).asUndefine();
             tx.execute(graqlQuery);
             tx.commit();
         } catch (RuntimeException e) {
@@ -133,9 +133,34 @@ public class GraqlSteps {
 
     @Given("graql insert throws")
     public void graql_insert_throws(String insertQueryStatements) {
-        GraqlQuery graqlQuery = Graql.parse(String.join("\n", insertQueryStatements));
         boolean threw = false;
         try {
+            GraqlQuery graqlQuery = Graql.parse(String.join("\n", insertQueryStatements));
+            tx.execute(graqlQuery);
+            tx.commit();
+        } catch (RuntimeException e) {
+            threw = true;
+        } finally {
+            tx.close();
+            tx = session.transaction(Transaction.Type.WRITE);
+        }
+        assertTrue(threw);
+    }
+
+    @Given("graql delete")
+    public void graql_delete(String deleteQueryStatements) {
+        GraqlQuery graqlQuery = Graql.parse(String.join("\n", deleteQueryStatements));
+        tx.execute(graqlQuery);
+        tx.commit();
+        tx = session.transaction(Transaction.Type.WRITE);
+    }
+
+
+    @Given("graql delete throws")
+    public void graql_delete_throws(String deleteQueryStatements) {
+        boolean threw = false;
+        try {
+            GraqlQuery graqlQuery = Graql.parse(String.join("\n", deleteQueryStatements));
             tx.execute(graqlQuery);
             tx.commit();
         } catch (RuntimeException e) {

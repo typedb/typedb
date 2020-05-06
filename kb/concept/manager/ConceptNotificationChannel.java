@@ -56,6 +56,9 @@ public interface ConceptNotificationChannel {
     void deleteReifiedOwner(Relation owner);
 
     void schemaConceptDeleted(SchemaConcept schemaConcept);
+
+    void hasAttributeRemoved(Thing owner, Attribute<?> owned);
+
     void roleUndefined(Role role);
     void relationRoleUnrelated(RelationType relationType, Role role, List<Casting> conceptsPlayingRole);
 

@@ -333,7 +333,7 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
             if (type != null && type.equals(Transaction.Type.WRITE)) {
                 tx = session.transaction(grakn.core.kb.server.Transaction.Type.WRITE);
             } else if (type != null && type.equals(Transaction.Type.READ)) {
-                tx = session.transaction(grakn.core.kb.server.Transaction.Type.WRITE);
+                tx = session.transaction(grakn.core.kb.server.Transaction.Type.READ);
             } else {
                 throw TransactionException.create("Invalid Transaction Type");
             }
