@@ -91,6 +91,7 @@ public class Concepts {
 
     public AttributeType putAttributeType(String label, Class<?> valueClass) {
         Schema.ValueClass schema = Schema.ValueClass.of(valueClass);
+        if (schema == null) throw new HypergraphException(INVALID_VALUE_CLASS.format(valueClass.getCanonicalName()));
         switch (schema) {
             case BOOLEAN:
                 return putAttributeTypeBoolean(label);
@@ -103,7 +104,7 @@ public class Concepts {
             case DATETIME:
                 return putAttributeTypeDateTime(label);
             default:
-                throw new HypergraphException(INVALID_VALUE_CLASS.format(valueClass.getCanonicalName()));
+                return null; // unreachable
         }
     }
 
