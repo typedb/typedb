@@ -98,7 +98,7 @@ public class OutHasFragment extends EdgeFragment {
         // (end) ATTR <-[edge]- OWNER (START)
         return Fragments.union(Fragments.isVertex(traversal),
                 ImmutableSet.of(
-                        reifiedRelationTraversal(conceptManager, vars, implicitRelationTypes, ownerRoles, valueRoles),
+//                        reifiedRelationTraversal(conceptManager, vars, implicitRelationTypes, ownerRoles, valueRoles),
                         edgeRelationTraversal(conceptManager, vars, implicitRelationTypes, ownerRoles, valueRoles))
         );
     }
@@ -126,7 +126,7 @@ public class OutHasFragment extends EdgeFragment {
         return attributeVertex;
     }
 
-    private GraphTraversal<Vertex, Edge> edgeRelationTraversal(
+    private GraphTraversal<Vertex, Vertex> edgeRelationTraversal(
             ConceptManager conceptManager, Collection<Variable> vars, Set<Label> implicitRelationTypes, Set<Label> ownerRoles, Set<Label> valueRoles) {
 
         GraphTraversal<Vertex, Edge> edgeTraversal = __.outE(Schema.EdgeLabel.ATTRIBUTE.getLabel());
@@ -136,7 +136,7 @@ public class OutHasFragment extends EdgeFragment {
         applyLabelsToTraversal(edgeTraversal, RELATION_ROLE_VALUE_LABEL_ID, valueRoles, conceptManager);
         applyLabelsToTraversal(edgeTraversal, RELATION_TYPE_LABEL_ID, implicitRelationTypes, conceptManager);
 
-        return edgeTraversal;
+        return edgeTraversal.inV();
     }
 
     private void applyLabelsToTraversal(GraphTraversal<?, Edge> traversal, Schema.EdgeProperty property,

@@ -128,7 +128,7 @@ public class InHasFragment extends EdgeFragment {
         return ownerVertex;
     }
 
-    private GraphTraversal<Vertex, Edge> edgeRelationTraversal(
+    private GraphTraversal<Vertex, Vertex> edgeRelationTraversal(
             ConceptManager conceptManager, Collection<Variable> vars, Set<Label> implicitRelationTypes, Set<Label> ownerRoles, Set<Label> valueRoles) {
 
         GraphTraversal<Vertex, Edge> edgeTraversal = __.inE(Schema.EdgeLabel.ATTRIBUTE.getLabel());
@@ -138,7 +138,7 @@ public class InHasFragment extends EdgeFragment {
         applyLabelsToTraversal(edgeTraversal, RELATION_ROLE_VALUE_LABEL_ID, valueRoles, conceptManager);
         applyLabelsToTraversal(edgeTraversal, RELATION_TYPE_LABEL_ID, implicitRelationTypes, conceptManager);
 
-        return edgeTraversal;
+        return edgeTraversal.outV();
     }
 
     private void applyLabelsToTraversal(GraphTraversal<?, Edge> traversal, Schema.EdgeProperty property,
