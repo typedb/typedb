@@ -48,9 +48,10 @@ public class HasFragmentSet extends EquivalentFragmentSetImpl {
 //                rolePlayer(property, property.relation().var(), edge2, property.attribute().var(), null,
 //                        ImmutableSet.of(hasValueRole, keyValueRole), ImmutableSet.of(has, key)),
 //                neq(property, edge1, edge2)
+        Variable edge = new Variable();
         return ImmutableSet.of(
-                Fragments.inHas(varProperty(), attribute, owner, attributeTypeLabels),
-                Fragments.outHas(varProperty(), owner, attribute, attributeTypeLabels)
+                Fragments.inHas(varProperty(), attribute, owner, edge, attributeTypeLabels),
+                Fragments.outHas(varProperty(), owner, attribute, edge, attributeTypeLabels)
         );
     }
 

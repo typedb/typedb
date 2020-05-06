@@ -34,6 +34,7 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
@@ -50,10 +51,10 @@ public class OutHasFragment extends EdgeFragment {
     private final ImmutableSet<Label> attributeTypeLabels;
     private Variable edgeVariable;
 
-    public OutHasFragment(VarProperty varProperty, Variable owner, Variable attribute, ImmutableSet<Label> attributeTypeLabels) {
+    public OutHasFragment(VarProperty varProperty, Variable owner, Variable attribute, Variable edge, ImmutableSet<Label> attributeTypeLabels) {
         super(varProperty, owner, attribute);
         this.attributeTypeLabels = attributeTypeLabels;
-        edgeVariable = new Variable();
+        edgeVariable = edge;
     }
 
     @Override
