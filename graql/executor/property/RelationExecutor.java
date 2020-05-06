@@ -25,7 +25,6 @@ import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Relation;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Thing;
-import grakn.core.kb.graql.exception.GraqlQueryException;
 import grakn.core.kb.graql.exception.GraqlSemanticException;
 import grakn.core.kb.graql.executor.WriteExecutor;
 import grakn.core.kb.graql.executor.property.PropertyExecutor;

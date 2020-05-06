@@ -19,6 +19,7 @@
 package grakn.core.graql.planning.gremlin.fragment;
 
 import com.google.common.collect.ImmutableSet;
+import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.planning.spanningtree.graph.InstanceNode;
@@ -31,15 +32,37 @@ import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public class OutHasFragment extends EdgeFragment {
     private final ImmutableSet<Label> attributeTypeLabels;
     private Variable edgeVariable;
+    // for backwards compatibility
+    private final Set<Label> implicitRelationTypes;
+    private final Set<Label> ownerRoles;
+    private final Set<Label> valueRoles;
 
     public OutHasFragment(VarProperty varProperty, Variable owner, Variable attribute, ImmutableSet<Label> attributeTypeLabels) {
         super(varProperty, owner, attribute);
         this.attributeTypeLabels = attributeTypeLabels;
         edgeVariable = new Variable();
+
+        implicitRelationTypes = attributeTypeLabels.stream().map(label -> Schema.ImplicitType.HAS.getLabel(label)).collect(Collectors.toSet());
+        attributeTypeLabels.forEach(label -> implicitRelationTypes.add(Schema.ImplicitType.KEY.getLabel(label)));
+
+        ownerRoles = new HashSet<>();
+        attributeTypeLabels.forEach(label -> {
+            ownerRoles.add(Schema.ImplicitType.HAS_OWNER.getLabel(label));
+            ownerRoles.add(Schema.ImplicitType.KEY_OWNER.getLabel(label));
+        });
+
+        valueRoles = new HashSet<>();
+        attributeTypeLabels.forEach(label -> {
+            valueRoles.add(Schema.ImplicitType.HAS_VALUE.getLabel(label));
+            valueRoles.add(Schema.ImplicitType.KEY_VALUE.getLabel(label));
+        });
     }
 
     @Override
@@ -60,7 +83,7 @@ public class OutHasFragment extends EdgeFragment {
     @Override
     GraphTraversal<Vertex, ? extends Element> applyTraversalInner(GraphTraversal<Vertex, ? extends Element> traversal, ConceptManager conceptManager, Collection<Variable> vars) {
         // extend the traversal with a UNION of 2 paths:
-        // ATTR <-[value]- rel node -[owner]-> OWNER (START)
+        // ATTR <-[value]- rel node -[owner]-> OWNER (START), owner != value edge
         // ATTR <-[edge]- OWNER (START)
         return null;
     }

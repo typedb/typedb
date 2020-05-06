@@ -27,9 +27,6 @@ import graql.lang.statement.Variable;
 
 import java.util.Set;
 
-import static grakn.core.graql.planning.gremlin.sets.EquivalentFragmentSets.neq;
-import static grakn.core.graql.planning.gremlin.sets.EquivalentFragmentSets.rolePlayer;
-
 public class HasFragmentSet extends EquivalentFragmentSetImpl {
 
     private final Variable owner;
@@ -51,18 +48,6 @@ public class HasFragmentSet extends EquivalentFragmentSetImpl {
 //                rolePlayer(property, property.relation().var(), edge2, property.attribute().var(), null,
 //                        ImmutableSet.of(hasValueRole, keyValueRole), ImmutableSet.of(has, key)),
 //                neq(property, edge1, edge2)
-
-        //        Label has = Schema.ImplicitType.HAS.getLabel(type);
-        //        Label key = Schema.ImplicitType.KEY.getLabel(type);
-        //
-        //        Label hasOwnerRole = Schema.ImplicitType.HAS_OWNER.getLabel(type);
-        //        Label keyOwnerRole = Schema.ImplicitType.KEY_OWNER.getLabel(type);
-        //        Label hasValueRole = Schema.ImplicitType.HAS_VALUE.getLabel(type);
-        //        Label keyValueRole = Schema.ImplicitType.KEY_VALUE.getLabel(type);
-        //
-        //        Variable edge1 = new Variable();
-        //        Variable edge2 = new Variable();
-
         return ImmutableSet.of(
                 Fragments.inHas(varProperty(), attribute, owner, attributeTypeLabels),
                 Fragments.outHas(varProperty(), owner, attribute, attributeTypeLabels)
