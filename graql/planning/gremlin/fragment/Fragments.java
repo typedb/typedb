@@ -69,8 +69,8 @@ public class Fragments {
                 varProperty, relation, rolePlayer, edge, role, roleLabels, relationTypeLabels);
     }
 
-    public static Fragment inHas(VarProperty varProperty, Variable owner, Variable attribute, ImmutableSet<Label> attributeTypeLabels) {
-        return new InHasFragment(varProperty, owner, attribute, attributeTypeLabels);
+    public static Fragment inHas(VarProperty varProperty, Variable attribute, Variable owner, ImmutableSet<Label> attributeTypeLabels) {
+        return new InHasFragment(varProperty, attribute, owner, attributeTypeLabels);
     }
 
     public static Fragment outHas(VarProperty varProperty, Variable owner, Variable attribute, ImmutableSet<Label> attributeTypeLabels) {

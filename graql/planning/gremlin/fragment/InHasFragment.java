@@ -53,7 +53,7 @@ public class InHasFragment extends EdgeFragment {
     private Variable edgeVariable;
     // for backwards compatibility
 
-    public InHasFragment(VarProperty varProperty, Variable owner, Variable attribute, ImmutableSet<Label> attributeTypeLabels) {
+    public InHasFragment(VarProperty varProperty, Variable attribute, Variable owner, ImmutableSet<Label> attributeTypeLabels) {
         super(varProperty, attribute, owner);
         this.attributeTypeLabels = attributeTypeLabels;
         edgeVariable = new Variable();
