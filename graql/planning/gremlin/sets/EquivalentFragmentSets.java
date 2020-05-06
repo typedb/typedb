@@ -66,8 +66,8 @@ public class EquivalentFragmentSets {
      * @param attribute
      * @return
      */
-    public static EquivalentFragmentSet has(VarProperty varProperty, Variable owner, Variable attribute) {
-        return new HasFragmentSet(varProperty, owner, attribute);
+    public static EquivalentFragmentSet has(VarProperty varProperty, Variable owner, Variable attribute, ImmutableSet<Label> attributeTypeLabels) {
+        return new HasFragmentSet(varProperty, owner, attribute, attributeTypeLabels);
     }
 
 

@@ -52,7 +52,7 @@ public class HasAttributeExecutor  implements PropertyExecutor.Insertable, Prope
     public Set<EquivalentFragmentSet> matchFragments() {
         return ImmutableSet.of(
                 //owner rolePlayer edge
-                EquivalentFragmentSets.has(property, var, property.attribute().var())
+                EquivalentFragmentSets.has(property, var, property.attribute().var(), ImmutableSet.of(type))
         );
     }
 
