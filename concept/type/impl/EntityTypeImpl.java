@@ -16,16 +16,17 @@
  *
  */
 
-package hypergraph.concept.type;
+package hypergraph.concept.type.impl;
 
 import hypergraph.common.exception.HypergraphException;
+import hypergraph.concept.type.EntityType;
 import hypergraph.graph.Graph;
 import hypergraph.graph.Schema;
 import hypergraph.graph.vertex.TypeVertex;
 
 import static hypergraph.common.exception.Error.TypeDefinition.INVALID_ROOT_TYPE_MUTATION;
 
-public class EntityTypeImpl extends ThingTypeImpl<EntityTypeImpl> implements EntityTypeInt {
+public class EntityTypeImpl extends ThingTypeImpl<EntityTypeImpl> implements EntityType {
 
     private EntityTypeImpl(TypeVertex vertex) {
         super(vertex);
@@ -53,7 +54,7 @@ public class EntityTypeImpl extends ThingTypeImpl<EntityTypeImpl> implements Ent
     EntityTypeImpl newInstance(TypeVertex vertex) { return of(vertex); }
 
     @Override
-    public void sup(EntityTypeInt superType) {
+    public void sup(EntityType superType) {
         super.sup((EntityTypeImpl) superType);
     }
 
@@ -74,7 +75,7 @@ public class EntityTypeImpl extends ThingTypeImpl<EntityTypeImpl> implements Ent
         public void isAbstract(boolean isAbstract) { throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION); }
 
         @Override
-        public void sup(EntityTypeInt superType) { throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION); }
+        public void sup(EntityType superType) { throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION); }
 
         @Override
         public EntityTypeImpl sup() { return null; }

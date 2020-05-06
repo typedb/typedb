@@ -19,13 +19,13 @@
 package hypergraph.test.integration;
 
 import hypergraph.Hypergraph;
-import hypergraph.concept.type.AttributeTypeInt;
-import hypergraph.concept.type.AttributeTypeImpl;
-import hypergraph.concept.type.EntityTypeInt;
-import hypergraph.concept.type.EntityTypeImpl;
-import hypergraph.concept.type.RelationTypeInt;
-import hypergraph.concept.type.RoleTypeInt;
-import hypergraph.concept.type.ThingTypeInt;
+import hypergraph.concept.type.AttributeType;
+import hypergraph.concept.type.impl.AttributeTypeImpl;
+import hypergraph.concept.type.EntityType;
+import hypergraph.concept.type.impl.EntityTypeImpl;
+import hypergraph.concept.type.RelationType;
+import hypergraph.concept.type.RoleType;
+import hypergraph.concept.type.ThingType;
 import hypergraph.core.CoreHypergraph;
 import org.junit.Test;
 
@@ -94,21 +94,21 @@ public class BasicTest {
 
                     Stream<Consumer<Hypergraph.Transaction>> rootTypeAssertions = Stream.of(
                             tx -> {
-                                ThingTypeInt rootType = tx.concepts().getRootType();
+                                ThingType rootType = tx.concepts().getRootType();
                                 assertNotNull(rootType);
                             },
                             tx -> {
-                                EntityTypeInt rootEntityType = tx.concepts().getRootEntityType();
+                                EntityType rootEntityType = tx.concepts().getRootEntityType();
                                 assertNotNull(rootEntityType);
                                 assertNull(rootEntityType.sup());
                             },
                             tx -> {
-                                RelationTypeInt rootRelationType = tx.concepts().getRootRelationType();
+                                RelationType rootRelationType = tx.concepts().getRootRelationType();
                                 assertNotNull(rootRelationType);
                                 assertNull(rootRelationType.sup());
                             },
                             tx -> {
-                                AttributeTypeInt rootAttributeType = tx.concepts().getRootAttributeType();
+                                AttributeType rootAttributeType = tx.concepts().getRootAttributeType();
                                 assertNotNull(rootAttributeType);
                                 assertNull(rootAttributeType.sup());
                             }
@@ -121,15 +121,15 @@ public class BasicTest {
                     assertTrue(transaction.isOpen());
                     assertEquals(CoreHypergraph.Transaction.Type.WRITE, transaction.type());
 
-                    ThingTypeInt rootType = transaction.concepts().getRootType();
-                    EntityTypeInt rootEntityType = transaction.concepts().getRootEntityType();
-                    RelationTypeInt rootRelationType = transaction.concepts().getRootRelationType();
-                    AttributeTypeInt rootAttributeType = transaction.concepts().getRootAttributeType();
+                    ThingType rootType = transaction.concepts().getRootType();
+                    EntityType rootEntityType = transaction.concepts().getRootEntityType();
+                    RelationType rootRelationType = transaction.concepts().getRootRelationType();
+                    AttributeType rootAttributeType = transaction.concepts().getRootAttributeType();
                     notNulls(rootType, rootEntityType, rootRelationType, rootAttributeType);
 
                     Stream<Consumer<Hypergraph.Transaction>> typeAssertions = Stream.of(
                             tx -> {
-                                AttributeTypeInt name = tx.concepts().putAttributeTypeString("name");
+                                AttributeType name = tx.concepts().putAttributeTypeString("name");
                                 notNulls(name);
                                 assertEquals(name.sup(), rootAttributeType);
                             },
@@ -139,21 +139,21 @@ public class BasicTest {
                                 assertEquals(age.sup(), rootAttributeType);
                             },
                             tx -> {
-                                RelationTypeInt marriage = tx.concepts().putRelationType("marriage");
+                                RelationType marriage = tx.concepts().putRelationType("marriage");
                                 marriage.relates("husband");
                                 marriage.relates("wife");
                                 notNulls(marriage);
                                 assertEquals(marriage.sup(), rootRelationType);
                             },
                             tx -> {
-                                RelationTypeInt employment = tx.concepts().putRelationType("employment");
+                                RelationType employment = tx.concepts().putRelationType("employment");
                                 employment.relates("employee");
                                 employment.relates("employer");
                                 notNulls(employment);
                                 assertEquals(employment.sup(), rootRelationType);
                             },
                             tx -> {
-                                EntityTypeInt person = tx.concepts().putEntityType("person");
+                                EntityType person = tx.concepts().putEntityType("person");
                                 notNulls(person);
                                 assertEquals(person.sup(), rootEntityType);
 
@@ -174,7 +174,7 @@ public class BasicTest {
                                 subPersonAssertions.parallel().forEach(assertions -> assertions.accept(tx));
                             },
                             tx -> {
-                                EntityTypeInt company = tx.concepts().putEntityType("company");
+                                EntityType company = tx.concepts().putEntityType("company");
                                 notNulls(company);
                                 assertEquals(company.sup(), rootEntityType);
                             }
@@ -208,12 +208,12 @@ public class BasicTest {
 
                 try (Hypergraph.Transaction transaction = session.transaction(Hypergraph.Transaction.Type.WRITE)) {
                     AttributeTypeImpl.String gender = transaction.concepts().putAttributeTypeString("gender");
-                    EntityTypeInt school = transaction.concepts().putEntityType("school");
-                    RelationTypeInt teaching = transaction.concepts().putRelationType("teaching");
+                    EntityType school = transaction.concepts().putEntityType("school");
+                    RelationType teaching = transaction.concepts().putRelationType("teaching");
                     teaching.relates("teacher");
                     teaching.relates("student");
-                    RoleTypeInt teacher = teaching.role("teacher");
-                    RoleTypeInt student = teaching.role("student");
+                    RoleType teacher = teaching.role("teacher");
+                    RoleType student = teaching.role("student");
                     notNulls(gender, school, teaching, teacher, student);
                     transaction.commit();
                 }
@@ -221,10 +221,10 @@ public class BasicTest {
                 try (Hypergraph.Transaction transaction = session.transaction(Hypergraph.Transaction.Type.READ)) {
                     assertTransactionRead(transaction);
                     AttributeTypeImpl.String gender = transaction.concepts().getAttributeType("gender").asString();
-                    EntityTypeInt school = transaction.concepts().getEntityType("school");
-                    RelationTypeInt teaching = transaction.concepts().getRelationType("teaching");
-                    RoleTypeInt teacher = teaching.role("teacher");
-                    RoleTypeInt student = teaching.role("student");
+                    EntityType school = transaction.concepts().getEntityType("school");
+                    RelationType teaching = transaction.concepts().getRelationType("teaching");
+                    RoleType teacher = teaching.role("teacher");
+                    RoleType student = teaching.role("student");
                     notNulls(gender, school, teaching, teacher, student);
                 }
             }
@@ -235,10 +235,10 @@ public class BasicTest {
         assertTrue(transaction.isOpen());
         assertEquals(CoreHypergraph.Transaction.Type.READ, transaction.type());
 
-        ThingTypeInt rootType = transaction.concepts().getRootType();
-        EntityTypeInt rootEntityType = transaction.concepts().getRootEntityType();
-        RelationTypeInt rootRelationType = transaction.concepts().getRootRelationType();
-        AttributeTypeInt rootAttributeType = transaction.concepts().getRootAttributeType();
+        ThingType rootType = transaction.concepts().getRootType();
+        EntityType rootEntityType = transaction.concepts().getRootEntityType();
+        RelationType rootRelationType = transaction.concepts().getRootRelationType();
+        AttributeType rootAttributeType = transaction.concepts().getRootAttributeType();
         notNulls(rootType, rootEntityType, rootRelationType, rootAttributeType);
 
         Stream<Consumer<Hypergraph.Transaction>> typeAssertions = Stream.of(
@@ -253,34 +253,34 @@ public class BasicTest {
                     assertEquals(age.sup(), rootAttributeType);
                 },
                 tx -> {
-                    RelationTypeInt marriage = tx.concepts().getRelationType("marriage");
-                    RoleTypeInt husband = marriage.role("husband");
-                    RoleTypeInt wife = marriage.role("wife");
+                    RelationType marriage = tx.concepts().getRelationType("marriage");
+                    RoleType husband = marriage.role("husband");
+                    RoleType wife = marriage.role("wife");
                     notNulls(marriage, husband, wife);
                     assertEquals(rootRelationType, marriage.sup());
                     assertEquals(rootRelationType.role("role"), husband.sup());
                     assertEquals(rootRelationType.role("role"), wife.sup());
                 },
                 tx -> {
-                    RelationTypeInt employment = tx.concepts().getRelationType("employment");
-                    RoleTypeInt employee = employment.role("employee");
-                    RoleTypeInt employer = employment.role("employer");
+                    RelationType employment = tx.concepts().getRelationType("employment");
+                    RoleType employee = employment.role("employee");
+                    RoleType employer = employment.role("employer");
                     notNulls(employment, employee, employer);
                     assertEquals(employment.sup(), rootRelationType);
                 },
                 tx -> {
-                    EntityTypeInt person = tx.concepts().getEntityType("person");
+                    EntityType person = tx.concepts().getEntityType("person");
                     notNulls(person);
                     assertEquals(person.sup(), rootEntityType);
 
                     Stream<Consumer<Hypergraph.Transaction>> subPersonAssertions = Stream.of(
                             tx2 -> {
-                                EntityTypeInt man = tx2.concepts().getEntityType("man");
+                                EntityType man = tx2.concepts().getEntityType("man");
                                 notNulls(man);
                                 assertEquals(man.sup(), person);
                             },
                             tx2 -> {
-                                EntityTypeInt woman = tx2.concepts().getEntityType("woman");
+                                EntityType woman = tx2.concepts().getEntityType("woman");
                                 notNulls(woman);
                                 assertEquals(woman.sup(), person);
                             }
@@ -288,7 +288,7 @@ public class BasicTest {
                     subPersonAssertions.parallel().forEach(assertions -> assertions.accept(tx));
                 },
                 tx -> {
-                    EntityTypeInt company = tx.concepts().getEntityType("company");
+                    EntityType company = tx.concepts().getEntityType("company");
                     notNulls(company);
                     assertEquals(company.sup(), rootEntityType);
                 }

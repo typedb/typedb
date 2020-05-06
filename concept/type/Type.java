@@ -20,16 +20,23 @@ package hypergraph.concept.type;
 
 import java.util.stream.Stream;
 
-public interface EntityTypeInt extends ThingTypeInt {
+public interface Type {
 
-    @Override
-    EntityTypeInt sup();
+    Long count();
 
-    @Override
-    Stream<? extends EntityTypeInt> sups();
+    boolean isRoot();
 
-    @Override
-    Stream<? extends EntityTypeInt> subs();
+    void label(String label);
 
-    void sup(EntityTypeInt superType);
+    String label();
+
+    boolean isAbstract();
+
+    Type sup();
+
+    Stream<? extends Type> sups();
+
+    Stream<? extends Type> subs();
+
+    void delete();
 }

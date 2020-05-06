@@ -20,50 +20,26 @@ package hypergraph.concept.type;
 
 import java.util.stream.Stream;
 
-public interface AttributeTypeInt extends ThingTypeInt {
+public interface RelationType extends ThingType {
 
     @Override
-    AttributeTypeInt sup();
+    RelationType sup();
 
     @Override
-    Stream<? extends AttributeTypeInt> sups();
+    Stream<? extends RelationType> sups();
 
     @Override
-    Stream<? extends AttributeTypeInt> subs();
+    Stream<? extends RelationType> subs();
 
-    void sup(AttributeTypeInt superType);
+    void sup(RelationType superType);
 
-    Class<?> valueClass();
+    void relates(String roleLabel);
 
-    AttributeTypeInt asObject();
+    void relates(String roleLabel, String overriddenLabel);
 
-    AttributeTypeInt.Boolean asBoolean();
+    void unrelate(String roleLabel);
 
-    AttributeTypeInt.Long asLong();
+    Stream<? extends RoleType> roles();
 
-    AttributeTypeInt.Double asDouble();
-
-    AttributeTypeInt.String asString();
-
-    AttributeTypeInt.DateTime asDateTime();
-
-    interface Boolean extends AttributeTypeInt {
-
-    }
-
-    interface Long extends AttributeTypeInt {
-
-    }
-
-    interface Double extends AttributeTypeInt {
-
-    }
-
-    interface String extends AttributeTypeInt {
-
-    }
-
-    interface DateTime extends AttributeTypeInt {
-
-    }
+    RoleType role(String roleLabel);
 }

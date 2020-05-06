@@ -16,16 +16,17 @@
  *
  */
 
-package hypergraph.concept.type;
+package hypergraph.concept.type.impl;
 
 import hypergraph.common.exception.HypergraphException;
+import hypergraph.concept.type.RoleType;
 import hypergraph.graph.Graph;
 import hypergraph.graph.Schema;
 import hypergraph.graph.vertex.TypeVertex;
 
 import static hypergraph.common.exception.Error.TypeDefinition.INVALID_ROOT_TYPE_MUTATION;
 
-public class RoleTypeImpl extends TypeImpl<RoleTypeImpl> implements RoleTypeInt {
+public class RoleTypeImpl extends TypeImpl<RoleTypeImpl> implements RoleType {
 
     private RoleTypeImpl(TypeVertex vertex) {
         super(vertex);
@@ -63,7 +64,7 @@ public class RoleTypeImpl extends TypeImpl<RoleTypeImpl> implements RoleTypeInt 
         vertex.isAbstract(isAbstract);
     }
 
-    void sup(RoleTypeInt superType) {
+    void sup(RoleType superType) {
         super.sup((RoleTypeImpl) superType);
     }
 
@@ -84,7 +85,7 @@ public class RoleTypeImpl extends TypeImpl<RoleTypeImpl> implements RoleTypeInt 
         void isAbstract(boolean isAbstract) { throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION); }
 
         @Override
-        void sup(RoleTypeInt superType) { throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION); }
+        void sup(RoleType superType) { throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION); }
 
         @Override
         public RoleTypeImpl sup() { return null; }

@@ -19,7 +19,7 @@
 package hypergraph.test.behaviour.concept.type.relationtype;
 
 import hypergraph.common.exception.HypergraphException;
-import hypergraph.concept.type.RoleTypeInt;
+import hypergraph.concept.type.RoleType;
 import hypergraph.test.behaviour.config.Parameters;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
@@ -117,7 +117,7 @@ public class RelationTypeSteps {
 
     @Then("relation\\( ?{type_label} ?) get role\\( ?{type_label} ?) get supertype: {scoped_label}")
     public void relation_get_role_get_supertype(String relationLabel, String roleLabel, Parameters.ScopedLabel superLabel) {
-        RoleTypeInt superType = tx().concepts().getRelationType(superLabel.scope()).role(superLabel.role());
+        RoleType superType = tx().concepts().getRelationType(superLabel.scope()).role(superLabel.role());
         assertEquals(superType, tx().concepts().getRelationType(relationLabel).role(roleLabel).sup());
     }
 

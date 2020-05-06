@@ -19,14 +19,14 @@
 package hypergraph.concept;
 
 import hypergraph.common.exception.HypergraphException;
-import hypergraph.concept.type.AttributeTypeInt;
-import hypergraph.concept.type.AttributeTypeImpl;
-import hypergraph.concept.type.EntityTypeInt;
-import hypergraph.concept.type.EntityTypeImpl;
-import hypergraph.concept.type.RelationTypeInt;
-import hypergraph.concept.type.RelationTypeImpl;
-import hypergraph.concept.type.ThingTypeInt;
-import hypergraph.concept.type.ThingTypeImpl;
+import hypergraph.concept.type.AttributeType;
+import hypergraph.concept.type.impl.AttributeTypeImpl;
+import hypergraph.concept.type.EntityType;
+import hypergraph.concept.type.impl.EntityTypeImpl;
+import hypergraph.concept.type.RelationType;
+import hypergraph.concept.type.impl.RelationTypeImpl;
+import hypergraph.concept.type.ThingType;
+import hypergraph.concept.type.impl.ThingTypeImpl;
 import hypergraph.graph.Graph;
 import hypergraph.graph.Schema;
 import hypergraph.graph.vertex.TypeVertex;
@@ -41,25 +41,25 @@ public class Concepts {
         this.graph = graph;
     }
 
-    public ThingTypeInt getRootType() {
+    public ThingType getRootType() {
         TypeVertex vertex = graph.type().get(Schema.Vertex.Type.Root.THING.label());
         if (vertex != null) return new ThingTypeImpl.Root(vertex);
         else return null;
     }
 
-    public EntityTypeInt getRootEntityType() {
+    public EntityType getRootEntityType() {
         TypeVertex vertex = graph.type().get(Schema.Vertex.Type.Root.ENTITY.label());
         if (vertex != null) return EntityTypeImpl.of(vertex);
         else return null;
     }
 
-    public RelationTypeInt getRootRelationType() {
+    public RelationType getRootRelationType() {
         TypeVertex vertex = graph.type().get(Schema.Vertex.Type.Root.RELATION.label());
         if (vertex != null) return RelationTypeImpl.of(vertex);
         else return null;
     }
 
-    public AttributeTypeInt getRootAttributeType() {
+    public AttributeType getRootAttributeType() {
         TypeVertex vertex = graph.type().get(Schema.Vertex.Type.Root.ATTRIBUTE.label());
         if (vertex != null) return AttributeTypeImpl.of(vertex);
         else return null;
@@ -77,19 +77,19 @@ public class Concepts {
         else return null;
     }
 
-    public RelationTypeInt putRelationType(String label) {
+    public RelationType putRelationType(String label) {
         TypeVertex vertex = graph.type().get(label);
         if (vertex != null) return RelationTypeImpl.of(vertex);
         else return RelationTypeImpl.of(graph.type(), label);
     }
 
-    public RelationTypeInt getRelationType(String label) {
+    public RelationType getRelationType(String label) {
         TypeVertex vertex = graph.type().get(label);
         if (vertex != null) return RelationTypeImpl.of(vertex);
         else return null;
     }
 
-    public AttributeTypeInt putAttributeType(String label, Class<?> valueClass) {
+    public AttributeType putAttributeType(String label, Class<?> valueClass) {
         Schema.ValueClass schema = Schema.ValueClass.of(valueClass);
         switch (schema) {
             case BOOLEAN:

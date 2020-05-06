@@ -20,16 +20,16 @@ package hypergraph.concept.type;
 
 import java.util.stream.Stream;
 
-public interface RoleTypeInt extends TypeInt {
+public interface RoleType extends Type {
 
     @Override
-    RoleTypeInt sup();
+    RoleType sup();
 
     @Override
-    Stream<? extends RoleTypeInt> sups();
+    Stream<? extends RoleType> sups();
 
     @Override
-    Stream<? extends RoleTypeInt> subs();
+    Stream<? extends RoleType> subs();
 
     String scopedLabel();
 }

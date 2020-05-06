@@ -16,10 +16,11 @@
  *
  */
 
-package hypergraph.concept.type;
+package hypergraph.concept.type.impl;
 
 import hypergraph.common.exception.HypergraphException;
 import hypergraph.common.iterator.Iterators;
+import hypergraph.concept.type.Type;
 import hypergraph.graph.Graph;
 import hypergraph.graph.Schema;
 import hypergraph.graph.vertex.TypeVertex;
@@ -33,7 +34,7 @@ import static java.util.Spliterator.ORDERED;
 import static java.util.Spliterators.spliteratorUnknownSize;
 import static java.util.stream.StreamSupport.stream;
 
-public abstract class TypeImpl<TYPE extends TypeImpl<TYPE>> implements TypeInt {
+public abstract class TypeImpl<TYPE extends TypeImpl<TYPE>> implements Type {
 
     protected final TypeVertex vertex;
     protected TYPE superType;
