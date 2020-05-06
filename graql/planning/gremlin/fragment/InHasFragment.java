@@ -57,7 +57,6 @@ public class InHasFragment extends EdgeFragment {
         super(varProperty, attribute, owner);
         this.attributeTypeLabels = attributeTypeLabels;
         edgeVariable = new Variable();
-
     }
 
     @Override
@@ -124,15 +123,8 @@ public class InHasFragment extends EdgeFragment {
         applyLabelsToTraversal(ownerEdge, ROLE_LABEL_ID, ownerRoles, conceptManager);
         applyLabelsToTraversal(ownerEdge, RELATION_TYPE_LABEL_ID, implicitRelationTypes, conceptManager);
 
-        GraphTraversal<Vertex, Vertex> attributeVertex = ownerEdge.inV();
-        return attributeVertex;
-    }
-
-    private void applyLabelsToTraversal(GraphTraversal<?, Edge> traversal, Schema.EdgeProperty property,
-                                        Set<Label> typeLabels, ConceptManager conceptManager) {
-        Set<Integer> typeIds =
-                typeLabels.stream().map(label -> conceptManager.convertToId(label).getValue()).collect(toSet());
-        traversal.has(property.name(), P.within(typeIds));
+        GraphTraversal<Vertex, Vertex> ownerVertex = ownerEdge.inV();
+        return ownerVertex;
     }
 
     private GraphTraversal<Vertex, Edge> edgeRelationTraversal(
@@ -146,6 +138,13 @@ public class InHasFragment extends EdgeFragment {
         applyLabelsToTraversal(edgeTraversal, RELATION_TYPE_LABEL_ID, implicitRelationTypes, conceptManager);
 
         return edgeTraversal;
+    }
+
+    private void applyLabelsToTraversal(GraphTraversal<?, Edge> traversal, Schema.EdgeProperty property,
+                                        Set<Label> typeLabels, ConceptManager conceptManager) {
+        Set<Integer> typeIds =
+                typeLabels.stream().map(label -> conceptManager.convertToId(label).getValue()).collect(toSet());
+        traversal.has(property.name(), P.within(typeIds));
     }
 
     @Override
