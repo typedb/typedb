@@ -55,9 +55,9 @@ public class Concepts {
         else return null;
     }
 
-    public AttributeType.Object getRootAttributeType() {
+    public AttributeType getRootAttributeType() {
         TypeVertex vertex = graph.type().get(Schema.Vertex.Type.Root.ATTRIBUTE.label());
-        if (vertex != null) return new AttributeType.Object(vertex);
+        if (vertex != null) return AttributeType.of(vertex);
         else return null;
     }
 

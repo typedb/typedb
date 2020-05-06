@@ -25,6 +25,7 @@ import hypergraph.graph.Schema;
 import hypergraph.graph.vertex.TypeVertex;
 
 import java.time.LocalDateTime;
+import java.util.stream.Stream;
 
 import static hypergraph.common.exception.Error.TypeDefinition.INVALID_ROOT_TYPE_MUTATION;
 import static hypergraph.common.exception.Error.TypeRetrieval.INVALID_TYPE_CASTING;
@@ -47,7 +48,7 @@ public abstract class AttributeType<ATT_TYPE extends AttributeType<ATT_TYPE>> ex
     public static AttributeType<? extends AttributeType> of(TypeVertex vertex) {
         switch (vertex.valueClass()) {
             case OBJECT:
-                return new Object(vertex);
+                return new AttributeType.Root(vertex);
             case BOOLEAN:
                 return AttributeType.Boolean.of(vertex);
             case LONG:
@@ -66,11 +67,6 @@ public abstract class AttributeType<ATT_TYPE extends AttributeType<ATT_TYPE>> ex
     public abstract Class<?> valueClass();
 
     @Override
-    public ATT_TYPE sup() {
-        return super.sup();
-    }
-
-    @Override
     public void sup(ATT_TYPE superType) {
         if (!superType.isRoot() && !this.valueClass().equals(superType.valueClass())) {
             throw new HypergraphException(Error.TypeDefinition.INVALID_SUPERTYPE_VALUE_CLASS.format(
@@ -83,25 +79,40 @@ public abstract class AttributeType<ATT_TYPE extends AttributeType<ATT_TYPE>> ex
     }
 
     @Override
+    public ATT_TYPE sup() {
+        return super.sup();
+    }
+
+    @Override
+    public Stream<ATT_TYPE> sups() {
+        return super.sups();
+    }
+
+    @Override
+    public Stream<ATT_TYPE> subs() {
+        return super.subs();
+    }
+
+    @Override
     @SuppressWarnings("unchecked")
     ATT_TYPE newInstance(TypeVertex vertex) {
         // This is only called by AttributeType.Object and ATT_TYPE is always AttributeType<?>
         return (ATT_TYPE) of(vertex);
     }
 
-    public AttributeType.Object asObject() {
+    public AttributeType.Root asObject() {
         if (this.valueClass().equals(java.lang.Object.class)) {
-            return (AttributeType.Object) this;
+            return new AttributeType.Root(this.vertex);
         } else {
             throw new HypergraphException(INVALID_TYPE_CASTING.format(
-                    this.label(), AttributeType.Object.class.getCanonicalName()
+                    this.label(), AttributeType.Root.class.getCanonicalName()
             ));
         }
     }
 
     public AttributeType.Boolean asBoolean() {
         if (this.valueClass().equals(java.lang.Boolean.class) || this.isRoot()) {
-            return (Boolean) this;
+            return AttributeType.Boolean.of(this.vertex);
         } else {
             throw new HypergraphException(INVALID_TYPE_CASTING.format(
                     this.label(), AttributeType.Boolean.class.getCanonicalName()
@@ -111,7 +122,7 @@ public abstract class AttributeType<ATT_TYPE extends AttributeType<ATT_TYPE>> ex
 
     public AttributeType.Long asLong() {
         if (this.valueClass().equals(java.lang.Long.class) || this.isRoot()) {
-            return (Long) this;
+            return AttributeType.Long.of(this.vertex);
         } else {
             throw new HypergraphException(INVALID_TYPE_CASTING.format(
                     this.label(), AttributeType.Long.class.getCanonicalName()
@@ -121,7 +132,7 @@ public abstract class AttributeType<ATT_TYPE extends AttributeType<ATT_TYPE>> ex
 
     public AttributeType.Double asDouble() {
         if (this.valueClass().equals(java.lang.Double.class) || this.isRoot()) {
-            return (Double) this;
+            return AttributeType.Double.of(this.vertex);
         } else {
             throw new HypergraphException(INVALID_TYPE_CASTING.format(
                     this.label(), AttributeType.Double.class.getCanonicalName()
@@ -131,7 +142,7 @@ public abstract class AttributeType<ATT_TYPE extends AttributeType<ATT_TYPE>> ex
 
     public AttributeType.String asString() {
         if (this.valueClass().equals(java.lang.String.class) || this.isRoot()) {
-            return (String) this;
+            return AttributeType.String.of(this.vertex);
         } else {
             throw new HypergraphException(INVALID_TYPE_CASTING.format(
                     this.label(), AttributeType.Long.class.getCanonicalName()
@@ -141,7 +152,7 @@ public abstract class AttributeType<ATT_TYPE extends AttributeType<ATT_TYPE>> ex
 
     public AttributeType.DateTime asDateTime() {
         if (this.valueClass().equals(LocalDateTime.class) || this.isRoot()) {
-            return (DateTime) this;
+            return AttributeType.DateTime.of(this.vertex);
         } else {
             throw new HypergraphException(INVALID_TYPE_CASTING.format(
                     this.label(), AttributeType.DateTime.class.getCanonicalName()
@@ -157,16 +168,16 @@ public abstract class AttributeType<ATT_TYPE extends AttributeType<ATT_TYPE>> ex
         return this.vertex.equals(that.vertex);
     }
 
-    public static class Object extends AttributeType<AttributeType.Object> {
+    private static class Root extends AttributeType<Root> {
 
-        public Object(TypeVertex vertex) {
+        private Root(TypeVertex vertex) {
             super(vertex);
             assert vertex.valueClass().equals(Schema.ValueClass.OBJECT);
             assert vertex.label().equals(Schema.Vertex.Type.Root.ATTRIBUTE.label());
         }
 
         @Override
-        AttributeType.Object getThis() { return this; }
+        AttributeType.Root getThis() { return this; }
 
         public Class<java.lang.Object> valueClass() { return java.lang.Object.class; }
 
@@ -180,10 +191,10 @@ public abstract class AttributeType<ATT_TYPE extends AttributeType<ATT_TYPE>> ex
         public void isAbstract(boolean isAbstract) { throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION); }
 
         @Override
-        public AttributeType.Object sup() { return null; }
+        public AttributeType.Root sup() { return null; }
 
         @Override
-        public void sup(AttributeType.Object superType) { throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION); }
+        public void sup(AttributeType.Root superType) { throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION); }
     }
 
     public static class Boolean extends AttributeType<AttributeType.Boolean> {
