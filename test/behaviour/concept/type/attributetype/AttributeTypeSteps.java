@@ -19,7 +19,7 @@
 package hypergraph.test.behaviour.concept.type.attributetype;
 
 import hypergraph.common.exception.HypergraphException;
-import hypergraph.concept.type.AttributeType;
+import hypergraph.concept.type.AttributeTypeInt;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 
@@ -45,7 +45,7 @@ public class AttributeTypeSteps {
 
     @Then("attribute\\( ?{type_label} ?) fails at setting supertype: {type_label}")
     public void thing_fails_at_setting_key_attribute(String typeLabel, String superLabel) {
-        AttributeType superType = tx().concepts().getAttributeType(superLabel);
+        AttributeTypeInt superType = tx().concepts().getAttributeType(superLabel);
         try {
             tx().concepts().getAttributeType(typeLabel).sup(superType);
             fail();

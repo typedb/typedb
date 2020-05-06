@@ -19,7 +19,7 @@
 package hypergraph.test.behaviour.concept.type.relationtype;
 
 import hypergraph.common.exception.HypergraphException;
-import hypergraph.concept.type.RoleType;
+import hypergraph.concept.type.RoleTypeInt;
 import hypergraph.test.behaviour.config.Parameters;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
@@ -57,13 +57,13 @@ public class RelationTypeSteps {
 
     @When("relation\\( ?{type_label} ?) set relates role: {type_label} as {type_label}")
     public void relation_set_relates_role_as(String relationLabel, String roleLabel, String superRole) {
-        tx().concepts().putRelationType(relationLabel).relates(roleLabel).as(superRole);
+        tx().concepts().putRelationType(relationLabel).relates(roleLabel, superRole);
     }
 
     @When("relation\\( ?{type_label} ?) fails at setting relates role: {type_label} as {type_label}")
     public void thing_fails_at_setting_relates_role_as(String relationLabel, String roleLabel, String superRole) {
         try {
-            tx().concepts().putRelationType(relationLabel).relates(roleLabel).as(superRole);
+            tx().concepts().putRelationType(relationLabel).relates(roleLabel, superRole);
             fail();
         } catch(HypergraphException ignore) {
             assertTrue(true);
@@ -117,7 +117,7 @@ public class RelationTypeSteps {
 
     @Then("relation\\( ?{type_label} ?) get role\\( ?{type_label} ?) get supertype: {scoped_label}")
     public void relation_get_role_get_supertype(String relationLabel, String roleLabel, Parameters.ScopedLabel superLabel) {
-        RoleType superType = tx().concepts().getRelationType(superLabel.scope()).role(superLabel.role());
+        RoleTypeInt superType = tx().concepts().getRelationType(superLabel.scope()).role(superLabel.role());
         assertEquals(superType, tx().concepts().getRelationType(relationLabel).role(roleLabel).sup());
     }
 

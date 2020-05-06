@@ -28,54 +28,52 @@ import java.util.Iterator;
 import java.util.Objects;
 import java.util.stream.Stream;
 
-import static hypergraph.common.exception.Error.TypeDefinition.INVALID_ROOT_TYPE_MUTATION;
 import static java.util.Spliterator.IMMUTABLE;
 import static java.util.Spliterator.ORDERED;
 import static java.util.Spliterators.spliteratorUnknownSize;
 import static java.util.stream.StreamSupport.stream;
 
-public abstract class Type<TYPE extends Type<TYPE>> {
+public abstract class TypeImpl<TYPE extends TypeImpl<TYPE>> implements TypeInt {
 
     protected final TypeVertex vertex;
     protected TYPE superType;
 
-    protected Type(TypeVertex vertex) {
+    protected TypeImpl(TypeVertex vertex) {
         this.vertex = Objects.requireNonNull(vertex);
     }
 
-    Type(Graph.Type graph, String label, Schema.Vertex.Type schema) {
+    TypeImpl(Graph.Type graph, String label, Schema.Vertex.Type schema) {
         this(graph, label, schema, null);
     }
 
-    Type(Graph.Type graph, String label, Schema.Vertex.Type schema, String scope) {
+    TypeImpl(Graph.Type graph, String label, Schema.Vertex.Type schema, String scope) {
         this.vertex = graph.put(schema, label, scope);
         TypeVertex superTypeVertex = graph.get(schema.root().label(), schema.root().scope());
         vertex.outs().put(Schema.Edge.Type.SUB, superTypeVertex);
         superType = newInstance(superTypeVertex);
     }
 
-    abstract TYPE getThis();
-
     abstract TYPE newInstance(TypeVertex vertex);
 
+    @Override
     public boolean isRoot() { return false; }
 
+    @Override
     public Long count() {
         return 0L; // TODO: return total number of type instances
     }
 
+    @Override
     public void label(String label) {
         vertex.label(label);
     }
 
+    @Override
     public String label() {
         return vertex.label();
     }
 
-    protected void isAbstract(boolean isAbstract) {
-        vertex.isAbstract(isAbstract);
-    }
-
+    @Override
     public boolean isAbstract() {
         return vertex.isAbstract();
     }
@@ -86,6 +84,7 @@ public abstract class Type<TYPE extends Type<TYPE>> {
         this.superType = superType;
     }
 
+    @Override
     public TYPE sup() {
         if (superType != null) return superType;
 
@@ -95,6 +94,7 @@ public abstract class Type<TYPE extends Type<TYPE>> {
         return superType;
     }
 
+    @Override
     public Stream<TYPE> sups() {
         Iterator<TYPE> sups = Iterators.loop(
                 vertex,
@@ -108,11 +108,13 @@ public abstract class Type<TYPE extends Type<TYPE>> {
         return stream(spliteratorUnknownSize(sups, ORDERED | IMMUTABLE), false);
     }
 
+    @Override
     public Stream<TYPE> subs() {
         Iterator<TYPE> sups = Iterators.tree(vertex, v -> v.ins().edge(Schema.Edge.Type.SUB).from()).apply(this::newInstance);
         return stream(spliteratorUnknownSize(sups, ORDERED), false);
     }
 
+    @Override
     public void delete() {
         // TODO: Check if a type has any intances too
         if (subs().findAny().isPresent()) {
@@ -131,7 +133,7 @@ public abstract class Type<TYPE extends Type<TYPE>> {
     public boolean equals(Object object) {
         if (this == object) return true;
         if (object == null || getClass() != object.getClass()) return false;
-        Type<?> that = (Type<?>) object;
+        TypeImpl<?> that = (TypeImpl<?>) object;
         return this.vertex.equals(that.vertex);
     }
 

@@ -25,9 +25,9 @@ import hypergraph.graph.vertex.TypeVertex;
 
 import static hypergraph.common.exception.Error.TypeDefinition.INVALID_ROOT_TYPE_MUTATION;
 
-public class RoleType extends Type<RoleType> {
+public class RoleTypeImpl extends TypeImpl<RoleTypeImpl> implements RoleTypeInt {
 
-    private RoleType(TypeVertex vertex) {
+    private RoleTypeImpl(TypeVertex vertex) {
         super(vertex);
         assert vertex.schema() == Schema.Vertex.Type.ROLE_TYPE;
         if (vertex.schema() != Schema.Vertex.Type.ROLE_TYPE) {
@@ -36,32 +36,38 @@ public class RoleType extends Type<RoleType> {
         }
     }
 
-    private RoleType(Graph.Type graph, String label, String relation) {
+    private RoleTypeImpl(Graph.Type graph, String label, String relation) {
         super(graph, label, Schema.Vertex.Type.ROLE_TYPE, relation);
     }
 
-    public static RoleType of(TypeVertex vertex) {
-        if (vertex.label().equals(Schema.Vertex.Type.Root.ROLE.label())) return new RoleType.Root(vertex);
-        else return new RoleType(vertex);
+    public static RoleTypeImpl of(TypeVertex vertex) {
+        if (vertex.label().equals(Schema.Vertex.Type.Root.ROLE.label())) return new RoleTypeImpl.Root(vertex);
+        else return new RoleTypeImpl(vertex);
     }
 
-    public static RoleType of(Graph.Type graph, String label, String relation) {
-        return new RoleType(graph, label, relation);
+    public static RoleTypeImpl of(Graph.Type graph, String label, String relation) {
+        return new RoleTypeImpl(graph, label, relation);
     }
 
     @Override
-    RoleType getThis() { return this; }
-
-    @Override
-    RoleType newInstance(TypeVertex vertex) {
+    RoleTypeImpl newInstance(TypeVertex vertex) {
         return of(vertex);
     }
 
+    @Override
     public String scopedLabel() {
         return vertex.scopedLabel();
     }
 
-    public static class Root extends RoleType {
+    void isAbstract(boolean isAbstract) {
+        vertex.isAbstract(isAbstract);
+    }
+
+    void sup(RoleTypeInt superType) {
+        super.sup((RoleTypeImpl) superType);
+    }
+
+    public static class Root extends RoleTypeImpl {
 
         Root(TypeVertex vertex) {
             super(vertex);
@@ -75,12 +81,12 @@ public class RoleType extends Type<RoleType> {
         public void label(String label) { throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION); }
 
         @Override
-        protected void isAbstract(boolean isAbstract) { throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION); }
+        void isAbstract(boolean isAbstract) { throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION); }
 
         @Override
-        public RoleType sup() { return null; }
+        void sup(RoleTypeInt superType) { throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION); }
 
         @Override
-        protected void sup(RoleType superType) { throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION); }
+        public RoleTypeImpl sup() { return null; }
     }
 }

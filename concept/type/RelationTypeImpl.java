@@ -39,9 +39,9 @@ import static java.util.Spliterator.ORDERED;
 import static java.util.Spliterators.spliteratorUnknownSize;
 import static java.util.stream.StreamSupport.stream;
 
-public class RelationType extends ThingType<RelationType> {
+public class RelationTypeImpl extends ThingTypeImpl<RelationTypeImpl> implements RelationTypeInt {
 
-    private RelationType(TypeVertex vertex) {
+    private RelationTypeImpl(TypeVertex vertex) {
         super(vertex);
         if (vertex.schema() != Schema.Vertex.Type.RELATION_TYPE) {
             throw new HypergraphException("Invalid Relation Type: " + vertex.label() +
@@ -49,24 +49,21 @@ public class RelationType extends ThingType<RelationType> {
         }
     }
 
-    private RelationType(Graph.Type graph, String label) {
+    private RelationTypeImpl(Graph.Type graph, String label) {
         super(graph, label, Schema.Vertex.Type.RELATION_TYPE);
     }
 
-    public static RelationType of(TypeVertex vertex) {
-        if (vertex.label().equals(Schema.Vertex.Type.Root.RELATION.label())) return new RelationType.Root(vertex);
-        else return new RelationType(vertex);
+    public static RelationTypeImpl of(TypeVertex vertex) {
+        if (vertex.label().equals(Schema.Vertex.Type.Root.RELATION.label())) return new RelationTypeImpl.Root(vertex);
+        else return new RelationTypeImpl(vertex);
     }
 
-    public static RelationType of(Graph.Type graph, String label) {
-        return new RelationType(graph, label);
+    public static RelationTypeInt of(Graph.Type graph, String label) {
+        return new RelationTypeImpl(graph, label);
     }
 
     @Override
-    RelationType getThis() { return this; }
-
-    @Override
-    RelationType newInstance(TypeVertex vertex) { return of(vertex); }
+    RelationTypeImpl newInstance(TypeVertex vertex) { return of(vertex); }
 
     @Override
     public void label(String label) {
@@ -77,56 +74,79 @@ public class RelationType extends ThingType<RelationType> {
     @Override
     public void isAbstract(boolean isAbstract) {
         vertex.isAbstract(isAbstract);
-        declaredRoles().forEach(role -> role.isAbstract(true));
+        declaredRoles().forEach(role -> ((RoleTypeImpl) role).isAbstract(isAbstract));
     }
 
-    public RelatesOverrider relates(String roleLabel) {
+    @Override
+    public void sup(RelationTypeInt superType) {
+        super.sup((RelationTypeImpl) superType);
+    }
+
+    @Override
+    public void relates(String roleLabel) {
         TypeVertex roleTypeVertex = vertex.graph().get(roleLabel, vertex.label());
-        if (roleTypeVertex != null) {
-            return new RelatesOverrider(RoleType.of(roleTypeVertex));
-        } else if (sups().flatMap(RelationType::roles).anyMatch(role -> role.label().equals(roleLabel))) {
-            throw new HypergraphException("Invalid RoleType Assignment: role type already exists in a supertype relation");
-        } else {
-            RoleType roleType = RoleType.of(vertex.graph(), roleLabel, vertex.label());
-            vertex.outs().put(Schema.Edge.Type.RELATES, roleType.vertex);
-            vertex.outs().edge(Schema.Edge.Type.RELATES, roleType.vertex).overridden(roleType.sup().vertex);
-            return new RelatesOverrider(roleType);
+        if (roleTypeVertex == null) {
+            if (sups().flatMap(RelationTypeInt::roles).anyMatch(role -> role.label().equals(roleLabel))) {
+                throw new HypergraphException("Invalid RoleType Assignment: role type already exists in a supertype relation");
+            } else {
+                RoleTypeImpl roleType = RoleTypeImpl.of(vertex.graph(), roleLabel, vertex.label());
+                vertex.outs().put(Schema.Edge.Type.RELATES, roleType.vertex);
+                vertex.outs().edge(Schema.Edge.Type.RELATES, roleType.vertex).overridden(roleType.sup().vertex);
+            }
         }
     }
 
+    @Override
+    public void relates(String roleLabel, String overriddenLabel) {
+        this.relates(roleLabel);
+        RoleTypeImpl roleType = role(roleLabel);
+
+        Optional<RoleTypeImpl> inherited;
+        if (declaredRoles().anyMatch(r -> r.label().equals(overriddenLabel)) ||
+                !(inherited = sup().roles().filter(role -> role.label().equals(overriddenLabel)).findAny()).isPresent()) {
+            throw new HypergraphException("Invalid Role Type Overriding: " + overriddenLabel + " cannot be overridden");
+        }
+
+        roleType.sup(inherited.get());
+        vertex.outs().edge(Schema.Edge.Type.RELATES, roleType.vertex).overridden(inherited.get().vertex);
+    }
+
+    @Override
     public void unrelate(String roleLabel) {
         TypeVertex roleTypeVertex = vertex.graph().get(roleLabel, vertex.label());
         if (roleTypeVertex != null) {
-            RoleType.of(roleTypeVertex).delete();
+            RoleTypeImpl.of(roleTypeVertex).delete();
         } else {
             throw new HypergraphException("Invalid RoleType Removal: " + roleLabel + " does not exist in " + vertex.label());
         }
     }
 
-    public Stream<RoleType> roles() {
-        Iterator<RoleType> roles = apply(vertex.outs().edge(Schema.Edge.Type.RELATES).to(), RoleType::of);
+    @Override
+    public Stream<RoleTypeImpl> roles() {
+        Iterator<RoleTypeImpl> roles = apply(vertex.outs().edge(Schema.Edge.Type.RELATES).to(), RoleTypeImpl::of);
         if (isRoot()) {
             return stream(spliteratorUnknownSize(roles, ORDERED | IMMUTABLE), false);
         } else {
-            Set<RoleType> direct = new HashSet<>(), overridden = new HashSet<>();
+            Set<RoleTypeImpl> direct = new HashSet<>(), overridden = new HashSet<>();
             roles.forEachRemaining(direct::add);
             filter(vertex.outs().edge(Schema.Edge.Type.RELATES).overridden(), Objects::nonNull)
-                    .apply(RoleType::of)
+                    .apply(RoleTypeImpl::of)
                     .forEachRemaining(overridden::add);
             return Stream.concat(direct.stream(), sup().roles().filter(role -> !overridden.contains(role)));
         }
     }
 
-    private Stream<RoleType> declaredRoles() {
-        Iterator<RoleType> roles = apply(vertex.outs().edge(Schema.Edge.Type.RELATES).to(), RoleType::of);
+    private Stream<RoleTypeImpl> declaredRoles() {
+        Iterator<RoleTypeImpl> roles = apply(vertex.outs().edge(Schema.Edge.Type.RELATES).to(), RoleTypeImpl::of);
         return stream(spliteratorUnknownSize(roles, ORDERED | IMMUTABLE), false);
     }
 
-    public RoleType role(String roleLabel) {
-        Optional<RoleType> roleType;
+    @Override
+    public RoleTypeImpl role(String roleLabel) {
+        Optional<RoleTypeImpl> roleType;
         TypeVertex roleTypeVertex = vertex.graph().get(roleLabel, vertex.label());
         if (roleTypeVertex != null) {
-            return RoleType.of(roleTypeVertex);
+            return RoleTypeImpl.of(roleTypeVertex);
         } else if ((roleType = roles().filter(role -> role.label().equals(roleLabel)).findAny()).isPresent()) {
             return roleType.get();
         } else return null;
@@ -135,7 +155,7 @@ public class RelationType extends ThingType<RelationType> {
     @Override
     public void delete() {
         if (compareSize(subs(), 1) == 0) {
-            declaredRoles().forEach(Type::delete);
+            declaredRoles().forEach(TypeInt::delete);
             vertex.delete();
         } else {
             throw new HypergraphException("Invalid RoleType Removal: " + label() + " has subtypes");
@@ -144,24 +164,17 @@ public class RelationType extends ThingType<RelationType> {
 
     public class RelatesOverrider {
 
-        private final RoleType roleType;
+        private final RoleTypeImpl roleType;
 
-        RelatesOverrider(RoleType roleType) {
+        RelatesOverrider(RoleTypeImpl roleType) {
             this.roleType = roleType;
         }
 
         public void as(String superLabel) {
-            Optional<RoleType> inherited;
-            if (declaredRoles().anyMatch(r -> r.label().equals(superLabel)) ||
-                    !(inherited = sup().roles().filter(role -> role.label().equals(superLabel)).findAny()).isPresent()) {
-                throw new HypergraphException("Invalid Role Type Overriding: " + superLabel + " cannot be overridden");
-            }
 
-            roleType.sup(inherited.get());
-            vertex.outs().edge(Schema.Edge.Type.RELATES, roleType.vertex).overridden(inherited.get().vertex);
         }
 
-        public void as(RoleType superType) {
+        public void as(RoleTypeImpl superType) {
             if (sup().roles().anyMatch(rt -> rt.equals(superType))) {
                 roleType.sup(superType);
                 vertex.outs().edge(Schema.Edge.Type.RELATES, roleType.vertex).overridden(superType.vertex);
@@ -172,7 +185,7 @@ public class RelationType extends ThingType<RelationType> {
         }
     }
 
-    public static class Root extends RelationType {
+    public static class Root extends RelationTypeImpl {
 
         Root(TypeVertex vertex) {
             super(vertex);
@@ -189,9 +202,9 @@ public class RelationType extends ThingType<RelationType> {
         public void isAbstract(boolean isAbstract) { throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION); }
 
         @Override
-        public RelationType.Root sup() { return null; }
+        public void sup(RelationTypeInt superType) { throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION); }
 
         @Override
-        public void sup(RelationType superType) { throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION); }
+        public RelationTypeImpl sup() { return null; }
     }
 }

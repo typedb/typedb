@@ -25,9 +25,9 @@ import hypergraph.graph.vertex.TypeVertex;
 
 import static hypergraph.common.exception.Error.TypeDefinition.INVALID_ROOT_TYPE_MUTATION;
 
-public class EntityType extends ThingType<EntityType> {
+public class EntityTypeImpl extends ThingTypeImpl<EntityTypeImpl> implements EntityTypeInt {
 
-    private EntityType(TypeVertex vertex) {
+    private EntityTypeImpl(TypeVertex vertex) {
         super(vertex);
         if (vertex.schema() != Schema.Vertex.Type.ENTITY_TYPE) {
             throw new HypergraphException("Invalid Entity Type: " + vertex.label() +
@@ -35,27 +35,29 @@ public class EntityType extends ThingType<EntityType> {
         }
     }
 
-    private EntityType(Graph.Type graph, String label) {
+    private EntityTypeImpl(Graph.Type graph, String label) {
         super(graph, label, Schema.Vertex.Type.ENTITY_TYPE);
         assert !label.equals(Schema.Vertex.Type.Root.ENTITY.label());
     }
 
-    public static EntityType of(TypeVertex vertex) {
-        if (vertex.label().equals(Schema.Vertex.Type.Root.ENTITY.label())) return new EntityType.Root(vertex);
-        else return new EntityType(vertex);
+    public static EntityTypeImpl of(TypeVertex vertex) {
+        if (vertex.label().equals(Schema.Vertex.Type.Root.ENTITY.label())) return new EntityTypeImpl.Root(vertex);
+        else return new EntityTypeImpl(vertex);
     }
 
-    public static EntityType of(Graph.Type graph, String label) {
-        return new EntityType(graph, label);
+    public static EntityTypeImpl of(Graph.Type graph, String label) {
+        return new EntityTypeImpl(graph, label);
     }
 
     @Override
-    EntityType getThis() { return this; }
+    EntityTypeImpl newInstance(TypeVertex vertex) { return of(vertex); }
 
     @Override
-    EntityType newInstance(TypeVertex vertex) { return of(vertex); }
+    public void sup(EntityTypeInt superType) {
+        super.sup((EntityTypeImpl) superType);
+    }
 
-    public static class Root extends EntityType {
+    public static class Root extends EntityTypeImpl {
 
         Root(TypeVertex vertex) {
             super(vertex);
@@ -72,9 +74,9 @@ public class EntityType extends ThingType<EntityType> {
         public void isAbstract(boolean isAbstract) { throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION); }
 
         @Override
-        public EntityType.Root sup() { return null; }
+        public void sup(EntityTypeInt superType) { throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION); }
 
         @Override
-        public void sup(EntityType superType) { throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION); }
+        public EntityTypeImpl sup() { return null; }
     }
 }
