@@ -276,7 +276,7 @@ public class GraknClientIT {
             Set<ConceptMap> deductions = deductions(answer);
             assertTrue(deductions.stream().anyMatch(ans -> {
                 assertNotNull(ans.queryPattern());
-                if (ans.hasExplanation()) {
+                if (ans.hasExplanation() && ans.explanation().getAnswers().size() == 1) {
                     assertEquals("transitive-location", ans.explanation().getRule().label().toString());
                     assertEquals("{ (contained: $x, container: $y) isa contains; (contained: $y, container: $z) isa contains; };", ans.explanation().getRule().when().toString());
                     assertEquals("{ (contained: $x, container: $z) isa contains; };", ans.explanation().getRule().then().toString());
@@ -322,11 +322,11 @@ public class GraknClientIT {
 
             Set<ConceptMap> deductions = deductions(answer);
 
-            assertEquals(patterns.size() + ruleStatements, deductions.size());
+            assertEquals(patterns.size() + ruleStatements + 1, deductions.size());
             assertEquals(patterns.size(), answer.explanation().getAnswers().size());
             answer.explanation().getAnswers().stream()
                     .filter(a -> a.map().containsKey(var("infer").var()))
-                    .forEach(a -> assertEquals(ruleStatements, a.explanation().getAnswers().size()));
+                    .forEach(a -> assertEquals(1, a.explanation().getAnswers().size()));
             testExplanation(answer);
         }
     }
