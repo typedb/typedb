@@ -26,6 +26,7 @@ import hypergraph.graph.Graph;
 import hypergraph.graph.Schema;
 import hypergraph.graph.vertex.TypeVertex;
 
+import javax.annotation.Nullable;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Objects;
@@ -82,9 +83,11 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
         super.superTypeVertex(((RelationTypeImpl) superType).vertex);
     }
 
+    @Nullable
     @Override
     public RelationTypeImpl sup() {
-        return of(super.superTypeVertex());
+        TypeVertex vertex = super.superTypeVertex();
+        return vertex != null ? of(vertex) : null;
     }
 
     @Override
@@ -197,8 +200,5 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
 
         @Override
         public void sup(RelationType superType) { throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION); }
-
-        @Override
-        public RelationTypeImpl sup() { return null; }
     }
 }

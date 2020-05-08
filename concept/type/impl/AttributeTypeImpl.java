@@ -26,6 +26,7 @@ import hypergraph.graph.Graph;
 import hypergraph.graph.Schema;
 import hypergraph.graph.vertex.TypeVertex;
 
+import javax.annotation.Nullable;
 import java.time.LocalDateTime;
 import java.util.Iterator;
 import java.util.stream.Stream;
@@ -77,9 +78,11 @@ public class AttributeTypeImpl extends ThingTypeImpl implements AttributeType {
         super.superTypeVertex(((AttributeTypeImpl) superType).vertex);
     }
 
+    @Nullable
     @Override
     public AttributeTypeImpl sup() {
-        return of(super.superTypeVertex());
+        TypeVertex vertex = super.superTypeVertex();
+        return vertex != null ? of(vertex) : null;
     }
 
     @Override
@@ -203,9 +206,6 @@ public class AttributeTypeImpl extends ThingTypeImpl implements AttributeType {
 
         @Override
         public void sup(AttributeType superType) { throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION); }
-
-        @Override
-        public AttributeTypeImpl.Root sup() { return null; }
     }
 
     public static class Boolean extends AttributeTypeImpl implements AttributeType.Boolean {
@@ -252,9 +252,6 @@ public class AttributeTypeImpl extends ThingTypeImpl implements AttributeType {
             public void isAbstract(boolean isAbstract) { throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION); }
 
             @Override
-            public AttributeTypeImpl.Boolean sup() { return null; }
-
-            @Override
             public void sup(AttributeType superType) { throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION); }
         }
     }
@@ -293,22 +290,13 @@ public class AttributeTypeImpl extends ThingTypeImpl implements AttributeType {
             public boolean isRoot() { return true; }
 
             @Override
-            public void label(java.lang.String label) {
-                throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
-            }
+            public void label(java.lang.String label) { throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION); }
 
             @Override
-            public void isAbstract(boolean isAbstract) {
-                throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
-            }
+            public void isAbstract(boolean isAbstract) { throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION); }
 
             @Override
-            public void sup(AttributeType superType) {
-                throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
-            }
-
-            @Override
-            public AttributeTypeImpl.Long sup() { return null; }
+            public void sup(AttributeType superType) { throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION); }
         }
     }
 
@@ -346,22 +334,13 @@ public class AttributeTypeImpl extends ThingTypeImpl implements AttributeType {
             public boolean isRoot() { return true; }
 
             @Override
-            public void label(java.lang.String label) {
-                throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
-            }
+            public void label(java.lang.String label) { throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION); }
 
             @Override
-            public void isAbstract(boolean isAbstract) {
-                throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
-            }
+            public void isAbstract(boolean isAbstract) { throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION); }
 
             @Override
-            public void sup(AttributeType superType) {
-                throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
-            }
-
-            @Override
-            public AttributeTypeImpl.Double sup() { return null; }
+            public void sup(AttributeType superType) { throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION); }
         }
     }
 
@@ -399,22 +378,13 @@ public class AttributeTypeImpl extends ThingTypeImpl implements AttributeType {
             public boolean isRoot() { return true; }
 
             @Override
-            public void label(java.lang.String label) {
-                throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
-            }
+            public void label(java.lang.String label) { throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION); }
 
             @Override
-            public void isAbstract(boolean isAbstract) {
-                throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
-            }
+            public void isAbstract(boolean isAbstract) { throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION); }
 
             @Override
-            public void sup(AttributeType superType) {
-                throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
-            }
-
-            @Override
-            public AttributeTypeImpl.String sup() { return null; }
+            public void sup(AttributeType superType) { throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION); }
         }
     }
 
@@ -452,22 +422,13 @@ public class AttributeTypeImpl extends ThingTypeImpl implements AttributeType {
             public boolean isRoot() { return true; }
 
             @Override
-            public void label(java.lang.String label) {
-                throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
-            }
+            public void label(java.lang.String label) { throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION); }
 
             @Override
-            public void isAbstract(boolean isAbstract) {
-                throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
-            }
+            public void isAbstract(boolean isAbstract) { throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION); }
 
             @Override
-            public void sup(AttributeType superType) {
-                throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
-            }
-
-            @Override
-            public AttributeTypeImpl.DateTime sup() { return null; }
+            public void sup(AttributeType superType) { throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION); }
         }
     }
 }

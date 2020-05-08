@@ -25,6 +25,7 @@ import hypergraph.graph.Graph;
 import hypergraph.graph.Schema;
 import hypergraph.graph.vertex.TypeVertex;
 
+import javax.annotation.Nullable;
 import java.util.Iterator;
 import java.util.Objects;
 
@@ -74,6 +75,7 @@ public abstract class TypeImpl implements Type {
         vertex.outs().put(Schema.Edge.Type.SUB, superTypeVertex);
     }
 
+    @Nullable
     protected TypeVertex superTypeVertex() {
         Iterator<TypeVertex> iterator = Iterators.filter(vertex.outs().edge(Schema.Edge.Type.SUB).to(),
                                                          v -> v.schema().equals(vertex.schema()));

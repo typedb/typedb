@@ -27,6 +27,7 @@ import hypergraph.graph.Graph;
 import hypergraph.graph.Schema;
 import hypergraph.graph.vertex.TypeVertex;
 
+import javax.annotation.Nullable;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Objects;
@@ -58,6 +59,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         vertex.isAbstract(isAbstract);
     }
 
+    @Nullable
     public abstract ThingTypeImpl sup();
 
     private <T extends Type> void override(Schema.Edge.Type schema, T type, T overriddenType,
@@ -229,7 +231,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         public void isAbstract(boolean isAbstract) { throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION); }
 
         @Override
-        public ThingTypeImpl.Root sup() { return null; }
+        public ThingTypeImpl sup() { return null; }
 
         @Override
         public Stream<? extends ThingTypeImpl> sups() {

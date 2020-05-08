@@ -25,6 +25,7 @@ import hypergraph.graph.Graph;
 import hypergraph.graph.Schema;
 import hypergraph.graph.vertex.TypeVertex;
 
+import javax.annotation.Nullable;
 import java.util.Iterator;
 import java.util.stream.Stream;
 
@@ -66,9 +67,11 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
         super.superTypeVertex(((RoleTypeImpl) superType).vertex);
     }
 
+    @Nullable
     @Override
     public RoleTypeImpl sup() {
-        return of(super.superTypeVertex());
+        TypeVertex vertex = super.superTypeVertex();
+        return vertex != null ? of(vertex) : null;
     }
 
     @Override
@@ -106,8 +109,5 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
 
         @Override
         void sup(RoleType superType) { throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION); }
-
-        @Override
-        public RoleTypeImpl sup() { return null; }
     }
 }

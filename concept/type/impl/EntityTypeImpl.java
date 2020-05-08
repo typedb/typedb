@@ -25,6 +25,7 @@ import hypergraph.graph.Graph;
 import hypergraph.graph.Schema;
 import hypergraph.graph.vertex.TypeVertex;
 
+import javax.annotation.Nullable;
 import java.util.Iterator;
 import java.util.stream.Stream;
 
@@ -63,9 +64,11 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
         super.superTypeVertex(((EntityTypeImpl) superType).vertex);
     }
 
+    @Nullable
     @Override
     public EntityTypeImpl sup() {
-        return of(super.superTypeVertex());
+        TypeVertex vertex = super.superTypeVertex();
+        return vertex != null ? of(vertex) : null;
     }
 
     @Override
@@ -98,8 +101,5 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
 
         @Override
         public void sup(EntityType superType) { throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION); }
-
-        @Override
-        public EntityTypeImpl sup() { return null; }
     }
 }
