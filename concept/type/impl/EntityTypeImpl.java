@@ -19,14 +19,22 @@
 package hypergraph.concept.type.impl;
 
 import hypergraph.common.exception.HypergraphException;
+import hypergraph.common.iterator.Iterators;
 import hypergraph.concept.type.EntityType;
 import hypergraph.graph.Graph;
 import hypergraph.graph.Schema;
 import hypergraph.graph.vertex.TypeVertex;
 
-import static hypergraph.common.exception.Error.TypeDefinition.INVALID_ROOT_TYPE_MUTATION;
+import java.util.Iterator;
+import java.util.stream.Stream;
 
-public class EntityTypeImpl extends ThingTypeImpl<EntityTypeImpl> implements EntityType {
+import static hypergraph.common.exception.Error.TypeDefinition.INVALID_ROOT_TYPE_MUTATION;
+import static java.util.Spliterator.IMMUTABLE;
+import static java.util.Spliterator.ORDERED;
+import static java.util.Spliterators.spliteratorUnknownSize;
+import static java.util.stream.StreamSupport.stream;
+
+public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
 
     private EntityTypeImpl(TypeVertex vertex) {
         super(vertex);
@@ -51,16 +59,30 @@ public class EntityTypeImpl extends ThingTypeImpl<EntityTypeImpl> implements Ent
     }
 
     @Override
-    EntityTypeImpl newInstance(TypeVertex vertex) { return of(vertex); }
-
-    @Override
     public void sup(EntityType superType) {
-        super.sup((EntityTypeImpl) superType);
+        super.superTypeVertex(((EntityTypeImpl) superType).vertex);
     }
 
-    public static class Root extends EntityTypeImpl {
+    @Override
+    public EntityTypeImpl sup() {
+        return of(super.superTypeVertex());
+    }
 
-        Root(TypeVertex vertex) {
+    @Override
+    public Stream<EntityTypeImpl> sups() {
+        Iterator<EntityTypeImpl> sups = Iterators.apply(super.superTypeVertices(), EntityTypeImpl::of);
+        return stream(spliteratorUnknownSize(sups, ORDERED | IMMUTABLE), false);
+    }
+
+    @Override
+    public Stream<EntityTypeImpl> subs() {
+        Iterator<EntityTypeImpl> subs = Iterators.apply(super.subTypeVertices(), EntityTypeImpl::of);
+        return stream(spliteratorUnknownSize(subs, ORDERED | IMMUTABLE), false);
+    }
+
+    private static class Root extends EntityTypeImpl {
+
+        private Root(TypeVertex vertex) {
             super(vertex);
             assert vertex.label().equals(Schema.Vertex.Type.Root.ENTITY.label());
         }

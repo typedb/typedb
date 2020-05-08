@@ -43,7 +43,7 @@ import static java.util.Spliterators.spliteratorUnknownSize;
 import static java.util.stream.Stream.concat;
 import static java.util.stream.StreamSupport.stream;
 
-public abstract class ThingTypeImpl<TYPE extends ThingTypeImpl<TYPE>> extends TypeImpl<TYPE> implements ThingType {
+public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
     ThingTypeImpl(TypeVertex vertex) {
         super(vertex);
@@ -57,6 +57,8 @@ public abstract class ThingTypeImpl<TYPE extends ThingTypeImpl<TYPE>> extends Ty
     public void isAbstract(boolean isAbstract) {
         vertex.isAbstract(isAbstract);
     }
+
+    public abstract ThingTypeImpl sup();
 
     private <T extends Type> void override(Schema.Edge.Type schema, T type, T overriddenType,
                                            Stream<? extends Type> overridable, Stream<? extends Type> notOverridable) {
@@ -141,7 +143,7 @@ public abstract class ThingTypeImpl<TYPE extends ThingTypeImpl<TYPE>> extends Ty
 
     private Stream<AttributeTypeImpl> declaredAttributes() {
         Iterator<AttributeTypeImpl> attributes = link(vertex.outs().edge(Schema.Edge.Type.KEY).to(),
-                                                     vertex.outs().edge(Schema.Edge.Type.HAS).to()).apply(AttributeTypeImpl::of);
+                                                      vertex.outs().edge(Schema.Edge.Type.HAS).to()).apply(AttributeTypeImpl::of);
         return stream(spliteratorUnknownSize(attributes, ORDERED | IMMUTABLE), false);
     }
 
@@ -153,7 +155,7 @@ public abstract class ThingTypeImpl<TYPE extends ThingTypeImpl<TYPE>> extends Ty
     @Override
     public Stream<AttributeTypeImpl> attributes() {
         Iterator<AttributeTypeImpl> attributes = link(vertex.outs().edge(Schema.Edge.Type.KEY).to(),
-                                                     vertex.outs().edge(Schema.Edge.Type.HAS).to()).apply(AttributeTypeImpl::of);
+                                                      vertex.outs().edge(Schema.Edge.Type.HAS).to()).apply(AttributeTypeImpl::of);
         if (isRoot()) {
             return stream(spliteratorUnknownSize(attributes, ORDERED | IMMUTABLE), false);
         } else {
@@ -210,15 +212,12 @@ public abstract class ThingTypeImpl<TYPE extends ThingTypeImpl<TYPE>> extends Ty
         }
     }
 
-    public static class Root extends ThingTypeImpl<ThingTypeImpl.Root> {
+    public static class Root extends ThingTypeImpl {
 
         public Root(TypeVertex vertex) {
             super(vertex);
             assert vertex.label().equals(Schema.Vertex.Type.Root.THING.label());
         }
-
-        @Override
-        ThingTypeImpl.Root newInstance(TypeVertex vertex) { return new ThingTypeImpl.Root(vertex); }
 
         @Override
         public boolean isRoot() { return true; }
@@ -233,6 +232,28 @@ public abstract class ThingTypeImpl<TYPE extends ThingTypeImpl<TYPE>> extends Ty
         public ThingTypeImpl.Root sup() { return null; }
 
         @Override
-        public void sup(Root superType) { throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION); }
+        public Stream<? extends ThingTypeImpl> sups() {
+            return Stream.empty();
+        }
+
+        @Override
+        public Stream<? extends ThingTypeImpl> subs() {
+            Stream<TypeVertex> directSubTypeVertices = stream(spliteratorUnknownSize(
+                    vertex.ins().edge(Schema.Edge.Type.SUB).from(), ORDERED | IMMUTABLE
+            ), false);
+
+            return directSubTypeVertices.flatMap(vertex -> {
+                switch (vertex.schema()) {
+                    case ENTITY_TYPE:
+                        return EntityTypeImpl.of(vertex).subs();
+                    case ATTRIBUTE_TYPE:
+                        return AttributeTypeImpl.of(vertex).subs();
+                    case RELATION_TYPE:
+                        return RelationTypeImpl.of(vertex).subs();
+                    default:
+                        throw new HypergraphException("Unreachable");
+                }
+            });
+        }
     }
 }

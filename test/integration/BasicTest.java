@@ -20,9 +20,7 @@ package hypergraph.test.integration;
 
 import hypergraph.Hypergraph;
 import hypergraph.concept.type.AttributeType;
-import hypergraph.concept.type.impl.AttributeTypeImpl;
 import hypergraph.concept.type.EntityType;
-import hypergraph.concept.type.impl.EntityTypeImpl;
 import hypergraph.concept.type.RelationType;
 import hypergraph.concept.type.RoleType;
 import hypergraph.concept.type.ThingType;
@@ -39,8 +37,6 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -66,7 +62,7 @@ public class BasicTest {
 
     @Test
     public void loop_test_hypergraph() throws IOException {
-        for (int i=0; i<1000; i++) {
+        for (int i = 0; i < 1000; i++) {
             System.out.println(i + " ---- ");
             test_hypergraph();
         }
@@ -134,7 +130,7 @@ public class BasicTest {
                                 assertEquals(name.sup(), rootAttributeType);
                             },
                             tx -> {
-                                AttributeTypeImpl.Long age = tx.concepts().putAttributeTypeLong("age");
+                                AttributeType.Long age = tx.concepts().putAttributeTypeLong("age");
                                 notNulls(age);
                                 assertEquals(age.sup(), rootAttributeType);
                             },
@@ -159,13 +155,13 @@ public class BasicTest {
 
                                 Stream<Consumer<Hypergraph.Transaction>> subPersonAssertions = Stream.of(
                                         tx2 -> {
-                                            EntityTypeImpl man = tx2.concepts().putEntityType("man");
+                                            EntityType man = tx2.concepts().putEntityType("man");
                                             man.sup(person);
                                             notNulls(man);
                                             assertEquals(man.sup(), person);
                                         },
                                         tx2 -> {
-                                            EntityTypeImpl woman = tx2.concepts().putEntityType("woman");
+                                            EntityType woman = tx2.concepts().putEntityType("woman");
                                             woman.sup(person);
                                             notNulls(woman);
                                             assertEquals(woman.sup(), person);
@@ -207,7 +203,7 @@ public class BasicTest {
                 }
 
                 try (Hypergraph.Transaction transaction = session.transaction(Hypergraph.Transaction.Type.WRITE)) {
-                    AttributeTypeImpl.String gender = transaction.concepts().putAttributeTypeString("gender");
+                    AttributeType.String gender = transaction.concepts().putAttributeTypeString("gender");
                     EntityType school = transaction.concepts().putEntityType("school");
                     RelationType teaching = transaction.concepts().putRelationType("teaching");
                     teaching.relates("teacher");
@@ -220,7 +216,7 @@ public class BasicTest {
 
                 try (Hypergraph.Transaction transaction = session.transaction(Hypergraph.Transaction.Type.READ)) {
                     assertTransactionRead(transaction);
-                    AttributeTypeImpl.String gender = transaction.concepts().getAttributeType("gender").asString();
+                    AttributeType.String gender = transaction.concepts().getAttributeType("gender").asString();
                     EntityType school = transaction.concepts().getEntityType("school");
                     RelationType teaching = transaction.concepts().getRelationType("teaching");
                     RoleType teacher = teaching.role("teacher");
@@ -243,12 +239,12 @@ public class BasicTest {
 
         Stream<Consumer<Hypergraph.Transaction>> typeAssertions = Stream.of(
                 tx -> {
-                    AttributeTypeImpl.String name = tx.concepts().getAttributeType("name").asString();
+                    AttributeType.String name = tx.concepts().getAttributeType("name").asString();
                     notNulls(name);
                     assertEquals(name.sup(), rootAttributeType);
                 },
                 tx -> {
-                    AttributeTypeImpl.Long age = tx.concepts().getAttributeType("age").asLong();
+                    AttributeType.Long age = tx.concepts().getAttributeType("age").asLong();
                     notNulls(age);
                     assertEquals(age.sup(), rootAttributeType);
                 },

@@ -19,14 +19,22 @@
 package hypergraph.concept.type.impl;
 
 import hypergraph.common.exception.HypergraphException;
+import hypergraph.common.iterator.Iterators;
 import hypergraph.concept.type.RoleType;
 import hypergraph.graph.Graph;
 import hypergraph.graph.Schema;
 import hypergraph.graph.vertex.TypeVertex;
 
-import static hypergraph.common.exception.Error.TypeDefinition.INVALID_ROOT_TYPE_MUTATION;
+import java.util.Iterator;
+import java.util.stream.Stream;
 
-public class RoleTypeImpl extends TypeImpl<RoleTypeImpl> implements RoleType {
+import static hypergraph.common.exception.Error.TypeDefinition.INVALID_ROOT_TYPE_MUTATION;
+import static java.util.Spliterator.IMMUTABLE;
+import static java.util.Spliterator.ORDERED;
+import static java.util.Spliterators.spliteratorUnknownSize;
+import static java.util.stream.StreamSupport.stream;
+
+public class RoleTypeImpl extends TypeImpl implements RoleType {
 
     private RoleTypeImpl(TypeVertex vertex) {
         super(vertex);
@@ -50,22 +58,34 @@ public class RoleTypeImpl extends TypeImpl<RoleTypeImpl> implements RoleType {
         return new RoleTypeImpl(graph, label, relation);
     }
 
-    @Override
-    RoleTypeImpl newInstance(TypeVertex vertex) {
-        return of(vertex);
-    }
-
-    @Override
-    public String scopedLabel() {
-        return vertex.scopedLabel();
-    }
-
     void isAbstract(boolean isAbstract) {
         vertex.isAbstract(isAbstract);
     }
 
     void sup(RoleType superType) {
-        super.sup((RoleTypeImpl) superType);
+        super.superTypeVertex(((RoleTypeImpl) superType).vertex);
+    }
+
+    @Override
+    public RoleTypeImpl sup() {
+        return of(super.superTypeVertex());
+    }
+
+    @Override
+    public Stream<RoleTypeImpl> sups() {
+        Iterator<RoleTypeImpl> sups = Iterators.apply(super.superTypeVertices(), RoleTypeImpl::of);
+        return stream(spliteratorUnknownSize(sups, ORDERED | IMMUTABLE), false);
+    }
+
+    @Override
+    public Stream<RoleTypeImpl> subs() {
+        Iterator<RoleTypeImpl> subs = Iterators.apply(super.subTypeVertices(), RoleTypeImpl::of);
+        return stream(spliteratorUnknownSize(subs, ORDERED | IMMUTABLE), false);
+    }
+
+    @Override
+    public String scopedLabel() {
+        return vertex.scopedLabel();
     }
 
     public static class Root extends RoleTypeImpl {

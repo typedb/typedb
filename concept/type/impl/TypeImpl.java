@@ -27,17 +27,10 @@ import hypergraph.graph.vertex.TypeVertex;
 
 import java.util.Iterator;
 import java.util.Objects;
-import java.util.stream.Stream;
 
-import static java.util.Spliterator.IMMUTABLE;
-import static java.util.Spliterator.ORDERED;
-import static java.util.Spliterators.spliteratorUnknownSize;
-import static java.util.stream.StreamSupport.stream;
-
-public abstract class TypeImpl<TYPE extends TypeImpl<TYPE>> implements Type {
+public abstract class TypeImpl implements Type {
 
     protected final TypeVertex vertex;
-    protected TYPE superType;
 
     protected TypeImpl(TypeVertex vertex) {
         this.vertex = Objects.requireNonNull(vertex);
@@ -51,10 +44,7 @@ public abstract class TypeImpl<TYPE extends TypeImpl<TYPE>> implements Type {
         this.vertex = graph.put(schema, label, scope);
         TypeVertex superTypeVertex = graph.get(schema.root().label(), schema.root().scope());
         vertex.outs().put(Schema.Edge.Type.SUB, superTypeVertex);
-        superType = newInstance(superTypeVertex);
     }
-
-    abstract TYPE newInstance(TypeVertex vertex);
 
     @Override
     public boolean isRoot() { return false; }
@@ -79,40 +69,31 @@ public abstract class TypeImpl<TYPE extends TypeImpl<TYPE>> implements Type {
         return vertex.isAbstract();
     }
 
-    protected void sup(TYPE superType) {
-        vertex.outs().delete(Schema.Edge.Type.SUB, sup().vertex);
-        vertex.outs().put(Schema.Edge.Type.SUB, superType.vertex);
-        this.superType = superType;
+    protected void superTypeVertex(TypeVertex superTypeVertex) {
+        vertex.outs().delete(Schema.Edge.Type.SUB, superTypeVertex());
+        vertex.outs().put(Schema.Edge.Type.SUB, superTypeVertex);
     }
 
-    @Override
-    public TYPE sup() {
-        if (superType != null) return superType;
-
+    protected TypeVertex superTypeVertex() {
         Iterator<TypeVertex> iterator = Iterators.filter(vertex.outs().edge(Schema.Edge.Type.SUB).to(),
                                                          v -> v.schema().equals(vertex.schema()));
-        if (iterator.hasNext()) superType = newInstance(iterator.next());
-        return superType;
+        if (iterator.hasNext()) return iterator.next();
+        else return null;
     }
 
-    @Override
-    public Stream<TYPE> sups() {
-        Iterator<TYPE> sups = Iterators.loop(
+    protected Iterator<TypeVertex> superTypeVertices() {
+        return Iterators.loop(
                 vertex,
                 v -> v != null && v.schema().equals(this.vertex.schema()),
                 v -> {
                     Iterator<TypeVertex> p = v.outs().edge(Schema.Edge.Type.SUB).to();
                     if (p.hasNext()) return p.next();
                     else return null;
-                }).apply(this::newInstance);
-
-        return stream(spliteratorUnknownSize(sups, ORDERED | IMMUTABLE), false);
+                });
     }
 
-    @Override
-    public Stream<TYPE> subs() {
-        Iterator<TYPE> sups = Iterators.tree(vertex, v -> v.ins().edge(Schema.Edge.Type.SUB).from()).apply(this::newInstance);
-        return stream(spliteratorUnknownSize(sups, ORDERED), false);
+    protected Iterator<TypeVertex> subTypeVertices() {
+        return Iterators.tree(vertex, v -> v.ins().edge(Schema.Edge.Type.SUB).from());
     }
 
     @Override
@@ -134,7 +115,7 @@ public abstract class TypeImpl<TYPE extends TypeImpl<TYPE>> implements Type {
     public boolean equals(Object object) {
         if (this == object) return true;
         if (object == null || getClass() != object.getClass()) return false;
-        TypeImpl<?> that = (TypeImpl<?>) object;
+        TypeImpl that = (TypeImpl) object;
         return this.vertex.equals(that.vertex);
     }
 

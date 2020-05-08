@@ -108,37 +108,37 @@ public class Concepts {
         }
     }
 
-    public AttributeTypeImpl.Boolean putAttributeTypeBoolean(String label) {
+    public AttributeType.Boolean putAttributeTypeBoolean(String label) {
         TypeVertex vertex = graph.type().get(label);
         if (vertex != null) return AttributeTypeImpl.Boolean.of(vertex);
         else return new AttributeTypeImpl.Boolean(graph.type(), label);
     }
 
-    public AttributeTypeImpl.Long putAttributeTypeLong(String label) {
+    public AttributeType.Long putAttributeTypeLong(String label) {
         TypeVertex vertex = graph.type().get(label);
         if (vertex != null) return AttributeTypeImpl.Long.of(vertex);
         else return new AttributeTypeImpl.Long(graph.type(), label);
     }
 
-    public AttributeTypeImpl.Double putAttributeTypeDouble(String label) {
+    public AttributeType.Double putAttributeTypeDouble(String label) {
         TypeVertex vertex = graph.type().get(label);
         if (vertex != null) return AttributeTypeImpl.Double.of(vertex);
         else return new AttributeTypeImpl.Double(graph.type(), label);
     }
 
-    public AttributeTypeImpl.String putAttributeTypeString(String label) {
+    public AttributeType.String putAttributeTypeString(String label) {
         TypeVertex vertex = graph.type().get(label);
         if (vertex != null) return AttributeTypeImpl.String.of(vertex);
         else return new AttributeTypeImpl.String(graph.type(), label);
     }
 
-    public AttributeTypeImpl.DateTime putAttributeTypeDateTime(String label) {
+    public AttributeType.DateTime putAttributeTypeDateTime(String label) {
         TypeVertex vertex = graph.type().get(label);
         if (vertex != null) return AttributeTypeImpl.DateTime.of(vertex);
         else return new AttributeTypeImpl.DateTime(graph.type(), label);
     }
 
-    public AttributeTypeImpl getAttributeType(String label) {
+    public AttributeType getAttributeType(String label) {
         TypeVertex vertex = graph.type().get(label);
         if (vertex != null) return AttributeTypeImpl.of(vertex);
         else return null;

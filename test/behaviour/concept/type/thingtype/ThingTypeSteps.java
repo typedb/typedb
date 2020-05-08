@@ -20,7 +20,6 @@ package hypergraph.test.behaviour.concept.type.thingtype;
 
 import hypergraph.common.exception.HypergraphException;
 import hypergraph.concept.type.AttributeType;
-import hypergraph.concept.type.impl.AttributeTypeImpl;
 import hypergraph.concept.type.EntityType;
 import hypergraph.concept.type.RelationType;
 import hypergraph.concept.type.RoleType;
@@ -158,7 +157,7 @@ public class ThingTypeSteps {
 
     @When("{root_label}\\( ?{type_label} ?) set key attribute: {type_label}")
     public void thing_set_key_attribute(RootLabel rootLabel, String typeLabel, String attributeLabel) {
-        AttributeTypeImpl<?> attributeType = tx().concepts().getAttributeType(attributeLabel);
+        AttributeType attributeType = tx().concepts().getAttributeType(attributeLabel);
         get_thing_type(rootLabel, typeLabel).key(attributeType);
     }
 
@@ -171,7 +170,7 @@ public class ThingTypeSteps {
 
     @Then("{root_label}\\( ?{type_label} ?) fails at setting key attribute: {type_label}")
     public void thing_fails_at_setting_key_attribute(RootLabel rootLabel, String typeLabel, String attributeLabel) {
-        AttributeTypeImpl<?> attributeType = tx().concepts().getAttributeType(attributeLabel);
+        AttributeType attributeType = tx().concepts().getAttributeType(attributeLabel);
         try {
             get_thing_type(rootLabel, typeLabel).key(attributeType);
             fail();
@@ -194,7 +193,7 @@ public class ThingTypeSteps {
 
     @When("{root_label}\\( ?{type_label} ?) remove key attribute: {type_label}")
     public void thing_remove_key_attribute(RootLabel rootLabel, String typeLabel, String attributeLabel) {
-        AttributeTypeImpl attributeType = tx().concepts().getAttributeType(attributeLabel);
+        AttributeType attributeType = tx().concepts().getAttributeType(attributeLabel);
         get_thing_type(rootLabel, typeLabel).unkey(attributeType);
     }
 
@@ -214,13 +213,13 @@ public class ThingTypeSteps {
 
     @When("{root_label}\\( ?{type_label} ?) set has attribute: {type_label}")
     public void thing_set_has_attribute(RootLabel rootLabel, String typeLabel, String attributeLabel) {
-        AttributeTypeImpl attributeType = tx().concepts().getAttributeType(attributeLabel);
+        AttributeType attributeType = tx().concepts().getAttributeType(attributeLabel);
         get_thing_type(rootLabel, typeLabel).has(attributeType);
     }
 
     @Then("{root_label}\\( ?{type_label} ?) fails at setting has attribute: {type_label}")
     public void thing_fails_at_setting_has_attribute(RootLabel rootLabel, String typeLabel, String attributeLabel) {
-        AttributeTypeImpl attributeType = tx().concepts().getAttributeType(attributeLabel);
+        AttributeType attributeType = tx().concepts().getAttributeType(attributeLabel);
         try {
             get_thing_type(rootLabel, typeLabel).has(attributeType);
             fail();
@@ -250,7 +249,7 @@ public class ThingTypeSteps {
 
     @When("{root_label}\\( ?{type_label} ?) remove has attribute: {type_label}")
     public void thing_remove_has_attribute(RootLabel rootLabel, String typeLabel, String attributeLabel) {
-        AttributeTypeImpl attributeType = tx().concepts().getAttributeType(attributeLabel);
+        AttributeType attributeType = tx().concepts().getAttributeType(attributeLabel);
         get_thing_type(rootLabel, typeLabel).unhas(attributeType);
     }
 

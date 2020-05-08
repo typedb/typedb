@@ -20,18 +20,24 @@ package hypergraph.concept.type.impl;
 
 import hypergraph.common.exception.Error;
 import hypergraph.common.exception.HypergraphException;
+import hypergraph.common.iterator.Iterators;
 import hypergraph.concept.type.AttributeType;
 import hypergraph.graph.Graph;
 import hypergraph.graph.Schema;
 import hypergraph.graph.vertex.TypeVertex;
 
 import java.time.LocalDateTime;
+import java.util.Iterator;
 import java.util.stream.Stream;
 
 import static hypergraph.common.exception.Error.TypeDefinition.INVALID_ROOT_TYPE_MUTATION;
 import static hypergraph.common.exception.Error.TypeRetrieval.INVALID_TYPE_CASTING;
+import static java.util.Spliterator.IMMUTABLE;
+import static java.util.Spliterator.ORDERED;
+import static java.util.Spliterators.spliteratorUnknownSize;
+import static java.util.stream.StreamSupport.stream;
 
-public abstract class AttributeTypeImpl<ATT_TYPE extends AttributeTypeImpl<ATT_TYPE>> extends ThingTypeImpl<ATT_TYPE> implements AttributeType {
+public class AttributeTypeImpl extends ThingTypeImpl implements AttributeType {
 
     private AttributeTypeImpl(TypeVertex vertex) {
         super(vertex);
@@ -46,7 +52,7 @@ public abstract class AttributeTypeImpl<ATT_TYPE extends AttributeTypeImpl<ATT_T
         vertex.valueClass(Schema.ValueClass.of(valueClass));
     }
 
-    public static AttributeTypeImpl<? extends AttributeType> of(TypeVertex vertex) {
+    public static AttributeTypeImpl of(TypeVertex vertex) {
         switch (vertex.valueClass()) {
             case OBJECT:
                 return new AttributeTypeImpl.Root(vertex);
@@ -61,30 +67,36 @@ public abstract class AttributeTypeImpl<ATT_TYPE extends AttributeTypeImpl<ATT_T
             case DATETIME:
                 return AttributeTypeImpl.DateTime.of(vertex);
             default:
-                return null; // unreachable
+                throw new HypergraphException("Unreachable"); // unreachable
         }
     }
 
     @Override
-    public ATT_TYPE sup() {
-        return super.sup();
+    public void sup(AttributeType superType) {
+        validateSuperTypeValueClass(superType);
+        super.superTypeVertex(((AttributeTypeImpl) superType).vertex);
     }
 
     @Override
-    public Stream<ATT_TYPE> sups() {
-        return super.sups();
+    public AttributeTypeImpl sup() {
+        return of(super.superTypeVertex());
     }
 
     @Override
-    public Stream<ATT_TYPE> subs() {
-        return super.subs();
+    public Stream<? extends AttributeTypeImpl> sups() {
+        Iterator<AttributeTypeImpl> sups = Iterators.apply(super.superTypeVertices(), AttributeTypeImpl::of);
+        return stream(spliteratorUnknownSize(sups, ORDERED | IMMUTABLE), false);
     }
 
     @Override
-    @SuppressWarnings("unchecked")
-    ATT_TYPE newInstance(TypeVertex vertex) {
-        // This is only called by AttributeType.Object and ATT_TYPE is always AttributeType<?>
-        return (ATT_TYPE) of(vertex);
+    public Stream<? extends AttributeTypeImpl> subs() {
+        Iterator<AttributeTypeImpl> subs = Iterators.apply(super.subTypeVertices(), AttributeTypeImpl::of);
+        return stream(spliteratorUnknownSize(subs, ORDERED | IMMUTABLE), false);
+    }
+
+    @Override
+    public Class<?> valueClass() {
+        return Object.class;
     }
 
     @Override
@@ -166,11 +178,11 @@ public abstract class AttributeTypeImpl<ATT_TYPE extends AttributeTypeImpl<ATT_T
     public boolean equals(java.lang.Object object) {
         if (this == object) return true;
         if (!(object instanceof AttributeTypeImpl)) return false;
-        AttributeTypeImpl<?> that = (AttributeTypeImpl<?>) object;
+        AttributeTypeImpl that = (AttributeTypeImpl) object;
         return this.vertex.equals(that.vertex);
     }
 
-    private static class Root extends AttributeTypeImpl<Root> {
+    private static class Root extends AttributeTypeImpl {
 
         private Root(TypeVertex vertex) {
             super(vertex);
@@ -190,13 +202,13 @@ public abstract class AttributeTypeImpl<ATT_TYPE extends AttributeTypeImpl<ATT_T
         public void isAbstract(boolean isAbstract) { throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION); }
 
         @Override
-        public AttributeTypeImpl.Root sup() { return null; }
+        public void sup(AttributeType superType) { throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION); }
 
         @Override
-        public void sup(AttributeType superType) { throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION); }
+        public AttributeTypeImpl.Root sup() { return null; }
     }
 
-    public static class Boolean extends AttributeTypeImpl<AttributeTypeImpl.Boolean> implements AttributeType.Boolean {
+    public static class Boolean extends AttributeTypeImpl implements AttributeType.Boolean {
 
         public Boolean(Graph.Type graph, java.lang.String label) {
             super(graph, label, java.lang.Boolean.class);
@@ -209,17 +221,15 @@ public abstract class AttributeTypeImpl<ATT_TYPE extends AttributeTypeImpl<ATT_T
         }
 
         public static AttributeTypeImpl.Boolean of(TypeVertex vertex) {
-            if (vertex.label().equals(Schema.Vertex.Type.Root.ATTRIBUTE.label())) return new AttributeTypeImpl.Boolean.Root(vertex);
-            else return new AttributeTypeImpl.Boolean(vertex);
+            return vertex.label().equals(Schema.Vertex.Type.Root.ATTRIBUTE.label()) ?
+                    new Root(vertex) :
+                    new AttributeTypeImpl.Boolean(vertex);
         }
-
-        @Override
-        AttributeTypeImpl.Boolean newInstance(TypeVertex vertex) { return of(vertex); }
 
         @Override
         public void sup(AttributeType superType) {
             validateSuperTypeValueClass(superType);
-            super.sup((AttributeTypeImpl.Boolean) superType);
+            super.sup(superType);
         }
 
         @Override
@@ -245,11 +255,11 @@ public abstract class AttributeTypeImpl<ATT_TYPE extends AttributeTypeImpl<ATT_T
             public AttributeTypeImpl.Boolean sup() { return null; }
 
             @Override
-            public void sup(AttributeTypeImpl.Boolean superType) { throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION); }
+            public void sup(AttributeType superType) { throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION); }
         }
     }
 
-    public static class Long extends AttributeTypeImpl<AttributeTypeImpl.Long> implements AttributeType.Long {
+    public static class Long extends AttributeTypeImpl implements AttributeType.Long {
 
         public Long(Graph.Type graph, java.lang.String label) {
             super(graph, label, java.lang.Long.class);
@@ -262,17 +272,9 @@ public abstract class AttributeTypeImpl<ATT_TYPE extends AttributeTypeImpl<ATT_T
         }
 
         public static AttributeTypeImpl.Long of(TypeVertex vertex) {
-            if (vertex.label().equals(Schema.Vertex.Type.Root.ATTRIBUTE.label())) return new AttributeTypeImpl.Long.Root(vertex);
-            else return new AttributeTypeImpl.Long(vertex);
-        }
-
-        @Override
-        AttributeTypeImpl.Long newInstance(TypeVertex vertex) {return of(vertex); }
-
-        @Override
-        public void sup(AttributeType superType) {
-            validateSuperTypeValueClass(superType);
-            super.sup((AttributeTypeImpl.Long) superType);
+            return vertex.label().equals(Schema.Vertex.Type.Root.ATTRIBUTE.label()) ?
+                    new Root(vertex) :
+                    new AttributeTypeImpl.Long(vertex);
         }
 
         @Override
@@ -301,7 +303,7 @@ public abstract class AttributeTypeImpl<ATT_TYPE extends AttributeTypeImpl<ATT_T
             }
 
             @Override
-            public void sup(AttributeTypeImpl.Long superType) {
+            public void sup(AttributeType superType) {
                 throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
             }
 
@@ -310,7 +312,7 @@ public abstract class AttributeTypeImpl<ATT_TYPE extends AttributeTypeImpl<ATT_T
         }
     }
 
-    public static class Double extends AttributeTypeImpl<AttributeTypeImpl.Double> implements AttributeType.Double {
+    public static class Double extends AttributeTypeImpl implements AttributeType.Double {
 
         public Double(Graph.Type graph, java.lang.String label) {
             super(graph, label, java.lang.Double.class);
@@ -323,17 +325,9 @@ public abstract class AttributeTypeImpl<ATT_TYPE extends AttributeTypeImpl<ATT_T
         }
 
         public static AttributeTypeImpl.Double of(TypeVertex vertex) {
-            if (vertex.label().equals(Schema.Vertex.Type.Root.ATTRIBUTE.label())) return new AttributeTypeImpl.Double.Root(vertex);
-            else return new AttributeTypeImpl.Double(vertex);
-        }
-
-        @Override
-        AttributeTypeImpl.Double newInstance(TypeVertex vertex) {return of(vertex); }
-
-        @Override
-        public void sup(AttributeType superType) {
-            validateSuperTypeValueClass(superType);
-            super.sup((AttributeTypeImpl.Double) superType);
+            return vertex.label().equals(Schema.Vertex.Type.Root.ATTRIBUTE.label()) ?
+                    new Root(vertex) :
+                    new AttributeTypeImpl.Double(vertex);
         }
 
         @Override
@@ -353,22 +347,25 @@ public abstract class AttributeTypeImpl<ATT_TYPE extends AttributeTypeImpl<ATT_T
 
             @Override
             public void label(java.lang.String label) {
-                throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION); }
+                throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
+            }
 
             @Override
             public void isAbstract(boolean isAbstract) {
-                throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION); }
+                throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
+            }
 
             @Override
-            public void sup(AttributeTypeImpl.Double superType) {
-                throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION); }
+            public void sup(AttributeType superType) {
+                throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
+            }
 
             @Override
             public AttributeTypeImpl.Double sup() { return null; }
         }
     }
 
-    public static class String extends AttributeTypeImpl<AttributeTypeImpl.String> implements AttributeType.String {
+    public static class String extends AttributeTypeImpl implements AttributeType.String {
 
         public String(Graph.Type graph, java.lang.String label) {
             super(graph, label, java.lang.String.class);
@@ -381,17 +378,9 @@ public abstract class AttributeTypeImpl<ATT_TYPE extends AttributeTypeImpl<ATT_T
         }
 
         public static AttributeTypeImpl.String of(TypeVertex vertex) {
-            if (vertex.label().equals(Schema.Vertex.Type.Root.ATTRIBUTE.label())) return new AttributeTypeImpl.String.Root(vertex);
-            else return new AttributeTypeImpl.String(vertex);
-        }
-
-        @Override
-        AttributeTypeImpl.String newInstance(TypeVertex vertex) {return of(vertex); }
-
-        @Override
-        public void sup(AttributeType superType) {
-            validateSuperTypeValueClass(superType);
-            super.sup((AttributeTypeImpl.String) superType);
+            return vertex.label().equals(Schema.Vertex.Type.Root.ATTRIBUTE.label()) ?
+                    new Root(vertex) :
+                    new AttributeTypeImpl.String(vertex);
         }
 
         @Override
@@ -420,7 +409,7 @@ public abstract class AttributeTypeImpl<ATT_TYPE extends AttributeTypeImpl<ATT_T
             }
 
             @Override
-            public void sup(AttributeTypeImpl.String superType) {
+            public void sup(AttributeType superType) {
                 throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
             }
 
@@ -429,7 +418,7 @@ public abstract class AttributeTypeImpl<ATT_TYPE extends AttributeTypeImpl<ATT_T
         }
     }
 
-    public static class DateTime extends AttributeTypeImpl<AttributeTypeImpl.DateTime> implements AttributeType.DateTime {
+    public static class DateTime extends AttributeTypeImpl implements AttributeType.DateTime {
 
         public DateTime(Graph.Type graph, java.lang.String label) {
             super(graph, label, LocalDateTime.class);
@@ -442,17 +431,9 @@ public abstract class AttributeTypeImpl<ATT_TYPE extends AttributeTypeImpl<ATT_T
         }
 
         public static AttributeTypeImpl.DateTime of(TypeVertex vertex) {
-            if (vertex.label().equals(Schema.Vertex.Type.Root.ATTRIBUTE.label())) return new AttributeTypeImpl.DateTime.Root(vertex);
-            else return new AttributeTypeImpl.DateTime(vertex);
-        }
-
-        @Override
-        AttributeTypeImpl.DateTime newInstance(TypeVertex vertex) {return of(vertex); }
-
-        @Override
-        public void sup(AttributeType superType) {
-            validateSuperTypeValueClass(superType);
-            super.sup((AttributeTypeImpl.DateTime) superType);
+            return vertex.label().equals(Schema.Vertex.Type.Root.ATTRIBUTE.label()) ?
+                    new Root(vertex) :
+                    new AttributeTypeImpl.DateTime(vertex);
         }
 
         @Override
@@ -481,7 +462,7 @@ public abstract class AttributeTypeImpl<ATT_TYPE extends AttributeTypeImpl<ATT_T
             }
 
             @Override
-            public void sup(AttributeTypeImpl.DateTime superType) {
+            public void sup(AttributeType superType) {
                 throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
             }
 

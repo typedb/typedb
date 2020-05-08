@@ -19,6 +19,7 @@
 package hypergraph.concept.type.impl;
 
 import hypergraph.common.exception.HypergraphException;
+import hypergraph.common.iterator.Iterators;
 import hypergraph.concept.type.RelationType;
 import hypergraph.concept.type.Type;
 import hypergraph.graph.Graph;
@@ -41,7 +42,7 @@ import static java.util.Spliterator.ORDERED;
 import static java.util.Spliterators.spliteratorUnknownSize;
 import static java.util.stream.StreamSupport.stream;
 
-public class RelationTypeImpl extends ThingTypeImpl<RelationTypeImpl> implements RelationType {
+public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
 
     private RelationTypeImpl(TypeVertex vertex) {
         super(vertex);
@@ -65,9 +66,6 @@ public class RelationTypeImpl extends ThingTypeImpl<RelationTypeImpl> implements
     }
 
     @Override
-    RelationTypeImpl newInstance(TypeVertex vertex) { return of(vertex); }
-
-    @Override
     public void label(String label) {
         vertex.label(label);
         vertex.outs().edge(Schema.Edge.Type.RELATES).to().forEachRemaining(v -> v.scope(label));
@@ -76,12 +74,29 @@ public class RelationTypeImpl extends ThingTypeImpl<RelationTypeImpl> implements
     @Override
     public void isAbstract(boolean isAbstract) {
         vertex.isAbstract(isAbstract);
-        declaredRoles().forEach(role -> ((RoleTypeImpl) role).isAbstract(isAbstract));
+        declaredRoles().forEach(role -> role.isAbstract(isAbstract));
     }
 
     @Override
     public void sup(RelationType superType) {
-        super.sup((RelationTypeImpl) superType);
+        super.superTypeVertex(((RelationTypeImpl) superType).vertex);
+    }
+
+    @Override
+    public RelationTypeImpl sup() {
+        return of(super.superTypeVertex());
+    }
+
+    @Override
+    public Stream<RelationTypeImpl> sups() {
+        Iterator<RelationTypeImpl> sups = Iterators.apply(super.superTypeVertices(), RelationTypeImpl::of);
+        return stream(spliteratorUnknownSize(sups, ORDERED | IMMUTABLE), false);
+    }
+
+    @Override
+    public Stream<RelationTypeImpl> subs() {
+        Iterator<RelationTypeImpl> subs = Iterators.apply(super.subTypeVertices(), RelationTypeImpl::of);
+        return stream(spliteratorUnknownSize(subs, ORDERED | IMMUTABLE), false);
     }
 
     @Override
@@ -161,29 +176,6 @@ public class RelationTypeImpl extends ThingTypeImpl<RelationTypeImpl> implements
             vertex.delete();
         } else {
             throw new HypergraphException("Invalid RoleType Removal: " + label() + " has subtypes");
-        }
-    }
-
-    public class RelatesOverrider {
-
-        private final RoleTypeImpl roleType;
-
-        RelatesOverrider(RoleTypeImpl roleType) {
-            this.roleType = roleType;
-        }
-
-        public void as(String superLabel) {
-
-        }
-
-        public void as(RoleTypeImpl superType) {
-            if (sup().roles().anyMatch(rt -> rt.equals(superType))) {
-                roleType.sup(superType);
-                vertex.outs().edge(Schema.Edge.Type.RELATES, roleType.vertex).overridden(superType.vertex);
-            } else {
-                throw new HypergraphException(
-                        "Invalid Role Type Overriding: inherited roles do not contain " + superType.label());
-            }
         }
     }
 
