@@ -49,21 +49,62 @@ public interface AttributeType extends ThingType {
 
     interface Boolean extends AttributeType {
 
+        @Override
+        AttributeType.Boolean sup();
+
+        @Override
+        Stream<? extends AttributeType.Boolean> sups();
+
+        @Override
+        Stream<? extends AttributeType.Boolean> subs();
+
     }
 
     interface Long extends AttributeType {
 
+        @Override
+        AttributeType.Long sup();
+
+        @Override
+        Stream<? extends AttributeType.Long> sups();
+
+        @Override
+        Stream<? extends AttributeType.Long> subs();
     }
 
     interface Double extends AttributeType {
 
+        @Override
+        AttributeType.Double sup();
+
+        @Override
+        Stream<? extends AttributeType.Double> sups();
+
+        @Override
+        Stream<? extends AttributeType.Double> subs();
     }
 
     interface String extends AttributeType {
 
+        @Override
+        AttributeType.String sup();
+
+        @Override
+        Stream<? extends AttributeType.String> sups();
+
+        @Override
+        Stream<? extends AttributeType.String> subs();
     }
 
     interface DateTime extends AttributeType {
 
+        @Override
+        AttributeType.DateTime sup();
+
+        @Override
+        Stream<? extends AttributeType.DateTime> sups();
+
+        @Override
+        Stream<? extends AttributeType.DateTime> subs();
     }
 }

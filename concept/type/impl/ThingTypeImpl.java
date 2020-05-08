@@ -235,23 +235,22 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
         @Override
         public Stream<? extends ThingTypeImpl> sups() {
-            return Stream.empty();
+            return Stream.of(this);
         }
 
         @Override
         public Stream<? extends ThingTypeImpl> subs() {
-            Stream<TypeVertex> directSubTypeVertices = stream(spliteratorUnknownSize(
-                    vertex.ins().edge(Schema.Edge.Type.SUB).from(), ORDERED | IMMUTABLE
-            ), false);
-
-            return directSubTypeVertices.flatMap(vertex -> {
-                switch (vertex.schema()) {
+            return stream(spliteratorUnknownSize(super.subTypeVertices(), ORDERED | IMMUTABLE), false).map(v -> {
+                switch (v.schema()) {
+                    case THING_TYPE:
+                        assert this.vertex == v;
+                        return this;
                     case ENTITY_TYPE:
-                        return EntityTypeImpl.of(vertex).subs();
+                        return EntityTypeImpl.of(v);
                     case ATTRIBUTE_TYPE:
-                        return AttributeTypeImpl.of(vertex).subs();
+                        return AttributeTypeImpl.of(v);
                     case RELATION_TYPE:
-                        return RelationTypeImpl.of(vertex).subs();
+                        return RelationTypeImpl.of(v);
                     default:
                         throw new HypergraphException("Unreachable");
                 }
