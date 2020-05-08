@@ -82,6 +82,11 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
     @Override
     public abstract Stream<? extends AttributeTypeImpl> subs();
 
+    protected Iterator<TypeVertex> subTypeVertices(Schema.ValueClass valueClass) {
+        return Iterators.tree(vertex, v -> Iterators.filter(v.ins().edge(Schema.Edge.Type.SUB).from(),
+                                                            sv -> sv.valueClass().equals(valueClass)));
+    }
+
     @Override
     public void sup(AttributeType superType) {
         if (!superType.isRoot() && !this.valueClass().equals(superType.valueClass())) {
@@ -287,6 +292,15 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
             @Override
             public void sup(AttributeType superType) { throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION); }
+
+            @Override
+            public Stream<AttributeTypeImpl.Boolean> subs() {
+                Iterator<AttributeTypeImpl.Boolean> sups = Iterators.apply(
+                        super.subTypeVertices(Schema.ValueClass.BOOLEAN),
+                        AttributeTypeImpl.Boolean::of
+                );
+                return stream(spliteratorUnknownSize(sups, ORDERED | IMMUTABLE), false);
+            }
         }
     }
 
@@ -350,6 +364,15 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
             @Override
             public void sup(AttributeType superType) { throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION); }
+
+            @Override
+            public Stream<AttributeTypeImpl.Long> subs() {
+                Iterator<AttributeTypeImpl.Long> sups = Iterators.apply(
+                        super.subTypeVertices(Schema.ValueClass.LONG),
+                        AttributeTypeImpl.Long::of
+                );
+                return stream(spliteratorUnknownSize(sups, ORDERED | IMMUTABLE), false);
+            }
         }
     }
 
@@ -413,6 +436,15 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
             @Override
             public void sup(AttributeType superType) { throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION); }
+
+            @Override
+            public Stream<AttributeTypeImpl.Double> subs() {
+                Iterator<AttributeTypeImpl.Double> sups = Iterators.apply(
+                        super.subTypeVertices(Schema.ValueClass.DOUBLE),
+                        AttributeTypeImpl.Double::of
+                );
+                return stream(spliteratorUnknownSize(sups, ORDERED | IMMUTABLE), false);
+            }
         }
     }
 
@@ -476,6 +508,15 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
             @Override
             public void sup(AttributeType superType) { throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION); }
+
+            @Override
+            public Stream<AttributeTypeImpl.String> subs() {
+                Iterator<AttributeTypeImpl.String> sups = Iterators.apply(
+                        super.subTypeVertices(Schema.ValueClass.STRING),
+                        AttributeTypeImpl.String::of
+                );
+                return stream(spliteratorUnknownSize(sups, ORDERED | IMMUTABLE), false);
+            }
         }
     }
 
@@ -539,6 +580,15 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
             @Override
             public void sup(AttributeType superType) { throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION); }
+
+            @Override
+            public Stream<AttributeTypeImpl.DateTime> subs() {
+                Iterator<AttributeTypeImpl.DateTime> sups = Iterators.apply(
+                        super.subTypeVertices(Schema.ValueClass.DATETIME),
+                        AttributeTypeImpl.DateTime::of
+                );
+                return stream(spliteratorUnknownSize(sups, ORDERED | IMMUTABLE), false);
+            }
         }
     }
 }
