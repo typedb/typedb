@@ -42,13 +42,13 @@ public class RelationTypeSteps {
 
     @When("relation\\( ?{type_label} ?) set relates role: {type_label}")
     public void relation_set_relates_role(String relationLabel, String roleLabel) {
-        tx().concepts().putRelationType(relationLabel).relates(roleLabel);
+        tx().concepts().getRelationType(relationLabel).relates(roleLabel);
     }
 
     @When("relation\\( ?{type_label} ?) fails at setting relates role: {type_label}")
     public void thing_fails_at_setting_relates_role(String relationLabel, String roleLabel) {
         try {
-            tx().concepts().putRelationType(relationLabel).relates(roleLabel);
+            tx().concepts().getRelationType(relationLabel).relates(roleLabel);
             fail();
         } catch(HypergraphException ignore) {
             assertTrue(true);
@@ -57,13 +57,13 @@ public class RelationTypeSteps {
 
     @When("relation\\( ?{type_label} ?) set relates role: {type_label} as {type_label}")
     public void relation_set_relates_role_as(String relationLabel, String roleLabel, String superRole) {
-        tx().concepts().putRelationType(relationLabel).relates(roleLabel, superRole);
+        tx().concepts().getRelationType(relationLabel).relates(roleLabel, superRole);
     }
 
     @When("relation\\( ?{type_label} ?) fails at setting relates role: {type_label} as {type_label}")
     public void thing_fails_at_setting_relates_role_as(String relationLabel, String roleLabel, String superRole) {
         try {
-            tx().concepts().putRelationType(relationLabel).relates(roleLabel, superRole);
+            tx().concepts().getRelationType(relationLabel).relates(roleLabel, superRole);
             fail();
         } catch(HypergraphException ignore) {
             assertTrue(true);
@@ -77,7 +77,7 @@ public class RelationTypeSteps {
 
     @Then("relation\\( ?{type_label} ?) get role\\( ?{type_label} ?) is null: {bool}")
     public void relation_get_role_is_null(String relationLabel, String roleLabel, boolean isNull) {
-        assertEquals(isNull, isNull(tx().concepts().putRelationType(relationLabel).role(roleLabel)));
+        assertEquals(isNull, isNull(tx().concepts().getRelationType(relationLabel).role(roleLabel)));
     }
 
     @When("relation\\( ?{type_label} ?) get role\\( ?{type_label} ?) set label: {type_label}")
