@@ -31,12 +31,10 @@ import io.cucumber.java.en.When;
 
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import static hypergraph.test.behaviour.config.Parameters.RootLabel;
 import static hypergraph.test.behaviour.connection.ConnectionSteps.tx;
 import static java.util.Objects.isNull;
-import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -87,9 +85,6 @@ public class ThingTypeSteps {
         for (String subLabel : subLabels) {
             assertFalse(actuals.contains(subLabel));
         }
-
-        tx().concepts().getRootType().subs().forEach(t -> System.out.println(t.label()));
-        List<ThingType> list = tx().concepts().getRootType().subs().collect(Collectors.toList());
     }
 
     @When("put {root_label} type: {type_label}")
