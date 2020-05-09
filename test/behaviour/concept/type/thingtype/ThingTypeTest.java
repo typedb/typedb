@@ -16,7 +16,7 @@
  *
  */
 
-package hypergraph.test.behaviour.concept.type.attributetype;
+package hypergraph.test.behaviour.concept.type.thingtype;
 
 import io.cucumber.junit.Cucumber;
 import io.cucumber.junit.CucumberOptions;
@@ -27,17 +27,17 @@ import org.junit.runner.RunWith;
         strict = true,
         plugin = "pretty",
         glue = "hypergraph.test.behaviour",
-        features = "external/graknlabs_verification/behaviour/concept/type/attributetype.feature",
+        features = "external/graknlabs_verification/behaviour/concept/type/thingtype.feature",
         tags = "not @ignore and not @ignore-hypergraph"
 )
-public class AttributeTypeTest {
+public class ThingTypeTest {
     // ATTENTION:
     // When you click RUN from within this class through Intellij IDE, it will fail.
     // You can fix it by doing:
     //
     // 1) Go to 'Run'
     // 2) Select 'Edit Configurations...'
-    // 3) Select 'Bazel test AttributeTypeTest'
+    // 3) Select 'Bazel test ThingTypeTest'
     //
     // 4) Ensure 'Target Expression' is set correctly: '//<this>/<package>/<name>:test'
     //

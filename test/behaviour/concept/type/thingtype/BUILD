@@ -39,9 +39,35 @@ java_library(
     ],
 )
 
+java_test(
+    name = "test",
+    srcs = [
+        "ThingTypeTest.java"
+    ],
+    test_class = "hypergraph.test.behaviour.concept.type.thingtype.ThingTypeTest",
+    deps = [
+        # External Maven Dependencies
+        "//dependencies/maven/artifacts/io/cucumber:cucumber-junit",
+    ],
+    runtime_deps = [
+        ":steps",
+        "//test/behaviour/config:parameters",
+        "//test/behaviour/concept/type/attributetype:steps",
+        "//test/behaviour/concept/type/relationtype:steps",
+        "//test/behaviour/connection/keyspace:steps",
+        "//test/behaviour/connection/session:steps",
+        "//test/behaviour/connection/transaction:steps",
+    ],
+    data = [
+        "@graknlabs_verification//behaviour/concept/type:thingtype.feature",
+    ],
+    size = "medium",
+)
+
 checkstyle_test(
     name = "checkstyle",
     targets = [
         ":steps",
+        ":test",
     ],
 )

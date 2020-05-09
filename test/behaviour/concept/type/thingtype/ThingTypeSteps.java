@@ -31,10 +31,12 @@ import io.cucumber.java.en.When;
 
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static hypergraph.test.behaviour.config.Parameters.RootLabel;
 import static hypergraph.test.behaviour.connection.ConnectionSteps.tx;
 import static java.util.Objects.isNull;
+import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -57,6 +59,37 @@ public class ThingTypeSteps {
             default:
                 throw new HypergraphException("Invalid ThingType");
         }
+    }
+
+    @Then("thing type root get supertypes contain:")
+    public void thing_type_root_get_supertypes_contain(List<String> superLabels) {
+        Set<String> actuals = tx().concepts().getRootType().sups().map(ThingType::label).collect(toSet());
+        assertTrue(actuals.containsAll(superLabels));
+    }
+
+    @Then("thing type root get supertypes do not contain:")
+    public void thing_type_root_get_supertypes_do_not_contain(List<String> superLabels) {
+        Set<String> actuals = tx().concepts().getRootType().sups().map(ThingType::label).collect(toSet());
+        for (String superLabel : superLabels) {
+            assertFalse(actuals.contains(superLabel));
+        }
+    }
+
+    @Then("thing type root get subtypes contain:")
+    public void thing_type_root_get_subtypes_contain(List<String> subLabels) {
+        Set<String> actuals = tx().concepts().getRootType().subs().map(ThingType::label).collect(toSet());
+        assertTrue(actuals.containsAll(subLabels));
+    }
+
+    @Then("thing type root get subtypes do not contain:")
+    public void thing_type_root_get_subtypes_do_not_contain(List<String> subLabels) {
+        Set<String> actuals = tx().concepts().getRootType().subs().map(ThingType::label).collect(toSet());
+        for (String subLabel : subLabels) {
+            assertFalse(actuals.contains(subLabel));
+        }
+
+        tx().concepts().getRootType().subs().forEach(t -> System.out.println(t.label()));
+        List<ThingType> list = tx().concepts().getRootType().subs().collect(Collectors.toList());
     }
 
     @When("put {root_label} type: {type_label}")

@@ -117,7 +117,6 @@ public class Graph {
             rootAttributeType.outs().put(Schema.Edge.Type.SUB, rootThingType);
             rootRelationType.outs().put(Schema.Edge.Type.SUB, rootThingType);
             rootRelationType.outs().put(Schema.Edge.Type.RELATES, rootRoleType);
-            rootRoleType.outs().put(Schema.Edge.Type.SUB, rootThingType);
         }
 
         public void commit() {
