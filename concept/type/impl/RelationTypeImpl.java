@@ -161,6 +161,16 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
         return stream(spliteratorUnknownSize(roles, ORDERED | IMMUTABLE), false);
     }
 
+    /**
+     * Get the role type with a given {@code roleLabel} related by this relation type.
+     *
+     * First, look up the role type by the given label and it's scope: the relation label.
+     * If the role type vertex do not exist, then call {@code role()} to get the inherited role types,
+     * and see if the any of them has the {@code roleLabel} of interest.
+     *
+     * @param   roleLabel   the label of the role
+     * @return              the role type related in this relation
+     */
     @Override
     public RoleTypeImpl role(String roleLabel) {
         Optional<RoleTypeImpl> roleType;
