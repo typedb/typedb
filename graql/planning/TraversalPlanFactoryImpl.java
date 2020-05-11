@@ -133,6 +133,17 @@ public class TraversalPlanFactoryImpl implements TraversalPlanFactory {
         // it's possible that some (or all) fragments are disconnected, e.g. $x isa person; $y isa dog;
         Collection<Set<Fragment>> connectedFragmentSets = getConnectedFragmentSets(allFragments);
 
+
+
+        /*
+        Fragments
+          -> Nodes including virtual middle nodes
+          -> Arborescence, including virtual middle nodes
+          -> List<Fragment>, by mapping virtual middle nodes back to fragments
+         */
+
+
+
         // build a query plan for each query subgraph separately
         for (Set<Fragment> connectedFragments : connectedFragmentSets) {
             // one of two cases - either we have a connected graph > 1 node, which is used to compute a MST, OR exactly 1 node
