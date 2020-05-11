@@ -18,6 +18,25 @@
 
 package hypergraph.concept.thing;
 
+import hypergraph.concept.type.RelationType;
+
 public interface Relation extends Thing {
+
+    /**
+     * Get the immediate {@code RelationType} in which this this {@code Relation} is an instance of.
+     *
+     * @return the {@code RelationType} of this {@code Relation}
+     */
+    @Override
+    RelationType type();
+
+    /**
+     * Set an {@code Attribute} to be owned by this {@code Relation}.
+     *
+     * @param attribute that will be owned by this {@code Relation}
+     * @return this {@code Relation} for further manipulation
+     */
+    @Override
+    Relation has(Attribute attribute);
 
 }

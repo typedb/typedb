@@ -168,8 +168,8 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
      * If the role type vertex do not exist, then call {@code role()} to get the inherited role types,
      * and see if the any of them has the {@code roleLabel} of interest.
      *
-     * @param   roleLabel   the label of the role
-     * @return              the role type related in this relation
+     * @param roleLabel the label of the role
+     * @return the role type related in this relation
      */
     @Override
     public RoleTypeImpl role(String roleLabel) {

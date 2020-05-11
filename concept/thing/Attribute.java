@@ -18,5 +18,24 @@
 
 package hypergraph.concept.thing;
 
+import hypergraph.concept.type.AttributeType;
+
 public interface Attribute extends Thing {
+
+    /**
+     * Get the immediate {@code AttributeType} in which this this {@code Attribute} is an instance of.
+     *
+     * @return the {@code AttributeType} of this {@code Attribute}
+     */
+    @Override
+    AttributeType type();
+
+    /**
+     * Set an {@code Attribute} to be owned by this {@code Attribute}.
+     *
+     * @param attribute that will be owned by this {@code Attribute}
+     * @return this {@code Attribute} for further manipulation
+     */
+    @Override
+    Attribute has(Attribute attribute);
 }

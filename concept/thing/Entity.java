@@ -18,6 +18,24 @@
 
 package hypergraph.concept.thing;
 
+import hypergraph.concept.type.EntityType;
+
 public interface Entity extends Thing {
 
+    /**
+     * Get the immediate {@code EntityType} in which this this {@code Entity} is an instance of.
+     *
+     * @return the {@code EntityType} of this {@code Entity}
+     */
+    @Override
+    EntityType type();
+
+    /**
+     * Set an {@code Attribute} to be owned by this {@code Entity}.
+     *
+     * @param attribute that will be owned by this {@code Entity}
+     * @return this {@code Entity} for further manipulation
+     */
+    @Override
+    Entity has(Attribute attribute);
 }

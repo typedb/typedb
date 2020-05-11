@@ -18,19 +18,20 @@
 
 package hypergraph.concept.thing;
 
+import hypergraph.concept.type.AttributeType;
 import hypergraph.concept.type.RoleType;
-import hypergraph.concept.type.Type;
+import hypergraph.concept.type.ThingType;
 
 import java.util.stream.Stream;
 
 public interface Thing {
 
     /**
-     * Get the immediate {@code Type} in which this this {@code Thing} is an instance of.
+     * Get the immediate {@code ThingType} in which this this {@code Thing} is an instance of.
      *
-     * @return the {@code Type} of this {@code Thing}
+     * @return the {@code ThingType} of this {@code Thing}
      */
-    Type type();
+    ThingType type();
 
     /**
      * Get a boolean representing whether this {@code Thing} is inferred.
@@ -40,59 +41,51 @@ public interface Thing {
     boolean isInferred();
 
     /**
-     * Set an {@code Attribute} to be a key this {@code Thing}.
-     *
-     * A {@code Thing} must have one and only one {@code Attribute} with the same {@code AttributeType},
-     * and that {@code Attribute} cannot be owned by another {@code Thing} of the same {@code Type} as this one.
-     *
-     * @param   attribute   that will be a key to this {@code Thing}
-     * @return              this {@code Type} for further manipulation
-     */
-    Type key(Attribute attribute);
-
-    /**
-     * Remove an {@code Attribute} from being a key to this {@code Thing}.
-     *
-     * Once the key {@code Attribute} of this {@code Thing} has been removed, the {@code Thing}
-     * needs to have a new {@code Attribute} assigned as its key before being committed.
-     * Otherwise, this {@code Thing} will fail validation as it no longer as a key.
-     * The {@code Attribute} that has been removed can also be owned by a new {@code Thing}.
-     *
-     * @param   attribute   that will no longer be a key to this {@code Thing}
-     */
-    void unkey(Attribute attribute);
-
-    /**
-     * Get all {@code Attribute} that are keys to this {@code Thing}.
-     *
-     * @return a stream of {@code Attribute} instances that are keys of this {@code Thing}
-     */
-    Stream<? extends Attribute> keys();
-
-    /**
      * Set an {@code Attribute} to be owned by this {@code Thing}.
      *
-     * @param   attribute   that will be owned by this {@code Thing}
-     * @return              this {@code Thing} for further manipulation
+     * If the {@code Attribute} is an instance of an {@code AttributeType} that is a key to the
+     * {@code ThingType} of this {@code Thing}, then this {@code Thing} must have one and only one
+     * {@code Attribute} with the same {@code AttributeType}, and that {@code Attribute} cannot be
+     * owned by another {@code Thing} of the same {@code ThingType} as this one.
+     *
+     * @param attribute that will be owned by this {@code Thing}
+     * @return this {@code Thing} for further manipulation
      */
-    Type has(Attribute attribute);
+    Thing has(Attribute attribute);
 
     /**
      * Remove an {@code Attribute} from being owned by this {@code Thing}.
      *
-     * @param   attribute   that will no longer be owned by this {@code Thing}
+     * If the {@code Attribute} is an instance of an {@code AttributeType} that is a key to the
+     * {@code ThingType} of this {@code Thing}, then once the key {@code Attribute} of this {@code Thing}
+     * has been removed, the {@code Thing} needs to have a new {@code Attribute} assigned as its key
+     * before being committed. Otherwise, this {@code Thing} will fail validation as it no longer as a key.
+     * The {@code Attribute} that has been removed can also be owned by a new {@code Thing}.
+     *
+     * @param attribute that will no longer be owned by this {@code Thing}
      */
     void unhas(Attribute attribute);
 
     /**
-     * Get all {@code Attribute} instances that are owned by this {@code Thing}.
+     * Get all {@code Attribute} instances that are keys to this {@code Thing}.
      *
-     * The {@code Attribute} instances owned by this {@code Thing} include those that are
-     * merely owned by this {@code Thing}, as well as those that serve as key {@code Attributes}.
+     * Get all {@code Attribute} instances that are keys to this {@code Thing} filtered by their
+     * {@code AttributeType} types.
+     *
+     * @return a stream of {@code Attribute} instances that are keys of this {@code Thing}
+     */
+    Stream<? extends Attribute> keys(AttributeType... attributeTypes);
+
+    /**
+     * Get all {@code Attribute} instances owned by this {@code Thing}.
+     *
+     * Get all {@code Attribute} instances owned by this {@code Thing} filtered by their
+     * {@code AttributeType} types. The {@code Attribute} instances owned by this {@code Thing} include
+     * {@code Attribute} instances that serve as key {@code Attributes}.
      *
      * @return a stream of {@code Attribute} instances owned by this {@code Thing}
      */
-    Stream<? extends Attribute> attributes();
+    Stream<? extends Attribute> attributes(AttributeType... attributeTypes);
 
     /**
      * Get all {@code RoleType} types that this {@code Thing} plays in a {@code Relation}.
@@ -104,8 +97,8 @@ public interface Thing {
     /**
      * Get all {@code Relation} instances that this {@code Thing} is plays in.
      *
-     * @param   roleTypes   that this {@code Thing} can play
-     * @return              a stream of {@code Relation} that this {@code Thing} plays in
+     * @param roleTypes that this {@code Thing} can play
+     * @return a stream of {@code Relation} that this {@code Thing} plays in
      */
     Stream<? extends Relation> relations(RoleType... roleTypes);
 

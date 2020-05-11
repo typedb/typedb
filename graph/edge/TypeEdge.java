@@ -50,7 +50,7 @@ public abstract class TypeEdge extends Edge<Schema.Edge.Type, TypeVertex> {
     /**
      * Set the head type vertex of this type edge to override a given type vertex.
      *
-     * @param overridden    the type vertex to override by the head
+     * @param overridden the type vertex to override by the head
      */
     public abstract void overridden(TypeVertex overridden);
 
@@ -67,10 +67,10 @@ public abstract class TypeEdge extends Edge<Schema.Edge.Type, TypeVertex> {
         /**
          * Default constructor for {@code TypeEdge.Buffered}.
          *
-         * @param graph     the type graph, comprised of type vertices
-         * @param schema    the type edge {@code schema}
-         * @param from      the tail type vertex
-         * @param to        the head type vertex
+         * @param graph  the type graph, comprised of type vertices
+         * @param schema the type edge {@code schema}
+         * @param from   the tail type vertex
+         * @param to     the head type vertex
          */
         public Buffered(Graph.Type graph, Schema.Edge.Type schema, TypeVertex from, TypeVertex to) {
             super(graph, schema);
@@ -130,7 +130,7 @@ public abstract class TypeEdge extends Edge<Schema.Edge.Type, TypeVertex> {
         /**
          * Set the head type vertex of this type edge to override a given type vertex.
          *
-         * @param overridden    the type vertex to override by the head
+         * @param overridden the type vertex to override by the head
          */
         @Override
         public void overridden(TypeVertex overridden) {
@@ -314,7 +314,7 @@ public abstract class TypeEdge extends Edge<Schema.Edge.Type, TypeVertex> {
          * Once the property has been set, we write to storage immediately as this type edge
          * does not buffer information in memory before being persisted.
          *
-         * @param overridden    the type vertex to override by the head
+         * @param overridden the type vertex to override by the head
          */
         @Override
         public void overridden(TypeVertex overridden) {
@@ -358,8 +358,8 @@ public abstract class TypeEdge extends Edge<Schema.Edge.Type, TypeVertex> {
          * that do not change, unlike {@code overriddenIID} and {@code isDeleted}. They are also the
          * canonical properties required to identify a {@code TypeEdge} uniquely.
          *
-         * @param   object  that that we want to compare against
-         * @return          true if equal, else false
+         * @param object that that we want to compare against
+         * @return true if equal, else false
          */
         @Override
         public boolean equals(Object object) {
@@ -378,7 +378,7 @@ public abstract class TypeEdge extends Edge<Schema.Edge.Type, TypeVertex> {
          * that do not change, unlike {@code overriddenIID} and {@code isDeleted}. They are also the
          * canonical properties required to identify a {@code TypeEdge} uniquely.
          *
-         * @return  int of the hashcode
+         * @return int of the hashcode
          */
         @Override
         public final int hashCode() {
