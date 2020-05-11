@@ -18,5 +18,6 @@
 
 package hypergraph.concept.thing;
 
-public interface Relation {
+public interface Relation extends Thing {
+
 }
