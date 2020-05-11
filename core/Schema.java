@@ -198,7 +198,8 @@ public final class Schema {
         SCHEMA_LABEL(String.class), LABEL_ID(Integer.class), INSTANCE_COUNT(Long.class), TYPE_SHARD_CHECKPOINT(Long.class), IS_ABSTRACT(Boolean.class),
 
         // Attribute schema concept properties
-        REGEX(String.class), VALUE_TYPE(String.class),
+        // TODO change to `VALUE_TYPE` when no longer require preserving DB compatibility
+        REGEX(String.class), DATA_TYPE(String.class),
 
         // Attribute concept properties
         INDEX(String.class),

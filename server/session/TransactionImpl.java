@@ -812,7 +812,7 @@ public class TransactionImpl implements Transaction {
             if (Schema.MetaSchema.isMetaLabel(label)) {
                 throw GraknConceptException.metaTypeImmutable(label);
             } else if (!valueType.equals(attributeType.valueType())) {
-                throw GraknElementException.immutableProperty(attributeType.valueType(), valueType, Schema.VertexProperty.VALUE_TYPE);
+                throw GraknElementException.immutableProperty(attributeType.valueType(), valueType, Schema.VertexProperty.DATA_TYPE);
             }
         }
 
