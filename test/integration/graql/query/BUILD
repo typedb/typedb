@@ -133,22 +133,6 @@ java_test(
 )
 
 java_test(
-    name = "query-builder-it",
-    size = "medium",
-    srcs = ["QueryBuilderIT.java"],
-    classpath_resources = ["//test/resources:logback-test"],
-    test_class = "grakn.core.graql.query.QueryBuilderIT",
-    deps = [
-        "//kb/graql/exception",
-        "//kb/server",
-        "//test/integration/graql/graph:movie-graph",
-        "//test/rule:grakn-test-server",
-        "//test/integration/util:graql-test-util",
-        "@graknlabs_graql//java:graql",
-    ],
-)
-
-java_test(
     name = "query-admin-it",
     size = "medium",
     srcs = ["QueryAdminIT.java"],
@@ -222,7 +206,6 @@ checkstyle_test(
         ":graql-delete-it",
         ":graql-insert-it",
         ":graql-undefine-it",
-        ":query-builder-it",
         ":query-admin-it",
         ":query-error-it",
         ":query-planner-it",
