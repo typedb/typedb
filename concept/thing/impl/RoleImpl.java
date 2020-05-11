@@ -16,7 +16,9 @@
  *
  */
 
-package hypergraph.concept.thing;
+package hypergraph.concept.thing.impl;
 
-public interface Thing {
+import hypergraph.concept.thing.Role;
+
+public class RoleImpl implements Role {
 }

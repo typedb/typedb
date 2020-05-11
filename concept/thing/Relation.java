@@ -18,17 +18,5 @@
 
 package hypergraph.concept.thing;
 
-import java.util.HashSet;
-import java.util.Set;
-
-public class Relation extends Thing {
-
-    private final Set<Role> roles;
-
-    public Relation() {
-        this.roles = new HashSet<>();
-    }
-    public Relation(Set<Role> roles) {
-        this.roles = roles;
-    }
+public interface Relation {
 }

@@ -16,7 +16,21 @@
  *
  */
 
-package hypergraph.concept.thing;
+package hypergraph.concept.thing.impl;
 
-public interface Thing {
+import hypergraph.concept.thing.Relation;
+
+import java.util.HashSet;
+import java.util.Set;
+
+public class RelationImpl extends ThingImpl implements Relation {
+
+    private final Set<RoleImpl> roles;
+
+    public RelationImpl() {
+        this.roles = new HashSet<>();
+    }
+    public RelationImpl(Set<RoleImpl> roles) {
+        this.roles = roles;
+    }
 }

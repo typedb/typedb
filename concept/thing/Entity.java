@@ -18,5 +18,5 @@
 
 package hypergraph.concept.thing;
 
-public class Entity extends Thing {
+public interface Entity {
 }

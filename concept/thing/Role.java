@@ -18,5 +18,5 @@
 
 package hypergraph.concept.thing;
 
-public class Role {
+public interface Role {
 }
