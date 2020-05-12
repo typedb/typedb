@@ -249,7 +249,6 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
     }
 
     private Stream<Relation> edgeRelations(Role... roles) {
-        long t1 = System.currentTimeMillis();
         Set<Role> roleSet = new HashSet<>(Arrays.asList(roles));
         // TODO move this into the AbstractElement and ElementFactory as well
         Stream<EdgeElement> stream = vertex().getEdgesOfType(Direction.BOTH, Schema.EdgeLabel.ATTRIBUTE);
@@ -265,7 +264,6 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
             });
         }
 
-        System.out.println("Time to get edge relations: " + (System.currentTimeMillis() - t1));
         return stream.map(edge -> conceptManager.buildRelation(edge));
     }
 

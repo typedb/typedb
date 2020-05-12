@@ -99,7 +99,10 @@ public class OutRolePlayerFragment extends AbstractRolePlayerFragment {
             GraphTraversal<Vertex, ? extends Element> traversal, ConceptManager conceptManager, Collection<Variable> vars) {
 
         return Fragments.union(traversal, ImmutableSet.of(
-                reifiedRelationTraversal(conceptManager, vars)
+                reifiedRelationTraversal(conceptManager, vars),
+                // TODO remove these when we are sure no where in the code do we refer to attribute ownerships as relations
+                edgeRelationTraversal(conceptManager, Direction.OUT, RELATION_ROLE_OWNER_LABEL_ID, vars),
+                edgeRelationTraversal(conceptManager, Direction.IN, RELATION_ROLE_VALUE_LABEL_ID, vars)
         ));
     }
 
@@ -115,6 +118,24 @@ public class OutRolePlayerFragment extends AbstractRolePlayerFragment {
         traverseToRole(edgeTraversal, role(), ROLE_LABEL_ID, vars);
 
         return edgeTraversal.inV();
+    }
+
+    private GraphTraversal<Element, Vertex> edgeRelationTraversal(
+            ConceptManager conceptManager, Direction direction, Schema.EdgeProperty roleProperty, Collection<Variable> vars) {
+
+        GraphTraversal<Element, Edge> edgeTraversal = Fragments.isEdge(__.start());
+
+        // Filter by any provided type labels
+        applyLabelsToTraversal(edgeTraversal, roleProperty, roleLabels(), conceptManager);
+        applyLabelsToTraversal(edgeTraversal, RELATION_TYPE_LABEL_ID, relationTypeLabels(), conceptManager);
+
+        traverseToRole(edgeTraversal, role(), roleProperty, vars);
+
+        // Identify the relation - role-player pair by combining the relation edge and direction into a map
+        edgeTraversal.as(RELATION_EDGE.symbol()).constant(direction).as(RELATION_DIRECTION.symbol());
+        edgeTraversal.select(Pop.last, RELATION_EDGE.symbol(), RELATION_DIRECTION.symbol()).as(edge().symbol()).select(RELATION_EDGE.symbol());
+
+        return edgeTraversal.toV(direction);
     }
 
     @Override
