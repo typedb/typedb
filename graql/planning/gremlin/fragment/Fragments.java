@@ -135,7 +135,7 @@ public class Fragments {
         return new RegexFragment(varProperty, start, regex);
     }
 
-    public static Fragment notInternal(VarProperty varProperty, Variable start) {
+    public static Fragment notShard(VarProperty varProperty, Variable start) {
         return new NotShardFragment(varProperty, start);
     }
 

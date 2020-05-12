@@ -111,8 +111,8 @@ public class EquivalentFragmentSets {
     /**
      * An EquivalentFragmentSet that indicates a variable is not a casting or a shard.
      */
-    public static EquivalentFragmentSet notInternalFragmentSet(VarProperty varProperty, Variable start) {
-        return new NotInternalFragmentSet(varProperty, start);
+    public static EquivalentFragmentSet notShardFragmentSet(VarProperty varProperty, Variable start) {
+        return new NotShardFragmentSet(varProperty, start);
     }
 
     /**

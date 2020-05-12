@@ -25,9 +25,13 @@ import grakn.core.kb.graql.planning.gremlin.EquivalentFragmentSet;
 import graql.lang.property.NeqProperty;
 import graql.lang.statement.Variable;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
-public class NeqExecutor  implements PropertyExecutor {
+public class NeqExecutor implements PropertyExecutor {
 
     private final Variable var;
     private final NeqProperty property;
@@ -39,11 +43,10 @@ public class NeqExecutor  implements PropertyExecutor {
 
     @Override
     public Set<EquivalentFragmentSet> matchFragments() {
-        return Sets.newHashSet(
-                EquivalentFragmentSets.notInternalFragmentSet(property, var),
-                EquivalentFragmentSets.notInternalFragmentSet(property, property.statement().var()),
-                EquivalentFragmentSets.neq(property, var, property.statement().var())
-        );
+//        return Sets.newHashSet(
+//                EquivalentFragmentSets.notInternalFragmentSet(property, var),
+//                EquivalentFragmentSets.notInternalFragmentSet(property, property.statement().var()),
+        return new HashSet<>(Collections.singletonList(EquivalentFragmentSets.neq(property, var, property.statement().var())));
     }
 
 }
