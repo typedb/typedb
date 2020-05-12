@@ -18,13 +18,14 @@
 
 package hypergraph.concept.thing;
 
+import hypergraph.concept.Concept;
 import hypergraph.concept.type.AttributeType;
 import hypergraph.concept.type.RoleType;
 import hypergraph.concept.type.ThingType;
 
 import java.util.stream.Stream;
 
-public interface Thing {
+public interface Thing extends Concept {
 
     /**
      * Get the immediate {@code ThingType} in which this this {@code Thing} is an instance of.
@@ -34,7 +35,7 @@ public interface Thing {
     ThingType type();
 
     /**
-     * Get a boolean representing whether this {@code Thing} is inferred.
+     * Indicates whether this {@code Thing} is inferred.
      *
      * @return true if this {@code Thing} is inferred, else false
      */

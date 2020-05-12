@@ -32,7 +32,7 @@ import java.util.Iterator;
 import java.util.stream.Stream;
 
 import static hypergraph.common.exception.Error.TypeDefinition.INVALID_ROOT_TYPE_MUTATION;
-import static hypergraph.common.exception.Error.TypeRetrieval.INVALID_TYPE_CASTING;
+import static hypergraph.common.exception.Error.ConceptRetrieval.INVALID_CONCEPT_CASTING;
 import static java.util.Spliterator.IMMUTABLE;
 import static java.util.Spliterator.ORDERED;
 import static java.util.Spliterators.spliteratorUnknownSize;
@@ -72,6 +72,37 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         }
     }
 
+    @Override
+    public AttributeTypeImpl.Root asObject() {
+        if (this.valueClass().equals(java.lang.Object.class)) return new AttributeTypeImpl.Root(this.vertex);
+        else throw new HypergraphException(INVALID_CONCEPT_CASTING.format(AttributeType.class.getCanonicalName()));
+    }
+
+    @Override
+    public AttributeTypeImpl.Boolean asBoolean() {
+        throw new HypergraphException(INVALID_CONCEPT_CASTING.format(AttributeType.Boolean.class.getCanonicalName()));
+    }
+
+    @Override
+    public AttributeTypeImpl.Long asLong() {
+        throw new HypergraphException(INVALID_CONCEPT_CASTING.format(AttributeType.Long.class.getCanonicalName()));
+    }
+
+    @Override
+    public AttributeTypeImpl.Double asDouble() {
+        throw new HypergraphException(INVALID_CONCEPT_CASTING.format(AttributeType.Double.class.getCanonicalName()));
+    }
+
+    @Override
+    public AttributeTypeImpl.String asString() {
+        throw new HypergraphException(INVALID_CONCEPT_CASTING.format(AttributeType.Long.class.getCanonicalName()));
+    }
+
+    @Override
+    public AttributeTypeImpl.DateTime asDateTime() {
+        throw new HypergraphException(INVALID_CONCEPT_CASTING.format(AttributeType.DateTime.class.getCanonicalName()));
+    }
+
     @Nullable
     @Override
     public abstract AttributeTypeImpl sup();
@@ -101,42 +132,6 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
     @Override
     public Class<?> valueClass() {
         return Object.class;
-    }
-
-    @Override
-    public AttributeTypeImpl.Root asObject() {
-        if (this.valueClass().equals(java.lang.Object.class)) {
-            return new AttributeTypeImpl.Root(this.vertex);
-        } else {
-            throw new HypergraphException(INVALID_TYPE_CASTING.format(
-                    this.label(), AttributeTypeImpl.Root.class.getCanonicalName()
-            ));
-        }
-    }
-
-    @Override
-    public AttributeTypeImpl.Boolean asBoolean() {
-        throw new HypergraphException(INVALID_TYPE_CASTING.format(this.label(), Boolean.class.getCanonicalName()));
-    }
-
-    @Override
-    public AttributeTypeImpl.Long asLong() {
-        throw new HypergraphException(INVALID_TYPE_CASTING.format(this.label(), AttributeTypeImpl.Long.class.getCanonicalName()));
-    }
-
-    @Override
-    public AttributeTypeImpl.Double asDouble() {
-        throw new HypergraphException(INVALID_TYPE_CASTING.format(this.label(), AttributeTypeImpl.Double.class.getCanonicalName()));
-    }
-
-    @Override
-    public AttributeTypeImpl.String asString() {
-        throw new HypergraphException(INVALID_TYPE_CASTING.format(this.label(), AttributeTypeImpl.Long.class.getCanonicalName()));
-    }
-
-    @Override
-    public AttributeTypeImpl.DateTime asDateTime() {
-        throw new HypergraphException(INVALID_TYPE_CASTING.format(this.label(), AttributeTypeImpl.DateTime.class.getCanonicalName()));
     }
 
     @Override

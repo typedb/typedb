@@ -18,9 +18,14 @@
 
 package hypergraph.concept.type;
 
+import hypergraph.concept.Concept;
+
 import java.util.stream.Stream;
 
-public interface Type {
+public interface Type extends Concept {
+
+    @Override
+    default Type asType() { return this; }
 
     Long count();
 

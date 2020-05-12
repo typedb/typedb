@@ -38,4 +38,6 @@ public interface Entity extends Thing {
      */
     @Override
     Entity has(Attribute attribute);
+
+
 }

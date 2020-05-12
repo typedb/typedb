@@ -48,6 +48,9 @@ public abstract class TypeImpl implements Type {
     }
 
     @Override
+    public byte[] iid() { return vertex.iid(); }
+
+    @Override
     public boolean isRoot() { return false; }
 
     @Override

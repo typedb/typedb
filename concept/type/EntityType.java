@@ -23,6 +23,9 @@ import java.util.stream.Stream;
 public interface EntityType extends ThingType {
 
     @Override
+    default EntityType asEntityType() { return this; }
+
+    @Override
     EntityType sup();
 
     @Override

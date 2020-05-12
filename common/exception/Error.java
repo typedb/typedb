@@ -100,10 +100,23 @@ public abstract class Error<TYPE extends Error<TYPE>> {
         }
     }
 
-    public static class TypeRetrieval extends Error {
+    public static class ConceptRetrieval extends Error {
 
-        public static final Error.TypeDefinition INVALID_TYPE_CASTING =
-                new Error.TypeDefinition(1, "The type '%s' cannot be converted into '%s'");
+        public static final TypeDefinition INVALID_CONCEPT_CASTING =
+                new TypeDefinition(1, "Invalid concept conversion to '%s'");
+        private static final String codePrefix = "CON";
+        private static final String descriptionPrefix = "Invalid Concept Retrieval";
+
+        ConceptRetrieval(int number, String description) {
+            super(codePrefix, number, descriptionPrefix, description);
+        }
+
+        protected Error.ConceptRetrieval getThis() {
+            return this;
+        }
+    }
+
+    public static class TypeRetrieval extends Error {
 
         private static final String codePrefix = "TYR";
         private static final String descriptionPrefix = "Invalid Type Retrieval";

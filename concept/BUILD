@@ -31,6 +31,7 @@ java_library(
     srcs = glob([
         "*.java",
         "type/**/*.java",
+        "thing/*.java",
     ]),
     deps = [
         # Internal Package Dependencies
