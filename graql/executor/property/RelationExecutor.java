@@ -25,7 +25,6 @@ import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Relation;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Thing;
-import grakn.core.kb.graql.exception.GraqlQueryException;
 import grakn.core.kb.graql.exception.GraqlSemanticException;
 import grakn.core.kb.graql.executor.WriteExecutor;
 import grakn.core.kb.graql.executor.property.PropertyExecutor;
@@ -131,11 +130,6 @@ public class RelationExecutor implements PropertyExecutor.Insertable, PropertyEx
         }
 
         @Override
-        public TiebreakDeletionOrdering ordering(WriteExecutor executor) {
-            return TiebreakDeletionOrdering.EDGE;
-        }
-
-        @Override
         public void execute(WriteExecutor executor) {
             Relation relation = executor.getConcept(var).asRelation();
             property.relationPlayers().forEach(relationPlayer -> {
@@ -170,9 +164,15 @@ public class RelationExecutor implements PropertyExecutor.Insertable, PropertyEx
         }
 
         @Override
-        public Set<Variable> requiredVars() {
-            return allVars();
+        public TiebreakDeletionOrdering ordering(WriteExecutor executor) {
+            return TiebreakDeletionOrdering.ROLE_PLAYER;
+        }
 
+        @Override
+        public Set<Variable> requiredVars() {
+            Set<Variable> vars = allPlayerVars();
+            vars.add(var);
+            return Collections.unmodifiableSet(vars);
         }
 
         @Override
@@ -180,13 +180,11 @@ public class RelationExecutor implements PropertyExecutor.Insertable, PropertyEx
             return Collections.emptySet();
         }
 
-        private Set<Variable> allVars() {
+        private Set<Variable> allPlayerVars() {
             Set<Variable> relationPlayers = property.relationPlayers().stream()
                     .flatMap(relationPlayer -> Stream.of(relationPlayer.getPlayer().var(), getRoleVar(relationPlayer)))
                     .collect(Collectors.toSet());
-
-            relationPlayers.add(var);
-            return Collections.unmodifiableSet(relationPlayers);
+            return relationPlayers;
         }
 
         @Override
