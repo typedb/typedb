@@ -37,6 +37,8 @@ import grakn.core.kb.graql.reasoner.cache.QueryCache;
 import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
 import graql.lang.statement.Variable;
+
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.Set;
 
@@ -134,9 +136,11 @@ public class AtomicState extends AnswerPropagatorState<ReasonerAtomicQuery> {
         );
         if (answer.isEmpty()) return answer;
 
-        return AnswerUtil.joinAnswers(answer, query.getSubstitution())
-                .project(query.getVarNames())
-                .explain(new RuleExplanation(rule.getRule()), query.getPattern());
+        return new ConceptMap(
+                AnswerUtil.joinAnswers(answer, query.getSubstitution()).project(query.getVarNames()).map(),
+                new RuleExplanation(Collections.singletonList(baseAnswer), rule.getRule()),
+                query.withSubstitution(baseAnswer).getPattern()
+        );
     }
 
     private ConceptMap materialisedAnswer(ConceptMap baseAnswer, InferenceRule rule, Unifier unifier) {
@@ -160,8 +164,8 @@ public class AtomicState extends AnswerPropagatorState<ReasonerAtomicQuery> {
         ConceptMap materialisedSub = ruleHead.materialise(baseAnswer).findFirst().orElse(null);
         ConceptMap answer = baseAnswer;
         if (materialisedSub != null) {
-            RuleExplanation ruleExplanation = new RuleExplanation(rule.getRule());
-            ConceptMap ruleAnswer = materialisedSub.explain(ruleExplanation, query.getPattern());
+            RuleExplanation ruleExplanation = new RuleExplanation(Collections.singletonList(baseAnswer), rule.getRule());
+            ConceptMap ruleAnswer = materialisedSub.explain(ruleExplanation);
             queryCache.record(ruleHead, ruleAnswer);
             Atom ruleAtom = ruleHead.getAtom();
             //if it's an implicit relation also record it as an attribute
@@ -170,12 +174,13 @@ public class AtomicState extends AnswerPropagatorState<ReasonerAtomicQuery> {
                 ReasonerAtomicQuery attributeHead = reasonerQueryFactory.atomic(ruleHead.getAtom().toAttributeAtom());
                 queryCache.record(attributeHead, ruleAnswer.project(attributeHead.getVarNames()));
             }
-            answer = unifier.apply(materialisedSub.project(headVars));
+            answer = unifier.apply(ruleAnswer.project(headVars));
         }
         if (answer.isEmpty()) return answer;
 
-        return AnswerUtil.joinAnswers(answer, query.getSubstitution())
-                .project(query.getVarNames())
-                .explain(new RuleExplanation(rule.getRule()), query.getPattern());
+        return new ConceptMap(
+                AnswerUtil.joinAnswers(answer, query.getSubstitution()).project(query.getVarNames()).map(),
+                new RuleExplanation(answer.explanation().getAnswers(), rule.getRule()),
+                query.withSubstitution(answer).getPattern());
     }
 }

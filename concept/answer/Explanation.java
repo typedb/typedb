@@ -42,17 +42,6 @@ public class Explanation {
     }
 
     /**
-     * produce a new explanation with a provided parent answer
-     *
-     * @param ans parent answer
-     * @return new explanation with dependent answers
-     */
-    @CheckReturnValue
-    public Explanation childOf(ConceptMap ans) {
-        return new Explanation(ans.explanation().getAnswers());
-    }
-
-    /**
      * @return answers this explanation is dependent on
      */
     @CheckReturnValue

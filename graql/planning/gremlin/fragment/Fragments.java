@@ -136,7 +136,7 @@ public class Fragments {
     }
 
     public static Fragment notInternal(VarProperty varProperty, Variable start) {
-        return new NotInternalFragment(varProperty, start);
+        return new NotShardFragment(varProperty, start);
     }
 
     public static Fragment neq(VarProperty varProperty, Variable start, Variable other) {

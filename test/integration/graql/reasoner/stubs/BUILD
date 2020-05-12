@@ -27,6 +27,7 @@ filegroup(
         "freshEntityDerivationFromRelations.gql",
         "freshRelationDerivation.gql",
         "negation.gql",
+        "negationGoalPropagation.gql",
         "recipeTest.gql",
         "reflexiveRelation.gql",
         "reflexiveSymmetricRelation.gql",
