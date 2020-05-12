@@ -116,57 +116,27 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
     @Override
     public AttributeTypeImpl.Boolean asBoolean() {
-        if (this.valueClass().equals(java.lang.Boolean.class) || this.isRoot()) {
-            return AttributeTypeImpl.Boolean.of(this.vertex);
-        } else {
-            throw new HypergraphException(INVALID_TYPE_CASTING.format(
-                    this.label(), AttributeTypeImpl.Boolean.class.getCanonicalName()
-            ));
-        }
+        throw new HypergraphException(INVALID_TYPE_CASTING.format(this.label(), Boolean.class.getCanonicalName()));
     }
 
     @Override
     public AttributeTypeImpl.Long asLong() {
-        if (this.valueClass().equals(java.lang.Long.class) || this.isRoot()) {
-            return AttributeTypeImpl.Long.of(this.vertex);
-        } else {
-            throw new HypergraphException(INVALID_TYPE_CASTING.format(
-                    this.label(), AttributeTypeImpl.Long.class.getCanonicalName()
-            ));
-        }
+        throw new HypergraphException(INVALID_TYPE_CASTING.format(this.label(), AttributeTypeImpl.Long.class.getCanonicalName()));
     }
 
     @Override
     public AttributeTypeImpl.Double asDouble() {
-        if (this.valueClass().equals(java.lang.Double.class) || this.isRoot()) {
-            return AttributeTypeImpl.Double.of(this.vertex);
-        } else {
-            throw new HypergraphException(INVALID_TYPE_CASTING.format(
-                    this.label(), AttributeTypeImpl.Double.class.getCanonicalName()
-            ));
-        }
+        throw new HypergraphException(INVALID_TYPE_CASTING.format(this.label(), AttributeTypeImpl.Double.class.getCanonicalName()));
     }
 
     @Override
     public AttributeTypeImpl.String asString() {
-        if (this.valueClass().equals(java.lang.String.class) || this.isRoot()) {
-            return AttributeTypeImpl.String.of(this.vertex);
-        } else {
-            throw new HypergraphException(INVALID_TYPE_CASTING.format(
-                    this.label(), AttributeTypeImpl.Long.class.getCanonicalName()
-            ));
-        }
+        throw new HypergraphException(INVALID_TYPE_CASTING.format(this.label(), AttributeTypeImpl.Long.class.getCanonicalName()));
     }
 
     @Override
     public AttributeTypeImpl.DateTime asDateTime() {
-        if (this.valueClass().equals(LocalDateTime.class) || this.isRoot()) {
-            return AttributeTypeImpl.DateTime.of(this.vertex);
-        } else {
-            throw new HypergraphException(INVALID_TYPE_CASTING.format(
-                    this.label(), AttributeTypeImpl.DateTime.class.getCanonicalName()
-            ));
-        }
+        throw new HypergraphException(INVALID_TYPE_CASTING.format(this.label(), AttributeTypeImpl.DateTime.class.getCanonicalName()));
     }
 
     @Override
@@ -186,6 +156,24 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         }
 
         public Class<java.lang.Object> valueClass() { return java.lang.Object.class; }
+
+        @Override
+        public AttributeTypeImpl.Root asObject() { return this; }
+
+        @Override
+        public AttributeTypeImpl.Boolean asBoolean() { return AttributeTypeImpl.Boolean.of(this.vertex); }
+
+        @Override
+        public AttributeTypeImpl.Long asLong() { return AttributeTypeImpl.Long.of(this.vertex); }
+
+        @Override
+        public AttributeTypeImpl.Double asDouble() { return AttributeTypeImpl.Double.of(this.vertex); }
+
+        @Override
+        public AttributeTypeImpl.String asString() { return AttributeTypeImpl.String.of(this.vertex); }
+
+        @Override
+        public AttributeTypeImpl.DateTime asDateTime() { return AttributeTypeImpl.DateTime.of(this.vertex); }
 
         @Override
         public boolean isRoot() { return true; }
@@ -251,6 +239,9 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
                     new Root(vertex) :
                     new AttributeTypeImpl.Boolean(vertex);
         }
+
+        @Override
+        public AttributeTypeImpl.Boolean asBoolean() { return this; }
 
         @Nullable
         @Override
@@ -321,6 +312,9 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
                     new Root(vertex) :
                     new AttributeTypeImpl.Long(vertex);
         }
+
+        @Override
+        public AttributeTypeImpl.Long asLong() { return this; }
 
         @Nullable
         @Override
@@ -394,6 +388,9 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
                     new AttributeTypeImpl.Double(vertex);
         }
 
+        @Override
+        public AttributeTypeImpl.Double asDouble() { return this; }
+
         @Nullable
         @Override
         public AttributeTypeImpl.Double sup() {
@@ -466,6 +463,9 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
                     new AttributeTypeImpl.String(vertex);
         }
 
+        @Override
+        public AttributeTypeImpl.String asString() { return this; }
+
         @Nullable
         @Override
         public AttributeTypeImpl.String sup() {
@@ -537,6 +537,9 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
                     new Root(vertex) :
                     new AttributeTypeImpl.DateTime(vertex);
         }
+
+        @Override
+        public AttributeTypeImpl.DateTime asDateTime() { return this; }
 
         @Nullable
         @Override
