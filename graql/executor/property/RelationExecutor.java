@@ -130,11 +130,6 @@ public class RelationExecutor implements PropertyExecutor.Insertable, PropertyEx
         }
 
         @Override
-        public TiebreakDeletionOrdering ordering(WriteExecutor executor) {
-            return TiebreakDeletionOrdering.EDGE;
-        }
-
-        @Override
         public void execute(WriteExecutor executor) {
             Relation relation = executor.getConcept(var).asRelation();
             property.relationPlayers().forEach(relationPlayer -> {
@@ -169,9 +164,15 @@ public class RelationExecutor implements PropertyExecutor.Insertable, PropertyEx
         }
 
         @Override
-        public Set<Variable> requiredVars() {
-            return allVars();
+        public TiebreakDeletionOrdering ordering(WriteExecutor executor) {
+            return TiebreakDeletionOrdering.ROLE_PLAYER;
+        }
 
+        @Override
+        public Set<Variable> requiredVars() {
+            Set<Variable> vars = allPlayerVars();
+            vars.add(var);
+            return Collections.unmodifiableSet(vars);
         }
 
         @Override
@@ -179,13 +180,11 @@ public class RelationExecutor implements PropertyExecutor.Insertable, PropertyEx
             return Collections.emptySet();
         }
 
-        private Set<Variable> allVars() {
+        private Set<Variable> allPlayerVars() {
             Set<Variable> relationPlayers = property.relationPlayers().stream()
                     .flatMap(relationPlayer -> Stream.of(relationPlayer.getPlayer().var(), getRoleVar(relationPlayer)))
                     .collect(Collectors.toSet());
-
-            relationPlayers.add(var);
-            return Collections.unmodifiableSet(relationPlayers);
+            return relationPlayers;
         }
 
         @Override
