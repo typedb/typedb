@@ -281,7 +281,7 @@ public class GraqlGetIT {
 
     @Test
     public void testSumInt() {
-        GraqlGet.Aggregate query = Graql.match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("tmdb-vote-count")).get()
+        GraqlGet.Aggregate query = Graql.match(var("x").isa("movie").has("attribute", var("y")), var("y").isa("tmdb-vote-count")).get()
                 .sum("y");
 
         assertEquals(1940, tx.execute(query).get(0).number().intValue());
@@ -289,7 +289,7 @@ public class GraqlGetIT {
 
     @Test
     public void testSumDouble() {
-        GraqlGet.Aggregate query = Graql.match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("tmdb-vote-average")).get()
+        GraqlGet.Aggregate query = Graql.match(var("x").isa("movie").has("attribute", var("y")), var("y").isa("tmdb-vote-average")).get()
                 .sum("y");
 
         assertEquals(27.7d, tx.execute(query).get(0).number().doubleValue(), 0.01d);
@@ -318,7 +318,7 @@ public class GraqlGetIT {
 
     @Test
     public void testMaxInt() {
-        GraqlGet.Aggregate query = Graql.match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("tmdb-vote-count")).get()
+        GraqlGet.Aggregate query = Graql.match(var("x").isa("movie").has("attribute", var("y")), var("y").isa("tmdb-vote-count")).get()
                 .max("y");
 
         assertEquals(1000, tx.execute(query).get(0).number().intValue());
@@ -326,7 +326,7 @@ public class GraqlGetIT {
 
     @Test
     public void testMaxDouble() {
-        GraqlGet.Aggregate query = Graql.match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("tmdb-vote-average")).get()
+        GraqlGet.Aggregate query = Graql.match(var("x").isa("movie").has("attribute", var("y")), var("y").isa("tmdb-vote-average")).get()
                 .max("y");
 
         assertEquals(8.6d, tx.execute(query).get(0).number().doubleValue(), 0.01d);
@@ -343,7 +343,7 @@ public class GraqlGetIT {
 
     @Test
     public void testMinInt() {
-        GraqlGet.Aggregate query = Graql.match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("tmdb-vote-count")).get()
+        GraqlGet.Aggregate query = Graql.match(var("x").isa("movie").has("attribute", var("y")), var("y").isa("tmdb-vote-count")).get()
                 .min("y");
 
         assertEquals(5, tx.execute(query).get(0).number().intValue());
@@ -360,7 +360,7 @@ public class GraqlGetIT {
 
     @Test
     public void testMean() {
-        GraqlGet.Aggregate query = Graql.match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("tmdb-vote-average")).get()
+        GraqlGet.Aggregate query = Graql.match(var("x").isa("movie").has("attribute", var("y")), var("y").isa("tmdb-vote-average")).get()
                 .mean("y");
 
         //noinspection OptionalGetWithoutIsPresent
@@ -378,7 +378,7 @@ public class GraqlGetIT {
 
     @Test
     public void testMedianInt() {
-        GraqlGet.Aggregate query = Graql.match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("tmdb-vote-count")).get()
+        GraqlGet.Aggregate query = Graql.match(var("x").isa("movie").has("attribute", var("y")), var("y").isa("tmdb-vote-count")).get()
                 .median("y");
 
         assertEquals(400, tx.execute(query).get(0).number().intValue());
@@ -386,11 +386,8 @@ public class GraqlGetIT {
 
     @Test
     public void testMedianDouble() {
-        GraqlGet.Aggregate query = Graql.match(
-                var("x").isa("movie"),
-                var().rel("x").rel("y"),
-                var("y").isa("tmdb-vote-average")
-        ).get().median("y");
+        GraqlGet.Aggregate query = Graql.match(var("x").isa("movie").has("attribute", var("y")), var("y").isa("tmdb-vote-average")).get()
+        .median("y");
 
         //noinspection OptionalGetWithoutIsPresent
         assertEquals(8.0d, tx.execute(query).get(0).number().doubleValue(), 0.01d);

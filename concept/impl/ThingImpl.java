@@ -94,6 +94,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
      */
     @Override
     public void delete() {
+        long t1 = System.currentTimeMillis();
         //Remove links to relations and return them
         Set<Relation> relations = castingsInstance().map(casting -> {
             Relation relation = casting.getRelation();
@@ -102,12 +103,23 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
             return relation;
         }).collect(toSet());
 
+        long t2 = System.currentTimeMillis();
+        System.out.println("Delete t2 - t1: " + (t2 - t1));
+
+        long t25 = t2;
         if (!isDeleted()) {
             // must happen before deleteNode() so we can access properties on the vertex
+
+            t25 = System.currentTimeMillis();
+            System.out.println("check is deleted: " +  (t25 - t2));
             conceptNotificationChannel.thingDeleted(this);
         }
 
+
         this.edgeRelations().forEach(Concept::delete);
+
+        long t3 = System.currentTimeMillis();
+        System.out.println("Delete t3 - t25: " + (t3 - t25));
 
         deleteNode();
 
@@ -122,6 +134,8 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
                         rel.cleanUp();
                     }
                 });
+        long t4 = System.currentTimeMillis();
+        System.out.println("Delete t4 - t3: " + (t4 - t3));
     }
 
     /**
@@ -235,6 +249,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
     }
 
     private Stream<Relation> edgeRelations(Role... roles) {
+        long t1 = System.currentTimeMillis();
         Set<Role> roleSet = new HashSet<>(Arrays.asList(roles));
         // TODO move this into the AbstractElement and ElementFactory as well
         Stream<EdgeElement> stream = vertex().getEdgesOfType(Direction.BOTH, Schema.EdgeLabel.ATTRIBUTE);
@@ -250,6 +265,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
             });
         }
 
+        System.out.println("Time to get edge relations: " + (System.currentTimeMillis() - t1));
         return stream.map(edge -> conceptManager.buildRelation(edge));
     }
 

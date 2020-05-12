@@ -155,11 +155,14 @@ public class RelationEdge implements RelationStructure {
 
     @Override
     public void delete() {
+        long t1 = System.currentTimeMillis();
         if (!isDeleted()) {
+            System.out.println("Time to check if deleted : " + (System.currentTimeMillis() - t1));
             Supplier<Concept> conceptRetriever = () -> conceptManager.getConcept(id());
             conceptNotificationChannel.relationEdgeDeleted(this.type(), this.isInferred(), conceptRetriever);
             edge().delete();
         }
+        System.out.println("Time to delete relation edge: " + (System.currentTimeMillis() - t1));
     }
 
     @Override

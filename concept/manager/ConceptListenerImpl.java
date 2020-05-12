@@ -77,11 +77,17 @@ public class ConceptListenerImpl implements ConceptListener {
 
     @Override
     public void thingDeleted(Thing thing) {
+        long t0 = System.currentTimeMillis();
         Type type = thing.type();
         statistics.decrement(type);
+        long t1 = System.currentTimeMillis();
+        System.out.println("quarter thingDeleted() time: " + (t1 - t0));
         queryCache.ackDeletion(type);
+        long t2 = System.currentTimeMillis();
+        System.out.println("half thingDeleted() time: " + (t2 - t1));
         conceptDeleted(thing);
         if(thing.isAttribute()) attributeDeleted(thing.asAttribute());
+        System.out.println("thingDeleted() time: " + (System.currentTimeMillis() - t2));
     }
 
     // Using a supplier instead of the concept avoids fetching the wrapping concept
