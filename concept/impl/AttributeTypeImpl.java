@@ -167,7 +167,7 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
     @Nullable
     @Override
     public ValueType<D> valueType() {
-        String className = vertex().property(Schema.VertexProperty.VALUE_TYPE);
+        String className = vertex().property(Schema.VertexProperty.DATA_TYPE);
         if (className == null) return null;
 
         try {

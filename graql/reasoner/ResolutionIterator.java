@@ -115,6 +115,8 @@ public class ResolutionIterator extends ReasonerQueryIterator {
     }
 
     private long startTime = System.currentTimeMillis();
+    private boolean resultsFinalised = false;
+
     /**
      * check whether answers available, if answers not fully computed compute more answers
      * @return true if answers available
@@ -139,7 +141,7 @@ public class ResolutionIterator extends ReasonerQueryIterator {
             }
         }
 
-        finalise();
+        if(!resultsFinalised) finalise();
 
         return false;
     }
@@ -150,5 +152,6 @@ public class ResolutionIterator extends ReasonerQueryIterator {
         queryCache.propagateAnswers();
 
         if (LOG.isDebugEnabled()) logTree.outputToFile();
+        resultsFinalised = true;
     }
 }

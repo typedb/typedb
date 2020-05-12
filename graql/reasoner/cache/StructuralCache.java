@@ -78,14 +78,14 @@ public class StructuralCache<Q extends ReasonerQueryImpl>{
 
             return traversalExecutor.traverse(transformedQuery.getPattern(), traversal.transform(idTransform))
                     .map(unifier::apply)
-                    .map(a -> a.explain(new LookupExplanation(), query.getPattern()));
+                    .map(a -> new ConceptMap(a.map(), new LookupExplanation(), query.withSubstitution(a).getPattern()));
         }
 
         GraqlTraversal traversal = traversalPlanFactory.createTraversal(query.getPattern());
         structCache.put(structQuery, new CacheEntry<>(query, traversal));
 
         return traversalExecutor.traverse(query.getPattern(), traversal)
-                .map(a -> a.explain(new LookupExplanation(), query.getPattern()));
+                .map(a -> new ConceptMap(a.map(), new LookupExplanation(), query.withSubstitution(a).getPattern()));
     }
 
     public void clear(){

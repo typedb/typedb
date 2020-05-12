@@ -22,8 +22,6 @@ import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.answer.Explanation;
 import grakn.core.kb.concept.api.Rule;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -36,21 +34,9 @@ public class RuleExplanation extends Explanation {
     public RuleExplanation(Rule rule){
         this.rule = rule;
     }
-    private RuleExplanation(List<ConceptMap> answers, Rule rule){
+    public RuleExplanation(List<ConceptMap> answers, Rule rule){
         super(answers);
         this.rule = rule;
-    }
-
-    @Override
-    public RuleExplanation childOf(ConceptMap ans) {
-        Explanation explanation = ans.explanation();
-        List<ConceptMap> answerList = new ArrayList<>(this.getAnswers());
-        answerList.addAll(
-                explanation.isLookupExplanation()?
-                        Collections.singletonList(ans) :
-                        explanation.getAnswers()
-        );
-        return new RuleExplanation(answerList, rule);
     }
 
     @Override
