@@ -70,19 +70,19 @@ public class ReasoningIT {
     //as specified in the respective comments below.
 
 
-    @Test
-    public void test() {
-        try (Session session = server.session("taxfix_reimport")) {
-            List<String> queries = Arrays.asList(
-//                    "match $taxpayer isa User; $data_source isa DataSource; (filer: $taxpayer, declaration: $declaration) isa files_tax_declaration; (declaration: $declaration, source: $data_source) isa uses_data_from; $data_source has identifier \"pre-fill\"; get; limit 1;\n" ,
-//                    "match $taxpayer isa User; $taxpayer isa User; get; limit 1;\n" ,
-//                    "match $taxpayer isa User; $taxpayer isa User; get; limit 1;\n" ,
-//                    "match $taxpayer isa User; $taxpayer isa User; get; limit 1;\n" ,
-//                    "match $taxpayer isa User; $taxpayer isa User; get; limit 1;\n" ,
-//                    "match $taxpayer isa User; $taxpayer isa User; get; limit 1;\n" ,
-//                    "match $taxpayer isa User; $taxpayer isa User; get; limit 1;\n"
-//                    ,
-                    "match $taxpayer isa User; $taxpayer has has_employer true; get; limit 1;\n"
+//    @Test
+//    public void test() {
+//        try (Session session = server.session("taxfix_reimport")) {
+//            List<String> queries = Arrays.asList(
+////                    "match $taxpayer isa User; $data_source isa DataSource; (filer: $taxpayer, declaration: $declaration) isa files_tax_declaration; (declaration: $declaration, source: $data_source) isa uses_data_from; $data_source has identifier \"pre-fill\"; get; limit 1;\n" ,
+////                    "match $taxpayer isa User; $taxpayer isa User; get; limit 1;\n" ,
+////                    "match $taxpayer isa User; $taxpayer isa User; get; limit 1;\n" ,
+////                    "match $taxpayer isa User; $taxpayer isa User; get; limit 1;\n" ,
+////                    "match $taxpayer isa User; $taxpayer isa User; get; limit 1;\n" ,
+////                    "match $taxpayer isa User; $taxpayer isa User; get; limit 1;\n" ,
+////                    "match $taxpayer isa User; $taxpayer isa User; get; limit 1;\n"
+////                    ,
+//                    "match $taxpayer isa User; $taxpayer has has_employer true; get; limit 1;\n"
 //                    ,
 //                    "match $taxpayer isa User; $taxpayer has has_employer false; get; limit 1;\n"
 //                    ,
@@ -228,18 +228,18 @@ public class ReasoningIT {
 //                    "match $taxpayer isa User; (filer: $taxpayer, declaration: $declaration) isa files_tax_declaration; $prefill isa FormDataSource; $prefill has identifier == \"pre-fill\"; (declaration: $declaration, source: $prefill) isa uses_data_from; $bonus_irpef_code_field (form: $prefill, field: $bonus_irpef_code); $bonus_irpef_code_field isa has_form_field; $bonus_irpef_code_field has identifier == \"730/QuadroC/BonusIrpef/CodiceBonus\"; get ;\n" ,
 //                    "match $taxpayer isa User; (filer: $taxpayer, declaration: $declaration) isa files_tax_declaration; $prefill isa FormDataSource; $prefill has identifier == \"pre-fill\"; (declaration: $declaration, source: $prefill) isa uses_data_from; $reimbursement_to_employer isa ReimbursementToEmployer; (expense_payer: $taxpayer, expense: $reimbursement_to_employer) isa bears; $reimbursement_to_employer isa ReimbursementToEmployer; (expense_payer: $taxpayer, expense: $reimbursement_to_employer) isa bears; get; limit 1;\n" ,
 //                    "match $taxpayer isa User; (filer: $taxpayer, declaration: $declaration) isa files_tax_declaration; $prefill isa FormDataSource; $prefill has identifier == \"pre-fill\"; (declaration: $declaration, source: $prefill) isa uses_data_from; $amounts_unduly_taxed isa AmountsUndulyTaxedUnderEmploymentIncome; (expense_payer: $taxpayer, expense: $amounts_unduly_taxed) isa bears; get; limit 1;\n");
-            );
-            try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-                int counter = 0;
-                for (String q : queries) {
-                    long start = System.currentTimeMillis();
-                    tx.execute(Graql.parse(q).asGet());
-                    System.out.println(counter + ": time taken = " + (System.currentTimeMillis() - start));
-                    counter++;
-                }
-            }
-        }
-    }
+////            );
+//            try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+//                int counter = 0;
+//                for (String q : queries) {
+//                    long start = System.currentTimeMillis();
+//                    List<ConceptMap> answers = tx.execute(Graql.parse(q).asGet());
+//                    System.out.println(counter + ": time taken = " + (System.currentTimeMillis() - start) + ", answers: " + answers.size());
+//                    counter++;
+//                }
+//            }
+//        }
+//    }
 
     @Test
     public void whenMaterialising_duplicatesAreNotCreated() {

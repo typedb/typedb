@@ -88,7 +88,7 @@ public class GraknTestServer extends ExternalResource {
     public void before() {
         try {
             // Start Cassandra
-//            graknTestStorage.before();
+            graknTestStorage.before();
 
             // half of this might be good to split into cassandra rule separately
             grpcPort = findUnusedLocalPort();
@@ -107,7 +107,7 @@ public class GraknTestServer extends ExternalResource {
     @Override
     public void after() {
         try {
-//            graknTestStorage.after();
+            graknTestStorage.after();
             graknServer.close();
         } catch (Exception e) {
             throw new RuntimeException("Could not shut down ", e);
@@ -169,9 +169,9 @@ public class GraknTestServer extends ExternalResource {
         config.setConfigProperty(ConfigKey.STORAGE_HOSTNAME, "127.0.0.1");
         config.setConfigProperty(ConfigKey.GRPC_PORT, grpcPort);
         //Override Storage Port used by Janus to communicate with Cassandra Backend
-//        config.setConfigProperty(ConfigKey.STORAGE_PORT, graknTestStorage.nativeTransportPort());
+        config.setConfigProperty(ConfigKey.STORAGE_PORT, graknTestStorage.nativeTransportPort());
         //Override ports used by HadoopGraph
-//        config.setConfigProperty(ConfigKey.HADOOP_STORAGE_PORT, graknTestStorage.nativeTransportPort());
+        config.setConfigProperty(ConfigKey.HADOOP_STORAGE_PORT, graknTestStorage.nativeTransportPort());
 
         return config;
     }
