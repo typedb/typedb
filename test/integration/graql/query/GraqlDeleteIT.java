@@ -209,10 +209,12 @@ public class GraqlDeleteIT {
     }
 
 
+    @Ignore // TODO update when removing implicit attrs from higher level code
     @Test
     public void whenDeletingAResource_TheResourceAndImplicitRelationsAreDeleted() {
         ConceptId id = tx.stream(Graql.match(
-                x.has("title", "Godfather"),
+                x.has("title", var("y")),
+                var("y").value("Godfather"),
                 var("a").rel(x).rel(y).isa(Schema.ImplicitType.HAS.getLabel("tmdb-vote-count").getValue())
         ).get("a")).map(ans -> ans.get("a")).findFirst().get().id();
 
