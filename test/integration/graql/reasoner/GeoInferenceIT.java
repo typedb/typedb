@@ -63,7 +63,6 @@ public class GeoInferenceIT {
     }
 
 
-
     @Test
     public void testEntitiesLocatedInThemselves(){
         try (Transaction tx = geoGraphSession.transaction(Transaction.Type.WRITE)) {

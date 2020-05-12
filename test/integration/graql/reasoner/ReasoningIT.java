@@ -334,7 +334,7 @@ public class ReasoningIT {
     }
 
     @Test
-    public void resourcesAsRolePlayers_vpPropagationTest() {
+    public void resourcesAsRolePlayers_variablePlayersPropagationTest() {
         try (Session session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "resourcesAsRolePlayers.gql", session);
             try (Transaction tx = session.transaction(Transaction.Type.READ)) {

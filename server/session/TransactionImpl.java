@@ -443,7 +443,7 @@ public class TransactionImpl implements Transaction {
                 .forEach(t -> {
                     //as we are going to persist the concepts, reset the inferred flag
                     ConceptVertex.from(t).vertex().property(Schema.VertexProperty.IS_INFERRED, false);
-                   transactionCache.inferredInstanceToPersist(t);
+                    transactionCache.inferredInstanceToPersist(t);
                 });
     }
 
