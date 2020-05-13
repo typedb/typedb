@@ -111,7 +111,7 @@ public abstract class ConceptImpl implements Concept, ConceptVertex {
         }
     }
 
-    public <X extends Concept> Stream<X> subs() {
+    public <X extends Concept> Stream<X> retrieveSubs() {
         Stream<X> subTypes = neighbours(Direction.IN, Schema.EdgeLabel.SUB);
 
         // TODO remove this filtering out of implicit concept types once the implicit relations are fully removed
