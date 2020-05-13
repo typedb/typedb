@@ -18,16 +18,19 @@
 
 package hypergraph.graph.edge;
 
-import hypergraph.graph.Graph;
-import hypergraph.graph.Schema;
-import hypergraph.graph.vertex.ThingVertex;
+import hypergraph.graph.vertex.TypeVertex;
 
-public abstract class ThingEdge extends Edge<Schema.Edge.Thing, ThingVertex> {
+public interface TypeEdgeInt extends EdgeInt {
 
-    private final Graph.Thing graph;
+    /**
+     * @return type vertex overridden by the head of this type edge.
+     */
+    TypeVertex overridden();
 
-    ThingEdge(Graph.Thing graph, Schema.Edge.Thing schema) {
-        super(schema);
-        this.graph = graph;
-    }
+    /**
+     * Set the head type vertex of this type edge to override a given type vertex.
+     *
+     * @param overridden the type vertex to override by the head
+     */
+    void overridden(TypeVertex overridden);
 }

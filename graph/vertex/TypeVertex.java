@@ -22,8 +22,8 @@ import hypergraph.common.iterator.Iterators;
 import hypergraph.graph.Graph;
 import hypergraph.graph.KeyGenerator;
 import hypergraph.graph.Schema;
-import hypergraph.graph.edge.Edge;
-import hypergraph.graph.edge.TypeEdge;
+import hypergraph.graph.edge.impl.EdgeImpl;
+import hypergraph.graph.edge.impl.TypeEdgeImpl;
 
 import javax.annotation.Nullable;
 import java.util.Collections;
@@ -37,7 +37,7 @@ import static hypergraph.common.collection.ByteArrays.join;
 import static hypergraph.common.iterator.Iterators.link;
 
 public abstract class TypeVertex extends Vertex<
-        Schema.Vertex.Type, TypeVertex, Schema.Edge.Type, TypeEdge, TypeVertex.TypeEdgeMap.TypeVertexIteratorBuilder> {
+        Schema.Vertex.Type, TypeVertex, Schema.Edge.Type, TypeEdgeImpl, TypeVertex.TypeEdgeMap.TypeVertexIteratorBuilder> {
 
     protected final Graph.Type graph;
     protected String label;
@@ -118,7 +118,7 @@ public abstract class TypeVertex extends Vertex<
     public abstract TypeVertex regex(String regex);
 
     public abstract class TypeEdgeMap extends EdgeMap<
-                TypeVertex, Schema.Edge.Type, TypeEdge, TypeEdgeMap.TypeVertexIteratorBuilder> {
+                TypeVertex, Schema.Edge.Type, TypeEdgeImpl, TypeEdgeMap.TypeVertexIteratorBuilder> {
 
         TypeEdgeMap(Direction direction) {
             super(direction);
@@ -128,13 +128,13 @@ public abstract class TypeVertex extends Vertex<
         public void put(Schema.Edge.Type schema, TypeVertex adjacent) {
             TypeVertex from = direction.isOut() ? TypeVertex.this : adjacent;
             TypeVertex to = direction.isOut() ? adjacent : TypeVertex.this;
-            TypeEdge edge = new TypeEdge.Buffered(graph, schema, from, to);
+            TypeEdgeImpl edge = new TypeEdgeImpl.Buffered(graph, schema, from, to);
             edges.computeIfAbsent(edge.schema(), e -> ConcurrentHashMap.newKeySet()).add(edge);
             to.ins().putNonRecursive(edge);
         }
 
         @Override
-        public void deleteNonRecursive(TypeEdge edge) {
+        public void deleteNonRecursive(TypeEdgeImpl edge) {
             if (edges.containsKey(edge.schema())) edges.get(edge.schema()).remove(edge);
         }
 
@@ -143,14 +143,14 @@ public abstract class TypeVertex extends Vertex<
             for (Schema.Edge.Type schema : Schema.Edge.Type.values()) delete(schema);
         }
 
-        public class TypeVertexIteratorBuilder extends EdgeMap.VertexIteratorBuilder<TypeVertex, TypeEdge> {
+        public class TypeVertexIteratorBuilder extends EdgeMap.VertexIteratorBuilder<TypeVertex, TypeEdgeImpl> {
 
-            TypeVertexIteratorBuilder(Iterator<TypeEdge> edgeIterator) {
+            TypeVertexIteratorBuilder(Iterator<TypeEdgeImpl> edgeIterator) {
                 super(edgeIterator);
             }
 
             public Iterator<TypeVertex> overridden() {
-                return Iterators.apply(edgeIterator, TypeEdge::overridden);
+                return Iterators.apply(edgeIterator, TypeEdgeImpl::overridden);
             }
         }
     }
@@ -259,8 +259,8 @@ public abstract class TypeVertex extends Vertex<
         }
 
         private void commitEdges() {
-            outs.forEach(Edge::commit);
-            ins.forEach(Edge::commit);
+            outs.forEach(EdgeImpl::commit);
+            ins.forEach(EdgeImpl::commit);
         }
 
         public class BufferedDirectedTypeEdges extends TypeEdgeMap {
@@ -271,15 +271,15 @@ public abstract class TypeVertex extends Vertex<
 
             @Override
             public TypeVertexIteratorBuilder edge(Schema.Edge.Type schema) {
-                Set<TypeEdge> t;
+                Set<TypeEdgeImpl> t;
                 if ((t = edges.get(schema)) != null) return new TypeVertexIteratorBuilder(t.iterator());
                 return new TypeVertexIteratorBuilder(Collections.emptyIterator());
             }
 
             @Override
-            public TypeEdge edge(Schema.Edge.Type schema, TypeVertex adjacent) {
+            public TypeEdgeImpl edge(Schema.Edge.Type schema, TypeVertex adjacent) {
                 if (edges.containsKey(schema)) {
-                    Predicate<TypeEdge> predicate = direction.isOut()
+                    Predicate<TypeEdgeImpl> predicate = direction.isOut()
                             ? e -> e.to().equals(adjacent)
                             : e -> e.from().equals(adjacent);
                     return edges.get(schema).stream().filter(predicate).findAny().orElse(null);
@@ -290,16 +290,16 @@ public abstract class TypeVertex extends Vertex<
             @Override
             public void delete(Schema.Edge.Type schema, TypeVertex adjacent) {
                 if (edges.containsKey(schema)) {
-                    Predicate<TypeEdge> predicate = direction.isOut()
+                    Predicate<TypeEdgeImpl> predicate = direction.isOut()
                             ? e -> e.to().equals(adjacent)
                             : e -> e.from().equals(adjacent);
-                    edges.get(schema).stream().filter(predicate).forEach(Edge::delete);
+                    edges.get(schema).stream().filter(predicate).forEach(EdgeImpl::delete);
                 }
             }
 
             @Override
             public void delete(Schema.Edge.Type schema) {
-                if (edges.containsKey(schema)) edges.get(schema).forEach(Edge::delete);
+                if (edges.containsKey(schema)) edges.get(schema).forEach(EdgeImpl::delete);
             }
         }
     }
@@ -416,8 +416,8 @@ public abstract class TypeVertex extends Vertex<
         }
 
         private void commitEdges() {
-            outs.forEach(Edge::commit);
-            ins.forEach(Edge::commit);
+            outs.forEach(EdgeImpl::commit);
+            ins.forEach(EdgeImpl::commit);
         }
 
         public class PersistedDirectedTypeEdges extends TypeEdgeMap {
@@ -428,9 +428,9 @@ public abstract class TypeVertex extends Vertex<
 
             @Override
             public TypeVertexIteratorBuilder edge(Schema.Edge.Type schema) {
-                Iterator<TypeEdge> storageIterator = graph.storage().iterate(
+                Iterator<TypeEdgeImpl> storageIterator = graph.storage().iterate(
                         join(iid, direction.isOut() ? schema.out().key() : schema.in().key()),
-                        (key, value) -> new TypeEdge.Persisted(graph, key, value)
+                        (key, value) -> new TypeEdgeImpl.Persisted(graph, key, value)
                 );
 
                 if (edges.get(schema) == null) {
@@ -441,9 +441,9 @@ public abstract class TypeVertex extends Vertex<
             }
 
             @Override
-            public TypeEdge edge(Schema.Edge.Type schema, TypeVertex adjacent) {
-                Optional<TypeEdge> container;
-                Predicate<TypeEdge> predicate = direction.isOut()
+            public TypeEdgeImpl edge(Schema.Edge.Type schema, TypeVertex adjacent) {
+                Optional<TypeEdgeImpl> container;
+                Predicate<TypeEdgeImpl> predicate = direction.isOut()
                         ? e -> e.to().equals(adjacent)
                         : e -> e.from().equals(adjacent);
 
@@ -455,7 +455,7 @@ public abstract class TypeVertex extends Vertex<
                     byte[] edgeIID = join(iid, infix.key(), adjacent.iid);
                     byte[] overriddenIID;
                     if ((overriddenIID = graph.storage().get(edgeIID)) != null) {
-                        return new TypeEdge.Persisted(graph, edgeIID, overriddenIID);
+                        return new TypeEdgeImpl.Persisted(graph, edgeIID, overriddenIID);
                     }
                 }
 
@@ -464,8 +464,8 @@ public abstract class TypeVertex extends Vertex<
 
             @Override
             public void delete(Schema.Edge.Type schema, TypeVertex adjacent) {
-                Optional<TypeEdge> container;
-                Predicate<TypeEdge> predicate = direction.isOut()
+                Optional<TypeEdgeImpl> container;
+                Predicate<TypeEdgeImpl> predicate = direction.isOut()
                         ? e -> e.to().equals(adjacent)
                         : e -> e.from().equals(adjacent);
 
@@ -477,19 +477,19 @@ public abstract class TypeVertex extends Vertex<
                     byte[] edgeIID = join(iid, infix.key(), adjacent.iid);
                     byte[] overriddenIID;
                     if ((overriddenIID = graph.storage().get(edgeIID)) != null) {
-                        (new TypeEdge.Persisted(graph, edgeIID, overriddenIID)).delete();
+                        (new TypeEdgeImpl.Persisted(graph, edgeIID, overriddenIID)).delete();
                     }
                 }
             }
 
             @Override
             public void delete(Schema.Edge.Type schema) {
-                if (edges.containsKey(schema)) edges.get(schema).parallelStream().forEach(Edge::delete);
-                Iterator<TypeEdge> storageIterator = graph.storage().iterate(
+                if (edges.containsKey(schema)) edges.get(schema).parallelStream().forEach(EdgeImpl::delete);
+                Iterator<TypeEdgeImpl> storageIterator = graph.storage().iterate(
                         join(iid, direction.isOut() ? schema.out().key() : schema.in().key()),
-                        (key, value) -> new TypeEdge.Persisted(graph, key, value)
+                        (key, value) -> new TypeEdgeImpl.Persisted(graph, key, value)
                 );
-                storageIterator.forEachRemaining(Edge::delete);
+                storageIterator.forEachRemaining(EdgeImpl::delete);
             }
         }
     }

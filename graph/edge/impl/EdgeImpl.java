@@ -16,19 +16,21 @@
  *
  */
 
-package hypergraph.graph.edge;
+package hypergraph.graph.edge.impl;
 
 import hypergraph.graph.Schema;
+import hypergraph.graph.edge.EdgeInt;
 import hypergraph.graph.vertex.Vertex;
 
-public abstract class Edge<EDGE_SCHEMA extends Schema.Edge, VERTEX extends Vertex> {
+public abstract class EdgeImpl<EDGE_SCHEMA extends Schema.Edge, VERTEX extends Vertex> implements EdgeInt {
 
     protected final EDGE_SCHEMA schema;
 
-    public Edge(EDGE_SCHEMA schema) {
+    public EdgeImpl(EDGE_SCHEMA schema) {
         this.schema = schema;
     }
 
+    @Override
     public EDGE_SCHEMA schema() {
         return schema;
     }

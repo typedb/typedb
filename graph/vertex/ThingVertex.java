@@ -21,7 +21,7 @@ package hypergraph.graph.vertex;
 import hypergraph.graph.Graph;
 import hypergraph.graph.KeyGenerator;
 import hypergraph.graph.Schema;
-import hypergraph.graph.edge.ThingEdge;
+import hypergraph.graph.edge.impl.ThingEdgeImpl;
 
 import java.util.Arrays;
 import java.util.Iterator;
@@ -29,7 +29,7 @@ import java.util.Iterator;
 import static hypergraph.common.collection.ByteArrays.join;
 
 public abstract class ThingVertex extends Vertex<
-        Schema.Vertex.Thing, ThingVertex, Schema.Edge.Thing, ThingEdge,
+        Schema.Vertex.Thing, ThingVertex, Schema.Edge.Thing, ThingEdgeImpl,
         ThingVertex.ThingEdgeMap.ThingVertexIteratorBuilder> {
 
     protected final Graph.Thing graph;
@@ -72,16 +72,16 @@ public abstract class ThingVertex extends Vertex<
     }
 
     public abstract class ThingEdgeMap extends EdgeMap<
-                ThingVertex, Schema.Edge.Thing, ThingEdge, ThingEdgeMap.ThingVertexIteratorBuilder> {
+                ThingVertex, Schema.Edge.Thing, ThingEdgeImpl, ThingEdgeMap.ThingVertexIteratorBuilder> {
 
 
         ThingEdgeMap(Direction direction) {
             super(direction);
         }
 
-        public class ThingVertexIteratorBuilder extends EdgeMap.VertexIteratorBuilder<ThingVertex, ThingEdge> {
+        public class ThingVertexIteratorBuilder extends EdgeMap.VertexIteratorBuilder<ThingVertex, ThingEdgeImpl> {
 
-            ThingVertexIteratorBuilder(Iterator<ThingEdge> edgeIterator) {
+            ThingVertexIteratorBuilder(Iterator<ThingEdgeImpl> edgeIterator) {
                 super(edgeIterator);
             }
         }

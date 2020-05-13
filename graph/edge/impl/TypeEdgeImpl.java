@@ -16,10 +16,11 @@
  *
  */
 
-package hypergraph.graph.edge;
+package hypergraph.graph.edge.impl;
 
 import hypergraph.graph.Graph;
 import hypergraph.graph.Schema;
+import hypergraph.graph.edge.TypeEdgeInt;
 import hypergraph.graph.vertex.TypeVertex;
 
 import javax.annotation.Nullable;
@@ -33,31 +34,19 @@ import static java.util.Objects.hash;
 /**
  * A Type Edge that connects two Type Vertices, and an overridden Type Vertex.
  */
-public abstract class TypeEdge extends Edge<Schema.Edge.Type, TypeVertex> {
+public abstract class TypeEdgeImpl extends EdgeImpl<Schema.Edge.Type, TypeVertex> implements TypeEdgeInt {
 
     protected final Graph.Type graph;
 
-    TypeEdge(Graph.Type graph, Schema.Edge.Type schema) {
+    TypeEdgeImpl(Graph.Type graph, Schema.Edge.Type schema) {
         super(schema);
         this.graph = graph;
     }
 
     /**
-     * @return type vertex overridden by the head of this type edge.
-     */
-    public abstract TypeVertex overridden();
-
-    /**
-     * Set the head type vertex of this type edge to override a given type vertex.
-     *
-     * @param overridden the type vertex to override by the head
-     */
-    public abstract void overridden(TypeVertex overridden);
-
-    /**
      * A Buffered Type Edge that connects two Type Vertices, and an overridden Type Vertex.
      */
-    public static class Buffered extends TypeEdge {
+    public static class Buffered extends TypeEdgeImpl {
 
         private final AtomicBoolean committed;
         private final TypeVertex from;
@@ -182,7 +171,7 @@ public abstract class TypeEdge extends Edge<Schema.Edge.Type, TypeVertex> {
         public boolean equals(Object object) {
             if (this == object) return true;
             if (object == null || getClass() != object.getClass()) return false;
-            TypeEdge.Buffered that = (TypeEdge.Buffered) object;
+            TypeEdgeImpl.Buffered that = (TypeEdgeImpl.Buffered) object;
             return (this.schema.equals(that.schema) &&
                     this.from.equals(that.from) &&
                     this.to.equals(that.to));
@@ -206,7 +195,7 @@ public abstract class TypeEdge extends Edge<Schema.Edge.Type, TypeVertex> {
     /**
      * Persisted Type Edge that connects two Type Vertices, and an overridden Type Vertex
      */
-    public static class Persisted extends TypeEdge {
+    public static class Persisted extends TypeEdgeImpl {
 
         private final byte[] outIID;
         private final byte[] inIID;
@@ -365,7 +354,7 @@ public abstract class TypeEdge extends Edge<Schema.Edge.Type, TypeVertex> {
         public boolean equals(Object object) {
             if (this == object) return true;
             if (object == null || getClass() != object.getClass()) return false;
-            TypeEdge.Persisted that = (TypeEdge.Persisted) object;
+            TypeEdgeImpl.Persisted that = (TypeEdgeImpl.Persisted) object;
             return (this.schema.equals(that.schema) &&
                     Arrays.equals(this.fromIID, that.fromIID) &&
                     Arrays.equals(this.toIID, that.toIID));
