@@ -18,8 +18,8 @@
 
 package hypergraph.graph.vertex;
 
-import hypergraph.graph.KeyGenerator;
-import hypergraph.graph.Schema;
+import hypergraph.graph.util.KeyGenerator;
+import hypergraph.graph.util.Schema;
 import hypergraph.graph.ThingGraph;
 import hypergraph.graph.edge.ThingEdge;
 

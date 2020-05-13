@@ -20,7 +20,7 @@ package hypergraph.core;
 
 import hypergraph.Hypergraph;
 import hypergraph.common.exception.HypergraphException;
-import hypergraph.graph.KeyGenerator;
+import hypergraph.graph.util.KeyGenerator;
 import org.rocksdb.OptimisticTransactionDB;
 import org.rocksdb.RocksDBException;
 

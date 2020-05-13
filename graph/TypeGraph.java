@@ -21,6 +21,8 @@ package hypergraph.graph;
 import hypergraph.common.collection.ByteArray;
 import hypergraph.common.concurrent.ManagedReadWriteLock;
 import hypergraph.common.exception.HypergraphException;
+import hypergraph.graph.util.Schema;
+import hypergraph.graph.util.Storage;
 import hypergraph.graph.vertex.TypeVertex;
 import hypergraph.graph.vertex.Vertex;
 

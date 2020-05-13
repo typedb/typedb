@@ -21,7 +21,7 @@ package hypergraph.concept.type.impl;
 import hypergraph.common.exception.HypergraphException;
 import hypergraph.common.iterator.Iterators;
 import hypergraph.concept.type.Type;
-import hypergraph.graph.Schema;
+import hypergraph.graph.util.Schema;
 import hypergraph.graph.TypeGraph;
 import hypergraph.graph.vertex.TypeVertex;
 

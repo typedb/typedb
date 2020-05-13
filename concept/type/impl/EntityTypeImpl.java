@@ -22,7 +22,7 @@ import hypergraph.common.exception.HypergraphException;
 import hypergraph.common.iterator.Iterators;
 import hypergraph.concept.thing.impl.EntityImpl;
 import hypergraph.concept.type.EntityType;
-import hypergraph.graph.Schema;
+import hypergraph.graph.util.Schema;
 import hypergraph.graph.TypeGraph;
 import hypergraph.graph.vertex.ThingVertex;
 import hypergraph.graph.vertex.TypeVertex;

@@ -18,7 +18,7 @@
 
 package hypergraph.graph.edge;
 
-import hypergraph.graph.Schema;
+import hypergraph.graph.util.Schema;
 import hypergraph.graph.vertex.Vertex;
 
 public interface Edge<EDGE_SCHEMA extends Schema.Edge, VERTEX extends Vertex> {

@@ -19,9 +19,8 @@
 package hypergraph.graph.vertex;
 
 import hypergraph.common.iterator.Iterators;
-import hypergraph.graph.Schema;
+import hypergraph.graph.util.Schema;
 import hypergraph.graph.edge.Edge;
-import hypergraph.graph.edge.impl.EdgeImpl;
 
 import java.util.Arrays;
 import java.util.Iterator;

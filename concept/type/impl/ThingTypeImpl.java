@@ -23,7 +23,7 @@ import hypergraph.concept.type.AttributeType;
 import hypergraph.concept.type.RoleType;
 import hypergraph.concept.type.ThingType;
 import hypergraph.concept.type.Type;
-import hypergraph.graph.Schema;
+import hypergraph.graph.util.Schema;
 import hypergraph.graph.TypeGraph;
 import hypergraph.graph.vertex.TypeVertex;
 

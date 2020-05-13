@@ -16,7 +16,7 @@
  *
  */
 
-package hypergraph.graph;
+package hypergraph.graph.util;
 
 import java.util.Iterator;
 import java.util.function.BiFunction;

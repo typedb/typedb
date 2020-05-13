@@ -18,19 +18,14 @@
 
 package hypergraph.graph.edge.impl;
 
-import hypergraph.graph.Schema;
+import hypergraph.graph.util.Schema;
 import hypergraph.graph.TypeGraph;
-import hypergraph.graph.edge.Edge;
 import hypergraph.graph.edge.TypeEdge;
 import hypergraph.graph.vertex.TypeVertex;
 
 import javax.annotation.Nullable;
-import java.util.Arrays;
-import java.util.concurrent.atomic.AtomicBoolean;
 
-import static hypergraph.common.collection.ByteArrays.join;
 import static java.util.Arrays.copyOfRange;
-import static java.util.Objects.hash;
 
 /**
  * A Type Edge that connects two Type Vertices, and an overridden Type Vertex.

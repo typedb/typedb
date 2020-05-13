@@ -18,7 +18,7 @@
 
 package hypergraph.graph.edge;
 
-import hypergraph.graph.Schema;
+import hypergraph.graph.util.Schema;
 import hypergraph.graph.vertex.TypeVertex;
 
 public interface TypeEdge extends Edge<Schema.Edge.Type, TypeVertex> {

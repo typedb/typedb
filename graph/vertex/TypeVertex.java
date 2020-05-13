@@ -19,8 +19,8 @@
 package hypergraph.graph.vertex;
 
 import hypergraph.common.iterator.Iterators;
-import hypergraph.graph.KeyGenerator;
-import hypergraph.graph.Schema;
+import hypergraph.graph.util.KeyGenerator;
+import hypergraph.graph.util.Schema;
 import hypergraph.graph.TypeGraph;
 import hypergraph.graph.edge.Edge;
 import hypergraph.graph.edge.TypeEdge;

@@ -19,7 +19,7 @@
 package hypergraph.core;
 
 import hypergraph.Hypergraph;
-import hypergraph.graph.KeyGenerator;
+import hypergraph.graph.util.KeyGenerator;
 import org.rocksdb.OptimisticTransactionDB;
 
 import java.util.Set;

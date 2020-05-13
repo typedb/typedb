@@ -16,7 +16,7 @@
  *
  */
 
-package hypergraph.graph;
+package hypergraph.graph.util;
 
 import hypergraph.common.collection.ByteArray;
 
@@ -58,8 +58,9 @@ public abstract class KeyGenerator {
         ).getAndAdd(delta));
     }
 
-    static class Buffered extends KeyGenerator {
-        Buffered() {
+    public static class Buffered extends KeyGenerator {
+
+        public Buffered() {
             super(Schema.Key.BUFFERED.initialValue(), Schema.Key.BUFFERED.isIncrement() ? 1 : -1);
         }
     }

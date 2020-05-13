@@ -18,6 +18,9 @@
 
 package hypergraph.graph;
 
+import hypergraph.graph.util.KeyGenerator;
+import hypergraph.graph.util.Storage;
+
 public class Graphs {
 
     private final Storage storage;

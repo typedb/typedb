@@ -16,7 +16,7 @@
  *
  */
 
-package hypergraph.graph;
+package hypergraph.graph.util;
 
 import javax.annotation.Nullable;
 import java.time.LocalDateTime;
