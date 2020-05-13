@@ -508,8 +508,8 @@ public class StatisticsIT {
             // manually construct the relation type and instance
             AttributeType<Long> power = tx.putAttributeType("power", AttributeType.ValueType.LONG);
             EntityType person = tx.putEntityType("person").has(power);
-            Role resourceOwner = tx.getRole(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of("power")).getValue());
-            Role resourceValue = tx.getRole(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of("power")).getValue());
+//            Role resourceOwner = tx.getRole(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of("power")).getValue());
+//            Role resourceValue = tx.getRole(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of("power")).getValue());
 
             person.has(power);
 
@@ -519,18 +519,20 @@ public class StatisticsIT {
             Attribute power1 = power.create(1L);
             Attribute power2 = power.create(2L);
             Attribute power3 = power.create(3L);
-            RelationType relationType = tx.putRelationType(Schema.ImplicitType.HAS.getLabel(Label.of("power")))
-                    .relates(resourceOwner).relates(resourceValue);
+//            RelationType relationType = tx.putRelationType(Schema.ImplicitType.HAS.getLabel(Label.of("power")))
+//                    .relates(resourceOwner).relates(resourceValue);
 
-            relationType.create()
-                    .assign(resourceOwner, person1)
-                    .assign(resourceValue, power1);
+//            relationType.create()
+//                    .assign(resourceOwner, person1)
+//                    .assign(resourceValue, power1);
+//
+//            relationType.create()
+//                    .assign(resourceOwner, person2)
+//                    .assign(resourceValue, power2);
+            person1.has(power1);
+            person2.has(power2);
 
-            relationType.create()
-                    .assign(resourceOwner, person2)
-                    .assign(resourceValue, power2);
             person1.has(power2);
-
             person3.has(power3);
 
             tx.commit();
@@ -646,65 +648,78 @@ public class StatisticsIT {
             Entity entity3 = tx.getConcept(entityId3);
             Entity entity4 = tx.getConcept(entityId4);
 
-            Role resourceOwner1 = tx.getSchemaConcept(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of(resourceType1)));
-            Role resourceOwner2 = tx.getSchemaConcept(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of(resourceType2)));
-            Role resourceOwner3 = tx.getSchemaConcept(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of(resourceType3)));
-            Role resourceOwner4 = tx.getSchemaConcept(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of(resourceType4)));
-            Role resourceOwner5 = tx.getSchemaConcept(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of(resourceType5)));
-            Role resourceOwner6 = tx.getSchemaConcept(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of(resourceType6)));
+//            Role resourceOwner1 = tx.getSchemaConcept(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of(resourceType1)));
+//            Role resourceOwner2 = tx.getSchemaConcept(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of(resourceType2)));
+//            Role resourceOwner3 = tx.getSchemaConcept(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of(resourceType3)));
+//            Role resourceOwner4 = tx.getSchemaConcept(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of(resourceType4)));
+//            Role resourceOwner5 = tx.getSchemaConcept(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of(resourceType5)));
+//            Role resourceOwner6 = tx.getSchemaConcept(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of(resourceType6)));
+//
+//            Role resourceValue1 = tx.getSchemaConcept(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of(resourceType1)));
+//            Role resourceValue2 = tx.getSchemaConcept(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of(resourceType2)));
+//            Role resourceValue3 = tx.getSchemaConcept(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of(resourceType3)));
+//            Role resourceValue4 = tx.getSchemaConcept(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of(resourceType4)));
+//            Role resourceValue5 = tx.getSchemaConcept(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of(resourceType5)));
+//            Role resourceValue6 = tx.getSchemaConcept(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of(resourceType6)));
 
-            Role resourceValue1 = tx.getSchemaConcept(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of(resourceType1)));
-            Role resourceValue2 = tx.getSchemaConcept(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of(resourceType2)));
-            Role resourceValue3 = tx.getSchemaConcept(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of(resourceType3)));
-            Role resourceValue4 = tx.getSchemaConcept(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of(resourceType4)));
-            Role resourceValue5 = tx.getSchemaConcept(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of(resourceType5)));
-            Role resourceValue6 = tx.getSchemaConcept(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of(resourceType6)));
+//            RelationType relationType1 = tx.getSchemaConcept(Schema.ImplicitType.HAS.getLabel(Label.of(resourceType1)));
+//            relationType1.create()
+//                    .assign(resourceOwner1, entity1)
+//                    .assign(resourceValue1, tx.<Double>getAttributeType(resourceType1).create(1.2));
+//            relationType1.create()
+//                    .assign(resourceOwner1, entity1)
+//                    .assign(resourceValue1, tx.<Double>getAttributeType(resourceType1).create(1.5));
+//            relationType1.create()
+//                    .assign(resourceOwner1, entity3)
+//                    .assign(resourceValue1, tx.<Double>getAttributeType(resourceType1).create(1.8));
+            entity1.has(tx.getAttributeType(resourceType1).create(1.2));
+            entity1.has(tx.getAttributeType(resourceType1).create(1.5));
+            entity3.has(tx.getAttributeType(resourceType1).create(1.8));
 
-            RelationType relationType1 = tx.getSchemaConcept(Schema.ImplicitType.HAS.getLabel(Label.of(resourceType1)));
-            relationType1.create()
-                    .assign(resourceOwner1, entity1)
-                    .assign(resourceValue1, tx.<Double>getAttributeType(resourceType1).create(1.2));
-            relationType1.create()
-                    .assign(resourceOwner1, entity1)
-                    .assign(resourceValue1, tx.<Double>getAttributeType(resourceType1).create(1.5));
-            relationType1.create()
-                    .assign(resourceOwner1, entity3)
-                    .assign(resourceValue1, tx.<Double>getAttributeType(resourceType1).create(1.8));
-
-            RelationType relationType2 = tx.getSchemaConcept(Schema.ImplicitType.HAS.getLabel(Label.of(resourceType2)));
-            relationType2.create()
-                    .assign(resourceOwner2, entity1)
-                    .assign(resourceValue2, tx.<Long>getAttributeType(resourceType2).create(4L));
-            relationType2.create()
-                    .assign(resourceOwner2, entity1)
-                    .assign(resourceValue2, tx.<Long>getAttributeType(resourceType2).create(-1L));
-            relationType2.create()
-                    .assign(resourceOwner2, entity4)
-                    .assign(resourceValue2, tx.<Long>getAttributeType(resourceType2).create(0L));
+//            RelationType relationType2 = tx.getSchemaConcept(Schema.ImplicitType.HAS.getLabel(Label.of(resourceType2)));
+//            relationType2.create()
+//                    .assign(resourceOwner2, entity1)
+//                    .assign(resourceValue2, tx.<Long>getAttributeType(resourceType2).create(4L));
+//            relationType2.create()
+//                    .assign(resourceOwner2, entity1)
+//                    .assign(resourceValue2, tx.<Long>getAttributeType(resourceType2).create(-1L));
+//            relationType2.create()
+//                    .assign(resourceOwner2, entity4)
+//                    .assign(resourceValue2, tx.<Long>getAttributeType(resourceType2).create(0L));
+            entity1.has(tx.getAttributeType(resourceType2).create(4L));
+            entity1.has(tx.getAttributeType(resourceType2).create(-1L));
+            entity4.has(tx.getAttributeType(resourceType2).create(0L));
 
             tx.<Long>getAttributeType(resourceType3).create(100L);
 
-            RelationType relationType5 = tx.getSchemaConcept(Schema.ImplicitType.HAS.getLabel(Label.of(resourceType5)));
-            relationType5.create()
-                    .assign(resourceOwner5, entity1)
-                    .assign(resourceValue5, tx.<Long>getAttributeType(resourceType5).create(-7L));
-            relationType5.create()
-                    .assign(resourceOwner5, entity2)
-                    .assign(resourceValue5, tx.<Long>getAttributeType(resourceType5).create(-7L));
-            relationType5.create()
-                    .assign(resourceOwner5, entity4)
-                    .assign(resourceValue5, tx.<Long>getAttributeType(resourceType5).create(-7L));
+//            RelationType relationType5 = tx.getSchemaConcept(Schema.ImplicitType.HAS.getLabel(Label.of(resourceType5)));
+//            relationType5.create()
+//                    .assign(resourceOwner5, entity1)
+//                    .assign(resourceValue5, tx.<Long>getAttributeType(resourceType5).create(-7L));
+//            relationType5.create()
+//                    .assign(resourceOwner5, entity2)
+//                    .assign(resourceValue5, tx.<Long>getAttributeType(resourceType5).create(-7L));
+//            relationType5.create()
+//                    .assign(resourceOwner5, entity4)
+//                    .assign(resourceValue5, tx.<Long>getAttributeType(resourceType5).create(-7L));
+            entity1.has(tx.getAttributeType(resourceType5).create(-7L));
+            entity2.has(tx.getAttributeType(resourceType5).create(-7L));
+            entity4.has(tx.getAttributeType(resourceType5).create(-7L));
 
-            RelationType relationType6 = tx.getSchemaConcept(Schema.ImplicitType.HAS.getLabel(Label.of(resourceType6)));
-            relationType6.create()
-                    .assign(resourceOwner6, entity1)
-                    .assign(resourceValue6, tx.<Double>getAttributeType(resourceType6).create(7.5));
-            relationType6.create()
-                    .assign(resourceOwner6, entity2)
-                    .assign(resourceValue6, tx.<Double>getAttributeType(resourceType6).create(7.5));
-            relationType6.create()
-                    .assign(resourceOwner6, entity4)
-                    .assign(resourceValue6, tx.<Double>getAttributeType(resourceType6).create(7.5));
+
+//            RelationType relationType6 = tx.getSchemaConcept(Schema.ImplicitType.HAS.getLabel(Label.of(resourceType6)));
+//            relationType6.create()
+//                    .assign(resourceOwner6, entity1)
+//                    .assign(resourceValue6, tx.<Double>getAttributeType(resourceType6).create(7.5));
+//            relationType6.create()
+//                    .assign(resourceOwner6, entity2)
+//                    .assign(resourceValue6, tx.<Double>getAttributeType(resourceType6).create(7.5));
+//            relationType6.create()
+//                    .assign(resourceOwner6, entity4)
+//                    .assign(resourceValue6, tx.<Double>getAttributeType(resourceType6).create(7.5));
+            entity1.has(tx.getAttributeType(resourceType6).create(7.5));
+            entity2.has(tx.getAttributeType(resourceType6).create(7.5));
+            entity4.has(tx.getAttributeType(resourceType6).create(7.5));
 
             // some attributes in, but not connect them to any instances
             tx.<Double>getAttributeType(resourceType1).create(2.8);
