@@ -243,7 +243,7 @@ public class ReasoningIT {
 //                    System.out.println("" + counter + ": time taken = " + (middle - start) + ", answers: " + answers.size());
 //                    counter++;
 //                    tx.commit();
-//                    System.out.println("  time for commit = " + (System.currentTimeMillis() - middle) + "\n");
+                    System.out.println("  time for commit = " + (System.currentTimeMillis() - 0) + "\n");
 //                }
             }
         }

@@ -317,19 +317,22 @@ public class GraqlComputeIT {
 
             Entity theResourceOwner = thingy.create();
 
-            Role resourceOwner = tx.getRole(Schema.ImplicitType.HAS_OWNER.getLabel(resourceTypeId).getValue());
-            Role resourceValue = tx.getRole(Schema.ImplicitType.HAS_VALUE.getLabel(resourceTypeId).getValue());
-            RelationType relationType = tx.getRelationType(Schema.ImplicitType.HAS.getLabel(resourceTypeId).getValue());
+//            Role resourceOwner = tx.getRole(Schema.ImplicitType.HAS_OWNER.getLabel(resourceTypeId).getValue());
+//            Role resourceValue = tx.getRole(Schema.ImplicitType.HAS_VALUE.getLabel(resourceTypeId).getValue());
+//            RelationType relationType = tx.getRelationType(Schema.ImplicitType.HAS.getLabel(resourceTypeId).getValue());
+            theResourceOwner.has(resource.create(1L));
+            theResourceOwner.has(resource.create(2L));
+            theResourceOwner.has(resource.create(3L));
 
-            relationType.create()
-                    .assign(resourceOwner, theResourceOwner)
-                    .assign(resourceValue, resource.create(1L));
-            relationType.create()
-                    .assign(resourceOwner, theResourceOwner)
-                    .assign(resourceValue, resource.create(2L));
-            relationType.create()
-                    .assign(resourceOwner, theResourceOwner)
-                    .assign(resourceValue, resource.create(3L));
+//            relationType.create()
+//                    .assign(resourceOwner, theResourceOwner)
+//                    .assign(resourceValue, resource.create(1L));
+//            relationType.create()
+//                    .assign(resourceOwner, theResourceOwner)
+//                    .assign(resourceValue, resource.create(2L));
+//            relationType.create()
+//                    .assign(resourceOwner, theResourceOwner)
+//                    .assign(resourceValue, resource.create(3L));
 
             tx.commit();
         }
