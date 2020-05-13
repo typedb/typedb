@@ -156,6 +156,6 @@ public class InHasFragment extends EdgeFragment {
     @Override
     public double internalFragmentCost() {
         // TODO - use COST_OWNERS_PER_ATTRIBUTE;
-        return 0.0;
+        return COST_RELATIONS_PER_INSTANCE;
     }
 }

@@ -236,15 +236,15 @@ public class ReasoningIT {
             );
             int counter = 0;
             for (String q : queries) {
-                try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-                    long start = System.currentTimeMillis();
-                    List<ConceptMap> answers = tx.execute(Graql.parse(q).asGet());
-                    long middle = System.currentTimeMillis();
-                    System.out.println("\n" + counter + ": time taken = " + (middle - start) + ", answers: " + answers.size());
-                    counter++;
-                    tx.commit();
-                    System.out.println("  time for commit = " + (System.currentTimeMillis() - middle));
-                }
+//                try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+//                    long start = System.currentTimeMillis();
+//                    List<ConceptMap> answers = tx.execute(Graql.parse(q).asGet());
+//                    long middle = System.currentTimeMillis();
+//                    System.out.println("" + counter + ": time taken = " + (middle - start) + ", answers: " + answers.size());
+//                    counter++;
+//                    tx.commit();
+//                    System.out.println("  time for commit = " + (System.currentTimeMillis() - middle) + "\n");
+//                }
             }
         }
     }
