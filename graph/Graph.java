@@ -87,6 +87,10 @@ public class Graph {
             multiLabelLock = new ManagedReadWriteLock();
         }
 
+        public Graph.Thing thing() {
+            return thingGraph;
+        }
+
         public Storage storage() {
             return storage;
         }
@@ -241,14 +245,22 @@ public class Graph {
 
         public void commit() {
             thingByIID.values().parallelStream().forEach(
-                    vertex -> vertex.iid(ThingVertex.generateIID(storage.keyGenerator(), vertex.schema()))
-            ); // typeByIID no longer contains valid mapping from IID to TypeVertex
+                    vertex -> vertex.iid(ThingVertex.generateIID(storage.keyGenerator(), vertex.schema(), vertex.typeVertex()))
+            ); // thingByIID no longer contains valid mapping from IID to TypeVertex
             thingByIID.values().parallelStream().forEach(Vertex::commit);
             clear(); // we now flush the indexes after commit, and we do not expect this Graph.Thing to be used again
         }
 
         private void clear() {
             thingByIID.clear();
+        }
+
+        public ThingVertex create(Schema.Vertex.Thing schema, byte[] iid) {
+            return null; // TODO
+        }
+
+        public Type type() {
+            return typeGraph;
         }
     }
 }

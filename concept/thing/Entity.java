@@ -23,6 +23,14 @@ import hypergraph.concept.type.EntityType;
 public interface Entity extends Thing {
 
     /**
+     * Cast the {@code Concept} down to {@code Entity}
+     *
+     * @return this {@code Entity}
+     */
+    @Override
+    default Entity asEntity() { return this; }
+
+    /**
      * Get the immediate {@code EntityType} in which this this {@code Entity} is an instance of.
      *
      * @return the {@code EntityType} of this {@code Entity}

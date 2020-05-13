@@ -46,8 +46,8 @@ public abstract class TypeVertex extends Vertex<
     protected Schema.ValueClass valueClass;
     protected String regex;
 
-    TypeVertex(Graph.Type graph, Schema.Vertex.Type type, byte[] iid, String label, @Nullable String scope) {
-        super(iid, type);
+    TypeVertex(Graph.Type graph, Schema.Vertex.Type schema, byte[] iid, String label, @Nullable String scope) {
+        super(iid, schema);
         this.graph = graph;
         this.label = label;
         this.scope = scope;
@@ -58,14 +58,33 @@ public abstract class TypeVertex extends Vertex<
         else return scope + ":" + label;
     }
 
+    /**
+     * Get the index address of given {@code TypeVertex}
+     *
+     * @param label of the {@code TypeVertex}
+     * @param scope of the {@code TypeVertex}, which could be null
+     * @return a byte array representing the index address of a {@code TypeVertex}
+     */
     public static byte[] index(String label, @Nullable String scope) {
         return join(Schema.Index.TYPE.prefix().key(), scopedLabel(label, scope).getBytes());
     }
 
+    /**
+     * Generate an IID for a {@code TypeVertex} for a given {@code Schema}
+     *
+     * @param keyGenerator to generate the IID for a {@code TypeVertex}
+     * @param schema       of the {@code TypeVertex} in which the IID will be used for
+     * @return a byte array representing a new IID for a {@code TypeVertex}
+     */
     public static byte[] generateIID(KeyGenerator keyGenerator, Schema.Vertex.Type schema) {
         return join(schema.prefix().key(), keyGenerator.forType(schema.prefix().key()));
     }
 
+    /**
+     * Get the {@code Graph} containing all {@code TypeVertex}
+     *
+     * @return the {@code Graph} containing all {@code TypeVertex}
+     */
     public Graph.Type graph() {
         return graph;
     }

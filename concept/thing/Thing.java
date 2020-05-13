@@ -28,6 +28,14 @@ import java.util.stream.Stream;
 public interface Thing extends Concept {
 
     /**
+     * Case the {@code Concept} down to {@code Thing}
+     *
+     * @return this {@code Thing}
+     */
+    @Override
+    default Thing asThing() { return this; }
+
+    /**
      * Get the immediate {@code ThingType} in which this this {@code Thing} is an instance of.
      *
      * @return the {@code ThingType} of this {@code Thing}
@@ -102,15 +110,4 @@ public interface Thing extends Concept {
      * @return a stream of {@code Relation} that this {@code Thing} plays in
      */
     Stream<? extends Relation> relations(RoleType... roleTypes);
-
-    /**
-     * Get all concepts that this {@code Thing} depends on in order to exist.
-     *
-     * For example, if this were to be an inferred concept, and you need to material this {@code Thing},
-     * what are the other concepts that needs to exist for this {@code Thing} to be able to refer to?
-     *
-     * @return a stream {@code Thing} concepts that this {@code Thing} depends on
-     */
-    Stream<? extends Thing> dependency();
-
 }

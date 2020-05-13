@@ -18,6 +18,8 @@
 
 package hypergraph.concept.type;
 
+import hypergraph.concept.thing.Entity;
+
 import java.util.stream.Stream;
 
 public interface EntityType extends ThingType {
@@ -35,4 +37,6 @@ public interface EntityType extends ThingType {
     Stream<? extends EntityType> subs();
 
     void sup(EntityType superType);
+
+    Entity create();
 }

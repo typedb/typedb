@@ -23,6 +23,14 @@ import hypergraph.concept.type.AttributeType;
 public interface Attribute extends Thing {
 
     /**
+     * Case the {@code Concept} down to {@code Attribute}
+     *
+     * @return this {@code Attribute}
+     */
+    @Override
+    default Attribute asAttribute() { return this; }
+
+    /**
      * Get the immediate {@code AttributeType} in which this this {@code Attribute} is an instance of.
      *
      * @return the {@code AttributeType} of this {@code Attribute}

@@ -20,9 +20,11 @@ package hypergraph.concept.type.impl;
 
 import hypergraph.common.exception.HypergraphException;
 import hypergraph.common.iterator.Iterators;
+import hypergraph.concept.thing.impl.EntityImpl;
 import hypergraph.concept.type.EntityType;
 import hypergraph.graph.Graph;
 import hypergraph.graph.Schema;
+import hypergraph.graph.vertex.ThingVertex;
 import hypergraph.graph.vertex.TypeVertex;
 
 import javax.annotation.Nullable;
@@ -57,6 +59,12 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
 
     public static EntityTypeImpl of(Graph.Type graph, String label) {
         return new EntityTypeImpl(graph, label);
+    }
+
+    @Override
+    public EntityImpl create() {
+        ThingVertex instance = vertex.graph().thing().create(Schema.Vertex.Thing.ENTITY, vertex.iid());
+        return new EntityImpl(instance);
     }
 
     @Override

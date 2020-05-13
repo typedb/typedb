@@ -29,9 +29,7 @@ package(
 java_library(
     name = "concept",
     srcs = glob([
-        "*.java",
-        "type/**/*.java",
-        "thing/*.java",
+        "**/*.java",
     ]),
     deps = [
         # Internal Package Dependencies

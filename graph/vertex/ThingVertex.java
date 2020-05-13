@@ -23,21 +23,52 @@ import hypergraph.graph.KeyGenerator;
 import hypergraph.graph.Schema;
 import hypergraph.graph.edge.ThingEdge;
 
+import java.util.Arrays;
 import java.util.Iterator;
+
+import static hypergraph.common.collection.ByteArrays.join;
 
 public abstract class ThingVertex extends Vertex<
         Schema.Vertex.Thing, ThingVertex, Schema.Edge.Thing, ThingEdge,
         ThingVertex.DirectedThingEdges.ThingVertexIterator> {
 
     protected final Graph.Thing graph;
+    protected final byte[] typeIID;
 
     ThingVertex(Graph.Thing graph, Schema.Vertex.Thing schema, byte[] iid) {
         super(iid, schema);
         this.graph = graph;
+        this.typeIID = Arrays.copyOfRange(iid, 1, 4);
     }
 
-    public static byte[] generateIID(KeyGenerator keyGenerator, Schema.Vertex.Thing schema) {
-        return null; // TODO
+    /**
+     * Generate an IID for a {@code ThingVertex} for a given {@code Schema} and {@code TypeVertex}
+     *
+     * @param keyGenerator to generate the IID for a {@code ThingVertex}
+     * @param schema       of the {@code ThingVertex} in which the IID will be used for
+     * @param type         of the {@code ThingVertex} in which this {@code ThingVertex} is an instance of
+     * @return a byte array representing a new IID for a {@code ThingVertex}
+     */
+    public static byte[] generateIID(KeyGenerator keyGenerator, Schema.Vertex.Thing schema, TypeVertex type) {
+        return join(schema.prefix().key(), type.iid(), keyGenerator.forThing(type.iid()));
+    }
+
+    /**
+     * Get the {@code Graph} containing all {@code ThingVertex}
+     *
+     * @return the {@code Graph} containing all {@code ThingVertex}
+     */
+    public Graph.Thing graph() {
+        return graph;
+    }
+
+    /**
+     * Get the {@code TypeVertex} in which this {@code ThingVertex} is an instance of
+     *
+     * @return the {@code TypeVertex} in which this {@code ThingVertex} is an instance of
+     */
+    public TypeVertex typeVertex() {
+        return graph.type().get(typeIID);
     }
 
     public abstract class DirectedThingEdges extends DirectedEdges<

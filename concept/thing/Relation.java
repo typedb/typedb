@@ -23,6 +23,14 @@ import hypergraph.concept.type.RelationType;
 public interface Relation extends Thing {
 
     /**
+     * Cast the {@code Concept} down to {@code Relation}
+     *
+     * @return this {@code Relation}
+     */
+    @Override
+    default Relation asRelation() { return this; }
+
+    /**
      * Get the immediate {@code RelationType} in which this this {@code Relation} is an instance of.
      *
      * @return the {@code RelationType} of this {@code Relation}

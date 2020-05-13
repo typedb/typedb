@@ -19,6 +19,21 @@
 package hypergraph.concept.thing.impl;
 
 import hypergraph.concept.thing.Attribute;
+import hypergraph.concept.type.impl.AttributeTypeImpl;
+import hypergraph.graph.vertex.ThingVertex;
 
 public class AttributeImpl extends ThingImpl implements Attribute {
+    public AttributeImpl(ThingVertex vertex) {
+        super(vertex);
+    }
+
+    @Override
+    public AttributeTypeImpl type() {
+        return AttributeTypeImpl.of(vertex.typeVertex());
+    }
+
+    @Override
+    public AttributeImpl has(Attribute attribute) {
+        return null; //TODO
+    }
 }

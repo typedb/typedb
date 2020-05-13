@@ -18,7 +18,68 @@
 
 package hypergraph.concept.thing.impl;
 
+import hypergraph.concept.thing.Attribute;
+import hypergraph.concept.thing.Relation;
 import hypergraph.concept.thing.Thing;
+import hypergraph.concept.type.AttributeType;
+import hypergraph.concept.type.RoleType;
+import hypergraph.concept.type.impl.ThingTypeImpl;
+import hypergraph.graph.vertex.ThingVertex;
 
-public class ThingImpl implements Thing {
+import java.util.Objects;
+import java.util.stream.Stream;
+
+public abstract class ThingImpl implements Thing {
+
+    protected final ThingVertex vertex;
+
+    protected ThingImpl(ThingVertex vertex) {
+        this.vertex = Objects.requireNonNull(vertex);
+    }
+
+
+    @Override
+    public ThingTypeImpl type() {
+        return null;
+    }
+
+    @Override
+    public boolean isInferred() {
+        return false;
+    }
+
+    @Override
+    public Thing has(Attribute attribute) {
+        return null;
+    }
+
+    @Override
+    public void unhas(Attribute attribute) {
+
+    }
+
+    @Override
+    public Stream<? extends Attribute> keys(AttributeType... attributeTypes) {
+        return null;
+    }
+
+    @Override
+    public Stream<? extends Attribute> attributes(AttributeType... attributeTypes) {
+        return null;
+    }
+
+    @Override
+    public Stream<? extends RoleType> roles() {
+        return null;
+    }
+
+    @Override
+    public Stream<? extends Relation> relations(RoleType... roleTypes) {
+        return null;
+    }
+
+    @Override
+    public byte[] iid() {
+        return new byte[0];
+    }
 }
