@@ -50,7 +50,7 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
     private final ConceptCache<Label> cachedLabel = new ConceptCache<>(() -> Label.of(vertex().property(Schema.VertexProperty.SCHEMA_LABEL)));
     private final ConceptCache<LabelId> cachedLabelId = new ConceptCache<>(() -> LabelId.of(vertex().property(Schema.VertexProperty.LABEL_ID)));
     private final ConceptCache<T> cachedSuperType = new ConceptCache<>(() -> this.<T>neighbours(Direction.OUT, Schema.EdgeLabel.SUB).findFirst().orElse(null));
-    private final ConceptCache<Set<T>> cachedDirectSubTypes = new ConceptCache<>(() -> this.<T>neighbours(Direction.IN, Schema.EdgeLabel.SUB).collect(Collectors.toSet()));
+    private final ConceptCache<Set<T>> cachedDirectSubTypes = new ConceptCache<>(() -> this.subs().collect(Collectors.toSet()));
     private final ConceptCache<Boolean> cachedIsImplicit = new ConceptCache<>(() -> vertex().propertyBoolean(Schema.VertexProperty.IS_IMPLICIT));
 
     SchemaConceptImpl(VertexElement vertexElement, ConceptManager conceptManager, ConceptNotificationChannel conceptNotificationChannel) {

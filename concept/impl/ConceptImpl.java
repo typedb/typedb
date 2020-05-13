@@ -111,6 +111,15 @@ public abstract class ConceptImpl implements Concept, ConceptVertex {
         }
     }
 
+    public <X extends Concept> Stream<X> subs() {
+        Stream<X> subTypes = neighbours(Direction.IN, Schema.EdgeLabel.SUB);
+
+        // TODO remove this filtering out of implicit concept types once the implicit relations are fully removed
+        // TODO this will be after the DB backwards compatibility is removed
+        return subTypes.filter(concept -> !concept.asSchemaConcept().isImplicit());
+
+    }
+
     EdgeElement putEdge(ConceptVertex to, Schema.EdgeLabel label) {
         return vertex().putEdge(to.vertex(), label);
     }

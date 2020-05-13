@@ -22,6 +22,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import grakn.core.common.config.Config;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.Entity;
 import grakn.core.kb.concept.api.Relation;
@@ -50,7 +51,7 @@ import java.util.stream.Collectors;
 import static grakn.core.util.GraqlTestUtil.assertCollectionsNonTriviallyEqual;
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
 import static java.util.stream.Collectors.toSet;
-import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class MaterialisationIT {
@@ -202,18 +203,25 @@ public class MaterialisationIT {
             assertTrue(Iterables.getOnlyElement(resourceAnswers).get("r").asAttribute().isInferred());
 
             materialiseWithoutDuplicates(reuseResourcePattern,reasonerQueryFactory, tx);
-            assertTrue(Iterables.getOnlyElement(
-                    tx.execute(Graql.parse("match" +
-                            "$x has resource-string $r via $rel;" +
-                            "$x id " + secondEntity.id().getValue() + ";" +
-                            "$r id " + resource.id().getValue() + ";" +
-                            "get;").asGet(), false)).get("rel").asRelation().isInferred());
-            assertFalse(Iterables.getOnlyElement(
-                    tx.execute(Graql.parse("match" +
-                            "$x has resource-string $r via $rel;" +
-                            "$x id " + firstEntity.id().getValue() + ";" +
-                            "$r id " + resource.id().getValue() + ";" +
-                            "get;").asGet(), false)).get("rel").asRelation().isInferred());
+
+            Attribute<Object> attr = tx.getConcept(resource.id()).asAttribute();
+            List<Attribute<?>> owned = tx.getConcept(secondEntity.id()).asThing().attributes(attr.type())
+                    .filter(attributeOwned -> attributeOwned.equals(attr))
+                    .collect(Collectors.toList());
+            assertEquals(1, owned.size());
+
+//            assertTrue(Iterables.getOnlyElement(
+//                    tx.execute(Graql.parse("match" +
+//                            "$x has resource-string $r via $rel;" +
+//                            "$x id " + secondEntity.id().getValue() + ";" +
+//                            "$r id " + resource.id().getValue() + ";" +
+//                            "get;").asGet(), false)).get("rel").asRelation().isInferred());
+//            assertFalse(Iterables.getOnlyElement(
+//                    tx.execute(Graql.parse("match" +
+//                            "$x has resource-string $r via $rel;" +
+//                            "$x id " + firstEntity.id().getValue() + ";" +
+//                            "$r id " + resource.id().getValue() + ";" +
+//                            "get;").asGet(), false)).get("rel").asRelation().isInferred());
         }
     }
 
