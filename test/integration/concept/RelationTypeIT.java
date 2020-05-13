@@ -94,7 +94,7 @@ public class RelationTypeIT {
         AttributeType<String> attributeType = tx.putAttributeType("My Special Attribute Type", AttributeType.ValueType.STRING);
         Attribute<String> attribute = attributeType.create("Ad thing");
 
-        EntityType entityType = tx.putEntityType("My Special Entity Type").has(attributeType);
+        EntityType entityType = tx.putEntityType("My Special Entity Type").putHas(attributeType);
         Entity entity = entityType.create();
 
         RelationType implicitRelationType = tx.getRelationType(Schema.ImplicitType.HAS.getLabel(attributeType.label()).getValue());
@@ -112,7 +112,7 @@ public class RelationTypeIT {
         AttributeType<String> attributeType = tx.putAttributeType("My Special Attribute Type", AttributeType.ValueType.STRING);
         Attribute<String> attribute = attributeType.create("Ad thing");
 
-        EntityType entityType = tx.putEntityType("My Special Entity Type").has(attributeType);
+        EntityType entityType = tx.putEntityType("My Special Entity Type").putHas(attributeType);
         entityType.create().has(attribute);
 
         RelationType implicitRelationType = tx.getRelationType(Schema.ImplicitType.HAS.getLabel(attributeType.label()).getValue());

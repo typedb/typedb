@@ -134,7 +134,7 @@ public class CountIT {
         try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             EntityType person = tx.putEntityType("person");
             AttributeType<String> name = tx.putAttributeType("name", AttributeType.ValueType.STRING);
-            person.has(name);
+            person.putHas(name);
             Entity aPerson = person.create();
             aPerson.has(name.create("jason"));
             tx.commit();
@@ -214,7 +214,7 @@ public class CountIT {
             AttributeType<String> name = tx.putAttributeType("name", AttributeType.ValueType.STRING);
             Attribute jason = name.create("jason");
 
-            person.has(name);
+            person.putHas(name);
 
             Role resourceOwner = tx.putRole(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of("name")));
             person.plays(resourceOwner);

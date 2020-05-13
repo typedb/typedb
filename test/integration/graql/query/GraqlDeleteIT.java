@@ -317,8 +317,8 @@ public class GraqlDeleteIT {
         EntityType somework = tx.putEntityType("somework").plays(work);
         Role author = tx.putRole("author");
         EntityType person = tx.putEntityType("person").plays(author);
-        tx.putRelationType("authored-by").relates(work).relates(author).has(year);
-        tx.getRelationType("@has-year").has(name);
+        tx.putRelationType("authored-by").relates(work).relates(author).putHas(year);
+        tx.getRelationType("@has-year").putHas(name);
 
         Stream<ConceptMap> answers = tx.stream(Graql.parse("insert $x isa person;" +
                 "$y isa somework; " +
@@ -354,7 +354,7 @@ public class GraqlDeleteIT {
         EntityType person = tx.putEntityType("person").plays(author);
         EntityType production = tx.putEntityType("production").plays(work);
         AttributeType<String> provenance = tx.putAttributeType("provenance", AttributeType.ValueType.STRING);
-        authoredBy.has(provenance);
+        authoredBy.putHas(provenance);
 
         Entity aPerson = person.create();
         Relation aRelation = authoredBy.create();
@@ -388,7 +388,7 @@ public class GraqlDeleteIT {
         EntityType person = tx.putEntityType("person").plays(author);
         EntityType production = tx.putEntityType("production").plays(work);
         AttributeType<String> provenance = tx.putAttributeType("provenance", AttributeType.ValueType.STRING);
-        authoredBy.has(provenance);
+        authoredBy.putHas(provenance);
 
         Entity aPerson = person.create();
         ConceptId personId = aPerson.id();
@@ -527,7 +527,7 @@ public class GraqlDeleteIT {
     public void whenDeletingAttributeOwnershipWithSubtype_Throw() {
         AttributeType<String> firstName = tx.putAttributeType("first-name", AttributeType.ValueType.STRING);
         firstName.sup(tx.getAttributeType("name"));
-        tx.getEntityType("person").has(firstName);
+        tx.getEntityType("person").putHas(firstName);
 
         List<ConceptMap> answers = tx.execute(Graql.parse("match $x isa person, has name $n; get;").asGet());
         assertEquals(10, answers.size());

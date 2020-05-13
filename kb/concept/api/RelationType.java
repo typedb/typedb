@@ -62,7 +62,7 @@ public interface RelationType extends Type {
      * @return The Type itself.
      */
     @Override
-    RelationType key(AttributeType attributeType);
+    RelationType putKey(AttributeType attributeType);
 
     /**
      * Creates a RelationType which allows this type and a resource type to be linked.
@@ -71,7 +71,7 @@ public interface RelationType extends Type {
      * @return The Type itself.
      */
     @Override
-    RelationType has(AttributeType attributeType);
+    RelationType putHas(AttributeType attributeType);
 
     //------------------------------------- Accessors ----------------------------------
 

@@ -287,8 +287,8 @@ public class EntityTypeIT {
         AttributeType attributeType = tx.putAttributeType(label, AttributeType.ValueType.STRING).sup(superAttributeType);
         AttributeType metaType = tx.getMetaAttributeType();
 
-        entityType1.has(superAttributeType);
-        entityType2.has(attributeType);
+        entityType1.putHas(superAttributeType);
+        entityType2.putHas(attributeType);
 
         //Check role types are only built explicitly
         assertThat(entityType1.playing().collect(toSet()),
@@ -330,7 +330,7 @@ public class EntityTypeIT {
         AttributeType attributeType = tx.putAttributeType(label, AttributeType.ValueType.STRING).sup(superAttributeType);
         AttributeType metaType = tx.getMetaAttributeType();
 
-        entityType.has(attributeType);
+        entityType.putHas(attributeType);
 
         //Check role types are only built explicitly
         assertThat(entityType.playing().collect(toSet()),
@@ -417,11 +417,11 @@ public class EntityTypeIT {
         AttributeType r2 = tx.putAttributeType("r2", AttributeType.ValueType.LONG);
         AttributeType r3 = tx.putAttributeType("r3", AttributeType.ValueType.BOOLEAN);
 
-        assertTrue("Entity is linked to resources when it shouldn't", e1.attributes().collect(toSet()).isEmpty());
-        e1.has(r1);
-        e1.has(r2);
-        e1.has(r3);
-        assertThat(e1.attributes().collect(toSet()), containsInAnyOrder(r1, r2, r3));
+        assertTrue("Entity is linked to resources when it shouldn't", e1.putHas().collect(toSet()).isEmpty());
+        e1.putHas(r1);
+        e1.putHas(r2);
+        e1.putHas(r3);
+        assertThat(e1.putHas().collect(toSet()), containsInAnyOrder(r1, r2, r3));
     }
 
     @Test
@@ -433,19 +433,19 @@ public class EntityTypeIT {
         EntityType entityType2 = tx.putEntityType("EntityType 2");
 
         assertThat(entityType1.keys().collect(toSet()), is(empty()));
-        assertThat(entityType1.attributes().collect(toSet()), is(empty()));
+        assertThat(entityType1.putHas().collect(toSet()), is(empty()));
         assertThat(entityType2.keys().collect(toSet()), is(empty()));
-        assertThat(entityType2.attributes().collect(toSet()), is(empty()));
+        assertThat(entityType2.putHas().collect(toSet()), is(empty()));
 
         //Link the resources
-        entityType1.has(attributeType1);
+        entityType1.putHas(attributeType1);
 
-        entityType1.key(attributeType2);
-        entityType2.key(attributeType1);
-        entityType2.key(attributeType2);
+        entityType1.putKey(attributeType2);
+        entityType2.putKey(attributeType1);
+        entityType2.putKey(attributeType2);
 
-        assertThat(entityType1.attributes().collect(toSet()), containsInAnyOrder(attributeType1, attributeType2));
-        assertThat(entityType2.attributes().collect(toSet()), containsInAnyOrder(attributeType1, attributeType2));
+        assertThat(entityType1.putHas().collect(toSet()), containsInAnyOrder(attributeType1, attributeType2));
+        assertThat(entityType2.putHas().collect(toSet()), containsInAnyOrder(attributeType1, attributeType2));
 
         assertThat(entityType1.keys().collect(toSet()), containsInAnyOrder(attributeType2));
         assertThat(entityType2.keys().collect(toSet()), containsInAnyOrder(attributeType1, attributeType2));
@@ -472,12 +472,12 @@ public class EntityTypeIT {
         AttributeType<String> attributeType = tx.putAttributeType("Shared Attribute", AttributeType.ValueType.STRING);
         EntityType entityType = tx.putEntityType("EntityType");
 
-        entityType.has(attributeType);
+        entityType.putHas(attributeType);
 
         expectedException.expect(TransactionException.class);
         expectedException.expectMessage(CANNOT_BE_KEY_AND_ATTRIBUTE.getMessage(entityType.label(), attributeType.label()));
 
-        entityType.key(attributeType);
+        entityType.putKey(attributeType);
     }
 
     @Test
@@ -485,12 +485,12 @@ public class EntityTypeIT {
         AttributeType<String> attributeType = tx.putAttributeType("Shared Attribute", AttributeType.ValueType.STRING);
         EntityType entityType = tx.putEntityType("EntityType");
 
-        entityType.key(attributeType);
+        entityType.putKey(attributeType);
 
         expectedException.expect(TransactionException.class);
         expectedException.expectMessage(CANNOT_BE_KEY_AND_ATTRIBUTE.getMessage(entityType.label(), attributeType.label()));
 
-        entityType.has(attributeType);
+        entityType.putHas(attributeType);
     }
 
     @Test
@@ -526,10 +526,10 @@ public class EntityTypeIT {
     public void whenRemovingAttributesFromAType_EnsureTheTypeNoLongerHasThoseAttributes(){
         AttributeType<String> name = tx.putAttributeType("name", AttributeType.ValueType.STRING);
         AttributeType<Integer> age = tx.putAttributeType("age", AttributeType.ValueType.INTEGER);
-        EntityType person = tx.putEntityType("person").has(name).has(age);
-        assertThat(person.attributes().collect(toSet()), containsInAnyOrder(name, age));
+        EntityType person = tx.putEntityType("person").putHas(name).putHas(age);
+        assertThat(person.putHas().collect(toSet()), containsInAnyOrder(name, age));
         person.unhas(name);
-        assertThat(person.attributes().collect(toSet()), containsInAnyOrder(age));
+        assertThat(person.putHas().collect(toSet()), containsInAnyOrder(age));
     }
 
     @Test
@@ -537,14 +537,14 @@ public class EntityTypeIT {
         AttributeType<String> name = tx.putAttributeType("name", AttributeType.ValueType.STRING);
         AttributeType<Integer> age = tx.putAttributeType("age", AttributeType.ValueType.INTEGER);
         AttributeType<Integer> id = tx.putAttributeType("id", AttributeType.ValueType.INTEGER);
-        EntityType person = tx.putEntityType("person").has(name).has(age).key(id);
+        EntityType person = tx.putEntityType("person").putHas(name).putHas(age).putKey(id);
 
-        assertThat(person.attributes().collect(toSet()), containsInAnyOrder(name, age, id));
+        assertThat(person.putHas().collect(toSet()), containsInAnyOrder(name, age, id));
         assertThat(person.keys().collect(toSet()), containsInAnyOrder(id));
 
         //Key is removed
         person.unkey(id);
-        assertThat(person.attributes().collect(toSet()), containsInAnyOrder(name, age));
+        assertThat(person.putHas().collect(toSet()), containsInAnyOrder(name, age));
         assertThat(person.keys().collect(toSet()), empty());
     }
 
@@ -553,9 +553,9 @@ public class EntityTypeIT {
         AttributeType<String> name = tx.putAttributeType("name", AttributeType.ValueType.STRING);
         AttributeType<Integer> age = tx.putAttributeType("age", AttributeType.ValueType.INTEGER);
         AttributeType<Integer> id = tx.putAttributeType("id", AttributeType.ValueType.INTEGER);
-        EntityType person = tx.putEntityType("person").has(name).has(age).key(id);
+        EntityType person = tx.putEntityType("person").putHas(name).putHas(age).putKey(id);
 
-        assertThat(person.attributes().collect(toSet()), containsInAnyOrder(name, age, id));
+        assertThat(person.putHas().collect(toSet()), containsInAnyOrder(name, age, id));
         assertThat(person.keys().collect(toSet()), containsInAnyOrder(id));
 
         expectedException.expect(GraknConceptException.class);

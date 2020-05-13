@@ -277,7 +277,7 @@ public class RelationIT {
         AttributeType<String> attributeType = tx.putAttributeType("what a pain", AttributeType.ValueType.STRING);
         Attribute<String> attribute = attributeType.create("a real pain");
 
-        EntityType entityType = tx.putEntityType("yay").has(attributeType);
+        EntityType entityType = tx.putEntityType("yay").putHas(attributeType);
         Relation implicitRelation = Iterables.getOnlyElement(entityType.create().has(attribute).relations().collect(Collectors.toSet()));
 
         expectedException.expect(GraknConceptException.class);
@@ -292,7 +292,7 @@ public class RelationIT {
         Role role1 = tx.putRole("dark");
         Role role2 = tx.putRole("souls");
         AttributeType<Long> attributeType = tx.putAttributeType("Death Number", AttributeType.ValueType.LONG);
-        RelationType relationType = tx.putRelationType("Dark Souls").relates(role1).relates(role2).key(attributeType);
+        RelationType relationType = tx.putRelationType("Dark Souls").relates(role1).relates(role2).putKey(attributeType);
         EntityType entityType = tx.putEntityType("Dead Guys").plays(role1).plays(role2);
 
         Entity e1 = entityType.create();
@@ -344,7 +344,7 @@ public class RelationIT {
     @Test
     public void whenAttributeLinkedToRelationIsInferred_EnsureItIsMarkedAsInferred(){
         AttributeType attributeType = tx.putAttributeType("Another thing of sorts", AttributeType.ValueType.STRING);
-        RelationType relationType = tx.putRelationType("A thing of sorts").has(attributeType);
+        RelationType relationType = tx.putRelationType("A thing of sorts").putHas(attributeType);
 
         Attribute attribute = attributeType.create("Things");
         Relation relation = relationType.create();
@@ -375,7 +375,7 @@ public class RelationIT {
         RelationType membership = tx.putRelationType("membership")
                 .relates(member)
                 .relates(member_of)
-                .has(name);
+                .putHas(name);
         EntityType group = tx.putEntityType("group").plays(member_of);
         EntityType person = tx.putEntityType("person").plays(member);
 

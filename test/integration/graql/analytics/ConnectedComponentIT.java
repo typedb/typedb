@@ -157,8 +157,8 @@ public class ConnectedComponentIT {
         try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             AttributeType<String> attributeType =
                     tx.putAttributeType(aResourceTypeLabel, AttributeType.ValueType.STRING);
-            tx.getEntityType(thing).has(attributeType);
-            tx.getEntityType(anotherThing).has(attributeType);
+            tx.getEntityType(thing).putHas(attributeType);
+            tx.getEntityType(anotherThing).putHas(attributeType);
             Attribute aAttribute = attributeType.create("blah");
             tx.getEntityType(thing).instances().forEach(instance -> instance.has(aAttribute));
             tx.getEntityType(anotherThing).instances().forEach(instance -> instance.has(aAttribute));
@@ -300,8 +300,8 @@ public class ConnectedComponentIT {
             attributeTypeList.add(tx.putAttributeType(resourceType7, AttributeType.ValueType.DOUBLE));
 
             attributeTypeList.forEach(attributeType -> {
-                entityType1.has(attributeType);
-                entityType2.has(attributeType);
+                entityType1.putHas(attributeType);
+                entityType2.putHas(attributeType);
             });
 
             tx.commit();

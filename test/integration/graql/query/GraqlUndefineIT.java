@@ -108,12 +108,12 @@ public class GraqlUndefineIT {
         tx.execute(Graql.define(type(NEW_TYPE.getValue()).sub(ENTITY).has("name")));
         tx.commit();
         tx = session.transaction(Transaction.Type.WRITE);
-        assertThat(tx.getType(NEW_TYPE).attributes().toArray(), hasItemInArray(tx.getAttributeType("name")));
+        assertThat(tx.getType(NEW_TYPE).putHas().toArray(), hasItemInArray(tx.getAttributeType("name")));
 
         tx.execute(Graql.undefine(type(NEW_TYPE.getValue()).has("name")));
         tx.commit();
         tx = session.transaction(Transaction.Type.WRITE);
-        assertThat(tx.getType(NEW_TYPE).attributes().toArray(), not(hasItemInArray(tx.getAttributeType("name"))));
+        assertThat(tx.getType(NEW_TYPE).putHas().toArray(), not(hasItemInArray(tx.getAttributeType("name"))));
     }
 
     @Test
@@ -121,12 +121,12 @@ public class GraqlUndefineIT {
         tx.execute(Graql.define(type(NEW_TYPE.getValue()).sub(ENTITY).has("name")));
         tx.commit();
         tx = session.transaction(Transaction.Type.WRITE);
-        assertThat(tx.getType(NEW_TYPE).attributes().toArray(), hasItemInArray(tx.getAttributeType("name")));
+        assertThat(tx.getType(NEW_TYPE).putHas().toArray(), hasItemInArray(tx.getAttributeType("name")));
 
         tx.execute(Graql.undefine(type(NEW_TYPE.getValue()).has("title")));
         tx.commit();
         tx = session.transaction(Transaction.Type.WRITE);
-        assertThat(tx.getType(NEW_TYPE).attributes().toArray(), hasItemInArray(tx.getAttributeType("name")));
+        assertThat(tx.getType(NEW_TYPE).putHas().toArray(), hasItemInArray(tx.getAttributeType("name")));
     }
 
     @Test
@@ -343,7 +343,7 @@ public class GraqlUndefineIT {
         Role ancestor = tx.getRole("ancestor");
         Role descendant = tx.getRole("descendant");
 
-        assertThat(pokemon.attributes().toArray(), arrayContaining(pokedexNo));
+        assertThat(pokemon.putHas().toArray(), arrayContaining(pokedexNo));
         assertThat(evolution.roles().toArray(), arrayContainingInAnyOrder(ancestor, descendant));
         assertThat(pokemon.playing().filter(r -> !r.isImplicit()).toArray(), arrayContainingInAnyOrder(ancestor, descendant));
 

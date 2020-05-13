@@ -109,7 +109,7 @@ public class SchemaConceptIT {
         Label hasResourceValueLabel = Schema.ImplicitType.HAS_VALUE.getLabel(resourceLabel);
         Label hasResourceLabel = Schema.ImplicitType.HAS.getLabel(resourceLabel);
 
-        entityType.has(attributeType);
+        entityType.putHas(attributeType);
 
         RelationType relationType = tx.getRelationType(hasResourceLabel.getValue());
         Assert.assertEquals(hasResourceLabel, relationType.label());

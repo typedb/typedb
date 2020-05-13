@@ -19,13 +19,11 @@ package grakn.core.graql.analytics;
 
 import com.google.common.collect.Sets;
 import grakn.core.concept.answer.Numeric;
-import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.Entity;
 import grakn.core.kb.concept.api.EntityType;
-import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.graql.exception.GraqlSemanticException;
@@ -507,11 +505,11 @@ public class StatisticsIT {
 
             // manually construct the relation type and instance
             AttributeType<Long> power = tx.putAttributeType("power", AttributeType.ValueType.LONG);
-            EntityType person = tx.putEntityType("person").has(power);
+            EntityType person = tx.putEntityType("person").putHas(power);
 //            Role resourceOwner = tx.getRole(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of("power")).getValue());
 //            Role resourceValue = tx.getRole(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of("power")).getValue());
 
-            person.has(power);
+            person.putHas(power);
 
             Entity person1 = person.create();
             Entity person2 = person.create();
@@ -595,21 +593,21 @@ public class StatisticsIT {
             AttributeType<Double> attribute6 = tx.putAttributeType(resourceType6, AttributeType.ValueType.DOUBLE);
             AttributeType<Double> attribute7 = tx.putAttributeType(resourceType7, AttributeType.ValueType.DOUBLE);
 
-            entityType1.has(attribute1);
-            entityType1.has(attribute2);
-            entityType1.has(attribute3);
-            entityType1.has(attribute4);
-            entityType1.has(attribute5);
-            entityType1.has(attribute6);
-            entityType1.has(attribute7);
+            entityType1.putHas(attribute1);
+            entityType1.putHas(attribute2);
+            entityType1.putHas(attribute3);
+            entityType1.putHas(attribute4);
+            entityType1.putHas(attribute5);
+            entityType1.putHas(attribute6);
+            entityType1.putHas(attribute7);
 
-            entityType2.has(attribute1);
-            entityType2.has(attribute2);
-            entityType2.has(attribute3);
-            entityType2.has(attribute4);
-            entityType2.has(attribute5);
-            entityType2.has(attribute6);
-            entityType2.has(attribute7);
+            entityType2.putHas(attribute1);
+            entityType2.putHas(attribute2);
+            entityType2.putHas(attribute3);
+            entityType2.putHas(attribute4);
+            entityType2.putHas(attribute5);
+            entityType2.putHas(attribute6);
+            entityType2.putHas(attribute7);
 
             tx.commit();
         }

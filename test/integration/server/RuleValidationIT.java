@@ -951,9 +951,9 @@ public class RuleValidationIT {
         Role singleRole = tx.putRole("singleRole");
 
         tx.putEntityType("someEntity")
-                .has(someAttribute)
-                .has(anotherAttribute)
-                .has(stringAttribute)
+                .putHas(someAttribute)
+                .putHas(anotherAttribute)
+                .putHas(stringAttribute)
                 .plays(someRole)
                 .plays(anotherRole);
 

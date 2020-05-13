@@ -95,17 +95,22 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
     }
 
     @Override
-    public Stream<AttributeType> attributes() {
-        Stream<AttributeType> attributes = attributes(Schema.ImplicitType.HAS_OWNER);
-        return Stream.concat(attributes, keys());
+    public Stream<AttributeType> putHas() {
+        Stream<AttributeType> attributes__BackwardsCompatible = attributes__BackwardsCompatible(Schema.ImplicitType.HAS_OWNER);
+        Stream<AttributeType> attributes = neighbours(Direction.OUT, Schema.EdgeLabel.HAS);
+        Stream<AttributeType> allAttributes = Stream.concat(attributes__BackwardsCompatible, attributes);
+        return Stream.concat(allAttributes, keys());
     }
+
 
     @Override
     public Stream<AttributeType> keys() {
-        return attributes(Schema.ImplicitType.KEY_OWNER);
+        Stream<AttributeType> attributes_BackwardsCompatible = attributes__BackwardsCompatible(Schema.ImplicitType.KEY_OWNER);
+        Stream<AttributeType> attributes = neighbours(Direction.OUT, Schema.EdgeLabel.KEY);
+        return Stream.concat(attributes_BackwardsCompatible, attributes);
     }
 
-    private Stream<AttributeType> attributes(Schema.ImplicitType implicitType) {
+    private Stream<AttributeType> attributes__BackwardsCompatible(Schema.ImplicitType implicitType) {
         //TODO: Make this less convoluted
         String[] implicitIdentifiers = implicitType.getLabel("").getValue().split("--");
         String prefix = implicitIdentifiers[0] + "-";
@@ -257,7 +262,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
      * @return the Type itself
      */
     private T unlinkAttribute(AttributeType<?> attributeToRemove, boolean isKey) {
-        Stream<AttributeType> attributeTypes = isKey ? keys() : attributes();
+        Stream<AttributeType> attributeTypes = isKey ? keys() : putHas();
         Schema.ImplicitType ownerSchema = isKey ? Schema.ImplicitType.KEY_OWNER : Schema.ImplicitType.HAS_OWNER;
         Schema.ImplicitType valueSchema = isKey ? Schema.ImplicitType.KEY_VALUE : Schema.ImplicitType.HAS_VALUE;
         Schema.ImplicitType relationSchema = isKey ? Schema.ImplicitType.KEY : Schema.ImplicitType.HAS;
@@ -353,61 +358,81 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         }
     }
 
-    /**
-     * Creates a relation type which allows this type and a Attribute type to be linked.
-     *
-     * @param attributeType The AttributeType which instances of this type should be allowed to play.
-     * @param has           the implicit relation type to build
-     * @param hasValue      the implicit role type to build for the AttributeType
-     * @param hasOwner      the implicit role type to build for the type
-     * @param required      Indicates if the Attribute is required on the entity
-     * @return The Type itself
-     */
-    private T has(AttributeType attributeType, Schema.ImplicitType has, Schema.ImplicitType hasValue, Schema.ImplicitType hasOwner, boolean required) {
-        Label attributeLabel = attributeType.label();
-        Role ownerRole = conceptManager.getRole(hasOwner.getLabel(attributeLabel).getValue());
-        if (ownerRole == null) {
-            ownerRole = conceptManager.createImplicitRole(hasOwner.getLabel(attributeLabel));
+//    /**
+//     * Creates a relation type which allows this type and a Attribute type to be linked.
+//     *
+//     * @param attributeType The AttributeType which instances of this type should be allowed to play.
+//     * @param has           the implicit relation type to build
+//     * @param hasValue      the implicit role type to build for the AttributeType
+//     * @param hasOwner      the implicit role type to build for the type
+//     * @param required      Indicates if the Attribute is required on the entity
+//     * @return The Type itself
+//     */
+//    private T has__Old(AttributeType attributeType, Schema.ImplicitType has, Schema.ImplicitType hasValue, Schema.ImplicitType hasOwner, boolean required) {
+//        Label attributeLabel = attributeType.label();
+//        Role ownerRole = conceptManager.getRole(hasOwner.getLabel(attributeLabel).getValue());
+//        if (ownerRole == null) {
+//            ownerRole = conceptManager.createImplicitRole(hasOwner.getLabel(attributeLabel));
+//        }
+//        Role valueRole = conceptManager.getRole(hasValue.getLabel(attributeLabel).getValue());
+//        if (valueRole == null) {
+//            valueRole = conceptManager.createImplicitRole(hasValue.getLabel(attributeLabel));
+//        }
+//
+//        RelationType relationType = conceptManager.getRelationType(has.getLabel(attributeLabel).getValue());
+//        if (relationType == null) {
+//            relationType = conceptManager.createImplicitRelationType(has.getLabel(attributeLabel));
+//        }
+//
+//        relationType.relates(ownerRole).relates(valueRole);
+//
+//        //this plays ownerRole;
+//        this.play(ownerRole, required);
+//        //TODO: Use explicit cardinality of 0-1 rather than just false
+//        //attributeType plays valueRole;
+//        ((AttributeTypeImpl) attributeType).play(valueRole, false);
+//
+//        updateAttributeRelationHierarchy(attributeType, has, hasValue, hasOwner, ownerRole, valueRole, relationType);
+//
+//        return getThis();
+//    }
+//
+//    public T has__Old(AttributeType attributeType) {
+//        checkLinkAttributeIsLegal(Schema.ImplicitType.KEY_OWNER, attributeType);
+//        return has__Old(attributeType, Schema.ImplicitType.HAS, Schema.ImplicitType.HAS_VALUE, Schema.ImplicitType.HAS_OWNER, false);
+//    }
+//
+//    public T key__Old(AttributeType attributeType) {
+//        checkLinkAttributeIsLegal(Schema.ImplicitType.HAS_OWNER, attributeType);
+//        return has__Old(attributeType, Schema.ImplicitType.KEY, Schema.ImplicitType.KEY_VALUE, Schema.ImplicitType.KEY_OWNER, true);
+//    }
+
+    @Override
+    public T putHas(AttributeType attributeType) {
+        validateOwnershipLegal(attributeType);
+
+        // check that the AttributeType is not already owned
+        if (this.putHas().noneMatch(attributeType::equals)) {
+            this.addEdge(ConceptVertex.from(attributeType), Schema.EdgeLabel.HAS);
         }
-        Role valueRole = conceptManager.getRole(hasValue.getLabel(attributeLabel).getValue());
-        if (valueRole == null) {
-            valueRole = conceptManager.createImplicitRole(hasValue.getLabel(attributeLabel));
+        // TODO could log a message if the ownership already exists
+        return getThis();
+
+    }
+
+    @Override
+    public T putKey(AttributeType attributeType) {
+        validateOwnershipLegal(attributeType);
+        // put a new KEY schema edge between this type and the attribute type
+        if (this.keys().noneMatch(attributeType::equals)) {
+            this.addEdge(ConceptVertex.from(attributeType), Schema.EdgeLabel.KEY);
         }
-
-        RelationType relationType = conceptManager.getRelationType(has.getLabel(attributeLabel).getValue());
-        if (relationType == null) {
-            relationType = conceptManager.createImplicitRelationType(has.getLabel(attributeLabel));
-        }
-
-        relationType.relates(ownerRole).relates(valueRole);
-
-        //this plays ownerRole;
-        this.play(ownerRole, required);
-        //TODO: Use explicit cardinality of 0-1 rather than just false
-        //attributeType plays valueRole;
-        ((AttributeTypeImpl) attributeType).play(valueRole, false);
-
-        updateAttributeRelationHierarchy(attributeType, has, hasValue, hasOwner, ownerRole, valueRole, relationType);
-
         return getThis();
     }
 
-    @Override
-    public T has(AttributeType attributeType) {
-        checkLinkAttributeIsLegal(Schema.ImplicitType.KEY_OWNER, attributeType);
-        return has(attributeType, Schema.ImplicitType.HAS, Schema.ImplicitType.HAS_VALUE, Schema.ImplicitType.HAS_OWNER, false);
-    }
-
-    @Override
-    public T key(AttributeType attributeType) {
-        checkLinkAttributeIsLegal(Schema.ImplicitType.HAS_OWNER, attributeType);
-        return has(attributeType, Schema.ImplicitType.KEY, Schema.ImplicitType.KEY_VALUE, Schema.ImplicitType.KEY_OWNER, true);
-    }
-
-    private void checkLinkAttributeIsLegal(Schema.ImplicitType implicitType, AttributeType attributeType) {
+    private void validateOwnershipLegal(AttributeType attributeType) {
         checkSchemaMutationAllowed();
         checkIfHasTargetMeta(attributeType);
-        checkNonOverlapOfImplicitRelations(implicitType, attributeType);
     }
 
     private void checkIfHasTargetMeta(AttributeType attributeType) {
@@ -417,18 +442,24 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         }
     }
 
-    /**
-     * Checks if the provided AttributeType is already used in an other implicit relation.
-     *
-     * @param implicitType  The implicit relation to check against.
-     * @param attributeType The AttributeType which should not be in that implicit relation
-     * @throws GraknConceptException when the AttributeType is already used in another implicit relation
-     */
-    private void checkNonOverlapOfImplicitRelations(Schema.ImplicitType implicitType, AttributeType attributeType) {
-        if (attributes(implicitType).anyMatch(rt -> rt.equals(attributeType))) {
-            throw GraknConceptException.duplicateHas(this, attributeType);
-        }
-    }
+//    private void checkLinkAttributeIsLegal(Schema.ImplicitType implicitType, AttributeType attributeType) {
+//        checkSchemaMutationAllowed();
+//        checkIfHasTargetMeta(attributeType);
+//        checkNonOverlapOfImplicitRelations(implicitType, attributeType);
+//    }
+//
+//    /**
+//     * Checks if the provided AttributeType is already used in an other implicit relation.
+//     *
+//     * @param implicitType  The implicit relation to check against.
+//     * @param attributeType The AttributeType which should not be in that implicit relation
+//     * @throws GraknConceptException when the AttributeType is already used in another implicit relation
+//     */
+//    private void checkNonOverlapOfImplicitRelations(Schema.ImplicitType implicitType, AttributeType attributeType) {
+//        if (attributes(implicitType).anyMatch(rt -> rt.equals(attributeType))) {
+//            throw GraknConceptException.duplicateHas(this, attributeType);
+//        }
+//    }
 
     @Override
     void trackRolePlayers() {

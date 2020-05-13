@@ -201,7 +201,7 @@ public class DegreeIT {
         AttributeType<String> altName =
                 tx.putAttributeType("alternate-name", AttributeType.ValueType.STRING);
 
-        animal.has(name).has(altName);
+        animal.putHas(name).putHas(altName);
 
         // add data to the graph
         Entity coco = animal.create();

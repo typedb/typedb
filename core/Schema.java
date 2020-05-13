@@ -93,11 +93,13 @@ public final class Schema {
         SUB("sub"),
         RELATES("relates"),
         PLAYS("plays"),
+        HAS("has"), // has schema edge
+        KEY("has"), // key schema edge
         POSITIVE_HYPOTHESIS("positive-hypothesis"),
         NEGATIVE_HYPOTHESIS("negative-hypothesis"),
         CONCLUSION("conclusion"),
         ROLE_PLAYER("role-player"),
-        ATTRIBUTE("attribute"),
+        ATTRIBUTE("attribute"), // attribute ownership edge
         SHARD("shard");
 
         private final String label;

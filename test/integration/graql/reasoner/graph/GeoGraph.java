@@ -70,7 +70,7 @@ public class GeoGraph {
         geographicalObject = tx.putEntityType("geoObject")
                 .plays(geoEntity)
                 .plays(entityLocation);
-        geographicalObject.has(key);
+        geographicalObject.putHas(key);
 
         continent = tx.putEntityType("continent")
                 .sup(geographicalObject)
@@ -89,7 +89,7 @@ public class GeoGraph {
                 .plays(entityLocation);
         university = tx.putEntityType("university")
                 .plays(geoEntity);
-        university.has(key);
+        university.putHas(key);
     }
 
     private void buildInstances() {

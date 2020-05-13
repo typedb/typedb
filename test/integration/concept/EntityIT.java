@@ -144,7 +144,7 @@ public class EntityIT {
         Label resourceLabel = Label.of("A Attribute Thing");
         EntityType entityType = tx.putEntityType("A Thing");
         AttributeType<String> attributeType = tx.putAttributeType(resourceLabel, AttributeType.ValueType.STRING);
-        entityType.has(attributeType);
+        entityType.putHas(attributeType);
 
         Entity entity = entityType.create();
         Attribute attribute = attributeType.create("A attribute thing");
@@ -174,7 +174,7 @@ public class EntityIT {
         String resourceTypeId = "A Attribute Thing";
         EntityType entityType = tx.putEntityType("A Thing");
         AttributeType<String> attributeType = tx.putAttributeType(resourceTypeId, AttributeType.ValueType.STRING);
-        entityType.has(attributeType);
+        entityType.putHas(attributeType);
 
         Entity entity = entityType.create();
         Attribute attribute1 = attributeType.create("A resource thing");
@@ -194,7 +194,7 @@ public class EntityIT {
         Label resourceLabel = Label.of("A Attribute Thing");
         EntityType entityType = tx.putEntityType("A Thing");
         AttributeType<String> attributeType = tx.putAttributeType(resourceLabel, AttributeType.ValueType.STRING);
-        entityType.key(attributeType);
+        entityType.putKey(attributeType);
 
         Entity entity = entityType.create();
         Attribute attribute = attributeType.create("A attribute thing");
@@ -210,7 +210,7 @@ public class EntityIT {
         String resourceTypeId = "A Attribute Thing";
         EntityType entityType = tx.putEntityType("A Thing");
         AttributeType<String> attributeType = tx.putAttributeType(resourceTypeId, AttributeType.ValueType.STRING);
-        entityType.key(attributeType);
+        entityType.putKey(attributeType);
 
         entityType.create();
 
@@ -239,7 +239,7 @@ public class EntityIT {
     public void whenGettingEntityKeys_EnsureKeysAreReturned(){
         AttributeType<String> attributeType = tx.putAttributeType("An Attribute", AttributeType.ValueType.STRING);
         AttributeType<String> keyType = tx.putAttributeType("A Key", AttributeType.ValueType.STRING);
-        EntityType entityType = tx.putEntityType("A Thing").has(attributeType).key(keyType);
+        EntityType entityType = tx.putEntityType("A Thing").putHas(attributeType).putKey(keyType);
 
         Attribute<String> a1 = attributeType.create("a1");
         Attribute<String> a2 = attributeType.create("a2");
@@ -269,7 +269,7 @@ public class EntityIT {
         Attribute<String> tim = name.create("Tim");
         Attribute<String> pim = name.create("Pim");
 
-        EntityType person = tx.putEntityType("person").has(name);
+        EntityType person = tx.putEntityType("person").putHas(name);
         Entity aPerson = person.create().has(fim).has(tim).has(pim);
         assertThat(aPerson.attributes().collect(toSet()), containsInAnyOrder(fim, tim, pim));
 
@@ -283,7 +283,7 @@ public class EntityIT {
         AttributeType<String> name = tx.putAttributeType("name", AttributeType.ValueType.STRING);
         Attribute<String> attribute1 = name.create("An attribute 1");
         Attribute<String> attribute2 = name.create("An attribute 2");
-        EntityType et = tx.putEntityType("et").has(name);
+        EntityType et = tx.putEntityType("et").putHas(name);
         Entity e = et.create();
 
         //Link Attributes

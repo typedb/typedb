@@ -485,7 +485,7 @@ public class GraknClientIT {
             grakn.core.kb.concept.api.Role actor = tx.putRole("actor");
             grakn.core.kb.concept.api.Role characterBeingPlayed = tx.putRole("character-being-played");
             grakn.core.kb.concept.api.RelationType hasCast = tx.putRelationType("has-cast").relates(actor).relates(characterBeingPlayed);
-            person.key(email).has(name);
+            person.putKey(email).putHas(name);
             person.plays(actor).plays(characterBeingPlayed);
 
             grakn.core.kb.concept.api.Entity marco = person.create().has(name.create("marco")).has(email.create("marco@yolo.com"));
@@ -515,7 +515,7 @@ public class GraknClientIT {
             grakn.core.kb.concept.api.Role actor = tx.putRole("actor");
             grakn.core.kb.concept.api.Role characterBeingPlayed = tx.putRole("character-being-played");
             grakn.core.kb.concept.api.RelationType hasCast = tx.putRelationType("has-cast").relates(actor).relates(characterBeingPlayed);
-            person.key(email).has(name);
+            person.putKey(email).putHas(name);
             person.plays(actor).plays(characterBeingPlayed);
 
             grakn.core.kb.concept.api.Entity marco = person.create().has(name.create("marco")).has(email.create("marco@yolo.com"));
@@ -591,7 +591,7 @@ public class GraknClientIT {
             grakn.core.kb.concept.api.Role actor = tx.putRole("actor");
             grakn.core.kb.concept.api.Role characterBeingPlayed = tx.putRole("character-being-played");
             grakn.core.kb.concept.api.RelationType hasCast = tx.putRelationType("has-cast").relates(actor).relates(characterBeingPlayed);
-            person.key(email).has(name);
+            person.putKey(email).putHas(name);
             person.plays(actor).plays(characterBeingPlayed);
 
             grakn.core.kb.concept.api.Entity marco = person.create().has(name.create("marco")).has(email.create("marco@yolo.com"));
@@ -633,8 +633,8 @@ public class GraknClientIT {
             tx.putRelationType("has-cast").relates(productionWithCast).relates(actor).relates(characterBeingPlayed);
             grakn.core.kb.concept.api.EntityType person = tx.putEntityType("person").plays(actor).plays(characterBeingPlayed);
 
-            person.has(tx.putAttributeType("gender", grakn.core.kb.concept.api.AttributeType.ValueType.STRING));
-            person.has(tx.putAttributeType("name", grakn.core.kb.concept.api.AttributeType.ValueType.STRING));
+            person.putHas(tx.putAttributeType("gender", grakn.core.kb.concept.api.AttributeType.ValueType.STRING));
+            person.putHas(tx.putAttributeType("name", grakn.core.kb.concept.api.AttributeType.ValueType.STRING));
 
             person.create();
             person.create();
@@ -656,7 +656,7 @@ public class GraknClientIT {
                     grakn.core.kb.concept.api.Type::instances,
                     grakn.client.concept.type.Type.Remote::instances);
             assertEqualConcepts(localConcept, remoteConcept,
-                    grakn.core.kb.concept.api.Type::attributes,
+                    grakn.core.kb.concept.api.Type::putHas,
                     grakn.client.concept.type.Type.Remote::attributes);
             assertEqualConcepts(localConcept, remoteConcept,
                     grakn.core.kb.concept.api.Type::keys,
@@ -812,7 +812,7 @@ public class GraknClientIT {
         try (Transaction localTx = localSession.transaction(Transaction.Type.WRITE)) {
             grakn.core.kb.concept.api.EntityType person = localTx.putEntityType("person");
             grakn.core.kb.concept.api.AttributeType<String> name = localTx.putAttributeType("name", grakn.core.kb.concept.api.AttributeType.ValueType.STRING);
-            person.has(name);
+            person.putHas(name);
             grakn.core.kb.concept.api.Attribute<String> alice = name.create("Alice");
             person.create().has(alice);
             localTx.commit();
@@ -846,7 +846,7 @@ public class GraknClientIT {
             grakn.core.kb.concept.api.EntityType human = tx.putEntityType("human").plays(owner);
             grakn.core.kb.concept.api.RelationType petOwnership = tx.putRelationType("pet-ownership").relates(pet).relates(owner);
             grakn.core.kb.concept.api.AttributeType<Long> age = tx.putAttributeType("age", grakn.core.kb.concept.api.AttributeType.ValueType.LONG);
-            human.has(age);
+            human.putHas(age);
 
             grakn.core.kb.concept.api.Entity coco = animal.create();
             grakn.core.kb.concept.api.Entity mike = human.create();
@@ -1074,13 +1074,13 @@ public class GraknClientIT {
             assertEquals(ImmutableSet.of(chaser), dog.playing().filter(role -> !role.isImplicit()).collect(toSet()));
             assertEquals(ImmutableSet.of(chased), cat.playing().filter(role -> !role.isImplicit()).collect(toSet()));
 
-            assertEquals(ImmutableSet.of(name, id), animal.attributes().collect(toSet()));
+            assertEquals(ImmutableSet.of(name, id), animal.putHas().collect(toSet()));
             assertEquals(ImmutableSet.of(id), animal.keys().collect(toSet()));
 
-            assertEquals(ImmutableSet.of(name, id), dog.attributes().collect(toSet()));
+            assertEquals(ImmutableSet.of(name, id), dog.putHas().collect(toSet()));
             assertEquals(ImmutableSet.of(id), dog.keys().collect(toSet()));
 
-            assertEquals(ImmutableSet.of(name, id), cat.attributes().collect(toSet()));
+            assertEquals(ImmutableSet.of(name, id), cat.putHas().collect(toSet()));
             assertEquals(ImmutableSet.of(id), cat.keys().collect(toSet()));
 
             assertEquals("good-dog", Iterables.getOnlyElement(dunstan.keys(id).collect(toSet())).value());

@@ -129,7 +129,7 @@ public interface AttributeType<D> extends Type {
      * @return The Type itself.
      */
     @Override
-    AttributeType<D> key(AttributeType attributeType);
+    AttributeType<D> putKey(AttributeType attributeType);
 
     /**
      * Creates a RelationType which allows this type and a resource type to be linked.
@@ -138,7 +138,7 @@ public interface AttributeType<D> extends Type {
      * @return The Type itself.
      */
     @Override
-    AttributeType<D> has(AttributeType attributeType);
+    AttributeType<D> putHas(AttributeType attributeType);
 
     //------------------------------------- Accessors ---------------------------------
 
