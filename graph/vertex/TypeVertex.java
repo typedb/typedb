@@ -37,7 +37,7 @@ import static hypergraph.common.collection.ByteArrays.join;
 import static hypergraph.common.iterator.Iterators.link;
 
 public abstract class TypeVertex extends Vertex<
-        Schema.Vertex.Type, TypeVertex, Schema.Edge.Type, TypeEdge, TypeVertex.DirectedTypeEdges.TypeVertexIterator> {
+        Schema.Vertex.Type, TypeVertex, Schema.Edge.Type, TypeEdge, TypeVertex.TypeEdgeMap.TypeVertexIteratorBuilder> {
 
     protected final Graph.Type graph;
     protected String label;
@@ -117,10 +117,10 @@ public abstract class TypeVertex extends Vertex<
 
     public abstract TypeVertex regex(String regex);
 
-    public abstract class DirectedTypeEdges extends DirectedEdges<
-            TypeVertex, Schema.Edge.Type, TypeEdge, DirectedTypeEdges.TypeVertexIterator> {
+    public abstract class TypeEdgeMap extends EdgeMap<
+                TypeVertex, Schema.Edge.Type, TypeEdge, TypeEdgeMap.TypeVertexIteratorBuilder> {
 
-        DirectedTypeEdges(Direction direction) {
+        TypeEdgeMap(Direction direction) {
             super(direction);
         }
 
@@ -143,9 +143,9 @@ public abstract class TypeVertex extends Vertex<
             for (Schema.Edge.Type schema : Schema.Edge.Type.values()) delete(schema);
         }
 
-        public class TypeVertexIterator extends DirectedEdges.VertexIterator<TypeVertex, TypeEdge> {
+        public class TypeVertexIteratorBuilder extends EdgeMap.VertexIteratorBuilder<TypeVertex, TypeEdge> {
 
-            TypeVertexIterator(Iterator<TypeEdge> edgeIterator) {
+            TypeVertexIteratorBuilder(Iterator<TypeEdge> edgeIterator) {
                 super(edgeIterator);
             }
 
@@ -176,7 +176,7 @@ public abstract class TypeVertex extends Vertex<
         }
 
         @Override
-        protected DirectedTypeEdges newDirectedEdges(DirectedEdges.Direction direction) {
+        protected TypeEdgeMap newDirectedEdges(EdgeMap.Direction direction) {
             return new BufferedDirectedTypeEdges(direction);
         }
 
@@ -263,17 +263,17 @@ public abstract class TypeVertex extends Vertex<
             ins.forEach(Edge::commit);
         }
 
-        public class BufferedDirectedTypeEdges extends DirectedTypeEdges {
+        public class BufferedDirectedTypeEdges extends TypeEdgeMap {
 
             BufferedDirectedTypeEdges(Direction direction) {
                 super(direction);
             }
 
             @Override
-            public TypeVertexIterator edge(Schema.Edge.Type schema) {
+            public TypeVertexIteratorBuilder edge(Schema.Edge.Type schema) {
                 Set<TypeEdge> t;
-                if ((t = edges.get(schema)) != null) return new TypeVertexIterator(t.iterator());
-                return new TypeVertexIterator(Collections.emptyIterator());
+                if ((t = edges.get(schema)) != null) return new TypeVertexIteratorBuilder(t.iterator());
+                return new TypeVertexIteratorBuilder(Collections.emptyIterator());
             }
 
             @Override
@@ -325,7 +325,7 @@ public abstract class TypeVertex extends Vertex<
         }
 
         @Override
-        protected DirectedTypeEdges newDirectedEdges(DirectedEdges.Direction direction) {
+        protected TypeEdgeMap newDirectedEdges(EdgeMap.Direction direction) {
             return new PersistedDirectedTypeEdges(direction);
         }
 
@@ -420,23 +420,23 @@ public abstract class TypeVertex extends Vertex<
             ins.forEach(Edge::commit);
         }
 
-        public class PersistedDirectedTypeEdges extends DirectedTypeEdges {
+        public class PersistedDirectedTypeEdges extends TypeEdgeMap {
 
             PersistedDirectedTypeEdges(Direction direction) {
                 super(direction);
             }
 
             @Override
-            public TypeVertexIterator edge(Schema.Edge.Type schema) {
+            public TypeVertexIteratorBuilder edge(Schema.Edge.Type schema) {
                 Iterator<TypeEdge> storageIterator = graph.storage().iterate(
                         join(iid, direction.isOut() ? schema.out().key() : schema.in().key()),
                         (key, value) -> new TypeEdge.Persisted(graph, key, value)
                 );
 
                 if (edges.get(schema) == null) {
-                    return new TypeVertexIterator(storageIterator);
+                    return new TypeVertexIteratorBuilder(storageIterator);
                 } else {
-                    return new TypeVertexIterator(link(edges.get(schema).iterator(), storageIterator));
+                    return new TypeVertexIteratorBuilder(link(edges.get(schema).iterator(), storageIterator));
                 }
             }
 

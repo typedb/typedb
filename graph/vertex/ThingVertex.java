@@ -30,7 +30,7 @@ import static hypergraph.common.collection.ByteArrays.join;
 
 public abstract class ThingVertex extends Vertex<
         Schema.Vertex.Thing, ThingVertex, Schema.Edge.Thing, ThingEdge,
-        ThingVertex.DirectedThingEdges.ThingVertexIterator> {
+        ThingVertex.ThingEdgeMap.ThingVertexIteratorBuilder> {
 
     protected final Graph.Thing graph;
     protected final byte[] typeIID;
@@ -71,17 +71,17 @@ public abstract class ThingVertex extends Vertex<
         return graph.type().get(typeIID);
     }
 
-    public abstract class DirectedThingEdges extends DirectedEdges<
-            ThingVertex, Schema.Edge.Thing, ThingEdge, DirectedThingEdges.ThingVertexIterator> {
+    public abstract class ThingEdgeMap extends EdgeMap<
+                ThingVertex, Schema.Edge.Thing, ThingEdge, ThingEdgeMap.ThingVertexIteratorBuilder> {
 
 
-        DirectedThingEdges(Direction direction) {
+        ThingEdgeMap(Direction direction) {
             super(direction);
         }
 
-        public class ThingVertexIterator extends DirectedEdges.VertexIterator<ThingVertex, ThingEdge> {
+        public class ThingVertexIteratorBuilder extends EdgeMap.VertexIteratorBuilder<ThingVertex, ThingEdge> {
 
-            ThingVertexIterator(Iterator<ThingEdge> edgeIterator) {
+            ThingVertexIteratorBuilder(Iterator<ThingEdge> edgeIterator) {
                 super(edgeIterator);
             }
         }
