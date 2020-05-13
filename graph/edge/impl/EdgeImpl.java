@@ -19,10 +19,10 @@
 package hypergraph.graph.edge.impl;
 
 import hypergraph.graph.Schema;
-import hypergraph.graph.edge.EdgeInt;
+import hypergraph.graph.edge.Edge;
 import hypergraph.graph.vertex.Vertex;
 
-public abstract class EdgeImpl<EDGE_SCHEMA extends Schema.Edge, VERTEX extends Vertex> implements EdgeInt {
+public abstract class EdgeImpl<EDGE_SCHEMA extends Schema.Edge, VERTEX extends Vertex> implements Edge {
 
     protected final EDGE_SCHEMA schema;
 

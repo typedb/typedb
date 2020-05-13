@@ -20,7 +20,7 @@ package hypergraph.graph.edge.impl;
 
 import hypergraph.graph.Graph;
 import hypergraph.graph.Schema;
-import hypergraph.graph.edge.TypeEdgeInt;
+import hypergraph.graph.edge.TypeEdge;
 import hypergraph.graph.vertex.TypeVertex;
 
 import javax.annotation.Nullable;
@@ -34,7 +34,7 @@ import static java.util.Objects.hash;
 /**
  * A Type Edge that connects two Type Vertices, and an overridden Type Vertex.
  */
-public abstract class TypeEdgeImpl extends EdgeImpl<Schema.Edge.Type, TypeVertex> implements TypeEdgeInt {
+public abstract class TypeEdgeImpl extends EdgeImpl<Schema.Edge.Type, TypeVertex> implements TypeEdge {
 
     protected final Graph.Type graph;
 

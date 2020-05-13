@@ -20,7 +20,7 @@ package hypergraph.graph.edge;
 
 import hypergraph.graph.vertex.TypeVertex;
 
-public interface TypeEdgeInt extends EdgeInt {
+public interface TypeEdge extends Edge {
 
     /**
      * @return type vertex overridden by the head of this type edge.

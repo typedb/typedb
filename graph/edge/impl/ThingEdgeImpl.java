@@ -20,10 +20,10 @@ package hypergraph.graph.edge.impl;
 
 import hypergraph.graph.Graph;
 import hypergraph.graph.Schema;
-import hypergraph.graph.edge.ThingEdgeInt;
+import hypergraph.graph.edge.ThingEdge;
 import hypergraph.graph.vertex.ThingVertex;
 
-public abstract class ThingEdgeImpl extends EdgeImpl<Schema.Edge.Thing, ThingVertex> implements ThingEdgeInt {
+public abstract class ThingEdgeImpl extends EdgeImpl<Schema.Edge.Thing, ThingVertex> implements ThingEdge {
 
     private final Graph.Thing graph;
 

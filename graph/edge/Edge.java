@@ -18,5 +18,30 @@
 
 package hypergraph.graph.edge;
 
-public interface ThingEdgeInt extends EdgeInt {
+import hypergraph.graph.Schema;
+import hypergraph.graph.vertex.Vertex;
+
+public interface Edge {
+
+    Schema.Edge schema();
+
+    Schema.Status status();
+
+    byte[] outIID();
+
+    byte[] inIID();
+
+    Vertex from();
+
+    Vertex to();
+
+    void delete();
+
+    void commit();
+
+    @Override
+    boolean equals(Object object);
+
+    @Override
+    int hashCode();
 }
