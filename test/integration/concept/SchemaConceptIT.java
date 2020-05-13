@@ -37,6 +37,7 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -98,6 +99,7 @@ public class SchemaConceptIT {
 
     }
 
+    @Ignore // TODO remove this test -- irrelevant as we should no longer write implicit relation types or any such hierarchies
     @Test
     public void whenSpecifyingTheResourceTypeOfAnEntityType_EnsureTheImplicitStructureIsCreated(){
         Label resourceLabel = Label.of("Attribute Type");

@@ -41,6 +41,7 @@ import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -275,6 +276,7 @@ public class EntityTypeIT {
         meta.plays(role);
     }
 
+    @Ignore // TODO remove this test -- irrelevant as we should no longer write implicit relation types or any such hierarchies
     @Test
     public void whenAddingResourcesWithSubTypesToEntityTypes_EnsureImplicitStructureFollowsSubTypes(){
         EntityType entityType1 = tx.putEntityType("Entity Type 1");
@@ -319,6 +321,7 @@ public class EntityTypeIT {
         assertEquals(metaRelation, superRelation.sup());
     }
 
+    @Ignore // TODO remove this test -- irrelevant as we should no longer write implicit relation types or any such hierarchies
     @Test
     public void whenAddingResourceWithAbstractSuperTypeToEntityType_EnsureImplicitStructureFollowsSubTypes(){
         EntityType entityType = tx.putEntityType("Entity Type");

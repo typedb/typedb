@@ -35,6 +35,8 @@ java_library(
         "//kb/keyspace",
         "//core",
 
+        "//kb/server",
+
         # External dependencies from @graknlabs
         "@graknlabs_graql//java:graql",
         "@graknlabs_common//:common",

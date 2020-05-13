@@ -189,6 +189,7 @@ public class GraqlDefineIT {
         assertExists(tx, type("123").plays("director"));
     }
 
+    @Ignore // TODO remove this test -- irrelevant as we should no longer write implicit relation types or any such hierarchies
     @Test
     public void testDefineReferenceByName() {
         String roleTypeLabel = HAS_OWNER.getLabel("title").getValue();

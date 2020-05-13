@@ -47,6 +47,7 @@ import grakn.client.concept.type.RelationType;
 import grakn.client.concept.type.Role;
 import grakn.client.concept.type.Type;
 import grakn.client.exception.GraknClientException;
+import grakn.core.kb.server.TMP_MIGRATION_HELPER;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import grakn.core.kb.server.exception.SessionException;
@@ -1071,7 +1072,7 @@ public class GraknClientIT {
             assertEquals(animal, cat.sup());
 
             assertEquals(ImmutableSet.of(chased, chaser), chases.roles().collect(toSet()));
-            assertEquals(ImmutableSet.of(chaser), dog.playing().filter(role -> !role.isImplicit()).collect(toSet()));
+            assertEquals(ImmutableSet.of(chaser), TMP_MIGRATION_HELPER.filterImplicit(dog.playing()).collect(toSet()));
             assertEquals(ImmutableSet.of(chased), cat.playing().filter(role -> !role.isImplicit()).collect(toSet()));
 
             assertEquals(ImmutableSet.of(name, id), animal.putHas().collect(toSet()));
