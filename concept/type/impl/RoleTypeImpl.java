@@ -21,8 +21,8 @@ package hypergraph.concept.type.impl;
 import hypergraph.common.exception.HypergraphException;
 import hypergraph.common.iterator.Iterators;
 import hypergraph.concept.type.RoleType;
-import hypergraph.graph.Graph;
 import hypergraph.graph.Schema;
+import hypergraph.graph.TypeGraph;
 import hypergraph.graph.vertex.TypeVertex;
 
 import javax.annotation.Nullable;
@@ -46,7 +46,7 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
         }
     }
 
-    private RoleTypeImpl(Graph.Type graph, String label, String relation) {
+    private RoleTypeImpl(TypeGraph graph, String label, String relation) {
         super(graph, label, Schema.Vertex.Type.ROLE_TYPE, relation);
     }
 
@@ -55,7 +55,7 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
         else return new RoleTypeImpl(vertex);
     }
 
-    public static RoleTypeImpl of(Graph.Type graph, String label, String relation) {
+    public static RoleTypeImpl of(TypeGraph graph, String label, String relation) {
         return new RoleTypeImpl(graph, label, relation);
     }
 

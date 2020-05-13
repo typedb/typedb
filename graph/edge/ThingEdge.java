@@ -18,5 +18,8 @@
 
 package hypergraph.graph.edge;
 
-public interface ThingEdge extends Edge {
+import hypergraph.graph.Schema;
+import hypergraph.graph.vertex.ThingVertex;
+
+public interface ThingEdge extends Edge<Schema.Edge.Thing, ThingVertex> {
 }

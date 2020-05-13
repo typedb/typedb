@@ -18,9 +18,10 @@
 
 package hypergraph.graph.edge;
 
+import hypergraph.graph.Schema;
 import hypergraph.graph.vertex.TypeVertex;
 
-public interface TypeEdge extends Edge {
+public interface TypeEdge extends Edge<Schema.Edge.Type, TypeVertex> {
 
     /**
      * @return type vertex overridden by the head of this type edge.

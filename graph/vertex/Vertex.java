@@ -20,6 +20,7 @@ package hypergraph.graph.vertex;
 
 import hypergraph.common.iterator.Iterators;
 import hypergraph.graph.Schema;
+import hypergraph.graph.edge.Edge;
 import hypergraph.graph.edge.impl.EdgeImpl;
 
 import java.util.Arrays;
@@ -33,7 +34,7 @@ public abstract class Vertex<
         VERTEX_SCHEMA extends Schema.Vertex,
         VERTEX extends Vertex,
         EDGE_SCHEMA extends Schema.Edge,
-        EDGE extends EdgeImpl<EDGE_SCHEMA, VERTEX>,
+        EDGE extends Edge<EDGE_SCHEMA, VERTEX>,
         VERTEX_ITER extends Vertex.EdgeMap.VertexIteratorBuilder<VERTEX, EDGE>> {
 
     protected final VERTEX_SCHEMA schema;
@@ -99,7 +100,7 @@ public abstract class Vertex<
     public abstract static class EdgeMap<
             DIR_VERTEX extends Vertex,
             DIR_EDGE_SCHEMA extends Schema.Edge,
-            DIR_EDGE extends EdgeImpl<DIR_EDGE_SCHEMA, DIR_VERTEX>,
+            DIR_EDGE extends Edge<DIR_EDGE_SCHEMA, DIR_VERTEX>,
             DIR_VERTEX_ITER extends EdgeMap.VertexIteratorBuilder<DIR_VERTEX, DIR_EDGE>> {
 
         protected final ConcurrentMap<DIR_EDGE_SCHEMA, Set<DIR_EDGE>> edges;
@@ -129,7 +130,7 @@ public abstract class Vertex<
             edges = new ConcurrentHashMap<>();
         }
 
-        public static class VertexIteratorBuilder<VERTEX_ITER extends Vertex, EDGE_ITER extends EdgeImpl<?, VERTEX_ITER>> {
+        public static class VertexIteratorBuilder<VERTEX_ITER extends Vertex, EDGE_ITER extends Edge<?, VERTEX_ITER>> {
 
             protected final Iterator<EDGE_ITER> edgeIterator;
 
@@ -138,11 +139,11 @@ public abstract class Vertex<
             }
 
             public Iterator<VERTEX_ITER> to() {
-                return Iterators.apply(edgeIterator, EdgeImpl::to);
+                return Iterators.apply(edgeIterator, Edge::to);
             }
 
             public Iterator<VERTEX_ITER> from() {
-                return Iterators.apply(edgeIterator, EdgeImpl::from);
+                return Iterators.apply(edgeIterator, Edge::from);
             }
         }
 

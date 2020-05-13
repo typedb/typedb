@@ -22,7 +22,7 @@ import hypergraph.Hypergraph;
 import hypergraph.common.concurrent.ManagedReadWriteLock;
 import hypergraph.common.exception.HypergraphException;
 import hypergraph.concept.Concepts;
-import hypergraph.graph.Graph;
+import hypergraph.graph.Graphs;
 import hypergraph.graph.KeyGenerator;
 import hypergraph.graph.Storage;
 import hypergraph.traversal.Traversal;
@@ -51,7 +51,7 @@ class CoreTransaction implements Hypergraph.Transaction {
     private final Transaction rocksTransaction;
     private final Type type;
     private final CoreStorage storage;
-    private final Graph graph;
+    private final Graphs graph;
     private final Concepts concepts;
     private final Traversal traversal;
     private final AtomicBoolean isOpen;
@@ -69,7 +69,7 @@ class CoreTransaction implements Hypergraph.Transaction {
         readOptions.setSnapshot(rocksTransaction.getSnapshot());
 
         storage = new CoreStorage();
-        graph = new Graph(storage);
+        graph = new Graphs(storage);
         concepts = new Concepts(graph);
         traversal = new Traversal(concepts);
 
@@ -77,7 +77,7 @@ class CoreTransaction implements Hypergraph.Transaction {
         isOpen.set(true);
     }
 
-    Graph graph() {
+    Graphs graph() {
         return graph;
     }
 

@@ -18,17 +18,6 @@
 
 package hypergraph.graph.edge.impl;
 
-import hypergraph.graph.Graph;
-import hypergraph.graph.Schema;
-import hypergraph.graph.edge.ThingEdge;
-import hypergraph.graph.vertex.ThingVertex;
+public abstract class ThingEdgeImpl {
 
-public abstract class ThingEdgeImpl extends EdgeImpl<Schema.Edge.Thing, ThingVertex> implements ThingEdge {
-
-    private final Graph.Thing graph;
-
-    ThingEdgeImpl(Graph.Thing graph, Schema.Edge.Thing schema) {
-        super(schema);
-        this.graph = graph;
-    }
 }

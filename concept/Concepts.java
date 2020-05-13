@@ -27,7 +27,7 @@ import hypergraph.concept.type.RelationType;
 import hypergraph.concept.type.impl.RelationTypeImpl;
 import hypergraph.concept.type.ThingType;
 import hypergraph.concept.type.impl.ThingTypeImpl;
-import hypergraph.graph.Graph;
+import hypergraph.graph.Graphs;
 import hypergraph.graph.Schema;
 import hypergraph.graph.vertex.TypeVertex;
 
@@ -35,9 +35,9 @@ import static hypergraph.common.exception.Error.TypeDefinition.INVALID_VALUE_CLA
 
 public class Concepts {
 
-    private final Graph graph;
+    private final Graphs graph;
 
-    public Concepts(Graph graph) {
+    public Concepts(Graphs graph) {
         this.graph = graph;
     }
 

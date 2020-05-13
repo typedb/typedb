@@ -18,10 +18,10 @@
 
 package hypergraph.graph.vertex;
 
-import hypergraph.graph.Graph;
 import hypergraph.graph.KeyGenerator;
 import hypergraph.graph.Schema;
-import hypergraph.graph.edge.impl.ThingEdgeImpl;
+import hypergraph.graph.ThingGraph;
+import hypergraph.graph.edge.ThingEdge;
 
 import java.util.Arrays;
 import java.util.Iterator;
@@ -29,13 +29,13 @@ import java.util.Iterator;
 import static hypergraph.common.collection.ByteArrays.join;
 
 public abstract class ThingVertex extends Vertex<
-        Schema.Vertex.Thing, ThingVertex, Schema.Edge.Thing, ThingEdgeImpl,
+        Schema.Vertex.Thing, ThingVertex, Schema.Edge.Thing, ThingEdge,
         ThingVertex.ThingEdgeMap.ThingVertexIteratorBuilder> {
 
-    protected final Graph.Thing graph;
+    protected final ThingGraph graph;
     protected final byte[] typeIID;
 
-    ThingVertex(Graph.Thing graph, Schema.Vertex.Thing schema, byte[] iid) {
+    ThingVertex(ThingGraph graph, Schema.Vertex.Thing schema, byte[] iid) {
         super(iid, schema);
         this.graph = graph;
         this.typeIID = Arrays.copyOfRange(iid, 1, 4);
@@ -58,7 +58,7 @@ public abstract class ThingVertex extends Vertex<
      *
      * @return the {@code Graph} containing all {@code ThingVertex}
      */
-    public Graph.Thing graph() {
+    public ThingGraph graph() {
         return graph;
     }
 
@@ -68,20 +68,20 @@ public abstract class ThingVertex extends Vertex<
      * @return the {@code TypeVertex} in which this {@code ThingVertex} is an instance of
      */
     public TypeVertex typeVertex() {
-        return graph.type().get(typeIID);
+        return graph.typeGraph().get(typeIID);
     }
 
     public abstract class ThingEdgeMap extends EdgeMap<
-                ThingVertex, Schema.Edge.Thing, ThingEdgeImpl, ThingEdgeMap.ThingVertexIteratorBuilder> {
+            ThingVertex, Schema.Edge.Thing, ThingEdge, ThingEdgeMap.ThingVertexIteratorBuilder> {
 
 
         ThingEdgeMap(Direction direction) {
             super(direction);
         }
 
-        public class ThingVertexIteratorBuilder extends EdgeMap.VertexIteratorBuilder<ThingVertex, ThingEdgeImpl> {
+        public class ThingVertexIteratorBuilder extends EdgeMap.VertexIteratorBuilder<ThingVertex, ThingEdge> {
 
-            ThingVertexIteratorBuilder(Iterator<ThingEdgeImpl> edgeIterator) {
+            ThingVertexIteratorBuilder(Iterator<ThingEdge> edgeIterator) {
                 super(edgeIterator);
             }
         }

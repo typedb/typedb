@@ -21,8 +21,8 @@ package hypergraph.concept.type.impl;
 import hypergraph.common.exception.HypergraphException;
 import hypergraph.common.iterator.Iterators;
 import hypergraph.concept.type.Type;
-import hypergraph.graph.Graph;
 import hypergraph.graph.Schema;
+import hypergraph.graph.TypeGraph;
 import hypergraph.graph.vertex.TypeVertex;
 
 import javax.annotation.Nullable;
@@ -37,11 +37,11 @@ public abstract class TypeImpl implements Type {
         this.vertex = Objects.requireNonNull(vertex);
     }
 
-    TypeImpl(Graph.Type graph, String label, Schema.Vertex.Type schema) {
+    TypeImpl(TypeGraph graph, String label, Schema.Vertex.Type schema) {
         this(graph, label, schema, null);
     }
 
-    TypeImpl(Graph.Type graph, String label, Schema.Vertex.Type schema, String scope) {
+    TypeImpl(TypeGraph graph, String label, Schema.Vertex.Type schema, String scope) {
         this.vertex = graph.put(schema, label, scope);
         TypeVertex superTypeVertex = graph.get(schema.root().label(), schema.root().scope());
         vertex.outs().put(Schema.Edge.Type.SUB, superTypeVertex);

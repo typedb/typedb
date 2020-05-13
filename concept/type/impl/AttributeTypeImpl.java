@@ -22,8 +22,8 @@ import hypergraph.common.exception.Error;
 import hypergraph.common.exception.HypergraphException;
 import hypergraph.common.iterator.Iterators;
 import hypergraph.concept.type.AttributeType;
-import hypergraph.graph.Graph;
 import hypergraph.graph.Schema;
+import hypergraph.graph.TypeGraph;
 import hypergraph.graph.vertex.TypeVertex;
 
 import javax.annotation.Nullable;
@@ -48,7 +48,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         }
     }
 
-    private AttributeTypeImpl(Graph.Type graph, java.lang.String label, Class<?> valueClass) {
+    private AttributeTypeImpl(TypeGraph graph, java.lang.String label, Class<?> valueClass) {
         super(graph, label, Schema.Vertex.Type.ATTRIBUTE_TYPE);
         vertex.valueClass(Schema.ValueClass.of(valueClass));
     }
@@ -219,7 +219,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
     public static class Boolean extends AttributeTypeImpl implements AttributeType.Boolean {
 
-        public Boolean(Graph.Type graph, java.lang.String label) {
+        public Boolean(TypeGraph graph, java.lang.String label) {
             super(graph, label, java.lang.Boolean.class);
         }
 
@@ -292,7 +292,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
     public static class Long extends AttributeTypeImpl implements AttributeType.Long {
 
-        public Long(Graph.Type graph, java.lang.String label) {
+        public Long(TypeGraph graph, java.lang.String label) {
             super(graph, label, java.lang.Long.class);
         }
 
@@ -367,7 +367,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
     public static class Double extends AttributeTypeImpl implements AttributeType.Double {
 
-        public Double(Graph.Type graph, java.lang.String label) {
+        public Double(TypeGraph graph, java.lang.String label) {
             super(graph, label, java.lang.Double.class);
         }
 
@@ -442,7 +442,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
     public static class String extends AttributeTypeImpl implements AttributeType.String {
 
-        public String(Graph.Type graph, java.lang.String label) {
+        public String(TypeGraph graph, java.lang.String label) {
             super(graph, label, java.lang.String.class);
         }
 
@@ -517,7 +517,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
     public static class DateTime extends AttributeTypeImpl implements AttributeType.DateTime {
 
-        public DateTime(Graph.Type graph, java.lang.String label) {
+        public DateTime(TypeGraph graph, java.lang.String label) {
             super(graph, label, LocalDateTime.class);
         }
 

@@ -21,9 +21,9 @@ package hypergraph.graph.edge;
 import hypergraph.graph.Schema;
 import hypergraph.graph.vertex.Vertex;
 
-public interface Edge {
+public interface Edge<EDGE_SCHEMA extends Schema.Edge, VERTEX extends Vertex> {
 
-    Schema.Edge schema();
+    EDGE_SCHEMA schema();
 
     Schema.Status status();
 
@@ -31,9 +31,9 @@ public interface Edge {
 
     byte[] inIID();
 
-    Vertex from();
+    VERTEX from();
 
-    Vertex to();
+    VERTEX to();
 
     void delete();
 

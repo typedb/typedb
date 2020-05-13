@@ -22,8 +22,8 @@ import hypergraph.common.exception.HypergraphException;
 import hypergraph.common.iterator.Iterators;
 import hypergraph.concept.thing.impl.EntityImpl;
 import hypergraph.concept.type.EntityType;
-import hypergraph.graph.Graph;
 import hypergraph.graph.Schema;
+import hypergraph.graph.TypeGraph;
 import hypergraph.graph.vertex.ThingVertex;
 import hypergraph.graph.vertex.TypeVertex;
 
@@ -47,7 +47,7 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
         }
     }
 
-    private EntityTypeImpl(Graph.Type graph, String label) {
+    private EntityTypeImpl(TypeGraph graph, String label) {
         super(graph, label, Schema.Vertex.Type.ENTITY_TYPE);
         assert !label.equals(Schema.Vertex.Type.Root.ENTITY.label());
     }
@@ -57,13 +57,13 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
         else return new EntityTypeImpl(vertex);
     }
 
-    public static EntityTypeImpl of(Graph.Type graph, String label) {
+    public static EntityTypeImpl of(TypeGraph graph, String label) {
         return new EntityTypeImpl(graph, label);
     }
 
     @Override
     public EntityImpl create() {
-        ThingVertex instance = vertex.graph().thing().create(Schema.Vertex.Thing.ENTITY, vertex.iid());
+        ThingVertex instance = vertex.graph().thingGraph().create(Schema.Vertex.Thing.ENTITY, vertex.iid());
         return new EntityImpl(instance);
     }
 

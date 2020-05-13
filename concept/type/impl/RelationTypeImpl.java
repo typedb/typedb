@@ -22,8 +22,8 @@ import hypergraph.common.exception.HypergraphException;
 import hypergraph.common.iterator.Iterators;
 import hypergraph.concept.type.RelationType;
 import hypergraph.concept.type.Type;
-import hypergraph.graph.Graph;
 import hypergraph.graph.Schema;
+import hypergraph.graph.TypeGraph;
 import hypergraph.graph.vertex.TypeVertex;
 
 import javax.annotation.Nullable;
@@ -53,7 +53,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
         }
     }
 
-    private RelationTypeImpl(Graph.Type graph, String label) {
+    private RelationTypeImpl(TypeGraph graph, String label) {
         super(graph, label, Schema.Vertex.Type.RELATION_TYPE);
     }
 
@@ -62,7 +62,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
         else return new RelationTypeImpl(vertex);
     }
 
-    public static RelationType of(Graph.Type graph, String label) {
+    public static RelationType of(TypeGraph graph, String label) {
         return new RelationTypeImpl(graph, label);
     }
 

@@ -18,8 +18,9 @@
 
 package hypergraph.graph.edge.impl;
 
-import hypergraph.graph.Graph;
 import hypergraph.graph.Schema;
+import hypergraph.graph.TypeGraph;
+import hypergraph.graph.edge.Edge;
 import hypergraph.graph.edge.TypeEdge;
 import hypergraph.graph.vertex.TypeVertex;
 
@@ -34,78 +35,22 @@ import static java.util.Objects.hash;
 /**
  * A Type Edge that connects two Type Vertices, and an overridden Type Vertex.
  */
-public abstract class TypeEdgeImpl extends EdgeImpl<Schema.Edge.Type, TypeVertex> implements TypeEdge {
-
-    protected final Graph.Type graph;
-
-    TypeEdgeImpl(Graph.Type graph, Schema.Edge.Type schema) {
-        super(schema);
-        this.graph = graph;
-    }
+public class TypeEdgeImpl {
 
     /**
      * A Buffered Type Edge that connects two Type Vertices, and an overridden Type Vertex.
      */
-    public static class Buffered extends TypeEdgeImpl {
+    public static class Buffered extends EdgeImpl.Buffered<TypeGraph, Schema.Edge.Type, TypeEdge, TypeVertex> implements TypeEdge {
 
-        private final AtomicBoolean committed;
-        private final TypeVertex from;
-        private final TypeVertex to;
         private TypeVertex overridden;
 
-        /**
-         * Default constructor for {@code TypeEdge.Buffered}.
-         *
-         * @param graph  the type graph, comprised of type vertices
-         * @param schema the type edge {@code schema}
-         * @param from   the tail type vertex
-         * @param to     the head type vertex
-         */
-        public Buffered(Graph.Type graph, Schema.Edge.Type schema, TypeVertex from, TypeVertex to) {
-            super(graph, schema);
-            this.from = from;
-            this.to = to;
-            committed = new AtomicBoolean(false);
+        public Buffered(TypeGraph graph, Schema.Edge.Type schema, TypeVertex from, TypeVertex to) {
+            super(graph, schema, from, to);
         }
 
-        /**
-         * @return the status of this edge: either {@code committed} or {@code buffered}
-         */
         @Override
-        public Schema.Status status() {
-            return committed.get() ? Schema.Status.COMMITTED : Schema.Status.BUFFERED;
-        }
-
-        /**
-         * @return the {@code iid} of this type edge pointing outwards
-         */
-        @Override
-        public byte[] outIID() {
-            return join(from().iid(), schema.out().key(), to().iid());
-        }
-
-        /**
-         * @return the {@code iid} of this type edge pointing inwards
-         */
-        @Override
-        public byte[] inIID() {
-            return join(to().iid(), schema.in().key(), from().iid());
-        }
-
-        /**
-         * @return the tail type vertex of this type edge
-         */
-        @Override
-        public TypeVertex from() {
-            return from;
-        }
-
-        /**
-         * @return the head type vertex of this type edge
-         */
-        @Override
-        public TypeVertex to() {
-            return to;
+        TypeEdgeImpl.Buffered getThis() {
+            return this;
         }
 
         /**
@@ -156,133 +101,25 @@ public abstract class TypeEdgeImpl extends EdgeImpl<Schema.Edge.Type, TypeVertex
                 if (schema.in() != null) graph.storage().put(inIID());
             }
         }
-
-        /**
-         * Determine the equality of a {@code TypeEdge.Buffered} against another.
-         *
-         * We only use {@code schema}, {@code from} and {@code to} as the are the fixed properties
-         * that do not change, unlike {@code overridden}. They are also the canonical properties
-         * required to identify a {@code TypeEdge.Buffered} uniquely.
-         *
-         * @param object that we want to compare against
-         * @return true if equal, else false
-         */
-        @Override
-        public boolean equals(Object object) {
-            if (this == object) return true;
-            if (object == null || getClass() != object.getClass()) return false;
-            TypeEdgeImpl.Buffered that = (TypeEdgeImpl.Buffered) object;
-            return (this.schema.equals(that.schema) &&
-                    this.from.equals(that.from) &&
-                    this.to.equals(that.to));
-        }
-
-        /**
-         * Determine the equality of a {@code TypeEdge.Buffered} against another.
-         *
-         * We only use {@code schema}, {@code from} and {@code to} as the are the fixed properties
-         * that do not change, unlike {@code overridden}. They are also the canonical properties
-         * required to identify a {@code TypeEdge.Buffered} uniquely.
-         *
-         * @return int of the hashcode
-         */
-        @Override
-        public final int hashCode() {
-            return hash(schema, from, to);
-        }
     }
 
     /**
      * Persisted Type Edge that connects two Type Vertices, and an overridden Type Vertex
      */
-    public static class Persisted extends TypeEdgeImpl {
+    public static class Persisted extends EdgeImpl.Persisted<TypeGraph, Schema.Edge.Type, TypeEdge, TypeVertex> implements TypeEdge {
 
-        private final byte[] outIID;
-        private final byte[] inIID;
-        private final byte[] fromIID;
-        private final byte[] toIID;
-        private final AtomicBoolean isDeleted;
-
-        private TypeVertex from;
-        private TypeVertex to;
-        private TypeVertex overridden;
         private byte[] overriddenIID;
+        private TypeVertex overridden;
 
-        /**
-         * Default constructor for {@code TypeEdge.Persisted}.
-         *
-         * The edge can be constructed from an {@code iid} that represents either an inwards
-         * or outwards pointing edge. Thus, we extract the {@code start} and {@code end} of it,
-         * and use the {@code infix} of the edge {@code iid} to determine the direction,
-         * and which vertex becomes {@code fromIID} or {@code toIID}.
-         *
-         * The head of this edge may or may not be overriding another type vertex.
-         * If it does the {@code overriddenIID} will not be null.
-         *
-         * @param graph         the type graph, comprised of type vertices
-         * @param iid           the {@code iid} of a persisted type edge
-         * @param overriddenIID the {@code iid} of the head vertex overrides
-         */
-        public Persisted(Graph.Type graph, byte[] iid, @Nullable byte[] overriddenIID) {
-            super(graph, Schema.Edge.Type.of(iid[Schema.IID.TYPE.length()]));
-            byte[] start = copyOfRange(iid, 0, Schema.IID.TYPE.length());
-            byte[] end = copyOfRange(iid, Schema.IID.TYPE.length() + 1, iid.length);
+        public Persisted(TypeGraph graph, byte[] iid, @Nullable byte[] overriddenIID) {
+            super(graph, Schema.Edge.Type.of(iid[Schema.IID.TYPE.length()]), Schema.IID.TYPE, iid);
 
             if (Schema.Edge.isOut(iid[Schema.IID.TYPE.length()])) {
-                fromIID = start; toIID = end; outIID = iid;
-                inIID = join(end, schema.in().key(), start);
                 this.overriddenIID = overriddenIID;
             } else {
-                fromIID = end; toIID = start; inIID = iid;
-                outIID = join(end, schema().out().key(), start);
                 this.overriddenIID = null;
+                assert overriddenIID == null || overriddenIID.length == 0;
             }
-
-            isDeleted = new AtomicBoolean(false);
-        }
-
-        /**
-         * @return the status of this edge: {@code persisted}
-         */
-        @Override
-        public Schema.Status status() {
-            return Schema.Status.PERSISTED;
-        }
-
-        /**
-         * @return the {@code iid} of this type edge pointing outwards
-         */
-        @Override
-        public byte[] outIID() {
-            return outIID;
-        }
-
-        /**
-         * @return the {@code iid} of this type edge pointing inwards
-         */
-        @Override
-        public byte[] inIID() {
-            return inIID;
-        }
-
-        /**
-         * @return the tail type vertex of this type edge
-         */
-        @Override
-        public TypeVertex from() {
-            if (from != null) return from;
-            from = graph.get(fromIID);
-            return from;
-        }
-
-        /**
-         * @return the head type vertex of this type edge
-         */
-        @Override
-        public TypeVertex to() {
-            if (to != null) return to;
-            to = graph.get(toIID);
-            return to;
         }
 
         /**
@@ -312,66 +149,9 @@ public abstract class TypeEdgeImpl extends EdgeImpl<Schema.Edge.Type, TypeVertex
             graph.storage().put(outIID, overriddenIID);
         }
 
-        /**
-         * Delete operation of a persisted type edge.
-         *
-         * This operation can only be performed once, and thus protected by {@code isDelete} boolean.
-         * The delete operation involves removing this type edge from the {@code from.outs()} and
-         * {@code to.ins()} edge collections, and then delete both directions of this edge
-         * from the graph storage.
-         */
         @Override
-        public void delete() {
-            if (isDeleted.compareAndSet(false, true)) {
-                if (from != null) from.outs().deleteNonRecursive(this);
-                if (to != null) to.ins().deleteNonRecursive(this);
-                graph.storage().delete(this.outIID);
-                graph.storage().delete(this.inIID);
-            }
-        }
-
-        /**
-         * No-op commit operation of a persisted type edge.
-         *
-         * Persisted type edges do not need to be committed back to the graph storage.
-         * The only property of a persisted type edge that can be changed is only the
-         * {@code overriddenIID}, and that is immediately written to storage when changed.
-         */
-        @Override
-        public void commit() {}
-
-        /**
-         * Determine the equality of a {@code TypeEdge} against another.
-         *
-         * We only use {@code schema}, {@code fromIID} and {@code toIID} as the are the fixed properties
-         * that do not change, unlike {@code overriddenIID} and {@code isDeleted}. They are also the
-         * canonical properties required to identify a {@code TypeEdge} uniquely.
-         *
-         * @param object that that we want to compare against
-         * @return true if equal, else false
-         */
-        @Override
-        public boolean equals(Object object) {
-            if (this == object) return true;
-            if (object == null || getClass() != object.getClass()) return false;
-            TypeEdgeImpl.Persisted that = (TypeEdgeImpl.Persisted) object;
-            return (this.schema.equals(that.schema) &&
-                    Arrays.equals(this.fromIID, that.fromIID) &&
-                    Arrays.equals(this.toIID, that.toIID));
-        }
-
-        /**
-         * HashCode of a {@code TypeEdge}.
-         *
-         * We only use {@code schema}, {@code fromIID} and {@code toIID} as the are the fixed properties
-         * that do not change, unlike {@code overriddenIID} and {@code isDeleted}. They are also the
-         * canonical properties required to identify a {@code TypeEdge} uniquely.
-         *
-         * @return int of the hashcode
-         */
-        @Override
-        public final int hashCode() {
-            return hash(schema, Arrays.hashCode(fromIID), Arrays.hashCode(toIID));
+        TypeEdgeImpl.Persisted getThis() {
+            return this;
         }
     }
 }

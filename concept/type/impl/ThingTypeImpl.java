@@ -23,8 +23,8 @@ import hypergraph.concept.type.AttributeType;
 import hypergraph.concept.type.RoleType;
 import hypergraph.concept.type.ThingType;
 import hypergraph.concept.type.Type;
-import hypergraph.graph.Graph;
 import hypergraph.graph.Schema;
+import hypergraph.graph.TypeGraph;
 import hypergraph.graph.vertex.TypeVertex;
 
 import javax.annotation.Nullable;
@@ -50,7 +50,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         super(vertex);
     }
 
-    ThingTypeImpl(Graph.Type graph, String label, Schema.Vertex.Type schema) {
+    ThingTypeImpl(TypeGraph graph, String label, Schema.Vertex.Type schema) {
         super(graph, label, schema);
     }
 
