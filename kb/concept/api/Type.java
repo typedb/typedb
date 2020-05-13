@@ -76,6 +76,10 @@ public interface Type extends SchemaConcept {
      */
     Stream<Role> playing();
 
+
+    Stream<AttributeType> has();
+    Stream<AttributeType> key();
+
     /**
      * @return The AttributeTypes which this Type is linked with.
      */

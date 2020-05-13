@@ -280,15 +280,32 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
 
     @Override
     public Relation attributeInferred(Attribute attribute) {
-        return attributeRelation(attribute, true);
+        return attributeRelation_backwardsCompatible(attribute, true);
     }
 
     @Override
     public Relation relhas(Attribute attribute) {
-        return attributeRelation(attribute, false);
+        return attributeRelation_backwardsCompatible(attribute, false);
     }
 
-    private Relation attributeRelation(Attribute attribute, boolean isInferred) {
+    private void attributeOwnership(Attribute attribute, boolean isInferred) {
+
+        // TODO this check should be removable after fully removing implicit types
+        if (!IS_BACKWARDS_COMPATIBLE_HAS(attribute)) {
+            attributeRelation_backwardsCompatible(attribute, isInferred);
+        }
+
+        if (type().has().noneMatch(attribute.type()::equals)) {
+            throw GraknConceptException.hasNotAllowed(this, attribute);
+        }
+
+        EdgeElement attributeEdge = addEdge(AttributeImpl.from(attribute), Schema.EdgeLabel.ATTRIBUTE);
+        if (isInferred) attributeEdge.property(Schema.EdgeProperty.IS_INFERRED, true);
+
+        conceptManager.createHasAttributeRelation(attributeEdge, isInferred);
+    }
+
+    private Relation attributeRelation_backwardsCompatible(Attribute attribute, boolean isInferred) {
         Schema.ImplicitType has = Schema.ImplicitType.HAS;
         Schema.ImplicitType hasValue = Schema.ImplicitType.HAS_VALUE;
         Schema.ImplicitType hasOwner = Schema.ImplicitType.HAS_OWNER;
@@ -313,6 +330,10 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
         if (isInferred) attributeEdge.property(Schema.EdgeProperty.IS_INFERRED, true);
 
         return conceptManager.createHasAttributeRelation(attributeEdge, hasAttribute, hasAttributeOwner, hasAttributeValue, isInferred);
+    }
+
+    private boolean IS_BACKWARDS_COMPATIBLE_HAS(Attribute attribute) {
+        return ((TypeImpl)this.type()).neighbours(Direction.OUT, Schema.EdgeLabel.HAS).anyMatch(attribute.type()::equals);
     }
 
     @Override

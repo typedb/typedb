@@ -95,7 +95,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
     }
 
     @Override
-    public Stream<AttributeType> putHas() {
+    public Stream<AttributeType> has() {
         Stream<AttributeType> attributes__BackwardsCompatible = attributes__BackwardsCompatible(Schema.ImplicitType.HAS_OWNER);
         Stream<AttributeType> attributes = neighbours(Direction.OUT, Schema.EdgeLabel.HAS);
         Stream<AttributeType> allAttributes = Stream.concat(attributes__BackwardsCompatible, attributes);
@@ -412,7 +412,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         validateOwnershipLegal(attributeType);
 
         // check that the AttributeType is not already owned
-        if (this.putHas().noneMatch(attributeType::equals)) {
+        if (this.has().noneMatch(attributeType::equals)) {
             this.addEdge(ConceptVertex.from(attributeType), Schema.EdgeLabel.HAS);
         }
         // TODO could log a message if the ownership already exists
