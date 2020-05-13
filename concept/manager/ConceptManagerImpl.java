@@ -189,7 +189,11 @@ public class ConceptManagerImpl implements ConceptManager {
         RelationTypeImpl relationType = new RelationTypeImpl(vertex, this, conceptNotificationChannel);
         relationType.createShard();
         relationType.sup(superType);
-        conceptNotificationChannel.relationTypeCreated(relationType);
+
+        // TODO remove this when do not have implicit types
+        if (!relationType.isImplicit()) {
+            conceptNotificationChannel.relationTypeCreated(relationType);
+        }
         transactionCache.cacheConcept(relationType);
         return relationType;
     }
@@ -332,7 +336,11 @@ public class ConceptManagerImpl implements ConceptManager {
         RelationReified relationReified = (RelationReified) createRelationReified(vertex, type);
 
         RelationImpl newRelation = new RelationImpl(relationReified);
-        conceptNotificationChannel.relationCreated(newRelation, isInferred);
+
+        // TODO this shouldn't be required after removing implicit types
+        if (!type.isImplicit()) {
+            conceptNotificationChannel.relationCreated(newRelation, isInferred);
+        }
 
         return newRelation;
     }
