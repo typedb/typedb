@@ -29,24 +29,19 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
-import javax.annotation.Nullable;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 
-/**
- * Fragment for traversing from an attribute type, to the types that can own it
- * We traverse to owners that are owners as both normal HAS or as KEY
- */
-public class InHasFragment extends EdgeFragment {
+public class OutKeyFragment extends EdgeFragment {
 
-    public InHasFragment(@Nullable VarProperty varProperty, Variable start, Variable end) {
+    public OutKeyFragment(VarProperty varProperty, Variable start, Variable end) {
         super(varProperty, start, end);
     }
 
     @Override
     protected NodeId getMiddleNodeId() {
-        return NodeId.of(NodeId.Type.HAS, new HashSet<>(Arrays.asList(start(), end())));
+        return NodeId.of(NodeId.Type.KEY, new HashSet<>(Arrays.asList(start(), end())));
     }
 
     @Override
@@ -61,17 +56,17 @@ public class InHasFragment extends EdgeFragment {
 
     @Override
     GraphTraversal<Vertex, Vertex> applyTraversalInner(GraphTraversal<Vertex, ? extends Element> traversal, ConceptManager conceptManager, Collection<Variable> vars) {
-        return traversal.in(Schema.EdgeLabel.HAS.getLabel(), Schema.EdgeLabel.KEY.getLabel());
-   }
+        return traversal.out(Schema.EdgeLabel.KEY.getLabel());
+    }
 
     @Override
     public String name() {
-        return "<-[has]-";
+        return "-[key]->";
     }
 
     @Override
     public double internalFragmentCost() {
         // TODO update
-        return COST_TYPES_PER_ROLE;
+        return COST_ROLES_PER_TYPE;
     }
 }
