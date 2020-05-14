@@ -125,6 +125,6 @@ public class EdgeElementImpl extends AbstractElementImpl<Edge> implements EdgeEl
     }
 
     public VertexElement asReifiedVertexElement(boolean isInferred) {
-        return elementFactory.addVertexElementWithEdgeIdProperty(Schema.BaseType.RELATION, Schema.conceptId(element()), isInferred);
+        return elementFactory.addVertexElementWithEdgeIdProperty(Schema.BaseType.RELATION, Schema.conceptId(element()).getValue(), isInferred);
     }
 }

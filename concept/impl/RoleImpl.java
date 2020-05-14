@@ -25,11 +25,10 @@ import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.concept.manager.ConceptNotificationChannel;
-import grakn.core.kb.concept.structure.Casting;
+import grakn.core.kb.concept.api.Casting;
 import grakn.core.kb.concept.structure.VertexElement;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
-import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -96,8 +95,6 @@ public class RoleImpl extends SchemaConceptImpl<Role> implements Role {
     public Stream<Casting> rolePlayers() {
         return relations()
                 .flatMap(RelationType::instances)
-                .map(relation -> RelationImpl.from(relation).reified())
-                .filter(Objects::nonNull)
                 .flatMap(relation -> relation.castingsRelation(this));
     }
 

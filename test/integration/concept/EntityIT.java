@@ -30,7 +30,7 @@ import grakn.core.kb.concept.api.Relation;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Thing;
-import grakn.core.kb.concept.structure.Casting;
+import grakn.core.kb.concept.api.Casting;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import grakn.core.kb.server.exception.InvalidKBException;
@@ -112,14 +112,14 @@ public class EntityIT {
         Casting rp2 = ConceptDowncasting.thing(rolePlayer2).castingsInstance().findAny().get();
         Casting rp3 = ConceptDowncasting.thing(rolePlayer3).castingsInstance().findAny().get();
 
-        assertThat(ConceptDowncasting.relation(relation).reified().castingsRelation().collect(toSet()), containsInAnyOrder(rp1, rp2, rp3));
+        assertThat(relation.castingsRelation().collect(toSet()), containsInAnyOrder(rp1, rp2, rp3));
 
         //Delete And Check Again
         ConceptId idOfDeleted = rolePlayer1.id();
         rolePlayer1.delete();
 
         assertNull(tx.getConcept(idOfDeleted));
-        assertThat(ConceptDowncasting.relation(relation).reified().castingsRelation().collect(toSet()), containsInAnyOrder(rp2, rp3));
+        assertThat(relation.castingsRelation().collect(toSet()), containsInAnyOrder(rp2, rp3));
     }
 
     @Test

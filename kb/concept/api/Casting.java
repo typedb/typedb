@@ -16,16 +16,10 @@
  *
  */
 
-package grakn.core.kb.concept.structure;
+package grakn.core.kb.concept.api;
 
-import grakn.core.kb.concept.api.Relation;
-import grakn.core.kb.concept.api.RelationType;
-import grakn.core.kb.concept.api.Role;
-import grakn.core.kb.concept.api.Thing;
 
 public interface Casting {
-
-    EdgeElement edge();
 
     /**
      * @return The Role the Thing is playing

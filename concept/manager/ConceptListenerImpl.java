@@ -19,7 +19,6 @@
 package grakn.core.concept.manager;
 
 import grakn.core.concept.impl.RelationImpl;
-import grakn.core.concept.impl.RelationReified;
 import grakn.core.concept.impl.ThingImpl;
 import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.Attribute;
@@ -36,7 +35,7 @@ import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.concept.manager.ConceptListener;
-import grakn.core.kb.concept.structure.Casting;
+import grakn.core.kb.concept.api.Casting;
 import grakn.core.kb.graql.reasoner.cache.QueryCache;
 import grakn.core.kb.graql.reasoner.cache.RuleCache;
 import grakn.core.kb.keyspace.AttributeManager;
@@ -227,10 +226,7 @@ public class ConceptListenerImpl implements ConceptListener {
     public void trackRelationInstancesRolePlayers(RelationType relationType) {
         relationType.instances().forEach(concept -> {
             RelationImpl relation = RelationImpl.from(concept);
-            RelationReified reifedRelation = relation.reified();
-            if (reifedRelation != null) {
-                reifedRelation.castingsRelation().forEach(rolePlayer -> transactionCache.trackForValidation(rolePlayer));
-            }
+            relation.castingsRelation().forEach(rolePlayer -> transactionCache.trackForValidation(rolePlayer));
         });
     }
 

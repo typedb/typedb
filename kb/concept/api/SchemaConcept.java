@@ -18,6 +18,7 @@
 
 package grakn.core.kb.concept.api;
 
+
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
 import java.util.stream.Stream;

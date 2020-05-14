@@ -98,7 +98,7 @@ public class EntityTypeIT {
     public void whenCreatingEntityTypeUsingLabelTakenByAnotherType_Throw(){
         Role original = tx.putRole("Role Type");
         expectedException.expect(PropertyNotUniqueException.class);
-        expectedException.expectMessage(PropertyNotUniqueException.cannotCreateProperty(original, Schema.VertexProperty.SCHEMA_LABEL, original.label()).getMessage());
+        expectedException.expectMessage(PropertyNotUniqueException.cannotCreateProperty(original.toString(), Schema.VertexProperty.SCHEMA_LABEL, original.label()).getMessage());
         tx.putEntityType(original.label());
     }
 

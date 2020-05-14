@@ -170,7 +170,7 @@ public class ConceptUtils {
     public static void validateBaseType(SchemaConceptImpl schemaConcept, Schema.BaseType expectedBaseType) {
         // throws if label is already taken for a different type
         if (!expectedBaseType.equals(schemaConcept.baseType())) {
-            throw PropertyNotUniqueException.cannotCreateProperty(schemaConcept, Schema.VertexProperty.SCHEMA_LABEL, schemaConcept.label());
+            throw PropertyNotUniqueException.cannotCreateProperty(schemaConcept.toString(), Schema.VertexProperty.SCHEMA_LABEL, schemaConcept.label());
         }
     }
 }

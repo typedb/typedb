@@ -21,10 +21,6 @@ package grakn.core.concept.structure;
 import grakn.core.core.JanusTraversalSourceProvider;
 import grakn.core.core.Schema;
 import grakn.core.graph.core.JanusGraphTransaction;
-import grakn.core.kb.concept.api.ConceptId;
-import grakn.core.kb.concept.api.LabelId;
-import grakn.core.kb.concept.api.Role;
-import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.concept.structure.EdgeElement;
 import grakn.core.kb.concept.structure.GraknElementException;
 import grakn.core.kb.concept.structure.Shard;
@@ -125,9 +121,9 @@ public final class ElementFactory {
      * @param conceptId ConceptId to be set on the vertex
      * @return just created Vertex
      */
-    VertexElement addVertexElementWithEdgeIdProperty(Schema.BaseType baseType, ConceptId conceptId, boolean isInferred) {
+    VertexElement addVertexElementWithEdgeIdProperty(Schema.BaseType baseType, String conceptId, boolean isInferred) {
         Vertex vertex = janusTx.addVertex(baseType.name());
-        vertex.property(Schema.VertexProperty.EDGE_RELATION_ID.name(), conceptId.getValue());
+        vertex.property(Schema.VertexProperty.EDGE_RELATION_ID.name(), conceptId);
         VertexElement vertexElement = buildVertexElement(vertex);
         if (isInferred) {
             vertexElement.property(Schema.VertexProperty.IS_INFERRED, true);
@@ -151,30 +147,30 @@ public final class ElementFactory {
     }
 
 
-    Stream<EdgeElement> rolePlayerEdges(String vertexId, Type type, Set<Integer> roleTypesIds) {
+    Stream<EdgeElement> rolePlayerEdges(String vertexId, Integer typeLabelId, Set<Integer> roleTypesIds) {
         return traversalSourceProvider.getTinkerTraversal()
                 .V(vertexId)
                 .outE(Schema.EdgeLabel.ROLE_PLAYER.getLabel())
-                .has(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID.name(), type.labelId().getValue())
+                .has(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID.name(), typeLabelId)
                 .has(Schema.EdgeProperty.ROLE_LABEL_ID.name(), P.within(roleTypesIds))
                 .toStream()
                 .filter(edge -> ElementUtils.isValidElement(edge))// filter out invalid or deleted edges that are cached
                 .map(edge -> buildEdgeElement(edge));
     }
 
-    boolean rolePlayerEdgeExists(String startVertexId, Type relationType, Role role, String endVertexId) {
-        //Checking if the edge exists
-        GraphTraversal<Vertex, Edge> traversal = traversalSourceProvider.getTinkerTraversal().V(startVertexId)
-                .outE(Schema.EdgeLabel.ROLE_PLAYER.getLabel())
-                .has(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID.name(), relationType.labelId().getValue())
-                .has(Schema.EdgeProperty.ROLE_LABEL_ID.name(), role.labelId().getValue())
-                .as("edge")
-                .inV()
-                .hasId(endVertexId)
-                .select("edge");
-
-        return traversal.hasNext();
-    }
+//    boolean rolePlayerEdgeExists(String startVertexId, Integer relationTypeLabelId, Integer roleLabelId, String endVertexId) {
+//        //Checking if the edge exists
+//        GraphTraversal<Vertex, Edge> traversal = traversalSourceProvider.getTinkerTraversal().V(startVertexId)
+//                .outE(Schema.EdgeLabel.ROLE_PLAYER.getLabel())
+//                .has(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID.name(), relationTypeLabelId)
+//                .has(Schema.EdgeProperty.ROLE_LABEL_ID.name(), roleLabelId)
+//                .as("edge")
+//                .inV()
+//                .hasId(endVertexId)
+//                .select("edge");
+//
+//        return traversal.hasNext();
+//    }
 
     Stream<VertexElement> shortcutNeighbors(String startConceptId, Set<Integer> ownerRoleIds, Set<Integer> valueRoleIds,
                                             boolean ownerToValueOrdering) {
@@ -182,10 +178,10 @@ public final class ElementFactory {
         GraphTraversal<Vertex, Vertex> shortcutTraversal = !(ownerRoleIds.isEmpty() || valueRoleIds.isEmpty()) ?
                 __.inE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
                         as("edge").
-                        has(Schema.EdgeProperty.ROLE_LABEL_ID.name(), P.within(ownerToValueOrdering ? ownerRoleIds : valueRoleIds)).
+                        has(Schema.EdgeProperty.ROLE_LABEL_ID.name(), P.within(ownerToValueOrdering ? ownerRoleIds : ownerRoleIds)).
                         outV().
                         outE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
-                        has(Schema.EdgeProperty.ROLE_LABEL_ID.name(), P.within(ownerToValueOrdering ? valueRoleIds : ownerRoleIds)).
+                        has(Schema.EdgeProperty.ROLE_LABEL_ID.name(), P.within(ownerToValueOrdering ? valueRoleIds : valueRoleIds)).
                         where(P.neq("edge")).
                         inV()
                 :
@@ -225,17 +221,17 @@ public final class ElementFactory {
                 .map(vertex -> buildVertexElement(vertex));
     }
 
-    Stream<EdgeElement> edgeRelationsConnectedToInstancesOfType(String typeVertexId, LabelId edgeInstanceLabelId) {
-        return traversalSourceProvider.getTinkerTraversal()
-                .V()
-                .hasId(typeVertexId)
-                .in(Schema.EdgeLabel.SHARD.getLabel())
-                .in(Schema.EdgeLabel.ISA.getLabel())
-                .outE(Schema.EdgeLabel.ATTRIBUTE.getLabel())
-                .has(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID.name(), edgeInstanceLabelId.getValue())
-                .toStream()
-                .map(edge -> buildEdgeElement(edge));
-    }
+//    Stream<EdgeElement> edgeRelationsConnectedToInstancesOfType(String typeVertexId, Integer edgeInstanceLabelId) {
+//        return traversalSourceProvider.getTinkerTraversal()
+//                .V()
+//                .hasId(typeVertexId)
+//                .in(Schema.EdgeLabel.SHARD.getLabel())
+//                .in(Schema.EdgeLabel.ISA.getLabel())
+//                .outE(Schema.EdgeLabel.ATTRIBUTE.getLabel())
+//                .has(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID.name(), edgeInstanceLabelId)
+//                .toStream()
+//                .map(edge -> buildEdgeElement(edge));
+//    }
 
     EdgeElement edgeBetweenVertices(String startVertexId, String endVertexId, Schema.EdgeLabel edgeLabel) {
         GraphTraversal<Vertex, Edge> traversal = traversalSourceProvider.getTinkerTraversal()

@@ -23,7 +23,6 @@ import grakn.core.concept.impl.AttributeTypeImpl;
 import grakn.core.concept.impl.EntityImpl;
 import grakn.core.concept.impl.EntityTypeImpl;
 import grakn.core.concept.impl.RelationImpl;
-import grakn.core.concept.impl.RelationReified;
 import grakn.core.concept.impl.RelationTypeImpl;
 import grakn.core.concept.impl.RoleImpl;
 import grakn.core.concept.impl.RuleImpl;
@@ -40,7 +39,6 @@ import grakn.core.kb.concept.api.EntityType;
 import grakn.core.kb.concept.api.GraknConceptException;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.LabelId;
-import grakn.core.kb.concept.api.RelationStructure;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Rule;
@@ -298,18 +296,18 @@ public class ConceptManagerImpl implements ConceptManager {
 //        conceptNotificationChannel.hasAttributeRelationCreated(newRelation, isInferred);
     }
 
-    /**
-     * Used by RelationEdge when it needs to reify a relation
-     * NOTE The passed in vertex is already prepared outside of the ConceptManager
-     * @return ReifiedRelation
-     */
-    @Override
-    public RelationStructure createRelationReified(VertexElement vertex, RelationType type) {
-        preCheckForInstanceCreation(type);
-        RelationReified relationReified = new RelationReified(vertex, this, conceptNotificationChannel);
-        relationReified.type(TypeImpl.from(type));
-        return relationReified;
-    }
+//    /**
+//     * Used by RelationEdge when it needs to reify a relation
+//     * NOTE The passed in vertex is already prepared outside of the ConceptManager
+//     * @return ReifiedRelation
+//     */
+//    @Override
+//    public RelationStructure createRelationReified(VertexElement vertex, RelationType type) {
+//        preCheckForInstanceCreation(type);
+//        RelationReified relationReified = new RelationReified(vertex, this, conceptNotificationChannel);
+//        relationReified.type(TypeImpl.from(type));
+//        return relationReified;
+//    }
 
     /**
      * Create a new Relation instance from a vertex

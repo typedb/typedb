@@ -70,6 +70,7 @@ public interface Relation extends Thing {
      */
     @CheckReturnValue
     Stream<Thing> rolePlayers(Role... roles);
+    Stream<Casting> castingsRelation(Role... roles);
 
     /**
      * Expands this Relation to include a new role player which is playing a specific role.

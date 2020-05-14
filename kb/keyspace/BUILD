@@ -26,6 +26,7 @@ java_library(
     ]),
     tags = ["maven_coordinates=io.grakn.core:grakn-kb-keyspace:{pom_version}"],
     deps = [
+        "//core",
         "//kb/concept/api",
         "//kb/concept/manager",
 

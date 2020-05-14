@@ -20,7 +20,6 @@ package grakn.core.concept.impl;
 
 import com.google.common.collect.Sets;
 import grakn.core.concept.cache.ConceptCache;
-import grakn.core.concept.structure.CastingImpl;
 import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
@@ -37,7 +36,7 @@ import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.concept.manager.ConceptNotificationChannel;
 import grakn.core.kb.concept.structure.AbstractElement;
-import grakn.core.kb.concept.structure.Casting;
+import grakn.core.kb.concept.api.Casting;
 import grakn.core.kb.concept.structure.EdgeElement;
 import grakn.core.kb.concept.structure.VertexElement;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -47,6 +46,7 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toSet;
@@ -247,7 +247,8 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
     }
 
     private Stream<Relation> reifiedRelations(Role... roles) {
-        Stream<VertexElement> reifiedRelationVertices = vertex().reifiedRelations(roles);
+        Set<Integer> roleIds = Arrays.stream(roles).map(role -> role.labelId().getValue()).collect(Collectors.toSet());
+        Stream<VertexElement> reifiedRelationVertices = vertex().reifiedRelations(roleIds);
         return reifiedRelationVertices.map(vertexElement -> conceptManager.buildConcept(vertexElement));
     }
 

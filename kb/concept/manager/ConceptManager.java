@@ -28,7 +28,6 @@ import grakn.core.kb.concept.api.EntityType;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.LabelId;
 import grakn.core.kb.concept.api.Relation;
-import grakn.core.kb.concept.api.RelationStructure;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Rule;
@@ -79,9 +78,6 @@ public interface ConceptManager {
     RelationType createImplicitRelationType(Label label);
     Role createImplicitRole(Label label);
     void createHasAttributeRelation(EdgeElement attributeEdge, boolean isInferred);
-
-    // TODO this wants to return implementation RelationReified, not interface RelationStructure, using downcasts for now
-    RelationStructure createRelationReified(VertexElement relationVertex, RelationType type);
 
     EntityType createEntityType(Label label, EntityType superType);
     RelationType createRelationType(Label label, RelationType superType);
