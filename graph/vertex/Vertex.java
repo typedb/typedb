@@ -18,39 +18,34 @@
 
 package hypergraph.graph.vertex;
 
-import hypergraph.common.iterator.Iterators;
+import hypergraph.graph.edge.EdgeMapImpl;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.edge.Edge;
 
 import java.util.Arrays;
-import java.util.Iterator;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.function.Consumer;
 
 public abstract class Vertex<
         VERTEX_SCHEMA extends Schema.Vertex,
         VERTEX extends Vertex,
         EDGE_SCHEMA extends Schema.Edge,
         EDGE extends Edge<EDGE_SCHEMA, VERTEX>,
-        VERTEX_ITER extends Vertex.EdgeMap.VertexIteratorBuilder<VERTEX, EDGE>> {
+        VERTEX_ITER extends EdgeMapImpl.VertexIteratorBuilder<VERTEX, EDGE>> {
 
     protected final VERTEX_SCHEMA schema;
 
-    protected final EdgeMap<VERTEX, EDGE_SCHEMA, EDGE, VERTEX_ITER> outs;
-    protected final EdgeMap<VERTEX, EDGE_SCHEMA, EDGE, VERTEX_ITER> ins;
+    protected final EdgeMapImpl<VERTEX, EDGE_SCHEMA, EDGE, VERTEX_ITER> outs;
+    protected final EdgeMapImpl<VERTEX, EDGE_SCHEMA, EDGE, VERTEX_ITER> ins;
 
     protected byte[] iid;
 
     Vertex(byte[] iid, VERTEX_SCHEMA schema) {
         this.schema = schema;
         this.iid = iid;
-        outs = newDirectedEdges(EdgeMap.Direction.OUT);
-        ins = newDirectedEdges(EdgeMap.Direction.IN);
+        outs = newEdgeMap(EdgeMapImpl.Direction.OUT);
+        ins = newEdgeMap(EdgeMapImpl.Direction.IN);
     }
 
-    protected abstract EdgeMap<VERTEX, EDGE_SCHEMA, EDGE, VERTEX_ITER> newDirectedEdges(EdgeMap.Direction direction);
+    protected abstract EdgeMapImpl<VERTEX, EDGE_SCHEMA, EDGE, VERTEX_ITER> newEdgeMap(EdgeMapImpl.Direction direction);
 
     public abstract Schema.Status status();
 
@@ -62,11 +57,11 @@ public abstract class Vertex<
 
     public abstract void delete();
 
-    public EdgeMap<VERTEX, EDGE_SCHEMA, EDGE, VERTEX_ITER> outs() {
+    public EdgeMapImpl<VERTEX, EDGE_SCHEMA, EDGE, VERTEX_ITER> outs() {
         return outs;
     }
 
-    public EdgeMap<VERTEX, EDGE_SCHEMA, EDGE, VERTEX_ITER> ins() {
+    public EdgeMapImpl<VERTEX, EDGE_SCHEMA, EDGE, VERTEX_ITER> ins() {
         return ins;
     }
 
@@ -96,76 +91,4 @@ public abstract class Vertex<
         return Arrays.hashCode(iid);
     }
 
-    public abstract static class EdgeMap<
-            DIR_VERTEX extends Vertex,
-            DIR_EDGE_SCHEMA extends Schema.Edge,
-            DIR_EDGE extends Edge<DIR_EDGE_SCHEMA, DIR_VERTEX>,
-            DIR_VERTEX_ITER extends EdgeMap.VertexIteratorBuilder<DIR_VERTEX, DIR_EDGE>> {
-
-        protected final ConcurrentMap<DIR_EDGE_SCHEMA, Set<DIR_EDGE>> edges;
-        protected final Direction direction;
-
-        enum Direction {
-            OUT(true),
-            IN(false);
-
-            private final boolean isOut;
-
-            Direction(boolean isOut) {
-                this.isOut = isOut;
-            }
-
-            public boolean isOut() {
-                return isOut;
-            }
-
-            public boolean isIn() {
-                return !isOut;
-            }
-        }
-
-        EdgeMap(Direction direction) {
-            this.direction = direction;
-            edges = new ConcurrentHashMap<>();
-        }
-
-        public static class VertexIteratorBuilder<VERTEX_ITER extends Vertex, EDGE_ITER extends Edge<?, VERTEX_ITER>> {
-
-            protected final Iterator<EDGE_ITER> edgeIterator;
-
-            VertexIteratorBuilder(Iterator<EDGE_ITER> edgeIterator) {
-                this.edgeIterator = edgeIterator;
-            }
-
-            public Iterator<VERTEX_ITER> to() {
-                return Iterators.apply(edgeIterator, Edge::to);
-            }
-
-            public Iterator<VERTEX_ITER> from() {
-                return Iterators.apply(edgeIterator, Edge::from);
-            }
-        }
-
-        public abstract DIR_VERTEX_ITER edge(DIR_EDGE_SCHEMA schema);
-
-        public abstract DIR_EDGE edge(DIR_EDGE_SCHEMA schema, DIR_VERTEX adjacent);
-
-        public abstract void put(DIR_EDGE_SCHEMA schema, DIR_VERTEX adjacent);
-
-        public abstract void delete(DIR_EDGE_SCHEMA schema, DIR_VERTEX adjacent);
-
-        public abstract void delete(DIR_EDGE_SCHEMA schema);
-
-        public abstract void deleteNonRecursive(DIR_EDGE edge);
-
-        protected abstract void deleteAll();
-
-        public void putNonRecursive(DIR_EDGE edge) {
-            edges.computeIfAbsent(edge.schema(), e -> ConcurrentHashMap.newKeySet()).add(edge);
-        }
-
-        protected void forEach(Consumer<DIR_EDGE> function) {
-            edges.forEach((key, set) -> set.forEach(function));
-        }
-    }
 }

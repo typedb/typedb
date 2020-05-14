@@ -19,6 +19,7 @@
 package hypergraph.graph.vertex;
 
 import hypergraph.common.iterator.Iterators;
+import hypergraph.graph.edge.EdgeMapImpl;
 import hypergraph.graph.util.KeyGenerator;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.TypeGraph;
@@ -118,8 +119,8 @@ public abstract class TypeVertex extends Vertex<
 
     public abstract TypeVertex regex(String regex);
 
-    public abstract class TypeEdgeMap extends EdgeMap<
-                TypeVertex, Schema.Edge.Type, TypeEdge, TypeEdgeMap.TypeVertexIteratorBuilder> {
+    public abstract class TypeEdgeMap extends EdgeMapImpl<
+                    TypeVertex, Schema.Edge.Type, TypeEdge, TypeEdgeMap.TypeVertexIteratorBuilder> {
 
         TypeEdgeMap(Direction direction) {
             super(direction);
@@ -140,11 +141,11 @@ public abstract class TypeVertex extends Vertex<
         }
 
         @Override
-        protected void deleteAll() {
+        public void deleteAll() {
             for (Schema.Edge.Type schema : Schema.Edge.Type.values()) delete(schema);
         }
 
-        public class TypeVertexIteratorBuilder extends EdgeMap.VertexIteratorBuilder<TypeVertex, TypeEdge> {
+        public class TypeVertexIteratorBuilder extends EdgeMapImpl.VertexIteratorBuilder<TypeVertex, TypeEdge> {
 
             TypeVertexIteratorBuilder(Iterator<TypeEdge> edgeIterator) {
                 super(edgeIterator);
@@ -177,8 +178,8 @@ public abstract class TypeVertex extends Vertex<
         }
 
         @Override
-        protected TypeEdgeMap newDirectedEdges(EdgeMap.Direction direction) {
-            return new BufferedDirectedTypeEdges(direction);
+        protected TypeEdgeMap newEdgeMap(EdgeMapImpl.Direction direction) {
+            return new BufferedTypeEdgeMap(direction);
         }
 
         public Schema.Status status() {
@@ -264,9 +265,9 @@ public abstract class TypeVertex extends Vertex<
             ins.forEach(Edge::commit);
         }
 
-        public class BufferedDirectedTypeEdges extends TypeEdgeMap {
+        public class BufferedTypeEdgeMap extends TypeEdgeMap {
 
-            BufferedDirectedTypeEdges(Direction direction) {
+            BufferedTypeEdgeMap(Direction direction) {
                 super(direction);
             }
 
@@ -326,8 +327,8 @@ public abstract class TypeVertex extends Vertex<
         }
 
         @Override
-        protected TypeEdgeMap newDirectedEdges(EdgeMap.Direction direction) {
-            return new PersistedDirectedTypeEdges(direction);
+        protected TypeEdgeMap newEdgeMap(EdgeMapImpl.Direction direction) {
+            return new PersistedTypeEdgeMap(direction);
         }
 
         @Override
@@ -421,9 +422,9 @@ public abstract class TypeVertex extends Vertex<
             ins.forEach(Edge::commit);
         }
 
-        public class PersistedDirectedTypeEdges extends TypeEdgeMap {
+        public class PersistedTypeEdgeMap extends TypeEdgeMap {
 
-            PersistedDirectedTypeEdges(Direction direction) {
+            PersistedTypeEdgeMap(Direction direction) {
                 super(direction);
             }
 

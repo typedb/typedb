@@ -19,7 +19,6 @@
 package hypergraph.graph;
 
 import hypergraph.graph.util.Storage;
-import hypergraph.graph.vertex.TypeVertex;
 import hypergraph.graph.vertex.Vertex;
 
 public interface Graph<VERTEX extends Vertex> {
@@ -28,7 +27,7 @@ public interface Graph<VERTEX extends Vertex> {
 
     VERTEX get(byte[] iid);
 
-    void delete(TypeVertex vertex);
+    void delete(VERTEX vertex);
 
     void commit();
 

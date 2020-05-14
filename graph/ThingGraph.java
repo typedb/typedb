@@ -49,7 +49,7 @@ public class ThingGraph implements Graph<ThingVertex> {
     }
 
     @Override
-    public void delete(TypeVertex vertex) {
+    public void delete(ThingVertex vertex) {
         // TODO
     }
 

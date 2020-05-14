@@ -18,6 +18,7 @@
 
 package hypergraph.graph.vertex;
 
+import hypergraph.graph.edge.EdgeMapImpl;
 import hypergraph.graph.util.KeyGenerator;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.ThingGraph;
@@ -71,15 +72,15 @@ public abstract class ThingVertex extends Vertex<
         return graph.typeGraph().get(typeIID);
     }
 
-    public abstract class ThingEdgeMap extends EdgeMap<
-            ThingVertex, Schema.Edge.Thing, ThingEdge, ThingEdgeMap.ThingVertexIteratorBuilder> {
+    public abstract class ThingEdgeMap extends EdgeMapImpl<
+                ThingVertex, Schema.Edge.Thing, ThingEdge, ThingEdgeMap.ThingVertexIteratorBuilder> {
 
 
         ThingEdgeMap(Direction direction) {
             super(direction);
         }
 
-        public class ThingVertexIteratorBuilder extends EdgeMap.VertexIteratorBuilder<ThingVertex, ThingEdge> {
+        public class ThingVertexIteratorBuilder extends EdgeMapImpl.VertexIteratorBuilder<ThingVertex, ThingEdge> {
 
             ThingVertexIteratorBuilder(Iterator<ThingEdge> edgeIterator) {
                 super(edgeIterator);
