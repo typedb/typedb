@@ -18,6 +18,39 @@
 
 package hypergraph.graph.edge.impl;
 
+import hypergraph.graph.ThingGraph;
+import hypergraph.graph.edge.ThingEdge;
+import hypergraph.graph.util.Schema;
+import hypergraph.graph.vertex.ThingVertex;
+
 public abstract class ThingEdgeImpl {
 
+    public static class Buffered extends EdgeImpl.Buffered<ThingGraph, Schema.Edge.Thing, ThingEdge, ThingVertex> implements ThingEdge {
+
+        public Buffered(ThingGraph graph, Schema.Edge.Thing schema, ThingVertex from, ThingVertex to) {
+            super(graph, schema, from, to);
+        }
+
+        @Override
+        ThingEdge getThis() {
+            return this;
+        }
+
+        @Override
+        public void commit() {
+            // TODO
+        }
+    }
+
+    public static class Persisted extends EdgeImpl.Persisted<ThingGraph, Schema.Edge.Thing, ThingEdge, ThingVertex> implements ThingEdge {
+
+        public Persisted(ThingGraph graph, byte[] iid) {
+            super(graph, Schema.Edge.Thing.of(iid[Schema.IID.THING.length()]), Schema.IID.THING, iid);
+        }
+
+        @Override
+        ThingEdge getThis() {
+            return this;
+        }
+    }
 }

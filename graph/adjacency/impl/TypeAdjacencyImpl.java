@@ -63,13 +63,13 @@ public class TypeAdjacencyImpl {
         }
 
         @Override
-        protected TypeEdge newTypeEdge(Schema.Edge.Type schema, TypeVertex from, TypeVertex to) {
-            return new TypeEdgeImpl.Buffered(owner.graph(), schema, from, to);
+        protected TypeIteratorBuilderImpl newIteratorBuilder(Iterator<TypeEdge> typeEdgeIterator) {
+            return new TypeIteratorBuilderImpl(typeEdgeIterator);
         }
 
         @Override
-        protected TypeIteratorBuilderImpl newIteratorBuilder(Iterator<TypeEdge> typeEdgeIterator) {
-            return new TypeIteratorBuilderImpl(typeEdgeIterator);
+        protected TypeEdge newBufferedEdge(Schema.Edge.Type schema, TypeVertex from, TypeVertex to) {
+            return new TypeEdgeImpl.Buffered(owner.graph(), schema, from, to);
         }
 
     }
@@ -83,18 +83,8 @@ public class TypeAdjacencyImpl {
         }
 
         @Override
-        protected TypeEdge newPersistedEdge(Graph<TypeVertex> graph, byte[] key, byte[] value) {
-            return new TypeEdgeImpl.Persisted(owner.graph(), key, value);
-        }
-
-        @Override
         protected Schema.Edge.Type[] schemaValues() {
             return Schema.Edge.Type.values();
-        }
-
-        @Override
-        protected TypeEdge newTypeEdge(Schema.Edge.Type schema, TypeVertex from, TypeVertex to) {
-            return new TypeEdgeImpl.Buffered(owner.graph(), schema, from, to);
         }
 
         @Override
@@ -102,5 +92,14 @@ public class TypeAdjacencyImpl {
             return new TypeIteratorBuilderImpl(typeEdgeIterator);
         }
 
+        @Override
+        protected TypeEdge newBufferedEdge(Schema.Edge.Type schema, TypeVertex from, TypeVertex to) {
+            return new TypeEdgeImpl.Buffered(owner.graph(), schema, from, to);
+        }
+
+        @Override
+        protected TypeEdge newPersistedEdge(Graph<TypeVertex> graph, byte[] key, byte[] value) {
+            return new TypeEdgeImpl.Persisted(owner.graph(), key, value);
+        }
     }
 }

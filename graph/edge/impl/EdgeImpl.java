@@ -127,6 +127,18 @@ public abstract class EdgeImpl<
         }
 
         /**
+         * Delete operation of a buffered type edge.
+         *
+         * The delete operation involves removing this type edge from the {@code from.outs()} and
+         * {@code to.ins()} edge collections.
+         */
+        @Override
+        public void delete() {
+            from.outs().deleteNonRecursive(getThis());
+            to.ins().deleteNonRecursive(getThis());
+        }
+
+        /**
          * Determine the equality of a {@code EdgeImpl.Buffered} against another.
          *
          * We only use {@code schema}, {@code from} and {@code to} as the are the fixed properties

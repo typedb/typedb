@@ -65,18 +65,6 @@ public class TypeEdgeImpl {
         }
 
         /**
-         * Delete operation of a buffered type edge.
-         *
-         * The delete operation involves removing this type edge from the {@code from.outs()} and
-         * {@code to.ins()} edge collections.
-         */
-        @Override
-        public void delete() {
-            from.outs().deleteNonRecursive(this);
-            to.ins().deleteNonRecursive(this);
-        }
-
-        /**
          * Commit operation of a buffered type edge.
          *
          * This operation can only be performed oncec, and thus protected by {@code committed} boolean.

@@ -56,15 +56,15 @@ public abstract class AdjacencyImpl<
 
     protected abstract EDGE_SCHEMA[] schemaValues();
 
-    protected abstract EDGE newTypeEdge(EDGE_SCHEMA schema, VERTEX from, VERTEX to);
-
     protected abstract ITER_BUILDER newIteratorBuilder(Iterator<EDGE> edgeIterator);
+
+    protected abstract EDGE newBufferedEdge(EDGE_SCHEMA schema, VERTEX from, VERTEX to);
 
     @Override
     public void put(EDGE_SCHEMA schema, VERTEX adjacent) {
         VERTEX from = direction.isOut() ? owner : adjacent;
         VERTEX to = direction.isOut() ? adjacent : owner;
-        EDGE edge = newTypeEdge(schema, from, to);
+        EDGE edge = newBufferedEdge(schema, from, to);
         edges.computeIfAbsent(edge.schema(), e -> ConcurrentHashMap.newKeySet()).add(edge);
         to.ins().putNonRecursive(edge);
     }

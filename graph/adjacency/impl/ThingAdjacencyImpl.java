@@ -18,20 +18,89 @@
 
 package hypergraph.graph.adjacency.impl;
 
+import hypergraph.graph.Graph;
 import hypergraph.graph.adjacency.Adjacency;
+import hypergraph.graph.adjacency.ThingAdjacency;
 import hypergraph.graph.edge.ThingEdge;
+import hypergraph.graph.edge.impl.ThingEdgeImpl;
+import hypergraph.graph.util.Schema;
 import hypergraph.graph.vertex.ThingVertex;
 
 import java.util.Iterator;
 
 public abstract class ThingAdjacencyImpl {
 
-    public class ThingIteratorBuilderImpl
+    public static class ThingIteratorBuilderImpl
             extends AdjacencyImpl.IteratorBuilderImpl<ThingEdge, ThingVertex>
             implements Adjacency.IteratorBuilder<ThingVertex> {
 
         ThingIteratorBuilderImpl(Iterator<ThingEdge> edgeIterator) {
             super(edgeIterator);
+        }
+    }
+
+    public static class Buffered
+            extends AdjacencyImpl.Buffered<Schema.Edge.Thing, ThingEdge, ThingVertex, ThingIteratorBuilderImpl>
+            implements ThingAdjacency {
+
+        protected Buffered(ThingVertex owner, Direction direction) {
+            super(owner, direction);
+        }
+
+        @Override
+        protected Schema.Edge.Thing[] schemaValues() {
+            return Schema.Edge.Thing.values();
+        }
+
+        @Override
+        protected ThingIteratorBuilderImpl newIteratorBuilder(Iterator<ThingEdge> thingEdgeIterator) {
+            return new ThingIteratorBuilderImpl(thingEdgeIterator);
+        }
+
+        @Override
+        protected ThingEdge newBufferedEdge(Schema.Edge.Thing schema, ThingVertex from, ThingVertex to) {
+            return new ThingEdgeImpl.Buffered(owner.graph(), schema, from, to);
+        }
+    }
+
+    public static class Persisted
+            extends AdjacencyImpl.Persisted<Schema.Edge.Thing, ThingEdge, ThingVertex, ThingIteratorBuilderImpl>
+            implements ThingAdjacency {
+
+
+        protected Persisted(ThingVertex owner, Direction direction) {
+            super(owner, direction);
+        }
+
+        @Override
+        protected Schema.Edge.Thing[] schemaValues() {
+            return Schema.Edge.Thing.values();
+        }
+
+        @Override
+        protected ThingIteratorBuilderImpl newIteratorBuilder(Iterator<ThingEdge> thingEdgeIterator) {
+            return new ThingIteratorBuilderImpl(thingEdgeIterator);
+        }
+
+        @Override
+        protected ThingEdge newBufferedEdge(Schema.Edge.Thing schema, ThingVertex from, ThingVertex to) {
+            return new ThingEdgeImpl.Buffered(owner.graph(), schema, from, to);
+        }
+
+        /**
+         * Instantiate a new persisted edge by creating a new {@code ThingEdge.Persisted}
+         *
+         * For {@code ThingEdgeImpl.Persisted} we ignore the {@code value} that the {@code key} ({@code iid})
+         * points to, as edges between {@code ThingVertex} never stores anything as {@code value}
+         *
+         * @param graph the graph containing the {@code ThingVertex}
+         * @param key   the edge {@code iid}
+         * @param value the value that the edge {@code iid} points to in the storage
+         * @return a new {@code ThingEdge}
+         */
+        @Override
+        protected ThingEdge newPersistedEdge(Graph<ThingVertex> graph, byte[] key, byte[] value) {
+            return new ThingEdgeImpl.Persisted(owner.graph(), key);
         }
     }
 }

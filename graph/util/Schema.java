@@ -430,6 +430,15 @@ public class Schema {
                 this.in = in;
             }
 
+            public static Thing of(byte infix) {
+                for (Thing t : Thing.values()) {
+                    if (t.out.key == infix || t.in.key == infix) {
+                        return t;
+                    }
+                }
+                return null;
+            }
+
             @Override
             public Infix out() {
                 return out;
