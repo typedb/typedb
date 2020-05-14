@@ -18,7 +18,7 @@
 
 package hypergraph.graph.vertex;
 
-import hypergraph.graph.edge.EdgeMapImpl;
+import hypergraph.graph.edge.impl.EdgeMapImpl;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.edge.Edge;
 
@@ -28,24 +28,18 @@ public abstract class Vertex<
         VERTEX_SCHEMA extends Schema.Vertex,
         VERTEX extends Vertex,
         EDGE_SCHEMA extends Schema.Edge,
-        EDGE extends Edge<EDGE_SCHEMA, VERTEX>,
-        VERTEX_ITER extends EdgeMapImpl.VertexIteratorBuilder<VERTEX, EDGE>> {
+        EDGE extends Edge<EDGE_SCHEMA, VERTEX>> {
 
     protected final VERTEX_SCHEMA schema;
 
-    protected final EdgeMapImpl<VERTEX, EDGE_SCHEMA, EDGE, VERTEX_ITER> outs;
-    protected final EdgeMapImpl<VERTEX, EDGE_SCHEMA, EDGE, VERTEX_ITER> ins;
+
 
     protected byte[] iid;
 
     Vertex(byte[] iid, VERTEX_SCHEMA schema) {
         this.schema = schema;
         this.iid = iid;
-        outs = newEdgeMap(EdgeMapImpl.Direction.OUT);
-        ins = newEdgeMap(EdgeMapImpl.Direction.IN);
     }
-
-    protected abstract EdgeMapImpl<VERTEX, EDGE_SCHEMA, EDGE, VERTEX_ITER> newEdgeMap(EdgeMapImpl.Direction direction);
 
     public abstract Schema.Status status();
 
@@ -57,13 +51,9 @@ public abstract class Vertex<
 
     public abstract void delete();
 
-    public EdgeMapImpl<VERTEX, EDGE_SCHEMA, EDGE, VERTEX_ITER> outs() {
-        return outs;
-    }
+    public abstract EdgeMapImpl<EDGE_SCHEMA, EDGE, VERTEX> outs();
 
-    public EdgeMapImpl<VERTEX, EDGE_SCHEMA, EDGE, VERTEX_ITER> ins() {
-        return ins;
-    }
+    public abstract EdgeMapImpl<EDGE_SCHEMA, EDGE, VERTEX> ins();
 
     public byte[] iid() {
         return iid;

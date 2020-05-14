@@ -1,0 +1,74 @@
+/*
+ * Copyright (C) 2020 Grakn Labs
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
+ */
+
+package hypergraph.graph.edge;
+
+import hypergraph.graph.util.Schema;
+import hypergraph.graph.vertex.Vertex;
+
+import java.util.Iterator;
+import java.util.function.Consumer;
+
+public interface EdgeMap<
+        EDGE_SCHEMA extends Schema.Edge,
+        EDGE extends Edge<EDGE_SCHEMA, VERTEX>,
+        VERTEX extends Vertex> {
+
+    enum Direction {
+        OUT(true),
+        IN(false);
+
+        private final boolean isOut;
+
+        Direction(boolean isOut) {
+            this.isOut = isOut;
+        }
+
+        public boolean isOut() {
+            return isOut;
+        }
+
+        public boolean isIn() {
+            return !isOut;
+        }
+    }
+
+    interface IteratorBuilder<ITER_VERTEX extends Vertex> {
+        Iterator<ITER_VERTEX> to();
+
+        Iterator<ITER_VERTEX> from();
+    }
+
+    IteratorBuilder<VERTEX> edge(EDGE_SCHEMA schema);
+
+    EDGE edge(EDGE_SCHEMA schema, VERTEX adjacent);
+
+    void put(EDGE_SCHEMA schema, VERTEX adjacent);
+
+    void delete(EDGE_SCHEMA schema, VERTEX adjacent);
+
+    void delete(EDGE_SCHEMA schema);
+
+    void deleteNonRecursive(EDGE edge);
+
+    void deleteAll();
+
+    void putNonRecursive(EDGE edge);
+
+    void forEach(Consumer<EDGE> function);
+}
