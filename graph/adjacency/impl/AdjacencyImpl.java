@@ -33,7 +33,8 @@ import java.util.function.Consumer;
 public abstract class AdjacencyImpl<
         EDGE_SCHEMA extends Schema.Edge,
         EDGE extends Edge<EDGE_SCHEMA, VERTEX>,
-        VERTEX extends Vertex> implements Adjacency<EDGE_SCHEMA, EDGE, VERTEX> {
+        VERTEX extends Vertex<?, VERTEX, EDGE_SCHEMA, EDGE>
+        > implements Adjacency<EDGE_SCHEMA, EDGE, VERTEX> {
 
     protected final VERTEX owner;
     protected final Direction direction;
@@ -45,9 +46,32 @@ public abstract class AdjacencyImpl<
         this.edges = new ConcurrentHashMap<>();
     }
 
+    protected abstract EDGE_SCHEMA[] schemaValues();
+
+    protected abstract EDGE newTypeEdge(EDGE_SCHEMA schema, VERTEX from, VERTEX to);
+
+    @Override
+    public void put(EDGE_SCHEMA schema, VERTEX adjacent) {
+        VERTEX from = direction.isOut() ? owner : adjacent;
+        VERTEX to = direction.isOut() ? adjacent : owner;
+        EDGE edge = newTypeEdge(schema, from, to);
+        edges.computeIfAbsent(edge.schema(), e -> ConcurrentHashMap.newKeySet()).add(edge);
+        to.ins().putNonRecursive(edge);
+    }
+
     @Override
     public void putNonRecursive(EDGE edge) {
         edges.computeIfAbsent(edge.schema(), e -> ConcurrentHashMap.newKeySet()).add(edge);
+    }
+
+    @Override
+    public void deleteNonRecursive(EDGE edge) {
+        if (edges.containsKey(edge.schema())) edges.get(edge.schema()).remove(edge);
+    }
+
+    @Override
+    public void deleteAll() {
+        for (EDGE_SCHEMA schema : schemaValues()) delete(schema);
     }
 
     @Override
@@ -55,9 +79,10 @@ public abstract class AdjacencyImpl<
         edges.forEach((key, set) -> set.forEach(function));
     }
 
-    public static class IteratorBuilderImpl<
-            ITER_VERTEX extends Vertex,
-            ITER_EDGE extends Edge<?, ITER_VERTEX>> implements Adjacency.IteratorBuilder<ITER_VERTEX> {
+    protected static class IteratorBuilderImpl<
+            ITER_EDGE extends Edge<?, ITER_VERTEX>,
+            ITER_VERTEX extends Vertex
+            > implements Adjacency.IteratorBuilder<ITER_VERTEX> {
 
         protected final Iterator<ITER_EDGE> edgeIterator;
 
@@ -73,6 +98,28 @@ public abstract class AdjacencyImpl<
         @Override
         public Iterator<ITER_VERTEX> from() {
             return Iterators.apply(edgeIterator, Edge::from);
+        }
+    }
+
+    protected static abstract class Buffered<
+            BUF_EDGE_SCHEMA extends Schema.Edge,
+            BUF_EDGE extends Edge<BUF_EDGE_SCHEMA, BUF_VERTEX>,
+            BUF_VERTEX extends Vertex<?, BUF_VERTEX, BUF_EDGE_SCHEMA, BUF_EDGE>
+            > extends AdjacencyImpl<BUF_EDGE_SCHEMA, BUF_EDGE, BUF_VERTEX> {
+
+        protected Buffered(BUF_VERTEX owner, Direction direction) {
+            super(owner, direction);
+        }
+    }
+
+    protected static abstract class Persisted<
+            PER_EDGE_SCHEMA extends Schema.Edge,
+            PER_EDGE extends Edge<PER_EDGE_SCHEMA, PER_VERTEX>,
+            PER_VERTEX extends Vertex<?, PER_VERTEX, PER_EDGE_SCHEMA, PER_EDGE>
+            > extends AdjacencyImpl<PER_EDGE_SCHEMA, PER_EDGE, PER_VERTEX> {
+
+        protected Persisted(PER_VERTEX owner, Direction direction) {
+            super(owner, direction);
         }
     }
 }

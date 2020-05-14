@@ -28,13 +28,15 @@ import java.util.function.Consumer;
 public interface Adjacency<
         EDGE_SCHEMA extends Schema.Edge,
         EDGE extends Edge<EDGE_SCHEMA, VERTEX>,
-        VERTEX extends Vertex> {
+        VERTEX extends Vertex<?, VERTEX, EDGE_SCHEMA, EDGE>> {
 
     IteratorBuilder<VERTEX> edge(EDGE_SCHEMA schema);
 
     EDGE edge(EDGE_SCHEMA schema, VERTEX adjacent);
 
     void put(EDGE_SCHEMA schema, VERTEX adjacent);
+
+    void putNonRecursive(EDGE edge);
 
     void delete(EDGE_SCHEMA schema, VERTEX adjacent);
 
@@ -43,8 +45,6 @@ public interface Adjacency<
     void deleteNonRecursive(EDGE edge);
 
     void deleteAll();
-
-    void putNonRecursive(EDGE edge);
 
     void forEach(Consumer<EDGE> function);
 

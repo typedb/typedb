@@ -76,7 +76,7 @@ public abstract class ThingVertex extends Vertex<Schema.Vertex.Thing, ThingVerte
             super(owner, direction);
         }
 
-        public class ThingVertexIteratorBuilder extends IteratorBuilderImpl<ThingVertex, ThingEdge> {
+        public class ThingVertexIteratorBuilder extends IteratorBuilderImpl<ThingEdge, ThingVertex> {
 
             ThingVertexIteratorBuilder(Iterator<ThingEdge> edgeIterator) {
                 super(edgeIterator);

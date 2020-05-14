@@ -34,7 +34,8 @@ public abstract class EdgeImpl<
         GRAPH extends Graph<VERTEX>,
         EDGE_SCHEMA extends Schema.Edge,
         EDGE extends Edge<EDGE_SCHEMA, VERTEX>,
-        VERTEX extends Vertex<?, VERTEX, EDGE_SCHEMA, EDGE>> implements Edge<EDGE_SCHEMA, VERTEX> {
+        VERTEX extends Vertex<?, VERTEX, EDGE_SCHEMA, EDGE>
+        > implements Edge<EDGE_SCHEMA, VERTEX> {
 
     protected final GRAPH graph;
     protected final EDGE_SCHEMA schema;
@@ -61,7 +62,8 @@ public abstract class EdgeImpl<
             GRAPH extends Graph<VERTEX>,
             EDGE_SCHEMA extends Schema.Edge,
             EDGE extends Edge<EDGE_SCHEMA, VERTEX>,
-            VERTEX extends Vertex<?, VERTEX, EDGE_SCHEMA, EDGE>> extends EdgeImpl<GRAPH, EDGE_SCHEMA, EDGE, VERTEX> {
+            VERTEX extends Vertex<?, VERTEX, EDGE_SCHEMA, EDGE>
+            > extends EdgeImpl<GRAPH, EDGE_SCHEMA, EDGE, VERTEX> {
 
         protected final GRAPH graph;
         protected final AtomicBoolean committed;
@@ -163,7 +165,8 @@ public abstract class EdgeImpl<
             GRAPH extends Graph<VERTEX>,
             EDGE_SCHEMA extends Schema.Edge,
             EDGE extends Edge<EDGE_SCHEMA, VERTEX>,
-            VERTEX extends Vertex<?, VERTEX, EDGE_SCHEMA, EDGE>> extends EdgeImpl<GRAPH, EDGE_SCHEMA, EDGE, VERTEX> {
+            VERTEX extends Vertex<?, VERTEX, EDGE_SCHEMA, EDGE>
+            > extends EdgeImpl<GRAPH, EDGE_SCHEMA, EDGE, VERTEX> {
 
         protected final byte[] outIID;
         protected final byte[] inIID;

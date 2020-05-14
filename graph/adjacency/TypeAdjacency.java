@@ -29,15 +29,6 @@ public interface TypeAdjacency extends Adjacency<Schema.Edge.Type, TypeEdge, Typ
     @Override
     TypeIteratorBuilder edge(Schema.Edge.Type schema);
 
-    @Override
-    void put(Schema.Edge.Type schema, TypeVertex adjacent);
-
-    @Override
-    void deleteNonRecursive(TypeEdge edge);
-
-    @Override
-    void deleteAll();
-
     interface TypeIteratorBuilder extends IteratorBuilder<TypeVertex> {
 
         Iterator<TypeVertex> overridden();

@@ -30,39 +30,15 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
 
 import static hypergraph.common.collection.ByteArrays.join;
 import static hypergraph.common.iterator.Iterators.link;
 
-public abstract class TypeAdjacencyImpl extends AdjacencyImpl<Schema.Edge.Type, TypeEdge, TypeVertex> implements TypeAdjacency {
-
-    TypeAdjacencyImpl(TypeVertex owner, Direction direction) {
-        super(owner, direction);
-    }
-
-    @Override
-    public void put(Schema.Edge.Type schema, TypeVertex adjacent) {
-        TypeVertex from = direction.isOut() ? owner : adjacent;
-        TypeVertex to = direction.isOut() ? adjacent : owner;
-        TypeEdge edge = new TypeEdgeImpl.Buffered(owner.graph(), schema, from, to);
-        edges.computeIfAbsent(edge.schema(), e -> ConcurrentHashMap.newKeySet()).add(edge);
-        to.ins().putNonRecursive(edge);
-    }
-
-    @Override
-    public void deleteNonRecursive(TypeEdge edge) {
-        if (edges.containsKey(edge.schema())) edges.get(edge.schema()).remove(edge);
-    }
-
-    @Override
-    public void deleteAll() {
-        for (Schema.Edge.Type schema : Schema.Edge.Type.values()) delete(schema);
-    }
+public class TypeAdjacencyImpl {
 
     public static class TypeIteratorBuilderImpl
-            extends IteratorBuilderImpl<TypeVertex, TypeEdge>
+            extends AdjacencyImpl.IteratorBuilderImpl<TypeEdge, TypeVertex>
             implements TypeAdjacency.TypeIteratorBuilder {
 
         TypeIteratorBuilderImpl(Iterator<TypeEdge> edgeIterator) {
@@ -74,10 +50,20 @@ public abstract class TypeAdjacencyImpl extends AdjacencyImpl<Schema.Edge.Type, 
         }
     }
 
-    public static class Buffered extends TypeAdjacencyImpl {
+    public static class Buffered extends AdjacencyImpl.Buffered<Schema.Edge.Type, TypeEdge, TypeVertex> implements TypeAdjacency {
 
         public Buffered(TypeVertex owner, Direction direction) {
             super(owner, direction);
+        }
+
+        @Override
+        protected Schema.Edge.Type[] schemaValues() {
+            return Schema.Edge.Type.values();
+        }
+
+        @Override
+        protected TypeEdge newTypeEdge(Schema.Edge.Type schema, TypeVertex from, TypeVertex to) {
+            return new TypeEdgeImpl.Buffered(owner.graph(), schema, from, to);
         }
 
         @Override
@@ -114,10 +100,20 @@ public abstract class TypeAdjacencyImpl extends AdjacencyImpl<Schema.Edge.Type, 
         }
     }
 
-    public static class Persisted extends TypeAdjacencyImpl {
+    public static class Persisted extends AdjacencyImpl.Persisted<Schema.Edge.Type, TypeEdge, TypeVertex> implements TypeAdjacency {
 
         public Persisted(TypeVertex owner, Direction direction) {
             super(owner, direction);
+        }
+
+        @Override
+        protected Schema.Edge.Type[] schemaValues() {
+            return Schema.Edge.Type.values();
+        }
+
+        @Override
+        protected TypeEdge newTypeEdge(Schema.Edge.Type schema, TypeVertex from, TypeVertex to) {
+            return new TypeEdgeImpl.Buffered(owner.graph(), schema, from, to);
         }
 
         @Override

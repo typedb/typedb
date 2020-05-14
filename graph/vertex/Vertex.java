@@ -26,7 +26,7 @@ import java.util.Arrays;
 
 public abstract class Vertex<
         VERTEX_SCHEMA extends Schema.Vertex,
-        VERTEX extends Vertex,
+        VERTEX extends Vertex<VERTEX_SCHEMA, VERTEX, EDGE_SCHEMA, EDGE>,
         EDGE_SCHEMA extends Schema.Edge,
         EDGE extends Edge<EDGE_SCHEMA, VERTEX>> {
 
