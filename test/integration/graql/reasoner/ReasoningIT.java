@@ -322,7 +322,7 @@ public class ReasoningIT {
                                 tx.getAttributeType("furtherExtendedResource"),
                                 tx.getAttributeType("simpleResource")
                         ),
-                        tx.getEntityType("genericEntity").putHas().collect(toSet())
+                        tx.getEntityType("genericEntity").has().collect(toSet())
                 );
             }
         }

@@ -39,7 +39,7 @@ import java.util.stream.Stream;
  * Encapsulates relations between Thing
  * A relation which is an instance of a RelationType defines how instances may relate to one another.
  */
-public class RelationImpl implements Relation, ConceptVertex {
+public class RelationImpl  implements Relation, ConceptVertex {
     private RelationStructure relationStructure;
 
     public RelationImpl(RelationStructure relationStructure) {
@@ -91,16 +91,10 @@ public class RelationImpl implements Relation, ConceptVertex {
         return relationStructure;
     }
 
-    @Override
-    public Relation has(Attribute attribute) {
-        relhas(attribute);
-        return this;
-    }
-
-    @Override
-    public Relation relhas(Attribute attribute) {
-        return reify().relhas(attribute);
-    }
+//    @Override
+//    public void relhas(Attribute attribute) {
+//        return has(attribute);
+//    }
 
     @Override
     public Stream<Attribute<?>> attributes(AttributeType[] attributeTypes) {

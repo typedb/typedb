@@ -262,7 +262,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
      * @return the Type itself
      */
     private T unlinkAttribute(AttributeType<?> attributeToRemove, boolean isKey) {
-        Stream<AttributeType> attributeTypes = isKey ? keys() : putHas();
+        Stream<AttributeType> attributeTypes = isKey ? keys() : has();
         Schema.ImplicitType ownerSchema = isKey ? Schema.ImplicitType.KEY_OWNER : Schema.ImplicitType.HAS_OWNER;
         Schema.ImplicitType valueSchema = isKey ? Schema.ImplicitType.KEY_VALUE : Schema.ImplicitType.HAS_VALUE;
         Schema.ImplicitType relationSchema = isKey ? Schema.ImplicitType.KEY : Schema.ImplicitType.HAS;
@@ -408,7 +408,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
 //    }
 
     @Override
-    public T putHas(AttributeType attributeType) {
+    public T has(AttributeType attributeType) {
         validateOwnershipLegal(attributeType);
 
         // check that the AttributeType is not already owned

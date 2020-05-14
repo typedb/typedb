@@ -78,8 +78,7 @@ public interface ConceptManager {
     <D> Attribute<D> createAttribute(AttributeType<D> dAttributeType, D value, boolean isInferred);
     RelationType createImplicitRelationType(Label label);
     Role createImplicitRole(Label label);
-    Relation createHasAttributeRelation(EdgeElement attributeEdge, RelationType hasAttribute, Role hasAttributeOwner,
-                                        Role hasAttributeValue, boolean isInferred);
+    void createHasAttributeRelation(EdgeElement attributeEdge, boolean isInferred);
 
     // TODO this wants to return implementation RelationReified, not interface RelationStructure, using downcasts for now
     RelationStructure createRelationReified(VertexElement relationVertex, RelationType type);

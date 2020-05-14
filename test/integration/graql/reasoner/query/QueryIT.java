@@ -259,7 +259,7 @@ public class QueryIT {
                 resource.create(1337L);
                 resource.create(1667L);
                 tx.putEntityType("someEntity")
-                        .putHas(resource);
+                        .has(resource);
                 tx.commit();
             }
             try (TestTransaction tx = ((TestTransaction)session.transaction(Transaction.Type.WRITE))) {

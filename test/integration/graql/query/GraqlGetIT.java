@@ -489,7 +489,7 @@ public class GraqlGetIT {
         Role author = tx.putRole("author");
         EntityType person = tx.putEntityType("person").plays(author);
         AttributeType<Long> year = tx.putAttributeType("year", AttributeType.ValueType.LONG);
-        tx.putRelationType("authored-by").relates(work).relates(author).putHas(year);
+        tx.putRelationType("authored-by").relates(work).relates(author).has(year);
 
         Stream<ConceptMap> answers = tx.stream(Graql.parse("insert $x isa person;" +
                 "$y isa somework; " +

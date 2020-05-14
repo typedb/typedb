@@ -156,8 +156,8 @@ public class CorenessIT {
             String aResourceTypeLabel = "aResourceTypeLabel";
             AttributeType<String> attributeType =
                     tx.putAttributeType(aResourceTypeLabel, AttributeType.ValueType.STRING);
-            tx.getEntityType(thing).putHas(attributeType);
-            tx.getEntityType(anotherThing).putHas(attributeType);
+            tx.getEntityType(thing).has(attributeType);
+            tx.getEntityType(anotherThing).has(attributeType);
 
             Attribute Attribute1 = attributeType.create("blah");
             tx.getConcept(entityId1).asEntity().has(Attribute1);

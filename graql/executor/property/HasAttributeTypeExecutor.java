@@ -175,7 +175,7 @@ public class HasAttributeTypeExecutor  implements PropertyExecutor.Definable {
             if (property.isKey()) {
                 entityTypeConcept.putKey(attributeTypeConcept);
             } else {
-                entityTypeConcept.putHas(attributeTypeConcept);
+                entityTypeConcept.has(attributeTypeConcept);
             }
         }
     }

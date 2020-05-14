@@ -142,7 +142,7 @@ public class SchemaMutationIT {
     public void whenAddingResourceToSubTypeOfEntityType_EnsureNoValidationErrorsOccur() {
         //Create initial Schema
         AttributeType<String> name = tx.putAttributeType("name", AttributeType.ValueType.STRING);
-        EntityType person = tx.putEntityType("person").putHas(name);
+        EntityType person = tx.putEntityType("person").has(name);
         EntityType animal = tx.putEntityType("animal").sup(person);
         Attribute bob = name.create("Bob");
         person.create().has(bob);
@@ -152,7 +152,7 @@ public class SchemaMutationIT {
         tx = session.transaction(Transaction.Type.WRITE);
         EntityType retrievedAnimal = tx.getEntityType("animal");
         AttributeType nameType = tx.getAttributeType("name");
-        retrievedAnimal.putHas(nameType);
+        retrievedAnimal.has(nameType);
         tx.commit();
     }
 
@@ -179,7 +179,7 @@ public class SchemaMutationIT {
         AttributeType<String> name = tx.putAttributeType("name", AttributeType.ValueType.STRING);
 
         //Create a animal and allow animal to have a name
-        EntityType animal = tx.putEntityType("animal").putHas(name);
+        EntityType animal = tx.putEntityType("animal").has(name);
 
         //Create a dog which is a animal and is therefore allowed to have a name
         EntityType dog = tx.putEntityType("dog").sup(animal);

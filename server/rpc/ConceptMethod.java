@@ -142,8 +142,10 @@ public class ConceptMethod {
                 con.asThing().type();
                 return;
             case THING_RELHAS_REQ:
-                con.asThing().relhas(req.getThingRelhasReq().getAttribute());
-                return;
+//                con.asThing().relhas(req.getThingRelhasReq().getAttribute());
+                // TODO remove support for relation ownership edges in ConceptAPI
+                throw new RuntimeException("Unsupported operation - implicit attribute relations are no longer used");
+//                return;
             case THING_UNHAS_REQ:
                 con.asThing().unhas(req.getThingUnhasReq().getAttribute());
                 return;
@@ -530,7 +532,7 @@ public class ConceptMethod {
             }
 
             private void attributes() {
-                Stream<grakn.core.kb.concept.api.AttributeType> concepts = concept.asType().putHas();
+                Stream<grakn.core.kb.concept.api.AttributeType> concepts = concept.asType().has();
 
                 Stream<SessionProto.Transaction.Res> responses = concepts.map(con -> {
                     ConceptProto.Method.Iter.Res res = ConceptProto.Method.Iter.Res.newBuilder()
@@ -563,7 +565,7 @@ public class ConceptMethod {
 
             private void has(ConceptProto.Concept protoAttribute) {
                 grakn.core.kb.concept.api.AttributeType<?> attributeType = convert(protoAttribute).asAttributeType();
-                concept.asType().putHas(attributeType);
+                concept.asType().has(attributeType);
                 responseSender.accept(null);
             }
 
@@ -827,16 +829,16 @@ public class ConceptMethod {
                 iterators.startBatchIterating(responses.iterator(), options);
             }
 
-            private void relhas(ConceptProto.Concept protoAttribute) {
-                grakn.core.kb.concept.api.Attribute<?> attribute = convert(protoAttribute).asAttribute();
-                grakn.core.kb.concept.api.Relation relation = ConceptHolder.this.concept.asThing().relhas(attribute);
-
-                ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setThingRelhasRes(ConceptProto.Thing.Relhas.Res.newBuilder()
-                                                   .setRelation(ResponseBuilder.Concept.concept(relation))).build();
-
-                responseSender.accept(transactionRes(response));
-            }
+//            private void relhas(ConceptProto.Concept protoAttribute) {
+//                grakn.core.kb.concept.api.Attribute<?> attribute = convert(protoAttribute).asAttribute();
+//                grakn.core.kb.concept.api.Relation relation = ConceptHolder.this.concept.asThing().relhas(attribute);
+//
+//                ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
+//                        .setThingRelhasRes(ConceptProto.Thing.Relhas.Res.newBuilder()
+//                                                   .setRelation(ResponseBuilder.Concept.concept(relation))).build();
+//
+//                responseSender.accept(transactionRes(response));
+//            }
 
             private void unhas(ConceptProto.Concept protoAttribute) {
                 grakn.core.kb.concept.api.Attribute<?> attribute = convert(protoAttribute).asAttribute();

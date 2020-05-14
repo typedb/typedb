@@ -110,17 +110,17 @@ public class MovieGraph {
                 .relates(clusterOfProduction).relates(productionWithCluster);
 
         title = tx.putAttributeType("title", AttributeType.ValueType.STRING);
-        title.putHas(title);
+        title.has(title);
 
         production = tx.putEntityType("production")
                 .plays(productionWithCluster).plays(productionBeingDirected).plays(productionWithCast).plays(work)
                 .plays(productionWithGenre);
 
-        production.putHas(title);
-        production.putHas(tmdbVoteCount);
-        production.putHas(tmdbVoteAverage);
-        production.putHas(releaseDate);
-        production.putHas(runtime);
+        production.has(title);
+        production.has(tmdbVoteCount);
+        production.has(tmdbVoteAverage);
+        production.has(releaseDate);
+        production.has(runtime);
 
         movie = tx.putEntityType("movie").sup(production);
 
@@ -129,9 +129,9 @@ public class MovieGraph {
         person = tx.putEntityType("person")
                 .plays(director).plays(actor).plays(characterBeingPlayed).plays(author);
 
-        person.putHas(gender);
-        person.putHas(name);
-        person.putHas(realName);
+        person.has(gender);
+        person.has(name);
+        person.has(realName);
 
         genre = tx.putEntityType("genre").plays(genreOfProduction);
         genre.putKey(name);
@@ -139,18 +139,18 @@ public class MovieGraph {
         character = tx.putEntityType("character")
                 .plays(characterBeingPlayed);
 
-        character.putHas(name);
+        character.has(name);
 
         tx.putEntityType("award");
         language = tx.putEntityType("language");
 
-        language.putHas(name);
+        language.has(name);
 
         cluster = tx.putEntityType("cluster").plays(clusterOfProduction);
-        cluster.putHas(name);
+        cluster.has(name);
 
-        tx.getType(Schema.ImplicitType.HAS.getLabel("title")).putHas(provenance);
-        authoredBy.putHas(provenance);
+        tx.getType(Schema.ImplicitType.HAS.getLabel("title")).has(provenance);
+        authoredBy.has(provenance);
     }
 
     private static void buildInstances(Transaction tx) {

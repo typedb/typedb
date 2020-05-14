@@ -91,14 +91,14 @@ public class AttributeIT {
         AttributeType<String> resource = tx.putAttributeType("resource", AttributeType.ValueType.STRING);
         AttributeType<String> anotherResource = tx.putAttributeType("anotherResource", AttributeType.ValueType.STRING);
         EntityType someEntity = tx.putEntityType("someEntity")
-                .putHas(resource)
-                .putHas(anotherResource);
+                .has(resource)
+                .has(anotherResource);
         EntityType subEntity = tx.putEntityType("subEntity").sup(someEntity)
-                .putHas(resource)
-                .putHas(anotherResource);
+                .has(resource)
+                .has(anotherResource);
 
-        List<AttributeType> entityAttributes = someEntity.putHas().collect(toList());
-        List<AttributeType> subEntityAttributes = subEntity.putHas().collect(toList());
+        List<AttributeType> entityAttributes = someEntity.has().collect(toList());
+        List<AttributeType> subEntityAttributes = subEntity.has().collect(toList());
         assertTrue(entityAttributes.containsAll(subEntityAttributes));
         assertTrue(subEntityAttributes.containsAll(entityAttributes));
     }
@@ -225,8 +225,8 @@ public class AttributeIT {
         AttributeType<String> subAttribute = tx.putAttributeType("subAttribute", AttributeType.ValueType.STRING).sup(baseAttribute);
 
         tx.putEntityType("someEntity")
-                .putHas(baseAttribute)
-                .putHas(subAttribute);
+                .has(baseAttribute)
+                .has(subAttribute);
 
         RelationType baseImplicitRelation = tx.getRelationType(Schema.ImplicitType.HAS.getLabel(baseAttribute.label()).getValue());
         RelationType subImplicitRelation = tx.getRelationType(Schema.ImplicitType.HAS.getLabel(subAttribute.label()).getValue());
@@ -241,7 +241,7 @@ public class AttributeIT {
         AttributeType<String> attributeType = tx.putAttributeType("My attribute type", AttributeType.ValueType.STRING);
         Attribute<String> attribute = attributeType.create("A String");
 
-        EntityType entityType = tx.putEntityType("My entity type").putHas(attributeType);
+        EntityType entityType = tx.putEntityType("My entity type").has(attributeType);
         Entity entity = entityType.create();
 
         entity.has(attribute);
@@ -258,7 +258,7 @@ public class AttributeIT {
         //Create boring attribute which creates a relation edge
         AttributeType<String> attributeType = tx.putAttributeType("My attribute type", AttributeType.ValueType.STRING);
         Attribute<String> attribute = attributeType.create("A String");
-        EntityType entityType = tx.putEntityType("My entity type").putHas(attributeType);
+        EntityType entityType = tx.putEntityType("My entity type").has(attributeType);
         Entity entity = entityType.create();
         entity.has(attribute);
         RelationImpl relation = RelationImpl.from(entity.relations().iterator().next());
@@ -348,7 +348,7 @@ public class AttributeIT {
         AttributeType<String> attributeType = tx.putAttributeType("resource", AttributeType.ValueType.STRING);
         Attribute<String> attribute = attributeType.create("polok");
 
-        EntityType entityType = tx.putEntityType("someEntity").putHas(attributeType);
+        EntityType entityType = tx.putEntityType("someEntity").has(attributeType);
         Entity e1 = entityType.create();
         Entity e2 = entityType.create();
 

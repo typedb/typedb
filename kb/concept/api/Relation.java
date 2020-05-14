@@ -30,16 +30,16 @@ import java.util.stream.Stream;
  * Relation are used to model n-ary relations between instances.
  */
 public interface Relation extends Thing {
-    //------------------------------------- Modifiers ----------------------------------
-
-    /**
-     * Creates a relation from this instance to the provided Attribute.
-     *
-     * @param attribute The Attribute to which a relation is created
-     * @return The instance itself
-     */
-    @Override
-    Relation has(Attribute attribute);
+////    ------------------------------------- Modifiers ----------------------------------
+//
+//    /**
+//     * Creates a relation from this instance to the provided Attribute.
+//     *
+//     * @param attribute The Attribute to which a relation is created
+//     * @return The instance itself
+//     */
+//    @Override
+//    Relation has(Attribute attribute);
 
     //------------------------------------- Accessors ----------------------------------
 

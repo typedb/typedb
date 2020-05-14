@@ -103,7 +103,7 @@ public class AttributeAtomValidator implements AtomValidator<AttributeAtom> {
         Type ownerType = atom.getParentQuery().getUnambiguousType(atom.getVarName(), false);
 
         if (ownerType != null
-                && ownerType.putHas().noneMatch(rt -> rt.equals(type.asAttributeType()))){
+                && ownerType.has().noneMatch(rt -> rt.equals(type.asAttributeType()))){
             errors.add(ErrorMessage.VALIDATION_RULE_ATTRIBUTE_OWNER_CANNOT_HAVE_ATTRIBUTE.getMessage(ruleLabel, type.label(), ownerType.label()));
         }
         return errors;

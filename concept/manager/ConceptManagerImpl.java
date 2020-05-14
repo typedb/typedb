@@ -295,19 +295,9 @@ public class ConceptManagerImpl implements ConceptManager {
      * Skip checking caches because this should be a brand new edge and concept
      */
     @Override
-    public RelationImpl createHasAttributeRelation(EdgeElement edge, RelationType relationType, Role owner, Role value, boolean isInferred) {
-        preCheckForInstanceCreation(relationType);
-
-        edge.propertyImmutable(Schema.EdgeProperty.RELATION_ROLE_OWNER_LABEL_ID, owner, null, o -> o.labelId().getValue());
-        edge.propertyImmutable(Schema.EdgeProperty.RELATION_ROLE_VALUE_LABEL_ID, value, null, v -> v.labelId().getValue());
-        edge.propertyImmutable(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID, relationType, null, t -> t.labelId().getValue());
-
-        RelationEdge relationEdge = new RelationEdge(edge, this, conceptNotificationChannel);
-        // because the Relation hierarchy is still wrong, RelationEdge and RelationImpl doesn't set type(type) like other instances do
-        RelationImpl newRelation = new RelationImpl(relationEdge);
-        conceptNotificationChannel.hasAttributeRelationCreated(newRelation, isInferred);
-
-        return newRelation;
+    public void createHasAttributeRelation(EdgeElement edge, boolean isInferred) {
+        // TODO this may need to be re-added with different behaviour
+//        conceptNotificationChannel.hasAttributeRelationCreated(newRelation, isInferred);
     }
 
     /**

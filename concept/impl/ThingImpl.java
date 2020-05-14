@@ -30,7 +30,6 @@ import grakn.core.kb.concept.api.GraknConceptException;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.LabelId;
 import grakn.core.kb.concept.api.Relation;
-import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Thing;
@@ -274,30 +273,22 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
 
     @Override
     public T has(Attribute attribute) {
-        relhas(attribute);
+        attributeOwnership(attribute, false);
         return getThis();
     }
 
     @Override
     public Relation attributeInferred(Attribute attribute) {
-        return attributeRelation_backwardsCompatible(attribute, true);
-    }
-
-    @Override
-    public Relation relhas(Attribute attribute) {
-        return attributeRelation_backwardsCompatible(attribute, false);
+        return attributeOwnership(attribute, true);
     }
 
     private void attributeOwnership(Attribute attribute, boolean isInferred) {
-
-        // TODO this check should be removable after fully removing implicit types
-        if (!IS_BACKWARDS_COMPATIBLE_HAS(attribute)) {
-            attributeRelation_backwardsCompatible(attribute, isInferred);
-        }
-
         if (type().has().noneMatch(attribute.type()::equals)) {
             throw GraknConceptException.hasNotAllowed(this, attribute);
         }
+
+        // TODO check explicitly whether this attribute is already owned in any way
+        // TODO this will require reading old+new structure but we always write new structure
 
         EdgeElement attributeEdge = addEdge(AttributeImpl.from(attribute), Schema.EdgeLabel.ATTRIBUTE);
         if (isInferred) attributeEdge.property(Schema.EdgeProperty.IS_INFERRED, true);
@@ -305,36 +296,6 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
         conceptManager.createHasAttributeRelation(attributeEdge, isInferred);
     }
 
-    private Relation attributeRelation_backwardsCompatible(Attribute attribute, boolean isInferred) {
-        Schema.ImplicitType has = Schema.ImplicitType.HAS;
-        Schema.ImplicitType hasValue = Schema.ImplicitType.HAS_VALUE;
-        Schema.ImplicitType hasOwner = Schema.ImplicitType.HAS_OWNER;
-
-        //Is this attribute a key to me?
-        if (type().keys().anyMatch(key -> key.equals(attribute.type()))) {
-            has = Schema.ImplicitType.KEY;
-            hasValue = Schema.ImplicitType.KEY_VALUE;
-            hasOwner = Schema.ImplicitType.KEY_OWNER;
-        }
-
-        Label label = attribute.type().label();
-        RelationType hasAttribute = conceptManager.getSchemaConcept(has.getLabel(label));
-        Role hasAttributeOwner = conceptManager.getSchemaConcept(hasOwner.getLabel(label));
-        Role hasAttributeValue = conceptManager.getSchemaConcept(hasValue.getLabel(label));
-
-        if (hasAttribute == null || hasAttributeOwner == null || hasAttributeValue == null || type().playing().noneMatch(play -> play.equals(hasAttributeOwner))) {
-            throw GraknConceptException.hasNotAllowed(this, attribute);
-        }
-
-        EdgeElement attributeEdge = addEdge(AttributeImpl.from(attribute), Schema.EdgeLabel.ATTRIBUTE);
-        if (isInferred) attributeEdge.property(Schema.EdgeProperty.IS_INFERRED, true);
-
-        return conceptManager.createHasAttributeRelation(attributeEdge, hasAttribute, hasAttributeOwner, hasAttributeValue, isInferred);
-    }
-
-    private boolean IS_BACKWARDS_COMPATIBLE_HAS(Attribute attribute) {
-        return ((TypeImpl)this.type()).neighbours(Direction.OUT, Schema.EdgeLabel.HAS).anyMatch(attribute.type()::equals);
-    }
 
     @Override
     public T unhas(Attribute attribute) {

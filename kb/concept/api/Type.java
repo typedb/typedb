@@ -67,7 +67,7 @@ public interface Type extends SchemaConcept {
      * @param attributeType The AttributeType  which instances of this type should be allowed to play.
      * @return The Type itself.
      */
-    Type putHas(AttributeType attributeType);
+    Type has(AttributeType attributeType);
 
     //------------------------------------- Accessors ---------------------------------
 
@@ -78,19 +78,13 @@ public interface Type extends SchemaConcept {
 
 
     Stream<AttributeType> has();
-    Stream<AttributeType> key();
-
-    /**
-     * @return The AttributeTypes which this Type is linked with.
-     */
-    @CheckReturnValue
-    Stream<AttributeType> putHas();
-
     /**
      * @return The AttributeTypes which this Type is linked with as a key.
      */
     @CheckReturnValue
     Stream<AttributeType> keys();
+
+
 
     /**
      * @return The direct super of this Type

@@ -69,14 +69,13 @@ public interface Thing extends Concept {
      */
     Thing has(Attribute attribute);
 
-    /**
-     * Creates a Relation from this instance to the provided Attribute.
-     * This has the same effect as #has(Attribute), but returns the new Relation.
-     *
-     * @param attribute The Attribute to which a Relation is created
-     * @return The Relation connecting the Thing and the Attribute
-     */
-    Relation relhas(Attribute attribute);
+//    /**
+//     * Creates an ownership from this instance to the provided Attribute.
+//     *
+//     * @param attribute The Attribute to which a Relation is created
+//     * @return The Relation connecting the Thing and the Attribute
+//     */
+//    void relhas(Attribute attribute);
 
     /**
      * Retrieves a collection of Attribute attached to this Thing
