@@ -68,6 +68,7 @@ public interface Adjacency<
     }
 
     interface IteratorBuilder<ITER_VERTEX extends Vertex> {
+
         Iterator<ITER_VERTEX> to();
 
         Iterator<ITER_VERTEX> from();

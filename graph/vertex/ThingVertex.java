@@ -19,13 +19,11 @@
 package hypergraph.graph.vertex;
 
 import hypergraph.graph.ThingGraph;
-import hypergraph.graph.adjacency.impl.AdjacencyImpl;
 import hypergraph.graph.edge.ThingEdge;
 import hypergraph.graph.util.KeyGenerator;
 import hypergraph.graph.util.Schema;
 
 import java.util.Arrays;
-import java.util.Iterator;
 
 import static hypergraph.common.collection.ByteArrays.join;
 
@@ -70,17 +68,4 @@ public abstract class ThingVertex extends Vertex<Schema.Vertex.Thing, ThingVerte
         return graph.typeGraph().get(typeIID);
     }
 
-    public abstract class ThingAdjacencyImpl extends AdjacencyImpl<Schema.Edge.Thing, ThingEdge, ThingVertex> {
-
-        ThingAdjacencyImpl(ThingVertex owner, Direction direction) {
-            super(owner, direction);
-        }
-
-        public class ThingVertexIteratorBuilder extends IteratorBuilderImpl<ThingEdge, ThingVertex> {
-
-            ThingVertexIteratorBuilder(Iterator<ThingEdge> edgeIterator) {
-                super(edgeIterator);
-            }
-        }
-    }
 }

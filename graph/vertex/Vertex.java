@@ -18,6 +18,7 @@
 
 package hypergraph.graph.vertex;
 
+import hypergraph.graph.Graph;
 import hypergraph.graph.adjacency.Adjacency;
 import hypergraph.graph.edge.Edge;
 import hypergraph.graph.util.Schema;
@@ -40,11 +41,9 @@ public abstract class Vertex<
         this.iid = iid;
     }
 
-    public abstract Schema.Status status();
+    public abstract Graph<VERTEX> graph();
 
-    public VERTEX_SCHEMA schema() {
-        return schema;
-    }
+    public abstract Schema.Status status();
 
     public abstract void commit();
 
@@ -53,6 +52,10 @@ public abstract class Vertex<
     public abstract Adjacency<EDGE_SCHEMA, EDGE, VERTEX> outs();
 
     public abstract Adjacency<EDGE_SCHEMA, EDGE, VERTEX> ins();
+
+    public VERTEX_SCHEMA schema() {
+        return schema;
+    }
 
     public byte[] iid() {
         return iid;
@@ -79,5 +82,4 @@ public abstract class Vertex<
     public final int hashCode() {
         return Arrays.hashCode(iid);
     }
-
 }

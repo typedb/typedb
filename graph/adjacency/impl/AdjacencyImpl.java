@@ -19,21 +19,29 @@
 package hypergraph.graph.adjacency.impl;
 
 import hypergraph.common.iterator.Iterators;
+import hypergraph.graph.Graph;
 import hypergraph.graph.adjacency.Adjacency;
 import hypergraph.graph.edge.Edge;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.vertex.Vertex;
 
+import java.util.Collections;
 import java.util.Iterator;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
+
+import static hypergraph.common.collection.ByteArrays.join;
+import static hypergraph.common.iterator.Iterators.link;
 
 public abstract class AdjacencyImpl<
         EDGE_SCHEMA extends Schema.Edge,
         EDGE extends Edge<EDGE_SCHEMA, VERTEX>,
-        VERTEX extends Vertex<?, VERTEX, EDGE_SCHEMA, EDGE>
+        VERTEX extends Vertex<?, VERTEX, EDGE_SCHEMA, EDGE>,
+        ITER_BUILDER extends AdjacencyImpl.IteratorBuilderImpl<EDGE, VERTEX>
         > implements Adjacency<EDGE_SCHEMA, EDGE, VERTEX> {
 
     protected final VERTEX owner;
@@ -49,6 +57,8 @@ public abstract class AdjacencyImpl<
     protected abstract EDGE_SCHEMA[] schemaValues();
 
     protected abstract EDGE newTypeEdge(EDGE_SCHEMA schema, VERTEX from, VERTEX to);
+
+    protected abstract ITER_BUILDER newIteratorBuilder(Iterator<EDGE> edgeIterator);
 
     @Override
     public void put(EDGE_SCHEMA schema, VERTEX adjacent) {
@@ -104,22 +114,125 @@ public abstract class AdjacencyImpl<
     protected static abstract class Buffered<
             BUF_EDGE_SCHEMA extends Schema.Edge,
             BUF_EDGE extends Edge<BUF_EDGE_SCHEMA, BUF_VERTEX>,
-            BUF_VERTEX extends Vertex<?, BUF_VERTEX, BUF_EDGE_SCHEMA, BUF_EDGE>
-            > extends AdjacencyImpl<BUF_EDGE_SCHEMA, BUF_EDGE, BUF_VERTEX> {
+            BUF_VERTEX extends Vertex<?, BUF_VERTEX, BUF_EDGE_SCHEMA, BUF_EDGE>,
+            BUF_ITER_BUILDER extends IteratorBuilderImpl<BUF_EDGE, BUF_VERTEX>
+            > extends AdjacencyImpl<BUF_EDGE_SCHEMA, BUF_EDGE, BUF_VERTEX, BUF_ITER_BUILDER> {
 
         protected Buffered(BUF_VERTEX owner, Direction direction) {
             super(owner, direction);
+        }
+
+        @Override
+        public BUF_ITER_BUILDER edge(BUF_EDGE_SCHEMA schema) {
+            Set<BUF_EDGE> t;
+            if ((t = edges.get(schema)) != null) return newIteratorBuilder(t.iterator());
+            return newIteratorBuilder(Collections.emptyIterator());
+        }
+
+        @Override
+        public BUF_EDGE edge(BUF_EDGE_SCHEMA schema, BUF_VERTEX adjacent) {
+            if (edges.containsKey(schema)) {
+                Predicate<BUF_EDGE> predicate = direction.isOut()
+                        ? e -> e.to().equals(adjacent)
+                        : e -> e.from().equals(adjacent);
+                return edges.get(schema).stream().filter(predicate).findAny().orElse(null);
+            }
+            return null;
+        }
+
+        @Override
+        public void delete(BUF_EDGE_SCHEMA schema, BUF_VERTEX adjacent) {
+            if (edges.containsKey(schema)) {
+                Predicate<BUF_EDGE> predicate = direction.isOut()
+                        ? e -> e.to().equals(adjacent)
+                        : e -> e.from().equals(adjacent);
+                edges.get(schema).stream().filter(predicate).forEach(Edge::delete);
+            }
+        }
+
+        @Override
+        public void delete(BUF_EDGE_SCHEMA schema) {
+            if (edges.containsKey(schema)) edges.get(schema).forEach(Edge::delete);
         }
     }
 
     protected static abstract class Persisted<
             PER_EDGE_SCHEMA extends Schema.Edge,
             PER_EDGE extends Edge<PER_EDGE_SCHEMA, PER_VERTEX>,
-            PER_VERTEX extends Vertex<?, PER_VERTEX, PER_EDGE_SCHEMA, PER_EDGE>
-            > extends AdjacencyImpl<PER_EDGE_SCHEMA, PER_EDGE, PER_VERTEX> {
+            PER_VERTEX extends Vertex<?, PER_VERTEX, PER_EDGE_SCHEMA, PER_EDGE>,
+            PER_ITER_BUILDER extends IteratorBuilderImpl<PER_EDGE, PER_VERTEX>
+            > extends AdjacencyImpl<PER_EDGE_SCHEMA, PER_EDGE, PER_VERTEX, PER_ITER_BUILDER> {
 
         protected Persisted(PER_VERTEX owner, Direction direction) {
             super(owner, direction);
+        }
+
+        protected abstract PER_EDGE newPersistedEdge(Graph<PER_VERTEX> graph, byte[] key, byte[] value);
+
+        @Override
+        public PER_ITER_BUILDER edge(PER_EDGE_SCHEMA schema) {
+            Iterator<PER_EDGE> storageIterator = owner.graph().storage().iterate(
+                    join(owner.iid(), direction.isOut() ? schema.out().key() : schema.in().key()),
+                    (key, value) -> newPersistedEdge(owner.graph(), key, value)
+            );
+
+            if (edges.get(schema) == null) {
+                return newIteratorBuilder(storageIterator);
+            } else {
+                return newIteratorBuilder(link(edges.get(schema).iterator(), storageIterator));
+            }
+        }
+
+        @Override
+        public PER_EDGE edge(PER_EDGE_SCHEMA schema, PER_VERTEX adjacent) {
+            Optional<PER_EDGE> container;
+            Predicate<PER_EDGE> predicate = direction.isOut()
+                    ? e -> e.to().equals(adjacent)
+                    : e -> e.from().equals(adjacent);
+
+            if (edges.containsKey(schema) &&
+                    (container = edges.get(schema).stream().filter(predicate).findAny()).isPresent()) {
+                return container.get();
+            } else {
+                Schema.Infix infix = direction.isOut() ? schema.out() : schema.in();
+                byte[] edgeIID = join(owner.iid(), infix.key(), adjacent.iid());
+                byte[] overriddenIID;
+                if ((overriddenIID = owner.graph().storage().get(edgeIID)) != null) {
+                    return newPersistedEdge(owner.graph(), edgeIID, overriddenIID);
+                }
+            }
+
+            return null;
+        }
+
+        @Override
+        public void delete(PER_EDGE_SCHEMA schema, PER_VERTEX adjacent) {
+            Optional<PER_EDGE> container;
+            Predicate<PER_EDGE> predicate = direction.isOut()
+                    ? e -> e.to().equals(adjacent)
+                    : e -> e.from().equals(adjacent);
+
+            if (edges.containsKey(schema) &&
+                    (container = edges.get(schema).stream().filter(predicate).findAny()).isPresent()) {
+                edges.get(schema).remove(container.get());
+            } else {
+                Schema.Infix infix = direction.isOut() ? schema.out() : schema.in();
+                byte[] edgeIID = join(owner.iid(), infix.key(), adjacent.iid());
+                byte[] overriddenIID;
+                if ((overriddenIID = owner.graph().storage().get(edgeIID)) != null) {
+                    (newPersistedEdge(owner.graph(), edgeIID, overriddenIID)).delete();
+                }
+            }
+        }
+
+        @Override
+        public void delete(PER_EDGE_SCHEMA schema) {
+            if (edges.containsKey(schema)) edges.get(schema).parallelStream().forEach(Edge::delete);
+            Iterator<PER_EDGE> storageIterator = owner.graph().storage().iterate(
+                    join(owner.iid(), direction.isOut() ? schema.out().key() : schema.in().key()),
+                    (key, value) -> newPersistedEdge(owner.graph(), key, value)
+            );
+            storageIterator.forEachRemaining(Edge::delete);
         }
     }
 }
