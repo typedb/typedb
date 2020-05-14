@@ -403,7 +403,7 @@ public class PathIT {
         try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             EntityType person = tx.putEntityType("person");
             AttributeType<String> name = tx.putAttributeType("name", AttributeType.ValueType.STRING);
-            person.has(name);
+            person.putHas(name);
             Entity aPerson = person.create();
             startId = aPerson.id();
             Attribute<String> jason = name.create("jason");
@@ -448,7 +448,7 @@ public class PathIT {
             EntityType person = tx.putEntityType("person");
             AttributeType<Long> power = tx.putAttributeType("power", AttributeType.ValueType.LONG);
 
-            person.has(power);
+            person.putHas(power);
 
             // manually construct the attribute relation
             Role resourceOwner = tx.getRole(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of("power")).getValue());
@@ -479,7 +479,7 @@ public class PathIT {
                     .assign(resourceValue, power2).id();
 
             // add implicit resource relations as well
-            person.has(power);
+            person.putHas(power);
 
             person1.has(power2);
             person3.has(power3);

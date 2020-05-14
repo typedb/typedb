@@ -154,7 +154,7 @@ public class KCoreIT {
             String aResourceTypeLabel = "aResourceTypeLabel";
             AttributeType<String> attributeType =
                     tx.putAttributeType(aResourceTypeLabel, AttributeType.ValueType.STRING);
-            tx.getEntityType(thing).has(attributeType);
+            tx.getEntityType(thing).putHas(attributeType);
             Attribute aAttribute = attributeType.create("blah");
             tx.getConcept(entityId1).asEntity().has(aAttribute);
             tx.getConcept(entityId2).asEntity().has(aAttribute);
@@ -182,7 +182,7 @@ public class KCoreIT {
             String aResourceTypeLabel = "aResourceTypeLabel";
             AttributeType<String> attributeType =
                     tx.putAttributeType(aResourceTypeLabel, AttributeType.ValueType.STRING);
-            tx.getEntityType(thing).has(attributeType);
+            tx.getEntityType(thing).putHas(attributeType);
 
             Attribute Attribute1 = attributeType.create("blah");
             tx.getConcept(entityId1).asEntity().has(Attribute1);

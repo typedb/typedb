@@ -256,7 +256,7 @@ public class TransactionCacheIT {
         AttributeType<String> provenance = tx.putAttributeType("provenance", AttributeType.ValueType.STRING);
         EntityType somework = tx.putEntityType("somework").plays(work);
         EntityType person = tx.putEntityType("person").plays(author);
-        RelationType authoredBy = tx.putRelationType("authored-by").relates(work).relates(author).has(provenance);
+        RelationType authoredBy = tx.putRelationType("authored-by").relates(work).relates(author).putHas(provenance);
 
         Entity aPerson = person.create();
         Relation aRelation = authoredBy.create();
@@ -311,7 +311,7 @@ public class TransactionCacheIT {
         AttributeType<String> provenance = tx.putAttributeType("provenance", AttributeType.ValueType.STRING);
         EntityType somework = tx.putEntityType("somework").plays(work);
         EntityType person = tx.putEntityType("person").plays(author);
-        RelationType authoredBy = tx.putRelationType("authored-by").relates(work).relates(author).has(provenance);
+        RelationType authoredBy = tx.putRelationType("authored-by").relates(work).relates(author).putHas(provenance);
 
         Entity aPerson = person.create();
         Relation aRelation = authoredBy.create();
@@ -398,7 +398,7 @@ public class TransactionCacheIT {
     @Test
     public void whenInsertingAndDeletingInferredImplicitRelation_instanceIsTracked(){
         AttributeType<String> attributeType = tx.putAttributeType("resource", AttributeType.ValueType.STRING);
-        EntityType someEntity = tx.putEntityType("someEntity").has(attributeType);
+        EntityType someEntity = tx.putEntityType("someEntity").putHas(attributeType);
         Entity owner = someEntity.create();
         Attribute<String> attribute = attributeType.create("banana");
 //        Relation implicitRelation = owner.attributeInferred(attribute);

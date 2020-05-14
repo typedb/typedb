@@ -87,11 +87,11 @@ public class AttributeIT {
         AttributeType<String> resource = tx.putAttributeType("resource", AttributeType.ValueType.STRING);
         AttributeType<String> anotherResource = tx.putAttributeType("anotherResource", AttributeType.ValueType.STRING);
         EntityType someEntity = tx.putEntityType("someEntity")
-                .has(resource)
-                .has(anotherResource);
+                .putHas(resource)
+                .putHas(anotherResource);
         EntityType subEntity = tx.putEntityType("subEntity").sup(someEntity)
-                .has(resource)
-                .has(anotherResource);
+                .putHas(resource)
+                .putHas(anotherResource);
 
         List<AttributeType> entityAttributes = someEntity.has().collect(toList());
         List<AttributeType> subEntityAttributes = subEntity.has().collect(toList());
@@ -221,8 +221,8 @@ public class AttributeIT {
         AttributeType<String> subAttribute = tx.putAttributeType("subAttribute", AttributeType.ValueType.STRING).sup(baseAttribute);
 
         tx.putEntityType("someEntity")
-                .has(baseAttribute)
-                .has(subAttribute);
+                .putHas(baseAttribute)
+                .putHas(subAttribute);
 
         RelationType baseImplicitRelation = tx.getRelationType(Schema.ImplicitType.HAS.getLabel(baseAttribute.label()).getValue());
         RelationType subImplicitRelation = tx.getRelationType(Schema.ImplicitType.HAS.getLabel(subAttribute.label()).getValue());
@@ -237,7 +237,7 @@ public class AttributeIT {
         AttributeType<String> attributeType = tx.putAttributeType("My attribute type", AttributeType.ValueType.STRING);
         Attribute<String> attribute = attributeType.create("A String");
 
-        EntityType entityType = tx.putEntityType("My entity type").has(attributeType);
+        EntityType entityType = tx.putEntityType("My entity type").putHas(attributeType);
         Entity entity = entityType.create();
 
         entity.has(attribute);
@@ -342,7 +342,7 @@ public class AttributeIT {
         AttributeType<String> attributeType = tx.putAttributeType("resource", AttributeType.ValueType.STRING);
         Attribute<String> attribute = attributeType.create("polok");
 
-        EntityType entityType = tx.putEntityType("someEntity").has(attributeType);
+        EntityType entityType = tx.putEntityType("someEntity").putHas(attributeType);
         Entity e1 = entityType.create();
         Entity e2 = entityType.create();
 

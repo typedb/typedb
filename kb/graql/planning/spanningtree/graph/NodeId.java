@@ -36,7 +36,7 @@ public class NodeId {
      * If the node is an edge from the query, its type is the type of the fragment.
      **/
     public enum Type {
-        ISA, PLAYS, RELATES, SUB, VAR
+        ISA, PLAYS, RELATES, SUB, HAS, KEY, ATTRIBUTE, VAR
     }
 
     private final Type nodeIdType;

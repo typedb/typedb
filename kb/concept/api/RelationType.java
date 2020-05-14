@@ -71,7 +71,7 @@ public interface RelationType extends Type {
      * @return The Type itself.
      */
     @Override
-    RelationType has(AttributeType attributeType);
+    RelationType putHas(AttributeType attributeType);
 
     //------------------------------------- Accessors ----------------------------------
 

@@ -18,30 +18,38 @@
 
 package grakn.core.graql.planning.gremlin.sets;
 
-
 import com.google.common.collect.ImmutableSet;
-import grakn.core.graql.planning.gremlin.fragment.InHasFragment;
-import grakn.core.graql.planning.gremlin.fragment.OutHasFragment;
+import grakn.core.graql.planning.gremlin.fragment.Fragments;
+import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.graql.planning.gremlin.Fragment;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 
 import java.util.Set;
 
-public class HasFragmentSet extends EquivalentFragmentSetImpl {
+/**
+ * Traverse attribute instance ownership edges in either direction
+ */
+public class AttributeFragmentSet extends EquivalentFragmentSetImpl {
 
-    private final Variable ownerTypeVar;
-    private final Variable attributeTypeVar;
+    private final Variable owner;
+    private final Variable attribute;
+    private final ImmutableSet<Label> attributeTypeLabels;
 
-    public HasFragmentSet(VarProperty property, Variable ownerTypeVar, Variable attributeTypeVar) {
-        super(property);
-        this.ownerTypeVar = ownerTypeVar;
-        this.attributeTypeVar = attributeTypeVar;
+    AttributeFragmentSet(VarProperty varProperty, Variable owner, Variable attribute, ImmutableSet<Label> attributeTypeLabels){
+        super(varProperty);
+        this.owner = owner;
+        this.attribute = attribute;
+        this.attributeTypeLabels = attributeTypeLabels;
     }
+
     @Override
-    public Set<Fragment> fragments() {
+    public final Set<Fragment> fragments() {
+        Variable edge = new Variable();
         return ImmutableSet.of(
-                new InHasFragment(varProperty(), ownerTypeVar, attributeTypeVar),
-                new OutHasFragment(varProperty(), attributeTypeVar, ownerTypeVar));
+                Fragments.inAttribute(varProperty(), attribute, owner, edge, attributeTypeLabels),
+                Fragments.outAttribute(varProperty(), owner, attribute, edge, attributeTypeLabels)
+        );
     }
+
 }

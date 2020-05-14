@@ -118,7 +118,7 @@ public interface EntityType extends Type {
      * @return The Type itself.
      */
     @Override
-    EntityType has(AttributeType attributeType);
+    EntityType putHas(AttributeType attributeType);
 
     //------------------------------------- Accessors ----------------------------------
 

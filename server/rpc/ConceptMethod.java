@@ -565,7 +565,7 @@ public class ConceptMethod {
 
             private void has(ConceptProto.Concept protoAttribute) {
                 grakn.core.kb.concept.api.AttributeType<?> attributeType = convert(protoAttribute).asAttributeType();
-                concept.asType().has(attributeType);
+                concept.asType().putHas(attributeType);
                 responseSender.accept(null);
             }
 

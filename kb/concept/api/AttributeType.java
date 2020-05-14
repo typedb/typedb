@@ -138,7 +138,7 @@ public interface AttributeType<D> extends Type {
      * @return The Type itself.
      */
     @Override
-    AttributeType<D> has(AttributeType attributeType);
+    AttributeType<D> putHas(AttributeType attributeType);
 
     //------------------------------------- Accessors ---------------------------------
 

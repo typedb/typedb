@@ -199,7 +199,7 @@ public class AttributeTypeIT {
         AttributeType<String> valueAttributeType = tx.putAttributeType("value", AttributeType.ValueType.STRING);
 
         Attribute<String> attribute = valueAttributeType.create("testing");
-        EntityType person = tx.putEntityType("person").has(valueAttributeType);
+        EntityType person = tx.putEntityType("person").putHas(valueAttributeType);
         person.create().has(attribute);
         tx.commit();
 
@@ -214,7 +214,7 @@ public class AttributeTypeIT {
         AttributeType<String> ownerAttributeType = tx.putAttributeType("owner", AttributeType.ValueType.STRING);
 
         Attribute<String> attribute = ownerAttributeType.create("testing");
-        EntityType person = tx.putEntityType("person").has(ownerAttributeType);
+        EntityType person = tx.putEntityType("person").putHas(ownerAttributeType);
         person.create().has(attribute);
         tx.commit();
 
