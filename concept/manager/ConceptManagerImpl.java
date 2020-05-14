@@ -318,10 +318,8 @@ public class ConceptManagerImpl implements ConceptManager {
         preCheckForInstanceCreation(type);
         VertexElement vertex = createInstanceVertex(RELATION, isInferred);
 
-////         safe downcast from interface to implementation type
-//        RelationReified relationReified = (RelationReified) createRelationReified(vertex, type);
-
         RelationImpl newRelation = new RelationImpl(vertex, this, conceptNotificationChannel);
+        newRelation.type(TypeImpl.from(type));
 
         // TODO this shouldn't be required after removing implicit types
         if (!type.isImplicit()) {
