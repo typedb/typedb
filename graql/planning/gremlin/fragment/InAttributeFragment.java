@@ -95,33 +95,8 @@ public class InAttributeFragment extends EdgeFragment {
         // (start) ATTR <-[value]- rel node -[owner]-> OWNER, owner != value edge
         // (start) ATTR <-[edge] - OWNER
         return Fragments.union(Fragments.isVertex(traversal),
-                ImmutableSet.of(
-                        reifiedRelationTraversal__BackwardsCompatible(conceptManager, vars, implicitRelationTypes, ownerRoles, valueRoles),
-                        edgeRelationTraversal(conceptManager, vars, implicitRelationTypes, ownerRoles, valueRoles))
+                ImmutableSet.of(edgeRelationTraversal(conceptManager, vars, implicitRelationTypes, ownerRoles, valueRoles))
         );
-    }
-
-    private GraphTraversal<Vertex, Vertex> reifiedRelationTraversal__BackwardsCompatible(ConceptManager conceptManager, Collection<Variable> vars, Set<Label> implicitRelationTypes, Set<Label> ownerRoles, Set<Label> valueRoles) {
-        Variable edge1 = new Variable();
-        Variable edge2 = new Variable();
-        GraphTraversal<Vertex, Edge> valueEdge = __.inE(ROLE_PLAYER.getLabel()).as(edge1.symbol());
-
-        // Filter by any provided type labels
-        applyLabelsToTraversal(valueEdge, ROLE_LABEL_ID, valueRoles, conceptManager);
-        applyLabelsToTraversal(valueEdge, RELATION_TYPE_LABEL_ID, implicitRelationTypes, conceptManager);
-
-        // reach the implicit attribute vertex
-        GraphTraversal<Vertex, Vertex> implicitRelationVertex = valueEdge.outV();
-
-        // traverse outgoing role player edge
-        GraphTraversal<Vertex, Edge> ownerEdge = implicitRelationVertex.outE(ROLE_PLAYER.getLabel()).as(edge2.symbol());
-        // as long as it's different from the one we traversed over already
-        ownerEdge.where(P.neq(edge1.symbol()));
-        applyLabelsToTraversal(ownerEdge, ROLE_LABEL_ID, ownerRoles, conceptManager);
-        applyLabelsToTraversal(ownerEdge, RELATION_TYPE_LABEL_ID, implicitRelationTypes, conceptManager);
-
-        GraphTraversal<Vertex, Vertex> ownerVertex = ownerEdge.inV();
-        return ownerVertex;
     }
 
     private GraphTraversal<Vertex, Vertex> edgeRelationTraversal(

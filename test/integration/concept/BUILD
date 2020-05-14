@@ -61,7 +61,6 @@ java_test(
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//kb/server",
         "//kb/concept/api",
-        "//kb/concept/structure",
         "//test/rule:grakn-test-server",
         "//test/integration/util:concept-downcasting",
     ],

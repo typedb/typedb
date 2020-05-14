@@ -25,7 +25,6 @@ java_library(
     deps = [
         "//kb/concept/structure",
         "//core",
-        "//concept/cache:conceptcache",
         "//graph",
 
         # External dependencies from Maven

@@ -74,7 +74,6 @@ java_test(
         "//concept/impl:impl",
         "//kb/server",
         "//kb/concept/api",
-        "//kb/concept/structure",
         "//server",
         "//test/rule:grakn-test-server",
         "//test/integration/util:concept-downcasting",
