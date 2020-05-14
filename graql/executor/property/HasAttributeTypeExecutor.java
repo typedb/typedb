@@ -41,12 +41,9 @@ public class HasAttributeTypeExecutor  implements PropertyExecutor.Definable {
     private final Variable var;
     private final HasAttributeTypeProperty property;
 
-    private final Statement attributeType;
-
     HasAttributeTypeExecutor(Variable var, HasAttributeTypeProperty property) {
         this.var = var;
         this.property = property;
-        this.attributeType = property.attributeType();
 
 //        // TODO: this may the cause of issue #4664
 //        String type = attributeType.getType().orElseThrow(

@@ -94,35 +94,51 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         return Stream.concat(allRoles, superSet).distinct();
     }
 
+
+    /**
+     *  retrieve all attributes owned directly and by all super types
+     */
     @Override
     public Stream<AttributeType> has() {
-        Stream<AttributeType> attributes__BackwardsCompatible = attributes__BackwardsCompatible(Schema.ImplicitType.HAS_OWNER);
-        Stream<AttributeType> attributes = neighbours(Direction.OUT, Schema.EdgeLabel.HAS);
-        Stream<AttributeType> allAttributes = Stream.concat(attributes__BackwardsCompatible, attributes);
-        return Stream.concat(allAttributes, keys());
+        return Stream.concat(
+                directHas(),
+                sups().flatMap(Type::directHas)
+        );
     }
 
-
+    /**
+     * retrieve all attributes owned as keys directly and by all super types
+     */
     @Override
     public Stream<AttributeType> keys() {
-        Stream<AttributeType> attributes_BackwardsCompatible = attributes__BackwardsCompatible(Schema.ImplicitType.KEY_OWNER);
-        Stream<AttributeType> attributes = neighbours(Direction.OUT, Schema.EdgeLabel.KEY);
-        return Stream.concat(attributes_BackwardsCompatible, attributes);
+        return Stream.concat(
+                directKeys(),
+                sups().flatMap(Type::directKeys)
+        );
     }
 
-    private Stream<AttributeType> attributes__BackwardsCompatible(Schema.ImplicitType implicitType) {
-        //TODO: Make this less convoluted
-        String[] implicitIdentifiers = implicitType.getLabel("").getValue().split("--");
-        String prefix = implicitIdentifiers[0] + "-";
-        String suffix = "-" + implicitIdentifiers[1];
+    @Override
+    public Stream<AttributeType> hasWithoutKeys() {
+        return Stream.concat(
+                directHasWithoutKeys(),
+                sups().flatMap(Type::directHasWithoutKeys)
+        );
+    }
 
-        //A traversal is not used in this so that caching can be taken advantage of.
-        return playing().map(role -> role.label().getValue()).
-                filter(roleLabel -> roleLabel.startsWith(prefix) && roleLabel.endsWith(suffix)).
-                map(roleLabel -> {
-                    String attributeTypeLabel = roleLabel.replace(prefix, "").replace(suffix, "");
-                    return conceptManager.getAttributeType(attributeTypeLabel);
-                });
+    @Override
+    public Stream<AttributeType> directHas() {
+        Stream<AttributeType> attributes = neighbours(Direction.OUT, Schema.EdgeLabel.HAS);
+        return Stream.concat(attributes, keys());
+    }
+
+    @Override
+    public Stream<AttributeType> directKeys() {
+        return neighbours(Direction.OUT, Schema.EdgeLabel.KEY);
+    }
+
+    @Override
+    public Stream<AttributeType> directHasWithoutKeys() {
+        return neighbours(Direction.OUT, Schema.EdgeLabel.HAS);
     }
 
     public Map<Role, Boolean> directPlays() {
@@ -244,65 +260,27 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
 
     @Override
     public T unhas(AttributeType attributeType) {
-        return unlinkAttribute(attributeType, false);
+        if (this.directHasWithoutKeys().noneMatch(attributeType::equals)) {
+            if (this.hasWithoutKeys().anyMatch(attributeType::equals)) {
+                throw GraknConceptException.illegalUnhasInherited(label().toString(), attributeType.label().toString(), false);
+            }
+            throw GraknConceptException.illegalUnhasNotExist(label().toString(), attributeType.label().toString(), false);
+        }
+
+        deleteEdge(Direction.OUT, Schema.EdgeLabel.HAS, attributeType);
+        return getThis();
     }
 
     @Override
     public T unkey(AttributeType attributeType) {
-        return unlinkAttribute(attributeType, true);
-    }
-
-    /**
-     * Helper method to delete a AttributeType which is possible linked to this Type.
-     * The link to AttributeType is removed if <code>attributeToRemove</code> is in the candidate list
-     * <code>attributeTypes</code>
-     *
-     * @param attributeToRemove the AttributeType to remove
-     * @param isKey             a boolean to determine whether the AttributeType to be removed is a KEY to the owning Type
-     * @return the Type itself
-     */
-    private T unlinkAttribute(AttributeType<?> attributeToRemove, boolean isKey) {
-
-        // TODO this has to handle both old and new format stored data
-
-
-        Stream<AttributeType> attributeTypes = isKey ? keys() : has();
-        Schema.ImplicitType ownerSchema = isKey ? Schema.ImplicitType.KEY_OWNER : Schema.ImplicitType.HAS_OWNER;
-        Schema.ImplicitType valueSchema = isKey ? Schema.ImplicitType.KEY_VALUE : Schema.ImplicitType.HAS_VALUE;
-        Schema.ImplicitType relationSchema = isKey ? Schema.ImplicitType.KEY : Schema.ImplicitType.HAS;
-
-        if (attributeTypes.anyMatch(a -> a.equals(attributeToRemove))) {
-            Label relationLabel = relationSchema.getLabel(attributeToRemove.label());
-            RelationTypeImpl relation = conceptManager.getSchemaConcept(relationLabel);
-            if (attributeToRemove.instances().flatMap(Attribute::owners).anyMatch(thing -> thing.type().equals(this))) {
-                throw GraknConceptException.illegalUnhasWithInstance(this.label().getValue(), attributeToRemove.label().getValue(), isKey);
+        if (this.directKeys().noneMatch(attributeType::equals)) {
+            if (this.keys().anyMatch(attributeType::equals)) {
+                throw GraknConceptException.illegalUnhasInherited(label().toString(), attributeType.label().toString(), true);
             }
-
-            Label ownerLabel = ownerSchema.getLabel(attributeToRemove.label());
-            Role ownerRole = conceptManager.getSchemaConcept(ownerLabel);
-
-            if (ownerRole == null) {
-                throw GraknConceptException.illegalUnhasNotExist(this.label().getValue(), attributeToRemove.label().getValue(), isKey);
-            } else if (!directPlays().keySet().contains(ownerRole)) {
-                throw GraknConceptException.illegalUnhasInherited(this.label().getValue(), attributeToRemove.label().getValue(), isKey);
-            }
-
-            unplay(ownerRole);
-
-            // If there are no other Types that own this Attribute, remove the entire implicit relation
-            if (!ownerRole.players().iterator().hasNext()) {
-                Label valueLabel = valueSchema.getLabel(attributeToRemove.label());
-                Role valueRole = conceptManager.getSchemaConcept(valueLabel);
-                attributeToRemove.unplay(valueRole);
-
-                relation.unrelate(ownerRole);
-                relation.unrelate(valueRole);
-                ownerRole.delete();
-                valueRole.delete();
-                relation.delete();
-            }
+            throw GraknConceptException.illegalUnhasNotExist(label().toString(), attributeType.label().toString(), true);
         }
 
+        deleteEdge(Direction.OUT, Schema.EdgeLabel.KEY, attributeType);
         return getThis();
     }
 
@@ -330,38 +308,38 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         return getThis();
     }
 
-    private void updateAttributeRelationHierarchy(AttributeType attributeType, Schema.ImplicitType has, Schema.ImplicitType hasValue, Schema.ImplicitType hasOwner,
-                                                  Role ownerRole, Role valueRole, RelationType relationType) {
-        AttributeType attributeTypeSuper = attributeType.sup();
-        Label superLabel = attributeTypeSuper.label();
-        Role ownerRoleSuper = conceptManager.getRole(hasOwner.getLabel(superLabel).getValue());
-        // create implicit roles and relations if required
-        if (ownerRoleSuper == null) {
-            ownerRoleSuper = conceptManager.createImplicitRole(hasOwner.getLabel(superLabel));
-        }
-        Role valueRoleSuper = conceptManager.getRole(hasValue.getLabel(superLabel).getValue());
-        if (valueRoleSuper == null) {
-            valueRoleSuper = conceptManager.createImplicitRole(hasValue.getLabel(superLabel));
-        }
-
-        RelationType relationTypeSuper = conceptManager.getRelationType(has.getLabel(superLabel).getValue());
-        if (relationTypeSuper == null) {
-            relationTypeSuper = conceptManager.createImplicitRelationType(has.getLabel(superLabel));
-        }
-        relationTypeSuper.relates(ownerRoleSuper).relates(valueRoleSuper);
-
-        //Create the super type edges from sub role/relations to super roles/relation
-        ownerRole.sup(ownerRoleSuper);
-        valueRole.sup(valueRoleSuper);
-        relationType.sup(relationTypeSuper);
-
-        if (!Schema.MetaSchema.ATTRIBUTE.getLabel().equals(superLabel)) {
-            //Make sure the supertype attribute is linked with the role as well
-            ((AttributeTypeImpl) attributeTypeSuper).plays(valueRoleSuper);
-            updateAttributeRelationHierarchy(attributeTypeSuper, has, hasValue, hasOwner, ownerRoleSuper, valueRoleSuper, relationTypeSuper);
-        }
-    }
-
+//    private void updateAttributeRelationHierarchy(AttributeType attributeType, Schema.ImplicitType has, Schema.ImplicitType hasValue, Schema.ImplicitType hasOwner,
+//                                                  Role ownerRole, Role valueRole, RelationType relationType) {
+//        AttributeType attributeTypeSuper = attributeType.sup();
+//        Label superLabel = attributeTypeSuper.label();
+//        Role ownerRoleSuper = conceptManager.getRole(hasOwner.getLabel(superLabel).getValue());
+//        // create implicit roles and relations if required
+//        if (ownerRoleSuper == null) {
+//            ownerRoleSuper = conceptManager.createImplicitRole(hasOwner.getLabel(superLabel));
+//        }
+//        Role valueRoleSuper = conceptManager.getRole(hasValue.getLabel(superLabel).getValue());
+//        if (valueRoleSuper == null) {
+//            valueRoleSuper = conceptManager.createImplicitRole(hasValue.getLabel(superLabel));
+//        }
+//
+//        RelationType relationTypeSuper = conceptManager.getRelationType(has.getLabel(superLabel).getValue());
+//        if (relationTypeSuper == null) {
+//            relationTypeSuper = conceptManager.createImplicitRelationType(has.getLabel(superLabel));
+//        }
+//        relationTypeSuper.relates(ownerRoleSuper).relates(valueRoleSuper);
+//
+//        //Create the super type edges from sub role/relations to super roles/relation
+//        ownerRole.sup(ownerRoleSuper);
+//        valueRole.sup(valueRoleSuper);
+//        relationType.sup(relationTypeSuper);
+//
+//        if (!Schema.MetaSchema.ATTRIBUTE.getLabel().equals(superLabel)) {
+//            //Make sure the supertype attribute is linked with the role as well
+//            ((AttributeTypeImpl) attributeTypeSuper).plays(valueRoleSuper);
+//            updateAttributeRelationHierarchy(attributeTypeSuper, has, hasValue, hasOwner, ownerRoleSuper, valueRoleSuper, relationTypeSuper);
+//        }
+//    }
+//
 //    /**
 //     * Creates a relation type which allows this type and a Attribute type to be linked.
 //     *
