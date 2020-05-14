@@ -19,9 +19,9 @@
 package hypergraph.graph.adjacency;
 
 import hypergraph.common.iterator.Iterators;
+import hypergraph.graph.adjacency.impl.AdjacencyImpl;
 import hypergraph.graph.edge.Edge;
 import hypergraph.graph.edge.TypeEdge;
-import hypergraph.graph.adjacency.impl.AdjacencyImpl;
 import hypergraph.graph.edge.impl.TypeEdgeImpl;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.vertex.TypeVertex;
@@ -36,14 +36,11 @@ import java.util.function.Predicate;
 import static hypergraph.common.collection.ByteArrays.join;
 import static hypergraph.common.iterator.Iterators.link;
 
-public abstract class TypeAdjacencyImpl extends AdjacencyImpl<Schema.Edge.Type, TypeEdge, TypeVertex> {
+public abstract class TypeAdjacencyImpl extends AdjacencyImpl<Schema.Edge.Type, TypeEdge, TypeVertex> implements TypeAdjacency {
 
     TypeAdjacencyImpl(TypeVertex owner, Direction direction) {
         super(owner, direction);
     }
-
-    @Override
-    public abstract TypeIteratorBuilder edge(Schema.Edge.Type schema);
 
     @Override
     public void put(Schema.Edge.Type schema, TypeVertex adjacent) {
@@ -64,9 +61,11 @@ public abstract class TypeAdjacencyImpl extends AdjacencyImpl<Schema.Edge.Type, 
         for (Schema.Edge.Type schema : Schema.Edge.Type.values()) delete(schema);
     }
 
-    public static class TypeIteratorBuilder extends IteratorBuilderImpl<TypeVertex, TypeEdge> {
+    public static class TypeIteratorBuilderImpl
+            extends IteratorBuilderImpl<TypeVertex, TypeEdge>
+            implements TypeAdjacency.TypeIteratorBuilder {
 
-        TypeIteratorBuilder(Iterator<TypeEdge> edgeIterator) {
+        TypeIteratorBuilderImpl(Iterator<TypeEdge> edgeIterator) {
             super(edgeIterator);
         }
 
@@ -82,10 +81,10 @@ public abstract class TypeAdjacencyImpl extends AdjacencyImpl<Schema.Edge.Type, 
         }
 
         @Override
-        public TypeIteratorBuilder edge(Schema.Edge.Type schema) {
+        public TypeIteratorBuilderImpl edge(Schema.Edge.Type schema) {
             Set<TypeEdge> t;
-            if ((t = edges.get(schema)) != null) return new TypeIteratorBuilder(t.iterator());
-            return new TypeIteratorBuilder(Collections.emptyIterator());
+            if ((t = edges.get(schema)) != null) return new TypeIteratorBuilderImpl(t.iterator());
+            return new TypeIteratorBuilderImpl(Collections.emptyIterator());
         }
 
         @Override
@@ -122,16 +121,16 @@ public abstract class TypeAdjacencyImpl extends AdjacencyImpl<Schema.Edge.Type, 
         }
 
         @Override
-        public TypeIteratorBuilder edge(Schema.Edge.Type schema) {
+        public TypeIteratorBuilderImpl edge(Schema.Edge.Type schema) {
             Iterator<TypeEdge> storageIterator = owner.graph().storage().iterate(
                     join(owner.iid(), direction.isOut() ? schema.out().key() : schema.in().key()),
                     (key, value) -> new TypeEdgeImpl.Persisted(owner.graph(), key, value)
             );
 
             if (edges.get(schema) == null) {
-                return new TypeIteratorBuilder(storageIterator);
+                return new TypeIteratorBuilderImpl(storageIterator);
             } else {
-                return new TypeIteratorBuilder(link(edges.get(schema).iterator(), storageIterator));
+                return new TypeIteratorBuilderImpl(link(edges.get(schema).iterator(), storageIterator));
             }
         }
 
