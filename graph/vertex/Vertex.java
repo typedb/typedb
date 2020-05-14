@@ -18,7 +18,7 @@
 
 package hypergraph.graph.vertex;
 
-import hypergraph.graph.edge.impl.EdgeMapImpl;
+import hypergraph.graph.adjacency.impl.AdjacencyImpl;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.edge.Edge;
 
@@ -51,9 +51,9 @@ public abstract class Vertex<
 
     public abstract void delete();
 
-    public abstract EdgeMapImpl<EDGE_SCHEMA, EDGE, VERTEX> outs();
+    public abstract AdjacencyImpl<EDGE_SCHEMA, EDGE, VERTEX> outs();
 
-    public abstract EdgeMapImpl<EDGE_SCHEMA, EDGE, VERTEX> ins();
+    public abstract AdjacencyImpl<EDGE_SCHEMA, EDGE, VERTEX> ins();
 
     public byte[] iid() {
         return iid;

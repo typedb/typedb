@@ -18,7 +18,7 @@
 
 package hypergraph.graph.vertex;
 
-import hypergraph.graph.edge.impl.EdgeMapImpl;
+import hypergraph.graph.adjacency.impl.AdjacencyImpl;
 import hypergraph.graph.util.KeyGenerator;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.ThingGraph;
@@ -70,10 +70,10 @@ public abstract class ThingVertex extends Vertex<Schema.Vertex.Thing, ThingVerte
         return graph.typeGraph().get(typeIID);
     }
 
-    public abstract class ThingEdgeMap extends EdgeMapImpl<Schema.Edge.Thing, ThingEdge, ThingVertex> {
+    public abstract class ThingAdjacencyImpl extends AdjacencyImpl<Schema.Edge.Thing, ThingEdge, ThingVertex> {
 
 
-        ThingEdgeMap(ThingVertex owner, Direction direction) {
+        ThingAdjacencyImpl(ThingVertex owner, Direction direction) {
             super(owner, direction);
         }
 

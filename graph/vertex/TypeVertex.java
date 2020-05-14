@@ -18,9 +18,9 @@
 
 package hypergraph.graph.vertex;
 
-import hypergraph.graph.edge.EdgeMap;
-import hypergraph.graph.edge.TypeEdgeMapImpl;
-import hypergraph.graph.edge.impl.EdgeMapImpl;
+import hypergraph.graph.adjacency.Adjacency;
+import hypergraph.graph.adjacency.TypeAdjacencyImpl;
+import hypergraph.graph.adjacency.impl.AdjacencyImpl;
 import hypergraph.graph.util.KeyGenerator;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.TypeGraph;
@@ -35,8 +35,8 @@ import static hypergraph.common.collection.ByteArrays.join;
 public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, TypeVertex, Schema.Edge.Type, TypeEdge> {
 
     protected final TypeGraph graph;
-    protected final TypeEdgeMapImpl outs;
-    protected final TypeEdgeMapImpl ins;
+    protected final TypeAdjacencyImpl outs;
+    protected final TypeAdjacencyImpl ins;
 
     protected String label;
     protected String scope;
@@ -50,11 +50,11 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, TypeVertex, 
         this.graph = graph;
         this.label = label;
         this.scope = scope;
-        this.outs = newEdgeMap(this, EdgeMap.Direction.OUT);
-        this.ins = newEdgeMap(this, EdgeMap.Direction.IN);
+        this.outs = newAdjacency(this, Adjacency.Direction.OUT);
+        this.ins = newAdjacency(this, Adjacency.Direction.IN);
     }
 
-    protected abstract TypeEdgeMapImpl newEdgeMap(TypeVertex owner, EdgeMapImpl.Direction direction);
+    protected abstract TypeAdjacencyImpl newAdjacency(TypeVertex owner, AdjacencyImpl.Direction direction);
 
     public static String scopedLabel(String label, @Nullable String scope) {
         if (scope == null) return label;
@@ -100,11 +100,11 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, TypeVertex, 
         return scopedLabel(label, scope);
     }
 
-    public TypeEdgeMapImpl outs() {
+    public TypeAdjacencyImpl outs() {
         return outs;
     }
 
-    public TypeEdgeMapImpl ins() {
+    public TypeAdjacencyImpl ins() {
         return ins;
     }
 
@@ -145,8 +145,8 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, TypeVertex, 
         }
 
         @Override
-        protected TypeEdgeMapImpl newEdgeMap(TypeVertex owner, EdgeMapImpl.Direction direction) {
-            return new TypeEdgeMapImpl.Buffered(owner, direction);
+        protected TypeAdjacencyImpl newAdjacency(TypeVertex owner, AdjacencyImpl.Direction direction) {
+            return new TypeAdjacencyImpl.Buffered(owner, direction);
         }
 
         public Schema.Status status() {
@@ -254,8 +254,8 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, TypeVertex, 
         }
 
         @Override
-        protected TypeEdgeMapImpl newEdgeMap(TypeVertex owner, EdgeMapImpl.Direction direction) {
-            return new TypeEdgeMapImpl.Persisted(owner, direction);
+        protected TypeAdjacencyImpl newAdjacency(TypeVertex owner, AdjacencyImpl.Direction direction) {
+            return new TypeAdjacencyImpl.Persisted(owner, direction);
         }
 
         @Override

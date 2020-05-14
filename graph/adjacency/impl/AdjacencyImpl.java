@@ -16,11 +16,11 @@
  *
  */
 
-package hypergraph.graph.edge.impl;
+package hypergraph.graph.adjacency.impl;
 
 import hypergraph.common.iterator.Iterators;
 import hypergraph.graph.edge.Edge;
-import hypergraph.graph.edge.EdgeMap;
+import hypergraph.graph.adjacency.Adjacency;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.vertex.Vertex;
 
@@ -30,16 +30,16 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Consumer;
 
-public abstract class EdgeMapImpl<
+public abstract class AdjacencyImpl<
         EDGE_SCHEMA extends Schema.Edge,
         EDGE extends Edge<EDGE_SCHEMA, VERTEX>,
-        VERTEX extends Vertex> implements EdgeMap<EDGE_SCHEMA, EDGE, VERTEX> {
+        VERTEX extends Vertex> implements Adjacency<EDGE_SCHEMA, EDGE, VERTEX> {
 
     protected final VERTEX owner;
     protected final Direction direction;
     protected final ConcurrentMap<EDGE_SCHEMA, Set<EDGE>> edges;
 
-    protected EdgeMapImpl(VERTEX owner, Direction direction) {
+    protected AdjacencyImpl(VERTEX owner, Direction direction) {
         this.owner = owner;
         this.direction = direction;
         this.edges = new ConcurrentHashMap<>();
@@ -47,7 +47,7 @@ public abstract class EdgeMapImpl<
 
     public static class IteratorBuilderImpl<
             ITER_VERTEX extends Vertex,
-            ITER_EDGE extends Edge<?, ITER_VERTEX>> implements EdgeMap.IteratorBuilder<ITER_VERTEX> {
+            ITER_EDGE extends Edge<?, ITER_VERTEX>> implements Adjacency.IteratorBuilder<ITER_VERTEX> {
 
         protected final Iterator<ITER_EDGE> edgeIterator;
 

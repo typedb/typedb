@@ -16,10 +16,12 @@
  *
  */
 
-package hypergraph.graph.edge;
+package hypergraph.graph.adjacency;
 
 import hypergraph.common.iterator.Iterators;
-import hypergraph.graph.edge.impl.EdgeMapImpl;
+import hypergraph.graph.edge.Edge;
+import hypergraph.graph.edge.TypeEdge;
+import hypergraph.graph.adjacency.impl.AdjacencyImpl;
 import hypergraph.graph.edge.impl.TypeEdgeImpl;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.vertex.TypeVertex;
@@ -34,9 +36,9 @@ import java.util.function.Predicate;
 import static hypergraph.common.collection.ByteArrays.join;
 import static hypergraph.common.iterator.Iterators.link;
 
-public abstract class TypeEdgeMapImpl extends EdgeMapImpl<Schema.Edge.Type, TypeEdge, TypeVertex> {
+public abstract class TypeAdjacencyImpl extends AdjacencyImpl<Schema.Edge.Type, TypeEdge, TypeVertex> {
 
-    TypeEdgeMapImpl(TypeVertex owner, Direction direction) {
+    TypeAdjacencyImpl(TypeVertex owner, Direction direction) {
         super(owner, direction);
     }
 
@@ -73,7 +75,7 @@ public abstract class TypeEdgeMapImpl extends EdgeMapImpl<Schema.Edge.Type, Type
         }
     }
 
-    public static class Buffered extends TypeEdgeMapImpl {
+    public static class Buffered extends TypeAdjacencyImpl {
 
         public Buffered(TypeVertex owner, Direction direction) {
             super(owner, direction);
@@ -113,7 +115,7 @@ public abstract class TypeEdgeMapImpl extends EdgeMapImpl<Schema.Edge.Type, Type
         }
     }
 
-    public static class Persisted extends TypeEdgeMapImpl {
+    public static class Persisted extends TypeAdjacencyImpl {
 
         public Persisted(TypeVertex owner, Direction direction) {
             super(owner, direction);
