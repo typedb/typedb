@@ -67,7 +67,7 @@ public interface Thing extends Concept {
      * @param attribute The Attribute to which a Relation is created
      * @return The instance itself
      */
-    Thing has(Attribute attribute);
+    <T extends Thing> T has(Attribute attribute);
 
 //    /**
 //     * Creates an ownership from this instance to the provided Attribute.
@@ -117,7 +117,7 @@ public interface Thing extends Concept {
     /**
      * Add an inferred attribute ownership to this Thing
      */
-    Relation attributeInferred(Attribute attribute);
+    void attributeInferred(Attribute attribute);
 
     /**
      * Return concepts that are DIRECT dependants of this concept - concepts required to be persisted if we persist this concept.

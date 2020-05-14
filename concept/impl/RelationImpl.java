@@ -27,6 +27,8 @@ import grakn.core.kb.concept.api.RelationStructure;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Thing;
+import grakn.core.kb.concept.manager.ConceptManager;
+import grakn.core.kb.concept.manager.ConceptNotificationChannel;
 import grakn.core.kb.concept.structure.VertexElement;
 
 import javax.annotation.Nullable;
@@ -39,14 +41,11 @@ import java.util.stream.Stream;
  * Encapsulates relations between Thing
  * A relation which is an instance of a RelationType defines how instances may relate to one another.
  */
-public class RelationImpl  implements Relation, ConceptVertex {
+public class RelationImpl extends ThingImpl<Relation, RelationType> implements Relation, ConceptVertex {
     private RelationStructure relationStructure;
 
-    public RelationImpl(RelationStructure relationStructure) {
-        this.relationStructure = relationStructure;
-        if (relationStructure.isReified()) {
-            ((RelationReified)relationStructure.reify()).owner(this);
-        }
+    public RelationImpl(VertexElement vertexElement, ConceptManager conceptManager, ConceptNotificationChannel conceptNotificationChannel){
+        super(vertexElement, conceptManager, conceptNotificationChannel);
     }
 
     public static RelationImpl from(Relation relation) {
@@ -161,13 +160,6 @@ public class RelationImpl  implements Relation, ConceptVertex {
     }
 
     @Override
-    public Relation unhas(Attribute attribute) {
-        RelationReified relationReified = reified();
-        if (relationReified != null) relationReified.unhas(attribute);
-        return this;
-    }
-
-    @Override
     public boolean isInferred() {
         return structure().isInferred();
     }
@@ -203,11 +195,6 @@ public class RelationImpl  implements Relation, ConceptVertex {
     }
 
     @Override
-    public String toString() {
-        return structure().toString();
-    }
-
-    @Override
     public ConceptId id() {
         return structure().id();
     }
@@ -225,11 +212,6 @@ public class RelationImpl  implements Relation, ConceptVertex {
     @Override
     public VertexElement vertex() {
         return reify().vertex();
-    }
-
-    @Override
-    public Relation attributeInferred(Attribute attribute) {
-        return reify().attributeInferred(attribute);
     }
 
     @Override

@@ -36,6 +36,7 @@ import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.concept.manager.ConceptNotificationChannel;
+import grakn.core.kb.concept.structure.AbstractElement;
 import grakn.core.kb.concept.structure.Casting;
 import grakn.core.kb.concept.structure.EdgeElement;
 import grakn.core.kb.concept.structure.VertexElement;
@@ -114,8 +115,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
             conceptNotificationChannel.thingDeleted(this);
         }
 
-
-        this.edgeRelations().forEach(Concept::delete);
+        deleteAttributeOwnerships();
 
         long t3 = System.currentTimeMillis();
         System.out.println("Delete t3 - t25: " + (t3 - t25));
@@ -239,7 +239,11 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
      */
     @Override
     public Stream<Relation> relations(Role... roles) {
-        return Stream.concat(reifiedRelations(roles), edgeRelations(roles));
+//        return Stream.concat(reifiedRelations(roles));
+        return reifiedRelations(roles);
+
+        // TODO definitely removed this now!
+        //, edgeRelations(roles));
     }
 
     private Stream<Relation> reifiedRelations(Role... roles) {
@@ -247,23 +251,9 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
         return reifiedRelationVertices.map(vertexElement -> conceptManager.buildConcept(vertexElement));
     }
 
-    private Stream<Relation> edgeRelations(Role... roles) {
-        Set<Role> roleSet = new HashSet<>(Arrays.asList(roles));
-        // TODO move this into the AbstractElement and ElementFactory as well
-        Stream<EdgeElement> stream = vertex().getEdgesOfType(Direction.BOTH, Schema.EdgeLabel.ATTRIBUTE);
-
-        if (!roleSet.isEmpty()) {
-            stream = stream.filter(edge -> {
-                Set<Role> edgeRoles = new HashSet<>();
-                edgeRoles.add(conceptManager.getSchemaConcept(LabelId.of(edge.property(Schema.EdgeProperty.RELATION_ROLE_OWNER_LABEL_ID))));
-                if (this.isAttribute()) {
-                    edgeRoles.add(conceptManager.getSchemaConcept(LabelId.of(edge.property(Schema.EdgeProperty.RELATION_ROLE_VALUE_LABEL_ID))));
-                }
-                return !Sets.intersection(roleSet, edgeRoles).isEmpty();
-            });
-        }
-
-        return stream.map(edge -> conceptManager.buildRelation(edge));
+    private void deleteAttributeOwnerships() {
+        vertex().getEdgesOfType(Direction.BOTH, Schema.EdgeLabel.ATTRIBUTE)
+            .forEach(AbstractElement::delete);
     }
 
     @Override
@@ -278,8 +268,8 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
     }
 
     @Override
-    public Relation attributeInferred(Attribute attribute) {
-        return attributeOwnership(attribute, true);
+    public void attributeInferred(Attribute attribute) {
+        attributeOwnership(attribute, true);
     }
 
     private void attributeOwnership(Attribute attribute, boolean isInferred) {
@@ -299,6 +289,9 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
 
     @Override
     public T unhas(Attribute attribute) {
+        // TODO-NOIMPL add forwards and backwards compatibility on deletes
+
+
         Role roleHasOwner = conceptManager.getSchemaConcept(Schema.ImplicitType.HAS_OWNER.getLabel(attribute.type().label()));
         Role roleKeyOwner = conceptManager.getSchemaConcept(Schema.ImplicitType.KEY_OWNER.getLabel(attribute.type().label()));
 

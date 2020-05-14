@@ -22,7 +22,6 @@ import grakn.core.concept.impl.AttributeImpl;
 import grakn.core.concept.impl.AttributeTypeImpl;
 import grakn.core.concept.impl.EntityImpl;
 import grakn.core.concept.impl.EntityTypeImpl;
-import grakn.core.concept.impl.RelationEdge;
 import grakn.core.concept.impl.RelationImpl;
 import grakn.core.concept.impl.RelationReified;
 import grakn.core.concept.impl.RelationTypeImpl;
@@ -62,7 +61,6 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import javax.annotation.Nullable;
 import java.util.HashSet;
-import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -322,10 +320,10 @@ public class ConceptManagerImpl implements ConceptManager {
         preCheckForInstanceCreation(type);
         VertexElement vertex = createInstanceVertex(RELATION, isInferred);
 
-        // safe downcast from interface to implementation type
-        RelationReified relationReified = (RelationReified) createRelationReified(vertex, type);
+////         safe downcast from interface to implementation type
+//        RelationReified relationReified = (RelationReified) createRelationReified(vertex, type);
 
-        RelationImpl newRelation = new RelationImpl(relationReified);
+        RelationImpl newRelation = new RelationImpl(vertex, this, conceptNotificationChannel);
 
         // TODO this shouldn't be required after removing implicit types
         if (!type.isImplicit()) {
@@ -619,7 +617,7 @@ public class ConceptManagerImpl implements ConceptManager {
             Concept concept;
             switch (type) {
                 case RELATION:
-                    concept = new RelationImpl(new RelationReified(vertexElement, this, conceptNotificationChannel));
+                    concept = new RelationImpl(vertexElement, this, conceptNotificationChannel);
                     break;
                 case TYPE:
                     concept = new TypeImpl(vertexElement, this, conceptNotificationChannel);
@@ -667,39 +665,42 @@ public class ConceptManagerImpl implements ConceptManager {
     }
 
     private <X extends Concept> X buildConcept(EdgeElement edgeElement) {
-        Schema.EdgeLabel label = Schema.EdgeLabel.valueOf(edgeElement.label().toUpperCase(Locale.getDefault()));
 
-        ConceptId conceptId = Schema.conceptId(edgeElement.element());
-        if (!transactionCache.isConceptCached(conceptId)) {
-            Concept concept;
-            switch (label) {
-                case ATTRIBUTE:
-                    concept = new RelationImpl(new RelationEdge(edgeElement, this, conceptNotificationChannel));
-                    break;
-                default:
-                    throw GraknConceptException.unknownConceptType(label.name());
-            }
-            transactionCache.cacheConcept(concept);
-        }
-        return transactionCache.getCachedConcept(conceptId);
+        throw new RuntimeException("No longer building edge concepts");
+//
+//        Schema.EdgeLabel label = Schema.EdgeLabel.valueOf(edgeElement.label().toUpperCase(Locale.getDefault()));
+//
+//        ConceptId conceptId = Schema.conceptId(edgeElement.element());
+//        if (!transactionCache.isConceptCached(conceptId)) {
+//            Concept concept;
+//            switch (label) {
+//                case ATTRIBUTE:
+//                    concept = new RelationImpl(new RelationEdge(edgeElement, this, conceptNotificationChannel));
+//                    break;
+//                default:
+//                    throw GraknConceptException.unknownConceptType(label.name());
+//            }
+//            transactionCache.cacheConcept(concept);
+//        }
+//        return transactionCache.getCachedConcept(conceptId);
     }
 
 
-    /**
-     * Used by RelationEdge to build a RelationImpl object out of a provided Edge
-     * Build a concept around an prexisting edge that we may have cached
-     */
-    @Override
-    public RelationImpl buildRelation(EdgeElement edge) {
-        ConceptId conceptId = Schema.conceptId(edge.element());
-        if (!transactionCache.isConceptCached(conceptId)) {
-            RelationImpl relation = new RelationImpl(new RelationEdge(edge, this, conceptNotificationChannel));
-            transactionCache.cacheConcept(relation);
-            return relation;
-        } else {
-            return transactionCache.getCachedConcept(conceptId);
-        }
-    }
+//    /**
+//     * Used by RelationEdge to build a RelationImpl object out of a provided Edge
+//     * Build a concept around an prexisting edge that we may have cached
+//     */
+//    @Override
+//    public RelationImpl buildRelation(EdgeElement edge) {
+//        ConceptId conceptId = Schema.conceptId(edge.element());
+//        if (!transactionCache.isConceptCached(conceptId)) {
+//            RelationImpl relation = new RelationImpl(new RelationEdge(edge, this, conceptNotificationChannel));
+//            transactionCache.cacheConcept(relation);
+//            return relation;
+//        } else {
+//            return transactionCache.getCachedConcept(conceptId);
+//        }
+//    }
 
 
     /**

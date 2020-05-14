@@ -31,15 +31,15 @@ import java.util.stream.Stream;
  */
 public interface Relation extends Thing {
 ////    ------------------------------------- Modifiers ----------------------------------
-//
-//    /**
-//     * Creates a relation from this instance to the provided Attribute.
-//     *
-//     * @param attribute The Attribute to which a relation is created
-//     * @return The instance itself
-//     */
-//    @Override
-//    Relation has(Attribute attribute);
+
+    /**
+     * Creates an ownership from this instance to the provided Attribute.
+     *
+     * @param attribute The Attribute to which a relation is created
+     * @return The instance itself
+     */
+    @Override
+    Relation has(Attribute attribute);
 
     //------------------------------------- Accessors ----------------------------------
 
@@ -79,15 +79,6 @@ public interface Relation extends Thing {
      * @return The Relation itself.
      */
     Relation assign(Role role, Thing player);
-
-    /**
-     * Removes the provided Attribute from this Relation
-     *
-     * @param attribute the Attribute to be removed
-     * @return The Relation itself
-     */
-    @Override
-    Relation unhas(Attribute attribute);
 
     /**
      * Removes the Thing which is playing a Role in this Relation.
