@@ -16,10 +16,10 @@
  *
  */
 
-package hypergraph.graph.adjacency;
+package hypergraph.graph.adjacency.impl;
 
 import hypergraph.common.iterator.Iterators;
-import hypergraph.graph.adjacency.impl.AdjacencyImpl;
+import hypergraph.graph.adjacency.TypeAdjacency;
 import hypergraph.graph.edge.Edge;
 import hypergraph.graph.edge.TypeEdge;
 import hypergraph.graph.edge.impl.TypeEdgeImpl;

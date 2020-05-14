@@ -30,6 +30,24 @@ public interface Adjacency<
         EDGE extends Edge<EDGE_SCHEMA, VERTEX>,
         VERTEX extends Vertex> {
 
+    IteratorBuilder<VERTEX> edge(EDGE_SCHEMA schema);
+
+    EDGE edge(EDGE_SCHEMA schema, VERTEX adjacent);
+
+    void put(EDGE_SCHEMA schema, VERTEX adjacent);
+
+    void delete(EDGE_SCHEMA schema, VERTEX adjacent);
+
+    void delete(EDGE_SCHEMA schema);
+
+    void deleteNonRecursive(EDGE edge);
+
+    void deleteAll();
+
+    void putNonRecursive(EDGE edge);
+
+    void forEach(Consumer<EDGE> function);
+
     enum Direction {
         OUT(true),
         IN(false);
@@ -54,22 +72,4 @@ public interface Adjacency<
 
         Iterator<ITER_VERTEX> from();
     }
-
-    IteratorBuilder<VERTEX> edge(EDGE_SCHEMA schema);
-
-    EDGE edge(EDGE_SCHEMA schema, VERTEX adjacent);
-
-    void put(EDGE_SCHEMA schema, VERTEX adjacent);
-
-    void delete(EDGE_SCHEMA schema, VERTEX adjacent);
-
-    void delete(EDGE_SCHEMA schema);
-
-    void deleteNonRecursive(EDGE edge);
-
-    void deleteAll();
-
-    void putNonRecursive(EDGE edge);
-
-    void forEach(Consumer<EDGE> function);
 }

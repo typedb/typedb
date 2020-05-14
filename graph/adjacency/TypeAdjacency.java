@@ -1,12 +1,33 @@
+/*
+ * Copyright (C) 2020 Grakn Labs
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
+ */
+
 package hypergraph.graph.adjacency;
 
 import hypergraph.graph.edge.TypeEdge;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.vertex.TypeVertex;
 
-public interface TypeAdjacency extends Adjacency<EDGE_SCHEMA, EDGE, VERTEX> {
+import java.util.Iterator;
+
+public interface TypeAdjacency extends Adjacency<Schema.Edge.Type, TypeEdge, TypeVertex> {
+
     @Override
-    TypeAdjacencyImpl.TypeIteratorBuilder edge(Schema.Edge.Type schema);
+    TypeIteratorBuilder edge(Schema.Edge.Type schema);
 
     @Override
     void put(Schema.Edge.Type schema, TypeVertex adjacent);
@@ -16,4 +37,9 @@ public interface TypeAdjacency extends Adjacency<EDGE_SCHEMA, EDGE, VERTEX> {
 
     @Override
     void deleteAll();
+
+    interface TypeIteratorBuilder extends IteratorBuilder<TypeVertex> {
+
+        Iterator<TypeVertex> overridden();
+    }
 }

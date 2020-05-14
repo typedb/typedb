@@ -204,10 +204,6 @@ public class Schema {
             this.keyword = keyword;
         }
 
-        public byte[] key() {
-            return new byte[]{key};
-        }
-
         public static ValueClass of(byte value) {
             for (ValueClass t : ValueClass.values()) {
                 if (t.key == value) {
@@ -224,6 +220,10 @@ public class Schema {
                 }
             }
             return null;
+        }
+
+        public byte[] key() {
+            return new byte[]{key};
         }
 
         @Nullable
@@ -285,15 +285,6 @@ public class Schema {
                 this.root = root;
             }
 
-            @Override
-            public Prefix prefix() {
-                return prefix;
-            }
-
-            public Root root() {
-                return root;
-            }
-
             public static Type of(byte prefix) {
                 for (Type t : Type.values()) {
                     if (t.prefix.key == prefix) return t;
@@ -306,6 +297,15 @@ public class Schema {
                     if (t.root.name().equals(thing.name())) return t;
                 }
                 return null;
+            }
+
+            @Override
+            public Prefix prefix() {
+                return prefix;
+            }
+
+            public Root root() {
+                return root;
             }
 
             public enum Root {
@@ -349,11 +349,6 @@ public class Schema {
                 this.prefix = prefix;
             }
 
-            @Override
-            public Prefix prefix() {
-                return prefix;
-            }
-
             public static Thing of(byte prefix) {
                 for (Thing t : Thing.values()) {
                     if (t.prefix.key == prefix) return t;
@@ -367,19 +362,24 @@ public class Schema {
                 }
                 return null;
             }
+
+            @Override
+            public Prefix prefix() {
+                return prefix;
+            }
         }
 
     }
 
     public interface Edge {
 
-        Infix out();
-
-        Infix in();
-
         static boolean isOut(byte infix) {
             return infix > 0;
         }
+
+        Infix out();
+
+        Infix in();
 
         enum Type implements Edge {
             SUB(Infix.EDGE_SUB_OUT, Infix.EDGE_SUB_IN),

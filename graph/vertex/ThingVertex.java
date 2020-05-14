@@ -18,11 +18,11 @@
 
 package hypergraph.graph.vertex;
 
+import hypergraph.graph.ThingGraph;
 import hypergraph.graph.adjacency.impl.AdjacencyImpl;
+import hypergraph.graph.edge.ThingEdge;
 import hypergraph.graph.util.KeyGenerator;
 import hypergraph.graph.util.Schema;
-import hypergraph.graph.ThingGraph;
-import hypergraph.graph.edge.ThingEdge;
 
 import java.util.Arrays;
 import java.util.Iterator;
@@ -71,7 +71,6 @@ public abstract class ThingVertex extends Vertex<Schema.Vertex.Thing, ThingVerte
     }
 
     public abstract class ThingAdjacencyImpl extends AdjacencyImpl<Schema.Edge.Thing, ThingEdge, ThingVertex> {
-
 
         ThingAdjacencyImpl(ThingVertex owner, Direction direction) {
             super(owner, direction);

@@ -18,9 +18,9 @@
 
 package hypergraph.graph.vertex;
 
-import hypergraph.graph.adjacency.impl.AdjacencyImpl;
-import hypergraph.graph.util.Schema;
+import hypergraph.graph.adjacency.Adjacency;
 import hypergraph.graph.edge.Edge;
+import hypergraph.graph.util.Schema;
 
 import java.util.Arrays;
 
@@ -31,7 +31,6 @@ public abstract class Vertex<
         EDGE extends Edge<EDGE_SCHEMA, VERTEX>> {
 
     protected final VERTEX_SCHEMA schema;
-
 
 
     protected byte[] iid;
@@ -51,9 +50,9 @@ public abstract class Vertex<
 
     public abstract void delete();
 
-    public abstract AdjacencyImpl<EDGE_SCHEMA, EDGE, VERTEX> outs();
+    public abstract Adjacency<EDGE_SCHEMA, EDGE, VERTEX> outs();
 
-    public abstract AdjacencyImpl<EDGE_SCHEMA, EDGE, VERTEX> ins();
+    public abstract Adjacency<EDGE_SCHEMA, EDGE, VERTEX> ins();
 
     public byte[] iid() {
         return iid;

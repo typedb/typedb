@@ -19,8 +19,8 @@
 package hypergraph.graph.adjacency.impl;
 
 import hypergraph.common.iterator.Iterators;
-import hypergraph.graph.edge.Edge;
 import hypergraph.graph.adjacency.Adjacency;
+import hypergraph.graph.edge.Edge;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.vertex.Vertex;
 
@@ -45,6 +45,16 @@ public abstract class AdjacencyImpl<
         this.edges = new ConcurrentHashMap<>();
     }
 
+    @Override
+    public void putNonRecursive(EDGE edge) {
+        edges.computeIfAbsent(edge.schema(), e -> ConcurrentHashMap.newKeySet()).add(edge);
+    }
+
+    @Override
+    public void forEach(Consumer<EDGE> function) {
+        edges.forEach((key, set) -> set.forEach(function));
+    }
+
     public static class IteratorBuilderImpl<
             ITER_VERTEX extends Vertex,
             ITER_EDGE extends Edge<?, ITER_VERTEX>> implements Adjacency.IteratorBuilder<ITER_VERTEX> {
@@ -64,15 +74,5 @@ public abstract class AdjacencyImpl<
         public Iterator<ITER_VERTEX> from() {
             return Iterators.apply(edgeIterator, Edge::from);
         }
-    }
-
-    @Override
-    public void putNonRecursive(EDGE edge) {
-        edges.computeIfAbsent(edge.schema(), e -> ConcurrentHashMap.newKeySet()).add(edge);
-    }
-
-    @Override
-    public void forEach(Consumer<EDGE> function) {
-        edges.forEach((key, set) -> set.forEach(function));
     }
 }

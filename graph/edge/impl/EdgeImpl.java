@@ -19,8 +19,8 @@
 package hypergraph.graph.edge.impl;
 
 import hypergraph.graph.Graph;
-import hypergraph.graph.util.Schema;
 import hypergraph.graph.edge.Edge;
+import hypergraph.graph.util.Schema;
 import hypergraph.graph.vertex.Vertex;
 
 import java.util.Arrays;
@@ -194,10 +194,14 @@ public abstract class EdgeImpl<
             byte[] end = copyOfRange(iid, iidSchema.length() + 1, iid.length);
 
             if (Schema.Edge.isOut(iid[iidSchema.length()])) {
-                fromIID = start; toIID = end; outIID = iid;
+                fromIID = start;
+                toIID = end;
+                outIID = iid;
                 inIID = join(end, edgeSchema.in().key(), start);
             } else {
-                fromIID = end; toIID = start; inIID = iid;
+                fromIID = end;
+                toIID = start;
+                inIID = iid;
                 outIID = join(end, schema().out().key(), start);
             }
 

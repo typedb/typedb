@@ -18,14 +18,14 @@
 
 package hypergraph.graph.vertex;
 
-import hypergraph.graph.adjacency.Adjacency;
-import hypergraph.graph.adjacency.TypeAdjacencyImpl;
-import hypergraph.graph.adjacency.impl.AdjacencyImpl;
-import hypergraph.graph.util.KeyGenerator;
-import hypergraph.graph.util.Schema;
 import hypergraph.graph.TypeGraph;
+import hypergraph.graph.adjacency.Adjacency;
+import hypergraph.graph.adjacency.TypeAdjacency;
+import hypergraph.graph.adjacency.impl.TypeAdjacencyImpl;
 import hypergraph.graph.edge.Edge;
 import hypergraph.graph.edge.TypeEdge;
+import hypergraph.graph.util.KeyGenerator;
+import hypergraph.graph.util.Schema;
 
 import javax.annotation.Nullable;
 import java.util.Iterator;
@@ -35,8 +35,8 @@ import static hypergraph.common.collection.ByteArrays.join;
 public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, TypeVertex, Schema.Edge.Type, TypeEdge> {
 
     protected final TypeGraph graph;
-    protected final TypeAdjacencyImpl outs;
-    protected final TypeAdjacencyImpl ins;
+    protected final TypeAdjacency outs;
+    protected final TypeAdjacency ins;
 
     protected String label;
     protected String scope;
@@ -53,8 +53,6 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, TypeVertex, 
         this.outs = newAdjacency(this, Adjacency.Direction.OUT);
         this.ins = newAdjacency(this, Adjacency.Direction.IN);
     }
-
-    protected abstract TypeAdjacencyImpl newAdjacency(TypeVertex owner, AdjacencyImpl.Direction direction);
 
     public static String scopedLabel(String label, @Nullable String scope) {
         if (scope == null) return label;
@@ -83,6 +81,8 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, TypeVertex, 
         return join(schema.prefix().key(), keyGenerator.forType(schema.prefix().key()));
     }
 
+    protected abstract TypeAdjacency newAdjacency(TypeVertex owner, Adjacency.Direction direction);
+
     /**
      * Get the {@code Graph} containing all {@code TypeVertex}
      *
@@ -100,11 +100,11 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, TypeVertex, 
         return scopedLabel(label, scope);
     }
 
-    public TypeAdjacencyImpl outs() {
+    public TypeAdjacency outs() {
         return outs;
     }
 
-    public TypeAdjacencyImpl ins() {
+    public TypeAdjacency ins() {
         return ins;
     }
 
@@ -145,7 +145,7 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, TypeVertex, 
         }
 
         @Override
-        protected TypeAdjacencyImpl newAdjacency(TypeVertex owner, AdjacencyImpl.Direction direction) {
+        protected TypeAdjacency newAdjacency(TypeVertex owner, Adjacency.Direction direction) {
             return new TypeAdjacencyImpl.Buffered(owner, direction);
         }
 
@@ -254,7 +254,7 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, TypeVertex, 
         }
 
         @Override
-        protected TypeAdjacencyImpl newAdjacency(TypeVertex owner, AdjacencyImpl.Direction direction) {
+        protected TypeAdjacency newAdjacency(TypeVertex owner, Adjacency.Direction direction) {
             return new TypeAdjacencyImpl.Persisted(owner, direction);
         }
 
