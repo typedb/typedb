@@ -34,12 +34,33 @@ public interface Adjacency<
 
     EDGE edge(EDGE_SCHEMA schema, VERTEX adjacent);
 
+    /**
+     * Puts an adjacent vertex over an edge with a given schema.
+     *
+     * The owner of this {@code Adjacency} map will also be added as an adjacent
+     * vertex to the provided vertex, through an opposite facing edge stored in
+     * an {@code Adjacency} map with an opposite direction to this one. I.e.
+     * This is a recursive put operation.
+     *
+     * @param schema   of the edge that will connect the owner to the adjacent vertex
+     * @param adjacent the adjacent vertex
+     */
     void put(EDGE_SCHEMA schema, VERTEX adjacent);
 
     void putNonRecursive(EDGE edge);
 
     void delete(EDGE_SCHEMA schema, VERTEX adjacent);
 
+    /**
+     * Deletes an edge with a given schema from the {@code Adjacency} map.
+     *
+     * Deleting the edge renders all adjacent vertices connected through this
+     * edge to no longer be connected to the owner of this {@code Adjacency}
+     * map, both through this {@code Adjacency} or the opposite one that the
+     * disconnected vertices own. I.e. this is a recursive delete operation
+     *
+     * @param schema   of the edge that will connect the owner to the adjacent vertex
+     */
     void delete(EDGE_SCHEMA schema);
 
     void deleteNonRecursive(EDGE edge);

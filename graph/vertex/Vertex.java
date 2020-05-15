@@ -18,8 +18,6 @@
 
 package hypergraph.graph.vertex;
 
-import hypergraph.graph.Graph;
-import hypergraph.graph.adjacency.Adjacency;
 import hypergraph.graph.edge.Edge;
 import hypergraph.graph.util.Schema;
 
@@ -29,10 +27,9 @@ public abstract class Vertex<
         VERTEX_SCHEMA extends Schema.Vertex,
         VERTEX extends Vertex<VERTEX_SCHEMA, VERTEX, EDGE_SCHEMA, EDGE>,
         EDGE_SCHEMA extends Schema.Edge,
-        EDGE extends Edge<EDGE_SCHEMA, VERTEX>> {
+        EDGE extends Edge<EDGE_SCHEMA, VERTEX>> implements VertexInt<VERTEX_SCHEMA, VERTEX, EDGE_SCHEMA, EDGE> {
 
     protected final VERTEX_SCHEMA schema;
-
 
     protected byte[] iid;
 
@@ -41,26 +38,17 @@ public abstract class Vertex<
         this.iid = iid;
     }
 
-    public abstract Graph<VERTEX> graph();
-
-    public abstract Schema.Status status();
-
-    public abstract void commit();
-
-    public abstract void delete();
-
-    public abstract Adjacency<EDGE_SCHEMA, EDGE, VERTEX> outs();
-
-    public abstract Adjacency<EDGE_SCHEMA, EDGE, VERTEX> ins();
-
+    @Override
     public VERTEX_SCHEMA schema() {
         return schema;
     }
 
+    @Override
     public byte[] iid() {
         return iid;
     }
 
+    @Override
     public void iid(byte[] iid) {
         this.iid = iid;
     }
