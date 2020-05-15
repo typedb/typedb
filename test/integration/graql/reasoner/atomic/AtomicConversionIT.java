@@ -151,47 +151,47 @@ public class AtomicConversionIT {
         }
     }
 
-    @Test
-    public void whenConvertingAttributeToRelation_predicatesArePreserved(){
-        try(Transaction tx = session.transaction(Transaction.Type.READ)){
-            ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
+//    @Test
+//    public void whenConvertingAttributeToRelation_predicatesArePreserved(){
+//        try(Transaction tx = session.transaction(Transaction.Type.READ)){
+//            ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
+//
+//            Atom attribute = reasonerQueryFactory.atomic(attributePattern).getAtom();
+//            RelationAtom relation = attribute.toRelationAtom();
+//
+//            assertEquals(
+//                    relation.getPredicates(IdPredicate.class).collect(toSet()),
+//                    attribute.getPredicates(IdPredicate.class).collect(toSet())
+//            );
+//
+//            assertEquals(
+//                    relation.getPredicates(ValuePredicate.class).collect(toSet()),
+//                    attribute.getInnerPredicates(ValuePredicate.class).collect(toSet())
+//            );
+//        }
+//    }
 
-            Atom attribute = reasonerQueryFactory.atomic(attributePattern).getAtom();
-            RelationAtom relation = attribute.toRelationAtom();
+//    @Test
+//    public void whenPerformingAttributeRelationIdentityConversion_equivalenceIsPreserved(){
+//        try(Transaction tx = session.transaction(Transaction.Type.READ)){
+//            ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
+//
+//            Atom attribute = reasonerQueryFactory.atomic(attributePattern).getAtom();
+//            RelationAtom intermittentAtom = attribute.toRelationAtom();
+//            AttributeAtom equivalentAttribute = intermittentAtom.toAttributeAtom();
+//            assertTrue(attribute.isAlphaEquivalent(equivalentAttribute));
+//            assertEquals(attribute, equivalentAttribute);
+//        }
+//    }
 
-            assertEquals(
-                    relation.getPredicates(IdPredicate.class).collect(toSet()),
-                    attribute.getPredicates(IdPredicate.class).collect(toSet())
-            );
-
-            assertEquals(
-                    relation.getPredicates(ValuePredicate.class).collect(toSet()),
-                    attribute.getInnerPredicates(ValuePredicate.class).collect(toSet())
-            );
-        }
-    }
-
-    @Test
-    public void whenPerformingAttributeRelationIdentityConversion_equivalenceIsPreserved(){
-        try(Transaction tx = session.transaction(Transaction.Type.READ)){
-            ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
-
-            Atom attribute = reasonerQueryFactory.atomic(attributePattern).getAtom();
-            RelationAtom intermittentAtom = attribute.toRelationAtom();
-            AttributeAtom equivalentAttribute = intermittentAtom.toAttributeAtom();
-            assertTrue(attribute.isAlphaEquivalent(equivalentAttribute));
-            assertEquals(attribute, equivalentAttribute);
-        }
-    }
-
-    @Test
-    public void whenPerformingRelationAttributeIdentityConversion_equivalenceIsPreserved(){
-        try(Transaction tx = session.transaction(Transaction.Type.READ)){
-            ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
-            Atom relation = reasonerQueryFactory.atomic(implicitRelationPattern).getAtom();
-            AttributeAtom intermittentAtom = relation.toAttributeAtom();
-            Atom equivalentRelation = intermittentAtom.toRelationAtom();
-            assertEquals(relation, equivalentRelation);
-        }
-    }
+//    @Test
+//    public void whenPerformingRelationAttributeIdentityConversion_equivalenceIsPreserved(){
+//        try(Transaction tx = session.transaction(Transaction.Type.READ)){
+//            ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
+//            Atom relation = reasonerQueryFactory.atomic(implicitRelationPattern).getAtom();
+//            AttributeAtom intermittentAtom = relation.toAttributeAtom();
+//            Atom equivalentRelation = intermittentAtom.toRelationAtom();
+//            assertEquals(relation, equivalentRelation);
+//        }
+//    }
 }
