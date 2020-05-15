@@ -18,6 +18,8 @@
 
 package hypergraph.concept.type;
 
+import hypergraph.concept.thing.Relation;
+
 import java.util.stream.Stream;
 
 public interface RelationType extends ThingType {
@@ -45,4 +47,8 @@ public interface RelationType extends ThingType {
     Stream<? extends RoleType> roles();
 
     RoleType role(String roleLabel);
+
+    Relation create();
+
+    Relation create(boolean isInferred);
 }

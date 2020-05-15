@@ -20,10 +20,12 @@ package hypergraph.concept.type.impl;
 
 import hypergraph.common.exception.HypergraphException;
 import hypergraph.common.iterator.Iterators;
+import hypergraph.concept.thing.impl.RelationImpl;
 import hypergraph.concept.type.RelationType;
 import hypergraph.concept.type.Type;
 import hypergraph.graph.TypeGraph;
 import hypergraph.graph.util.Schema;
+import hypergraph.graph.vertex.ThingVertex;
 import hypergraph.graph.vertex.TypeVertex;
 
 import javax.annotation.Nullable;
@@ -190,6 +192,17 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
         } else {
             throw new HypergraphException("Invalid RoleType Removal: " + label() + " has subtypes");
         }
+    }
+
+    @Override // TODO: force to take in at least one role player
+    public RelationImpl create() {
+        return create(false);
+    }
+
+    @Override
+    public RelationImpl create(boolean isInferred) {
+        ThingVertex instance = vertex.graph().thingGraph().create(Schema.Vertex.Thing.RELATION, vertex, isInferred);
+        return new RelationImpl(instance);
     }
 
     public static class Root extends RelationTypeImpl {
