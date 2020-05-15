@@ -25,7 +25,7 @@ import hypergraph.graph.util.Schema;
 public interface ThingVertex extends Vertex<Schema.Vertex.Thing, ThingVertex, Schema.Edge.Thing, ThingEdge> {
 
     /**
-     * Returns the {@code Graph} containing all {@code ThingVertex}
+     * Returns the {@code Graph} containing all {@code ThingVertex}.
      *
      * @return the {@code Graph} containing all {@code ThingVertex}
      */
@@ -33,9 +33,16 @@ public interface ThingVertex extends Vertex<Schema.Vertex.Thing, ThingVertex, Sc
     ThingGraph graph();
 
     /**
-     * Returns the {@code TypeVertex} in which this {@code ThingVertex} is an instance of
+     * Returns the {@code TypeVertex} in which this {@code ThingVertex} is an instance of.
      *
      * @return the {@code TypeVertex} in which this {@code ThingVertex} is an instance of
      */
     TypeVertex typeVertex();
+
+    /**
+     * Returns true if this {@code ThingVertex} is a result of inference.
+     *
+     * @return true if this {@code ThingVertex} is a result of inference
+     */
+    boolean isInferred();
 }

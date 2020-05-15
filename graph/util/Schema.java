@@ -187,21 +187,21 @@ public class Schema {
     }
 
     public enum ValueClass {
-        OBJECT(0, Object.class, null),
-        BOOLEAN(10, Boolean.class, "boolean"),
-        LONG(20, Long.class, "long"),
-        DOUBLE(30, Double.class, "double"),
-        STRING(40, String.class, "string"),
-        DATETIME(50, LocalDateTime.class, "datetime");
+        OBJECT(0, Object.class, false),
+        BOOLEAN(10, Boolean.class, false),
+        LONG(20, Long.class, true),
+        DOUBLE(30, Double.class, false),
+        STRING(40, String.class, true),
+        DATETIME(50, LocalDateTime.class, true);
 
         private final byte key;
         private final Class<?> valueClass;
-        private final String keyword;
+        private final boolean isKeyable;
 
-        ValueClass(int key, Class<?> valueClass, @Nullable String keyword) {
+        ValueClass(int key, Class<?> valueClass, boolean isKeyable) {
             this.key = (byte) key;
             this.valueClass = valueClass;
-            this.keyword = keyword;
+            this.isKeyable = isKeyable;
         }
 
         public static ValueClass of(byte value) {
@@ -226,13 +226,12 @@ public class Schema {
             return new byte[]{key};
         }
 
-        @Nullable
-        public String keyword() {
-            return keyword;
-        }
-
         public Class<?> valueClass() {
             return valueClass;
+        }
+
+        public boolean isKeyable() {
+            return isKeyable;
         }
     }
 

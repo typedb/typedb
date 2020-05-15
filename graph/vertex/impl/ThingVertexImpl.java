@@ -18,7 +18,13 @@
 
 package hypergraph.graph.vertex.impl;
 
+import hypergraph.common.exception.Error;
+import hypergraph.common.exception.HypergraphException;
 import hypergraph.graph.ThingGraph;
+import hypergraph.graph.adjacency.Adjacency;
+import hypergraph.graph.adjacency.ThingAdjacency;
+import hypergraph.graph.adjacency.impl.ThingAdjacencyImpl;
+import hypergraph.graph.edge.Edge;
 import hypergraph.graph.edge.ThingEdge;
 import hypergraph.graph.util.KeyGenerator;
 import hypergraph.graph.util.Schema;
@@ -33,11 +39,15 @@ public abstract class ThingVertexImpl extends VertexImpl<Schema.Vertex.Thing, Th
 
     protected final ThingGraph graph;
     protected final byte[] typeIID;
+    protected final ThingAdjacency outs;
+    protected final ThingAdjacency ins;
 
     ThingVertexImpl(ThingGraph graph, Schema.Vertex.Thing schema, byte[] iid) {
         super(iid, schema);
         this.graph = graph;
         this.typeIID = Arrays.copyOfRange(iid, 1, 4);
+        this.outs = newAdjacency(Adjacency.Direction.OUT);
+        this.ins = newAdjacency(Adjacency.Direction.IN);
     }
 
     /**
@@ -51,6 +61,14 @@ public abstract class ThingVertexImpl extends VertexImpl<Schema.Vertex.Thing, Th
     public static byte[] generateIID(KeyGenerator keyGenerator, Schema.Vertex.Thing schema, TypeVertex type) {
         return join(schema.prefix().key(), type.iid(), keyGenerator.forThing(type.iid()));
     }
+
+    /**
+     * Instantiates a new {@code ThingAdjacency} class
+     *
+     * @param direction the direction of the edges held in {@code ThingAdjacency}
+     * @return the new {@code ThingAdjacency} class
+     */
+    protected abstract ThingAdjacency newAdjacency(Adjacency.Direction direction);
 
     /**
      * Returns the {@code Graph} containing all {@code ThingVertex}
@@ -72,4 +90,55 @@ public abstract class ThingVertexImpl extends VertexImpl<Schema.Vertex.Thing, Th
         return graph.typeGraph().get(typeIID);
     }
 
+    @Override
+    public Adjacency<Schema.Edge.Thing, ThingEdge, ThingVertex> outs() {
+        return outs;
+    }
+
+    @Override
+    public Adjacency<Schema.Edge.Thing, ThingEdge, ThingVertex> ins() {
+        return ins;
+    }
+
+    public static class Buffered extends ThingVertexImpl {
+
+        private boolean isInferred;
+
+        public Buffered(ThingGraph graph, Schema.Vertex.Thing schema, byte[] iid, boolean isInferred) {
+            super(graph, schema, iid);
+            this.isInferred = isInferred;
+        }
+
+        @Override
+        protected ThingAdjacency newAdjacency(Adjacency.Direction direction) {
+            return new ThingAdjacencyImpl.Buffered(this, direction);
+        }
+
+        @Override
+        public boolean isInferred() {
+            return isInferred;
+        }
+
+        @Override
+        public Schema.Status status() {
+            return Schema.Status.BUFFERED;
+        }
+
+        @Override
+        public void commit() {
+            if (isInferred) throw new HypergraphException(Error.Transaction.ILLEGAL_OPERATION);
+            graph.storage().put(iid);
+            commitEdges();
+        }
+
+        @Override
+        public void delete() {
+            // TODO
+        }
+
+        private void commitEdges() {
+            outs.forEach(Edge::commit);
+            ins.forEach(Edge::commit);
+        }
+    }
 }

@@ -30,7 +30,7 @@ import hypergraph.concept.type.RoleType;
 import hypergraph.concept.type.ThingType;
 import hypergraph.concept.type.Type;
 
-import static hypergraph.common.exception.Error.ConceptRetrieval.INVALID_CONCEPT_CASTING;
+import static hypergraph.common.exception.Error.ConceptRead.INVALID_CONCEPT_CASTING;
 
 public interface Concept {
 

@@ -43,7 +43,7 @@ public abstract class ThingAdjacencyImpl {
             extends AdjacencyImpl.Buffered<Schema.Edge.Thing, ThingEdge, ThingVertex, ThingIteratorBuilderImpl>
             implements ThingAdjacency {
 
-        protected Buffered(ThingVertex owner, Direction direction) {
+        public Buffered(ThingVertex owner, Direction direction) {
             super(owner, direction);
         }
 

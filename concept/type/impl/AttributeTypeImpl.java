@@ -31,8 +31,8 @@ import java.time.LocalDateTime;
 import java.util.Iterator;
 import java.util.stream.Stream;
 
-import static hypergraph.common.exception.Error.ConceptRetrieval.INVALID_CONCEPT_CASTING;
-import static hypergraph.common.exception.Error.TypeDefinition.INVALID_ROOT_TYPE_MUTATION;
+import static hypergraph.common.exception.Error.ConceptRead.INVALID_CONCEPT_CASTING;
+import static hypergraph.common.exception.Error.TypeWrite.INVALID_ROOT_TYPE_MUTATION;
 import static java.util.Spliterator.IMMUTABLE;
 import static java.util.Spliterator.ORDERED;
 import static java.util.Spliterators.spliteratorUnknownSize;
@@ -121,12 +121,17 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
     @Override
     public void sup(AttributeType superType) {
         if (!superType.isRoot() && !this.valueClass().equals(superType.valueClass())) {
-            throw new HypergraphException(Error.TypeDefinition.INVALID_SUPERTYPE_VALUE_CLASS.format(
+            throw new HypergraphException(Error.TypeWrite.INVALID_ATTRIBUTE_SUPERTYPE_VALUE_CLASS.format(
                     this.label(), this.valueClass().getSimpleName(),
                     superType.label(), superType.valueClass().getSimpleName())
             );
         }
         super.superTypeVertex(((AttributeTypeImpl) superType).vertex);
+    }
+
+    @Override
+    public boolean isKeyable() {
+        return vertex.valueClass().isKeyable();
     }
 
     @Override

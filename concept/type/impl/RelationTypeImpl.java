@@ -35,7 +35,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import static hypergraph.common.collection.Streams.compareSize;
-import static hypergraph.common.exception.Error.TypeDefinition.INVALID_ROOT_TYPE_MUTATION;
+import static hypergraph.common.exception.Error.TypeWrite.INVALID_ROOT_TYPE_MUTATION;
 import static hypergraph.common.iterator.Iterators.apply;
 import static hypergraph.common.iterator.Iterators.filter;
 import static java.util.Spliterator.IMMUTABLE;

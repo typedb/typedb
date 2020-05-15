@@ -88,6 +88,9 @@ public abstract class Error<TYPE extends Error<TYPE>> {
 
     public static class Transaction extends Error<Error.Transaction> {
 
+        public static final TypeWrite ILLEGAL_OPERATION =
+                new TypeWrite(1, "Attempted an illegal operation!");
+
         private static final String codePrefix = "TXN";
         private static final String descriptionPrefix = "Invalid Transaction Operation";
 
@@ -100,53 +103,69 @@ public abstract class Error<TYPE extends Error<TYPE>> {
         }
     }
 
-    public static class ConceptRetrieval extends Error {
+    public static class ConceptRead extends Error {
 
-        public static final TypeDefinition INVALID_CONCEPT_CASTING =
-                new TypeDefinition(1, "Invalid concept conversion to '%s'");
+        public static final TypeWrite INVALID_CONCEPT_CASTING =
+                new TypeWrite(1, "Invalid concept conversion to '%s'.");
         private static final String codePrefix = "CON";
         private static final String descriptionPrefix = "Invalid Concept Retrieval";
 
-        ConceptRetrieval(int number, String description) {
+        ConceptRead(int number, String description) {
             super(codePrefix, number, descriptionPrefix, description);
         }
 
-        protected Error.ConceptRetrieval getThis() {
+        protected ConceptRead getThis() {
             return this;
         }
     }
 
-    public static class TypeRetrieval extends Error {
+    public static class ThingWrite extends Error {
+
+        private static final String codePrefix = "THW";
+        private static final String descriptionPrefix = "Invalid Thing Write";
+
+        ThingWrite(int number, String description) {
+            super(codePrefix, number, descriptionPrefix, description);
+        }
+
+        protected ThingWrite getThis() {
+            return this;
+        }
+    }
+
+    public static class TypeRead extends Error {
 
         private static final String codePrefix = "TYR";
         private static final String descriptionPrefix = "Invalid Type Retrieval";
 
-        TypeRetrieval(int number, String description) {
+        TypeRead(int number, String description) {
             super(codePrefix, number, descriptionPrefix, description);
         }
 
-        protected Error.TypeRetrieval getThis() {
+        protected TypeRead getThis() {
             return this;
         }
     }
 
-    public static class TypeDefinition extends Error {
+    public static class TypeWrite extends Error {
 
-        public static final Error.TypeDefinition INVALID_ROOT_TYPE_MUTATION =
-                new Error.TypeDefinition(1, "Root types are immutable");
-        public static final Error.TypeDefinition INVALID_VALUE_CLASS =
-                new Error.TypeDefinition(2, "The Java class '%s' is not a supported value class");
-        public static final Error.TypeDefinition INVALID_SUPERTYPE_VALUE_CLASS =
-                new Error.TypeDefinition(3, "Type '%s' has value class '%s', and cannot have supertype '%s' with value class '%s' ");
+        public static final TypeWrite INVALID_ROOT_TYPE_MUTATION =
+                new TypeWrite(1, "Root types are immutable.");
+        public static final TypeWrite UNSUPPORTED_VALUE_CLASS =
+                new TypeWrite(2, "The Java class '%s' is not a supported value class.");
+        public static final TypeWrite INVALID_ATTRIBUTE_SUPERTYPE_VALUE_CLASS =
+                new TypeWrite(3, "AttributeType '%s' has value class '%s', and cannot have supertype '%s' with value class '%s'.");
+        public static final TypeWrite INVALID_KEY_ATTRIBUTE =
+                new TypeWrite(4, "AttributeType '%s' has value class '%s', and cannot and cannot be used as a type key.");
 
-        private static final String codePrefix = "TYD";
+        private static final String codePrefix = "TYW";
         private static final String descriptionPrefix = "Invalid Type Definition";
 
-        TypeDefinition(int number, String description) {
+        TypeWrite(int number, String description) {
             super(codePrefix, number, descriptionPrefix, description);
         }
 
-        protected Error.TypeDefinition getThis() {
+        protected TypeWrite getThis() {
             return this;
         }
     }

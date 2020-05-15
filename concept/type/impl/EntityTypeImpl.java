@@ -31,7 +31,7 @@ import javax.annotation.Nullable;
 import java.util.Iterator;
 import java.util.stream.Stream;
 
-import static hypergraph.common.exception.Error.TypeDefinition.INVALID_ROOT_TYPE_MUTATION;
+import static hypergraph.common.exception.Error.TypeWrite.INVALID_ROOT_TYPE_MUTATION;
 import static java.util.Spliterator.IMMUTABLE;
 import static java.util.Spliterator.ORDERED;
 import static java.util.Spliterators.spliteratorUnknownSize;
@@ -63,7 +63,12 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
 
     @Override
     public EntityImpl create() {
-        ThingVertex instance = vertex.graph().thingGraph().create(Schema.Vertex.Thing.ENTITY, vertex.iid());
+        return create(false);
+    }
+
+    @Override
+    public EntityImpl create(boolean isInferred) {
+        ThingVertex instance = vertex.graph().thingGraph().create(Schema.Vertex.Thing.ENTITY, vertex, isInferred);
         return new EntityImpl(instance);
     }
 

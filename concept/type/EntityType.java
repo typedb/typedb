@@ -39,4 +39,6 @@ public interface EntityType extends ThingType {
     void sup(EntityType superType);
 
     Entity create();
+
+    Entity create(boolean isInferred);
 }

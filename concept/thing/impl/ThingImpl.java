@@ -37,15 +37,12 @@ public abstract class ThingImpl implements Thing {
         this.vertex = Objects.requireNonNull(vertex);
     }
 
-
     @Override
-    public ThingTypeImpl type() {
-        return null;
-    }
+    public abstract ThingTypeImpl type();
 
     @Override
     public boolean isInferred() {
-        return false;
+        return vertex.isInferred();
     }
 
     @Override

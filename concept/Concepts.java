@@ -31,7 +31,7 @@ import hypergraph.graph.Graphs;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.vertex.TypeVertex;
 
-import static hypergraph.common.exception.Error.TypeDefinition.INVALID_VALUE_CLASS;
+import static hypergraph.common.exception.Error.TypeWrite.UNSUPPORTED_VALUE_CLASS;
 
 public class Concepts {
 
@@ -91,7 +91,7 @@ public class Concepts {
 
     public AttributeType putAttributeType(String label, Class<?> valueClass) {
         Schema.ValueClass schema = Schema.ValueClass.of(valueClass);
-        if (schema == null) throw new HypergraphException(INVALID_VALUE_CLASS.format(valueClass.getCanonicalName()));
+        if (schema == null) throw new HypergraphException(UNSUPPORTED_VALUE_CLASS.format(valueClass.getCanonicalName()));
         switch (schema) {
             case BOOLEAN:
                 return putAttributeTypeBoolean(label);

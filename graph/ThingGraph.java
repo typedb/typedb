@@ -19,14 +19,18 @@
 package hypergraph.graph;
 
 import hypergraph.common.collection.ByteArray;
+import hypergraph.common.collection.ByteArrays;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.util.Storage;
 import hypergraph.graph.vertex.ThingVertex;
+import hypergraph.graph.vertex.TypeVertex;
 import hypergraph.graph.vertex.Vertex;
 import hypergraph.graph.vertex.impl.ThingVertexImpl;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+
+import static hypergraph.graph.vertex.impl.ThingVertexImpl.generateIID;
 
 public class ThingGraph implements Graph<ThingVertex> {
 
@@ -54,10 +58,10 @@ public class ThingGraph implements Graph<ThingVertex> {
     }
 
     public void commit() {
-        thingByIID.values().parallelStream().forEach(
-                vertex -> vertex.iid(ThingVertexImpl.generateIID(graphManager.storage().keyGenerator(), vertex.schema(), vertex.typeVertex()))
+        thingByIID.values().parallelStream().filter(v -> !v.isInferred()).forEach(
+                vertex -> vertex.iid(generateIID(graphManager.storage().keyGenerator(), vertex.schema(), vertex.typeVertex()))
         ); // thingByIID no longer contains valid mapping from IID to TypeVertex
-        thingByIID.values().parallelStream().forEach(Vertex::commit);
+        thingByIID.values().parallelStream().filter(v -> !v.isInferred()).forEach(Vertex::commit);
         clear(); // we now flush the indexes after commit, and we do not expect this Graph.Thing to be used again
     }
 
@@ -66,8 +70,11 @@ public class ThingGraph implements Graph<ThingVertex> {
         thingByIID.clear();
     }
 
-    public ThingVertex create(Schema.Vertex.Thing schema, byte[] iid) {
-        return null; // TODO
+    public ThingVertex create(Schema.Vertex.Thing schema, TypeVertex type, boolean isInferred) {
+        byte[] iid = generateIID(graphManager.keyGenerator(), schema, type);
+        ThingVertex vertex = new ThingVertexImpl.Buffered(this, schema, iid, isInferred);
+        thingByIID.put(ByteArray.of(iid), vertex);
+        return vertex;
     }
 
     public TypeGraph typeGraph() {

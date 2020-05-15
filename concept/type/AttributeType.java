@@ -36,6 +36,8 @@ public interface AttributeType extends ThingType {
 
     void sup(AttributeType superType);
 
+    boolean isKeyable();
+
     Class<?> valueClass();
 
     AttributeType asObject();

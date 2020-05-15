@@ -34,7 +34,8 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static hypergraph.common.exception.Error.TypeDefinition.INVALID_ROOT_TYPE_MUTATION;
+import static hypergraph.common.exception.Error.TypeWrite.INVALID_KEY_ATTRIBUTE;
+import static hypergraph.common.exception.Error.TypeWrite.INVALID_ROOT_TYPE_MUTATION;
 import static hypergraph.common.iterator.Iterators.apply;
 import static hypergraph.common.iterator.Iterators.filter;
 import static hypergraph.common.iterator.Iterators.link;
@@ -74,11 +75,13 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     }
 
     @Override
-    public void key(AttributeType attributeTypeInt) {
-        AttributeTypeImpl attributeTypeImpl = (AttributeTypeImpl) attributeTypeInt;
-        if (filter(vertex.outs().edge(Schema.Edge.Type.HAS).to(), v -> v.equals(attributeTypeImpl.vertex)).hasNext()) {
+    public void key(AttributeType attributeType) {
+        AttributeTypeImpl attributeTypeImpl = (AttributeTypeImpl) attributeType;
+        if (!attributeType.isKeyable()) {
+            throw new HypergraphException(INVALID_KEY_ATTRIBUTE.format(attributeTypeImpl.label(), attributeTypeImpl.valueClass().getSimpleName()));
+        } else if (filter(vertex.outs().edge(Schema.Edge.Type.HAS).to(), v -> v.equals(attributeTypeImpl.vertex)).hasNext()) {
             throw new HypergraphException("Invalid Key Assignment: " + attributeTypeImpl.label() + " is already used as an attribute");
-        } else if (sups().flatMap(ThingType::attributes).anyMatch(a -> a.equals(attributeTypeImpl))) {
+        } else if (sups().filter(s -> !s.equals(this)).flatMap(ThingType::attributes).anyMatch(a -> a.equals(attributeTypeImpl))) {
             throw new HypergraphException("Invalid Attribute Assignment: " + attributeTypeImpl.label() + " is already inherited and/or overridden ");
         }
 
@@ -119,8 +122,8 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     }
 
     @Override
-    public void has(AttributeType attributeTypeInt) {
-        AttributeTypeImpl attributeTypeImpl = (AttributeTypeImpl) attributeTypeInt;
+    public void has(AttributeType attributeType) {
+        AttributeTypeImpl attributeTypeImpl = (AttributeTypeImpl) attributeType;
         if (filter(vertex.outs().edge(Schema.Edge.Type.KEY).to(), v -> v.equals(attributeTypeImpl.vertex)).hasNext()) {
             throw new HypergraphException("Invalid Attribute Assignment: " + attributeTypeImpl.label() + " is already used as a key");
         } else if (sups().flatMap(ThingType::attributes).anyMatch(a -> a.equals(attributeTypeImpl))) {

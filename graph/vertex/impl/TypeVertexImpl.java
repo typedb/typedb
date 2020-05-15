@@ -18,6 +18,8 @@
 
 package hypergraph.graph.vertex.impl;
 
+import hypergraph.common.exception.Error;
+import hypergraph.common.exception.HypergraphException;
 import hypergraph.graph.TypeGraph;
 import hypergraph.graph.adjacency.Adjacency;
 import hypergraph.graph.adjacency.TypeAdjacency;
@@ -51,8 +53,8 @@ public abstract class TypeVertexImpl extends VertexImpl<Schema.Vertex.Type, Type
         this.graph = graph;
         this.label = label;
         this.scope = scope;
-        this.outs = newAdjacency(this, Adjacency.Direction.OUT);
-        this.ins = newAdjacency(this, Adjacency.Direction.IN);
+        this.outs = newAdjacency(Adjacency.Direction.OUT);
+        this.ins = newAdjacency(Adjacency.Direction.IN);
     }
 
     /**
@@ -89,7 +91,13 @@ public abstract class TypeVertexImpl extends VertexImpl<Schema.Vertex.Type, Type
         else return scope + ":" + label;
     }
 
-    protected abstract TypeAdjacency newAdjacency(TypeVertexImpl owner, Adjacency.Direction direction);
+    /**
+     * Instantiates a new {@code TypeAdjacency} class
+     *
+     * @param direction the direction of the edges held in {@code TypeAdjacency}
+     * @return the new {@code TypeAdjacency} class
+     */
+    protected abstract TypeAdjacency newAdjacency(Adjacency.Direction direction);
 
     /**
      * Get the {@code Graph} containing all {@code TypeVertex}
@@ -142,8 +150,8 @@ public abstract class TypeVertexImpl extends VertexImpl<Schema.Vertex.Type, Type
         }
 
         @Override
-        protected TypeAdjacency newAdjacency(TypeVertexImpl owner, Adjacency.Direction direction) {
-            return new TypeAdjacencyImpl.Buffered(owner, direction);
+        protected TypeAdjacency newAdjacency(Adjacency.Direction direction) {
+            return new TypeAdjacencyImpl.Buffered(this, direction);
         }
 
         public Schema.Status status() {
@@ -250,8 +258,13 @@ public abstract class TypeVertexImpl extends VertexImpl<Schema.Vertex.Type, Type
         }
 
         @Override
-        protected TypeAdjacency newAdjacency(TypeVertexImpl owner, Adjacency.Direction direction) {
-            return new TypeAdjacencyImpl.Persisted(owner, direction);
+        protected TypeAdjacency newAdjacency(Adjacency.Direction direction) {
+            return new TypeAdjacencyImpl.Persisted(this, direction);
+        }
+
+        @Override
+        public void iid(byte[] iid) {
+            throw new HypergraphException(Error.Transaction.ILLEGAL_OPERATION);
         }
 
         @Override
