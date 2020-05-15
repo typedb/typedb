@@ -24,16 +24,16 @@ import hypergraph.concept.thing.Thing;
 import hypergraph.concept.type.AttributeType;
 import hypergraph.concept.type.RoleType;
 import hypergraph.concept.type.impl.ThingTypeImpl;
-import hypergraph.graph.vertex.ThingVertex;
+import hypergraph.graph.vertex.ThingVertexImpl;
 
 import java.util.Objects;
 import java.util.stream.Stream;
 
 public abstract class ThingImpl implements Thing {
 
-    protected final ThingVertex vertex;
+    protected final ThingVertexImpl vertex;
 
-    protected ThingImpl(ThingVertex vertex) {
+    protected ThingImpl(ThingVertexImpl vertex) {
         this.vertex = Objects.requireNonNull(vertex);
     }
 

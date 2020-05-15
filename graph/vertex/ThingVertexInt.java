@@ -16,24 +16,26 @@
  *
  */
 
-package hypergraph.concept.thing.impl;
+package hypergraph.graph.vertex;
 
-import hypergraph.concept.thing.Attribute;
-import hypergraph.concept.type.impl.AttributeTypeImpl;
-import hypergraph.graph.vertex.ThingVertexImpl;
+import hypergraph.graph.ThingGraph;
+import hypergraph.graph.edge.ThingEdge;
+import hypergraph.graph.util.Schema;
 
-public class AttributeImpl extends ThingImpl implements Attribute {
-    public AttributeImpl(ThingVertexImpl vertex) {
-        super(vertex);
-    }
+public interface ThingVertexInt extends VertexInt<Schema.Vertex.Thing, ThingVertexImpl, Schema.Edge.Thing, ThingEdge> {
 
+    /**
+     * Returns the {@code Graph} containing all {@code ThingVertex}
+     *
+     * @return the {@code Graph} containing all {@code ThingVertex}
+     */
     @Override
-    public AttributeTypeImpl type() {
-        return AttributeTypeImpl.of(vertex.typeVertex());
-    }
+    ThingGraph graph();
 
-    @Override
-    public AttributeImpl has(Attribute attribute) {
-        return null; //TODO
-    }
+    /**
+     * Returns the {@code TypeVertex} in which this {@code ThingVertex} is an instance of
+     *
+     * @return the {@code TypeVertex} in which this {@code ThingVertex} is an instance of
+     */
+    TypeVertexImpl typeVertex();
 }

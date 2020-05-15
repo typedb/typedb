@@ -20,7 +20,7 @@ package hypergraph.graph.adjacency;
 
 import hypergraph.graph.edge.ThingEdge;
 import hypergraph.graph.util.Schema;
-import hypergraph.graph.vertex.ThingVertex;
+import hypergraph.graph.vertex.ThingVertexImpl;
 
-public interface ThingAdjacency extends Adjacency<Schema.Edge.Thing, ThingEdge, ThingVertex> {
+public interface ThingAdjacency extends Adjacency<Schema.Edge.Thing, ThingEdge, ThingVertexImpl> {
 }

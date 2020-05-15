@@ -21,16 +21,16 @@ package hypergraph.graph;
 import hypergraph.common.collection.ByteArray;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.util.Storage;
-import hypergraph.graph.vertex.ThingVertex;
+import hypergraph.graph.vertex.ThingVertexImpl;
 import hypergraph.graph.vertex.VertexImpl;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-public class ThingGraph implements Graph<ThingVertex> {
+public class ThingGraph implements Graph<ThingVertexImpl> {
 
     private final Graphs graphManager;
-    private final ConcurrentMap<ByteArray, ThingVertex> thingByIID;
+    private final ConcurrentMap<ByteArray, ThingVertexImpl> thingByIID;
 
     ThingGraph(Graphs graphManager) {
         this.graphManager = graphManager;
@@ -43,18 +43,18 @@ public class ThingGraph implements Graph<ThingVertex> {
     }
 
     @Override
-    public ThingVertex get(byte[] iid) {
+    public ThingVertexImpl get(byte[] iid) {
         return null; // TODO
     }
 
     @Override
-    public void delete(ThingVertex vertex) {
+    public void delete(ThingVertexImpl vertex) {
         // TODO
     }
 
     public void commit() {
         thingByIID.values().parallelStream().forEach(
-                vertex -> vertex.iid(ThingVertex.generateIID(graphManager.storage().keyGenerator(), vertex.schema(), vertex.typeVertex()))
+                vertex -> vertex.iid(ThingVertexImpl.generateIID(graphManager.storage().keyGenerator(), vertex.schema(), vertex.typeVertex()))
         ); // thingByIID no longer contains valid mapping from IID to TypeVertex
         thingByIID.values().parallelStream().forEach(VertexImpl::commit);
         clear(); // we now flush the indexes after commit, and we do not expect this Graph.Thing to be used again
@@ -65,7 +65,7 @@ public class ThingGraph implements Graph<ThingVertex> {
         thingByIID.clear();
     }
 
-    public ThingVertex create(Schema.Vertex.Thing schema, byte[] iid) {
+    public ThingVertexImpl create(Schema.Vertex.Thing schema, byte[] iid) {
         return null; // TODO
     }
 

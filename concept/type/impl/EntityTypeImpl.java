@@ -24,7 +24,7 @@ import hypergraph.concept.thing.impl.EntityImpl;
 import hypergraph.concept.type.EntityType;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.TypeGraph;
-import hypergraph.graph.vertex.ThingVertex;
+import hypergraph.graph.vertex.ThingVertexImpl;
 import hypergraph.graph.vertex.TypeVertexImpl;
 
 import javax.annotation.Nullable;
@@ -63,7 +63,7 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
 
     @Override
     public EntityImpl create() {
-        ThingVertex instance = vertex.graph().thingGraph().create(Schema.Vertex.Thing.ENTITY, vertex.iid());
+        ThingVertexImpl instance = vertex.graph().thingGraph().create(Schema.Vertex.Thing.ENTITY, vertex.iid());
         return new EntityImpl(instance);
     }
 

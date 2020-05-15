@@ -21,7 +21,7 @@ package hypergraph.concept.thing.impl;
 import hypergraph.concept.thing.Attribute;
 import hypergraph.concept.thing.Relation;
 import hypergraph.concept.type.impl.RelationTypeImpl;
-import hypergraph.graph.vertex.ThingVertex;
+import hypergraph.graph.vertex.ThingVertexImpl;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -30,7 +30,7 @@ public class RelationImpl extends ThingImpl implements Relation {
 
     private final Set<RoleImpl> roles;
 
-    public RelationImpl(ThingVertex vertex) {
+    public RelationImpl(ThingVertexImpl vertex) {
         super(vertex);
         this.roles = new HashSet<>();
     }

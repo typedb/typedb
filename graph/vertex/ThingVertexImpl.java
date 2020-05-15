@@ -27,12 +27,12 @@ import java.util.Arrays;
 
 import static hypergraph.common.collection.ByteArrays.join;
 
-public abstract class ThingVertex extends VertexImpl<Schema.Vertex.Thing, ThingVertex, Schema.Edge.Thing, ThingEdge> {
+public abstract class ThingVertexImpl extends VertexImpl<Schema.Vertex.Thing, ThingVertexImpl, Schema.Edge.Thing, ThingEdge> implements ThingVertexInt {
 
     protected final ThingGraph graph;
     protected final byte[] typeIID;
 
-    ThingVertex(ThingGraph graph, Schema.Vertex.Thing schema, byte[] iid) {
+    ThingVertexImpl(ThingGraph graph, Schema.Vertex.Thing schema, byte[] iid) {
         super(iid, schema);
         this.graph = graph;
         this.typeIID = Arrays.copyOfRange(iid, 1, 4);
@@ -51,19 +51,21 @@ public abstract class ThingVertex extends VertexImpl<Schema.Vertex.Thing, ThingV
     }
 
     /**
-     * Get the {@code Graph} containing all {@code ThingVertex}
+     * Returns the {@code Graph} containing all {@code ThingVertex}
      *
      * @return the {@code Graph} containing all {@code ThingVertex}
      */
+    @Override
     public ThingGraph graph() {
         return graph;
     }
 
     /**
-     * Get the {@code TypeVertex} in which this {@code ThingVertex} is an instance of
+     * Returns the {@code TypeVertex} in which this {@code ThingVertex} is an instance of
      *
      * @return the {@code TypeVertex} in which this {@code ThingVertex} is an instance of
      */
+    @Override
     public TypeVertexImpl typeVertex() {
         return graph.typeGraph().get(typeIID);
     }
