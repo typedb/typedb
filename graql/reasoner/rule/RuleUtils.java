@@ -163,15 +163,14 @@ public class RuleUtils {
                     .flatMap(type -> queryCacheImpl.getFamily(type).stream())
                     .map(Equivalence.Wrapper::get)
                     .filter(q -> queryCacheImpl.getParents(q).isEmpty())
-                    .filter(q -> q.getAtom().isRelation() || q.getAtom().isAttribute())
+                    .filter(q -> q.getAtom().isRelationAtom() || q.getAtom().isAttributeAtom())
                     .collect(toSet());
             //if we don't have full information (query answers in cache), we assume reiteration is needed
             if (!queries.stream().allMatch(q -> queryCacheImpl.isDBComplete(q))) return true;
 
             HashMultimap<Concept, Concept> conceptMap = HashMultimap.create();
             for (ReasonerAtomicQuery q : queries) {
-                RelationAtom relationAtom = q.getAtom().toRelationAtom();
-                Set<Pair<Variable, Variable>> varPairs = relationAtom.varDirectionality();
+                Set<Pair<Variable, Variable>> varPairs = q.getAtom().varDirectionality();
                 IndexedAnswerSet answers = queryCacheImpl.getEntry(q).cachedElement();
                 for (ConceptMap ans : answers) {
                     for (Pair<Variable, Variable> p : varPairs) {

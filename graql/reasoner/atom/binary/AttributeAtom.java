@@ -18,7 +18,10 @@
 package grakn.core.graql.reasoner.atom.binary;
 
 import com.google.common.base.Equivalence;
+import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Multimap;
+import grakn.common.util.Pair;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.core.AttributeValueConverter;
 import grakn.core.core.Schema;
@@ -40,6 +43,7 @@ import grakn.core.graql.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Label;
+import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.graql.exception.GraqlSemanticException;
@@ -56,6 +60,11 @@ import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 
 import javax.annotation.Nullable;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -179,11 +188,6 @@ public class AttributeAtom extends Atom{
     public AttributeAtom toAttributeAtom(){ return converter.toAttributeAtom(this, context());}
 
     @Override
-    public RelationAtom toRelationAtom(){
-        return converter.toRelationAtom(this, context());
-    }
-
-    @Override
     public IsaAtom toIsaAtom() {
         return converter.toIsaAtom(this, context());
     }
@@ -265,6 +269,14 @@ public class AttributeAtom extends Atom{
         return hashCode;
     }
 
+    /**
+     * Determines the directionality in the form of variable pairs.
+     * @return use owner -> attribute variable ordering
+     */
+    public Set<Pair<Variable, Variable>> varDirectionality() {
+        return new HashSet<>(Collections.singleton(new Pair<>(getVarName(), getAttributeVariable())));
+    }
+
     @Override
     public int structuralEquivalenceHashCode() {
         return alphaEquivalenceHashCode();
@@ -288,7 +300,7 @@ public class AttributeAtom extends Atom{
     }
 
     @Override
-    public boolean isAttribute(){ return true;}
+    public boolean isAttributeAtom(){ return true;}
 
     @Override
     public boolean isSelectable(){ return true;}
@@ -366,7 +378,7 @@ public class AttributeAtom extends Atom{
      * @return rewritten atom
      */
     private AttributeAtom rewriteWithRelationVariable(Atom parentAtom){
-        if (parentAtom.isAttribute() && ((AttributeAtom) parentAtom).getRelationVariable().isReturned()) return rewriteWithRelationVariable();
+        if (parentAtom.isAttributeAtom() && ((AttributeAtom) parentAtom).getRelationVariable().isReturned()) return rewriteWithRelationVariable();
         return this;
     }
 

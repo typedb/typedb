@@ -151,7 +151,7 @@ public class InferenceRule {
         Set<Atomic> atoms = new HashSet<>(getHead().getAtoms());
         Set<Variable> headVars = getHead().getVarNames();
         getBody().getAtoms(TypeAtom.class)
-                .filter(t -> !t.isRelation())
+                .filter(t -> !t.isRelationAtom())
                 .filter(t -> !Sets.intersection(t.getVarNames(), headVars).isEmpty())
                 .forEach(atoms::add);
         return reasonerQueryFactory.create(atoms).isEquivalent(getBody());
@@ -188,10 +188,10 @@ public class InferenceRule {
     private ReasonerQueryImpl getCombinedQuery(){
         Set<Atomic> allAtoms = new HashSet<>(body.getAtoms());
         //NB: if rule acts as a sub, do not include type overlap
-        boolean subHead = head.getAtom().isType();
+        boolean subHead = head.getAtom().isCompatibleWithTypeAtom();
         if (subHead){
             body.getAtoms().stream()
-                    .filter(Atomic::isType)
+                    .filter(Atomic::isCompatibleWithTypeAtom)
                     .filter(at -> at.getVarName().equals(head.getAtom().getVarName()))
                     .forEach(allAtoms::remove);
         }
@@ -217,7 +217,7 @@ public class InferenceRule {
      * @return rule with propagated constraints from parent
      */
     private InferenceRule propagateConstraints(Atom parentAtom, Unifier unifier){
-        if (!parentAtom.isRelation() && !parentAtom.isAttribute()) return this;
+        if (!parentAtom.isRelationAtom() && !parentAtom.isAttributeAtom()) return this;
         Atom headAtom = head.getAtom();
 
         //we are only rewriting the conjunction atoms (not complement atoms) as
@@ -235,7 +235,7 @@ public class InferenceRule {
         bodyConjunctionAtoms.addAll(vpsToPropagate);
 
         //if head is a resource merge vps into head
-        if (headAtom.isAttribute()) {
+        if (headAtom.isAttributeAtom()) {
             AttributeAtom resourceHead = (AttributeAtom) headAtom;
 
             if (resourceHead.getMultiPredicate().isEmpty()) {
@@ -262,7 +262,7 @@ public class InferenceRule {
                 .collect(toSet());
 
         //set rule body types to sub types of combined query+rule types
-        Set<TypeAtom> ruleTypes = bodyConjunction.getAtoms(TypeAtom.class).filter(t -> !t.isRelation()).collect(toSet());
+        Set<TypeAtom> ruleTypes = bodyConjunction.getAtoms(TypeAtom.class).filter(t -> !t.isRelationAtom()).collect(toSet());
         Set<TypeAtom> allTypes = Sets.union(unifiedTypes, ruleTypes);
         allTypes.stream()
                 .filter(ta -> {
@@ -313,17 +313,17 @@ public class InferenceRule {
         return false;
     }
 
-    private InferenceRule rewriteHeadToRelation(Atom parentAtom){
-        if (parentAtom.isRelation() && getHead().getAtom().isAttribute()){
-            return new InferenceRule(
-                    reasonerQueryFactory.atomic(getHead().getAtom().toRelationAtom()),
-                    getBody(),
-                    rule,
-                    reasonerQueryFactory
-            );
-        }
-        return this;
-    }
+//    private InferenceRule rewriteHeadToRelation(Atom parentAtom){
+//        if (parentAtom.isRelationAtom() && getHead().getAtom().isAttributeAtom()){
+//            return new InferenceRule(
+//                    reasonerQueryFactory.atomic(getHead().getAtom().toRelationAtom()),
+//                    getBody(),
+//                    rule,
+//                    reasonerQueryFactory
+//            );
+//        }
+//        return this;
+//    }
 
     private InferenceRule rewriteVariables(Atom parentAtom){
         if (parentAtom.isUserDefined() || parentAtom.requiresRoleExpansion()) {
@@ -353,7 +353,7 @@ public class InferenceRule {
     public InferenceRule rewrite(Atom parentAtom){
         return this
                 .rewriteBodyAtoms()
-                .rewriteHeadToRelation(parentAtom)
+//                .rewriteHeadToRelation(parentAtom)
                 .rewriteVariables(parentAtom);
     }
 

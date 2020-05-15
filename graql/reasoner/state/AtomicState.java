@@ -170,7 +170,7 @@ public class AtomicState extends AnswerPropagatorState<ReasonerAtomicQuery> {
             Atom ruleAtom = ruleHead.getAtom();
             //if it's an implicit relation also record it as an attribute
             SchemaConcept ruleAtomType = ruleAtom.getSchemaConcept();
-            if (ruleAtom.isRelation() && ruleAtomType != null && ruleAtomType.isImplicit()) {
+            if (ruleAtom.isRelationAtom() && ruleAtomType != null && ruleAtomType.isImplicit()) {
                 ReasonerAtomicQuery attributeHead = reasonerQueryFactory.atomic(ruleHead.getAtom().toAttributeAtom());
                 queryCache.record(attributeHead, ruleAnswer.project(attributeHead.getVarNames()));
             }

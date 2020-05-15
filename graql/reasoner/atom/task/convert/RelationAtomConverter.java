@@ -42,11 +42,6 @@ import static graql.lang.Graql.var;
 public class RelationAtomConverter implements AtomConverter<RelationAtom> {
 
     @Override
-    public RelationAtom toRelationAtom(RelationAtom atom, ReasoningContext ctx) {
-        return atom;
-    }
-
-    @Override
     public AttributeAtom toAttributeAtom(RelationAtom atom, ReasoningContext ctx) {
         SchemaConcept type = atom.getSchemaConcept();
         if (type == null || !type.isImplicit()) {

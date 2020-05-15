@@ -24,7 +24,6 @@ import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.AtomicUtil;
 import grakn.core.graql.reasoner.atom.binary.AttributeAtom;
 import grakn.core.graql.reasoner.atom.binary.IsaAtom;
-import grakn.core.graql.reasoner.atom.binary.RelationAtom;
 import grakn.core.graql.reasoner.atom.predicate.ValuePredicate;
 import grakn.core.graql.reasoner.cache.SemanticDifference;
 import grakn.core.graql.reasoner.cache.VariableDefinition;
@@ -51,9 +50,9 @@ public class AttributeSemanticProcessor implements SemanticProcessor<AttributeAt
             // in general this >= parent, hence for rule unifiers we can potentially specialise child to match parent
             if (unifierType.equals(UnifierType.RULE)) {
                 if (parentAtom instanceof IsaAtom) return childAtom.toIsaAtom().getUnifier(parentAtom, unifierType);
-                else if (parentAtom instanceof RelationAtom){
-                    return childAtom.toRelationAtom().getUnifier(parentAtom, unifierType);
-                }
+//                else if (parentAtom instanceof RelationAtom){
+//                    return childAtom.toRelationAtom().getUnifier(parentAtom, unifierType);
+//                }
             }
             return UnifierImpl.nonExistent();
         }
@@ -84,9 +83,9 @@ public class AttributeSemanticProcessor implements SemanticProcessor<AttributeAt
             // in general this >= parent, hence for rule unifiers we can potentially specialise child to match parent
             if (unifierType.equals(UnifierType.RULE)) {
                 if (parentAtom instanceof IsaAtom) return childAtom.toIsaAtom().getMultiUnifier(parentAtom, unifierType);
-                else if (parentAtom instanceof RelationAtom){
-                    return childAtom.toRelationAtom().getMultiUnifier(parentAtom, unifierType);
-                }
+//                else if (parentAtom instanceof RelationAtom){
+//                    return childAtom.toRelationAtom().getMultiUnifier(parentAtom, unifierType);
+//                }
             }
             return MultiUnifierImpl.nonExistent();
         }
@@ -97,7 +96,7 @@ public class AttributeSemanticProcessor implements SemanticProcessor<AttributeAt
     @Override
     public SemanticDifference computeSemanticDifference(AttributeAtom parent, Atom child, Unifier unifier, ReasoningContext ctx) {
         SemanticDifference baseDiff = binarySemanticProcessor.computeSemanticDifference(parent.toIsaAtom(), child, unifier, ctx);
-        if (!child.isAttribute()) return baseDiff;
+        if (!child.isAttributeAtom()) return baseDiff;
         AttributeAtom childAtom = (AttributeAtom) child;
         Set<VariableDefinition> diff = new HashSet<>();
 
