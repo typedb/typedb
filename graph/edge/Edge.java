@@ -23,25 +23,61 @@ import hypergraph.graph.vertex.Vertex;
 
 public interface Edge<EDGE_SCHEMA extends Schema.Edge, VERTEX extends Vertex> {
 
+    /**
+     * Returns the schema of this edge.
+     *
+     * @return the schema of this edge
+     */
     EDGE_SCHEMA schema();
 
+    /**
+     * Returns the status of this edge.
+     *
+     * The status could either be either {@code buffered}, {@code committed}, or {@code persisted}.
+     *
+     * @return the status of this edge
+     */
     Schema.Status status();
 
+    /**
+     * Returns the {@code iid} of this edge pointing outwards.
+     *
+     * @return the {@code iid} of this edge pointing outwards
+     */
     byte[] outIID();
 
+    /**
+     * Returns the {@code iid} of this edge pointing inwards.
+     *
+     * @return the {@code iid} of this edge pointing inwards
+     */
     byte[] inIID();
 
+    /**
+     * Returns the tail vertex of this edge.
+     *
+     * @return the tail vertex of this edge
+     */
     VERTEX from();
 
+    /**
+     * Returns the head vertex of this edge.
+     *
+     * @return the head vertex of this edge
+     */
     VERTEX to();
 
+    /**
+     * Deletes this edge from the graph.
+     *
+     * The delete operation should also remove this edge from its tail and head vertices.
+     */
     void delete();
 
+    /**
+     * Commits the edge to the graph for persistent storage.
+     *
+     * After committing this edge to the graph, the status of this edges should be {@code persisted}.
+     */
     void commit();
-
-    @Override
-    boolean equals(Object object);
-
-    @Override
-    int hashCode();
 }

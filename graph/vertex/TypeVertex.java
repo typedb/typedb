@@ -231,7 +231,6 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, TypeVertex, 
             outs.forEach(Edge::commit);
             ins.forEach(Edge::commit);
         }
-
     }
 
     public static class Persisted extends TypeVertex {

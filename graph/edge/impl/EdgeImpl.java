@@ -65,7 +65,6 @@ public abstract class EdgeImpl<
             VERTEX extends Vertex<?, VERTEX, EDGE_SCHEMA, EDGE>
             > extends EdgeImpl<GRAPH, EDGE_SCHEMA, EDGE, VERTEX> {
 
-        protected final GRAPH graph;
         protected final AtomicBoolean committed;
         protected final VERTEX from;
         protected final VERTEX to;
@@ -80,13 +79,14 @@ public abstract class EdgeImpl<
          */
         public Buffered(GRAPH graph, EDGE_SCHEMA schema, VERTEX from, VERTEX to) {
             super(graph, schema);
-            this.graph = graph;
             this.from = from;
             this.to = to;
             committed = new AtomicBoolean(false);
         }
 
         /**
+         * Returns the status of this edge: either {@code committed} or {@code buffered}.
+         *
          * @return the status of this edge: either {@code committed} or {@code buffered}
          */
         @Override
@@ -95,6 +95,8 @@ public abstract class EdgeImpl<
         }
 
         /**
+         * Returns the {@code iid} of this edge pointing outwards.
+         *
          * @return the {@code iid} of this edge pointing outwards
          */
         @Override
@@ -103,6 +105,8 @@ public abstract class EdgeImpl<
         }
 
         /**
+         * Returns the {@code iid} of this edge pointing inwards.
+         *
          * @return the {@code iid} of this edge pointing inwards
          */
         @Override
@@ -111,6 +115,8 @@ public abstract class EdgeImpl<
         }
 
         /**
+         * Returns the tail vertex of this edge.
+         *
          * @return the tail vertex of this edge
          */
         @Override
@@ -119,6 +125,8 @@ public abstract class EdgeImpl<
         }
 
         /**
+         * Returns the head vertex of this edge.
+         *
          * @return the head vertex of this edge
          */
         @Override
@@ -224,6 +232,8 @@ public abstract class EdgeImpl<
         }
 
         /**
+         * Returns the status of this edge: {@code persisted}.
+         *
          * @return the status of this edge: {@code persisted}
          */
         @Override
@@ -232,6 +242,8 @@ public abstract class EdgeImpl<
         }
 
         /**
+         * Returns the {@code iid} of this edge pointing outwards.
+         *
          * @return the {@code iid} of this edge pointing outwards
          */
         @Override
@@ -240,6 +252,8 @@ public abstract class EdgeImpl<
         }
 
         /**
+         * Returns the {@code iid} of this edge pointing inwards.
+         *
          * @return the {@code iid} of this edge pointing inwards
          */
         @Override
@@ -248,6 +262,8 @@ public abstract class EdgeImpl<
         }
 
         /**
+         * Returns the tail vertex of this edge.
+         *
          * @return the tail vertex of this edge
          */
         @Override
@@ -258,6 +274,8 @@ public abstract class EdgeImpl<
         }
 
         /**
+         * Returns the head vertex of this edge.
+         *
          * @return the head vertex of this edge
          */
         @Override
