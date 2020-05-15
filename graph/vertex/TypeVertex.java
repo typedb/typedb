@@ -46,9 +46,9 @@ public interface TypeVertex extends Vertex<Schema.Vertex.Type, TypeVertex, Schem
 
     TypeVertex isAbstract(boolean isAbstract);
 
-    Schema.ValueClass valueClass();
+    Schema.ValueType valueType();
 
-    TypeVertex valueClass(Schema.ValueClass valueClass);
+    TypeVertex valueType(Schema.ValueType valueType);
 
     String regex();
 

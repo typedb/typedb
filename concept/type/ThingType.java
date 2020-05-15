@@ -42,7 +42,7 @@ public interface ThingType extends Type {
 
     void unkey(AttributeType attributeType);
 
-    Stream<? extends AttributeType> keys(Class<?> valueClass);
+    Stream<? extends AttributeType> keys(Class<?> valueType);
 
     Stream<? extends AttributeType> keys();
 
@@ -52,7 +52,7 @@ public interface ThingType extends Type {
 
     void unhas(AttributeType attributeType);
 
-    Stream<? extends AttributeType> attributes(Class<?> valueClass);
+    Stream<? extends AttributeType> attributes(Class<?> valueType);
 
     Stream<? extends AttributeType> attributes();
 

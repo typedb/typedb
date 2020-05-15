@@ -48,13 +48,13 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         }
     }
 
-    private AttributeTypeImpl(TypeGraph graph, java.lang.String label, Class<?> valueClass) {
+    private AttributeTypeImpl(TypeGraph graph, java.lang.String label, Class<?> valueType) {
         super(graph, label, Schema.Vertex.Type.ATTRIBUTE_TYPE);
-        vertex.valueClass(Schema.ValueClass.of(valueClass));
+        vertex.valueType(Schema.ValueType.of(valueType));
     }
 
     public static AttributeTypeImpl of(TypeVertex vertex) {
-        switch (vertex.valueClass()) {
+        switch (vertex.valueType()) {
             case OBJECT:
                 return new AttributeTypeImpl.Root(vertex);
             case BOOLEAN:
@@ -74,7 +74,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
     @Override
     public AttributeTypeImpl.Root asObject() {
-        if (this.valueClass().equals(java.lang.Object.class)) return new AttributeTypeImpl.Root(this.vertex);
+        if (this.valueType().equals(java.lang.Object.class)) return new AttributeTypeImpl.Root(this.vertex);
         else throw new HypergraphException(INVALID_CONCEPT_CASTING.format(AttributeType.class.getCanonicalName()));
     }
 
@@ -113,17 +113,17 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
     @Override
     public abstract Stream<? extends AttributeTypeImpl> subs();
 
-    protected Iterator<TypeVertex> subTypeVertices(Schema.ValueClass valueClass) {
+    protected Iterator<TypeVertex> subTypeVertices(Schema.ValueType valueType) {
         return Iterators.tree(vertex, v -> Iterators.filter(v.ins().edge(Schema.Edge.Type.SUB).from(),
-                                                            sv -> sv.valueClass().equals(valueClass)));
+                                                            sv -> sv.valueType().equals(valueType)));
     }
 
     @Override
     public void sup(AttributeType superType) {
-        if (!superType.isRoot() && !this.valueClass().equals(superType.valueClass())) {
-            throw new HypergraphException(Error.TypeWrite.INVALID_ATTRIBUTE_SUPERTYPE_VALUE_CLASS.format(
-                    this.label(), this.valueClass().getSimpleName(),
-                    superType.label(), superType.valueClass().getSimpleName())
+        if (!superType.isRoot() && !this.valueType().equals(superType.valueType())) {
+            throw new HypergraphException(Error.TypeWrite.INVALID_ATTRIBUTE_SUPERTYPE_VALUE_TYPE.format(
+                    this.label(), this.valueType().getSimpleName(),
+                    superType.label(), superType.valueType().getSimpleName())
             );
         }
         super.superTypeVertex(((AttributeTypeImpl) superType).vertex);
@@ -131,11 +131,11 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
     @Override
     public boolean isKeyable() {
-        return vertex.valueClass().isKeyable();
+        return vertex.valueType().isKeyable();
     }
 
     @Override
-    public Class<?> valueClass() {
+    public Class<?> valueType() {
         return Object.class;
     }
 
@@ -151,11 +151,11 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         private Root(TypeVertex vertex) {
             super(vertex);
-            assert vertex.valueClass().equals(Schema.ValueClass.OBJECT);
+            assert vertex.valueType().equals(Schema.ValueType.OBJECT);
             assert vertex.label().equals(Schema.Vertex.Type.Root.ATTRIBUTE.label());
         }
 
-        public Class<java.lang.Object> valueClass() { return java.lang.Object.class; }
+        public Class<java.lang.Object> valueType() { return java.lang.Object.class; }
 
         @Override
         public AttributeTypeImpl.Root asObject() { return this; }
@@ -201,7 +201,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         @Override
         public Stream<? extends AttributeTypeImpl> subs() {
             return stream(spliteratorUnknownSize(super.subTypeVertices(), ORDERED | IMMUTABLE), false).map(v -> {
-                switch (v.valueClass()) {
+                switch (v.valueType()) {
                     case OBJECT:
                         assert this.vertex == v;
                         return this;
@@ -231,7 +231,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         private Boolean(TypeVertex vertex) {
             super(vertex);
             assert (vertex.label().equals(Schema.Vertex.Type.Root.ATTRIBUTE.label()) ||
-                    vertex.valueClass().equals(Schema.ValueClass.BOOLEAN));
+                    vertex.valueType().equals(Schema.ValueType.BOOLEAN));
         }
 
         public static AttributeTypeImpl.Boolean of(TypeVertex vertex) {
@@ -263,7 +263,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         }
 
         @Override
-        public Class<java.lang.Boolean> valueClass() { return java.lang.Boolean.class; }
+        public Class<java.lang.Boolean> valueType() { return java.lang.Boolean.class; }
 
         private static class Root extends AttributeTypeImpl.Boolean {
 
@@ -287,7 +287,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             @Override
             public Stream<AttributeTypeImpl.Boolean> subs() {
                 Iterator<AttributeTypeImpl.Boolean> sups = Iterators.apply(
-                        super.subTypeVertices(Schema.ValueClass.BOOLEAN),
+                        super.subTypeVertices(Schema.ValueType.BOOLEAN),
                         AttributeTypeImpl.Boolean::of
                 );
                 return stream(spliteratorUnknownSize(sups, ORDERED | IMMUTABLE), false);
@@ -304,7 +304,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         private Long(TypeVertex vertex) {
             super(vertex);
             assert (vertex.label().equals(Schema.Vertex.Type.Root.ATTRIBUTE.label()) ||
-                    vertex.valueClass().equals(Schema.ValueClass.LONG));
+                    vertex.valueType().equals(Schema.ValueType.LONG));
         }
 
         public static AttributeTypeImpl.Long of(TypeVertex vertex) {
@@ -336,7 +336,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         }
 
         @Override
-        public Class<java.lang.Long> valueClass() {
+        public Class<java.lang.Long> valueType() {
             return java.lang.Long.class;
         }
 
@@ -362,7 +362,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             @Override
             public Stream<AttributeTypeImpl.Long> subs() {
                 Iterator<AttributeTypeImpl.Long> sups = Iterators.apply(
-                        super.subTypeVertices(Schema.ValueClass.LONG),
+                        super.subTypeVertices(Schema.ValueType.LONG),
                         AttributeTypeImpl.Long::of
                 );
                 return stream(spliteratorUnknownSize(sups, ORDERED | IMMUTABLE), false);
@@ -379,7 +379,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         private Double(TypeVertex vertex) {
             super(vertex);
             assert (vertex.label().equals(Schema.Vertex.Type.Root.ATTRIBUTE.label()) ||
-                    vertex.valueClass().equals(Schema.ValueClass.DOUBLE));
+                    vertex.valueType().equals(Schema.ValueType.DOUBLE));
         }
 
         public static AttributeTypeImpl.Double of(TypeVertex vertex) {
@@ -411,7 +411,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         }
 
         @Override
-        public Class<java.lang.Double> valueClass() {
+        public Class<java.lang.Double> valueType() {
             return java.lang.Double.class;
         }
 
@@ -437,7 +437,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             @Override
             public Stream<AttributeTypeImpl.Double> subs() {
                 Iterator<AttributeTypeImpl.Double> sups = Iterators.apply(
-                        super.subTypeVertices(Schema.ValueClass.DOUBLE),
+                        super.subTypeVertices(Schema.ValueType.DOUBLE),
                         AttributeTypeImpl.Double::of
                 );
                 return stream(spliteratorUnknownSize(sups, ORDERED | IMMUTABLE), false);
@@ -454,7 +454,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         private String(TypeVertex vertex) {
             super(vertex);
             assert (vertex.label().equals(Schema.Vertex.Type.Root.ATTRIBUTE.label()) ||
-                    vertex.valueClass().equals(Schema.ValueClass.STRING));
+                    vertex.valueType().equals(Schema.ValueType.STRING));
         }
 
         public static AttributeTypeImpl.String of(TypeVertex vertex) {
@@ -486,7 +486,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         }
 
         @Override
-        public Class<java.lang.String> valueClass() {
+        public Class<java.lang.String> valueType() {
             return java.lang.String.class;
         }
 
@@ -512,7 +512,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             @Override
             public Stream<AttributeTypeImpl.String> subs() {
                 Iterator<AttributeTypeImpl.String> sups = Iterators.apply(
-                        super.subTypeVertices(Schema.ValueClass.STRING),
+                        super.subTypeVertices(Schema.ValueType.STRING),
                         AttributeTypeImpl.String::of
                 );
                 return stream(spliteratorUnknownSize(sups, ORDERED | IMMUTABLE), false);
@@ -529,7 +529,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         private DateTime(TypeVertex vertex) {
             super(vertex);
             assert (vertex.label().equals(Schema.Vertex.Type.Root.ATTRIBUTE.label()) ||
-                    vertex.valueClass().equals(Schema.ValueClass.DATETIME));
+                    vertex.valueType().equals(Schema.ValueType.DATETIME));
         }
 
         public static AttributeTypeImpl.DateTime of(TypeVertex vertex) {
@@ -561,7 +561,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         }
 
         @Override
-        public Class<LocalDateTime> valueClass() {
+        public Class<LocalDateTime> valueType() {
             return LocalDateTime.class;
         }
 
@@ -587,7 +587,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             @Override
             public Stream<AttributeTypeImpl.DateTime> subs() {
                 Iterator<AttributeTypeImpl.DateTime> sups = Iterators.apply(
-                        super.subTypeVertices(Schema.ValueClass.DATETIME),
+                        super.subTypeVertices(Schema.ValueType.DATETIME),
                         AttributeTypeImpl.DateTime::of
                 );
                 return stream(spliteratorUnknownSize(sups, ORDERED | IMMUTABLE), false);

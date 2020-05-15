@@ -151,12 +151,12 @@ public abstract class Error<TYPE extends Error<TYPE>> {
 
         public static final TypeWrite INVALID_ROOT_TYPE_MUTATION =
                 new TypeWrite(1, "Root types are immutable.");
-        public static final TypeWrite UNSUPPORTED_VALUE_CLASS =
-                new TypeWrite(2, "The Java class '%s' is not a supported value class.");
-        public static final TypeWrite INVALID_ATTRIBUTE_SUPERTYPE_VALUE_CLASS =
-                new TypeWrite(3, "AttributeType '%s' has value class '%s', and cannot have supertype '%s' with value class '%s'.");
+        public static final TypeWrite UNSUPPORTED_VALUE_TYPE =
+                new TypeWrite(2, "The Java class '%s' is not a supported value type.");
+        public static final TypeWrite INVALID_ATTRIBUTE_SUPERTYPE_VALUE_TYPE =
+                new TypeWrite(3, "AttributeType '%s' has value type '%s', and cannot have supertype '%s' with value type '%s'.");
         public static final TypeWrite INVALID_KEY_ATTRIBUTE =
-                new TypeWrite(4, "AttributeType '%s' has value class '%s', and cannot and cannot be used as a type key.");
+                new TypeWrite(4, "AttributeType '%s' has value type '%s', and cannot and cannot be used as a type key.");
 
         private static final String codePrefix = "TYW";
         private static final String descriptionPrefix = "Invalid Type Definition";

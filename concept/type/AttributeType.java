@@ -38,7 +38,7 @@ public interface AttributeType extends ThingType {
 
     boolean isKeyable();
 
-    Class<?> valueClass();
+    Class<?> valueType();
 
     AttributeType asObject();
 

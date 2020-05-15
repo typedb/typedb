@@ -44,7 +44,7 @@ public abstract class TypeVertexImpl extends VertexImpl<Schema.Vertex.Type, Type
     protected String label;
     protected String scope;
     protected Boolean isAbstract;
-    protected Schema.ValueClass valueClass;
+    protected Schema.ValueType valueType;
     protected String regex;
 
 
@@ -167,12 +167,12 @@ public abstract class TypeVertexImpl extends VertexImpl<Schema.Vertex.Type, Type
             return this;
         }
 
-        public Schema.ValueClass valueClass() {
-            return valueClass;
+        public Schema.ValueType valueType() {
+            return valueType;
         }
 
-        public TypeVertexImpl valueClass(Schema.ValueClass valueClass) {
-            this.valueClass = valueClass;
+        public TypeVertexImpl valueType(Schema.ValueType valueType) {
+            this.valueType = valueType;
             return this;
         }
 
@@ -208,7 +208,7 @@ public abstract class TypeVertexImpl extends VertexImpl<Schema.Vertex.Type, Type
             commitPropertyLabel();
             if (scope != null) commitPropertyScope();
             if (isAbstract != null && isAbstract) commitPropertyAbstract();
-            if (valueClass != null) commitPropertyValueClass();
+            if (valueType != null) commitPropertyValueType();
             if (regex != null && !regex.isEmpty()) commitPropertyRegex();
         }
 
@@ -224,8 +224,8 @@ public abstract class TypeVertexImpl extends VertexImpl<Schema.Vertex.Type, Type
             graph.storage().put(join(iid, Schema.Property.LABEL.infix().key()), label.getBytes());
         }
 
-        private void commitPropertyValueClass() {
-            graph.storage().put(join(iid, Schema.Property.VALUE_CLASS.infix().key()), valueClass.key());
+        private void commitPropertyValueType() {
+            graph.storage().put(join(iid, Schema.Property.VALUE_TYPE.infix().key()), valueType.key());
         }
 
         private void commitPropertyRegex() {
@@ -309,17 +309,17 @@ public abstract class TypeVertexImpl extends VertexImpl<Schema.Vertex.Type, Type
         }
 
         @Override
-        public Schema.ValueClass valueClass() {
-            if (valueClass != null) return valueClass;
-            byte[] val = graph.storage().get(join(iid, Schema.Property.VALUE_CLASS.infix().key()));
-            if (val != null) valueClass = Schema.ValueClass.of(val[0]);
-            return valueClass;
+        public Schema.ValueType valueType() {
+            if (valueType != null) return valueType;
+            byte[] val = graph.storage().get(join(iid, Schema.Property.VALUE_TYPE.infix().key()));
+            if (val != null) valueType = Schema.ValueType.of(val[0]);
+            return valueType;
         }
 
         @Override
-        public TypeVertexImpl valueClass(Schema.ValueClass valueClass) {
-            graph.storage().put(join(iid, Schema.Property.VALUE_CLASS.infix().key()), valueClass.key());
-            this.valueClass = valueClass;
+        public TypeVertexImpl valueType(Schema.ValueType valueType) {
+            graph.storage().put(join(iid, Schema.Property.VALUE_TYPE.infix().key()), valueType.key());
+            this.valueType = valueType;
             return this;
         }
 

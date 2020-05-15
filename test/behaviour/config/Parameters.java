@@ -132,7 +132,7 @@ public class Parameters {
     }
 
     @ParameterType("long|double|string|boolean|datetime")
-    public Class<?> value_class(String type) {
+    public Class<?> value_type(String type) {
         switch (type) {
             case "long":
                 return Long.class;

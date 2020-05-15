@@ -103,7 +103,7 @@ public class Schema {
         PROPERTY_SCOPE(1),
         PROPERTY_ABSTRACT(2),
         PROPERTY_REGEX(3),
-        PROPERTY_VALUE_CLASS(4),
+        PROPERTY_VALUE_TYPE(4),
         PROPERTY_VALUE_REF(5),
         PROPERTY_VALUE(6),
         PROPERTY_WHEN(7),
@@ -169,7 +169,7 @@ public class Schema {
         SCOPE(Infix.PROPERTY_SCOPE),
         ABSTRACT(Infix.PROPERTY_ABSTRACT),
         REGEX(Infix.PROPERTY_REGEX),
-        VALUE_CLASS(Infix.PROPERTY_VALUE_CLASS),
+        VALUE_TYPE(Infix.PROPERTY_VALUE_TYPE),
         VALUE_REF(Infix.PROPERTY_VALUE_REF),
         VALUE(Infix.PROPERTY_VALUE),
         WHEN(Infix.PROPERTY_WHEN),
@@ -186,7 +186,7 @@ public class Schema {
         }
     }
 
-    public enum ValueClass {
+    public enum ValueType {
         OBJECT(0, Object.class, false),
         BOOLEAN(10, Boolean.class, false),
         LONG(20, Long.class, true),
@@ -195,17 +195,17 @@ public class Schema {
         DATETIME(50, LocalDateTime.class, true);
 
         private final byte key;
-        private final Class<?> valueClass;
+        private final Class<?> valueType;
         private final boolean isKeyable;
 
-        ValueClass(int key, Class<?> valueClass, boolean isKeyable) {
+        ValueType(int key, Class<?> valueType, boolean isKeyable) {
             this.key = (byte) key;
-            this.valueClass = valueClass;
+            this.valueType = valueType;
             this.isKeyable = isKeyable;
         }
 
-        public static ValueClass of(byte value) {
-            for (ValueClass t : ValueClass.values()) {
+        public static ValueType of(byte value) {
+            for (ValueType t : ValueType.values()) {
                 if (t.key == value) {
                     return t;
                 }
@@ -213,9 +213,9 @@ public class Schema {
             return null;
         }
 
-        public static ValueClass of(Class<?> valueClass) {
-            for (ValueClass t : ValueClass.values()) {
-                if (t.valueClass == valueClass) {
+        public static ValueType of(Class<?> valueType) {
+            for (ValueType t : ValueType.values()) {
+                if (t.valueType == valueType) {
                     return t;
                 }
             }
@@ -226,8 +226,8 @@ public class Schema {
             return new byte[]{key};
         }
 
-        public Class<?> valueClass() {
-            return valueClass;
+        public Class<?> valueType() {
+            return valueType;
         }
 
         public boolean isKeyable() {

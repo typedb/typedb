@@ -73,7 +73,7 @@ public class TypeGraph implements Graph<TypeVertex> {
                 Schema.Vertex.Type.Root.ENTITY.label()).isAbstract(true);
         TypeVertex rootAttributeType = put(
                 Schema.Vertex.Type.ATTRIBUTE_TYPE,
-                Schema.Vertex.Type.Root.ATTRIBUTE.label()).isAbstract(true).valueClass(Schema.ValueClass.OBJECT);
+                Schema.Vertex.Type.Root.ATTRIBUTE.label()).isAbstract(true).valueType(Schema.ValueType.OBJECT);
         TypeVertex rootRelationType = put(
                 Schema.Vertex.Type.RELATION_TYPE,
                 Schema.Vertex.Type.Root.RELATION.label()).isAbstract(true);

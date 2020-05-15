@@ -78,7 +78,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     public void key(AttributeType attributeType) {
         AttributeTypeImpl attributeTypeImpl = (AttributeTypeImpl) attributeType;
         if (!attributeType.isKeyable()) {
-            throw new HypergraphException(INVALID_KEY_ATTRIBUTE.format(attributeTypeImpl.label(), attributeTypeImpl.valueClass().getSimpleName()));
+            throw new HypergraphException(INVALID_KEY_ATTRIBUTE.format(attributeTypeImpl.label(), attributeTypeImpl.valueType().getSimpleName()));
         } else if (filter(vertex.outs().edge(Schema.Edge.Type.HAS).to(), v -> v.equals(attributeTypeImpl.vertex)).hasNext()) {
             throw new HypergraphException("Invalid Key Assignment: " + attributeTypeImpl.label() + " is already used as an attribute");
         } else if (sups().filter(s -> !s.equals(this)).flatMap(ThingType::attributes).anyMatch(a -> a.equals(attributeTypeImpl))) {
@@ -102,8 +102,8 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     }
 
     @Override
-    public Stream<AttributeTypeImpl> keys(Class<?> valueClass) {
-        return keys().filter(att -> att.valueClass().equals(valueClass));
+    public Stream<AttributeTypeImpl> keys(Class<?> valueType) {
+        return keys().filter(att -> att.valueType().equals(valueType));
     }
 
     @Override
@@ -136,7 +136,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     @Override
     public void has(AttributeType attributeType, AttributeType overriddenType) {
         this.has(attributeType);
-        Stream<AttributeTypeImpl> overridable = ThingTypeImpl.this.sup().attributes(attributeType.valueClass());
+        Stream<AttributeTypeImpl> overridable = ThingTypeImpl.this.sup().attributes(attributeType.valueType());
         Stream<AttributeTypeImpl> notOverridable = concat(ThingTypeImpl.this.sup().keys(), ThingTypeImpl.this.declaredAttributes());
         override(Schema.Edge.Type.HAS, attributeType, overriddenType, overridable, notOverridable);
     }
@@ -153,8 +153,8 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     }
 
     @Override
-    public Stream<AttributeTypeImpl> attributes(Class<?> valueClass) {
-        return attributes().filter(att -> att.valueClass().equals(valueClass));
+    public Stream<AttributeTypeImpl> attributes(Class<?> valueType) {
+        return attributes().filter(att -> att.valueType().equals(valueType));
     }
 
     @Override

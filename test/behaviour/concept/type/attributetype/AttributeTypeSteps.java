@@ -40,20 +40,20 @@ import static org.junit.Assert.fail;
  */
 public class AttributeTypeSteps {
 
-    @When("put attribute type: {type_label}, value class: {value_class}")
-    public void put_attribute_type_value_class(String typeLabel, Class<?> valueClass) {
-        tx().concepts().putAttributeType(typeLabel, valueClass);
+    @When("put attribute type: {type_label}, value type: {value_type}")
+    public void put_attribute_type_value_type(String typeLabel, Class<?> valueType) {
+        tx().concepts().putAttributeType(typeLabel, valueType);
     }
 
-    @Then("attribute\\( ?{type_label} ?) get value class: {value_class}")
-    public void attribute_get_value_class(String typeLabel, Class<?> valueClass) {
-        assertEquals(valueClass, tx().concepts().getAttributeType(typeLabel).valueClass());
+    @Then("attribute\\( ?{type_label} ?) get value type: {value_type}")
+    public void attribute_get_value_type(String typeLabel, Class<?> valueType) {
+        assertEquals(valueType, tx().concepts().getAttributeType(typeLabel).valueType());
     }
 
-    @Then("attribute\\( ?{type_label} ?) get supertype value class: {value_class}")
-    public void attribute_get_supertype_value_class(String typeLabel, Class<?> valueClass) {
+    @Then("attribute\\( ?{type_label} ?) get supertype value type: {value_type}")
+    public void attribute_get_supertype_value_type(String typeLabel, Class<?> valueType) {
         AttributeType supertype = tx().concepts().getAttributeType(typeLabel).sup();
-        assertEquals(valueClass, supertype.valueClass());
+        assertEquals(valueType, supertype.valueType());
     }
 
     @Then("attribute\\( ?{type_label} ?) fails at setting supertype: {type_label}")
@@ -67,36 +67,36 @@ public class AttributeTypeSteps {
         }
     }
 
-    private AttributeType attribute_as_value_class(String typeLabel, Class<?> valueClass) {
+    private AttributeType attribute_as_value_type(String typeLabel, Class<?> valueType) {
         AttributeType attributeType = tx().concepts().getAttributeType(typeLabel);
 
-        if (valueClass.equals(Object.class)) {
+        if (valueType.equals(Object.class)) {
             return attributeType.asObject();
-        } else if (valueClass.equals(Boolean.class)) {
+        } else if (valueType.equals(Boolean.class)) {
             return attributeType.asBoolean();
-        } else if (valueClass.equals(Long.class)) {
+        } else if (valueType.equals(Long.class)) {
             return attributeType.asLong();
-        } else if (valueClass.equals(Double.class)) {
+        } else if (valueType.equals(Double.class)) {
             return attributeType.asDouble();
-        } else if (valueClass.equals(String.class)) {
+        } else if (valueType.equals(String.class)) {
             return attributeType.asString();
-        } else if (valueClass.equals(LocalDateTime.class)) {
+        } else if (valueType.equals(LocalDateTime.class)) {
             return attributeType.asDateTime();
         } else {
             throw new HypergraphException("unreachable");
         }
     }
 
-    @Then("attribute\\( ?{type_label} ?) as\\( ?{value_class} ?) get subtypes contain:")
-    public void attribute_as_get_subtypes_contain(String typeLabel, Class<?> valueClass, List<String> subLabels) {
-        AttributeType attributeType = attribute_as_value_class(typeLabel, valueClass);
+    @Then("attribute\\( ?{type_label} ?) as\\( ?{value_type} ?) get subtypes contain:")
+    public void attribute_as_get_subtypes_contain(String typeLabel, Class<?> valueType, List<String> subLabels) {
+        AttributeType attributeType = attribute_as_value_type(typeLabel, valueType);
         Set<String> actuals = attributeType.subs().map(ThingType::label).collect(toSet());
         assertTrue(actuals.containsAll(subLabels));
     }
 
-    @Then("attribute\\( ?{type_label} ?) as\\( ?{value_class} ?) get subtypes do not contain:")
-    public void attribute_as_get_subtypes_do_not_contain(String typeLabel, Class<?> valueClass, List<String> subLabels) {
-        AttributeType attributeType = attribute_as_value_class(typeLabel, valueClass);
+    @Then("attribute\\( ?{type_label} ?) as\\( ?{value_type} ?) get subtypes do not contain:")
+    public void attribute_as_get_subtypes_do_not_contain(String typeLabel, Class<?> valueType, List<String> subLabels) {
+        AttributeType attributeType = attribute_as_value_type(typeLabel, valueType);
         Set<String> actuals = attributeType.subs().map(ThingType::label).collect(toSet());
         for (String subLabel : subLabels) {
             assertFalse(actuals.contains(subLabel));
