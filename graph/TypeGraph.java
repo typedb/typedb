@@ -23,16 +23,16 @@ import hypergraph.common.concurrent.ManagedReadWriteLock;
 import hypergraph.common.exception.HypergraphException;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.util.Storage;
-import hypergraph.graph.vertex.TypeVertexImpl;
-import hypergraph.graph.vertex.VertexImpl;
+import hypergraph.graph.vertex.impl.TypeVertexImpl;
+import hypergraph.graph.vertex.impl.VertexImpl;
 
 import javax.annotation.Nullable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-import static hypergraph.graph.vertex.TypeVertexImpl.generateIID;
-import static hypergraph.graph.vertex.TypeVertexImpl.index;
-import static hypergraph.graph.vertex.TypeVertexImpl.scopedLabel;
+import static hypergraph.graph.vertex.impl.TypeVertexImpl.generateIID;
+import static hypergraph.graph.vertex.impl.TypeVertexImpl.index;
+import static hypergraph.graph.vertex.impl.TypeVertexImpl.scopedLabel;
 
 public class TypeGraph implements Graph<TypeVertexImpl> {
 

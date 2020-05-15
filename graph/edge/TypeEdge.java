@@ -19,7 +19,7 @@
 package hypergraph.graph.edge;
 
 import hypergraph.graph.util.Schema;
-import hypergraph.graph.vertex.TypeVertexImpl;
+import hypergraph.graph.vertex.impl.TypeVertexImpl;
 
 /**
  * An edge between two {@code TypeVertex}.

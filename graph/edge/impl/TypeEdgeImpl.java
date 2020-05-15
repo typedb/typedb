@@ -21,7 +21,7 @@ package hypergraph.graph.edge.impl;
 import hypergraph.graph.TypeGraph;
 import hypergraph.graph.edge.TypeEdge;
 import hypergraph.graph.util.Schema;
-import hypergraph.graph.vertex.TypeVertexImpl;
+import hypergraph.graph.vertex.impl.TypeVertexImpl;
 
 import javax.annotation.Nullable;
 

@@ -29,7 +29,7 @@ import hypergraph.concept.type.ThingType;
 import hypergraph.concept.type.impl.ThingTypeImpl;
 import hypergraph.graph.Graphs;
 import hypergraph.graph.util.Schema;
-import hypergraph.graph.vertex.TypeVertexImpl;
+import hypergraph.graph.vertex.impl.TypeVertexImpl;
 
 import static hypergraph.common.exception.Error.TypeDefinition.INVALID_VALUE_CLASS;
 

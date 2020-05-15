@@ -16,18 +16,19 @@
  *
  */
 
-package hypergraph.graph.vertex;
+package hypergraph.graph.vertex.impl;
 
 import hypergraph.graph.ThingGraph;
 import hypergraph.graph.edge.ThingEdge;
 import hypergraph.graph.util.KeyGenerator;
 import hypergraph.graph.util.Schema;
+import hypergraph.graph.vertex.ThingVertex;
 
 import java.util.Arrays;
 
 import static hypergraph.common.collection.ByteArrays.join;
 
-public abstract class ThingVertexImpl extends VertexImpl<Schema.Vertex.Thing, ThingVertexImpl, Schema.Edge.Thing, ThingEdge> implements ThingVertexInt {
+public abstract class ThingVertexImpl extends VertexImpl<Schema.Vertex.Thing, ThingVertexImpl, Schema.Edge.Thing, ThingEdge> implements ThingVertex {
 
     protected final ThingGraph graph;
     protected final byte[] typeIID;

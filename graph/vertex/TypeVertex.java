@@ -22,8 +22,9 @@ import hypergraph.graph.TypeGraph;
 import hypergraph.graph.adjacency.TypeAdjacency;
 import hypergraph.graph.edge.TypeEdge;
 import hypergraph.graph.util.Schema;
+import hypergraph.graph.vertex.impl.TypeVertexImpl;
 
-public interface TypeVertexInt extends VertexInt<Schema.Vertex.Type, TypeVertexImpl, Schema.Edge.Type, TypeEdge> {
+public interface TypeVertex extends Vertex<Schema.Vertex.Type, TypeVertexImpl, Schema.Edge.Type, TypeEdge> {
 
     @Override
     TypeGraph graph();

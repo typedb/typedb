@@ -24,7 +24,7 @@ import hypergraph.common.iterator.Iterators;
 import hypergraph.concept.type.AttributeType;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.TypeGraph;
-import hypergraph.graph.vertex.TypeVertexImpl;
+import hypergraph.graph.vertex.impl.TypeVertexImpl;
 
 import javax.annotation.Nullable;
 import java.time.LocalDateTime;

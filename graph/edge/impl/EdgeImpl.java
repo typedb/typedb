@@ -21,7 +21,7 @@ package hypergraph.graph.edge.impl;
 import hypergraph.graph.Graph;
 import hypergraph.graph.edge.Edge;
 import hypergraph.graph.util.Schema;
-import hypergraph.graph.vertex.VertexImpl;
+import hypergraph.graph.vertex.impl.VertexImpl;
 
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicBoolean;

@@ -16,7 +16,7 @@
  *
  */
 
-package hypergraph.graph.vertex;
+package hypergraph.graph.vertex.impl;
 
 import hypergraph.graph.TypeGraph;
 import hypergraph.graph.adjacency.Adjacency;
@@ -26,13 +26,14 @@ import hypergraph.graph.edge.Edge;
 import hypergraph.graph.edge.TypeEdge;
 import hypergraph.graph.util.KeyGenerator;
 import hypergraph.graph.util.Schema;
+import hypergraph.graph.vertex.TypeVertex;
 
 import javax.annotation.Nullable;
 import java.util.Iterator;
 
 import static hypergraph.common.collection.ByteArrays.join;
 
-public abstract class TypeVertexImpl extends VertexImpl<Schema.Vertex.Type, TypeVertexImpl, Schema.Edge.Type, TypeEdge> implements TypeVertexInt {
+public abstract class TypeVertexImpl extends VertexImpl<Schema.Vertex.Type, TypeVertexImpl, Schema.Edge.Type, TypeEdge> implements TypeVertex {
 
     protected final TypeGraph graph;
     protected final TypeAdjacency outs;

@@ -21,7 +21,7 @@ package hypergraph.graph.edge.impl;
 import hypergraph.graph.ThingGraph;
 import hypergraph.graph.edge.ThingEdge;
 import hypergraph.graph.util.Schema;
-import hypergraph.graph.vertex.ThingVertexImpl;
+import hypergraph.graph.vertex.impl.ThingVertexImpl;
 
 public abstract class ThingEdgeImpl {
 

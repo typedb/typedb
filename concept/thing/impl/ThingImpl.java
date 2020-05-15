@@ -24,7 +24,7 @@ import hypergraph.concept.thing.Thing;
 import hypergraph.concept.type.AttributeType;
 import hypergraph.concept.type.RoleType;
 import hypergraph.concept.type.impl.ThingTypeImpl;
-import hypergraph.graph.vertex.ThingVertexImpl;
+import hypergraph.graph.vertex.impl.ThingVertexImpl;
 
 import java.util.Objects;
 import java.util.stream.Stream;

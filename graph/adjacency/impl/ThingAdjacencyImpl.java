@@ -24,7 +24,7 @@ import hypergraph.graph.adjacency.ThingAdjacency;
 import hypergraph.graph.edge.ThingEdge;
 import hypergraph.graph.edge.impl.ThingEdgeImpl;
 import hypergraph.graph.util.Schema;
-import hypergraph.graph.vertex.ThingVertexImpl;
+import hypergraph.graph.vertex.impl.ThingVertexImpl;
 
 import java.util.Iterator;
 

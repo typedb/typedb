@@ -24,8 +24,8 @@ import hypergraph.concept.thing.impl.EntityImpl;
 import hypergraph.concept.type.EntityType;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.TypeGraph;
-import hypergraph.graph.vertex.ThingVertexImpl;
-import hypergraph.graph.vertex.TypeVertexImpl;
+import hypergraph.graph.vertex.impl.ThingVertexImpl;
+import hypergraph.graph.vertex.impl.TypeVertexImpl;
 
 import javax.annotation.Nullable;
 import java.util.Iterator;

@@ -21,7 +21,7 @@ package hypergraph.concept.thing.impl;
 import hypergraph.concept.thing.Attribute;
 import hypergraph.concept.thing.Entity;
 import hypergraph.concept.type.impl.EntityTypeImpl;
-import hypergraph.graph.vertex.ThingVertexImpl;
+import hypergraph.graph.vertex.impl.ThingVertexImpl;
 
 public class EntityImpl extends ThingImpl implements Entity {
 

@@ -22,8 +22,9 @@ import hypergraph.graph.Graph;
 import hypergraph.graph.adjacency.Adjacency;
 import hypergraph.graph.edge.Edge;
 import hypergraph.graph.util.Schema;
+import hypergraph.graph.vertex.impl.VertexImpl;
 
-public interface VertexInt<
+public interface Vertex<
         VERTEX_SCHEMA extends Schema.Vertex,
         VERTEX extends VertexImpl<VERTEX_SCHEMA, VERTEX, EDGE_SCHEMA, EDGE>,
         EDGE_SCHEMA extends Schema.Edge,

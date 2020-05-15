@@ -23,7 +23,7 @@ import hypergraph.graph.Graph;
 import hypergraph.graph.adjacency.Adjacency;
 import hypergraph.graph.edge.Edge;
 import hypergraph.graph.util.Schema;
-import hypergraph.graph.vertex.VertexImpl;
+import hypergraph.graph.vertex.impl.VertexImpl;
 
 import java.util.Collections;
 import java.util.Iterator;

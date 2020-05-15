@@ -21,7 +21,7 @@ package hypergraph.concept.thing.impl;
 import hypergraph.concept.thing.Attribute;
 import hypergraph.concept.thing.Relation;
 import hypergraph.concept.type.impl.RelationTypeImpl;
-import hypergraph.graph.vertex.ThingVertexImpl;
+import hypergraph.graph.vertex.impl.ThingVertexImpl;
 
 import java.util.HashSet;
 import java.util.Set;

@@ -20,7 +20,7 @@ package hypergraph.concept.thing.impl;
 
 import hypergraph.concept.thing.Attribute;
 import hypergraph.concept.type.impl.AttributeTypeImpl;
-import hypergraph.graph.vertex.ThingVertexImpl;
+import hypergraph.graph.vertex.impl.ThingVertexImpl;
 
 public class AttributeImpl extends ThingImpl implements Attribute {
     public AttributeImpl(ThingVertexImpl vertex) {

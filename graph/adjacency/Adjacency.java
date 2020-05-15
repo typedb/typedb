@@ -20,7 +20,7 @@ package hypergraph.graph.adjacency;
 
 import hypergraph.graph.edge.Edge;
 import hypergraph.graph.util.Schema;
-import hypergraph.graph.vertex.VertexImpl;
+import hypergraph.graph.vertex.impl.VertexImpl;
 
 import java.util.Iterator;
 import java.util.function.Consumer;

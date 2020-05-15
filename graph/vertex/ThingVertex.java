@@ -21,8 +21,10 @@ package hypergraph.graph.vertex;
 import hypergraph.graph.ThingGraph;
 import hypergraph.graph.edge.ThingEdge;
 import hypergraph.graph.util.Schema;
+import hypergraph.graph.vertex.impl.ThingVertexImpl;
+import hypergraph.graph.vertex.impl.TypeVertexImpl;
 
-public interface ThingVertexInt extends VertexInt<Schema.Vertex.Thing, ThingVertexImpl, Schema.Edge.Thing, ThingEdge> {
+public interface ThingVertex extends Vertex<Schema.Vertex.Thing, ThingVertexImpl, Schema.Edge.Thing, ThingEdge> {
 
     /**
      * Returns the {@code Graph} containing all {@code ThingVertex}

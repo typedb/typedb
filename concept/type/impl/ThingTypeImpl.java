@@ -25,7 +25,7 @@ import hypergraph.concept.type.ThingType;
 import hypergraph.concept.type.Type;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.TypeGraph;
-import hypergraph.graph.vertex.TypeVertexImpl;
+import hypergraph.graph.vertex.impl.TypeVertexImpl;
 
 import javax.annotation.Nullable;
 import java.util.HashSet;

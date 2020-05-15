@@ -19,7 +19,7 @@
 package hypergraph.graph;
 
 import hypergraph.graph.util.Storage;
-import hypergraph.graph.vertex.VertexImpl;
+import hypergraph.graph.vertex.impl.VertexImpl;
 
 public interface Graph<VERTEX extends VertexImpl> {
 

@@ -21,8 +21,8 @@ package hypergraph.graph;
 import hypergraph.common.collection.ByteArray;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.util.Storage;
-import hypergraph.graph.vertex.ThingVertexImpl;
-import hypergraph.graph.vertex.VertexImpl;
+import hypergraph.graph.vertex.impl.ThingVertexImpl;
+import hypergraph.graph.vertex.impl.VertexImpl;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
