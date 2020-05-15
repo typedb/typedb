@@ -19,9 +19,9 @@
 package hypergraph.graph;
 
 import hypergraph.graph.util.Storage;
-import hypergraph.graph.vertex.Vertex;
+import hypergraph.graph.vertex.VertexImpl;
 
-public interface Graph<VERTEX extends Vertex> {
+public interface Graph<VERTEX extends VertexImpl> {
 
     Storage storage();
 

@@ -19,9 +19,9 @@
 package hypergraph.graph.edge;
 
 import hypergraph.graph.util.Schema;
-import hypergraph.graph.vertex.Vertex;
+import hypergraph.graph.vertex.VertexImpl;
 
-public interface Edge<EDGE_SCHEMA extends Schema.Edge, VERTEX extends Vertex> {
+public interface Edge<EDGE_SCHEMA extends Schema.Edge, VERTEX extends VertexImpl> {
 
     /**
      * Returns the schema of this edge.

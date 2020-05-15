@@ -25,7 +25,7 @@ import hypergraph.concept.type.ThingType;
 import hypergraph.concept.type.Type;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.TypeGraph;
-import hypergraph.graph.vertex.TypeVertex;
+import hypergraph.graph.vertex.TypeVertexImpl;
 
 import javax.annotation.Nullable;
 import java.util.HashSet;
@@ -46,7 +46,7 @@ import static java.util.stream.StreamSupport.stream;
 
 public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
-    ThingTypeImpl(TypeVertex vertex) {
+    ThingTypeImpl(TypeVertexImpl vertex) {
         super(vertex);
     }
 
@@ -216,7 +216,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
     public static class Root extends ThingTypeImpl {
 
-        public Root(TypeVertex vertex) {
+        public Root(TypeVertexImpl vertex) {
             super(vertex);
             assert vertex.label().equals(Schema.Vertex.Type.Root.THING.label());
         }

@@ -32,7 +32,7 @@ import java.util.Iterator;
 
 import static hypergraph.common.collection.ByteArrays.join;
 
-public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, TypeVertex, Schema.Edge.Type, TypeEdge> {
+public abstract class TypeVertexImpl extends VertexImpl<Schema.Vertex.Type, TypeVertexImpl, Schema.Edge.Type, TypeEdge> implements TypeVertexInt {
 
     protected final TypeGraph graph;
     protected final TypeAdjacency outs;
@@ -45,29 +45,13 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, TypeVertex, 
     protected String regex;
 
 
-    TypeVertex(TypeGraph graph, Schema.Vertex.Type schema, byte[] iid, String label, @Nullable String scope) {
+    TypeVertexImpl(TypeGraph graph, Schema.Vertex.Type schema, byte[] iid, String label, @Nullable String scope) {
         super(iid, schema);
         this.graph = graph;
         this.label = label;
         this.scope = scope;
         this.outs = newAdjacency(this, Adjacency.Direction.OUT);
         this.ins = newAdjacency(this, Adjacency.Direction.IN);
-    }
-
-    public static String scopedLabel(String label, @Nullable String scope) {
-        if (scope == null) return label;
-        else return scope + ":" + label;
-    }
-
-    /**
-     * Get the index address of given {@code TypeVertex}
-     *
-     * @param label of the {@code TypeVertex}
-     * @param scope of the {@code TypeVertex}, which could be null
-     * @return a byte array representing the index address of a {@code TypeVertex}
-     */
-    public static byte[] index(String label, @Nullable String scope) {
-        return join(Schema.Index.TYPE.prefix().key(), scopedLabel(label, scope).getBytes());
     }
 
     /**
@@ -81,71 +65,83 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, TypeVertex, 
         return join(schema.prefix().key(), keyGenerator.forType(schema.prefix().key()));
     }
 
-    protected abstract TypeAdjacency newAdjacency(TypeVertex owner, Adjacency.Direction direction);
+    /**
+     * Returns the index address of given {@code TypeVertex}
+     *
+     * @param label of the {@code TypeVertex}
+     * @param scope of the {@code TypeVertex}, which could be null
+     * @return a byte array representing the index address of a {@code TypeVertex}
+     */
+    public static byte[] index(String label, @Nullable String scope) {
+        return join(Schema.Index.TYPE.prefix().key(), scopedLabel(label, scope).getBytes());
+    }
+
+    /**
+     * Returns the fully scoped label for a given {@code TypeVertex}
+     *
+     * @param label the unscoped label of the {@code TypeVertex}
+     * @param scope the scope label of the {@code TypeVertex}
+     * @return the fully scoped label for a given {@code TypeVertex} as a string
+     */
+    public static String scopedLabel(String label, @Nullable String scope) {
+        if (scope == null) return label;
+        else return scope + ":" + label;
+    }
+
+    protected abstract TypeAdjacency newAdjacency(TypeVertexImpl owner, Adjacency.Direction direction);
 
     /**
      * Get the {@code Graph} containing all {@code TypeVertex}
      *
      * @return the {@code Graph} containing all {@code TypeVertex}
      */
+    @Override
     public TypeGraph graph() {
         return graph;
     }
 
+    @Override
     public String label() {
         return label;
     }
 
+    @Override
     public String scopedLabel() {
         return scopedLabel(label, scope);
     }
 
+    @Override
     public TypeAdjacency outs() {
         return outs;
     }
 
+    @Override
     public TypeAdjacency ins() {
         return ins;
     }
 
-    public abstract TypeVertex label(String label);
-
-    public abstract TypeVertex scope(String scope);
-
-    public abstract boolean isAbstract();
-
-    public abstract TypeVertex isAbstract(boolean isAbstract);
-
-    public abstract Schema.ValueClass valueClass();
-
-    public abstract TypeVertex valueClass(Schema.ValueClass valueClass);
-
-    public abstract String regex();
-
-    public abstract TypeVertex regex(String regex);
-
-    public static class Buffered extends TypeVertex {
+    public static class Buffered extends TypeVertexImpl {
 
         public Buffered(TypeGraph graph, Schema.Vertex.Type schema, byte[] iid, String label, @Nullable String scope) {
             super(graph, schema, iid, label, scope);
         }
 
         @Override
-        public TypeVertex label(String label) {
+        public TypeVertexImpl label(String label) {
             graph.update(this, this.label, scope, label, scope);
             this.label = label;
             return this;
         }
 
         @Override
-        public TypeVertex scope(String scope) {
+        public TypeVertexImpl scope(String scope) {
             graph.update(this, label, this.scope, label, scope);
             this.scope = scope;
             return this;
         }
 
         @Override
-        protected TypeAdjacency newAdjacency(TypeVertex owner, Adjacency.Direction direction) {
+        protected TypeAdjacency newAdjacency(TypeVertexImpl owner, Adjacency.Direction direction) {
             return new TypeAdjacencyImpl.Buffered(owner, direction);
         }
 
@@ -157,7 +153,7 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, TypeVertex, 
             return isAbstract != null ? isAbstract : false;
         }
 
-        public TypeVertex isAbstract(boolean isAbstract) {
+        public TypeVertexImpl isAbstract(boolean isAbstract) {
             this.isAbstract = isAbstract;
             return this;
         }
@@ -166,7 +162,7 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, TypeVertex, 
             return valueClass;
         }
 
-        public TypeVertex valueClass(Schema.ValueClass valueClass) {
+        public TypeVertexImpl valueClass(Schema.ValueClass valueClass) {
             this.valueClass = valueClass;
             return this;
         }
@@ -175,7 +171,7 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, TypeVertex, 
             return regex;
         }
 
-        public TypeVertex regex(String regex) {
+        public TypeVertexImpl regex(String regex) {
             this.regex = regex;
             return this;
         }
@@ -233,7 +229,7 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, TypeVertex, 
         }
     }
 
-    public static class Persisted extends TypeVertex {
+    public static class Persisted extends TypeVertexImpl {
 
         public Persisted(TypeGraph graph, byte[] iid, String label, @Nullable String scope) {
             super(graph, Schema.Vertex.Type.of(iid[0]), iid, label, scope);
@@ -253,7 +249,7 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, TypeVertex, 
         }
 
         @Override
-        protected TypeAdjacency newAdjacency(TypeVertex owner, Adjacency.Direction direction) {
+        protected TypeAdjacency newAdjacency(TypeVertexImpl owner, Adjacency.Direction direction) {
             return new TypeAdjacencyImpl.Persisted(owner, direction);
         }
 
@@ -263,7 +259,7 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, TypeVertex, 
         }
 
         @Override
-        public TypeVertex label(String label) {
+        public TypeVertexImpl label(String label) {
             graph.update(this, this.label, scope, label, scope);
             graph.storage().put(join(iid, Schema.Property.LABEL.infix().key()), label.getBytes());
             graph.storage().delete(index(this.label, scope));
@@ -273,7 +269,7 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, TypeVertex, 
         }
 
         @Override
-        public TypeVertex scope(String scope) {
+        public TypeVertexImpl scope(String scope) {
             graph.update(this, label, this.scope, label, scope);
             graph.storage().put(join(iid, Schema.Property.SCOPE.infix().key()), scope.getBytes());
             graph.storage().delete(index(label, this.scope));
@@ -291,7 +287,7 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, TypeVertex, 
         }
 
         @Override
-        public TypeVertex isAbstract(boolean isAbstract) {
+        public TypeVertexImpl isAbstract(boolean isAbstract) {
             if (isAbstract) graph.storage().put(join(iid, Schema.Property.ABSTRACT.infix().key()));
             else graph.storage().delete(join(iid, Schema.Property.ABSTRACT.infix().key()));
             this.isAbstract = isAbstract;
@@ -307,7 +303,7 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, TypeVertex, 
         }
 
         @Override
-        public TypeVertex valueClass(Schema.ValueClass valueClass) {
+        public TypeVertexImpl valueClass(Schema.ValueClass valueClass) {
             graph.storage().put(join(iid, Schema.Property.VALUE_CLASS.infix().key()), valueClass.key());
             this.valueClass = valueClass;
             return this;
@@ -322,7 +318,7 @@ public abstract class TypeVertex extends Vertex<Schema.Vertex.Type, TypeVertex, 
         }
 
         @Override
-        public TypeVertex regex(String regex) {
+        public TypeVertexImpl regex(String regex) {
             graph.storage().put(join(iid, Schema.Property.REGEX.infix().key()), regex.getBytes());
             this.regex = regex;
             return this;

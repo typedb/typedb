@@ -18,32 +18,39 @@
 
 package hypergraph.graph.vertex;
 
-import hypergraph.graph.Graph;
-import hypergraph.graph.adjacency.Adjacency;
-import hypergraph.graph.edge.Edge;
+import hypergraph.graph.TypeGraph;
+import hypergraph.graph.adjacency.TypeAdjacency;
+import hypergraph.graph.edge.TypeEdge;
 import hypergraph.graph.util.Schema;
 
-public interface VertexInt<
-        VERTEX_SCHEMA extends Schema.Vertex,
-        VERTEX extends VertexImpl<VERTEX_SCHEMA, VERTEX, EDGE_SCHEMA, EDGE>,
-        EDGE_SCHEMA extends Schema.Edge,
-        EDGE extends Edge<EDGE_SCHEMA, VERTEX>> {
+public interface TypeVertexInt extends VertexInt<Schema.Vertex.Type, TypeVertexImpl, Schema.Edge.Type, TypeEdge> {
 
-    Graph<VERTEX> graph();
+    @Override
+    TypeGraph graph();
 
-    byte[] iid();
+    @Override
+    TypeAdjacency outs();
 
-    void iid(byte[] iid);
+    @Override
+    TypeAdjacency ins();
 
-    Schema.Status status();
+    String label();
 
-    VERTEX_SCHEMA schema();
+    String scopedLabel();
 
-    Adjacency<EDGE_SCHEMA, EDGE, VERTEX> outs();
+    TypeVertexImpl label(String label);
 
-    Adjacency<EDGE_SCHEMA, EDGE, VERTEX> ins();
+    TypeVertexImpl scope(String scope);
 
-    void commit();
+    boolean isAbstract();
 
-    void delete();
+    TypeVertexImpl isAbstract(boolean isAbstract);
+
+    Schema.ValueClass valueClass();
+
+    TypeVertexImpl valueClass(Schema.ValueClass valueClass);
+
+    String regex();
+
+    TypeVertexImpl regex(String regex);
 }

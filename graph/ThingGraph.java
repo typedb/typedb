@@ -22,7 +22,7 @@ import hypergraph.common.collection.ByteArray;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.util.Storage;
 import hypergraph.graph.vertex.ThingVertex;
-import hypergraph.graph.vertex.Vertex;
+import hypergraph.graph.vertex.VertexImpl;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -56,7 +56,7 @@ public class ThingGraph implements Graph<ThingVertex> {
         thingByIID.values().parallelStream().forEach(
                 vertex -> vertex.iid(ThingVertex.generateIID(graphManager.storage().keyGenerator(), vertex.schema(), vertex.typeVertex()))
         ); // thingByIID no longer contains valid mapping from IID to TypeVertex
-        thingByIID.values().parallelStream().forEach(Vertex::commit);
+        thingByIID.values().parallelStream().forEach(VertexImpl::commit);
         clear(); // we now flush the indexes after commit, and we do not expect this Graph.Thing to be used again
     }
 

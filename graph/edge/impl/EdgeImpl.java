@@ -21,7 +21,7 @@ package hypergraph.graph.edge.impl;
 import hypergraph.graph.Graph;
 import hypergraph.graph.edge.Edge;
 import hypergraph.graph.util.Schema;
-import hypergraph.graph.vertex.Vertex;
+import hypergraph.graph.vertex.VertexImpl;
 
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -34,7 +34,7 @@ public abstract class EdgeImpl<
         GRAPH extends Graph<VERTEX>,
         EDGE_SCHEMA extends Schema.Edge,
         EDGE extends Edge<EDGE_SCHEMA, VERTEX>,
-        VERTEX extends Vertex<?, VERTEX, EDGE_SCHEMA, EDGE>
+        VERTEX extends VertexImpl<?, VERTEX, EDGE_SCHEMA, EDGE>
         > implements Edge<EDGE_SCHEMA, VERTEX> {
 
     protected final GRAPH graph;
@@ -62,7 +62,7 @@ public abstract class EdgeImpl<
             GRAPH extends Graph<VERTEX>,
             EDGE_SCHEMA extends Schema.Edge,
             EDGE extends Edge<EDGE_SCHEMA, VERTEX>,
-            VERTEX extends Vertex<?, VERTEX, EDGE_SCHEMA, EDGE>
+            VERTEX extends VertexImpl<?, VERTEX, EDGE_SCHEMA, EDGE>
             > extends EdgeImpl<GRAPH, EDGE_SCHEMA, EDGE, VERTEX> {
 
         protected final AtomicBoolean committed;
@@ -185,7 +185,7 @@ public abstract class EdgeImpl<
             GRAPH extends Graph<VERTEX>,
             EDGE_SCHEMA extends Schema.Edge,
             EDGE extends Edge<EDGE_SCHEMA, VERTEX>,
-            VERTEX extends Vertex<?, VERTEX, EDGE_SCHEMA, EDGE>
+            VERTEX extends VertexImpl<?, VERTEX, EDGE_SCHEMA, EDGE>
             > extends EdgeImpl<GRAPH, EDGE_SCHEMA, EDGE, VERTEX> {
 
         protected final byte[] outIID;

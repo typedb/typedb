@@ -23,18 +23,22 @@ import hypergraph.common.concurrent.ManagedReadWriteLock;
 import hypergraph.common.exception.HypergraphException;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.util.Storage;
-import hypergraph.graph.vertex.TypeVertex;
-import hypergraph.graph.vertex.Vertex;
+import hypergraph.graph.vertex.TypeVertexImpl;
+import hypergraph.graph.vertex.VertexImpl;
 
 import javax.annotation.Nullable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-public class TypeGraph implements Graph<TypeVertex> {
+import static hypergraph.graph.vertex.TypeVertexImpl.generateIID;
+import static hypergraph.graph.vertex.TypeVertexImpl.index;
+import static hypergraph.graph.vertex.TypeVertexImpl.scopedLabel;
+
+public class TypeGraph implements Graph<TypeVertexImpl> {
 
     private final Graphs graphManager;
-    private final ConcurrentMap<String, TypeVertex> typeByLabel;
-    private final ConcurrentMap<ByteArray, TypeVertex> typeByIID;
+    private final ConcurrentMap<String, TypeVertexImpl> typeByLabel;
+    private final ConcurrentMap<ByteArray, TypeVertexImpl> typeByIID;
     private final ConcurrentMap<String, ManagedReadWriteLock> singleLabelLocks;
     private final ManagedReadWriteLock multiLabelLock;
 
@@ -60,19 +64,19 @@ public class TypeGraph implements Graph<TypeVertex> {
     }
 
     public void initialise() {
-        TypeVertex rootThingType = put(
+        TypeVertexImpl rootThingType = put(
                 Schema.Vertex.Type.THING_TYPE,
                 Schema.Vertex.Type.Root.THING.label()).isAbstract(true);
-        TypeVertex rootEntityType = put(
+        TypeVertexImpl rootEntityType = put(
                 Schema.Vertex.Type.ENTITY_TYPE,
                 Schema.Vertex.Type.Root.ENTITY.label()).isAbstract(true);
-        TypeVertex rootAttributeType = put(
+        TypeVertexImpl rootAttributeType = put(
                 Schema.Vertex.Type.ATTRIBUTE_TYPE,
                 Schema.Vertex.Type.Root.ATTRIBUTE.label()).isAbstract(true).valueClass(Schema.ValueClass.OBJECT);
-        TypeVertex rootRelationType = put(
+        TypeVertexImpl rootRelationType = put(
                 Schema.Vertex.Type.RELATION_TYPE,
                 Schema.Vertex.Type.Root.RELATION.label()).isAbstract(true);
-        TypeVertex rootRoleType = put(
+        TypeVertexImpl rootRoleType = put(
                 Schema.Vertex.Type.ROLE_TYPE,
                 Schema.Vertex.Type.Root.ROLE.label(),
                 Schema.Vertex.Type.Root.RELATION.label()).isAbstract(true);
@@ -86,15 +90,15 @@ public class TypeGraph implements Graph<TypeVertex> {
     @Override
     public void commit() {
         typeByIID.values().parallelStream().filter(v -> v.status().equals(Schema.Status.BUFFERED)).forEach(
-                vertex -> vertex.iid(TypeVertex.generateIID(graphManager.storage().keyGenerator(), vertex.schema()))
+                vertex -> vertex.iid(generateIID(graphManager.storage().keyGenerator(), vertex.schema()))
         ); // typeByIID no longer contains valid mapping from IID to TypeVertex
-        typeByIID.values().parallelStream().forEach(Vertex::commit);
+        typeByIID.values().parallelStream().forEach(VertexImpl::commit);
         clear(); // we now flush the indexes after commit, and we do not expect this Graph.Type to be used again
     }
 
-    public TypeVertex update(TypeVertex vertex, String oldLabel, @Nullable String oldScope, String newLabel, @Nullable String newScope) {
-        String oldScopedLabel = TypeVertex.scopedLabel(oldLabel, oldScope);
-        String newScopedLabel = TypeVertex.scopedLabel(newLabel, newScope);
+    public TypeVertexImpl update(TypeVertexImpl vertex, String oldLabel, @Nullable String oldScope, String newLabel, @Nullable String newScope) {
+        String oldScopedLabel = scopedLabel(oldLabel, oldScope);
+        String newScopedLabel = scopedLabel(newLabel, newScope);
         try {
             multiLabelLock.lockWrite();
             if (typeByLabel.containsKey(newScopedLabel)) throw new HypergraphException(
@@ -109,18 +113,18 @@ public class TypeGraph implements Graph<TypeVertex> {
         }
     }
 
-    public TypeVertex put(Schema.Vertex.Type type, String label) {
+    public TypeVertexImpl put(Schema.Vertex.Type type, String label) {
         return put(type, label, null);
     }
 
-    public TypeVertex put(Schema.Vertex.Type type, String label, @Nullable String scope) {
-        String scopedLabel = TypeVertex.scopedLabel(label, scope);
+    public TypeVertexImpl put(Schema.Vertex.Type type, String label, @Nullable String scope) {
+        String scopedLabel = scopedLabel(label, scope);
         try { // we intentionally use READ on multiLabelLock, as put() only concerns one label
             multiLabelLock.lockRead();
             singleLabelLocks.computeIfAbsent(scopedLabel, x -> new ManagedReadWriteLock()).lockWrite();
 
-            TypeVertex typeVertex = typeByLabel.computeIfAbsent(
-                    scopedLabel, i -> new TypeVertex.Buffered(this, type, TypeVertex.generateIID(graphManager.keyGenerator(), type), label, scope)
+            TypeVertexImpl typeVertex = typeByLabel.computeIfAbsent(
+                    scopedLabel, i -> new TypeVertexImpl.Buffered(this, type, generateIID(graphManager.keyGenerator(), type), label, scope)
             );
             typeByIID.put(ByteArray.of(typeVertex.iid()), typeVertex);
             return typeVertex;
@@ -132,23 +136,23 @@ public class TypeGraph implements Graph<TypeVertex> {
         }
     }
 
-    public TypeVertex get(String label) {
+    public TypeVertexImpl get(String label) {
         return get(label, null);
     }
 
-    public TypeVertex get(String label, @Nullable String scope) {
-        String scopedLabel = TypeVertex.scopedLabel(label, scope);
+    public TypeVertexImpl get(String label, @Nullable String scope) {
+        String scopedLabel = scopedLabel(label, scope);
         try {
             multiLabelLock.lockRead();
             singleLabelLocks.computeIfAbsent(scopedLabel, x -> new ManagedReadWriteLock()).lockRead();
 
-            TypeVertex vertex = typeByLabel.get(scopedLabel);
+            TypeVertexImpl vertex = typeByLabel.get(scopedLabel);
             if (vertex != null) return vertex;
 
-            byte[] iid = graphManager.storage().get(TypeVertex.index(label, scope));
+            byte[] iid = graphManager.storage().get(index(label, scope));
             if (iid != null) {
                 vertex = typeByIID.computeIfAbsent(
-                        ByteArray.of(iid), i -> new TypeVertex.Persisted(this, i.bytes(), label, scope)
+                        ByteArray.of(iid), i -> new TypeVertexImpl.Persisted(this, i.bytes(), label, scope)
                 );
                 typeByLabel.putIfAbsent(scopedLabel, vertex);
             }
@@ -163,12 +167,12 @@ public class TypeGraph implements Graph<TypeVertex> {
     }
 
     @Override
-    public TypeVertex get(byte[] iid) {
-        TypeVertex vertex = typeByIID.get(ByteArray.of(iid));
+    public TypeVertexImpl get(byte[] iid) {
+        TypeVertexImpl vertex = typeByIID.get(ByteArray.of(iid));
         if (vertex != null) return vertex;
 
         vertex = typeByIID.computeIfAbsent(
-                ByteArray.of(iid), i -> new TypeVertex.Persisted(this, i.bytes())
+                ByteArray.of(iid), i -> new TypeVertexImpl.Persisted(this, i.bytes())
         );
         typeByLabel.putIfAbsent(vertex.scopedLabel(), vertex);
 
@@ -176,7 +180,7 @@ public class TypeGraph implements Graph<TypeVertex> {
     }
 
     @Override
-    public void delete(TypeVertex vertex) {
+    public void delete(TypeVertexImpl vertex) {
         try { // we intentionally use READ on multiLabelLock, as delete() only concerns one label
             multiLabelLock.lockRead();
             singleLabelLocks.computeIfAbsent(vertex.scopedLabel(), x -> new ManagedReadWriteLock()).lockWrite();

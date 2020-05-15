@@ -23,9 +23,9 @@ import hypergraph.graph.util.Schema;
 
 import java.util.Arrays;
 
-public abstract class Vertex<
+public abstract class VertexImpl<
         VERTEX_SCHEMA extends Schema.Vertex,
-        VERTEX extends Vertex<VERTEX_SCHEMA, VERTEX, EDGE_SCHEMA, EDGE>,
+        VERTEX extends VertexImpl<VERTEX_SCHEMA, VERTEX, EDGE_SCHEMA, EDGE>,
         EDGE_SCHEMA extends Schema.Edge,
         EDGE extends Edge<EDGE_SCHEMA, VERTEX>> implements VertexInt<VERTEX_SCHEMA, VERTEX, EDGE_SCHEMA, EDGE> {
 
@@ -33,7 +33,7 @@ public abstract class Vertex<
 
     protected byte[] iid;
 
-    Vertex(byte[] iid, VERTEX_SCHEMA schema) {
+    VertexImpl(byte[] iid, VERTEX_SCHEMA schema) {
         this.schema = schema;
         this.iid = iid;
     }
@@ -62,7 +62,7 @@ public abstract class Vertex<
     public boolean equals(Object object) {
         if (this == object) return true;
         if (object == null || getClass() != object.getClass()) return false;
-        Vertex that = (Vertex) object;
+        VertexImpl that = (VertexImpl) object;
         return Arrays.equals(this.iid, that.iid);
     }
 

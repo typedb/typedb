@@ -27,7 +27,7 @@ import java.util.Arrays;
 
 import static hypergraph.common.collection.ByteArrays.join;
 
-public abstract class ThingVertex extends Vertex<Schema.Vertex.Thing, ThingVertex, Schema.Edge.Thing, ThingEdge> {
+public abstract class ThingVertex extends VertexImpl<Schema.Vertex.Thing, ThingVertex, Schema.Edge.Thing, ThingEdge> {
 
     protected final ThingGraph graph;
     protected final byte[] typeIID;
@@ -46,7 +46,7 @@ public abstract class ThingVertex extends Vertex<Schema.Vertex.Thing, ThingVerte
      * @param type         of the {@code ThingVertex} in which this {@code ThingVertex} is an instance of
      * @return a byte array representing a new IID for a {@code ThingVertex}
      */
-    public static byte[] generateIID(KeyGenerator keyGenerator, Schema.Vertex.Thing schema, TypeVertex type) {
+    public static byte[] generateIID(KeyGenerator keyGenerator, Schema.Vertex.Thing schema, TypeVertexImpl type) {
         return join(schema.prefix().key(), type.iid(), keyGenerator.forThing(type.iid()));
     }
 
@@ -64,7 +64,7 @@ public abstract class ThingVertex extends Vertex<Schema.Vertex.Thing, ThingVerte
      *
      * @return the {@code TypeVertex} in which this {@code ThingVertex} is an instance of
      */
-    public TypeVertex typeVertex() {
+    public TypeVertexImpl typeVertex() {
         return graph.typeGraph().get(typeIID);
     }
 

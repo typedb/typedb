@@ -24,7 +24,7 @@ import hypergraph.concept.type.RelationType;
 import hypergraph.concept.type.Type;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.TypeGraph;
-import hypergraph.graph.vertex.TypeVertex;
+import hypergraph.graph.vertex.TypeVertexImpl;
 
 import javax.annotation.Nullable;
 import java.util.HashSet;
@@ -45,7 +45,7 @@ import static java.util.stream.StreamSupport.stream;
 
 public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
 
-    private RelationTypeImpl(TypeVertex vertex) {
+    private RelationTypeImpl(TypeVertexImpl vertex) {
         super(vertex);
         if (vertex.schema() != Schema.Vertex.Type.RELATION_TYPE) {
             throw new HypergraphException("Invalid Relation Type: " + vertex.label() +
@@ -57,7 +57,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
         super(graph, label, Schema.Vertex.Type.RELATION_TYPE);
     }
 
-    public static RelationTypeImpl of(TypeVertex vertex) {
+    public static RelationTypeImpl of(TypeVertexImpl vertex) {
         if (vertex.label().equals(Schema.Vertex.Type.Root.RELATION.label())) return new RelationTypeImpl.Root(vertex);
         else return new RelationTypeImpl(vertex);
     }
@@ -86,7 +86,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     @Nullable
     @Override
     public RelationTypeImpl sup() {
-        TypeVertex vertex = super.superTypeVertex();
+        TypeVertexImpl vertex = super.superTypeVertex();
         return vertex != null ? of(vertex) : null;
     }
 
@@ -104,7 +104,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
 
     @Override
     public void relates(String roleLabel) {
-        TypeVertex roleTypeVertex = vertex.graph().get(roleLabel, vertex.label());
+        TypeVertexImpl roleTypeVertex = vertex.graph().get(roleLabel, vertex.label());
         if (roleTypeVertex == null) {
             if (sups().flatMap(RelationType::roles).anyMatch(role -> role.label().equals(roleLabel))) {
                 throw new HypergraphException("Invalid RoleType Assignment: role type already exists in a supertype relation");
@@ -133,7 +133,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
 
     @Override
     public void unrelate(String roleLabel) {
-        TypeVertex roleTypeVertex = vertex.graph().get(roleLabel, vertex.label());
+        TypeVertexImpl roleTypeVertex = vertex.graph().get(roleLabel, vertex.label());
         if (roleTypeVertex != null) {
             RoleTypeImpl.of(roleTypeVertex).delete();
         } else {
@@ -174,7 +174,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     @Override
     public RoleTypeImpl role(String roleLabel) {
         Optional<RoleTypeImpl> roleType;
-        TypeVertex roleTypeVertex = vertex.graph().get(roleLabel, vertex.label());
+        TypeVertexImpl roleTypeVertex = vertex.graph().get(roleLabel, vertex.label());
         if (roleTypeVertex != null) {
             return RoleTypeImpl.of(roleTypeVertex);
         } else if ((roleType = roles().filter(role -> role.label().equals(roleLabel)).findAny()).isPresent()) {
@@ -194,7 +194,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
 
     public static class Root extends RelationTypeImpl {
 
-        Root(TypeVertex vertex) {
+        Root(TypeVertexImpl vertex) {
             super(vertex);
             assert vertex.label().equals(Schema.Vertex.Type.Root.RELATION.label());
         }

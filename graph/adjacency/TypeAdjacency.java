@@ -20,17 +20,17 @@ package hypergraph.graph.adjacency;
 
 import hypergraph.graph.edge.TypeEdge;
 import hypergraph.graph.util.Schema;
-import hypergraph.graph.vertex.TypeVertex;
+import hypergraph.graph.vertex.TypeVertexImpl;
 
 import java.util.Iterator;
 
-public interface TypeAdjacency extends Adjacency<Schema.Edge.Type, TypeEdge, TypeVertex> {
+public interface TypeAdjacency extends Adjacency<Schema.Edge.Type, TypeEdge, TypeVertexImpl> {
 
     @Override
     TypeIteratorBuilder edge(Schema.Edge.Type schema);
 
-    interface TypeIteratorBuilder extends IteratorBuilder<TypeVertex> {
+    interface TypeIteratorBuilder extends IteratorBuilder<TypeVertexImpl> {
 
-        Iterator<TypeVertex> overridden();
+        Iterator<TypeVertexImpl> overridden();
     }
 }

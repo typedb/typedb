@@ -19,26 +19,26 @@
 package hypergraph.graph.edge;
 
 import hypergraph.graph.util.Schema;
-import hypergraph.graph.vertex.TypeVertex;
+import hypergraph.graph.vertex.TypeVertexImpl;
 
 /**
  * An edge between two {@code TypeVertex}.
  *
  * This edge can only have a schema of type {@code Schema.Edge.Type}.
  */
-public interface TypeEdge extends Edge<Schema.Edge.Type, TypeVertex> {
+public interface TypeEdge extends Edge<Schema.Edge.Type, TypeVertexImpl> {
 
     /**
      * Returns the type vertex overridden by the head of this type edge.
      *
      * @return the type vertex overridden by the head of this type edge
      */
-    TypeVertex overridden();
+    TypeVertexImpl overridden();
 
     /**
      * Sets the head vertex of this type edge to be overridden by a given type vertex.
      *
      * @param overridden the type vertex to override by the head vertex
      */
-    void overridden(TypeVertex overridden);
+    void overridden(TypeVertexImpl overridden);
 }

@@ -25,7 +25,7 @@ import hypergraph.concept.type.EntityType;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.TypeGraph;
 import hypergraph.graph.vertex.ThingVertex;
-import hypergraph.graph.vertex.TypeVertex;
+import hypergraph.graph.vertex.TypeVertexImpl;
 
 import javax.annotation.Nullable;
 import java.util.Iterator;
@@ -39,7 +39,7 @@ import static java.util.stream.StreamSupport.stream;
 
 public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
 
-    private EntityTypeImpl(TypeVertex vertex) {
+    private EntityTypeImpl(TypeVertexImpl vertex) {
         super(vertex);
         if (vertex.schema() != Schema.Vertex.Type.ENTITY_TYPE) {
             throw new HypergraphException("Invalid Entity Type: " + vertex.label() +
@@ -52,7 +52,7 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
         assert !label.equals(Schema.Vertex.Type.Root.ENTITY.label());
     }
 
-    public static EntityTypeImpl of(TypeVertex vertex) {
+    public static EntityTypeImpl of(TypeVertexImpl vertex) {
         if (vertex.label().equals(Schema.Vertex.Type.Root.ENTITY.label())) return new EntityTypeImpl.Root(vertex);
         else return new EntityTypeImpl(vertex);
     }
@@ -75,7 +75,7 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
     @Nullable
     @Override
     public EntityTypeImpl sup() {
-        TypeVertex vertex = super.superTypeVertex();
+        TypeVertexImpl vertex = super.superTypeVertex();
         return vertex != null ? of(vertex) : null;
     }
 
@@ -93,7 +93,7 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
 
     private static class Root extends EntityTypeImpl {
 
-        private Root(TypeVertex vertex) {
+        private Root(TypeVertexImpl vertex) {
             super(vertex);
             assert vertex.label().equals(Schema.Vertex.Type.Root.ENTITY.label());
         }

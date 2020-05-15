@@ -29,7 +29,7 @@ import hypergraph.concept.type.ThingType;
 import hypergraph.concept.type.impl.ThingTypeImpl;
 import hypergraph.graph.Graphs;
 import hypergraph.graph.util.Schema;
-import hypergraph.graph.vertex.TypeVertex;
+import hypergraph.graph.vertex.TypeVertexImpl;
 
 import static hypergraph.common.exception.Error.TypeDefinition.INVALID_VALUE_CLASS;
 
@@ -42,49 +42,49 @@ public class Concepts {
     }
 
     public ThingType getRootType() {
-        TypeVertex vertex = graph.type().get(Schema.Vertex.Type.Root.THING.label());
+        TypeVertexImpl vertex = graph.type().get(Schema.Vertex.Type.Root.THING.label());
         if (vertex != null) return new ThingTypeImpl.Root(vertex);
         else return null;
     }
 
     public EntityType getRootEntityType() {
-        TypeVertex vertex = graph.type().get(Schema.Vertex.Type.Root.ENTITY.label());
+        TypeVertexImpl vertex = graph.type().get(Schema.Vertex.Type.Root.ENTITY.label());
         if (vertex != null) return EntityTypeImpl.of(vertex);
         else return null;
     }
 
     public RelationType getRootRelationType() {
-        TypeVertex vertex = graph.type().get(Schema.Vertex.Type.Root.RELATION.label());
+        TypeVertexImpl vertex = graph.type().get(Schema.Vertex.Type.Root.RELATION.label());
         if (vertex != null) return RelationTypeImpl.of(vertex);
         else return null;
     }
 
     public AttributeType getRootAttributeType() {
-        TypeVertex vertex = graph.type().get(Schema.Vertex.Type.Root.ATTRIBUTE.label());
+        TypeVertexImpl vertex = graph.type().get(Schema.Vertex.Type.Root.ATTRIBUTE.label());
         if (vertex != null) return AttributeTypeImpl.of(vertex);
         else return null;
     }
 
     public EntityTypeImpl putEntityType(String label) {
-        TypeVertex vertex = graph.type().get(label);
+        TypeVertexImpl vertex = graph.type().get(label);
         if (vertex != null) return EntityTypeImpl.of(vertex);
         else return EntityTypeImpl.of(graph.type(), label);
     }
 
     public EntityTypeImpl getEntityType(String label) {
-        TypeVertex vertex = graph.type().get(label);
+        TypeVertexImpl vertex = graph.type().get(label);
         if (vertex != null) return EntityTypeImpl.of(vertex);
         else return null;
     }
 
     public RelationType putRelationType(String label) {
-        TypeVertex vertex = graph.type().get(label);
+        TypeVertexImpl vertex = graph.type().get(label);
         if (vertex != null) return RelationTypeImpl.of(vertex);
         else return RelationTypeImpl.of(graph.type(), label);
     }
 
     public RelationType getRelationType(String label) {
-        TypeVertex vertex = graph.type().get(label);
+        TypeVertexImpl vertex = graph.type().get(label);
         if (vertex != null) return RelationTypeImpl.of(vertex);
         else return null;
     }
@@ -109,37 +109,37 @@ public class Concepts {
     }
 
     public AttributeType.Boolean putAttributeTypeBoolean(String label) {
-        TypeVertex vertex = graph.type().get(label);
+        TypeVertexImpl vertex = graph.type().get(label);
         if (vertex != null) return AttributeTypeImpl.Boolean.of(vertex);
         else return new AttributeTypeImpl.Boolean(graph.type(), label);
     }
 
     public AttributeType.Long putAttributeTypeLong(String label) {
-        TypeVertex vertex = graph.type().get(label);
+        TypeVertexImpl vertex = graph.type().get(label);
         if (vertex != null) return AttributeTypeImpl.Long.of(vertex);
         else return new AttributeTypeImpl.Long(graph.type(), label);
     }
 
     public AttributeType.Double putAttributeTypeDouble(String label) {
-        TypeVertex vertex = graph.type().get(label);
+        TypeVertexImpl vertex = graph.type().get(label);
         if (vertex != null) return AttributeTypeImpl.Double.of(vertex);
         else return new AttributeTypeImpl.Double(graph.type(), label);
     }
 
     public AttributeType.String putAttributeTypeString(String label) {
-        TypeVertex vertex = graph.type().get(label);
+        TypeVertexImpl vertex = graph.type().get(label);
         if (vertex != null) return AttributeTypeImpl.String.of(vertex);
         else return new AttributeTypeImpl.String(graph.type(), label);
     }
 
     public AttributeType.DateTime putAttributeTypeDateTime(String label) {
-        TypeVertex vertex = graph.type().get(label);
+        TypeVertexImpl vertex = graph.type().get(label);
         if (vertex != null) return AttributeTypeImpl.DateTime.of(vertex);
         else return new AttributeTypeImpl.DateTime(graph.type(), label);
     }
 
     public AttributeType getAttributeType(String label) {
-        TypeVertex vertex = graph.type().get(label);
+        TypeVertexImpl vertex = graph.type().get(label);
         if (vertex != null) return AttributeTypeImpl.of(vertex);
         else return null;
     }

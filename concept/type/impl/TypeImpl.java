@@ -23,7 +23,7 @@ import hypergraph.common.iterator.Iterators;
 import hypergraph.concept.type.Type;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.TypeGraph;
-import hypergraph.graph.vertex.TypeVertex;
+import hypergraph.graph.vertex.TypeVertexImpl;
 
 import javax.annotation.Nullable;
 import java.util.Iterator;
@@ -31,9 +31,9 @@ import java.util.Objects;
 
 public abstract class TypeImpl implements Type {
 
-    protected final TypeVertex vertex;
+    protected final TypeVertexImpl vertex;
 
-    protected TypeImpl(TypeVertex vertex) {
+    protected TypeImpl(TypeVertexImpl vertex) {
         this.vertex = Objects.requireNonNull(vertex);
     }
 
@@ -43,7 +43,7 @@ public abstract class TypeImpl implements Type {
 
     TypeImpl(TypeGraph graph, String label, Schema.Vertex.Type schema, String scope) {
         this.vertex = graph.put(schema, label, scope);
-        TypeVertex superTypeVertex = graph.get(schema.root().label(), schema.root().scope());
+        TypeVertexImpl superTypeVertex = graph.get(schema.root().label(), schema.root().scope());
         vertex.outs().put(Schema.Edge.Type.SUB, superTypeVertex);
     }
 
@@ -73,31 +73,31 @@ public abstract class TypeImpl implements Type {
         return vertex.isAbstract();
     }
 
-    protected void superTypeVertex(TypeVertex superTypeVertex) {
+    protected void superTypeVertex(TypeVertexImpl superTypeVertex) {
         vertex.outs().delete(Schema.Edge.Type.SUB, superTypeVertex());
         vertex.outs().put(Schema.Edge.Type.SUB, superTypeVertex);
     }
 
     @Nullable
-    protected TypeVertex superTypeVertex() {
-        Iterator<TypeVertex> iterator = Iterators.filter(vertex.outs().edge(Schema.Edge.Type.SUB).to(),
+    protected TypeVertexImpl superTypeVertex() {
+        Iterator<TypeVertexImpl> iterator = Iterators.filter(vertex.outs().edge(Schema.Edge.Type.SUB).to(),
                                                          v -> v.schema().equals(vertex.schema()));
         if (iterator.hasNext()) return iterator.next();
         else return null;
     }
 
-    protected Iterator<TypeVertex> superTypeVertices() {
+    protected Iterator<TypeVertexImpl> superTypeVertices() {
         return Iterators.loop(
                 vertex,
                 v -> v != null && v.schema().equals(this.vertex.schema()),
                 v -> {
-                    Iterator<TypeVertex> p = v.outs().edge(Schema.Edge.Type.SUB).to();
+                    Iterator<TypeVertexImpl> p = v.outs().edge(Schema.Edge.Type.SUB).to();
                     if (p.hasNext()) return p.next();
                     else return null;
                 });
     }
 
-    protected Iterator<TypeVertex> subTypeVertices() {
+    protected Iterator<TypeVertexImpl> subTypeVertices() {
         return Iterators.tree(vertex, v -> v.ins().edge(Schema.Edge.Type.SUB).from());
     }
 
