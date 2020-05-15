@@ -22,17 +22,17 @@ import hypergraph.common.exception.Error;
 import hypergraph.common.exception.HypergraphException;
 import hypergraph.common.iterator.Iterators;
 import hypergraph.concept.type.AttributeType;
-import hypergraph.graph.util.Schema;
 import hypergraph.graph.TypeGraph;
-import hypergraph.graph.vertex.impl.TypeVertexImpl;
+import hypergraph.graph.util.Schema;
+import hypergraph.graph.vertex.TypeVertex;
 
 import javax.annotation.Nullable;
 import java.time.LocalDateTime;
 import java.util.Iterator;
 import java.util.stream.Stream;
 
-import static hypergraph.common.exception.Error.TypeDefinition.INVALID_ROOT_TYPE_MUTATION;
 import static hypergraph.common.exception.Error.ConceptRetrieval.INVALID_CONCEPT_CASTING;
+import static hypergraph.common.exception.Error.TypeDefinition.INVALID_ROOT_TYPE_MUTATION;
 import static java.util.Spliterator.IMMUTABLE;
 import static java.util.Spliterator.ORDERED;
 import static java.util.Spliterators.spliteratorUnknownSize;
@@ -40,7 +40,7 @@ import static java.util.stream.StreamSupport.stream;
 
 public abstract class AttributeTypeImpl extends ThingTypeImpl implements AttributeType {
 
-    private AttributeTypeImpl(TypeVertexImpl vertex) {
+    private AttributeTypeImpl(TypeVertex vertex) {
         super(vertex);
         if (vertex.schema() != Schema.Vertex.Type.ATTRIBUTE_TYPE) {
             throw new HypergraphException("Invalid Attribute Type: " + vertex.label() +
@@ -53,7 +53,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         vertex.valueClass(Schema.ValueClass.of(valueClass));
     }
 
-    public static AttributeTypeImpl of(TypeVertexImpl vertex) {
+    public static AttributeTypeImpl of(TypeVertex vertex) {
         switch (vertex.valueClass()) {
             case OBJECT:
                 return new AttributeTypeImpl.Root(vertex);
@@ -113,7 +113,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
     @Override
     public abstract Stream<? extends AttributeTypeImpl> subs();
 
-    protected Iterator<TypeVertexImpl> subTypeVertices(Schema.ValueClass valueClass) {
+    protected Iterator<TypeVertex> subTypeVertices(Schema.ValueClass valueClass) {
         return Iterators.tree(vertex, v -> Iterators.filter(v.ins().edge(Schema.Edge.Type.SUB).from(),
                                                             sv -> sv.valueClass().equals(valueClass)));
     }
@@ -144,7 +144,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
     private static class Root extends AttributeTypeImpl {
 
-        private Root(TypeVertexImpl vertex) {
+        private Root(TypeVertex vertex) {
             super(vertex);
             assert vertex.valueClass().equals(Schema.ValueClass.OBJECT);
             assert vertex.label().equals(Schema.Vertex.Type.Root.ATTRIBUTE.label());
@@ -223,13 +223,13 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             super(graph, label, java.lang.Boolean.class);
         }
 
-        private Boolean(TypeVertexImpl vertex) {
+        private Boolean(TypeVertex vertex) {
             super(vertex);
             assert (vertex.label().equals(Schema.Vertex.Type.Root.ATTRIBUTE.label()) ||
                     vertex.valueClass().equals(Schema.ValueClass.BOOLEAN));
         }
 
-        public static AttributeTypeImpl.Boolean of(TypeVertexImpl vertex) {
+        public static AttributeTypeImpl.Boolean of(TypeVertex vertex) {
             return vertex.label().equals(Schema.Vertex.Type.Root.ATTRIBUTE.label()) ?
                     new Root(vertex) :
                     new AttributeTypeImpl.Boolean(vertex);
@@ -241,7 +241,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         @Nullable
         @Override
         public AttributeTypeImpl.Boolean sup() {
-            TypeVertexImpl vertex = super.superTypeVertex();
+            TypeVertex vertex = super.superTypeVertex();
             return vertex != null ? of(vertex) : null;
         }
 
@@ -262,7 +262,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         private static class Root extends AttributeTypeImpl.Boolean {
 
-            private Root(TypeVertexImpl vertex) {
+            private Root(TypeVertex vertex) {
                 super(vertex);
                 assert vertex.label().equals(Schema.Vertex.Type.Root.ATTRIBUTE.label());
             }
@@ -296,13 +296,13 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             super(graph, label, java.lang.Long.class);
         }
 
-        private Long(TypeVertexImpl vertex) {
+        private Long(TypeVertex vertex) {
             super(vertex);
             assert (vertex.label().equals(Schema.Vertex.Type.Root.ATTRIBUTE.label()) ||
                     vertex.valueClass().equals(Schema.ValueClass.LONG));
         }
 
-        public static AttributeTypeImpl.Long of(TypeVertexImpl vertex) {
+        public static AttributeTypeImpl.Long of(TypeVertex vertex) {
             return vertex.label().equals(Schema.Vertex.Type.Root.ATTRIBUTE.label()) ?
                     new Root(vertex) :
                     new AttributeTypeImpl.Long(vertex);
@@ -314,7 +314,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         @Nullable
         @Override
         public AttributeTypeImpl.Long sup() {
-            TypeVertexImpl vertex = super.superTypeVertex();
+            TypeVertex vertex = super.superTypeVertex();
             return vertex != null ? of(vertex) : null;
         }
 
@@ -337,7 +337,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         private static class Root extends AttributeTypeImpl.Long {
 
-            private Root(TypeVertexImpl vertex) {
+            private Root(TypeVertex vertex) {
                 super(vertex);
                 assert vertex.label().equals(Schema.Vertex.Type.Root.ATTRIBUTE.label());
             }
@@ -371,13 +371,13 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             super(graph, label, java.lang.Double.class);
         }
 
-        private Double(TypeVertexImpl vertex) {
+        private Double(TypeVertex vertex) {
             super(vertex);
             assert (vertex.label().equals(Schema.Vertex.Type.Root.ATTRIBUTE.label()) ||
                     vertex.valueClass().equals(Schema.ValueClass.DOUBLE));
         }
 
-        public static AttributeTypeImpl.Double of(TypeVertexImpl vertex) {
+        public static AttributeTypeImpl.Double of(TypeVertex vertex) {
             return vertex.label().equals(Schema.Vertex.Type.Root.ATTRIBUTE.label()) ?
                     new Root(vertex) :
                     new AttributeTypeImpl.Double(vertex);
@@ -389,7 +389,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         @Nullable
         @Override
         public AttributeTypeImpl.Double sup() {
-            TypeVertexImpl vertex = super.superTypeVertex();
+            TypeVertex vertex = super.superTypeVertex();
             return vertex != null ? of(vertex) : null;
         }
 
@@ -412,7 +412,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         private static class Root extends AttributeTypeImpl.Double {
 
-            private Root(TypeVertexImpl vertex) {
+            private Root(TypeVertex vertex) {
                 super(vertex);
                 assert vertex.label().equals(Schema.Vertex.Type.Root.ATTRIBUTE.label());
             }
@@ -446,13 +446,13 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             super(graph, label, java.lang.String.class);
         }
 
-        private String(TypeVertexImpl vertex) {
+        private String(TypeVertex vertex) {
             super(vertex);
             assert (vertex.label().equals(Schema.Vertex.Type.Root.ATTRIBUTE.label()) ||
                     vertex.valueClass().equals(Schema.ValueClass.STRING));
         }
 
-        public static AttributeTypeImpl.String of(TypeVertexImpl vertex) {
+        public static AttributeTypeImpl.String of(TypeVertex vertex) {
             return vertex.label().equals(Schema.Vertex.Type.Root.ATTRIBUTE.label()) ?
                     new Root(vertex) :
                     new AttributeTypeImpl.String(vertex);
@@ -464,7 +464,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         @Nullable
         @Override
         public AttributeTypeImpl.String sup() {
-            TypeVertexImpl vertex = super.superTypeVertex();
+            TypeVertex vertex = super.superTypeVertex();
             return vertex != null ? of(vertex) : null;
         }
 
@@ -487,7 +487,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         private static class Root extends AttributeTypeImpl.String {
 
-            private Root(TypeVertexImpl vertex) {
+            private Root(TypeVertex vertex) {
                 super(vertex);
                 assert vertex.label().equals(Schema.Vertex.Type.Root.ATTRIBUTE.label());
             }
@@ -521,13 +521,13 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             super(graph, label, LocalDateTime.class);
         }
 
-        private DateTime(TypeVertexImpl vertex) {
+        private DateTime(TypeVertex vertex) {
             super(vertex);
             assert (vertex.label().equals(Schema.Vertex.Type.Root.ATTRIBUTE.label()) ||
                     vertex.valueClass().equals(Schema.ValueClass.DATETIME));
         }
 
-        public static AttributeTypeImpl.DateTime of(TypeVertexImpl vertex) {
+        public static AttributeTypeImpl.DateTime of(TypeVertex vertex) {
             return vertex.label().equals(Schema.Vertex.Type.Root.ATTRIBUTE.label()) ?
                     new Root(vertex) :
                     new AttributeTypeImpl.DateTime(vertex);
@@ -539,7 +539,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         @Nullable
         @Override
         public AttributeTypeImpl.DateTime sup() {
-            TypeVertexImpl vertex = super.superTypeVertex();
+            TypeVertex vertex = super.superTypeVertex();
             return vertex != null ? of(vertex) : null;
         }
 
@@ -562,7 +562,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         private static class Root extends AttributeTypeImpl.DateTime {
 
-            private Root(TypeVertexImpl vertex) {
+            private Root(TypeVertex vertex) {
                 super(vertex);
                 assert vertex.label().equals(Schema.Vertex.Type.Root.ATTRIBUTE.label());
             }

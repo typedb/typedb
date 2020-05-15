@@ -22,9 +22,8 @@ import hypergraph.graph.TypeGraph;
 import hypergraph.graph.adjacency.TypeAdjacency;
 import hypergraph.graph.edge.TypeEdge;
 import hypergraph.graph.util.Schema;
-import hypergraph.graph.vertex.impl.TypeVertexImpl;
 
-public interface TypeVertex extends Vertex<Schema.Vertex.Type, TypeVertexImpl, Schema.Edge.Type, TypeEdge> {
+public interface TypeVertex extends Vertex<Schema.Vertex.Type, TypeVertex, Schema.Edge.Type, TypeEdge> {
 
     @Override
     TypeGraph graph();
@@ -39,19 +38,19 @@ public interface TypeVertex extends Vertex<Schema.Vertex.Type, TypeVertexImpl, S
 
     String scopedLabel();
 
-    TypeVertexImpl label(String label);
+    TypeVertex label(String label);
 
-    TypeVertexImpl scope(String scope);
+    TypeVertex scope(String scope);
 
     boolean isAbstract();
 
-    TypeVertexImpl isAbstract(boolean isAbstract);
+    TypeVertex isAbstract(boolean isAbstract);
 
     Schema.ValueClass valueClass();
 
-    TypeVertexImpl valueClass(Schema.ValueClass valueClass);
+    TypeVertex valueClass(Schema.ValueClass valueClass);
 
     String regex();
 
-    TypeVertexImpl regex(String regex);
+    TypeVertex regex(String regex);
 }

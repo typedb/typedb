@@ -21,9 +21,9 @@ package hypergraph.concept.type.impl;
 import hypergraph.common.exception.HypergraphException;
 import hypergraph.common.iterator.Iterators;
 import hypergraph.concept.type.RoleType;
-import hypergraph.graph.util.Schema;
 import hypergraph.graph.TypeGraph;
-import hypergraph.graph.vertex.impl.TypeVertexImpl;
+import hypergraph.graph.util.Schema;
+import hypergraph.graph.vertex.TypeVertex;
 
 import javax.annotation.Nullable;
 import java.util.Iterator;
@@ -37,7 +37,7 @@ import static java.util.stream.StreamSupport.stream;
 
 public class RoleTypeImpl extends TypeImpl implements RoleType {
 
-    private RoleTypeImpl(TypeVertexImpl vertex) {
+    private RoleTypeImpl(TypeVertex vertex) {
         super(vertex);
         assert vertex.schema() == Schema.Vertex.Type.ROLE_TYPE;
         if (vertex.schema() != Schema.Vertex.Type.ROLE_TYPE) {
@@ -50,7 +50,7 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
         super(graph, label, Schema.Vertex.Type.ROLE_TYPE, relation);
     }
 
-    public static RoleTypeImpl of(TypeVertexImpl vertex) {
+    public static RoleTypeImpl of(TypeVertex vertex) {
         if (vertex.label().equals(Schema.Vertex.Type.Root.ROLE.label())) return new RoleTypeImpl.Root(vertex);
         else return new RoleTypeImpl(vertex);
     }
@@ -70,7 +70,7 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
     @Nullable
     @Override
     public RoleTypeImpl sup() {
-        TypeVertexImpl vertex = super.superTypeVertex();
+        TypeVertex vertex = super.superTypeVertex();
         return vertex != null ? of(vertex) : null;
     }
 
@@ -93,7 +93,7 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
 
     public static class Root extends RoleTypeImpl {
 
-        Root(TypeVertexImpl vertex) {
+        Root(TypeVertex vertex) {
             super(vertex);
             assert vertex.label().equals(Schema.Vertex.Type.Root.ROLE.label());
         }

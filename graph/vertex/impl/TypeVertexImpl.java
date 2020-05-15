@@ -33,7 +33,7 @@ import java.util.Iterator;
 
 import static hypergraph.common.collection.ByteArrays.join;
 
-public abstract class TypeVertexImpl extends VertexImpl<Schema.Vertex.Type, TypeVertexImpl, Schema.Edge.Type, TypeEdge> implements TypeVertex {
+public abstract class TypeVertexImpl extends VertexImpl<Schema.Vertex.Type, TypeVertex, Schema.Edge.Type, TypeEdge> implements TypeVertex {
 
     protected final TypeGraph graph;
     protected final TypeAdjacency outs;

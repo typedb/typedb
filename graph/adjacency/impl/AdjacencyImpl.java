@@ -23,7 +23,7 @@ import hypergraph.graph.Graph;
 import hypergraph.graph.adjacency.Adjacency;
 import hypergraph.graph.edge.Edge;
 import hypergraph.graph.util.Schema;
-import hypergraph.graph.vertex.impl.VertexImpl;
+import hypergraph.graph.vertex.Vertex;
 
 import java.util.Collections;
 import java.util.Iterator;
@@ -40,7 +40,7 @@ import static hypergraph.common.iterator.Iterators.link;
 public abstract class AdjacencyImpl<
         EDGE_SCHEMA extends Schema.Edge,
         EDGE extends Edge<EDGE_SCHEMA, VERTEX>,
-        VERTEX extends VertexImpl<?, VERTEX, EDGE_SCHEMA, EDGE>,
+        VERTEX extends Vertex<?, VERTEX, EDGE_SCHEMA, EDGE>,
         ITER_BUILDER extends AdjacencyImpl.IteratorBuilderImpl<EDGE, VERTEX>
         > implements Adjacency<EDGE_SCHEMA, EDGE, VERTEX> {
 
@@ -91,7 +91,7 @@ public abstract class AdjacencyImpl<
 
     protected static class IteratorBuilderImpl<
             ITER_EDGE extends Edge<?, ITER_VERTEX>,
-            ITER_VERTEX extends VertexImpl
+            ITER_VERTEX extends Vertex<?, ITER_VERTEX, ?, ITER_EDGE>
             > implements Adjacency.IteratorBuilder<ITER_VERTEX> {
 
         protected final Iterator<ITER_EDGE> edgeIterator;
@@ -114,7 +114,7 @@ public abstract class AdjacencyImpl<
     protected static abstract class Buffered<
             BUF_EDGE_SCHEMA extends Schema.Edge,
             BUF_EDGE extends Edge<BUF_EDGE_SCHEMA, BUF_VERTEX>,
-            BUF_VERTEX extends VertexImpl<?, BUF_VERTEX, BUF_EDGE_SCHEMA, BUF_EDGE>,
+            BUF_VERTEX extends Vertex<?, BUF_VERTEX, BUF_EDGE_SCHEMA, BUF_EDGE>,
             BUF_ITER_BUILDER extends IteratorBuilderImpl<BUF_EDGE, BUF_VERTEX>
             > extends AdjacencyImpl<BUF_EDGE_SCHEMA, BUF_EDGE, BUF_VERTEX, BUF_ITER_BUILDER> {
 
@@ -159,7 +159,7 @@ public abstract class AdjacencyImpl<
     protected static abstract class Persisted<
             PER_EDGE_SCHEMA extends Schema.Edge,
             PER_EDGE extends Edge<PER_EDGE_SCHEMA, PER_VERTEX>,
-            PER_VERTEX extends VertexImpl<?, PER_VERTEX, PER_EDGE_SCHEMA, PER_EDGE>,
+            PER_VERTEX extends Vertex<?, PER_VERTEX, PER_EDGE_SCHEMA, PER_EDGE>,
             PER_ITER_BUILDER extends IteratorBuilderImpl<PER_EDGE, PER_VERTEX>
             > extends AdjacencyImpl<PER_EDGE_SCHEMA, PER_EDGE, PER_VERTEX, PER_ITER_BUILDER> {
 

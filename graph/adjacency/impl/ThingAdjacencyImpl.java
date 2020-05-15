@@ -24,15 +24,15 @@ import hypergraph.graph.adjacency.ThingAdjacency;
 import hypergraph.graph.edge.ThingEdge;
 import hypergraph.graph.edge.impl.ThingEdgeImpl;
 import hypergraph.graph.util.Schema;
-import hypergraph.graph.vertex.impl.ThingVertexImpl;
+import hypergraph.graph.vertex.ThingVertex;
 
 import java.util.Iterator;
 
 public abstract class ThingAdjacencyImpl {
 
     public static class ThingIteratorBuilderImpl
-            extends AdjacencyImpl.IteratorBuilderImpl<ThingEdge, ThingVertexImpl>
-            implements Adjacency.IteratorBuilder<ThingVertexImpl> {
+            extends AdjacencyImpl.IteratorBuilderImpl<ThingEdge, ThingVertex>
+            implements Adjacency.IteratorBuilder<ThingVertex> {
 
         ThingIteratorBuilderImpl(Iterator<ThingEdge> edgeIterator) {
             super(edgeIterator);
@@ -40,10 +40,10 @@ public abstract class ThingAdjacencyImpl {
     }
 
     public static class Buffered
-            extends AdjacencyImpl.Buffered<Schema.Edge.Thing, ThingEdge, ThingVertexImpl, ThingIteratorBuilderImpl>
+            extends AdjacencyImpl.Buffered<Schema.Edge.Thing, ThingEdge, ThingVertex, ThingIteratorBuilderImpl>
             implements ThingAdjacency {
 
-        protected Buffered(ThingVertexImpl owner, Direction direction) {
+        protected Buffered(ThingVertex owner, Direction direction) {
             super(owner, direction);
         }
 
@@ -58,17 +58,17 @@ public abstract class ThingAdjacencyImpl {
         }
 
         @Override
-        protected ThingEdge newBufferedEdge(Schema.Edge.Thing schema, ThingVertexImpl from, ThingVertexImpl to) {
+        protected ThingEdge newBufferedEdge(Schema.Edge.Thing schema, ThingVertex from, ThingVertex to) {
             return new ThingEdgeImpl.Buffered(owner.graph(), schema, from, to);
         }
     }
 
     public static class Persisted
-            extends AdjacencyImpl.Persisted<Schema.Edge.Thing, ThingEdge, ThingVertexImpl, ThingIteratorBuilderImpl>
+            extends AdjacencyImpl.Persisted<Schema.Edge.Thing, ThingEdge, ThingVertex, ThingIteratorBuilderImpl>
             implements ThingAdjacency {
 
 
-        protected Persisted(ThingVertexImpl owner, Direction direction) {
+        protected Persisted(ThingVertex owner, Direction direction) {
             super(owner, direction);
         }
 
@@ -83,7 +83,7 @@ public abstract class ThingAdjacencyImpl {
         }
 
         @Override
-        protected ThingEdge newBufferedEdge(Schema.Edge.Thing schema, ThingVertexImpl from, ThingVertexImpl to) {
+        protected ThingEdge newBufferedEdge(Schema.Edge.Thing schema, ThingVertex from, ThingVertex to) {
             return new ThingEdgeImpl.Buffered(owner.graph(), schema, from, to);
         }
 
@@ -99,7 +99,7 @@ public abstract class ThingAdjacencyImpl {
          * @return a new {@code ThingEdge}
          */
         @Override
-        protected ThingEdge newPersistedEdge(Graph<ThingVertexImpl> graph, byte[] key, byte[] value) {
+        protected ThingEdge newPersistedEdge(Graph<ThingVertex> graph, byte[] key, byte[] value) {
             return new ThingEdgeImpl.Persisted(owner.graph(), key);
         }
     }

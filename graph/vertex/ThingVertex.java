@@ -21,10 +21,8 @@ package hypergraph.graph.vertex;
 import hypergraph.graph.ThingGraph;
 import hypergraph.graph.edge.ThingEdge;
 import hypergraph.graph.util.Schema;
-import hypergraph.graph.vertex.impl.ThingVertexImpl;
-import hypergraph.graph.vertex.impl.TypeVertexImpl;
 
-public interface ThingVertex extends Vertex<Schema.Vertex.Thing, ThingVertexImpl, Schema.Edge.Thing, ThingEdge> {
+public interface ThingVertex extends Vertex<Schema.Vertex.Thing, ThingVertex, Schema.Edge.Thing, ThingEdge> {
 
     /**
      * Returns the {@code Graph} containing all {@code ThingVertex}
@@ -39,5 +37,5 @@ public interface ThingVertex extends Vertex<Schema.Vertex.Thing, ThingVertexImpl
      *
      * @return the {@code TypeVertex} in which this {@code ThingVertex} is an instance of
      */
-    TypeVertexImpl typeVertex();
+    TypeVertex typeVertex();
 }

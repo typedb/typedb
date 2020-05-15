@@ -21,16 +21,17 @@ package hypergraph.graph;
 import hypergraph.common.collection.ByteArray;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.util.Storage;
+import hypergraph.graph.vertex.ThingVertex;
+import hypergraph.graph.vertex.Vertex;
 import hypergraph.graph.vertex.impl.ThingVertexImpl;
-import hypergraph.graph.vertex.impl.VertexImpl;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-public class ThingGraph implements Graph<ThingVertexImpl> {
+public class ThingGraph implements Graph<ThingVertex> {
 
     private final Graphs graphManager;
-    private final ConcurrentMap<ByteArray, ThingVertexImpl> thingByIID;
+    private final ConcurrentMap<ByteArray, ThingVertex> thingByIID;
 
     ThingGraph(Graphs graphManager) {
         this.graphManager = graphManager;
@@ -43,12 +44,12 @@ public class ThingGraph implements Graph<ThingVertexImpl> {
     }
 
     @Override
-    public ThingVertexImpl get(byte[] iid) {
+    public ThingVertex get(byte[] iid) {
         return null; // TODO
     }
 
     @Override
-    public void delete(ThingVertexImpl vertex) {
+    public void delete(ThingVertex vertex) {
         // TODO
     }
 
@@ -56,7 +57,7 @@ public class ThingGraph implements Graph<ThingVertexImpl> {
         thingByIID.values().parallelStream().forEach(
                 vertex -> vertex.iid(ThingVertexImpl.generateIID(graphManager.storage().keyGenerator(), vertex.schema(), vertex.typeVertex()))
         ); // thingByIID no longer contains valid mapping from IID to TypeVertex
-        thingByIID.values().parallelStream().forEach(VertexImpl::commit);
+        thingByIID.values().parallelStream().forEach(Vertex::commit);
         clear(); // we now flush the indexes after commit, and we do not expect this Graph.Thing to be used again
     }
 
@@ -65,7 +66,7 @@ public class ThingGraph implements Graph<ThingVertexImpl> {
         thingByIID.clear();
     }
 
-    public ThingVertexImpl create(Schema.Vertex.Thing schema, byte[] iid) {
+    public ThingVertex create(Schema.Vertex.Thing schema, byte[] iid) {
         return null; // TODO
     }
 

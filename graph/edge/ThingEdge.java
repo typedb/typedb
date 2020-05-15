@@ -19,11 +19,11 @@
 package hypergraph.graph.edge;
 
 import hypergraph.graph.util.Schema;
-import hypergraph.graph.vertex.impl.ThingVertexImpl;
+import hypergraph.graph.vertex.ThingVertex;
 
 /**
  * An edge between two {@code ThingVertex}.
  *
  * This edge can only have a schema of type {@code Schema.Edge.Thing}.
  */
-public interface ThingEdge extends Edge<Schema.Edge.Thing, ThingVertexImpl> {}
+public interface ThingEdge extends Edge<Schema.Edge.Thing, ThingVertex> {}

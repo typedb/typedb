@@ -24,30 +24,30 @@ import hypergraph.graph.adjacency.TypeAdjacency;
 import hypergraph.graph.edge.TypeEdge;
 import hypergraph.graph.edge.impl.TypeEdgeImpl;
 import hypergraph.graph.util.Schema;
-import hypergraph.graph.vertex.impl.TypeVertexImpl;
+import hypergraph.graph.vertex.TypeVertex;
 
 import java.util.Iterator;
 
 public class TypeAdjacencyImpl {
 
     public static class TypeIteratorBuilderImpl
-            extends AdjacencyImpl.IteratorBuilderImpl<TypeEdge, TypeVertexImpl>
+            extends AdjacencyImpl.IteratorBuilderImpl<TypeEdge, TypeVertex>
             implements TypeAdjacency.TypeIteratorBuilder {
 
         TypeIteratorBuilderImpl(Iterator<TypeEdge> edgeIterator) {
             super(edgeIterator);
         }
 
-        public Iterator<TypeVertexImpl> overridden() {
+        public Iterator<TypeVertex> overridden() {
             return Iterators.apply(edgeIterator, TypeEdge::overridden);
         }
     }
 
     public static class Buffered
-            extends AdjacencyImpl.Buffered<Schema.Edge.Type, TypeEdge, TypeVertexImpl, TypeIteratorBuilderImpl>
+            extends AdjacencyImpl.Buffered<Schema.Edge.Type, TypeEdge, TypeVertex, TypeIteratorBuilderImpl>
             implements TypeAdjacency {
 
-        public Buffered(TypeVertexImpl owner, Direction direction) {
+        public Buffered(TypeVertex owner, Direction direction) {
             super(owner, direction);
         }
 
@@ -62,17 +62,17 @@ public class TypeAdjacencyImpl {
         }
 
         @Override
-        protected TypeEdge newBufferedEdge(Schema.Edge.Type schema, TypeVertexImpl from, TypeVertexImpl to) {
+        protected TypeEdge newBufferedEdge(Schema.Edge.Type schema, TypeVertex from, TypeVertex to) {
             return new TypeEdgeImpl.Buffered(owner.graph(), schema, from, to);
         }
 
     }
 
     public static class Persisted
-            extends AdjacencyImpl.Persisted<Schema.Edge.Type, TypeEdge, TypeVertexImpl, TypeIteratorBuilderImpl>
+            extends AdjacencyImpl.Persisted<Schema.Edge.Type, TypeEdge, TypeVertex, TypeIteratorBuilderImpl>
             implements TypeAdjacency {
 
-        public Persisted(TypeVertexImpl owner, Direction direction) {
+        public Persisted(TypeVertex owner, Direction direction) {
             super(owner, direction);
         }
 
@@ -87,12 +87,12 @@ public class TypeAdjacencyImpl {
         }
 
         @Override
-        protected TypeEdge newBufferedEdge(Schema.Edge.Type schema, TypeVertexImpl from, TypeVertexImpl to) {
+        protected TypeEdge newBufferedEdge(Schema.Edge.Type schema, TypeVertex from, TypeVertex to) {
             return new TypeEdgeImpl.Buffered(owner.graph(), schema, from, to);
         }
 
         @Override
-        protected TypeEdge newPersistedEdge(Graph<TypeVertexImpl> graph, byte[] key, byte[] value) {
+        protected TypeEdge newPersistedEdge(Graph<TypeVertex> graph, byte[] key, byte[] value) {
             return new TypeEdgeImpl.Persisted(owner.graph(), key, value);
         }
     }

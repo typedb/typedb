@@ -21,7 +21,7 @@ package hypergraph.graph.edge.impl;
 import hypergraph.graph.TypeGraph;
 import hypergraph.graph.edge.TypeEdge;
 import hypergraph.graph.util.Schema;
-import hypergraph.graph.vertex.impl.TypeVertexImpl;
+import hypergraph.graph.vertex.TypeVertex;
 
 import javax.annotation.Nullable;
 
@@ -33,11 +33,11 @@ public class TypeEdgeImpl {
     /**
      * A Buffered Type Edge that connects two Type Vertices, and an overridden Type Vertex.
      */
-    public static class Buffered extends EdgeImpl.Buffered<TypeGraph, Schema.Edge.Type, TypeEdge, TypeVertexImpl> implements TypeEdge {
+    public static class Buffered extends EdgeImpl.Buffered<TypeGraph, Schema.Edge.Type, TypeEdge, TypeVertex> implements TypeEdge {
 
-        private TypeVertexImpl overridden;
+        private TypeVertex overridden;
 
-        public Buffered(TypeGraph graph, Schema.Edge.Type schema, TypeVertexImpl from, TypeVertexImpl to) {
+        public Buffered(TypeGraph graph, Schema.Edge.Type schema, TypeVertex from, TypeVertex to) {
             super(graph, schema, from, to);
         }
 
@@ -50,7 +50,7 @@ public class TypeEdgeImpl {
          * @return type vertex overridden by the head of this type edge
          */
         @Override
-        public TypeVertexImpl overridden() {
+        public TypeVertex overridden() {
             return overridden;
         }
 
@@ -60,7 +60,7 @@ public class TypeEdgeImpl {
          * @param overridden the type vertex to override by the head
          */
         @Override
-        public void overridden(TypeVertexImpl overridden) {
+        public void overridden(TypeVertex overridden) {
             this.overridden = overridden;
         }
 
@@ -87,10 +87,10 @@ public class TypeEdgeImpl {
     /**
      * Persisted Type Edge that connects two Type Vertices, and an overridden Type Vertex
      */
-    public static class Persisted extends EdgeImpl.Persisted<TypeGraph, Schema.Edge.Type, TypeEdge, TypeVertexImpl> implements TypeEdge {
+    public static class Persisted extends EdgeImpl.Persisted<TypeGraph, Schema.Edge.Type, TypeEdge, TypeVertex> implements TypeEdge {
 
         private byte[] overriddenIID;
-        private TypeVertexImpl overridden;
+        private TypeVertex overridden;
 
         public Persisted(TypeGraph graph, byte[] iid, @Nullable byte[] overriddenIID) {
             super(graph, Schema.Edge.Type.of(iid[Schema.IID.TYPE.length()]), Schema.IID.TYPE, iid);
@@ -107,7 +107,7 @@ public class TypeEdgeImpl {
          * @return type vertex overridden by the head of this type edge
          */
         @Override
-        public TypeVertexImpl overridden() {
+        public TypeVertex overridden() {
             if (overridden != null) return overridden;
             if (overriddenIID == null || overriddenIID.length == 0) return null;
 
@@ -124,7 +124,7 @@ public class TypeEdgeImpl {
          * @param overridden the type vertex to override by the head
          */
         @Override
-        public void overridden(TypeVertexImpl overridden) {
+        public void overridden(TypeVertex overridden) {
             this.overridden = overridden;
             overriddenIID = overridden.iid();
             graph.storage().put(outIID, overriddenIID);

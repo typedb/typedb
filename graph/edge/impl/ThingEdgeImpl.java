@@ -21,15 +21,15 @@ package hypergraph.graph.edge.impl;
 import hypergraph.graph.ThingGraph;
 import hypergraph.graph.edge.ThingEdge;
 import hypergraph.graph.util.Schema;
-import hypergraph.graph.vertex.impl.ThingVertexImpl;
+import hypergraph.graph.vertex.ThingVertex;
 
 public abstract class ThingEdgeImpl {
 
     public static class Buffered
-            extends EdgeImpl.Buffered<ThingGraph, Schema.Edge.Thing, ThingEdge, ThingVertexImpl>
+            extends EdgeImpl.Buffered<ThingGraph, Schema.Edge.Thing, ThingEdge, ThingVertex>
             implements ThingEdge {
 
-        public Buffered(ThingGraph graph, Schema.Edge.Thing schema, ThingVertexImpl from, ThingVertexImpl to) {
+        public Buffered(ThingGraph graph, Schema.Edge.Thing schema, ThingVertex from, ThingVertex to) {
             super(graph, schema, from, to);
         }
 
@@ -45,7 +45,7 @@ public abstract class ThingEdgeImpl {
     }
 
     public static class Persisted
-            extends EdgeImpl.Persisted<ThingGraph, Schema.Edge.Thing, ThingEdge, ThingVertexImpl>
+            extends EdgeImpl.Persisted<ThingGraph, Schema.Edge.Thing, ThingEdge, ThingVertex>
             implements ThingEdge {
 
         public Persisted(ThingGraph graph, byte[] iid) {

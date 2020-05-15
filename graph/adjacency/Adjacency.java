@@ -20,7 +20,7 @@ package hypergraph.graph.adjacency;
 
 import hypergraph.graph.edge.Edge;
 import hypergraph.graph.util.Schema;
-import hypergraph.graph.vertex.impl.VertexImpl;
+import hypergraph.graph.vertex.Vertex;
 
 import java.util.Iterator;
 import java.util.function.Consumer;
@@ -28,7 +28,7 @@ import java.util.function.Consumer;
 public interface Adjacency<
         EDGE_SCHEMA extends Schema.Edge,
         EDGE extends Edge<EDGE_SCHEMA, VERTEX>,
-        VERTEX extends VertexImpl<?, VERTEX, EDGE_SCHEMA, EDGE>> {
+        VERTEX extends Vertex<?, VERTEX, EDGE_SCHEMA, EDGE>> {
 
     IteratorBuilder<VERTEX> edge(EDGE_SCHEMA schema);
 
@@ -59,7 +59,7 @@ public interface Adjacency<
      * map, both through this {@code Adjacency} or the opposite one that the
      * disconnected vertices own. I.e. this is a recursive delete operation
      *
-     * @param schema   of the edge that will connect the owner to the adjacent vertex
+     * @param schema of the edge that will connect the owner to the adjacent vertex
      */
     void delete(EDGE_SCHEMA schema);
 
@@ -88,7 +88,7 @@ public interface Adjacency<
         }
     }
 
-    interface IteratorBuilder<ITER_VERTEX extends VertexImpl> {
+    interface IteratorBuilder<ITER_VERTEX extends Vertex> {
 
         Iterator<ITER_VERTEX> to();
 
