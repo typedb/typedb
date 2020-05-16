@@ -20,6 +20,7 @@ package hypergraph.concept.type.impl;
 
 import hypergraph.common.exception.HypergraphException;
 import hypergraph.common.iterator.Iterators;
+import hypergraph.concept.thing.Entity;
 import hypergraph.concept.thing.impl.EntityImpl;
 import hypergraph.concept.type.EntityType;
 import hypergraph.graph.TypeGraph;
@@ -31,6 +32,7 @@ import javax.annotation.Nullable;
 import java.util.Iterator;
 import java.util.stream.Stream;
 
+import static hypergraph.common.exception.Error.ThingWrite.ILLEGAL_ABSTRACT_WRITE;
 import static hypergraph.common.exception.Error.TypeWrite.INVALID_ROOT_TYPE_MUTATION;
 import static java.util.Spliterator.IMMUTABLE;
 import static java.util.Spliterator.ORDERED;
@@ -62,17 +64,6 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
     }
 
     @Override
-    public EntityImpl create() {
-        return create(false);
-    }
-
-    @Override
-    public EntityImpl create(boolean isInferred) {
-        ThingVertex instance = vertex.graph().thingGraph().create(Schema.Vertex.Thing.ENTITY, vertex, isInferred);
-        return new EntityImpl(instance);
-    }
-
-    @Override
     public void sup(EntityType superType) {
         super.superTypeVertex(((EntityTypeImpl) superType).vertex);
     }
@@ -94,6 +85,18 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
     public Stream<EntityTypeImpl> subs() {
         Iterator<EntityTypeImpl> subs = Iterators.apply(super.subTypeVertices(), EntityTypeImpl::of);
         return stream(spliteratorUnknownSize(subs, ORDERED | IMMUTABLE), false);
+    }
+
+    @Override
+    public EntityImpl create() {
+        return create(false);
+    }
+
+    @Override
+    public EntityImpl create(boolean isInferred) {
+        if (isAbstract()) throw new HypergraphException(ILLEGAL_ABSTRACT_WRITE.format(Entity.class.getSimpleName(), label()));
+        ThingVertex instance = vertex.graph().thingGraph().create(Schema.Vertex.Thing.ENTITY, vertex, isInferred);
+        return new EntityImpl(instance);
     }
 
     private static class Root extends EntityTypeImpl {

@@ -121,6 +121,8 @@ public abstract class Error<TYPE extends Error<TYPE>> {
 
     public static class ThingWrite extends Error {
 
+        public static final ThingWrite ILLEGAL_ABSTRACT_WRITE =
+                new ThingWrite(1, "Attempted an illegal write of a new '%s' of abstract type '%s'.");
         private static final String codePrefix = "THW";
         private static final String descriptionPrefix = "Invalid Thing Write";
 
