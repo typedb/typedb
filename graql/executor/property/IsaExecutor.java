@@ -25,7 +25,6 @@ import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.concept.api.Type;
-import grakn.core.kb.graql.exception.GraqlQueryException;
 import grakn.core.kb.graql.exception.GraqlSemanticException;
 import grakn.core.kb.graql.executor.WriteExecutor;
 import grakn.core.kb.graql.executor.property.PropertyExecutor;
@@ -132,7 +131,7 @@ public class IsaExecutor implements PropertyExecutor.Insertable, PropertyExecuto
 
         @Override
         public Set<Variable> requiredVars() {
-            return ImmutableSet.of();
+            return ImmutableSet.of(var);
         }
 
         @Override
@@ -145,12 +144,12 @@ public class IsaExecutor implements PropertyExecutor.Insertable, PropertyExecuto
             Concept concept = executor.getConcept(var);
             if (concept.isRelation()) {
                 if (concept.asThing().type().isImplicit()) {
-                    return TiebreakDeletionOrdering.EDGE;
+                    return TiebreakDeletionOrdering.HAS;
                 } else {
-                    return TiebreakDeletionOrdering.RELATION_INSTANCE;
+                    return TiebreakDeletionOrdering.RELATION;
                 }
             } else {
-                return TiebreakDeletionOrdering.NON_RELATION_INSTANCE;
+                return TiebreakDeletionOrdering.NON_RELATION;
             }
         }
 
