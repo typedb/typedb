@@ -182,11 +182,6 @@ public class RelationAtom extends Atom {
     }
 
     @Override
-    public AttributeAtom toAttributeAtom() {
-        return converter.toAttributeAtom(this, context());
-    }
-
-    @Override
     public IsaAtom toIsaAtom() {
         return converter.toIsaAtom(this, context());
     }

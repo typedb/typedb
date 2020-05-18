@@ -85,19 +85,6 @@ public interface SchemaConcept extends Concept {
     Stream<? extends SchemaConcept> subs();
 
     /**
-     * Return whether the SchemaConcept was created implicitly.
-     * By default, SchemaConcept are not implicit.
-     *
-     * @return returns true if the type was created implicitly through the Attribute syntax
-     */
-    /*
-    TODO
-    REMOVE
-     */
-    @CheckReturnValue
-    Boolean isImplicit();
-
-    /**
      * Return the collection of Rule for which this SchemaConcept serves as a hypothesis.
      *
      * @return A collection of Rule for which this SchemaConcept serves as a hypothesis

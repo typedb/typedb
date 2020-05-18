@@ -50,8 +50,7 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
     private final ConceptCache<Label> cachedLabel = new ConceptCache<>(() -> Label.of(vertex().property(Schema.VertexProperty.SCHEMA_LABEL)));
     private final ConceptCache<LabelId> cachedLabelId = new ConceptCache<>(() -> LabelId.of(vertex().property(Schema.VertexProperty.LABEL_ID)));
     private final ConceptCache<T> cachedSuperType = new ConceptCache<>(() -> this.<T>neighbours(Direction.OUT, Schema.EdgeLabel.SUB).findFirst().orElse(null));
-    private final ConceptCache<Set<T>> cachedDirectSubTypes = new ConceptCache<>(() -> this.<T>retrieveSubs().collect(Collectors.toSet()));
-    private final ConceptCache<Boolean> cachedIsImplicit = new ConceptCache<>(() -> vertex().propertyBoolean(Schema.VertexProperty.IS_IMPLICIT));
+    private final ConceptCache<Set<T>> cachedDirectSubTypes = new ConceptCache<>(() -> this.<T>directSubs().collect(Collectors.toSet()));
 
     SchemaConceptImpl(VertexElement vertexElement, ConceptManager conceptManager, ConceptNotificationChannel conceptNotificationChannel) {
         super(vertexElement, conceptManager, conceptNotificationChannel);
@@ -113,14 +112,6 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
         }
 
         return superSet.stream();
-    }
-
-    /**
-     * @return returns true if the type was created implicitly through the resource syntax
-     */
-    @Override
-    public Boolean isImplicit() {
-        return cachedIsImplicit.get();
     }
 
     /**

@@ -49,10 +49,6 @@ public class ConceptMethod {
                 con.asConcept().delete();
                 return;
 
-            // SchemaConcept methods
-            case SCHEMACONCEPT_ISIMPLICIT_REQ:
-                con.asSchemaConcept().isImplicit();
-                return;
             case SCHEMACONCEPT_GETLABEL_REQ:
                 con.asSchemaConcept().label();
                 return;
@@ -330,16 +326,6 @@ public class ConceptMethod {
          * A utility class to execute methods on grakn.core.kb.concept.api.SchemaConcept
          */
         private class SchemaConcept {
-
-            private void isImplicit() {
-                Boolean implicit = concept.asSchemaConcept().isImplicit();
-
-                ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setSchemaConceptIsImplicitRes(ConceptProto.SchemaConcept.IsImplicit.Res.newBuilder()
-                                                               .setImplicit(implicit)).build();
-
-                responseSender.accept(transactionRes(response));
-            }
 
             private void label() {
                 Label label = concept.asSchemaConcept().label();

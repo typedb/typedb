@@ -167,13 +167,6 @@ public class AtomicState extends AnswerPropagatorState<ReasonerAtomicQuery> {
             RuleExplanation ruleExplanation = new RuleExplanation(Collections.singletonList(baseAnswer), rule.getRule());
             ConceptMap ruleAnswer = materialisedSub.explain(ruleExplanation);
             queryCache.record(ruleHead, ruleAnswer);
-            Atom ruleAtom = ruleHead.getAtom();
-            //if it's an implicit relation also record it as an attribute
-            SchemaConcept ruleAtomType = ruleAtom.getSchemaConcept();
-            if (ruleAtom.isRelationAtom() && ruleAtomType != null && ruleAtomType.isImplicit()) {
-                ReasonerAtomicQuery attributeHead = reasonerQueryFactory.atomic(ruleHead.getAtom().toAttributeAtom());
-                queryCache.record(attributeHead, ruleAnswer.project(attributeHead.getVarNames()));
-            }
             answer = unifier.apply(ruleAnswer.project(headVars));
         }
         if (answer.isEmpty()) return answer;

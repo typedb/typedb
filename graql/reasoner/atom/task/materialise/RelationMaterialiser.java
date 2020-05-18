@@ -47,11 +47,6 @@ public class RelationMaterialiser implements AtomMaterialiser<RelationAtom> {
     @Override
     public Stream<ConceptMap> materialise(RelationAtom atom, ReasoningContext ctx) {
         RelationType relationType = atom.getSchemaConcept().asRelationType();
-        //in case the roles are variable, we wouldn't have enough information if converted to attribute
-        if (relationType.isImplicit()) {
-            ConceptMap roleSub = getRoleSubstitution(atom, ctx);
-            return atom.toAttributeAtom().materialise().map(ans -> AnswerUtil.joinAnswers(ans, roleSub));
-        }
         Multimap<Role, Variable> roleVarMap = atom.getRoleVarMap();
         ConceptMap substitution = atom.getParentQuery().getSubstitution();
 

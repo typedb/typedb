@@ -245,7 +245,7 @@ public class OntologicalQueryIT {
             assertCollectionsNonTriviallyEqual(tx.execute(Graql.parse(queryString).asGet(), false), answers);
             List<ConceptMap> relations = tx.execute(Graql.parse("match $x isa relation;get;").asGet(), false);
             //plus extra 3 cause there are 3 binary relations which are not extra counted as reifiable-relations
-            assertEquals(relations.stream().filter(ans -> !ans.get("x").asRelation().type().isImplicit()).count() + 3, answers.size());
+            assertEquals(relations.size() + 3, answers.size());
         }
     }
 

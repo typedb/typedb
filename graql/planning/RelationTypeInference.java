@@ -23,7 +23,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
-import grakn.core.kb.server.TMP_MIGRATION_HELPER;
 import grakn.core.graql.planning.gremlin.fragment.Fragments;
 import grakn.core.graql.planning.gremlin.fragment.InIsaFragment;
 import grakn.core.graql.planning.gremlin.fragment.InSubFragment;
@@ -171,8 +170,11 @@ public class RelationTypeInference {
     }
 
     private static void addAllPossibleRelations(Multimap<Type, RelationType> relationMap, Type metaType) {
-        metaType.subs().forEach(type -> TMP_MIGRATION_HELPER.filterImplicit(type.playing()).flatMap(Role::relations)
-                .forEach(relationType -> relationMap.put(type, relationType)));
+        metaType.subs()
+                .forEach(type ->
+                    type.playing().flatMap(Role::relations)
+                            .forEach(relationType -> relationMap.put(type, relationType))
+                );
     }
 
     private static Set<Type> getAllPossibleRelationTypes(

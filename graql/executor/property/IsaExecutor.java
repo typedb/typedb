@@ -143,11 +143,7 @@ public class IsaExecutor implements PropertyExecutor.Insertable, PropertyExecuto
         public TiebreakDeletionOrdering ordering(WriteExecutor executor) {
             Concept concept = executor.getConcept(var);
             if (concept.isRelation()) {
-                if (concept.asThing().type().isImplicit()) {
-                    return TiebreakDeletionOrdering.HAS;
-                } else {
-                    return TiebreakDeletionOrdering.RELATION;
-                }
+                return TiebreakDeletionOrdering.RELATION;
             } else {
                 return TiebreakDeletionOrdering.NON_RELATION;
             }

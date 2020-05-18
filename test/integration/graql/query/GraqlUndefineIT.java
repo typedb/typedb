@@ -345,7 +345,7 @@ public class GraqlUndefineIT {
 
         assertThat(pokemon.has().toArray(), arrayContaining(pokedexNo));
         assertThat(evolution.roles().toArray(), arrayContainingInAnyOrder(ancestor, descendant));
-        assertThat(pokemon.playing().filter(r -> !r.isImplicit()).toArray(), arrayContainingInAnyOrder(ancestor, descendant));
+        assertThat(pokemon.playing().toArray(), arrayContainingInAnyOrder(ancestor, descendant));
 
         tx.execute(Graql.undefine(schema));
         tx.commit();

@@ -122,8 +122,8 @@ public class ConceptNotificationChannelImpl implements ConceptNotificationChanne
     }
 
     @Override
-    public void hasAttributeRelationCreated(Relation hasAttributeRelation, boolean isInferred) {
-        conceptListener.hasAttributeRelationCreated(hasAttributeRelation, isInferred);
+    public void hasAttributeRelationCreated(Thing owner, Attribute attribute, boolean isInferred) {
+        conceptListener.hasAttributeRelationCreated(owner, attribute, isInferred);
     }
 
     @Override

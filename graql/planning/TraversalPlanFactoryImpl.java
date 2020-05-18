@@ -253,19 +253,7 @@ public class TraversalPlanFactoryImpl implements TraversalPlanFactory {
                 .limit(MAX_STARTING_POINTS)
                 .forEach(fragment -> {
                     Node node = allNodes.get(NodeId.of(NodeId.Type.VAR, fragment.start()));
-                    //TODO: this behaviour should be incorporated into the MST weight calculation
-                    if (fragment instanceof LabelFragment) {
-                        Type type = conceptManager.getType(Iterators.getOnlyElement(((LabelFragment) fragment).labels().iterator()));
-                        if (type != null && type.isImplicit()) {
-                            // implicit types have low priority because their instances may be edges
-                            lowPriorityStartingNodeSet.add(node);
-                        } else {
-                            // other labels/types are the ideal starting point as they are indexed
-                            highPriorityStartingNodeSet.add(node);
-                        }
-                    } else {
-                        highPriorityStartingNodeSet.add(node);
-                    }
+                    highPriorityStartingNodeSet.add(node);
                 });
 
         Set<Node> startingNodes;

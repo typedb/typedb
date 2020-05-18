@@ -65,7 +65,7 @@ public interface ConceptNotificationChannel {
     <D> void attributeCreated(Attribute<D> attribute, D value, boolean isInferred);
     void relationCreated(Relation relation, boolean isInferred);
     void entityCreated(Entity entity, boolean isInferred);
-    void hasAttributeRelationCreated(Relation hasAttributeRelation, boolean isInferred);
+    void hasAttributeRelationCreated(Thing owner, Attribute attribute, boolean isInferred);
     void rolePlayerCreated(Casting casting);
 
     void ruleCreated(Rule rule);

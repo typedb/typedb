@@ -135,17 +135,9 @@ public class ConceptListenerImpl implements ConceptListener {
             transactionCache.trackForValidation(thing);
         }
 
-        //acknowledge key relation modification if the thing is one
-        if (thingType.isImplicit() && Schema.ImplicitType.isKey(thingType.label())){
-            thing.asRelation().rolePlayers()
-                    .filter(Concept::isAttribute)
-                    .map(Concept::asAttribute)
-                    .forEach(key -> {
-                        Label label = Schema.ImplicitType.explicitLabel(thingType.label());
-                        String index = Schema.generateAttributeIndex(label, key.value().toString());
-                        transactionCache.addModifiedKeyIndex(index);
-                    });
-        }
+        // TODO this is probably the source of most KEY-related errors
+
+
     }
 
     @Override
@@ -178,8 +170,15 @@ public class ConceptListenerImpl implements ConceptListener {
     }
 
     @Override
-    public void hasAttributeRelationCreated(Relation hasAttributeRelation, boolean isInferred) {
-        thingCreated(hasAttributeRelation, isInferred);
+    public void hasAttributeRelationCreated(Thing owner, Attribute attribute, boolean isInferred) {
+//        thingCreated(hasAttributeRelation, isInferred);
+
+        //acknowledge key relation modification if the thing is one
+        if (owner.type().keys().anyMatch(attribute.type()::equals)) {
+            Label label = Schema.ImplicitType.explicitLabel(attribute.type().label());
+            String index = Schema.generateAttributeIndex(label, attribute.value().toString());
+            transactionCache.addModifiedKeyIndex(index);
+        }
     }
 
     @Override

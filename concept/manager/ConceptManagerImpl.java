@@ -107,25 +107,13 @@ public class ConceptManagerImpl implements ConceptManager {
     /**
      * @param label             The Label of the SchemaConcept to create
      * @param baseType          The Schema.BaseType of the SchemaConcept to find or create
-     * @param isImplicit        a flag indicating if the label we are creating is for an implicit grakn.core.kb.concept.api.Type or not
      */
-    private VertexElement createSchemaVertex(Label label, Schema.BaseType baseType, boolean isImplicit) {
-        if (!isImplicit && label.getValue().startsWith(Schema.ImplicitType.RESERVED.getValue())) {
-            throw GraknConceptException.invalidLabelStart(label);
-        }
-
-        VertexElement vertexElement = addTypeVertex(getNextId(), label, baseType);
-
-        //Mark it as implicit here so we don't have to pass it down the constructors
-        if (isImplicit) {
-            vertexElement.property(Schema.VertexProperty.IS_IMPLICIT, true);
-        }
-
-        return vertexElement;
+    private VertexElement createSchemaVertex(Label label, Schema.BaseType baseType) {
+        return addTypeVertex(getNextId(), label, baseType);
     }
 
     public EntityType createEntityType(Label label, EntityType superType) {
-        VertexElement vertex = createSchemaVertex(label, ENTITY_TYPE, false);
+        VertexElement vertex = createSchemaVertex(label, ENTITY_TYPE);
         EntityTypeImpl entityType = new EntityTypeImpl(vertex, this, conceptNotificationChannel);
         entityType.createShard();
         entityType.sup(superType);
@@ -134,21 +122,21 @@ public class ConceptManagerImpl implements ConceptManager {
     }
 
     public RelationType createRelationType(Label label, RelationType superType) {
-        VertexElement vertex = createSchemaVertex(label, RELATION_TYPE, false);
+        VertexElement vertex = createSchemaVertex(label, RELATION_TYPE);
         return createRelationType(vertex, superType);
     }
 
     // users cannot create implicit relation types themselves, this is internal behavior
     @Override
     public RelationType createImplicitRelationType(Label implicitRelationLabel) {
-        VertexElement vertex = createSchemaVertex(implicitRelationLabel, RELATION_TYPE, true);
+        VertexElement vertex = createSchemaVertex(implicitRelationLabel, RELATION_TYPE);
         return createRelationType(vertex, getMetaRelationType());
     }
 
 
     @Override
     public <V> AttributeType<V> createAttributeType(Label label, AttributeType<V> superType, AttributeType.ValueType<V> valueType) {
-        VertexElement vertexElement = createSchemaVertex(label, ATTRIBUTE_TYPE, false);
+        VertexElement vertexElement = createSchemaVertex(label, ATTRIBUTE_TYPE);
         vertexElement.propertyImmutable(Schema.VertexProperty.DATA_TYPE, valueType, null, AttributeType.ValueType::name);
         AttributeType<V> attributeType = new AttributeTypeImpl<>(vertexElement, this, conceptNotificationChannel);
         attributeType.createShard();
@@ -158,19 +146,19 @@ public class ConceptManagerImpl implements ConceptManager {
     }
 
     public Role createRole(Label label, Role superType) {
-        VertexElement vertexElement = createSchemaVertex(label, ROLE, false);
+        VertexElement vertexElement = createSchemaVertex(label, ROLE);
         return createRole(vertexElement, superType);
     }
 
     // users cannot create implicit roles themselves, this is internal behavior
     @Override
     public Role createImplicitRole(Label implicitRoleLabel) {
-        VertexElement vertexElement = createSchemaVertex(implicitRoleLabel, ROLE, true);
+        VertexElement vertexElement = createSchemaVertex(implicitRoleLabel, ROLE);
         return createRole(vertexElement, getMetaRole());
     }
 
     public Rule createRule(Label label, Pattern when, Pattern then, Rule superType) {
-        VertexElement vertexElement = createSchemaVertex(label, RULE, false);
+        VertexElement vertexElement = createSchemaVertex(label, RULE);
         vertexElement.propertyImmutable(Schema.VertexProperty.RULE_WHEN, when, null, Pattern::toString);
         vertexElement.propertyImmutable(Schema.VertexProperty.RULE_THEN, then, null, Pattern::toString);
         RuleImpl rule = new RuleImpl(vertexElement, this, conceptNotificationChannel);
@@ -186,10 +174,13 @@ public class ConceptManagerImpl implements ConceptManager {
         relationType.createShard();
         relationType.sup(superType);
 
-        // TODO remove this when do not have implicit types
-        if (!relationType.isImplicit()) {
-            conceptNotificationChannel.relationTypeCreated(relationType);
-        }
+        // TODO this may need to be updated with new ownership behaviours
+
+//
+//        // TODO remove this when do not have implicit types
+//        if (!relationType.isImplicit()) {
+//            conceptNotificationChannel.relationTypeCreated(relationType);
+//        }
         transactionCache.cacheConcept(relationType);
         return relationType;
     }
@@ -320,11 +311,6 @@ public class ConceptManagerImpl implements ConceptManager {
 
         RelationImpl newRelation = new RelationImpl(vertex, this, conceptNotificationChannel);
         newRelation.type(TypeImpl.from(type));
-
-        // TODO this shouldn't be required after removing implicit types
-        if (!type.isImplicit()) {
-            conceptNotificationChannel.relationCreated(newRelation, isInferred);
-        }
 
         return newRelation;
     }

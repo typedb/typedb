@@ -53,8 +53,6 @@ import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.LabelId;
-import grakn.core.kb.concept.api.RelationType;
-import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.concept.api.Type;
@@ -410,7 +408,7 @@ public class ComputeExecutorImpl implements ComputeExecutor {
         if (!resultFromMemory.isEmpty()) {
             paths = getComputePathResultList(pathsAsEdgeList, fromID);
             if (scopeIncludesAttributes(query)) {
-                paths = getComputePathResultListIncludingImplicitRelations(paths);
+                paths = getComputePathResultList(paths);
             }
         } else {
             paths = Collections.emptyList();
@@ -641,7 +639,7 @@ public class ComputeExecutorImpl implements ComputeExecutor {
      * @param allPaths
      * @return
      */
-    private List<List<ConceptId>> getComputePathResultListIncludingImplicitRelations(List<List<ConceptId>> allPaths) {
+    private List<List<ConceptId>> getComputePathResultList(List<List<ConceptId>> allPaths) {
         List<List<ConceptId>> extendedPaths = new ArrayList<>();
         for (List<ConceptId> currentPath : allPaths) {
             boolean hasAttribute = currentPath.stream().anyMatch(conceptID -> conceptManager.getConcept(conceptID).isAttribute());
@@ -679,21 +677,6 @@ public class ComputeExecutorImpl implements ComputeExecutor {
         return extendedPaths;
     }
 
-    /**
-     * Helper method to get the label IDs of role players in a relation
-     *
-     * @return a set of type label IDs
-     */
-    private Set<Label> scopeTypeLabelsImplicitPlayers(GraqlCompute query) {
-        return scopeTypes(query)
-                .filter(Concept::isRelationType)
-                .map(Concept::asRelationType)
-                .filter(RelationType::isImplicit)
-                .flatMap(RelationType::roles)
-                .flatMap(Role::players)
-                .map(SchemaConcept::label)
-                .collect(toSet());
-    }
 
     /**
      * Get the resource edge id if there is one. Return null if not.
@@ -807,13 +790,12 @@ public class ComputeExecutorImpl implements ComputeExecutor {
             ImmutableSet.Builder<Type> typeBuilder = ImmutableSet.builder();
 
             if (scopeIncludesAttributes(query)) {
-                // this implies that Attributes and Implicit relations are included
+                // this implies that Attributes are included
                 // always set with compute count and statistics
                 conceptManager.getMetaConcept().subs().forEach(typeBuilder::add);
             } else {
                 conceptManager.getMetaEntityType().subs().forEach(typeBuilder::add);
-                conceptManager.getMetaRelationType().subs()
-                        .filter(relationType -> !relationType.isImplicit()).forEach(typeBuilder::add);
+                conceptManager.getMetaRelationType().subs().forEach(typeBuilder::add);
             }
 
             return typeBuilder.build().stream();
@@ -824,10 +806,6 @@ public class ComputeExecutorImpl implements ComputeExecutor {
                 if (type == null) throw GraqlSemanticException.labelNotFound(label);
                 return type;
             }).flatMap(Type::subs);
-
-            if (!scopeIncludesAttributes(query)) {
-                subTypes = subTypes.filter(relationType -> !relationType.isImplicit());
-            }
 
             return subTypes;
         }
@@ -892,7 +870,7 @@ public class ComputeExecutorImpl implements ComputeExecutor {
         return query.in().stream().anyMatch(t -> {
             Label label = Label.of(t);
             SchemaConcept type = conceptManager.getSchemaConcept(label);
-            return (type != null && (type.isAttributeType() || type.isImplicit()));
+            return (type != null && (type.isAttributeType()));
         });
     }
 

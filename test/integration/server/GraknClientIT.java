@@ -47,7 +47,6 @@ import grakn.client.concept.type.RelationType;
 import grakn.client.concept.type.Role;
 import grakn.client.concept.type.Type;
 import grakn.client.exception.GraknClientException;
-import grakn.core.kb.server.TMP_MIGRATION_HELPER;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import grakn.core.kb.server.exception.SessionException;
@@ -571,7 +570,6 @@ public class GraknClientIT {
             grakn.core.kb.concept.api.ConceptId localId = grakn.core.kb.concept.api.ConceptId.of(remoteConcept.id().getValue());
             grakn.core.kb.concept.api.SchemaConcept localConcept = localTx.getConcept(localId).asSchemaConcept();
 
-            assertEquals(localConcept.isImplicit(), remoteConcept.isImplicit());
             assertEquals(localConcept.label().toString(), remoteConcept.label().toString());
             assertEquals(localConcept.sup().id().toString(), remoteConcept.sup().id().toString());
             assertEqualConcepts(localConcept, remoteConcept,
@@ -1072,8 +1070,8 @@ public class GraknClientIT {
             assertEquals(animal, cat.sup());
 
             assertEquals(ImmutableSet.of(chased, chaser), chases.roles().collect(toSet()));
-            assertEquals(ImmutableSet.of(chaser), TMP_MIGRATION_HELPER.filterImplicit(dog.playing()).collect(toSet()));
-            assertEquals(ImmutableSet.of(chased), cat.playing().filter(role -> !role.isImplicit()).collect(toSet()));
+            assertEquals(ImmutableSet.of(chaser), dog.playing().collect(toSet()));
+            assertEquals(ImmutableSet.of(chased), cat.playing().collect(toSet()));
 
             assertEquals(ImmutableSet.of(name, id), animal.has().collect(toSet()));
             assertEquals(ImmutableSet.of(id), animal.keys().collect(toSet()));

@@ -19,25 +19,14 @@
 package grakn.core.graql.reasoner.atom.task.convert;
 
 import com.google.common.collect.Sets;
-import grakn.core.core.Schema;
 import grakn.core.graql.reasoner.ReasoningContext;
 import grakn.core.graql.reasoner.atom.binary.AttributeAtom;
 import grakn.core.graql.reasoner.atom.binary.IsaAtom;
-import grakn.core.graql.reasoner.atom.binary.RelationAtom;
-import grakn.core.graql.reasoner.atom.predicate.Predicate;
-import grakn.core.kb.concept.api.Label;
-import grakn.core.kb.concept.api.SchemaConcept;
-import grakn.core.kb.graql.reasoner.ReasonerException;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
-import graql.lang.Graql;
-import graql.lang.statement.Statement;
-import java.util.HashSet;
+
 import java.util.Set;
 
 public class AttributeAtomConverter implements AtomConverter<AttributeAtom> {
-
-    @Override
-    public AttributeAtom toAttributeAtom(AttributeAtom atom, ReasoningContext ctx){ return atom; }
 
     /**
      * NB: this is somewhat ambiguous case -> from {$x has resource $r;} we can extract:

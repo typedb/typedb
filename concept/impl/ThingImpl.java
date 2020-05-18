@@ -111,7 +111,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
             // must happen before deleteNode() so we can access properties on the vertex
 
             t25 = System.currentTimeMillis();
-            System.out.println("check is deleted: " +  (t25 - t2));
+            System.out.println("check is deleted: " + (t25 - t2));
             conceptNotificationChannel.thingDeleted(this);
         }
 
@@ -121,18 +121,6 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
         System.out.println("Delete t3 - t25: " + (t3 - t25));
 
         deleteNode();
-
-        relations.stream()
-                .filter(rel -> !rel.isDeleted())
-                .forEach(relation -> {
-                    //NB: this only deletes reified implicit relations
-                    if (relation.type().isImplicit()) {
-                        relation.delete();
-                    } else {
-                        RelationImpl rel = (RelationImpl) relation;
-                        rel.cleanUp();
-                    }
-                });
         long t4 = System.currentTimeMillis();
         System.out.println("Delete t4 - t3: " + (t4 - t3));
     }
@@ -254,7 +242,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
 
     private void deleteAttributeOwnerships() {
         vertex().getEdgesOfType(Direction.BOTH, Schema.EdgeLabel.ATTRIBUTE)
-            .forEach(AbstractElement::delete);
+                .forEach(AbstractElement::delete);
     }
 
     @Override
@@ -281,6 +269,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
         // TODO check explicitly whether this attribute is already owned in any way
 
         EdgeElement attributeEdge = putEdge(AttributeImpl.from(attribute), Schema.EdgeLabel.ATTRIBUTE);
+        attributeEdge.property(Schema.EdgeProperty.ATTRIBUTE_OWNED_LABEL_ID, attribute.type().labelId().getValue());
         if (isInferred) attributeEdge.property(Schema.EdgeProperty.IS_INFERRED, true);
 
         conceptManager.createHasAttributeRelation(attributeEdge, isInferred);
@@ -289,8 +278,8 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
 
     @Override
     public T unhas(Attribute attribute) {
-        // TODO-NOIMPL add forwards and backwards compatibility on deletes
-
+        // TODO-NOIMPL add forwards compatibility on deletes
+        // SHOULD BREAK
 
         Role roleHasOwner = conceptManager.getSchemaConcept(Schema.ImplicitType.HAS_OWNER.getLabel(attribute.type().label()));
         Role roleKeyOwner = conceptManager.getSchemaConcept(Schema.ImplicitType.KEY_OWNER.getLabel(attribute.type().label()));

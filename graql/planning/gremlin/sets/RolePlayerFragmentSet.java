@@ -132,51 +132,6 @@ public class RolePlayerFragmentSet extends EquivalentFragmentSetImpl {
     };
 
     /**
-     * For traversals associated with implicit relations (either via the has keyword or directly using the implicit relation):
-     *
-     * - expands the roles and relation types to include relevant hierarchies
-     * - as we have transaction information here, we additionally filter the non-relevant variant between key- and has- attribute options.
-     *
-     */
-    static final FragmentSetOptimisation IMPLICIT_RELATION_OPTIMISATION = (fragmentSets, conceptManager) -> {
-        Iterable<RolePlayerFragmentSet> rolePlayers =
-                EquivalentFragmentSets.fragmentSetOfType(RolePlayerFragmentSet.class, fragmentSets)::iterator;
-
-        for (RolePlayerFragmentSet rolePlayer : rolePlayers) {
-            @Nullable RolePlayerFragmentSet newRolePlayer = null;
-
-            @Nullable ImmutableSet<Label> relLabels = rolePlayer.relationTypeLabels;
-            @Nullable ImmutableSet<Label> roleLabels = rolePlayer.roleLabels;
-            if(relLabels == null || roleLabels == null) continue;
-
-            Set<RelationType> relTypes = relLabels.stream()
-                    .map(conceptManager::<SchemaConcept>getSchemaConcept)
-                    .filter(Objects::nonNull)
-                    .filter(Concept::isRelationType)
-                    .map(Concept::asRelationType)
-                    .collect(toSet());
-
-            Set<Role> roles = roleLabels.stream()
-                    .map(conceptManager::<SchemaConcept>getSchemaConcept)
-                    .filter(Objects::nonNull)
-                    .filter(Concept::isRole)
-                    .map(Concept::asRole)
-                    .collect(toSet());
-            if (Stream.concat(relTypes.stream(), roles.stream()).allMatch(SchemaConcept::isImplicit)) {
-                newRolePlayer = rolePlayer.substituteLabels(roles, relTypes);
-            }
-
-            if (newRolePlayer != null && !newRolePlayer.equals(rolePlayer)) {
-                fragmentSets.remove(rolePlayer);
-                fragmentSets.add(newRolePlayer);
-                return true;
-            }
-        }
-
-        return false;
-    };
-
-    /**
      * A query can use the RelationType Labels on a Schema.EdgeLabel#ROLE_PLAYER edge when the following criteria are met:
      * <ol>
      *     <li>There is a RolePlayerFragmentSet {@code $r-[role-player:$e ...]->$p}

@@ -30,6 +30,7 @@ import graql.lang.statement.Variable;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.List;
@@ -192,48 +193,50 @@ public class AttributeAttachmentIT {
         }
     }
 
-    @Test
-    public void whenReasoningWithAttributesInRelationForm_attributesAreMaterialisedCorrectly() {
-        int noOfAttributes;
-        int noOfGeneralAnswers;
-        String attributeQuery = "match $x isa attribute;get;";
-        String attributeRelationQuery = "match " +
-                "$rel ($x, $y);" +
-                "$x isa attribute;" +
-                "get;";
-        String generalQuery = "match " +
-                "$rel ($x); " +
-                "get;";
-        try (Transaction tx = attributeAttachmentSession.transaction(Transaction.Type.WRITE)) {
-            List<ConceptMap> attributeAnswers = tx.execute(Graql.parse(attributeQuery).asGet());
-            noOfAttributes = attributeAnswers.size();
-        }
-        try (Transaction tx = attributeAttachmentSession.transaction(Transaction.Type.WRITE)) {
-            List<ConceptMap> attributeRelationAnswers = tx.execute(Graql.parse(attributeRelationQuery).asGet());
-
-            assertEquals(
-                    noOfAttributes,
-                    attributeRelationAnswers.stream().map(ans -> ans.project(Sets.newHashSet(new Variable("x")))).distinct().count()
-            );
-
-            List<ConceptMap> genericAnswers = tx.execute(Graql.parse(generalQuery).asGet());
-            Set<Concept> expectedAttributeRelations = attributeRelationAnswers.stream()
-                    .map(ans -> ans.project(Sets.newHashSet(var("rel").var())))
-                    .map(ans -> ans.get("rel"))
-                    .collect(toSet());
-            Set<Concept> attributeRelations = genericAnswers.stream()
-                    .filter(ans -> ans.get("rel").asRelation().type().isImplicit())
-                    .map(ans -> ans.get("rel"))
-                    .collect(Collectors.toSet());
-            assertEquals(expectedAttributeRelations, attributeRelations);
-            noOfGeneralAnswers = genericAnswers.size();
-        }
-
-        try (Transaction tx = attributeAttachmentSession.transaction(Transaction.Type.WRITE)) {
-            List<ConceptMap> genericAnswers = tx.execute(Graql.parse(generalQuery).asGet());
-            assertEquals(noOfGeneralAnswers, genericAnswers.size());
-        }
-    }
+    // TODO-NOIMPL determine if we can reuse this test
+//    @Ignore
+//    @Test
+//    public void whenReasoningWithAttributesInRelationForm_attributesAreMaterialisedCorrectly() {
+//        int noOfAttributes;
+//        int noOfGeneralAnswers;
+//        String attributeQuery = "match $x isa attribute;get;";
+//        String attributeRelationQuery = "match " +
+//                "$rel ($x, $y);" +
+//                "$x isa attribute;" +
+//                "get;";
+//        String generalQuery = "match " +
+//                "$rel ($x); " +
+//                "get;";
+//        try (Transaction tx = attributeAttachmentSession.transaction(Transaction.Type.WRITE)) {
+//            List<ConceptMap> attributeAnswers = tx.execute(Graql.parse(attributeQuery).asGet());
+//            noOfAttributes = attributeAnswers.size();
+//        }
+//        try (Transaction tx = attributeAttachmentSession.transaction(Transaction.Type.WRITE)) {
+//            List<ConceptMap> attributeRelationAnswers = tx.execute(Graql.parse(attributeRelationQuery).asGet());
+//
+//            assertEquals(
+//                    noOfAttributes,
+//                    attributeRelationAnswers.stream().map(ans -> ans.project(Sets.newHashSet(new Variable("x")))).distinct().count()
+//            );
+//
+//            List<ConceptMap> genericAnswers = tx.execute(Graql.parse(generalQuery).asGet());
+//            Set<Concept> expectedAttributeRelations = attributeRelationAnswers.stream()
+//                    .map(ans -> ans.project(Sets.newHashSet(var("rel").var())))
+//                    .map(ans -> ans.get("rel"))
+//                    .collect(toSet());
+//            Set<Concept> attributeRelations = genericAnswers.stream()
+//                    .filter(ans -> ans.get("rel").asRelation().type().isImplicit())
+//                    .map(ans -> ans.get("rel"))
+//                    .collect(Collectors.toSet());
+//            assertEquals(expectedAttributeRelations, attributeRelations);
+//            noOfGeneralAnswers = genericAnswers.size();
+//        }
+//
+//        try (Transaction tx = attributeAttachmentSession.transaction(Transaction.Type.WRITE)) {
+//            List<ConceptMap> genericAnswers = tx.execute(Graql.parse(generalQuery).asGet());
+//            assertEquals(noOfGeneralAnswers, genericAnswers.size());
+//        }
+//    }
 
     @Test
     public void whenExecutingAQueryWithImplicitTypes_InferenceHasAtLeastAsManyResults() {

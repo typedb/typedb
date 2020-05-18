@@ -190,9 +190,6 @@ public class ResponseBuilder {
             if (concept.isSchemaConcept()) {
                 builder.setLabelRes(ConceptProto.SchemaConcept.GetLabel.Res.newBuilder()
                         .setLabel(concept.asSchemaConcept().label().getValue()));
-                builder.setIsImplicitRes(ConceptProto.SchemaConcept.IsImplicit.Res.newBuilder()
-                        .setImplicit(concept.asSchemaConcept().isImplicit()));
-
             } else if (concept.isThing()) {
                 builder.setTypeRes(ConceptProto.Thing.Type.Res.newBuilder()
                         .setType(conceptPrefilled(concept.asThing().type())));
