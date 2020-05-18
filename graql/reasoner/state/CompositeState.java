@@ -77,7 +77,7 @@ public class CompositeState extends AnswerPropagatorState<CompositeQuery> {
     }
 
     @Override
-    ConceptMap consumeAnswer(AnswerState state) { return state.getSubstitution(); }
+    ConceptMap consumeAnswer(AnswerState state) { return state.getSubstitution().withPattern(getQuery().getPattern()); }
 
     @Override
     public ResolutionState propagateAnswer(AnswerState state) {

@@ -118,8 +118,7 @@ public class MultilevelSemanticCache extends SemanticCache<Equivalence.Wrapper<R
                 multiUnifier.inverse()
                         .apply(answerIndex)
                         .flatMap(index -> answers.get(index).stream())
-                        .flatMap(multiUnifier::apply)
-                .map(ans -> ans.withPattern(query.withSubstitution(ans).getPattern())),
+                        .flatMap(multiUnifier::apply),
                 multiUnifier
         );
     }

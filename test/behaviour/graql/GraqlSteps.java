@@ -308,8 +308,8 @@ public class GraqlSteps {
         assertTrue(String.format("No answer found for explanation entry %d that satisfies the vars and identifiers given", entryId), matchingAnswer.isPresent());
         ConceptMap answer = matchingAnswer.get();
 
-        String queryWithIds = applyQueryTemplate(explanationEntry.get("pattern"), answer);
-        Conjunction<?> queryWithIdsConj = Graql.and(Graql.parsePatternList(queryWithIds));
+//        String queryWithIds = applyQueryTemplate(explanationEntry.get("pattern"), answer);
+        Conjunction<?> queryWithIdsConj = Graql.and(Graql.parsePatternList(explanationEntry.get("pattern")));
         assertEquals(
                 String.format("Explanation entry %d has an incorrect pattern.\nExpected: %s\nActual: %s", entryId, queryWithIdsConj, answer.getPattern()),
                 queryWithIdsConj, answer.getPattern());
@@ -322,13 +322,16 @@ public class GraqlSteps {
             assertFalse(String.format("Explanation entry %d is declared as a lookup, but an explanation was found", entryId), hasExplanation);
 
             String[] expectedChildren = {"-"};
-            assertArrayEquals(String.format("Explanation entry %d is declared as a lookup, and so it should have no children, indicated as \"-\", but got children %s instead", entryId, Arrays.toString(children)), expectedChildren, children);
+            if (!Arrays.equals(expectedChildren, children)) {
+                throw new ScenarioDefinitionException(String.format("Explanation entry %d is declared as a lookup, and so it should have no children, indicated as \"-\", but got children %s instead", entryId, Arrays.toString(children)));
+            }
         } else {
 
             Explanation explanation = answer.explanation();
             List<ConceptMap> explAnswers = explanation.getAnswers();
 
-            assertEquals(String.format("Explanation entry %d should have as many children as it has answers. Instead, %d children were declared, and %d answers were found.", entryId, children.length, explAnswers.size()), children.length, explAnswers.size());
+            assertEquals(String.format("Explanation entry %d should have as many children as it has answers. Instead, %d children were declared, and %d answers were found. Note, this entry could be wrongly declared as a rule, when it is a lookup.", entryId, children.length, explAnswers.size()),
+                    children.length, explAnswers.size());
 
             if (expectedRule.equals("join")) {
                 assertNull(String.format("Explanation entry %d is declared as a join, and should not have a rule attached, but one was found", entryId), explanation.isRuleExplanation() ? ((RuleExplanation)explanation).getRule() : null);

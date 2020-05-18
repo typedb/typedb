@@ -227,10 +227,10 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
      * @return stream of materialised answers
      */
     public Stream<ConceptMap> materialise(ConceptMap answer) {
-        return this.withSubstitution(answer)
+        return this
                 .getAtom()
                 .materialise()
-                .map(ans -> new ConceptMap(ans.map(), answer.explanation(), this.withSubstitution(ans).getPattern()));
+                .map(ans -> new ConceptMap(ans.map(), answer.explanation(), this.getPattern()));
     }
 
     @Override
