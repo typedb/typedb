@@ -336,34 +336,6 @@ public final class Schema {
         public String getValue() {
             return label;
         }
-
-        /**
-         * Helper method which converts the implicit type label back into the original label from which is was built.
-         *
-         * @param implicitType the implicit type label
-         * @return The original label which was used to build this type
-         */
-        @CheckReturnValue
-        public static Label explicitLabel(Label implicitType) {
-            if (!(implicitType.getValue().startsWith("@key") || implicitType.getValue().startsWith("@has"))) {
-                throw new IllegalArgumentException(INVALID_IMPLICIT_TYPE.getMessage(implicitType));
-            }
-
-            int endIndex = implicitType.getValue().length();
-            // We need to exclude the scenario where the user literally names their attributes 'value' or 'owner'
-            // which will result in @has-value, @has-owner, @key-value, @key-owner as legitimate implicit-relation names
-            if (implicitType.getValue().length() > 10 && (implicitType.getValue().endsWith("-value") || implicitType.getValue().endsWith("-owner"))) {
-                endIndex = implicitType.getValue().lastIndexOf("-");
-            }
-
-            //return the Label without the `@has-`or '@key-' prefix
-            return Label.of(implicitType.getValue().substring(5, endIndex));
-        }
-
-        @CheckReturnValue
-        public static boolean isKey(Label implicitType) {
-            return implicitType.getValue().startsWith("@key");
-        }
     }
 
     /**

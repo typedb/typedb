@@ -140,7 +140,7 @@ public class Validator {
      * @param thing The Thing to validate
      */
     private void validateThing(Thing thing) {
-        ValidateGlobalRules.validateInstancePlaysAllRequiredRoles(conceptManager, thing).ifPresent(errorsFound::add);
+        ValidateGlobalRules.validateInstancePlaysAllRequiredRoles(thing).ifPresent(errorsFound::add);
     }
 
     /**

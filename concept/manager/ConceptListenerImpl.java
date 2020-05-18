@@ -175,7 +175,7 @@ public class ConceptListenerImpl implements ConceptListener {
 
         //acknowledge key relation modification if the thing is one
         if (owner.type().keys().anyMatch(attribute.type()::equals)) {
-            Label label = Schema.ImplicitType.explicitLabel(attribute.type().label());
+            Label label = attribute.type().label();
             String index = Schema.generateAttributeIndex(label, attribute.value().toString());
             transactionCache.addModifiedKeyIndex(index);
         }
