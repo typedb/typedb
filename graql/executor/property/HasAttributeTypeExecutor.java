@@ -113,7 +113,6 @@ public class HasAttributeTypeExecutor  implements PropertyExecutor.Definable {
             Set<Variable> required = new HashSet<>();
             required.add(var);
             required.add(property.attributeType().var());
-
             return Collections.unmodifiableSet(required);
         }
 
@@ -126,15 +125,14 @@ public class HasAttributeTypeExecutor  implements PropertyExecutor.Definable {
 
         @Override
         public void execute(WriteExecutor executor) {
-            Type entityTypeConcept = executor.getConcept(var).asType();
+            Type typeConcept = executor.getConcept(var).asType();
             AttributeType attributeTypeConcept = executor
                     .getConcept(property.attributeType().var())
                     .asAttributeType();
-
             if (property.isKey()) {
-                entityTypeConcept.putKey(attributeTypeConcept);
+                typeConcept.putKey(attributeTypeConcept);
             } else {
-                entityTypeConcept.putHas(attributeTypeConcept);
+                typeConcept.putHas(attributeTypeConcept);
             }
         }
     }

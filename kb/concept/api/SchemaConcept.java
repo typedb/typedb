@@ -19,6 +19,8 @@
 package grakn.core.kb.concept.api;
 
 
+import com.sun.xml.internal.bind.v2.TODO;
+
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
 import java.util.stream.Stream;
@@ -87,6 +89,10 @@ public interface SchemaConcept extends Concept {
      * By default, SchemaConcept are not implicit.
      *
      * @return returns true if the type was created implicitly through the Attribute syntax
+     */
+    /*
+    TODO
+    REMOVE
      */
     @CheckReturnValue
     Boolean isImplicit();

@@ -279,9 +279,8 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
         }
 
         // TODO check explicitly whether this attribute is already owned in any way
-        // TODO this will require reading old+new structure but we always write new structure
 
-        EdgeElement attributeEdge = addEdge(AttributeImpl.from(attribute), Schema.EdgeLabel.ATTRIBUTE);
+        EdgeElement attributeEdge = putEdge(AttributeImpl.from(attribute), Schema.EdgeLabel.ATTRIBUTE);
         if (isInferred) attributeEdge.property(Schema.EdgeProperty.IS_INFERRED, true);
 
         conceptManager.createHasAttributeRelation(attributeEdge, isInferred);

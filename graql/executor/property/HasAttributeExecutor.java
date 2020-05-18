@@ -22,7 +22,6 @@ import com.google.common.collect.ImmutableSet;
 import grakn.core.graql.planning.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.Concept;
-import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.graql.exception.GraqlSemanticException;
@@ -53,7 +52,7 @@ public class HasAttributeExecutor  implements PropertyExecutor.Insertable, Prope
     public Set<EquivalentFragmentSet> matchFragments() {
         return ImmutableSet.of(
                 //owner rolePlayer edge
-                EquivalentFragmentSets.has(property, var, property.attribute().var(), ImmutableSet.of(type))
+                EquivalentFragmentSets.attribute(property, var, property.attribute().var(), ImmutableSet.of(type))
         );
     }
 

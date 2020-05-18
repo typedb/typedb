@@ -39,12 +39,16 @@ import java.util.HashSet;
 import java.util.Set;
 
 import static grakn.core.core.Schema.EdgeLabel.ROLE_PLAYER;
+import static grakn.core.core.Schema.EdgeProperty.ATTRIBUTE_OWNED_LABEL_ID;
 import static grakn.core.core.Schema.EdgeProperty.RELATION_ROLE_OWNER_LABEL_ID;
 import static grakn.core.core.Schema.EdgeProperty.RELATION_ROLE_VALUE_LABEL_ID;
 import static grakn.core.core.Schema.EdgeProperty.RELATION_TYPE_LABEL_ID;
 import static grakn.core.core.Schema.EdgeProperty.ROLE_LABEL_ID;
 import static java.util.stream.Collectors.toSet;
 
+/**
+ * Traverse from an owner instance to attribute instances of the given type labels
+ */
 public class OutAttributeFragment extends EdgeFragment {
     private final ImmutableSet<Label> attributeTypeLabels;
     private Variable edgeVariable;
@@ -72,43 +76,24 @@ public class OutAttributeFragment extends EdgeFragment {
 
     @Override
     GraphTraversal<Vertex, ? extends Element> applyTraversalInner(GraphTraversal<Vertex, ? extends Element> traversal, ConceptManager conceptManager, Collection<Variable> vars) {
-        // collect the allowed subtypes
-        Set<Label> implicitRelationTypes = new HashSet<>();
-        Set<Label> ownerRoles = new HashSet<>();
-        Set<Label> valueRoles = new HashSet<>();
-
-        // retrieve matching attribute vertices or any of its subtypes' instances
-        attributeTypeLabels.stream()
-                .flatMap(attributeTypeLabel -> conceptManager.getAttributeType(attributeTypeLabel.getValue()).subs())
-                .forEach(attrType -> {
-                    Label attrTypeLabel = attrType.label();
-                    implicitRelationTypes.add(Schema.ImplicitType.HAS.getLabel(attrTypeLabel));
-                    implicitRelationTypes.add(Schema.ImplicitType.KEY.getLabel(attrTypeLabel));
-                    ownerRoles.add(Schema.ImplicitType.HAS_OWNER.getLabel(attrTypeLabel));
-                    ownerRoles.add(Schema.ImplicitType.KEY_OWNER.getLabel(attrTypeLabel));
-                    valueRoles.add(Schema.ImplicitType.HAS_VALUE.getLabel(attrTypeLabel));
-                    valueRoles.add(Schema.ImplicitType.KEY_VALUE.getLabel(attrTypeLabel));
-                });
-
-
-        // extend the traversal with a UNION of 2 paths:
-        // (end) ATTR <-[value]- rel node -[owner]-> OWNER (START), owner != value edge
-        // (end) ATTR <-[edge]- OWNER (START)
-        return Fragments.union(Fragments.isVertex(traversal),
-                ImmutableSet.of(
-                        edgeRelationTraversal(conceptManager, vars, implicitRelationTypes, ownerRoles, valueRoles))
+        // (start) ATTR <-[edge]- OWNER (START)
+        return Fragments.union(
+                Fragments.isVertex(traversal),
+                ImmutableSet.of(edgeRelationTraversal(conceptManager))
         );
     }
 
-    private GraphTraversal<Vertex, Vertex> edgeRelationTraversal(
-            ConceptManager conceptManager, Collection<Variable> vars, Set<Label> implicitRelationTypes, Set<Label> ownerRoles, Set<Label> valueRoles) {
-
+    private GraphTraversal<Vertex, Vertex> edgeRelationTraversal(ConceptManager conceptManager) {
         GraphTraversal<Vertex, Edge> edgeTraversal = __.outE(Schema.EdgeLabel.ATTRIBUTE.getLabel());
 
+        Set<Label> labelsWithSubtypes = attributeTypeLabels
+                .stream()
+                .flatMap(label -> conceptManager.getSchemaConcept(label).subs())
+                .map(type -> type.label())
+                .collect(toSet());
+
         // Filter by any provided type labels
-        applyLabelsToTraversal(edgeTraversal, RELATION_ROLE_OWNER_LABEL_ID, ownerRoles, conceptManager);
-        applyLabelsToTraversal(edgeTraversal, RELATION_ROLE_VALUE_LABEL_ID, valueRoles, conceptManager);
-        applyLabelsToTraversal(edgeTraversal, RELATION_TYPE_LABEL_ID, implicitRelationTypes, conceptManager);
+        applyLabelsToTraversal(edgeTraversal, ATTRIBUTE_OWNED_LABEL_ID, labelsWithSubtypes, conceptManager);
 
         return edgeTraversal.inV();
     }

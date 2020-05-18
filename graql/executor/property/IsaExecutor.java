@@ -56,12 +56,12 @@ public class IsaExecutor implements PropertyExecutor.Insertable, PropertyExecuto
         Variable directTypeVar = new Variable();
         if (!property.isExplicit()) {
             return ImmutableSet.of(
-                    EquivalentFragmentSets.isa(property, var, directTypeVar, true),
+                    EquivalentFragmentSets.isa(property, var, directTypeVar),
                     EquivalentFragmentSets.sub(property, directTypeVar, property.type().var())
             );
         } else {
             return ImmutableSet.of(
-                    EquivalentFragmentSets.isa(property, var, property.type().var(), true)
+                    EquivalentFragmentSets.isa(property, var, property.type().var())
             );
         }
     }

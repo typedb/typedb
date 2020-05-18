@@ -40,12 +40,12 @@ public class EquivalentFragmentSets {
 
     private static final ImmutableCollection<FragmentSetOptimisation> OPTIMISATIONS = ImmutableSet.of(
             RolePlayerFragmentSet.ROLE_OPTIMISATION,
-            RolePlayerFragmentSet.IMPLICIT_RELATION_OPTIMISATION,
+//            RolePlayerFragmentSet.IMPLICIT_RELATION_OPTIMISATION,
             AttributeIndexFragmentSet.ATTRIBUTE_INDEX_OPTIMISATION,
             RolePlayerFragmentSet.RELATION_TYPE_OPTIMISATION,
             LabelFragmentSet.REDUNDANT_LABEL_ELIMINATION_OPTIMISATION,
-            SubFragmentSet.SUB_TRAVERSAL_ELIMINATION_OPTIMISATION,
-            IsaFragmentSet.SKIP_EDGE_INSTANCE_CHECK_OPTIMISATION
+            SubFragmentSet.SUB_TRAVERSAL_ELIMINATION_OPTIMISATION
+//            IsaFragmentSet.SKIP_EDGE_INSTANCE_CHECK_OPTIMISATION
     );
 
     /**
@@ -66,7 +66,7 @@ public class EquivalentFragmentSets {
      * @param attribute
      * @return
      */
-    public static EquivalentFragmentSet has(VarProperty varProperty, Variable owner, Variable attribute, ImmutableSet<Label> attributeTypeLabels) {
+    public static EquivalentFragmentSet attribute(VarProperty varProperty, Variable owner, Variable attribute, ImmutableSet<Label> attributeTypeLabels) {
         return new AttributeFragmentSet(varProperty, owner, attribute, attributeTypeLabels);
     }
 
@@ -119,8 +119,8 @@ public class EquivalentFragmentSets {
      * An EquivalentFragmentSet that indicates a variable is a direct instance of a type.
      */
     public static EquivalentFragmentSet isa(
-            VarProperty varProperty, Variable instance, Variable type, boolean mayHaveEdgeInstances) {
-        return new IsaFragmentSet(varProperty, instance, type, mayHaveEdgeInstances);
+            VarProperty varProperty, Variable instance, Variable type) {
+        return new IsaFragmentSet(varProperty, instance, type);
     }
 
     /**

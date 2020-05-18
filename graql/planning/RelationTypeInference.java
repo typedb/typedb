@@ -100,7 +100,7 @@ public class RelationTypeInference {
                 Statement labelVar = inferredLabels.get(label);
                 IsaProperty isaProperty = new IsaProperty(labelVar);
                 EquivalentFragmentSet isaEquivalentFragmentSet = EquivalentFragmentSets.isa(isaProperty,
-                        relationVar, labelVar.var(), relationType.isImplicit());
+                        relationVar, labelVar.var());
                 inferredFragments.addAll(isaEquivalentFragmentSet.fragments());
             }
         });

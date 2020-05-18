@@ -260,7 +260,10 @@ public final class Schema {
         ROLE_LABEL_ID(Integer.class),
         RELATION_TYPE_LABEL_ID(Integer.class),
         REQUIRED(Boolean.class),
-        IS_INFERRED(Boolean.class);
+        IS_INFERRED(Boolean.class),
+        // forwards compatibility
+        ATTRIBUTE_OWNED_LABEL_ID(Integer.class),
+        ATTRIBUTE_OWNER_LABEL_ID(Integer.class);
 
         private final Class valueType;
 
