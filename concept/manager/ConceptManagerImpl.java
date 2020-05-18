@@ -43,6 +43,7 @@ import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.SchemaConcept;
+import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.concept.manager.ConceptNotificationChannel;
@@ -282,9 +283,8 @@ public class ConceptManagerImpl implements ConceptManager {
      * Skip checking caches because this should be a brand new edge and concept
      */
     @Override
-    public void createHasAttributeRelation(EdgeElement edge, boolean isInferred) {
-        // TODO this may need to be re-added with different behaviour
-//        conceptNotificationChannel.hasAttributeRelationCreated(newRelation, isInferred);
+    public void createHasAttributeRelation(Thing owner, Attribute attribute, boolean isInferred) {
+        conceptNotificationChannel.hasAttributeRelationCreated(owner, attribute, isInferred);
     }
 
 //    /**

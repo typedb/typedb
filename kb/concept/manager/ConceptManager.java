@@ -32,6 +32,7 @@ import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.SchemaConcept;
+import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.concept.structure.EdgeElement;
 import grakn.core.kb.concept.structure.Shard;
@@ -48,7 +49,6 @@ public interface ConceptManager {
     <T extends Concept> T buildConcept(Edge edge);
     <T extends Concept> T buildConcept(VertexElement vertex);
 //    Relation buildRelation(EdgeElement edge);
-
 
     <T extends Type> T getType(Label label);
     <T extends SchemaConcept> T getSchemaConcept(Label label);
@@ -71,13 +71,12 @@ public interface ConceptManager {
     Role getMetaRole();
     Rule getMetaRule();
 
-
     Relation createRelation(RelationType relationType, boolean isInferred);
     Entity createEntity(EntityType entityType, boolean isInferred);
     <D> Attribute<D> createAttribute(AttributeType<D> dAttributeType, D value, boolean isInferred);
     RelationType createImplicitRelationType(Label label);
     Role createImplicitRole(Label label);
-    void createHasAttributeRelation(EdgeElement attributeEdge, boolean isInferred);
+    void createHasAttributeRelation(Thing owner, Attribute attribute, boolean isInferred);
 
     EntityType createEntityType(Label label, EntityType superType);
     RelationType createRelationType(Label label, RelationType superType);
