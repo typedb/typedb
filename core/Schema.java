@@ -93,8 +93,8 @@ public final class Schema {
         SUB("sub"),
         RELATES("relates"),
         PLAYS("plays"),
-        HAS("has"), // has schema edge
-        KEY("key"), // key schema edge
+        HAS("schema-has"), // has schema edge
+        KEY("schema-key"), // key schema edge -- "key" is a reserved keyword!
         POSITIVE_HYPOTHESIS("positive-hypothesis"),
         NEGATIVE_HYPOTHESIS("negative-hypothesis"),
         CONCLUSION("conclusion"),
