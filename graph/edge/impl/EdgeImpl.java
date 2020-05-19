@@ -30,7 +30,7 @@ import static java.util.Objects.hash;
 
 public abstract class EdgeImpl<
         GRAPH extends Graph<?, VERTEX>,
-        EDGE_IID extends IID.Edge<VERTEX_IID>,
+        EDGE_IID extends IID.Edge<EDGE_SCHEMA, VERTEX_IID>,
         EDGE_SCHEMA extends Schema.Edge,
         EDGE extends Edge<EDGE_IID, EDGE_SCHEMA, VERTEX>,
         VERTEX_IID extends IID.Vertex,
@@ -62,7 +62,7 @@ public abstract class EdgeImpl<
 
     public static abstract class Buffered<
             GRAPH extends Graph<?, VERTEX>,
-            EDGE_IID extends IID.Edge<VERTEX_IID>,
+            EDGE_IID extends IID.Edge<EDGE_SCHEMA, VERTEX_IID>,
             EDGE_SCHEMA extends Schema.Edge,
             EDGE extends Edge<EDGE_IID, EDGE_SCHEMA, VERTEX>,
             VERTEX_IID extends IID.Vertex,
@@ -187,7 +187,7 @@ public abstract class EdgeImpl<
 
     public static abstract class Persisted<
             GRAPH extends Graph<VERTEX_IID, VERTEX>,
-            EDGE_IID extends IID.Edge<VERTEX_IID>,
+            EDGE_IID extends IID.Edge<EDGE_SCHEMA, VERTEX_IID>,
             EDGE_SCHEMA extends Schema.Edge,
             EDGE extends Edge<EDGE_IID, EDGE_SCHEMA, VERTEX>,
             VERTEX_IID extends IID.Vertex,
@@ -217,8 +217,8 @@ public abstract class EdgeImpl<
          * @param graph the graph comprised of all the vertices
          * @param iid   the {@code iid} of a persisted edge
          */
-        public Persisted(GRAPH graph, EDGE_SCHEMA edgeSchema, EDGE_IID iid) {
-            super(graph, edgeSchema);
+        public Persisted(GRAPH graph, EDGE_IID iid) {
+            super(graph, iid.schema());
             VERTEX_IID start = iid.start();
             VERTEX_IID end = iid.end();
 
@@ -226,12 +226,12 @@ public abstract class EdgeImpl<
                 fromIID = start;
                 toIID = end;
                 outIID = iid;
-                inIID = edgeIID(end, edgeSchema.in(), start);
+                inIID = edgeIID(end, iid.schema().in(), start);
             } else {
                 fromIID = end;
                 toIID = start;
                 inIID = iid;
-                outIID = edgeIID(end, edgeSchema.out(), start);
+                outIID = edgeIID(end, iid.schema().out(), start);
             }
 
             isDeleted = new AtomicBoolean(false);

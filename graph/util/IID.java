@@ -133,9 +133,16 @@ public class IID {
                 return IID.Vertex.Type.of(copyOfRange(bytes, Prefix.LENGTH, Type.LENGTH));
             }
         }
+
+        public static class Attribute extends IID.Vertex.Thing {
+
+            Attribute(byte[] bytes) {
+                super(bytes);
+            }
+        }
     }
 
-    public static abstract class Edge<VERTEX_IID extends IID.Vertex> extends IID {
+    public static abstract class Edge<EDGE_SCHEMA extends Schema.Edge, VERTEX_IID extends IID.Vertex> extends IID {
 
         Edge(byte[] bytes) {
             super(bytes);
@@ -143,13 +150,13 @@ public class IID {
 
         public abstract boolean isOutwards();
 
+        public abstract EDGE_SCHEMA schema();
+
         public abstract VERTEX_IID start();
 
         public abstract VERTEX_IID end();
 
-        public abstract Schema.Infix infix();
-
-        public static class Type extends IID.Edge<IID.Vertex.Type> {
+        public static class Type extends IID.Edge<Schema.Edge.Type, IID.Vertex.Type> {
 
             Type(byte[] bytes) {
                 super(bytes);
@@ -160,16 +167,18 @@ public class IID {
             }
 
             public static IID.Edge.Type of(IID.Vertex.Type start, Schema.Infix infix, IID.Vertex.Type end) {
-                return new IID.Edge.Type(join(start.bytes, infix.key(), end.bytes));
-            }
-
-            public Schema.Edge.Type schema() {
-                return Schema.Edge.Type.of(bytes[Vertex.Type.LENGTH]);
+                return new IID.Edge.Type(join(start.bytes, infix.bytes(), end.bytes));
             }
 
             @Override
             public boolean isOutwards() {
                 return Schema.Edge.isOut(bytes[Vertex.Type.LENGTH]);
+            }
+
+            @Override
+
+            public Schema.Edge.Type schema() {
+                return Schema.Edge.Type.of(bytes[Vertex.Type.LENGTH]);
             }
 
             @Override
@@ -182,14 +191,9 @@ public class IID {
                 return Vertex.Type.of(copyOfRange(bytes, Vertex.Type.LENGTH + Infix.LENGTH, bytes.length));
             }
 
-            @Override
-            public Schema.Infix infix() {
-                return Schema.Infix.of(bytes[Vertex.Type.LENGTH]);
-            }
-
         }
 
-        public static class Thing extends IID.Edge<IID.Vertex.Thing> {
+        public static class Thing extends IID.Edge<Schema.Edge.Thing, IID.Vertex.Thing> {
 
             Thing(byte[] bytes) {
                 super(bytes);
@@ -200,16 +204,17 @@ public class IID {
             }
 
             public static Thing of(Vertex.Thing start, Schema.Infix infix, Vertex.Thing end) {
-                return new IID.Edge.Thing(join(start.bytes(), infix.key(), end.bytes()));
-            }
-
-            public Schema.Edge.Thing schema() {
-                return null; // TODO
+                return new IID.Edge.Thing(join(start.bytes(), infix.bytes(), end.bytes()));
             }
 
             @Override
             public boolean isOutwards() {
                 return false; // TODO
+            }
+
+            @Override
+            public Schema.Edge.Thing schema() {
+                return null; // TODO
             }
 
             @Override
@@ -219,11 +224,6 @@ public class IID {
 
             @Override
             public IID.Vertex.Thing end() {
-                return null; // TODO
-            }
-
-            @Override
-            public Schema.Infix infix() {
                 return null; // TODO
             }
         }

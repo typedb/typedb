@@ -40,7 +40,7 @@ public class CoreKeyspace implements Hypergraph.Keyspace {
     private final CoreHypergraph core;
     private final OptimisticTransactionDB rocksDB;
     private final KeyGenerator.Persisted keyGenerator;
-    private final AttributeSync attributeSync;
+    private final CoreAttributeSync attributeSync;
     private final AtomicBoolean isOpen;
     private final Set<CoreSession> sessions;
 
@@ -48,7 +48,7 @@ public class CoreKeyspace implements Hypergraph.Keyspace {
         this.name = name;
         this.core = core;
         keyGenerator = new KeyGenerator.Persisted();
-        attributeSync = new AttributeSync();
+        attributeSync = new CoreAttributeSync();
         sessions = ConcurrentHashMap.newKeySet();
         isOpen = new AtomicBoolean(false);
 

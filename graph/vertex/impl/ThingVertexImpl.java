@@ -56,7 +56,7 @@ public abstract class ThingVertexImpl extends VertexImpl<IID.Vertex.Thing, Schem
      * @return a byte array representing a new IID for a {@code ThingVertex}
      */
     public static IID.Vertex.Thing generateIID(KeyGenerator keyGenerator, Schema.Vertex.Thing schema, IID.Vertex.Type typeIID) {
-        return IID.Vertex.Thing.of(join(schema.prefix().key(), typeIID.bytes(), keyGenerator.forThing(typeIID)));
+        return IID.Vertex.Thing.of(join(schema.prefix().bytes(), typeIID.bytes(), keyGenerator.forThing(typeIID)));
     }
 
     /**

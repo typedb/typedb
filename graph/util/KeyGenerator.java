@@ -77,12 +77,12 @@ public abstract class KeyGenerator {
 
         private void syncTypeKeys(Storage storage) {
             for (Schema.Vertex.Type schema : Schema.Vertex.Type.values()) {
-                byte[] prefix = schema.prefix().key();
+                byte[] prefix = schema.prefix().bytes();
                 byte[] lastIID = storage.getLastKey(prefix);
                 AtomicInteger nextValue = lastIID != null ?
                         new AtomicInteger(wrap(copyOfRange(lastIID, IID.Prefix.LENGTH, IID.Vertex.Type.LENGTH)).getShort() + delta) :
                         new AtomicInteger(initialValue);
-                typeKeys.put(IID.Prefix.of(schema.prefix().key()), nextValue);
+                typeKeys.put(IID.Prefix.of(schema.prefix().bytes()), nextValue);
             }
         }
 
@@ -92,12 +92,12 @@ public abstract class KeyGenerator {
             };
 
             for (Schema.Vertex.Thing thingSchema : thingsWithGeneratedIID) {
-                byte[] typeSchema = thingSchema.type().prefix().key();
+                byte[] typeSchema = thingSchema.type().prefix().bytes();
                 Iterator<byte[]> typeIterator = filter(storage.iterate(typeSchema, (iid, value) -> iid),
                                                        iid -> iid.length == IID.Vertex.Type.LENGTH);
                 while (typeIterator.hasNext()) {
                     byte[] typeIID = typeIterator.next();
-                    byte[] prefix = join(thingSchema.prefix().key(), typeIID);
+                    byte[] prefix = join(thingSchema.prefix().bytes(), typeIID);
                     byte[] lastIID = storage.getLastKey(prefix);
                     AtomicLong nextValue = lastIID != null ?
                             new AtomicLong(wrap(

@@ -18,34 +18,12 @@
 
 package hypergraph.graph.util;
 
-import hypergraph.common.collection.ByteArray;
+public interface AttributeSync {
 
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicBoolean;
+    CommitFlag get(IID.Vertex.Attribute attributeIID);
 
-public class AttributeSync {
+    interface CommitFlag {
 
-    private final ConcurrentMap<ByteArray, CommitFlag> commitFlags;
-
-    public AttributeSync() {
-        this.commitFlags = new ConcurrentHashMap<>();
-    }
-
-    public CommitFlag get(byte[] attributeIID) {
-        return commitFlags.computeIfAbsent(ByteArray.of(attributeIID), iid -> new CommitFlag());
-    }
-
-    public static class CommitFlag {
-
-        private final AtomicBoolean commited;
-
-        CommitFlag() {
-            commited = new AtomicBoolean(false);
-        }
-
-        public boolean getAndSetTrue() {
-            return commited.getAndSet(true);
-        }
+        boolean getAndSetTrue();
     }
 }

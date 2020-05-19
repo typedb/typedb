@@ -108,7 +108,7 @@ public class TypeEdgeImpl {
         private TypeVertex overridden;
 
         public Persisted(TypeGraph graph, IID.Edge.Type iid, @Nullable IID.Vertex.Type overriddenIID) {
-            super(graph, iid.schema(), iid);
+            super(graph, iid);
 
             if (iid.isOutwards()) {
                 this.overriddenIID = overriddenIID;

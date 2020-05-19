@@ -55,7 +55,7 @@ public abstract class ThingEdgeImpl {
             implements ThingEdge {
 
         public Persisted(ThingGraph graph, IID.Edge.Thing iid) {
-            super(graph, iid.schema(), iid);
+            super(graph, iid);
         }
 
         @Override

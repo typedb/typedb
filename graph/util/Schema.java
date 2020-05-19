@@ -87,7 +87,7 @@ public class Schema {
             this.key = (byte) key;
         }
 
-        public byte[] key() {
+        public byte[] bytes() {
             return new byte[]{key};
         }
     }
@@ -135,7 +135,7 @@ public class Schema {
             return null;
         }
 
-        public byte[] key() {
+        public byte[] bytes() {
             return new byte[]{key};
         }
     }
@@ -229,7 +229,7 @@ public class Schema {
             return null;
         }
 
-        public byte[] key() {
+        public byte[] bytes() {
             return new byte[]{key};
         }
 
@@ -406,14 +406,6 @@ public class Schema {
                     if (t.out.key == infix || t.in.key == infix) {
                         return t;
                     }
-                }
-                return null;
-            }
-
-            public static Infix reverse(Infix infix) {
-                for (Type t : Type.values()) {
-                    if (t.out == infix) return t.in;
-                    else if (t.in == infix) return t.out;
                 }
                 return null;
             }

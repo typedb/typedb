@@ -65,7 +65,7 @@ public abstract class AdjacencyImpl<
         VERTEX from = direction.isOut() ? owner : adjacent;
         VERTEX to = direction.isOut() ? adjacent : owner;
         EDGE edge = newBufferedEdge(schema, from, to);
-        edges.computeIfAbsent(edge.schema(), e -> ConcurrentHashMap.newKeySet()).add(edge);
+        edges.computeIfAbsent(schema, e -> ConcurrentHashMap.newKeySet()).add(edge);
         to.ins().putNonRecursive(edge);
     }
 
@@ -172,7 +172,7 @@ public abstract class AdjacencyImpl<
         @Override
         public PER_ITER_BUILDER edge(PER_EDGE_SCHEMA schema) {
             Iterator<PER_EDGE> storageIterator = owner.graph().storage().iterate(
-                    join(owner.iid().bytes(), direction.isOut() ? schema.out().key() : schema.in().key()),
+                    join(owner.iid().bytes(), direction.isOut() ? schema.out().bytes() : schema.in().bytes()),
                     (key, value) -> newPersistedEdge(owner.graph(), key, value)
             );
 
@@ -195,7 +195,7 @@ public abstract class AdjacencyImpl<
                 return container.get();
             } else {
                 Schema.Infix infix = direction.isOut() ? schema.out() : schema.in();
-                byte[] edgeIID = join(owner.iid().bytes(), infix.key(), adjacent.iid().bytes());
+                byte[] edgeIID = join(owner.iid().bytes(), infix.bytes(), adjacent.iid().bytes());
                 byte[] overriddenIID;
                 if ((overriddenIID = owner.graph().storage().get(edgeIID)) != null) {
                     return newPersistedEdge(owner.graph(), edgeIID, overriddenIID);
@@ -217,7 +217,7 @@ public abstract class AdjacencyImpl<
                 edges.get(schema).remove(container.get());
             } else {
                 Schema.Infix infix = direction.isOut() ? schema.out() : schema.in();
-                byte[] edgeIID = join(owner.iid().bytes(), infix.key(), adjacent.iid().bytes());
+                byte[] edgeIID = join(owner.iid().bytes(), infix.bytes(), adjacent.iid().bytes());
                 byte[] overriddenIID;
                 if ((overriddenIID = owner.graph().storage().get(edgeIID)) != null) {
                     (newPersistedEdge(owner.graph(), edgeIID, overriddenIID)).delete();
@@ -229,7 +229,7 @@ public abstract class AdjacencyImpl<
         public void delete(PER_EDGE_SCHEMA schema) {
             if (edges.containsKey(schema)) edges.get(schema).parallelStream().forEach(Edge::delete);
             Iterator<PER_EDGE> storageIterator = owner.graph().storage().iterate(
-                    join(owner.iid().bytes(), direction.isOut() ? schema.out().key() : schema.in().key()),
+                    join(owner.iid().bytes(), direction.isOut() ? schema.out().bytes() : schema.in().bytes()),
                     (key, value) -> newPersistedEdge(owner.graph(), key, value)
             );
             storageIterator.forEachRemaining(Edge::delete);

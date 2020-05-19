@@ -24,7 +24,6 @@ import hypergraph.concept.type.EntityType;
 import hypergraph.concept.type.RelationType;
 import hypergraph.concept.type.RoleType;
 import hypergraph.concept.type.ThingType;
-import hypergraph.concept.type.Type;
 import hypergraph.core.CoreHypergraph;
 import org.junit.Test;
 
@@ -34,9 +33,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Comparator;
-import java.util.Set;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.junit.Assert.assertEquals;
@@ -305,29 +302,6 @@ public class BasicTest {
     private static void nulls(Object... objects) {
         for (Object object : objects) {
             assertNull(object);
-        }
-    }
-
-    @Test
-    public void test() throws IOException {
-        resetDirectory();
-        try (Hypergraph graph = CoreHypergraph.open(directory.toString())) {
-            graph.keyspaces().create("my_data_keyspace");
-
-            assertTrue(graph.isOpen());
-            assertEquals(1, graph.keyspaces().getAll().size());
-            assertEquals("my_data_keyspace", graph.keyspaces().getAll().iterator().next().name());
-
-            try (Hypergraph.Session session = graph.session("my_data_keyspace")) {
-
-                assertTrue(session.isOpen());
-                assertEquals("my_data_keyspace", session.keyspace().name());
-
-                try (Hypergraph.Transaction transaction = session.transaction(Hypergraph.Transaction.Type.READ)) {
-                    Set<Type> types = transaction.concepts().getRootType().subs().collect(Collectors.toSet());
-                    System.out.println(types);
-                }
-            }
         }
     }
 }

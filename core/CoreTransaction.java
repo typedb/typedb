@@ -99,8 +99,9 @@ class CoreTransaction implements Hypergraph.Transaction {
 
     @Override
     public void commit() {
-        if (type.equals(Type.READ)) throw new HypergraphException("Illegal Write Exception");
-        else if (isOpen.compareAndSet(true, false)) {
+        if (type.equals(Type.READ)) {
+            throw new HypergraphException("Illegal Write Exception");
+        } else if (isOpen.compareAndSet(true, false)) {
             try {
                 graph.commit();
                 rocksTransaction.commit();
