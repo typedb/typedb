@@ -31,9 +31,8 @@ import javax.annotation.Nullable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-import static hypergraph.graph.vertex.impl.TypeVertexImpl.generateIID;
-import static hypergraph.graph.vertex.impl.TypeVertexImpl.index;
-import static hypergraph.graph.vertex.impl.TypeVertexImpl.scopedLabel;
+import static hypergraph.graph.util.IID.Vertex.Type.generate;
+import static hypergraph.graph.util.Schema.Vertex.Type.scopedLabel;
 
 public class TypeGraph implements Graph<IID.Vertex.Type, TypeVertex> {
 
@@ -91,7 +90,7 @@ public class TypeGraph implements Graph<IID.Vertex.Type, TypeVertex> {
     @Override
     public void commit() {
         typeByIID.values().parallelStream().filter(v -> v.status().equals(Schema.Status.BUFFERED)).forEach(
-                vertex -> vertex.iid(generateIID(graphManager.storage().keyGenerator(), vertex.schema()))
+                vertex -> vertex.iid(generate(graphManager.storage().keyGenerator(), vertex.schema()))
         ); // typeByIID no longer contains valid mapping from IID to TypeVertex
         typeByIID.values().parallelStream().forEach(Vertex::commit);
         clear(); // we now flush the indexes after commit, and we do not expect this Graph.Type to be used again
@@ -124,9 +123,9 @@ public class TypeGraph implements Graph<IID.Vertex.Type, TypeVertex> {
             multiLabelLock.lockRead();
             singleLabelLocks.computeIfAbsent(scopedLabel, x -> new ManagedReadWriteLock()).lockWrite();
 
-            TypeVertex typeVertex = typeByLabel.computeIfAbsent(
-                    scopedLabel, i -> new TypeVertexImpl.Buffered(this, type, generateIID(graphManager.keyGenerator(), type), label, scope)
-            );
+            TypeVertex typeVertex = typeByLabel.computeIfAbsent(scopedLabel, i -> new TypeVertexImpl.Buffered(
+                    this, type, generate(graphManager.keyGenerator(), type), label, scope
+            ));
             typeByIID.put(typeVertex.iid(), typeVertex);
             return typeVertex;
         } catch (InterruptedException e) {
@@ -150,7 +149,7 @@ public class TypeGraph implements Graph<IID.Vertex.Type, TypeVertex> {
             TypeVertex vertex = typeByLabel.get(scopedLabel);
             if (vertex != null) return vertex;
 
-            byte[] iid = graphManager.storage().get(index(label, scope));
+            byte[] iid = graphManager.storage().get(IID.Index.Type.of(label, scope).bytes());
             if (iid != null) {
                 vertex = typeByIID.computeIfAbsent(
                         IID.Vertex.Type.of(iid), i -> new TypeVertexImpl.Persisted(this, i, label, scope)

@@ -18,6 +18,7 @@
 
 package hypergraph.graph.util;
 
+import javax.annotation.Nullable;
 import java.util.Arrays;
 
 import static hypergraph.common.collection.ByteArrays.join;
@@ -81,15 +82,30 @@ public class IID {
         }
     }
 
-    public static class Index extends IID {
+    public static abstract class Index extends IID {
 
         Index(byte[] bytes) {
             super(bytes);
         }
 
-        public static IID.Index of(byte[] bytes) {
-            return new IID.Index(bytes);
+        public static class Type extends Index {
+
+            Type(byte[] bytes) {
+                super(bytes);
+            }
+
+            /**
+             * Returns the index address of given {@code TypeVertex}
+             *
+             * @param label of the {@code TypeVertex}
+             * @param scope of the {@code TypeVertex}, which could be null
+             * @return a byte array representing the index address of a {@code TypeVertex}
+             */
+            public static Index of(String label, @Nullable String scope) {
+                return new Index.Type(join(Schema.Index.TYPE.prefix().bytes(), Schema.Vertex.Type.scopedLabel(label, scope).getBytes()));
+            }
         }
+
     }
 
     public static abstract class Vertex extends IID {
@@ -109,6 +125,17 @@ public class IID {
 
             public static IID.Vertex.Type of(byte[] bytes) {
                 return new IID.Vertex.Type(bytes);
+            }
+
+            /**
+             * Generate an IID for a {@code TypeVertex} for a given {@code Schema}
+             *
+             * @param keyGenerator to generate the IID for a {@code TypeVertex}
+             * @param schema       of the {@code TypeVertex} in which the IID will be used for
+             * @return a byte array representing a new IID for a {@code TypeVertex}
+             */
+            public static Type generate(KeyGenerator keyGenerator, Schema.Vertex.Type schema) {
+                return of(join(schema.prefix().bytes(), keyGenerator.forType(Prefix.of(schema.prefix().bytes()))));
             }
 
             public Schema.Vertex.Type schema() {

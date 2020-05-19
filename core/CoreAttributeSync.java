@@ -38,7 +38,7 @@ public class CoreAttributeSync implements AttributeSync {
         return commitFlags.computeIfAbsent(attributeIID, iid -> new CommitFlag());
     }
 
-    public static class CommitFlag implements AttributeSync.CommitFlag {
+    public static class CommitFlag implements CommitSync {
 
         private final AtomicBoolean commited;
 
@@ -47,7 +47,7 @@ public class CoreAttributeSync implements AttributeSync {
         }
 
         @Override
-        public boolean getAndSetTrue() {
+        public boolean sync() {
             return commited.getAndSet(true);
         }
     }

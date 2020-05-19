@@ -298,6 +298,18 @@ public class Schema {
                 return null;
             }
 
+            /**
+             * Returns the fully scoped label for a given {@code TypeVertex}
+             *
+             * @param label the unscoped label of the {@code TypeVertex}
+             * @param scope the scope label of the {@code TypeVertex}
+             * @return the fully scoped label for a given {@code TypeVertex} as a string
+             */
+            public static String scopedLabel(String label, @Nullable String scope) {
+                if (scope == null) return label;
+                else return scope + ":" + label;
+            }
+
             @Override
             public Prefix prefix() {
                 return prefix;

@@ -27,7 +27,6 @@ import hypergraph.graph.adjacency.impl.TypeAdjacencyImpl;
 import hypergraph.graph.edge.Edge;
 import hypergraph.graph.edge.TypeEdge;
 import hypergraph.graph.util.IID;
-import hypergraph.graph.util.KeyGenerator;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.vertex.TypeVertex;
 
@@ -59,40 +58,6 @@ public abstract class TypeVertexImpl extends VertexImpl<IID.Vertex.Type, Schema.
     }
 
     /**
-     * Generate an IID for a {@code TypeVertex} for a given {@code Schema}
-     *
-     * @param keyGenerator to generate the IID for a {@code TypeVertex}
-     * @param schema       of the {@code TypeVertex} in which the IID will be used for
-     * @return a byte array representing a new IID for a {@code TypeVertex}
-     */
-    public static IID.Vertex.Type generateIID(KeyGenerator keyGenerator, Schema.Vertex.Type schema) {
-        return IID.Vertex.Type.of(join(schema.prefix().bytes(), keyGenerator.forType(IID.Prefix.of(schema.prefix().bytes()))));
-    }
-
-    /**
-     * Returns the index address of given {@code TypeVertex}
-     *
-     * @param label of the {@code TypeVertex}
-     * @param scope of the {@code TypeVertex}, which could be null
-     * @return a byte array representing the index address of a {@code TypeVertex}
-     */
-    public static byte[] index(String label, @Nullable String scope) {
-        return join(Schema.Index.TYPE.prefix().bytes(), scopedLabel(label, scope).getBytes());
-    }
-
-    /**
-     * Returns the fully scoped label for a given {@code TypeVertex}
-     *
-     * @param label the unscoped label of the {@code TypeVertex}
-     * @param scope the scope label of the {@code TypeVertex}
-     * @return the fully scoped label for a given {@code TypeVertex} as a string
-     */
-    public static String scopedLabel(String label, @Nullable String scope) {
-        if (scope == null) return label;
-        else return scope + ":" + label;
-    }
-
-    /**
      * Instantiates a new {@code TypeAdjacency} class
      *
      * @param direction the direction of the edges held in {@code TypeAdjacency}
@@ -117,7 +82,7 @@ public abstract class TypeVertexImpl extends VertexImpl<IID.Vertex.Type, Schema.
 
     @Override
     public String scopedLabel() {
-        return scopedLabel(label, scope);
+        return Schema.Vertex.Type.scopedLabel(label, scope);
     }
 
     @Override
@@ -202,7 +167,7 @@ public abstract class TypeVertexImpl extends VertexImpl<IID.Vertex.Type, Schema.
         }
 
         void commitIndex() {
-            graph.storage().put(index(label, scope), iid.bytes());
+            graph.storage().put(IID.Index.Type.of(label, scope).bytes(), iid.bytes());
         }
 
         void commitProperties() {
@@ -277,8 +242,8 @@ public abstract class TypeVertexImpl extends VertexImpl<IID.Vertex.Type, Schema.
         public TypeVertexImpl label(String label) {
             graph.update(this, this.label, scope, label, scope);
             graph.storage().put(join(iid.bytes(), Schema.Property.LABEL.infix().bytes()), label.getBytes());
-            graph.storage().delete(index(this.label, scope));
-            graph.storage().put(index(label, scope), iid.bytes());
+            graph.storage().delete(IID.Index.Type.of(this.label, scope).bytes());
+            graph.storage().put(IID.Index.Type.of(label, scope).bytes(), iid.bytes());
             this.label = label;
             return this;
         }
@@ -287,8 +252,8 @@ public abstract class TypeVertexImpl extends VertexImpl<IID.Vertex.Type, Schema.
         public TypeVertexImpl scope(String scope) {
             graph.update(this, label, this.scope, label, scope);
             graph.storage().put(join(iid.bytes(), Schema.Property.SCOPE.infix().bytes()), scope.getBytes());
-            graph.storage().delete(index(label, this.scope));
-            graph.storage().put(index(label, scope), iid.bytes());
+            graph.storage().delete(IID.Index.Type.of(label, this.scope).bytes());
+            graph.storage().put(IID.Index.Type.of(label, scope).bytes(), iid.bytes());
             this.scope = scope;
             return this;
         }
@@ -349,7 +314,7 @@ public abstract class TypeVertexImpl extends VertexImpl<IID.Vertex.Type, Schema.
             ins.deleteAll();
             outs.deleteAll();
             graph.delete(this);
-            graph.storage().delete(index(label, scope));
+            graph.storage().delete(IID.Index.Type.of(label, scope).bytes());
             Iterator<byte[]> keys = graph.storage().iterate(iid.bytes(), (iid, value) -> iid);
             while (keys.hasNext()) graph.storage().delete(keys.next());
         }
