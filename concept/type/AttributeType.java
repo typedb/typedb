@@ -18,6 +18,9 @@
 
 package hypergraph.concept.type;
 
+import hypergraph.concept.thing.Attribute;
+
+import java.time.LocalDateTime;
 import java.util.stream.Stream;
 
 public interface AttributeType extends ThingType {
@@ -63,6 +66,9 @@ public interface AttributeType extends ThingType {
         @Override
         Stream<? extends AttributeType.Boolean> subs();
 
+        Attribute.Boolean put(boolean value);
+
+        Attribute.Boolean put(boolean value, boolean isInferred);
     }
 
     interface Long extends AttributeType {
@@ -75,6 +81,10 @@ public interface AttributeType extends ThingType {
 
         @Override
         Stream<? extends AttributeType.Long> subs();
+
+        Attribute.Long put(long value);
+
+        Attribute.Long put(long value, boolean isInferred);
     }
 
     interface Double extends AttributeType {
@@ -87,6 +97,10 @@ public interface AttributeType extends ThingType {
 
         @Override
         Stream<? extends AttributeType.Double> subs();
+
+        Attribute.Double put(double value);
+
+        Attribute.Double put(double value, boolean isInferred);
     }
 
     interface String extends AttributeType {
@@ -99,6 +113,10 @@ public interface AttributeType extends ThingType {
 
         @Override
         Stream<? extends AttributeType.String> subs();
+
+        Attribute.String put(String value);
+
+        Attribute.String put(String value, boolean isInferred);
     }
 
     interface DateTime extends AttributeType {
@@ -111,5 +129,9 @@ public interface AttributeType extends ThingType {
 
         @Override
         Stream<? extends AttributeType.DateTime> subs();
+
+        Attribute.DateTime put(LocalDateTime value);
+
+        Attribute.DateTime put(LocalDateTime value, boolean isInferred);
     }
 }

@@ -18,9 +18,9 @@
 
 package hypergraph.graph;
 
-import hypergraph.common.collection.ByteArray;
 import hypergraph.common.concurrent.ManagedReadWriteLock;
 import hypergraph.common.exception.HypergraphException;
+import hypergraph.graph.util.IID;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.util.Storage;
 import hypergraph.graph.vertex.TypeVertex;
@@ -35,11 +35,11 @@ import static hypergraph.graph.vertex.impl.TypeVertexImpl.generateIID;
 import static hypergraph.graph.vertex.impl.TypeVertexImpl.index;
 import static hypergraph.graph.vertex.impl.TypeVertexImpl.scopedLabel;
 
-public class TypeGraph implements Graph<TypeVertex> {
+public class TypeGraph implements Graph<IID.Vertex.Type, TypeVertex> {
 
     private final Graphs graphManager;
     private final ConcurrentMap<String, TypeVertex> typeByLabel;
-    private final ConcurrentMap<ByteArray, TypeVertex> typeByIID;
+    private final ConcurrentMap<IID.Vertex.Type, TypeVertex> typeByIID;
     private final ConcurrentMap<String, ManagedReadWriteLock> singleLabelLocks;
     private final ManagedReadWriteLock multiLabelLock;
 
@@ -60,11 +60,11 @@ public class TypeGraph implements Graph<TypeVertex> {
         return graphManager.storage();
     }
 
-    public boolean isInitialised() {
+    public boolean isInitialised() throws HypergraphException {
         return get(Schema.Vertex.Type.Root.THING.label()) != null;
     }
 
-    public void initialise() {
+    public void initialise() throws HypergraphException {
         TypeVertex rootThingType = put(
                 Schema.Vertex.Type.THING_TYPE,
                 Schema.Vertex.Type.Root.THING.label()).isAbstract(true);
@@ -127,7 +127,7 @@ public class TypeGraph implements Graph<TypeVertex> {
             TypeVertex typeVertex = typeByLabel.computeIfAbsent(
                     scopedLabel, i -> new TypeVertexImpl.Buffered(this, type, generateIID(graphManager.keyGenerator(), type), label, scope)
             );
-            typeByIID.put(ByteArray.of(typeVertex.iid()), typeVertex);
+            typeByIID.put(typeVertex.iid(), typeVertex);
             return typeVertex;
         } catch (InterruptedException e) {
             throw new HypergraphException(e);
@@ -153,7 +153,7 @@ public class TypeGraph implements Graph<TypeVertex> {
             byte[] iid = graphManager.storage().get(index(label, scope));
             if (iid != null) {
                 vertex = typeByIID.computeIfAbsent(
-                        ByteArray.of(iid), i -> new TypeVertexImpl.Persisted(this, i.bytes(), label, scope)
+                        IID.Vertex.Type.of(iid), i -> new TypeVertexImpl.Persisted(this, i, label, scope)
                 );
                 typeByLabel.putIfAbsent(scopedLabel, vertex);
             }
@@ -168,12 +168,12 @@ public class TypeGraph implements Graph<TypeVertex> {
     }
 
     @Override
-    public TypeVertex get(byte[] iid) {
-        TypeVertex vertex = typeByIID.get(ByteArray.of(iid));
+    public TypeVertex get(IID.Vertex.Type iid) {
+        TypeVertex vertex = typeByIID.get(iid);
         if (vertex != null) return vertex;
 
         vertex = typeByIID.computeIfAbsent(
-                ByteArray.of(iid), i -> new TypeVertexImpl.Persisted(this, i.bytes())
+                iid, i -> new TypeVertexImpl.Persisted(this, i)
         );
         typeByLabel.putIfAbsent(vertex.scopedLabel(), vertex);
 
@@ -187,7 +187,7 @@ public class TypeGraph implements Graph<TypeVertex> {
             singleLabelLocks.computeIfAbsent(vertex.scopedLabel(), x -> new ManagedReadWriteLock()).lockWrite();
 
             typeByLabel.remove(vertex.scopedLabel());
-            typeByIID.remove(ByteArray.of(vertex.iid()));
+            typeByIID.remove(vertex.iid());
         } catch (InterruptedException e) {
             throw new HypergraphException(e);
         } finally {

@@ -20,6 +20,7 @@ package hypergraph.graph.edge.impl;
 
 import hypergraph.graph.TypeGraph;
 import hypergraph.graph.edge.TypeEdge;
+import hypergraph.graph.util.IID;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.vertex.TypeVertex;
 
@@ -33,7 +34,11 @@ public class TypeEdgeImpl {
     /**
      * A Buffered Type Edge that connects two Type Vertices, and an overridden Type Vertex.
      */
-    public static class Buffered extends EdgeImpl.Buffered<TypeGraph, Schema.Edge.Type, TypeEdge, TypeVertex> implements TypeEdge {
+    public static class Buffered extends EdgeImpl.Buffered<
+            TypeGraph,
+            IID.Edge.Type, Schema.Edge.Type, TypeEdge,
+            IID.Vertex.Type, TypeVertex
+            > implements TypeEdge {
 
         private TypeVertex overridden;
 
@@ -45,6 +50,12 @@ public class TypeEdgeImpl {
         TypeEdgeImpl.Buffered getThis() {
             return this;
         }
+
+        @Override
+        IID.Edge.Type edgeIID(IID.Vertex.Type start, Schema.Infix infix, IID.Vertex.Type end) {
+            return IID.Edge.Type.of(start, infix, end);
+        }
+
 
         /**
          * @return type vertex overridden by the head of this type edge
@@ -76,10 +87,10 @@ public class TypeEdgeImpl {
         public void commit() {
             if (committed.compareAndSet(false, true)) {
                 if (schema.out() != null) {
-                    if (overridden != null) graph.storage().put(outIID(), overridden.iid());
-                    else graph.storage().put((outIID()));
+                    if (overridden != null) graph.storage().put(outIID().bytes(), overridden.iid().bytes());
+                    else graph.storage().put((outIID().bytes()));
                 }
-                if (schema.in() != null) graph.storage().put(inIID());
+                if (schema.in() != null) graph.storage().put(inIID().bytes());
             }
         }
     }
@@ -87,20 +98,34 @@ public class TypeEdgeImpl {
     /**
      * Persisted Type Edge that connects two Type Vertices, and an overridden Type Vertex
      */
-    public static class Persisted extends EdgeImpl.Persisted<TypeGraph, Schema.Edge.Type, TypeEdge, TypeVertex> implements TypeEdge {
+    public static class Persisted extends EdgeImpl.Persisted<
+            TypeGraph,
+            IID.Edge.Type, Schema.Edge.Type, TypeEdge,
+            IID.Vertex.Type, TypeVertex
+            > implements TypeEdge {
 
-        private byte[] overriddenIID;
+        private IID.Vertex.Type overriddenIID;
         private TypeVertex overridden;
 
-        public Persisted(TypeGraph graph, byte[] iid, @Nullable byte[] overriddenIID) {
-            super(graph, Schema.Edge.Type.of(iid[Schema.IID.TYPE.length()]), Schema.IID.TYPE, iid);
+        public Persisted(TypeGraph graph, IID.Edge.Type iid, @Nullable IID.Vertex.Type overriddenIID) {
+            super(graph, iid.schema(), iid);
 
-            if (Schema.Edge.isOut(iid[Schema.IID.TYPE.length()])) {
+            if (iid.isOutwards()) {
                 this.overriddenIID = overriddenIID;
             } else {
                 this.overriddenIID = null;
-                assert overriddenIID == null || overriddenIID.length == 0;
+                assert overriddenIID == null;
             }
+        }
+
+        @Override
+        TypeEdgeImpl.Persisted getThis() {
+            return this;
+        }
+
+        @Override
+        IID.Edge.Type edgeIID(IID.Vertex.Type start, Schema.Infix infix, IID.Vertex.Type end) {
+            return IID.Edge.Type.of(start, infix, end);
         }
 
         /**
@@ -109,7 +134,7 @@ public class TypeEdgeImpl {
         @Override
         public TypeVertex overridden() {
             if (overridden != null) return overridden;
-            if (overriddenIID == null || overriddenIID.length == 0) return null;
+            if (overriddenIID == null) return null;
 
             overridden = graph.get(overriddenIID);
             return overridden;
@@ -127,12 +152,7 @@ public class TypeEdgeImpl {
         public void overridden(TypeVertex overridden) {
             this.overridden = overridden;
             overriddenIID = overridden.iid();
-            graph.storage().put(outIID, overriddenIID);
-        }
-
-        @Override
-        TypeEdgeImpl.Persisted getThis() {
-            return this;
+            graph.storage().put(outIID.bytes(), overriddenIID.bytes());
         }
     }
 }

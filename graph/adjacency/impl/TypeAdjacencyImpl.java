@@ -23,6 +23,7 @@ import hypergraph.graph.Graph;
 import hypergraph.graph.adjacency.TypeAdjacency;
 import hypergraph.graph.edge.TypeEdge;
 import hypergraph.graph.edge.impl.TypeEdgeImpl;
+import hypergraph.graph.util.IID;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.vertex.TypeVertex;
 
@@ -92,8 +93,9 @@ public class TypeAdjacencyImpl {
         }
 
         @Override
-        protected TypeEdge newPersistedEdge(Graph<TypeVertex> graph, byte[] key, byte[] value) {
-            return new TypeEdgeImpl.Persisted(owner.graph(), key, value);
+        protected TypeEdge newPersistedEdge(Graph<?, TypeVertex> graph, byte[] key, byte[] value) {
+            IID.Vertex.Type overridden = value == null || value.length == 0 ? null : IID.Vertex.Type.of(value);
+            return new TypeEdgeImpl.Persisted(owner.graph(), IID.Edge.Type.of(key), overridden);
         }
     }
 }

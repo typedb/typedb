@@ -20,11 +20,14 @@ package hypergraph.concept.thing.impl;
 
 import hypergraph.concept.thing.Attribute;
 import hypergraph.concept.type.impl.AttributeTypeImpl;
+import hypergraph.graph.util.Schema;
 import hypergraph.graph.vertex.ThingVertex;
 
 public class AttributeImpl extends ThingImpl implements Attribute {
+
     public AttributeImpl(ThingVertex vertex) {
         super(vertex);
+        assert vertex.schema().equals(Schema.Vertex.Thing.ATTRIBUTE);
     }
 
     @Override
@@ -35,5 +38,23 @@ public class AttributeImpl extends ThingImpl implements Attribute {
     @Override
     public AttributeImpl has(Attribute attribute) {
         return null; //TODO
+    }
+
+    @Override
+    public Object value() {
+        return null; // TODO: return vertex.value();
+    }
+
+    public static class String extends AttributeImpl implements Attribute.String {
+
+        public String(ThingVertex vertex) {
+            super(vertex);
+            assert vertex.typeVertex().valueType().equals(Schema.ValueType.STRING);
+        }
+
+        @Override
+        public java.lang.String value() {
+            return null; // TODO
+        }
     }
 }

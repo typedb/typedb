@@ -23,6 +23,7 @@ import hypergraph.common.concurrent.ManagedReadWriteLock;
 import hypergraph.common.exception.HypergraphException;
 import hypergraph.concept.Concepts;
 import hypergraph.graph.Graphs;
+import hypergraph.graph.util.AttributeSync;
 import hypergraph.graph.util.KeyGenerator;
 import hypergraph.graph.util.Storage;
 import hypergraph.traversal.Traversal;
@@ -160,6 +161,10 @@ class CoreTransaction implements Hypergraph.Transaction {
         @Override
         public KeyGenerator keyGenerator() {
             return session.keyGenerator();
+        }
+
+        AttributeSync attributeSync() {
+            return session.attributeSync();
         }
 
         @Override

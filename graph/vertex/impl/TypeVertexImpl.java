@@ -26,6 +26,7 @@ import hypergraph.graph.adjacency.TypeAdjacency;
 import hypergraph.graph.adjacency.impl.TypeAdjacencyImpl;
 import hypergraph.graph.edge.Edge;
 import hypergraph.graph.edge.TypeEdge;
+import hypergraph.graph.util.IID;
 import hypergraph.graph.util.KeyGenerator;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.vertex.TypeVertex;
@@ -35,7 +36,7 @@ import java.util.Iterator;
 
 import static hypergraph.common.collection.ByteArrays.join;
 
-public abstract class TypeVertexImpl extends VertexImpl<Schema.Vertex.Type, TypeVertex, Schema.Edge.Type, TypeEdge> implements TypeVertex {
+public abstract class TypeVertexImpl extends VertexImpl<IID.Vertex.Type, Schema.Vertex.Type, TypeVertex, Schema.Edge.Type, TypeEdge> implements TypeVertex {
 
     protected final TypeGraph graph;
     protected final TypeAdjacency outs;
@@ -48,8 +49,8 @@ public abstract class TypeVertexImpl extends VertexImpl<Schema.Vertex.Type, Type
     protected String regex;
 
 
-    TypeVertexImpl(TypeGraph graph, Schema.Vertex.Type schema, byte[] iid, String label, @Nullable String scope) {
-        super(iid, schema);
+    TypeVertexImpl(TypeGraph graph, IID.Vertex.Type iid, String label, @Nullable String scope) {
+        super(iid, iid.schema());
         this.graph = graph;
         this.label = label;
         this.scope = scope;
@@ -64,8 +65,8 @@ public abstract class TypeVertexImpl extends VertexImpl<Schema.Vertex.Type, Type
      * @param schema       of the {@code TypeVertex} in which the IID will be used for
      * @return a byte array representing a new IID for a {@code TypeVertex}
      */
-    public static byte[] generateIID(KeyGenerator keyGenerator, Schema.Vertex.Type schema) {
-        return join(schema.prefix().key(), keyGenerator.forType(schema.prefix().key()));
+    public static IID.Vertex.Type generateIID(KeyGenerator keyGenerator, Schema.Vertex.Type schema) {
+        return IID.Vertex.Type.of(join(schema.prefix().key(), keyGenerator.forType(IID.Prefix.of(schema.prefix().key()))));
     }
 
     /**
@@ -131,8 +132,8 @@ public abstract class TypeVertexImpl extends VertexImpl<Schema.Vertex.Type, Type
 
     public static class Buffered extends TypeVertexImpl {
 
-        public Buffered(TypeGraph graph, Schema.Vertex.Type schema, byte[] iid, String label, @Nullable String scope) {
-            super(graph, schema, iid, label, scope);
+        public Buffered(TypeGraph graph, Schema.Vertex.Type schema, IID.Vertex.Type iid, String label, @Nullable String scope) {
+            super(graph, iid, label, scope);
         }
 
         @Override
@@ -187,7 +188,7 @@ public abstract class TypeVertexImpl extends VertexImpl<Schema.Vertex.Type, Type
 
         @Override
         public void commit() {
-            graph.storage().put(iid);
+            graph.storage().put(iid.bytes());
             commitIndex();
             commitProperties();
             commitEdges();
@@ -201,7 +202,7 @@ public abstract class TypeVertexImpl extends VertexImpl<Schema.Vertex.Type, Type
         }
 
         void commitIndex() {
-            graph.storage().put(index(label, scope), iid);
+            graph.storage().put(index(label, scope), iid.bytes());
         }
 
         void commitProperties() {
@@ -213,23 +214,23 @@ public abstract class TypeVertexImpl extends VertexImpl<Schema.Vertex.Type, Type
         }
 
         private void commitPropertyScope() {
-            graph.storage().put(join(iid, Schema.Property.SCOPE.infix().key()), scope.getBytes());
+            graph.storage().put(join(iid.bytes(), Schema.Property.SCOPE.infix().key()), scope.getBytes());
         }
 
         private void commitPropertyAbstract() {
-            graph.storage().put(join(iid, Schema.Property.ABSTRACT.infix().key()));
+            graph.storage().put(join(iid.bytes(), Schema.Property.ABSTRACT.infix().key()));
         }
 
         private void commitPropertyLabel() {
-            graph.storage().put(join(iid, Schema.Property.LABEL.infix().key()), label.getBytes());
+            graph.storage().put(join(iid.bytes(), Schema.Property.LABEL.infix().key()), label.getBytes());
         }
 
         private void commitPropertyValueType() {
-            graph.storage().put(join(iid, Schema.Property.VALUE_TYPE.infix().key()), valueType.key());
+            graph.storage().put(join(iid.bytes(), Schema.Property.VALUE_TYPE.infix().key()), valueType.key());
         }
 
         private void commitPropertyRegex() {
-            graph.storage().put(join(iid, Schema.Property.REGEX.infix().key()), regex.getBytes());
+            graph.storage().put(join(iid.bytes(), Schema.Property.REGEX.infix().key()), regex.getBytes());
         }
 
         private void commitEdges() {
@@ -240,19 +241,19 @@ public abstract class TypeVertexImpl extends VertexImpl<Schema.Vertex.Type, Type
 
     public static class Persisted extends TypeVertexImpl {
 
-        public Persisted(TypeGraph graph, byte[] iid, String label, @Nullable String scope) {
-            super(graph, Schema.Vertex.Type.of(iid[0]), iid, label, scope);
+        public Persisted(TypeGraph graph, IID.Vertex.Type iid, String label, @Nullable String scope) {
+            super(graph, iid, label, scope);
         }
 
-        public Persisted(TypeGraph graph, byte[] iid) {
-            super(graph, Schema.Vertex.Type.of(iid[0]), iid,
-                  new String(graph.storage().get(join(iid, Schema.Property.LABEL.infix().key()))),
+        public Persisted(TypeGraph graph, IID.Vertex.Type iid) {
+            super(graph, iid,
+                  new String(graph.storage().get(join(iid.bytes(), Schema.Property.LABEL.infix().key()))),
                   getScope(graph, iid));
         }
 
         @Nullable
-        private static String getScope(TypeGraph graph, byte[] iid) {
-            byte[] scopeBytes = graph.storage().get(join(iid, Schema.Property.SCOPE.infix().key()));
+        private static String getScope(TypeGraph graph, IID.Vertex.Type iid) {
+            byte[] scopeBytes = graph.storage().get(join(iid.bytes(), Schema.Property.SCOPE.infix().key()));
             if (scopeBytes != null) return new String(scopeBytes);
             else return null;
         }
@@ -263,7 +264,7 @@ public abstract class TypeVertexImpl extends VertexImpl<Schema.Vertex.Type, Type
         }
 
         @Override
-        public void iid(byte[] iid) {
+        public void iid(IID.Vertex.Type iid) {
             throw new HypergraphException(Error.Transaction.ILLEGAL_OPERATION);
         }
 
@@ -275,9 +276,9 @@ public abstract class TypeVertexImpl extends VertexImpl<Schema.Vertex.Type, Type
         @Override
         public TypeVertexImpl label(String label) {
             graph.update(this, this.label, scope, label, scope);
-            graph.storage().put(join(iid, Schema.Property.LABEL.infix().key()), label.getBytes());
+            graph.storage().put(join(iid.bytes(), Schema.Property.LABEL.infix().key()), label.getBytes());
             graph.storage().delete(index(this.label, scope));
-            graph.storage().put(index(label, scope), iid);
+            graph.storage().put(index(label, scope), iid.bytes());
             this.label = label;
             return this;
         }
@@ -285,9 +286,9 @@ public abstract class TypeVertexImpl extends VertexImpl<Schema.Vertex.Type, Type
         @Override
         public TypeVertexImpl scope(String scope) {
             graph.update(this, label, this.scope, label, scope);
-            graph.storage().put(join(iid, Schema.Property.SCOPE.infix().key()), scope.getBytes());
+            graph.storage().put(join(iid.bytes(), Schema.Property.SCOPE.infix().key()), scope.getBytes());
             graph.storage().delete(index(label, this.scope));
-            graph.storage().put(index(label, scope), iid);
+            graph.storage().put(index(label, scope), iid.bytes());
             this.scope = scope;
             return this;
         }
@@ -295,15 +296,15 @@ public abstract class TypeVertexImpl extends VertexImpl<Schema.Vertex.Type, Type
         @Override
         public boolean isAbstract() {
             if (isAbstract != null) return isAbstract;
-            byte[] flag = graph.storage().get(join(iid, Schema.Property.ABSTRACT.infix().key()));
+            byte[] flag = graph.storage().get(join(iid.bytes(), Schema.Property.ABSTRACT.infix().key()));
             isAbstract = flag != null;
             return isAbstract;
         }
 
         @Override
         public TypeVertexImpl isAbstract(boolean isAbstract) {
-            if (isAbstract) graph.storage().put(join(iid, Schema.Property.ABSTRACT.infix().key()));
-            else graph.storage().delete(join(iid, Schema.Property.ABSTRACT.infix().key()));
+            if (isAbstract) graph.storage().put(join(iid.bytes(), Schema.Property.ABSTRACT.infix().key()));
+            else graph.storage().delete(join(iid.bytes(), Schema.Property.ABSTRACT.infix().key()));
             this.isAbstract = isAbstract;
             return this;
         }
@@ -311,14 +312,14 @@ public abstract class TypeVertexImpl extends VertexImpl<Schema.Vertex.Type, Type
         @Override
         public Schema.ValueType valueType() {
             if (valueType != null) return valueType;
-            byte[] val = graph.storage().get(join(iid, Schema.Property.VALUE_TYPE.infix().key()));
+            byte[] val = graph.storage().get(join(iid.bytes(), Schema.Property.VALUE_TYPE.infix().key()));
             if (val != null) valueType = Schema.ValueType.of(val[0]);
             return valueType;
         }
 
         @Override
         public TypeVertexImpl valueType(Schema.ValueType valueType) {
-            graph.storage().put(join(iid, Schema.Property.VALUE_TYPE.infix().key()), valueType.key());
+            graph.storage().put(join(iid.bytes(), Schema.Property.VALUE_TYPE.infix().key()), valueType.key());
             this.valueType = valueType;
             return this;
         }
@@ -326,14 +327,14 @@ public abstract class TypeVertexImpl extends VertexImpl<Schema.Vertex.Type, Type
         @Override
         public String regex() {
             if (regex != null) return regex;
-            byte[] val = graph.storage().get(join(iid, Schema.Property.REGEX.infix().key()));
+            byte[] val = graph.storage().get(join(iid.bytes(), Schema.Property.REGEX.infix().key()));
             if (val != null) regex = new String(val);
             return regex;
         }
 
         @Override
         public TypeVertexImpl regex(String regex) {
-            graph.storage().put(join(iid, Schema.Property.REGEX.infix().key()), regex.getBytes());
+            graph.storage().put(join(iid.bytes(), Schema.Property.REGEX.infix().key()), regex.getBytes());
             this.regex = regex;
             return this;
         }
@@ -349,7 +350,7 @@ public abstract class TypeVertexImpl extends VertexImpl<Schema.Vertex.Type, Type
             outs.deleteAll();
             graph.delete(this);
             graph.storage().delete(index(label, scope));
-            Iterator<byte[]> keys = graph.storage().iterate(iid, (iid, value) -> iid);
+            Iterator<byte[]> keys = graph.storage().iterate(iid.bytes(), (iid, value) -> iid);
             while (keys.hasNext()) graph.storage().delete(keys.next());
         }
 

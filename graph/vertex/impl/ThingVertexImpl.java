@@ -26,26 +26,23 @@ import hypergraph.graph.adjacency.ThingAdjacency;
 import hypergraph.graph.adjacency.impl.ThingAdjacencyImpl;
 import hypergraph.graph.edge.Edge;
 import hypergraph.graph.edge.ThingEdge;
+import hypergraph.graph.util.IID;
 import hypergraph.graph.util.KeyGenerator;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.vertex.ThingVertex;
 import hypergraph.graph.vertex.TypeVertex;
 
-import java.util.Arrays;
-
 import static hypergraph.common.collection.ByteArrays.join;
 
-public abstract class ThingVertexImpl extends VertexImpl<Schema.Vertex.Thing, ThingVertex, Schema.Edge.Thing, ThingEdge> implements ThingVertex {
+public abstract class ThingVertexImpl extends VertexImpl<IID.Vertex.Thing, Schema.Vertex.Thing, ThingVertex, Schema.Edge.Thing, ThingEdge> implements ThingVertex {
 
     protected final ThingGraph graph;
-    protected final byte[] typeIID;
     protected final ThingAdjacency outs;
     protected final ThingAdjacency ins;
 
-    ThingVertexImpl(ThingGraph graph, Schema.Vertex.Thing schema, byte[] iid) {
+    ThingVertexImpl(ThingGraph graph, Schema.Vertex.Thing schema, IID.Vertex.Thing iid) {
         super(iid, schema);
         this.graph = graph;
-        this.typeIID = Arrays.copyOfRange(iid, 1, 4);
         this.outs = newAdjacency(Adjacency.Direction.OUT);
         this.ins = newAdjacency(Adjacency.Direction.IN);
     }
@@ -55,11 +52,11 @@ public abstract class ThingVertexImpl extends VertexImpl<Schema.Vertex.Thing, Th
      *
      * @param keyGenerator to generate the IID for a {@code ThingVertex}
      * @param schema       of the {@code ThingVertex} in which the IID will be used for
-     * @param type         of the {@code ThingVertex} in which this {@code ThingVertex} is an instance of
+     * @param typeIID      of the {@code TypeVertex} in which this {@code ThingVertex} is an instance of
      * @return a byte array representing a new IID for a {@code ThingVertex}
      */
-    public static byte[] generateIID(KeyGenerator keyGenerator, Schema.Vertex.Thing schema, TypeVertex type) {
-        return join(schema.prefix().key(), type.iid(), keyGenerator.forThing(type.iid()));
+    public static IID.Vertex.Thing generateIID(KeyGenerator keyGenerator, Schema.Vertex.Thing schema, IID.Vertex.Type typeIID) {
+        return IID.Vertex.Thing.of(join(schema.prefix().key(), typeIID.bytes(), keyGenerator.forThing(typeIID)));
     }
 
     /**
@@ -87,7 +84,7 @@ public abstract class ThingVertexImpl extends VertexImpl<Schema.Vertex.Thing, Th
      */
     @Override
     public TypeVertex typeVertex() {
-        return graph.typeGraph().get(typeIID);
+        return graph.typeGraph().get(iid.type());
     }
 
     @Override
@@ -104,7 +101,7 @@ public abstract class ThingVertexImpl extends VertexImpl<Schema.Vertex.Thing, Th
 
         private boolean isInferred;
 
-        public Buffered(ThingGraph graph, Schema.Vertex.Thing schema, byte[] iid, boolean isInferred) {
+        public Buffered(ThingGraph graph, Schema.Vertex.Thing schema, IID.Vertex.Thing iid, boolean isInferred) {
             super(graph, schema, iid);
             this.isInferred = isInferred;
         }
@@ -120,6 +117,11 @@ public abstract class ThingVertexImpl extends VertexImpl<Schema.Vertex.Thing, Th
         }
 
         @Override
+        public void isInferred(boolean isInferred) {
+            this.isInferred = isInferred;
+        }
+
+        @Override
         public Schema.Status status() {
             return Schema.Status.BUFFERED;
         }
@@ -127,7 +129,7 @@ public abstract class ThingVertexImpl extends VertexImpl<Schema.Vertex.Thing, Th
         @Override
         public void commit() {
             if (isInferred) throw new HypergraphException(Error.Transaction.ILLEGAL_OPERATION);
-            graph.storage().put(iid);
+            graph.storage().put(iid.bytes());
             commitEdges();
         }
 

@@ -21,19 +21,21 @@ package hypergraph.graph.vertex;
 import hypergraph.graph.Graph;
 import hypergraph.graph.adjacency.Adjacency;
 import hypergraph.graph.edge.Edge;
+import hypergraph.graph.util.IID;
 import hypergraph.graph.util.Schema;
 
 public interface Vertex<
+        VERTEX_IID extends IID.Vertex,
         VERTEX_SCHEMA extends Schema.Vertex,
-        VERTEX extends Vertex<VERTEX_SCHEMA, VERTEX, EDGE_SCHEMA, EDGE>,
+        VERTEX extends Vertex<VERTEX_IID, VERTEX_SCHEMA, VERTEX, EDGE_SCHEMA, EDGE>,
         EDGE_SCHEMA extends Schema.Edge,
-        EDGE extends Edge<EDGE_SCHEMA, VERTEX>> {
+        EDGE extends Edge<?, EDGE_SCHEMA, VERTEX>> {
 
-    Graph<VERTEX> graph();
+    Graph<VERTEX_IID, VERTEX> graph();
 
-    byte[] iid();
+    VERTEX_IID iid();
 
-    void iid(byte[] iid);
+    void iid(VERTEX_IID iid);
 
     Schema.Status status();
 

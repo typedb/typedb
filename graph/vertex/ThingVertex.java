@@ -20,9 +20,13 @@ package hypergraph.graph.vertex;
 
 import hypergraph.graph.ThingGraph;
 import hypergraph.graph.edge.ThingEdge;
+import hypergraph.graph.util.IID;
 import hypergraph.graph.util.Schema;
 
-public interface ThingVertex extends Vertex<Schema.Vertex.Thing, ThingVertex, Schema.Edge.Thing, ThingEdge> {
+public interface ThingVertex extends Vertex<
+        IID.Vertex.Thing,
+        Schema.Vertex.Thing, ThingVertex,
+        Schema.Edge.Thing, ThingEdge> {
 
     /**
      * Returns the {@code Graph} containing all {@code ThingVertex}.
@@ -45,4 +49,11 @@ public interface ThingVertex extends Vertex<Schema.Vertex.Thing, ThingVertex, Sc
      * @return true if this {@code ThingVertex} is a result of inference
      */
     boolean isInferred();
+
+    /**
+     * Sets a boolean flag to indicate whether this vertex was a result of inference
+     *
+     * @param isInferred indicating whether this vertex was a result of inference
+     */
+    void isInferred(boolean isInferred);
 }

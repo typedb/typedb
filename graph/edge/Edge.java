@@ -18,10 +18,14 @@
 
 package hypergraph.graph.edge;
 
+import hypergraph.graph.util.IID;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.vertex.Vertex;
 
-public interface Edge<EDGE_SCHEMA extends Schema.Edge, VERTEX extends Vertex> {
+public interface Edge<
+        EDGE_IID extends IID.Edge,
+        EDGE_SCHEMA extends Schema.Edge,
+        VERTEX extends Vertex> {
 
     /**
      * Returns the schema of this edge.
@@ -44,14 +48,14 @@ public interface Edge<EDGE_SCHEMA extends Schema.Edge, VERTEX extends Vertex> {
      *
      * @return the {@code iid} of this edge pointing outwards
      */
-    byte[] outIID();
+    EDGE_IID outIID();
 
     /**
      * Returns the {@code iid} of this edge pointing inwards.
      *
      * @return the {@code iid} of this edge pointing inwards
      */
-    byte[] inIID();
+    EDGE_IID inIID();
 
     /**
      * Returns the tail vertex of this edge.

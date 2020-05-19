@@ -21,9 +21,13 @@ package hypergraph.graph.vertex;
 import hypergraph.graph.TypeGraph;
 import hypergraph.graph.adjacency.TypeAdjacency;
 import hypergraph.graph.edge.TypeEdge;
+import hypergraph.graph.util.IID;
 import hypergraph.graph.util.Schema;
 
-public interface TypeVertex extends Vertex<Schema.Vertex.Type, TypeVertex, Schema.Edge.Type, TypeEdge> {
+public interface TypeVertex extends Vertex<
+        IID.Vertex.Type,
+        Schema.Vertex.Type, TypeVertex,
+        Schema.Edge.Type, TypeEdge> {
 
     @Override
     TypeGraph graph();

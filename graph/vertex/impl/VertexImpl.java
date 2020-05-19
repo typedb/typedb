@@ -19,22 +19,24 @@
 package hypergraph.graph.vertex.impl;
 
 import hypergraph.graph.edge.Edge;
+import hypergraph.graph.util.IID;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.vertex.Vertex;
 
 import java.util.Arrays;
 
 public abstract class VertexImpl<
+        VERTEX_IID extends IID.Vertex,
         VERTEX_SCHEMA extends Schema.Vertex,
-        VERTEX extends Vertex<VERTEX_SCHEMA, VERTEX, EDGE_SCHEMA, EDGE>,
+        VERTEX extends Vertex<VERTEX_IID, VERTEX_SCHEMA, VERTEX, EDGE_SCHEMA, EDGE>,
         EDGE_SCHEMA extends Schema.Edge,
-        EDGE extends Edge<EDGE_SCHEMA, VERTEX>> implements Vertex<VERTEX_SCHEMA, VERTEX, EDGE_SCHEMA, EDGE> {
+        EDGE extends Edge<?, EDGE_SCHEMA, VERTEX>> implements Vertex<VERTEX_IID, VERTEX_SCHEMA, VERTEX, EDGE_SCHEMA, EDGE> {
 
     protected final VERTEX_SCHEMA schema;
 
-    protected byte[] iid;
+    protected VERTEX_IID iid;
 
-    VertexImpl(byte[] iid, VERTEX_SCHEMA schema) {
+    VertexImpl(VERTEX_IID iid, VERTEX_SCHEMA schema) {
         this.schema = schema;
         this.iid = iid;
     }
@@ -45,18 +47,18 @@ public abstract class VertexImpl<
     }
 
     @Override
-    public byte[] iid() {
+    public VERTEX_IID iid() {
         return iid;
     }
 
     @Override
-    public void iid(byte[] iid) {
+    public void iid(VERTEX_IID iid) {
         this.iid = iid;
     }
 
     @Override
     public String toString() {
-        return this.getClass().getCanonicalName() + ": [" + schema + "] " + Arrays.toString(iid);
+        return this.getClass().getCanonicalName() + ": [" + schema + "] " + iid.toString();
     }
 
     @Override
@@ -64,11 +66,11 @@ public abstract class VertexImpl<
         if (this == object) return true;
         if (object == null || getClass() != object.getClass()) return false;
         VertexImpl that = (VertexImpl) object;
-        return Arrays.equals(this.iid, that.iid);
+        return this.iid.equals(that.iid);
     }
 
     @Override
     public final int hashCode() {
-        return Arrays.hashCode(iid);
+        return iid.hashCode();
     }
 }

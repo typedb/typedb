@@ -20,22 +20,22 @@ package hypergraph.graph.edge.impl;
 
 import hypergraph.graph.Graph;
 import hypergraph.graph.edge.Edge;
+import hypergraph.graph.util.IID;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.vertex.Vertex;
 
-import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static hypergraph.common.collection.ByteArrays.join;
-import static java.util.Arrays.copyOfRange;
 import static java.util.Objects.hash;
 
 public abstract class EdgeImpl<
-        GRAPH extends Graph<VERTEX>,
+        GRAPH extends Graph<?, VERTEX>,
+        EDGE_IID extends IID.Edge<VERTEX_IID>,
         EDGE_SCHEMA extends Schema.Edge,
-        EDGE extends Edge<EDGE_SCHEMA, VERTEX>,
-        VERTEX extends Vertex<?, VERTEX, EDGE_SCHEMA, EDGE>
-        > implements Edge<EDGE_SCHEMA, VERTEX> {
+        EDGE extends Edge<EDGE_IID, EDGE_SCHEMA, VERTEX>,
+        VERTEX_IID extends IID.Vertex,
+        VERTEX extends Vertex<VERTEX_IID, ?, VERTEX, EDGE_SCHEMA, EDGE>
+        > implements Edge<EDGE_IID, EDGE_SCHEMA, VERTEX> {
 
     protected final GRAPH graph;
     protected final EDGE_SCHEMA schema;
@@ -46,6 +46,8 @@ public abstract class EdgeImpl<
     }
 
     abstract EDGE getThis();
+
+    abstract EDGE_IID edgeIID(VERTEX_IID start, Schema.Infix infix, VERTEX_IID end);
 
     @Override
     public EDGE_SCHEMA schema() {
@@ -59,11 +61,13 @@ public abstract class EdgeImpl<
     public abstract int hashCode();
 
     public static abstract class Buffered<
-            GRAPH extends Graph<VERTEX>,
+            GRAPH extends Graph<?, VERTEX>,
+            EDGE_IID extends IID.Edge<VERTEX_IID>,
             EDGE_SCHEMA extends Schema.Edge,
-            EDGE extends Edge<EDGE_SCHEMA, VERTEX>,
-            VERTEX extends Vertex<?, VERTEX, EDGE_SCHEMA, EDGE>
-            > extends EdgeImpl<GRAPH, EDGE_SCHEMA, EDGE, VERTEX> {
+            EDGE extends Edge<EDGE_IID, EDGE_SCHEMA, VERTEX>,
+            VERTEX_IID extends IID.Vertex,
+            VERTEX extends Vertex<VERTEX_IID, ?, VERTEX, EDGE_SCHEMA, EDGE>
+            > extends EdgeImpl<GRAPH, EDGE_IID, EDGE_SCHEMA, EDGE, VERTEX_IID, VERTEX> {
 
         protected final AtomicBoolean committed;
         protected final VERTEX from;
@@ -100,8 +104,8 @@ public abstract class EdgeImpl<
          * @return the {@code iid} of this edge pointing outwards
          */
         @Override
-        public byte[] outIID() {
-            return join(from().iid(), schema.out().key(), to().iid());
+        public EDGE_IID outIID() {
+            return edgeIID(from().iid(), schema.out(), to().iid());
         }
 
         /**
@@ -110,8 +114,8 @@ public abstract class EdgeImpl<
          * @return the {@code iid} of this edge pointing inwards
          */
         @Override
-        public byte[] inIID() {
-            return join(to().iid(), schema.in().key(), from().iid());
+        public EDGE_IID inIID() {
+            return edgeIID(to().iid(), schema.in(), from().iid());
         }
 
         /**
@@ -135,9 +139,9 @@ public abstract class EdgeImpl<
         }
 
         /**
-         * Delete operation of a buffered type edge.
+         * Delete operation of a buffered edge.
          *
-         * The delete operation involves removing this type edge from the {@code from.outs()} and
+         * The delete operation involves removing this edge from the {@code from.outs()} and
          * {@code to.ins()} edge collections.
          */
         @Override
@@ -182,16 +186,18 @@ public abstract class EdgeImpl<
     }
 
     public static abstract class Persisted<
-            GRAPH extends Graph<VERTEX>,
+            GRAPH extends Graph<VERTEX_IID, VERTEX>,
+            EDGE_IID extends IID.Edge<VERTEX_IID>,
             EDGE_SCHEMA extends Schema.Edge,
-            EDGE extends Edge<EDGE_SCHEMA, VERTEX>,
-            VERTEX extends Vertex<?, VERTEX, EDGE_SCHEMA, EDGE>
-            > extends EdgeImpl<GRAPH, EDGE_SCHEMA, EDGE, VERTEX> {
+            EDGE extends Edge<EDGE_IID, EDGE_SCHEMA, VERTEX>,
+            VERTEX_IID extends IID.Vertex,
+            VERTEX extends Vertex<VERTEX_IID, ?, VERTEX, EDGE_SCHEMA, EDGE>
+            > extends EdgeImpl<GRAPH, EDGE_IID, EDGE_SCHEMA, EDGE, VERTEX_IID, VERTEX> {
 
-        protected final byte[] outIID;
-        protected final byte[] inIID;
-        protected final byte[] fromIID;
-        protected final byte[] toIID;
+        protected final EDGE_IID outIID;
+        protected final EDGE_IID inIID;
+        protected final VERTEX_IID fromIID;
+        protected final VERTEX_IID toIID;
         protected final AtomicBoolean isDeleted;
 
         protected VERTEX from;
@@ -211,21 +217,21 @@ public abstract class EdgeImpl<
          * @param graph the graph comprised of all the vertices
          * @param iid   the {@code iid} of a persisted edge
          */
-        public Persisted(GRAPH graph, EDGE_SCHEMA edgeSchema, Schema.IID iidSchema, byte[] iid) {
+        public Persisted(GRAPH graph, EDGE_SCHEMA edgeSchema, EDGE_IID iid) {
             super(graph, edgeSchema);
-            byte[] start = copyOfRange(iid, 0, iidSchema.length());
-            byte[] end = copyOfRange(iid, iidSchema.length() + 1, iid.length);
+            VERTEX_IID start = iid.start();
+            VERTEX_IID end = iid.end();
 
-            if (Schema.Edge.isOut(iid[iidSchema.length()])) {
+            if (iid.isOutwards()) {
                 fromIID = start;
                 toIID = end;
                 outIID = iid;
-                inIID = join(end, edgeSchema.in().key(), start);
+                inIID = edgeIID(end, edgeSchema.in(), start);
             } else {
                 fromIID = end;
                 toIID = start;
                 inIID = iid;
-                outIID = join(end, schema().out().key(), start);
+                outIID = edgeIID(end, edgeSchema.out(), start);
             }
 
             isDeleted = new AtomicBoolean(false);
@@ -247,7 +253,7 @@ public abstract class EdgeImpl<
          * @return the {@code iid} of this edge pointing outwards
          */
         @Override
-        public byte[] outIID() {
+        public EDGE_IID outIID() {
             return outIID;
         }
 
@@ -257,7 +263,7 @@ public abstract class EdgeImpl<
          * @return the {@code iid} of this edge pointing inwards
          */
         @Override
-        public byte[] inIID() {
+        public EDGE_IID inIID() {
             return inIID;
         }
 
@@ -298,8 +304,8 @@ public abstract class EdgeImpl<
             if (isDeleted.compareAndSet(false, true)) {
                 if (from != null) from.outs().deleteNonRecursive(getThis());
                 if (to != null) to.ins().deleteNonRecursive(getThis());
-                graph.storage().delete(this.outIID);
-                graph.storage().delete(this.inIID);
+                graph.storage().delete(this.outIID.bytes());
+                graph.storage().delete(this.inIID.bytes());
             }
         }
 
@@ -329,8 +335,8 @@ public abstract class EdgeImpl<
             if (object == null || getClass() != object.getClass()) return false;
             EdgeImpl.Persisted that = (EdgeImpl.Persisted) object;
             return (this.schema.equals(that.schema) &&
-                    Arrays.equals(this.fromIID, that.fromIID) &&
-                    Arrays.equals(this.toIID, that.toIID));
+                    this.fromIID.equals(that.fromIID) &&
+                    this.toIID.equals(that.toIID));
         }
 
         /**
@@ -344,7 +350,7 @@ public abstract class EdgeImpl<
          */
         @Override
         public final int hashCode() {
-            return hash(schema, Arrays.hashCode(fromIID), Arrays.hashCode(toIID));
+            return hash(schema, fromIID.hashCode(), toIID.hashCode());
         }
     }
 }

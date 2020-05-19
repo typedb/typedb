@@ -18,14 +18,15 @@
 
 package hypergraph.graph;
 
+import hypergraph.graph.util.IID;
 import hypergraph.graph.util.Storage;
 import hypergraph.graph.vertex.Vertex;
 
-public interface Graph<VERTEX extends Vertex> {
+public interface Graph<VERTEX_IID extends IID.Vertex, VERTEX extends Vertex> {
 
     Storage storage();
 
-    VERTEX get(byte[] iid);
+    VERTEX get(VERTEX_IID iid);
 
     void delete(VERTEX vertex);
 

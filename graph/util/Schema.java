@@ -128,6 +128,13 @@ public class Schema {
             this.key = (byte) key;
         }
 
+        public static Infix of(byte key) {
+            for (Infix i : Infix.values()) {
+                if (i.key == key) return i;
+            }
+            return null;
+        }
+
         public byte[] key() {
             return new byte[]{key};
         }
@@ -195,12 +202,12 @@ public class Schema {
         DATETIME(50, LocalDateTime.class, true);
 
         private final byte key;
-        private final Class<?> valueType;
+        private final Class<?> valueClass;
         private final boolean isKeyable;
 
-        ValueType(int key, Class<?> valueType, boolean isKeyable) {
+        ValueType(int key, Class<?> valueClass, boolean isKeyable) {
             this.key = (byte) key;
-            this.valueType = valueType;
+            this.valueClass = valueClass;
             this.isKeyable = isKeyable;
         }
 
@@ -213,9 +220,9 @@ public class Schema {
             return null;
         }
 
-        public static ValueType of(Class<?> valueType) {
+        public static ValueType of(Class<?> valueClass) {
             for (ValueType t : ValueType.values()) {
-                if (t.valueType == valueType) {
+                if (t.valueClass == valueClass) {
                     return t;
                 }
             }
@@ -226,8 +233,8 @@ public class Schema {
             return new byte[]{key};
         }
 
-        public Class<?> valueType() {
-            return valueType;
+        public Class<?> valueClass() {
+            return valueClass;
         }
 
         public boolean isKeyable() {
@@ -291,13 +298,6 @@ public class Schema {
                 return null;
             }
 
-            public static Type of(Thing thing) {
-                for (Type t : Type.values()) {
-                    if (t.root.name().equals(thing.name())) return t;
-                }
-                return null;
-            }
-
             @Override
             public Prefix prefix() {
                 return prefix;
@@ -337,15 +337,17 @@ public class Schema {
         }
 
         enum Thing implements Vertex {
-            ENTITY(Prefix.VERTEX_ENTITY),
-            ATTRIBUTE(Prefix.VERTEX_ATTRIBUTE),
-            RELATION(Prefix.VERTEX_RELATION),
-            ROLE(Prefix.VERTEX_ROLE);
+            ENTITY(Prefix.VERTEX_ENTITY, Type.ENTITY_TYPE),
+            ATTRIBUTE(Prefix.VERTEX_ATTRIBUTE, Type.ATTRIBUTE_TYPE),
+            RELATION(Prefix.VERTEX_RELATION, Type.RELATION_TYPE),
+            ROLE(Prefix.VERTEX_ROLE, Type.ROLE_TYPE);
 
             private final Prefix prefix;
+            private final Schema.Vertex.Type type;
 
-            Thing(Prefix prefix) {
+            Thing(Prefix prefix, Schema.Vertex.Type type) {
                 this.prefix = prefix;
+                this.type = type;
             }
 
             public static Thing of(byte prefix) {
@@ -365,6 +367,10 @@ public class Schema {
             @Override
             public Prefix prefix() {
                 return prefix;
+            }
+
+            public Type type() {
+                return type;
             }
         }
 
@@ -400,6 +406,14 @@ public class Schema {
                     if (t.out.key == infix || t.in.key == infix) {
                         return t;
                     }
+                }
+                return null;
+            }
+
+            public static Infix reverse(Infix infix) {
+                for (Type t : Type.values()) {
+                    if (t.out == infix) return t.in;
+                    else if (t.in == infix) return t.out;
                 }
                 return null;
             }

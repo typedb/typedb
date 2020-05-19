@@ -19,6 +19,7 @@
 package hypergraph.core;
 
 import hypergraph.Hypergraph;
+import hypergraph.graph.util.AttributeSync;
 import hypergraph.graph.util.KeyGenerator;
 import org.rocksdb.OptimisticTransactionDB;
 
@@ -46,6 +47,10 @@ public class CoreSession implements Hypergraph.Session {
 
     KeyGenerator keyGenerator() {
         return keyspace.keyGenerator();
+    }
+
+    AttributeSync attributeSync() {
+        return keyspace.attributeSync();
     }
 
     void remove(CoreTransaction transaction) {

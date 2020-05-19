@@ -18,8 +18,7 @@
 
 package hypergraph.graph;
 
-import hypergraph.common.collection.ByteArray;
-import hypergraph.common.collection.ByteArrays;
+import hypergraph.graph.util.IID;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.util.Storage;
 import hypergraph.graph.vertex.ThingVertex;
@@ -32,10 +31,10 @@ import java.util.concurrent.ConcurrentMap;
 
 import static hypergraph.graph.vertex.impl.ThingVertexImpl.generateIID;
 
-public class ThingGraph implements Graph<ThingVertex> {
+public class ThingGraph implements Graph<IID.Vertex.Thing, ThingVertex> {
 
     private final Graphs graphManager;
-    private final ConcurrentMap<ByteArray, ThingVertex> thingByIID;
+    private final ConcurrentMap<IID.Vertex.Thing, ThingVertex> thingByIID;
 
     ThingGraph(Graphs graphManager) {
         this.graphManager = graphManager;
@@ -48,7 +47,7 @@ public class ThingGraph implements Graph<ThingVertex> {
     }
 
     @Override
-    public ThingVertex get(byte[] iid) {
+    public ThingVertex get(IID.Vertex.Thing iid) {
         return null; // TODO
     }
 
@@ -59,7 +58,7 @@ public class ThingGraph implements Graph<ThingVertex> {
 
     public void commit() {
         thingByIID.values().parallelStream().filter(v -> !v.isInferred()).forEach(
-                vertex -> vertex.iid(generateIID(graphManager.storage().keyGenerator(), vertex.schema(), vertex.typeVertex()))
+                vertex -> vertex.iid(generateIID(graphManager.storage().keyGenerator(), vertex.schema(), vertex.typeVertex().iid()))
         ); // thingByIID no longer contains valid mapping from IID to TypeVertex
         thingByIID.values().parallelStream().filter(v -> !v.isInferred()).forEach(Vertex::commit);
         clear(); // we now flush the indexes after commit, and we do not expect this Graph.Thing to be used again
@@ -70,11 +69,20 @@ public class ThingGraph implements Graph<ThingVertex> {
         thingByIID.clear();
     }
 
-    public ThingVertex create(Schema.Vertex.Thing schema, TypeVertex type, boolean isInferred) {
-        byte[] iid = generateIID(graphManager.keyGenerator(), schema, type);
+    public ThingVertex create(Schema.Vertex.Thing schema, IID.Vertex.Type type, boolean isInferred) {
+        IID.Vertex.Thing iid = generateIID(graphManager.keyGenerator(), schema, type);
         ThingVertex vertex = new ThingVertexImpl.Buffered(this, schema, iid, isInferred);
-        thingByIID.put(ByteArray.of(iid), vertex);
+        thingByIID.put(iid, vertex);
         return vertex;
+    }
+
+    public ThingVertex putAttribute(TypeVertex type, Object value) {
+        assert type.schema().equals(Schema.Vertex.Type.ATTRIBUTE_TYPE);
+        assert type.valueType().valueClass().isInstance(value);
+
+
+
+        return null;
     }
 
     public TypeGraph typeGraph() {

@@ -95,7 +95,7 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
     @Override
     public EntityImpl create(boolean isInferred) {
         if (isAbstract()) throw new HypergraphException(ILLEGAL_ABSTRACT_WRITE.format(Entity.class.getSimpleName(), label()));
-        ThingVertex instance = vertex.graph().thingGraph().create(Schema.Vertex.Thing.ENTITY, vertex, isInferred);
+        ThingVertex instance = vertex.graph().thingGraph().create(Schema.Vertex.Thing.ENTITY, vertex.iid(), isInferred);
         return new EntityImpl(instance);
     }
 

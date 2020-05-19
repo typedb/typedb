@@ -21,9 +21,12 @@ package hypergraph.concept.type.impl;
 import hypergraph.common.exception.Error;
 import hypergraph.common.exception.HypergraphException;
 import hypergraph.common.iterator.Iterators;
+import hypergraph.concept.thing.Attribute;
+import hypergraph.concept.thing.impl.AttributeImpl;
 import hypergraph.concept.type.AttributeType;
 import hypergraph.graph.TypeGraph;
 import hypergraph.graph.util.Schema;
+import hypergraph.graph.vertex.ThingVertex;
 import hypergraph.graph.vertex.TypeVertex;
 
 import javax.annotation.Nullable;
@@ -72,37 +75,6 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         }
     }
 
-    @Override
-    public AttributeTypeImpl.Root asObject() {
-        if (this.valueType().equals(java.lang.Object.class)) return new AttributeTypeImpl.Root(this.vertex);
-        else throw new HypergraphException(INVALID_CONCEPT_CASTING.format(AttributeType.class.getCanonicalName()));
-    }
-
-    @Override
-    public AttributeTypeImpl.Boolean asBoolean() {
-        throw new HypergraphException(INVALID_CONCEPT_CASTING.format(AttributeType.Boolean.class.getCanonicalName()));
-    }
-
-    @Override
-    public AttributeTypeImpl.Long asLong() {
-        throw new HypergraphException(INVALID_CONCEPT_CASTING.format(AttributeType.Long.class.getCanonicalName()));
-    }
-
-    @Override
-    public AttributeTypeImpl.Double asDouble() {
-        throw new HypergraphException(INVALID_CONCEPT_CASTING.format(AttributeType.Double.class.getCanonicalName()));
-    }
-
-    @Override
-    public AttributeTypeImpl.String asString() {
-        throw new HypergraphException(INVALID_CONCEPT_CASTING.format(AttributeType.Long.class.getCanonicalName()));
-    }
-
-    @Override
-    public AttributeTypeImpl.DateTime asDateTime() {
-        throw new HypergraphException(INVALID_CONCEPT_CASTING.format(AttributeType.DateTime.class.getCanonicalName()));
-    }
-
     @Nullable
     @Override
     public abstract AttributeTypeImpl sup();
@@ -137,6 +109,37 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
     @Override
     public Class<?> valueType() {
         return Object.class;
+    }
+
+    @Override
+    public AttributeTypeImpl.Root asObject() {
+        if (this.valueType().equals(java.lang.Object.class)) return new AttributeTypeImpl.Root(this.vertex);
+        else throw new HypergraphException(INVALID_CONCEPT_CASTING.format(AttributeType.class.getCanonicalName()));
+    }
+
+    @Override
+    public AttributeTypeImpl.Boolean asBoolean() {
+        throw new HypergraphException(INVALID_CONCEPT_CASTING.format(AttributeType.Boolean.class.getCanonicalName()));
+    }
+
+    @Override
+    public AttributeTypeImpl.Long asLong() {
+        throw new HypergraphException(INVALID_CONCEPT_CASTING.format(AttributeType.Long.class.getCanonicalName()));
+    }
+
+    @Override
+    public AttributeTypeImpl.Double asDouble() {
+        throw new HypergraphException(INVALID_CONCEPT_CASTING.format(AttributeType.Double.class.getCanonicalName()));
+    }
+
+    @Override
+    public AttributeTypeImpl.String asString() {
+        throw new HypergraphException(INVALID_CONCEPT_CASTING.format(AttributeType.Long.class.getCanonicalName()));
+    }
+
+    @Override
+    public AttributeTypeImpl.DateTime asDateTime() {
+        throw new HypergraphException(INVALID_CONCEPT_CASTING.format(AttributeType.DateTime.class.getCanonicalName()));
     }
 
     @Override
@@ -240,9 +243,6 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
                     new AttributeTypeImpl.Boolean(vertex);
         }
 
-        @Override
-        public AttributeTypeImpl.Boolean asBoolean() { return this; }
-
         @Nullable
         @Override
         public AttributeTypeImpl.Boolean sup() {
@@ -264,6 +264,20 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         @Override
         public Class<java.lang.Boolean> valueType() { return java.lang.Boolean.class; }
+
+        @Override
+        public AttributeTypeImpl.Boolean asBoolean() { return this; }
+
+        @Override
+        public Attribute.Boolean put(boolean value) {
+            return put(value, false);
+        }
+
+        @Override
+        public Attribute.Boolean put(boolean value, boolean isInferred) {
+            return null;
+            // TODO: ThingVertex attVertex = vertex.graph().thingGraph().create(value, isInferred);
+        }
 
         private static class Root extends AttributeTypeImpl.Boolean {
 
@@ -313,9 +327,6 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
                     new AttributeTypeImpl.Long(vertex);
         }
 
-        @Override
-        public AttributeTypeImpl.Long asLong() { return this; }
-
         @Nullable
         @Override
         public AttributeTypeImpl.Long sup() {
@@ -338,6 +349,19 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         @Override
         public Class<java.lang.Long> valueType() {
             return java.lang.Long.class;
+        }
+
+        @Override
+        public AttributeTypeImpl.Long asLong() { return this; }
+
+        @Override
+        public Attribute.Long put(long value) {
+            return put(value, false);
+        }
+
+        @Override
+        public Attribute.Long put(long value, boolean isInferred) {
+            return null; // TODO
         }
 
         private static class Root extends AttributeTypeImpl.Long {
@@ -388,9 +412,6 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
                     new AttributeTypeImpl.Double(vertex);
         }
 
-        @Override
-        public AttributeTypeImpl.Double asDouble() { return this; }
-
         @Nullable
         @Override
         public AttributeTypeImpl.Double sup() {
@@ -413,6 +434,19 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         @Override
         public Class<java.lang.Double> valueType() {
             return java.lang.Double.class;
+        }
+
+        @Override
+        public AttributeTypeImpl.Double asDouble() { return this; }
+
+        @Override
+        public Attribute.Double put(double value) {
+            return put(value, false);
+        }
+
+        @Override
+        public Attribute.Double put(double value, boolean isInferred) {
+            return null; // TODO
         }
 
         private static class Root extends AttributeTypeImpl.Double {
@@ -463,9 +497,6 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
                     new AttributeTypeImpl.String(vertex);
         }
 
-        @Override
-        public AttributeTypeImpl.String asString() { return this; }
-
         @Nullable
         @Override
         public AttributeTypeImpl.String sup() {
@@ -483,6 +514,21 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         public Stream<AttributeTypeImpl.String> subs() {
             Iterator<AttributeTypeImpl.String> subs = Iterators.apply(super.subTypeVertices(), AttributeTypeImpl.String::of);
             return stream(spliteratorUnknownSize(subs, ORDERED | IMMUTABLE), false);
+        }
+
+        @Override
+        public AttributeTypeImpl.String asString() { return this; }
+
+        @Override
+        public Attribute.String put(AttributeType.String value) {
+            return put(value, false);
+        }
+
+        @Override
+        public Attribute.String put(AttributeType.String value, boolean isInferred) {
+            ThingVertex attVertex = vertex.graph().thingGraph().putAttribute(vertex, value);
+            attVertex.isInferred(isInferred);
+            return new AttributeImpl.String(attVertex);
         }
 
         @Override
@@ -538,9 +584,6 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
                     new AttributeTypeImpl.DateTime(vertex);
         }
 
-        @Override
-        public AttributeTypeImpl.DateTime asDateTime() { return this; }
-
         @Nullable
         @Override
         public AttributeTypeImpl.DateTime sup() {
@@ -563,6 +606,19 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         @Override
         public Class<LocalDateTime> valueType() {
             return LocalDateTime.class;
+        }
+
+        @Override
+        public AttributeTypeImpl.DateTime asDateTime() { return this; }
+
+        @Override
+        public Attribute.DateTime put(LocalDateTime value) {
+            return put(value, false);
+        }
+
+        @Override
+        public Attribute.DateTime put(LocalDateTime value, boolean isInferred) {
+            return null;
         }
 
         private static class Root extends AttributeTypeImpl.DateTime {

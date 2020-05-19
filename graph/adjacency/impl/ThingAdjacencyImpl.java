@@ -23,6 +23,7 @@ import hypergraph.graph.adjacency.Adjacency;
 import hypergraph.graph.adjacency.ThingAdjacency;
 import hypergraph.graph.edge.ThingEdge;
 import hypergraph.graph.edge.impl.ThingEdgeImpl;
+import hypergraph.graph.util.IID;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.vertex.ThingVertex;
 
@@ -99,8 +100,8 @@ public abstract class ThingAdjacencyImpl {
          * @return a new {@code ThingEdge}
          */
         @Override
-        protected ThingEdge newPersistedEdge(Graph<ThingVertex> graph, byte[] key, byte[] value) {
-            return new ThingEdgeImpl.Persisted(owner.graph(), key);
+        protected ThingEdge newPersistedEdge(Graph<?, ThingVertex> graph, byte[] key, byte[] value) {
+            return new ThingEdgeImpl.Persisted(owner.graph(), IID.Edge.Thing.of(key));
         }
     }
 }
