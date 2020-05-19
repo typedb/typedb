@@ -209,22 +209,18 @@ public class TransactionImpl implements Transaction {
     }
 
     private void commitInternal() throws InvalidKBException {
-        long t1 = System.currentTimeMillis();
         boolean lockRequired = commitLockRequired();
         if (lockRequired) graphLock.writeLock().lock();
         try {
             createNewTypeShardsWhenThresholdReached();
             transactionCache.getRemovedAttributes().forEach(index -> session.attributeManager().attributesCommitted().invalidate(index));
             Set<String> deduplicatedIndices = mergeAttributes();
-            long t2 = System.currentTimeMillis();
-            System.out.println("halfway commitInternal(): " + (t2 - t1));
             persistInternal();
             ackCommit(deduplicatedIndices);
 
         } finally {
             if (lockRequired) graphLock.writeLock().unlock();
         }
-        System.out.println("commitInternal() : " + (System.currentTimeMillis() - t1));
     }
 
     private void persistInternal() throws InvalidKBException {
@@ -1117,9 +1113,7 @@ public class TransactionImpl implements Transaction {
      */
     @Override
     public void commit() throws TransactionException {
-        long t1 = System.currentTimeMillis();
 
-        long t2;
         if (!isOpen()) {
             throw TransactionException.transactionClosed(this, null);
         }
@@ -1128,17 +1122,14 @@ public class TransactionImpl implements Transaction {
             removeInferredConcepts();
             computeShardCandidates();
 
-            System.out.println("before commit internal " + (System.currentTimeMillis() - t1));
             // lock on the keyspace cache shared between concurrent tx's to the same keyspace
             // force serialized updates, keeping Janus and our KeyspaceCache in sync
             commitInternal();
-            t2 = System.currentTimeMillis();
             transactionCache.flushSchemaLabelIdsToCache();
         } finally {
             String closeMessage = ErrorMessage.TX_CLOSED_ON_ACTION.getMessage("committed", keyspace());
             closeTransaction(closeMessage);
         }
-        System.out.println("commit after commit internal : " + (System.currentTimeMillis() - t2));
     }
 
     private void closeTransaction(String closedReason) {
@@ -1149,12 +1140,9 @@ public class TransactionImpl implements Transaction {
     }
 
     private void removeInferredConcepts() {
-        long t1 = System.currentTimeMillis();
         Set<Thing> inferredThingsToDiscard = transactionCache.getInferredInstancesToDiscard().collect(Collectors.toSet());
         inferredThingsToDiscard.forEach(transactionCache::remove);
-        System.out.println("Number of inferred concepts to delete: " + inferredThingsToDiscard.size());
         inferredThingsToDiscard.forEach(Concept::delete);
-        System.out.println("time to remove inferred concepts: " + (System.currentTimeMillis() - t1));
     }
 
     private void validateGraph() throws InvalidKBException {

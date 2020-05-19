@@ -337,13 +337,13 @@ public class ReasoningIT {
                 String attributeName = "name";
                 String queryString = "match $x has " + attributeName + " $y; get;";
 
-                String implicitQueryString = "match " +
-                        "(" +
-                        HAS_OWNER.getLabel(attributeName).getValue() + ": $x, " +
-                        HAS_VALUE.getLabel(attributeName).getValue() + ": $y " +
-                        ") isa " + HAS.getLabel(attributeName).getValue() + ";get;";
+//                String implicitQueryString = "match " +
+//                        "(" +
+//                        HAS_OWNER.getLabel(attributeName).getValue() + ": $x, " +
+//                        HAS_VALUE.getLabel(attributeName).getValue() + ": $y " +
+//                        ") isa " + HAS.getLabel(attributeName).getValue() + ";get;";
 
-                List<ConceptMap> implicitAnswers = tx.execute(Graql.parse(implicitQueryString).asGet());
+//                List<ConceptMap> implicitAnswers = tx.execute(Graql.parse(implicitQueryString).asGet());
                 List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());
 
                 tx.getMetaEntityType().instances().forEach(entity -> assertThat(entity.attributes().collect(toSet()), empty()));
@@ -353,7 +353,7 @@ public class ReasoningIT {
                 instances.forEach(attribute -> assertThat(attribute.owners().collect(toSet()), empty()));
 
                 assertThat(answers, empty());
-                assertCollectionsEqual(implicitAnswers, answers);
+//                assertCollectionsEqual(implicitAnswers, answers);
             }
         }
     }
