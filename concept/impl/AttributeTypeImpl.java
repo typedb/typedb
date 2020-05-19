@@ -22,14 +22,17 @@ import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.GraknConceptException;
+import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.concept.manager.ConceptNotificationChannel;
 import grakn.core.kb.concept.structure.VertexElement;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import javax.annotation.Nullable;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 /**
  * An ontological element which models and categorises the various Attribute in the graph.
@@ -59,6 +62,19 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
     public AttributeType<D> sup(AttributeType<D> superType) {
         ((AttributeTypeImpl<D>) superType).sups().forEach(st -> checkInstancesMatchRegex(st.regex()));
         return super.sup(superType);
+    }
+
+    private Stream<Thing> directOwners() {
+        Stream<Thing> directHasOwners = neighbours(Direction.IN, Schema.EdgeLabel.HAS);
+        Stream<Thing> directKeyOwners = neighbours(Direction.IN, Schema.EdgeLabel.KEY);
+        return Stream.concat(directHasOwners, directKeyOwners);
+    }
+
+    @Override
+    public Stream<Thing> owners() {
+        // note that sups() includes self
+        Stream<Thing> owners = sups().flatMap(parent -> (((AttributeTypeImpl<D>)parent).directOwners()));
+        return owners;
     }
 
     /**

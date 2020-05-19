@@ -264,10 +264,10 @@ public class ValidateGlobalRules {
         return Optional.empty();
     }
 
-    // TODO this behaviour should be moved to another method
+    // TODO this behaviour should be moved to another method, and optimised as it is very expensive
     private static Optional<String> validateKeyOwnedOnceByType(Attribute<?> key, Type ownerType) {
         long owners = key.owners().filter(owner -> owner.type().equals(ownerType)).limit(2).count();
-        if (owners != 0) {
+        if (owners != 1) {
             return Optional.of(VALIDATION_MORE_THAN_ONE_USE_OF_KEY.getMessage(ownerType.label(), key, key.type().label()));
         }
         return Optional.empty();

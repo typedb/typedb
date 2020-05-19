@@ -43,7 +43,7 @@ public class KeyFragmentSet extends EquivalentFragmentSetImpl {
     @Override
     public Set<Fragment> fragments() {
         return ImmutableSet.of(
-                new InKeyFragment(varProperty(), ownerTypeVar, attributeTypeVar),
-                new OutKeyFragment(varProperty(), attributeTypeVar, ownerTypeVar));
+                new InKeyFragment(varProperty(), attributeTypeVar, ownerTypeVar),
+                new OutKeyFragment(varProperty(), ownerTypeVar, attributeTypeVar));
     }
 }

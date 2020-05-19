@@ -41,7 +41,7 @@ public class HasFragmentSet extends EquivalentFragmentSetImpl {
     @Override
     public Set<Fragment> fragments() {
         return ImmutableSet.of(
-                new InHasFragment(varProperty(), ownerTypeVar, attributeTypeVar),
-                new OutHasFragment(varProperty(), attributeTypeVar, ownerTypeVar));
+                new InHasFragment(varProperty(), attributeTypeVar, ownerTypeVar),
+                new OutHasFragment(varProperty(), ownerTypeVar, attributeTypeVar));
     }
 }

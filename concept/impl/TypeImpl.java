@@ -100,10 +100,8 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
      */
     @Override
     public Stream<AttributeType> has() {
-        return Stream.concat(
-                directHas(),
-                sups().flatMap(Type::directHas)
-        );
+        // sups() returns this type
+        return sups().flatMap(Type::directHas);
     }
 
     /**
@@ -111,18 +109,14 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
      */
     @Override
     public Stream<AttributeType> keys() {
-        return Stream.concat(
-                directKeys(),
-                sups().flatMap(Type::directKeys)
-        );
+        // sups() returns this type
+        return sups().flatMap(Type::directKeys);
     }
 
     @Override
     public Stream<AttributeType> hasWithoutKeys() {
-        return Stream.concat(
-                directHasWithoutKeys(),
-                sups().flatMap(Type::directHasWithoutKeys)
-        );
+        // sups() returns this type
+        return sups().flatMap(Type::directHasWithoutKeys);
     }
 
     @Override

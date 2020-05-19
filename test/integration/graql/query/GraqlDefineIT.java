@@ -223,6 +223,7 @@ public class GraqlDefineIT {
                 type("an-unconnected-resource-type").sub(Graql.Token.Type.ATTRIBUTE).value(Graql.Token.ValueType.LONG)
         ));
 
+        tx.getAttributeType(resourceType).owners();
         // Make sure a-new-type can have the given resource type, but not other resource types
         assertExists(tx, type("a-new-type").sub("entity").has(resourceType));
         assertNotExists(tx, type("a-new-type").has("title"));

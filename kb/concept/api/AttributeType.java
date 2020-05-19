@@ -69,6 +69,11 @@ public interface AttributeType<D> extends Type {
      */
     AttributeType<D> sup(AttributeType<D> type);
 
+    Stream<Thing> owners();
+
+    @Override
+    void writeCount(Long count);
+
     /**
      * Sets the Role which instances of this AttributeType may play.
      *
