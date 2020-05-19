@@ -211,22 +211,20 @@ public class GraqlDeleteIT {
 
     @Ignore // TODO update when removing implicit attrs from higher level code
     @Test
-    public void whenDeletingAResource_TheResourceAndImplicitRelationsAreDeleted() {
+    public void whenDeletingAResource_TheResourceAndOwnershipsAreDeleted() {
         ConceptId id = tx.stream(Graql.match(
                 x.has("title", var("y")),
-                var("y").value("Godfather"),
-                var("a").rel(x).rel(y).isa(Schema.ImplicitType.HAS.getLabel("tmdb-vote-count").getValue())
-        ).get("a")).map(ans -> ans.get("a")).findFirst().get().id();
+                var("attr").value("Godfather")
+        ).get()).map(ans -> ans.get("attr")).findFirst().get().id();
 
         assertExists(tx, var().has("title", "Godfather"));
         assertExists(tx, var().id(id.getValue()));
         assertExists(tx, var().val(1000L).isa("tmdb-vote-count"));
 
-        tx.execute(Graql.match(x.val(1000L).isa("tmdb-vote-count")).delete(x.isa("tmdb-vote-count")));
+        tx.execute(Graql.match(x.id(id.getValue())).delete(x.isa("attribute")));
 
-        assertExists(tx, var().has("title", "Godfather"));
+        assertNotExists(tx, var().has("title", "Godfather"));
         assertNotExists(tx, var().id(id.getValue()));
-        assertNotExists(tx, var().val(1000L).isa("tmdb-vote-count"));
     }
 
 

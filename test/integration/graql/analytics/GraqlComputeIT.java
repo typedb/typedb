@@ -204,10 +204,9 @@ public class GraqlComputeIT {
     public void whenComputingCountOfMultipleTypes_resultantCountIsASum() {
         addSchemaAndEntities();
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-            Label implicitLabel = Schema.ImplicitType.HAS.getLabel(someAttribute);
-            GraqlCompute.Statistics.Count query = Graql.compute().count().in(thingy, implicitLabel.getValue());
+            GraqlCompute.Statistics.Count query = Graql.compute().count().in(thingy, someAttribute);
             assertEquals(
-                    typeCount(Label.of(thingy), tx) + typeCount(implicitLabel, tx),
+                    typeCount(Label.of(thingy), tx) + typeCount(Label.of(someAttribute), tx),
                     Iterables.getOnlyElement(tx.execute(query)).number()
             );
         }

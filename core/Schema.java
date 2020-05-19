@@ -94,7 +94,7 @@ public final class Schema {
         RELATES("relates"),
         PLAYS("plays"),
         HAS("has"), // has schema edge
-        KEY("has"), // key schema edge
+        KEY("key"), // key schema edge
         POSITIVE_HYPOTHESIS("positive-hypothesis"),
         NEGATIVE_HYPOTHESIS("negative-hypothesis"),
         CONCLUSION("conclusion"),
@@ -330,11 +330,6 @@ public final class Schema {
         @CheckReturnValue
         public Label getLabel(String attributeType) {
             return Label.of(String.format(label, attributeType));
-        }
-
-        @CheckReturnValue
-        public String getValue() {
-            return label;
         }
     }
 

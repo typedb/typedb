@@ -149,8 +149,9 @@ public class MovieGraph {
         cluster = tx.putEntityType("cluster").plays(clusterOfProduction);
         cluster.putHas(name);
 
-        tx.getType(Schema.ImplicitType.HAS.getLabel("title")).putHas(provenance);
-        authoredBy.putHas(provenance);
+        // TODO-NOIMPL : we need to move to the new method of doing provenance, with an explicit that owns an attribute
+//        tx.getType(Schema.ImplicitType.HAS.getLabel("title")).putHas(provenance);
+//        authoredBy.putHas(provenance);
     }
 
     private static void buildInstances(Transaction tx) {
