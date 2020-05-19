@@ -122,6 +122,7 @@ public class GraknTestStorage extends ExternalResource {
         String directory = "target/embeddedCassandra";
         org.apache.cassandra.io.util.FileUtils.createDirectory(directory);
         Path copyName = Paths.get(directory, "cassandra-embedded.yaml");
+        Files.deleteIfExists(copyName);
         // Create file in directory we just created and copy the stream content into it.
         Files.copy(configStream, copyName);
         return copyName.toFile();
