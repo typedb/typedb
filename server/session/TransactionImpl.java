@@ -430,20 +430,19 @@ public class TransactionImpl implements Transaction {
     /**
      * Mark all objects inserted explicitly for persistence, if they are inferred
      * The inferred objects also transitively check their generating concepts to be marked for persistence
+     * "Dependant" concepts that are DIRECT dependants of a concept - concepts required to be persisted if we persist that concept
      *
      * We do the persistence operation at the top level in the Transaction, because we have access to the Caches here
      * However, it may be better performed directly in the ConceptManager or elsewhere
+     *
+     *
+     * TODO properly design this functionality and clean it up
      */
     private void markConceptsForPersistence(Collection<Concept> concepts) {
         Set<Thing> things = concepts.stream()
                 .filter(Concept::isThing)
                 .map(Concept::asThing)
                 .collect(Collectors.toSet());
-
-        Set<Pair<Thing, Attribute>> inferredOwnerships = new HashSet<>();
-        Set<Thing> inferredConcepts = new HashSet<>();
-        // TODO not supported yet to persist expanded RPs
-//        Set<Pair<Relation, Thing>> inferredRolePlayers = new HashSet<>();
 
         Set<Thing> visitedThings = new HashSet<>();
         Stack<Thing> thingStack = new Stack<>();
@@ -459,11 +458,14 @@ public class TransactionImpl implements Transaction {
                             .forEach(thingStack::add);
 
                 } else if (thing.isAttribute()) {
+                    // get all owners as a low level traversal
                     ConceptVertex.from(thing).vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.ATTRIBUTE)
                             .forEach(edge -> {
                                 Thing owner = conceptManager.buildConcept(edge.source());
                                 if (edge.propertyBoolean(Schema.EdgeProperty.IS_INFERRED)) {
-                                    inferredOwnerships.add(new Pair<>(owner, thing.asAttribute()));
+                                    // mark this edge for persistence
+                                    transactionCache.inferredOwnershipToPersist(owner, thing.asAttribute());
+                                    edge.property(Schema.EdgeProperty.IS_INFERRED, false);
                                 }
                                 if (!visitedThings.contains(owner)) {
                                     thingStack.add(owner);
@@ -472,15 +474,12 @@ public class TransactionImpl implements Transaction {
                 }
 
                 if (thing.isInferred()) {
-                    inferredConcepts.add(thing);
+                    transactionCache.inferredInstanceToPersist(thing);
+                    ConceptVertex.from(thing).vertex().property(Schema.VertexProperty.IS_INFERRED, false);
                 }
-
                 visitedThings.add(thing);
             }
         }
-
-        inferredConcepts.forEach(inferred -> transactionCache.inferredInstanceToPersist(inferred));
-        inferredOwnerships.forEach(ownership -> transactionCache.inferredOwnershipToPersist(ownership.first(), ownership.second()));
     }
 
     // Delete query

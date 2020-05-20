@@ -179,12 +179,6 @@ public class RelationImpl extends ThingImpl<Relation, RelationType> implements R
     }
 
     @Override
-    public Stream<Thing> getDependentConcepts() {
-        return Stream.concat(Stream.of(this), rolePlayers());
-    }
-
-
-    @Override
     public String innerToString() {
         StringBuilder description = new StringBuilder();
         description.append("ID [").append(id()).append("] Type [").append(type().label()).append("] Roles and Role Players: \n");

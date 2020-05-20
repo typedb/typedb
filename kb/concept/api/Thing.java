@@ -111,10 +111,6 @@ public interface Thing extends Concept {
      */
     void attributeInferred(Attribute attribute);
 
-    /**
-     * Return concepts that are DIRECT dependants of this concept - concepts required to be persisted if we persist this concept.
-     */
-    default Stream<Thing> getDependentConcepts(){ return Stream.of(this);}
 
     //------------------------------------- Other ---------------------------------
     @Deprecated

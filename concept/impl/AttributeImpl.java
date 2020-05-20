@@ -82,11 +82,4 @@ public class AttributeImpl<D> extends ThingImpl<Attribute<D>, AttributeType<D>> 
     public String innerToString() {
         return super.innerToString() + "- Value [" + value() + "] ";
     }
-
-    @Override
-    public Stream<Thing> getDependentConcepts() {
-        Stream<Thing> conceptStream = Stream.of(this);
-        conceptStream = Stream.concat(conceptStream, owners());
-        return conceptStream;
-    }
 }
