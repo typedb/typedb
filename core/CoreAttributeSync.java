@@ -27,28 +27,33 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public class CoreAttributeSync implements AttributeSync {
 
-    private final ConcurrentMap<IID.Vertex.Attribute, CommitFlag> commitFlags;
+    private final ConcurrentMap<IID.Vertex.Attribute, CommitSync> commitFlags;
 
-    public CoreAttributeSync() {
+    CoreAttributeSync() {
         this.commitFlags = new ConcurrentHashMap<>();
     }
 
     @Override
-    public CommitFlag get(IID.Vertex.Attribute attributeIID) {
-        return commitFlags.computeIfAbsent(attributeIID, iid -> new CommitFlag());
+    public CommitSync get(IID.Vertex.Attribute attributeIID) {
+        return commitFlags.computeIfAbsent(attributeIID, iid -> new CommitSync());
     }
 
-    public static class CommitFlag implements CommitSync {
+    @Override
+    public void remove(IID.Vertex.Attribute attributeIID) {
+        commitFlags.remove(attributeIID);
+    }
 
-        private final AtomicBoolean commited;
+    public static class CommitSync implements AttributeSync.CommitSync {
 
-        CommitFlag() {
-            commited = new AtomicBoolean(false);
+        private final AtomicBoolean committed;
+
+        CommitSync() {
+            committed = new AtomicBoolean(false);
         }
 
         @Override
-        public boolean sync() {
-            return commited.getAndSet(true);
+        public boolean checkIsSyncedAndSetTrue() {
+            return committed.getAndSet(true);
         }
     }
 }

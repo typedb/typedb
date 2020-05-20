@@ -164,7 +164,8 @@ class CoreTransaction implements Hypergraph.Transaction {
             return session.keyGenerator();
         }
 
-        AttributeSync attributeSync() {
+        @Override
+        public AttributeSync attributeSync() {
             return session.attributeSync();
         }
 

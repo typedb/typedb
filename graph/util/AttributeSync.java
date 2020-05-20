@@ -36,6 +36,13 @@ public interface AttributeSync {
     CommitSync get(IID.Vertex.Attribute attributeIID);
 
     /**
+     * Removes the {@code CommitSync} for a given attribute.
+     *
+     * @param attributeIID of the attribute of the {@code CommitSync} to remove
+     */
+    void remove(IID.Vertex.Attribute attributeIID);
+
+    /**
      * A system to synchronise a commit.
      */
     interface CommitSync {
@@ -50,6 +57,6 @@ public interface AttributeSync {
          *
          * @return the current sync status before setting it to true
          */
-        boolean sync();
+        boolean checkIsSyncedAndSetTrue();
     }
 }

@@ -520,14 +520,16 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         public AttributeTypeImpl.String asString() { return this; }
 
         @Override
-        public Attribute.String put(AttributeType.String value) {
+        public Attribute.String put(java.lang.String value) {
             return put(value, false);
         }
 
         @Override
-        public Attribute.String put(AttributeType.String value, boolean isInferred) {
-            ThingVertex attVertex = vertex.graph().thingGraph().putAttribute(vertex, value);
-            attVertex.isInferred(isInferred);
+        public Attribute.String put(java.lang.String value, boolean isInferred) {
+            if (value.length() > Schema.STRING_MAX_LENGTH) {
+                throw new HypergraphException(Error.ThingWrite.ILLEGAL_STRING_SIZE);
+            }
+            ThingVertex attVertex = vertex.graph().thingGraph().putAttribute(vertex, value, isInferred);
             return new AttributeImpl.String(attVertex);
         }
 

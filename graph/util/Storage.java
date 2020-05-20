@@ -25,6 +25,8 @@ public interface Storage {
 
     KeyGenerator keyGenerator();
 
+    AttributeSync attributeSync();
+
     byte[] get(byte[] key);
 
     byte[] getLastKey(byte[] prefix);

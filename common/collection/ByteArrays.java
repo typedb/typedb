@@ -18,6 +18,8 @@
 
 package hypergraph.common.collection;
 
+import java.nio.ByteBuffer;
+
 public class ByteArrays {
 
     public static byte[] join(byte[]... byteArrays) {
@@ -71,5 +73,9 @@ public class ByteArrays {
         bytes[1] = (byte) (num >>= 8);
         bytes[0] = (byte) (num >> 8);
         return bytes;
+    }
+
+    public static byte[] doubleToBytes(double value) {
+        return ByteBuffer.allocate(8).putDouble(value).array();
     }
 }

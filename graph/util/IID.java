@@ -19,9 +19,17 @@
 package hypergraph.graph.util;
 
 import javax.annotation.Nullable;
+import java.nio.ByteBuffer;
+import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.Arrays;
 
+import static hypergraph.common.collection.ByteArrays.doubleToBytes;
 import static hypergraph.common.collection.ByteArrays.join;
+import static hypergraph.common.collection.ByteArrays.longToBytes;
+import static hypergraph.graph.util.Schema.STRING_ENCODING;
+import static hypergraph.graph.util.Schema.STRING_MAX_LENGTH;
+import static hypergraph.graph.util.Schema.TIME_ZONE_ID;
 import static java.util.Arrays.copyOfRange;
 
 public class IID {
@@ -148,23 +156,83 @@ public class IID {
             public static final int PREFIX_TYPE_LENGTH = Prefix.LENGTH + Type.LENGTH;
             public static final int LENGTH = PREFIX_TYPE_LENGTH + 8;
 
-            Thing(byte[] bytes) {
+            public Thing(byte[] bytes) {
                 super(bytes);
-            }
-
-            public static IID.Vertex.Thing of(byte[] bytes) {
-                return new IID.Vertex.Thing(bytes);
             }
 
             public IID.Vertex.Type type() {
                 return IID.Vertex.Type.of(copyOfRange(bytes, Prefix.LENGTH, Type.LENGTH));
             }
+
+            public Schema.Vertex.Thing schema() {
+                return Schema.Vertex.Thing.of(bytes[0]);
+            }
         }
 
-        public static class Attribute extends IID.Vertex.Thing {
+        public static abstract class Attribute extends IID.Vertex.Thing {
 
-            Attribute(byte[] bytes) {
-                super(bytes);
+            Attribute(Schema.ValueType valueType, Type typeIID, byte[] valueBytes) {
+                super(join(
+                        Schema.Vertex.Thing.ATTRIBUTE.prefix().bytes(),
+                        typeIID.bytes(),
+                        valueType.bytes(),
+                        valueBytes
+                ));
+            }
+
+            public static class Boolean extends Attribute {
+
+                public Boolean(IID.Vertex.Type typeIID, boolean value) {
+                    super(Schema.ValueType.BOOLEAN, typeIID, new byte[]{(byte) (value ? 1 : 0)});
+                }
+            }
+
+            public static class Long extends Attribute {
+
+                public Long(IID.Vertex.Type typeIID, long value) {
+                    super(Schema.ValueType.LONG, typeIID, longToBytes(value));
+                }
+            }
+
+            public static class Double extends Attribute {
+
+                public Double(IID.Vertex.Type typeIID, double value) {
+                    super(Schema.ValueType.DOUBLE, typeIID, doubleToBytes(value));
+                }
+            }
+
+            public static class String extends Attribute {
+
+                public String(IID.Vertex.Type typeIID, java.lang.String value) {
+                    super(Schema.ValueType.STRING, typeIID, serialise(value));
+                }
+
+                private static byte[] serialise(java.lang.String value) {
+                    byte[] bytes = value.getBytes(STRING_ENCODING);
+                    assert bytes.length <= STRING_MAX_LENGTH;
+
+                    return join(new byte[]{(byte) bytes.length}, bytes);
+                }
+
+                private static java.lang.String deserialise(byte[] bytes) {
+                    byte[] x = Arrays.copyOfRange(bytes, 1, 1 + bytes[0]);
+                    return new java.lang.String(x, STRING_ENCODING);
+                }
+            }
+
+            public static class DateTime extends Attribute {
+
+                public DateTime(IID.Vertex.Type typeIID, java.time.LocalDateTime value) {
+                    super(Schema.ValueType.DATETIME, typeIID, serialise(value));
+                }
+
+                private static byte[] serialise(java.time.LocalDateTime value) {
+                    return longToBytes(value.atZone(TIME_ZONE_ID).toInstant().toEpochMilli());
+                }
+
+                private static java.time.LocalDateTime deserialise(byte[] bytes) {
+                    return LocalDateTime.ofInstant(Instant.ofEpochMilli(ByteBuffer.wrap(bytes).getLong()), TIME_ZONE_ID);
+                }
             }
         }
     }

@@ -26,6 +26,7 @@ import hypergraph.graph.vertex.TypeVertex;
 import hypergraph.graph.vertex.Vertex;
 import hypergraph.graph.vertex.impl.ThingVertexImpl;
 
+import java.time.LocalDateTime;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -71,18 +72,63 @@ public class ThingGraph implements Graph<IID.Vertex.Thing, ThingVertex> {
 
     public ThingVertex create(Schema.Vertex.Thing schema, IID.Vertex.Type type, boolean isInferred) {
         IID.Vertex.Thing iid = generateIID(graphManager.keyGenerator(), schema, type);
-        ThingVertex vertex = new ThingVertexImpl.Buffered(this, schema, iid, isInferred);
+        ThingVertex vertex = new ThingVertexImpl.Buffered(this, iid, isInferred);
         thingByIID.put(iid, vertex);
         return vertex;
     }
 
-    public ThingVertex putAttribute(TypeVertex type, Object value) {
+    public ThingVertex putAttribute(TypeVertex type, boolean value, boolean isInferred) {
         assert type.schema().equals(Schema.Vertex.Type.ATTRIBUTE_TYPE);
-        assert type.valueType().valueClass().isInstance(value);
+        assert type.valueType().valueClass().equals(Boolean.class);
 
+        IID.Vertex.Attribute attIID = new IID.Vertex.Attribute.Boolean(type.iid(), value);
+        return putAttribute(attIID, isInferred);
+    }
 
+    public ThingVertex putAttribute(TypeVertex type, long value, boolean isInferred) {
+        assert type.schema().equals(Schema.Vertex.Type.ATTRIBUTE_TYPE);
+        assert type.valueType().valueClass().equals(Long.class);
 
-        return null;
+        IID.Vertex.Attribute attIID = new IID.Vertex.Attribute.Long(type.iid(), value);
+        return putAttribute(attIID, isInferred);
+    }
+
+    public ThingVertex putAttribute(TypeVertex type, double value, boolean isInferred) {
+        assert type.schema().equals(Schema.Vertex.Type.ATTRIBUTE_TYPE);
+        assert type.valueType().valueClass().equals(Double.class);
+
+        IID.Vertex.Attribute attIID = new IID.Vertex.Attribute.Double(type.iid(), value);
+        return putAttribute(attIID, isInferred);
+    }
+
+    public ThingVertex putAttribute(TypeVertex type, String value, boolean isInferred) {
+        assert type.schema().equals(Schema.Vertex.Type.ATTRIBUTE_TYPE);
+        assert type.valueType().valueClass().equals(String.class);
+        assert value.length() == Schema.STRING_MAX_LENGTH;
+
+        IID.Vertex.Attribute attIID = new IID.Vertex.Attribute.String(type.iid(), value);
+        return putAttribute(attIID, isInferred);
+    }
+
+    public ThingVertex putAttribute(TypeVertex type, LocalDateTime value, boolean isInferred) {
+        assert type.schema().equals(Schema.Vertex.Type.ATTRIBUTE_TYPE);
+        assert type.valueType().valueClass().equals(LocalDateTime.class);
+
+        IID.Vertex.Attribute attIID = new IID.Vertex.Attribute.DateTime(type.iid(), value);
+        return putAttribute(attIID, isInferred);
+    }
+
+    public ThingVertex putAttribute(IID.Vertex.Attribute attributeIID, boolean isInferred) {
+        ThingVertex vertex = get(attributeIID);
+
+        if (vertex != null) {
+            graphManager.storage().attributeSync().remove(attributeIID);
+        } else {
+            vertex = new ThingVertexImpl.Buffered(this, attributeIID, isInferred);
+            thingByIID.put(attributeIID, vertex);
+        }
+
+        return vertex;
     }
 
     public TypeGraph typeGraph() {

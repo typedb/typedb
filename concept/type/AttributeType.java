@@ -114,9 +114,9 @@ public interface AttributeType extends ThingType {
         @Override
         Stream<? extends AttributeType.String> subs();
 
-        Attribute.String put(String value);
+        Attribute.String put(java.lang.String value);
 
-        Attribute.String put(String value, boolean isInferred);
+        Attribute.String put(java.lang.String value, boolean isInferred);
     }
 
     interface DateTime extends AttributeType {

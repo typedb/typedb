@@ -26,6 +26,7 @@ import hypergraph.graph.adjacency.ThingAdjacency;
 import hypergraph.graph.adjacency.impl.ThingAdjacencyImpl;
 import hypergraph.graph.edge.Edge;
 import hypergraph.graph.edge.ThingEdge;
+import hypergraph.graph.util.AttributeSync;
 import hypergraph.graph.util.IID;
 import hypergraph.graph.util.KeyGenerator;
 import hypergraph.graph.util.Schema;
@@ -40,8 +41,8 @@ public abstract class ThingVertexImpl extends VertexImpl<IID.Vertex.Thing, Schem
     protected final ThingAdjacency outs;
     protected final ThingAdjacency ins;
 
-    ThingVertexImpl(ThingGraph graph, Schema.Vertex.Thing schema, IID.Vertex.Thing iid) {
-        super(iid, schema);
+    ThingVertexImpl(ThingGraph graph, IID.Vertex.Thing iid) {
+        super(iid, iid.schema());
         this.graph = graph;
         this.outs = newAdjacency(Adjacency.Direction.OUT);
         this.ins = newAdjacency(Adjacency.Direction.IN);
@@ -56,7 +57,7 @@ public abstract class ThingVertexImpl extends VertexImpl<IID.Vertex.Thing, Schem
      * @return a byte array representing a new IID for a {@code ThingVertex}
      */
     public static IID.Vertex.Thing generateIID(KeyGenerator keyGenerator, Schema.Vertex.Thing schema, IID.Vertex.Type typeIID) {
-        return IID.Vertex.Thing.of(join(schema.prefix().bytes(), typeIID.bytes(), keyGenerator.forThing(typeIID)));
+        return new IID.Vertex.Thing(join(schema.prefix().bytes(), typeIID.bytes(), keyGenerator.forThing(typeIID)));
     }
 
     /**
@@ -99,10 +100,10 @@ public abstract class ThingVertexImpl extends VertexImpl<IID.Vertex.Thing, Schem
 
     public static class Buffered extends ThingVertexImpl {
 
-        private boolean isInferred;
+        protected boolean isInferred;
 
-        public Buffered(ThingGraph graph, Schema.Vertex.Thing schema, IID.Vertex.Thing iid, boolean isInferred) {
-            super(graph, schema, iid);
+        public Buffered(ThingGraph graph, IID.Vertex.Thing iid, boolean isInferred) {
+            super(graph, iid);
             this.isInferred = isInferred;
         }
 
@@ -141,6 +142,25 @@ public abstract class ThingVertexImpl extends VertexImpl<IID.Vertex.Thing, Schem
         private void commitEdges() {
             outs.forEach(Edge::commit);
             ins.forEach(Edge::commit);
+        }
+
+        public static class Attribute extends ThingVertexImpl.Buffered {
+
+            private final AttributeSync.CommitSync commitSync;
+
+            public Attribute(ThingGraph graph, IID.Vertex.Thing iid, boolean isInferred, AttributeSync.CommitSync commitSync) {
+                super(graph, iid, isInferred);
+                this.commitSync = commitSync;
+            }
+
+            @Override
+            public void commit() {
+                if (isInferred) throw new HypergraphException(Error.Transaction.ILLEGAL_OPERATION);
+                if (!commitSync.checkIsSyncedAndSetTrue()) {
+                    graph.storage().put(iid.bytes());
+                }
+                super.commitEdges();
+            }
         }
     }
 }
