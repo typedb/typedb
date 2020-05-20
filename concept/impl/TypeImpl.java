@@ -99,7 +99,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
      *  retrieve all attributes owned directly and by all super types
      */
     @Override
-    public Stream<AttributeType> has() {
+    public Stream<AttributeType<?>> has() {
         // sups() returns this type
         return sups().flatMap(Type::directHas);
     }
@@ -108,30 +108,30 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
      * retrieve all attributes owned as keys directly and by all super types
      */
     @Override
-    public Stream<AttributeType> keys() {
+    public Stream<AttributeType<?>> keys() {
         // sups() returns this type
         return sups().flatMap(Type::directKeys);
     }
 
     @Override
-    public Stream<AttributeType> hasWithoutKeys() {
+    public Stream<AttributeType<?>> hasWithoutKeys() {
         // sups() returns this type
         return sups().flatMap(Type::directHasWithoutKeys);
     }
 
     @Override
-    public Stream<AttributeType> directHas() {
-        Stream<AttributeType> attributes = neighbours(Direction.OUT, Schema.EdgeLabel.HAS);
+    public Stream<AttributeType<?>> directHas() {
+        Stream<AttributeType<?>> attributes = neighbours(Direction.OUT, Schema.EdgeLabel.HAS);
         return Stream.concat(attributes, keys());
     }
 
     @Override
-    public Stream<AttributeType> directKeys() {
+    public Stream<AttributeType<?>> directKeys() {
         return neighbours(Direction.OUT, Schema.EdgeLabel.KEY);
     }
 
     @Override
-    public Stream<AttributeType> directHasWithoutKeys() {
+    public Stream<AttributeType<?>> directHasWithoutKeys() {
         return neighbours(Direction.OUT, Schema.EdgeLabel.HAS);
     }
 

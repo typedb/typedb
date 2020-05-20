@@ -69,14 +69,6 @@ public interface Thing extends Concept {
      */
     <T extends Thing> T has(Attribute attribute);
 
-//    /**
-//     * Creates an ownership from this instance to the provided Attribute.
-//     *
-//     * @param attribute The Attribute to which a Relation is created
-//     * @return The Relation connecting the Thing and the Attribute
-//     */
-//    void relhas(Attribute attribute);
-
     /**
      * Retrieves a collection of Attribute attached to this Thing
      *
@@ -85,7 +77,7 @@ public interface Thing extends Concept {
      * see Attribute
      */
     @CheckReturnValue
-    Stream<Attribute<?>> attributes(AttributeType... attributeTypes);
+    Stream<Attribute<?>> attributes(AttributeType<?>... attributeTypes);
 
     /**
      * Retrieves a collection of Attribute attached to this Thing as a key
@@ -95,7 +87,7 @@ public interface Thing extends Concept {
      * see Attribute
      */
     @CheckReturnValue
-    Stream<Attribute<?>> keys(AttributeType... attributeTypes);
+    Stream<Attribute<?>> keys(AttributeType<?>... attributeTypes);
 
     /**
      * Removes the provided Attribute from this Thing

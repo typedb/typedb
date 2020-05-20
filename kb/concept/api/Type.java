@@ -77,16 +77,16 @@ public interface Type extends SchemaConcept {
     Stream<Role> playing();
 
 
-    Stream<AttributeType> has();
-    Stream<AttributeType> hasWithoutKeys();
-    Stream<AttributeType> directHas();
+    Stream<AttributeType<?>> has();
+    Stream<AttributeType<?>> hasWithoutKeys();
+    Stream<AttributeType<?>> directHas();
     /**
      * @return The AttributeTypes which this Type is linked with as a key.
      */
     @CheckReturnValue
-    Stream<AttributeType> keys();
-    Stream<AttributeType> directHasWithoutKeys();
-    Stream<AttributeType> directKeys();
+    Stream<AttributeType<?>> keys();
+    Stream<AttributeType<?>> directHasWithoutKeys();
+    Stream<AttributeType<?>> directKeys();
 
 
     /**

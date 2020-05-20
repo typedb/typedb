@@ -245,7 +245,7 @@ public class ValidateGlobalRules {
     static Optional<String> validateInstancePlaysAllRequiredRoles(Thing thing) {
         TypeImpl<?, ?> type = (TypeImpl) thing.type();
 
-        for (Iterator<AttributeType> it = type.keys().iterator(); it.hasNext(); ) {
+        for (Iterator<AttributeType<?>> it = type.keys().iterator(); it.hasNext(); ) {
             AttributeType keyType = it.next();
             List<Attribute> keys = thing.attributes(keyType).collect(Collectors.toList());
             if (keys.size() == 0) {

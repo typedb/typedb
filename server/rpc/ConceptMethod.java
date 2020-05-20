@@ -505,7 +505,7 @@ public class ConceptMethod {
             }
 
             private void keys() {
-                Stream<grakn.core.kb.concept.api.AttributeType> concepts = concept.asType().keys();
+                Stream<grakn.core.kb.concept.api.AttributeType<?>> concepts = concept.asType().keys();
 
                 Stream<SessionProto.Transaction.Res> responses = concepts.map(con -> {
                     ConceptProto.Method.Iter.Res res = ConceptProto.Method.Iter.Res.newBuilder()
@@ -518,7 +518,7 @@ public class ConceptMethod {
             }
 
             private void attributes() {
-                Stream<grakn.core.kb.concept.api.AttributeType> concepts = concept.asType().has();
+                Stream<grakn.core.kb.concept.api.AttributeType<?>> concepts = concept.asType().has();
 
                 Stream<SessionProto.Transaction.Res> responses = concepts.map(con -> {
                     ConceptProto.Method.Iter.Res res = ConceptProto.Method.Iter.Res.newBuilder()

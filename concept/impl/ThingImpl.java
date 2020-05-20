@@ -43,7 +43,7 @@ import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.Objects;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -135,42 +135,10 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
     }
 
     @Override
-    public Stream<Attribute<?>> attributes(AttributeType... attributeTypes) {
-        Set<ConceptId> attributeTypesIds = Arrays.stream(attributeTypes).map(Concept::id).collect(toSet());
-        return attributes(getShortcutNeighbours(true), attributeTypesIds);
-    }
-
-    @Override
-    public Stream<Attribute<?>> keys(AttributeType... attributeTypes) {
-        Set<ConceptId> attributeTypesIds = Arrays.stream(attributeTypes).map(Concept::id).collect(toSet());
-        Set<ConceptId> keyTypeIds = type().keys().map(Concept::id).collect(toSet());
-
-        if (!attributeTypesIds.isEmpty()) {
-            keyTypeIds = Sets.intersection(attributeTypesIds, keyTypeIds);
-        }
-
-        if (keyTypeIds.isEmpty()) return Stream.empty();
-
-        return attributes(getShortcutNeighbours(true), keyTypeIds);
-    }
-
-    /**
-     * Helper class which filters a Stream of Attribute to those of a specific set of AttributeType.
-     *
-     * @param conceptStream     The Stream to filter
-     * @param attributeTypesIds The AttributeType ConceptIds to filter to.
-     * @return the filtered stream
-     */
-    private <X extends Concept> Stream<Attribute<?>> attributes(Stream<X> conceptStream, Set<ConceptId> attributeTypesIds) {
-        Stream<Attribute<?>> attributeStream = conceptStream.
-                filter(concept -> concept.isAttribute() && !this.equals(concept)).
-                map(Concept::asAttribute);
-
-        if (!attributeTypesIds.isEmpty()) {
-            attributeStream = attributeStream.filter(attribute -> attributeTypesIds.contains(attribute.type().id()));
-        }
-
-        return attributeStream;
+    public Stream<Attribute<?>> keys(AttributeType<?>... attributeTypes) {
+        Set<AttributeType<?>> attributeKeyTypes = new HashSet<>(Arrays.asList(attributeTypes));
+        List<AttributeType<?>> keyTypes = type().keys().filter(attributeKeyTypes::contains).collect(Collectors.toList());
+        return attributes(keyTypes.toArray(new AttributeType<?>[0]));
     }
 
     /**
@@ -183,42 +151,22 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
                 .map(edge -> CastingImpl.withThing(edge, this, conceptManager));
     }
 
-    private Set<Integer> implicitLabelsToIds(Set<Label> labels, Set<Schema.ImplicitType> implicitTypes) {
-        return labels.stream()
-                .flatMap(label -> implicitTypes.stream().map(it -> it.getLabel(label)))
-                .map(label -> conceptManager.convertToId(label))
-                .filter(id -> !id.equals(LabelId.invalid()))
-                .map(LabelId::getValue)
-                .collect(toSet());
-    }
-
-    <X extends Thing> Stream<X> getShortcutNeighbours(boolean ownerToValueOrdering, AttributeType... attributeTypes) {
-        Set<AttributeType> completeAttributeTypes = new HashSet<>(Arrays.asList(attributeTypes));
+    @Override
+    public Stream<Attribute<?>> attributes(AttributeType<?>... attributeTypes) {
+        Set<AttributeType<?>> completeAttributeTypes = new HashSet<>(Arrays.asList(attributeTypes));
         if (completeAttributeTypes.isEmpty()) {
             completeAttributeTypes.add(conceptManager.getMetaAttributeType());
         }
 
-        Set<Label> attributeHierarchyLabels = completeAttributeTypes.stream()
-                .flatMap(t -> (Stream<AttributeType>) t.subs())
-                .map(SchemaConcept::label)
+        Set<AttributeType<?>> typesWithSubs = completeAttributeTypes.stream()
+                .flatMap(AttributeType::subs)
                 .collect(toSet());
 
-        Set<Integer> ownerRoleIds = implicitLabelsToIds(
-                attributeHierarchyLabels,
-                Sets.newHashSet(
-                        Schema.ImplicitType.HAS_OWNER,
-                        Schema.ImplicitType.KEY_OWNER
-                ));
-        Set<Integer> valueRoleIds = implicitLabelsToIds(
-                attributeHierarchyLabels,
-                Sets.newHashSet(
-                        Schema.ImplicitType.HAS_VALUE,
-                        Schema.ImplicitType.KEY_VALUE
-                ));
+        Stream<Attribute<?>> attributesOwned = neighbours(Direction.OUT, Schema.EdgeLabel.ATTRIBUTE)
+                .filter(neighbour -> typesWithSubs.contains(neighbour.asThing().type()))
+                .map(Concept::asAttribute);
 
-        Stream<VertexElement> shortcutNeighbors = vertex().getShortcutNeighbors(ownerRoleIds, valueRoleIds, ownerToValueOrdering);
-        return shortcutNeighbors.map(vertexElement -> conceptManager.buildConcept(vertexElement));
-
+        return attributesOwned;
     }
 
     /**

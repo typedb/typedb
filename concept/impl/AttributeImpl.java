@@ -86,19 +86,7 @@ public class AttributeImpl<D> extends ThingImpl<Attribute<D>, AttributeType<D>> 
     @Override
     public Stream<Thing> getDependentConcepts() {
         Stream<Thing> conceptStream = Stream.of(this);
-        conceptStream = Stream.concat(conceptStream, getImplicitOwnerships());
         conceptStream = Stream.concat(conceptStream, owners());
-        return conceptStream;
-    }
-
-    // TODO remove this method when removing implicit relations fully
-    private Stream<Thing> getImplicitOwnerships() {
-        Stream<Thing> conceptStream = Stream.of();
-        Label typeLabel = type().label();
-        Role hasRole = conceptManager.getRole(Schema.ImplicitType.HAS_VALUE.getLabel(typeLabel).getValue());
-        Role keyRole = conceptManager.getRole(Schema.ImplicitType.KEY_VALUE.getLabel(typeLabel).getValue());
-        if (hasRole != null) conceptStream = Stream.concat(conceptStream, relations(hasRole));
-        if (keyRole != null) conceptStream = Stream.concat(conceptStream, relations(keyRole));
         return conceptStream;
     }
 }
