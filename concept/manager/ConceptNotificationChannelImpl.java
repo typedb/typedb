@@ -127,8 +127,8 @@ public class ConceptNotificationChannelImpl implements ConceptNotificationChanne
     }
 
     @Override
-    public void hasAttributeRemoved(Thing owner, Attribute<?> owned) {
-        conceptListener.hasAttributeRemoved(owner, owned);
+    public void hasAttributeRemoved(Thing owner, Attribute<?> owned, boolean isInferred) {
+        conceptListener.hasAttributeRemoved(owner, owned, isInferred);
     }
 
     @Override

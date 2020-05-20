@@ -55,7 +55,7 @@ public interface ConceptListener {
 
     void hasAttributeCreated(Thing owner, Attribute attribute, boolean isInferred);
 
-    void hasAttributeRemoved(Thing owner, Attribute<?> owned);
+    void hasAttributeRemoved(Thing owner, Attribute<?> owned, boolean isInferred);
 
     void ruleCreated(Rule rule);
 

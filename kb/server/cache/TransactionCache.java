@@ -72,6 +72,8 @@ public class TransactionCache {
     private final Set<Rule> modifiedRules = new HashSet<>();
     private final Set<Thing> inferredConcepts = new HashSet<>();
     private final Set<Thing> inferredConceptsToPersist = new HashSet<>();
+    private final Set<Pair<Thing, Attribute<?>>> inferredOwnerships = new HashSet<>();
+    private final Set<Pair<Thing, Attribute<?>>> inferredOwnershipsToPersist = new HashSet<>();
 
     private Map<Label, Long> newShards = new HashMap<>();
 
@@ -125,9 +127,11 @@ public class TransactionCache {
         }
     }
 
+
     public void trackForValidation(Casting casting) {
         modifiedCastings.add(casting);
     }
+
 
     public void removeFromValidation(Type type) {
         if (type.isRelationType()) {
@@ -277,12 +281,33 @@ public class TransactionCache {
         return inferredConcepts.stream();
     }
 
+    public void inferredOwnershipToPersist(Thing owner, Attribute<?> attribute) {
+        inferredOwnershipsToPersist.add(new Pair<>(owner, attribute));
+    }
+
+    public void hasAttributeCreated(Thing owner, Attribute<?> attribute, boolean isInferred) {
+        if (isInferred) {
+            inferredOwnerships.add(new Pair<>(owner, attribute));
+        }
+    }
+
+    public void hasAttributeDeleted(Thing owner, Attribute<?> attribute, boolean isInferred) {
+        if (isInferred) {
+            inferredOwnerships.remove(new Pair<>(owner, attribute));
+        }
+    }
+
     /**
      * @return cached things that are inferred
      */
     public Stream<Thing> getInferredInstancesToDiscard() {
         return inferredConcepts.stream()
                 .filter(t -> !inferredConceptsToPersist.contains(t));
+    }
+
+    public Stream<Pair<Thing, Attribute<?>>> getInferredOwnershipsToDiscard() {
+        return inferredOwnerships.stream()
+                .filter(pair -> !inferredOwnershipsToPersist.contains(pair));
     }
 
     /**

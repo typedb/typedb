@@ -207,8 +207,17 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
     public T unhas(Attribute attribute) {
         // delete attribute ownerships between this Thing and the Attribute
         // TODO may need to be able to limit the number of times the edge is removed if there are multiple - this removes all
-        vertex().deleteEdge(Direction.OUT, Schema.EdgeLabel.ATTRIBUTE, ConceptVertex.from(attribute).vertex());
-        conceptNotificationChannel.hasAttributeRemoved(this, attribute);
+        Optional<EdgeElement> edgeElement = vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.ATTRIBUTE)
+                .filter(edge -> edge.target().equals(ConceptVertex.from(attribute).vertex()))
+                .findAny();
+
+        if (edgeElement.isPresent()) {
+            EdgeElement edge = edgeElement.get();
+            boolean isInferred = edge.propertyBoolean(Schema.EdgeProperty.IS_INFERRED);
+            edge.delete();
+            conceptNotificationChannel.hasAttributeRemoved(this, attribute, isInferred);
+        }
+
         return getThis();
     }
 

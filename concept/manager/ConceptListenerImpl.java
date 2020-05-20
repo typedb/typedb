@@ -165,21 +165,23 @@ public class ConceptListenerImpl implements ConceptListener {
 
     @Override
     public void hasAttributeCreated(Thing owner, Attribute attribute, boolean isInferred) {
-//        thingCreated(hasAttributeRelation, isInferred);
-
         //acknowledge key relation modification if the thing is one
         if (owner.type().keys().anyMatch(attribute.type()::equals)) {
             Label label = attribute.type().label();
             String index = Schema.generateAttributeIndex(label, attribute.value().toString());
             transactionCache.addModifiedKeyIndex(index);
         }
+
+        transactionCache.hasAttributeCreated(owner, attribute, isInferred);
     }
 
     @Override
-    public void hasAttributeRemoved(Thing owner, Attribute<?> owned) {
+    public void hasAttributeRemoved(Thing owner, Attribute<?> owned, boolean isInferred) {
         if (owner.type().keys().anyMatch(key -> key.equals(owned.type()))) {
             transactionCache.trackForValidation(owner);
         }
+
+        transactionCache.hasAttributeDeleted(owner, owned, isInferred);
     }
 
     @Override

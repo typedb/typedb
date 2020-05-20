@@ -51,6 +51,7 @@ import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.EntityType;
 import grakn.core.kb.concept.api.GraknConceptException;
 import grakn.core.kb.concept.api.Label;
+import grakn.core.kb.concept.api.Relation;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Rule;
@@ -100,6 +101,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.Stack;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -438,13 +440,47 @@ public class TransactionImpl implements Transaction {
                 .map(Concept::asThing)
                 .collect(Collectors.toSet());
 
-        ConceptUtils.getDependentConcepts(things)
-                .filter(Thing::isInferred)
-                .forEach(t -> {
-                    //as we are going to persist the concepts, reset the inferred flag
-                    ConceptVertex.from(t).vertex().property(Schema.VertexProperty.IS_INFERRED, false);
-                   transactionCache.inferredInstanceToPersist(t);
-                });
+        Set<Pair<Thing, Attribute>> inferredOwnerships = new HashSet<>();
+        Set<Thing> inferredConcepts = new HashSet<>();
+        // TODO not supported yet to persist expanded RPs
+//        Set<Pair<Relation, Thing>> inferredRolePlayers = new HashSet<>();
+
+        Set<Thing> visitedThings = new HashSet<>();
+        Stack<Thing> thingStack = new Stack<>();
+        thingStack.addAll(things);
+        while (!thingStack.isEmpty()) {
+            Thing thing = thingStack.pop();
+            if (!visitedThings.contains(thing)) {
+                if (thing.isRelation()) {
+                    // TODO persist inferred edges - not supported to persist inferred role playing yet
+
+                    thing.asRelation().rolePlayers()
+                            .filter(t -> !visitedThings.contains(t))
+                            .forEach(thingStack::add);
+
+                } else if (thing.isAttribute()) {
+                    ConceptVertex.from(thing).vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.ATTRIBUTE)
+                            .forEach(edge -> {
+                                Thing owner = conceptManager.buildConcept(edge.source());
+                                if (edge.propertyBoolean(Schema.EdgeProperty.IS_INFERRED)) {
+                                    inferredOwnerships.add(new Pair<>(owner, thing.asAttribute()));
+                                }
+                                if (!visitedThings.contains(owner)) {
+                                    thingStack.add(owner);
+                                }
+                            });
+                }
+
+                if (thing.isInferred()) {
+                    inferredConcepts.add(thing);
+                }
+
+                visitedThings.add(thing);
+            }
+        }
+
+        inferredConcepts.forEach(inferred -> transactionCache.inferredInstanceToPersist(inferred));
+        inferredOwnerships.forEach(ownership -> transactionCache.inferredOwnershipToPersist(ownership.first(), ownership.second()));
     }
 
     // Delete query
@@ -1119,7 +1155,7 @@ public class TransactionImpl implements Transaction {
         }
         try {
             checkMutationAllowed();
-            removeInferredConcepts();
+            removeInferredFacts();
             computeShardCandidates();
 
             // lock on the keyspace cache shared between concurrent tx's to the same keyspace
@@ -1139,10 +1175,16 @@ public class TransactionImpl implements Transaction {
         queryCache.clear();
     }
 
-    private void removeInferredConcepts() {
+    private void removeInferredFacts() {
         Set<Thing> inferredThingsToDiscard = transactionCache.getInferredInstancesToDiscard().collect(Collectors.toSet());
         inferredThingsToDiscard.forEach(transactionCache::remove);
         inferredThingsToDiscard.forEach(Concept::delete);
+
+        transactionCache.getInferredOwnershipsToDiscard().forEach(pair -> {
+            Thing owner = pair.first();
+            Attribute<?> attribute = pair.second();
+            owner.unhas(attribute);
+        });
     }
 
     private void validateGraph() throws InvalidKBException {
