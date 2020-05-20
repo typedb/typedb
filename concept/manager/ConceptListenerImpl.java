@@ -170,7 +170,7 @@ public class ConceptListenerImpl implements ConceptListener {
     }
 
     @Override
-    public void hasAttributeRelationCreated(Thing owner, Attribute attribute, boolean isInferred) {
+    public void hasAttributeCreated(Thing owner, Attribute attribute, boolean isInferred) {
 //        thingCreated(hasAttributeRelation, isInferred);
 
         //acknowledge key relation modification if the thing is one

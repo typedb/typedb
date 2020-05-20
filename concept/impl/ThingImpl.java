@@ -227,11 +227,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
      */
     @Override
     public Stream<Relation> relations(Role... roles) {
-//        return Stream.concat(reifiedRelations(roles));
         return reifiedRelations(roles);
-
-        // TODO definitely removed this now!
-        //, edgeRelations(roles));
     }
 
     private Stream<Relation> reifiedRelations(Role... roles) {
@@ -271,38 +267,16 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
         EdgeElement attributeEdge = putEdge(AttributeImpl.from(attribute), Schema.EdgeLabel.ATTRIBUTE);
         attributeEdge.property(Schema.EdgeProperty.ATTRIBUTE_OWNED_LABEL_ID, attribute.type().labelId().getValue());
 
-        conceptManager.createHasAttributeRelation(this, attribute, isInferred);
+        conceptManager.createHasAttribute(this, attribute, isInferred);
     }
-
 
     @Override
     public T unhas(Attribute attribute) {
-        // TODO-NOIMPL add forwards compatibility on deletes
-        // SHOULD BREAK
-
-        Role roleHasOwner = conceptManager.getSchemaConcept(Schema.ImplicitType.HAS_OWNER.getLabel(attribute.type().label()));
-        Role roleKeyOwner = conceptManager.getSchemaConcept(Schema.ImplicitType.KEY_OWNER.getLabel(attribute.type().label()));
-
-        Role roleHasValue = conceptManager.getSchemaConcept(Schema.ImplicitType.HAS_VALUE.getLabel(attribute.type().label()));
-        Role roleKeyValue = conceptManager.getSchemaConcept(Schema.ImplicitType.KEY_VALUE.getLabel(attribute.type().label()));
-
         // delete attribute ownerships between this Thing and the Attribute
-        Stream<Relation> relations = relations(filterNulls(roleHasOwner, roleKeyOwner));
-        relations.filter(relation -> {
-            Stream<Thing> rolePlayers = relation.rolePlayers(filterNulls(roleHasValue, roleKeyValue));
-            return rolePlayers.anyMatch(rolePlayer -> rolePlayer.equals(attribute));
-        }).forEach(Concept::delete);
-
+        // TODO may need to be able to limit the number of times the edge is removed if there are multiple - this removes all
+        vertex().deleteEdge(Direction.OUT, Schema.EdgeLabel.ATTRIBUTE, ConceptVertex.from(attribute).vertex());
         conceptNotificationChannel.hasAttributeRemoved(this, attribute);
-
         return getThis();
-    }
-
-    /**
-     * Returns an array with all the nulls filtered out.
-     */
-    private Role[] filterNulls(Role... roles) {
-        return Arrays.stream(roles).filter(Objects::nonNull).toArray(Role[]::new);
     }
 
     /**

@@ -53,7 +53,7 @@ public interface ConceptListener {
 
     void entityCreated(Entity entity, boolean isInferred);
 
-    void hasAttributeRelationCreated(Thing owner, Attribute attribute, boolean isInferred);
+    void hasAttributeCreated(Thing owner, Attribute attribute, boolean isInferred);
 
     void hasAttributeRemoved(Thing owner, Attribute<?> owned);
 

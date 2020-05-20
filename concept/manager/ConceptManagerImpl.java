@@ -279,26 +279,14 @@ public class ConceptManagerImpl implements ConceptManager {
     }
 
     /**
-     * Create a new Relation instance from an edge
+     * Create a new ownership from owner to attribute
      * Skip checking caches because this should be a brand new edge and concept
      */
     @Override
-    public void createHasAttributeRelation(Thing owner, Attribute attribute, boolean isInferred) {
-        conceptNotificationChannel.hasAttributeRelationCreated(owner, attribute, isInferred);
+    public void createHasAttribute(Thing owner, Attribute attribute, boolean isInferred) {
+        conceptNotificationChannel.hasAttributeCreated(owner, attribute, isInferred);
     }
 
-//    /**
-//     * Used by RelationEdge when it needs to reify a relation
-//     * NOTE The passed in vertex is already prepared outside of the ConceptManager
-//     * @return ReifiedRelation
-//     */
-//    @Override
-//    public RelationStructure createRelationReified(VertexElement vertex, RelationType type) {
-//        preCheckForInstanceCreation(type);
-//        RelationReified relationReified = new RelationReified(vertex, this, conceptNotificationChannel);
-//        relationReified.type(TypeImpl.from(type));
-//        return relationReified;
-//    }
 
     /**
      * Create a new Relation instance from a vertex
