@@ -23,6 +23,7 @@ import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.GraknConceptException;
 import grakn.core.kb.concept.api.Thing;
+import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.concept.manager.ConceptNotificationChannel;
 import grakn.core.kb.concept.structure.VertexElement;
@@ -64,16 +65,22 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
         return super.sup(superType);
     }
 
-    private Stream<Thing> directOwners() {
-        Stream<Thing> directHasOwners = neighbours(Direction.IN, Schema.EdgeLabel.HAS);
-        Stream<Thing> directKeyOwners = neighbours(Direction.IN, Schema.EdgeLabel.KEY);
+    @Override
+    public Stream<Type> directOwnersAsKey() {
+        Stream<Type> directKeyOwners = neighbours(Direction.IN, Schema.EdgeLabel.KEY);
+        return directKeyOwners;
+    }
+
+    private Stream<Type> directOwners() {
+        Stream<Type> directHasOwners = neighbours(Direction.IN, Schema.EdgeLabel.HAS);
+        Stream<Type> directKeyOwners = neighbours(Direction.IN, Schema.EdgeLabel.KEY);
         return Stream.concat(directHasOwners, directKeyOwners);
     }
 
     @Override
-    public Stream<Thing> owners() {
+    public Stream<Type> owners() {
         // note that sups() includes self
-        Stream<Thing> owners = sups().flatMap(parent -> (((AttributeTypeImpl<D>)parent).directOwners()));
+        Stream<Type> owners = sups().flatMap(parent -> (((AttributeTypeImpl<D>)parent).directOwners()));
         return owners;
     }
 

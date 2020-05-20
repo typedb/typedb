@@ -175,13 +175,7 @@ public class ConceptManagerImpl implements ConceptManager {
         relationType.createShard();
         relationType.sup(superType);
 
-        // TODO this may need to be updated with new ownership behaviours
-
-//
-//        // TODO remove this when do not have implicit types
-//        if (!relationType.isImplicit()) {
-//            conceptNotificationChannel.relationTypeCreated(relationType);
-//        }
+        conceptNotificationChannel.relationTypeCreated(relationType);
         transactionCache.cacheConcept(relationType);
         return relationType;
     }

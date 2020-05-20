@@ -69,7 +69,9 @@ public interface AttributeType<D> extends Type {
      */
     AttributeType<D> sup(AttributeType<D> type);
 
-    Stream<Thing> owners();
+    Stream<Type> directOwnersAsKey();
+
+    Stream<Type> owners();
 
     @Override
     void writeCount(Long count);

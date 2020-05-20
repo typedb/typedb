@@ -242,7 +242,7 @@ public class ValidateGlobalRules {
      * @param thing The thing to be validated
      * @return An error message if the thing does not have all the required resources
      */
-    static Optional<String> validateInstancePlaysAllRequiredRoles(Thing thing) {
+    static Optional<String> validateThingKeys(Thing thing) {
         TypeImpl<?, ?> type = (TypeImpl) thing.type();
 
         for (Iterator<AttributeType<?>> it = type.keys().iterator(); it.hasNext(); ) {
@@ -266,25 +266,25 @@ public class ValidateGlobalRules {
 
     // TODO this behaviour should be moved to another method, and optimised as it is very expensive
     private static Optional<String> validateKeyOwnedOnceByType(Attribute<?> key, Type ownerType) {
-        long owners = key.owners().filter(owner -> owner.type().equals(ownerType)).limit(2).count();
+        // find the supertype of the ownertype that keys this attribute's type
+        Set<Type> directOwnersOfKeyType = key.type().directOwnersAsKey().collect(Collectors.toSet());
+        Type highestSupOwningKey = ownerType;
+        while (true) {
+            Type sup = highestSupOwningKey.sup();
+            if (!directOwnersOfKeyType.contains(sup)) {
+                break;
+            }
+            highestSupOwningKey = sup;
+        }
+
+        Set<Type> childrenOfHighestKeyedType = highestSupOwningKey.subs().collect(Collectors.toSet());
+        long owners = key.owners().filter(owner -> childrenOfHighestKeyedType.contains(owner.type())).limit(2).count();
         if (owners != 1) {
-            return Optional.of(VALIDATION_MORE_THAN_ONE_USE_OF_KEY.getMessage(ownerType.label(), key.value(), key.type().label()));
+            return Optional.of(VALIDATION_MORE_THAN_ONE_USE_OF_KEY.getMessage(highestSupOwningKey.label(), key.value(), key.type().label()));
         }
         return Optional.empty();
     }
 
-//
-//    public static Optional<String> validateKeyUniqueness(ConceptManager conceptManager, Thing thing, Role role, Type ownerType, Label attributeLabel){
-//        //validate key uniqueness
-//        Relation keyRelation = thing.relations(role).findFirst().get();
-//        final Role keyValueRole = conceptManager.getRole(Schema.ImplicitType.KEY_VALUE.getLabel(attributeLabel).getValue());
-//        final Attribute<?> keyValue = keyRelation.rolePlayers(keyValueRole).findFirst().get().asAttribute();
-//        if (keyValue.owners().filter(owner -> owner.type().sups().anyMatch(t -> t.equals(ownerType))).limit(2).count() > 1) {
-//            Label resourceTypeLabel = Schema.ImplicitType.explicitLabel(role.label());
-//            return Optional.of(VALIDATION_MORE_THAN_ONE_USE_OF_KEY.getMessage(ownerType.label(), keyValue.value(), resourceTypeLabel));
-//        }
-//        return Optional.empty();
-//    }
 
     /**
      * @return Error messages if the rules in the db are not stratifiable (cycles with negation are present)
