@@ -308,8 +308,8 @@ public class GraqlSteps {
         assertTrue(String.format("No answer found for explanation entry %d that satisfies the vars and identifiers given", entryId), matchingAnswer.isPresent());
         ConceptMap answer = matchingAnswer.get();
 
-//        String queryWithIds = applyQueryTemplate(explanationEntry.get("pattern"), answer);
-        Conjunction<?> queryWithIdsConj = Graql.and(Graql.parsePatternList(explanationEntry.get("pattern")));
+        String queryWithIds = applyQueryTemplate(explanationEntry.get("pattern"), answer);
+        Conjunction<?> queryWithIdsConj = Graql.and(Graql.parsePatternList(queryWithIds));
         assertEquals(
                 String.format("Explanation entry %d has an incorrect pattern.\nExpected: %s\nActual: %s", entryId, queryWithIdsConj, answer.getPattern()),
                 queryWithIdsConj, answer.getPattern());

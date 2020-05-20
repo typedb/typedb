@@ -617,7 +617,7 @@ public class ReasonerQueryImpl extends ResolvableQuery {
         return this.selectAtoms()
             .map(at -> at.inferTypes(mergedAnswer.project(at.getVarNames())))
             .map(reasonerQueryFactory::atomic)
-            .map(aq -> new ConceptMap(mergedAnswer.project(aq.getVarNames()).map(), new LookupExplanation(), aq.getPattern()))
+            .map(aq -> new ConceptMap(mergedAnswer.project(aq.getVarNames()).map(), new LookupExplanation(), aq.withSubstitution(mergedAnswer).getPattern()))
             .collect(Collectors.toList());
     }
 
@@ -632,7 +632,7 @@ public class ReasonerQueryImpl extends ResolvableQuery {
             if (fruitless) dbIterator = Collections.emptyIterator();
             else {
                 dbIterator = traversalExecutor.traverse(getPattern())
-                        .map(ans -> new ConceptMap(ans.map(), new JoinExplanation(this.splitToPartialAnswers(ans)), this.getPattern()))
+                        .map(ans -> new ConceptMap(ans.map(), new JoinExplanation(this.splitToPartialAnswers(ans)), this.withSubstitution(ans).getPattern()))
                         .map(ans -> new AnswerState(ans, parent.getUnifier(), parent))
                         .iterator();
             }

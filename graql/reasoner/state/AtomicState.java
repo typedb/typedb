@@ -139,7 +139,7 @@ public class AtomicState extends AnswerPropagatorState<ReasonerAtomicQuery> {
         return new ConceptMap(
                 AnswerUtil.joinAnswers(answer, query.getSubstitution()).project(query.getVarNames()).map(),
                 new RuleExplanation(Collections.singletonList(baseAnswer), rule.getRule()),
-                query.getPattern()
+                query.withSubstitution(baseAnswer).getPattern()
         );
     }
 
@@ -181,6 +181,6 @@ public class AtomicState extends AnswerPropagatorState<ReasonerAtomicQuery> {
         return new ConceptMap(
                 AnswerUtil.joinAnswers(answer, query.getSubstitution()).project(query.getVarNames()).map(),
                 new RuleExplanation(answer.explanation().getAnswers(), rule.getRule()),
-                query.getPattern());
+                query.withSubstitution(answer).getPattern());
     }
 }

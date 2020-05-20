@@ -69,7 +69,7 @@ public class JoinState extends AnswerPropagatorState<ReasonerQueryImpl> {
     public ResolutionState propagateAnswer(AnswerState state) {
         ConceptMap accumulatedAnswer = getSubstitution();
         // we need to pass ID substitutions whenever we set the pattern from raw query
-        ConceptMap toMerge = state.getSubstitution().withPattern(getQuery().getPattern());
+        ConceptMap toMerge = state.getSubstitution().withPattern(getQuery().withSubstitution(state.getSubstitution()).getPattern());
         ConceptMap merged = AnswerUtil.joinAnswers(accumulatedAnswer, toMerge);
         ConceptMap answer = new ConceptMap(
                 merged.map(),

@@ -1075,7 +1075,7 @@ public class TransactionImpl implements Transaction {
                     .map(atom -> reasonerQueryFactory.atomic(atom))
                     .flatMap(aq -> {
                         Stream<ConceptMap> answerStream = queryCache.getAnswerStream(aq);
-                        return answerStream.map(conceptMap -> conceptMap.withPattern(aq.getPattern()));
+                        return answerStream.map(conceptMap -> conceptMap.withPattern(aq.withSubstitution(conceptMap).getPattern()));
                     })
                     .collect(Collectors.toList());
             explanation = new JoinExplanation(maps);
