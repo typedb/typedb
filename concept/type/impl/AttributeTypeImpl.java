@@ -275,8 +275,8 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         @Override
         public Attribute.Boolean put(boolean value, boolean isInferred) {
-            return null;
-            // TODO: ThingVertex attVertex = vertex.graph().thingGraph().create(value, isInferred);
+            ThingVertex attVertex = vertex.graph().thingGraph().putAttribute(vertex, value, isInferred);
+            return new AttributeImpl.Boolean(attVertex);
         }
 
         private static class Root extends AttributeTypeImpl.Boolean {
@@ -361,7 +361,8 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         @Override
         public Attribute.Long put(long value, boolean isInferred) {
-            return null; // TODO
+            ThingVertex attVertex = vertex.graph().thingGraph().putAttribute(vertex, value, isInferred);
+            return new AttributeImpl.Long(attVertex);
         }
 
         private static class Root extends AttributeTypeImpl.Long {
@@ -446,7 +447,8 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         @Override
         public Attribute.Double put(double value, boolean isInferred) {
-            return null; // TODO
+            ThingVertex attVertex = vertex.graph().thingGraph().putAttribute(vertex, value, isInferred);
+            return new AttributeImpl.Double(attVertex);
         }
 
         private static class Root extends AttributeTypeImpl.Double {
@@ -620,7 +622,8 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         @Override
         public Attribute.DateTime put(LocalDateTime value, boolean isInferred) {
-            return null;
+            ThingVertex attVertex = vertex.graph().thingGraph().putAttribute(vertex, value, isInferred);
+            return new AttributeImpl.DateTime(attVertex);
         }
 
         private static class Root extends AttributeTypeImpl.DateTime {

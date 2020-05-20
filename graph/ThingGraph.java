@@ -58,7 +58,7 @@ public class ThingGraph implements Graph<IID.Vertex.Thing, ThingVertex> {
     }
 
     public void commit() {
-        thingByIID.values().parallelStream().filter(v -> !v.isInferred()).forEach(
+        thingByIID.values().parallelStream().filter(v -> !v.isInferred() && !v.schema().equals(Schema.Vertex.Thing.ATTRIBUTE)).forEach(
                 vertex -> vertex.iid(generateIID(graphManager.storage().keyGenerator(), vertex.schema(), vertex.typeVertex().iid()))
         ); // thingByIID no longer contains valid mapping from IID to TypeVertex
         thingByIID.values().parallelStream().filter(v -> !v.isInferred()).forEach(Vertex::commit);

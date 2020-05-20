@@ -45,6 +45,45 @@ public class AttributeImpl extends ThingImpl implements Attribute {
         return null; // TODO: return vertex.value();
     }
 
+    public static class Boolean extends AttributeImpl implements Attribute.Boolean {
+
+        public Boolean(ThingVertex vertex) {
+            super(vertex);
+            assert vertex.typeVertex().valueType().equals(Schema.ValueType.BOOLEAN);
+        }
+
+        @Override
+        public java.lang.Boolean value() {
+            return null; // TODO
+        }
+    }
+
+    public static class Long extends AttributeImpl implements Attribute.Long {
+
+        public Long(ThingVertex vertex) {
+            super(vertex);
+            assert vertex.typeVertex().valueType().equals(Schema.ValueType.LONG);
+        }
+
+        @Override
+        public java.lang.Long value() {
+            return null; // TODO
+        }
+    }
+
+    public static class Double extends AttributeImpl implements Attribute.Double {
+
+        public Double(ThingVertex vertex) {
+            super(vertex);
+            assert vertex.typeVertex().valueType().equals(Schema.ValueType.DOUBLE);
+        }
+
+        @Override
+        public java.lang.Double value() {
+            return null; // TODO
+        }
+    }
+
     public static class String extends AttributeImpl implements Attribute.String {
 
         public String(ThingVertex vertex) {
@@ -54,6 +93,19 @@ public class AttributeImpl extends ThingImpl implements Attribute {
 
         @Override
         public java.lang.String value() {
+            return null; // TODO
+        }
+    }
+
+    public static class DateTime extends AttributeImpl implements Attribute.DateTime {
+
+        public DateTime(ThingVertex vertex) {
+            super(vertex);
+            assert vertex.typeVertex().valueType().equals(Schema.ValueType.DATETIME);
+        }
+
+        @Override
+        public java.time.LocalDateTime value() {
             return null; // TODO
         }
     }
