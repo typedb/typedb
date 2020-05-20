@@ -94,35 +94,20 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
      */
     @Override
     public void delete() {
-        long t1 = System.currentTimeMillis();
         //Remove links to relations and return them
-        Set<Relation> relations = castingsInstance().map(casting -> {
+        castingsInstance().forEach(casting -> {
             Relation relation = casting.getRelation();
             Role role = casting.getRole();
             relation.unassign(role, this);
-            return relation;
-        }).collect(toSet());
+        });
 
-        long t2 = System.currentTimeMillis();
-        System.out.println("Delete t2 - t1: " + (t2 - t1));
-
-        long t25 = t2;
         if (!isDeleted()) {
             // must happen before deleteNode() so we can access properties on the vertex
-
-            t25 = System.currentTimeMillis();
-            System.out.println("check is deleted: " + (t25 - t2));
             conceptNotificationChannel.thingDeleted(this);
         }
 
         deleteAttributeOwnerships();
-
-        long t3 = System.currentTimeMillis();
-        System.out.println("Delete t3 - t25: " + (t3 - t25));
-
         deleteNode();
-        long t4 = System.currentTimeMillis();
-        System.out.println("Delete t4 - t3: " + (t4 - t3));
     }
 
     /**
