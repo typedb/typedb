@@ -5,7 +5,7 @@ java_test(
     size = "medium",
     srcs = ["CastingIT.java"],
     classpath_resources = ["//test/resources:logback-test"],
-    test_class = "grakn.core.server.kb.structure.CastingIT",
+    test_class = "grakn.core.concept.structure.CastingIT",
     deps = [
         "//concept/impl",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
@@ -21,7 +21,7 @@ java_test(
     size = "medium",
     srcs = ["EdgeIT.java"],
     classpath_resources = ["//test/resources:logback-test"],
-    test_class = "grakn.core.server.kb.structure.EdgeIT",
+    test_class = "grakn.core.concept.structure.EdgeIT",
     deps = [
         "//concept/structure",
         "//core",

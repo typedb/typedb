@@ -18,7 +18,6 @@
 
 package grakn.core.concept;
 
-import com.google.common.collect.Iterables;
 import grakn.core.common.config.Config;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.concept.answer.Void;
@@ -31,7 +30,6 @@ import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.Entity;
 import grakn.core.kb.concept.api.EntityType;
-import grakn.core.kb.concept.api.GraknConceptException;
 import grakn.core.kb.concept.api.Relation;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
@@ -275,21 +273,6 @@ public class RelationIT {
     }
 
     @Test
-    public void whenAttemptingToLinkTheInstanceOfAResourceRelationToTheResourceWhichCreatedIt_ThrowIfTheRelationTypeDoesNotHavePermissionToPlayTheNecessaryRole(){
-        AttributeType<String> attributeType = tx.putAttributeType("what a pain", AttributeType.ValueType.STRING);
-        Attribute<String> attribute = attributeType.create("a real pain");
-
-        EntityType entityType = tx.putEntityType("yay").putHas(attributeType);
-        Relation implicitRelation = Iterables.getOnlyElement(entityType.create().has(attribute).relations().collect(Collectors.toSet()));
-
-        expectedException.expect(GraknConceptException.class);
-        expectedException.expectMessage(GraknConceptException.hasNotAllowed(implicitRelation, attribute).getMessage());
-
-        implicitRelation.has(attribute);
-    }
-
-
-    @Test
     public void whenAddingDuplicateRelationsWithDifferentKeys_EnsureTheyCanBeCommitted(){
         Role role1 = tx.putRole("dark");
         Role role2 = tx.putRole("souls");
@@ -432,7 +415,7 @@ public class RelationIT {
 
         // try to delete the inferred relationship
         tx = session.transaction(Transaction.Type.WRITE);
-        GraqlDelete delete = Graql.parse("match $r isa aunthood; delete $r;").asDelete();
+        GraqlDelete delete = Graql.parse("match $r isa aunthood; delete $r isa relation;").asDelete();
         List<Void> deletedConcepts = tx.execute(delete);
 
         // normally throws on commit
