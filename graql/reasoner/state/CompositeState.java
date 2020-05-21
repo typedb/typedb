@@ -19,6 +19,7 @@
 package grakn.core.graql.reasoner.state;
 
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.graql.reasoner.explanation.CompositeExplanation;
 import grakn.core.graql.reasoner.query.CompositeQuery;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.reasoner.query.ResolvableQuery;
@@ -77,7 +78,10 @@ public class CompositeState extends AnswerPropagatorState<CompositeQuery> {
     }
 
     @Override
-    ConceptMap consumeAnswer(AnswerState state) { return state.getSubstitution(); }
+    ConceptMap consumeAnswer(AnswerState state) {
+        ConceptMap sub = state.getSubstitution();
+        return new ConceptMap(sub.map(), new CompositeExplanation(sub), getQuery().withSubstitution(sub).getPattern());
+    }
 
     @Override
     public ResolutionState propagateAnswer(AnswerState state) {

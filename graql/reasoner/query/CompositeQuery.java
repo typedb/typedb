@@ -72,6 +72,7 @@ public class CompositeQuery extends ResolvableQuery {
 
     final private ReasonerQueryImpl conjunctiveQuery;
     final private Set<ResolvableQuery> complementQueries;
+    private Conjunction<Pattern> pattern = null;
 
     CompositeQuery(Conjunction<Pattern> pattern, TraversalExecutor traversalExecutor, ReasoningContext ctx) throws ReasonerException {
         super(traversalExecutor, ctx);
@@ -311,16 +312,19 @@ public class CompositeQuery extends ResolvableQuery {
 
     @Override
     public Conjunction<Pattern> getPattern() {
-        Set<Pattern> pattern = Sets.newLinkedHashSet(getConjunctiveQuery().getPattern().getPatterns());
-        getComplementQueries().stream().map(ResolvableQuery::getPattern).forEach(p -> {
-            if (p.getPatterns().size() == 1) {
-                // Unwrap the conjunction if it has only one child pattern
-                pattern.add(Graql.not(Iterators.getOnlyElement(p.getPatterns().iterator())));
-            } else {
-                pattern.add(Graql.not(p));
-            }
-        });
-        return Graql.and(pattern);
+        if (pattern == null) {
+            Set<Pattern> conjunctPatterns = Sets.newLinkedHashSet(getConjunctiveQuery().getPattern().getPatterns());
+            getComplementQueries().stream().map(ResolvableQuery::getPattern).forEach(p -> {
+                if (p.getPatterns().size() == 1) {
+                    // Unwrap the conjunction if it has only one child pattern
+                    conjunctPatterns.add(Graql.not(Iterators.getOnlyElement(p.getPatterns().iterator())));
+                } else {
+                    conjunctPatterns.add(Graql.not(p));
+                }
+            });
+            pattern = Graql.and(conjunctPatterns);
+        }
+        return pattern;
     }
 
     @Override
