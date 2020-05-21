@@ -60,6 +60,12 @@ public class KeyspaceStatisticsImpl implements KeyspaceStatistics {
     }
 
     @Override
+    public long countOwnerships(ConceptManager conceptManager, Label attributeOwned) {
+        // TODO
+        return 0L;
+    }
+
+    @Override
     public void commit(ConceptManager conceptManager, StatisticsDelta statisticsDelta) {
         HashMap<Label, Long> deltaMap = statisticsDelta.instanceDeltas();
 

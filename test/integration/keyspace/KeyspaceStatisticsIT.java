@@ -183,7 +183,7 @@ public class KeyspaceStatisticsIT {
     }
 
     @Test
-    public void keyspaceStatisticsNotUpdatedIfNotcommitted() {
+    public void keyspaceStatisticsNotUpdatedIfNotCommitted() {
         Transaction tx = localSession.transaction(Transaction.Type.WRITE);
         AttributeType ageType = tx.putAttributeType("age", AttributeType.ValueType.LONG);
         Role friend = tx.putRole("friend");

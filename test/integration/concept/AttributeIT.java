@@ -216,23 +216,6 @@ public class AttributeIT {
     }
 
     @Test
-    public void whenCreatingAttributeInstancesWithHierarchies_HierarchyOfImplicitRelationsIsPreserved(){
-        AttributeType<String> baseAttribute = tx.putAttributeType("baseAttribute", AttributeType.ValueType.STRING);
-        AttributeType<String> subAttribute = tx.putAttributeType("subAttribute", AttributeType.ValueType.STRING).sup(baseAttribute);
-
-        tx.putEntityType("someEntity")
-                .putHas(baseAttribute)
-                .putHas(subAttribute);
-
-        RelationType baseImplicitRelation = tx.getRelationType(Schema.ImplicitType.HAS.getLabel(baseAttribute.label()).getValue());
-        RelationType subImplicitRelation = tx.getRelationType(Schema.ImplicitType.HAS.getLabel(subAttribute.label()).getValue());
-        assertNotNull(baseImplicitRelation);
-        assertNotNull(subImplicitRelation);
-        TestCase.assertTrue(baseImplicitRelation.subs().anyMatch(sub -> sub.equals(subImplicitRelation)));
-        TestCase.assertTrue(subImplicitRelation.sups().anyMatch(sup -> sup.equals(baseImplicitRelation)));
-    }
-
-    @Test
     public void whenLinkingResourcesToThings_EnsureTheEdgeExists() {
         AttributeType<String> attributeType = tx.putAttributeType("My attribute type", AttributeType.ValueType.STRING);
         Attribute<String> attribute = attributeType.create("A String");

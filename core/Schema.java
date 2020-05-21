@@ -325,11 +325,6 @@ public final class Schema {
         public Label getLabel(Label attributeType) {
             return attributeType.map(attribute -> String.format(label, attribute));
         }
-
-        @CheckReturnValue
-        public Label getLabel(String attributeType) {
-            return Label.of(String.format(label, attributeType));
-        }
     }
 
     /**
