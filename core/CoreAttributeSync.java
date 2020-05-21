@@ -18,36 +18,40 @@
 
 package hypergraph.core;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import hypergraph.graph.util.AttributeSync;
 import hypergraph.graph.util.IID;
 
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class CoreAttributeSync implements AttributeSync {
 
-    private final ConcurrentMap<IID.Vertex.Attribute, CommitSync> commitFlags;
+    private final Cache<IID.Vertex.Attribute, CoreCommitSync> commitSyncs;
 
-    CoreAttributeSync() {
-        this.commitFlags = new ConcurrentHashMap<>();
+    CoreAttributeSync() { // TODO: extract these values to grakn.properties
+        this.commitSyncs = Caffeine.newBuilder()
+                .maximumSize(10_000_000)
+                .expireAfterWrite(10, TimeUnit.MINUTES)
+                .build();
     }
 
     @Override
-    public CommitSync get(IID.Vertex.Attribute attributeIID) {
-        return commitFlags.computeIfAbsent(attributeIID, iid -> new CommitSync());
+    public CoreCommitSync get(IID.Vertex.Attribute attributeIID) {
+        return commitSyncs.get(attributeIID, iid -> new CoreCommitSync());
     }
 
     @Override
     public void remove(IID.Vertex.Attribute attributeIID) {
-        commitFlags.remove(attributeIID);
+        commitSyncs.invalidate(attributeIID);
     }
 
-    public static class CommitSync implements AttributeSync.CommitSync {
+    public static class CoreCommitSync implements AttributeSync.CommitSync {
 
         private final AtomicBoolean committed;
 
-        CommitSync() {
+        CoreCommitSync() {
             committed = new AtomicBoolean(false);
         }
 
