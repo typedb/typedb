@@ -275,7 +275,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         @Override
         public Attribute.Boolean put(boolean value, boolean isInferred) {
-            ThingVertex attVertex = vertex.graph().thingGraph().putAttribute(vertex, value, isInferred);
+            ThingVertex.Attribute<java.lang.Boolean> attVertex = vertex.graph().thingGraph().putAttribute(vertex, value, isInferred);
             return new AttributeImpl.Boolean(attVertex);
         }
 
@@ -361,7 +361,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         @Override
         public Attribute.Long put(long value, boolean isInferred) {
-            ThingVertex attVertex = vertex.graph().thingGraph().putAttribute(vertex, value, isInferred);
+            ThingVertex.Attribute<java.lang.Long> attVertex = vertex.graph().thingGraph().putAttribute(vertex, value, isInferred);
             return new AttributeImpl.Long(attVertex);
         }
 
@@ -447,7 +447,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         @Override
         public Attribute.Double put(double value, boolean isInferred) {
-            ThingVertex attVertex = vertex.graph().thingGraph().putAttribute(vertex, value, isInferred);
+            ThingVertex.Attribute<java.lang.Double> attVertex = vertex.graph().thingGraph().putAttribute(vertex, value, isInferred);
             return new AttributeImpl.Double(attVertex);
         }
 
@@ -531,7 +531,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             if (value.length() > Schema.STRING_MAX_LENGTH) {
                 throw new HypergraphException(Error.ThingWrite.ILLEGAL_STRING_SIZE);
             }
-            ThingVertex attVertex = vertex.graph().thingGraph().putAttribute(vertex, value, isInferred);
+            ThingVertex.Attribute<java.lang.String> attVertex = vertex.graph().thingGraph().putAttribute(vertex, value, isInferred);
             return new AttributeImpl.String(attVertex);
         }
 
@@ -622,7 +622,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         @Override
         public Attribute.DateTime put(LocalDateTime value, boolean isInferred) {
-            ThingVertex attVertex = vertex.graph().thingGraph().putAttribute(vertex, value, isInferred);
+            ThingVertex.Attribute<java.time.LocalDateTime> attVertex = vertex.graph().thingGraph().putAttribute(vertex, value, isInferred);
             return new AttributeImpl.DateTime(attVertex);
         }
 

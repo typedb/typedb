@@ -22,6 +22,7 @@ import hypergraph.graph.ThingGraph;
 import hypergraph.graph.edge.ThingEdge;
 import hypergraph.graph.util.IID;
 import hypergraph.graph.util.Schema;
+import hypergraph.graph.vertex.impl.ThingVertexImpl;
 
 public interface ThingVertex extends Vertex<
         IID.Vertex.Thing,
@@ -57,10 +58,13 @@ public interface ThingVertex extends Vertex<
      */
     void isInferred(boolean isInferred);
 
-    /**
-     * Returns the literal value stored in the vertex, if it represents an attribute
-     *
-     * @return the literal value stored in the vertex
-     */
-    Object value();
+    interface Attribute<VALUE> extends ThingVertex {
+
+        /**
+         * Returns the literal value stored in the vertex, if it represents an attribute
+         *
+         * @return the literal value stored in the vertex
+         */
+        VALUE value();
+    }
 }

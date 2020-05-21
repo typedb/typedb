@@ -47,35 +47,28 @@ public interface Attribute extends Thing {
     @Override
     Attribute has(Attribute attribute);
 
-    Object value();
-
     interface Boolean extends Attribute {
 
-        @Override
         java.lang.Boolean value();
     }
 
     interface Long extends Attribute {
 
-        @Override
         java.lang.Long value();
     }
 
     interface Double extends Attribute {
 
-        @Override
         java.lang.Double value();
     }
 
     interface String extends Attribute {
 
-        @Override
         java.lang.String value();
     }
 
     interface DateTime extends Attribute {
 
-        @Override
         java.time.LocalDateTime value();
     }
 }

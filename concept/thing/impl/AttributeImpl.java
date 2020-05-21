@@ -23,11 +23,13 @@ import hypergraph.concept.type.impl.AttributeTypeImpl;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.vertex.ThingVertex;
 
-public class AttributeImpl extends ThingImpl implements Attribute {
+public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribute {
 
-    public AttributeImpl(ThingVertex vertex) {
+    protected final ThingVertex.Attribute<VALUE> attributeVertex;
+
+    public AttributeImpl(ThingVertex.Attribute<VALUE> vertex) {
         super(vertex);
-        assert vertex.schema().equals(Schema.Vertex.Thing.ATTRIBUTE);
+        this.attributeVertex = vertex;
     }
 
     @Override
@@ -40,73 +42,70 @@ public class AttributeImpl extends ThingImpl implements Attribute {
         return null; //TODO
     }
 
-    @Override
-    public Object value() {
-        return vertex.value();
-    }
+    public abstract VALUE value();
 
-    public static class Boolean extends AttributeImpl implements Attribute.Boolean {
+    public static class Boolean extends AttributeImpl<java.lang.Boolean> implements Attribute.Boolean {
 
-        public Boolean(ThingVertex vertex) {
+        public Boolean(ThingVertex.Attribute<java.lang.Boolean> vertex) {
             super(vertex);
             assert vertex.typeVertex().valueType().equals(Schema.ValueType.BOOLEAN);
         }
 
         @Override
         public java.lang.Boolean value() {
-            return (java.lang.Boolean) vertex.value();
+            return attributeVertex.value();
         }
     }
 
-    public static class Long extends AttributeImpl implements Attribute.Long {
+    public static class Long extends AttributeImpl<java.lang.Long> implements Attribute.Long {
 
-        public Long(ThingVertex vertex) {
+        public Long(ThingVertex.Attribute<java.lang.Long> vertex) {
             super(vertex);
             assert vertex.typeVertex().valueType().equals(Schema.ValueType.LONG);
         }
 
         @Override
         public java.lang.Long value() {
-            return (java.lang.Long) vertex.value();
+            return attributeVertex.value();
         }
     }
 
-    public static class Double extends AttributeImpl implements Attribute.Double {
+    public static class Double extends AttributeImpl<java.lang.Double> implements Attribute.Double {
 
-        public Double(ThingVertex vertex) {
+        public Double(ThingVertex.Attribute<java.lang.Double> vertex) {
             super(vertex);
             assert vertex.typeVertex().valueType().equals(Schema.ValueType.DOUBLE);
         }
 
         @Override
         public java.lang.Double value() {
-            return (java.lang.Double) vertex.value();
+            return attributeVertex.value();
         }
     }
 
-    public static class String extends AttributeImpl implements Attribute.String {
+    public static class String extends AttributeImpl<java.lang.String> implements Attribute.String {
 
-        public String(ThingVertex vertex) {
+        public String(ThingVertex.Attribute<java.lang.String> vertex) {
             super(vertex);
             assert vertex.typeVertex().valueType().equals(Schema.ValueType.STRING);
         }
 
         @Override
         public java.lang.String value() {
-            return (java.lang.String) vertex.value();
+            return attributeVertex.value();
         }
     }
 
-    public static class DateTime extends AttributeImpl implements Attribute.DateTime {
+    public static class DateTime extends AttributeImpl<java.time.LocalDateTime> implements Attribute.DateTime {
 
-        public DateTime(ThingVertex vertex) {
+        public DateTime(ThingVertex.Attribute<java.time.LocalDateTime> vertex) {
             super(vertex);
             assert vertex.typeVertex().valueType().equals(Schema.ValueType.DATETIME);
         }
 
         @Override
         public java.time.LocalDateTime value() {
-            return (java.time.LocalDateTime) vertex.value();
+            return attributeVertex.value();
         }
     }
 }

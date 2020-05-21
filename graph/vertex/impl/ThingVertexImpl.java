@@ -28,14 +28,13 @@ import hypergraph.graph.edge.Edge;
 import hypergraph.graph.edge.ThingEdge;
 import hypergraph.graph.util.AttributeSync;
 import hypergraph.graph.util.IID;
-import hypergraph.graph.util.KeyGenerator;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.vertex.ThingVertex;
 import hypergraph.graph.vertex.TypeVertex;
 
-import static hypergraph.common.collection.ByteArrays.join;
-
-public abstract class ThingVertexImpl extends VertexImpl<IID.Vertex.Thing, Schema.Vertex.Thing, ThingVertex, Schema.Edge.Thing, ThingEdge> implements ThingVertex {
+public abstract class ThingVertexImpl
+        extends VertexImpl<IID.Vertex.Thing, Schema.Vertex.Thing, ThingVertex, Schema.Edge.Thing, ThingEdge>
+        implements ThingVertex {
 
     protected final ThingGraph graph;
     protected final ThingAdjacency outs;
@@ -46,18 +45,6 @@ public abstract class ThingVertexImpl extends VertexImpl<IID.Vertex.Thing, Schem
         this.graph = graph;
         this.outs = newAdjacency(Adjacency.Direction.OUT);
         this.ins = newAdjacency(Adjacency.Direction.IN);
-    }
-
-    /**
-     * Generate an IID for a {@code ThingVertex} for a given {@code Schema} and {@code TypeVertex}
-     *
-     * @param keyGenerator to generate the IID for a {@code ThingVertex}
-     * @param schema       of the {@code ThingVertex} in which the IID will be used for
-     * @param typeIID      of the {@code TypeVertex} in which this {@code ThingVertex} is an instance of
-     * @return a byte array representing a new IID for a {@code ThingVertex}
-     */
-    public static IID.Vertex.Thing generateIID(KeyGenerator keyGenerator, Schema.Vertex.Thing schema, IID.Vertex.Type typeIID) {
-        return new IID.Vertex.Thing(join(schema.prefix().bytes(), typeIID.bytes(), keyGenerator.forThing(typeIID)));
     }
 
     /**
@@ -123,11 +110,6 @@ public abstract class ThingVertexImpl extends VertexImpl<IID.Vertex.Thing, Schem
         }
 
         @Override
-        public Object value() {
-            return null;
-        }
-
-        @Override
         public Schema.Status status() {
             return Schema.Status.BUFFERED;
         }
@@ -136,7 +118,12 @@ public abstract class ThingVertexImpl extends VertexImpl<IID.Vertex.Thing, Schem
         public void commit() {
             if (isInferred) throw new HypergraphException(Error.Transaction.ILLEGAL_OPERATION);
             graph.storage().put(iid.bytes());
+            commitIndex();
             commitEdges();
+        }
+
+        protected void commitIndex() {
+            // TODO
         }
 
         @Override
@@ -144,17 +131,17 @@ public abstract class ThingVertexImpl extends VertexImpl<IID.Vertex.Thing, Schem
             // TODO
         }
 
-        private void commitEdges() {
+        protected void commitEdges() {
             outs.forEach(Edge::commit);
             ins.forEach(Edge::commit);
         }
 
-        public static class Attribute extends ThingVertexImpl.Buffered {
+        public static class Attribute<VALUE> extends ThingVertexImpl.Buffered implements ThingVertex.Attribute<VALUE> {
 
             private final AttributeSync.CommitSync commitSync;
-            private final IID.Vertex.Attribute attributeIID;
+            private final IID.Vertex.Attribute<VALUE> attributeIID;
 
-            public Attribute(ThingGraph graph, IID.Vertex.Attribute iid, boolean isInferred, AttributeSync.CommitSync commitSync) {
+            public Attribute(ThingGraph graph, IID.Vertex.Attribute<VALUE> iid, boolean isInferred, AttributeSync.CommitSync commitSync) {
                 super(graph, iid, isInferred);
                 this.commitSync = commitSync;
                 this.attributeIID = iid;
@@ -165,12 +152,13 @@ public abstract class ThingVertexImpl extends VertexImpl<IID.Vertex.Thing, Schem
                 if (isInferred) throw new HypergraphException(Error.Transaction.ILLEGAL_OPERATION);
                 if (!commitSync.checkIsSyncedAndSetTrue()) {
                     graph.storage().put(attributeIID.bytes());
+                    commitIndex();
                 }
-                super.commitEdges();
+                commitEdges();
             }
 
             @Override
-            public Object value() {
+            public VALUE value() {
                 if (typeVertex().valueType().isIndexable()) {
                     return attributeIID.value();
                 } else {

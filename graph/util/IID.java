@@ -164,6 +164,18 @@ public class IID {
                 super(bytes);
             }
 
+            /**
+             * Generate an IID for a {@code ThingVertex} for a given {@code Schema} and {@code TypeVertex}
+             *
+             * @param keyGenerator to generate the IID for a {@code ThingVertex}
+             * @param schema       of the {@code ThingVertex} in which the IID will be used for
+             * @param typeIID      of the {@code TypeVertex} in which this {@code ThingVertex} is an instance of
+             * @return a byte array representing a new IID for a {@code ThingVertex}
+             */
+            public static Thing generate(KeyGenerator keyGenerator, Schema.Vertex.Thing schema, Type typeIID) {
+                return new Thing(join(schema.prefix().bytes(), typeIID.bytes(), keyGenerator.forThing(typeIID)));
+            }
+
             public IID.Vertex.Type type() {
                 return IID.Vertex.Type.of(copyOfRange(bytes, Prefix.LENGTH, Type.LENGTH));
             }
@@ -173,7 +185,7 @@ public class IID {
             }
         }
 
-        public static abstract class Attribute extends IID.Vertex.Thing {
+        public static abstract class Attribute<VALUE> extends IID.Vertex.Thing {
 
             public static final int VALUE_INDEX = Prefix.LENGTH + Type.LENGTH + 1;
 
@@ -186,9 +198,9 @@ public class IID {
                 ));
             }
 
-            public abstract Object value();
+            public abstract VALUE value();
 
-            public static class Boolean extends Attribute {
+            public static class Boolean extends Attribute<java.lang.Boolean> {
 
                 public Boolean(IID.Vertex.Type typeIID, boolean value) {
                     super(Schema.ValueType.BOOLEAN, typeIID, new byte[]{(byte) (value ? 1 : 0)});
@@ -200,7 +212,7 @@ public class IID {
                 }
             }
 
-            public static class Long extends Attribute {
+            public static class Long extends Attribute<java.lang.Long> {
 
                 public Long(IID.Vertex.Type typeIID, long value) {
                     super(Schema.ValueType.LONG, typeIID, longToBytes(value));
@@ -212,7 +224,7 @@ public class IID {
                 }
             }
 
-            public static class Double extends Attribute {
+            public static class Double extends Attribute<java.lang.Double> {
 
                 public Double(IID.Vertex.Type typeIID, double value) {
                     super(Schema.ValueType.DOUBLE, typeIID, doubleToBytes(value));
@@ -224,7 +236,7 @@ public class IID {
                 }
             }
 
-            public static class String extends Attribute {
+            public static class String extends Attribute<java.lang.String> {
 
                 public String(IID.Vertex.Type typeIID, java.lang.String value) {
                     super(Schema.ValueType.STRING, typeIID, serialise(value));
@@ -248,7 +260,7 @@ public class IID {
                 }
             }
 
-            public static class DateTime extends Attribute {
+            public static class DateTime extends Attribute<java.time.LocalDateTime> {
 
                 public DateTime(IID.Vertex.Type typeIID, java.time.LocalDateTime value) {
                     super(Schema.ValueType.DATETIME, typeIID, serialise(value));
@@ -263,7 +275,7 @@ public class IID {
                 }
 
                 @Override
-                public Object value() {
+                public java.time.LocalDateTime value() {
                     return deserialise(copyOfRange(bytes, VALUE_INDEX, bytes.length));
                 }
             }
