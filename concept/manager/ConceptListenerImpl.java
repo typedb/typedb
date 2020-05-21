@@ -172,16 +172,18 @@ public class ConceptListenerImpl implements ConceptListener {
             transactionCache.addModifiedKeyIndex(index);
         }
 
+        statistics.incrementOwnership(attribute.type());
         transactionCache.hasAttributeCreated(owner, attribute, isInferred);
     }
 
     @Override
-    public void hasAttributeRemoved(Thing owner, Attribute<?> owned, boolean isInferred) {
-        if (owner.type().keys().anyMatch(key -> key.equals(owned.type()))) {
+    public void hasAttributeRemoved(Thing owner, Attribute<?> attribute, boolean isInferred) {
+        if (owner.type().keys().anyMatch(key -> key.equals(attribute.type()))) {
             transactionCache.trackForValidation(owner);
         }
 
-        transactionCache.hasAttributeDeleted(owner, owned, isInferred);
+        statistics.decrementOwnership(attribute.type());
+        transactionCache.hasAttributeDeleted(owner, attribute, isInferred);
     }
 
     @Override

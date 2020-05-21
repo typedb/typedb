@@ -38,6 +38,8 @@ import java.util.HashMap;
 public class StatisticsDeltaImpl implements StatisticsDelta {
 
     private HashMap<Label, Long> instanceDeltas;
+//    private HashMap<Label, Long> ownershipDeltas;
+
     // keep these outside of the hashmap to avoid a large number of hash() method calls
     private long thingCount = 0;
     private long entityCount = 0;
@@ -71,6 +73,13 @@ public class StatisticsDeltaImpl implements StatisticsDelta {
     }
 
     @Override
+    public void incrementOwnership(AttributeType<?> type) {
+//        Label label = type.label();
+//        Long currentCount = ownershipDeltas.getOrDefault(label, 0L);
+//        ownershipDeltas.put(label, currentCount + 1);
+    }
+
+    @Override
     public void decrement(Type type) {
         Label label = type.label();
         Long currentCount = instanceDeltas.getOrDefault(label, 0L);
@@ -85,6 +94,13 @@ public class StatisticsDeltaImpl implements StatisticsDelta {
         } else {
             throw GraknConceptException.unknownTypeMetaType(type);
         }
+    }
+
+    @Override
+    public void decrementOwnership(AttributeType<?> type) {
+//        Label label = type.label();
+//        Long currentCount = ownershipDeltas.getOrDefault(label, 0L);
+//        ownershipDeltas.put(label, currentCount - 1);
     }
 
     /**
@@ -115,5 +131,11 @@ public class StatisticsDeltaImpl implements StatisticsDelta {
             instanceDeltas.put(Schema.MetaSchema.ATTRIBUTE.getLabel(), attributeCount);
         }
         return instanceDeltas;
+    }
+
+    @Override
+    public HashMap<Label, Long> ownershipDeltas() {
+//        return ownershipDeltas;
+        return null;
     }
 }

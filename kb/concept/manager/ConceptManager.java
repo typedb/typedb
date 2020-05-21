@@ -74,8 +74,6 @@ public interface ConceptManager {
     Relation createRelation(RelationType relationType, boolean isInferred);
     Entity createEntity(EntityType entityType, boolean isInferred);
     <D> Attribute<D> createAttribute(AttributeType<D> dAttributeType, D value, boolean isInferred);
-    RelationType createImplicitRelationType(Label label);
-    Role createImplicitRole(Label label);
     void createHasAttribute(Thing owner, Attribute attribute, boolean isInferred);
 
     EntityType createEntityType(Label label, EntityType superType);

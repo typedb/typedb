@@ -18,6 +18,7 @@
 
 package grakn.core.kb.keyspace;
 
+import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Type;
 
@@ -27,8 +28,10 @@ public interface StatisticsDelta {
     long delta(Label label);
 
     void increment(Type type);
+    void incrementOwnership(AttributeType<?> attribute);
 
     void decrement(Type type);
+    void decrementOwnership(AttributeType<?> attribute);
 
     /**
      * Special case decrement for attribute deduplication
@@ -37,4 +40,6 @@ public interface StatisticsDelta {
     void decrementAttribute(Label label);
 
     HashMap<Label, Long> instanceDeltas();
+
+    HashMap<Label, Long> ownershipDeltas();
 }

@@ -106,7 +106,7 @@ public class ValueFragment extends FragmentImpl {
             AttributeType<?> attrType = it.next();
             Label attrLabel = attrType.label();
             totalAttributes += statistics.count(conceptManager, attrLabel);
-            totalOwnerships += statistics.countOwnerships(conceptManager, attrLabel);
+            totalOwnerships += statistics.countOwnerships(conceptManager, attrLabel, null); // TODO implement ownership stats
         }
 
         if (totalAttributes == 0) {

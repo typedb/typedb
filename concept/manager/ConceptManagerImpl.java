@@ -127,13 +127,6 @@ public class ConceptManagerImpl implements ConceptManager {
         return createRelationType(vertex, superType);
     }
 
-    // users cannot create implicit relation types themselves, this is internal behavior
-    @Override
-    public RelationType createImplicitRelationType(Label implicitRelationLabel) {
-        VertexElement vertex = createSchemaVertex(implicitRelationLabel, RELATION_TYPE);
-        return createRelationType(vertex, getMetaRelationType());
-    }
-
 
     @Override
     public <V> AttributeType<V> createAttributeType(Label label, AttributeType<V> superType, AttributeType.ValueType<V> valueType) {
@@ -151,12 +144,6 @@ public class ConceptManagerImpl implements ConceptManager {
         return createRole(vertexElement, superType);
     }
 
-    // users cannot create implicit roles themselves, this is internal behavior
-    @Override
-    public Role createImplicitRole(Label implicitRoleLabel) {
-        VertexElement vertexElement = createSchemaVertex(implicitRoleLabel, ROLE);
-        return createRole(vertexElement, getMetaRole());
-    }
 
     public Rule createRule(Label label, Pattern when, Pattern then, Rule superType) {
         VertexElement vertexElement = createSchemaVertex(label, RULE);

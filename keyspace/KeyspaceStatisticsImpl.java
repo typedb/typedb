@@ -47,22 +47,28 @@ import java.util.concurrent.ConcurrentHashMap;
 public class KeyspaceStatisticsImpl implements KeyspaceStatistics {
 
     private ConcurrentHashMap<Label, Long> instanceCountsCache;
+//    private ConcurrentHashMap<Pair<Label, Label>, Long> ownershipCountsCache;
 
     public KeyspaceStatisticsImpl() {
         instanceCountsCache = new ConcurrentHashMap<>();
+//        ownershipCountsCache = new ConcurrentHashMap<>();
     }
 
     @Override
     public long count(ConceptManager conceptManager, Label label) {
-        // return count if cached, else cache miss and retrieve from Janus
+        // return count if cached, else cache miss and retrieve from vertex
         instanceCountsCache.computeIfAbsent(label, l -> retrieveCountFromVertex(conceptManager, l));
         return instanceCountsCache.get(label);
     }
 
     @Override
-    public long countOwnerships(ConceptManager conceptManager, Label attributeOwned) {
+    public long countOwnerships(ConceptManager conceptManager, Label owner, Label attributeOwned) {
         // TODO
-        return 0L;
+//        // return count if cached, else cache miss and retrieve from the vertex
+//        Pair<Label, Label> ownership = new Pair<>(owner, attributeOwned);
+//        ownershipCountsCache.computeIfAbsent(ownership, l -> retrieveOwnershipCount(conceptManager, owner, attributeOwned));
+//        return ownershipCountsCache.get(ownership);
+        return 1L;
     }
 
     @Override
@@ -89,6 +95,9 @@ public class KeyspaceStatisticsImpl implements KeyspaceStatistics {
     }
 
     private void persist(ConceptManager conceptManager, Set<Label> labelsToPersist) {
+
+        // TODO implement persisting the counts of ownerships
+
         // TODO - there's an possible removal from instanceCountsCache here
         // when the schemaConcept is null - ie it's been removed. However making this
         // thread safe with competing action of creating a schema concept of the same name again
@@ -121,5 +130,19 @@ public class KeyspaceStatisticsImpl implements KeyspaceStatistics {
             // short circuit then it's a good starting point
             return -1L;
         }
+    }
+
+    /**
+     * Effectively a cache miss - retrieves the value from the janus vertex
+     * Note that the count property doesn't exist on a label until a commit places a non-zero count on the vertex
+     */
+    private long retrieveOwnershipCount(ConceptManager conceptManager, Label owner, Label attribute) {
+        // TODO this will be much faster in 2.0 backend
+//        VertexElement ownerVertex = ConceptVertex.from(conceptManager.getSchemaConcept(owner)).vertex();
+//        VertexElement attributeVertex = ConceptVertex.from(conceptManager.getSchemaConcept(attribute)).vertex();
+
+        // TODO this needs to be implemented in a way that is agnostic to whether we have `key` or `has` edges
+        // TODO this may become important if we allow upgrading or downgrading the `key` to `has`
+        return 1L;
     }
 }
