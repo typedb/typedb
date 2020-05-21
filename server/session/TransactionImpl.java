@@ -1175,15 +1175,14 @@ public class TransactionImpl implements Transaction {
     }
 
     private void removeInferredFacts() {
-        Set<Thing> inferredThingsToDiscard = transactionCache.getInferredInstancesToDiscard().collect(Collectors.toSet());
-        inferredThingsToDiscard.forEach(transactionCache::remove);
-        inferredThingsToDiscard.forEach(Concept::delete);
-
         transactionCache.getInferredOwnershipsToDiscard().forEach(pair -> {
             Thing owner = pair.first();
             Attribute<?> attribute = pair.second();
             owner.unhas(attribute);
         });
+
+        Set<Thing> inferredThingsToDiscard = transactionCache.getInferredInstancesToDiscard();
+        inferredThingsToDiscard.forEach(Concept::delete);
     }
 
     private void validateGraph() throws InvalidKBException {

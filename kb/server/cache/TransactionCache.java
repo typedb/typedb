@@ -41,6 +41,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -137,13 +138,6 @@ public class TransactionCache {
         if (type.isRelationType()) {
             modifiedRelationTypes.remove(type.asRelationType());
         }
-    }
-
-    /**
-     * @return All the types labels currently cached in the transaction.
-     */
-    public Map<Label, LabelId> getLabelCache() {
-        return labelCache;
     }
 
     /**
@@ -295,21 +289,25 @@ public class TransactionCache {
 
     public void hasAttributeDeleted(Thing owner, Attribute<?> attribute, boolean isInferred) {
         if (isInferred) {
-            inferredOwnerships.remove(new Pair<>(owner, attribute));
+            Pair<Thing, Attribute<?>> ownership = new Pair<>(owner, attribute);
+            inferredOwnerships.remove(ownership);
+            inferredOwnershipsToPersist.remove(ownership);
         }
     }
 
     /**
      * @return cached things that are inferred
      */
-    public Stream<Thing> getInferredInstancesToDiscard() {
+    public Set<Thing> getInferredInstancesToDiscard() {
         return inferredConcepts.stream()
-                .filter(t -> !inferredConceptsToPersist.contains(t));
+                .filter(t -> !inferredConceptsToPersist.contains(t))
+                .collect(Collectors.toSet());
     }
 
-    public Stream<Pair<Thing, Attribute<?>>> getInferredOwnershipsToDiscard() {
+    public Set<Pair<Thing, Attribute<?>>> getInferredOwnershipsToDiscard() {
         return inferredOwnerships.stream()
-                .filter(pair -> !inferredOwnershipsToPersist.contains(pair));
+                .filter(pair -> !inferredOwnershipsToPersist.contains(pair))
+                .collect(Collectors.toSet());
     }
 
     /**

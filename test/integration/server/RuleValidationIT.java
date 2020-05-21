@@ -67,7 +67,6 @@ public class RuleValidationIT {
     @org.junit.Rule
     public final ExpectedException expectedException = ExpectedException.none();
 
-
     @ClassRule
     public static final GraknTestStorage storage = new GraknTestStorage();
 
