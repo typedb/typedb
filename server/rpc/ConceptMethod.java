@@ -137,11 +137,9 @@ public class ConceptMethod {
             case THING_TYPE_REQ:
                 con.asThing().type();
                 return;
-            case THING_RELHAS_REQ:
-//                con.asThing().relhas(req.getThingRelhasReq().getAttribute());
-                // TODO remove support for relation ownership edges in ConceptAPI
-                throw new RuntimeException("Unsupported operation - implicit attribute relations are no longer used");
-//                return;
+            case THING_HAS_REQ:
+                con.asThing().has(req.getThingHasReq().getAttribute());
+                return;
             case THING_UNHAS_REQ:
                 con.asThing().unhas(req.getThingUnhasReq().getAttribute());
                 return;
@@ -815,16 +813,16 @@ public class ConceptMethod {
                 iterators.startBatchIterating(responses.iterator(), options);
             }
 
-//            private void relhas(ConceptProto.Concept protoAttribute) {
-//                grakn.core.kb.concept.api.Attribute<?> attribute = convert(protoAttribute).asAttribute();
-//                grakn.core.kb.concept.api.Relation relation = ConceptHolder.this.concept.asThing().relhas(attribute);
-//
-//                ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-//                        .setThingRelhasRes(ConceptProto.Thing.Relhas.Res.newBuilder()
-//                                                   .setRelation(ResponseBuilder.Concept.concept(relation))).build();
-//
-//                responseSender.accept(transactionRes(response));
-//            }
+            // TODO-NOIMPL udpate protocol to not use RelHas anymore
+            private void has(ConceptProto.Concept protoAttribute) {
+                grakn.core.kb.concept.api.Attribute<?> attribute = convert(protoAttribute).asAttribute();
+                ConceptHolder.this.concept.asThing().has(attribute);
+
+                ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
+                        .setThingHasRes(ConceptProto.Thing.Has.Res.newBuilder().build()).build();
+
+                responseSender.accept(transactionRes(response));
+            }
 
             private void unhas(ConceptProto.Concept protoAttribute) {
                 grakn.core.kb.concept.api.Attribute<?> attribute = convert(protoAttribute).asAttribute();

@@ -1041,7 +1041,7 @@ public class GraknClientIT {
 
             Entity.Remote dunstan = dog.create();
             Attribute.Remote<String> dunstanId = id.create("good-dog");
-            assertNotNull(dunstan.relhas(dunstanId));
+            assertNull(dunstan.has(dunstanId));
 
             Attribute.Remote<String> dunstanName = name.create("Dunstan");
             dunstan.has(dunstanName).unhas(dunstanName);
