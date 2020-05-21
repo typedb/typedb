@@ -762,7 +762,11 @@ public class TransactionImpl implements Transaction {
             return conceptManager.createEntityType(label, getMetaEntityType());
         }
 
-        ConceptUtils.validateBaseType(schemaConcept, Schema.BaseType.ENTITY_TYPE);
+        try {
+            ConceptUtils.validateBaseType(schemaConcept, Schema.BaseType.ENTITY_TYPE);
+        } catch (PropertyNotUniqueException e) {
+            throw GraknConceptException.propertyNotUnique(e.getMessage());
+        }
 
         return (EntityType) schemaConcept;
     }

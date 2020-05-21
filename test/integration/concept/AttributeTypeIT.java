@@ -192,35 +192,4 @@ public class AttributeTypeIT {
             }
         }
     }
-
-
-    @Test
-    public void whenNamingAttributeTypeValue_NoErrorsThrown() {
-        AttributeType<String> valueAttributeType = tx.putAttributeType("value", AttributeType.ValueType.STRING);
-
-        Attribute<String> attribute = valueAttributeType.create("testing");
-        EntityType person = tx.putEntityType("person").putHas(valueAttributeType);
-        person.create().has(attribute);
-        tx.commit();
-
-        tx = session.transaction(Transaction.Type.READ);
-        tx.execute(Graql.parse("match $x isa @has-attribute; get;").asGet());
-        tx.execute(Graql.parse("match $x isa @has-value; get;").asGet());
-        tx.execute(Graql.parse("match (@has-value-value: $attr, @has-value-owner: $person) isa @has-value; get;").asGet());
-    }
-
-    @Test
-    public void whenNamingAttributeTypeOwner_NoErrorsThrown() {
-        AttributeType<String> ownerAttributeType = tx.putAttributeType("owner", AttributeType.ValueType.STRING);
-
-        Attribute<String> attribute = ownerAttributeType.create("testing");
-        EntityType person = tx.putEntityType("person").putHas(ownerAttributeType);
-        person.create().has(attribute);
-        tx.commit();
-
-        tx = session.transaction(Transaction.Type.READ);
-        tx.execute(Graql.parse("match $x isa @has-attribute; get;").asGet());
-        tx.execute(Graql.parse("match $x isa @has-owner; get;").asGet());
-        tx.execute(Graql.parse("match (@has-owner-value: $attr, @has-owner-owner: $person) isa @has-owner; get;").asGet());
-    }
 }

@@ -145,6 +145,10 @@ public class GraknConceptException extends GraknException {
         return create(LABEL_TAKEN.getMessage(label));
     }
 
+    public static GraknConceptException propertyNotUnique(String message) {
+        return create(message);
+    }
+
     /**
      * Thrown when a Type has incoming edges and therefore cannot be deleted
      */
@@ -208,7 +212,7 @@ public class GraknConceptException extends GraknException {
     /**
      * Thrown when {@code type} has {@code attributeType} as a Type#key(AttributeType) and a Type#has(AttributeType)
      */
-    public static GraknConceptException duplicateHas(Type type, AttributeType attributeType) {
+    public static GraknConceptException cannotBeKeyAndHas(Type type, AttributeType attributeType) {
         return create(ErrorMessage.CANNOT_BE_KEY_AND_ATTRIBUTE.getMessage(type.label(), attributeType.label()));
     }
 

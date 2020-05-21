@@ -394,7 +394,6 @@ public class EntityTypeIT {
 
         expectedException.expect(TransactionException.class);
         expectedException.expectMessage(CANNOT_BE_KEY_AND_ATTRIBUTE.getMessage(entityType.label(), attributeType.label()));
-
         entityType.putKey(attributeType);
     }
 
@@ -481,15 +480,4 @@ public class EntityTypeIT {
                 person.label().getValue(), id.label().getValue(), false).getMessage());
         person.unhas(id);
     }
-
-    @Test
-    public void whenCreatingAnEntityTypeWithLabelStartingWithReservedCharachter_Throw(){
-        String label = "@what-a-dumb-label-name";
-
-        expectedException.expect(GraknConceptException.class);
-        expectedException.expectMessage(GraknConceptException.invalidLabelStart(Label.of(label)).getMessage());
-
-        tx.putEntityType(label);
-    }
-
 }

@@ -22,6 +22,7 @@ import com.google.common.collect.Iterables;
 import grakn.core.common.config.Config;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.concept.answer.Void;
+import grakn.core.concept.impl.ConceptVertex;
 import grakn.core.core.JanusTraversalSourceProvider;
 import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.Attribute;
@@ -46,6 +47,7 @@ import graql.lang.Graql;
 import graql.lang.query.GraqlDefine;
 import graql.lang.query.GraqlDelete;
 import graql.lang.query.GraqlInsert;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.hamcrest.Matchers;
 import org.junit.After;
@@ -350,7 +352,8 @@ public class RelationIT {
         Relation relation = relationType.create();
 
         relation.attributeInferred(attribute);
-        assertTrue(relation.relations().findAny().get().isInferred());
+        assertTrue(ConceptVertex.from(relation).vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.ATTRIBUTE)
+                .anyMatch(edge -> edge.propertyBoolean(Schema.EdgeProperty.IS_INFERRED)));
     }
 
     @Test

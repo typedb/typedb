@@ -18,15 +18,12 @@
 
 package grakn.core.concept;
 
-import com.google.common.collect.Iterables;
 import grakn.core.concept.impl.AttributeTypeImpl;
-import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Entity;
 import grakn.core.kb.concept.api.EntityType;
 import grakn.core.kb.concept.api.GraknConceptException;
-import grakn.core.kb.concept.api.Relation;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Thing;
@@ -34,7 +31,6 @@ import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import grakn.core.kb.server.exception.InvalidKBException;
 import grakn.core.test.rule.GraknTestServer;
-import junit.framework.TestCase;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -49,7 +45,6 @@ import java.util.List;
 
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
-import static junit.framework.TestCase.assertNotNull;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -100,14 +95,14 @@ public class AttributeIT {
     }
 
     @Test
-    public void whenCreatingResource_EnsureTheResourcesValueTypeIsTheSameAsItsType() throws Exception {
+    public void whenCreatingResource_EnsureTheResourcesValueTypeIsTheSameAsItsType() {
         AttributeType<String> attributeType = tx.putAttributeType("attributeType", AttributeType.ValueType.STRING);
         Attribute attribute = attributeType.create("resource");
         assertEquals(AttributeType.ValueType.STRING, attribute.valueType());
     }
 
     @Test
-    public void whenAttachingResourcesToInstances_EnsureInstancesAreReturnedAsOwners() throws Exception {
+    public void whenAttachingResourcesToInstances_EnsureInstancesAreReturnedAsRelated(){
         EntityType randomThing = tx.putEntityType("A Thing");
         AttributeType<String> attributeType = tx.putAttributeType("A Attribute Thing", AttributeType.ValueType.STRING);
         RelationType hasResource = tx.putRelationType("Has Attribute");
@@ -131,7 +126,8 @@ public class AttributeIT {
         hasResource.create().
                 assign(resourceRole, birthDate).assign(actorRole, alice);
 
-        assertThat(birthDate.owners().collect(toSet()), containsInAnyOrder(pacino, jennifer, bob, alice));
+        List<Thing> neighbors = birthDate.relations(resourceRole).flatMap(rel -> rel.rolePlayers(actorRole)).collect(toList());
+        assertThat(neighbors, containsInAnyOrder(pacino, jennifer, bob, alice));
     }
 
     // this is due to the generic of getResourcesByValue
@@ -292,26 +288,6 @@ public class AttributeIT {
     }
 
     @Test
-    public void whenGettingTheRelationsOfResources_EnsureIncomingResourceEdgesAreTakingIntoAccount() {
-        AttributeType<String> attributeType = tx.putAttributeType("Attribute Type Thingy", AttributeType.ValueType.STRING);
-        Attribute<String> attribute = attributeType.create("Thingy");
-
-        EntityType entityType = tx.putEntityType("Entity Type Thingy").putKey(attributeType);
-        Entity e1 = entityType.create();
-        Entity e2 = entityType.create();
-
-        assertThat(attribute.relations().collect(toSet()), empty());
-
-        e1.has(attribute);
-        e2.has(attribute);
-
-        Relation rel1 = Iterables.getOnlyElement(e1.relations().collect(toSet()));
-        Relation rel2 = Iterables.getOnlyElement(e2.relations().collect(toSet()));
-
-        assertThat(attribute.relations().collect(toSet()), containsInAnyOrder(rel1, rel2));
-    }
-
-    @Test
     public void whenCreatingAnInferredAttribute_EnsureMarkedAsInferred() {
         AttributeTypeImpl at = AttributeTypeImpl.from(tx.putAttributeType("at", AttributeType.ValueType.STRING));
         Attribute attribute = at.create("blergh");
@@ -321,7 +297,7 @@ public class AttributeIT {
     }
 
     @Test
-    public void whenDeletingAnAttribute_associatedEdgeRelationsAreDeleted() {
+    public void whenDeletingAnAttribute_associatedEdgesAreDeleted() {
         AttributeType<String> attributeType = tx.putAttributeType("resource", AttributeType.ValueType.STRING);
         Attribute<String> attribute = attributeType.create("polok");
 
@@ -329,17 +305,17 @@ public class AttributeIT {
         Entity e1 = entityType.create();
         Entity e2 = entityType.create();
 
-        assertThat(attribute.relations().collect(toSet()), empty());
+        assertThat(attribute.owners().collect(toSet()), empty());
 
         e1.has(attribute);
         e2.has(attribute);
 
-        assertTrue(e1.relations().findFirst().isPresent());
-        assertTrue(e2.relations().findFirst().isPresent());
+        assertTrue(e1.attributes().findFirst().isPresent());
+        assertTrue(e2.attributes().findFirst().isPresent());
 
         attribute.delete();
 
-        assertFalse(e1.relations().findFirst().isPresent());
-        assertFalse(e2.relations().findFirst().isPresent());
+        assertFalse(e1.attributes().findFirst().isPresent());
+        assertFalse(e2.attributes().findFirst().isPresent());
     }
 }

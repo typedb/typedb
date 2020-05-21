@@ -384,6 +384,10 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
     public T putHas(AttributeType attributeType) {
         validateOwnershipLegal(attributeType);
 
+        if (this.keys().anyMatch(attributeType::equals)) {
+            throw GraknConceptException.cannotBeKeyAndHas(this, attributeType);
+        }
+
         // check that the AttributeType is not already owned
         if (this.has().noneMatch(attributeType::equals)) {
             this.addEdge(ConceptVertex.from(attributeType), Schema.EdgeLabel.HAS);
@@ -396,6 +400,10 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
     @Override
     public T putKey(AttributeType attributeType) {
         validateOwnershipLegal(attributeType);
+        if (this.hasWithoutKeys().anyMatch(attributeType::equals)) {
+            throw GraknConceptException.cannotBeKeyAndHas(this, attributeType);
+        }
+
         // put a new KEY schema edge between this type and the attribute type
         if (this.keys().noneMatch(attributeType::equals)) {
             this.addEdge(ConceptVertex.from(attributeType), Schema.EdgeLabel.KEY);
