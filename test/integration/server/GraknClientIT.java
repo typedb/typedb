@@ -62,6 +62,7 @@ import junit.framework.TestCase;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -835,6 +836,7 @@ public class GraknClientIT {
     }
 
 
+    @Ignore
     @Test
     public void testExecutingComputeQueries_ResultsAreCorrect() {
         grakn.core.kb.concept.api.ConceptId idCoco, idMike, idCocoAndMike;
@@ -1041,10 +1043,15 @@ public class GraknClientIT {
 
             Entity.Remote dunstan = dog.create();
             Attribute.Remote<String> dunstanId = id.create("good-dog");
-            assertNull(dunstan.has(dunstanId));
+            dunstan.has(dunstanId);
+            assertTrue(dunstan.attributes(dunstanId.type()).findAny().isPresent());
 
             Attribute.Remote<String> dunstanName = name.create("Dunstan");
-            dunstan.has(dunstanName).unhas(dunstanName);
+            dunstan.has(dunstanName);
+            assertTrue(dunstan.attributes(dunstanName.type()).findAny().isPresent());
+
+            dunstan.unhas(dunstanName);
+            assertFalse(dunstan.attributes(dunstanName.type()).findAny().isPresent());
 
             chases.create().assign(chaser, dunstan);
 

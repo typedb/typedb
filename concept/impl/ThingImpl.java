@@ -123,6 +123,9 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
     public Stream<Attribute<?>> keys(AttributeType<?>... attributeTypes) {
         Set<AttributeType<?>> attributeKeyTypes = new HashSet<>(Arrays.asList(attributeTypes));
         List<AttributeType<?>> keyTypes = type().keys().filter(attributeKeyTypes::contains).collect(Collectors.toList());
+        if (keyTypes.isEmpty()) {
+            return Stream.empty();
+        }
         return attributes(keyTypes.toArray(new AttributeType<?>[0]));
     }
 
