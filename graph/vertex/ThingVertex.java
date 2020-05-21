@@ -56,4 +56,11 @@ public interface ThingVertex extends Vertex<
      * @param isInferred indicating whether this vertex was a result of inference
      */
     void isInferred(boolean isInferred);
+
+    /**
+     * Returns the literal value stored in the vertex, if it represents an attribute
+     *
+     * @return the literal value stored in the vertex
+     */
+    Object value();
 }

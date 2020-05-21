@@ -18,12 +18,16 @@
 
 package hypergraph.graph.util;
 
+import hypergraph.common.collection.ByteArrays;
+
 import javax.annotation.Nullable;
 import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 
+import static hypergraph.common.collection.ByteArrays.bytesToDouble;
+import static hypergraph.common.collection.ByteArrays.bytesToLong;
 import static hypergraph.common.collection.ByteArrays.doubleToBytes;
 import static hypergraph.common.collection.ByteArrays.join;
 import static hypergraph.common.collection.ByteArrays.longToBytes;
@@ -171,6 +175,8 @@ public class IID {
 
         public static abstract class Attribute extends IID.Vertex.Thing {
 
+            public static final int VALUE_INDEX = Prefix.LENGTH + Type.LENGTH + 1;
+
             Attribute(Schema.ValueType valueType, Type typeIID, byte[] valueBytes) {
                 super(join(
                         Schema.Vertex.Thing.ATTRIBUTE.prefix().bytes(),
@@ -180,10 +186,17 @@ public class IID {
                 ));
             }
 
+            public abstract Object value();
+
             public static class Boolean extends Attribute {
 
                 public Boolean(IID.Vertex.Type typeIID, boolean value) {
                     super(Schema.ValueType.BOOLEAN, typeIID, new byte[]{(byte) (value ? 1 : 0)});
+                }
+
+                @Override
+                public java.lang.Boolean value() {
+                    return bytes[VALUE_INDEX] == 1;
                 }
             }
 
@@ -192,12 +205,22 @@ public class IID {
                 public Long(IID.Vertex.Type typeIID, long value) {
                     super(Schema.ValueType.LONG, typeIID, longToBytes(value));
                 }
+
+                @Override
+                public java.lang.Long value() {
+                    return bytesToLong(copyOfRange(bytes, VALUE_INDEX, VALUE_INDEX + ByteArrays.LONG_SIZE));
+                }
             }
 
             public static class Double extends Attribute {
 
                 public Double(IID.Vertex.Type typeIID, double value) {
                     super(Schema.ValueType.DOUBLE, typeIID, doubleToBytes(value));
+                }
+
+                @Override
+                public java.lang.Double value() {
+                    return bytesToDouble(copyOfRange(bytes, VALUE_INDEX, VALUE_INDEX + ByteArrays.DOUBLE_SIZE));
                 }
             }
 
@@ -218,6 +241,11 @@ public class IID {
                     byte[] x = Arrays.copyOfRange(bytes, 1, 1 + bytes[0]);
                     return new java.lang.String(x, STRING_ENCODING);
                 }
+
+                @Override
+                public java.lang.String value() {
+                    return deserialise(copyOfRange(bytes, VALUE_INDEX, bytes.length));
+                }
             }
 
             public static class DateTime extends Attribute {
@@ -231,7 +259,12 @@ public class IID {
                 }
 
                 private static java.time.LocalDateTime deserialise(byte[] bytes) {
-                    return LocalDateTime.ofInstant(Instant.ofEpochMilli(ByteBuffer.wrap(bytes).getLong()), TIME_ZONE_ID);
+                    return LocalDateTime.ofInstant(Instant.ofEpochMilli(bytesToLong(bytes)), TIME_ZONE_ID);
+                }
+
+                @Override
+                public Object value() {
+                    return deserialise(copyOfRange(bytes, VALUE_INDEX, bytes.length));
                 }
             }
         }

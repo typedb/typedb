@@ -202,21 +202,23 @@ public class Schema {
     }
 
     public enum ValueType {
-        OBJECT(0, Object.class, false),
-        BOOLEAN(10, Boolean.class, false),
-        LONG(20, Long.class, true),
-        DOUBLE(30, Double.class, false),
-        STRING(40, String.class, true),
-        DATETIME(50, LocalDateTime.class, true);
+        OBJECT(0, Object.class, false, false),
+        BOOLEAN(10, Boolean.class, true, false),
+        LONG(20, Long.class, true, true),
+        DOUBLE(30, Double.class, true, false),
+        STRING(40, String.class, true, true),
+        DATETIME(50, LocalDateTime.class, true, true);
 
         private final byte key;
         private final Class<?> valueClass;
         private final boolean isKeyable;
+        private final boolean isIndexable;
 
-        ValueType(int key, Class<?> valueClass, boolean isKeyable) {
+        ValueType(int key, Class<?> valueClass, boolean isIndexable, boolean isKeyable) {
             this.key = (byte) key;
             this.valueClass = valueClass;
             this.isKeyable = isKeyable;
+            this.isIndexable = isIndexable;
         }
 
         public static ValueType of(byte value) {
@@ -243,6 +245,10 @@ public class Schema {
 
         public Class<?> valueClass() {
             return valueClass;
+        }
+
+        public boolean isIndexable() {
+            return isIndexable;
         }
 
         public boolean isKeyable() {

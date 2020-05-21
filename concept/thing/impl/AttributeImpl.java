@@ -42,7 +42,7 @@ public class AttributeImpl extends ThingImpl implements Attribute {
 
     @Override
     public Object value() {
-        return null; // TODO: return vertex.value();
+        return vertex.value();
     }
 
     public static class Boolean extends AttributeImpl implements Attribute.Boolean {
@@ -54,7 +54,7 @@ public class AttributeImpl extends ThingImpl implements Attribute {
 
         @Override
         public java.lang.Boolean value() {
-            return null; // TODO
+            return (java.lang.Boolean) vertex.value();
         }
     }
 
@@ -67,7 +67,7 @@ public class AttributeImpl extends ThingImpl implements Attribute {
 
         @Override
         public java.lang.Long value() {
-            return null; // TODO
+            return (java.lang.Long) vertex.value();
         }
     }
 
@@ -80,7 +80,7 @@ public class AttributeImpl extends ThingImpl implements Attribute {
 
         @Override
         public java.lang.Double value() {
-            return null; // TODO
+            return (java.lang.Double) vertex.value();
         }
     }
 
@@ -93,7 +93,7 @@ public class AttributeImpl extends ThingImpl implements Attribute {
 
         @Override
         public java.lang.String value() {
-            return null; // TODO
+            return (java.lang.String) vertex.value();
         }
     }
 
@@ -106,7 +106,7 @@ public class AttributeImpl extends ThingImpl implements Attribute {
 
         @Override
         public java.time.LocalDateTime value() {
-            return null; // TODO
+            return (java.time.LocalDateTime) vertex.value();
         }
     }
 }

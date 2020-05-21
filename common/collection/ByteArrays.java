@@ -22,6 +22,11 @@ import java.nio.ByteBuffer;
 
 public class ByteArrays {
 
+    public static final int SHORT_SIZE = 2;
+    public static final int INTEGER_SIZE = 4;
+    public static final int LONG_SIZE = 8;
+    public static final int DOUBLE_SIZE = 8;
+
     public static byte[] join(byte[]... byteArrays) {
         int length = 0;
         for (byte[] array : byteArrays) {
@@ -47,14 +52,14 @@ public class ByteArrays {
     }
 
     public static byte[] shortToBytes(int num) {
-        byte[] bytes = new byte[2];
+        byte[] bytes = new byte[SHORT_SIZE];
         bytes[1] = (byte) (num);
         bytes[0] = (byte) (num >> 8);
         return bytes;
     }
 
     public static byte[] integerToBytes(int num) {
-        byte[] bytes = new byte[4];
+        byte[] bytes = new byte[INTEGER_SIZE];
         bytes[3] = (byte) (num);
         bytes[2] = (byte) (num >>= 8);
         bytes[1] = (byte) (num >>= 8);
@@ -63,7 +68,7 @@ public class ByteArrays {
     }
 
     public static byte[] longToBytes(long num) {
-        byte[] bytes = new byte[8];
+        byte[] bytes = new byte[LONG_SIZE];
         bytes[7] = (byte) (num);
         bytes[6] = (byte) (num >>= 8);
         bytes[5] = (byte) (num >>= 8);
@@ -75,7 +80,15 @@ public class ByteArrays {
         return bytes;
     }
 
+    public static long bytesToLong(byte[] bytes) {
+        return ByteBuffer.wrap(bytes).getLong();
+    }
+
     public static byte[] doubleToBytes(double value) {
-        return ByteBuffer.allocate(8).putDouble(value).array();
+        return ByteBuffer.allocate(DOUBLE_SIZE).putDouble(value).array();
+    }
+
+    public static double bytesToDouble(byte[] bytes) {
+        return ByteBuffer.allocate(DOUBLE_SIZE).getDouble();
     }
 }

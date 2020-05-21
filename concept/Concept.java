@@ -34,7 +34,7 @@ import static hypergraph.common.exception.Error.ConceptRead.INVALID_CONCEPT_CAST
 
 public interface Concept {
 
-    byte[] iid();
+    byte[] iid(); // TODO: Return HEX String
 
     default Type asType() {
         throw new HypergraphException(INVALID_CONCEPT_CASTING.format(Type.class.getCanonicalName()));

@@ -18,6 +18,7 @@
 
 package hypergraph.graph;
 
+import hypergraph.graph.util.AttributeSync;
 import hypergraph.graph.util.IID;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.util.Storage;
@@ -124,7 +125,8 @@ public class ThingGraph implements Graph<IID.Vertex.Thing, ThingVertex> {
         if (vertex != null) {
             graphManager.storage().attributeSync().remove(attributeIID);
         } else {
-            vertex = new ThingVertexImpl.Buffered(this, attributeIID, isInferred);
+            AttributeSync.CommitSync commitSync = graphManager.storage().attributeSync().get(attributeIID);
+            vertex = new ThingVertexImpl.Buffered.Attribute(this, attributeIID, isInferred, commitSync);
             thingByIID.put(attributeIID, vertex);
         }
 

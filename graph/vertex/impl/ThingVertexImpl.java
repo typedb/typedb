@@ -123,6 +123,11 @@ public abstract class ThingVertexImpl extends VertexImpl<IID.Vertex.Thing, Schem
         }
 
         @Override
+        public Object value() {
+            return null;
+        }
+
+        @Override
         public Schema.Status status() {
             return Schema.Status.BUFFERED;
         }
@@ -147,19 +152,31 @@ public abstract class ThingVertexImpl extends VertexImpl<IID.Vertex.Thing, Schem
         public static class Attribute extends ThingVertexImpl.Buffered {
 
             private final AttributeSync.CommitSync commitSync;
+            private final IID.Vertex.Attribute attributeIID;
 
-            public Attribute(ThingGraph graph, IID.Vertex.Thing iid, boolean isInferred, AttributeSync.CommitSync commitSync) {
+            public Attribute(ThingGraph graph, IID.Vertex.Attribute iid, boolean isInferred, AttributeSync.CommitSync commitSync) {
                 super(graph, iid, isInferred);
                 this.commitSync = commitSync;
+                this.attributeIID = iid;
             }
 
             @Override
             public void commit() {
                 if (isInferred) throw new HypergraphException(Error.Transaction.ILLEGAL_OPERATION);
                 if (!commitSync.checkIsSyncedAndSetTrue()) {
-                    graph.storage().put(iid.bytes());
+                    graph.storage().put(attributeIID.bytes());
                 }
                 super.commitEdges();
+            }
+
+            @Override
+            public Object value() {
+                if (typeVertex().valueType().isIndexable()) {
+                    return attributeIID.value();
+                } else {
+                    // TODO: implement for ValueType.TEXT
+                    return null;
+                }
             }
         }
     }
