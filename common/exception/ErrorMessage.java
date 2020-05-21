@@ -71,7 +71,6 @@ public enum ErrorMessage {
     RESERVED_WORD("The word [%s] is reserved internally and cannot be used"),
     INVALID_PROPERTY_USE("The concept [%s] cannot contain vertex property [%s]"),
     UNKNOWN_CONCEPT("Unknown concept type [%s]"),
-    INVALID_IMPLICIT_TYPE("Label [%s] is not an implicit label"),
     LABEL_TAKEN("The label [%s] has already been used"),
     INVALID_KEYSPACE_NAME("Keyspace name is invalid: [%s]. Keyspace name cannot start with a number, " +
             "and can only contain maximum 48 characters of lower case, alphanumeric and underscore characters."),
@@ -122,10 +121,6 @@ public enum ErrorMessage {
     VALIDATION_RULE_ILLEGAL_HEAD_ATOM_WITH_UNBOUND_VARIABLE("Atom [%s] is not allowed to form a rule head of rule [%s] as it contains an unbound variable\n"),
 
     VALIDATION_RULE_ILLEGAL_HEAD_ATOM_WITH_AMBIGUOUS_SCHEMA_CONCEPT("Atom [%s] is not allowed to form a rule head of rule [%s] as it has an ambiguous schema concept\n"),
-
-    VALIDATION_RULE_ILLEGAL_HEAD_ATOM_WITH_IMPLICIT_SCHEMA_CONCEPT("Atom [%s] is not allowed to form a rule head of rule [%s] as it has an implicit schema concept\n"),
-
-    VALIDATION_RULE_ILLEGAL_HEAD_RELATION_WITH_IMPLICIT_ROLE("Relation [%s] is not allowed to form a rule head of rule [%s] as it has an implicit role\n"),
 
     VALIDATION_RULE_ILLEGAL_HEAD_RELATION_WITH_AMBIGUOUS_ROLE("Relation [%s] is not allowed to form a rule head of rule [%s] as it has an ambiguous (unspecified, variable or meta) role\n"),
 

@@ -282,24 +282,6 @@ public class RuleValidationIT {
     }
 
     @Test
-    public void whenAddingRuleWithIllegalAtomicInHead_RelationWithImplicitType_Throw() throws InvalidKBException {
-        validateIllegalHead(
-                Graql.parsePattern("(someRole: $x, anotherRole: $y) isa someRelation;"),
-                Graql.parsePattern("($x, $y) isa " + Schema.ImplicitType.HAS.getLabel("someAttribute;").getValue()),
-                ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_ATOM_WITH_IMPLICIT_SCHEMA_CONCEPT
-        );
-    }
-
-    @Test
-    public void whenAddingRuleWithIllegalAtomicInHead_RelationWithImplicitRole_Throw() throws InvalidKBException {
-        validateIllegalHead(
-                Graql.parsePattern("(someRole: $x, anotherRole: $y) isa someRelation;"),
-                Graql.parsePattern("(" + Schema.ImplicitType.HAS_OWNER.getLabel("someAttribute").getValue() + ": $x, $y);"),
-                ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_RELATION_WITH_IMPLICIT_ROLE
-        );
-    }
-
-    @Test
     public void whenAddingRuleWithIllegalAtomicInHead_IllegalTypeAtoms_Throw() throws InvalidKBException {
         validateIllegalHead(
                 Graql.parsePattern("(someRole: $x, anotherRole: $y) isa someRelation;"),
