@@ -54,6 +54,20 @@ jobs:
       - run-bazel-rbe:
           command: bazel test $(bazel query 'kind(checkstyle_test, //...)')
 
+  build-analysis:
+    machine: true
+    working_directory: ~/hypergraph
+    steps:
+      - install-bazel-linux-rbe
+      - checkout
+      - run: |
+          SONARCLOUD_CODE_ANALYSIS_CREDENTIAL=$SONARCLOUD_CREDENTIAL \
+            bazel run @graknlabs_build_tools//sonarcloud:code-analysis -- \
+            --organisation=$SONARCLOUD_ORGANISATION \
+            --project-key=$SONARCLOUD_PROJECT_KEY \
+            --commit-id=$CIRCLE_SHA1 \
+            --branch=$CIRCLE_BRANCH
+
   test-basic:
     machine: true
     working_directory: ~/hypergraph
@@ -103,6 +117,7 @@ workflows:
     jobs:
       - build
       - build-checkstyle
+      - build-analysis
       - test-basic
       - test-connection
       - test-concept
