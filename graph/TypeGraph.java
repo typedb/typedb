@@ -64,19 +64,19 @@ public class TypeGraph implements Graph<IID.Vertex.Type, TypeVertex> {
     }
 
     public void initialise() throws HypergraphException {
-        TypeVertex rootThingType = put(
+        TypeVertex rootThingType = create(
                 Schema.Vertex.Type.THING_TYPE,
                 Schema.Vertex.Type.Root.THING.label()).isAbstract(true);
-        TypeVertex rootEntityType = put(
+        TypeVertex rootEntityType = create(
                 Schema.Vertex.Type.ENTITY_TYPE,
                 Schema.Vertex.Type.Root.ENTITY.label()).isAbstract(true);
-        TypeVertex rootAttributeType = put(
+        TypeVertex rootAttributeType = create(
                 Schema.Vertex.Type.ATTRIBUTE_TYPE,
                 Schema.Vertex.Type.Root.ATTRIBUTE.label()).isAbstract(true).valueType(Schema.ValueType.OBJECT);
-        TypeVertex rootRelationType = put(
+        TypeVertex rootRelationType = create(
                 Schema.Vertex.Type.RELATION_TYPE,
                 Schema.Vertex.Type.Root.RELATION.label()).isAbstract(true);
-        TypeVertex rootRoleType = put(
+        TypeVertex rootRoleType = create(
                 Schema.Vertex.Type.ROLE_TYPE,
                 Schema.Vertex.Type.Root.ROLE.label(),
                 Schema.Vertex.Type.Root.RELATION.label()).isAbstract(true);
@@ -113,11 +113,11 @@ public class TypeGraph implements Graph<IID.Vertex.Type, TypeVertex> {
         }
     }
 
-    public TypeVertex put(Schema.Vertex.Type type, String label) {
-        return put(type, label, null);
+    public TypeVertex create(Schema.Vertex.Type type, String label) {
+        return create(type, label, null);
     }
 
-    public TypeVertex put(Schema.Vertex.Type type, String label, @Nullable String scope) {
+    public TypeVertex create(Schema.Vertex.Type type, String label, @Nullable String scope) {
         String scopedLabel = scopedLabel(label, scope);
         try { // we intentionally use READ on multiLabelLock, as put() only concerns one label
             multiLabelLock.lockRead();
@@ -168,15 +168,11 @@ public class TypeGraph implements Graph<IID.Vertex.Type, TypeVertex> {
 
     @Override
     public TypeVertex get(IID.Vertex.Type iid) {
-        TypeVertex vertex = typeByIID.get(iid);
-        if (vertex != null) return vertex;
-
-        vertex = typeByIID.computeIfAbsent(
-                iid, i -> new TypeVertexImpl.Persisted(this, i)
-        );
-        typeByLabel.putIfAbsent(vertex.scopedLabel(), vertex);
-
-        return vertex;
+        return typeByIID.computeIfAbsent(iid, i -> {
+            TypeVertex vertex = new TypeVertexImpl.Persisted(this, i);
+            typeByLabel.putIfAbsent(vertex.scopedLabel(), vertex);
+            return vertex;
+        });
     }
 
     @Override

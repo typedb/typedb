@@ -53,8 +53,8 @@ public class ThingGraph implements Graph<IID.Vertex.Thing, ThingVertex> {
         return null; // TODO
     }
 
-    public <VALUE> ThingVertex.Attribute<VALUE> getAttribute(IID.Vertex.Attribute<VALUE> attributeIID) {
-        return null;
+    public <VALUE> ThingVertex.Attribute<VALUE> get(IID.Vertex.Attribute<VALUE> attributeIID) {
+        return null; // TODO
     }
 
     @Override
@@ -109,7 +109,7 @@ public class ThingGraph implements Graph<IID.Vertex.Thing, ThingVertex> {
     public ThingVertex.Attribute<String> putAttribute(TypeVertex type, String value, boolean isInferred) {
         assert type.schema().equals(Schema.Vertex.Type.ATTRIBUTE_TYPE);
         assert type.valueType().valueClass().equals(String.class);
-        assert value.length() == Schema.STRING_MAX_LENGTH;
+        assert value.length() <= Schema.STRING_MAX_LENGTH;
 
         IID.Vertex.Attribute<String> attIID = new IID.Vertex.Attribute.String(type.iid(), value);
         return putAttribute(attIID, isInferred);
@@ -124,7 +124,7 @@ public class ThingGraph implements Graph<IID.Vertex.Thing, ThingVertex> {
     }
 
     public <VALUE> ThingVertex.Attribute<VALUE> putAttribute(IID.Vertex.Attribute<VALUE> attributeIID, boolean isInferred) {
-        ThingVertex.Attribute<VALUE> vertex = getAttribute(attributeIID);
+        ThingVertex.Attribute<VALUE> vertex = get(attributeIID);
 
         if (vertex != null) {
             graphManager.storage().attributeSync().remove(attributeIID);

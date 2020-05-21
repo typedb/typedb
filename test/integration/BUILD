@@ -26,6 +26,7 @@ java_test(
         "//concept:concept",
         "//core:hypergraph",
     ],
+    size = "small",
 )
 
 java_test(
