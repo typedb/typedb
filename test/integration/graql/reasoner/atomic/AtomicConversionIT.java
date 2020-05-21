@@ -19,14 +19,10 @@ package grakn.core.graql.reasoner.atomic;
 
 import com.google.common.collect.Sets;
 import grakn.core.common.config.Config;
-import grakn.core.core.Schema;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.binary.AttributeAtom;
 import grakn.core.graql.reasoner.atom.binary.IsaAtom;
-import grakn.core.graql.reasoner.atom.binary.RelationAtom;
-import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.reasoner.atom.predicate.Predicate;
-import grakn.core.graql.reasoner.atom.predicate.ValuePredicate;
 import grakn.core.graql.reasoner.query.ReasonerQueryFactory;
 import grakn.core.kb.graql.reasoner.ReasonerException;
 import grakn.core.kb.server.Session;
@@ -47,7 +43,6 @@ import org.junit.Test;
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
 import static java.util.stream.Collectors.toSet;
 import static junit.framework.TestCase.assertEquals;
-import static junit.framework.TestCase.assertTrue;
 
 public class AtomicConversionIT {
 
@@ -58,7 +53,6 @@ public class AtomicConversionIT {
 
     private static Conjunction<Statement> attributePattern;
     private static Conjunction<Statement> relationPattern;
-    private static Conjunction<Statement> implicitRelationPattern;
     private static Variable attributeVar;
     private static Variable relationVar;
 
@@ -78,15 +72,6 @@ public class AtomicConversionIT {
         Statement rel = Graql.var(relationVar).rel("baseRole1", "x").rel("baseRole2", "y").isa("binary");
         Statement rId = Graql.var(relationVar).id("V123");
         relationPattern = Graql.and(Sets.newHashSet(rel, rId));
-
-        String attributeLabel = "resource";
-        Statement implicitRel = Graql.var(relationVar)
-                .rel(Schema.ImplicitType.HAS_OWNER.getLabel(attributeLabel).getValue(), "x")
-                .rel(Schema.ImplicitType.HAS_VALUE.getLabel(attributeLabel).getValue(), "y")
-                .isa(Schema.ImplicitType.HAS.getLabel(attributeLabel).getValue());
-        Statement xId = Graql.var("x").id("V456");
-        Statement yId = Graql.var("y").id("V789");
-        implicitRelationPattern = Graql.and(Sets.newHashSet(implicitRel, xId, yId));
     }
 
     @AfterClass
@@ -136,62 +121,4 @@ public class AtomicConversionIT {
         }
     }
 
-    @Test
-    public void whenConvertingImplicitRelationToAttribute_predicatesArePreserved(){
-        try(Transaction tx = session.transaction(Transaction.Type.READ)){
-            ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
-
-            Atom relation = reasonerQueryFactory.atomic(implicitRelationPattern).getAtom();
-            AttributeAtom attribute = relation.toAttributeAtom();
-
-            assertEquals(
-                    relation.getPredicates().filter(p -> attribute.getVarNames().contains(p.getVarName())).collect(toSet()),
-                    attribute.getPredicates().collect(toSet())
-            );
-        }
-    }
-
-//    @Test
-//    public void whenConvertingAttributeToRelation_predicatesArePreserved(){
-//        try(Transaction tx = session.transaction(Transaction.Type.READ)){
-//            ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
-//
-//            Atom attribute = reasonerQueryFactory.atomic(attributePattern).getAtom();
-//            RelationAtom relation = attribute.toRelationAtom();
-//
-//            assertEquals(
-//                    relation.getPredicates(IdPredicate.class).collect(toSet()),
-//                    attribute.getPredicates(IdPredicate.class).collect(toSet())
-//            );
-//
-//            assertEquals(
-//                    relation.getPredicates(ValuePredicate.class).collect(toSet()),
-//                    attribute.getInnerPredicates(ValuePredicate.class).collect(toSet())
-//            );
-//        }
-//    }
-
-//    @Test
-//    public void whenPerformingAttributeRelationIdentityConversion_equivalenceIsPreserved(){
-//        try(Transaction tx = session.transaction(Transaction.Type.READ)){
-//            ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
-//
-//            Atom attribute = reasonerQueryFactory.atomic(attributePattern).getAtom();
-//            RelationAtom intermittentAtom = attribute.toRelationAtom();
-//            AttributeAtom equivalentAttribute = intermittentAtom.toAttributeAtom();
-//            assertTrue(attribute.isAlphaEquivalent(equivalentAttribute));
-//            assertEquals(attribute, equivalentAttribute);
-//        }
-//    }
-
-//    @Test
-//    public void whenPerformingRelationAttributeIdentityConversion_equivalenceIsPreserved(){
-//        try(Transaction tx = session.transaction(Transaction.Type.READ)){
-//            ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
-//            Atom relation = reasonerQueryFactory.atomic(implicitRelationPattern).getAtom();
-//            AttributeAtom intermittentAtom = relation.toAttributeAtom();
-//            Atom equivalentRelation = intermittentAtom.toRelationAtom();
-//            assertEquals(relation, equivalentRelation);
-//        }
-//    }
 }
