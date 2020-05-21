@@ -199,6 +199,9 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
 
         EdgeElement attributeEdge = putEdge(AttributeImpl.from(attribute), Schema.EdgeLabel.ATTRIBUTE);
         attributeEdge.property(Schema.EdgeProperty.ATTRIBUTE_OWNED_LABEL_ID, attribute.type().labelId().getValue());
+        if (isInferred) {
+            attributeEdge.property(Schema.EdgeProperty.IS_INFERRED, true);
+        }
 
         conceptManager.createHasAttribute(this, attribute, isInferred);
     }
