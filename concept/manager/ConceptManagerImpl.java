@@ -290,10 +290,9 @@ public class ConceptManagerImpl implements ConceptManager {
     public RelationImpl createRelation(RelationType type, boolean isInferred) {
         preCheckForInstanceCreation(type);
         VertexElement vertex = createInstanceVertex(RELATION, isInferred);
-
         RelationImpl newRelation = new RelationImpl(vertex, this, conceptNotificationChannel);
         newRelation.type(TypeImpl.from(type));
-
+        conceptNotificationChannel.relationCreated(newRelation, isInferred);
         return newRelation;
     }
 

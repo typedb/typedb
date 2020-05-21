@@ -419,7 +419,7 @@ public class TransactionImpl implements Transaction {
         Stream<ConceptMap> explicitlyPersisted = inserted.peek(conceptMap -> {
             // mark all inferred concepts that are required for the insert for persistence explicitly
             // can avoid this potentially expensive check if there aren't any inferred concepts to start with
-            if (transactionCache.getInferredInstances().findAny().isPresent()) {
+            if (transactionCache.anyFactsInferred()) {
                 markConceptsForPersistence(conceptMap.concepts());
             }
         });

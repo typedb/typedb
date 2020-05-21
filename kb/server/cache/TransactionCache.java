@@ -254,6 +254,8 @@ public class TransactionCache {
         return (X) conceptCache.get(id);
     }
 
+    // ------------- Methods and state enabling persistence of inferred facts -----
+
     /**
      * Caches an inferred instance for possible persistence later.
      *
@@ -277,8 +279,8 @@ public class TransactionCache {
         inferredConceptsToPersist.add(t);
     }
 
-    public Stream<Thing> getInferredInstances() {
-        return inferredConcepts.stream();
+    public boolean anyFactsInferred() {
+        return inferredConcepts.size() > 0 || inferredOwnerships.size() > 0;
     }
 
     public void inferredOwnershipToPersist(Thing owner, Attribute<?> attribute) {
@@ -381,6 +383,9 @@ public class TransactionCache {
         return attributeCache;
     }
 
+
+    // --------- visible for testing - code smells, needs further refinement -----
+
     @VisibleForTesting
     public Map<ConceptId, Concept> getConceptCache() {
         return conceptCache;
@@ -391,4 +396,13 @@ public class TransactionCache {
         return schemaConceptCache;
     }
 
+    @VisibleForTesting
+    public Set<Thing> getInferredInstances() {
+        return inferredConcepts;
+    }
+
+    @VisibleForTesting
+    public Set<Pair<Thing, Attribute<?>>> getInferredOwnerships() {
+        return inferredOwnerships;
+    }
 }
