@@ -122,8 +122,9 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
     @Override
     public Stream<Attribute<?>> keys(AttributeType<?>... attributeTypes) {
         Set<AttributeType<?>> attributeKeyTypes = new HashSet<>(Arrays.asList(attributeTypes));
-        List<AttributeType<?>> keyTypes = type().keys().filter(attributeKeyTypes::contains).collect(Collectors.toList());
-        if (keyTypes.isEmpty() && attributeTypes.length != 0) {
+        List<AttributeType<?>> keyTypes = type().keys().collect(Collectors.toList());
+        List<AttributeType<?>> keysToRetrieve = keyTypes.stream().filter(attributeKeyTypes::contains).collect(Collectors.toList());
+        if (keysToRetrieve.isEmpty() && attributeTypes.length != 0) {
             // if the user gave types to filter to that are NOT keys, return no keys
             return Stream.empty();
         }

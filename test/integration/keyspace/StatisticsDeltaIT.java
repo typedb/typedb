@@ -181,7 +181,7 @@ public class StatisticsDeltaIT {
         tx.getConcept(id1).delete();
 
         // test Graql deletion
-        tx.execute(Graql.parse("match $x id " + id2 + "; delete $x;").asDelete());
+        tx.execute(Graql.parse("match $x id " + id2 + "; delete $x isa entity;").asDelete());
 
         long personDelta = statisticsDelta.delta(Label.of("person"));
         assertEquals(-2, personDelta);
@@ -211,8 +211,8 @@ public class StatisticsDeltaIT {
         tx.getConcept(id1).delete();
 
         // test Graql deletion
-        tx.execute(Graql.parse("match $x id " + id2 + "; delete $x;").asDelete());
-        tx.execute(Graql.parse("match $x id " + id3 + "; delete $x;").asDelete());
+        tx.execute(Graql.parse("match $x id " + id2 + "; delete $x isa relation;").asDelete());
+        tx.execute(Graql.parse("match $x id " + id3 + "; delete $x isa relation;").asDelete());
 
         long friendshipDelta = statisticsDelta.delta(Label.of("friendship"));
         assertEquals(-3, friendshipDelta);
@@ -235,7 +235,7 @@ public class StatisticsDeltaIT {
         tx.getConcept(lastAttributeId).delete();
 
         // test Graql deletion
-        tx.execute(Graql.parse("match $x 50 isa age; $y 51 isa age; $z 52 isa age; delete $x, $y, $z;").asDelete());
+        tx.execute(Graql.parse("match $x 50 isa age; $y 51 isa age; $z 52 isa age; delete $x isa attribute; $y isa attribute; $z isa attribute;").asDelete());
 
         long ageDelta = statisticsDelta.delta(Label.of("age"));
         assertEquals(-4, ageDelta);
@@ -265,7 +265,7 @@ public class StatisticsDeltaIT {
         tx.getConcept(age2Id).delete();
 
         // test deletion
-        tx.execute(Graql.parse("match $x 1 isa age; delete $x;").asDelete());
+        tx.execute(Graql.parse("match $x 1 isa age; delete $x isa attribute;").asDelete());
 
         long ageDelta = statisticsDelta.delta(Label.of("age"));
         assertEquals(-2, ageDelta);
