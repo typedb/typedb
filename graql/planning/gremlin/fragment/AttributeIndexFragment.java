@@ -100,7 +100,7 @@ public class AttributeIndexFragment extends FragmentImpl {
             AttributeType<?> attrType = it.next();
             Label attrLabel = attrType.label();
             totalAttributes += statistics.count(conceptManager, attrLabel);
-            totalOwnerships += statistics.countOwnerships(conceptManager, attrLabel, null); // TODO implement ownership stats
+            totalOwnerships += statistics.countOwnerships(conceptManager, attrLabel);
         }
 
         if (totalAttributes == 0) {

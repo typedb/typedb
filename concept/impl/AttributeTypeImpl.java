@@ -208,6 +208,18 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
         return vertex().property(Schema.VertexProperty.REGEX);
     }
 
+    public long ownershipCount() {
+        Long count = vertex().property(Schema.VertexProperty.OWNERSHIP_COUNT);
+        if (count != null) {
+            return count;
+        }
+        return 0L;
+    }
+
+    public void writeOwnershipCount(long count) {
+        vertex().property(Schema.VertexProperty.OWNERSHIP_COUNT, count);
+    }
+
     @Override
     void trackRolePlayers() {
         conceptNotificationChannel.trackAttributeInstancesRolesPlayed(this);

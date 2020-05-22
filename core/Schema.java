@@ -196,7 +196,7 @@ public final class Schema {
      */
     public enum VertexProperty {
         // Schema concept properties
-        SCHEMA_LABEL(String.class), LABEL_ID(Integer.class), INSTANCE_COUNT(Long.class), TYPE_SHARD_CHECKPOINT(Long.class), IS_ABSTRACT(Boolean.class),
+        SCHEMA_LABEL(String.class), LABEL_ID(Integer.class), INSTANCE_COUNT(Long.class), OWNERSHIP_COUNT(Long.class), TYPE_SHARD_CHECKPOINT(Long.class), IS_ABSTRACT(Boolean.class),
 
         // Attribute schema concept properties
         // TODO change to `VALUE_TYPE` when no longer require preserving DB compatibility

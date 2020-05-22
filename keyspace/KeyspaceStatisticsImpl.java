@@ -18,6 +18,7 @@
 
 package grakn.core.keyspace;
 
+import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Type;
@@ -36,10 +37,10 @@ import java.util.concurrent.ConcurrentHashMap;
  * The general method of operation is as a cache, into which the statistics delta is merged on commit.
  * At this point we also write the statistics to JanusGraph, writing recorded values as vertex properties on the schema
  * concepts.
- *
+ * <p>
  * On cache miss, we read from JanusGraph schema vertices, which only have the INSTANCE_COUNT property if the
  * count is non-zero or has been non-zero in the past. No such property means instance count is 0.
- *
+ * <p>
  * We also store the total count of all concepts the same was as any other schema concept, but on the meta
  * concept types. Note that this is different from the other instance counts as it DOES include counts of all subtypes. The
  * other counts on user-defined schema concepts are for for that concrete type only
@@ -47,11 +48,11 @@ import java.util.concurrent.ConcurrentHashMap;
 public class KeyspaceStatisticsImpl implements KeyspaceStatistics {
 
     private ConcurrentHashMap<Label, Long> instanceCountsCache;
-//    private ConcurrentHashMap<Pair<Label, Label>, Long> ownershipCountsCache;
+    private ConcurrentHashMap<Label, Long> ownershipCountsCache;
 
     public KeyspaceStatisticsImpl() {
         instanceCountsCache = new ConcurrentHashMap<>();
-//        ownershipCountsCache = new ConcurrentHashMap<>();
+        ownershipCountsCache = new ConcurrentHashMap<>();
     }
 
     @Override
@@ -62,13 +63,10 @@ public class KeyspaceStatisticsImpl implements KeyspaceStatistics {
     }
 
     @Override
-    public long countOwnerships(ConceptManager conceptManager, Label owner, Label attributeOwned) {
-        // TODO
-//        // return count if cached, else cache miss and retrieve from the vertex
-//        Pair<Label, Label> ownership = new Pair<>(owner, attributeOwned);
-//        ownershipCountsCache.computeIfAbsent(ownership, l -> retrieveOwnershipCount(conceptManager, owner, attributeOwned));
-//        return ownershipCountsCache.get(ownership);
-        return 1L;
+    public long countOwnerships(ConceptManager conceptManager, Label owner) {
+        // return count if cached, else cache miss and retrieve from the vertex
+        ownershipCountsCache.computeIfAbsent(owner, l -> retrieveOwnershipCount(conceptManager, owner));
+        return ownershipCountsCache.get(owner);
     }
 
     @Override
@@ -85,18 +83,32 @@ public class KeyspaceStatisticsImpl implements KeyspaceStatistics {
                     labelsToPersist.add(label);
                     // atomic update
                     instanceCountsCache.compute(label, (k, prior) ->
-                        prior == null?
-                                retrieveCountFromVertex(conceptManager, label) + delta:
-                                prior + delta
-            );
-        });
+                            prior == null ?
+                                    retrieveCountFromVertex(conceptManager, label) + delta :
+                                    prior + delta
+                    );
+                });
 
-        persist(conceptManager, labelsToPersist);
+        HashMap<Label, Long> ownershipDelta = statisticsDelta.ownershipDeltas();
+        Set<Label> ownershipLabelsToPersist = new HashSet<>();
+        ownershipDelta.entrySet().stream()
+                .filter(e -> e.getValue() != 0)
+                .forEach(entry -> {
+                    Label attr = entry.getKey();
+                    Long delta = entry.getValue();
+                    ownershipLabelsToPersist.add(attr);
+                    ownershipCountsCache.compute(attr, (k, prior) ->
+                        prior == null ?
+                                retrieveOwnershipCount(conceptManager, attr) + delta :
+                                prior + delta
+                    );
+                });
+
+        persist(conceptManager, labelsToPersist, ownershipLabelsToPersist);
+
     }
 
-    private void persist(ConceptManager conceptManager, Set<Label> labelsToPersist) {
-
-        // TODO implement persisting the counts of ownerships
+    private void persist(ConceptManager conceptManager, Set<Label> labelsToPersist, Set<Label> ownershipLabelsToPersist) {
 
         // TODO - there's an possible removal from instanceCountsCache here
         // when the schemaConcept is null - ie it's been removed. However making this
@@ -114,6 +126,17 @@ public class KeyspaceStatisticsImpl implements KeyspaceStatistics {
                 return count;
             });
         }
+
+        for (Label label : ownershipLabelsToPersist) {
+            // don't change the value, just use `.compute()` for atomic and locking vertex write
+            ownershipCountsCache.compute(label, (lab, count) -> {
+                AttributeType<?> attributeType = conceptManager.getAttributeType(lab.toString());
+                if (attributeType != null) {
+                    attributeType.writeOwnershipCount(count);
+                }
+                return count;
+            });
+        }
     }
 
     /**
@@ -122,27 +145,16 @@ public class KeyspaceStatisticsImpl implements KeyspaceStatistics {
      */
     private long retrieveCountFromVertex(ConceptManager conceptManager, Label label) {
         Concept schemaConcept = conceptManager.getSchemaConcept(label);
-        if (schemaConcept != null && schemaConcept.isType()) {
-            Type conceptAsType = schemaConcept.asType();
-            return conceptAsType.getCount();
-        } else {
-            // if the schema concept is NULL, it doesn't exist! While it shouldn't pass validation, if we can use it to
-            // short circuit then it's a good starting point
-            return -1L;
-        }
+        Type conceptAsType = schemaConcept.asType();
+        return conceptAsType.getCount();
     }
 
     /**
      * Effectively a cache miss - retrieves the value from the janus vertex
      * Note that the count property doesn't exist on a label until a commit places a non-zero count on the vertex
      */
-    private long retrieveOwnershipCount(ConceptManager conceptManager, Label owner, Label attribute) {
-        // TODO this will be much faster in 2.0 backend
-//        VertexElement ownerVertex = ConceptVertex.from(conceptManager.getSchemaConcept(owner)).vertex();
-//        VertexElement attributeVertex = ConceptVertex.from(conceptManager.getSchemaConcept(attribute)).vertex();
-
-        // TODO this needs to be implemented in a way that is agnostic to whether we have `key` or `has` edges
-        // TODO this may become important if we allow upgrading or downgrading the `key` to `has`
-        return 1L;
+    private long retrieveOwnershipCount(ConceptManager conceptManager, Label attribute) {
+        AttributeType<?> attributeType = conceptManager.getAttributeType(attribute.toString());
+        return attributeType.ownershipCount();
     }
 }

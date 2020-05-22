@@ -28,6 +28,6 @@ public interface KeyspaceStatistics {
     long count(ConceptManager conceptManager, Label label);
 
     // TODO - not implemented yet
-    long countOwnerships(ConceptManager conceptManager, Label owner, Label attributeOwned);
+    long countOwnerships(ConceptManager conceptManager, Label attributeOwned);
     void commit(ConceptManager conceptManager, StatisticsDelta statisticsDelta);
 }
