@@ -257,6 +257,10 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
             throw GraknConceptException.illegalUnhasNotExist(label().toString(), attributeType.label().toString(), false);
         }
 
+        if (instances().anyMatch(concept -> concept.attributes(attributeType).findAny().isPresent())) {
+            throw GraknConceptException.illegalUnhasWithInstance(this.label().toString(), attributeType.label().toString(), false);
+        }
+
         deleteEdge(Direction.OUT, Schema.EdgeLabel.HAS, attributeType);
         return getThis();
     }
@@ -268,6 +272,10 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
                 throw GraknConceptException.illegalUnhasInherited(label().toString(), attributeType.label().toString(), true);
             }
             throw GraknConceptException.illegalUnhasNotExist(label().toString(), attributeType.label().toString(), true);
+        }
+
+        if (instances().anyMatch(concept -> concept.attributes(attributeType).findAny().isPresent())) {
+            throw GraknConceptException.illegalUnhasWithInstance(this.label().toString(), attributeType.label().toString(), true);
         }
 
         deleteEdge(Direction.OUT, Schema.EdgeLabel.KEY, attributeType);

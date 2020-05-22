@@ -118,16 +118,14 @@ public class GraqlUndefineIT {
     }
 
     @Test
-    public void whenUndefiningHasWhichDoesntExist_DoNothing() {
+    public void whenUndefiningHasWhichDoesntExist_Throw() {
         tx.execute(Graql.define(type(NEW_TYPE.getValue()).sub(ENTITY).has("name")));
         tx.commit();
         tx = session.transaction(Transaction.Type.WRITE);
         assertThat(tx.getType(NEW_TYPE).has().toArray(), hasItemInArray(tx.getAttributeType("name")));
 
-        tx.execute(Graql.undefine(type(NEW_TYPE.getValue()).has("title")));
-        tx.commit();
-        tx = session.transaction(Transaction.Type.WRITE);
-        assertThat(tx.getType(NEW_TYPE).has().toArray(), hasItemInArray(tx.getAttributeType("name")));
+        exception.expectMessage(ErrorMessage.ILLEGAL_TYPE_UNHAS_ATTRIBUTE_NOT_EXIST.getMessage(NEW_TYPE, "has", "title"));
+        tx.execute(Graql.undefine(type(NEW_TYPE.getValue()).key("title")));
     }
 
     @Test
@@ -144,7 +142,7 @@ public class GraqlUndefineIT {
     }
 
     @Test
-    public void whenUndefiningKeyWhichDoesntExist_DoNothing() {
+    public void whenUndefiningKeyWhichDoesntExist_Throw() {
         tx.execute(Graql.define(type(NEW_TYPE.getValue()).sub(ENTITY).key("name")));
         tx.commit();
         tx = session.transaction(Transaction.Type.WRITE);

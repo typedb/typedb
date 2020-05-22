@@ -118,7 +118,7 @@ public class KeyspaceStatisticsIT {
         long personCount = localSession.keyspaceStatistics().count(testTx.conceptManager(), Label.of("person"));
         long ageCount = localSession.keyspaceStatistics().count(testTx.conceptManager(), Label.of("age"));
         long friendshipCount = localSession.keyspaceStatistics().count(testTx.conceptManager(), Label.of("friendship"));
-        long implicitAgeCount = localSession.keyspaceStatistics().count(testTx.conceptManager(), Label.of("@has-age"));
+        long ageOwnershipCount = localSession.keyspaceStatistics().countOwnerships(testTx.conceptManager(), Label.of("@has-age"));
         long thingCount = localSession.keyspaceStatistics().count(testTx.conceptManager(), Label.of("thing"));
         long entityCount = localSession.keyspaceStatistics().count(testTx.conceptManager(), Label.of("entity"));
         long relationCount = localSession.keyspaceStatistics().count(testTx.conceptManager(), Label.of("relation"));
