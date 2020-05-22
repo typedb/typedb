@@ -18,6 +18,7 @@
 package grakn.core.graql.query;
 
 import com.google.common.collect.ImmutableList;
+import grakn.core.common.exception.ErrorMessage;
 import grakn.core.graql.graph.MovieGraph;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Concept;
@@ -149,10 +150,9 @@ public class GraqlUndefineIT {
         tx = session.transaction(Transaction.Type.WRITE);
         assertThat(tx.getType(NEW_TYPE).keys().toArray(), hasItemInArray(tx.getAttributeType("name")));
 
+        exception.expect(GraknConceptException.class);
+        exception.expectMessage(ErrorMessage.ILLEGAL_TYPE_UNHAS_ATTRIBUTE_NOT_EXIST.getMessage(NEW_TYPE, "key", "title"));
         tx.execute(Graql.undefine(type(NEW_TYPE.getValue()).key("title")));
-        tx.commit();
-        tx = session.transaction(Transaction.Type.WRITE);
-        assertThat(tx.getType(NEW_TYPE).keys().toArray(), hasItemInArray(tx.getAttributeType("name")));
     }
 
     @Test @Ignore // TODO: investigate how this is possible in the first place

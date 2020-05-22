@@ -109,6 +109,7 @@ java_test(
         "//kb/concept/api",
         "//kb/graql/exception",
         "//kb/server",
+        "//common",
         "//test/integration/graql/graph:movie-graph",
         "//test/rule:grakn-test-server",
         "//test/integration/util:graql-test-util",
