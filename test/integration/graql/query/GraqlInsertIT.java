@@ -364,8 +364,13 @@ public class GraqlInsertIT {
     @Test
     public void whenAddingAnAttributeRelationWithProvenance_TheAttributeAndProvenanceAreAdded() {
         GraqlInsert query = Graql.insert(
-                y.has("provenance", z.val("Someone told me")),
-                w.isa("movie").has(title, x.val("My Movie"), y)
+                y.isa("provenance").val("Someone told me"), // create provenance attribute
+                w.isa("movie"), // thing we want to add provenance to
+                var("r").isa("provenancedTitle") // provenanced name ownership
+                        .rel("provenancedNameOwner", w) // owner
+                        .has("name", x) // actual title
+                        .has(y) // provenance info
+                x.val()
         );
 
         ConceptMap answer = Iterables.getOnlyElement(tx.execute(query));
@@ -379,8 +384,6 @@ public class GraqlInsertIT {
         assertThat(hasTitle.attributes().toArray(), arrayContaining(provenance));
     }
 
-    // TODO fix this test after updating Graql dep
-    @Ignore
     @Test
     public void whenAddingProvenanceToAnExistingRelation_TheProvenanceIsAdded() {
         GraqlInsert query = Graql.match(w.isa("movie").has(title, x.val("The Muppets"), y))

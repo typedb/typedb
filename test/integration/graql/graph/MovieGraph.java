@@ -41,6 +41,7 @@ public class MovieGraph {
     private static AttributeType<Long> tmdbVoteCount, runtime;
     private static AttributeType<Double> tmdbVoteAverage;
     private static AttributeType<LocalDateTime> releaseDate;
+    private static RelationType hasNameWithProvenance;
     private static RelationType hasCast, authoredBy, directedBy, hasGenre, hasCluster;
     private static Role productionBeingDirected, director, productionWithCast, actor, characterBeingPlayed;
     private static Role genreOfProduction, productionWithGenre, clusterOfProduction, productionWithCluster;
@@ -88,6 +89,13 @@ public class MovieGraph {
         author = tx.putRole("author");
         authoredBy = tx.putRelationType("authored-by").relates(work).relates(author);
 
+        hasNameWithProvenance = tx.putRelationType("hasNameWithProvenance");
+        Role provenancedNameOwner = tx.putRole("provenanced-name-owner");
+        Role provenancedNameValue = tx.putRole("provenanced-name-value");
+        name.plays(provenancedNameValue);
+
+        hasNameWithProvenance.putHas(provenance); // the provenance
+
         productionBeingDirected = tx.putRole("production-being-directed").sup(work);
         director = tx.putRole("director").sup(author);
         directedBy = tx.putRelationType("directed-by").sup(authoredBy)
@@ -114,7 +122,7 @@ public class MovieGraph {
 
         production = tx.putEntityType("production")
                 .plays(productionWithCluster).plays(productionBeingDirected).plays(productionWithCast).plays(work)
-                .plays(productionWithGenre);
+                .plays(productionWithGenre).plays(provenancedNameOwner);
 
         production.putHas(title);
         production.putHas(tmdbVoteCount);
@@ -130,8 +138,8 @@ public class MovieGraph {
                 .plays(director).plays(actor).plays(characterBeingPlayed).plays(author);
 
         person.putHas(gender);
-        person.putHas(name);
         person.putHas(realName);
+        person.putHas(name);
 
         genre = tx.putEntityType("genre").plays(genreOfProduction);
         genre.putKey(name);
@@ -149,9 +157,7 @@ public class MovieGraph {
         cluster = tx.putEntityType("cluster").plays(clusterOfProduction);
         cluster.putHas(name);
 
-        // TODO-NOIMPL : we need to move to the new method of doing provenance, with an explicit that owns an attribute
-//        tx.getType(Schema.ImplicitType.HAS.getLabel("title")).putHas(provenance);
-//        authoredBy.putHas(provenance);
+        authoredBy.putHas(provenance);
     }
 
     private static void buildInstances(Transaction tx) {
