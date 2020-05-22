@@ -8,7 +8,6 @@ java_test(
     test_class = "grakn.core.concept.AttributeIT",
     deps = [
         "//concept/impl:impl",
-        "//core",
         "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//kb/server",
@@ -57,7 +56,6 @@ java_test(
     classpath_resources = ["//test/resources:logback-test"],
     test_class = "grakn.core.concept.EntityIT",
     deps = [
-        "//core",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//kb/server",
         "//kb/concept/api",

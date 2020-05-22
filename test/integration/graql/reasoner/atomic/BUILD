@@ -53,7 +53,6 @@ java_test(
     test_class = "grakn.core.graql.reasoner.atomic.AtomicConversionIT",
     deps = [
         "//common",
-        "//core",
         "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//graql/reasoner",

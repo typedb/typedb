@@ -212,7 +212,6 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
      * presence of a direct Schema.EdgeLabel#PLAYS edge between the Type and the implicit RelationType.
      * When changing the super you may accidentally cause this disconnection. So we prevent it here.
      */
-    //TODO: Remove this when traversing to the instances of an implicit RelationType is no longer done via plays edges
     @Override
     boolean changingSuperAllowed(T oldSuperType, T newSuperType) {
         boolean changingSuperAllowed = super.changingSuperAllowed(oldSuperType, newSuperType);

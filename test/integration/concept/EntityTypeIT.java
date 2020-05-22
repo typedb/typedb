@@ -97,7 +97,7 @@ public class EntityTypeIT {
     @Test
     public void whenCreatingEntityTypeUsingLabelTakenByAnotherType_Throw(){
         Role original = tx.putRole("Role Type");
-        expectedException.expect(PropertyNotUniqueException.class);
+        expectedException.expect(GraknConceptException.class);
         expectedException.expectMessage(PropertyNotUniqueException.cannotCreateProperty(original.toString(), Schema.VertexProperty.SCHEMA_LABEL, original.label()).getMessage());
         tx.putEntityType(original.label());
     }
@@ -392,7 +392,7 @@ public class EntityTypeIT {
 
         entityType.putHas(attributeType);
 
-        expectedException.expect(TransactionException.class);
+        expectedException.expect(GraknConceptException.class);
         expectedException.expectMessage(CANNOT_BE_KEY_AND_ATTRIBUTE.getMessage(entityType.label(), attributeType.label()));
         entityType.putKey(attributeType);
     }
@@ -404,7 +404,7 @@ public class EntityTypeIT {
 
         entityType.putKey(attributeType);
 
-        expectedException.expect(TransactionException.class);
+        expectedException.expect(GraknConceptException.class);
         expectedException.expectMessage(CANNOT_BE_KEY_AND_ATTRIBUTE.getMessage(entityType.label(), attributeType.label()));
 
         entityType.putHas(attributeType);
@@ -433,7 +433,7 @@ public class EntityTypeIT {
         Concept thing = tx.getMetaConcept();
         String reservedWord = Graql.Token.Type.THING.toString();
 
-        expectedException.expect(TransactionException.class);
+        expectedException.expect(GraknConceptException.class);
         expectedException.expectMessage(UNIQUE_PROPERTY_TAKEN.getMessage(Schema.VertexProperty.SCHEMA_LABEL, "thing", thing));
 
         tx.putEntityType(reservedWord);
