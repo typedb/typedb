@@ -89,9 +89,9 @@ public class MovieGraph {
         author = tx.putRole("author");
         authoredBy = tx.putRelationType("authored-by").relates(work).relates(author);
 
-        hasNameWithProvenance = tx.putRelationType("hasNameWithProvenance");
         Role provenancedNameOwner = tx.putRole("provenanced-name-owner");
         Role provenancedNameValue = tx.putRole("provenanced-name-value");
+        hasNameWithProvenance = tx.putRelationType("has-name-with-provenance").relates(provenancedNameOwner).relates(provenancedNameValue);
         name.plays(provenancedNameValue);
 
         hasNameWithProvenance.putHas(provenance); // the provenance

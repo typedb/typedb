@@ -366,38 +366,56 @@ public class GraqlInsertIT {
         GraqlInsert query = Graql.insert(
                 y.isa("provenance").val("Someone told me"), // create provenance attribute
                 w.isa("movie"), // thing we want to add provenance to
-                var("r").isa("provenancedTitle") // provenanced name ownership
-                        .rel("provenancedNameOwner", w) // owner
-                        .has("name", x) // actual title
-                        .has(y) // provenance info
-                x.val()
+                var("r").isa("has-name-with-provenance") // provenanced name ownership
+                        .rel("provenanced-name-owner", w) // owner
+                        .rel("provenanced-name-value", x) // actual title
+                        .has("provenance", y), // provenance info
+                x.isa("name").val("some-hearsay-name")
         );
 
         ConceptMap answer = Iterables.getOnlyElement(tx.execute(query));
 
         Entity movie = answer.get(w.var()).asEntity();
         Attribute<String> theTitle = answer.get(x.var()).asAttribute();
-        Relation hasTitle = answer.get(y.var()).asRelation();
-        Attribute<String> provenance = answer.get(z.var()).asAttribute();
+        Relation hasProvenancedName = answer.get("r").asRelation();
+        Attribute<String> provenance = answer.get(y.var()).asAttribute();
 
-        assertThat(hasTitle.rolePlayers().toArray(), arrayContainingInAnyOrder(movie, theTitle));
-        assertThat(hasTitle.attributes().toArray(), arrayContaining(provenance));
+        assertThat(hasProvenancedName.rolePlayers().toArray(), arrayContainingInAnyOrder(movie, theTitle));
+        assertThat(hasProvenancedName.attributes().toArray(), arrayContaining(provenance));
     }
 
     @Test
     public void whenAddingProvenanceToAnExistingRelation_TheProvenanceIsAdded() {
-        GraqlInsert query = Graql.match(w.isa("movie").has(title, x.val("The Muppets"), y))
-                .insert(x, w, y.has("provenance", z.val("Someone told me")));
+        GraqlInsert createProvenancedName = Graql.insert(
+                y.isa("provenance").val("Someone told me"), // create provenance attribute
+                w.isa("movie"), // thing we want to add provenance to
+                var("r").isa("has-name-with-provenance") // provenanced name ownership
+                        .rel("provenanced-name-owner", w) // owner
+                        .rel("provenanced-name-value", x), // actual title
+                x.isa("name").val("some-hearsay-name")
+        );
+
+        ConceptMap insertion = tx.execute(createProvenancedName).get(0);
+
+        GraqlInsert query = Graql.match(
+                w.isa("movie"),
+                var("r").isa("has-name-with-provenance") // provenanced name ownership
+                        .rel("provenanced-name-value", x)
+                        .rel("provenanced-name-owner", w)
+        ).insert(
+                var("r").has("provenance", y),
+                y.isa("provenance").val("Someone told me")
+        );
 
         ConceptMap answer = Iterables.getOnlyElement(tx.execute(query));
 
-        Entity movie = answer.get(w.var()).asEntity();
-        Attribute<String> theTitle = answer.get(x.var()).asAttribute();
-        Relation hasTitle = answer.get(y.var()).asRelation();
-        Attribute<String> provenance = answer.get(z.var()).asAttribute();
+        Entity movie = insertion.get(w.var()).asEntity();
+        Attribute<String> theTitle = insertion.get(x.var()).asAttribute();
+        Relation hasProvenancedName = answer.get("r").asRelation();
+        Attribute<String> provenance = answer.get(y.var()).asAttribute();
 
-        assertThat(hasTitle.rolePlayers().toArray(), arrayContainingInAnyOrder(movie, theTitle));
-        assertThat(hasTitle.attributes().toArray(), arrayContaining(provenance));
+        assertThat(hasProvenancedName.rolePlayers().toArray(), arrayContainingInAnyOrder(movie, theTitle));
+        assertThat(hasProvenancedName.attributes().toArray(), arrayContaining(provenance));
     }
 
     @Test
