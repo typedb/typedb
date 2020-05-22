@@ -21,13 +21,15 @@ package hypergraph.concept.thing.impl;
 import hypergraph.concept.thing.Attribute;
 import hypergraph.concept.type.impl.AttributeTypeImpl;
 import hypergraph.graph.util.Schema;
-import hypergraph.graph.vertex.ThingVertex;
+import hypergraph.graph.vertex.AttributeVertex;
+
+import java.time.LocalDateTime;
 
 public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribute {
 
-    protected final ThingVertex.Attribute<VALUE> attributeVertex;
+    protected final AttributeVertex<VALUE> attributeVertex;
 
-    public AttributeImpl(ThingVertex.Attribute<VALUE> vertex) {
+    public AttributeImpl(AttributeVertex<VALUE> vertex) {
         super(vertex);
         this.attributeVertex = vertex;
     }
@@ -46,7 +48,7 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
 
     public static class Boolean extends AttributeImpl<java.lang.Boolean> implements Attribute.Boolean {
 
-        public Boolean(ThingVertex.Attribute<java.lang.Boolean> vertex) {
+        public Boolean(AttributeVertex<java.lang.Boolean> vertex) {
             super(vertex);
             assert vertex.typeVertex().valueType().equals(Schema.ValueType.BOOLEAN);
         }
@@ -59,7 +61,7 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
 
     public static class Long extends AttributeImpl<java.lang.Long> implements Attribute.Long {
 
-        public Long(ThingVertex.Attribute<java.lang.Long> vertex) {
+        public Long(AttributeVertex<java.lang.Long> vertex) {
             super(vertex);
             assert vertex.typeVertex().valueType().equals(Schema.ValueType.LONG);
         }
@@ -72,7 +74,7 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
 
     public static class Double extends AttributeImpl<java.lang.Double> implements Attribute.Double {
 
-        public Double(ThingVertex.Attribute<java.lang.Double> vertex) {
+        public Double(AttributeVertex<java.lang.Double> vertex) {
             super(vertex);
             assert vertex.typeVertex().valueType().equals(Schema.ValueType.DOUBLE);
         }
@@ -85,7 +87,7 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
 
     public static class String extends AttributeImpl<java.lang.String> implements Attribute.String {
 
-        public String(ThingVertex.Attribute<java.lang.String> vertex) {
+        public String(AttributeVertex<java.lang.String> vertex) {
             super(vertex);
             assert vertex.typeVertex().valueType().equals(Schema.ValueType.STRING);
         }
@@ -98,7 +100,7 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
 
     public static class DateTime extends AttributeImpl<java.time.LocalDateTime> implements Attribute.DateTime {
 
-        public DateTime(ThingVertex.Attribute<java.time.LocalDateTime> vertex) {
+        public DateTime(AttributeVertex<LocalDateTime> vertex) {
             super(vertex);
             assert vertex.typeVertex().valueType().equals(Schema.ValueType.DATETIME);
         }

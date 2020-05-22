@@ -69,7 +69,7 @@ public abstract class ThingAdjacencyImpl {
             implements ThingAdjacency {
 
 
-        protected Persisted(ThingVertex owner, Direction direction) {
+        public Persisted(ThingVertex owner, Direction direction) {
             super(owner, direction);
         }
 

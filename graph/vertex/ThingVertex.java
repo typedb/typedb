@@ -58,13 +58,4 @@ public interface ThingVertex extends Vertex<
      */
     void isInferred(boolean isInferred);
 
-    interface Attribute<VALUE> extends ThingVertex {
-
-        /**
-         * Returns the literal value stored in the vertex, if it represents an attribute
-         *
-         * @return the literal value stored in the vertex
-         */
-        VALUE value();
-    }
 }

@@ -32,8 +32,8 @@ public class CoreAttributeSync implements AttributeSync {
 
     CoreAttributeSync() { // TODO: extract these values to grakn.properties
         this.commitSyncs = Caffeine.newBuilder()
-                .maximumSize(10_000_000)
-                .expireAfterWrite(10, TimeUnit.MINUTES)
+                .maximumSize(1_000_000_000)
+                .expireAfterWrite(24, TimeUnit.MINUTES)
                 .build();
     }
 

@@ -26,7 +26,6 @@ import hypergraph.graph.adjacency.ThingAdjacency;
 import hypergraph.graph.adjacency.impl.ThingAdjacencyImpl;
 import hypergraph.graph.edge.Edge;
 import hypergraph.graph.edge.ThingEdge;
-import hypergraph.graph.util.AttributeSync;
 import hypergraph.graph.util.IID;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.vertex.ThingVertex;
@@ -39,12 +38,14 @@ public abstract class ThingVertexImpl
     protected final ThingGraph graph;
     protected final ThingAdjacency outs;
     protected final ThingAdjacency ins;
+    protected boolean isInferred;
 
-    ThingVertexImpl(ThingGraph graph, IID.Vertex.Thing iid) {
+    ThingVertexImpl(ThingGraph graph, IID.Vertex.Thing iid, boolean isInferred) {
         super(iid, iid.schema());
         this.graph = graph;
         this.outs = newAdjacency(Adjacency.Direction.OUT);
         this.ins = newAdjacency(Adjacency.Direction.IN);
+        this.isInferred = isInferred;
     }
 
     /**
@@ -75,6 +76,16 @@ public abstract class ThingVertexImpl
         return graph.typeGraph().get(iid.type());
     }
 
+    /**
+     * Returns true if this {@code ThingVertex} is a result of inference.
+     *
+     * @return true if this {@code ThingVertex} is a result of inference
+     */
+    @Override
+    public boolean isInferred() {
+        return isInferred;
+    }
+
     @Override
     public Adjacency<Schema.Edge.Thing, ThingEdge, ThingVertex> outs() {
         return outs;
@@ -87,21 +98,13 @@ public abstract class ThingVertexImpl
 
     public static class Buffered extends ThingVertexImpl {
 
-        protected boolean isInferred;
-
         public Buffered(ThingGraph graph, IID.Vertex.Thing iid, boolean isInferred) {
-            super(graph, iid);
-            this.isInferred = isInferred;
+            super(graph, iid, isInferred);
         }
 
         @Override
         protected ThingAdjacency newAdjacency(Adjacency.Direction direction) {
             return new ThingAdjacencyImpl.Buffered(this, direction);
-        }
-
-        @Override
-        public boolean isInferred() {
-            return isInferred;
         }
 
         @Override
@@ -122,50 +125,55 @@ public abstract class ThingVertexImpl
             commitEdges();
         }
 
-        protected void commitIndex() {
+        private void commitIndex() {
             // TODO
+        }
+
+        private void commitEdges() {
+            outs.forEach(Edge::commit);
+            ins.forEach(Edge::commit);
         }
 
         @Override
         public void delete() {
             // TODO
         }
+    }
 
-        protected void commitEdges() {
+    public static class Persisted extends ThingVertexImpl {
+
+        public Persisted(ThingGraph graph, IID.Vertex.Thing iid) {
+            super(graph, iid, false);
+        }
+
+        @Override
+        protected ThingAdjacency newAdjacency(Adjacency.Direction direction) {
+            return new ThingAdjacencyImpl.Persisted(this, direction);
+        }
+
+        @Override
+        public void isInferred(boolean isInferred) {
+            throw new HypergraphException(Error.Transaction.ILLEGAL_OPERATION);
+        }
+
+        @Override
+        public Schema.Status status() {
+            return Schema.Status.PERSISTED;
+        }
+
+        @Override
+        public void commit() {
+            commitEdges();
+        }
+
+        private void commitEdges() {
             outs.forEach(Edge::commit);
             ins.forEach(Edge::commit);
         }
 
-        public static class Attribute<VALUE> extends ThingVertexImpl.Buffered implements ThingVertex.Attribute<VALUE> {
-
-            private final AttributeSync.CommitSync commitSync;
-            private final IID.Vertex.Attribute<VALUE> attributeIID;
-
-            public Attribute(ThingGraph graph, IID.Vertex.Attribute<VALUE> iid, boolean isInferred, AttributeSync.CommitSync commitSync) {
-                super(graph, iid, isInferred);
-                this.commitSync = commitSync;
-                this.attributeIID = iid;
-            }
-
-            @Override
-            public void commit() {
-                if (isInferred) throw new HypergraphException(Error.Transaction.ILLEGAL_OPERATION);
-                if (!commitSync.checkIsSyncedAndSetTrue()) {
-                    graph.storage().put(attributeIID.bytes());
-                    commitIndex();
-                }
-                commitEdges();
-            }
-
-            @Override
-            public VALUE value() {
-                if (typeVertex().valueType().isIndexable()) {
-                    return attributeIID.value();
-                } else {
-                    // TODO: implement for ValueType.TEXT
-                    return null;
-                }
-            }
+        @Override
+        public void delete() {
+            // TODO
         }
     }
 }
