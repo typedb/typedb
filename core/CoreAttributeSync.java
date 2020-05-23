@@ -18,33 +18,29 @@
 
 package hypergraph.core;
 
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
 import hypergraph.graph.util.AttributeSync;
 import hypergraph.graph.util.IID;
 
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class CoreAttributeSync implements AttributeSync {
 
-    private final Cache<IID.Vertex.Attribute, CoreCommitSync> commitSyncs;
+    private final ConcurrentMap<IID.Vertex.Attribute, CoreCommitSync> commitSyncs;
 
     CoreAttributeSync() { // TODO: extract these values to grakn.properties
-        this.commitSyncs = Caffeine.newBuilder()
-                .maximumSize(1_000_000_000)
-                .expireAfterWrite(24, TimeUnit.MINUTES)
-                .build();
+        commitSyncs = new ConcurrentHashMap<>();
     }
 
     @Override
     public CoreCommitSync get(IID.Vertex.Attribute attributeIID) {
-        return commitSyncs.get(attributeIID, iid -> new CoreCommitSync());
+        return commitSyncs.computeIfAbsent(attributeIID, iid -> new CoreCommitSync());
     }
 
     @Override
     public void remove(IID.Vertex.Attribute attributeIID) {
-        commitSyncs.invalidate(attributeIID);
+        commitSyncs.remove(attributeIID);
     }
 
     public static class CoreCommitSync implements AttributeSync.CommitSync {

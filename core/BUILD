@@ -35,7 +35,6 @@ java_library(
         "//traversal:traversal",
 
         # External dependencies
-        "//dependencies/maven/artifacts/com/github/ben-manes/caffeine:caffeine",
         "//dependencies/maven/artifacts/org/rocksdb:rocksdbjni",
     ],
 )
