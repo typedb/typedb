@@ -64,19 +64,19 @@ public class TypeGraph implements Graph<IID.Vertex.Type, TypeVertex> {
     }
 
     public void initialise() throws HypergraphException {
-        TypeVertex rootThingType = create(
+        TypeVertex rootThingType = insert(
                 Schema.Vertex.Type.THING_TYPE,
                 Schema.Vertex.Type.Root.THING.label()).isAbstract(true);
-        TypeVertex rootEntityType = create(
+        TypeVertex rootEntityType = insert(
                 Schema.Vertex.Type.ENTITY_TYPE,
                 Schema.Vertex.Type.Root.ENTITY.label()).isAbstract(true);
-        TypeVertex rootAttributeType = create(
+        TypeVertex rootAttributeType = insert(
                 Schema.Vertex.Type.ATTRIBUTE_TYPE,
                 Schema.Vertex.Type.Root.ATTRIBUTE.label()).isAbstract(true).valueType(Schema.ValueType.OBJECT);
-        TypeVertex rootRelationType = create(
+        TypeVertex rootRelationType = insert(
                 Schema.Vertex.Type.RELATION_TYPE,
                 Schema.Vertex.Type.Root.RELATION.label()).isAbstract(true);
-        TypeVertex rootRoleType = create(
+        TypeVertex rootRoleType = insert(
                 Schema.Vertex.Type.ROLE_TYPE,
                 Schema.Vertex.Type.Root.ROLE.label(),
                 Schema.Vertex.Type.Root.RELATION.label()).isAbstract(true);
@@ -88,52 +88,12 @@ public class TypeGraph implements Graph<IID.Vertex.Type, TypeVertex> {
     }
 
     @Override
-    public void commit() {
-        typeByIID.values().parallelStream().filter(v -> v.status().equals(Schema.Status.BUFFERED)).forEach(
-                vertex -> vertex.iid(generate(graphManager.storage().keyGenerator(), vertex.schema()))
-        ); // typeByIID no longer contains valid mapping from IID to TypeVertex
-        typeByIID.values().parallelStream().forEach(Vertex::commit);
-        clear(); // we now flush the indexes after commit, and we do not expect this Graph.Type to be used again
-    }
-
-    public TypeVertex update(TypeVertex vertex, String oldLabel, @Nullable String oldScope, String newLabel, @Nullable String newScope) {
-        String oldScopedLabel = scopedLabel(oldLabel, oldScope);
-        String newScopedLabel = scopedLabel(newLabel, newScope);
-        try {
-            multiLabelLock.lockWrite();
-            if (typeByLabel.containsKey(newScopedLabel)) throw new HypergraphException(
-                    String.format("Invalid Write Operation: index '%s' is already in use", newScopedLabel));
-            typeByLabel.remove(oldScopedLabel);
-            typeByLabel.put(newScopedLabel, vertex);
+    public TypeVertex convert(IID.Vertex.Type iid) {
+        return typeByIID.computeIfAbsent(iid, i -> {
+            TypeVertex vertex = new TypeVertexImpl.Persisted(this, i);
+            typeByLabel.putIfAbsent(vertex.scopedLabel(), vertex);
             return vertex;
-        } catch (InterruptedException e) {
-            throw new HypergraphException(e);
-        } finally {
-            multiLabelLock.unlockWrite();
-        }
-    }
-
-    public TypeVertex create(Schema.Vertex.Type type, String label) {
-        return create(type, label, null);
-    }
-
-    public TypeVertex create(Schema.Vertex.Type type, String label, @Nullable String scope) {
-        String scopedLabel = scopedLabel(label, scope);
-        try { // we intentionally use READ on multiLabelLock, as put() only concerns one label
-            multiLabelLock.lockRead();
-            singleLabelLocks.computeIfAbsent(scopedLabel, x -> new ManagedReadWriteLock()).lockWrite();
-
-            TypeVertex typeVertex = typeByLabel.computeIfAbsent(scopedLabel, i -> new TypeVertexImpl.Buffered(
-                    this, type, generate(graphManager.keyGenerator(), type), label, scope
-            ));
-            typeByIID.put(typeVertex.iid(), typeVertex);
-            return typeVertex;
-        } catch (InterruptedException e) {
-            throw new HypergraphException(e);
-        } finally {
-            singleLabelLocks.get(scopedLabel).unlockWrite();
-            multiLabelLock.unlockRead();
-        }
+        });
     }
 
     public TypeVertex get(String label) {
@@ -166,13 +126,44 @@ public class TypeGraph implements Graph<IID.Vertex.Type, TypeVertex> {
         }
     }
 
-    @Override
-    public TypeVertex get(IID.Vertex.Type iid) {
-        return typeByIID.computeIfAbsent(iid, i -> {
-            TypeVertex vertex = new TypeVertexImpl.Persisted(this, i);
-            typeByLabel.putIfAbsent(vertex.scopedLabel(), vertex);
+    public TypeVertex insert(Schema.Vertex.Type type, String label) {
+        return insert(type, label, null);
+    }
+
+    public TypeVertex insert(Schema.Vertex.Type type, String label, @Nullable String scope) {
+        String scopedLabel = scopedLabel(label, scope);
+        try { // we intentionally use READ on multiLabelLock, as put() only concerns one label
+            multiLabelLock.lockRead();
+            singleLabelLocks.computeIfAbsent(scopedLabel, x -> new ManagedReadWriteLock()).lockWrite();
+
+            TypeVertex typeVertex = typeByLabel.computeIfAbsent(scopedLabel, i -> new TypeVertexImpl.Buffered(
+                    this, type, generate(graphManager.keyGenerator(), type), label, scope
+            ));
+            typeByIID.put(typeVertex.iid(), typeVertex);
+            return typeVertex;
+        } catch (InterruptedException e) {
+            throw new HypergraphException(e);
+        } finally {
+            singleLabelLocks.get(scopedLabel).unlockWrite();
+            multiLabelLock.unlockRead();
+        }
+    }
+
+    public TypeVertex update(TypeVertex vertex, String oldLabel, @Nullable String oldScope, String newLabel, @Nullable String newScope) {
+        String oldScopedLabel = scopedLabel(oldLabel, oldScope);
+        String newScopedLabel = scopedLabel(newLabel, newScope);
+        try {
+            multiLabelLock.lockWrite();
+            if (typeByLabel.containsKey(newScopedLabel)) throw new HypergraphException(
+                    String.format("Invalid Write Operation: index '%s' is already in use", newScopedLabel));
+            typeByLabel.remove(oldScopedLabel);
+            typeByLabel.put(newScopedLabel, vertex);
             return vertex;
-        });
+        } catch (InterruptedException e) {
+            throw new HypergraphException(e);
+        } finally {
+            multiLabelLock.unlockWrite();
+        }
     }
 
     @Override
@@ -189,6 +180,15 @@ public class TypeGraph implements Graph<IID.Vertex.Type, TypeVertex> {
             singleLabelLocks.get(vertex.scopedLabel()).unlockWrite();
             multiLabelLock.unlockRead();
         }
+    }
+
+    @Override
+    public void commit() {
+        typeByIID.values().parallelStream().filter(v -> v.status().equals(Schema.Status.BUFFERED)).forEach(
+                vertex -> vertex.iid(generate(graphManager.storage().keyGenerator(), vertex.schema()))
+        ); // typeByIID no longer contains valid mapping from IID to TypeVertex
+        typeByIID.values().parallelStream().forEach(Vertex::commit);
+        clear(); // we now flush the indexes after commit, and we do not expect this Graph.Type to be used again
     }
 
     @Override

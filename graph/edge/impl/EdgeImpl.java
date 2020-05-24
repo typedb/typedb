@@ -275,7 +275,7 @@ public abstract class EdgeImpl<
         @Override
         public VERTEX from() {
             if (from != null) return from;
-            from = graph.get(fromIID);
+            from = graph.convert(fromIID);
             return from;
         }
 
@@ -287,7 +287,7 @@ public abstract class EdgeImpl<
         @Override
         public VERTEX to() {
             if (to != null) return to;
-            to = graph.get(toIID);
+            to = graph.convert(toIID);
             return to;
         }
 

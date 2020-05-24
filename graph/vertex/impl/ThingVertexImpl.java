@@ -73,7 +73,7 @@ public abstract class ThingVertexImpl
      */
     @Override
     public TypeVertex typeVertex() {
-        return graph.typeGraph().get(iid.type());
+        return graph.typeGraph().convert(iid.type());
     }
 
     /**

@@ -32,12 +32,11 @@ import hypergraph.graph.vertex.AttributeVertex;
 
 public class AttributeVertexImpl<VALUE> extends ThingVertexImpl implements AttributeVertex<VALUE> {
 
-    private final AttributeSync.CommitSync commitSync;
     private final IID.Vertex.Attribute<VALUE> attributeIID;
+    private AttributeSync.CommitSync commitSync;
 
-    public AttributeVertexImpl(ThingGraph graph, IID.Vertex.Attribute<VALUE> iid, boolean isInferred, AttributeSync.CommitSync commitSync) {
+    public AttributeVertexImpl(ThingGraph graph, IID.Vertex.Attribute<VALUE> iid, boolean isInferred) {
         super(graph, iid, isInferred);
-        this.commitSync = commitSync;
         this.attributeIID = iid;
     }
 
@@ -69,6 +68,7 @@ public class AttributeVertexImpl<VALUE> extends ThingVertexImpl implements Attri
     @Override
     public void commit() {
         if (isInferred) throw new HypergraphException(Error.Transaction.ILLEGAL_OPERATION);
+        commitSync = graph.storage().attributeSync().get(attributeIID);
         if (!commitSync.checkIsSyncedAndSetTrue()) {
             graph.storage().put(attributeIID.bytes());
             commitIndex();

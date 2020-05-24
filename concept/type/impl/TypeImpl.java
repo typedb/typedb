@@ -42,7 +42,7 @@ public abstract class TypeImpl implements Type {
     }
 
     TypeImpl(TypeGraph graph, String label, Schema.Vertex.Type schema, String scope) {
-        this.vertex = graph.create(schema, label, scope);
+        this.vertex = graph.insert(schema, label, scope);
         TypeVertex superTypeVertex = graph.get(schema.root().label(), schema.root().scope());
         vertex.outs().put(Schema.Edge.Type.SUB, superTypeVertex);
     }

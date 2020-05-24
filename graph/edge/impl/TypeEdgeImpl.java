@@ -136,7 +136,7 @@ public class TypeEdgeImpl {
             if (overridden != null) return overridden;
             if (overriddenIID == null) return null;
 
-            overridden = graph.get(overriddenIID);
+            overridden = graph.convert(overriddenIID);
             return overridden;
         }
 
