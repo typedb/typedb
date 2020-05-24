@@ -76,9 +76,7 @@ public class ThingGraph implements Graph<IID.Vertex.Thing, ThingVertex> {
         assert type.valueType().valueClass().equals(Boolean.class);
 
         IID.Vertex.Attribute.Boolean attIID = new IID.Vertex.Attribute.Boolean(type.iid(), value);
-        AttributeVertex<Boolean> vertex = attributeByIID.get(attIID, isInferred);
-        if (!isInferred && vertex.isInferred()) vertex.isInferred(false);
-        return vertex;
+        return attributeByIID.getOrCreate(attIID, isInferred);
     }
 
     public AttributeVertex<Long> put(TypeVertex type, long value, boolean isInferred) {
@@ -86,9 +84,7 @@ public class ThingGraph implements Graph<IID.Vertex.Thing, ThingVertex> {
         assert type.valueType().valueClass().equals(Long.class);
 
         IID.Vertex.Attribute.Long attIID = new IID.Vertex.Attribute.Long(type.iid(), value);
-        AttributeVertex<Long> vertex = attributeByIID.get(attIID, isInferred);
-        if (!isInferred && vertex.isInferred()) vertex.isInferred(false);
-        return vertex;
+        return attributeByIID.getOrCreate(attIID, isInferred);
     }
 
     public AttributeVertex<Double> put(TypeVertex type, double value, boolean isInferred) {
@@ -96,9 +92,7 @@ public class ThingGraph implements Graph<IID.Vertex.Thing, ThingVertex> {
         assert type.valueType().valueClass().equals(Double.class);
 
         IID.Vertex.Attribute.Double attIID = new IID.Vertex.Attribute.Double(type.iid(), value);
-        AttributeVertex<Double> vertex = attributeByIID.get(attIID, isInferred);
-        if (!isInferred && vertex.isInferred()) vertex.isInferred(false);
-        return vertex;
+        return attributeByIID.getOrCreate(attIID, isInferred);
     }
 
     public AttributeVertex<String> put(TypeVertex type, String value, boolean isInferred) {
@@ -107,9 +101,7 @@ public class ThingGraph implements Graph<IID.Vertex.Thing, ThingVertex> {
         assert value.length() <= Schema.STRING_MAX_LENGTH;
 
         IID.Vertex.Attribute.String attIID = new IID.Vertex.Attribute.String(type.iid(), value);
-        AttributeVertex<String> vertex = attributeByIID.get(attIID, isInferred);
-        if (!isInferred && vertex.isInferred()) vertex.isInferred(false);
-        return vertex;
+        return attributeByIID.getOrCreate(attIID, isInferred);
     }
 
     public AttributeVertex<LocalDateTime> put(TypeVertex type, LocalDateTime value, boolean isInferred) {
@@ -117,9 +109,7 @@ public class ThingGraph implements Graph<IID.Vertex.Thing, ThingVertex> {
         assert type.valueType().valueClass().equals(LocalDateTime.class);
 
         IID.Vertex.Attribute.DateTime attIID = new IID.Vertex.Attribute.DateTime(type.iid(), value);
-        AttributeVertex<LocalDateTime> vertex = attributeByIID.get(attIID, isInferred);
-        if (!isInferred && vertex.isInferred()) vertex.isInferred(false);
-        return vertex;
+        return attributeByIID.getOrCreate(attIID, isInferred);
     }
 
     @Override
@@ -157,23 +147,23 @@ public class ThingGraph implements Graph<IID.Vertex.Thing, ThingVertex> {
             dateTimes = new ConcurrentHashMap<>();
         }
 
-        AttributeVertex<Boolean> get(IID.Vertex.Attribute.Boolean attributeIID, boolean isInferred) {
+        AttributeVertex<Boolean> getOrCreate(IID.Vertex.Attribute.Boolean attributeIID, boolean isInferred) {
             return booleans.computeIfAbsent(attributeIID, iid -> new AttributeVertexImpl<>(ThingGraph.this, iid, isInferred));
         }
 
-        AttributeVertex<Long> get(IID.Vertex.Attribute.Long attributeIID, boolean isInferred) {
+        AttributeVertex<Long> getOrCreate(IID.Vertex.Attribute.Long attributeIID, boolean isInferred) {
             return longs.computeIfAbsent(attributeIID, iid -> new AttributeVertexImpl<>(ThingGraph.this, iid, isInferred));
         }
 
-        AttributeVertex<Double> get(IID.Vertex.Attribute.Double attributeIID, boolean isInferred) {
+        AttributeVertex<Double> getOrCreate(IID.Vertex.Attribute.Double attributeIID, boolean isInferred) {
             return doubles.computeIfAbsent(attributeIID, iid -> new AttributeVertexImpl<>(ThingGraph.this, iid, isInferred));
         }
 
-        AttributeVertex<String> get(IID.Vertex.Attribute.String attributeIID, boolean isInferred) {
+        AttributeVertex<String> getOrCreate(IID.Vertex.Attribute.String attributeIID, boolean isInferred) {
             return strings.computeIfAbsent(attributeIID, iid -> new AttributeVertexImpl<>(ThingGraph.this, iid, isInferred));
         }
 
-        AttributeVertex<LocalDateTime> get(IID.Vertex.Attribute.DateTime attributeIID, boolean isInferred) {
+        AttributeVertex<LocalDateTime> getOrCreate(IID.Vertex.Attribute.DateTime attributeIID, boolean isInferred) {
             return dateTimes.computeIfAbsent(attributeIID, iid -> new AttributeVertexImpl<>(ThingGraph.this, iid, isInferred));
         }
     }

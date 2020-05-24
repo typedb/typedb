@@ -623,6 +623,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         @Override
         public Attribute.DateTime put(LocalDateTime value, boolean isInferred) {
             AttributeVertex<LocalDateTime> attVertex = vertex.graph().thingGraph().put(vertex, value, isInferred);
+            if (!isInferred && attVertex.isInferred()) attVertex.isInferred(false);
             return new AttributeImpl.DateTime(attVertex);
         }
 
