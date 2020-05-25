@@ -45,7 +45,7 @@ public abstract class ThingEdgeImpl {
         }
 
         @Override
-        public void commit() {
+        public void commit(boolean hasAttributeSyncLock) {
             // TODO
         }
     }
@@ -67,5 +67,15 @@ public abstract class ThingEdgeImpl {
         IID.Edge.Thing edgeIID(IID.Vertex.Thing start, Schema.Infix infix, IID.Vertex.Thing end) {
             return IID.Edge.Thing.of(start, infix, end);
         }
+        /**
+         * No-op commit operation of a persisted edge.
+         *
+         * Persisted edges do not need to be committed back to the graph storage.
+         * The only property of a persisted edge that can be changed is only the
+         * {@code overriddenIID}, and that is immediately written to storage when changed.
+         * @param hasAttributeSyncLock
+         */
+        @Override
+        public void commit(boolean hasAttributeSyncLock) {}
     }
 }

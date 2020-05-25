@@ -125,6 +125,8 @@ public abstract class Error<TYPE extends Error<TYPE>> {
                 new ThingWrite(1, "Attempted an illegal write of a new '%s' of abstract type '%s'.");
         public static final ThingWrite ILLEGAL_STRING_SIZE =
                 new ThingWrite(2, "Attempted to insert a string larger than the maximum size");
+        public static final ThingWrite CONCURRENT_ATTRIBUTE_WRITE_DELETE =
+                new ThingWrite(3, "Attempted concurrent modification of attributes (writes and deletes)");
         private static final String codePrefix = "THW";
         private static final String descriptionPrefix = "Invalid Thing Write";
 

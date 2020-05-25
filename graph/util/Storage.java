@@ -23,6 +23,8 @@ import java.util.function.BiFunction;
 
 public interface Storage {
 
+    long snapshot();
+
     KeyGenerator keyGenerator();
 
     AttributeSync attributeSync();

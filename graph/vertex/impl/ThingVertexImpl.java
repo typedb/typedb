@@ -24,7 +24,6 @@ import hypergraph.graph.ThingGraph;
 import hypergraph.graph.adjacency.Adjacency;
 import hypergraph.graph.adjacency.ThingAdjacency;
 import hypergraph.graph.adjacency.impl.ThingAdjacencyImpl;
-import hypergraph.graph.edge.Edge;
 import hypergraph.graph.edge.ThingEdge;
 import hypergraph.graph.util.IID;
 import hypergraph.graph.util.Schema;
@@ -118,20 +117,20 @@ public abstract class ThingVertexImpl
         }
 
         @Override
-        public void commit() {
+        public void commit(boolean hasAttributeSyncLock) {
             if (isInferred) throw new HypergraphException(Error.Transaction.ILLEGAL_OPERATION);
             graph.storage().put(iid.bytes());
             commitIndex();
-            commitEdges();
+            commitEdges(hasAttributeSyncLock);
         }
 
         private void commitIndex() {
             // TODO
         }
 
-        private void commitEdges() {
-            outs.forEach(Edge::commit);
-            ins.forEach(Edge::commit);
+        private void commitEdges(boolean hasAttributeSyncLock) {
+            outs.forEach(e -> e.commit(hasAttributeSyncLock));
+            ins.forEach(e -> e.commit(hasAttributeSyncLock));
         }
 
         @Override
@@ -162,13 +161,13 @@ public abstract class ThingVertexImpl
         }
 
         @Override
-        public void commit() {
-            commitEdges();
+        public void commit(boolean hasAttributeSyncLock) {
+            commitEdges(hasAttributeSyncLock);
         }
 
-        private void commitEdges() {
-            outs.forEach(Edge::commit);
-            ins.forEach(Edge::commit);
+        private void commitEdges(boolean hasAttributeSyncLock) {
+            outs.forEach(e -> e.commit(hasAttributeSyncLock));
+            ins.forEach(e -> e.commit(hasAttributeSyncLock));
         }
 
         @Override

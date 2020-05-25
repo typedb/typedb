@@ -24,26 +24,33 @@ import hypergraph.graph.util.Storage;
 import hypergraph.graph.vertex.AttributeVertex;
 import hypergraph.graph.vertex.ThingVertex;
 import hypergraph.graph.vertex.TypeVertex;
-import hypergraph.graph.vertex.Vertex;
 import hypergraph.graph.vertex.impl.AttributeVertexImpl;
 import hypergraph.graph.vertex.impl.ThingVertexImpl;
 
 import java.time.LocalDateTime;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
+import java.util.stream.Stream;
 
+import static hypergraph.graph.util.AttributeSync.CommitSync.Status.NONE;
 import static hypergraph.graph.util.IID.Vertex.Thing.generate;
+import static java.util.stream.Stream.concat;
 
 public class ThingGraph implements Graph<IID.Vertex.Thing, ThingVertex> {
 
     private final Graphs graphManager;
-    private final ConcurrentMap<IID.Vertex.Thing, ThingVertex> thingByIID;
-    private final AttributeIIDMap attributeByIID;
+    private final ConcurrentMap<IID.Vertex.Thing, ThingVertex> thingsByIID;
+    private final AttributeIIDMap attributesByIID;
+    private ConcurrentLinkedQueue<AttributeVertex<?>> attributesWritten;
+    private boolean attributeSyncIsLocked;
 
     ThingGraph(Graphs graphManager) {
         this.graphManager = graphManager;
-        thingByIID = new ConcurrentHashMap<>();
-        attributeByIID = new AttributeIIDMap();
+        thingsByIID = new ConcurrentHashMap<>();
+        attributesByIID = new AttributeIIDMap();
+        attributesWritten = new ConcurrentLinkedQueue<>();
+        attributeSyncIsLocked = false;
     }
 
     public TypeGraph typeGraph() {
@@ -52,7 +59,7 @@ public class ThingGraph implements Graph<IID.Vertex.Thing, ThingVertex> {
 
     @Override
     public Storage storage() {
-        return null;
+        return graphManager.storage();
     }
 
     @Override
@@ -64,10 +71,11 @@ public class ThingGraph implements Graph<IID.Vertex.Thing, ThingVertex> {
         return null; // TODO
     }
 
-    public ThingVertex insert(Schema.Vertex.Thing schema, IID.Vertex.Type type, boolean isInferred) {
-        IID.Vertex.Thing iid = generate(graphManager.keyGenerator(), schema, type);
+    public ThingVertex insert(IID.Vertex.Type typeIID, boolean isInferred) {
+        assert !typeIID.schema().equals(Schema.Vertex.Type.ATTRIBUTE_TYPE);
+        IID.Vertex.Thing iid = generate(graphManager.keyGenerator(), typeIID);
         ThingVertex vertex = new ThingVertexImpl.Buffered(this, iid, isInferred);
-        thingByIID.put(iid, vertex);
+        thingsByIID.put(iid, vertex);
         return vertex;
     }
 
@@ -76,7 +84,7 @@ public class ThingGraph implements Graph<IID.Vertex.Thing, ThingVertex> {
         assert type.valueType().valueClass().equals(Boolean.class);
 
         IID.Vertex.Attribute.Boolean attIID = new IID.Vertex.Attribute.Boolean(type.iid(), value);
-        return attributeByIID.getOrCreate(attIID, isInferred);
+        return attributesByIID.getOrCreate(attIID, isInferred);
     }
 
     public AttributeVertex<Long> put(TypeVertex type, long value, boolean isInferred) {
@@ -84,7 +92,7 @@ public class ThingGraph implements Graph<IID.Vertex.Thing, ThingVertex> {
         assert type.valueType().valueClass().equals(Long.class);
 
         IID.Vertex.Attribute.Long attIID = new IID.Vertex.Attribute.Long(type.iid(), value);
-        return attributeByIID.getOrCreate(attIID, isInferred);
+        return attributesByIID.getOrCreate(attIID, isInferred);
     }
 
     public AttributeVertex<Double> put(TypeVertex type, double value, boolean isInferred) {
@@ -92,7 +100,7 @@ public class ThingGraph implements Graph<IID.Vertex.Thing, ThingVertex> {
         assert type.valueType().valueClass().equals(Double.class);
 
         IID.Vertex.Attribute.Double attIID = new IID.Vertex.Attribute.Double(type.iid(), value);
-        return attributeByIID.getOrCreate(attIID, isInferred);
+        return attributesByIID.getOrCreate(attIID, isInferred);
     }
 
     public AttributeVertex<String> put(TypeVertex type, String value, boolean isInferred) {
@@ -101,7 +109,7 @@ public class ThingGraph implements Graph<IID.Vertex.Thing, ThingVertex> {
         assert value.length() <= Schema.STRING_MAX_LENGTH;
 
         IID.Vertex.Attribute.String attIID = new IID.Vertex.Attribute.String(type.iid(), value);
-        return attributeByIID.getOrCreate(attIID, isInferred);
+        return attributesByIID.getOrCreate(attIID, isInferred);
     }
 
     public AttributeVertex<LocalDateTime> put(TypeVertex type, LocalDateTime value, boolean isInferred) {
@@ -109,7 +117,7 @@ public class ThingGraph implements Graph<IID.Vertex.Thing, ThingVertex> {
         assert type.valueType().valueClass().equals(LocalDateTime.class);
 
         IID.Vertex.Attribute.DateTime attIID = new IID.Vertex.Attribute.DateTime(type.iid(), value);
-        return attributeByIID.getOrCreate(attIID, isInferred);
+        return attributesByIID.getOrCreate(attIID, isInferred);
     }
 
     @Override
@@ -118,17 +126,53 @@ public class ThingGraph implements Graph<IID.Vertex.Thing, ThingVertex> {
     }
 
     @Override
-    public void commit() {
-        thingByIID.values().parallelStream().filter(v -> !v.isInferred() && !v.schema().equals(Schema.Vertex.Thing.ATTRIBUTE)).forEach(
-                vertex -> vertex.iid(generate(graphManager.storage().keyGenerator(), vertex.schema(), vertex.typeVertex().iid()))
-        ); // thingByIID no longer contains valid mapping from IID to TypeVertex
-        thingByIID.values().parallelStream().filter(v -> !v.isInferred()).forEach(Vertex::commit);
-        clear(); // we now flush the indexes after commit, and we do not expect this Graph.Thing to be used again
+    public void clear() {
+        thingsByIID.clear();
+        attributesByIID.clear();
     }
 
+    /**
+     * Commits all the writes captured in this graph into storage.
+     *
+     * TODO: describe the logic
+     *
+     * @return TODO
+     */
     @Override
-    public void clear() {
-        thingByIID.clear();
+    public boolean commit() {
+        thingsByIID.values().parallelStream().filter(v -> !v.isInferred()).forEach(
+                vertex -> vertex.iid(generate(graphManager.storage().keyGenerator(), vertex.typeVertex().iid()))
+        ); // thingByIID no longer contains valid mapping from IID to TypeVertex
+        thingsByIID.values().parallelStream().filter(v -> !v.isInferred()).forEach(v -> v.commit(false));
+
+        storage().attributeSync().lock();
+        attributesByIID.valueStream().parallel().forEach(v -> v.commit(true));
+
+        if (attributesWritten.isEmpty()) {
+            attributeSyncIsLocked = false;
+            storage().attributeSync().unlock();
+        } else {
+            attributeSyncIsLocked = true;
+        }
+
+        clear(); // we now flush the indexes after commit, and we do not expect this Graph.Thing to be used again
+        return attributeSyncIsLocked;
+    }
+
+    public void confirm(boolean committed, long snapshot) {
+        assert attributeSyncIsLocked;
+        if (!committed) {
+            attributesWritten.parallelStream().forEach(v -> storage().attributeSync().get(v.iid()).status(NONE));
+        } else {
+            assert snapshot > 0;
+            attributesWritten.parallelStream().forEach(v -> storage().attributeSync().get(v.iid()).snapshot(snapshot));
+        }
+        storage().attributeSync().unlock();
+        attributeSyncIsLocked = false;
+    }
+
+    public ConcurrentLinkedQueue<AttributeVertex<?>> attributesWritten() {
+        return attributesWritten;
     }
 
     private class AttributeIIDMap {
@@ -148,23 +192,39 @@ public class ThingGraph implements Graph<IID.Vertex.Thing, ThingVertex> {
         }
 
         AttributeVertex<Boolean> getOrCreate(IID.Vertex.Attribute.Boolean attributeIID, boolean isInferred) {
-            return booleans.computeIfAbsent(attributeIID, iid -> new AttributeVertexImpl<>(ThingGraph.this, iid, isInferred));
+            return booleans.computeIfAbsent(attributeIID, iid -> new AttributeVertexImpl.Boolean(ThingGraph.this, iid, isInferred));
         }
 
         AttributeVertex<Long> getOrCreate(IID.Vertex.Attribute.Long attributeIID, boolean isInferred) {
-            return longs.computeIfAbsent(attributeIID, iid -> new AttributeVertexImpl<>(ThingGraph.this, iid, isInferred));
+            return longs.computeIfAbsent(attributeIID, iid -> new AttributeVertexImpl.Long(ThingGraph.this, iid, isInferred));
         }
 
         AttributeVertex<Double> getOrCreate(IID.Vertex.Attribute.Double attributeIID, boolean isInferred) {
-            return doubles.computeIfAbsent(attributeIID, iid -> new AttributeVertexImpl<>(ThingGraph.this, iid, isInferred));
+            return doubles.computeIfAbsent(attributeIID, iid -> new AttributeVertexImpl.Double(ThingGraph.this, iid, isInferred));
         }
 
         AttributeVertex<String> getOrCreate(IID.Vertex.Attribute.String attributeIID, boolean isInferred) {
-            return strings.computeIfAbsent(attributeIID, iid -> new AttributeVertexImpl<>(ThingGraph.this, iid, isInferred));
+            return strings.computeIfAbsent(attributeIID, iid -> new AttributeVertexImpl.String(ThingGraph.this, iid, isInferred));
         }
 
         AttributeVertex<LocalDateTime> getOrCreate(IID.Vertex.Attribute.DateTime attributeIID, boolean isInferred) {
-            return dateTimes.computeIfAbsent(attributeIID, iid -> new AttributeVertexImpl<>(ThingGraph.this, iid, isInferred));
+            return dateTimes.computeIfAbsent(attributeIID, iid -> new AttributeVertexImpl.DateTime(ThingGraph.this, iid, isInferred));
+        }
+
+        Stream<AttributeVertex<?>> valueStream() {
+            return concat(booleans.values().stream(),
+                          concat(longs.values().stream(),
+                                 concat(doubles.values().stream(),
+                                        concat(strings.values().stream(),
+                                               dateTimes.values().stream()))));
+        }
+
+        public void clear() {
+            booleans.clear();
+            longs.clear();
+            doubles.clear();
+            strings.clear();
+            dateTimes.clear();
         }
     }
 }

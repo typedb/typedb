@@ -18,10 +18,20 @@
 
 package hypergraph.graph.vertex;
 
+import hypergraph.graph.util.IID;
+
 public interface AttributeVertex<VALUE> extends ThingVertex {
 
     /**
-     * Returns the literal value stored in the vertex, if it represents an attribute
+     * Returns the IID of this {@code AttributeVertex}.
+     *
+     * @return the IID of this {@code AttributeVertex}
+     */
+    @Override
+    IID.Vertex.Attribute<VALUE> iid();
+
+    /**
+     * Returns the literal value stored in the vertex, if it represents an attribute.
      *
      * @return the literal value stored in the vertex
      */

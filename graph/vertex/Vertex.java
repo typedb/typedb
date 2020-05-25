@@ -45,7 +45,5 @@ public interface Vertex<
 
     Adjacency<EDGE_SCHEMA, EDGE, VERTEX> ins();
 
-    void commit();
-
     void delete();
 }

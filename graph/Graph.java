@@ -30,7 +30,7 @@ public interface Graph<VERTEX_IID extends IID.Vertex, VERTEX extends Vertex> {
 
     void delete(VERTEX vertex);
 
-    void commit();
-
     void clear();
+
+    boolean commit();
 }

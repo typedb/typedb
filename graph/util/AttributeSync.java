@@ -43,20 +43,38 @@ public interface AttributeSync {
     void remove(IID.Vertex.Attribute attributeIID);
 
     /**
+     * Acquires the lock to work with the {@code AttributeSync}.
+     *
+     * Only one transaction can work with the {@code AttributeSync} at a time.
+     * Whichever transaction gets hold of the lock must release the lock by
+     * calling {@code unlock()}.
+     */
+    void lock();
+
+    /**
+     * Releases the lock to work with the {@code AttributeSync}.
+     *
+     * Only one transaction can work with the {@code AttributeSync} at a time.
+     * Whichever transaction gets hold of the lock by calling {@code lock()}
+     * must release the lock by calling this method.
+     */
+    void unlock();
+
+    /**
      * A system to synchronise a commit.
      */
     interface CommitSync {
 
-        /**
-         * Returns the current sync status and sets it to true.
-         *
-         * This is an atomic operation that gets the sync status and sets it to
-         * true in one atomic step. If the returned value is 'false' that means
-         * the commit is not yet synced, and the caller of this method needs to
-         * commit the attribute in which this {@code CommitSync} represented.
-         *
-         * @return the current sync status before setting it to true
-         */
-        boolean checkIsSyncedAndSetTrue();
+        enum Status {
+            NONE, WRITTEN, DELETED
+        }
+
+        Status status();
+
+        void status(Status status);
+
+        long snapshot();
+
+        void snapshot(long number);
     }
 }

@@ -18,19 +18,19 @@
 
 package hypergraph.graph.util;
 
-import hypergraph.common.collection.ByteArrays;
-
 import javax.annotation.Nullable;
-import java.nio.ByteBuffer;
-import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 
-import static hypergraph.common.collection.ByteArrays.bytesToDouble;
-import static hypergraph.common.collection.ByteArrays.bytesToLong;
-import static hypergraph.common.collection.ByteArrays.doubleToBytes;
-import static hypergraph.common.collection.ByteArrays.join;
-import static hypergraph.common.collection.ByteArrays.longToBytes;
+import static hypergraph.common.collection.Bytes.*;
+import static hypergraph.common.collection.Bytes.booleanToByte;
+import static hypergraph.common.collection.Bytes.byteToBoolean;
+import static hypergraph.common.collection.Bytes.bytesToDouble;
+import static hypergraph.common.collection.Bytes.bytesToLong;
+import static hypergraph.common.collection.Bytes.doubleToBytes;
+import static hypergraph.common.collection.Bytes.join;
+import static hypergraph.common.collection.Bytes.longToBytes;
+import static hypergraph.common.collection.Bytes.stringToBytes;
 import static hypergraph.graph.util.Schema.STRING_ENCODING;
 import static hypergraph.graph.util.Schema.STRING_MAX_LENGTH;
 import static hypergraph.graph.util.Schema.TIME_ZONE_ID;
@@ -113,11 +113,41 @@ public class IID {
              * @param scope of the {@code TypeVertex}, which could be null
              * @return a byte array representing the index address of a {@code TypeVertex}
              */
-            public static Index of(String label, @Nullable String scope) {
+            public static Index.Type of(String label, @Nullable String scope) {
                 return new Index.Type(join(Schema.Index.TYPE.prefix().bytes(), Schema.Vertex.Type.scopedLabel(label, scope).getBytes()));
             }
         }
 
+        public static class Attribute extends Index {
+
+            Attribute(byte[] bytes) {
+                super(bytes);
+            }
+
+            private static Index.Attribute newAttributeIndex(byte[] valueType, byte[] value, byte[] typeIID) {
+                return new Index.Attribute(join(Schema.Index.ATTRIBUTE.prefix().bytes(), valueType, value, typeIID));
+            }
+
+            public static Index.Attribute of(boolean value, IID.Vertex.Attribute attributeIID) {
+                return newAttributeIndex(Schema.ValueType.BOOLEAN.bytes(), new byte[]{booleanToByte(value)}, attributeIID.type().bytes);
+            }
+
+            public static Index.Attribute of(long value, IID.Vertex.Attribute attributeIID) {
+                return newAttributeIndex(Schema.ValueType.LONG.bytes(), longToBytes(value), attributeIID.type().bytes);
+            }
+
+            public static Index.Attribute of(double value, IID.Vertex.Attribute attributeIID) {
+                return newAttributeIndex(Schema.ValueType.DOUBLE.bytes(), doubleToBytes(value), attributeIID.type().bytes);
+            }
+
+            public static Index.Attribute of(String value, IID.Vertex.Attribute attributeIID) {
+                return newAttributeIndex(Schema.ValueType.STRING.bytes(), stringToBytes(value, STRING_ENCODING), attributeIID.type().bytes);
+            }
+
+            public static Index.Attribute of(LocalDateTime value, IID.Vertex.Attribute attributeIID) {
+                return newAttributeIndex(Schema.ValueType.DATETIME.bytes(), dateTimeToBytes(value, TIME_ZONE_ID), attributeIID.type().bytes);
+            }
+        }
     }
 
     public static abstract class Vertex extends IID {
@@ -168,12 +198,13 @@ public class IID {
              * Generate an IID for a {@code ThingVertex} for a given {@code Schema} and {@code TypeVertex}
              *
              * @param keyGenerator to generate the IID for a {@code ThingVertex}
-             * @param schema       of the {@code ThingVertex} in which the IID will be used for
              * @param typeIID      of the {@code TypeVertex} in which this {@code ThingVertex} is an instance of
              * @return a byte array representing a new IID for a {@code ThingVertex}
              */
-            public static Thing generate(KeyGenerator keyGenerator, Schema.Vertex.Thing schema, Type typeIID) {
-                return new Thing(join(schema.prefix().bytes(), typeIID.bytes(), keyGenerator.forThing(typeIID)));
+            public static Thing generate(KeyGenerator keyGenerator, Type typeIID) {
+                return new Thing(join(Schema.Vertex.Thing.of(typeIID.schema()).prefix().bytes(),
+                                      typeIID.bytes(),
+                                      keyGenerator.forThing(typeIID)));
             }
 
             public IID.Vertex.Type type() {
@@ -203,12 +234,12 @@ public class IID {
             public static class Boolean extends Attribute<java.lang.Boolean> {
 
                 public Boolean(IID.Vertex.Type typeIID, boolean value) {
-                    super(Schema.ValueType.BOOLEAN, typeIID, new byte[]{(byte) (value ? 1 : 0)});
+                    super(Schema.ValueType.BOOLEAN, typeIID, new byte[]{booleanToByte(value)});
                 }
 
                 @Override
                 public java.lang.Boolean value() {
-                    return bytes[VALUE_INDEX] == 1;
+                    return byteToBoolean(bytes[VALUE_INDEX]);
                 }
             }
 
@@ -220,7 +251,7 @@ public class IID {
 
                 @Override
                 public java.lang.Long value() {
-                    return bytesToLong(copyOfRange(bytes, VALUE_INDEX, VALUE_INDEX + ByteArrays.LONG_SIZE));
+                    return bytesToLong(copyOfRange(bytes, VALUE_INDEX, VALUE_INDEX + LONG_SIZE));
                 }
             }
 
@@ -232,51 +263,32 @@ public class IID {
 
                 @Override
                 public java.lang.Double value() {
-                    return bytesToDouble(copyOfRange(bytes, VALUE_INDEX, VALUE_INDEX + ByteArrays.DOUBLE_SIZE));
+                    return bytesToDouble(copyOfRange(bytes, VALUE_INDEX, VALUE_INDEX + DOUBLE_SIZE));
                 }
             }
 
             public static class String extends Attribute<java.lang.String> {
 
                 public String(IID.Vertex.Type typeIID, java.lang.String value) {
-                    super(Schema.ValueType.STRING, typeIID, serialise(value));
-                }
-
-                private static byte[] serialise(java.lang.String value) {
-                    byte[] bytes = value.getBytes(STRING_ENCODING);
-                    assert bytes.length <= STRING_MAX_LENGTH;
-
-                    return join(new byte[]{(byte) bytes.length}, bytes);
-                }
-
-                private static java.lang.String deserialise(byte[] bytes) {
-                    byte[] x = Arrays.copyOfRange(bytes, 1, 1 + bytes[0]);
-                    return new java.lang.String(x, STRING_ENCODING);
+                    super(Schema.ValueType.STRING, typeIID, stringToBytes(value, STRING_ENCODING));
+                    assert bytes.length <= STRING_MAX_LENGTH + 1;
                 }
 
                 @Override
                 public java.lang.String value() {
-                    return deserialise(copyOfRange(bytes, VALUE_INDEX, bytes.length));
+                    return bytesToString(copyOfRange(bytes, VALUE_INDEX, bytes.length), STRING_ENCODING);
                 }
             }
 
             public static class DateTime extends Attribute<java.time.LocalDateTime> {
 
                 public DateTime(IID.Vertex.Type typeIID, java.time.LocalDateTime value) {
-                    super(Schema.ValueType.DATETIME, typeIID, serialise(value));
-                }
-
-                private static byte[] serialise(java.time.LocalDateTime value) {
-                    return longToBytes(value.atZone(TIME_ZONE_ID).toInstant().toEpochMilli());
-                }
-
-                private static java.time.LocalDateTime deserialise(byte[] bytes) {
-                    return LocalDateTime.ofInstant(Instant.ofEpochMilli(bytesToLong(bytes)), TIME_ZONE_ID);
+                    super(Schema.ValueType.DATETIME, typeIID, dateTimeToBytes(value, TIME_ZONE_ID));
                 }
 
                 @Override
                 public java.time.LocalDateTime value() {
-                    return deserialise(copyOfRange(bytes, VALUE_INDEX, bytes.length));
+                    return bytesToDateTime(copyOfRange(bytes, VALUE_INDEX, bytes.length), TIME_ZONE_ID);
                 }
             }
         }

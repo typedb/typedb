@@ -19,8 +19,13 @@
 package hypergraph.common.collection;
 
 import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.Arrays;
 
-public class ByteArrays {
+public class Bytes {
 
     public static final int SHORT_SIZE = 2;
     public static final int INTEGER_SIZE = 4;
@@ -90,5 +95,31 @@ public class ByteArrays {
 
     public static double bytesToDouble(byte[] bytes) {
         return ByteBuffer.allocate(DOUBLE_SIZE).getDouble();
+    }
+
+    public static byte[] stringToBytes(String value, Charset encoding) {
+        byte[] bytes = value.getBytes(encoding);
+        return join(new byte[]{(byte) bytes.length}, bytes);
+    }
+
+    public static String bytesToString(byte[] bytes, Charset encoding) {
+        byte[] x = Arrays.copyOfRange(bytes, 1, 1 + bytes[0]);
+        return new String(x, encoding);
+    }
+
+    public static byte booleanToByte(boolean value) {
+        return (byte) (value ? 1 : 0);
+    }
+
+    public static Boolean byteToBoolean(byte aByte) {
+        return aByte == 1;
+    }
+
+    public static byte[] dateTimeToBytes(java.time.LocalDateTime value, ZoneId timeZoneID) {
+        return longToBytes(value.atZone(timeZoneID).toInstant().toEpochMilli());
+    }
+
+    public static java.time.LocalDateTime bytesToDateTime(byte[] bytes, ZoneId timeZoneID) {
+        return LocalDateTime.ofInstant(Instant.ofEpochMilli(bytesToLong(bytes)), timeZoneID);
     }
 }

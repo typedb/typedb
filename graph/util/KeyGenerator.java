@@ -24,9 +24,9 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static hypergraph.common.collection.ByteArrays.join;
-import static hypergraph.common.collection.ByteArrays.longToBytes;
-import static hypergraph.common.collection.ByteArrays.shortToBytes;
+import static hypergraph.common.collection.Bytes.join;
+import static hypergraph.common.collection.Bytes.longToBytes;
+import static hypergraph.common.collection.Bytes.shortToBytes;
 import static hypergraph.common.iterator.Iterators.filter;
 import static java.nio.ByteBuffer.wrap;
 import static java.util.Arrays.copyOfRange;

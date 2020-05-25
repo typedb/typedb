@@ -42,4 +42,11 @@ public interface TypeEdge extends Edge<IID.Edge.Type, Schema.Edge.Type, TypeVert
      * @param overridden the type vertex to override by the head vertex
      */
     void overridden(TypeVertex overridden);
+
+    /**
+     * Commits the edge to the graph for persistent storage.
+     *
+     * After committing this edge to the graph, the status of this edges should be {@code persisted}.
+     */
+    void commit();
 }

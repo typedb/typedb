@@ -41,7 +41,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
 
-import static hypergraph.common.collection.ByteArrays.bytesHavePrefix;
+import static hypergraph.common.collection.Bytes.bytesHavePrefix;
 
 class CoreTransaction implements Hypergraph.Transaction {
 
@@ -58,6 +58,7 @@ class CoreTransaction implements Hypergraph.Transaction {
     private final AtomicBoolean isOpen;
 
     private static final byte[] EMPTY_ARRAY = new byte[]{};
+    private final long snapshot;
 
     CoreTransaction(CoreSession session, Type type) {
         this.type = type;
@@ -68,6 +69,7 @@ class CoreTransaction implements Hypergraph.Transaction {
         optOptions = new OptimisticTransactionOptions().setSetSnapshot(true);
         rocksTransaction = session.rocks().beginTransaction(writeOptions, optOptions);
         readOptions.setSnapshot(rocksTransaction.getSnapshot());
+        snapshot = readOptions.snapshot().getSequenceNumber();
 
         storage = new CoreStorage();
         graph = new Graphs(storage);
@@ -97,17 +99,39 @@ class CoreTransaction implements Hypergraph.Transaction {
         return concepts;
     }
 
+    /**
+     * Commits any writes captured in the transaction into storage.
+     *
+     * If the transaction was opened as a {@code READ} transaction, then this
+     * operation will throw an exception. If this transaction has been committed,
+     * it cannot be committed again. If it has not been committed, then it will
+     * flush all changes in the graph into storage by calling {@code graph.commit()},
+     * which may result in acquiring a lock on the storage to confirm that the data
+     * will be committed into storage. The operation will then continue to commit
+     * all the writes into RocksDB by calling {@code rocksTransaction.commit()}.
+     * If the operation reaches this state, then the RocksDB commit was successful.
+     * We then need let go of the transaction that this resources of hold.
+     *
+     * If a lock was acquired from calling {@code graph.commit()} then we should
+     * let inform the graph by confirming whether the RocksDB commit was successful
+     * or not.
+     */
     @Override
     public void commit() {
         if (type.equals(Type.READ)) {
             throw new HypergraphException("Illegal Write Exception");
         } else if (isOpen.compareAndSet(true, false)) {
+            boolean locking = false;
+            long snapshot = -1;
             try {
-                graph.commit();
+                locking = graph.commit();
                 rocksTransaction.commit();
+                snapshot = rocksTransaction.getSnapshot().getSequenceNumber();
                 closeResources();
             } catch (RocksDBException e) {
                 throw new HypergraphException(e);
+            } finally {
+                if (locking) graph.confirm(snapshot > -1, snapshot);
             }
         } else {
             throw new HypergraphException("Invalid Commit Exception");
@@ -157,6 +181,11 @@ class CoreTransaction implements Hypergraph.Transaction {
         CoreStorage() {
             readWriteLock = new ManagedReadWriteLock();
             iterators = ConcurrentHashMap.newKeySet();
+        }
+
+        @Override
+        public long snapshot() {
+            return snapshot;
         }
 
         @Override

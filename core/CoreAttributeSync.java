@@ -23,7 +23,6 @@ import hypergraph.graph.util.IID;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 public class CoreAttributeSync implements AttributeSync {
 
@@ -43,17 +42,44 @@ public class CoreAttributeSync implements AttributeSync {
         commitSyncs.remove(attributeIID);
     }
 
+    @Override
+    public void lock() {
+        // TODO
+    }
+
+    @Override
+    public void unlock() {
+        // TODO
+    }
+
     public static class CoreCommitSync implements AttributeSync.CommitSync {
 
-        private final AtomicBoolean committed;
+        private Status status;
+        private long snapshot;
 
         CoreCommitSync() {
-            committed = new AtomicBoolean(false);
+            status = Status.NONE;
+            snapshot = -1;
         }
 
         @Override
-        public boolean checkIsSyncedAndSetTrue() {
-            return committed.getAndSet(true);
+        public Status status() {
+            return status;
+        }
+
+        @Override
+        public void status(Status status) {
+            this.status = status;
+        }
+
+        @Override
+        public long snapshot() {
+            return snapshot;
+        }
+
+        @Override
+        public void snapshot(long snapshot) {
+            this.snapshot = snapshot;
         }
     }
 }

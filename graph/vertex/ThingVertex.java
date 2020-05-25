@@ -58,4 +58,10 @@ public interface ThingVertex extends Vertex<
      */
     void isInferred(boolean isInferred);
 
+    /**
+     * Commits this {@code ThingVertex} to be persisted onto storage.
+     *
+     * @param hasAttributeSyncLock that indicates whether you have access to the {@code AttributeSync}
+     */
+    void commit(boolean hasAttributeSyncLock);
 }

@@ -33,7 +33,7 @@ import hypergraph.graph.vertex.TypeVertex;
 import javax.annotation.Nullable;
 import java.util.Iterator;
 
-import static hypergraph.common.collection.ByteArrays.join;
+import static hypergraph.common.collection.Bytes.join;
 
 public abstract class TypeVertexImpl extends VertexImpl<IID.Vertex.Type, Schema.Vertex.Type, TypeVertex, Schema.Edge.Type, TypeEdge> implements TypeVertex {
 
@@ -199,8 +199,8 @@ public abstract class TypeVertexImpl extends VertexImpl<IID.Vertex.Type, Schema.
         }
 
         private void commitEdges() {
-            outs.forEach(Edge::commit);
-            ins.forEach(Edge::commit);
+            outs.forEach(TypeEdge::commit);
+            ins.forEach(TypeEdge::commit);
         }
     }
 
@@ -320,8 +320,8 @@ public abstract class TypeVertexImpl extends VertexImpl<IID.Vertex.Type, Schema.
         }
 
         private void commitEdges() {
-            outs.forEach(Edge::commit);
-            ins.forEach(Edge::commit);
+            outs.forEach(TypeEdge::commit);
+            ins.forEach(TypeEdge::commit);
         }
 
     }

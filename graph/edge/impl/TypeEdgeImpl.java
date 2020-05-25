@@ -154,5 +154,15 @@ public class TypeEdgeImpl {
             overriddenIID = overridden.iid();
             graph.storage().put(outIID.bytes(), overriddenIID.bytes());
         }
+
+        /**
+         * No-op commit operation of a persisted edge.
+         *
+         * Persisted edges do not need to be committed back to the graph storage.
+         * The only property of a persisted edge that can be changed is only the
+         * {@code overriddenIID}, and that is immediately written to storage when changed.
+         */
+        @Override
+        public void commit() {}
     }
 }

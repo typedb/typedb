@@ -27,4 +27,15 @@ import hypergraph.graph.vertex.ThingVertex;
  *
  * This edge can only have a schema of type {@code Schema.Edge.Thing}.
  */
-public interface ThingEdge extends Edge<IID.Edge.Thing, Schema.Edge.Thing, ThingVertex> {}
+public interface ThingEdge extends Edge<IID.Edge.Thing, Schema.Edge.Thing, ThingVertex> {
+
+    /**
+     * Commits the edge to the graph for persistent storage.
+     *
+     * After committing this edge to the graph, the status of this edges should
+     * be {@code persisted}.
+     *
+     * @param hasAttributeSyncLock that indicates whether you have access to the {@code AttributeSync}
+     */
+    void commit(boolean hasAttributeSyncLock);
+}

@@ -24,7 +24,6 @@ import hypergraph.graph.util.IID;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.util.Storage;
 import hypergraph.graph.vertex.TypeVertex;
-import hypergraph.graph.vertex.Vertex;
 import hypergraph.graph.vertex.impl.TypeVertexImpl;
 
 import javax.annotation.Nullable;
@@ -37,15 +36,15 @@ import static hypergraph.graph.util.Schema.Vertex.Type.scopedLabel;
 public class TypeGraph implements Graph<IID.Vertex.Type, TypeVertex> {
 
     private final Graphs graphManager;
-    private final ConcurrentMap<String, TypeVertex> typeByLabel;
-    private final ConcurrentMap<IID.Vertex.Type, TypeVertex> typeByIID;
+    private final ConcurrentMap<String, TypeVertex> typesByLabel;
+    private final ConcurrentMap<IID.Vertex.Type, TypeVertex> typesByIID;
     private final ConcurrentMap<String, ManagedReadWriteLock> singleLabelLocks;
     private final ManagedReadWriteLock multiLabelLock;
 
     TypeGraph(Graphs graphManager) {
         this.graphManager = graphManager;
-        typeByLabel = new ConcurrentHashMap<>();
-        typeByIID = new ConcurrentHashMap<>();
+        typesByLabel = new ConcurrentHashMap<>();
+        typesByIID = new ConcurrentHashMap<>();
         singleLabelLocks = new ConcurrentHashMap<>();
         multiLabelLock = new ManagedReadWriteLock();
     }
@@ -89,9 +88,9 @@ public class TypeGraph implements Graph<IID.Vertex.Type, TypeVertex> {
 
     @Override
     public TypeVertex convert(IID.Vertex.Type iid) {
-        return typeByIID.computeIfAbsent(iid, i -> {
+        return typesByIID.computeIfAbsent(iid, i -> {
             TypeVertex vertex = new TypeVertexImpl.Persisted(this, i);
-            typeByLabel.putIfAbsent(vertex.scopedLabel(), vertex);
+            typesByLabel.putIfAbsent(vertex.scopedLabel(), vertex);
             return vertex;
         });
     }
@@ -106,15 +105,15 @@ public class TypeGraph implements Graph<IID.Vertex.Type, TypeVertex> {
             multiLabelLock.lockRead();
             singleLabelLocks.computeIfAbsent(scopedLabel, x -> new ManagedReadWriteLock()).lockRead();
 
-            TypeVertex vertex = typeByLabel.get(scopedLabel);
+            TypeVertex vertex = typesByLabel.get(scopedLabel);
             if (vertex != null) return vertex;
 
             byte[] iid = graphManager.storage().get(IID.Index.Type.of(label, scope).bytes());
             if (iid != null) {
-                vertex = typeByIID.computeIfAbsent(
+                vertex = typesByIID.computeIfAbsent(
                         IID.Vertex.Type.of(iid), i -> new TypeVertexImpl.Persisted(this, i, label, scope)
                 );
-                typeByLabel.putIfAbsent(scopedLabel, vertex);
+                typesByLabel.putIfAbsent(scopedLabel, vertex);
             }
 
             return vertex;
@@ -136,10 +135,10 @@ public class TypeGraph implements Graph<IID.Vertex.Type, TypeVertex> {
             multiLabelLock.lockRead();
             singleLabelLocks.computeIfAbsent(scopedLabel, x -> new ManagedReadWriteLock()).lockWrite();
 
-            TypeVertex typeVertex = typeByLabel.computeIfAbsent(scopedLabel, i -> new TypeVertexImpl.Buffered(
+            TypeVertex typeVertex = typesByLabel.computeIfAbsent(scopedLabel, i -> new TypeVertexImpl.Buffered(
                     this, type, generate(graphManager.keyGenerator(), type), label, scope
             ));
-            typeByIID.put(typeVertex.iid(), typeVertex);
+            typesByIID.put(typeVertex.iid(), typeVertex);
             return typeVertex;
         } catch (InterruptedException e) {
             throw new HypergraphException(e);
@@ -154,10 +153,10 @@ public class TypeGraph implements Graph<IID.Vertex.Type, TypeVertex> {
         String newScopedLabel = scopedLabel(newLabel, newScope);
         try {
             multiLabelLock.lockWrite();
-            if (typeByLabel.containsKey(newScopedLabel)) throw new HypergraphException(
+            if (typesByLabel.containsKey(newScopedLabel)) throw new HypergraphException(
                     String.format("Invalid Write Operation: index '%s' is already in use", newScopedLabel));
-            typeByLabel.remove(oldScopedLabel);
-            typeByLabel.put(newScopedLabel, vertex);
+            typesByLabel.remove(oldScopedLabel);
+            typesByLabel.put(newScopedLabel, vertex);
             return vertex;
         } catch (InterruptedException e) {
             throw new HypergraphException(e);
@@ -172,8 +171,8 @@ public class TypeGraph implements Graph<IID.Vertex.Type, TypeVertex> {
             multiLabelLock.lockRead();
             singleLabelLocks.computeIfAbsent(vertex.scopedLabel(), x -> new ManagedReadWriteLock()).lockWrite();
 
-            typeByLabel.remove(vertex.scopedLabel());
-            typeByIID.remove(vertex.iid());
+            typesByLabel.remove(vertex.scopedLabel());
+            typesByIID.remove(vertex.iid());
         } catch (InterruptedException e) {
             throw new HypergraphException(e);
         } finally {
@@ -182,18 +181,28 @@ public class TypeGraph implements Graph<IID.Vertex.Type, TypeVertex> {
         }
     }
 
+    /**
+     * Commits all the writes captured in this graph into storage.
+     *
+     * First, for every {@code TypeVertex} that is held in {@code typeByIID},
+     * we generate a unique {@code IID} to be persisted in storage. Then, we
+     * commit each vertex into storage by calling {@code vertex.commit()}.
+     *
+     * @return false as this operation does not acquire a lock on the storage.
+     */
     @Override
-    public void commit() {
-        typeByIID.values().parallelStream().filter(v -> v.status().equals(Schema.Status.BUFFERED)).forEach(
+    public boolean commit() {
+        typesByIID.values().parallelStream().filter(v -> v.status().equals(Schema.Status.BUFFERED)).forEach(
                 vertex -> vertex.iid(generate(graphManager.storage().keyGenerator(), vertex.schema()))
         ); // typeByIID no longer contains valid mapping from IID to TypeVertex
-        typeByIID.values().parallelStream().forEach(Vertex::commit);
+        typesByIID.values().parallelStream().forEach(TypeVertex::commit);
         clear(); // we now flush the indexes after commit, and we do not expect this Graph.Type to be used again
+        return false;
     }
 
     @Override
     public void clear() {
-        typeByIID.clear();
-        typeByLabel.clear();
+        typesByIID.clear();
+        typesByLabel.clear();
     }
 }

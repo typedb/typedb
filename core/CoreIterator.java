@@ -25,7 +25,7 @@ import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
 
-import static hypergraph.common.collection.ByteArrays.bytesHavePrefix;
+import static hypergraph.common.collection.Bytes.bytesHavePrefix;
 
 public class CoreIterator<T> implements Iterator<T> {
 

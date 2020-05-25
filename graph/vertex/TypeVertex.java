@@ -57,4 +57,6 @@ public interface TypeVertex extends Vertex<
     String regex();
 
     TypeVertex regex(String regex);
+
+    void commit();
 }

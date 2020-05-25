@@ -76,7 +76,7 @@ public class Schema {
      */
     public enum Prefix {
         INDEX_TYPE(0),
-        INDEX_VALUE(5),
+        INDEX_ATTRIBUTE(5),
         VERTEX_THING_TYPE(10),
         VERTEX_ENTITY_TYPE(20),
         VERTEX_ATTRIBUTE_TYPE(30),
@@ -150,7 +150,7 @@ public class Schema {
 
     public enum Index {
         TYPE(Prefix.INDEX_TYPE),
-        VALUE(Prefix.INDEX_VALUE);
+        ATTRIBUTE(Prefix.INDEX_ATTRIBUTE);
 
         private final Prefix prefix;
 
@@ -386,7 +386,7 @@ public class Schema {
 
             public static Thing of(Type type) {
                 for (Thing t : Thing.values()) {
-                    if (t.name().equals(type.root().label())) return t;
+                    if (t.type().equals(type)) return t;
                 }
                 return null;
             }

@@ -39,6 +39,10 @@ public class Graphs {
         return storage;
     }
 
+    public KeyGenerator keyGenerator() {
+        return keyGenerator;
+    }
+
     public TypeGraph type() {
         return typeGraph;
     }
@@ -60,13 +64,29 @@ public class Graphs {
         typeGraph.initialise();
     }
 
-    public void commit() {
-        typeGraph.commit();
-        thingGraph.commit();
+    /**
+     * Commits any writes captured in the graphs into storage.
+     *
+     * This operation may result in locking the storage to confirm that it gets
+     * committed. If it is locking, you must call {@code confirm(boolean committed)}
+     * to confirm whether the graph was successfully committed or not into storage.
+     *
+     * @return true if the operation results in locking the storage
+     */
+    public boolean commit() {
+        return typeGraph.commit() || thingGraph.commit();
     }
 
-    public KeyGenerator keyGenerator() {
-        return keyGenerator;
+    /**
+     * Confirms whether the graph was successfully committed into storage.
+     *
+     * This operation will release any lock on the storage, that the
+     * {@code commit()} operation may have acquired.
+     *
+     * @param committed whether the graph was successfully committed into storage
+     * @param snapshot  sequence number of storage if graph was successfully committed
+     */
+    public void confirm(boolean committed, long snapshot) {
+        thingGraph.confirm(committed, snapshot);
     }
-
 }

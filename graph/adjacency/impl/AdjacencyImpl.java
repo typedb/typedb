@@ -34,7 +34,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
-import static hypergraph.common.collection.ByteArrays.join;
+import static hypergraph.common.collection.Bytes.join;
 import static hypergraph.common.iterator.Iterators.link;
 
 public abstract class AdjacencyImpl<

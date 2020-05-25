@@ -310,16 +310,6 @@ public abstract class EdgeImpl<
         }
 
         /**
-         * No-op commit operation of a persisted edge.
-         *
-         * Persisted edges do not need to be committed back to the graph storage.
-         * The only property of a persisted edge that can be changed is only the
-         * {@code overriddenIID}, and that is immediately written to storage when changed.
-         */
-        @Override
-        public void commit() {}
-
-        /**
          * Determine the equality of a {@code Edge} against another.
          *
          * We only use {@code schema}, {@code fromIID} and {@code toIID} as the are the fixed properties
