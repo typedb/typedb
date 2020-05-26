@@ -19,8 +19,26 @@ load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
 java_test(
     name = "test-basic",
-    srcs = ["BasicTest.java"],
+    srcs = [
+        "BasicTest.java",
+        "Util.java",
+    ],
     test_class = "hypergraph.test.integration.BasicTest",
+    deps = [
+        "//:hypergraph",
+        "//concept:concept",
+        "//core:hypergraph",
+    ],
+    size = "small",
+)
+
+java_test(
+    name = "test-attribute-sync",
+    srcs = [
+        "AttributeSyncTest.java",
+        "Util.java",
+    ],
+    test_class = "hypergraph.test.integration.AttributeSyncTest",
     deps = [
         "//:hypergraph",
         "//concept:concept",

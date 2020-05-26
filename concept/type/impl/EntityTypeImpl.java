@@ -18,6 +18,7 @@
 
 package hypergraph.concept.type.impl;
 
+import hypergraph.common.exception.Error;
 import hypergraph.common.exception.HypergraphException;
 import hypergraph.common.iterator.Iterators;
 import hypergraph.concept.thing.Entity;
@@ -44,8 +45,11 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
     private EntityTypeImpl(TypeVertex vertex) {
         super(vertex);
         if (vertex.schema() != Schema.Vertex.Type.ENTITY_TYPE) {
-            throw new HypergraphException("Invalid Entity Type: " + vertex.label() +
-                                                  " subtypes " + vertex.schema().root().label());
+            throw new HypergraphException(Error.TypeRead.TYPE_ROOT_MISMATCH.format(
+                    vertex.label(),
+                    Schema.Vertex.Type.ENTITY_TYPE.root().label(),
+                    vertex.schema().root().label()
+            ));
         }
     }
 

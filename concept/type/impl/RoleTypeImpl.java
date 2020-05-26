@@ -18,6 +18,7 @@
 
 package hypergraph.concept.type.impl;
 
+import hypergraph.common.exception.Error;
 import hypergraph.common.exception.HypergraphException;
 import hypergraph.common.iterator.Iterators;
 import hypergraph.concept.type.RoleType;
@@ -41,8 +42,11 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
         super(vertex);
         assert vertex.schema() == Schema.Vertex.Type.ROLE_TYPE;
         if (vertex.schema() != Schema.Vertex.Type.ROLE_TYPE) {
-            throw new HypergraphException("Invalid Role Type: " + vertex.label() +
-                                                  " subtypes " + vertex.schema().root().label());
+            throw new HypergraphException(Error.TypeRead.TYPE_ROOT_MISMATCH.format(
+                    vertex.label(),
+                    Schema.Vertex.Type.ROLE_TYPE.root().label(),
+                    vertex.schema().root().label()
+            ));
         }
     }
 

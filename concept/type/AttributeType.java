@@ -69,6 +69,8 @@ public interface AttributeType extends ThingType {
         Attribute.Boolean put(boolean value);
 
         Attribute.Boolean put(boolean value, boolean isInferred);
+
+        Attribute.Boolean get(boolean value);
     }
 
     interface Long extends AttributeType {
@@ -85,6 +87,8 @@ public interface AttributeType extends ThingType {
         Attribute.Long put(long value);
 
         Attribute.Long put(long value, boolean isInferred);
+
+        Attribute.Long get(int value);
     }
 
     interface Double extends AttributeType {
@@ -101,6 +105,8 @@ public interface AttributeType extends ThingType {
         Attribute.Double put(double value);
 
         Attribute.Double put(double value, boolean isInferred);
+
+        Attribute.Double get(double value);
     }
 
     interface String extends AttributeType {
@@ -117,6 +123,8 @@ public interface AttributeType extends ThingType {
         Attribute.String put(java.lang.String value);
 
         Attribute.String put(java.lang.String value, boolean isInferred);
+
+        Attribute.String get(java.lang.String value);
     }
 
     interface DateTime extends AttributeType {
@@ -133,5 +141,7 @@ public interface AttributeType extends ThingType {
         Attribute.DateTime put(LocalDateTime value);
 
         Attribute.DateTime put(LocalDateTime value, boolean isInferred);
+
+        Attribute.DateTime get(LocalDateTime value);
     }
 }

@@ -108,7 +108,8 @@ public class TypeGraph implements Graph<IID.Vertex.Type, TypeVertex> {
             TypeVertex vertex = typesByLabel.get(scopedLabel);
             if (vertex != null) return vertex;
 
-            byte[] iid = graphManager.storage().get(IID.Index.Type.of(label, scope).bytes());
+            IID.Index.Type index = IID.Index.Type.of(label, scope);
+            byte[] iid = graphManager.storage().get(index.bytes());
             if (iid != null) {
                 vertex = typesByIID.computeIfAbsent(
                         IID.Vertex.Type.of(iid), i -> new TypeVertexImpl.Persisted(this, i, label, scope)

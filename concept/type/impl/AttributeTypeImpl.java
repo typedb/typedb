@@ -46,8 +46,11 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
     private AttributeTypeImpl(TypeVertex vertex) {
         super(vertex);
         if (vertex.schema() != Schema.Vertex.Type.ATTRIBUTE_TYPE) {
-            throw new HypergraphException("Invalid Attribute Type: " + vertex.label() +
-                                                  " subtypes " + vertex.schema().root().label());
+            throw new HypergraphException(Error.TypeRead.TYPE_ROOT_MISMATCH.format(
+                    vertex.label(),
+                    Schema.Vertex.Type.ATTRIBUTE_TYPE.root().label(),
+                    vertex.schema().root().label()
+            ));
         }
     }
 
@@ -233,8 +236,14 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         private Boolean(TypeVertex vertex) {
             super(vertex);
-            assert (vertex.label().equals(Schema.Vertex.Type.Root.ATTRIBUTE.label()) ||
-                    vertex.valueType().equals(Schema.ValueType.BOOLEAN));
+            if (!vertex.label().equals(Schema.Vertex.Type.Root.ATTRIBUTE.label()) &&
+                    !vertex.valueType().equals(Schema.ValueType.BOOLEAN)) {
+                throw new HypergraphException(Error.TypeRead.VALUE_TYPE_MISMATCH.format(
+                        vertex.label(),
+                        Schema.ValueType.BOOLEAN.name(),
+                        vertex.valueType().name()
+                ));
+            }
         }
 
         public static AttributeTypeImpl.Boolean of(TypeVertex vertex) {
@@ -279,6 +288,12 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             return new AttributeImpl.Boolean(attVertex);
         }
 
+        @Override
+        public Attribute.Boolean get(boolean value) {
+            AttributeVertex<java.lang.Boolean> attVertex = vertex.graph().thingGraph().get(vertex, value);
+            return new AttributeImpl.Boolean(attVertex);
+        }
+
         private static class Root extends AttributeTypeImpl.Boolean {
 
             private Root(TypeVertex vertex) {
@@ -317,8 +332,14 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         private Long(TypeVertex vertex) {
             super(vertex);
-            assert (vertex.label().equals(Schema.Vertex.Type.Root.ATTRIBUTE.label()) ||
-                    vertex.valueType().equals(Schema.ValueType.LONG));
+            if (!vertex.label().equals(Schema.Vertex.Type.Root.ATTRIBUTE.label()) &&
+                    !vertex.valueType().equals(Schema.ValueType.LONG)) {
+                throw new HypergraphException(Error.TypeRead.VALUE_TYPE_MISMATCH.format(
+                        vertex.label(),
+                        Schema.ValueType.LONG.name(),
+                        vertex.valueType().name()
+                ));
+            }
         }
 
         public static AttributeTypeImpl.Long of(TypeVertex vertex) {
@@ -365,6 +386,12 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             return new AttributeImpl.Long(attVertex);
         }
 
+        @Override
+        public Attribute.Long get(int value) {
+            AttributeVertex<java.lang.Long> attVertex = vertex.graph().thingGraph().get(vertex, value);
+            return new AttributeImpl.Long(attVertex);
+        }
+
         private static class Root extends AttributeTypeImpl.Long {
 
             private Root(TypeVertex vertex) {
@@ -403,8 +430,14 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         private Double(TypeVertex vertex) {
             super(vertex);
-            assert (vertex.label().equals(Schema.Vertex.Type.Root.ATTRIBUTE.label()) ||
-                    vertex.valueType().equals(Schema.ValueType.DOUBLE));
+            if (!vertex.label().equals(Schema.Vertex.Type.Root.ATTRIBUTE.label()) &&
+                    !vertex.valueType().equals(Schema.ValueType.DOUBLE)) {
+                throw new HypergraphException(Error.TypeRead.VALUE_TYPE_MISMATCH.format(
+                        vertex.label(),
+                        Schema.ValueType.DOUBLE.name(),
+                        vertex.valueType().name()
+                ));
+            }
         }
 
         public static AttributeTypeImpl.Double of(TypeVertex vertex) {
@@ -451,6 +484,12 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             return new AttributeImpl.Double(attVertex);
         }
 
+        @Override
+        public Attribute.Double get(double value) {
+            AttributeVertex<java.lang.Double> attVertex = vertex.graph().thingGraph().get(vertex, value);
+            return new AttributeImpl.Double(attVertex);
+        }
+
         private static class Root extends AttributeTypeImpl.Double {
 
             private Root(TypeVertex vertex) {
@@ -489,8 +528,14 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         private String(TypeVertex vertex) {
             super(vertex);
-            assert (vertex.label().equals(Schema.Vertex.Type.Root.ATTRIBUTE.label()) ||
-                    vertex.valueType().equals(Schema.ValueType.STRING));
+            if (!vertex.label().equals(Schema.Vertex.Type.Root.ATTRIBUTE.label()) &&
+                    !vertex.valueType().equals(Schema.ValueType.STRING)) {
+                throw new HypergraphException(Error.TypeRead.VALUE_TYPE_MISMATCH.format(
+                        vertex.label(),
+                        Schema.ValueType.STRING.name(),
+                        vertex.valueType().name()
+                ));
+            }
         }
 
         public static AttributeTypeImpl.String of(TypeVertex vertex) {
@@ -532,6 +577,12 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
                 throw new HypergraphException(Error.ThingWrite.ILLEGAL_STRING_SIZE);
             }
             AttributeVertex<java.lang.String> attVertex = vertex.graph().thingGraph().put(vertex, value, isInferred);
+            return new AttributeImpl.String(attVertex);
+        }
+
+        @Override
+        public Attribute.String get(java.lang.String value) {
+            AttributeVertex<java.lang.String> attVertex = vertex.graph().thingGraph().get(vertex, value);
             return new AttributeImpl.String(attVertex);
         }
 
@@ -578,8 +629,14 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         private DateTime(TypeVertex vertex) {
             super(vertex);
-            assert (vertex.label().equals(Schema.Vertex.Type.Root.ATTRIBUTE.label()) ||
-                    vertex.valueType().equals(Schema.ValueType.DATETIME));
+            if (!vertex.label().equals(Schema.Vertex.Type.Root.ATTRIBUTE.label()) &&
+                    !vertex.valueType().equals(Schema.ValueType.DATETIME)) {
+                throw new HypergraphException(Error.TypeRead.VALUE_TYPE_MISMATCH.format(
+                        vertex.label(),
+                        Schema.ValueType.DATETIME.name(),
+                        vertex.valueType().name()
+                ));
+            }
         }
 
         public static AttributeTypeImpl.DateTime of(TypeVertex vertex) {
@@ -624,6 +681,12 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         public Attribute.DateTime put(LocalDateTime value, boolean isInferred) {
             AttributeVertex<LocalDateTime> attVertex = vertex.graph().thingGraph().put(vertex, value, isInferred);
             if (!isInferred && attVertex.isInferred()) attVertex.isInferred(false);
+            return new AttributeImpl.DateTime(attVertex);
+        }
+
+        @Override
+        public Attribute.DateTime get(LocalDateTime value) {
+            AttributeVertex<java.time.LocalDateTime> attVertex = vertex.graph().thingGraph().get(vertex, value);
             return new AttributeImpl.DateTime(attVertex);
         }
 

@@ -103,6 +103,15 @@ jobs:
       - run-bazel-rbe:
           command: bazel test //test/behaviour/concept/type/attributetype:test --test_output=errors
 
+  test-attribute-sync:
+    machine: true
+    working_directory: ~/hypergraph
+    steps:
+      - install-bazel-linux-rbe
+      - checkout
+      - run-bazel-rbe:
+          command: bazel test //test/integration:test-attribute-sync --test_output=errors
+
   test-traversal:
     machine: true
     working_directory: ~/hypergraph
@@ -121,4 +130,5 @@ workflows:
       - test-basic
       - test-connection
       - test-concept
+      - test-attribute-sync
       - test-traversal

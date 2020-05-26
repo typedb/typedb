@@ -141,8 +141,12 @@ public abstract class Error<TYPE extends Error<TYPE>> {
 
     public static class TypeRead extends Error {
 
+        public static final TypeRead TYPE_ROOT_MISMATCH =
+                new TypeRead(1, "Attempted to retrieve '%s' as '%s', while it is actually a '%s'");
+        public static final TypeRead VALUE_TYPE_MISMATCH =
+                new TypeRead(2, "Attempted to retrieve '%s' as AttributeType of ValueType '%s', while it actually has ValueType '%s'");
         private static final String codePrefix = "TYR";
-        private static final String descriptionPrefix = "Invalid Type Retrieval";
+        private static final String descriptionPrefix = "Invalid Type Read";
 
         TypeRead(int number, String description) {
             super(codePrefix, number, descriptionPrefix, description);

@@ -132,24 +132,24 @@ public class IID {
                 return new Index.Attribute(join(Schema.Index.ATTRIBUTE.prefix().bytes(), valueType, value, typeIID));
             }
 
-            public static Index.Attribute of(boolean value, IID.Vertex.Attribute attributeIID) {
-                return newAttributeIndex(Schema.ValueType.BOOLEAN.bytes(), new byte[]{booleanToByte(value)}, attributeIID.type().bytes);
+            public static Index.Attribute of(boolean value, IID.Vertex.Type typeIID) {
+                return newAttributeIndex(Schema.ValueType.BOOLEAN.bytes(), new byte[]{booleanToByte(value)}, typeIID.bytes);
             }
 
-            public static Index.Attribute of(long value, IID.Vertex.Attribute attributeIID) {
-                return newAttributeIndex(Schema.ValueType.LONG.bytes(), longToBytes(value), attributeIID.type().bytes);
+            public static Index.Attribute of(long value, IID.Vertex.Type typeIID) {
+                return newAttributeIndex(Schema.ValueType.LONG.bytes(), longToBytes(value), typeIID.bytes);
             }
 
-            public static Index.Attribute of(double value, IID.Vertex.Attribute attributeIID) {
-                return newAttributeIndex(Schema.ValueType.DOUBLE.bytes(), doubleToBytes(value), attributeIID.type().bytes);
+            public static Index.Attribute of(double value, IID.Vertex.Type typeIID) {
+                return newAttributeIndex(Schema.ValueType.DOUBLE.bytes(), doubleToBytes(value), typeIID.bytes);
             }
 
-            public static Index.Attribute of(String value, IID.Vertex.Attribute attributeIID) {
-                return newAttributeIndex(Schema.ValueType.STRING.bytes(), stringToBytes(value, STRING_ENCODING), attributeIID.type().bytes);
+            public static Index.Attribute of(String value, IID.Vertex.Type typeIID) {
+                return newAttributeIndex(Schema.ValueType.STRING.bytes(), stringToBytes(value, STRING_ENCODING), typeIID.bytes);
             }
 
-            public static Index.Attribute of(LocalDateTime value, IID.Vertex.Attribute attributeIID) {
-                return newAttributeIndex(Schema.ValueType.DATETIME.bytes(), dateTimeToBytes(value, TIME_ZONE_ID), attributeIID.type().bytes);
+            public static Index.Attribute of(LocalDateTime value, IID.Vertex.Type typeIID) {
+                return newAttributeIndex(Schema.ValueType.DATETIME.bytes(), dateTimeToBytes(value, TIME_ZONE_ID), typeIID.bytes);
             }
         }
     }
@@ -212,7 +212,7 @@ public class IID {
             }
 
             public IID.Vertex.Type type() {
-                return IID.Vertex.Type.of(copyOfRange(bytes, Prefix.LENGTH, Type.LENGTH));
+                return IID.Vertex.Type.of(copyOfRange(bytes, Prefix.LENGTH, PREFIX_TYPE_LENGTH));
             }
 
             public Schema.Vertex.Thing schema() {

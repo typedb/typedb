@@ -122,16 +122,16 @@ class CoreTransaction implements Hypergraph.Transaction {
             throw new HypergraphException("Illegal Write Exception");
         } else if (isOpen.compareAndSet(true, false)) {
             boolean locking = false;
-            long snapshot = -1;
+            long newSnapshot = -1;
             try {
                 locking = graph.commit();
                 rocksTransaction.commit();
-                snapshot = rocksTransaction.getSnapshot().getSequenceNumber();
+                newSnapshot = rocksTransaction.getSnapshot().getSequenceNumber();
                 closeResources();
             } catch (RocksDBException e) {
                 throw new HypergraphException(e);
             } finally {
-                if (locking) graph.confirm(snapshot > -1, snapshot);
+                if (locking) graph.confirm(newSnapshot > this.snapshot, newSnapshot);
             }
         } else {
             throw new HypergraphException("Invalid Commit Exception");

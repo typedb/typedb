@@ -107,7 +107,7 @@ public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl impleme
 
         @Override
         protected IID.Index.Attribute index() {
-            return IID.Index.Attribute.of(value(), iid());
+            return IID.Index.Attribute.of(value(), typeVertex().iid());
         }
     }
 
@@ -119,7 +119,7 @@ public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl impleme
 
         @Override
         protected IID.Index.Attribute index() {
-            return IID.Index.Attribute.of(value(), iid());
+            return IID.Index.Attribute.of(value(), typeVertex().iid());
         }
     }
 
@@ -131,7 +131,7 @@ public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl impleme
 
         @Override
         protected IID.Index.Attribute index() {
-            return IID.Index.Attribute.of(value(), iid());
+            return IID.Index.Attribute.of(value(), typeVertex().iid());
         }
     }
 
@@ -143,7 +143,7 @@ public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl impleme
 
         @Override
         protected IID.Index.Attribute index() {
-            return IID.Index.Attribute.of(value(), iid());
+            return IID.Index.Attribute.of(value(), typeVertex().iid());
         }
     }
 
@@ -155,7 +155,7 @@ public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl impleme
 
         @Override
         protected IID.Index.Attribute index() {
-            return IID.Index.Attribute.of(value(), iid());
+            return IID.Index.Attribute.of(value(), typeVertex().iid());
         }
     }
 }

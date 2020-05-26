@@ -43,7 +43,7 @@ public abstract class VertexImpl<
 
     @Override
     public VERTEX_SCHEMA schema() {
-        return schema;
+        return schema; // TODO: return iid.schema() once we generalise IID.Vertex<VERTEX_SCHEMA>
     }
 
     @Override
