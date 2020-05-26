@@ -130,7 +130,7 @@ public class KeyspaceStatisticsIT {
         assertEquals(1, friendshipCount);
         assertEquals(3, ageOwnershipCount);
         assertEquals(2, entityCount);
-        assertEquals(4, relationCount);
+        assertEquals(1, relationCount);
         assertEquals(1, attributeCount);
         assertEquals(personCount + ageCount + friendshipCount, thingCount);
 
@@ -154,7 +154,7 @@ public class KeyspaceStatisticsIT {
         assertEquals(0, friendshipCount);
         assertEquals(3, ageOwnershipCount);
         assertEquals(2, entityCount);
-        assertEquals(3, relationCount);
+        assertEquals(1, relationCount);
         assertEquals(1, attributeCount);
         assertEquals(personCount + ageCount + friendshipCount, thingCount);
 
@@ -263,7 +263,7 @@ public class KeyspaceStatisticsIT {
         long personCountReopened = localSession.keyspaceStatistics().count(testTx.conceptManager(), Label.of("person"));
         long ageCountReopened = localSession.keyspaceStatistics().count(testTx.conceptManager(), Label.of("age"));
         long friendshipCountReopened = localSession.keyspaceStatistics().count(testTx.conceptManager(), Label.of("friendship"));
-        long ageOwnershipCountReopened = localSession.keyspaceStatistics().count(testTx.conceptManager(), Label.of("age"));
+        long ageOwnershipCountReopened = localSession.keyspaceStatistics().countOwnerships(testTx.conceptManager(), Label.of("age"));
         long thingCountReopened = localSession.keyspaceStatistics().count(testTx.conceptManager(), Label.of("thing"));
         long entityCountReopened = localSession.keyspaceStatistics().count(testTx.conceptManager(), Label.of("entity"));
         long relationCountReopened = localSession.keyspaceStatistics().count(testTx.conceptManager(), Label.of("relation"));

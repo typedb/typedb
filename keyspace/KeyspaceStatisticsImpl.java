@@ -145,6 +145,9 @@ public class KeyspaceStatisticsImpl implements KeyspaceStatistics {
      */
     private long retrieveCountFromVertex(ConceptManager conceptManager, Label label) {
         Concept schemaConcept = conceptManager.getSchemaConcept(label);
+        if (schemaConcept == null) {
+            return -1;
+        }
         Type conceptAsType = schemaConcept.asType();
         return conceptAsType.getCount();
     }
