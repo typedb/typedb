@@ -22,11 +22,15 @@ import javax.annotation.Nullable;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 
-import static hypergraph.common.collection.Bytes.*;
+import static hypergraph.common.collection.Bytes.DOUBLE_SIZE;
+import static hypergraph.common.collection.Bytes.LONG_SIZE;
 import static hypergraph.common.collection.Bytes.booleanToByte;
 import static hypergraph.common.collection.Bytes.byteToBoolean;
+import static hypergraph.common.collection.Bytes.bytesToDateTime;
 import static hypergraph.common.collection.Bytes.bytesToDouble;
 import static hypergraph.common.collection.Bytes.bytesToLong;
+import static hypergraph.common.collection.Bytes.bytesToString;
+import static hypergraph.common.collection.Bytes.dateTimeToBytes;
 import static hypergraph.common.collection.Bytes.doubleToBytes;
 import static hypergraph.common.collection.Bytes.join;
 import static hypergraph.common.collection.Bytes.longToBytes;
