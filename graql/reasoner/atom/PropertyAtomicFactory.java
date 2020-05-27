@@ -276,12 +276,12 @@ public class PropertyAtomicFactory {
     private ValueTypeAtom valueType(Variable var, ValueTypeProperty property, ReasonerQuery parent) {
         ImmutableMap.Builder<Graql.Token.ValueType, AttributeType.ValueType<?>> valueTypesBuilder = new ImmutableMap.Builder<>();
         valueTypesBuilder.put(Graql.Token.ValueType.BOOLEAN, AttributeType.ValueType.BOOLEAN);
-        valueTypesBuilder.put(Graql.Token.ValueType.DATE, AttributeType.ValueType.DATE);
+        valueTypesBuilder.put(Graql.Token.ValueType.DATETIME, AttributeType.ValueType.DATE);
         valueTypesBuilder.put(Graql.Token.ValueType.DOUBLE, AttributeType.ValueType.DOUBLE);
         valueTypesBuilder.put(Graql.Token.ValueType.LONG, AttributeType.ValueType.LONG);
         valueTypesBuilder.put(Graql.Token.ValueType.STRING, AttributeType.ValueType.STRING);
         ImmutableMap<Graql.Token.ValueType, AttributeType.ValueType<?>> valueTypes = valueTypesBuilder.build();
-        return ValueTypeAtom.create(var, property, parent, valueTypes.get(property.valueType()));
+        return ValueTypeAtom.create(var, property, parent, valueTypes.get(property.ValueType()));
     }
 
     private Atomic isAbstract(Variable var, ReasonerQuery parent) {

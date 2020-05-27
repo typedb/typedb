@@ -51,16 +51,16 @@ public class ValueTypeExecutor implements PropertyExecutor.Definable {
         }
         this.property = property;
 
-        if (!VALUE_TYPES.containsKey(property.valueType())) {
+        if (!VALUE_TYPES.containsKey(property.ValueType())) {
             throw new IllegalArgumentException("Unrecognised Attribute value type");
         }
-        this.valueType = VALUE_TYPES.get(property.valueType());
+        this.valueType = VALUE_TYPES.get(property.ValueType());
     }
 
     private static ImmutableMap<Graql.Token.ValueType, AttributeType.ValueType<?>> valueTypes() {
         ImmutableMap.Builder<Graql.Token.ValueType, AttributeType.ValueType<?>> valueTypes = new ImmutableMap.Builder<>();
         valueTypes.put(Graql.Token.ValueType.BOOLEAN, AttributeType.ValueType.BOOLEAN);
-        valueTypes.put(Graql.Token.ValueType.DATE, AttributeType.ValueType.DATE);
+        valueTypes.put(Graql.Token.ValueType.DATETIME, AttributeType.ValueType.DATE);
         valueTypes.put(Graql.Token.ValueType.DOUBLE, AttributeType.ValueType.DOUBLE);
         valueTypes.put(Graql.Token.ValueType.LONG, AttributeType.ValueType.LONG);
         valueTypes.put(Graql.Token.ValueType.STRING, AttributeType.ValueType.STRING);
