@@ -176,7 +176,7 @@ public class AttributeTypeIT {
         // now add the timezone to the graph
         try (Session session = server.sessionWithNewKeyspace()) {
             try (Transaction graph = session.transaction(Transaction.Type.WRITE)) {
-                AttributeType<LocalDateTime> aTime = graph.putAttributeType("aTime", AttributeType.ValueType.DATE);
+                AttributeType<LocalDateTime> aTime = graph.putAttributeType("aTime", AttributeType.ValueType.DATETIME);
                 aTime.create(rightNow);
                 graph.commit();
             }

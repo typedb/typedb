@@ -46,7 +46,7 @@ public abstract class AttributeSerialiser<DESERIALISED, SERIALISED> {
 
     private static Map<AttributeType.ValueType<?>, AttributeSerialiser<?, ?>> serialisers = map(
             pair(AttributeType.ValueType.BOOLEAN, BOOLEAN),
-            pair(AttributeType.ValueType.DATE, DATE),
+            pair(AttributeType.ValueType.DATETIME, DATE),
             pair(AttributeType.ValueType.DOUBLE, DOUBLE),
             pair(AttributeType.ValueType.FLOAT, FLOAT),
             pair(AttributeType.ValueType.INTEGER, INTEGER),

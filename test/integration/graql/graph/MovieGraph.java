@@ -78,7 +78,7 @@ public class MovieGraph {
 
         tmdbVoteCount = tx.putAttributeType("tmdb-vote-count", AttributeType.ValueType.LONG);
         tmdbVoteAverage = tx.putAttributeType("tmdb-vote-average", AttributeType.ValueType.DOUBLE);
-        releaseDate = tx.putAttributeType("release-date", AttributeType.ValueType.DATE);
+        releaseDate = tx.putAttributeType("release-date", AttributeType.ValueType.DATETIME);
         runtime = tx.putAttributeType("runtime", AttributeType.ValueType.LONG);
         gender = tx.putAttributeType("gender", AttributeType.ValueType.STRING).regex("(fe)?male");
         realName = tx.putAttributeType("real-name", AttributeType.ValueType.STRING);

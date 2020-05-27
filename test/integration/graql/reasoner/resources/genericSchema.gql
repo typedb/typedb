@@ -98,7 +98,7 @@ resource-long sub attribute, value long,
     plays baseRole2;
 
 resource-double sub attribute, value double;
-resource-date sub attribute, value date;
+resource-date sub attribute, value datetime;
 resource-boolean sub attribute, value boolean;
 
 

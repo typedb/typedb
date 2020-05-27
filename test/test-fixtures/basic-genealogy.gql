@@ -27,8 +27,8 @@ surname sub attribute, value string;
 middlename sub attribute, value string;
 picture sub attribute, value string;
 age sub attribute, value long;
-birth-date sub attribute, value date;
-death-date sub attribute, value date;
+birth-date sub attribute, value datetime;
+death-date sub attribute, value datetime;
 gender sub attribute, value string;
 
 # Roles and Relations
