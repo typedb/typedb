@@ -128,7 +128,7 @@ public class KeyspaceStatisticsIT {
         assertEquals(2, personCount);
         assertEquals(1, ageCount);
         assertEquals(1, friendshipCount);
-        assertEquals(3, ageOwnershipCount);
+        assertEquals(2, ageOwnershipCount);
         assertEquals(2, entityCount);
         assertEquals(1, relationCount);
         assertEquals(1, attributeCount);
@@ -152,7 +152,7 @@ public class KeyspaceStatisticsIT {
         assertEquals(2, personCount);
         assertEquals(1, ageCount);
         assertEquals(0, friendshipCount);
-        assertEquals(3, ageOwnershipCount);
+        assertEquals(2, ageOwnershipCount);
         assertEquals(2, entityCount);
         assertEquals(0, relationCount);
         assertEquals(1, attributeCount);

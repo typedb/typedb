@@ -214,15 +214,15 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
             throw GraknConceptException.hasNotAllowed(this, attribute);
         }
 
-        // TODO check explicitly whether this attribute is already owned in any way
-
-        EdgeElement attributeEdge = putEdge(AttributeImpl.from(attribute), Schema.EdgeLabel.ATTRIBUTE);
-        attributeEdge.property(Schema.EdgeProperty.ATTRIBUTE_OWNED_LABEL_ID, attribute.type().labelId().getValue());
-        if (isInferred) {
-            attributeEdge.property(Schema.EdgeProperty.IS_INFERRED, true);
+        if (!this.attributes(attribute.type()).anyMatch(attribute::equals)) {
+            EdgeElement attributeEdge = putEdge(AttributeImpl.from(attribute), Schema.EdgeLabel.ATTRIBUTE);
+            attributeEdge.property(Schema.EdgeProperty.ATTRIBUTE_OWNED_LABEL_ID, attribute.type().labelId().getValue());
+            if (isInferred) {
+                attributeEdge.property(Schema.EdgeProperty.IS_INFERRED, true);
+            }
+            conceptManager.createHasAttribute(this, attribute, isInferred);
         }
 
-        conceptManager.createHasAttribute(this, attribute, isInferred);
     }
 
     @Override

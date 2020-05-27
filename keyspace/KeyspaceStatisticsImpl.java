@@ -74,13 +74,13 @@ public class KeyspaceStatisticsImpl implements KeyspaceStatistics {
         HashMap<Label, Long> deltaMap = statisticsDelta.instanceDeltas();
 
         // merge each delta into the cache, then flush the cache to Janus
-        Set<Label> labelsToPersist = new HashSet<>();
+        Set<Label> instanceLabelsToPersist = new HashSet<>();
         deltaMap.entrySet().stream()
                 .filter(e -> e.getValue() != 0)
                 .forEach(entry -> {
                     Label label = entry.getKey();
                     Long delta = entry.getValue();
-                    labelsToPersist.add(label);
+                    instanceLabelsToPersist.add(label);
                     // atomic update
                     instanceCountsCache.compute(label, (k, prior) ->
                             prior == null ?
@@ -104,7 +104,7 @@ public class KeyspaceStatisticsImpl implements KeyspaceStatistics {
                     );
                 });
 
-        persist(conceptManager, labelsToPersist, ownershipLabelsToPersist);
+        persist(conceptManager, instanceLabelsToPersist, ownershipLabelsToPersist);
 
     }
 

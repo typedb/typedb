@@ -21,7 +21,6 @@ import grakn.core.concept.answer.AnswerGroup;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.answer.Numeric;
 import grakn.core.graql.graph.MovieGraph;
-import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
@@ -53,20 +52,14 @@ import org.junit.rules.ExpectedException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
-import static graql.lang.Graql.insert;
 import static graql.lang.Graql.var;
 import static graql.lang.exception.ErrorMessage.VARIABLE_OUT_OF_SCOPE;
 import static java.lang.Math.pow;
 import static java.lang.Math.sqrt;
-import static java.util.stream.Collectors.toSet;
-import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 @SuppressWarnings("Duplicates")
