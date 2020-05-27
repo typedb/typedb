@@ -176,18 +176,19 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
     }
 
     private void deleteAttributeOwnerships() {
-        vertex().getEdgesOfType(Direction.BOTH, Schema.EdgeLabel.ATTRIBUTE)
+        // delete ownerships of this Thing
+        if (isAttribute()) {
+            vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.ATTRIBUTE)
+                    .forEach(edge -> {
+                        Thing owner = conceptManager.buildConcept(edge.target()).asThing();
+                        conceptNotificationChannel.hasAttributeRemoved(owner, this.asAttribute(), isInferred());
+                        edge.delete();
+                    });
+        }
+        vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.ATTRIBUTE)
                 .forEach(edge -> {
-                    Concept owner;
-                    Attribute attribute;
-                    if (this.isAttribute()) {
-                        attribute = this.asAttribute();
-                        owner = conceptManager.buildConcept(edge.target());
-                    } else {
-                        attribute = conceptManager.buildConcept(edge.source()).asAttribute();
-                        owner = this;
-                    }
-                    conceptNotificationChannel.hasAttributeRemoved(owner.asThing(), attribute, attribute.isInferred());
+                    Attribute attribute = conceptManager.buildConcept(edge.target()).asAttribute();
+                    conceptNotificationChannel.hasAttributeRemoved(this, attribute, attribute.isInferred());
                     edge.delete();
                 });
     }
