@@ -184,9 +184,9 @@ public class AttributeIT {
     @Test
     public void whenCreatingResourceWithAnInvalidValueTypeOnADate_Throw() {
         String invalidThing = "Invalid Thing";
-        AttributeType dateAttributeType = tx.putAttributeType("date", AttributeType.ValueType.DATE);
+        AttributeType dateAttributeType = tx.putAttributeType("date", AttributeType.ValueType.DATETIME);
         expectedException.expect(GraknConceptException.class);
-        expectedException.expectMessage(GraknConceptException.invalidAttributeValue(dateAttributeType, invalidThing, AttributeType.ValueType.DATE).getMessage());
+        expectedException.expectMessage(GraknConceptException.invalidAttributeValue(dateAttributeType, invalidThing, AttributeType.ValueType.DATETIME).getMessage());
         dateAttributeType.create(invalidThing);
     }
 
@@ -211,7 +211,7 @@ public class AttributeIT {
     @Test
     public void whenSavingDateIntoResource_DateIsReturnedInSameFormat() {
         LocalDateTime date = LocalDateTime.now();
-        AttributeType<LocalDateTime> attributeType = tx.putAttributeType("My Birthday", AttributeType.ValueType.DATE);
+        AttributeType<LocalDateTime> attributeType = tx.putAttributeType("My Birthday", AttributeType.ValueType.DATETIME);
         Attribute<LocalDateTime> myBirthday = attributeType.create(date);
 
         assertEquals(date, myBirthday.value());

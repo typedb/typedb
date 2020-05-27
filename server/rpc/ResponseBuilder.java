@@ -247,7 +247,7 @@ public class ResponseBuilder {
                 return ConceptProto.AttributeType.VALUE_TYPE.FLOAT;
             } else if (valueType.equals(AttributeType.ValueType.DOUBLE)) {
                 return ConceptProto.AttributeType.VALUE_TYPE.DOUBLE;
-            } else if (valueType.equals(AttributeType.ValueType.DATE)) {
+            } else if (valueType.equals(AttributeType.ValueType.DATETIME)) {
                 return ConceptProto.AttributeType.VALUE_TYPE.DATE;
             } else {
                 throw GraknServerException.unreachableStatement("Unrecognised " + valueType);
@@ -269,7 +269,7 @@ public class ResponseBuilder {
                 case DOUBLE:
                     return AttributeType.ValueType.DOUBLE;
                 case DATE:
-                    return AttributeType.ValueType.DATE;
+                    return AttributeType.ValueType.DATETIME;
                 default:
                 case UNRECOGNIZED:
                     throw new IllegalArgumentException("Unrecognised " + valueType);
