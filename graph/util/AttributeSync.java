@@ -49,7 +49,7 @@ public interface AttributeSync {
      * Whichever transaction gets hold of the lock must release the lock by
      * calling {@code unlock()}.
      */
-    void lock();
+    void lock() throws InterruptedException;
 
     /**
      * Releases the lock to work with the {@code AttributeSync}.

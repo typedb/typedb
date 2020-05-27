@@ -18,6 +18,7 @@
 
 package hypergraph.graph;
 
+import hypergraph.common.exception.HypergraphException;
 import hypergraph.graph.util.IID;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.util.Storage;
@@ -181,14 +182,15 @@ public class ThingGraph implements Graph<IID.Vertex.Thing, ThingVertex> {
         ); // thingByIID no longer contains valid mapping from IID to TypeVertex
         thingsByIID.values().parallelStream().filter(v -> !v.isInferred()).forEach(v -> v.commit(false));
 
-        storage().attributeSync().lock();
-        attributesByIID.valueStream().parallel().forEach(v -> v.commit(true));
-
-        if (attributesWritten.isEmpty()) {
+        try {
             attributeSyncIsLocked = false;
-            storage().attributeSync().unlock();
-        } else {
-            attributeSyncIsLocked = true;
+            storage().attributeSync().lock();
+            attributesByIID.valueStream().parallel().forEach(v -> v.commit(true));
+            if (!attributesWritten.isEmpty()) attributeSyncIsLocked = true;
+        } catch (InterruptedException e) {
+            throw new HypergraphException(e);
+        } finally {
+            if (!attributeSyncIsLocked) storage().attributeSync().unlock();
         }
 
         clear(); // we now flush the indexes after commit, and we do not expect this Graph.Thing to be used again

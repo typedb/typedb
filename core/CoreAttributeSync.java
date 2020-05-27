@@ -18,6 +18,7 @@
 
 package hypergraph.core;
 
+import hypergraph.common.concurrent.ManagedReadWriteLock;
 import hypergraph.graph.util.AttributeSync;
 import hypergraph.graph.util.IID;
 
@@ -27,9 +28,11 @@ import java.util.concurrent.ConcurrentMap;
 public class CoreAttributeSync implements AttributeSync {
 
     private final ConcurrentMap<IID.Vertex.Attribute, CoreCommitSync> commitSyncs;
+    private final ManagedReadWriteLock lock;
 
     CoreAttributeSync() { // TODO: extract these values to grakn.properties
         commitSyncs = new ConcurrentHashMap<>();
+        lock = new ManagedReadWriteLock();
     }
 
     @Override
@@ -43,13 +46,13 @@ public class CoreAttributeSync implements AttributeSync {
     }
 
     @Override
-    public void lock() {
-        // TODO
+    public void lock() throws InterruptedException {
+        lock.lockWrite();
     }
 
     @Override
     public void unlock() {
-        // TODO
+        lock.unlockWrite();
     }
 
     public static class CoreCommitSync implements AttributeSync.CommitSync {
