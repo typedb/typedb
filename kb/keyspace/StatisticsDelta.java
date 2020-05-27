@@ -26,6 +26,7 @@ import java.util.HashMap;
 
 public interface StatisticsDelta {
     long delta(Label label);
+    long deltaOwnership(Label label);
 
     void increment(Type type);
     void incrementOwnership(AttributeType<?> attribute);

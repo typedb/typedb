@@ -135,7 +135,7 @@ public class KeyspaceStatisticsIT {
         assertEquals(personCount + ageCount + friendshipCount, thingCount);
 
         tx = localSession.transaction(Transaction.Type.WRITE);
-        tx.execute(Graql.parse("match $x isa friendship; delete $x;").asDelete());
+        tx.execute(Graql.parse("match $x isa friendship; delete $x isa friendship;").asDelete());
         tx.commit();
 
         testTx = (TestTransactionProvider.TestTransaction)localSession.transaction(Transaction.Type.WRITE);
@@ -154,12 +154,12 @@ public class KeyspaceStatisticsIT {
         assertEquals(0, friendshipCount);
         assertEquals(3, ageOwnershipCount);
         assertEquals(2, entityCount);
-        assertEquals(1, relationCount);
+        assertEquals(0, relationCount);
         assertEquals(1, attributeCount);
         assertEquals(personCount + ageCount + friendshipCount, thingCount);
 
         tx = localSession.transaction(Transaction.Type.WRITE);
-        tx.execute(Graql.parse("match $x isa thing; delete $x;").asDelete());
+        tx.execute(Graql.parse("match $x isa thing; delete $x isa thing;").asDelete());
         tx.commit();
         testTx = (TestTransactionProvider.TestTransaction)localSession.transaction(Transaction.Type.WRITE);
         personCount = localSession.keyspaceStatistics().count(testTx.conceptManager(), Label.of("person"));

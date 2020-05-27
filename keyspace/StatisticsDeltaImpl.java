@@ -57,6 +57,11 @@ public class StatisticsDeltaImpl implements StatisticsDelta {
     }
 
     @Override
+    public long deltaOwnership(Label label) {
+        return ownershipDeltas.getOrDefault(label, 0L);
+    }
+
+    @Override
     public void increment(Type type) {
         Label label = type.label();
         Long currentCount = instanceDeltas.getOrDefault(label, 0L);

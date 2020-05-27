@@ -177,7 +177,19 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
 
     private void deleteAttributeOwnerships() {
         vertex().getEdgesOfType(Direction.BOTH, Schema.EdgeLabel.ATTRIBUTE)
-                .forEach(AbstractElement::delete);
+                .forEach(edge -> {
+                    Concept owner;
+                    Attribute attribute;
+                    if (this.isAttribute()) {
+                        attribute = this.asAttribute();
+                        owner = conceptManager.buildConcept(edge.target());
+                    } else {
+                        attribute = conceptManager.buildConcept(edge.source()).asAttribute();
+                        owner = this;
+                    }
+                    conceptNotificationChannel.hasAttributeRemoved(owner.asThing(), attribute, attribute.isInferred());
+                    edge.delete();
+                });
     }
 
     @Override
