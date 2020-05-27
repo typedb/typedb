@@ -276,7 +276,7 @@ public class PropertyAtomicFactory {
     private ValueTypeAtom valueType(Variable var, ValueTypeProperty property, ReasonerQuery parent) {
         ImmutableMap.Builder<Graql.Token.ValueType, AttributeType.ValueType<?>> valueTypesBuilder = new ImmutableMap.Builder<>();
         valueTypesBuilder.put(Graql.Token.ValueType.BOOLEAN, AttributeType.ValueType.BOOLEAN);
-        valueTypesBuilder.put(Graql.Token.ValueType.DATETIME, AttributeType.ValueType.DATE);
+        valueTypesBuilder.put(Graql.Token.ValueType.DATETIME, AttributeType.ValueType.DATETIME);
         valueTypesBuilder.put(Graql.Token.ValueType.DOUBLE, AttributeType.ValueType.DOUBLE);
         valueTypesBuilder.put(Graql.Token.ValueType.LONG, AttributeType.ValueType.LONG);
         valueTypesBuilder.put(Graql.Token.ValueType.STRING, AttributeType.ValueType.STRING);

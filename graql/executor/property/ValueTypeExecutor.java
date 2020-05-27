@@ -60,7 +60,7 @@ public class ValueTypeExecutor implements PropertyExecutor.Definable {
     private static ImmutableMap<Graql.Token.ValueType, AttributeType.ValueType<?>> valueTypes() {
         ImmutableMap.Builder<Graql.Token.ValueType, AttributeType.ValueType<?>> valueTypes = new ImmutableMap.Builder<>();
         valueTypes.put(Graql.Token.ValueType.BOOLEAN, AttributeType.ValueType.BOOLEAN);
-        valueTypes.put(Graql.Token.ValueType.DATETIME, AttributeType.ValueType.DATE);
+        valueTypes.put(Graql.Token.ValueType.DATETIME, AttributeType.ValueType.DATETIME);
         valueTypes.put(Graql.Token.ValueType.DOUBLE, AttributeType.ValueType.DOUBLE);
         valueTypes.put(Graql.Token.ValueType.LONG, AttributeType.ValueType.LONG);
         valueTypes.put(Graql.Token.ValueType.STRING, AttributeType.ValueType.STRING);

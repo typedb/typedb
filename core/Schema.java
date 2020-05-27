@@ -226,7 +226,7 @@ public final class Schema {
 
         private static Map<AttributeType.ValueType, VertexProperty> valueTypeVertexProperty = map(
                 pair(AttributeType.ValueType.BOOLEAN, VertexProperty.VALUE_BOOLEAN),
-                pair(AttributeType.ValueType.DATE, VertexProperty.VALUE_DATE),
+                pair(AttributeType.ValueType.DATETIME, VertexProperty.VALUE_DATE),
                 pair(AttributeType.ValueType.DOUBLE, VertexProperty.VALUE_DOUBLE),
                 pair(AttributeType.ValueType.FLOAT, VertexProperty.VALUE_FLOAT),
                 pair(AttributeType.ValueType.INTEGER, VertexProperty.VALUE_INTEGER),

@@ -233,9 +233,9 @@ public interface AttributeType<D> extends Type {
             @Override
             public Set<ValueType<?>> comparableValueTypes() { return Collections.singleton(ValueType.BOOLEAN); }
         };
-        public static final ValueType<LocalDateTime> DATE = new ValueType<LocalDateTime>(LocalDateTime.class){
+        public static final ValueType<LocalDateTime> DATETIME = new ValueType<LocalDateTime>(LocalDateTime.class){
             @Override
-            public Set<ValueType<?>> comparableValueTypes() { return Collections.singleton(ValueType.DATE); }
+            public Set<ValueType<?>> comparableValueTypes() { return Collections.singleton(ValueType.DATETIME); }
         };
         public static final ValueType<Double> DOUBLE = new ValueType<Double>(Double.class){
             @Override
@@ -269,7 +269,7 @@ public interface AttributeType<D> extends Type {
             public Set<ValueType<?>> comparableValueTypes() { return Collections.singleton(ValueType.STRING); }
         };
 
-        private static final List<ValueType<?>> values = list(BOOLEAN, DATE, DOUBLE, FLOAT, INTEGER, LONG, STRING);
+        private static final List<ValueType<?>> values = list(BOOLEAN, DATETIME, DOUBLE, FLOAT, INTEGER, LONG, STRING);
 
         private final Class<D> dataClass;
 
