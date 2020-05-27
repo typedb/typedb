@@ -43,14 +43,14 @@ public class ThingGraph implements Graph<IID.Vertex.Thing, ThingVertex> {
     private final Graphs graphManager;
     private final ConcurrentMap<IID.Vertex.Thing, ThingVertex> thingsByIID;
     private final AttributeIIDMap attributesByIID;
-    private ConcurrentLinkedQueue<AttributeVertex<?>> attributesWritten;
+    private ConcurrentLinkedQueue<AttributeVertex<?>> attributeVerticesWritten;
     private boolean attributeSyncIsLocked;
 
     ThingGraph(Graphs graphManager) {
         this.graphManager = graphManager;
         thingsByIID = new ConcurrentHashMap<>();
         attributesByIID = new AttributeIIDMap();
-        attributesWritten = new ConcurrentLinkedQueue<>();
+        attributeVerticesWritten = new ConcurrentLinkedQueue<>();
         attributeSyncIsLocked = false;
     }
 
@@ -171,9 +171,21 @@ public class ThingGraph implements Graph<IID.Vertex.Thing, ThingVertex> {
     /**
      * Commits all the writes captured in this graph into storage.
      *
-     * TODO: describe the logic
+     * We start off by generating new IIDs for every {@code ThingVertex} (which
+     * does not actually include {@code AttributeVertex}). We then write the every
+     * {@code ThingVertex} onto the storage. Once all commit operations for every
+     * {@code ThingVertex} is done, we the write all the {@code AttributeVertex}
+     * as the last step. To do so, we acquire a lock from {@code AttributeSync}
+     * so that we have exclusive permission to access and manipulate it from
+     * within every vertex as we write them onto storage. If an attribute vertex
+     * was actually written to storage, it will be saved in
+     * {@code attributeVerticesWritten}, and we need to hold onto the lock we
+     * acquired from {@code AttributeSync} until we can {@code #confirm()} that
+     * they were actually committed at storage. If there were no attributes that
+     * needed to be written onto storage (because {@code AttributeSync} says they're
+     * already written in storage), then we can let go of the lock we had acquired.
      *
-     * @return TODO
+     * @return true if the operation results in locking the storage
      */
     @Override
     public boolean commit() {
@@ -186,7 +198,7 @@ public class ThingGraph implements Graph<IID.Vertex.Thing, ThingVertex> {
             attributeSyncIsLocked = false;
             storage().attributeSync().lock();
             attributesByIID.valueStream().parallel().forEach(v -> v.commit(true));
-            if (!attributesWritten.isEmpty()) attributeSyncIsLocked = true;
+            if (!attributeVerticesWritten.isEmpty()) attributeSyncIsLocked = true;
         } catch (InterruptedException e) {
             throw new HypergraphException(e);
         } finally {
@@ -200,17 +212,17 @@ public class ThingGraph implements Graph<IID.Vertex.Thing, ThingVertex> {
     public void confirm(boolean committed, long snapshot) {
         assert attributeSyncIsLocked;
         if (!committed) {
-            attributesWritten.parallelStream().forEach(v -> storage().attributeSync().get(v.iid()).status(NONE));
+            attributeVerticesWritten.parallelStream().forEach(v -> storage().attributeSync().get(v.iid()).status(NONE));
         } else {
             assert snapshot > 0;
-            attributesWritten.parallelStream().forEach(v -> storage().attributeSync().get(v.iid()).snapshot(snapshot));
+            attributeVerticesWritten.parallelStream().forEach(v -> storage().attributeSync().get(v.iid()).snapshot(snapshot));
         }
         storage().attributeSync().unlock();
         attributeSyncIsLocked = false;
     }
 
     public ConcurrentLinkedQueue<AttributeVertex<?>> attributesWritten() {
-        return attributesWritten;
+        return attributeVerticesWritten;
     }
 
     private class AttributeIIDMap {

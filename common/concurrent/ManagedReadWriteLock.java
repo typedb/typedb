@@ -21,6 +21,18 @@ package hypergraph.common.concurrent;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+/**
+ * A {@code ReentrantReadWriteLock} that wrapped in a {@code ManagedBlocker}.
+ *
+ * When a thread is blocked while waiting to acquire a lock, this class will
+ * possibly arrange for a spare thread to be activated if necessary, to ensure
+ * sufficient parallelism while the current thread is blocked. There are 2 blocking
+ * methods we would like to manage for a {@code ReentrantReadWriteLock}, they are
+ * {@code reentrantLock.readLock().lock()} and {@code reentrantLock.writeLock().lock()}.
+ * Each of them needs to be wrapped in a {@code ManagedBlocker}, and every thread
+ * needs to have one instance of each blocker. Thus, we hold each {@code ManagedBlocker}
+ * in a {@code ThreadLocal} object.
+ */
 public class ManagedReadWriteLock {
     private final ReentrantReadWriteLock reentrantLock = new ReentrantReadWriteLock();
     private ThreadLocal<ManagedReadBlocker> readBlocker = ThreadLocal.withInitial(ManagedReadBlocker::new);
