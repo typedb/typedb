@@ -32,6 +32,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.Properties;
 
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.DB_CACHE;
@@ -123,7 +124,7 @@ public class GraknTestStorage extends ExternalResource {
         org.apache.cassandra.io.util.FileUtils.createDirectory(directory);
         Path copyName = Paths.get(directory, "cassandra-embedded.yaml");
         // Create file in directory we just created and copy the stream content into it.
-        Files.copy(configStream, copyName);
+        Files.copy(configStream, copyName, StandardCopyOption.REPLACE_EXISTING);
         return copyName.toFile();
     }
 
