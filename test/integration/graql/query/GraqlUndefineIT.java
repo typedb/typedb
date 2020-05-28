@@ -124,7 +124,7 @@ public class GraqlUndefineIT {
         tx = session.transaction(Transaction.Type.WRITE);
         assertThat(tx.getType(NEW_TYPE).has().toArray(), hasItemInArray(tx.getAttributeType("name")));
 
-        exception.expectMessage(ErrorMessage.ILLEGAL_TYPE_UNHAS_ATTRIBUTE_NOT_EXIST.getMessage(NEW_TYPE, "has", "title"));
+        exception.expectMessage(ErrorMessage.ILLEGAL_TYPE_UNHAS_ATTRIBUTE_NOT_EXIST.getMessage(NEW_TYPE, "key", "title"));
         tx.execute(Graql.undefine(type(NEW_TYPE.getValue()).key("title")));
     }
 

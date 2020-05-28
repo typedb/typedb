@@ -1262,7 +1262,7 @@ public class GraknClientIT {
     @Test
     public void setAttributeValueWithValueTypeDate() {
         try (GraknClient.Transaction tx = remoteSession.transaction().write()) {
-            AttributeType.Remote<LocalDateTime> birthDateType = tx.putAttributeType("birth-date",  ValueType.DATE);
+            AttributeType.Remote<LocalDateTime> birthDateType = tx.putAttributeType("birth-date",  ValueType.DATETIME);
             LocalDateTime date = LocalDateTime.now();
             Attribute<LocalDateTime> dateAttribute = birthDateType.create(date);
             assertEquals(date, dateAttribute.value());
