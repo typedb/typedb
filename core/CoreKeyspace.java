@@ -32,6 +32,7 @@ import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class CoreKeyspace implements Hypergraph.Keyspace {
@@ -40,20 +41,27 @@ public class CoreKeyspace implements Hypergraph.Keyspace {
     private final CoreHypergraph core;
     private final OptimisticTransactionDB rocksDB;
     private final KeyGenerator.Persisted keyGenerator;
+    private final ConcurrentSkipListSet<Long> writeSnapshots;
     private final CoreAttributeSync attributeSync;
-    private final AtomicBoolean isOpen;
     private final Set<CoreSession> sessions;
+    private final AtomicBoolean isOpen;
 
     private CoreKeyspace(CoreHypergraph core, String name) {
         this.name = name;
         this.core = core;
         keyGenerator = new KeyGenerator.Persisted();
-        attributeSync = new CoreAttributeSync();
         sessions = ConcurrentHashMap.newKeySet();
         isOpen = new AtomicBoolean(false);
+        writeSnapshots = new ConcurrentSkipListSet<>();
+        attributeSync = new CoreAttributeSync(
+                this,
+                core.properties().ATTRIBUTE_SYNC_EXPIRE_DURATION,
+                core.properties().ATTRIBUTE_SYNC_EVICTION_DURATION,
+                core.properties().MEMORY_MINIMUM_RESERVE
+        );
 
         try {
-            rocksDB = OptimisticTransactionDB.open(this.core.options(), directory().toString());
+            rocksDB = OptimisticTransactionDB.open(this.core.rocksOptions(), directory().toString());
         } catch (RocksDBException e) {
             throw new HypergraphException(e);
         }
@@ -109,13 +117,30 @@ public class CoreKeyspace implements Hypergraph.Keyspace {
         return keyGenerator;
     }
 
+    void trackWriteSnapshot(long snapshot) {
+        writeSnapshots.add(snapshot);
+    }
+
+    void untrackWriteSnapshot(long snapshot) {
+        writeSnapshots.remove(snapshot);
+    }
+
+    long oldestWriteSnapshot() {
+        return writeSnapshots.first();
+    }
+
     AttributeSync attributeSync() {
         return attributeSync;
+    }
+
+    public void remove(CoreSession session) {
+        sessions.remove(session);
     }
 
     void close() {
         if (isOpen.compareAndSet(true, false)) {
             sessions.parallelStream().forEach(CoreSession::close);
+            attributeSync.close();
             rocksDB.close();
         }
     }

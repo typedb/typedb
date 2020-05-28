@@ -36,13 +36,6 @@ public interface AttributeSync {
     CommitSync get(IID.Vertex.Attribute attributeIID);
 
     /**
-     * Removes the {@code CommitSync} for a given attribute.
-     *
-     * @param attributeIID of the attribute of the {@code CommitSync} to remove
-     */
-    void remove(IID.Vertex.Attribute attributeIID);
-
-    /**
      * Acquires the lock to work with the {@code AttributeSync}.
      *
      * Only one transaction can work with the {@code AttributeSync} at a time.

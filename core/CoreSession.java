@@ -55,6 +55,9 @@ public class CoreSession implements Hypergraph.Session {
 
     void remove(CoreTransaction transaction) {
         transactions.remove(transaction);
+        if (transaction.type().isWrite()) {
+            keyspace.untrackWriteSnapshot(transaction.snapshot());
+        }
     }
 
     @Override
@@ -66,6 +69,9 @@ public class CoreSession implements Hypergraph.Session {
     public CoreTransaction transaction(Hypergraph.Transaction.Type type) {
         CoreTransaction transaction = new CoreTransaction(this, type);
         transactions.add(transaction);
+        if (transaction.type().isWrite()) {
+            keyspace.trackWriteSnapshot(transaction.snapshot());
+        }
         return transaction;
     }
 
@@ -78,6 +84,7 @@ public class CoreSession implements Hypergraph.Session {
     public void close() {
         if (isOpen.compareAndSet(true, false)) {
             transactions.parallelStream().forEach(CoreTransaction::close);
+            keyspace.remove(this);
         }
     }
 }

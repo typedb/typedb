@@ -84,6 +84,19 @@ class CoreTransaction implements Hypergraph.Transaction {
         return graph;
     }
 
+    Long snapshot() {
+        return snapshot;
+    }
+
+    public CoreStorage storage() {
+        return storage;
+    }
+
+    @Override
+    public Type type() {
+        return type;
+    }
+
     @Override
     public boolean isOpen() {
         return this.isOpen.get();
@@ -149,11 +162,6 @@ class CoreTransaction implements Hypergraph.Transaction {
     }
 
     @Override
-    public Type type() {
-        return type;
-    }
-
-    @Override
     public void close() {
         if (isOpen.compareAndSet(true, false)) {
             closeResources();
@@ -167,10 +175,6 @@ class CoreTransaction implements Hypergraph.Transaction {
         readOptions.close();
         rocksTransaction.close();
         session.remove(this);
-    }
-
-    public CoreStorage storage() {
-        return storage;
     }
 
     class CoreStorage implements Storage {

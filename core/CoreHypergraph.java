@@ -38,8 +38,9 @@ public class CoreHypergraph implements Hypergraph {
     }
 
     private final Path directory;
-    private final Options options;
+    private final Options rocksOptions;
     private final AtomicBoolean isOpen;
+    private final CoreProperties properties;
     private final CoreKeyspaceManager keyspaceMgr;
 
     public static CoreHypergraph open(String directory) {
@@ -52,9 +53,10 @@ public class CoreHypergraph implements Hypergraph {
 
     private CoreHypergraph(String directory, Properties properties) {
         this.directory = Paths.get(directory);
+        this.properties = new CoreProperties(properties);
 
-        options = new Options().setCreateIfMissing(true);
-        setOptionsFromProperties(properties);
+        rocksOptions = new Options().setCreateIfMissing(true);
+        setOptionsFromProperties();
 
         keyspaceMgr = new CoreKeyspaceManager(this);
         keyspaceMgr.loadAll();
@@ -63,7 +65,7 @@ public class CoreHypergraph implements Hypergraph {
         isOpen.set(true);
     }
 
-    private void setOptionsFromProperties(Properties properties) {
+    private void setOptionsFromProperties() {
         // TODO: configure optimisation paramaters
     }
 
@@ -71,8 +73,12 @@ public class CoreHypergraph implements Hypergraph {
         return directory;
     }
 
-    Options options() {
-        return options;
+    CoreProperties properties() {
+        return properties;
+    }
+
+    Options rocksOptions() {
+        return rocksOptions;
     }
 
     @Override
@@ -99,8 +105,7 @@ public class CoreHypergraph implements Hypergraph {
     public void close() {
         if (isOpen.compareAndSet(true, false)) {
             keyspaceMgr.getAll().parallelStream().forEach(CoreKeyspace::close);
-            options.close();
+            rocksOptions.close();
         }
     }
-
 }
