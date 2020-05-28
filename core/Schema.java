@@ -306,7 +306,7 @@ public final class Schema {
         KEY("@key-%s"),
 
         /**
-         * The label of a role in key, played by the owner of the key
+         * The label of a role in key, played by the owner of the ke
          */
         KEY_OWNER("@key-%s-owner"),
 

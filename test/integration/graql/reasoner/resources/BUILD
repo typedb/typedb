@@ -27,7 +27,7 @@ filegroup(
 
 filegroup(
     name = "reified-resource-applicability",
-    srcs = ["reifiedResourceApplicabilityTest.gql"],
+    srcs = ["explicitOwnershipRelationApplicabilityTest.gql"],
 )
 
 filegroup(
