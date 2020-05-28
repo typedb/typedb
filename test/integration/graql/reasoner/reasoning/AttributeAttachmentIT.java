@@ -17,9 +17,7 @@
 
 package grakn.core.graql.reasoner.reasoning;
 
-import com.google.common.collect.Sets;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import grakn.core.test.rule.GraknTestServer;
@@ -30,24 +28,13 @@ import graql.lang.statement.Variable;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
-import static grakn.core.core.Schema.ImplicitType.HAS;
-import static grakn.core.core.Schema.ImplicitType.HAS_OWNER;
-import static grakn.core.core.Schema.ImplicitType.HAS_VALUE;
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
-import static graql.lang.Graql.type;
 import static graql.lang.Graql.var;
-import static java.util.stream.Collectors.toSet;
-import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 /**

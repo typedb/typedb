@@ -101,12 +101,13 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
             relation.unassign(role, this);
         });
 
+        deleteAttributeOwnerships();
+
         if (!isDeleted()) {
             // must happen before deleteNode() so we can access properties on the vertex
             conceptNotificationChannel.thingDeleted(this);
         }
 
-        deleteAttributeOwnerships();
         deleteNode();
     }
 
