@@ -40,6 +40,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -213,5 +214,17 @@ public class GraqlTraversalImpl implements GraqlTraversal {
 
             return sb.toString();
         }).collect(joining(", ")) + "}";
+    }
+
+    @Override
+    public int hashCode() {
+        return fragments.hashCode();
+    }
+
+    @Override
+    public boolean equals(Object object) {
+        if (this == object) return true;
+        if (object == null || getClass() != object.getClass()) return false;
+        return fragments.equals(((GraqlTraversalImpl)object).fragments);
     }
 }
