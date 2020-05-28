@@ -698,25 +698,11 @@ public class ComputeExecutorImpl implements ComputeExecutor {
     }
 
     /**
-     * Helper method to get implicit relation types of attributes
-     *
-     * @param types
-     * @return a set of type Labels
-     */
-    private static Set<Label> getAttributeImplicitRelationTypeLabes(Set<Type> types) {
-        // If the sub graph contains attributes, we may need to add implicit relations to the path
-        return types.stream()
-                .filter(Concept::isAttributeType)
-                .map(attributeType -> Schema.ImplicitType.HAS.getLabel(attributeType.label()))
-                .collect(toSet());
-    }
-
-    /**
      * Helper method to get the types to be included in the query target
      *
      * @return a set of Types
      */
-    private ImmutableSet<Type> targetTypes(Computable.Targetable<?> query) {
+    private Set<Type> targetTypes(Computable.Targetable<?> query) {
         if (query.of().isEmpty()) {
             throw GraqlSemanticException.statisticsAttributeTypesNotSpecified();
         }
@@ -772,7 +758,7 @@ public class ComputeExecutorImpl implements ComputeExecutor {
      * @return a set of type labels
      */
     private Set<Label> extendedScopeTypeLabels(GraqlCompute.Statistics.Value query) {
-        Set<Label> extendedTypeLabels = getAttributeImplicitRelationTypeLabes(targetTypes(query));
+        Set<Label> extendedTypeLabels = targetTypes(query).stream().map(SchemaConcept::label).collect(toSet());
         extendedTypeLabels.addAll(scopeTypeLabels(query));
         extendedTypeLabels.addAll(query.of().stream().map(Label::of).collect(toSet()));
         return extendedTypeLabels;

@@ -48,12 +48,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import static grakn.core.core.Schema.ImplicitType.HAS;
-import static grakn.core.core.Schema.ImplicitType.HAS_OWNER;
-import static grakn.core.core.Schema.ImplicitType.HAS_VALUE;
-import static grakn.core.core.Schema.ImplicitType.KEY;
-import static grakn.core.core.Schema.ImplicitType.KEY_OWNER;
-import static grakn.core.core.Schema.ImplicitType.KEY_VALUE;
 import static grakn.core.util.GraqlTestUtil.assertExists;
 import static grakn.core.util.GraqlTestUtil.assertNotExists;
 import static graql.lang.Graql.type;
