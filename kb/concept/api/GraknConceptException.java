@@ -235,4 +235,12 @@ public class GraknConceptException extends GraknException {
         return new GraknConceptException(ErrorMessage.UNHANDLED_CONCEPT_DELETION.getMessage(concept.toString()));
     }
 
+    /**
+     * Thrown when trying to modify an attribute type's value type in its subtype
+     */
+    public static GraknConceptException attributeSubtypeModifiesParentValueType(AttributeType.ValueType childValue, Label childLabel, AttributeType parent) {
+        return new GraknConceptException(ErrorMessage.ATTRIBUTE_SUBTYPE_MODIFIES_PARENT_VALUE_TYPE.getMessage(
+                childLabel, childValue, parent.label(), parent.valueType()));
+    }
+
 }

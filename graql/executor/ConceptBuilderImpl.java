@@ -393,8 +393,13 @@ public class ConceptBuilderImpl implements ConceptBuilder {
         } else if (superConcept.isRole()) {
             concept = putSchemaConcept(label, () -> conceptManager.createRole(label, superConcept.asRole()), Role.class);
         } else if (superConcept.isAttributeType()) {
-            AttributeType attributeType = superConcept.asAttributeType();
-            AttributeType.ValueType<?> valueType = useOrDefault(VALUE_TYPE, attributeType.valueType());
+            AttributeType superAttributeType = superConcept.asAttributeType();
+            AttributeType.ValueType<?> superValueType = superAttributeType.valueType();
+            AttributeType.ValueType<?> valueType = useOrDefault(VALUE_TYPE, superAttributeType.valueType());
+            if (superValueType != null
+                && !valueType.equals(superValueType)) {
+                throw GraknConceptException.attributeSubtypeModifiesParentValueType(valueType, label, superAttributeType);
+            }
             concept = putSchemaConcept(label, () -> conceptManager.createAttributeType(label, superConcept.asAttributeType(), valueType), AttributeType.class);
         } else if (superConcept.isRule()) {
             concept = putSchemaConcept(label, () -> conceptManager.createRule(label, use(WHEN), use(THEN), superConcept.asRule()), Rule.class);

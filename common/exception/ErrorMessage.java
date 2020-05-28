@@ -194,6 +194,7 @@ public enum ErrorMessage {
     DELETE_INSTANCE_INCORRECT_TYPE_OR_SUBTYPE("Cannot delete instance [%s] (%s), it is not of the required type (or subtype of) [%s]"),
     DELETE_INSTANCE_INCORRECT_TYPE("Cannot delete instance [%s] (%s), it is not of the required direct type [%s]"),
     UNHANDLED_CONCEPT_DELETION("Deletion of concept [%s] is not handled."),
+    ATTRIBUTE_SUBTYPE_MODIFIES_PARENT_VALUE_TYPE("Cannot set attribute type [%s] to have value type [%s], because its parent [%s] has a different value type [%s]"),
 
     //Templating
 
