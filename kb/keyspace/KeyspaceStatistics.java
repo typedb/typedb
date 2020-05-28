@@ -26,8 +26,6 @@ import grakn.core.kb.concept.manager.ConceptManager;
  */
 public interface KeyspaceStatistics {
     long count(ConceptManager conceptManager, Label label);
-
-    // TODO - not implemented yet
     long countOwnerships(ConceptManager conceptManager, Label attributeOwned);
     void commit(ConceptManager conceptManager, StatisticsDelta statisticsDelta);
 }

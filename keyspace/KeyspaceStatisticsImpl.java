@@ -148,6 +148,10 @@ public class KeyspaceStatisticsImpl implements KeyspaceStatistics {
         if (schemaConcept == null) {
             return -1;
         }
+        if (!schemaConcept.isType()) {
+            // if it's a role
+            return 1;
+        }
         Type conceptAsType = schemaConcept.asType();
         return conceptAsType.getCount();
     }

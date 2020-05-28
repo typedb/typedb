@@ -314,7 +314,6 @@ public class KeyspaceStatisticsIT {
             To debug this: set a breakpoint in `getSchemaConcept` in the server
             Somehow the age isn't being looked up properly because the label is not in the schema label cache?
 
-
              */
             grakn.client.concept.type.AttributeType.Remote<Integer> ageT = tx1.<Integer>getAttributeType("age").asRemote(tx1);
             grakn.client.concept.type.EntityType.Remote personT = tx1.getEntityType("person").asRemote(tx1);
