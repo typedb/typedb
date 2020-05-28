@@ -159,7 +159,7 @@ public class AtomicEquivalenceIT {
 
     private static Map<AttributeType.ValueType<?>, Object> testValues = ImmutableMap.<AttributeType.ValueType<?>, Object>builder()
             .put(AttributeType.ValueType.BOOLEAN, true)
-            .put(AttributeType.ValueType.DATE, LocalDateTime.now())
+            .put(AttributeType.ValueType.DATETIME, LocalDateTime.now())
             .put(AttributeType.ValueType.DOUBLE, 10.0)
             .put(AttributeType.ValueType.FLOAT, 10.0)
             .put(AttributeType.ValueType.INTEGER, 10)

@@ -27,7 +27,7 @@ resource-string sub attribute, value string;
 resource-long sub attribute, value long;
 resource-double sub attribute, value double;
 resource-boolean sub attribute, value boolean;
-resource-date sub attribute, value date;
+resource-date sub attribute, value datetime;
 
 insert
 
