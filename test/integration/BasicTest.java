@@ -113,44 +113,44 @@ public class BasicTest {
                             tx -> {
                                 AttributeType name = tx.concepts().putAttributeTypeString("name");
                                 Util.assertNotNulls(name);
-                                assertEquals(name.sup(), rootAttributeType);
+                                assertEquals(rootAttributeType, name.sup());
                             },
                             tx -> {
                                 AttributeType.Long age = tx.concepts().putAttributeTypeLong("age");
                                 Util.assertNotNulls(age);
-                                assertEquals(age.sup(), rootAttributeType);
+                                assertEquals(rootAttributeType, age.sup());
                             },
                             tx -> {
                                 RelationType marriage = tx.concepts().putRelationType("marriage");
                                 marriage.relates("husband");
                                 marriage.relates("wife");
                                 Util.assertNotNulls(marriage);
-                                assertEquals(marriage.sup(), rootRelationType);
+                                assertEquals(rootRelationType, marriage.sup());
                             },
                             tx -> {
                                 RelationType employment = tx.concepts().putRelationType("employment");
                                 employment.relates("employee");
                                 employment.relates("employer");
                                 Util.assertNotNulls(employment);
-                                assertEquals(employment.sup(), rootRelationType);
+                                assertEquals(rootRelationType, employment.sup());
                             },
                             tx -> {
                                 EntityType person = tx.concepts().putEntityType("person");
                                 Util.assertNotNulls(person);
-                                assertEquals(person.sup(), rootEntityType);
+                                assertEquals(rootEntityType, person.sup());
 
                                 Stream<Consumer<Hypergraph.Transaction>> subPersonAssertions = Stream.of(
                                         tx2 -> {
                                             EntityType man = tx2.concepts().putEntityType("man");
                                             man.sup(person);
                                             Util.assertNotNulls(man);
-                                            assertEquals(man.sup(), person);
+                                            assertEquals(person, man.sup());
                                         },
                                         tx2 -> {
                                             EntityType woman = tx2.concepts().putEntityType("woman");
                                             woman.sup(person);
                                             Util.assertNotNulls(woman);
-                                            assertEquals(woman.sup(), person);
+                                            assertEquals(person, woman.sup());
                                         }
                                 );
                                 subPersonAssertions.parallel().forEach(assertions -> assertions.accept(tx));
@@ -158,7 +158,7 @@ public class BasicTest {
                             tx -> {
                                 EntityType company = tx.concepts().putEntityType("company");
                                 Util.assertNotNulls(company);
-                                assertEquals(company.sup(), rootEntityType);
+                                assertEquals(rootEntityType, company.sup());
                             }
                     );
 
@@ -227,12 +227,12 @@ public class BasicTest {
                 tx -> {
                     AttributeType.String name = tx.concepts().getAttributeType("name").asString();
                     Util.assertNotNulls(name);
-                    assertEquals(name.sup(), rootAttributeType);
+                    assertEquals(rootAttributeType, name.sup());
                 },
                 tx -> {
                     AttributeType.Long age = tx.concepts().getAttributeType("age").asLong();
                     Util.assertNotNulls(age);
-                    assertEquals(age.sup(), rootAttributeType);
+                    assertEquals(rootAttributeType, age.sup());
                 },
                 tx -> {
                     RelationType marriage = tx.concepts().getRelationType("marriage");
@@ -248,23 +248,23 @@ public class BasicTest {
                     RoleType employee = employment.role("employee");
                     RoleType employer = employment.role("employer");
                     Util.assertNotNulls(employment, employee, employer);
-                    assertEquals(employment.sup(), rootRelationType);
+                    assertEquals(rootRelationType, employment.sup());
                 },
                 tx -> {
                     EntityType person = tx.concepts().getEntityType("person");
                     Util.assertNotNulls(person);
-                    assertEquals(person.sup(), rootEntityType);
+                    assertEquals(rootEntityType, person.sup());
 
                     Stream<Consumer<Hypergraph.Transaction>> subPersonAssertions = Stream.of(
                             tx2 -> {
                                 EntityType man = tx2.concepts().getEntityType("man");
                                 Util.assertNotNulls(man);
-                                assertEquals(man.sup(), person);
+                                assertEquals(person, man.sup());
                             },
                             tx2 -> {
                                 EntityType woman = tx2.concepts().getEntityType("woman");
                                 Util.assertNotNulls(woman);
-                                assertEquals(woman.sup(), person);
+                                assertEquals(person, woman.sup());
                             }
                     );
                     subPersonAssertions.parallel().forEach(assertions -> assertions.accept(tx));
@@ -272,7 +272,7 @@ public class BasicTest {
                 tx -> {
                     EntityType company = tx.concepts().getEntityType("company");
                     Util.assertNotNulls(company);
-                    assertEquals(company.sup(), rootEntityType);
+                    assertEquals(rootEntityType, company.sup());
                 }
         );
 

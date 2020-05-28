@@ -22,6 +22,7 @@ import hypergraph.Hypergraph;
 import hypergraph.concept.thing.Attribute;
 import hypergraph.concept.type.AttributeType;
 import hypergraph.core.CoreHypergraph;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -32,6 +33,7 @@ import java.time.LocalDateTime;
 
 import static hypergraph.test.integration.Util.assertNotNulls;
 import static hypergraph.test.integration.Util.resetDirectory;
+import static org.junit.Assert.assertEquals;
 
 public class AttributeSyncTest {
 
@@ -79,13 +81,19 @@ public class AttributeSyncTest {
                 }
 
                 try (Hypergraph.Transaction transaction = session.transaction(Hypergraph.Transaction.Type.READ)) {
+                    LocalDateTime dateTime = LocalDateTime.of(1991, 1, 1, 0, 0);
+
                     Attribute.Boolean isAlive = transaction.concepts().getAttributeType("is-alive").asBoolean().get(true);
                     Attribute.Long age = transaction.concepts().getAttributeType("age").asLong().get(18);
                     Attribute.Double score = transaction.concepts().getAttributeType("score").asDouble().get(90.5);
                     Attribute.String name = transaction.concepts().getAttributeType("name").asString().get("alice");
-                    Attribute.DateTime dob = transaction.concepts().getAttributeType("birth-date").asDateTime().get(LocalDateTime.of(1991, 1, 1, 0, 0));
+                    Attribute.DateTime dob = transaction.concepts().getAttributeType("birth-date").asDateTime().get(dateTime);
 
                     assertNotNulls(isAlive, age, score, name, dob);
+                    assertEquals(true, isAlive.value());
+                    assertEquals(18, age.value().longValue());
+                    assertEquals(90.5, score.value(), 0.001);
+                    assertEquals(dateTime, dob.value());
                 }
             }
         }
@@ -93,7 +101,6 @@ public class AttributeSyncTest {
 
     @Test
     public void write_different_attributes_in_parallel_successfully() {
-
     }
 
     @Test

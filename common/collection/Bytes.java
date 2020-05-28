@@ -94,7 +94,7 @@ public class Bytes {
     }
 
     public static double bytesToDouble(byte[] bytes) {
-        return ByteBuffer.allocate(DOUBLE_SIZE).getDouble();
+        return ByteBuffer.wrap(bytes).getDouble();
     }
 
     public static byte[] stringToBytes(String value, Charset encoding) {
