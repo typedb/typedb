@@ -167,6 +167,43 @@ public class AttributeSyncTest {
 
     @Test
     public void write_identical_attributes_in_parallel_successfully() {
+        LocalDateTime date_1992_2_3_4_5 = LocalDateTime.of(1991, 2, 3, 4, 5);
 
+        try (Hypergraph graph = CoreHypergraph.open(directory.toString())) {
+            try (Hypergraph.Session session = graph.session(keyspace)) {
+                Hypergraph.Transaction txn1 = session.transaction(Hypergraph.Transaction.Type.WRITE);
+                Hypergraph.Transaction txn2 = session.transaction(Hypergraph.Transaction.Type.WRITE);
+                Hypergraph.Transaction txn3 = session.transaction(Hypergraph.Transaction.Type.WRITE);
+
+                isAlive(txn1).put(true);
+                isAlive(txn2).put(true);
+                isAlive(txn3).put(true);
+                age(txn1).put(17);
+                age(txn2).put(17);
+                age(txn3).put(17);
+                score(txn1).put(70.5);
+                score(txn2).put(70.5);
+                score(txn3).put(70.5);
+                name(txn1).put("alice");
+                name(txn2).put("alice");
+                name(txn3).put("alice");
+                dob(txn1).put(date_1992_2_3_4_5);
+                dob(txn2).put(date_1992_2_3_4_5);
+                dob(txn3).put(date_1992_2_3_4_5);
+
+                txn1.commit();
+                txn2.commit();
+                txn3.commit();
+
+                try (Hypergraph.Transaction txn = session.transaction(Hypergraph.Transaction.Type.READ)) {
+
+                    assertEquals(true, isAlive(txn).get(true).value());
+                    assertEquals(17, age(txn).get(17).value().longValue());
+                    assertEquals(70.5, score(txn).get(70.5).value(), 0.001);
+                    assertEquals("alice", name(txn).get("alice").value());
+                    assertEquals(date_1992_2_3_4_5, dob(txn).get(date_1992_2_3_4_5).value());
+                }
+            }
+        }
     }
 }
