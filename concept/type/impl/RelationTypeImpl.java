@@ -204,8 +204,9 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
 
     @Override
     public RelationImpl create(boolean isInferred) {
-        if (isAbstract())
+        if (isAbstract()) {
             throw new HypergraphException(ILLEGAL_ABSTRACT_WRITE.format(Relation.class.getSimpleName(), label()));
+        }
         ThingVertex instance = vertex.graph().thingGraph().insert(vertex.iid(), isInferred);
         return new RelationImpl(instance);
     }
