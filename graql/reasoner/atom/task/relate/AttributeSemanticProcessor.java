@@ -70,7 +70,7 @@ public class AttributeSemanticProcessor implements SemanticProcessor<AttributeAt
         Variable childRelationVarName = childAtom.getRelationVariable();
         Variable parentRelationVarName = parent.getRelationVariable();
         if (parentRelationVarName.isReturned()){
-            unifier = unifier.merge(new UnifierImpl(ImmutableMap.of(parentRelationVarName, childRelationVarName)));
+            unifier = unifier.merge(new UnifierImpl(ImmutableMap.of(childRelationVarName, parentRelationVarName)));
         }
 
         return AtomicUtil.isPredicateCompatible(childAtom, parentAtom, unifier, unifierType, ctx.conceptManager())?
