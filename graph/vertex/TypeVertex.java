@@ -24,6 +24,8 @@ import hypergraph.graph.edge.TypeEdge;
 import hypergraph.graph.util.IID;
 import hypergraph.graph.util.Schema;
 
+import java.util.Iterator;
+
 public interface TypeVertex extends Vertex<
         IID.Vertex.Type,
         Schema.Vertex.Type, TypeVertex,
@@ -59,4 +61,6 @@ public interface TypeVertex extends Vertex<
     TypeVertex regex(String regex);
 
     void commit();
+
+    Iterator<? extends ThingVertex> instances();
 }

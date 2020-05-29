@@ -47,6 +47,16 @@ public interface Attribute extends Thing {
     @Override
     Attribute has(Attribute attribute);
 
+    Attribute.Boolean asBoolean();
+
+    Attribute.Long asLong();
+
+    Attribute.Double asDouble();
+
+    Attribute.String asString();
+
+    Attribute.DateTime asDateTime();
+
     interface Boolean extends Attribute {
 
         java.lang.Boolean value();

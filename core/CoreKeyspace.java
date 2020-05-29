@@ -32,8 +32,9 @@ import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class CoreKeyspace implements Hypergraph.Keyspace {
 
@@ -41,7 +42,7 @@ public class CoreKeyspace implements Hypergraph.Keyspace {
     private final CoreHypergraph core;
     private final OptimisticTransactionDB rocksDB;
     private final KeyGenerator.Persisted keyGenerator;
-    private final ConcurrentSkipListSet<Long> writeSnapshots;
+    private final ConcurrentSkipListMap<Long, AtomicInteger> writeSnapshots;
     private final CoreAttributeSync attributeSync;
     private final Set<CoreSession> sessions;
     private final AtomicBoolean isOpen;
@@ -52,7 +53,7 @@ public class CoreKeyspace implements Hypergraph.Keyspace {
         keyGenerator = new KeyGenerator.Persisted();
         sessions = ConcurrentHashMap.newKeySet();
         isOpen = new AtomicBoolean(false);
-        writeSnapshots = new ConcurrentSkipListSet<>();
+        writeSnapshots = new ConcurrentSkipListMap<>();
         attributeSync = new CoreAttributeSync(
                 this,
                 core.properties().ATTRIBUTE_SYNC_EXPIRE_DURATION,
@@ -118,15 +119,19 @@ public class CoreKeyspace implements Hypergraph.Keyspace {
     }
 
     void trackWriteSnapshot(long snapshot) {
-        writeSnapshots.add(snapshot);
+        writeSnapshots.computeIfAbsent(snapshot, s -> new AtomicInteger()).incrementAndGet();
     }
 
     void untrackWriteSnapshot(long snapshot) {
-        writeSnapshots.remove(snapshot);
+        writeSnapshots.computeIfPresent(snapshot, (s, count) -> {
+            int newCount = count.decrementAndGet();
+            if (newCount > 0) return count;
+            else return null;
+        });
     }
 
     long oldestWriteSnapshot() {
-        return writeSnapshots.first();
+        return writeSnapshots.firstKey();
     }
 
     AttributeSync attributeSync() {

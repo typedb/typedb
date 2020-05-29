@@ -139,7 +139,8 @@ class CoreTransaction implements Hypergraph.Transaction {
             try {
                 locking = graph.commit();
                 rocksTransaction.commit();
-                newSnapshot = rocksTransaction.getSnapshot().getSequenceNumber();
+                newSnapshot = session.rocks().getLatestSequenceNumber();
+                assert newSnapshot > this.snapshot;
             } catch (RocksDBException e) {
                 throw new HypergraphException(e);
             } finally {

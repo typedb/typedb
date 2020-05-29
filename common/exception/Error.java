@@ -105,8 +105,8 @@ public abstract class Error<TYPE extends Error<TYPE>> {
 
     public static class ConceptRead extends Error {
 
-        public static final TypeWrite INVALID_CONCEPT_CASTING =
-                new TypeWrite(1, "Invalid concept conversion to '%s'.");
+        public static final ConceptRead INVALID_CONCEPT_CASTING =
+                new ConceptRead(1, "Invalid concept conversion to '%s'.");
         private static final String codePrefix = "CON";
         private static final String descriptionPrefix = "Invalid Concept Retrieval";
 

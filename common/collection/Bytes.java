@@ -94,6 +94,7 @@ public class Bytes {
     }
 
     public static double bytesToDouble(byte[] bytes) {
+        assert bytes.length == DOUBLE_SIZE;
         return ByteBuffer.wrap(bytes).getDouble();
     }
 

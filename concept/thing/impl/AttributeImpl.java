@@ -18,12 +18,15 @@
 
 package hypergraph.concept.thing.impl;
 
+import hypergraph.common.exception.HypergraphException;
 import hypergraph.concept.thing.Attribute;
 import hypergraph.concept.type.impl.AttributeTypeImpl;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.vertex.AttributeVertex;
 
 import java.time.LocalDateTime;
+
+import static hypergraph.common.exception.Error.ConceptRead.INVALID_CONCEPT_CASTING;
 
 public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribute {
 
@@ -33,6 +36,8 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
         super(vertex);
         this.attributeVertex = vertex;
     }
+
+    public abstract VALUE value();
 
     @Override
     public AttributeTypeImpl type() {
@@ -44,7 +49,30 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
         return null; //TODO
     }
 
-    public abstract VALUE value();
+    @Override
+    public AttributeImpl.Boolean asBoolean() {
+        throw new HypergraphException(INVALID_CONCEPT_CASTING.format(Attribute.Boolean.class.getCanonicalName()));
+    }
+
+    @Override
+    public AttributeImpl.Long asLong() {
+        throw new HypergraphException(INVALID_CONCEPT_CASTING.format(Attribute.Long.class.getCanonicalName()));
+    }
+
+    @Override
+    public AttributeImpl.Double asDouble() {
+        throw new HypergraphException(INVALID_CONCEPT_CASTING.format(Attribute.Double.class.getCanonicalName()));
+    }
+
+    @Override
+    public AttributeImpl.String asString() {
+        throw new HypergraphException(INVALID_CONCEPT_CASTING.format(Attribute.Long.class.getCanonicalName()));
+    }
+
+    @Override
+    public AttributeImpl.DateTime asDateTime() {
+        throw new HypergraphException(INVALID_CONCEPT_CASTING.format(Attribute.DateTime.class.getCanonicalName()));
+    }
 
     public static class Boolean extends AttributeImpl<java.lang.Boolean> implements Attribute.Boolean {
 
@@ -56,6 +84,11 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
         @Override
         public java.lang.Boolean value() {
             return attributeVertex.value();
+        }
+
+        @Override
+        public AttributeImpl.Boolean asBoolean() {
+            return this;
         }
     }
 
@@ -70,6 +103,11 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
         public java.lang.Long value() {
             return attributeVertex.value();
         }
+
+        @Override
+        public AttributeImpl.Long asLong() {
+            return this;
+        }
     }
 
     public static class Double extends AttributeImpl<java.lang.Double> implements Attribute.Double {
@@ -82,6 +120,11 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
         @Override
         public java.lang.Double value() {
             return attributeVertex.value();
+        }
+
+        @Override
+        public AttributeImpl.Double asDouble() {
+            return this;
         }
     }
 
@@ -96,6 +139,11 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
         public java.lang.String value() {
             return attributeVertex.value();
         }
+
+        @Override
+        public AttributeImpl.String asString() {
+            return this;
+        }
     }
 
     public static class DateTime extends AttributeImpl<java.time.LocalDateTime> implements Attribute.DateTime {
@@ -108,6 +156,11 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
         @Override
         public java.time.LocalDateTime value() {
             return attributeVertex.value();
+        }
+
+        @Override
+        public AttributeImpl.DateTime asDateTime() {
+            return this;
         }
     }
 }

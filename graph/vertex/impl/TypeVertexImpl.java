@@ -24,14 +24,15 @@ import hypergraph.graph.TypeGraph;
 import hypergraph.graph.adjacency.Adjacency;
 import hypergraph.graph.adjacency.TypeAdjacency;
 import hypergraph.graph.adjacency.impl.TypeAdjacencyImpl;
-import hypergraph.graph.edge.Edge;
 import hypergraph.graph.edge.TypeEdge;
 import hypergraph.graph.util.IID;
 import hypergraph.graph.util.Schema;
+import hypergraph.graph.vertex.ThingVertex;
 import hypergraph.graph.vertex.TypeVertex;
 
 import javax.annotation.Nullable;
 import java.util.Iterator;
+import java.util.stream.Stream;
 
 import static hypergraph.common.collection.Bytes.join;
 
@@ -157,6 +158,11 @@ public abstract class TypeVertexImpl extends VertexImpl<IID.Vertex.Type, Schema.
             commitIndex();
             commitProperties();
             commitEdges();
+        }
+
+        @Override
+        public Iterator<? extends ThingVertex> instances() {
+            throw new HypergraphException(Error.Transaction.ILLEGAL_OPERATION);
         }
 
         @Override
@@ -305,11 +311,6 @@ public abstract class TypeVertexImpl extends VertexImpl<IID.Vertex.Type, Schema.
         }
 
         @Override
-        public void commit() {
-            commitEdges();
-        }
-
-        @Override
         public void delete() {
             ins.deleteAll();
             outs.deleteAll();
@@ -319,10 +320,15 @@ public abstract class TypeVertexImpl extends VertexImpl<IID.Vertex.Type, Schema.
             while (keys.hasNext()) graph.storage().delete(keys.next());
         }
 
-        private void commitEdges() {
+        @Override
+        public void commit() {
             outs.forEach(TypeEdge::commit);
             ins.forEach(TypeEdge::commit);
         }
 
+        @Override
+        public Iterator<? extends ThingVertex> instances() {
+            return null;
+        }
     }
 }
