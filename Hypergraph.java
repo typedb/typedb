@@ -41,12 +41,15 @@ public interface Hypergraph extends AutoCloseable {
 
     interface KeyspaceManager {
 
+        boolean contains(String keyspace);
+
         Keyspace create(String keyspace);
 
         Keyspace get(String keyspace);
 
         Set<? extends Keyspace> getAll();
     }
+
     /**
      * A Hypergraph Keyspace
      *

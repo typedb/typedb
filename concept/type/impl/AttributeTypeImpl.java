@@ -32,7 +32,6 @@ import hypergraph.graph.vertex.TypeVertex;
 import javax.annotation.Nullable;
 import java.time.LocalDateTime;
 import java.util.Iterator;
-import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static hypergraph.common.exception.Error.ConceptRead.INVALID_CONCEPT_CASTING;

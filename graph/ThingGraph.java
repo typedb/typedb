@@ -232,12 +232,12 @@ public class ThingGraph implements Graph<IID.Vertex.Thing, ThingVertex> {
         thingsByIID.values().parallelStream().filter(v -> !v.isInferred()).forEach(
                 vertex -> vertex.iid(generate(graphManager.storage().keyGenerator(), vertex.typeVertex().iid()))
         ); // thingByIID no longer contains valid mapping from IID to TypeVertex
-        thingsByIID.values().parallelStream().filter(v -> !v.isInferred()).forEach(v -> v.commit(false));
+        thingsByIID.values().stream().filter(v -> !v.isInferred()).forEach(v -> v.commit(false));
 
         try {
             attributeSyncIsLocked = false;
             storage().attributeSync().lock();
-            attributesByIID.valueStream().parallel().forEach(v -> v.commit(true));
+            attributesByIID.valueStream().forEach(v -> v.commit(true));
             if (!attributeVerticesWritten.isEmpty()) attributeSyncIsLocked = true;
         } catch (InterruptedException e) {
             throw new HypergraphException(e);

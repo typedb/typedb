@@ -50,7 +50,7 @@ public class RelationTypeSteps {
         try {
             tx().concepts().getRelationType(relationLabel).relates(roleLabel);
             fail();
-        } catch(HypergraphException ignore) {
+        } catch (HypergraphException ignore) {
             assertTrue(true);
         }
     }
@@ -65,7 +65,7 @@ public class RelationTypeSteps {
         try {
             tx().concepts().getRelationType(relationLabel).relates(roleLabel, superRole);
             fail();
-        } catch(HypergraphException ignore) {
+        } catch (HypergraphException ignore) {
             assertTrue(true);
         }
     }
@@ -146,6 +146,7 @@ public class RelationTypeSteps {
                 .map(role -> new Parameters.ScopedLabel(role.scopedLabel().split(":")[0],
                                                         role.scopedLabel().split(":")[1])).collect(toSet());
     }
+
     @Then("relation\\( ?{type_label} ?) get role\\( ?{type_label} ?) get subtypes contain:")
     public void relation_get_role_get_subtypes_contain(String relationLabel, String roleLabel, List<Parameters.ScopedLabel> subLabels) {
         Set<Parameters.ScopedLabel> actuals = relation_get_role_subtypes_actuals(relationLabel, roleLabel);

@@ -45,6 +45,7 @@ import static hypergraph.common.collection.Bytes.bytesHavePrefix;
 
 class CoreTransaction implements Hypergraph.Transaction {
 
+    private static final byte[] EMPTY_ARRAY = new byte[]{};
     private final CoreSession session;
     private final OptimisticTransactionOptions optOptions;
     private final WriteOptions writeOptions;
@@ -56,8 +57,6 @@ class CoreTransaction implements Hypergraph.Transaction {
     private final Concepts concepts;
     private final Traversal traversal;
     private final AtomicBoolean isOpen;
-
-    private static final byte[] EMPTY_ARRAY = new byte[]{};
     private final long snapshot;
 
     CoreTransaction(CoreSession session, Type type) {
@@ -218,8 +217,8 @@ class CoreTransaction implements Hypergraph.Transaction {
         @Override
         public byte[] getLastKey(byte[] prefix) {
             byte[] upperBound = Arrays.copyOf(prefix, prefix.length);
-            upperBound[upperBound.length-1] = (byte) (upperBound[upperBound.length-1] + 1);
-            assert upperBound[upperBound.length-1] != Byte.MIN_VALUE;
+            upperBound[upperBound.length - 1] = (byte) (upperBound[upperBound.length - 1] + 1);
+            assert upperBound[upperBound.length - 1] != Byte.MIN_VALUE;
 
             try (RocksIterator iterator = newRocksIterator()) {
                 iterator.seekForPrev(upperBound);

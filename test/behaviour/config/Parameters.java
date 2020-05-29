@@ -33,64 +33,6 @@ import static org.junit.Assert.fail;
 
 public class Parameters {
 
-    public enum RootLabel {
-        ENTITY("entity"),
-        ATTRIBUTE("attribute"),
-        RELATION("relation");
-
-        private final String label;
-
-        RootLabel(String label) {
-            this.label = label;
-        }
-
-        public String label() {
-            return label;
-        }
-
-        public static RootLabel of(String label) {
-            for (RootLabel t : RootLabel.values()) {
-                if (t.label.equals(label)) {
-                    return t;
-                }
-            }
-            return null;
-        }
-    }
-
-    public static class ScopedLabel {
-        private final String scope;
-        private final String role;
-
-        public ScopedLabel(String scope, String role) {
-            this.scope = scope;
-            this.role = role;
-        }
-
-        public String scope() {
-            return scope;
-        }
-
-        public String role() {
-            return role;
-        }
-
-        @Override
-        public boolean equals(Object object) {
-            if (this == object) return true;
-            if (object == null || getClass() != object.getClass()) return false;
-            ScopedLabel that = (ScopedLabel) object;
-            return (this.scope.equals(that.scope) &&
-                    this.role.equals(that.role));
-        }
-
-        @Override
-        public final int hashCode() {
-            return hash(scope, role);
-        }
-    }
-
-
     @ParameterType("true|false")
     public Boolean bool(String bool) {
         return Boolean.parseBoolean(bool);
@@ -164,5 +106,62 @@ public class Parameters {
         }
 
         return typeList;
+    }
+
+    public enum RootLabel {
+        ENTITY("entity"),
+        ATTRIBUTE("attribute"),
+        RELATION("relation");
+
+        private final String label;
+
+        RootLabel(String label) {
+            this.label = label;
+        }
+
+        public static RootLabel of(String label) {
+            for (RootLabel t : RootLabel.values()) {
+                if (t.label.equals(label)) {
+                    return t;
+                }
+            }
+            return null;
+        }
+
+        public String label() {
+            return label;
+        }
+    }
+
+    public static class ScopedLabel {
+        private final String scope;
+        private final String role;
+
+        public ScopedLabel(String scope, String role) {
+            this.scope = scope;
+            this.role = role;
+        }
+
+        public String scope() {
+            return scope;
+        }
+
+        public String role() {
+            return role;
+        }
+
+        @Override
+        public boolean equals(Object object) {
+            if (this == object) return true;
+            if (object == null || getClass() != object.getClass()) return false;
+            ScopedLabel that = (ScopedLabel) object;
+            return (this.scope.equals(that.scope) &&
+                    this.role.equals(that.role));
+        }
+
+        @Override
+        public final int hashCode() {
+            return hash(scope, role);
+        }
     }
 }

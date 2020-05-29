@@ -76,6 +76,14 @@ public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl impleme
         }
     }
 
+    /**
+     * Commits this vertex to be persisted onto storage.
+     *
+     * This method is not thread-safe. It uses needs to access and manipulate
+     * {@code AttributeSync} which is not a thread-safe object.
+     *
+     * @param hasAttributeSyncLock that indicates whether you have access to the {@code AttributeSync}
+     */
     @Override
     public void commit(boolean hasAttributeSyncLock) {
         if (isInferred || !hasAttributeSyncLock) throw new HypergraphException(Error.Transaction.ILLEGAL_OPERATION);

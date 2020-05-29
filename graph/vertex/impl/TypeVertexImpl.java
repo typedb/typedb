@@ -32,7 +32,6 @@ import hypergraph.graph.vertex.TypeVertex;
 
 import javax.annotation.Nullable;
 import java.util.Iterator;
-import java.util.stream.Stream;
 
 import static hypergraph.common.collection.Bytes.join;
 

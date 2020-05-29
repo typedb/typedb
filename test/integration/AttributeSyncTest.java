@@ -80,6 +80,13 @@ public class AttributeSyncTest {
     }
 
     @Test
+    public void write_attributes_successfully_repeatedly() {
+        for (int i = 0; i < 1000; i++) {
+            write_attributes_successfully();
+        }
+    }
+
+    @Test
     public void write_attributes_successfully() {
         try (Hypergraph graph = CoreHypergraph.open(directory.toString())) {
             try (Hypergraph.Session session = graph.session(keyspace)) {
@@ -115,6 +122,13 @@ public class AttributeSyncTest {
 
 
     @Test
+    public void write_different_attributes_in_parallel_successfully_repeatedly() {
+        for (int i = 0; i < 1000; i++) {
+            write_different_attributes_in_parallel_successfully();
+        }
+    }
+
+    @Test
     public void write_different_attributes_in_parallel_successfully() {
         try (Hypergraph graph = CoreHypergraph.open(directory.toString())) {
             try (Hypergraph.Session session = graph.session(keyspace)) {
@@ -133,9 +147,9 @@ public class AttributeSyncTest {
                 name(txn1).put("alice");
                 name(txn2).put("bob");
                 name(txn3).put("charlie");
-                dob(txn1).put(LocalDateTime.of( 1991, 2, 3, 4, 5));
-                dob(txn2).put(LocalDateTime.of( 1992, 3, 4, 5, 6));
-                dob(txn3).put(LocalDateTime.of( 1993, 4, 5, 6, 7));
+                dob(txn1).put(LocalDateTime.of(1991, 2, 3, 4, 5));
+                dob(txn2).put(LocalDateTime.of(1992, 3, 4, 5, 6));
+                dob(txn3).put(LocalDateTime.of(1993, 4, 5, 6, 7));
 
                 txn1.commit();
                 txn2.commit();
@@ -162,6 +176,14 @@ public class AttributeSyncTest {
                     assertEquals(d3, dob(txn).get(d3).value());
                 }
             }
+        }
+    }
+
+    @Test
+    public void write_identical_attributes_in_parallel_successfully_repeatedly() {
+        for (int i = 0; i < 1000; i++) {
+            System.out.println("Repetition: " + i);
+            write_identical_attributes_in_parallel_successfully();
         }
     }
 

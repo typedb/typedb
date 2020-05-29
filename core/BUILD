@@ -35,6 +35,7 @@ java_library(
         "//traversal:traversal",
 
         # External dependencies
+        "//dependencies/maven/artifacts/com/google/code/findbugs:jsr305",
         "//dependencies/maven/artifacts/org/rocksdb:rocksdbjni",
     ],
 )

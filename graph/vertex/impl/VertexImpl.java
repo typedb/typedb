@@ -23,8 +23,6 @@ import hypergraph.graph.util.IID;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.vertex.Vertex;
 
-import java.util.Arrays;
-
 public abstract class VertexImpl<
         VERTEX_IID extends IID.Vertex,
         VERTEX_SCHEMA extends Schema.Vertex,

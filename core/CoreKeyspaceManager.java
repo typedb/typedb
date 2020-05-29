@@ -50,6 +50,11 @@ public class CoreKeyspaceManager implements Hypergraph.KeyspaceManager {
     }
 
     @Override
+    public boolean contains(String keyspace) {
+        return keyspaces.containsKey(keyspace);
+    }
+
+    @Override
     public CoreKeyspace create(String name) {
         if (keyspaces.containsKey(name)) throw new HypergraphException("Keyspace Already Exist: " + name);
 

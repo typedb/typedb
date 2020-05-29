@@ -196,7 +196,7 @@ public class TypeGraph implements Graph<IID.Vertex.Type, TypeVertex> {
         typesByIID.values().parallelStream().filter(v -> v.status().equals(Schema.Status.BUFFERED)).forEach(
                 vertex -> vertex.iid(generate(graphManager.storage().keyGenerator(), vertex.schema()))
         ); // typeByIID no longer contains valid mapping from IID to TypeVertex
-        typesByIID.values().parallelStream().forEach(TypeVertex::commit);
+        typesByIID.values().forEach(TypeVertex::commit);
         clear(); // we now flush the indexes after commit, and we do not expect this Graph.Type to be used again
         return false;
     }

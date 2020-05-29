@@ -23,6 +23,8 @@ import hypergraph.common.exception.HypergraphException;
 import hypergraph.graph.util.AttributeSync;
 import hypergraph.graph.util.IID;
 
+import javax.annotation.concurrent.GuardedBy;
+import javax.annotation.concurrent.NotThreadSafe;
 import java.time.Instant;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -32,6 +34,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
+@NotThreadSafe
 public class CoreAttributeSync implements AttributeSync, AutoCloseable {
 
     private final CoreKeyspace keyspace;
@@ -55,6 +58,7 @@ public class CoreAttributeSync implements AttributeSync, AutoCloseable {
     }
 
     @Override
+    @GuardedBy("lock")
     public CoreCommitSync get(IID.Vertex.Attribute attributeIID) {
         return commitSyncs.computeIfAbsent(attributeIID, iid -> new CoreCommitSync()).accessed(Instant.now());
     }

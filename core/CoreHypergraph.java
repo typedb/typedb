@@ -43,14 +43,6 @@ public class CoreHypergraph implements Hypergraph {
     private final CoreProperties properties;
     private final CoreKeyspaceManager keyspaceMgr;
 
-    public static CoreHypergraph open(String directory) {
-        return open(directory, new Properties());
-    }
-
-    public static CoreHypergraph open(String directory, Properties properties) {
-        return new CoreHypergraph(directory, properties);
-    }
-
     private CoreHypergraph(String directory, Properties properties) {
         this.directory = Paths.get(directory);
         this.properties = new CoreProperties(properties);
@@ -63,6 +55,14 @@ public class CoreHypergraph implements Hypergraph {
 
         isOpen = new AtomicBoolean();
         isOpen.set(true);
+    }
+
+    public static CoreHypergraph open(String directory) {
+        return open(directory, new Properties());
+    }
+
+    public static CoreHypergraph open(String directory, Properties properties) {
+        return new CoreHypergraph(directory, properties);
     }
 
     private void setOptionsFromProperties() {
@@ -83,8 +83,7 @@ public class CoreHypergraph implements Hypergraph {
 
     @Override
     public CoreSession session(String keyspace) {
-        Keyspace k = keyspaceMgr.get(keyspace);
-        if (k != null){
+        if (keyspaceMgr.contains(keyspace)) {
             return keyspaceMgr.get(keyspace).createSessionAndOpen();
         } else {
             throw new HypergraphException("There does not exists a keyspace with the name: " + keyspace);

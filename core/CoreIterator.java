@@ -37,8 +37,6 @@ public class CoreIterator<T> implements Iterator<T> {
     private State state;
     private T next;
 
-    private enum State {INIT, EMPTY, FETCHED, COMPLETED}
-
     CoreIterator(CoreTransaction.CoreStorage storage, byte[] prefix, BiFunction<byte[], byte[], T> constructor) {
         this.storage = storage;
         this.prefix = prefix;
@@ -102,4 +100,6 @@ public class CoreIterator<T> implements Iterator<T> {
         state = State.EMPTY;
         return next;
     }
+
+    private enum State {INIT, EMPTY, FETCHED, COMPLETED}
 }

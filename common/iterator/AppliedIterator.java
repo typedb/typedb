@@ -24,8 +24,7 @@ import java.util.function.Function;
 public class AppliedIterator<T, U> implements Iterators.Composable<U> {
 
     private final Iterator<T> iterator;
-
-    private final Function<T,U> function;
+    private final Function<T, U> function;
 
     AppliedIterator(Iterator<T> iterator, Function<T, U> function) {
         this.iterator = iterator;

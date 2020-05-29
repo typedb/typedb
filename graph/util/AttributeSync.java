@@ -58,10 +58,6 @@ public interface AttributeSync {
      */
     interface CommitSync {
 
-        enum Status {
-            NONE, WRITTEN, DELETED
-        }
-
         Status status();
 
         void status(Status status);
@@ -69,5 +65,9 @@ public interface AttributeSync {
         long snapshot();
 
         void snapshot(long number);
+
+        enum Status {
+            NONE, WRITTEN, DELETED
+        }
     }
 }

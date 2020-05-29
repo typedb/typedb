@@ -65,6 +65,7 @@ public class ConnectionSteps {
         Files.createDirectory(directory);
         System.out.println("Database Directory created: " + directory.toString());
     }
+
     private static synchronized void connect_to_grakn() throws IOException {
         if (!isNull(hypergraph)) return;
 

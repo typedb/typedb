@@ -32,8 +32,6 @@ public class TreeIterator<T> implements Iterators.Composable<T> {
     private LinkedList<Iterator<T>> families;
     // a 'family' is [an iterator for a] collection of children from the same parent
 
-    private enum State {EMPTY, FETCHED, COMPLETED}
-
     TreeIterator(T root, Function<T, Iterator<T>> childrenFn) {
         this.next = root;
         this.childrenFn = childrenFn;
@@ -75,4 +73,6 @@ public class TreeIterator<T> implements Iterators.Composable<T> {
         state = State.EMPTY;
         return next;
     }
+
+    private enum State {EMPTY, FETCHED, COMPLETED}
 }
