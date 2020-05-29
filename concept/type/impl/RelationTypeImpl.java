@@ -20,7 +20,6 @@ package hypergraph.concept.type.impl;
 
 import hypergraph.common.exception.Error;
 import hypergraph.common.exception.HypergraphException;
-import hypergraph.common.iterator.Iterators;
 import hypergraph.concept.thing.Relation;
 import hypergraph.concept.thing.impl.RelationImpl;
 import hypergraph.concept.type.RelationType;
@@ -100,14 +99,12 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
 
     @Override
     public Stream<RelationTypeImpl> sups() {
-        Iterator<RelationTypeImpl> sups = Iterators.apply(super.superTypeVertices(), RelationTypeImpl::of);
-        return stream(spliteratorUnknownSize(sups, ORDERED | IMMUTABLE), false);
+        return super.sups(RelationTypeImpl::of);
     }
 
     @Override
     public Stream<RelationTypeImpl> subs() {
-        Iterator<RelationTypeImpl> subs = Iterators.apply(super.subTypeVertices(), RelationTypeImpl::of);
-        return stream(spliteratorUnknownSize(subs, ORDERED | IMMUTABLE), false);
+        return super.subs(RelationTypeImpl::of);
     }
 
     @Override
@@ -207,7 +204,8 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
 
     @Override
     public RelationImpl create(boolean isInferred) {
-        if (isAbstract()) throw new HypergraphException(ILLEGAL_ABSTRACT_WRITE.format(Relation.class.getSimpleName(), label()));
+        if (isAbstract())
+            throw new HypergraphException(ILLEGAL_ABSTRACT_WRITE.format(Relation.class.getSimpleName(), label()));
         ThingVertex instance = vertex.graph().thingGraph().insert(vertex.iid(), isInferred);
         return new RelationImpl(instance);
     }

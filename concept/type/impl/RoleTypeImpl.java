@@ -20,21 +20,15 @@ package hypergraph.concept.type.impl;
 
 import hypergraph.common.exception.Error;
 import hypergraph.common.exception.HypergraphException;
-import hypergraph.common.iterator.Iterators;
 import hypergraph.concept.type.RoleType;
 import hypergraph.graph.TypeGraph;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.vertex.TypeVertex;
 
 import javax.annotation.Nullable;
-import java.util.Iterator;
 import java.util.stream.Stream;
 
 import static hypergraph.common.exception.Error.TypeWrite.INVALID_ROOT_TYPE_MUTATION;
-import static java.util.Spliterator.IMMUTABLE;
-import static java.util.Spliterator.ORDERED;
-import static java.util.Spliterators.spliteratorUnknownSize;
-import static java.util.stream.StreamSupport.stream;
 
 public class RoleTypeImpl extends TypeImpl implements RoleType {
 
@@ -80,14 +74,12 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
 
     @Override
     public Stream<RoleTypeImpl> sups() {
-        Iterator<RoleTypeImpl> sups = Iterators.apply(super.superTypeVertices(), RoleTypeImpl::of);
-        return stream(spliteratorUnknownSize(sups, ORDERED | IMMUTABLE), false);
+        return super.sups(RoleTypeImpl::of);
     }
 
     @Override
     public Stream<RoleTypeImpl> subs() {
-        Iterator<RoleTypeImpl> subs = Iterators.apply(super.subTypeVertices(), RoleTypeImpl::of);
-        return stream(spliteratorUnknownSize(subs, ORDERED | IMMUTABLE), false);
+        return super.subs(RoleTypeImpl::of);
     }
 
     @Override

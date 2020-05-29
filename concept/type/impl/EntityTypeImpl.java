@@ -20,7 +20,6 @@ package hypergraph.concept.type.impl;
 
 import hypergraph.common.exception.Error;
 import hypergraph.common.exception.HypergraphException;
-import hypergraph.common.iterator.Iterators;
 import hypergraph.concept.thing.Entity;
 import hypergraph.concept.thing.impl.EntityImpl;
 import hypergraph.concept.type.EntityType;
@@ -30,15 +29,10 @@ import hypergraph.graph.vertex.ThingVertex;
 import hypergraph.graph.vertex.TypeVertex;
 
 import javax.annotation.Nullable;
-import java.util.Iterator;
 import java.util.stream.Stream;
 
 import static hypergraph.common.exception.Error.ThingWrite.ILLEGAL_ABSTRACT_WRITE;
 import static hypergraph.common.exception.Error.TypeWrite.INVALID_ROOT_TYPE_MUTATION;
-import static java.util.Spliterator.IMMUTABLE;
-import static java.util.Spliterator.ORDERED;
-import static java.util.Spliterators.spliteratorUnknownSize;
-import static java.util.stream.StreamSupport.stream;
 
 public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
 
@@ -81,14 +75,12 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
 
     @Override
     public Stream<EntityTypeImpl> sups() {
-        Iterator<EntityTypeImpl> sups = Iterators.apply(super.superTypeVertices(), EntityTypeImpl::of);
-        return stream(spliteratorUnknownSize(sups, ORDERED | IMMUTABLE), false);
+        return super.sups(EntityTypeImpl::of);
     }
 
     @Override
     public Stream<EntityTypeImpl> subs() {
-        Iterator<EntityTypeImpl> subs = Iterators.apply(super.subTypeVertices(), EntityTypeImpl::of);
-        return stream(spliteratorUnknownSize(subs, ORDERED | IMMUTABLE), false);
+        return super.subs(EntityTypeImpl::of);
     }
 
     @Override
@@ -98,7 +90,9 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
 
     @Override
     public EntityImpl create(boolean isInferred) {
-        if (isAbstract()) throw new HypergraphException(ILLEGAL_ABSTRACT_WRITE.format(Entity.class.getSimpleName(), label()));
+        if (isAbstract()) {
+            throw new HypergraphException(ILLEGAL_ABSTRACT_WRITE.format(Entity.class.getSimpleName(), label()));
+        }
         ThingVertex instance = vertex.graph().thingGraph().insert(vertex.iid(), isInferred);
         return new EntityImpl(instance);
     }

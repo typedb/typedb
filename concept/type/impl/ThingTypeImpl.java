@@ -243,7 +243,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
         @Override
         public Stream<? extends ThingTypeImpl> subs() {
-            return stream(spliteratorUnknownSize(super.subTypeVertices(), ORDERED | IMMUTABLE), false).map(v -> {
+            return subs(v -> {
                 switch (v.schema()) {
                     case THING_TYPE:
                         assert this.vertex == v;
