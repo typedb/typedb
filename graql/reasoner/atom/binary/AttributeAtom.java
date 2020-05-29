@@ -96,7 +96,6 @@ public class AttributeAtom extends Atom{
 
     private final ImmutableSet<ValuePredicate> multiPredicate;
     private final Variable attributeVariable;
-    private final Variable relationVariable;
 
     private final SemanticProcessor<AttributeAtom> semanticProcessor = new AttributeSemanticProcessor();
     private final AtomValidator<AttributeAtom> validator = new AttributeAtomValidator();
@@ -108,22 +107,16 @@ public class AttributeAtom extends Atom{
             ReasonerQuery parentQuery,
             @Nullable Label label,
             Variable predicateVariable,
-            Variable relationVariable,
             Variable attributeVariable,
             ImmutableSet<ValuePredicate> multiPredicate,
             ReasoningContext ctx) {
-        //super(varName, pattern, parentQuery, label, predicateVariable, ctx);
         super(parentQuery, varName, pattern, label, ctx);
         this.ownerIsa = IsaAtom.create(varName, new Variable(), label, false, parentQuery, ctx);
         this.attributeIsa = IsaAtom.create(attributeVariable, predicateVariable, label, false, parentQuery, ctx);
-        this.relationVariable = relationVariable;
         this.attributeVariable = attributeVariable;
         this.multiPredicate = multiPredicate;
     }
 
-    public Variable getRelationVariable() {
-        return relationVariable;
-    }
     public Variable getAttributeVariable() {
         return attributeVariable;
     }
@@ -132,14 +125,14 @@ public class AttributeAtom extends Atom{
     }
 
     public static AttributeAtom create(Statement pattern, Variable attributeVariable,
-                                       Variable relationVariable, Variable predicateVariable, @Nullable Label label,
+                                       Variable predicateVariable, @Nullable Label label,
                                        Set<ValuePredicate> ps, ReasonerQuery parent, ReasoningContext ctx) {
-        return new AttributeAtom(pattern.var(), pattern, parent, label, predicateVariable, relationVariable,
+        return new AttributeAtom(pattern.var(), pattern, parent, label, predicateVariable,
                 attributeVariable, ImmutableSet.copyOf(ps), ctx);
     }
 
     private static AttributeAtom create(AttributeAtom a, ReasonerQuery parent) {
-        return create(a.getPattern(), a.getAttributeVariable(), a.getRelationVariable(), a.getPredicateVariable(),
+        return create(a.getPattern(), a.getAttributeVariable(), a.getPredicateVariable(),
                 a.getTypeLabel(), a.getMultiPredicate(), parent, a.context());
     }
 
@@ -161,7 +154,7 @@ public class AttributeAtom extends Atom{
             ValueProperty.Operation operation = ValueProperty.Operation.Comparison.of(vp.getPredicate().comparator(), convertedValue);
             return ValuePredicate.create(vp.getVarName(), operation, getParentQuery());
         }).collect(Collectors.toSet());
-        return create(getPattern(), getAttributeVariable(), getRelationVariable(), getPredicateVariable(),
+        return create(getPattern(), getAttributeVariable(), getPredicateVariable(),
                 getTypeLabel(), newMultiPredicate, getParentQuery(), context());
     }
 
@@ -197,7 +190,6 @@ public class AttributeAtom extends Atom{
         return getVarName() + " has " + getTypeLabel() + " " +
                 getAttributeVariable() + " " +
                 multiPredicateString +
-                (getRelationVariable().isReturned()? "(" + getRelationVariable() + ")" : "") +
                 getPredicates(IdPredicate.class).map(Predicate::toString).collect(Collectors.joining(""));
     }
 
@@ -242,8 +234,7 @@ public class AttributeAtom extends Atom{
         if (obj == this) return true;
         AttributeAtom that = (AttributeAtom) obj;
         return equivalence.equivalent(this.attributeIsa(), that.attributeIsa())
-                && equivalence.equivalent(this.ownerIsa(), that.ownerIsa())
-                && this.getRelationVariable().isReturned() == that.getRelationVariable().isReturned();
+                && equivalence.equivalent(this.ownerIsa(), that.ownerIsa());
     }
 
     private boolean multiPredicateEqual(AttributeAtom that){
@@ -308,7 +299,6 @@ public class AttributeAtom extends Atom{
     public Set<Variable> getVarNames() {
         Set<Variable> varNames = super.getVarNames();
         varNames.add(getAttributeVariable());
-        if (getRelationVariable().isReturned()) varNames.add(getRelationVariable());
         getMultiPredicate().forEach(p -> varNames.addAll(p.getVarNames()));
         return varNames;
     }
@@ -322,10 +312,8 @@ public class AttributeAtom extends Atom{
         if (type == null) return false;
 
         boolean isBottomType = type.subs().allMatch(t -> t.equals(type));
-        boolean relationVarMapped = !getRelationVariable().isReturned() || sub.containsVar(getRelationVariable());
         return isBottomType
-                && isValueEquality() && sub.containsVar(getVarName())
-                && relationVarMapped;
+                && isValueEquality() && sub.containsVar(getVarName());
     }
 
     @Override
@@ -369,34 +357,13 @@ public class AttributeAtom extends Atom{
         return Stream.concat(attributeIsa.getInnerPredicates(), getMultiPredicate().stream());
     }
 
-    /**
-     * rewrites the atom to one with relation variable
-     * @param parentAtom parent atom that triggers rewrite
-     * @return rewritten atom
-     */
-    private AttributeAtom rewriteWithRelationVariable(Atom parentAtom){
-        if (parentAtom.isAttributeAtom() && ((AttributeAtom) parentAtom).getRelationVariable().isReturned()) return rewriteWithRelationVariable();
-        return this;
-    }
-
-    @Override
-    public AttributeAtom rewriteWithRelationVariable(){
-        Variable attributeVariable = getAttributeVariable();
-        Variable relationVariable = getRelationVariable().asReturnedVar();
-        Statement newVar = new Statement(getVarName())
-                .has(getTypeLabel().getValue(), new Statement(attributeVariable), new Statement(relationVariable));
-        return create(newVar, attributeVariable, relationVariable, getPredicateVariable(), getTypeLabel(), getMultiPredicate(), getParentQuery(), context());
-    }
-
     @Override
     public Atom rewriteWithTypeVariable() {
-        return create(getPattern(), getAttributeVariable(), getRelationVariable(), getPredicateVariable().asReturnedVar(), getTypeLabel(), getMultiPredicate(), getParentQuery(), context());
+        return create(getPattern(), getAttributeVariable(), getPredicateVariable().asReturnedVar(), getTypeLabel(), getMultiPredicate(), getParentQuery(), context());
     }
 
     @Override
     public Atom rewriteToUserDefined(Atom parentAtom){
-        return this
-                .rewriteWithRelationVariable(parentAtom)
-                .rewriteWithTypeVariable(parentAtom);
+        return rewriteWithTypeVariable(parentAtom);
     }
 }

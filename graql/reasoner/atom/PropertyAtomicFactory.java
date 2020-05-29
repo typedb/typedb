@@ -256,7 +256,6 @@ public class PropertyAtomicFactory {
 
         //NB: we always make the attribute variable explicit
         Variable attributeVariable = property.attribute().var().asReturnedVar();
-        Variable relationVariable = property.relation().var();
         Variable predicateVariable = new Variable();
         Set<ValuePredicate> predicates = getValuePredicates(attributeVariable, property.attribute(), otherStatements,
                 parent,this);
@@ -266,10 +265,8 @@ public class PropertyAtomicFactory {
         Label typeLabel = typeVar != null ? getLabel(predicateVariable, typeVar, otherStatements, ctx.conceptManager()) : null;
 
         //add resource atom
-        Statement resVar = relationVariable.isReturned() ?
-                new Statement(varName).has(property.type(), new Statement(attributeVariable), new Statement(relationVariable)) :
-                new Statement(varName).has(property.type(), new Statement(attributeVariable));
-        return AttributeAtom.create(resVar, attributeVariable, relationVariable, predicateVariable, typeLabel, predicates, parent, ctx);
+        Statement resVar = new Statement(varName).has(property.type(), new Statement(attributeVariable));
+        return AttributeAtom.create(resVar, attributeVariable, predicateVariable, typeLabel, predicates, parent, ctx);
     }
 
 

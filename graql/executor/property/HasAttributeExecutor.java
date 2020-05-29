@@ -88,7 +88,7 @@ public class HasAttributeExecutor  implements PropertyExecutor.Insertable, Prope
 
         @Override
         public Set<Variable> producedVars() {
-            return ImmutableSet.of(property.relation().var());
+            return ImmutableSet.of();
         }
 
         @Override
