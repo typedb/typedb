@@ -7,6 +7,7 @@ genericEntity sub entity,
     plays someRole,
     plays otherRole,
     has reattachable-resource-string,
+    has unrelated-reattachable-string,
     has subResource,
     has resource-long,
     has derived-resource-boolean;
@@ -30,6 +31,7 @@ derived-resource-string sub derivable-resource-string, value string;
 resource-long sub attribute, value long;
 derived-resource-boolean sub attribute, value boolean;
 subResource sub reattachable-resource-string;
+unrelated-reattachable-string sub derivable-resource-string, value string;
 
 #Rules
 
@@ -51,13 +53,22 @@ transferResourceToRelation sub rule,
         $z has reattachable-resource-string $y;
     };
 
-attachResourceValueToResourceOfDifferentType sub rule,
+attachResourceValueToResourceOfDifferentSubtype sub rule,
 	when {
 		$x isa genericEntity, has reattachable-resource-string $r1;
 	},
 	then {
 		$x has subResource $r1;
 	};
+
+attachResourceValueToResourceOfUnrelatedType sub rule,
+	when {
+		$x isa genericEntity, has reattachable-resource-string $r1;
+	},
+	then {
+		$x has unrelated-reattachable-string $r1;
+	};
+
 
 setResourceFlagBasedOnOtherResourceValue sub rule,
     when {
