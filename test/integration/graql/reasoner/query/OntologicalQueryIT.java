@@ -311,12 +311,10 @@ public class OntologicalQueryIT {
             List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());
 
             //TODO? doesn't pick up attribute relations
-            //one implicit,
             //3 x binary,
             //2 x ternary,
             //7 (3 reflexive) x reifying-relation
-            //3 x has-description resource relation
-            assertEquals(13, answers.size());
+            assertEquals(12, answers.size());
         }
     }
 
