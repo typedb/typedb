@@ -59,8 +59,7 @@ public class AttributeSemanticProcessor implements SemanticProcessor<AttributeAt
         }
 
         AttributeAtom parent = (AttributeAtom) parentAtom;
-        Unifier unifier = binarySemanticProcessor.getUnifier(childAtom.attributeIsa(), parent.attributeIsa(), unifierType, ctx);
-        if (unifier == null) return UnifierImpl.nonExistent();
+        Unifier unifier = new UnifierImpl(ImmutableMap.of(childAtom.getAttributeVariable(), parent.getAttributeVariable()));
 
         //unify owner isa
         Unifier ownerUnifier = binarySemanticProcessor.getUnifier(childAtom.ownerIsa(), parent.ownerIsa(), unifierType, ctx);
@@ -71,7 +70,7 @@ public class AttributeSemanticProcessor implements SemanticProcessor<AttributeAt
         Variable childRelationVarName = childAtom.getRelationVariable();
         Variable parentRelationVarName = parent.getRelationVariable();
         if (parentRelationVarName.isReturned()){
-            unifier = unifier.merge(new UnifierImpl(ImmutableMap.of(childRelationVarName, parentRelationVarName)));
+            unifier = unifier.merge(new UnifierImpl(ImmutableMap.of(parentRelationVarName, childRelationVarName)));
         }
 
         return AtomicUtil.isPredicateCompatible(childAtom, parentAtom, unifier, unifierType, ctx.conceptManager())?
