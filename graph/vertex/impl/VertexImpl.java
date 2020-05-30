@@ -56,7 +56,7 @@ public abstract class VertexImpl<
 
     @Override
     public String toString() {
-        return this.getClass().getCanonicalName() + ": [" + schema + "] " + iid.toString();
+        return this.getClass().getCanonicalName().substring(this.getClass().getPackage().getName().length() + 1) + ": " + iid.toString();
     }
 
     @Override

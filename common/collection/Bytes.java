@@ -63,6 +63,10 @@ public class Bytes {
         return bytes;
     }
 
+    public static Short bytesToShort(byte[] bytes) {
+        return ByteBuffer.wrap(bytes).getShort();
+    }
+
     public static byte[] integerToBytes(int num) {
         byte[] bytes = new byte[INTEGER_SIZE];
         bytes[3] = (byte) (num);

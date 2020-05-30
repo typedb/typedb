@@ -29,6 +29,7 @@ import static hypergraph.common.collection.Bytes.byteToBoolean;
 import static hypergraph.common.collection.Bytes.bytesToDateTime;
 import static hypergraph.common.collection.Bytes.bytesToDouble;
 import static hypergraph.common.collection.Bytes.bytesToLong;
+import static hypergraph.common.collection.Bytes.bytesToShort;
 import static hypergraph.common.collection.Bytes.bytesToString;
 import static hypergraph.common.collection.Bytes.dateTimeToBytes;
 import static hypergraph.common.collection.Bytes.doubleToBytes;
@@ -40,7 +41,7 @@ import static hypergraph.graph.util.Schema.STRING_MAX_LENGTH;
 import static hypergraph.graph.util.Schema.TIME_ZONE_ID;
 import static java.util.Arrays.copyOfRange;
 
-public class IID {
+public abstract class IID {
 
     protected final byte[] bytes;
 
@@ -53,9 +54,7 @@ public class IID {
     }
 
     @Override
-    public String toString() {
-        return Arrays.toString(bytes);
-    }
+    public abstract String toString();
 
     @Override
     public boolean equals(Object object) {
@@ -72,7 +71,7 @@ public class IID {
 
     public static class Prefix extends IID {
 
-        public static final int LENGTH = 1;
+        static final int LENGTH = 1;
 
         Prefix(byte[] bytes) {
             super(bytes);
@@ -82,11 +81,16 @@ public class IID {
         public static Prefix of(byte[] bytes) {
             return new Prefix(bytes);
         }
+
+        @Override
+        public String toString() {
+            return "[" + Schema.Prefix.of(bytes[0]).toString() + "]";
+        }
     }
 
     public static class Infix extends IID {
 
-        public static final int LENGTH = 1;
+        static final int LENGTH = 1;
 
         Infix(byte[] bytes) {
             super(bytes);
@@ -95,6 +99,11 @@ public class IID {
 
         public static Infix of(byte[] bytes) {
             return new Infix(bytes);
+        }
+
+        @Override
+        public String toString() {
+            return "[" + Schema.Infix.of(bytes[0]).toString() + "]";
         }
     }
 
@@ -118,11 +127,19 @@ public class IID {
              * @return a byte array representing the index address of a {@code TypeVertex}
              */
             public static Index.Type of(String label, @Nullable String scope) {
-                return new Index.Type(join(Schema.Index.TYPE.prefix().bytes(), Schema.Vertex.Type.scopedLabel(label, scope).getBytes()));
+                return new Index.Type(join(Schema.Index.TYPE.prefix().bytes(), Schema.Vertex.Type.scopedLabel(label, scope).getBytes(STRING_ENCODING)));
+            }
+
+            @Override
+            public String toString() {
+                return "[" + Prefix.LENGTH + ": " + Schema.Index.TYPE.toString() + "]" +
+                        "[" + (bytes.length - Prefix.LENGTH) + ": " + bytesToString(copyOfRange(bytes, Prefix.LENGTH, bytes.length), STRING_ENCODING) + "]";
             }
         }
 
         public static class Attribute extends Index {
+
+            static final int VALUE_INDEX = Prefix.LENGTH + Vertex.Attribute.VALUE_TYPE_LENGTH;
 
             Attribute(byte[] bytes) {
                 super(bytes);
@@ -150,6 +167,38 @@ public class IID {
 
             public static Index.Attribute of(LocalDateTime value, IID.Vertex.Type typeIID) {
                 return newAttributeIndex(Schema.ValueType.DATETIME.bytes(), dateTimeToBytes(value, TIME_ZONE_ID), typeIID.bytes);
+            }
+
+            @Override
+            public String toString() {
+                Schema.ValueType valueType = Schema.ValueType.of(bytes[Prefix.LENGTH]);
+                String value;
+                assert valueType != null;
+                switch (valueType) {
+                    case BOOLEAN:
+                        value = byteToBoolean(bytes[VALUE_INDEX]).toString();
+                        break;
+                    case LONG:
+                        value = "" + bytesToLong(copyOfRange(bytes, VALUE_INDEX, VALUE_INDEX + LONG_SIZE));
+                        break;
+                    case DOUBLE:
+                        value = "" + bytesToDouble(copyOfRange(bytes, VALUE_INDEX, VALUE_INDEX + DOUBLE_SIZE));
+                        break;
+                    case STRING:
+                        value = bytesToString(copyOfRange(bytes, VALUE_INDEX, bytes.length - Vertex.Type.LENGTH), STRING_ENCODING);
+                        break;
+                    case DATETIME:
+                        value = bytesToDateTime(copyOfRange(bytes, VALUE_INDEX, bytes.length - Vertex.Type.LENGTH), TIME_ZONE_ID).toString();
+                        break;
+                    default:
+                        value = "";
+                        break;
+                }
+
+                return "[" + Prefix.LENGTH + ": " + Schema.Index.ATTRIBUTE.toString() + "]" +
+                        "[" + Vertex.Attribute.VALUE_TYPE_LENGTH + ": " + valueType.toString() + "]" +
+                        "[" + (bytes.length - (Prefix.LENGTH + Vertex.Attribute.VALUE_TYPE_LENGTH + Vertex.Type.LENGTH)) + ": " + value + "]" +
+                        "[" + Vertex.Type.LENGTH + ": " + IID.Vertex.Type.of(copyOfRange(bytes, bytes.length - Vertex.Type.LENGTH, bytes.length)).toString() + "]";
             }
         }
     }
@@ -187,6 +236,12 @@ public class IID {
             public Schema.Vertex.Type schema() {
                 return Schema.Vertex.Type.of(bytes[0]);
             }
+
+            @Override
+            public String toString() {
+                return "[" + Prefix.LENGTH + ": " + schema().toString() + "]" +
+                        "[" + (Type.LENGTH - Prefix.LENGTH) + ": " + bytesToShort(copyOfRange(bytes, Prefix.LENGTH, Type.LENGTH)) + "]";
+            }
         }
 
         public static class Thing extends IID.Vertex {
@@ -218,11 +273,19 @@ public class IID {
             public Schema.Vertex.Thing schema() {
                 return Schema.Vertex.Thing.of(bytes[0]);
             }
+
+            @Override
+            public String toString() {
+                return "[" + Prefix.LENGTH + ": " + schema().toString() + "]" +
+                        "[" + Type.LENGTH + ": " + type().toString() + "]" +
+                        "[" + (LENGTH - PREFIX_TYPE_LENGTH) + ": " + bytesToLong(copyOfRange(bytes, PREFIX_TYPE_LENGTH, LENGTH)) + "]";
+            }
         }
 
         public static abstract class Attribute<VALUE> extends IID.Vertex.Thing {
 
-            public static final int VALUE_INDEX = Prefix.LENGTH + Type.LENGTH + 1;
+            static final int VALUE_TYPE_LENGTH = 1;
+            static final int VALUE_INDEX = Prefix.LENGTH + Type.LENGTH + VALUE_TYPE_LENGTH;
 
             Attribute(Schema.ValueType valueType, Type typeIID, byte[] valueBytes) {
                 super(join(
@@ -234,6 +297,38 @@ public class IID {
             }
 
             public abstract VALUE value();
+
+            @Override
+            public java.lang.String toString() {
+                Schema.ValueType valueType = Schema.ValueType.of(bytes[VALUE_INDEX - 1]);
+                java.lang.String value;
+                assert valueType != null;
+                switch (valueType) {
+                    case BOOLEAN:
+                        value = byteToBoolean(bytes[VALUE_INDEX]).toString();
+                        break;
+                    case LONG:
+                        value = "" + bytesToLong(copyOfRange(bytes, VALUE_INDEX, bytes.length));
+                        break;
+                    case DOUBLE:
+                        value = "" + bytesToDouble(copyOfRange(bytes, VALUE_INDEX, bytes.length));
+                        break;
+                    case STRING:
+                        value = bytesToString(copyOfRange(bytes, VALUE_INDEX, bytes.length), STRING_ENCODING);
+                        break;
+                    case DATETIME:
+                        value = bytesToDateTime(copyOfRange(bytes, VALUE_INDEX, bytes.length), TIME_ZONE_ID).toString();
+                        break;
+                    default:
+                        value = "";
+                        break;
+                }
+
+                return "[" + Prefix.LENGTH + ": " + Schema.Vertex.Thing.ATTRIBUTE.toString() + "]" +
+                        "[" + Type.LENGTH + ": " + type().toString() + "]" +
+                        "[" + VALUE_TYPE_LENGTH + ": " + valueType.toString() + "]" +
+                        "[" + (bytes.length - VALUE_INDEX) + ": " + value + "]";
+            }
 
             public static class Boolean extends Attribute<java.lang.Boolean> {
 
@@ -344,9 +439,16 @@ public class IID {
 
             @Override
             public Vertex.Type end() {
-                return Vertex.Type.of(copyOfRange(bytes, Vertex.Type.LENGTH + Infix.LENGTH, bytes.length));
+                return Vertex.Type.of(copyOfRange(bytes, bytes.length - Vertex.Type.LENGTH, bytes.length));
             }
 
+            @Override
+            public String toString() {
+                start();
+                return "[" + Vertex.Type.LENGTH + ": " + start().toString() + "]" +
+                        "[" + Infix.LENGTH + ": " + schema().toString() + "]" +
+                        "[" + Vertex.Type.LENGTH + ": " + end().toString() + "]";
+            }
         }
 
         public static class Thing extends IID.Edge<Schema.Edge.Thing, IID.Vertex.Thing> {
@@ -381,6 +483,11 @@ public class IID {
             @Override
             public IID.Vertex.Thing end() {
                 return null; // TODO
+            }
+
+            @Override
+            public String toString() {
+                return Arrays.toString(bytes); // TODO
             }
         }
     }

@@ -95,6 +95,13 @@ public class Schema {
             this.key = (byte) key;
         }
 
+        public static Prefix of(byte key) {
+            for (Prefix i : Prefix.values()) {
+                if (i.key == key) return i;
+            }
+            return null;
+        }
+
         public byte[] bytes() {
             return new byte[]{key};
         }
