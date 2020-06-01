@@ -49,7 +49,9 @@ You can visit the [Setup Guide](https://dev.grakn.ai/docs/running-grakn/install-
 1. Make sure you have the following dependencies installed on your machine:
     - Java 8
     - Python >= 2.7 and Pip >= 18.1
-    - [Bazel](http://bazel.build/). We use [Bazelisk](https://github.com/bazelbuild/bazelisk) to manage Bazel versions which runs the build with the Bazel version specified in [`.bazelversion`](https://github.com/graknlabs/grakn/blob/master/.bazelversion).
+    - [Bazel](http://bazel.build/). We use [Bazelisk](https://github.com/bazelbuild/bazelisk) to manage Bazel versions which runs the build with the Bazel version specified in [`.bazelversion`](https://github.com/graknlabs/grakn/blob/master/.bazelversion). In order to install it, follow platform-specific guide:
+        - macOS (Darwin): `brew install bazelbuild/tap/bazelisk`
+        - Linux: `wget https://github.com/bazelbuild/bazelisk/releases/download/v1.4.0/bazelisk-linux-amd64 -O /usr/local/bin/bazel`
 1. Depending on your Operating System, you can build Grakn with either one of the following commands: 
 ```
 $ bazel build //:assemble-linux-targz
