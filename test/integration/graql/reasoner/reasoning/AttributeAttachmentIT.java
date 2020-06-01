@@ -24,7 +24,6 @@ import grakn.core.test.rule.GraknTestServer;
 import graql.lang.Graql;
 import graql.lang.query.GraqlGet;
 import graql.lang.statement.Statement;
-import graql.lang.statement.Variable;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -98,13 +97,13 @@ public class AttributeAttachmentIT {
     public void reusingAttributes_queryingForGenericRelation() {
         try(Transaction tx = attributeAttachmentSession.transaction(Transaction.Type.WRITE)) {
 
-            String queryString = "match $x isa genericEntity;($x, $y); get;";
+            String queryString = "match $x isa genericEntity, has attribute $y; get;";
             List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());
 
-            assertEquals(5, answers.size());
-            //two attributes for each entity
+            assertEquals(6, answers.size());
+            //three attributes for each entity
             assertEquals(
-                    tx.getEntityType("genericEntity").instances().count() * 2,
+                    tx.getEntityType("genericEntity").instances().count() * 3,
                     answers.stream().filter(answer -> answer.get("y").isAttribute()).count()
             );
         }

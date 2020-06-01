@@ -74,14 +74,14 @@ public class AtomicQueryUnificationIT {
         Config mockServerConfig = storage.createCompatibleServerConfig();
         genericSchemaSession = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig);
         genericSchemaGraph = new GenericSchemaGraph(genericSchemaSession);
-//        unificationWithTypesSession = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig);
-//        loadFromFileAndCommit(resourcePath, "unificationWithTypesTest.gql", unificationWithTypesSession);
+        unificationWithTypesSession = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig);
+        loadFromFileAndCommit(resourcePath, "unificationWithTypesTest.gql", unificationWithTypesSession);
     }
 
     @AfterClass
     public static void closeSession() {
         genericSchemaSession.close();
-//        unificationWithTypesSession.close();
+        unificationWithTypesSession.close();
     }
 
     @Test
