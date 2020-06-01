@@ -31,7 +31,7 @@ derived-resource-string sub derivable-resource-string, value string;
 resource-long sub attribute, value long;
 derived-resource-boolean sub attribute, value boolean;
 subResource sub reattachable-resource-string;
-unrelated-reattachable-string sub derivable-resource-string, value string;
+unrelated-reattachable-string sub attribute, value string;
 
 #Rules
 
