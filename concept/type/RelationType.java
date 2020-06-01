@@ -36,6 +36,9 @@ public interface RelationType extends ThingType {
     @Override
     Stream<? extends RelationType> subs();
 
+    @Override
+    Stream<? extends Relation> instances();
+
     void sup(RelationType superType);
 
     void relates(String roleLabel);

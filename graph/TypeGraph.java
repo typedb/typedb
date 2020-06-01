@@ -188,17 +188,14 @@ public class TypeGraph implements Graph<IID.Vertex.Type, TypeVertex> {
      * First, for every {@code TypeVertex} that is held in {@code typeByIID},
      * we generate a unique {@code IID} to be persisted in storage. Then, we
      * commit each vertex into storage by calling {@code vertex.commit()}.
-     *
-     * @return false as this operation does not acquire a lock on the storage.
      */
     @Override
-    public boolean commit() {
+    public void commit() {
         typesByIID.values().parallelStream().filter(v -> v.status().equals(Schema.Status.BUFFERED)).forEach(
                 vertex -> vertex.iid(generate(graphManager.storage().keyGenerator(), vertex.schema()))
         ); // typeByIID no longer contains valid mapping from IID to TypeVertex
         typesByIID.values().forEach(TypeVertex::commit);
         clear(); // we now flush the indexes after commit, and we do not expect this Graph.Type to be used again
-        return false;
     }
 
     @Override

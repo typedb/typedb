@@ -40,13 +40,14 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class BasicTest {
 
     private static Path directory = Paths.get(System.getProperty("user.dir")).resolve("basic-test");
     private static String keyspace = "basic-test";
 
-    private static void assertTransactionRead(Hypergraph.Transaction transaction) {
+    private static void assert_transaction_read(Hypergraph.Transaction transaction) {
         assertTrue(transaction.isOpen());
         assertEquals(CoreHypergraph.Transaction.Type.READ, transaction.type());
 
@@ -113,15 +114,15 @@ public class BasicTest {
     }
 
     @Test
-    public void loop_test_hypergraph() throws IOException {
+    public void write_types_concurrently_repeatedly() throws IOException {
         for (int i = 0; i < 1000; i++) {
             System.out.println(i + " ---- ");
-            test_hypergraph();
+            write_types_concurrently();
         }
     }
 
     @Test
-    public void test_hypergraph() throws IOException {
+    public void write_types_concurrently() throws IOException {
         Util.resetDirectory(directory);
 
         try (Hypergraph graph = CoreHypergraph.open(directory.toString())) {
@@ -233,7 +234,7 @@ public class BasicTest {
                 }
 
                 try (Hypergraph.Transaction transaction = session.transaction(Hypergraph.Transaction.Type.READ)) {
-                    assertTransactionRead(transaction);
+                    assert_transaction_read(transaction);
                 }
             }
         }
@@ -251,7 +252,7 @@ public class BasicTest {
                 assertEquals("my_data_keyspace", session.keyspace().name());
 
                 try (Hypergraph.Transaction transaction = session.transaction(Hypergraph.Transaction.Type.READ)) {
-                    assertTransactionRead(transaction);
+                    assert_transaction_read(transaction);
                 }
 
                 try (Hypergraph.Transaction transaction = session.transaction(Hypergraph.Transaction.Type.WRITE)) {
@@ -267,7 +268,7 @@ public class BasicTest {
                 }
 
                 try (Hypergraph.Transaction transaction = session.transaction(Hypergraph.Transaction.Type.READ)) {
-                    assertTransactionRead(transaction);
+                    assert_transaction_read(transaction);
                     AttributeType.String gender = transaction.concepts().getAttributeType("gender").asString();
                     EntityType school = transaction.concepts().getEntityType("school");
                     RelationType teaching = transaction.concepts().getRelationType("teaching");
@@ -468,6 +469,73 @@ public class BasicTest {
                     assertEquals(70.5, score(txn).get(70.5).value(), 0.001);
                     assertEquals("alice", name(txn).get("alice").value());
                     assertEquals(date_1992_2_3_4_5, dob(txn).get(date_1992_2_3_4_5).value());
+                }
+            }
+        }
+    }
+
+    @Test
+    public void write_and_delete_attributes_concurrently() throws IOException {
+        reset_directory_and_create_attribute_types();
+
+        try (Hypergraph graph = CoreHypergraph.open(directory.toString())) {
+            try (Hypergraph.Session session = graph.session(keyspace)) {
+                Hypergraph.Transaction txn1 = session.transaction(Hypergraph.Transaction.Type.WRITE);
+                Hypergraph.Transaction txn2 = session.transaction(Hypergraph.Transaction.Type.WRITE);
+
+                name(txn1).put("alice");
+                name(txn2).put("alice");
+
+                txn1.commit();
+                txn2.commit();
+
+                try (Hypergraph.Transaction txn = session.transaction(Hypergraph.Transaction.Type.READ)) {
+                    assertEquals("alice", name(txn).get("alice").value());
+                }
+
+                txn1 = session.transaction(Hypergraph.Transaction.Type.WRITE);
+                txn2 = session.transaction(Hypergraph.Transaction.Type.WRITE);
+
+                name(txn1).put("alice");
+                name(txn2).get("alice").delete();
+
+                txn1.commit(); // write before delete
+                try {
+                    txn2.commit();
+                    fail("The delete operation in TX2 is not supposed to succeed");
+                } catch (Exception ignored) {}
+
+                try (Hypergraph.Transaction txn = session.transaction(Hypergraph.Transaction.Type.READ)) {
+                    assertEquals("alice", name(txn).get("alice").value());
+                }
+
+                txn1 = session.transaction(Hypergraph.Transaction.Type.WRITE);
+                txn2 = session.transaction(Hypergraph.Transaction.Type.WRITE);
+
+                name(txn1).put("alice");
+                name(txn2).get("alice").delete();
+
+                txn2.commit(); // delete before write
+                txn1.commit();
+
+                try (Hypergraph.Transaction txn = session.transaction(Hypergraph.Transaction.Type.READ)) {
+                    assertEquals("alice", name(txn).get("alice").value());
+                }
+
+                txn1 = session.transaction(Hypergraph.Transaction.Type.WRITE);
+                txn2 = session.transaction(Hypergraph.Transaction.Type.WRITE);
+
+                name(txn1).get("alice").delete();
+                name(txn2).get("alice").delete();
+
+                txn1.commit(); // delete concurrently
+                try {
+                    txn2.commit();
+                    fail("The second delete operation in TX2 is not supposed to succeed");
+                } catch (Exception ignored) {}
+
+                try (Hypergraph.Transaction txn = session.transaction(Hypergraph.Transaction.Type.READ)) {
+                    assertNull(name(txn).get("alice"));
                 }
             }
         }

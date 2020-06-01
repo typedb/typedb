@@ -72,6 +72,12 @@ public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl impleme
         }
     }
 
+    @Override
+    public void delete() {
+        graph.storage().delete(attributeIID.bytes());
+        graph.delete(this);
+    }
+
     /**
      * Commits this vertex to be persisted onto storage.
      *
@@ -85,11 +91,6 @@ public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl impleme
         graph.storage().putUntracked(index().bytes(), attributeIID.bytes());
         outs.forEach(Edge::commit);
         ins.forEach(Edge::commit);
-    }
-
-    @Override
-    public void delete() {
-        graph.storage().delete(attributeIID.bytes());
     }
 
     public static class Boolean extends AttributeVertexImpl<java.lang.Boolean> {

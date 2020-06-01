@@ -108,6 +108,11 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     }
 
     @Override
+    public Stream<? extends RelationImpl> instances() {
+        return null; // TODO
+    }
+
+    @Override
     public void relates(String roleLabel) {
         TypeVertex roleTypeVertex = vertex.graph().get(roleLabel, vertex.label());
         if (roleTypeVertex == null) {
@@ -189,11 +194,14 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
 
     @Override
     public void delete() {
-        if (compareSize(subs(), 1) == 0) {
-            declaredRoles().forEach(Type::delete);
-            vertex.delete();
+        // TODO: Check if a type has any intances too
+        if (subs().anyMatch(s -> !s.equals(this))) {
+            throw new HypergraphException("Invalid Type Removal: " + label() + " has subtypes");
+        } else if (subs().flatMap(RelationTypeImpl::instances).findAny().isPresent()) {
+            throw new HypergraphException("Invalid Type Removal: " + label() + " has instances");
         } else {
-            throw new HypergraphException("Invalid RoleType Removal: " + label() + " has subtypes");
+            declaredRoles().forEach(RoleTypeImpl::delete);
+            vertex.delete();
         }
     }
 

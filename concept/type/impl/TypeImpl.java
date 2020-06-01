@@ -113,14 +113,8 @@ public abstract class TypeImpl implements Type {
         return stream(spliteratorUnknownSize(subs, ORDERED | IMMUTABLE), false);
     }
 
-    @Override
-    public void delete() {
-        // TODO: Check if a type has any intances too
-        if (subs().findAny().isPresent()) {
-            vertex.delete();
-        } else {
-            throw new HypergraphException("Invalid RoleType Removal: " + label() + " has subtypes");
-        }
+    protected <THING> Stream<THING> instances(Function<TypeVertex, THING> thingConstructor) {
+        return null; // TODO
     }
 
     @Override

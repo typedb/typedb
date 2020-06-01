@@ -32,5 +32,5 @@ public interface Graph<VERTEX_IID extends IID.Vertex, VERTEX extends Vertex> {
 
     void clear();
 
-    boolean commit();
+    void commit();
 }

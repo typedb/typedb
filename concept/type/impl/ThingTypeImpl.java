@@ -19,6 +19,7 @@
 package hypergraph.concept.type.impl;
 
 import hypergraph.common.exception.HypergraphException;
+import hypergraph.concept.thing.Thing;
 import hypergraph.concept.type.AttributeType;
 import hypergraph.concept.type.RoleType;
 import hypergraph.concept.type.ThingType;
@@ -217,6 +218,17 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         }
     }
 
+    @Override
+    public void delete() {
+        if (subs().anyMatch(s -> !s.equals(this))) {
+            throw new HypergraphException("Invalid Type Removal: " + label() + " has subtypes");
+        } else if (subs().flatMap(ThingType::instances).findAny().isPresent()) {
+            throw new HypergraphException("Invalid Type Removal: " + label() + " has instances");
+        } else {
+            vertex.delete();
+        }
+    }
+
     public static class Root extends ThingTypeImpl {
 
         public Root(TypeVertex vertex) {
@@ -258,6 +270,11 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
                         throw new HypergraphException("Unreachable");
                 }
             });
+        }
+
+        @Override
+        public Stream<? extends Thing> instances() {
+            return subs().filter(t -> !t.isAbstract()).flatMap(ThingType::instances);
         }
     }
 }

@@ -18,6 +18,8 @@
 
 package hypergraph.concept.type;
 
+import hypergraph.concept.thing.Thing;
+
 import java.util.stream.Stream;
 
 public interface ThingType extends Type {
@@ -33,6 +35,8 @@ public interface ThingType extends Type {
 
     @Override
     Stream<? extends ThingType> subs();
+
+    Stream<? extends Thing> instances();
 
     void isAbstract(boolean isAbstract);
 
@@ -63,4 +67,6 @@ public interface ThingType extends Type {
     void unplay(RoleType roleType);
 
     Stream<? extends RoleType> plays();
+
+    void delete();
 }

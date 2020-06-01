@@ -79,4 +79,9 @@ public abstract class ThingImpl implements Thing {
     public byte[] iid() {
         return new byte[0];
     }
+
+    @Override
+    public void delete() {
+        vertex.delete();
+    }
 }

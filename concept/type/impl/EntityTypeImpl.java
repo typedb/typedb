@@ -21,6 +21,7 @@ package hypergraph.concept.type.impl;
 import hypergraph.common.exception.Error;
 import hypergraph.common.exception.HypergraphException;
 import hypergraph.concept.thing.Entity;
+import hypergraph.concept.thing.Thing;
 import hypergraph.concept.thing.impl.EntityImpl;
 import hypergraph.concept.type.EntityType;
 import hypergraph.graph.TypeGraph;
@@ -81,6 +82,11 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
     @Override
     public Stream<EntityTypeImpl> subs() {
         return super.subs(EntityTypeImpl::of);
+    }
+
+    @Override
+    public Stream<? extends EntityImpl> instances() {
+        return null; // TODO
     }
 
     @Override

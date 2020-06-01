@@ -226,6 +226,11 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
                 }
             });
         }
+
+        @Override
+        public Stream<? extends AttributeImpl<?>> instances() {
+            return null; // TODO
+        }
     }
 
     public static class Boolean extends AttributeTypeImpl implements AttributeType.Boolean {
@@ -267,6 +272,11 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         @Override
         public Stream<AttributeTypeImpl.Boolean> subs() {
             return super.subs(AttributeTypeImpl.Boolean::of);
+        }
+
+        @Override
+        public Stream<AttributeImpl.Boolean> instances() {
+            return null; // TODO
         }
 
         @Override
@@ -361,6 +371,11 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         @Override
         public Stream<AttributeTypeImpl.Long> subs() {
             return super.subs(AttributeTypeImpl.Long::of);
+        }
+
+        @Override
+        public Stream<AttributeImpl.Long> instances() {
+            return null; // TODO
         }
 
         @Override
@@ -460,6 +475,11 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         }
 
         @Override
+        public Stream<AttributeImpl.Double> instances() {
+            return null; // TODO
+        }
+
+        @Override
         public Class<java.lang.Double> valueType() {
             return java.lang.Double.class;
         }
@@ -556,6 +576,11 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         }
 
         @Override
+        public Stream<AttributeImpl.String> instances() {
+            return null; // TODO
+        }
+
+        @Override
         public AttributeTypeImpl.String asString() { return this; }
 
         @Override
@@ -575,7 +600,8 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         @Override
         public Attribute.String get(java.lang.String value) {
             AttributeVertex<java.lang.String> attVertex = vertex.graph().thingGraph().get(vertex, value);
-            return new AttributeImpl.String(attVertex);
+            if (attVertex != null) return new AttributeImpl.String(attVertex);
+            else return null;
         }
 
         @Override
@@ -652,6 +678,11 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         @Override
         public Stream<AttributeTypeImpl.DateTime> subs() {
             return super.subs(AttributeTypeImpl.DateTime::of);
+        }
+
+        @Override
+        public Stream<AttributeImpl.DateTime> instances() {
+            return null; // TODO
         }
 
         @Override

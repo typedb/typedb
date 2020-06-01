@@ -36,6 +36,9 @@ public interface EntityType extends ThingType {
     @Override
     Stream<? extends EntityType> subs();
 
+    @Override
+    Stream<? extends Entity> instances();
+
     void sup(EntityType superType);
 
     Entity create();

@@ -37,6 +37,9 @@ public interface AttributeType extends ThingType {
     @Override
     Stream<? extends AttributeType> subs();
 
+    @Override
+    Stream<? extends Attribute> instances();
+
     void sup(AttributeType superType);
 
     boolean isKeyable();
@@ -66,6 +69,9 @@ public interface AttributeType extends ThingType {
         @Override
         Stream<? extends AttributeType.Boolean> subs();
 
+        @Override
+        Stream<? extends Attribute.Boolean> instances();
+
         Attribute.Boolean put(boolean value);
 
         Attribute.Boolean put(boolean value, boolean isInferred);
@@ -83,6 +89,9 @@ public interface AttributeType extends ThingType {
 
         @Override
         Stream<? extends AttributeType.Long> subs();
+
+        @Override
+        Stream<? extends Attribute.Long> instances();
 
         Attribute.Long put(long value);
 
@@ -102,6 +111,9 @@ public interface AttributeType extends ThingType {
         @Override
         Stream<? extends AttributeType.Double> subs();
 
+        @Override
+        Stream<? extends Attribute.Double> instances();
+
         Attribute.Double put(double value);
 
         Attribute.Double put(double value, boolean isInferred);
@@ -120,6 +132,9 @@ public interface AttributeType extends ThingType {
         @Override
         Stream<? extends AttributeType.String> subs();
 
+        @Override
+        Stream<? extends Attribute.String> instances();
+
         Attribute.String put(java.lang.String value);
 
         Attribute.String put(java.lang.String value, boolean isInferred);
@@ -137,6 +152,9 @@ public interface AttributeType extends ThingType {
 
         @Override
         Stream<? extends AttributeType.DateTime> subs();
+
+        @Override
+        Stream<? extends Attribute.DateTime> instances();
 
         Attribute.DateTime put(LocalDateTime value);
 

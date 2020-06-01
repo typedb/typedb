@@ -42,7 +42,6 @@ checkstyle_test(
     name = "checkstyle",
     targets = [
         ":test-basic",
-        ":test-attribute-sync",
         ":test-traversal",
     ],
 )

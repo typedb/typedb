@@ -87,6 +87,10 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
         return vertex.scopedLabel();
     }
 
+    public void delete() {
+        vertex.delete();
+    }
+
     public static class Root extends RoleTypeImpl {
 
         Root(TypeVertex vertex) {

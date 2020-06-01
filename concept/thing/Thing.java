@@ -110,4 +110,9 @@ public interface Thing extends Concept {
      * @return a stream of {@code Relation} that this {@code Thing} plays in
      */
     Stream<? extends Relation> relations(RoleType... roleTypes);
+
+    /**
+     * Deletes this {@code Thing} from the system.
+     */
+    void delete();
 }

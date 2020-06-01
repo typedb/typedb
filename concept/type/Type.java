@@ -42,6 +42,4 @@ public interface Type extends Concept {
     Stream<? extends Type> sups();
 
     Stream<? extends Type> subs();
-
-    void delete();
 }

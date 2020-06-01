@@ -286,6 +286,7 @@ public abstract class IID {
 
             static final int VALUE_TYPE_LENGTH = 1;
             static final int VALUE_INDEX = Prefix.LENGTH + Type.LENGTH + VALUE_TYPE_LENGTH;
+            private final Schema.ValueType valueType;
 
             Attribute(Schema.ValueType valueType, Type typeIID, byte[] valueBytes) {
                 super(join(
@@ -294,9 +295,14 @@ public abstract class IID {
                         valueType.bytes(),
                         valueBytes
                 ));
+                this.valueType = valueType;
             }
 
             public abstract VALUE value();
+
+            public Schema.ValueType valueType() {
+                return valueType;
+            }
 
             @Override
             public java.lang.String toString() {

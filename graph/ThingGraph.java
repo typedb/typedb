@@ -43,13 +43,11 @@ public class ThingGraph implements Graph<IID.Vertex.Thing, ThingVertex> {
     private final Graphs graphManager;
     private final ConcurrentMap<IID.Vertex.Thing, ThingVertex> thingsByIID;
     private final AttributesByIID attributesByIID;
-    private boolean attributeSyncIsLocked;
 
     ThingGraph(Graphs graphManager) {
         this.graphManager = graphManager;
         thingsByIID = new ConcurrentHashMap<>();
         attributesByIID = new AttributesByIID();
-        attributeSyncIsLocked = false;
     }
 
     public TypeGraph typeGraph() {
@@ -191,7 +189,11 @@ public class ThingGraph implements Graph<IID.Vertex.Thing, ThingVertex> {
 
     @Override
     public void delete(ThingVertex vertex) {
-        // TODO
+        thingsByIID.remove(vertex.iid());
+    }
+
+    public void delete(AttributeVertex<?> vertex) {
+        attributesByIID.remove(vertex.iid());
     }
 
     @Override
@@ -207,20 +209,11 @@ public class ThingGraph implements Graph<IID.Vertex.Thing, ThingVertex> {
      * does not actually include {@code AttributeVertex}). We then write the every
      * {@code ThingVertex} onto the storage. Once all commit operations for every
      * {@code ThingVertex} is done, we the write all the {@code AttributeVertex}
-     * as the last step. To do so, we acquire a lock from {@code AttributeSync}
-     * so that we have exclusive permission to access and manipulate it from
-     * within every vertex as we write them onto storage. If an attribute vertex
-     * was actually written to storage, it will be saved in
-     * {@code attributeVerticesWritten}, and we need to hold onto the lock we
-     * acquired from {@code AttributeSync} until we can {@code #confirm()} that
-     * they were actually committed at storage. If there were no attributes that
-     * needed to be written onto storage (because {@code AttributeSync} says they're
-     * already written in storage), then we can let go of the lock we had acquired.
-     *
-     * @return true if the operation results in locking the storage
+     * as the last step. Since the write operations to storage are serialised
+     * anyways, we don't need to parallelise the streams to commit the vertices.
      */
     @Override
-    public boolean commit() {
+    public void commit() {
         thingsByIID.values().parallelStream().filter(v -> !v.isInferred()).forEach(
                 vertex -> vertex.iid(generate(graphManager.storage().keyGenerator(), vertex.type().iid()))
         ); // thingByIID no longer contains valid mapping from IID to TypeVertex
@@ -228,7 +221,6 @@ public class ThingGraph implements Graph<IID.Vertex.Thing, ThingVertex> {
         attributesByIID.valueStream().forEach(Vertex::commit);
 
         clear(); // we now flush the indexes after commit, and we do not expect this Graph.Thing to be used again
-        return attributeSyncIsLocked;
     }
 
     private static class AttributesByIID {
@@ -261,6 +253,26 @@ public class ThingGraph implements Graph<IID.Vertex.Thing, ThingVertex> {
             doubles.clear();
             strings.clear();
             dateTimes.clear();
+        }
+
+        public void remove(IID.Vertex.Attribute iid) {
+            switch (iid.valueType()) {
+                case BOOLEAN:
+                    booleans.remove((IID.Vertex.Attribute.Boolean) iid);
+                    break;
+                case LONG:
+                    longs.remove((IID.Vertex.Attribute.Long) iid);
+                    break;
+                case DOUBLE:
+                    doubles.remove((IID.Vertex.Attribute.Double) iid);
+                    break;
+                case STRING:
+                    strings.remove((IID.Vertex.Attribute.String) iid);
+                    break;
+                case DATETIME:
+                    dateTimes.remove((IID.Vertex.Attribute.DateTime) iid);
+                    break;
+            }
         }
     }
 }
