@@ -44,7 +44,6 @@ java_test(
     deps = [
         "//common",
         "//concept/answer",
-        "//core",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//kb/concept/api",
         "//kb/graql/exception",

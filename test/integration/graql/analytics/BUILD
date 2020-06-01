@@ -59,8 +59,6 @@ java_test(
     classpath_resources = ["//test/resources:logback-test"],
     test_class = "grakn.core.graql.analytics.CountIT",
     deps = [
-        "//concept/answer",
-        "//core",
         "//kb/concept/api",
         "//kb/server",
         "//test/rule:grakn-test-server",
