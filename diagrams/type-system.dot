@@ -2,96 +2,96 @@ digraph hypergraph {
     graph [splines = true]
 
     {
-        GRAKN_HIERARCHY [shape = none, label = "Grakn Type Hierarchy", pos = "3,7.5!"]
-        node [shape = ellipse]
+    GRAKN_HIERARCHY [shape = none, label = "Grakn Type Hierarchy", pos = "3,7.5!"]
+    node [shape = ellipse]
 
-        {
-            GRAKN_THING [label = "thing", pos = "3,6.5!"]
-            GRAKN_ENTITY [label = "entity", pos = "6,5.5!"]
-            GRAKN_ATTRIBUTE [label = "attribute", pos = "4,5!"]
-            GRAKN_RELATION [label = "relation", pos = "2,4.5!"]
-            GRAKN_ROLE [label = "role", pos = "0,4.0!"]
+    {
+    GRAKN_THING [label = "thing", pos = "3,6.5!"]
+    GRAKN_ENTITY [label = "entity", pos = "6,5.5!"]
+    GRAKN_ATTRIBUTE [label = "attribute", pos = "4,5!"]
+    GRAKN_RELATION [label = "relation", pos = "2,4.5!"]
+    GRAKN_ROLE [label = "role", pos = "0,4.0!"]
 
-        }
-        {
-            GRAKN_ENT123 [label = "ent123", pos = "6,1.5!"]
-            GRAKN_ATT234 [label = "att234", pos = "4,1!"]
-            GRAKN_REL345 [label = "rel345", pos = "2,0.5!"]
-            GRAKN_ROL456 [label = "rol456", pos = "0,0!"]
-        }
+    }
+    {
+    GRAKN_ENT123 [label = "ent123", pos = "6,1.5!"]
+    GRAKN_ATT234 [label = "att234", pos = "4,1!"]
+    GRAKN_REL345 [label = "rel345", pos = "2,0.5!"]
+    GRAKN_ROL456 [label = "rol456", pos = "0,0!"]
+    }
 
-        GRAKN_ENTITY -> GRAKN_THING [label = "subtype"]
-        GRAKN_ENTITY:w -> GRAKN_ENTITY:w [label = "subtype"]
-        GRAKN_ATTRIBUTE -> GRAKN_THING [label = "subtype"]
-        GRAKN_ATTRIBUTE:w -> GRAKN_ATTRIBUTE:w [label = "subtype"]
-        GRAKN_RELATION -> GRAKN_THING [label = "subtype"]
-        GRAKN_RELATION:w -> GRAKN_RELATION:w [label = "subtype"]
-        GRAKN_RELATION -> GRAKN_ROLE [label = "relates"]
-        GRAKN_ROLE:w -> GRAKN_ROLE:w [label = "subtype"]
+    GRAKN_ENTITY -> GRAKN_THING [label = "subtype"]
+    GRAKN_ENTITY: w -> GRAKN_ENTITY: w [label = "subtype"]
+    GRAKN_ATTRIBUTE -> GRAKN_THING [label = "subtype"]
+    GRAKN_ATTRIBUTE: w -> GRAKN_ATTRIBUTE: w [label = "subtype"]
+    GRAKN_RELATION -> GRAKN_THING [label = "subtype"]
+    GRAKN_RELATION: w -> GRAKN_RELATION: w [label = "subtype"]
+    GRAKN_RELATION -> GRAKN_ROLE [label = "relates"]
+    GRAKN_ROLE: w -> GRAKN_ROLE: w [label = "subtype"]
 
-        {
-            edge [style = dashed]
-            GRAKN_ENTITY -> GRAKN_ENT123 [label = "grakn-instance"]
-            GRAKN_ATTRIBUTE -> GRAKN_ATT234 [label = "grakn-instance"]
-            GRAKN_RELATION -> GRAKN_REL345 [label = "grakn-instance"]
-            GRAKN_ROLE -> GRAKN_ROL456 [label = "grakn-instance"]
-        }
+    {
+    edge [style = dashed]
+    GRAKN_ENTITY -> GRAKN_ENT123 [label = "grakn-instance"]
+    GRAKN_ATTRIBUTE -> GRAKN_ATT234 [label = "grakn-instance"]
+    GRAKN_RELATION -> GRAKN_REL345 [label = "grakn-instance"]
+    GRAKN_ROLE -> GRAKN_ROL456 [label = "grakn-instance"]
+    }
     }
 
     {
-        JAVA_HIERARCHY [shape = "none", label = "Java Class Hierarchy", pos = "11,7.5!"]
-        node [shape = rectangle]
+    JAVA_HIERARCHY [shape = "none", label = "Java Class Hierarchy", pos = "11,7.5!"]
+    node [shape = rectangle]
 
-        {
-            JAVA_TYPE [label = "Type", pos = "12.5,7!"]
-            JAVA_THING_TYPE [label = "ThingType", pos = "11,6.5!"]
-            JAVA_ENTITY_TYPE [label = "EntityType", pos = "8,5.5!"]
-            JAVA_ATTRIBUTE_TYPE [label = "AttributeType", pos = "10,5!"]
-            JAVA_RELATION_TYPE [label = "RelationType", pos = "12,4.5!"]
-            JAVA_ROLE_TYPE [label = "RoleType", pos = "14,4!"]
-        }
-        {
-            JAVA_THING [label = "Thing", pos = "11,2.5!"]
-            JAVA_ENTITY [label = "Entity", pos = "8,1.5!"]
-            JAVA_ATTRIBUTE [label = "Attribute", pos = "10,1!"]
-            JAVA_RELATION [label = "Relation", pos = "12,0.5!"]
-            JAVA_ROLE [label = "Role", pos = "14,0!"]
-        }
+    {
+    JAVA_TYPE [label = "Type", pos = "12.5,7!"]
+    JAVA_THING_TYPE [label = "ThingType", pos = "11,6.5!"]
+    JAVA_ENTITY_TYPE [label = "EntityType", pos = "8,5.5!"]
+    JAVA_ATTRIBUTE_TYPE [label = "AttributeType", pos = "10,5!"]
+    JAVA_RELATION_TYPE [label = "RelationType", pos = "12,4.5!"]
+    JAVA_ROLE_TYPE [label = "RoleType", pos = "14,4!"]
+    }
+    {
+    JAVA_THING [label = "Thing", pos = "11,2.5!"]
+    JAVA_ENTITY [label = "Entity", pos = "8,1.5!"]
+    JAVA_ATTRIBUTE [label = "Attribute", pos = "10,1!"]
+    JAVA_RELATION [label = "Relation", pos = "12,0.5!"]
+    JAVA_ROLE [label = "Role", pos = "14,0!"]
+    }
 
-        JAVA_THING_TYPE -> JAVA_TYPE [label = "subclass"]
-        JAVA_ENTITY_TYPE -> JAVA_THING_TYPE [label = "subclass"]
-        JAVA_ATTRIBUTE_TYPE -> JAVA_THING_TYPE [label = "subclass"]
-        JAVA_RELATION_TYPE -> JAVA_THING_TYPE [label = "subclass"]
-        JAVA_RELATION_TYPE -> JAVA_ROLE_TYPE [label = "relates"]
-        JAVA_ROLE_TYPE -> JAVA_TYPE [label = "subclass"]
+    JAVA_THING_TYPE -> JAVA_TYPE [label = "subclass"]
+    JAVA_ENTITY_TYPE -> JAVA_THING_TYPE [label = "subclass"]
+    JAVA_ATTRIBUTE_TYPE -> JAVA_THING_TYPE [label = "subclass"]
+    JAVA_RELATION_TYPE -> JAVA_THING_TYPE [label = "subclass"]
+    JAVA_RELATION_TYPE -> JAVA_ROLE_TYPE [label = "relates"]
+    JAVA_ROLE_TYPE -> JAVA_TYPE [label = "subclass"]
 
-        JAVA_ENTITY -> JAVA_THING [label = "subclass"]
-        JAVA_ATTRIBUTE -> JAVA_THING [label = "subclass"]
-        JAVA_RELATION -> JAVA_THING [label = "subclass"]
-        JAVA_RELATION -> JAVA_ROLE [label = "relates"]
+    JAVA_ENTITY -> JAVA_THING [label = "subclass"]
+    JAVA_ATTRIBUTE -> JAVA_THING [label = "subclass"]
+    JAVA_RELATION -> JAVA_THING [label = "subclass"]
+    JAVA_RELATION -> JAVA_ROLE [label = "relates"]
 
-        {
-            edge [style = dashed]
-            JAVA_THING_TYPE -> JAVA_THING [label = "grakn-instance"]
-            JAVA_ENTITY_TYPE -> JAVA_ENTITY [label = "grakn-instance"]
-            JAVA_RELATION_TYPE -> JAVA_RELATION [label = "grakn-instance"]
-            JAVA_ROLE_TYPE -> JAVA_ROLE [label = "grakn-instance"]
-            JAVA_ATTRIBUTE_TYPE -> JAVA_ATTRIBUTE [label = "grakn-instance"]
-        }
+    {
+    edge [style = dashed]
+    JAVA_THING_TYPE -> JAVA_THING [label = "grakn-instance"]
+    JAVA_ENTITY_TYPE -> JAVA_ENTITY [label = "grakn-instance"]
+    JAVA_RELATION_TYPE -> JAVA_RELATION [label = "grakn-instance"]
+    JAVA_ROLE_TYPE -> JAVA_ROLE [label = "grakn-instance"]
+    JAVA_ATTRIBUTE_TYPE -> JAVA_ATTRIBUTE [label = "grakn-instance"]
+    }
     }
 
     {
-        edge [style = dashed]
+    edge [style = dashed]
 
-        JAVA_THING_TYPE -> GRAKN_THING [label = "java-instance"]
-        JAVA_ENTITY_TYPE -> GRAKN_ENTITY [label = "java-instance"]
-        JAVA_RELATION_TYPE -> GRAKN_RELATION [label = "java-instance"]
-        JAVA_ROLE_TYPE -> GRAKN_ROLE [label = "java-instance"]
-        JAVA_ATTRIBUTE_TYPE -> GRAKN_ATTRIBUTE [label = "java-instance"]
+    JAVA_THING_TYPE -> GRAKN_THING [label = "java-instance"]
+    JAVA_ENTITY_TYPE -> GRAKN_ENTITY [label = "java-instance"]
+    JAVA_RELATION_TYPE -> GRAKN_RELATION [label = "java-instance"]
+    JAVA_ROLE_TYPE -> GRAKN_ROLE [label = "java-instance"]
+    JAVA_ATTRIBUTE_TYPE -> GRAKN_ATTRIBUTE [label = "java-instance"]
 
-        JAVA_ENTITY -> GRAKN_ENT123 [label = "java-instance"]
-        JAVA_ATTRIBUTE -> GRAKN_ATT234 [label = "java-instance"]
-        JAVA_RELATION -> GRAKN_REL345 [label = "java-instance"]
-        JAVA_ROLE -> GRAKN_ROL456 [label = "java-instance"]
+    JAVA_ENTITY -> GRAKN_ENT123 [label = "java-instance"]
+    JAVA_ATTRIBUTE -> GRAKN_ATT234 [label = "java-instance"]
+    JAVA_RELATION -> GRAKN_REL345 [label = "java-instance"]
+    JAVA_ROLE -> GRAKN_ROL456 [label = "java-instance"]
     }
 }

@@ -19,6 +19,7 @@
 package hypergraph.graph.vertex;
 
 import hypergraph.graph.ThingGraph;
+import hypergraph.graph.adjacency.ThingAdjacency;
 import hypergraph.graph.edge.ThingEdge;
 import hypergraph.graph.util.IID;
 import hypergraph.graph.util.Schema;
@@ -37,11 +38,27 @@ public interface ThingVertex extends Vertex<
     ThingGraph graph();
 
     /**
+     * Returns the {@code ThingAdjacency} set of outgoing edges.
+     *
+     * @return the {@code ThingAdjacency} set of outgoing edges
+     */
+    @Override
+    ThingAdjacency outs();
+
+    /**
+     * Returns the {@code ThingAdjacency} set of incoming edges.
+     *
+     * @return the {@code ThingAdjacency} set of incoming edges
+     */
+    @Override
+    ThingAdjacency ins();
+
+    /**
      * Returns the {@code TypeVertex} in which this {@code ThingVertex} is an instance of.
      *
      * @return the {@code TypeVertex} in which this {@code ThingVertex} is an instance of
      */
-    TypeVertex typeVertex();
+    TypeVertex type();
 
     /**
      * Returns true if this {@code ThingVertex} is a result of inference.
@@ -56,11 +73,4 @@ public interface ThingVertex extends Vertex<
      * @param isInferred indicating whether this vertex was a result of inference
      */
     void isInferred(boolean isInferred);
-
-    /**
-     * Commits this {@code ThingVertex} to be persisted onto storage.
-     *
-     * @param hasAttributeSyncLock that indicates whether you have access to the {@code AttributeSync}
-     */
-    void commit(boolean hasAttributeSyncLock);
 }

@@ -23,7 +23,6 @@ import hypergraph.common.concurrent.ManagedReadWriteLock;
 import hypergraph.common.exception.HypergraphException;
 import hypergraph.concept.Concepts;
 import hypergraph.graph.Graphs;
-import hypergraph.graph.util.AttributeSync;
 import hypergraph.graph.util.KeyGenerator;
 import hypergraph.graph.util.Storage;
 import hypergraph.traversal.Traversal;
@@ -57,7 +56,6 @@ class CoreTransaction implements Hypergraph.Transaction {
     private final Concepts concepts;
     private final Traversal traversal;
     private final AtomicBoolean isOpen;
-    private final long snapshot;
 
     CoreTransaction(CoreSession session, Type type) {
         this.type = type;
@@ -68,7 +66,6 @@ class CoreTransaction implements Hypergraph.Transaction {
         optOptions = new OptimisticTransactionOptions().setSetSnapshot(true);
         rocksTransaction = session.rocks().beginTransaction(writeOptions, optOptions);
         readOptions.setSnapshot(rocksTransaction.getSnapshot());
-        snapshot = readOptions.snapshot().getSequenceNumber();
 
         storage = new CoreStorage();
         graph = new Graphs(storage);
@@ -81,10 +78,6 @@ class CoreTransaction implements Hypergraph.Transaction {
 
     Graphs graph() {
         return graph;
-    }
-
-    Long snapshot() {
-        return snapshot;
     }
 
     public CoreStorage storage() {
@@ -133,16 +126,12 @@ class CoreTransaction implements Hypergraph.Transaction {
         if (type.equals(Type.READ)) {
             throw new HypergraphException("Illegal Write Exception");
         } else if (isOpen.compareAndSet(true, false)) {
-            boolean locking = false;
-            long newSnapshot = -1;
             try {
-                locking = graph.commit();
+                graph.commit();
                 rocksTransaction.commit();
-                newSnapshot = session.rocks().getLatestSequenceNumber();
             } catch (RocksDBException e) {
                 throw new HypergraphException(e);
             } finally {
-                if (locking) graph.confirm(newSnapshot > this.snapshot, newSnapshot);
                 closeResources();
             }
         } else {
@@ -187,18 +176,8 @@ class CoreTransaction implements Hypergraph.Transaction {
         }
 
         @Override
-        public long snapshot() {
-            return snapshot;
-        }
-
-        @Override
         public KeyGenerator keyGenerator() {
             return session.keyGenerator();
-        }
-
-        @Override
-        public AttributeSync attributeSync() {
-            return session.attributeSync();
         }
 
         @Override
@@ -248,6 +227,23 @@ class CoreTransaction implements Hypergraph.Transaction {
             try {
                 readWriteLock.lockWrite();
                 rocksTransaction.put(key, value);
+            } catch (RocksDBException | InterruptedException e) {
+                throw new HypergraphException(e);
+            } finally {
+                readWriteLock.unlockWrite();
+            }
+        }
+
+        @Override
+        public void putUntracked(byte[] key) {
+            putUntracked(key, EMPTY_ARRAY);
+        }
+
+        @Override
+        public void putUntracked(byte[] key, byte[] value) {
+            try {
+                readWriteLock.lockWrite();
+                rocksTransaction.putUntracked(key, value);
             } catch (RocksDBException | InterruptedException e) {
                 throw new HypergraphException(e);
             } finally {

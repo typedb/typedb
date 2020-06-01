@@ -37,7 +37,7 @@ public class RelationImpl extends ThingImpl implements Relation {
 
     @Override
     public RelationTypeImpl type() {
-        return RelationTypeImpl.of(vertex.typeVertex());
+        return RelationTypeImpl.of(vertex.type());
     }
 
     @Override

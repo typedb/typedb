@@ -23,11 +23,7 @@ import java.util.function.BiFunction;
 
 public interface Storage {
 
-    long snapshot();
-
     KeyGenerator keyGenerator();
-
-    AttributeSync attributeSync();
 
     byte[] get(byte[] key);
 
@@ -38,6 +34,10 @@ public interface Storage {
     void put(byte[] key);
 
     void put(byte[] key, byte[] value);
+
+    void putUntracked(byte[] key);
+
+    void putUntracked(byte[] key, byte[] value);
 
     <G> Iterator<G> iterate(byte[] key, BiFunction<byte[], byte[], G> constructor);
 }

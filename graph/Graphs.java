@@ -73,20 +73,8 @@ public class Graphs {
      *
      * @return true if the operation results in locking the storage
      */
-    public boolean commit() {
-        return typeGraph.commit() || thingGraph.commit();
-    }
-
-    /**
-     * Confirms whether the graph was successfully committed into storage.
-     *
-     * This operation will release any lock on the storage, that the
-     * {@code commit()} operation may have acquired.
-     *
-     * @param committed whether the graph was successfully committed into storage
-     * @param snapshot  sequence number of storage if graph was successfully committed
-     */
-    public void confirm(boolean committed, long snapshot) {
-        thingGraph.confirm(committed, snapshot);
+    public void commit() {
+        typeGraph.commit();
+        thingGraph.commit();
     }
 }

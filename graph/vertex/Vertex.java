@@ -46,4 +46,9 @@ public interface Vertex<
     Adjacency<EDGE_SCHEMA, EDGE, VERTEX> ins();
 
     void delete();
+
+    /**
+     * Commits this {@code ThingVertex} to be persisted onto storage.
+     */
+    void commit();
 }

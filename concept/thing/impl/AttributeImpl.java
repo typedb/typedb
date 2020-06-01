@@ -41,7 +41,7 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
 
     @Override
     public AttributeTypeImpl type() {
-        return AttributeTypeImpl.of(vertex.typeVertex());
+        return AttributeTypeImpl.of(vertex.type());
     }
 
     @Override
@@ -78,7 +78,7 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
 
         public Boolean(AttributeVertex<java.lang.Boolean> vertex) {
             super(vertex);
-            assert vertex.typeVertex().valueType().equals(Schema.ValueType.BOOLEAN);
+            assert vertex.type().valueType().equals(Schema.ValueType.BOOLEAN);
         }
 
         @Override
@@ -96,7 +96,7 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
 
         public Long(AttributeVertex<java.lang.Long> vertex) {
             super(vertex);
-            assert vertex.typeVertex().valueType().equals(Schema.ValueType.LONG);
+            assert vertex.type().valueType().equals(Schema.ValueType.LONG);
         }
 
         @Override
@@ -114,7 +114,7 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
 
         public Double(AttributeVertex<java.lang.Double> vertex) {
             super(vertex);
-            assert vertex.typeVertex().valueType().equals(Schema.ValueType.DOUBLE);
+            assert vertex.type().valueType().equals(Schema.ValueType.DOUBLE);
         }
 
         @Override
@@ -132,7 +132,7 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
 
         public String(AttributeVertex<java.lang.String> vertex) {
             super(vertex);
-            assert vertex.typeVertex().valueType().equals(Schema.ValueType.STRING);
+            assert vertex.type().valueType().equals(Schema.ValueType.STRING);
         }
 
         @Override
@@ -150,7 +150,7 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
 
         public DateTime(AttributeVertex<LocalDateTime> vertex) {
             super(vertex);
-            assert vertex.typeVertex().valueType().equals(Schema.ValueType.DATETIME);
+            assert vertex.type().valueType().equals(Schema.ValueType.DATETIME);
         }
 
         @Override

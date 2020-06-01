@@ -29,21 +29,6 @@ java_test(
         "//concept:concept",
         "//core:hypergraph",
     ],
-    size = "small",
-)
-
-java_test(
-    name = "test-attribute-sync",
-    srcs = [
-        "AttributeSyncTest.java",
-        "Util.java",
-    ],
-    test_class = "hypergraph.test.integration.AttributeSyncTest",
-    deps = [
-        "//:hypergraph",
-        "//concept:concept",
-        "//core:hypergraph",
-    ],
     size = "medium",
 )
 

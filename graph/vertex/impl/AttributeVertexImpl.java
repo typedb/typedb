@@ -24,22 +24,18 @@ import hypergraph.graph.ThingGraph;
 import hypergraph.graph.adjacency.Adjacency;
 import hypergraph.graph.adjacency.ThingAdjacency;
 import hypergraph.graph.adjacency.impl.ThingAdjacencyImpl;
-import hypergraph.graph.util.AttributeSync;
+import hypergraph.graph.edge.Edge;
 import hypergraph.graph.util.IID;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.vertex.AttributeVertex;
 
 import java.time.LocalDateTime;
 
-import static hypergraph.graph.util.AttributeSync.CommitSync.Status.DELETED;
-import static hypergraph.graph.util.AttributeSync.CommitSync.Status.NONE;
-import static hypergraph.graph.util.AttributeSync.CommitSync.Status.WRITTEN;
-
 public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl implements AttributeVertex<VALUE> {
 
     private final IID.Vertex.Attribute<VALUE> attributeIID;
 
-    public AttributeVertexImpl(ThingGraph graph, IID.Vertex.Attribute<VALUE> iid, boolean isInferred) {
+    AttributeVertexImpl(ThingGraph graph, IID.Vertex.Attribute<VALUE> iid, boolean isInferred) {
         super(graph, iid, isInferred);
         this.attributeIID = iid;
     }
@@ -68,7 +64,7 @@ public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl impleme
 
     @Override
     public VALUE value() {
-        if (typeVertex().valueType().isIndexable()) {
+        if (type().valueType().isIndexable()) {
             return attributeIID.value();
         } else {
             // TODO: implement for ValueType.TEXT
@@ -81,30 +77,19 @@ public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl impleme
      *
      * This method is not thread-safe. It uses needs to access and manipulate
      * {@code AttributeSync} which is not a thread-safe object.
-     *
-     * @param hasAttributeSyncLock that indicates whether you have access to the {@code AttributeSync}
      */
     @Override
-    public void commit(boolean hasAttributeSyncLock) {
-        if (isInferred || !hasAttributeSyncLock) throw new HypergraphException(Error.Transaction.ILLEGAL_OPERATION);
-
-        AttributeSync.CommitSync commitSync = graph.storage().attributeSync().get(attributeIID);
-        if (commitSync.status() == NONE || (commitSync.status() == DELETED && commitSync.snapshot() <= graph.storage().snapshot())) {
-            graph.storage().put(attributeIID.bytes());
-            graph.storage().put(index().bytes(), attributeIID.bytes());
-            commitSync.status(WRITTEN);
-            graph.attributesWritten().add(this);
-        } else if (commitSync.status() == DELETED) {
-            throw new HypergraphException(Error.ThingWrite.CONCURRENT_ATTRIBUTE_WRITE_DELETE);
-        }
-
-        outs.forEach(e -> e.commit(true));
-        ins.forEach(e -> e.commit(true));
+    public void commit() {
+        if (isInferred) throw new HypergraphException(Error.Transaction.ILLEGAL_OPERATION);
+        graph.storage().putUntracked(attributeIID.bytes());
+        graph.storage().putUntracked(index().bytes(), attributeIID.bytes());
+        outs.forEach(Edge::commit);
+        ins.forEach(Edge::commit);
     }
 
     @Override
     public void delete() {
-
+        graph.storage().delete(attributeIID.bytes());
     }
 
     public static class Boolean extends AttributeVertexImpl<java.lang.Boolean> {
@@ -115,7 +100,7 @@ public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl impleme
 
         @Override
         protected IID.Index.Attribute index() {
-            return IID.Index.Attribute.of(value(), typeVertex().iid());
+            return IID.Index.Attribute.of(value(), type().iid());
         }
     }
 
@@ -127,7 +112,7 @@ public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl impleme
 
         @Override
         protected IID.Index.Attribute index() {
-            return IID.Index.Attribute.of(value(), typeVertex().iid());
+            return IID.Index.Attribute.of(value(), type().iid());
         }
     }
 
@@ -139,7 +124,7 @@ public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl impleme
 
         @Override
         protected IID.Index.Attribute index() {
-            return IID.Index.Attribute.of(value(), typeVertex().iid());
+            return IID.Index.Attribute.of(value(), type().iid());
         }
     }
 
@@ -151,7 +136,7 @@ public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl impleme
 
         @Override
         protected IID.Index.Attribute index() {
-            return IID.Index.Attribute.of(value(), typeVertex().iid());
+            return IID.Index.Attribute.of(value(), type().iid());
         }
     }
 
@@ -163,7 +148,7 @@ public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl impleme
 
         @Override
         protected IID.Index.Attribute index() {
-            return IID.Index.Attribute.of(value(), typeVertex().iid());
+            return IID.Index.Attribute.of(value(), type().iid());
         }
     }
 }

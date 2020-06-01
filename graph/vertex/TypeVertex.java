@@ -40,6 +40,8 @@ public interface TypeVertex extends Vertex<
     @Override
     TypeAdjacency ins();
 
+    Iterator<? extends ThingVertex> instances();
+
     String label();
 
     String scopedLabel();
@@ -59,8 +61,4 @@ public interface TypeVertex extends Vertex<
     String regex();
 
     TypeVertex regex(String regex);
-
-    void commit();
-
-    Iterator<? extends ThingVertex> instances();
 }

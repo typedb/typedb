@@ -24,6 +24,7 @@ import hypergraph.graph.ThingGraph;
 import hypergraph.graph.adjacency.Adjacency;
 import hypergraph.graph.adjacency.ThingAdjacency;
 import hypergraph.graph.adjacency.impl.ThingAdjacencyImpl;
+import hypergraph.graph.edge.Edge;
 import hypergraph.graph.edge.ThingEdge;
 import hypergraph.graph.util.IID;
 import hypergraph.graph.util.Schema;
@@ -71,7 +72,7 @@ public abstract class ThingVertexImpl
      * @return the {@code TypeVertex} in which this {@code ThingVertex} is an instance of
      */
     @Override
-    public TypeVertex typeVertex() {
+    public TypeVertex type() {
         return graph.typeGraph().convert(iid.type());
     }
 
@@ -86,12 +87,12 @@ public abstract class ThingVertexImpl
     }
 
     @Override
-    public Adjacency<Schema.Edge.Thing, ThingEdge, ThingVertex> outs() {
+    public ThingAdjacency outs() {
         return outs;
     }
 
     @Override
-    public Adjacency<Schema.Edge.Thing, ThingEdge, ThingVertex> ins() {
+    public ThingAdjacency ins() {
         return ins;
     }
 
@@ -117,20 +118,20 @@ public abstract class ThingVertexImpl
         }
 
         @Override
-        public void commit(boolean hasAttributeSyncLock) {
+        public void commit() {
             if (isInferred) throw new HypergraphException(Error.Transaction.ILLEGAL_OPERATION);
             graph.storage().put(iid.bytes());
             commitIndex();
-            commitEdges(hasAttributeSyncLock);
+            commitEdges();
         }
 
         private void commitIndex() {
             // TODO
         }
 
-        private void commitEdges(boolean hasAttributeSyncLock) {
-            outs.forEach(e -> e.commit(hasAttributeSyncLock));
-            ins.forEach(e -> e.commit(hasAttributeSyncLock));
+        private void commitEdges() {
+            outs.forEach(Edge::commit);
+            ins.forEach(Edge::commit);
         }
 
         @Override
@@ -161,13 +162,13 @@ public abstract class ThingVertexImpl
         }
 
         @Override
-        public void commit(boolean hasAttributeSyncLock) {
-            commitEdges(hasAttributeSyncLock);
+        public void commit() {
+            commitEdges();
         }
 
-        private void commitEdges(boolean hasAttributeSyncLock) {
-            outs.forEach(e -> e.commit(hasAttributeSyncLock));
-            ins.forEach(e -> e.commit(hasAttributeSyncLock));
+        private void commitEdges() {
+            outs.forEach(Edge::commit);
+            ins.forEach(Edge::commit);
         }
 
         @Override

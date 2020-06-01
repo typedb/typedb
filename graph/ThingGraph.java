@@ -18,25 +18,23 @@
 
 package hypergraph.graph;
 
-import hypergraph.common.exception.HypergraphException;
 import hypergraph.graph.util.IID;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.util.Storage;
 import hypergraph.graph.vertex.AttributeVertex;
 import hypergraph.graph.vertex.ThingVertex;
 import hypergraph.graph.vertex.TypeVertex;
+import hypergraph.graph.vertex.Vertex;
 import hypergraph.graph.vertex.impl.AttributeVertexImpl;
 import hypergraph.graph.vertex.impl.ThingVertexImpl;
 
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import static hypergraph.graph.util.AttributeSync.CommitSync.Status.NONE;
 import static hypergraph.graph.util.IID.Vertex.Thing.generate;
 import static java.util.stream.Stream.concat;
 
@@ -45,23 +43,17 @@ public class ThingGraph implements Graph<IID.Vertex.Thing, ThingVertex> {
     private final Graphs graphManager;
     private final ConcurrentMap<IID.Vertex.Thing, ThingVertex> thingsByIID;
     private final AttributesByIID attributesByIID;
-    private ConcurrentLinkedQueue<AttributeVertex<?>> attributeVerticesWritten;
     private boolean attributeSyncIsLocked;
 
     ThingGraph(Graphs graphManager) {
         this.graphManager = graphManager;
         thingsByIID = new ConcurrentHashMap<>();
         attributesByIID = new AttributesByIID();
-        attributeVerticesWritten = new ConcurrentLinkedQueue<>();
         attributeSyncIsLocked = false;
     }
 
     public TypeGraph typeGraph() {
         return graphManager.type();
-    }
-
-    public ConcurrentLinkedQueue<AttributeVertex<?>> attributesWritten() {
-        return attributeVerticesWritten;
     }
 
     @Override
@@ -230,35 +222,13 @@ public class ThingGraph implements Graph<IID.Vertex.Thing, ThingVertex> {
     @Override
     public boolean commit() {
         thingsByIID.values().parallelStream().filter(v -> !v.isInferred()).forEach(
-                vertex -> vertex.iid(generate(graphManager.storage().keyGenerator(), vertex.typeVertex().iid()))
+                vertex -> vertex.iid(generate(graphManager.storage().keyGenerator(), vertex.type().iid()))
         ); // thingByIID no longer contains valid mapping from IID to TypeVertex
-        thingsByIID.values().stream().filter(v -> !v.isInferred()).forEach(v -> v.commit(false));
-
-        try {
-            attributeSyncIsLocked = false;
-            storage().attributeSync().lock();
-            attributesByIID.valueStream().forEach(v -> v.commit(true));
-            if (!attributeVerticesWritten.isEmpty()) attributeSyncIsLocked = true;
-        } catch (InterruptedException e) {
-            throw new HypergraphException(e);
-        } finally {
-            if (!attributeSyncIsLocked) storage().attributeSync().unlock();
-        }
+        thingsByIID.values().stream().filter(v -> !v.isInferred()).forEach(Vertex::commit);
+        attributesByIID.valueStream().forEach(Vertex::commit);
 
         clear(); // we now flush the indexes after commit, and we do not expect this Graph.Thing to be used again
         return attributeSyncIsLocked;
-    }
-
-    void confirm(boolean committed, long snapshot) {
-        assert attributeSyncIsLocked;
-        if (!committed) {
-            attributeVerticesWritten.parallelStream().forEach(v -> storage().attributeSync().get(v.iid()).status(NONE));
-        } else {
-            assert snapshot > 0;
-            attributeVerticesWritten.parallelStream().forEach(v -> storage().attributeSync().get(v.iid()).snapshot(snapshot));
-        }
-        storage().attributeSync().unlock();
-        attributeSyncIsLocked = false;
     }
 
     private static class AttributesByIID {

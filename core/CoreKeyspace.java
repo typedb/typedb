@@ -20,7 +20,6 @@ package hypergraph.core;
 
 import hypergraph.Hypergraph;
 import hypergraph.common.exception.HypergraphException;
-import hypergraph.graph.util.AttributeSync;
 import hypergraph.graph.util.KeyGenerator;
 import org.rocksdb.OptimisticTransactionDB;
 import org.rocksdb.RocksDBException;
@@ -32,9 +31,7 @@ import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public class CoreKeyspace implements Hypergraph.Keyspace {
 
@@ -42,8 +39,6 @@ public class CoreKeyspace implements Hypergraph.Keyspace {
     private final CoreHypergraph core;
     private final OptimisticTransactionDB rocksDB;
     private final KeyGenerator.Persisted keyGenerator;
-    private final ConcurrentSkipListMap<Long, AtomicInteger> writeSnapshots;
-    private final CoreAttributeSync attributeSync;
     private final Set<CoreSession> sessions;
     private final AtomicBoolean isOpen;
 
@@ -53,13 +48,6 @@ public class CoreKeyspace implements Hypergraph.Keyspace {
         keyGenerator = new KeyGenerator.Persisted();
         sessions = ConcurrentHashMap.newKeySet();
         isOpen = new AtomicBoolean(false);
-        writeSnapshots = new ConcurrentSkipListMap<>();
-        attributeSync = new CoreAttributeSync(
-                this,
-                core.properties().ATTRIBUTE_SYNC_EXPIRE_DURATION,
-                core.properties().ATTRIBUTE_SYNC_EVICTION_DURATION,
-                core.properties().MEMORY_MINIMUM_RESERVE
-        );
 
         try {
             rocksDB = OptimisticTransactionDB.open(this.core.rocksOptions(), directory().toString());
@@ -118,26 +106,6 @@ public class CoreKeyspace implements Hypergraph.Keyspace {
         return keyGenerator;
     }
 
-    void trackWriteSnapshot(long snapshot) {
-        writeSnapshots.computeIfAbsent(snapshot, s -> new AtomicInteger()).incrementAndGet();
-    }
-
-    void untrackWriteSnapshot(long snapshot) {
-        writeSnapshots.computeIfPresent(snapshot, (s, count) -> {
-            int newCount = count.decrementAndGet();
-            if (newCount > 0) return count;
-            else return null;
-        });
-    }
-
-    long oldestWriteSnapshot() {
-        return writeSnapshots.firstKey();
-    }
-
-    AttributeSync attributeSync() {
-        return attributeSync;
-    }
-
     public void remove(CoreSession session) {
         sessions.remove(session);
     }
@@ -145,7 +113,6 @@ public class CoreKeyspace implements Hypergraph.Keyspace {
     void close() {
         if (isOpen.compareAndSet(true, false)) {
             sessions.parallelStream().forEach(CoreSession::close);
-            attributeSync.close();
             rocksDB.close();
         }
     }
