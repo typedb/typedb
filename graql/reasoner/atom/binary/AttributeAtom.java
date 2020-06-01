@@ -290,6 +290,7 @@ public class AttributeAtom extends Atom{
     @Override
     public boolean isAttributeAtom(){ return true;}
 
+
     @Override
     public boolean isSelectable(){ return true;}
 

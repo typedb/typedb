@@ -106,19 +106,4 @@ public class AtomicConversionIT {
             );
         }
     }
-
-    @Test (expected = ReasonerException.class)
-    public void whenConvertingNonImplicitRelationToAttribute_weThrow(){
-        try(Transaction tx = session.transaction(Transaction.Type.READ)){
-            ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
-
-            Atom relation = reasonerQueryFactory.atomic(relationPattern).getAtom();
-            AttributeAtom attribute = relation.toAttributeAtom();
-            assertEquals(
-                    relation.getPredicates().collect(toSet()),
-                    attribute.getPredicates().collect(toSet())
-            );
-        }
-    }
-
 }

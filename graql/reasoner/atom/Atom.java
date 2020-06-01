@@ -88,11 +88,11 @@ public abstract class Atom extends AtomicBase {
         return typeLabel;
     }
 
-    public AttributeAtom toAttributeAtom() { throw ReasonerException.illegalAtomConversion(this, AttributeAtom.class); }
-
     public IsaAtom toIsaAtom() {
         throw ReasonerException.illegalAtomConversion(this, IsaAtom.class);
     }
+
+    public AttributeAtom asAttributeAtom() { throw ReasonerException.illegalAtomConversion(this, AttributeAtom.class); }
 
     /**
      * Determines whether the subsumption relation between this (A) and provided atom (B) holds,
