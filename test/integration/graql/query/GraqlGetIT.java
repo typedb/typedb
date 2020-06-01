@@ -477,42 +477,4 @@ public class GraqlGetIT {
         tx.execute(Graql.match(var("x").isa("movie").has("title", var("y"))).get().sort("z"));
     }
 
-
-    @Test
-    /**
-     * This tests ensures that queries that match both vertices and edges in the query operate correctly
-     */
-    public void whenMatchingEdgeAndVertex_AnswerIsNotEmpty() {
-        Role work = tx.putRole("work");
-        EntityType somework = tx.putEntityType("somework").plays(work);
-        Role author = tx.putRole("author");
-        EntityType person = tx.putEntityType("person").plays(author);
-        AttributeType<Long> year = tx.putAttributeType("year", AttributeType.ValueType.LONG);
-        tx.putRelationType("authored-by").relates(work).relates(author).putHas(year);
-
-        Stream<ConceptMap> answers = tx.stream(Graql.parse("insert $x isa person;" +
-                "$y isa somework; " +
-                "$a isa year; $a 2020; " +
-                "$r (author: $x, work: $y) isa authored-by; $r has year $a via $imp;").asInsert());
-
-        List<ConceptId> insertedIds = answers.flatMap(conceptMap -> conceptMap.concepts().stream().map(Concept::id)).collect(Collectors.toList());
-        tx.commit();
-        newTransaction();
-
-        List<Pattern> idPatterns = new ArrayList<>();
-        List<Statement> deletePatterns = new ArrayList<>();
-        for (int i = 0; i < insertedIds.size(); i++) {
-            StatementThing id = var("v" + i).id(insertedIds.get(i).toString());
-            Statement isaThing = var("v" + i).isa("thing");
-            idPatterns.add(id);
-            deletePatterns.add(isaThing);
-        }
-        List<ConceptMap> answersById = tx.execute(Graql.match(idPatterns).get());
-        assertEquals(answersById.size(), 1);
-
-        // clean up, delete the IDs we inserted for this test
-        tx.execute(Graql.match(idPatterns).delete(deletePatterns));
-        tx.commit();
-    }
-
 }
