@@ -1061,6 +1061,7 @@ public class AtomicQueryUnificationIT {
         int j = 0;
         for (String child : children) {
             for (String parent : parents) {
+                System.out.println(String.format("Unification between (row,col): (%d, %d)", i, j));
                 unification(child, parent, resultMatrix[i][j] == 1, unifierType, tx);
                 j++;
             }
