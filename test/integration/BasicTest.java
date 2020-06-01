@@ -475,6 +475,13 @@ public class BasicTest {
     }
 
     @Test
+    public void write_and_delete_attributes_concurrently_repeatedly() throws IOException {
+        for (int i = 0; i < 1000; i++) {
+            write_and_delete_attributes_concurrently();
+        }
+    }
+
+    @Test
     public void write_and_delete_attributes_concurrently() throws IOException {
         reset_directory_and_create_attribute_types();
 
@@ -504,7 +511,7 @@ public class BasicTest {
                     txn2.commit();
                     fail("The delete operation in TX2 is not supposed to succeed");
                 } catch (Exception ignored) {
-                    throw ignored;
+                    assertTrue(true);
                 }
 
                 try (Hypergraph.Transaction txn = session.transaction(Hypergraph.Transaction.Type.READ)) {
@@ -535,7 +542,7 @@ public class BasicTest {
                     txn2.commit();
                     fail("The second delete operation in TX2 is not supposed to succeed");
                 } catch (Exception ignored) {
-                    throw ignored;
+                    assertTrue(true);
                 }
 
                 try (Hypergraph.Transaction txn = session.transaction(Hypergraph.Transaction.Type.READ)) {
