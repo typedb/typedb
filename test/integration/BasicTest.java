@@ -503,7 +503,9 @@ public class BasicTest {
                 try {
                     txn2.commit();
                     fail("The delete operation in TX2 is not supposed to succeed");
-                } catch (Exception ignored) {}
+                } catch (Exception ignored) {
+                    throw ignored;
+                }
 
                 try (Hypergraph.Transaction txn = session.transaction(Hypergraph.Transaction.Type.READ)) {
                     assertEquals("alice", name(txn).get("alice").value());
@@ -532,7 +534,9 @@ public class BasicTest {
                 try {
                     txn2.commit();
                     fail("The second delete operation in TX2 is not supposed to succeed");
-                } catch (Exception ignored) {}
+                } catch (Exception ignored) {
+                    throw ignored;
+                }
 
                 try (Hypergraph.Transaction txn = session.transaction(Hypergraph.Transaction.Type.READ)) {
                     assertNull(name(txn).get("alice"));
