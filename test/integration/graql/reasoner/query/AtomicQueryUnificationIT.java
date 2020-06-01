@@ -37,6 +37,7 @@ import grakn.core.kb.server.Transaction;
 import grakn.core.test.rule.GraknTestStorage;
 import grakn.core.test.rule.SessionUtil;
 import grakn.core.test.rule.TestTransactionProvider;
+import graql.lang.Graql;
 import graql.lang.statement.Variable;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -73,14 +74,14 @@ public class AtomicQueryUnificationIT {
         Config mockServerConfig = storage.createCompatibleServerConfig();
         genericSchemaSession = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig);
         genericSchemaGraph = new GenericSchemaGraph(genericSchemaSession);
-        unificationWithTypesSession = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig);
-        loadFromFileAndCommit(resourcePath, "unificationWithTypesTest.gql", unificationWithTypesSession);
+//        unificationWithTypesSession = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig);
+//        loadFromFileAndCommit(resourcePath, "unificationWithTypesTest.gql", unificationWithTypesSession);
     }
 
     @AfterClass
     public static void closeSession() {
         genericSchemaSession.close();
-        unificationWithTypesSession.close();
+//        unificationWithTypesSession.close();
     }
 
     @Test
@@ -1061,7 +1062,6 @@ public class AtomicQueryUnificationIT {
         int j = 0;
         for (String child : children) {
             for (String parent : parents) {
-                System.out.println(String.format("Unification between (row,col): (%d, %d)", i, j));
                 unification(child, parent, resultMatrix[i][j] == 1, unifierType, tx);
                 j++;
             }
