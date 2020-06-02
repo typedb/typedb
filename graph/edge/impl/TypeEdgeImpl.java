@@ -34,16 +34,17 @@ public class TypeEdgeImpl {
     /**
      * A Buffered Type Edge that connects two Type Vertices, and an overridden Type Vertex.
      */
-    public static class Buffered extends EdgeImpl.Buffered<
-            TypeGraph,
-            IID.Edge.Type, Schema.Edge.Type, TypeEdge,
-            IID.Vertex.Type, TypeVertex
-            > implements TypeEdge {
+    public static class Buffered
+            extends EdgeImpl.Buffered<Schema.Edge.Type, IID.Edge.Type, TypeEdge, TypeVertex>
+            implements TypeEdge {
 
+        private final TypeGraph graph;
         private TypeVertex overridden;
 
-        public Buffered(TypeGraph graph, Schema.Edge.Type schema, TypeVertex from, TypeVertex to) {
-            super(graph, schema, from, to);
+        public Buffered(Schema.Edge.Type schema, TypeVertex from, TypeVertex to) {
+            super(schema, from, to);
+            this.graph = from.graph();
+            assert this.graph == to.graph();
         }
 
         @Override
@@ -52,24 +53,15 @@ public class TypeEdgeImpl {
         }
 
         @Override
-        IID.Edge.Type edgeIID(IID.Vertex.Type start, Schema.Infix infix, IID.Vertex.Type end) {
-            return IID.Edge.Type.of(start, infix, end);
+        IID.Edge.Type edgeIID(TypeVertex start, Schema.Infix infix, TypeVertex end) {
+            return IID.Edge.Type.of(start.iid(), infix, end.iid());
         }
 
-
-        /**
-         * @return type vertex overridden by the head of this type edge
-         */
         @Override
         public TypeVertex overridden() {
             return overridden;
         }
 
-        /**
-         * Set the head type vertex of this type edge to override a given type vertex.
-         *
-         * @param overridden the type vertex to override by the head
-         */
         @Override
         public void overridden(TypeVertex overridden) {
             this.overridden = overridden;
@@ -78,7 +70,7 @@ public class TypeEdgeImpl {
         /**
          * Commit operation of a buffered type edge.
          *
-         * This operation can only be performed oncec, and thus protected by {@code committed} boolean.
+         * This operation can only be performed once, and thus protected by {@code committed} boolean.
          * Then we check for each direction of this edge, whether they need to be persisted to storage.
          * It's possible that an edge only has a {@code schema.out()} (most likely an optimisation edge)
          * and therefore will not have an inward edge to be persisted onto storage.
@@ -98,11 +90,9 @@ public class TypeEdgeImpl {
     /**
      * Persisted Type Edge that connects two Type Vertices, and an overridden Type Vertex
      */
-    public static class Persisted extends EdgeImpl.Persisted<
-            TypeGraph,
-            IID.Edge.Type, Schema.Edge.Type, TypeEdge,
-            IID.Vertex.Type, TypeVertex
-            > implements TypeEdge {
+    public static class Persisted
+            extends EdgeImpl.Persisted<TypeGraph, Schema.Edge.Type, IID.Edge.Type, TypeEdge, IID.Vertex.Type, TypeVertex>
+            implements TypeEdge {
 
         private IID.Vertex.Type overriddenIID;
         private TypeVertex overridden;
@@ -128,9 +118,6 @@ public class TypeEdgeImpl {
             return IID.Edge.Type.of(start, infix, end);
         }
 
-        /**
-         * @return type vertex overridden by the head of this type edge
-         */
         @Override
         public TypeVertex overridden() {
             if (overridden != null) return overridden;

@@ -64,7 +64,7 @@ public class TypeAdjacencyImpl {
 
         @Override
         protected TypeEdge newBufferedEdge(Schema.Edge.Type schema, TypeVertex from, TypeVertex to) {
-            return new TypeEdgeImpl.Buffered(owner.graph(), schema, from, to);
+            return new TypeEdgeImpl.Buffered(schema, from, to);
         }
 
     }
@@ -89,7 +89,7 @@ public class TypeAdjacencyImpl {
 
         @Override
         protected TypeEdge newBufferedEdge(Schema.Edge.Type schema, TypeVertex from, TypeVertex to) {
-            return new TypeEdgeImpl.Buffered(owner.graph(), schema, from, to);
+            return new TypeEdgeImpl.Buffered(schema, from, to);
         }
 
         @Override

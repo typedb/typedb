@@ -29,7 +29,7 @@ public interface Vertex<
         VERTEX_SCHEMA extends Schema.Vertex,
         VERTEX extends Vertex<VERTEX_IID, VERTEX_SCHEMA, VERTEX, EDGE_SCHEMA, EDGE>,
         EDGE_SCHEMA extends Schema.Edge,
-        EDGE extends Edge<?, EDGE_SCHEMA, VERTEX>> {
+        EDGE extends Edge<EDGE_SCHEMA, ?, VERTEX>> {
 
     /**
      * Returns the {@code Graph} containing all the {@code Vertex}.

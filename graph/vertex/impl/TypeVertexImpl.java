@@ -33,6 +33,7 @@ import hypergraph.graph.vertex.TypeVertex;
 import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static hypergraph.common.collection.Bytes.join;
@@ -110,11 +111,11 @@ public abstract class TypeVertexImpl extends VertexImpl<IID.Vertex.Type> impleme
 
     public static class Buffered extends TypeVertexImpl {
 
-        private final AtomicReference<Schema.Status> status;
+        private final AtomicBoolean committed;
 
         public Buffered(TypeGraph graph, IID.Vertex.Type iid, String label, @Nullable String scope) {
             super(graph, iid, label, scope);
-            status = new AtomicReference<>(Schema.Status.BUFFERED);
+            committed = new AtomicBoolean(false);
         }
 
         @Override
@@ -143,7 +144,7 @@ public abstract class TypeVertexImpl extends VertexImpl<IID.Vertex.Type> impleme
 
         @Override
         public Schema.Status status() {
-            return status.get();
+            return committed.get() ? Schema.Status.COMMITTED : Schema.Status.BUFFERED;
         }
 
         @Override
@@ -188,7 +189,7 @@ public abstract class TypeVertexImpl extends VertexImpl<IID.Vertex.Type> impleme
 
         @Override
         public void commit() {
-            if (status.compareAndSet(Schema.Status.BUFFERED, Schema.Status.COMMITTED)) {
+            if (committed.compareAndSet(false, true)) {
                 graph.storage().put(iid.bytes());
                 commitIndex();
                 commitProperties();

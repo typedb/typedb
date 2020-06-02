@@ -28,123 +28,62 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.util.Objects.hash;
 
-public abstract class EdgeImpl<
-        GRAPH extends Graph<?, VERTEX>,
-        EDGE_IID extends IID.Edge<EDGE_SCHEMA, VERTEX_IID>,
-        EDGE_SCHEMA extends Schema.Edge,
-        EDGE extends Edge<EDGE_IID, EDGE_SCHEMA, VERTEX>,
-        VERTEX_IID extends IID.Vertex,
-        VERTEX extends Vertex<VERTEX_IID, ?, VERTEX, EDGE_SCHEMA, EDGE>
-        > implements Edge<EDGE_IID, EDGE_SCHEMA, VERTEX> {
-
-    protected final GRAPH graph;
-    protected final EDGE_SCHEMA schema;
-
-    public EdgeImpl(GRAPH graph, EDGE_SCHEMA schema) {
-        this.graph = graph;
-        this.schema = schema;
-    }
-
-    abstract EDGE getThis();
-
-    abstract EDGE_IID edgeIID(VERTEX_IID start, Schema.Infix infix, VERTEX_IID end);
-
-    @Override
-    public EDGE_SCHEMA schema() {
-        return schema;
-    }
-
-    @Override
-    public abstract boolean equals(Object object);
-
-    @Override
-    public abstract int hashCode();
+public abstract class EdgeImpl {
 
     public static abstract class Buffered<
-            GRAPH extends Graph<?, VERTEX>,
-            EDGE_IID extends IID.Edge<EDGE_SCHEMA, VERTEX_IID>,
             EDGE_SCHEMA extends Schema.Edge,
-            EDGE extends Edge<EDGE_IID, EDGE_SCHEMA, VERTEX>,
-            VERTEX_IID extends IID.Vertex,
-            VERTEX extends Vertex<VERTEX_IID, ?, VERTEX, EDGE_SCHEMA, EDGE>
-            > extends EdgeImpl<GRAPH, EDGE_IID, EDGE_SCHEMA, EDGE, VERTEX_IID, VERTEX> {
+            EDGE_IID extends IID.Edge<EDGE_SCHEMA, ?>,
+            EDGE extends Edge<EDGE_SCHEMA, EDGE_IID, VERTEX>,
+            VERTEX extends Vertex<?, ?, VERTEX, EDGE_SCHEMA, EDGE>> {
 
-        protected final AtomicBoolean committed;
+        protected final EDGE_SCHEMA schema;
         protected final VERTEX from;
         protected final VERTEX to;
+        protected final AtomicBoolean committed;
 
         /**
          * Default constructor for {@code EdgeImpl.Buffered}.
          *
-         * @param graph  the graph comprised of all the vertices
          * @param schema the edge {@code Schema}
          * @param from   the tail vertex
          * @param to     the head vertex
          */
-        public Buffered(GRAPH graph, EDGE_SCHEMA schema, VERTEX from, VERTEX to) {
-            super(graph, schema);
+        public Buffered(EDGE_SCHEMA schema, VERTEX from, VERTEX to) {
+
+            this.schema = schema;
             this.from = from;
             this.to = to;
             committed = new AtomicBoolean(false);
         }
 
-        /**
-         * Returns the status of this edge: either {@code committed} or {@code buffered}.
-         *
-         * @return the status of this edge: either {@code committed} or {@code buffered}
-         */
-        @Override
+        abstract EDGE getThis();
+
+        abstract EDGE_IID edgeIID(VERTEX start, Schema.Infix infix, VERTEX end);
+
+        public EDGE_SCHEMA schema() {
+            return schema;
+        }
+
         public Schema.Status status() {
             return committed.get() ? Schema.Status.COMMITTED : Schema.Status.BUFFERED;
         }
 
-        /**
-         * Returns the {@code iid} of this edge pointing outwards.
-         *
-         * @return the {@code iid} of this edge pointing outwards
-         */
-        @Override
         public EDGE_IID outIID() {
-            return edgeIID(from().iid(), schema.out(), to().iid());
+            return edgeIID(from(), schema.out(), to());
         }
 
-        /**
-         * Returns the {@code iid} of this edge pointing inwards.
-         *
-         * @return the {@code iid} of this edge pointing inwards
-         */
-        @Override
         public EDGE_IID inIID() {
-            return edgeIID(to().iid(), schema.in(), from().iid());
+            return edgeIID(to(), schema.in(), from());
         }
 
-        /**
-         * Returns the tail vertex of this edge.
-         *
-         * @return the tail vertex of this edge
-         */
-        @Override
         public VERTEX from() {
             return from;
         }
 
-        /**
-         * Returns the head vertex of this edge.
-         *
-         * @return the head vertex of this edge
-         */
-        @Override
         public VERTEX to() {
             return to;
         }
 
-        /**
-         * Delete operation of a buffered edge.
-         *
-         * The delete operation involves removing this edge from the {@code from.outs()} and
-         * {@code to.ins()} edge collections.
-         */
-        @Override
         public void delete() {
             from.outs().deleteNonRecursive(getThis());
             to.ins().deleteNonRecursive(getThis());
@@ -187,13 +126,14 @@ public abstract class EdgeImpl<
 
     public static abstract class Persisted<
             GRAPH extends Graph<VERTEX_IID, VERTEX>,
-            EDGE_IID extends IID.Edge<EDGE_SCHEMA, VERTEX_IID>,
             EDGE_SCHEMA extends Schema.Edge,
-            EDGE extends Edge<EDGE_IID, EDGE_SCHEMA, VERTEX>,
+            EDGE_IID extends IID.Edge<EDGE_SCHEMA, VERTEX_IID>,
+            EDGE extends Edge<EDGE_SCHEMA, EDGE_IID, VERTEX>,
             VERTEX_IID extends IID.Vertex,
-            VERTEX extends Vertex<VERTEX_IID, ?, VERTEX, EDGE_SCHEMA, EDGE>
-            > extends EdgeImpl<GRAPH, EDGE_IID, EDGE_SCHEMA, EDGE, VERTEX_IID, VERTEX> {
+            VERTEX extends Vertex<VERTEX_IID, ?, VERTEX, EDGE_SCHEMA, EDGE>> {
 
+        protected final GRAPH graph;
+        protected final EDGE_SCHEMA schema;
         protected final EDGE_IID outIID;
         protected final EDGE_IID inIID;
         protected final VERTEX_IID fromIID;
@@ -218,73 +158,50 @@ public abstract class EdgeImpl<
          * @param iid   the {@code iid} of a persisted edge
          */
         public Persisted(GRAPH graph, EDGE_IID iid) {
-            super(graph, iid.schema());
-            VERTEX_IID start = iid.start();
-            VERTEX_IID end = iid.end();
+            this.graph = graph;
+            this.schema = iid.schema();
 
             if (iid.isOutwards()) {
-                fromIID = start;
-                toIID = end;
+                fromIID = iid.start();
+                toIID = iid.end();
                 outIID = iid;
-                inIID = edgeIID(end, iid.schema().in(), start);
+                inIID = edgeIID(iid.end(), iid.schema().in(), iid.start());
             } else {
-                fromIID = end;
-                toIID = start;
+                fromIID = iid.end();
+                toIID = iid.start();
                 inIID = iid;
-                outIID = edgeIID(end, iid.schema().out(), start);
+                outIID = edgeIID(iid.end(), iid.schema().out(), iid.start());
             }
 
             isDeleted = new AtomicBoolean(false);
         }
 
-        /**
-         * Returns the status of this edge: {@code persisted}.
-         *
-         * @return the status of this edge: {@code persisted}
-         */
-        @Override
+        abstract EDGE getThis();
+
+        abstract EDGE_IID edgeIID(VERTEX_IID start, Schema.Infix infix, VERTEX_IID end);
+
+        public EDGE_SCHEMA schema() {
+            return schema;
+        }
+
         public Schema.Status status() {
             return Schema.Status.PERSISTED;
         }
 
-        /**
-         * Returns the {@code iid} of this edge pointing outwards.
-         *
-         * @return the {@code iid} of this edge pointing outwards
-         */
-        @Override
         public EDGE_IID outIID() {
             return outIID;
         }
 
-        /**
-         * Returns the {@code iid} of this edge pointing inwards.
-         *
-         * @return the {@code iid} of this edge pointing inwards
-         */
-        @Override
         public EDGE_IID inIID() {
             return inIID;
         }
 
-        /**
-         * Returns the tail vertex of this edge.
-         *
-         * @return the tail vertex of this edge
-         */
-        @Override
         public VERTEX from() {
             if (from != null) return from;
             from = graph.convert(fromIID);
             return from;
         }
 
-        /**
-         * Returns the head vertex of this edge.
-         *
-         * @return the head vertex of this edge
-         */
-        @Override
         public VERTEX to() {
             if (to != null) return to;
             to = graph.convert(toIID);
@@ -299,7 +216,6 @@ public abstract class EdgeImpl<
          * {@code to.ins()} edge collections, and then delete both directions of this edge
          * from the graph storage.
          */
-        @Override
         public void delete() {
             if (isDeleted.compareAndSet(false, true)) {
                 if (from != null) from.outs().deleteNonRecursive(getThis());

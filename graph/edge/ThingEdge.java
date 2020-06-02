@@ -27,4 +27,4 @@ import hypergraph.graph.vertex.ThingVertex;
  *
  * This edge can only have a schema of type {@code Schema.Edge.Thing}.
  */
-public interface ThingEdge extends Edge<IID.Edge.Thing, Schema.Edge.Thing, ThingVertex> {}
+public interface ThingEdge extends Edge<Schema.Edge.Thing, IID.Edge.Thing, ThingVertex> {}

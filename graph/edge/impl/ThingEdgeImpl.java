@@ -27,11 +27,11 @@ import hypergraph.graph.vertex.ThingVertex;
 public abstract class ThingEdgeImpl {
 
     public static class Buffered
-            extends EdgeImpl.Buffered<ThingGraph, IID.Edge.Thing, Schema.Edge.Thing, ThingEdge, IID.Vertex.Thing, ThingVertex>
+            extends EdgeImpl.Buffered<Schema.Edge.Thing, IID.Edge.Thing, ThingEdge, ThingVertex>
             implements ThingEdge {
 
-        public Buffered(ThingGraph graph, Schema.Edge.Thing schema, ThingVertex from, ThingVertex to) {
-            super(graph, schema, from, to);
+        public Buffered(Schema.Edge.Thing schema, ThingVertex from, ThingVertex to) {
+            super(schema, from, to);
         }
 
         @Override
@@ -40,8 +40,8 @@ public abstract class ThingEdgeImpl {
         }
 
         @Override
-        IID.Edge.Thing edgeIID(IID.Vertex.Thing start, Schema.Infix infix, IID.Vertex.Thing end) {
-            return IID.Edge.Thing.of(start, infix, end);
+        IID.Edge.Thing edgeIID(ThingVertex start, Schema.Infix infix, ThingVertex end) {
+            return IID.Edge.Thing.of(start.iid(), infix, end.iid());
         }
 
         @Override
@@ -51,7 +51,7 @@ public abstract class ThingEdgeImpl {
     }
 
     public static class Persisted
-            extends EdgeImpl.Persisted<ThingGraph, IID.Edge.Thing, Schema.Edge.Thing, ThingEdge, IID.Vertex.Thing, ThingVertex>
+            extends EdgeImpl.Persisted<ThingGraph, Schema.Edge.Thing, IID.Edge.Thing, ThingEdge, IID.Vertex.Thing, ThingVertex>
             implements ThingEdge {
 
         public Persisted(ThingGraph graph, IID.Edge.Thing iid) {

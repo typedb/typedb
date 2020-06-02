@@ -415,6 +415,9 @@ public abstract class IID {
 
         public static class Type extends IID.Edge<Schema.Edge.Type, IID.Vertex.Type> {
 
+            private Vertex.Type start;
+            private Vertex.Type end;
+
             Type(byte[] bytes) {
                 super(bytes);
             }
@@ -440,12 +443,16 @@ public abstract class IID {
 
             @Override
             public Vertex.Type start() {
-                return Vertex.Type.of(copyOfRange(bytes, 0, Vertex.Type.LENGTH));
+                if (start != null) return start;
+                start = Vertex.Type.of(copyOfRange(bytes, 0, Vertex.Type.LENGTH));
+                return start;
             }
 
             @Override
             public Vertex.Type end() {
-                return Vertex.Type.of(copyOfRange(bytes, bytes.length - Vertex.Type.LENGTH, bytes.length));
+                if (end != null) return end;
+                end = Vertex.Type.of(copyOfRange(bytes, bytes.length - Vertex.Type.LENGTH, bytes.length));
+                return end;
             }
 
             @Override
