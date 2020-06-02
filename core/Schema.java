@@ -277,57 +277,6 @@ public final class Schema {
     }
 
     /**
-     * This stores the schema which is required when implicitly creating roles for the has-Attribute methods
-     */
-    public enum ImplicitType {
-        /**
-         * Reserved character used by all implicit Types
-         */
-        RESERVED("@"),
-
-        /**
-         * The label of the generic has-Attribute relation, used for attaching Attributes to instances with the 'has' syntax
-         */
-        HAS("@has-%s"),
-
-        /**
-         * The label of a role in has-Attribute, played by the owner of the Attribute
-         */
-        HAS_OWNER("@has-%s-owner"),
-
-        /**
-         * The label of a role in has-Attribute, played by the Attribute
-         */
-        HAS_VALUE("@has-%s-value"),
-
-        /**
-         * The label of the generic key relation, used for attaching Attributes to instances with the 'has' syntax and additionally constraining them to be unique
-         */
-        KEY("@key-%s"),
-
-        /**
-         * The label of a role in key, played by the owner of the ke
-         */
-        KEY_OWNER("@key-%s-owner"),
-
-        /**
-         * The label of a role in key, played by the Attribute
-         */
-        KEY_VALUE("@key-%s-value");
-
-        private final String label;
-
-        ImplicitType(String label) {
-            this.label = label;
-        }
-
-        @CheckReturnValue
-        public Label getLabel(Label attributeType) {
-            return attributeType.map(attribute -> String.format(label, attribute));
-        }
-    }
-
-    /**
      * @param label The AttributeType label
      * @param value The value of the Attribute
      * @return A unique id for the Attribute
