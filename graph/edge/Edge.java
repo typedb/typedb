@@ -77,9 +77,6 @@ public interface Edge<EDGE_SCHEMA extends Schema.Edge, EDGE_IID extends IID.Edge
 
     /**
      * Commits the edge to the graph for persistent storage.
-     *
-     * After committing this edge to the graph, the status of this edges should
-     * be {@code persisted}.
      */
     void commit();
 }

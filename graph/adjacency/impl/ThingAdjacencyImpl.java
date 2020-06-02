@@ -18,7 +18,6 @@
 
 package hypergraph.graph.adjacency.impl;
 
-import hypergraph.graph.Graph;
 import hypergraph.graph.adjacency.Adjacency;
 import hypergraph.graph.adjacency.ThingAdjacency;
 import hypergraph.graph.edge.ThingEdge;
@@ -31,7 +30,25 @@ import java.util.Iterator;
 
 public abstract class ThingAdjacencyImpl {
 
-    public static class ThingIteratorBuilderImpl
+    private static class Util extends AdjacencyImpl.Util<Schema.Edge.Thing, ThingEdge, ThingVertex, ThingIteratorBuilderImpl> {
+
+        @Override
+        protected Schema.Edge.Thing[] schemaValues() {
+            return Schema.Edge.Thing.values();
+        }
+
+        @Override
+        protected ThingIteratorBuilderImpl newIteratorBuilder(Iterator<ThingEdge> thingEdgeIterator) {
+            return new ThingIteratorBuilderImpl(thingEdgeIterator);
+        }
+
+        @Override
+        protected ThingEdge newBufferedEdge(Schema.Edge.Thing schema, ThingVertex from, ThingVertex to) {
+            return new ThingEdgeImpl.Buffered(schema, from, to);
+        }
+    }
+
+    protected static class ThingIteratorBuilderImpl
             extends AdjacencyImpl.IteratorBuilderImpl<ThingEdge, ThingVertex>
             implements Adjacency.IteratorBuilder<ThingVertex> {
 
@@ -45,22 +62,7 @@ public abstract class ThingAdjacencyImpl {
             implements ThingAdjacency {
 
         public Buffered(ThingVertex owner, Direction direction) {
-            super(owner, direction);
-        }
-
-        @Override
-        protected Schema.Edge.Thing[] schemaValues() {
-            return Schema.Edge.Thing.values();
-        }
-
-        @Override
-        protected ThingIteratorBuilderImpl newIteratorBuilder(Iterator<ThingEdge> thingEdgeIterator) {
-            return new ThingIteratorBuilderImpl(thingEdgeIterator);
-        }
-
-        @Override
-        protected ThingEdge newBufferedEdge(Schema.Edge.Thing schema, ThingVertex from, ThingVertex to) {
-            return new ThingEdgeImpl.Buffered(schema, from, to);
+            super(owner, direction, new ThingAdjacencyImpl.Util());
         }
     }
 
@@ -70,22 +72,7 @@ public abstract class ThingAdjacencyImpl {
 
 
         public Persisted(ThingVertex owner, Direction direction) {
-            super(owner, direction);
-        }
-
-        @Override
-        protected Schema.Edge.Thing[] schemaValues() {
-            return Schema.Edge.Thing.values();
-        }
-
-        @Override
-        protected ThingIteratorBuilderImpl newIteratorBuilder(Iterator<ThingEdge> thingEdgeIterator) {
-            return new ThingIteratorBuilderImpl(thingEdgeIterator);
-        }
-
-        @Override
-        protected ThingEdge newBufferedEdge(Schema.Edge.Thing schema, ThingVertex from, ThingVertex to) {
-            return new ThingEdgeImpl.Buffered(schema, from, to);
+            super(owner, direction, new ThingAdjacencyImpl.Util());
         }
 
         /**
@@ -94,13 +81,12 @@ public abstract class ThingAdjacencyImpl {
          * For {@code ThingEdgeImpl.Persisted} we ignore the {@code value} that the {@code key} ({@code iid})
          * points to, as edges between {@code ThingVertex} never stores anything as {@code value}
          *
-         * @param graph the graph containing the {@code ThingVertex}
          * @param key   the edge {@code iid}
          * @param value the value that the edge {@code iid} points to in the storage
          * @return a new {@code ThingEdge}
          */
         @Override
-        protected ThingEdge newPersistedEdge(Graph<?, ThingVertex> graph, byte[] key, byte[] value) {
+        protected ThingEdge newPersistedEdge(byte[] key, byte[] value) {
             return new ThingEdgeImpl.Persisted(owner.graph(), IID.Edge.Thing.of(key));
         }
     }

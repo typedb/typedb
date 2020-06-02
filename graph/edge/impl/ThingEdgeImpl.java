@@ -59,7 +59,7 @@ public abstract class ThingEdgeImpl {
         }
 
         @Override
-        ThingEdge getThis() {
+        ThingEdgeImpl.Persisted getThis() {
             return this;
         }
 
