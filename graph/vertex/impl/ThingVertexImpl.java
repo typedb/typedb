@@ -31,9 +31,7 @@ import hypergraph.graph.util.Schema;
 import hypergraph.graph.vertex.ThingVertex;
 import hypergraph.graph.vertex.TypeVertex;
 
-public abstract class ThingVertexImpl
-        extends VertexImpl<IID.Vertex.Thing, Schema.Vertex.Thing, ThingVertex, Schema.Edge.Thing, ThingEdge>
-        implements ThingVertex {
+public abstract class ThingVertexImpl extends VertexImpl<IID.Vertex.Thing> implements ThingVertex {
 
     protected final ThingGraph graph;
     protected final ThingAdjacency outs;
@@ -41,7 +39,7 @@ public abstract class ThingVertexImpl
     protected boolean isInferred;
 
     ThingVertexImpl(ThingGraph graph, IID.Vertex.Thing iid, boolean isInferred) {
-        super(iid, iid.schema());
+        super(iid);
         this.graph = graph;
         this.outs = newAdjacency(Adjacency.Direction.OUT);
         this.ins = newAdjacency(Adjacency.Direction.IN);
@@ -56,34 +54,25 @@ public abstract class ThingVertexImpl
      */
     protected abstract ThingAdjacency newAdjacency(Adjacency.Direction direction);
 
-    /**
-     * Returns the {@code Graph} containing all {@code ThingVertex}
-     *
-     * @return the {@code Graph} containing all {@code ThingVertex}
-     */
+
     @Override
     public ThingGraph graph() {
         return graph;
     }
 
-    /**
-     * Returns the {@code TypeVertex} in which this {@code ThingVertex} is an instance of
-     *
-     * @return the {@code TypeVertex} in which this {@code ThingVertex} is an instance of
-     */
     @Override
-    public TypeVertex type() {
-        return graph.typeGraph().convert(iid.type());
+    public IID.Vertex.Thing iid() {
+        return iid;
     }
 
-    /**
-     * Returns true if this {@code ThingVertex} is a result of inference.
-     *
-     * @return true if this {@code ThingVertex} is a result of inference
-     */
     @Override
-    public boolean isInferred() {
-        return isInferred;
+    public void iid(IID.Vertex.Thing iid) {
+        this.iid = iid;
+    }
+
+    @Override
+    public Schema.Vertex.Thing schema() {
+        return iid.schema();
     }
 
     @Override
@@ -96,6 +85,21 @@ public abstract class ThingVertexImpl
         return ins;
     }
 
+    @Override
+    public TypeVertex type() {
+        return graph.typeGraph().convert(iid.type());
+    }
+
+    @Override
+    public boolean isInferred() {
+        return isInferred;
+    }
+
+    @Override
+    public void isInferred(boolean isInferred) {
+        this.isInferred = isInferred;
+    }
+
     public static class Buffered extends ThingVertexImpl {
 
         public Buffered(ThingGraph graph, IID.Vertex.Thing iid, boolean isInferred) {
@@ -105,11 +109,6 @@ public abstract class ThingVertexImpl
         @Override
         protected ThingAdjacency newAdjacency(Adjacency.Direction direction) {
             return new ThingAdjacencyImpl.Buffered(this, direction);
-        }
-
-        @Override
-        public void isInferred(boolean isInferred) {
-            this.isInferred = isInferred;
         }
 
         @Override

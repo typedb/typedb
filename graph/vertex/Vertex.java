@@ -31,6 +31,11 @@ public interface Vertex<
         EDGE_SCHEMA extends Schema.Edge,
         EDGE extends Edge<?, EDGE_SCHEMA, VERTEX>> {
 
+    /**
+     * Returns the {@code Graph} containing all the {@code Vertex}.
+     *
+     * @return the {@code Graph} containing all the {@code Vertex}
+     */
     Graph<VERTEX_IID, VERTEX> graph();
 
     VERTEX_IID iid();

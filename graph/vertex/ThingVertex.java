@@ -68,7 +68,7 @@ public interface ThingVertex extends Vertex<
     boolean isInferred();
 
     /**
-     * Sets a boolean flag to indicate whether this vertex was a result of inference
+     * Sets a boolean flag to indicate whether this vertex was a result of inference.
      *
      * @param isInferred indicating whether this vertex was a result of inference
      */

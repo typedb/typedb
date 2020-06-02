@@ -58,11 +58,6 @@ public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl impleme
     }
 
     @Override
-    public void isInferred(boolean isInferred) {
-        this.isInferred = isInferred;
-    }
-
-    @Override
     public VALUE value() {
         if (type().valueType().isIndexable()) {
             return attributeIID.value();

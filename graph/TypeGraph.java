@@ -137,7 +137,7 @@ public class TypeGraph implements Graph<IID.Vertex.Type, TypeVertex> {
             singleLabelLocks.computeIfAbsent(scopedLabel, x -> new ManagedReadWriteLock()).lockWrite();
 
             TypeVertex typeVertex = typesByLabel.computeIfAbsent(scopedLabel, i -> new TypeVertexImpl.Buffered(
-                    this, type, generate(graphManager.keyGenerator(), type), label, scope
+                    this, generate(graphManager.keyGenerator(), type), label, scope
             ));
             typesByIID.put(typeVertex.iid(), typeVertex);
             return typeVertex;

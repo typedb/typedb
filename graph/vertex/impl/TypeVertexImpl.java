@@ -31,11 +31,13 @@ import hypergraph.graph.vertex.ThingVertex;
 import hypergraph.graph.vertex.TypeVertex;
 
 import javax.annotation.Nullable;
+import java.util.Collections;
 import java.util.Iterator;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static hypergraph.common.collection.Bytes.join;
 
-public abstract class TypeVertexImpl extends VertexImpl<IID.Vertex.Type, Schema.Vertex.Type, TypeVertex, Schema.Edge.Type, TypeEdge> implements TypeVertex {
+public abstract class TypeVertexImpl extends VertexImpl<IID.Vertex.Type> implements TypeVertex {
 
     protected final TypeGraph graph;
     protected final TypeAdjacency outs;
@@ -49,7 +51,7 @@ public abstract class TypeVertexImpl extends VertexImpl<IID.Vertex.Type, Schema.
 
 
     TypeVertexImpl(TypeGraph graph, IID.Vertex.Type iid, String label, @Nullable String scope) {
-        super(iid, iid.schema());
+        super(iid);
         this.graph = graph;
         this.label = label;
         this.scope = scope;
@@ -65,24 +67,25 @@ public abstract class TypeVertexImpl extends VertexImpl<IID.Vertex.Type, Schema.
      */
     protected abstract TypeAdjacency newAdjacency(Adjacency.Direction direction);
 
-    /**
-     * Get the {@code Graph} containing all {@code TypeVertex}
-     *
-     * @return the {@code Graph} containing all {@code TypeVertex}
-     */
+
     @Override
     public TypeGraph graph() {
         return graph;
     }
 
     @Override
-    public String label() {
-        return label;
+    public IID.Vertex.Type iid() {
+        return iid;
     }
 
     @Override
-    public String scopedLabel() {
-        return Schema.Vertex.Type.scopedLabel(label, scope);
+    public void iid(IID.Vertex.Type iid) {
+        this.iid = iid;
+    }
+
+    @Override
+    public Schema.Vertex.Type schema() {
+        return iid.schema();
     }
 
     @Override
@@ -95,10 +98,33 @@ public abstract class TypeVertexImpl extends VertexImpl<IID.Vertex.Type, Schema.
         return ins;
     }
 
+    @Override
+    public String label() {
+        return label;
+    }
+
+    @Override
+    public String scopedLabel() {
+        return Schema.Vertex.Type.scopedLabel(label, scope);
+    }
+
     public static class Buffered extends TypeVertexImpl {
 
-        public Buffered(TypeGraph graph, Schema.Vertex.Type schema, IID.Vertex.Type iid, String label, @Nullable String scope) {
+        private final AtomicReference<Schema.Status> status;
+
+        public Buffered(TypeGraph graph, IID.Vertex.Type iid, String label, @Nullable String scope) {
             super(graph, iid, label, scope);
+            status = new AtomicReference<>(Schema.Status.BUFFERED);
+        }
+
+        @Override
+        protected TypeAdjacency newAdjacency(Adjacency.Direction direction) {
+            return new TypeAdjacencyImpl.Buffered(this, direction);
+        }
+
+        @Override
+        public Iterator<? extends ThingVertex> instances() {
+            return Collections.emptyIterator();
         }
 
         @Override
@@ -116,52 +142,41 @@ public abstract class TypeVertexImpl extends VertexImpl<IID.Vertex.Type, Schema.
         }
 
         @Override
-        protected TypeAdjacency newAdjacency(Adjacency.Direction direction) {
-            return new TypeAdjacencyImpl.Buffered(this, direction);
-        }
-
         public Schema.Status status() {
-            return Schema.Status.BUFFERED;
+            return status.get();
         }
 
+        @Override
         public boolean isAbstract() {
             return isAbstract != null ? isAbstract : false;
         }
 
+        @Override
         public TypeVertexImpl isAbstract(boolean isAbstract) {
             this.isAbstract = isAbstract;
             return this;
         }
 
+        @Override
         public Schema.ValueType valueType() {
             return valueType;
         }
 
+        @Override
         public TypeVertexImpl valueType(Schema.ValueType valueType) {
             this.valueType = valueType;
             return this;
         }
 
+        @Override
         public String regex() {
             return regex;
         }
 
+        @Override
         public TypeVertexImpl regex(String regex) {
             this.regex = regex;
             return this;
-        }
-
-        @Override
-        public void commit() {
-            graph.storage().put(iid.bytes());
-            commitIndex();
-            commitProperties();
-            commitEdges();
-        }
-
-        @Override
-        public Iterator<? extends ThingVertex> instances() {
-            throw new HypergraphException(Error.Transaction.ILLEGAL_OPERATION);
         }
 
         @Override
@@ -169,6 +184,16 @@ public abstract class TypeVertexImpl extends VertexImpl<IID.Vertex.Type, Schema.
             ins.deleteAll();
             outs.deleteAll();
             graph.delete(this);
+        }
+
+        @Override
+        public void commit() {
+            if (status.compareAndSet(Schema.Status.BUFFERED, Schema.Status.COMMITTED)) {
+                graph.storage().put(iid.bytes());
+                commitIndex();
+                commitProperties();
+                commitEdges();
+            }
         }
 
         void commitIndex() {
@@ -231,6 +256,11 @@ public abstract class TypeVertexImpl extends VertexImpl<IID.Vertex.Type, Schema.
         @Override
         protected TypeAdjacency newAdjacency(Adjacency.Direction direction) {
             return new TypeAdjacencyImpl.Persisted(this, direction);
+        }
+
+        @Override
+        public Iterator<? extends ThingVertex> instances() {
+            return null; // TODO
         }
 
         @Override
@@ -323,11 +353,6 @@ public abstract class TypeVertexImpl extends VertexImpl<IID.Vertex.Type, Schema.
         public void commit() {
             outs.forEach(TypeEdge::commit);
             ins.forEach(TypeEdge::commit);
-        }
-
-        @Override
-        public Iterator<? extends ThingVertex> instances() {
-            return null;
         }
     }
 }

@@ -31,6 +31,11 @@ public interface TypeVertex extends Vertex<
         Schema.Vertex.Type, TypeVertex,
         Schema.Edge.Type, TypeEdge> {
 
+    /**
+     * Get the {@code Graph} containing all {@code TypeVertex}
+     *
+     * @return the {@code Graph} containing all {@code TypeVertex}
+     */
     @Override
     TypeGraph graph();
 

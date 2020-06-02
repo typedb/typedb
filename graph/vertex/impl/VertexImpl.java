@@ -18,45 +18,21 @@
 
 package hypergraph.graph.vertex.impl;
 
-import hypergraph.graph.edge.Edge;
 import hypergraph.graph.util.IID;
-import hypergraph.graph.util.Schema;
-import hypergraph.graph.vertex.Vertex;
 
-public abstract class VertexImpl<
-        VERTEX_IID extends IID.Vertex,
-        VERTEX_SCHEMA extends Schema.Vertex,
-        VERTEX extends Vertex<VERTEX_IID, VERTEX_SCHEMA, VERTEX, EDGE_SCHEMA, EDGE>,
-        EDGE_SCHEMA extends Schema.Edge,
-        EDGE extends Edge<?, EDGE_SCHEMA, VERTEX>> implements Vertex<VERTEX_IID, VERTEX_SCHEMA, VERTEX, EDGE_SCHEMA, EDGE> {
-
-    protected final VERTEX_SCHEMA schema;
+public abstract class VertexImpl<VERTEX_IID extends IID.Vertex> {
 
     protected VERTEX_IID iid;
 
-    VertexImpl(VERTEX_IID iid, VERTEX_SCHEMA schema) {
-        this.schema = schema;
-        this.iid = iid;
-    }
-
-    @Override
-    public VERTEX_SCHEMA schema() {
-        return schema; // TODO: return iid.schema() once we generalise IID.Vertex<VERTEX_SCHEMA>
-    }
-
-    @Override
-    public VERTEX_IID iid() {
-        return iid;
-    }
-
-    @Override
-    public void iid(VERTEX_IID iid) {
+    VertexImpl(VERTEX_IID iid) {
         this.iid = iid;
     }
 
     @Override
     public String toString() {
-        return this.getClass().getCanonicalName().substring(this.getClass().getPackage().getName().length() + 1) + ": " + iid.toString();
+        return this.getClass().getCanonicalName()
+                .substring(this.getClass().getPackage().getName().length() + 1) + ": " +
+                iid.toString();
     }
 
     @Override
