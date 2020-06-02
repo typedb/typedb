@@ -234,7 +234,8 @@ public class ConnectedComponentIT {
             Set<String> subTypes = Sets.newHashSet(thing, anotherThing, resourceType1, resourceType2,
                     resourceType3, resourceType4, resourceType5, resourceType6);
             clusterList = tx.execute(Graql.compute().cluster().using(CONNECTED_COMPONENT).in(subTypes));
-            assertEquals(17, clusterList.size()); // No relations, so this is the entity count;
+            assertEquals(7, clusterList.size()); // the number of clusters
+            assertTrue(clusterList.stream().anyMatch(cluster -> cluster.set().size() == 10)); // largest cluster has 10 items, connected via attrs
         }
     }
 
