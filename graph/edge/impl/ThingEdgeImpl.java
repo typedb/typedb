@@ -35,7 +35,7 @@ public abstract class ThingEdgeImpl {
         }
 
         @Override
-        ThingEdge getThis() {
+        ThingEdgeImpl.Buffered getThis() {
             return this;
         }
 

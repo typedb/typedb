@@ -48,7 +48,7 @@ public abstract class ThingAdjacencyImpl {
         }
     }
 
-    protected static class ThingIteratorBuilderImpl
+    static class ThingIteratorBuilderImpl
             extends AdjacencyImpl.IteratorBuilderImpl<ThingEdge, ThingVertex>
             implements Adjacency.IteratorBuilder<ThingVertex> {
 

@@ -44,11 +44,11 @@ public abstract class TypeVertexImpl extends VertexImpl<IID.Vertex.Type> impleme
     protected final TypeAdjacency outs;
     protected final TypeAdjacency ins;
 
-    protected String label;
-    protected String scope;
-    protected Boolean isAbstract;
-    protected Schema.ValueType valueType;
-    protected String regex;
+    String label;
+    String scope;
+    Boolean isAbstract;
+    Schema.ValueType valueType;
+    String regex;
 
 
     TypeVertexImpl(TypeGraph graph, IID.Vertex.Type iid, String label, @Nullable String scope) {
@@ -72,16 +72,6 @@ public abstract class TypeVertexImpl extends VertexImpl<IID.Vertex.Type> impleme
     @Override
     public TypeGraph graph() {
         return graph;
-    }
-
-    @Override
-    public IID.Vertex.Type iid() {
-        return iid;
-    }
-
-    @Override
-    public void iid(IID.Vertex.Type iid) {
-        this.iid = iid;
     }
 
     @Override

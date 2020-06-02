@@ -33,10 +33,10 @@ import hypergraph.graph.vertex.TypeVertex;
 
 public abstract class ThingVertexImpl extends VertexImpl<IID.Vertex.Thing> implements ThingVertex {
 
-    protected final ThingGraph graph;
-    protected final ThingAdjacency outs;
-    protected final ThingAdjacency ins;
-    protected boolean isInferred;
+    final ThingGraph graph;
+    final ThingAdjacency outs;
+    final ThingAdjacency ins;
+    boolean isInferred;
 
     ThingVertexImpl(ThingGraph graph, IID.Vertex.Thing iid, boolean isInferred) {
         super(iid);
@@ -58,16 +58,6 @@ public abstract class ThingVertexImpl extends VertexImpl<IID.Vertex.Thing> imple
     @Override
     public ThingGraph graph() {
         return graph;
-    }
-
-    @Override
-    public IID.Vertex.Thing iid() {
-        return iid;
-    }
-
-    @Override
-    public void iid(IID.Vertex.Thing iid) {
-        this.iid = iid;
     }
 
     @Override

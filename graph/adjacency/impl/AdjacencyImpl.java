@@ -43,12 +43,12 @@ public abstract class AdjacencyImpl<
         ITER_BUILDER extends AdjacencyImpl.IteratorBuilderImpl<EDGE, VERTEX>
         > implements Adjacency<EDGE_SCHEMA, EDGE, VERTEX> {
 
-    protected final VERTEX owner;
-    protected final Direction direction;
-    protected final ConcurrentMap<EDGE_SCHEMA, Set<EDGE>> edges;
-    protected final Util<EDGE_SCHEMA, EDGE, VERTEX, ITER_BUILDER> util;
+    final VERTEX owner;
+    final Direction direction;
+    final ConcurrentMap<EDGE_SCHEMA, Set<EDGE>> edges;
+    final Util<EDGE_SCHEMA, EDGE, VERTEX, ITER_BUILDER> util;
 
-    protected AdjacencyImpl(VERTEX owner, Direction direction, Util<EDGE_SCHEMA, EDGE, VERTEX, ITER_BUILDER> util) {
+    AdjacencyImpl(VERTEX owner, Direction direction, Util<EDGE_SCHEMA, EDGE, VERTEX, ITER_BUILDER> util) {
         this.owner = owner;
         this.direction = direction;
         this.edges = new ConcurrentHashMap<>();
@@ -103,9 +103,9 @@ public abstract class AdjacencyImpl<
             VERTEX extends Vertex<?, ?, VERTEX, ?, EDGE>
             > implements Adjacency.IteratorBuilder<VERTEX> {
 
-        protected final Iterator<EDGE> edgeIterator;
+        final Iterator<EDGE> edgeIterator;
 
-        protected IteratorBuilderImpl(Iterator<EDGE> edgeIterator) {
+        IteratorBuilderImpl(Iterator<EDGE> edgeIterator) {
             this.edgeIterator = edgeIterator;
         }
 
@@ -176,7 +176,7 @@ public abstract class AdjacencyImpl<
             super(owner, direction, util);
         }
 
-        protected abstract EDGE newPersistedEdge(byte[] key, byte[] value);
+        abstract EDGE newPersistedEdge(byte[] key, byte[] value);
 
         @Override
         public ITER_BUILDER edge(EDGE_SCHEMA schema) {

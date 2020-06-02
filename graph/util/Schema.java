@@ -18,6 +18,9 @@
 
 package hypergraph.graph.util;
 
+import hypergraph.common.exception.Error;
+import hypergraph.common.exception.HypergraphException;
+
 import javax.annotation.Nullable;
 import java.nio.charset.Charset;
 import java.time.LocalDateTime;
@@ -99,7 +102,7 @@ public class Schema {
             for (Prefix i : Prefix.values()) {
                 if (i.key == key) return i;
             }
-            return null;
+            throw new HypergraphException(Error.Storage.INVALID_BYTE_INTERPRETATION);
         }
 
         public byte[] bytes() {
@@ -147,7 +150,7 @@ public class Schema {
             for (Infix i : Infix.values()) {
                 if (i.key == key) return i;
             }
-            return null;
+            throw new HypergraphException(Error.Storage.INVALID_BYTE_INTERPRETATION);
         }
 
         public byte[] bytes() {
@@ -235,7 +238,7 @@ public class Schema {
                     return t;
                 }
             }
-            return null;
+            throw new HypergraphException(Error.Storage.INVALID_BYTE_INTERPRETATION);
         }
 
         public static ValueType of(Class<?> valueClass) {
@@ -244,7 +247,7 @@ public class Schema {
                     return t;
                 }
             }
-            return null;
+            throw new HypergraphException(Error.Storage.INVALID_BYTE_INTERPRETATION);
         }
 
         public byte[] bytes() {
@@ -317,7 +320,7 @@ public class Schema {
                 for (Type t : Type.values()) {
                     if (t.prefix.key == prefix) return t;
                 }
-                return null;
+                throw new HypergraphException(Error.Storage.INVALID_BYTE_INTERPRETATION);
             }
 
             /**
@@ -388,14 +391,14 @@ public class Schema {
                 for (Thing t : Thing.values()) {
                     if (t.prefix.key == prefix) return t;
                 }
-                return null;
+                throw new HypergraphException(Error.Storage.INVALID_BYTE_INTERPRETATION);
             }
 
             public static Thing of(Type type) {
                 for (Thing t : Thing.values()) {
                     if (t.type().equals(type)) return t;
                 }
-                return null;
+                throw new HypergraphException(Error.Storage.INVALID_BYTE_INTERPRETATION);
             }
 
             @Override
@@ -441,7 +444,7 @@ public class Schema {
                         return t;
                     }
                 }
-                return null;
+                throw new HypergraphException(Error.Storage.INVALID_BYTE_INTERPRETATION);
             }
 
             @Override
@@ -475,7 +478,7 @@ public class Schema {
                         return t;
                     }
                 }
-                return null;
+                throw new HypergraphException(Error.Storage.INVALID_BYTE_INTERPRETATION);
             }
 
             @Override

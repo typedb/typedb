@@ -48,7 +48,7 @@ public class TypeAdjacencyImpl {
         }
     }
 
-    public static class TypeIteratorBuilderImpl
+    static class TypeIteratorBuilderImpl
             extends AdjacencyImpl.IteratorBuilderImpl<TypeEdge, TypeVertex>
             implements TypeAdjacency.TypeIteratorBuilder {
 

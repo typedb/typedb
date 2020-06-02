@@ -30,16 +30,16 @@ import static java.util.Objects.hash;
 
 public abstract class EdgeImpl {
 
-    public static abstract class Buffered<
+    static abstract class Buffered<
             EDGE_SCHEMA extends Schema.Edge,
             EDGE_IID extends IID.Edge<EDGE_SCHEMA, ?>,
             EDGE extends Edge<EDGE_SCHEMA, EDGE_IID, VERTEX>,
             VERTEX extends Vertex<?, ?, VERTEX, EDGE_SCHEMA, EDGE>> {
 
-        protected final EDGE_SCHEMA schema;
-        protected final VERTEX from;
-        protected final VERTEX to;
-        protected final AtomicBoolean committed;
+        final EDGE_SCHEMA schema;
+        final VERTEX from;
+        final VERTEX to;
+        final AtomicBoolean committed;
 
         /**
          * Default constructor for {@code EdgeImpl.Buffered}.
@@ -48,7 +48,7 @@ public abstract class EdgeImpl {
          * @param from   the tail vertex
          * @param to     the head vertex
          */
-        public Buffered(EDGE_SCHEMA schema, VERTEX from, VERTEX to) {
+        Buffered(EDGE_SCHEMA schema, VERTEX from, VERTEX to) {
 
             this.schema = schema;
             this.from = from;
@@ -124,7 +124,7 @@ public abstract class EdgeImpl {
         }
     }
 
-    public static abstract class Persisted<
+    static abstract class Persisted<
             GRAPH extends Graph<VERTEX_IID, VERTEX>,
             EDGE_SCHEMA extends Schema.Edge,
             EDGE_IID extends IID.Edge<EDGE_SCHEMA, VERTEX_IID>,
@@ -132,16 +132,16 @@ public abstract class EdgeImpl {
             VERTEX_IID extends IID.Vertex,
             VERTEX extends Vertex<VERTEX_IID, ?, VERTEX, EDGE_SCHEMA, EDGE>> {
 
-        protected final GRAPH graph;
-        protected final EDGE_SCHEMA schema;
-        protected final EDGE_IID outIID;
-        protected final EDGE_IID inIID;
-        protected final VERTEX_IID fromIID;
-        protected final VERTEX_IID toIID;
-        protected final AtomicBoolean isDeleted;
+        final GRAPH graph;
+        final EDGE_SCHEMA schema;
+        final EDGE_IID outIID;
+        final EDGE_IID inIID;
+        final VERTEX_IID fromIID;
+        final VERTEX_IID toIID;
+        final AtomicBoolean isDeleted;
 
-        protected VERTEX from;
-        protected VERTEX to;
+        VERTEX from;
+        VERTEX to;
 
         /**
          * Default constructor for {@code Edge.Persisted}.
@@ -157,7 +157,7 @@ public abstract class EdgeImpl {
          * @param graph the graph comprised of all the vertices
          * @param iid   the {@code iid} of a persisted edge
          */
-        public Persisted(GRAPH graph, EDGE_IID iid) {
+        Persisted(GRAPH graph, EDGE_IID iid) {
             this.graph = graph;
             this.schema = iid.schema();
 

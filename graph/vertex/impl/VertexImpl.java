@@ -28,6 +28,14 @@ public abstract class VertexImpl<VERTEX_IID extends IID.Vertex> {
         this.iid = iid;
     }
 
+    public VERTEX_IID iid() {
+        return iid;
+    }
+
+    public void iid(VERTEX_IID iid) {
+        this.iid = iid;
+    }
+
     @Override
     public String toString() {
         return this.getClass().getCanonicalName()

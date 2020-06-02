@@ -73,6 +73,9 @@ public abstract class Error<TYPE extends Error<TYPE>> {
 
     public static class Storage extends Error<Error.Storage> {
 
+        public static final Storage INVALID_BYTE_INTERPRETATION =
+                new Storage(1, "Invalid byte interpretation!");
+
         private static final String codePrefix = "STR";
         private static final String descriptionPrefix = "Invalid Storage State";
 
