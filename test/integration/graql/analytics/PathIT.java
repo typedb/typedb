@@ -20,21 +20,17 @@ package grakn.core.graql.analytics;
 import com.google.common.collect.Lists;
 import grakn.core.common.config.Config;
 import grakn.core.concept.answer.ConceptList;
-import grakn.core.core.Schema;
 import grakn.core.graql.executor.ExecutorFactoryImpl;
 import grakn.core.graql.reasoner.query.ReasonerQueryFactory;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
-import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.Entity;
 import grakn.core.kb.concept.api.EntityType;
-import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.exception.GraqlSemanticException;
-import grakn.core.kb.graql.executor.ExecutorFactory;
 import grakn.core.kb.graql.executor.TraversalExecutor;
 import grakn.core.kb.graql.planning.gremlin.TraversalPlanFactory;
 import grakn.core.kb.server.Session;
@@ -53,11 +49,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static graql.lang.Graql.var;
 import static org.junit.Assert.assertEquals;
 
 @SuppressWarnings({"CheckReturnValue", "Duplicates"})
@@ -395,38 +389,8 @@ public class PathIT {
         }
     }
 
-
     @Test
-    public void testResourceEdges() {
-        ConceptId startId;
-        ConceptId endId;
-        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-            EntityType person = tx.putEntityType("person");
-            AttributeType<String> name = tx.putAttributeType("name", AttributeType.ValueType.STRING);
-            person.putHas(name);
-            Entity aPerson = person.create();
-            startId = aPerson.id();
-            Attribute<String> jason = name.create("jason");
-            aPerson.has(jason);
-            endId = jason.id();
-
-            tx.commit();
-        }
-
-        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-            List<ConceptList> allPaths = tx.execute(Graql.compute().path().from(startId.getValue()).to(endId.getValue()).attributes(true));
-            assertEquals(1, allPaths.size());
-            assertEquals(3, allPaths.get(0).list().size());
-            assertEquals("@has-name", tx.getConcept(allPaths.get(0).list().get(1))
-                    .asRelation()
-                    .type()
-                    .label()
-                    .getValue());
-        }
-    }
-
-    @Test
-    public void testResourceVerticesAndEdges() {
+    public void testResourceVertices() {
         ConceptId idPerson1;
         ConceptId idPerson2;
         ConceptId idPerson3;
@@ -434,9 +398,6 @@ public class PathIT {
         ConceptId idPower1;
         ConceptId idPower2;
         ConceptId idPower3;
-
-        ConceptId idRelationPerson1Power1;
-        ConceptId idRelationPerson2Power2;
 
         ConceptId idRelationPerson1Person3;
 
@@ -451,9 +412,6 @@ public class PathIT {
             person.putHas(power);
 
             // manually construct the attribute relation
-            Role resourceOwner = tx.getRole(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of("power")).getValue());
-            Role resourceValue = tx.getRole(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of("power")).getValue());
-            RelationType relationType = tx.getRelationType(Schema.ImplicitType.HAS.getLabel(Label.of("power")).getValue());
 
             Entity person1 = person.create();
             idPerson1 = person1.id();
@@ -469,19 +427,10 @@ public class PathIT {
             Attribute power3 = power.create(3L);
             idPower3 = power3.id();
 
-            assert relationType != null;
-            idRelationPerson1Power1 = relationType.create()
-                    .assign(resourceOwner, person1)
-                    .assign(resourceValue, power1).id();
-
-            idRelationPerson2Power2 = relationType.create()
-                    .assign(resourceOwner, person2)
-                    .assign(resourceValue, power2).id();
-
-            // add implicit resource relations as well
             person.putHas(power);
-
+            person1.has(power1);
             person1.has(power2);
+            person2.has(power2);
             person3.has(power3);
 
             // finally add a relation between persons to make it more interesting
@@ -508,9 +457,6 @@ public class PathIT {
 
             // Path from power3 to power3
             pathPerson3Power3.add(idPerson3);
-            if (null != getResourceEdgeId(conceptManager, executorFactory, idPower3, idPerson3)) {
-                pathPerson3Power3.add(getResourceEdgeId(conceptManager, executorFactory, idPower3, idPerson3));
-            }
             pathPerson3Power3.add(idPower3);
             allPaths = tx.execute(Graql.compute().path().from(idPerson3.getValue()).to(idPower3.getValue()).attributes(true));
             assertEquals(1, allPaths.size());
@@ -518,13 +464,8 @@ public class PathIT {
 
             // Path from person2 to power1
             pathPerson2Power1.add(idPerson2);
-            pathPerson2Power1.add(idRelationPerson2Power2);
             pathPerson2Power1.add(idPower2);
-            if (null != getResourceEdgeId(conceptManager, executorFactory, idPerson1, idPower2)) {
-                pathPerson2Power1.add(getResourceEdgeId(conceptManager, executorFactory, idPerson1, idPower2));
-            }
             pathPerson2Power1.add(idPerson1);
-            pathPerson2Power1.add(idRelationPerson1Power1);
             pathPerson2Power1.add(idPower1);
 
             allPaths = tx.execute(Graql.compute().path().from(idPerson2.getValue()).to(idPower1.getValue()).attributes(true));
@@ -533,13 +474,9 @@ public class PathIT {
 
             // Path from power3 to power1
             pathPower3Power1.add(idPower3);
-            if (null != getResourceEdgeId(conceptManager, executorFactory, idPower3, idPerson3)) {
-                pathPower3Power1.add(getResourceEdgeId(conceptManager, executorFactory, idPower3, idPerson3));
-            }
             pathPower3Power1.add(idPerson3);
             pathPower3Power1.add(idRelationPerson1Person3);
             pathPower3Power1.add(idPerson1);
-            pathPower3Power1.add(idRelationPerson1Power1);
             pathPower3Power1.add(idPower1);
 
             allPaths = tx.execute(((Graql.compute().path().attributes(true)).from(idPower3.getValue())).to(idPower1.getValue()));
@@ -600,26 +537,5 @@ public class PathIT {
 
             tx.commit();
         }
-    }
-
-    /**
-     * Get the resource edge id if there is one. Return null if not.
-     * This is a duplicate from Executor to avoid having redundant static helpers
-     * If we need it elsewhere too, we can consider finding a common home for it
-     */
-    private static ConceptId getResourceEdgeId(ConceptManager conceptManager, ExecutorFactory executorFactory, ConceptId conceptId1, ConceptId conceptId2) {
-        if (Utility.mayHaveResourceEdge(conceptManager, conceptId1, conceptId2)) {
-            Optional<Concept> firstConcept = executorFactory.transactional(true).match(
-                    Graql.match(
-                            var("x").id(conceptId1.getValue()),
-                            var("y").id(conceptId2.getValue()),
-                            var("z").rel(var("x")).rel(var("y"))))
-                    .map(answer -> answer.get("z"))
-                    .findFirst();
-            if (firstConcept.isPresent()) {
-                return firstConcept.get().id();
-            }
-        }
-        return null;
     }
 }
