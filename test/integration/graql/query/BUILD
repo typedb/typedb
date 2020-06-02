@@ -65,7 +65,6 @@ java_test(
     test_class = "grakn.core.graql.query.GraqlDeleteIT",
     deps = [
         "//concept/answer",
-        "//core",
         "//kb/concept/api",
         "//kb/graql/exception",
         "//kb/server",

@@ -26,7 +26,6 @@ java_test(
     test_class = "grakn.core.graql.analytics.ConnectedComponentIT",
     deps = [
         "//concept/answer",
-        "//core",
         "//dependencies/maven/artifacts/com/google/guava",
         "//kb/concept/api",
         "//kb/graql/exception",
