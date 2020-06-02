@@ -124,9 +124,9 @@ public class AttributeAttachmentIT {
 
     @Test
     //Expected result: When the head of a rule contains attribute assertions, the respective unique attributes should be generated or reused.
-    public void reusingAttributes_usingExistingAttributeToDefineSubAttribute() {
+    public void reusingAttributes_usingExistingAttributeToCreateSubAttribute() {
         try(Transaction tx = attributeAttachmentSession.transaction(Transaction.Type.WRITE)) {
-                        String queryString = "match $x isa genericEntity, has subResource $y; get;";
+            String queryString = "match $x isa genericEntity, has subResource $y; get;";
             List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());
             assertEquals(tx.getEntityType("genericEntity").instances().count(), answers.size());
 
@@ -144,6 +144,30 @@ public class AttributeAttachmentIT {
             assertTrue(answers3.iterator().next().get("y").isAttribute());
         }
     }
+
+    @Test
+    //Expected result: When the head of a rule contains attribute assertions, the respective unique attributes should be generated or reused.
+    public void reusingAttributes_usingExistingAttributeToCreateUnrelatedAttribute() {
+        try(Transaction tx = attributeAttachmentSession.transaction(Transaction.Type.WRITE)) {
+            String queryString = "match $x isa genericEntity, has unrelated-reattachable-string $y; get;";
+            List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());
+            assertEquals(tx.getEntityType("genericEntity").instances().count(), answers.size());
+
+            String queryString2 = "match $x isa unrelated-reattachable-string; get;";
+            List<ConceptMap> answers2 = tx.execute(Graql.parse(queryString2).asGet());
+            assertEquals(1, answers2.size());
+            assertTrue(answers2.iterator().next().get("x").isAttribute());
+
+            String queryString3 = "match $x isa reattachable-resource-string; $y isa unrelated-reattachable-string;get;";
+            List<ConceptMap> answers3 = tx.execute(Graql.parse(queryString3).asGet());
+            //2 RRS instances - one base, one sub hence two answers
+            assertEquals(2, answers3.size());
+
+            assertTrue(answers3.iterator().next().get("x").isAttribute());
+            assertTrue(answers3.iterator().next().get("y").isAttribute());
+        }
+    }
+
 
     @Test
     public void whenReasoningWithAttributesInRelationForm_ResultsAreComplete() {
