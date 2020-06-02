@@ -19,8 +19,6 @@ package grakn.core.graql.analytics;
 
 import com.google.common.collect.Sets;
 import grakn.core.concept.answer.ConceptSet;
-import grakn.core.core.Schema;
-import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.Entity;

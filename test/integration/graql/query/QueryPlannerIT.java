@@ -44,7 +44,6 @@ import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static graql.lang.Graql.and;
 import static graql.lang.Graql.var;

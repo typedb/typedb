@@ -37,7 +37,6 @@ import grakn.core.kb.server.Transaction;
 import grakn.core.test.rule.GraknTestStorage;
 import grakn.core.test.rule.SessionUtil;
 import grakn.core.test.rule.TestTransactionProvider;
-import graql.lang.Graql;
 import graql.lang.statement.Variable;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;

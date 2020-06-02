@@ -107,9 +107,7 @@ java_test(
     deps = [
         "//common",
         "//concept/answer",
-        "//core",
         "//dependencies/maven/artifacts/com/google/guava",
-        "//graql/analytics",
         "//graql/executor",
         "//graql/reasoner",
         "//kb/concept/api",
