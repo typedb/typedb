@@ -60,7 +60,7 @@ public class TraversalExecutorImpl implements TraversalExecutor {
     @Override
     public Stream<ConceptMap> traverse(Conjunction<? extends Pattern> pattern, GraqlTraversal graqlTraversal) {
         Set<Variable> vars = Sets.filter(pattern.variables(), Variable::isReturned);
-        GraphTraversal<Vertex, Map<String, Element>> traversal = graqlTraversal.getGraphTraversal(vars);
+        GraphTraversal<Vertex, Map<String, Vertex>> traversal = graqlTraversal.getGraphTraversal(vars);
 
         return traversal.toStream()
                 .map(elements -> createAnswer(vars, elements))
@@ -74,19 +74,15 @@ public class TraversalExecutorImpl implements TraversalExecutor {
      * @param elements a map of vertices and edges where the key is the variable name
      * @return a map of concepts where the key is the variable name
      */
-    private Map<Variable, Concept> createAnswer(Set<Variable> vars, Map<String, Element> elements) {
+    private Map<Variable, Concept> createAnswer(Set<Variable> vars, Map<String, Vertex> elements) {
         Map<Variable, Concept> map = new HashMap<>();
         for (Variable var : vars) {
-            Element element = elements.get(var.symbol());
+            Vertex element = elements.get(var.symbol());
             if (element == null) {
                 throw GraqlSemanticException.unexpectedResult(var);
             } else {
                 Concept result;
-                if (element instanceof Vertex) {
-                    result = conceptManager.buildConcept((Vertex) element);
-                } else {
-                    result = conceptManager.buildConcept((Edge) element);
-                }
+                result = conceptManager.buildConcept(element);
                 Concept concept = result;
                 map.put(var, concept);
             }

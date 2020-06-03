@@ -81,7 +81,7 @@ public class GraqlTraversalImpl implements GraqlTraversal {
     @Override
     // Because 'union' accepts an array, we can't use generics
     @SuppressWarnings("unchecked")
-    public GraphTraversal<Vertex, Map<String, Element>> getGraphTraversal(Set<Variable> vars) {
+    public GraphTraversal<Vertex, Map<String, Vertex>> getGraphTraversal(Set<Variable> vars) {
 
         if (fragments().size() == 1) {
             // If there are no disjunctions, we don't need to union them and get a performance boost
@@ -115,16 +115,16 @@ public class GraqlTraversalImpl implements GraqlTraversal {
     /**
      * @return a gremlin traversal that represents this inner query
      */
-    private GraphTraversal<Vertex, Map<String, Element>> getConjunctionTraversal(
+    private GraphTraversal<Vertex, Map<String, Vertex>> getConjunctionTraversal(
             GraphTraversal<Vertex, Vertex> traversal, Set<Variable> vars,
             ImmutableList<? extends Fragment> fragmentList) {
 
         return applyFragments(vars, fragmentList, traversal);
     }
 
-    private GraphTraversal<Vertex, Map<String, Element>> applyFragments(
+    private GraphTraversal<Vertex, Map<String, Vertex>> applyFragments(
             Set<Variable> vars, ImmutableList<? extends Fragment> fragmentList,
-            GraphTraversal<Vertex, ? extends Element> traversal) {
+            GraphTraversal<Vertex, Vertex> traversal) {
         Set<Variable> foundVars = new HashSet<>();
 
         // Apply fragments in order into one single traversal
@@ -176,7 +176,7 @@ public class GraqlTraversalImpl implements GraqlTraversal {
         }
     }
 
-    private static <S, E> GraphTraversal<S, Map<String, E>> selectVars(GraphTraversal<S, ?> traversal, Set<Variable> vars) {
+    private static <S> GraphTraversal<S, Map<String, Vertex>> selectVars(GraphTraversal<S, Vertex> traversal, Set<Variable> vars) {
         if (vars.isEmpty()) {
             // Produce an empty result
             return traversal.constant(ImmutableMap.of());

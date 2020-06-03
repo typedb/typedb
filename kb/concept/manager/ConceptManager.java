@@ -46,9 +46,7 @@ import java.util.Set;
 public interface ConceptManager {
 
     <T extends Concept> T buildConcept(Vertex vertex);
-    <T extends Concept> T buildConcept(Edge edge);
     <T extends Concept> T buildConcept(VertexElement vertex);
-//    Relation buildRelation(EdgeElement edge);
 
     <T extends Type> T getType(Label label);
     <T extends SchemaConcept> T getSchemaConcept(Label label);

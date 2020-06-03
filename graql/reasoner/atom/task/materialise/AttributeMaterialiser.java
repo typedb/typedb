@@ -29,11 +29,9 @@ import grakn.core.graql.reasoner.atom.binary.AttributeAtom;
 import grakn.core.graql.reasoner.atom.predicate.ValuePredicate;
 import grakn.core.graql.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
-import grakn.core.graql.reasoner.utils.AnswerUtil;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Concept;
-import grakn.core.kb.concept.api.Relation;
 import graql.lang.statement.Variable;
 
 import java.util.Collections;
@@ -78,7 +76,7 @@ public class AttributeMaterialiser implements AtomMaterialiser<AttributeAtom> {
                     resourceVariable, attribute)
             );
 
-            putImplicitRelation(atom, answer, owner, attribute, ctx);
+            putAttributeOwmership(atom, answer, owner, attribute, ctx);
             return Stream.of(answer);
         }
         return Stream.empty();
@@ -95,25 +93,6 @@ public class AttributeMaterialiser implements AtomMaterialiser<AttributeAtom> {
         return answer;
     }
 
-//    /**
-//     * @param owner     attribute owner
-//     * @param attribute attribute itself
-//     * @return implicit relation of the attribute
-//     */
-//    private Relation attachAttribute(Concept owner, Attribute attribute) {
-//        //NB: this inserts the implicit relation based on the type of the attribute.
-//        //We can have cases when we want to specialise the relation while retaining the existing attribute.
-//        //In such cases at the moment we still insert the attribute type relation whilst retaining an appropriate cache entry.
-//        Relation relation = null;
-//        if (owner.isEntity()) {
-//            relation = owner.asEntity().attributeInferred(attribute);
-//        } else if (owner.isRelation()) {
-//            relation = owner.asRelation().attributeInferred(attribute);
-//        } else if (owner.isAttribute()) {
-//            relation = owner.asAttribute().attributeInferred(attribute);
-//        }
-//        return relation;
-//    }
 
     /**
      * @param sub       partial substitution
@@ -121,10 +100,8 @@ public class AttributeMaterialiser implements AtomMaterialiser<AttributeAtom> {
      * @param attribute attribute concept
      * @return inserted implicit relation if didn't exist, null otherwise
      */
-    private void putImplicitRelation(AttributeAtom atom, ConceptMap sub, Concept owner, Attribute attribute, ReasoningContext ctx) {
+    private void putAttributeOwmership(AttributeAtom atom, ConceptMap sub, Concept owner, Attribute attribute, ReasoningContext ctx) {
         ConceptMap answer = findAnswer(atom, sub, ctx);
         if (answer == null) owner.asThing().attributeInferred(attribute);
-//        Variable relationVariable = atom.getRelationVariable();
-//        return relationVariable.isReturned() ? answer.get(relationVariable).asRelation() : null;
     }
 }

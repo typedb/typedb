@@ -55,7 +55,6 @@ import grakn.core.kb.server.cache.TransactionCache;
 import grakn.core.kb.server.exception.TemporaryWriteException;
 import graql.lang.pattern.Pattern;
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import javax.annotation.Nullable;
@@ -79,8 +78,8 @@ import static grakn.core.core.Schema.BaseType.RULE;
  *
  * In general, it will do one of the following primary operations
  * 1. `Create` a brand new Janus Vertex wrapped in a Schema Concept
- * 2. `Create` a brand new Janus Vertex or Edge, wrapped in a Thing Concept
- * 3. `Build` a Concept from an existing VertexElement or EdgeElement that has been provided from externally
+ * 2. `Create` a brand new Janus Vertex or Edge
+ * 3. `Build` a Concept from an existing VertexElement that has been provided from externally
  * 4. `Retrieve` a concept based on some unique identifier (eg. ID, attribute key, janus key/value, etc.)
  *
  * Where possible, the TransactionCache will be queried to avoid rebuilding a concept that is already built or retrieved
@@ -388,19 +387,6 @@ public class ConceptManagerImpl implements ConceptManager {
             return transactionCache.getCachedConcept(conceptId);
         }
 
-        // If edgeId, we are trying to fetch either:
-        // - a concept edge
-        // - a reified relation
-        if (Schema.isEdgeId(conceptId)) {
-            EdgeElement edgeElement = elementFactory.getEdgeElementWithId(Schema.elementId(conceptId));
-            if (edgeElement != null) {
-                return buildConcept(edgeElement);
-            }
-            // If element is still null,  it is possible we are referring to a ReifiedRelation which
-            // uses its previous EdgeRelation as an id so property must be fetched
-            return getConcept(Schema.VertexProperty.EDGE_RELATION_ID, conceptId.getValue());
-        }
-
         Vertex vertex = elementFactory.getVertexWithId(Schema.elementId(conceptId));
         if (vertex == null) {
             return null;
@@ -601,57 +587,6 @@ public class ConceptManagerImpl implements ConceptManager {
         }
         return (X) cachedConcept;
     }
-
-    /**
-     * Constructors are called directly because this is only called when reading a known Edge or Concept.
-     * Thus tracking the concept can be skipped.
-     *
-     * @param edge A Edge of an unknown type
-     * @return A concept built to the correct type
-     */
-    @Override
-    public <X extends Concept> X buildConcept(Edge edge) {
-        return buildConcept(elementFactory.buildEdgeElement(edge));
-    }
-
-    private <X extends Concept> X buildConcept(EdgeElement edgeElement) {
-
-        throw new RuntimeException("No longer building edge concepts");
-//
-//        Schema.EdgeLabel label = Schema.EdgeLabel.valueOf(edgeElement.label().toUpperCase(Locale.getDefault()));
-//
-//        ConceptId conceptId = Schema.conceptId(edgeElement.element());
-//        if (!transactionCache.isConceptCached(conceptId)) {
-//            Concept concept;
-//            switch (label) {
-//                case ATTRIBUTE:
-//                    concept = new RelationImpl(new RelationEdge(edgeElement, this, conceptNotificationChannel));
-//                    break;
-//                default:
-//                    throw GraknConceptException.unknownConceptType(label.name());
-//            }
-//            transactionCache.cacheConcept(concept);
-//        }
-//        return transactionCache.getCachedConcept(conceptId);
-    }
-
-
-//    /**
-//     * Used by RelationEdge to build a RelationImpl object out of a provided Edge
-//     * Build a concept around an prexisting edge that we may have cached
-//     */
-//    @Override
-//    public RelationImpl buildRelation(EdgeElement edge) {
-//        ConceptId conceptId = Schema.conceptId(edge.element());
-//        if (!transactionCache.isConceptCached(conceptId)) {
-//            RelationImpl relation = new RelationImpl(new RelationEdge(edge, this, conceptNotificationChannel));
-//            transactionCache.cacheConcept(relation);
-//            return relation;
-//        } else {
-//            return transactionCache.getCachedConcept(conceptId);
-//        }
-//    }
-
 
     /**
      * This is a helper method to get the base type of a vertex.

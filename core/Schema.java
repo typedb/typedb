@@ -50,7 +50,6 @@ import static grakn.common.util.Collections.pair;
  */
 public final class Schema {
     private final static String PREFIX_VERTEX = "V";
-    private final static String PREFIX_EDGE = "E";
 
     private Schema() {
         throw new UnsupportedOperationException();
@@ -60,9 +59,8 @@ public final class Schema {
         return ConceptId.of(PREFIX_VERTEX + vertexId);
     }
 
-    public static ConceptId conceptId(Element element) {
-        String prefix = element instanceof Edge ? PREFIX_EDGE : PREFIX_VERTEX;
-        return ConceptId.of(prefix + element.id().toString());
+    public static ConceptId conceptId(Vertex element) {
+        return ConceptId.of(PREFIX_VERTEX + element.id().toString());
     }
 
     public static String elementId(ConceptId conceptId) {
@@ -71,17 +69,11 @@ public final class Schema {
 
     public static boolean validateConceptId(ConceptId conceptId) throws GraknConceptException {
         try {
-            if (!isEdgeId(conceptId)) {
-                Long.parseLong(elementId(conceptId));
-            }
+            Long.parseLong(elementId(conceptId));
         } catch (NumberFormatException e) {
             return false;
         }
         return true;
-    }
-
-    public static boolean isEdgeId(ConceptId conceptId) {
-        return conceptId.getValue().startsWith(Schema.PREFIX_EDGE);
     }
 
     /**

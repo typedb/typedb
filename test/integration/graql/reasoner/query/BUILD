@@ -97,9 +97,13 @@ java_test(
         "//graql/reasoner",
         "//kb/concept/api",
         "//kb/server",
+        "//concept/impl",
+        "//core",
+        "//kb/concept/structure",
         "//test/rule:grakn-test-server",
         "//test/integration/util:graql-test-util",
         "@graknlabs_graql//java:graql",
+        "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core"
     ],
 )
 

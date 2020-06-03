@@ -86,11 +86,6 @@ public interface VertexElement extends AbstractElement<Vertex> {
 
     // methods that should probably be removed from the interface
     Stream<EdgeElement> roleCastingsEdges(Integer typeLabelId, Set<Integer> allowedRoleTypeIds);
-//    boolean rolePlayerEdgeExists(String startVertexId, RelationType type, Role role, String endVertexId);
-    Stream<VertexElement> getShortcutNeighbors(Set<Integer> ownerRoleIds, Set<Integer> valueRoleIds,
-                                                      boolean ownerToValueOrdering);
-//    Stream<EdgeElement> edgeRelationsConnectedToInstancesOfType(LabelId edgeInstanceLabelId);
-
     Stream<VertexElement> reifiedRelations(Set<Integer> roleIds);
 }
 
