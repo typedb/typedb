@@ -308,7 +308,6 @@ public abstract class IID {
             public java.lang.String toString() {
                 Schema.ValueType valueType = Schema.ValueType.of(bytes[VALUE_INDEX - 1]);
                 java.lang.String value;
-                assert valueType != null;
                 switch (valueType) {
                     case BOOLEAN:
                         value = byteToBoolean(bytes[VALUE_INDEX]).toString();
@@ -436,7 +435,6 @@ public abstract class IID {
             }
 
             @Override
-
             public Schema.Edge.Type schema() {
                 return Schema.Edge.Type.of(bytes[Vertex.Type.LENGTH]);
             }

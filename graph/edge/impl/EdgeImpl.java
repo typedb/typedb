@@ -49,7 +49,6 @@ public abstract class EdgeImpl {
          * @param to     the head vertex
          */
         Buffered(EDGE_SCHEMA schema, VERTEX from, VERTEX to) {
-
             this.schema = schema;
             this.from = from;
             this.to = to;

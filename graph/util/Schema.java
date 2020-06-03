@@ -126,19 +126,20 @@ public class Schema {
         PROPERTY_VALUE(6),
         PROPERTY_WHEN(7),
         PROPERTY_THEN(8),
-        EDGE_SUB_OUT(20),
-        EDGE_SUB_IN(-20),
-        EDGE_KEY_OUT(30),
-        EDGE_KEY_IN(-30),
-        EDGE_HAS_OUT(40),
-        EDGE_HAS_IN(-40),
-        EDGE_PLAYS_OUT(50),
-        EDGE_PLAYS_IN(-50),
-        EDGE_RELATES_OUT(60),
-        EDGE_RELATES_IN(-60),
+        EDGE_ISA_IN(-20), // EDGE_ISA_OUT does not exist by design
+        EDGE_SUB_OUT(30),
+        EDGE_SUB_IN(-30),
+        EDGE_KEY_OUT(40),
+        EDGE_KEY_IN(-40),
+        EDGE_HAS_OUT(50),
+        EDGE_HAS_IN(-50),
+        EDGE_PLAYS_OUT(60),
+        EDGE_PLAYS_IN(-60),
+        EDGE_RELATES_OUT(70),
+        EDGE_RELATES_IN(-70),
         EDGE_OPT_ROLE_OUT(100),
         EDGE_OPT_ROLE_IN(-100),
-        EDGE_OPT_RELATION_OUT(110);
+        EDGE_OPT_RELATION_OUT(110); // EDGE_OPT_RELATION_IN does not exist by design
 
         private final byte key;
 
@@ -458,6 +459,7 @@ public class Schema {
         }
 
         enum Thing implements Edge {
+            ISA(null, Infix.EDGE_ISA_IN),
             HAS(Infix.EDGE_HAS_OUT, Infix.EDGE_HAS_IN),
             PLAYS(Infix.EDGE_PLAYS_OUT, Infix.EDGE_PLAYS_IN),
             RELATES(Infix.EDGE_RELATES_OUT, Infix.EDGE_RELATES_IN),
