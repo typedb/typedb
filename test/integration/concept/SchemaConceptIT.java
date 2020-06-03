@@ -24,6 +24,7 @@ import grakn.core.concept.impl.EntityTypeImpl;
 import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.EntityType;
+import grakn.core.kb.concept.api.GraknConceptException;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.SchemaConcept;
@@ -106,7 +107,7 @@ public class SchemaConceptIT {
         EntityType e1 = tx.putEntityType("Entity1");
         tx.putEntityType(label);
 
-        expectedException.expect(TransactionException.class);
+        expectedException.expect(GraknConceptException.class);
         expectedException.expectMessage(ErrorMessage.LABEL_TAKEN.getMessage(label));
 
         e1.label(label);
