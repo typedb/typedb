@@ -35,15 +35,9 @@ import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.Set;
 
-import static grakn.core.core.Schema.EdgeLabel.ROLE_PLAYER;
 import static grakn.core.core.Schema.EdgeProperty.ATTRIBUTE_OWNED_LABEL_ID;
-import static grakn.core.core.Schema.EdgeProperty.RELATION_ROLE_OWNER_LABEL_ID;
-import static grakn.core.core.Schema.EdgeProperty.RELATION_ROLE_VALUE_LABEL_ID;
-import static grakn.core.core.Schema.EdgeProperty.RELATION_TYPE_LABEL_ID;
-import static grakn.core.core.Schema.EdgeProperty.ROLE_LABEL_ID;
 import static java.util.stream.Collectors.toSet;
 
 /**

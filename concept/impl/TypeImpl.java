@@ -306,87 +306,6 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         return getThis();
     }
 
-//    private void updateAttributeRelationHierarchy(AttributeType attributeType, Schema.ImplicitType has, Schema.ImplicitType hasValue, Schema.ImplicitType hasOwner,
-//                                                  Role ownerRole, Role valueRole, RelationType relationType) {
-//        AttributeType attributeTypeSuper = attributeType.sup();
-//        Label superLabel = attributeTypeSuper.label();
-//        Role ownerRoleSuper = conceptManager.getRole(hasOwner.getLabel(superLabel).getValue());
-//        // create implicit roles and relations if required
-//        if (ownerRoleSuper == null) {
-//            ownerRoleSuper = conceptManager.createImplicitRole(hasOwner.getLabel(superLabel));
-//        }
-//        Role valueRoleSuper = conceptManager.getRole(hasValue.getLabel(superLabel).getValue());
-//        if (valueRoleSuper == null) {
-//            valueRoleSuper = conceptManager.createImplicitRole(hasValue.getLabel(superLabel));
-//        }
-//
-//        RelationType relationTypeSuper = conceptManager.getRelationType(has.getLabel(superLabel).getValue());
-//        if (relationTypeSuper == null) {
-//            relationTypeSuper = conceptManager.createImplicitRelationType(has.getLabel(superLabel));
-//        }
-//        relationTypeSuper.relates(ownerRoleSuper).relates(valueRoleSuper);
-//
-//        //Create the super type edges from sub role/relations to super roles/relation
-//        ownerRole.sup(ownerRoleSuper);
-//        valueRole.sup(valueRoleSuper);
-//        relationType.sup(relationTypeSuper);
-//
-//        if (!Schema.MetaSchema.ATTRIBUTE.getLabel().equals(superLabel)) {
-//            //Make sure the supertype attribute is linked with the role as well
-//            ((AttributeTypeImpl) attributeTypeSuper).plays(valueRoleSuper);
-//            updateAttributeRelationHierarchy(attributeTypeSuper, has, hasValue, hasOwner, ownerRoleSuper, valueRoleSuper, relationTypeSuper);
-//        }
-//    }
-//
-//    /**
-//     * Creates a relation type which allows this type and a Attribute type to be linked.
-//     *
-//     * @param attributeType The AttributeType which instances of this type should be allowed to play.
-//     * @param has           the implicit relation type to build
-//     * @param hasValue      the implicit role type to build for the AttributeType
-//     * @param hasOwner      the implicit role type to build for the type
-//     * @param required      Indicates if the Attribute is required on the entity
-//     * @return The Type itself
-//     */
-//    private T has__Old(AttributeType attributeType, Schema.ImplicitType has, Schema.ImplicitType hasValue, Schema.ImplicitType hasOwner, boolean required) {
-//        Label attributeLabel = attributeType.label();
-//        Role ownerRole = conceptManager.getRole(hasOwner.getLabel(attributeLabel).getValue());
-//        if (ownerRole == null) {
-//            ownerRole = conceptManager.createImplicitRole(hasOwner.getLabel(attributeLabel));
-//        }
-//        Role valueRole = conceptManager.getRole(hasValue.getLabel(attributeLabel).getValue());
-//        if (valueRole == null) {
-//            valueRole = conceptManager.createImplicitRole(hasValue.getLabel(attributeLabel));
-//        }
-//
-//        RelationType relationType = conceptManager.getRelationType(has.getLabel(attributeLabel).getValue());
-//        if (relationType == null) {
-//            relationType = conceptManager.createImplicitRelationType(has.getLabel(attributeLabel));
-//        }
-//
-//        relationType.relates(ownerRole).relates(valueRole);
-//
-//        //this plays ownerRole;
-//        this.play(ownerRole, required);
-//        //TODO: Use explicit cardinality of 0-1 rather than just false
-//        //attributeType plays valueRole;
-//        ((AttributeTypeImpl) attributeType).play(valueRole, false);
-//
-//        updateAttributeRelationHierarchy(attributeType, has, hasValue, hasOwner, ownerRole, valueRole, relationType);
-//
-//        return getThis();
-//    }
-//
-//    public T has__Old(AttributeType attributeType) {
-//        checkLinkAttributeIsLegal(Schema.ImplicitType.KEY_OWNER, attributeType);
-//        return has__Old(attributeType, Schema.ImplicitType.HAS, Schema.ImplicitType.HAS_VALUE, Schema.ImplicitType.HAS_OWNER, false);
-//    }
-//
-//    public T key__Old(AttributeType attributeType) {
-//        checkLinkAttributeIsLegal(Schema.ImplicitType.HAS_OWNER, attributeType);
-//        return has__Old(attributeType, Schema.ImplicitType.KEY, Schema.ImplicitType.KEY_VALUE, Schema.ImplicitType.KEY_OWNER, true);
-//    }
-
     @Override
     public T has(AttributeType attributeType) {
         validateOwnershipLegal(attributeType);
@@ -429,25 +348,6 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
             throw GraknConceptException.metaTypeImmutable(attributeType.label());
         }
     }
-
-//    private void checkLinkAttributeIsLegal(Schema.ImplicitType implicitType, AttributeType attributeType) {
-//        checkSchemaMutationAllowed();
-//        checkIfHasTargetMeta(attributeType);
-//        checkNonOverlapOfImplicitRelations(implicitType, attributeType);
-//    }
-//
-//    /**
-//     * Checks if the provided AttributeType is already used in an other implicit relation.
-//     *
-//     * @param implicitType  The implicit relation to check against.
-//     * @param attributeType The AttributeType which should not be in that implicit relation
-//     * @throws GraknConceptException when the AttributeType is already used in another implicit relation
-//     */
-//    private void checkNonOverlapOfImplicitRelations(Schema.ImplicitType implicitType, AttributeType attributeType) {
-//        if (attributes(implicitType).anyMatch(rt -> rt.equals(attributeType))) {
-//            throw GraknConceptException.duplicateHas(this, attributeType);
-//        }
-//    }
 
     @Override
     void trackRolePlayers() {

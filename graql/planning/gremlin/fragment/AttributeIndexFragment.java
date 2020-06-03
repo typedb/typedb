@@ -20,8 +20,6 @@ package grakn.core.graql.planning.gremlin.fragment;
 import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Label;
-import grakn.core.kb.concept.api.RelationType;
-import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.keyspace.KeyspaceStatistics;
 import graql.lang.property.VarProperty;

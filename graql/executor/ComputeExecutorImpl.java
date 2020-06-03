@@ -843,7 +843,7 @@ public class ComputeExecutorImpl implements ComputeExecutor {
      * @return true if they exist, false if they don't
      */
     private boolean scopeIncludesAttributes(GraqlCompute query) {
-        return query.includesAttributes() || scopeIncludesImplicitOrAttributeTypes(query);
+        return query.includesAttributes() || scopeIncludesAttributeTypes(query);
     }
 
     /**
@@ -851,7 +851,7 @@ public class ComputeExecutorImpl implements ComputeExecutor {
      *
      * @return true if they exist, false if they don't
      */
-    private boolean scopeIncludesImplicitOrAttributeTypes(GraqlCompute query) {
+    private boolean scopeIncludesAttributeTypes(GraqlCompute query) {
         if (query.in().isEmpty()) return false;
         return query.in().stream().anyMatch(t -> {
             Label label = Label.of(t);
