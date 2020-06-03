@@ -109,13 +109,15 @@ jobs:
       - run-bazel-rbe:
           command: bazel test //test/behaviour/graql/language/define:test --test_output=errors
       - run-bazel-rbe:
-          command: bazel test //test/behaviour/graql/language/undefine:test --test_output=errors
+          command: bazel test //test/behaviour/graql/language/delete:test --test_output=errors
       - run-bazel-rbe:
           command: bazel test //test/behaviour/graql/language/insert:test --test_output=errors
       - run-bazel-rbe:
           command: bazel test //test/behaviour/graql/language/match:test --test_output=errors
       - run-bazel-rbe:
-          command: bazel test //test/behaviour/graql/language/delete:test --test_output=errors
+          command: bazel test //test/behaviour/graql/language/mutate:test --test_output=errors
+      - run-bazel-rbe:
+          command: bazel test //test/behaviour/graql/language/undefine:test --test_output=errors
 
   test-behaviour-graql-reasoner:
     machine: true
