@@ -70,7 +70,7 @@ java_test(
     srcs = ["RuleApplicabilityIT.java"],
     classpath_resources = ["//test/resources:logback-test"],
     resources = [
-        "//test/integration/graql/reasoner/resources:reified-resource-applicability",
+        "//test/integration/graql/reasoner/resources:explicit-ownership-relation-applicability",
         "//test/integration/graql/reasoner/resources:resource-applicability",
         "//test/integration/graql/reasoner/resources:rule-applicability",
     ],

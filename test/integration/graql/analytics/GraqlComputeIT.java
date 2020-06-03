@@ -277,7 +277,7 @@ public class GraqlComputeIT {
 
             AttributeType<Long> resource = tx.putAttributeType(resourceTypeId, AttributeType.ValueType.LONG);
             EntityType thingy = tx.putEntityType("thingy");
-            thingy.putHas(resource);
+            thingy.has(resource);
 
             Entity theResourceOwner = thingy.create();
 
@@ -402,7 +402,7 @@ public class GraqlComputeIT {
     private void addSchemaAndEntities() throws InvalidKBException {
         try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             AttributeType<Long> attributeType = tx.putAttributeType(someAttribute, AttributeType.ValueType.LONG);
-            EntityType entityType1 = tx.putEntityType(thingy).putHas(attributeType);
+            EntityType entityType1 = tx.putEntityType(thingy).has(attributeType);
             EntityType entityType2 = tx.putEntityType(anotherThing);
             EntityType subEntityType = tx.putEntityType(subThingy).sup(entityType1);
 

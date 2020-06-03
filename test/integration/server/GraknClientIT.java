@@ -486,7 +486,7 @@ public class GraknClientIT {
             grakn.core.kb.concept.api.Role actor = tx.putRole("actor");
             grakn.core.kb.concept.api.Role characterBeingPlayed = tx.putRole("character-being-played");
             grakn.core.kb.concept.api.RelationType hasCast = tx.putRelationType("has-cast").relates(actor).relates(characterBeingPlayed);
-            person.putKey(email).putHas(name);
+            person.key(email).has(name);
             person.plays(actor).plays(characterBeingPlayed);
 
             grakn.core.kb.concept.api.Entity marco = person.create().has(name.create("marco")).has(email.create("marco@yolo.com"));
@@ -516,7 +516,7 @@ public class GraknClientIT {
             grakn.core.kb.concept.api.Role actor = tx.putRole("actor");
             grakn.core.kb.concept.api.Role characterBeingPlayed = tx.putRole("character-being-played");
             grakn.core.kb.concept.api.RelationType hasCast = tx.putRelationType("has-cast").relates(actor).relates(characterBeingPlayed);
-            person.putKey(email).putHas(name);
+            person.key(email).has(name);
             person.plays(actor).plays(characterBeingPlayed);
 
             grakn.core.kb.concept.api.Entity marco = person.create().has(name.create("marco")).has(email.create("marco@yolo.com"));
@@ -591,7 +591,7 @@ public class GraknClientIT {
             grakn.core.kb.concept.api.Role actor = tx.putRole("actor");
             grakn.core.kb.concept.api.Role characterBeingPlayed = tx.putRole("character-being-played");
             grakn.core.kb.concept.api.RelationType hasCast = tx.putRelationType("has-cast").relates(actor).relates(characterBeingPlayed);
-            person.putKey(email).putHas(name);
+            person.key(email).has(name);
             person.plays(actor).plays(characterBeingPlayed);
 
             grakn.core.kb.concept.api.Entity marco = person.create().has(name.create("marco")).has(email.create("marco@yolo.com"));
@@ -633,8 +633,8 @@ public class GraknClientIT {
             tx.putRelationType("has-cast").relates(productionWithCast).relates(actor).relates(characterBeingPlayed);
             grakn.core.kb.concept.api.EntityType person = tx.putEntityType("person").plays(actor).plays(characterBeingPlayed);
 
-            person.putHas(tx.putAttributeType("gender", grakn.core.kb.concept.api.AttributeType.ValueType.STRING));
-            person.putHas(tx.putAttributeType("name", grakn.core.kb.concept.api.AttributeType.ValueType.STRING));
+            person.has(tx.putAttributeType("gender", grakn.core.kb.concept.api.AttributeType.ValueType.STRING));
+            person.has(tx.putAttributeType("name", grakn.core.kb.concept.api.AttributeType.ValueType.STRING));
 
             person.create();
             person.create();
@@ -812,7 +812,7 @@ public class GraknClientIT {
         try (Transaction localTx = localSession.transaction(Transaction.Type.WRITE)) {
             grakn.core.kb.concept.api.EntityType person = localTx.putEntityType("person");
             grakn.core.kb.concept.api.AttributeType<String> name = localTx.putAttributeType("name", grakn.core.kb.concept.api.AttributeType.ValueType.STRING);
-            person.putHas(name);
+            person.has(name);
             grakn.core.kb.concept.api.Attribute<String> alice = name.create("Alice");
             person.create().has(alice);
             localTx.commit();
@@ -847,7 +847,7 @@ public class GraknClientIT {
             grakn.core.kb.concept.api.EntityType human = tx.putEntityType("human").plays(owner);
             grakn.core.kb.concept.api.RelationType petOwnership = tx.putRelationType("pet-ownership").relates(pet).relates(owner);
             grakn.core.kb.concept.api.AttributeType<Long> age = tx.putAttributeType("age", grakn.core.kb.concept.api.AttributeType.ValueType.LONG);
-            human.putHas(age);
+            human.has(age);
 
             grakn.core.kb.concept.api.Entity coco = animal.create();
             grakn.core.kb.concept.api.Entity mike = human.create();

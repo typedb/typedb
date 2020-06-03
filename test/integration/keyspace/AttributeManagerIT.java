@@ -61,7 +61,7 @@ public class AttributeManagerIT {
     public void whenTxsInsertDifferentAttributes_weDontLock() throws ExecutionException, InterruptedException {
         try(Transaction tx = session.transaction(Transaction.Type.WRITE)){
             AttributeType<Long> someAttribute = tx.putAttributeType("someAttribute", AttributeType.ValueType.LONG);
-            tx.putEntityType("someEntity").putHas(someAttribute);
+            tx.putEntityType("someEntity").has(someAttribute);
             tx.commit();
         }
         int threads = 8;
@@ -95,7 +95,7 @@ public class AttributeManagerIT {
     public void whenTxsInsertDifferentKeys_weDontLock() throws ExecutionException, InterruptedException {
         try(Transaction tx = session.transaction(Transaction.Type.WRITE)){
             AttributeType<Long> someAttribute = tx.putAttributeType("someAttribute", AttributeType.ValueType.LONG);
-            tx.putEntityType("someEntity").putKey(someAttribute);
+            tx.putEntityType("someEntity").key(someAttribute);
             tx.commit();
         }
         int threads = 8;
@@ -129,8 +129,8 @@ public class AttributeManagerIT {
     public void whenMultipleTxsInsertDifferentAttributesAsAKeyOrNot_weDontLock() throws ExecutionException, InterruptedException {
         try(Transaction tx = session.transaction(Transaction.Type.WRITE)){
             AttributeType<Long> someAttribute = tx.putAttributeType("someAttribute", AttributeType.ValueType.LONG);
-            tx.putEntityType("someEntity").putHas(someAttribute);
-            tx.putEntityType("keyEntity").putKey(someAttribute);
+            tx.putEntityType("someEntity").has(someAttribute);
+            tx.putEntityType("keyEntity").key(someAttribute);
             tx.commit();
         }
         int threads = 8;
@@ -166,7 +166,7 @@ public class AttributeManagerIT {
     public void whenMultipleTxsInsertExistingAttributes_weDontLock() throws ExecutionException, InterruptedException {
         try(Transaction tx = session.transaction(Transaction.Type.WRITE)){
             AttributeType<Long> someAttribute = tx.putAttributeType("someAttribute", AttributeType.ValueType.LONG);
-            tx.putEntityType("someEntity").putHas(someAttribute);
+            tx.putEntityType("someEntity").has(someAttribute);
             someAttribute.create(1337L);
             someAttribute.create(1667L);
             tx.commit();
@@ -204,7 +204,7 @@ public class AttributeManagerIT {
     public void whenMultipleTxsInsertSameAttribute_weLock() throws ExecutionException, InterruptedException {
         try(Transaction tx = session.transaction(Transaction.Type.WRITE)){
             AttributeType<Long> someAttribute = tx.putAttributeType("someAttribute", AttributeType.ValueType.LONG);
-            tx.putEntityType("someEntity").putHas(someAttribute);
+            tx.putEntityType("someEntity").has(someAttribute);
             tx.commit();
         }
         int threads = 8;
@@ -238,8 +238,8 @@ public class AttributeManagerIT {
     public void whenMultipleTxsInsertSameAttributeAsAKeyOrNot_weLock() throws ExecutionException, InterruptedException {
         try(Transaction tx = session.transaction(Transaction.Type.WRITE)){
             AttributeType<Long> someAttribute = tx.putAttributeType("someAttribute", AttributeType.ValueType.LONG);
-            tx.putEntityType("someEntity").putHas(someAttribute);
-            tx.putEntityType("keyEntity").putKey(someAttribute);
+            tx.putEntityType("someEntity").has(someAttribute);
+            tx.putEntityType("keyEntity").key(someAttribute);
             tx.commit();
         }
         int threads = 8;
@@ -278,7 +278,7 @@ public class AttributeManagerIT {
         int threads = 8;
         try(Transaction tx = session.transaction(Transaction.Type.WRITE)){
             AttributeType<Long> someAttribute = tx.putAttributeType("someAttribute", AttributeType.ValueType.LONG);
-            tx.putEntityType("someEntity").putKey(someAttribute);
+            tx.putEntityType("someEntity").key(someAttribute);
             for (int threadNo = 0; threadNo < threads; threadNo++) {
                 GraqlInsert query = Graql.parse("insert $x " + threadNo + " isa someAttribute;").asInsert();
                 tx.execute(query);

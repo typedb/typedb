@@ -130,7 +130,7 @@ public class ConceptManagerImpl implements ConceptManager {
     @Override
     public <V> AttributeType<V> createAttributeType(Label label, AttributeType<V> superType, AttributeType.ValueType<V> valueType) {
         VertexElement vertexElement = createSchemaVertex(label, ATTRIBUTE_TYPE);
-        vertexElement.propertyImmutable(Schema.VertexProperty.DATA_TYPE, valueType, null, AttributeType.ValueType::name);
+        vertexElement.propertyImmutable(Schema.VertexProperty.VALUE_TYPE, valueType, null, AttributeType.ValueType::name);
         AttributeType<V> attributeType = new AttributeTypeImpl<>(vertexElement, this, conceptNotificationChannel);
         attributeType.createShard();
         attributeType.sup(superType);

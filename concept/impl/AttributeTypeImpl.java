@@ -22,7 +22,6 @@ import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.GraknConceptException;
-import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.concept.manager.ConceptNotificationChannel;
@@ -190,7 +189,7 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
     @Nullable
     @Override
     public ValueType<D> valueType() {
-        String className = vertex().property(Schema.VertexProperty.DATA_TYPE);
+        String className = vertex().property(Schema.VertexProperty.VALUE_TYPE);
         if (className == null) return null;
 
         try {

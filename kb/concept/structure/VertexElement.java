@@ -86,6 +86,6 @@ public interface VertexElement extends AbstractElement<Vertex> {
 
     // methods that should probably be removed from the interface
     Stream<EdgeElement> roleCastingsEdges(Integer typeLabelId, Set<Integer> allowedRoleTypeIds);
-    Stream<VertexElement> reifiedRelations(Set<Integer> roleIds);
+    Stream<VertexElement> relations(Set<Integer> roleIds);
 }
 

@@ -522,7 +522,7 @@ public class RuleApplicabilityIT {
     }
 
     @Test
-    public void reifiedRelationsWithTypedRolePlayer(){
+    public void relationsWithTypedRolePlayer(){
         try(Transaction tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE)) {
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 

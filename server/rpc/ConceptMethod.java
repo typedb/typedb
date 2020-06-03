@@ -543,13 +543,13 @@ public class ConceptMethod {
 
             private void key(ConceptProto.Concept protoKey) {
                 grakn.core.kb.concept.api.AttributeType<?> attributeType = convert(protoKey).asAttributeType();
-                concept.asType().putKey(attributeType);
+                concept.asType().key(attributeType);
                 responseSender.accept(null);
             }
 
             private void has(ConceptProto.Concept protoAttribute) {
                 grakn.core.kb.concept.api.AttributeType<?> attributeType = convert(protoAttribute).asAttributeType();
-                concept.asType().putHas(attributeType);
+                concept.asType().has(attributeType);
                 responseSender.accept(null);
             }
 

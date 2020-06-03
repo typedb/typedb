@@ -277,7 +277,7 @@ public class RelationIT {
         Role role1 = tx.putRole("dark");
         Role role2 = tx.putRole("souls");
         AttributeType<Long> attributeType = tx.putAttributeType("Death Number", AttributeType.ValueType.LONG);
-        RelationType relationType = tx.putRelationType("Dark Souls").relates(role1).relates(role2).putKey(attributeType);
+        RelationType relationType = tx.putRelationType("Dark Souls").relates(role1).relates(role2).key(attributeType);
         EntityType entityType = tx.putEntityType("Dead Guys").plays(role1).plays(role2);
 
         Entity e1 = entityType.create();
@@ -329,7 +329,7 @@ public class RelationIT {
     @Test
     public void whenAttributeLinkedToRelationIsInferred_EnsureItIsMarkedAsInferred(){
         AttributeType attributeType = tx.putAttributeType("Another thing of sorts", AttributeType.ValueType.STRING);
-        RelationType relationType = tx.putRelationType("A thing of sorts").putHas(attributeType);
+        RelationType relationType = tx.putRelationType("A thing of sorts").has(attributeType);
 
         Attribute attribute = attributeType.create("Things");
         Relation relation = relationType.create();
@@ -361,7 +361,7 @@ public class RelationIT {
         RelationType membership = tx.putRelationType("membership")
                 .relates(member)
                 .relates(member_of)
-                .putHas(name);
+                .has(name);
         EntityType group = tx.putEntityType("group").plays(member_of);
         EntityType person = tx.putEntityType("person").plays(member);
 

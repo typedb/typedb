@@ -409,7 +409,7 @@ public class PathIT {
             EntityType person = tx.putEntityType("person");
             AttributeType<Long> power = tx.putAttributeType("power", AttributeType.ValueType.LONG);
 
-            person.putHas(power);
+            person.has(power);
 
             // manually construct the attribute relation
 
@@ -427,7 +427,7 @@ public class PathIT {
             Attribute power3 = power.create(3L);
             idPower3 = power3.id();
 
-            person.putHas(power);
+            person.has(power);
             person1.has(power1);
             person1.has(power2);
             person2.has(power2);

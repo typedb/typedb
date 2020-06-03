@@ -516,7 +516,7 @@ public class TransactionIT {
         String attributeLabel = "someAttribute";
         try(Transaction tx = session.transaction(Transaction.Type.WRITE)){
             AttributeType<Long> someAtttribute = tx.putAttributeType(attributeLabel, AttributeType.ValueType.LONG);
-            tx.putEntityType(entityLabel).putHas(someAtttribute);
+            tx.putEntityType(entityLabel).has(someAtttribute);
             tx.commit();
         }
         final int insertsPerCommit = 200;
@@ -554,7 +554,7 @@ public class TransactionIT {
                 AttributeType<Long> int_ = tx.putAttributeType("int", AttributeType.ValueType.LONG);
                 AttributeType<Long> foo = tx.putAttributeType("foo", AttributeType.ValueType.LONG).sup(int_);
                 tx.putAttributeType("bar", AttributeType.ValueType.LONG).sup(int_);
-                tx.putEntityType("FOO").putHas(foo);
+                tx.putEntityType("FOO").has(foo);
 
                 tx.commit();
             }
@@ -562,7 +562,7 @@ public class TransactionIT {
 
         //Relation Which Has Resources
         try (Transaction tx = localSession.transaction(Transaction.Type.WRITE)) {
-            tx.putEntityType("BAR").putHas(tx.getAttributeType("bar"));
+            tx.putEntityType("BAR").has(tx.getAttributeType("bar"));
             tx.commit();
         }
         localSession.close();

@@ -18,15 +18,12 @@
 package grakn.core.graql.planning.gremlin.fragment;
 
 import com.google.common.collect.ImmutableSet;
-import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.manager.ConceptManager;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
-import org.apache.tinkerpop.gremlin.process.traversal.Pop;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
-import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -36,8 +33,6 @@ import java.util.Collection;
 import java.util.Objects;
 
 import static grakn.core.core.Schema.EdgeLabel.ROLE_PLAYER;
-import static grakn.core.core.Schema.EdgeProperty.RELATION_ROLE_OWNER_LABEL_ID;
-import static grakn.core.core.Schema.EdgeProperty.RELATION_ROLE_VALUE_LABEL_ID;
 import static grakn.core.core.Schema.EdgeProperty.RELATION_TYPE_LABEL_ID;
 import static grakn.core.core.Schema.EdgeProperty.ROLE_LABEL_ID;
 
@@ -99,11 +94,11 @@ class InRolePlayerFragment extends AbstractRolePlayerFragment {
             GraphTraversal<Vertex, ? extends Element> traversal, ConceptManager conceptManager, Collection<Variable> vars) {
 
         return Fragments.union(Fragments.isVertex(traversal), ImmutableSet.of(
-                reifiedRelationTraversal(conceptManager, vars)
+                relationTraversal(conceptManager, vars)
         ));
     }
 
-    private GraphTraversal<Vertex, Vertex> reifiedRelationTraversal(ConceptManager conceptManager, Collection<Variable> vars) {
+    private GraphTraversal<Vertex, Vertex> relationTraversal(ConceptManager conceptManager, Collection<Variable> vars) {
         GraphTraversal<Vertex, Edge> edgeTraversal = __.inE(ROLE_PLAYER.getLabel()).as(edge().symbol());
 
         // Filter by any provided type labels

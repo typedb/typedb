@@ -26,7 +26,6 @@ import grakn.core.kb.concept.api.Entity;
 import grakn.core.kb.concept.api.EntityType;
 import grakn.core.kb.concept.api.GraknConceptException;
 import grakn.core.kb.concept.api.Label;
-import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.concept.structure.PropertyNotUniqueException;
@@ -41,7 +40,6 @@ import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -336,9 +334,9 @@ public class EntityTypeIT {
         AttributeType r3 = tx.putAttributeType("r3", AttributeType.ValueType.BOOLEAN);
 
         assertTrue("Entity is linked to resources when it shouldn't", e1.has().collect(toSet()).isEmpty());
-        e1.putHas(r1);
-        e1.putHas(r2);
-        e1.putHas(r3);
+        e1.has(r1);
+        e1.has(r2);
+        e1.has(r3);
         assertThat(e1.has().collect(toSet()), containsInAnyOrder(r1, r2, r3));
     }
 
@@ -356,11 +354,11 @@ public class EntityTypeIT {
         assertThat(entityType2.has().collect(toSet()), is(empty()));
 
         //Link the resources
-        entityType1.putHas(attributeType1);
+        entityType1.has(attributeType1);
 
-        entityType1.putKey(attributeType2);
-        entityType2.putKey(attributeType1);
-        entityType2.putKey(attributeType2);
+        entityType1.key(attributeType2);
+        entityType2.key(attributeType1);
+        entityType2.key(attributeType2);
 
         assertThat(entityType1.has().collect(toSet()), containsInAnyOrder(attributeType1, attributeType2));
         assertThat(entityType2.has().collect(toSet()), containsInAnyOrder(attributeType1, attributeType2));
@@ -390,11 +388,11 @@ public class EntityTypeIT {
         AttributeType<String> attributeType = tx.putAttributeType("Shared Attribute", AttributeType.ValueType.STRING);
         EntityType entityType = tx.putEntityType("EntityType");
 
-        entityType.putHas(attributeType);
+        entityType.has(attributeType);
 
         expectedException.expect(GraknConceptException.class);
         expectedException.expectMessage(CANNOT_BE_KEY_AND_ATTRIBUTE.getMessage(entityType.label(), attributeType.label()));
-        entityType.putKey(attributeType);
+        entityType.key(attributeType);
     }
 
     @Test
@@ -402,12 +400,12 @@ public class EntityTypeIT {
         AttributeType<String> attributeType = tx.putAttributeType("Shared Attribute", AttributeType.ValueType.STRING);
         EntityType entityType = tx.putEntityType("EntityType");
 
-        entityType.putKey(attributeType);
+        entityType.key(attributeType);
 
         expectedException.expect(GraknConceptException.class);
         expectedException.expectMessage(CANNOT_BE_KEY_AND_ATTRIBUTE.getMessage(entityType.label(), attributeType.label()));
 
-        entityType.putHas(attributeType);
+        entityType.has(attributeType);
     }
 
     @Test
@@ -443,7 +441,7 @@ public class EntityTypeIT {
     public void whenRemovingAttributesFromAType_EnsureTheTypeNoLongerHasThoseAttributes(){
         AttributeType<String> name = tx.putAttributeType("name", AttributeType.ValueType.STRING);
         AttributeType<Integer> age = tx.putAttributeType("age", AttributeType.ValueType.INTEGER);
-        EntityType person = tx.putEntityType("person").putHas(name).putHas(age);
+        EntityType person = tx.putEntityType("person").has(name).has(age);
         assertThat(person.has().collect(toSet()), containsInAnyOrder(name, age));
         person.unhas(name);
         assertThat(person.has().collect(toSet()), containsInAnyOrder(age));
@@ -454,7 +452,7 @@ public class EntityTypeIT {
         AttributeType<String> name = tx.putAttributeType("name", AttributeType.ValueType.STRING);
         AttributeType<Integer> age = tx.putAttributeType("age", AttributeType.ValueType.INTEGER);
         AttributeType<Integer> id = tx.putAttributeType("id", AttributeType.ValueType.INTEGER);
-        EntityType person = tx.putEntityType("person").putHas(name).putHas(age).putKey(id);
+        EntityType person = tx.putEntityType("person").has(name).has(age).key(id);
 
         assertThat(person.has().collect(toSet()), containsInAnyOrder(name, age, id));
         assertThat(person.keys().collect(toSet()), containsInAnyOrder(id));
@@ -470,7 +468,7 @@ public class EntityTypeIT {
         AttributeType<String> name = tx.putAttributeType("name", AttributeType.ValueType.STRING);
         AttributeType<Integer> age = tx.putAttributeType("age", AttributeType.ValueType.INTEGER);
         AttributeType<Integer> id = tx.putAttributeType("id", AttributeType.ValueType.INTEGER);
-        EntityType person = tx.putEntityType("person").putHas(name).putHas(age).putKey(id);
+        EntityType person = tx.putEntityType("person").has(name).has(age).key(id);
 
         assertThat(person.has().collect(toSet()), containsInAnyOrder(name, age, id));
         assertThat(person.keys().collect(toSet()), containsInAnyOrder(id));

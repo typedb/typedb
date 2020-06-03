@@ -79,8 +79,6 @@ public interface ConceptListener {
 
     void castingDeleted(Casting casting);
 
-    void deleteReifiedOwner(Relation owner);
-
     void relationRoleUnrelated(RelationType relationType, Role role, List<Casting> conceptsPlayingRole);
 
     void roleUndefined(Role role);

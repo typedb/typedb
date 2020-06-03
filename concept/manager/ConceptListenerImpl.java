@@ -245,14 +245,6 @@ public class ConceptListenerImpl implements ConceptListener {
     }
 
     @Override
-    public void deleteReifiedOwner(Relation owner) {
-        transactionCache.getNewRelations().remove(owner);
-        if (owner.isInferred()) {
-            transactionCache.removeInferredInstance(owner);
-        }
-    }
-
-    @Override
     public void relationRoleUnrelated(RelationType relationType, Role role, List<Casting> conceptsPlayingRole) {
         transactionCache.trackForValidation(relationType);
         transactionCache.trackForValidation(role);

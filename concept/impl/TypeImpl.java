@@ -388,7 +388,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
 //    }
 
     @Override
-    public T putHas(AttributeType attributeType) {
+    public T has(AttributeType attributeType) {
         validateOwnershipLegal(attributeType);
 
         if (this.keys().anyMatch(attributeType::equals)) {
@@ -405,7 +405,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
     }
 
     @Override
-    public T putKey(AttributeType attributeType) {
+    public T key(AttributeType attributeType) {
         validateOwnershipLegal(attributeType);
         if (this.hasWithoutKeys().anyMatch(attributeType::equals)) {
             throw GraknConceptException.cannotBeKeyAndHas(this, attributeType);

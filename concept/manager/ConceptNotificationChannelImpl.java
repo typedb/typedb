@@ -52,11 +52,6 @@ public class ConceptNotificationChannelImpl implements ConceptNotificationChanne
     }
 
     @Override
-    public void relationEdgeDeleted(RelationType edgeTypeDeleted, boolean isInferredEdge, Supplier<Concept> wrappingConceptGetter) {
-        conceptListener.relationEdgeDeleted(edgeTypeDeleted, isInferredEdge, wrappingConceptGetter);
-    }
-
-    @Override
     public void schemaConceptDeleted(SchemaConcept schemaConcept) {
         conceptListener.schemaConceptDeleted(schemaConcept);
     }
@@ -94,11 +89,6 @@ public class ConceptNotificationChannelImpl implements ConceptNotificationChanne
     @Override
     public void castingDeleted(Casting casting) {
         conceptListener.castingDeleted(casting);
-    }
-
-    @Override
-    public void deleteReifiedOwner(Relation owner) {
-        conceptListener.deleteReifiedOwner(owner);
     }
 
     @Override

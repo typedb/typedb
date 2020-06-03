@@ -48,12 +48,7 @@ public interface ConceptNotificationChannel {
     void subscribe(ConceptListener conceptListener);
 
     void thingDeleted(Thing thing);
-
-    // Using a supplier instead of the concept avoids fetching the wrapping concept
-    // when the edge is not inferred, which is probably most of the time
-    void relationEdgeDeleted(RelationType edgeTypeDeleted, boolean isInferredEdge, Supplier<Concept> wrappingConceptGetter);
     void castingDeleted(Casting casting);
-    void deleteReifiedOwner(Relation owner);
 
     void schemaConceptDeleted(SchemaConcept schemaConcept);
 

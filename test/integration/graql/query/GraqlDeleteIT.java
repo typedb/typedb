@@ -232,7 +232,7 @@ public class GraqlDeleteIT {
         EntityType person = tx.putEntityType("person").plays(author);
         EntityType production = tx.putEntityType("production").plays(work);
         AttributeType<String> provenance = tx.putAttributeType("provenance", AttributeType.ValueType.STRING);
-        authoredBy.putHas(provenance);
+        authoredBy.has(provenance);
 
         Entity aPerson = person.create();
         Relation aRelation = authoredBy.create();
@@ -266,7 +266,7 @@ public class GraqlDeleteIT {
         EntityType person = tx.putEntityType("person").plays(author);
         EntityType production = tx.putEntityType("production").plays(work);
         AttributeType<String> provenance = tx.putAttributeType("provenance", AttributeType.ValueType.STRING);
-        authoredBy.putHas(provenance);
+        authoredBy.has(provenance);
 
         Entity aPerson = person.create();
         ConceptId personId = aPerson.id();
@@ -405,7 +405,7 @@ public class GraqlDeleteIT {
     public void whenDeletingAttributeOwnershipWithSubtype_Throw() {
         AttributeType<String> firstName = tx.putAttributeType("first-name", AttributeType.ValueType.STRING);
         firstName.sup(tx.getAttributeType("name"));
-        tx.getEntityType("person").putHas(firstName);
+        tx.getEntityType("person").has(firstName);
 
         List<ConceptMap> answers = tx.execute(Graql.parse("match $x isa person, has name $n; get;").asGet());
         assertEquals(10, answers.size());

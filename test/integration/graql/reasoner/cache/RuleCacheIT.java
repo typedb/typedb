@@ -224,7 +224,7 @@ public class RuleCacheIT {
         try (Transaction tx = session.transaction(Transaction.Type.WRITE)){
             AttributeType<String> resource = tx.putAttributeType("resource", AttributeType.ValueType.STRING);
             AttributeType<String> derivedResource = tx.putAttributeType("derivedResource", AttributeType.ValueType.STRING);
-            tx.putEntityType("someEntity").putHas(resource).putHas(derivedResource);
+            tx.putEntityType("someEntity").has(resource).has(derivedResource);
             tx.putEntityType("derivedEntity");
             tx.putRule("positiveRule",
                     Graql.and(

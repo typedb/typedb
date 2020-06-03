@@ -635,7 +635,7 @@ public class ResolutionPlanIT {
 
     @Test
     @Repeat( times = repeat )
-    public void whenPlanningForAFullyLinkedReifiedRelation_optimalStartingPointIsPicked() {
+    public void whenPlanningForAFullyLinkedRelation_optimalStartingPointIsPicked() {
         Concept concept = tx.stream(Graql.match(var("x").isa("baseEntity")).get("x"))
                 .map(ans -> ans.get("x")).findAny().orElse(null);
         String queryString = "{" +

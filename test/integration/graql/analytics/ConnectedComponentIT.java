@@ -263,8 +263,8 @@ public class ConnectedComponentIT {
             attributeTypeList.add(tx.putAttributeType(resourceType7, AttributeType.ValueType.DOUBLE));
 
             attributeTypeList.forEach(attributeType -> {
-                entityType1.putHas(attributeType);
-                entityType2.putHas(attributeType);
+                entityType1.has(attributeType);
+                entityType2.has(attributeType);
             });
 
             tx.commit();

@@ -43,7 +43,6 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -257,7 +256,7 @@ public class TransactionCacheIT {
         AttributeType<String> provenance = tx.putAttributeType("provenance", AttributeType.ValueType.STRING);
         EntityType somework = tx.putEntityType("somework").plays(work);
         EntityType person = tx.putEntityType("person").plays(author);
-        RelationType authoredBy = tx.putRelationType("authored-by").relates(work).relates(author).putHas(provenance);
+        RelationType authoredBy = tx.putRelationType("authored-by").relates(work).relates(author).has(provenance);
 
         Entity aPerson = person.create();
         Relation aRelation = authoredBy.create();
@@ -312,7 +311,7 @@ public class TransactionCacheIT {
         AttributeType<String> provenance = tx.putAttributeType("provenance", AttributeType.ValueType.STRING);
         EntityType somework = tx.putEntityType("somework").plays(work);
         EntityType person = tx.putEntityType("person").plays(author);
-        RelationType authoredBy = tx.putRelationType("authored-by").relates(work).relates(author).putHas(provenance);
+        RelationType authoredBy = tx.putRelationType("authored-by").relates(work).relates(author).has(provenance);
 
         Entity aPerson = person.create();
         Relation aRelation = authoredBy.create();
@@ -398,7 +397,7 @@ public class TransactionCacheIT {
     @Test
     public void whenInsertingAndDeletingInferredOwnership_ownershipIsTracked(){
         AttributeType<String> attributeType = tx.putAttributeType("resource", AttributeType.ValueType.STRING);
-        EntityType someEntity = tx.putEntityType("someEntity").putHas(attributeType);
+        EntityType someEntity = tx.putEntityType("someEntity").has(attributeType);
         Entity owner = someEntity.create();
         Attribute<String> attribute = attributeType.create("banana");
         owner.attributeInferred(attribute);

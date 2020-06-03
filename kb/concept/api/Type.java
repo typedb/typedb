@@ -59,7 +59,7 @@ public interface Type extends SchemaConcept {
      * @param attributeType The AttributeType which instances of this type should be allowed to play.
      * @return The Type itself.
      */
-    Type putKey(AttributeType attributeType);
+    Type key(AttributeType attributeType);
 
     /**
      * Creates a RelationType which allows this type and a AttributeType  to be linked.
@@ -67,7 +67,7 @@ public interface Type extends SchemaConcept {
      * @param attributeType The AttributeType  which instances of this type should be allowed to play.
      * @return The Type itself.
      */
-    Type putHas(AttributeType attributeType);
+    Type has(AttributeType attributeType);
 
     //------------------------------------- Accessors ---------------------------------
 

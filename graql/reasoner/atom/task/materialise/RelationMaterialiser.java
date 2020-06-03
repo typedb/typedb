@@ -50,7 +50,6 @@ public class RelationMaterialiser implements AtomMaterialiser<RelationAtom> {
         Multimap<Role, Variable> roleVarMap = atom.getRoleVarMap();
         ConceptMap substitution = atom.getParentQuery().getSubstitution();
 
-        //NB: if the relation is implicit, it will be created as a reified relation
         //if the relation already exists, only assign roleplayers, otherwise create a new relation
         Relation relation;
         Variable varName = atom.getVarName();

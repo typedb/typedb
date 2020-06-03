@@ -17,7 +17,6 @@
 
 package grakn.core.graql.graph;
 
-import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.EntityType;
@@ -94,7 +93,7 @@ public class MovieGraph {
         hasNameWithProvenance = tx.putRelationType("has-name-with-provenance").relates(provenancedNameOwner).relates(provenancedNameValue);
         name.plays(provenancedNameValue);
 
-        hasNameWithProvenance.putHas(provenance); // the provenance
+        hasNameWithProvenance.has(provenance); // the provenance
 
         productionBeingDirected = tx.putRole("production-being-directed").sup(work);
         director = tx.putRole("director").sup(author);
@@ -118,17 +117,17 @@ public class MovieGraph {
                 .relates(clusterOfProduction).relates(productionWithCluster);
 
         title = tx.putAttributeType("title", AttributeType.ValueType.STRING);
-        title.putHas(title);
+        title.has(title);
 
         production = tx.putEntityType("production")
                 .plays(productionWithCluster).plays(productionBeingDirected).plays(productionWithCast).plays(work)
                 .plays(productionWithGenre).plays(provenancedNameOwner);
 
-        production.putHas(title);
-        production.putHas(tmdbVoteCount);
-        production.putHas(tmdbVoteAverage);
-        production.putHas(releaseDate);
-        production.putHas(runtime);
+        production.has(title);
+        production.has(tmdbVoteCount);
+        production.has(tmdbVoteAverage);
+        production.has(releaseDate);
+        production.has(runtime);
 
         movie = tx.putEntityType("movie").sup(production);
 
@@ -137,27 +136,27 @@ public class MovieGraph {
         person = tx.putEntityType("person")
                 .plays(director).plays(actor).plays(characterBeingPlayed).plays(author);
 
-        person.putHas(gender);
-        person.putHas(realName);
-        person.putHas(name);
+        person.has(gender);
+        person.has(realName);
+        person.has(name);
 
         genre = tx.putEntityType("genre").plays(genreOfProduction);
-        genre.putKey(name);
+        genre.key(name);
 
         character = tx.putEntityType("character")
                 .plays(characterBeingPlayed);
 
-        character.putHas(name);
+        character.has(name);
 
         tx.putEntityType("award");
         language = tx.putEntityType("language");
 
-        language.putHas(name);
+        language.has(name);
 
         cluster = tx.putEntityType("cluster").plays(clusterOfProduction);
-        cluster.putHas(name);
+        cluster.has(name);
 
-        authoredBy.putHas(provenance);
+        authoredBy.has(provenance);
     }
 
     private static void buildInstances(Transaction tx) {

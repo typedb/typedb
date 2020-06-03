@@ -329,8 +329,8 @@ public class ReasoningIT {
     }
 
     //tests if partial substitutions are propagated correctly - atom disjointness may lead to variable loss (bug #15476)
-    @Test //Expected result: 2 relations obtained by correctly finding reified relations
-    public void reasoningWithReifiedRelations() {
+    @Test //Expected result: 2 relations obtained by correctly finding relations
+    public void reasoningWithRelations() {
         try (Session session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "testSet26.gql", session);
             try (Transaction tx = session.transaction(Transaction.Type.READ)) {

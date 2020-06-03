@@ -192,13 +192,10 @@ public final class Schema {
 
         // Attribute schema concept properties
         // TODO change to `VALUE_TYPE` when no longer require preserving DB compatibility
-        REGEX(String.class), DATA_TYPE(String.class),
+        REGEX(String.class), VALUE_TYPE(String.class),
 
         // Attribute concept properties
         INDEX(String.class),
-
-        // Reified relations' ID (exported from a previously non-reified edge ID)
-        EDGE_RELATION_ID(String.class),
 
         // Properties on all Concept vertices
         THING_TYPE_LABEL_ID(Integer.class), IS_INFERRED(Boolean.class),

@@ -18,7 +18,6 @@
 
 package grakn.core.concept;
 
-import com.google.common.collect.Iterables;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
@@ -42,7 +41,6 @@ import org.junit.rules.ExpectedException;
 
 import static grakn.core.common.exception.ErrorMessage.IS_ABSTRACT;
 import static grakn.core.common.exception.ErrorMessage.VALIDATION_CASTING;
-import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.junit.Assert.assertThat;
 
@@ -142,7 +140,7 @@ public class SchemaMutationIT {
     public void whenAddingResourceToSubTypeOfEntityType_EnsureNoValidationErrorsOccur() {
         //Create initial Schema
         AttributeType<String> name = tx.putAttributeType("name", AttributeType.ValueType.STRING);
-        EntityType person = tx.putEntityType("person").putHas(name);
+        EntityType person = tx.putEntityType("person").has(name);
         EntityType animal = tx.putEntityType("animal").sup(person);
         Attribute bob = name.create("Bob");
         person.create().has(bob);
@@ -152,7 +150,7 @@ public class SchemaMutationIT {
         tx = session.transaction(Transaction.Type.WRITE);
         EntityType retrievedAnimal = tx.getEntityType("animal");
         AttributeType nameType = tx.getAttributeType("name");
-        retrievedAnimal.putHas(nameType);
+        retrievedAnimal.has(nameType);
         tx.commit();
     }
 

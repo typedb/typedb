@@ -241,7 +241,7 @@ public class VertexElementImpl extends AbstractElementImpl<Vertex> implements Ve
     }
 
     @Override
-    public Stream<VertexElement> reifiedRelations(Set<Integer> roleLabelIds) {
+    public Stream<VertexElement> relations(Set<Integer> roleLabelIds) {
         if (roleLabelIds.size() == 0) {
             return elementFactory.inFromSourceId(id().toString(), Schema.EdgeLabel.ROLE_PLAYER);
         } else {

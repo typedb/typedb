@@ -34,7 +34,6 @@ import grakn.core.test.rule.GraknTestServer;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -82,11 +81,11 @@ public class AttributeIT {
         AttributeType<String> resource = tx.putAttributeType("resource", AttributeType.ValueType.STRING);
         AttributeType<String> anotherResource = tx.putAttributeType("anotherResource", AttributeType.ValueType.STRING);
         EntityType someEntity = tx.putEntityType("someEntity")
-                .putHas(resource)
-                .putHas(anotherResource);
+                .has(resource)
+                .has(anotherResource);
         EntityType subEntity = tx.putEntityType("subEntity").sup(someEntity)
-                .putHas(resource)
-                .putHas(anotherResource);
+                .has(resource)
+                .has(anotherResource);
 
         List<AttributeType> entityAttributes = someEntity.has().collect(toList());
         List<AttributeType> subEntityAttributes = subEntity.has().collect(toList());
@@ -216,7 +215,7 @@ public class AttributeIT {
         AttributeType<String> attributeType = tx.putAttributeType("My attribute type", AttributeType.ValueType.STRING);
         Attribute<String> attribute = attributeType.create("A String");
 
-        EntityType entityType = tx.putEntityType("My entity type").putHas(attributeType);
+        EntityType entityType = tx.putEntityType("My entity type").has(attributeType);
         Entity entity = entityType.create();
 
         entity.has(attribute);
@@ -228,7 +227,7 @@ public class AttributeIT {
     @Test
     public void whenInsertingAThingWithTwoKeys_Throw() {
         AttributeType<String> attributeType = tx.putAttributeType("Key Thingy", AttributeType.ValueType.STRING);
-        EntityType entityType = tx.putEntityType("Entity Type Thingy").putKey(attributeType);
+        EntityType entityType = tx.putEntityType("Entity Type Thingy").key(attributeType);
         Entity entity = entityType.create();
 
         Attribute<String> key1 = attributeType.create("key 1");
@@ -256,7 +255,7 @@ public class AttributeIT {
         AttributeType<String> attributeType = tx.putAttributeType("resource", AttributeType.ValueType.STRING);
         Attribute<String> attribute = attributeType.create("polok");
 
-        EntityType entityType = tx.putEntityType("someEntity").putHas(attributeType);
+        EntityType entityType = tx.putEntityType("someEntity").has(attributeType);
         Entity e1 = entityType.create();
         Entity e2 = entityType.create();
 

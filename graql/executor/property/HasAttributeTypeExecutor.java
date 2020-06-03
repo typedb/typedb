@@ -27,7 +27,6 @@ import grakn.core.kb.graql.executor.property.PropertyExecutor;
 import grakn.core.kb.graql.planning.gremlin.EquivalentFragmentSet;
 import graql.lang.property.HasAttributeTypeProperty;
 import graql.lang.property.VarProperty;
-import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 
 import java.util.Collections;
@@ -130,9 +129,9 @@ public class HasAttributeTypeExecutor  implements PropertyExecutor.Definable {
                     .getConcept(property.attributeType().var())
                     .asAttributeType();
             if (property.isKey()) {
-                typeConcept.putKey(attributeTypeConcept);
+                typeConcept.key(attributeTypeConcept);
             } else {
-                typeConcept.putHas(attributeTypeConcept);
+                typeConcept.has(attributeTypeConcept);
             }
         }
     }
