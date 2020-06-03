@@ -170,7 +170,12 @@ public class PropertyAtomicFactory {
     }
 
     private Atomic relation(Variable var, RelationProperty property, ReasonerQuery parent, Statement statement, Set<Statement> otherStatements) {
-        Statement relVar = new Statement(var);
+        // set varName as user defined if "reified"
+        // "reified" if contains more properties than the RelationProperty itself and potential IsaProperty
+        boolean isUsedAsVertex = statement.properties().stream()
+                .filter(prop -> !RelationProperty.class.isInstance(prop))
+                .anyMatch(prop -> !IsaProperty.class.isInstance(prop));
+        Statement relVar = isUsedAsVertex ? new Statement(var.asReturnedVar()) : new Statement(var);
 
         ConceptManager conceptManager = ctx.conceptManager();
         for (RelationProperty.RolePlayer rp : property.relationPlayers()) {
