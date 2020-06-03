@@ -225,51 +225,6 @@ public class AttributeIT {
         assertThat(entity.attributes().collect(toSet()), containsInAnyOrder(attribute));
     }
 
-    @Ignore // TODO-NOIMPL see if we can refactor this to be useful still
-    @Test
-    public void whenAddingRolePlayerToRelationEdge_RelationAutomaticallyReifies() {
-//        //Create boring attribute which creates a relation edge
-//        AttributeType<String> attributeType = tx.putAttributeType("My attribute type", AttributeType.ValueType.STRING);
-//        Attribute<String> attribute = attributeType.create("A String");
-//        EntityType entityType = tx.putEntityType("My entity type").has(attributeType);
-//        Entity entity = entityType.create();
-//        entity.has(attribute);
-//        RelationImpl relation = RelationImpl.from(entity.relations().iterator().next());
-//
-//        //Check it's a relation edge.
-//        RelationStructure relationStructureBefore = relation.structure();
-//        assertThat(relationStructureBefore, instanceOf(RelationEdge.class));
-//
-//        //Get the roles and role players via the relation edge:
-//        Map<Role, List<Thing>> allRolePlayerBefore = relationStructureBefore.allRolePlayers();
-//
-//        //Expand Schema to allow new role
-//        Role newRole = tx.putRole("My New Role");
-//        entityType.plays(newRole);
-//        relation.type().relates(newRole);
-//        Entity newEntity = entityType.create();
-//
-//        //Now actually add the new role player
-//        relation.assign(newRole, newEntity);
-//
-//        //Check it's a relation reified now.
-//        RelationStructure relationStructureAfter = relation.structure();
-//        assertThat(relationStructureAfter, instanceOf(RelationReified.class));
-//
-//        //Check IDs are equal
-//        assertEquals(relationStructureBefore.id(), relation.id());
-//        assertEquals(relationStructureBefore.id(), relationStructureAfter.id());
-//
-//        //Check Role Players have been transferred
-//        allRolePlayerBefore.forEach((role, player) -> assertEquals(player, relationStructureAfter.rolePlayers(role).collect(toSet())));
-//
-//        //Check Type Has Been Transferred
-//        assertEquals(relationStructureBefore.type(), relationStructureAfter.type());
-//
-//        //Check new role player has been added as well
-//        assertEquals(newEntity, Iterables.getOnlyElement(relationStructureAfter.rolePlayers(newRole).collect(toSet())));
-    }
-
     @Test
     public void whenInsertingAThingWithTwoKeys_Throw() {
         AttributeType<String> attributeType = tx.putAttributeType("Key Thingy", AttributeType.ValueType.STRING);

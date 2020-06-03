@@ -312,18 +312,6 @@ public class InferenceRule {
         return false;
     }
 
-//    private InferenceRule rewriteHeadToRelation(Atom parentAtom){
-//        if (parentAtom.isRelationAtom() && getHead().getAtom().isAttributeAtom()){
-//            return new InferenceRule(
-//                    reasonerQueryFactory.atomic(getHead().getAtom().toRelationAtom()),
-//                    getBody(),
-//                    rule,
-//                    reasonerQueryFactory
-//            );
-//        }
-//        return this;
-//    }
-
     private InferenceRule rewriteVariables(Atom parentAtom){
         if (parentAtom.isUserDefined() || parentAtom.requiresRoleExpansion()) {
             //NB we don't have to rewrite complements as we don't allow recursion atm
@@ -352,7 +340,6 @@ public class InferenceRule {
     public InferenceRule rewrite(Atom parentAtom){
         return this
                 .rewriteBodyAtoms()
-//                .rewriteHeadToRelation(parentAtom)
                 .rewriteVariables(parentAtom);
     }
 

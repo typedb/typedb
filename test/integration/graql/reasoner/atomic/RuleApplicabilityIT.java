@@ -288,9 +288,11 @@ public class RuleApplicabilityIT {
                     rules.stream().filter(r -> r.getRule().label().getValue().contains("attributed-relation")).collect(toSet()),
                     relation3.getApplicableRules().collect(toSet()));
 
+
+            int rulesInferringAttributes = 3;
             // exclude rules that infer attributes
             assertEquals(
-                    testTx.ruleCache().getRules().count() - 1 - 3,
+                    testTx.ruleCache().getRules().count() - 1 - rulesInferringAttributes,
                     relation4.getApplicableRules().count());
         }
     }

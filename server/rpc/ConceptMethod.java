@@ -813,7 +813,6 @@ public class ConceptMethod {
                 iterators.startBatchIterating(responses.iterator(), options);
             }
 
-            // TODO-NOIMPL udpate protocol to not use RelHas anymore
             private void has(ConceptProto.Concept protoAttribute) {
                 grakn.core.kb.concept.api.Attribute<?> attribute = convert(protoAttribute).asAttribute();
                 ConceptHolder.this.concept.asThing().has(attribute);

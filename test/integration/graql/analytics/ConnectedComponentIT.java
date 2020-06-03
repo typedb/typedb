@@ -145,43 +145,6 @@ public class ConnectedComponentIT {
         }
     }
 
-    // TODO-NOIMPL do we want to keep this test?
-//    @Test
-//    public void testConnectedComponentImplicitType() {
-//        String aResourceTypeLabel = "aResourceTypeLabel";
-//
-//        addSchemaAndEntities();
-//        addResourceRelations();
-//
-//        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-//            AttributeType<String> attributeType =
-//                    tx.putAttributeType(aResourceTypeLabel, AttributeType.ValueType.STRING);
-//            tx.getEntityType(thing).putHas(attributeType);
-//            tx.getEntityType(anotherThing).putHas(attributeType);
-//            Attribute aAttribute = attributeType.create("blah");
-//            tx.getEntityType(thing).instances().forEach(instance -> instance.has(aAttribute));
-//            tx.getEntityType(anotherThing).instances().forEach(instance -> instance.has(aAttribute));
-//            tx.commit();
-//        }
-//
-//        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-//            List<ConceptSet> clusterList = tx.execute(Graql.compute().cluster().using(CONNECTED_COMPONENT)
-//                    .in(thing, anotherThing, aResourceTypeLabel, Schema.ImplicitType.HAS.getLabel(aResourceTypeLabel).getValue()));
-//            assertEquals(1, clusterList.size());
-//            assertEquals(5, clusterList.iterator().next().set().size());
-//
-//            clusterList = tx.execute(Graql.compute().cluster().using(CONNECTED_COMPONENT)
-//                    .in(thing, anotherThing, aResourceTypeLabel, Schema.ImplicitType.HAS.getLabel(aResourceTypeLabel).getValue())
-//                    .where(contains(entityId2.getValue())));
-//            assertEquals(1, clusterList.size());
-//            assertEquals(5, clusterList.iterator().next().set().size());
-//
-//            assertEquals(1, tx.execute(Graql.compute().cluster().using(CONNECTED_COMPONENT).attributes(true)
-//                    .in(thing, anotherThing, aResourceTypeLabel, Schema.ImplicitType.HAS.getLabel(aResourceTypeLabel).getValue())
-//                    .attributes(true)).size());
-//        }
-//    }
-
     @Test
     public void testConnectedComponent() {
         List<ConceptSet> clusterList;

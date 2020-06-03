@@ -395,9 +395,8 @@ public class TransactionCacheIT {
         assertNull(tx.cache().getAttributeCache().get(index));
     }
 
-    @Ignore // TODO-NOIMPL check if this can be modified and kept or deleted
     @Test
-    public void whenInsertingAndDeletingInferredImplicitRelation_instanceIsTracked(){
+    public void whenInsertingAndDeletingInferredOwnership_ownershipIsTracked(){
         AttributeType<String> attributeType = tx.putAttributeType("resource", AttributeType.ValueType.STRING);
         EntityType someEntity = tx.putEntityType("someEntity").putHas(attributeType);
         Entity owner = someEntity.create();

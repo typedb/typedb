@@ -76,7 +76,7 @@ public class KeyspaceStatisticsIT {
     @Test
     public void newKeyspaceHasZeroCounts() {
         KeyspaceStatistics statistics = localSession.keyspaceStatistics();
-        TestTransactionProvider.TestTransaction tx = (TestTransactionProvider.TestTransaction)localSession.transaction(Transaction.Type.WRITE);
+        TestTransactionProvider.TestTransaction tx = (TestTransactionProvider.TestTransaction) localSession.transaction(Transaction.Type.WRITE);
         long entityCount = statistics.count(tx.conceptManager(), Label.of("entity"));
         long relationCount = statistics.count(tx.conceptManager(), Label.of("relation"));
         long attributeCount = statistics.count(tx.conceptManager(), Label.of("attribute"));
@@ -89,7 +89,7 @@ public class KeyspaceStatisticsIT {
 
     @Test
     public void sessionsToSameKeyspaceShareStatistics() {
-        Session session2  = server.session(localSession.keyspace());
+        Session session2 = server.session(localSession.keyspace());
         Session session3 = server.session(localSession.keyspace());
         assertSame(session2.keyspaceStatistics(), session3.keyspaceStatistics());
     }
@@ -114,7 +114,7 @@ public class KeyspaceStatisticsIT {
         friendshipType.create().assign(friend, person1).assign(friend, person2);
         tx.commit();
 
-        TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction)localSession.transaction(Transaction.Type.WRITE);
+        TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction) localSession.transaction(Transaction.Type.WRITE);
         long personCount = localSession.keyspaceStatistics().count(testTx.conceptManager(), Label.of("person"));
         long ageCount = localSession.keyspaceStatistics().count(testTx.conceptManager(), Label.of("age"));
         long friendshipCount = localSession.keyspaceStatistics().count(testTx.conceptManager(), Label.of("friendship"));
@@ -138,7 +138,7 @@ public class KeyspaceStatisticsIT {
         tx.execute(Graql.parse("match $x isa friendship; delete $x isa friendship;").asDelete());
         tx.commit();
 
-        testTx = (TestTransactionProvider.TestTransaction)localSession.transaction(Transaction.Type.WRITE);
+        testTx = (TestTransactionProvider.TestTransaction) localSession.transaction(Transaction.Type.WRITE);
         personCount = localSession.keyspaceStatistics().count(testTx.conceptManager(), Label.of("person"));
         ageCount = localSession.keyspaceStatistics().count(testTx.conceptManager(), Label.of("age"));
         friendshipCount = localSession.keyspaceStatistics().count(testTx.conceptManager(), Label.of("friendship"));
@@ -161,7 +161,7 @@ public class KeyspaceStatisticsIT {
         tx = localSession.transaction(Transaction.Type.WRITE);
         tx.execute(Graql.parse("match $x isa thing; delete $x isa thing;").asDelete());
         tx.commit();
-        testTx = (TestTransactionProvider.TestTransaction)localSession.transaction(Transaction.Type.WRITE);
+        testTx = (TestTransactionProvider.TestTransaction) localSession.transaction(Transaction.Type.WRITE);
         personCount = localSession.keyspaceStatistics().count(testTx.conceptManager(), Label.of("person"));
         ageCount = localSession.keyspaceStatistics().count(testTx.conceptManager(), Label.of("age"));
         friendshipCount = localSession.keyspaceStatistics().count(testTx.conceptManager(), Label.of("friendship"));
@@ -202,7 +202,7 @@ public class KeyspaceStatisticsIT {
         friendshipType.create().assign(friend, person1).assign(friend, person2);
         tx.close();
 
-        TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction)localSession.transaction(Transaction.Type.WRITE);
+        TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction) localSession.transaction(Transaction.Type.WRITE);
         long personCount = localSession.keyspaceStatistics().count(testTx.conceptManager(), Label.of("person"));
         long ageCount = localSession.keyspaceStatistics().count(testTx.conceptManager(), Label.of("age"));
         long friendshipCount = localSession.keyspaceStatistics().count(testTx.conceptManager(), Label.of("friendship"));
@@ -242,7 +242,7 @@ public class KeyspaceStatisticsIT {
         friendshipType.create().assign(friend, person1).assign(friend, person2);
         tx.commit();
 
-        TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction)localSession.transaction(Transaction.Type.WRITE);
+        TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction) localSession.transaction(Transaction.Type.WRITE);
         long personCount = localSession.keyspaceStatistics().count(testTx.conceptManager(), Label.of("person"));
         long ageCount = localSession.keyspaceStatistics().count(testTx.conceptManager(), Label.of("age"));
         long friendshipCount = localSession.keyspaceStatistics().count(testTx.conceptManager(), Label.of("friendship"));
@@ -259,7 +259,7 @@ public class KeyspaceStatisticsIT {
         // at this point, the graph and keyspace should be deleted from Grakn server cache
         localSession = SessionUtil.serverlessSession(server.serverConfig(), remoteSession.keyspace().name());
 
-        testTx = (TestTransactionProvider.TestTransaction)localSession.transaction(Transaction.Type.WRITE);
+        testTx = (TestTransactionProvider.TestTransaction) localSession.transaction(Transaction.Type.WRITE);
         long personCountReopened = localSession.keyspaceStatistics().count(testTx.conceptManager(), Label.of("person"));
         long ageCountReopened = localSession.keyspaceStatistics().count(testTx.conceptManager(), Label.of("age"));
         long friendshipCountReopened = localSession.keyspaceStatistics().count(testTx.conceptManager(), Label.of("friendship"));
@@ -282,28 +282,40 @@ public class KeyspaceStatisticsIT {
 
     @Test
     public void nonexistentLabelStatisticsReturnMinusOne() {
-        TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction)localSession.transaction(Transaction.Type.WRITE);
+        TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction) localSession.transaction(Transaction.Type.WRITE);
         long personCount = localSession.keyspaceStatistics().count(testTx.conceptManager(), Label.of("person"));
         testTx.close();
         assertEquals(-1L, personCount);
     }
 
 
+    // TODO - this test is KNOWN to be flaky, as the attribute deduplicator is sometimes buggy!!
     @Test
     public void concurrentTransactionsUpdateStatisticsCorrectly() throws InterruptedException, ExecutionException {
-        TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction)localSession.transaction(Transaction.Type.WRITE);
+        TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction) localSession.transaction(Transaction.Type.WRITE);
         AttributeType ageType = testTx.putAttributeType("age", AttributeType.ValueType.LONG);
         Role friend = testTx.putRole("friend");
         EntityType personType = testTx.putEntityType("person").plays(friend).putHas(ageType);
         RelationType friendshipType = testTx.putRelationType("friendship").relates(friend);
-
-        long personCountStart = localSession.keyspaceStatistics().count(testTx.conceptManager(), Label.of("person"));
-        long ageCountStart = localSession.keyspaceStatistics().count(testTx.conceptManager(), Label.of("age"));
         testTx.commit();
 
         // TODO fix the schema label cache to be a read-through, meanwhile close and reopen session
         remoteSession.close();
         remoteSession = graknClient.session(localSession.keyspace().toString());
+
+        try (GraknClient.Transaction tx = remoteSession.transaction().write()) {
+            tx.getAttributeType("age").instances().forEach(concept -> concept.delete());
+            tx.commit();
+        }
+        ;
+
+        localSession.close();
+        // because we haven't solved statistics beyond a single node, refresh the session here to clear cached counts
+        localSession = SessionUtil.serverlessSession(server.serverConfig(), localSession.keyspace().name());
+        testTx = (TestTransactionProvider.TestTransaction) localSession.transaction(Transaction.Type.WRITE);
+        long personCountStart = localSession.keyspaceStatistics().count(testTx.conceptManager(), Label.of("person"));
+        long ageCountStart = localSession.keyspaceStatistics().count(testTx.conceptManager(), Label.of("age"));
+        testTx.close();
 
         ExecutorService parallelExecutor = Executors.newFixedThreadPool(2);
 
@@ -342,7 +354,7 @@ public class KeyspaceStatisticsIT {
 
         // because we haven't solved statistics beyond a single node, refresh the session here to clear cached counts
         localSession = SessionUtil.serverlessSession(server.serverConfig(), localSession.keyspace().name());
-        testTx = (TestTransactionProvider.TestTransaction)localSession.transaction(Transaction.Type.WRITE);
+        testTx = (TestTransactionProvider.TestTransaction) localSession.transaction(Transaction.Type.WRITE);
         long personCount = localSession.keyspaceStatistics().count(testTx.conceptManager(), Label.of("person"));
         long ageCount = localSession.keyspaceStatistics().count(testTx.conceptManager(), Label.of("age"));
         long thingCount = localSession.keyspaceStatistics().count(testTx.conceptManager(), Label.of("thing"));
@@ -381,7 +393,7 @@ public class KeyspaceStatisticsIT {
 
         tx.commit();
 
-        TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction)localSession.transaction(Transaction.Type.WRITE);
+        TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction) localSession.transaction(Transaction.Type.WRITE);
 
         Label ageLabel = Label.of("age");
         assertEquals(0, localSession.keyspaceStatistics().count(testTx.conceptManager(), ageLabel));

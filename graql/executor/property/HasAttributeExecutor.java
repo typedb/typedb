@@ -96,9 +96,6 @@ public class HasAttributeExecutor  implements PropertyExecutor.Insertable, Prope
             Attribute attributeConcept = executor.getConcept(property.attribute().var()).asAttribute();
             Thing thing = executor.getConcept(var).asThing();
             thing.has(attributeConcept);
-
-            // TODO-NOIMPL this is not required anymore, may need to replace it in the future
-//            executor.getBuilder(property.relation().var()).id(relationId);
         }
     }
 

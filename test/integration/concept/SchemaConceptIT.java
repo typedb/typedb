@@ -99,40 +99,6 @@ public class SchemaConceptIT {
 
     }
 
-    @Ignore // TODO-NOIMPL remove this test -- irrelevant as we should no longer write implicit relation types or any such hierarchies
-//    @Test
-//    public void whenSpecifyingTheResourceTypeOfAnEntityType_EnsureTheImplicitStructureIsCreated(){
-//        Label resourceLabel = Label.of("Attribute Type");
-//        EntityType entityType = tx.putEntityType("Entity1");
-//        AttributeType attributeType = tx.putAttributeType("Attribute Type", AttributeType.ValueType.STRING);
-//
-//        //Implicit Names
-//        Label hasResourceOwnerLabel = Schema.ImplicitType.HAS_OWNER.getLabel(resourceLabel);
-//        Label hasResourceValueLabel = Schema.ImplicitType.HAS_VALUE.getLabel(resourceLabel);
-//        Label hasResourceLabel = Schema.ImplicitType.HAS.getLabel(resourceLabel);
-//
-//        entityType.putHas(attributeType);
-//
-//        RelationType relationType = tx.getRelationType(hasResourceLabel.getValue());
-//        Assert.assertEquals(hasResourceLabel, relationType.label());
-//
-//        Set<Label> roleLabels = relationType.roles().map(SchemaConcept::label).collect(toSet());
-//        assertThat(roleLabels, containsInAnyOrder(hasResourceOwnerLabel, hasResourceValueLabel));
-//
-//        assertThat(entityType.playing().collect(toSet()), containsInAnyOrder(tx.getRole(hasResourceOwnerLabel.getValue())));
-//        assertThat(attributeType.playing().collect(toSet()), containsInAnyOrder(tx.getRole(hasResourceValueLabel.getValue())));
-//
-//        //Check everything is implicit
-//        assertTrue(relationType.isImplicit());
-//        relationType.roles().forEach(role -> assertTrue(role.isImplicit()));
-//
-//        // Check that resource is not required
-//        EdgeElement entityPlays = ((EntityTypeImpl) entityType).vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS).iterator().next();
-//        assertFalse(entityPlays.propertyBoolean(Schema.EdgeProperty.REQUIRED));
-//        EdgeElement resourcePlays = ((AttributeTypeImpl<?>) attributeType).vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS).iterator().next();
-//        assertFalse(resourcePlays.propertyBoolean(Schema.EdgeProperty.REQUIRED));
-//    }
-
     @Test
     public void whenChangingTheLabelOfSchemaConceptAndThatLabelIsTakenByAnotherConcept_Throw(){
         Label label = Label.of("mylabel");
