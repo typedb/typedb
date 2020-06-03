@@ -40,7 +40,7 @@ import java.util.Set;
 public abstract class GraknMapReduce<T> extends CommonOLAP
         implements MapReduce<Serializable, T, Serializable, T, Map<Serializable, T>> {
 
-    private static final String RESOURCE_DATA_TYPE_KEY = "RESOURCE_DATA_TYPE_KEY";
+    private static final String ATTRIBUTE_VALUE_TYPE_KEY = "ATTRIBUTE_VALUE_TYPE_KEY";
 
     // In MapReduce, vertex emits type label id, but has-resource edge can not. Instead, a message is sent via the edge,
     // and a vertex property is added. So the resource vertex can emit an extra key value pair, key being this constant.
@@ -51,9 +51,9 @@ public abstract class GraknMapReduce<T> extends CommonOLAP
         this.selectedTypes = selectedTypes;
     }
 
-    GraknMapReduce(Set<LabelId> selectedTypes, AttributeType.DataType resourceDataType) {
+    GraknMapReduce(Set<LabelId> selectedTypes, AttributeType.ValueType valueType) {
         this(selectedTypes);
-        persistentProperties.put(RESOURCE_DATA_TYPE_KEY, resourceDataType.name());
+        persistentProperties.put(ATTRIBUTE_VALUE_TYPE_KEY, valueType.name());
     }
 
     // Needed internally for OLAP tasks
@@ -136,6 +136,6 @@ public abstract class GraknMapReduce<T> extends CommonOLAP
     }
 
     final boolean usingLong() {
-        return persistentProperties.get(RESOURCE_DATA_TYPE_KEY).equals(AttributeType.DataType.LONG.name());
+        return persistentProperties.get(ATTRIBUTE_VALUE_TYPE_KEY).equals(AttributeType.ValueType.LONG.name());
     }
 }

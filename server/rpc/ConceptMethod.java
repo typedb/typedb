@@ -30,7 +30,6 @@ import graql.lang.pattern.Pattern;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
@@ -125,8 +124,8 @@ public class ConceptMethod {
             case ATTRIBUTETYPE_ATTRIBUTE_REQ:
                 con.asAttributeType().attribute(req.getAttributeTypeAttributeReq().getValue());
                 return;
-            case ATTRIBUTETYPE_DATATYPE_REQ:
-                con.asAttributeType().dataType();
+            case ATTRIBUTETYPE_VALUETYPE_REQ:
+                con.asAttributeType().valueType();
                 return;
             case ATTRIBUTETYPE_GETREGEX_REQ:
                 con.asAttributeType().regex();
@@ -707,17 +706,17 @@ public class ConceptMethod {
                 responseSender.accept(transactionRes(response));
             }
 
-            private void dataType() {
-                grakn.core.kb.concept.api.AttributeType.DataType<?> dataType = concept.asAttributeType().dataType();
+            private void valueType() {
+                grakn.core.kb.concept.api.AttributeType.ValueType<?> valueType = concept.asAttributeType().valueType();
 
-                ConceptProto.AttributeType.DataType.Res.Builder methodResponse =
-                        ConceptProto.AttributeType.DataType.Res.newBuilder();
+                ConceptProto.AttributeType.ValueType.Res.Builder methodResponse =
+                        ConceptProto.AttributeType.ValueType.Res.newBuilder();
 
-                if (dataType == null) methodResponse.setNull(ConceptProto.Null.getDefaultInstance()).build();
-                else methodResponse.setDataType(ResponseBuilder.Concept.DATA_TYPE(dataType)).build();
+                if (valueType == null) methodResponse.setNull(ConceptProto.Null.getDefaultInstance()).build();
+                else methodResponse.setValueType(ResponseBuilder.Concept.VALUE_TYPE(valueType)).build();
 
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setAttributeTypeDataTypeRes(methodResponse).build();
+                        .setAttributeTypeValueTypeRes(methodResponse).build();
 
                 responseSender.accept(transactionRes(response));
             }

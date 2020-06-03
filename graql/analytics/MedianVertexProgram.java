@@ -51,8 +51,8 @@ public class MedianVertexProgram extends GraknVertexProgram<Long> {
     private static final int MAX_ITERATION = 40;
     public static final String MEDIAN = "medianVertexProgram.median";
 
-    private static final String RESOURCE_DATA_TYPE = "medianVertexProgram.resourceDataType";
-    private static final String RESOURCE_TYPE = "medianVertexProgram.statisticsResourceType";
+    private static final String ATTRIBUTE_VALUE_TYPE = "medianVertexProgram.attributeValueType";
+    private static final String ATTRIBUTE_TYPE = "medianVertexProgram.attributeType";
     private static final String LABEL = "medianVertexProgram.label";
     private static final String COUNT = "medianVertexProgram.count";
     private static final String INDEX_START = "medianVertexProgram.indexStart";
@@ -90,12 +90,12 @@ public class MedianVertexProgram extends GraknVertexProgram<Long> {
     }
 
     public MedianVertexProgram(Set<LabelId> statisticsResourceLabelIds,
-                               AttributeType.DataType resourceDataType) {
+                               AttributeType.ValueType valueType) {
         this.statisticsResourceLabelIds = statisticsResourceLabelIds;
 
-        String resourceDataTypeValue = resourceDataType.equals(AttributeType.DataType.LONG) ?
+        String valueTypeStr = valueType.equals(AttributeType.ValueType.LONG) ?
                 Schema.VertexProperty.VALUE_LONG.name() : Schema.VertexProperty.VALUE_DOUBLE.name();
-        persistentProperties.put(RESOURCE_DATA_TYPE, resourceDataTypeValue);
+        persistentProperties.put(ATTRIBUTE_VALUE_TYPE, valueTypeStr);
     }
 
     @Override
@@ -126,14 +126,14 @@ public class MedianVertexProgram extends GraknVertexProgram<Long> {
     public void storeState(final Configuration configuration) {
         super.storeState(configuration);
         statisticsResourceLabelIds.forEach(
-                typeId -> configuration.addProperty(RESOURCE_TYPE + "." + typeId, typeId));
+                typeId -> configuration.addProperty(ATTRIBUTE_TYPE + "." + typeId, typeId));
     }
 
     @Override
     public void loadState(Graph graph, Configuration configuration) {
         super.loadState(graph, configuration);
-        configuration.subset(RESOURCE_TYPE).getKeys().forEachRemaining(key ->
-                statisticsResourceLabelIds.add((LabelId) configuration.getProperty(RESOURCE_TYPE + "." + key)));
+        configuration.subset(ATTRIBUTE_TYPE).getKeys().forEachRemaining(key ->
+                statisticsResourceLabelIds.add((LabelId) configuration.getProperty(ATTRIBUTE_TYPE + "." + key)));
     }
 
     @Override
@@ -144,7 +144,7 @@ public class MedianVertexProgram extends GraknVertexProgram<Long> {
         memory.set(NEGATIVE_COUNT, 0L);
         memory.set(POSITIVE_COUNT, 0L);
         memory.set(FOUND, false);
-        if (persistentProperties.get(RESOURCE_DATA_TYPE).equals(Schema.VertexProperty.VALUE_LONG.name())) {
+        if (persistentProperties.get(ATTRIBUTE_VALUE_TYPE).equals(Schema.VertexProperty.VALUE_LONG.name())) {
             memory.set(MEDIAN, 0L);
             memory.set(PIVOT, 0L);
             memory.set(PIVOT_NEGATIVE, 0L);
@@ -175,7 +175,7 @@ public class MedianVertexProgram extends GraknVertexProgram<Long> {
                     // select pivot randomly
                     if (degree > 0) {
                         memory.add(PIVOT,
-                                vertex.value((String) persistentProperties.get(RESOURCE_DATA_TYPE)));
+                                vertex.value((String) persistentProperties.get(ATTRIBUTE_VALUE_TYPE)));
                         memory.add(COUNT, degree);
                     }
                 }
@@ -183,7 +183,7 @@ public class MedianVertexProgram extends GraknVertexProgram<Long> {
             case 3:
                 if (vertexHasSelectedTypeId(vertex, statisticsResourceLabelIds) &&
                         (long) vertex.value(DEGREE) > 0) {
-                    Number value = vertex.value((String) persistentProperties.get(RESOURCE_DATA_TYPE));
+                    Number value = vertex.value((String) persistentProperties.get(ATTRIBUTE_VALUE_TYPE));
                     if (value.doubleValue() < memory.<Number>get(PIVOT).doubleValue()) {
                         updateMemoryNegative(vertex, memory, value);
                     } else if (value.doubleValue() > memory.<Number>get(PIVOT).doubleValue()) {
@@ -199,7 +199,7 @@ public class MedianVertexProgram extends GraknVertexProgram<Long> {
                 if (vertexHasSelectedTypeId(vertex, statisticsResourceLabelIds) &&
                         (long) vertex.value(DEGREE) > 0 &&
                         (int) vertex.value(LABEL) == memory.<Integer>get(LABEL_SELECTED)) {
-                    Number value = vertex.value((String) persistentProperties.get(RESOURCE_DATA_TYPE));
+                    Number value = vertex.value((String) persistentProperties.get(ATTRIBUTE_VALUE_TYPE));
                     if (value.doubleValue() < memory.<Number>get(PIVOT).doubleValue()) {
                         updateMemoryNegative(vertex, memory, value);
                     } else if (value.doubleValue() > memory.<Number>get(PIVOT).doubleValue()) {

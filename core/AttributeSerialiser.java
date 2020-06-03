@@ -44,23 +44,23 @@ public abstract class AttributeSerialiser<DESERIALISED, SERIALISED> {
 
     public abstract DESERIALISED deserialise(SERIALISED value);
 
-    private static Map<AttributeType.DataType<?>, AttributeSerialiser<?, ?>> serialisers = map(
-            pair(AttributeType.DataType.BOOLEAN, BOOLEAN),
-            pair(AttributeType.DataType.DATE, DATE),
-            pair(AttributeType.DataType.DOUBLE, DOUBLE),
-            pair(AttributeType.DataType.FLOAT, FLOAT),
-            pair(AttributeType.DataType.INTEGER, INTEGER),
-            pair(AttributeType.DataType.LONG, LONG),
-            pair(AttributeType.DataType.STRING, STRING)
+    private static Map<AttributeType.ValueType<?>, AttributeSerialiser<?, ?>> serialisers = map(
+            pair(AttributeType.ValueType.BOOLEAN, BOOLEAN),
+            pair(AttributeType.ValueType.DATETIME, DATE),
+            pair(AttributeType.ValueType.DOUBLE, DOUBLE),
+            pair(AttributeType.ValueType.FLOAT, FLOAT),
+            pair(AttributeType.ValueType.INTEGER, INTEGER),
+            pair(AttributeType.ValueType.LONG, LONG),
+            pair(AttributeType.ValueType.STRING, STRING)
     );
 
 
     // TODO: This method should not be needed if all usage of this class is
     //       accessed via the constant properties defined above.
-    public static <DESERIALISED> AttributeSerialiser<DESERIALISED, ?> of(AttributeType.DataType<DESERIALISED> dataType) {
-        AttributeSerialiser<?, ?> attributeSerialiser = serialisers.get(dataType);
+    public static <DESERIALISED> AttributeSerialiser<DESERIALISED, ?> of(AttributeType.ValueType<DESERIALISED> valueType) {
+        AttributeSerialiser<?, ?> attributeSerialiser = serialisers.get(valueType);
         if (attributeSerialiser == null){
-            throw new UnsupportedOperationException("Unsupported DataType: " + dataType.toString());
+            throw new UnsupportedOperationException("Unsupported ValueType: " + valueType.toString());
         }
         return (AttributeSerialiser<DESERIALISED, ?>) attributeSerialiser;
 

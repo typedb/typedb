@@ -43,7 +43,7 @@ public enum ErrorMessage {
     SUPER_LOOP_DETECTED("By setting the super of concept [%s] to [%s]. You will be creating a loop. This is prohibited"),
     INVALID_UNIQUE_PROPERTY_MUTATION("Property [%s] of Concept [%s] cannot be changed to [%s] as it is already taken by Concept [%s]"),
     UNIQUE_PROPERTY_TAKEN("Property [%s] with value [%s] is already taken by concept [%s]"),
-    INVALID_DATATYPE("The value [%s] of type [%s] must be of datatype [%s] for attribute type [%s]"),
+    INVALID_VALUETYPE("The value [%s] of type [%s] must be of value type [%s] for attribute type [%s]"),
     INVALID_OBJECT_TYPE("The concept [%s] is not of type [%s]"),
     REGEX_INSTANCE_FAILURE("The regex [%s] of Attribute Type [%s] cannot be applied because value [%s] " +
             "does not conform to the regular expression"),
@@ -136,7 +136,7 @@ public enum ErrorMessage {
 
     VALIDATION_RULE_ILLEGAL_HEAD_REWRITING_TYPE_TO_RELATION("Rule [%s] attempts to rewrite type to a relation type\n"),
 
-    VALIDATION_RULE_ILLEGAL_HEAD_REWRITING_TYPE_DATATYPE_INCOMPATIBLE("Rule [%s] attempts to convert attribute to a new datatype [%s]\n"),
+    VALIDATION_RULE_ILLEGAL_HEAD_REWRITING_TYPE_VALUETYPE_INCOMPATIBLE("Rule [%s] attempts to convert attribute to a new value type [%s]\n"),
 
     VALIDATION_RULE_ILLEGAL_HEAD_REWRITING_META_TYPE("Rule [%s] changes meta type for variable [%s]\n"),
 
@@ -168,6 +168,7 @@ public enum ErrorMessage {
     NON_POSITIVE_LIMIT("limit %s should be positive"),
     NEGATIVE_OFFSET("offset %s should be non-negative"),
     INVALID_VALUE("unsupported attribute value type %s"),
+    NOT_A_RELATION_INSTANCE("Concept represented by [%s] (%s) is not a relation instance"),
 
     AGGREGATE_ARGUMENT_NUM("aggregate '%s' takes %s arguments, but got %s"),
     UNKNOWN_AGGREGATE("unknown aggregate '%s'"),
@@ -180,11 +181,18 @@ public enum ErrorMessage {
     INVALID_SUPER_TYPE("'%s' cannot be a subtype of '%s'"),
     INSERT_RECURSIVE("%s should not refer to itself"),
     INSERT_ABSTRACT_NOT_TYPE("the concept [%s] is not a type and cannot be set to abstract"),
-    INSERT_RELATION_WITHOUT_ROLE_TYPE("attempted to insert a relation without all role types specified"),
+    INSERT_RELATION_WITHOUT_ROLE_TYPE("attempted to insert a relation players [%s] without all role types specified"),
+    DELETE_RELATION_PLAYER_WITHOUT_ROLE_TYPE("attempted to delete a role player [%s] from a relation without specifying role"),
 
     INVALID_STATEMENT("Value [%s] not of type [%s] in data [%s]"),
 
     NOT_A_TYPE("Concept with id [%s] is not a concept type and has base type [%s]."),
+
+    DELETE_OWNERSHIP_NOT_AN_ATTRIBUTE("Cannot remove ownership of [%s] (%s), required to be an attribute"),
+    DELETE_OWNERSHIP_TYPE_NOT_SATISFIED("Cannot delete attribute ownership, concept [%s] (%s) is not of required attribute type [%s]"),
+    DELETE_ROLE_PLAYER_NO_COMPATIBLE_PLAYER("Cannot delete role player [%s] (%s) from [%s] (%s), it does not play required role (or subtypes of) [%s]"),
+    DELETE_INSTANCE_INCORRECT_TYPE_OR_SUBTYPE("Cannot delete instance [%s] (%s), it is not of the required type (or subtype of) [%s]"),
+    DELETE_INSTANCE_INCORRECT_TYPE("Cannot delete instance [%s] (%s), it is not of the required direct type [%s]"),
     UNHANDLED_CONCEPT_DELETION("Deletion of concept [%s] is not handled."),
 
     //Templating

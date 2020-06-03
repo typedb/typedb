@@ -36,9 +36,9 @@ import java.util.stream.Stream;
  * Represent a literal resource in the graph.
  * Acts as an Thing when relating to other instances except it has the added functionality of:
  * 1. It is unique to its AttributeType based on it's value.
- * 2. It has a AttributeType.DataType associated with it which constrains the allowed values.
+ * 2. It has a AttributeType.ValueType associated with it which constrains the allowed values.
  *
- * @param <D> The data type of this resource type.
+ * @param <D> The value type of this attribute type.
  *            Supported Types include: String, Long, Double, and Boolean
  */
 public class AttributeImpl<D> extends ThingImpl<Attribute<D>, AttributeType<D>> implements Attribute<D> {
@@ -51,11 +51,11 @@ public class AttributeImpl<D> extends ThingImpl<Attribute<D>, AttributeType<D>> 
     }
 
     /**
-     * @return The data type of this Attribute's AttributeType.
+     * @return The value type of this Attribute's AttributeType.
      */
     @Override
-    public AttributeType.DataType<D> dataType() {
-        return type().dataType();
+    public AttributeType.ValueType<D> valueType() {
+        return type().valueType();
     }
 
     /**
@@ -76,8 +76,8 @@ public class AttributeImpl<D> extends ThingImpl<Attribute<D>, AttributeType<D>> 
      */
     @Override
     public D value() {
-        return AttributeSerialiser.of(dataType()).deserialise(
-                vertex().property(Schema.VertexProperty.ofDataType(dataType()))
+        return AttributeSerialiser.of(valueType()).deserialise(
+                vertex().property(Schema.VertexProperty.ofValueType(valueType()))
         );
     }
 

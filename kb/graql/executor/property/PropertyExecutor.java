@@ -59,11 +59,32 @@ public interface PropertyExecutor {
     }
 
     interface Insertable extends PropertyExecutor {
-
         Set<Writer> insertExecutors();
     }
 
+    interface Deletable extends PropertyExecutor {
+        Set<Writer> deleteExecutors();
+    }
+
     interface Writer {
+
+        enum TiebreakDeletionOrdering {
+            // when no explicit ordering is possible, we first delete
+            // 1. edge properties (eg. `DeleteHasAttribute` or `DeleteRelation`)
+            // 2. instances that are relations
+            // 3. instances that are non-relations
+
+            // lower is higher priority
+            NOT_APPLICABLE(0),
+            HAS(1),
+            ROLE_PLAYER(2),
+            RELATION(3),
+            NON_RELATION(4);
+            private final int priority;
+            TiebreakDeletionOrdering(int priority) {
+                this.priority = priority;
+            }
+        }
 
         Variable var();
 
@@ -74,10 +95,11 @@ public interface PropertyExecutor {
         Set<Variable> producedVars();
 
         void execute(WriteExecutor executor);
+
+        default TiebreakDeletionOrdering ordering(WriteExecutor executor) { return TiebreakDeletionOrdering.NOT_APPLICABLE; }
     }
 
-    interface Referrer extends Writer{
-
+    interface Referrer extends Writer {
         @Override
         default Set<Variable> requiredVars() {
             return ImmutableSet.of();
@@ -88,5 +110,4 @@ public interface PropertyExecutor {
             return ImmutableSet.of(var());
         }
     }
-
 }

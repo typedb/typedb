@@ -102,7 +102,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
             return relation;
         }).collect(toSet());
 
-        if (!isDeleted())  {
+        if (!isDeleted()) {
             // must happen before deleteNode() so we can access properties on the vertex
             conceptNotificationChannel.thingDeleted(this);
         }
@@ -111,15 +111,17 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
 
         deleteNode();
 
-        relations.forEach(relation -> {
-            //NB: this only deletes reified implicit relations
-            if (relation.type().isImplicit()) {
-                relation.delete();
-            } else {
-                RelationImpl rel = (RelationImpl) relation;
-                rel.cleanUp();
-            }
-        });
+        relations.stream()
+                .filter(rel -> !rel.isDeleted())
+                .forEach(relation -> {
+                    //NB: this only deletes reified implicit relations
+                    if (relation.type().isImplicit()) {
+                        relation.delete();
+                    } else {
+                        RelationImpl rel = (RelationImpl) relation;
+                        rel.cleanUp();
+                    }
+                });
     }
 
     /**
@@ -241,7 +243,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
             stream = stream.filter(edge -> {
                 Set<Role> edgeRoles = new HashSet<>();
                 edgeRoles.add(conceptManager.getSchemaConcept(LabelId.of(edge.property(Schema.EdgeProperty.RELATION_ROLE_OWNER_LABEL_ID))));
-                if (this.isAttribute()){
+                if (this.isAttribute()) {
                     edgeRoles.add(conceptManager.getSchemaConcept(LabelId.of(edge.property(Schema.EdgeProperty.RELATION_ROLE_VALUE_LABEL_ID))));
                 }
                 return !Sets.intersection(roleSet, edgeRoles).isEmpty();
@@ -307,11 +309,14 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
         Role roleHasValue = conceptManager.getSchemaConcept(Schema.ImplicitType.HAS_VALUE.getLabel(attribute.type().label()));
         Role roleKeyValue = conceptManager.getSchemaConcept(Schema.ImplicitType.KEY_VALUE.getLabel(attribute.type().label()));
 
+        // delete attribute ownerships between this Thing and the Attribute
         Stream<Relation> relations = relations(filterNulls(roleHasOwner, roleKeyOwner));
         relations.filter(relation -> {
             Stream<Thing> rolePlayers = relation.rolePlayers(filterNulls(roleHasValue, roleKeyValue));
             return rolePlayers.anyMatch(rolePlayer -> rolePlayer.equals(attribute));
         }).forEach(Concept::delete);
+
+        conceptNotificationChannel.hasAttributeRemoved(this, attribute);
 
         return getThis();
     }

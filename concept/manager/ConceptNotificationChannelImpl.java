@@ -127,8 +127,13 @@ public class ConceptNotificationChannelImpl implements ConceptNotificationChanne
     }
 
     @Override
-    public void roleDeleted(Role role) {
-        conceptListener.roleDeleted(role);
+    public void hasAttributeRemoved(Thing owner, Attribute<?> owned) {
+        conceptListener.hasAttributeRemoved(owner, owned);
+    }
+
+    @Override
+    public void roleUndefined(Role role) {
+        conceptListener.roleUndefined(role);
     }
 
     @Override

@@ -87,7 +87,7 @@ jobs:
       - run-bazel-rbe:
           command: bazel test //common/... --test_output=errors
 
-  test-behavior-connection:
+  test-behaviour-connection:
     machine: true
     working_directory: ~/grakn
     steps:
@@ -100,7 +100,7 @@ jobs:
       - run-bazel-rbe:
           command: bazel test //test/behaviour/connection/transaction:test --test_output=errors
 
-  test-behavior-graql:
+  test-behaviour-graql-language:
     machine: true
     working_directory: ~/grakn
     steps:
@@ -109,13 +109,15 @@ jobs:
       - run-bazel-rbe:
           command: bazel test //test/behaviour/graql/language/define:test --test_output=errors
       - run-bazel-rbe:
-          command: bazel test //test/behaviour/connection/transaction:test --test_output=errors
+          command: bazel test //test/behaviour/graql/language/undefine:test --test_output=errors
       - run-bazel-rbe:
           command: bazel test //test/behaviour/graql/language/insert:test --test_output=errors
       - run-bazel-rbe:
           command: bazel test //test/behaviour/graql/language/match:test --test_output=errors
+      - run-bazel-rbe:
+          command: bazel test //test/behaviour/graql/language/delete:test --test_output=errors
 
-  test-behavior-reasoner:
+  test-behaviour-graql-reasoner:
     machine: true
     working_directory: ~/grakn
     steps:
@@ -140,11 +142,11 @@ jobs:
       - install-bazel-linux-rbe
       - checkout
       - run-bazel-rbe:
-          command: bazel test //test-integration/server/... --test_output=errors
+          command: bazel test //test/integration/server/... --test_output=errors
       - run-bazel-rbe:
-          command: bazel test //test-integration/graql/executor/... --test_output=errors
+          command: bazel test //test/integration/graql/executor/... --test_output=errors
       - run-bazel-rbe:
-          command: bazel test //test-integration/graql/query/... --test_output=errors
+          command: bazel test //test/integration/graql/query/... --test_output=errors
 
   test-integration-reasoner:
     machine: true
@@ -153,7 +155,7 @@ jobs:
       - install-bazel-linux-rbe
       - checkout
       - run-bazel-rbe:
-          command: bazel test //test-integration/graql/reasoner/... --test_output=errors
+          command: bazel test //test/integration/graql/reasoner/... --test_output=errors
 
   test-integration-analytics:
     machine: true
@@ -162,16 +164,16 @@ jobs:
       - install-bazel-linux-rbe
       - checkout
       - run-bazel-rbe:
-          command: bazel test //test-integration/graql/analytics/... --test_output=errors
+          command: bazel test //test/integration/graql/analytics/... --test_output=errors
 
-  test-end-to-end:
+  test-assembly:
     machine: true
     working_directory: ~/grakn
     steps:
       - install-bazel-linux-rbe
       - checkout
       - run-bazel-rbe:
-          command: bazel test //test-end-to-end:test-end-to-end --test_output=streamed --spawn_strategy=standalone
+          command: bazel test //test/assembly:test-assembly --test_output=streamed --spawn_strategy=local
 
   test-assembly-mac-zip:
     macos:
@@ -185,7 +187,7 @@ jobs:
       - run: TEST_CACHE_TOKEN=$REPO_GITHUB_TOKEN bazel run @graknlabs_build_tools//ci:test-cache -- --file $(pwd)/bazel-bin/grakn-core-all-mac.zip --get
       - run: unzip bazel-bin/grakn-core-all-mac.zip -d bazel-bin/
       - run: nohup bazel-bin/grakn-core-all-mac/grakn server start
-      - run: bazel test //test/common:grakn-application-test --test_output=streamed --spawn_strategy=standalone --cache_test_results=no
+      - run: bazel test //test/common:grakn-application-test --test_output=streamed --spawn_strategy=local --cache_test_results=no
       - run: bazel-bin/grakn-core-all-mac/grakn server stop
       - run: TEST_CACHE_TOKEN=$REPO_GITHUB_TOKEN bazel run @graknlabs_build_tools//ci:test-cache -- --file $(pwd)/bazel-bin/grakn-core-all-mac.zip --save-success
       - store_artifacts:
@@ -216,7 +218,7 @@ jobs:
       - run: TEST_CACHE_TOKEN=$REPO_GITHUB_TOKEN bazel run @graknlabs_build_tools//ci:test-cache -- --file $(pwd)/bazel-bin/grakn-core-all-linux.tar.gz --get
       - run: tar -xf bazel-bin/grakn-core-all-linux.tar.gz -C bazel-bin
       - run: nohup bazel-bin/grakn-core-all-linux/grakn server start
-      - run: bazel test //test/common:grakn-application-test --test_output=streamed --spawn_strategy=standalone --cache_test_results=no
+      - run: bazel test //test/common:grakn-application-test --test_output=streamed --spawn_strategy=local --cache_test_results=no
       - run: bazel-bin/grakn-core-all-linux/grakn server stop
       - run: TEST_CACHE_TOKEN=$REPO_GITHUB_TOKEN bazel run @graknlabs_build_tools//ci:test-cache -- --file $(pwd)/bazel-bin/grakn-core-all-linux.tar.gz --save-success
       - store_artifacts:
@@ -279,7 +281,7 @@ jobs:
       - run: bazel run //test/deployment/apt:install
       - run: sudo chown -R circleci:circleci /opt/grakn/ # TODO: how do we avoid having to chown?
       - run: nohup grakn server start
-      - run: bazel test //test/common:grakn-application-test --test_output=streamed --spawn_strategy=standalone --cache_test_results=no
+      - run: bazel test //test/common:grakn-application-test --test_output=streamed --spawn_strategy=local --cache_test_results=no
       - run: grakn server stop
       - store_artifacts:
           path: /opt/grakn/core/logs/grakn.log
@@ -458,15 +460,15 @@ workflows:
           filters:
             branches:
               ignore: grakn-release-branch
-      - test-behavior-connection:
+      - test-behaviour-connection:
           filters:
             branches:
               ignore: grakn-release-branch
-      - test-behavior-graql:
+      - test-behaviour-graql-language:
           filters:
             branches:
               ignore: grakn-release-branch
-      - test-behavior-reasoner:
+      - test-behaviour-graql-reasoner:
           filters:
             branches:
               ignore: grakn-release-branch
@@ -486,10 +488,24 @@ workflows:
           filters:
             branches:
               ignore: grakn-release-branch
-      - test-end-to-end:
+      - test-assembly:
           filters:
             branches:
-              ignore: grakn-release-branch
+              only:
+                - master
+                - rewrite
+          requires:
+            - build
+            - build-checkstyle
+            - build-analysis
+            - test-common
+            - test-server
+            - test-behaviour-connection
+            - test-behaviour-graql-language
+            - test-behaviour-graql-reasoner
+            - test-integration
+            - test-integration-reasoner
+            - test-integration-analytics
       - test-assembly-mac-zip:
           filters:
             branches:
@@ -502,10 +518,12 @@ workflows:
             - build-analysis
             - test-common
             - test-server
+            - test-behaviour-connection
+            - test-behaviour-graql-language
+            - test-behaviour-graql-reasoner
             - test-integration
             - test-integration-reasoner
             - test-integration-analytics
-            - test-end-to-end
       - test-assembly-windows-zip:
           filters:
             branches:
@@ -518,10 +536,12 @@ workflows:
             - build-analysis
             - test-common
             - test-server
+            - test-behaviour-connection
+            - test-behaviour-graql-language
+            - test-behaviour-graql-reasoner
             - test-integration
             - test-integration-reasoner
             - test-integration-analytics
-            - test-end-to-end
       - test-assembly-linux-targz:
           filters:
             branches:
@@ -534,10 +554,12 @@ workflows:
             - build-analysis
             - test-common
             - test-server
+            - test-behaviour-connection
+            - test-behaviour-graql-language
+            - test-behaviour-graql-reasoner
             - test-integration
             - test-integration-reasoner
             - test-integration-analytics
-            - test-end-to-end
       - test-assembly-docker:
           filters:
             branches:
@@ -550,10 +572,12 @@ workflows:
             - build-analysis
             - test-common
             - test-server
+            - test-behaviour-connection
+            - test-behaviour-graql-language
+            - test-behaviour-graql-reasoner
             - test-integration
             - test-integration-reasoner
             - test-integration-analytics
-            - test-end-to-end
       - deploy-apt-snapshot:
           filters:
             branches:
@@ -565,6 +589,7 @@ workflows:
             - test-assembly-windows-zip
             - test-assembly-linux-targz
             - test-assembly-docker
+            - test-assembly
       - deploy-rpm-snapshot:
           filters:
             branches:
@@ -576,6 +601,7 @@ workflows:
             - test-assembly-windows-zip
             - test-assembly-linux-targz
             - test-assembly-docker
+            - test-assembly
       - test-deployment-linux-apt:
           filters:
             branches:

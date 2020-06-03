@@ -148,10 +148,10 @@ public class EquivalentFragmentSets {
     }
 
     /**
-     * An EquivalentFragmentSet that indicates a variable representing a resource type with a data-type.
+     * An EquivalentFragmentSet that indicates a variable representing a resource type with a value type.
      */
-    public static EquivalentFragmentSet dataType(VarProperty varProperty, Variable resourceType, AttributeType.DataType<?> dataType) {
-        return new DataTypeFragmentSet(varProperty, resourceType, dataType);
+    public static EquivalentFragmentSet valueType(VarProperty varProperty, Variable resourceType, AttributeType.ValueType<?> valueType) {
+        return new ValueTypeFragmentSet(varProperty, resourceType, valueType);
     }
 
     /**

@@ -107,9 +107,9 @@ public class GraqlSteps {
 
     @Given("graql undefine throws")
     public void graql_undefine_throws(String undefineQueryStatements) {
-        GraqlUndefine graqlQuery = Graql.parse(String.join("\n", undefineQueryStatements)).asUndefine();
         boolean threw = false;
         try {
+            GraqlUndefine graqlQuery = Graql.parse(String.join("\n", undefineQueryStatements)).asUndefine();
             tx.execute(graqlQuery);
             tx.commit();
         } catch (RuntimeException e) {
@@ -133,9 +133,34 @@ public class GraqlSteps {
 
     @Given("graql insert throws")
     public void graql_insert_throws(String insertQueryStatements) {
-        GraqlQuery graqlQuery = Graql.parse(String.join("\n", insertQueryStatements));
         boolean threw = false;
         try {
+            GraqlQuery graqlQuery = Graql.parse(String.join("\n", insertQueryStatements));
+            tx.execute(graqlQuery);
+            tx.commit();
+        } catch (RuntimeException e) {
+            threw = true;
+        } finally {
+            tx.close();
+            tx = session.transaction(Transaction.Type.WRITE);
+        }
+        assertTrue(threw);
+    }
+
+    @Given("graql delete")
+    public void graql_delete(String deleteQueryStatements) {
+        GraqlQuery graqlQuery = Graql.parse(String.join("\n", deleteQueryStatements));
+        tx.execute(graqlQuery);
+        tx.commit();
+        tx = session.transaction(Transaction.Type.WRITE);
+    }
+
+
+    @Given("graql delete throws")
+    public void graql_delete_throws(String deleteQueryStatements) {
+        boolean threw = false;
+        try {
+            GraqlQuery graqlQuery = Graql.parse(String.join("\n", deleteQueryStatements));
             tx.execute(graqlQuery);
             tx.commit();
         } catch (RuntimeException e) {
@@ -155,8 +180,7 @@ public class GraqlSteps {
         } else if (graqlQuery instanceof GraqlInsert) {
             answers = tx.execute(graqlQuery.asInsert());
         } else {
-            // TODO specialise exception
-            throw new RuntimeException("Only match-get and inserted supported for now");
+            throw new ScenarioDefinitionException("Only match-get and inserted supported for now");
         }
     }
 
@@ -184,7 +208,7 @@ public class GraqlSteps {
                     identifierChecks.put(identifier, new LabelUniquenessCheck(value));
                     break;
                 default:
-                    throw new RuntimeException(String.format("Unrecognised identifier check \"%s\"", check));
+                    throw new ScenarioDefinitionException(String.format("Unrecognised identifier check \"%s\"", check));
             }
         }
     }
@@ -247,7 +271,7 @@ public class GraqlSteps {
             }
 
             if(!identifierChecks.containsKey(identifier)) {
-                throw new RuntimeException(String.format("Identifier \"%s\" hasn't previously been declared", identifier));
+                throw new ScenarioDefinitionException(String.format("Identifier \"%s\" hasn't previously been declared", identifier));
             }
 
             if(!identifierChecks.get(identifier).check(answer.get(varName))) {
@@ -274,7 +298,7 @@ public class GraqlSteps {
         String[] children = explanationEntry.get("children").split(", ");
 
         if (vars.length != identifiers.length) {
-            throw new RuntimeException(String.format("vars and identifiers do not correspond for explanation entry %d. Found %d vars and %s identifiers", entryId, vars.length, identifiers.length));
+            throw new ScenarioDefinitionException(String.format("vars and identifiers do not correspond for explanation entry %d. Found %d vars and %s identifiers", entryId, vars.length, identifiers.length));
         }
 
         Map<String, String> answerIdentifiers = IntStream.range(0, vars.length).boxed().collect(Collectors.toMap(i -> vars[i], i -> identifiers[i]));
@@ -349,14 +373,14 @@ public class GraqlSteps {
         while (matcher.find()) {
             String matched = matcher.group(0);
             String requiredVariable = variableFromTemplatePlaceholder(matched.substring(1, matched.length() - 1));
-            Concept concept = templateFiller.get(requiredVariable);
 
-            builder.append(template, i, matcher.start());
-            if (concept == null) {
-                throw new RuntimeException(String.format("No ID available for template placeholder: %s", matched));
-            } else {
+            builder.append(template.substring(i, matcher.start()));
+            if (templateFiller.map().containsKey(new Variable(requiredVariable))) {
+                Concept concept = templateFiller.get(requiredVariable);
                 String conceptId = concept.id().toString();
                 builder.append(conceptId);
+            } else {
+                throw new ScenarioDefinitionException(String.format("No ID available for template placeholder: %s", matched));
             }
             i = matcher.end();
         }
@@ -370,10 +394,15 @@ public class GraqlSteps {
             String withoutPrefix = stripped.replace("answer.", "");
             return withoutPrefix;
         } else {
-            throw new RuntimeException("Cannot replace template not based on ID");
+            throw new ScenarioDefinitionException("Cannot replace template not based on ID");
         }
     }
 
+    private static class ScenarioDefinitionException extends RuntimeException {
+        ScenarioDefinitionException(String message) {
+            super(message);
+        }
+    }
 
     private interface UniquenessCheck {
         boolean check(Concept concept);
@@ -389,12 +418,10 @@ public class GraqlSteps {
 
         @Override
         public boolean check(Concept concept) {
-            if (concept.isType()) {
-                return label.equals(concept.asType().label().toString());
-            } else if (concept.isRole()) {
-                return label.equals(concept.asRole().label().toString());
+            if (concept.isSchemaConcept()) {
+                return label.equals(concept.asSchemaConcept().label().toString());
             } else {
-                throw new RuntimeException("Concept was checked for label uniqueness, but it is neither a role nor a type.");
+                throw new ScenarioDefinitionException("Concept was checked for label uniqueness, but it is not a schema concept.");
             }
         }
     }

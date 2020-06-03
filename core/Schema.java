@@ -198,6 +198,7 @@ public final class Schema {
         SCHEMA_LABEL(String.class), LABEL_ID(Integer.class), INSTANCE_COUNT(Long.class), TYPE_SHARD_CHECKPOINT(Long.class), IS_ABSTRACT(Boolean.class),
 
         // Attribute schema concept properties
+        // TODO change to `VALUE_TYPE` when no longer require preserving DB compatibility
         REGEX(String.class), DATA_TYPE(String.class),
 
         // Attribute concept properties
@@ -215,36 +216,36 @@ public final class Schema {
         // Relation properties
         IS_IMPLICIT(Boolean.class),
 
-        //Supported Data Types
+        //Supported Value Types
         VALUE_STRING(String.class), VALUE_LONG(Long.class),
         VALUE_DOUBLE(Double.class), VALUE_BOOLEAN(Boolean.class),
         VALUE_INTEGER(Integer.class), VALUE_FLOAT(Float.class),
         VALUE_DATE(Long.class);
 
-        private final Class dataType;
+        private final Class valueType;
 
-        private static Map<AttributeType.DataType, VertexProperty> dataTypeVertexProperty = map(
-                pair(AttributeType.DataType.BOOLEAN, VertexProperty.VALUE_BOOLEAN),
-                pair(AttributeType.DataType.DATE, VertexProperty.VALUE_DATE),
-                pair(AttributeType.DataType.DOUBLE, VertexProperty.VALUE_DOUBLE),
-                pair(AttributeType.DataType.FLOAT, VertexProperty.VALUE_FLOAT),
-                pair(AttributeType.DataType.INTEGER, VertexProperty.VALUE_INTEGER),
-                pair(AttributeType.DataType.LONG, VertexProperty.VALUE_LONG),
-                pair(AttributeType.DataType.STRING, VertexProperty.VALUE_STRING)
+        private static Map<AttributeType.ValueType, VertexProperty> valueTypeVertexProperty = map(
+                pair(AttributeType.ValueType.BOOLEAN, VertexProperty.VALUE_BOOLEAN),
+                pair(AttributeType.ValueType.DATETIME, VertexProperty.VALUE_DATE),
+                pair(AttributeType.ValueType.DOUBLE, VertexProperty.VALUE_DOUBLE),
+                pair(AttributeType.ValueType.FLOAT, VertexProperty.VALUE_FLOAT),
+                pair(AttributeType.ValueType.INTEGER, VertexProperty.VALUE_INTEGER),
+                pair(AttributeType.ValueType.LONG, VertexProperty.VALUE_LONG),
+                pair(AttributeType.ValueType.STRING, VertexProperty.VALUE_STRING)
         );
 
-        VertexProperty(Class dataType) {
-            this.dataType = dataType;
+        VertexProperty(Class valueType) {
+            this.valueType = valueType;
         }
 
         @CheckReturnValue
         public Class getPropertyClass() {
-            return dataType;
+            return valueType;
         }
 
         // TODO: This method feels out of place
-        public static VertexProperty ofDataType(AttributeType.DataType dataType) {
-            return dataTypeVertexProperty.get(dataType);
+        public static VertexProperty ofValueType(AttributeType.ValueType valueType) {
+            return valueTypeVertexProperty.get(valueType);
         }
     }
 
@@ -259,15 +260,15 @@ public final class Schema {
         REQUIRED(Boolean.class),
         IS_INFERRED(Boolean.class);
 
-        private final Class dataType;
+        private final Class valueType;
 
-        EdgeProperty(Class dataType) {
-            this.dataType = dataType;
+        EdgeProperty(Class valueType) {
+            this.valueType = valueType;
         }
 
         @CheckReturnValue
         public Class getPropertyClass() {
-            return dataType;
+            return valueType;
         }
     }
 

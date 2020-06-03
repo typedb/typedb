@@ -54,11 +54,12 @@ import graql.lang.property.ValueProperty;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
+
+import javax.annotation.Nullable;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import javax.annotation.Nullable;
 
 import static grakn.core.graql.reasoner.utils.ReasonerUtils.isEquivalentCollection;
 
@@ -138,15 +139,15 @@ public class AttributeAtom extends Atom{
         AttributeType<Object> attributeType = type.isAttributeType()? type.asAttributeType() : null;
         if (attributeType == null || Schema.MetaSchema.isMetaLabel(attributeType.label())) return this;
 
-        AttributeType.DataType<Object> dataType = attributeType.dataType();
+        AttributeType.ValueType<Object> valueType = attributeType.valueType();
         Set<ValuePredicate> newMultiPredicate = this.getMultiPredicate().stream().map(vp -> {
             Object value = vp.getPredicate().value();
             if (value == null) return vp;
             Object convertedValue;
             try {
-                convertedValue = AttributeValueConverter.of(dataType).convert(value);
+                convertedValue = AttributeValueConverter.of(valueType).convert(value);
             } catch (ClassCastException e){
-                throw GraqlSemanticException.incompatibleAttributeValue(dataType, value);
+                throw GraqlSemanticException.incompatibleAttributeValue(valueType, value);
             }
             ValueProperty.Operation operation = ValueProperty.Operation.Comparison.of(vp.getPredicate().comparator(), convertedValue);
             return ValuePredicate.create(vp.getVarName(), operation, getParentQuery());

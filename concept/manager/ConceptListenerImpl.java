@@ -178,6 +178,13 @@ public class ConceptListenerImpl implements ConceptListener {
     }
 
     @Override
+    public void hasAttributeRemoved(Thing owner, Attribute<?> owned) {
+        if (owner.type().keys().anyMatch(key -> key.equals(owned.type()))) {
+            transactionCache.trackForValidation(owner);
+        }
+    }
+
+    @Override
     public void ruleCreated(Rule rule) {
         transactionCache.trackForValidation(rule);
     }
@@ -192,9 +199,6 @@ public class ConceptListenerImpl implements ConceptListener {
         transactionCache.trackForValidation(relationType);
     }
 
-    /*
-    TODO this pair of methods might be combinable somehow
-     */
     @Override
     public void labelRemoved(SchemaConcept schemaConcept) {
         transactionCache.remove(schemaConcept);
@@ -257,7 +261,7 @@ public class ConceptListenerImpl implements ConceptListener {
     }
 
     @Override
-    public void roleDeleted(Role role) {
+    public void roleUndefined(Role role) {
         transactionCache.trackForValidation(role);
     }
 
