@@ -76,17 +76,18 @@ public interface Type extends SchemaConcept {
      */
     Stream<Role> playing();
 
-    /**
-     * @return The AttributeTypes which this Type is linked with.
-     */
-    @CheckReturnValue
-    Stream<AttributeType> attributes();
 
+    Stream<AttributeType<?>> has();
+    Stream<AttributeType<?>> hasWithoutKeys();
+    Stream<AttributeType<?>> directHas();
     /**
      * @return The AttributeTypes which this Type is linked with as a key.
      */
     @CheckReturnValue
-    Stream<AttributeType> keys();
+    Stream<AttributeType<?>> keys();
+    Stream<AttributeType<?>> directHasWithoutKeys();
+    Stream<AttributeType<?>> directKeys();
+
 
     /**
      * @return The direct super of this Type
@@ -109,6 +110,7 @@ public interface Type extends SchemaConcept {
      */
     @CheckReturnValue
     Stream<? extends Type> subs();
+
 
     /**
      * Get all indirect instances of this type.

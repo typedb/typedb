@@ -114,7 +114,7 @@ public abstract class TypeAtom extends Atom {
     }
 
     @Override
-    public boolean isType(){ return true;}
+    public boolean isCompatibleWithTypeAtom(){ return true;}
 
     @Override
     public boolean isRuleApplicableViaAtom(Atom ruleAtom) {

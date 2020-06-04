@@ -21,11 +21,9 @@ import com.google.common.collect.Iterators;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.answer.Numeric;
 import grakn.core.concept.answer.Void;
-import grakn.core.core.Schema;
 import grakn.core.graql.graph.MovieGraph;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
-import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.Entity;
 import grakn.core.kb.concept.api.EntityType;
@@ -39,10 +37,8 @@ import grakn.core.kb.server.Transaction;
 import grakn.core.test.rule.GraknTestServer;
 import graql.lang.Graql;
 import graql.lang.exception.GraqlException;
-import graql.lang.pattern.Pattern;
 import graql.lang.query.MatchClause;
 import graql.lang.statement.Statement;
-import graql.lang.statement.StatementThing;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -53,10 +49,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static grakn.core.util.GraqlTestUtil.assertExists;
 import static grakn.core.util.GraqlTestUtil.assertNotExists;
@@ -209,136 +203,22 @@ public class GraqlDeleteIT {
     }
 
 
+    @Ignore // TODO update when removing implicit attrs from higher level code
     @Test
-    public void whenDeletingAResource_TheResourceAndImplicitRelationsAreDeleted() {
+    public void whenDeletingAResource_TheResourceAndOwnershipsAreDeleted() {
         ConceptId id = tx.stream(Graql.match(
-                x.has("title", "Godfather"),
-                var("a").rel(x).rel(y).isa(Schema.ImplicitType.HAS.getLabel("tmdb-vote-count").getValue())
-        ).get("a")).map(ans -> ans.get("a")).findFirst().get().id();
+                x.has("title", var("y")),
+                var("attr").value("Godfather")
+        ).get()).map(ans -> ans.get("attr")).findFirst().get().id();
 
         assertExists(tx, var().has("title", "Godfather"));
         assertExists(tx, var().id(id.getValue()));
         assertExists(tx, var().val(1000L).isa("tmdb-vote-count"));
 
-        tx.execute(Graql.match(x.val(1000L).isa("tmdb-vote-count")).delete(x.isa("tmdb-vote-count")));
+        tx.execute(Graql.match(x.id(id.getValue())).delete(x.isa("attribute")));
 
-        assertExists(tx, var().has("title", "Godfather"));
+        assertNotExists(tx, var().has("title", "Godfather"));
         assertNotExists(tx, var().id(id.getValue()));
-        assertNotExists(tx, var().val(1000L).isa("tmdb-vote-count"));
-    }
-
-
-    @Test
-    public void whenDeletingAResourceOwnerAndImplicitRelation_NoErrorIsThrown() {
-        /*
-        Because we delete relations first, if a relation with a non-reified attribute relation is deleted, the
-        Janus edge representing the non-reified attribute relation is deleted automatically
-
-        note the failure is very hard to reproduce reliable due to nondeterministic sorting on the server
-        This test illustrates the failure case but doesn't cause it usually (fails more when there are around 2k instances in DB)
-        */
-
-        Session session = graknServer.sessionWithNewKeyspace();
-        Transaction tx = session.transaction(Transaction.Type.WRITE);
-
-        tx.execute(Graql.parse("define" +
-                "    unique-key sub attribute, value long;" +
-                "    name sub attribute, value string," +
-                "        key unique-key;" +
-                "    region-code sub attribute, value long," +
-                "        key unique-key;" +
-                "    road sub entity," +
-                "        plays endpoint," +
-                "        has name," +
-                "        key unique-key;" +
-                "    intersection sub relation," +
-                "        relates endpoint, " +
-                "        has region-code," +
-                "        key unique-key;").asDefine());
-        tx.execute(Graql.parse("define" +
-                "    @has-name key unique-key;" +
-                "    @has-region-code key unique-key;").asDefine());
-
-        tx.commit();
-        tx = session.transaction(Transaction.Type.WRITE);
-
-        List<ConceptMap> answers = tx.execute(Graql.parse("insert" +
-                "      $intersection1 (endpoint: $r1, endpoint: $r2, endpoint: $r3) isa intersection, has unique-key $k1, has region-code $rc via $imp1; $k1 -128;" +
-                "      $imp1 has unique-key $k2; $k2 -129;" +
-                "      $rc -1000; $rc has unique-key $k3; $k3 -130;" +
-                "      $r1 isa road, has unique-key $k4, has name $n1 via $imp2; $k4 -131 ;$n1 \"Street\"; $n1 has unique-key $k5; $k5 -132; $imp2 has unique-key $k6; $k6 -133;" +
-                "      $r2 isa road, has unique-key $k7, has name $n2 via $imp3; $k7 -134; $n2 \"Avenue\"; $n2 has unique-key $k107; $k107 -135; $imp3 has unique-key $k8; $k8 -136;" +
-                "      $r3 isa road, has unique-key $k9, has name $n3 via $imp4; $k9 -137; $n3 \"Boulevard\"; $n3 has unique-key $k10; $k10 -138; $imp4 has unique-key $k11; $k11 -139;" +
-                "      $intersection2 (endpoint: $r1, endpoint: $r4) isa intersection, has region-code $rc2 via $imp5, has unique-key $k12; $k12 -140;" +
-                "      $imp5 has unique-key $k13; $k13 -141;" +
-                "      $rc2 -2000; $rc2 has unique-key $k14; $k14 -142;" +
-                "      $r4 isa road, has unique-key $k15, has name $n4 via $imp6; $k15 -143; $n4 \"Alice\"; $n4 has unique-key $k16; $k16 -144; $imp6 has unique-key $k17; $k17 -145;").asInsert());
-
-        List<ConceptId> insertedIds = answers.stream().flatMap(conceptMap -> conceptMap.concepts().stream()).map(Concept::id).collect(Collectors.toList());
-
-        tx.commit();
-        tx = session.transaction(Transaction.Type.WRITE);
-
-        List<Pattern> idPatterns = new ArrayList<>();
-        List<Statement> deletePatterns = new ArrayList<>();
-        for (int i = 0; i < insertedIds.size(); i++) {
-            StatementThing id = var("v" + i).id(insertedIds.get(i).toString());
-            Statement delete = var("v" + i).isa("thing");
-            idPatterns.add(id);
-            deletePatterns.add(delete);
-        }
-
-        List<ConceptMap> answersById = tx.execute(Graql.match(idPatterns).get());
-        assertEquals(answersById.size(), 1);
-
-        tx.execute(Graql.match(idPatterns).delete(deletePatterns));
-        tx.commit();
-
-    }
-
-    /*
-    TODO re-enable test when Hypergraph backend is integrated
-    This currently fails because we can propagate a deletion and prompt a clean up of a concept (eg. role players
-    are deleted by ID, prompting clean up of relation, whose ID is no longer valid)
-    While it is still in the `match` stream. This is resolved if we can reflect deletions/changes in the input stream
-    as we're writing at the same time.
-     */
-    @Ignore
-    @Test
-    public void deleteRelationWithReifiedImplicitWithAttribute() {
-        Session session = graknServer.sessionWithNewKeyspace();
-        Transaction tx = session.transaction(Transaction.Type.WRITE);
-
-        AttributeType<String> name = tx.putAttributeType("name", AttributeType.ValueType.STRING);
-        AttributeType<Long> year = tx.putAttributeType("year", AttributeType.ValueType.LONG);
-        Role work = tx.putRole("work");
-        EntityType somework = tx.putEntityType("somework").plays(work);
-        Role author = tx.putRole("author");
-        EntityType person = tx.putEntityType("person").plays(author);
-        tx.putRelationType("authored-by").relates(work).relates(author).has(year);
-        tx.getRelationType("@has-year").has(name);
-
-        Stream<ConceptMap> answers = tx.stream(Graql.parse("insert $x isa person;" +
-                "$y isa somework; " +
-                "$a isa year; $a 2020; " +
-                "$r (author: $x, work: $y) isa authored-by; $r has year $a via $imp; " +
-                "$imp has name $name; $name \"testing\";").asInsert());
-
-        List<ConceptId> insertedIds = answers.flatMap(conceptMap -> conceptMap.concepts().stream().map(Concept::id)).collect(Collectors.toList());
-        tx.commit();
-        tx = session.transaction(Transaction.Type.WRITE);
-
-        List<Pattern> idPatterns = new ArrayList<>();
-        List<Statement> deletePatterns = new ArrayList<>();
-        for (int i = 0; i < insertedIds.size(); i++) {
-            StatementThing id = var("v" + i).id(insertedIds.get(i).toString());
-            Statement delete = var("v" + i).isa("thing");
-            idPatterns.add(id);
-            deletePatterns.add(delete);
-        }
-        // clean up, delete the IDs we inserted for this test
-        tx.execute(Graql.match(idPatterns).delete(deletePatterns));
-        tx.commit();
     }
 
     @Test

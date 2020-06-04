@@ -83,7 +83,6 @@ java_test(
     test_class = "grakn.core.keyspace.KeyspaceStatisticsIT",
     deps = [
         "//concept/answer",
-        "//core",
         "//kb/concept/api",
         "//kb/keyspace",
         "//kb/server",

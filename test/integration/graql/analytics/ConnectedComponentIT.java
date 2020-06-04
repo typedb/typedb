@@ -19,8 +19,6 @@ package grakn.core.graql.analytics;
 
 import com.google.common.collect.Sets;
 import grakn.core.concept.answer.ConceptSet;
-import grakn.core.core.Schema;
-import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.Entity;
@@ -148,42 +146,6 @@ public class ConnectedComponentIT {
     }
 
     @Test
-    public void testConnectedComponentImplicitType() {
-        String aResourceTypeLabel = "aResourceTypeLabel";
-
-        addSchemaAndEntities();
-        addResourceRelations();
-
-        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-            AttributeType<String> attributeType =
-                    tx.putAttributeType(aResourceTypeLabel, AttributeType.ValueType.STRING);
-            tx.getEntityType(thing).has(attributeType);
-            tx.getEntityType(anotherThing).has(attributeType);
-            Attribute aAttribute = attributeType.create("blah");
-            tx.getEntityType(thing).instances().forEach(instance -> instance.has(aAttribute));
-            tx.getEntityType(anotherThing).instances().forEach(instance -> instance.has(aAttribute));
-            tx.commit();
-        }
-
-        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-            List<ConceptSet> clusterList = tx.execute(Graql.compute().cluster().using(CONNECTED_COMPONENT)
-                    .in(thing, anotherThing, aResourceTypeLabel, Schema.ImplicitType.HAS.getLabel(aResourceTypeLabel).getValue()));
-            assertEquals(1, clusterList.size());
-            assertEquals(5, clusterList.iterator().next().set().size());
-
-            clusterList = tx.execute(Graql.compute().cluster().using(CONNECTED_COMPONENT)
-                    .in(thing, anotherThing, aResourceTypeLabel, Schema.ImplicitType.HAS.getLabel(aResourceTypeLabel).getValue())
-                    .where(contains(entityId2.getValue())));
-            assertEquals(1, clusterList.size());
-            assertEquals(5, clusterList.iterator().next().set().size());
-
-            assertEquals(1, tx.execute(Graql.compute().cluster().using(CONNECTED_COMPONENT).attributes(true)
-                    .in(thing, anotherThing, aResourceTypeLabel, Schema.ImplicitType.HAS.getLabel(aResourceTypeLabel).getValue())
-                    .attributes(true)).size());
-        }
-    }
-
-    @Test
     public void testConnectedComponent() {
         List<ConceptSet> clusterList;
 
@@ -233,7 +195,8 @@ public class ConnectedComponentIT {
             Set<String> subTypes = Sets.newHashSet(thing, anotherThing, resourceType1, resourceType2,
                     resourceType3, resourceType4, resourceType5, resourceType6);
             clusterList = tx.execute(Graql.compute().cluster().using(CONNECTED_COMPONENT).in(subTypes));
-            assertEquals(17, clusterList.size()); // No relations, so this is the entity count;
+            assertEquals(7, clusterList.size()); // the number of clusters
+            assertTrue(clusterList.stream().anyMatch(cluster -> cluster.set().size() == 10)); // largest cluster has 10 items, connected via attrs
         }
     }
 

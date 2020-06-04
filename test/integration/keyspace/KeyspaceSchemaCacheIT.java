@@ -19,6 +19,7 @@
 package grakn.core.keyspace;
 
 import grakn.client.GraknClient;
+import grakn.client.concept.Label;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
@@ -116,7 +117,7 @@ public class KeyspaceSchemaCacheIT {
             tx.commit();
         }
         try (Transaction tx = testSession.transaction(Transaction.Type.READ)) {
-            Set<String> entityTypeSubs = tx.getMetaEntityType().subs().map(et -> et.label().getValue()).collect(toSet());
+            Set<String> entityTypeSubs = tx.getSchemaConcept(grakn.core.kb.concept.api.Label.of("entity")).subs().map(et -> et.label().getValue()).collect(toSet());
             assertTrue(entityTypeSubs.contains("animal"));
             Set<String> relationshipTypeSubs = tx.getMetaRelationType().subs().map(et -> et.label().getValue()).collect(toSet());
             assertTrue(relationshipTypeSubs.contains("test-relationship"));
@@ -154,8 +155,8 @@ public class KeyspaceSchemaCacheIT {
             tx.commit();
         }
         try (GraknClient.Transaction tx = remoteSession.transaction().read()) {
-            Set<String> entityTypeSubs = tx.getMetaEntityType().subs().map(et -> et.label().getValue()).collect(toSet());
-            Set<String> relationshipTypeSubs = tx.getMetaRelationType().subs().map(et -> et.label().getValue()).collect(toSet());
+            Set<String> entityTypeSubs = tx.getSchemaConcept(Label.of("entity")).subs().map(et -> et.label().getValue()).collect(toSet());
+            Set<String> relationshipTypeSubs = tx.getSchemaConcept(Label.of("relation")).subs().map(et -> et.label().getValue()).collect(toSet());
             assertTrue(relationshipTypeSubs.contains("test-relationship"));
             assertTrue(entityTypeSubs.contains("animal"));
         }
@@ -172,9 +173,9 @@ public class KeyspaceSchemaCacheIT {
         }
         GraknClient.Session testSession = new GraknClient(server.grpcUri()).session(localSession.keyspace().name());
         try (GraknClient.Transaction tx = testSession.transaction().read()) {
-            Set<String> entityTypeSubs = tx.getMetaEntityType().subs().map(et -> et.label().getValue()).collect(toSet());
+            Set<String> entityTypeSubs = tx.getSchemaConcept(Label.of("entity")).subs().map(et -> et.label().getValue()).collect(toSet());
             assertTrue(entityTypeSubs.contains("animal"));
-            Set<String> relationshipTypeSubs = tx.getMetaRelationType().subs().map(et -> et.label().getValue()).collect(toSet());
+            Set<String> relationshipTypeSubs = tx.getSchemaConcept(Label.of("relation")).subs().map(et -> et.label().getValue()).collect(toSet());
             assertTrue(relationshipTypeSubs.contains("test-relationship"));
         }
         testSession.close();
@@ -192,9 +193,9 @@ public class KeyspaceSchemaCacheIT {
         remoteSession.close();
         GraknClient.Session testSession = graknClient.session(localSession.keyspace().name());
         try (GraknClient.Transaction tx = testSession.transaction().read()) {
-            Set<String> entityTypeSubs = tx.getMetaEntityType().subs().map(et -> et.label().getValue()).collect(toSet());
+            Set<String> entityTypeSubs = tx.getSchemaConcept(Label.of("entity")).subs().map(et -> et.label().getValue()).collect(toSet());
             assertTrue(entityTypeSubs.contains("animal"));
-            Set<String> relationshipTypeSubs = tx.getMetaRelationType().subs().map(et -> et.label().getValue()).collect(toSet());
+            Set<String> relationshipTypeSubs = tx.getSchemaConcept(Label.of("relation")).subs().map(et -> et.label().getValue()).collect(toSet());
             assertTrue(relationshipTypeSubs.contains("test-relationship"));
         }
         testSession.close();

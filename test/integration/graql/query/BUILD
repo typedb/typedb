@@ -44,7 +44,6 @@ java_test(
     deps = [
         "//common",
         "//concept/answer",
-        "//core",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//kb/concept/api",
         "//kb/graql/exception",
@@ -66,7 +65,6 @@ java_test(
     test_class = "grakn.core.graql.query.GraqlDeleteIT",
     deps = [
         "//concept/answer",
-        "//core",
         "//kb/concept/api",
         "//kb/graql/exception",
         "//kb/server",
@@ -109,6 +107,7 @@ java_test(
         "//kb/concept/api",
         "//kb/graql/exception",
         "//kb/server",
+        "//common",
         "//test/integration/graql/graph:movie-graph",
         "//test/rule:grakn-test-server",
         "//test/integration/util:graql-test-util",

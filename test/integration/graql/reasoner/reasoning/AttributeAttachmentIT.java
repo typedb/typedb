@@ -17,36 +17,23 @@
 
 package grakn.core.graql.reasoner.reasoning;
 
-import com.google.common.collect.Sets;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import grakn.core.test.rule.GraknTestServer;
 import graql.lang.Graql;
 import graql.lang.query.GraqlGet;
 import graql.lang.statement.Statement;
-import graql.lang.statement.Variable;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
-import static grakn.core.core.Schema.ImplicitType.HAS;
-import static grakn.core.core.Schema.ImplicitType.HAS_OWNER;
-import static grakn.core.core.Schema.ImplicitType.HAS_VALUE;
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
-import static graql.lang.Graql.type;
 import static graql.lang.Graql.var;
-import static java.util.stream.Collectors.toSet;
-import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -107,16 +94,16 @@ public class AttributeAttachmentIT {
 
     @Test
     //Expected result: When the head of a rule contains attribute assertions, the respective unique attributes should be generated or reused.
-    public void reusingAttributes_queryingForGenericRelation() {
+    public void reusingAttributes_queryingForGenericOwnership() {
         try(Transaction tx = attributeAttachmentSession.transaction(Transaction.Type.WRITE)) {
 
-            String queryString = "match $x isa genericEntity;($x, $y); get;";
+            String queryString = "match $x isa genericEntity, has attribute $y; get;";
             List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());
 
-            assertEquals(5, answers.size());
-            //two attributes for each entity
+            assertEquals(6, answers.size());
+            //three attributes for each entity
             assertEquals(
-                    tx.getEntityType("genericEntity").instances().count() * 2,
+                    tx.getEntityType("genericEntity").instances().count() * 3,
                     answers.stream().filter(answer -> answer.get("y").isAttribute()).count()
             );
         }
@@ -170,114 +157,11 @@ public class AttributeAttachmentIT {
 
 
     @Test
-    public void whenReasoningWithAttributesInRelationForm_ResultsAreComplete() {
-        try(Transaction tx = attributeAttachmentSession.transaction(Transaction.Type.WRITE)) {
-            String queryString = "match " +
-                    "$rel($role:$x) isa @has-reattachable-resource-string; " +
-                    "$x isa genericEntity; " +
-                    "get;";
-
-            List<ConceptMap> concepts = tx.execute(Graql.parse("match $x isa genericEntity; get;").asGet());
-            List<ConceptMap> subResources = tx.execute(Graql.parse(
-                    "match $x isa genericEntity, has subResource $res; get;").asGet());
-
-            List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());
-            /*
-            base resources yield 4 roles: metarole, base attribute role, super role, specific role
-            subresources yield 5 roles: all the above + specialised role
-
-            Answer configuration:
-            X (genericEntity)  --- has RRS (non inferred)  -- \
-                               --- has subResource         - \ \
-                                                              \
-            Y (genericEntity)  --- has RRS                 ---  RRS ("value")
-                               --- has subResource         ---/
-                                                               /
-            REL (relation0)    --- has RRS                 ---/
-
-            */
-            final int baseResourceRoles = 4;
-            final int subResourceRoles = 5;
-            assertEquals(
-                    concepts.size() * baseResourceRoles +
-                            subResources.size() * subResourceRoles,
-                    answers.size());
-            answers.forEach(ans -> assertEquals(3, ans.size()));
-        }
-    }
-
-    @Test
-    public void whenReasoningWithAttributesWithRelationVar_ResultsAreComplete() {
+    public void whenReasoningWithAttributes_ResultsAreComplete() {
         try (Transaction tx = attributeAttachmentSession.transaction(Transaction.Type.WRITE)) {
-            Statement has = var("x").has("reattachable-resource-string", var("y"), var("r"));
+            Statement has = var("x").has("reattachable-resource-string", var("y"));
             List<ConceptMap> answers = tx.execute(Graql.match(has).get());
             assertEquals(5, answers.size());
-            answers.forEach(a -> assertTrue(a.vars().contains(new Variable("r"))));
-        }
-    }
-
-    @Test
-    public void whenReasoningWithAttributesInRelationForm_attributesAreMaterialisedCorrectly() {
-        int noOfAttributes;
-        int noOfGeneralAnswers;
-        String attributeQuery = "match $x isa attribute;get;";
-        String attributeRelationQuery = "match " +
-                "$rel ($x, $y);" +
-                "$x isa attribute;" +
-                "get;";
-        String generalQuery = "match " +
-                "$rel ($x); " +
-                "get;";
-        try (Transaction tx = attributeAttachmentSession.transaction(Transaction.Type.WRITE)) {
-            List<ConceptMap> attributeAnswers = tx.execute(Graql.parse(attributeQuery).asGet());
-            noOfAttributes = attributeAnswers.size();
-        }
-        try (Transaction tx = attributeAttachmentSession.transaction(Transaction.Type.WRITE)) {
-            List<ConceptMap> attributeRelationAnswers = tx.execute(Graql.parse(attributeRelationQuery).asGet());
-
-            assertEquals(
-                    noOfAttributes,
-                    attributeRelationAnswers.stream().map(ans -> ans.project(Sets.newHashSet(new Variable("x")))).distinct().count()
-            );
-
-            List<ConceptMap> genericAnswers = tx.execute(Graql.parse(generalQuery).asGet());
-            Set<Concept> expectedAttributeRelations = attributeRelationAnswers.stream()
-                    .map(ans -> ans.project(Sets.newHashSet(var("rel").var())))
-                    .map(ans -> ans.get("rel"))
-                    .collect(toSet());
-            Set<Concept> attributeRelations = genericAnswers.stream()
-                    .filter(ans -> ans.get("rel").asRelation().type().isImplicit())
-                    .map(ans -> ans.get("rel"))
-                    .collect(Collectors.toSet());
-            assertEquals(expectedAttributeRelations, attributeRelations);
-            noOfGeneralAnswers = genericAnswers.size();
-        }
-
-        try (Transaction tx = attributeAttachmentSession.transaction(Transaction.Type.WRITE)) {
-            List<ConceptMap> genericAnswers = tx.execute(Graql.parse(generalQuery).asGet());
-            assertEquals(noOfGeneralAnswers, genericAnswers.size());
-        }
-    }
-
-    @Test
-    public void whenExecutingAQueryWithImplicitTypes_InferenceHasAtLeastAsManyResults() {
-        try(Transaction tx = attributeAttachmentSession.transaction(Transaction.Type.WRITE)) {
-
-            Statement owner = type(HAS_OWNER.getLabel("reattachable-resource-string").getValue());
-            Statement value = type(HAS_VALUE.getLabel("reattachable-resource-string").getValue());
-            Statement hasRes = type(HAS.getLabel("reattachable-resource-string").getValue());
-
-            GraqlGet query = Graql.match(
-                    var().rel(owner, "x").rel(value, "y").isa(hasRes),
-                    var("a").has("reattachable-resource-string", var("b"))  // This pattern is added only to encourage reasoning to activate
-            ).get();
-
-
-            Set<ConceptMap> resultsWithoutInference = tx.stream(query,false).collect(toSet());
-            Set<ConceptMap> resultsWithInference = tx.stream(query).collect(toSet());
-
-            assertThat(resultsWithoutInference, not(empty()));
-            assertThat(Sets.difference(resultsWithoutInference, resultsWithInference), empty());
         }
     }
 

@@ -149,7 +149,7 @@ public class CorenessIT {
     }
 
     @Test
-    public void testImplicitTypeShouldBeIncluded() {
+    public void testOwnershipShouldBeIncluded() {
         addSchemaAndEntities();
 
         try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {

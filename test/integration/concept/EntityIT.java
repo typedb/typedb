@@ -18,19 +18,17 @@
 
 package grakn.core.concept;
 
-import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
+import grakn.core.kb.concept.api.Casting;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.Entity;
 import grakn.core.kb.concept.api.EntityType;
 import grakn.core.kb.concept.api.GraknConceptException;
-import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Relation;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Thing;
-import grakn.core.kb.concept.structure.Casting;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import grakn.core.kb.server.exception.InvalidKBException;
@@ -112,14 +110,14 @@ public class EntityIT {
         Casting rp2 = ConceptDowncasting.thing(rolePlayer2).castingsInstance().findAny().get();
         Casting rp3 = ConceptDowncasting.thing(rolePlayer3).castingsInstance().findAny().get();
 
-        assertThat(ConceptDowncasting.relation(relation).reified().castingsRelation().collect(toSet()), containsInAnyOrder(rp1, rp2, rp3));
+        assertThat(relation.castingsRelation().collect(toSet()), containsInAnyOrder(rp1, rp2, rp3));
 
         //Delete And Check Again
         ConceptId idOfDeleted = rolePlayer1.id();
         rolePlayer1.delete();
 
         assertNull(tx.getConcept(idOfDeleted));
-        assertThat(ConceptDowncasting.relation(relation).reified().castingsRelation().collect(toSet()), containsInAnyOrder(rp2, rp3));
+        assertThat(relation.castingsRelation().collect(toSet()), containsInAnyOrder(rp2, rp3));
     }
 
     @Test
@@ -140,22 +138,6 @@ public class EntityIT {
     }
 
     @Test
-    public void whenAddingResourceToAnEntity_EnsureTheicitStructureIsCreated(){
-        Label resourceLabel = Label.of("A Attribute Thing");
-        EntityType entityType = tx.putEntityType("A Thing");
-        AttributeType<String> attributeType = tx.putAttributeType(resourceLabel, AttributeType.ValueType.STRING);
-        entityType.has(attributeType);
-
-        Entity entity = entityType.create();
-        Attribute attribute = attributeType.create("A attribute thing");
-
-        entity.has(attribute);
-        Relation relation = entity.relations().iterator().next();
-
-        checkicitStructure(attributeType, relation, entity, Schema.ImplicitType.HAS, Schema.ImplicitType.HAS_OWNER, Schema.ImplicitType.HAS_VALUE);
-    }
-
-    @Test
     public void whenAddingResourceToEntityWithoutAllowingItBetweenTypes_Throw(){
         EntityType entityType = tx.putEntityType("A Thing");
         AttributeType<String> attributeType = tx.putAttributeType("A Attribute Thing", AttributeType.ValueType.STRING);
@@ -169,41 +151,6 @@ public class EntityIT {
         entity.has(attribute);
     }
 
-    @Test
-    public void whenAddingMultipleResourcesToEntity_EnsureDifferentRelationsAreBuilt() throws InvalidKBException {
-        String resourceTypeId = "A Attribute Thing";
-        EntityType entityType = tx.putEntityType("A Thing");
-        AttributeType<String> attributeType = tx.putAttributeType(resourceTypeId, AttributeType.ValueType.STRING);
-        entityType.has(attributeType);
-
-        Entity entity = entityType.create();
-        Attribute attribute1 = attributeType.create("A resource thing");
-        Attribute attribute2 = attributeType.create("Another resource thing");
-
-        assertEquals(0, entity.relations().count());
-        entity.has(attribute1);
-        assertEquals(1, entity.relations().count());
-        entity.has(attribute2);
-        assertEquals(2, entity.relations().count());
-
-        tx.commit();
-    }
-
-    @Test
-    public void checkKeyCreatesCorrectResourceStructure(){
-        Label resourceLabel = Label.of("A Attribute Thing");
-        EntityType entityType = tx.putEntityType("A Thing");
-        AttributeType<String> attributeType = tx.putAttributeType(resourceLabel, AttributeType.ValueType.STRING);
-        entityType.key(attributeType);
-
-        Entity entity = entityType.create();
-        Attribute attribute = attributeType.create("A attribute thing");
-
-        entity.has(attribute);
-        Relation relation = entity.relations().iterator().next();
-
-        checkicitStructure(attributeType, relation, entity, Schema.ImplicitType.KEY, Schema.ImplicitType.KEY_OWNER, Schema.ImplicitType.KEY_VALUE);
-    }
 
     @Test
     public void whenCreatingAnEntityAndNotLinkingARequiredKey_Throw() throws InvalidKBException {
@@ -217,22 +164,6 @@ public class EntityIT {
         expectedException.expect(InvalidKBException.class);
 
         tx.commit();
-    }
-
-    private void checkicitStructure(AttributeType<?> attributeType, Relation relation, Entity entity, Schema.ImplicitType has, Schema.ImplicitType hasOwner, Schema.ImplicitType hasValue){
-        assertEquals(2, relation.rolePlayersMap().size());
-        assertEquals(has.getLabel(attributeType.label()), relation.type().label());
-        relation.rolePlayersMap().entrySet().forEach(entry -> {
-            Role role = entry.getKey();
-            assertEquals(1, entry.getValue().size());
-            entry.getValue().forEach(instance -> {
-                if(instance.equals(entity)){
-                    assertEquals(hasOwner.getLabel(attributeType.label()), role.label());
-                } else {
-                    assertEquals(hasValue.getLabel(attributeType.label()), role.label());
-                }
-            });
-        });
     }
 
     @Test

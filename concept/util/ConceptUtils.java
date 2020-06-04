@@ -143,34 +143,10 @@ public class ConceptUtils {
         return parent != null && child == null || !typesCompatible(parent, child, direct) && !typesCompatible(child, parent, direct);
     }
 
-    /**
-     * Computes dependent concepts of a thing - concepts that need to be persisted if we persist the provided thing.
-     *
-     * @param topThings things dependants of which we want to retrieve
-     * @return stream of things that are dependants of the provided thing - includes non-direct dependants.
-     */
-    public static Stream<Thing> getDependentConcepts(Collection<Thing> topThings) {
-        Set<Thing> things = new HashSet<>(topThings);
-        Set<Thing> visitedThings = new HashSet<>();
-        Stack<Thing> thingStack = new Stack<>();
-        thingStack.addAll(topThings);
-        while (!thingStack.isEmpty()) {
-            Thing thing = thingStack.pop();
-            if (!visitedThings.contains(thing)) {
-                thing.getDependentConcepts()
-                        .peek(things::add)
-                        .filter(t -> !visitedThings.contains(t))
-                        .forEach(thingStack::add);
-                visitedThings.add(thing);
-            }
-        }
-        return things.stream();
-    }
-
     public static void validateBaseType(SchemaConceptImpl schemaConcept, Schema.BaseType expectedBaseType) {
         // throws if label is already taken for a different type
         if (!expectedBaseType.equals(schemaConcept.baseType())) {
-            throw PropertyNotUniqueException.cannotCreateProperty(schemaConcept, Schema.VertexProperty.SCHEMA_LABEL, schemaConcept.label());
+            throw PropertyNotUniqueException.cannotCreateProperty(schemaConcept.toString(), Schema.VertexProperty.SCHEMA_LABEL, schemaConcept.label());
         }
     }
 }

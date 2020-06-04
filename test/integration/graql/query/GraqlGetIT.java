@@ -22,10 +22,6 @@ import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.answer.Numeric;
 import grakn.core.graql.graph.MovieGraph;
 import grakn.core.kb.concept.api.AttributeType;
-import grakn.core.kb.concept.api.Concept;
-import grakn.core.kb.concept.api.ConceptId;
-import grakn.core.kb.concept.api.EntityType;
-import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.graql.exception.GraqlSemanticException;
 import grakn.core.kb.server.Session;
@@ -33,10 +29,7 @@ import grakn.core.kb.server.Transaction;
 import grakn.core.test.rule.GraknTestServer;
 import graql.lang.Graql;
 import graql.lang.exception.GraqlException;
-import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlGet;
-import graql.lang.statement.Statement;
-import graql.lang.statement.StatementThing;
 import graql.lang.statement.Variable;
 import org.hamcrest.Matchers;
 import org.junit.After;
@@ -49,13 +42,9 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
-import static graql.lang.Graql.insert;
 import static graql.lang.Graql.var;
 import static graql.lang.exception.ErrorMessage.VARIABLE_OUT_OF_SCOPE;
 import static java.lang.Math.pow;
@@ -93,6 +82,11 @@ public class GraqlGetIT {
     @AfterClass
     public static void closeSession() {
         session.close();
+    }
+
+    @Test
+    public void test() {
+        List<ConceptMap> answers = tx.execute(Graql.parse("match $x has attribute $a; get;").asGet());
     }
 
     @Test
@@ -275,7 +269,7 @@ public class GraqlGetIT {
 
     @Test
     public void testSumInt() {
-        GraqlGet.Aggregate query = Graql.match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("tmdb-vote-count")).get()
+        GraqlGet.Aggregate query = Graql.match(var("x").isa("movie").has("attribute", var("y")), var("y").isa("tmdb-vote-count")).get()
                 .sum("y");
 
         assertEquals(1940, tx.execute(query).get(0).number().intValue());
@@ -283,7 +277,7 @@ public class GraqlGetIT {
 
     @Test
     public void testSumDouble() {
-        GraqlGet.Aggregate query = Graql.match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("tmdb-vote-average")).get()
+        GraqlGet.Aggregate query = Graql.match(var("x").isa("movie").has("attribute", var("y")), var("y").isa("tmdb-vote-average")).get()
                 .sum("y");
 
         assertEquals(27.7d, tx.execute(query).get(0).number().doubleValue(), 0.01d);
@@ -312,7 +306,7 @@ public class GraqlGetIT {
 
     @Test
     public void testMaxInt() {
-        GraqlGet.Aggregate query = Graql.match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("tmdb-vote-count")).get()
+        GraqlGet.Aggregate query = Graql.match(var("x").isa("movie").has("attribute", var("y")), var("y").isa("tmdb-vote-count")).get()
                 .max("y");
 
         assertEquals(1000, tx.execute(query).get(0).number().intValue());
@@ -320,7 +314,7 @@ public class GraqlGetIT {
 
     @Test
     public void testMaxDouble() {
-        GraqlGet.Aggregate query = Graql.match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("tmdb-vote-average")).get()
+        GraqlGet.Aggregate query = Graql.match(var("x").isa("movie").has("attribute", var("y")), var("y").isa("tmdb-vote-average")).get()
                 .max("y");
 
         assertEquals(8.6d, tx.execute(query).get(0).number().doubleValue(), 0.01d);
@@ -337,7 +331,7 @@ public class GraqlGetIT {
 
     @Test
     public void testMinInt() {
-        GraqlGet.Aggregate query = Graql.match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("tmdb-vote-count")).get()
+        GraqlGet.Aggregate query = Graql.match(var("x").isa("movie").has("attribute", var("y")), var("y").isa("tmdb-vote-count")).get()
                 .min("y");
 
         assertEquals(5, tx.execute(query).get(0).number().intValue());
@@ -354,7 +348,7 @@ public class GraqlGetIT {
 
     @Test
     public void testMean() {
-        GraqlGet.Aggregate query = Graql.match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("tmdb-vote-average")).get()
+        GraqlGet.Aggregate query = Graql.match(var("x").isa("movie").has("attribute", var("y")), var("y").isa("tmdb-vote-average")).get()
                 .mean("y");
 
         //noinspection OptionalGetWithoutIsPresent
@@ -372,7 +366,7 @@ public class GraqlGetIT {
 
     @Test
     public void testMedianInt() {
-        GraqlGet.Aggregate query = Graql.match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("tmdb-vote-count")).get()
+        GraqlGet.Aggregate query = Graql.match(var("x").isa("movie").has("attribute", var("y")), var("y").isa("tmdb-vote-count")).get()
                 .median("y");
 
         assertEquals(400, tx.execute(query).get(0).number().intValue());
@@ -380,11 +374,8 @@ public class GraqlGetIT {
 
     @Test
     public void testMedianDouble() {
-        GraqlGet.Aggregate query = Graql.match(
-                var("x").isa("movie"),
-                var().rel("x").rel("y"),
-                var("y").isa("tmdb-vote-average")
-        ).get().median("y");
+        GraqlGet.Aggregate query = Graql.match(var("x").isa("movie").has("attribute", var("y")), var("y").isa("tmdb-vote-average")).get()
+        .median("y");
 
         //noinspection OptionalGetWithoutIsPresent
         assertEquals(8.0d, tx.execute(query).get(0).number().doubleValue(), 0.01d);
@@ -476,41 +467,4 @@ public class GraqlGetIT {
         tx.execute(Graql.match(var("x").isa("movie").has("title", var("y"))).get().sort("z"));
     }
 
-
-    @Test
-    /**
-     * This tests ensures that queries that match both vertices and edges in the query operate correctly
-     */
-    public void whenMatchingEdgeAndVertex_AnswerIsNotEmpty() {
-        Role work = tx.putRole("work");
-        EntityType somework = tx.putEntityType("somework").plays(work);
-        Role author = tx.putRole("author");
-        EntityType person = tx.putEntityType("person").plays(author);
-        AttributeType<Long> year = tx.putAttributeType("year", AttributeType.ValueType.LONG);
-        tx.putRelationType("authored-by").relates(work).relates(author).has(year);
-
-        Stream<ConceptMap> answers = tx.stream(Graql.parse("insert $x isa person;" +
-                "$y isa somework; " +
-                "$a isa year; $a 2020; " +
-                "$r (author: $x, work: $y) isa authored-by; $r has year $a via $imp;").asInsert());
-
-        List<ConceptId> insertedIds = answers.flatMap(conceptMap -> conceptMap.concepts().stream().map(Concept::id)).collect(Collectors.toList());
-        tx.commit();
-        newTransaction();
-
-        List<Pattern> idPatterns = new ArrayList<>();
-        List<Statement> deletePatterns = new ArrayList<>();
-        for (int i = 0; i < insertedIds.size(); i++) {
-            StatementThing id = var("v" + i).id(insertedIds.get(i).toString());
-            Statement isaThing = var("v" + i).isa("thing");
-            idPatterns.add(id);
-            deletePatterns.add(isaThing);
-        }
-        List<ConceptMap> answersById = tx.execute(Graql.match(idPatterns).get());
-        assertEquals(answersById.size(), 1);
-
-        // clean up, delete the IDs we inserted for this test
-        tx.execute(Graql.match(idPatterns).delete(deletePatterns));
-        tx.commit();
-    }
 }

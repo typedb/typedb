@@ -34,7 +34,6 @@ import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.exception.GraqlSemanticException;
-import graql.lang.property.PlaysProperty;
 import graql.lang.property.RelationProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
@@ -137,10 +136,6 @@ public class RelationAtomValidator implements AtomValidator<RelationAtom> {
                         errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_RELATION_WITH_AMBIGUOUS_ROLE.getMessage(rule.then(), rule.label()));
                     }
                     Role roleType = conceptManager.getRole(roleLabel);
-                    if (roleType != null && roleType.isImplicit()) {
-                        errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_RELATION_WITH_IMPLICIT_ROLE.getMessage(rule.then(), rule.label()));
-                    }
-
                     // take the role player variable, perform type inference and check if any of the possible types can play
                     // the given roles
                     IsaAtom isaAtom = IsaAtom.create(rp.getPlayer().var(), new Variable(), null, false, atom.getParentQuery(), ctx);

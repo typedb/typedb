@@ -30,10 +30,10 @@ import java.util.stream.Stream;
  * Relation are used to model n-ary relations between instances.
  */
 public interface Relation extends Thing {
-    //------------------------------------- Modifiers ----------------------------------
+////    ------------------------------------- Modifiers ----------------------------------
 
     /**
-     * Creates a relation from this instance to the provided Attribute.
+     * Creates an ownership from this instance to the provided Attribute.
      *
      * @param attribute The Attribute to which a relation is created
      * @return The instance itself
@@ -70,6 +70,7 @@ public interface Relation extends Thing {
      */
     @CheckReturnValue
     Stream<Thing> rolePlayers(Role... roles);
+    Stream<Casting> castingsRelation(Role... roles);
 
     /**
      * Expands this Relation to include a new role player which is playing a specific role.
@@ -79,15 +80,6 @@ public interface Relation extends Thing {
      * @return The Relation itself.
      */
     Relation assign(Role role, Thing player);
-
-    /**
-     * Removes the provided Attribute from this Relation
-     *
-     * @param attribute the Attribute to be removed
-     * @return The Relation itself
-     */
-    @Override
-    Relation unhas(Attribute attribute);
 
     /**
      * Removes the Thing which is playing a Role in this Relation.

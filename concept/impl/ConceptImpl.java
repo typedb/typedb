@@ -111,6 +111,10 @@ public abstract class ConceptImpl implements Concept, ConceptVertex {
         }
     }
 
+    public <X extends Concept> Stream<X> directSubs() {
+        return neighbours(Direction.IN, Schema.EdgeLabel.SUB);
+    }
+
     EdgeElement putEdge(ConceptVertex to, Schema.EdgeLabel label) {
         return vertex().putEdge(to.vertex(), label);
     }

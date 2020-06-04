@@ -18,6 +18,9 @@
 
 package grakn.core.kb.concept.api;
 
+
+import com.sun.xml.internal.bind.v2.TODO;
+
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
 import java.util.stream.Stream;
@@ -80,15 +83,6 @@ public interface SchemaConcept extends Concept {
      */
     @CheckReturnValue
     Stream<? extends SchemaConcept> subs();
-
-    /**
-     * Return whether the SchemaConcept was created implicitly.
-     * By default, SchemaConcept are not implicit.
-     *
-     * @return returns true if the type was created implicitly through the Attribute syntax
-     */
-    @CheckReturnValue
-    Boolean isImplicit();
 
     /**
      * Return the collection of Rule for which this SchemaConcept serves as a hypothesis.
