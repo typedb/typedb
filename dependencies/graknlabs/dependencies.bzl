@@ -34,22 +34,22 @@ def graknlabs_common():
 def graknlabs_graql():
     git_repository(
         name = "graknlabs_graql",
-        remote = "https://github.com/flyingsilverfin/graql",
-        commit = "4a18ef735004c1a7c82c6dddff5cc79dfd557070",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_graql
+        remote = "https://github.com/graknlabs/graql",
+        commit = "4e37a87cb562e47f04c270c6147eac2567d4a223",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_graql
     )
 
 def graknlabs_protocol():
     git_repository(
         name = "graknlabs_protocol",
-        remote = "https://github.com/flyingsilverfin/protocol",
-        commit = "87cdf74ed08d9ba541d31494ca5bc8ccccf12ef2",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_protocol
+        remote = "https://github.com/graknlabs/protocol",
+        commit = "1683f498bf7236283888fe0f620ea4eb0df9c7cf",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_protocol
     )
 
 def graknlabs_client_java():
     git_repository(
         name = "graknlabs_client_java",
-        remote = "https://github.com/flyingsilverfin/client-java",
-        commit = "a6187f647768f37959a336d619c9e72e7f7cac1d",
+        remote = "https://github.com/graknlabs/client-java",
+        commit = "4415fb2f468f6c9471e975643923f3be854a2278",
     )
 
 def graknlabs_console():
@@ -69,8 +69,8 @@ def graknlabs_simulation():
 def graknlabs_verification():
     git_repository(
         name = "graknlabs_verification",
-        remote = "https://github.com/flyingsilverfin/verification.git",
-        commit = "402b0719636c4f84d73cf03ed7cc292031a2325a",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_verification
+        remote = "https://github.com/graknlabs/verification.git",
+        commit = "0d2632a7bb0cf299ec0a7f186456196415617618",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_verification
     )
 
 def graknlabs_grabl_tracing():
