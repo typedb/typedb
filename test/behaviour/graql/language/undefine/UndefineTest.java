@@ -44,7 +44,7 @@ public class UndefineTest {
     //
     // 1) Go to 'Run'
     // 2) Select 'Edit Configurations...'
-    // 3) Select 'Bazel test TransactionTest'
+    // 3) Select 'Bazel test UndefineTest'
     //
     // 4) Ensure 'Target Expression' is set correctly:
     //    a) Use '//<this>/<package>/<name>:test-core' to test against grakn-core

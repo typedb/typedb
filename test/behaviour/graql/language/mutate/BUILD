@@ -22,9 +22,9 @@ load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 java_test(
     name = "test",
     srcs = [
-        "DefineTest.java",
+        "MutateTest.java",
     ],
-    test_class = "grakn.core.test.behaviour.graql.language.define.DefineTest",
+    test_class = "grakn.core.test.behaviour.graql.language.mutate.MutateTest",
     deps = [
         # Package dependencies
         "//test/behaviour/server:server",
@@ -39,10 +39,10 @@ java_test(
         "//test/behaviour/config:parameters",
     ],
     data = [
-        "@graknlabs_verification//behaviour/graql/language:define.feature",
+        "@graknlabs_verification//behaviour/graql/language:mutate.feature",
     ],
     classpath_resources = ["//test/resources:logback-test"],
-    size = "enormous",
+    size = "large",
     visibility = ["//visibility:public"]
 )
 

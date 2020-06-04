@@ -69,7 +69,7 @@ def graknlabs_simulation():
 def graknlabs_verification():
     git_repository(
         name = "graknlabs_verification",
-        remote = "https://github.com/graknlabs/verification.git",
+        remote = "https://github.com/graknlabs/verification",
         commit = "3df342eaa066846ec9d076f9cd6934c7c39e3bd4",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_verification
     )
 

@@ -16,7 +16,7 @@
  *
  */
 
-package grakn.core.test.behaviour.graql.language.match;
+package grakn.core.test.behaviour.graql.language.mutate;
 
 import grakn.core.test.behaviour.server.SingletonTestServer;
 import io.cucumber.junit.Cucumber;
@@ -25,26 +25,24 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 
-import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
-import java.util.concurrent.TimeoutException;
 
 @RunWith(Cucumber.class)
 @CucumberOptions(
         strict = true,
         plugin = "pretty",
         glue = "grakn.core.test.behaviour",
-        features = "external/graknlabs_verification/behaviour/graql/language/match.feature",
+        features = "external/graknlabs_verification/behaviour/graql/language/mutate.feature",
         tags = "not @ignore and not @ignore-grakn-core"
 )
-public class MatchTest {
+public class MutateTest {
     // ATTENTION:
     // When you click RUN from within this class through Intellij IDE, it will fail.
     // You can fix it by doing:
     //
     // 1) Go to 'Run'
     // 2) Select 'Edit Configurations...'
-    // 3) Select 'Bazel test MatchTest'
+    // 3) Select 'Bazel test MutateTest'
     //
     // 4) Ensure 'Target Expression' is set correctly:
     //    a) Use '//<this>/<package>/<name>:test-core' to test against grakn-core
@@ -70,5 +68,4 @@ public class MatchTest {
     public static void tearDown() {
         SingletonTestServer.shutdown();
     }
-
 }
