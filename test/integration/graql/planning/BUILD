@@ -23,7 +23,7 @@ java_test(
         "ConjunctionQueryTest.java",
         "GraqlMatchers.java",
     ],
-    test_class = "grakn.core.graql.gremlin.ConjunctionQueryTest",
+    test_class = "grakn.core.graql.planning.ConjunctionQueryTest",
     deps = [
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//dependencies/maven/artifacts/org/mockito:mockito-core",
@@ -43,7 +43,7 @@ java_test(
         "GraqlMatchers.java",
         "GraqlTraversalIT.java",
     ],
-    test_class = "grakn.core.graql.gremlin.GraqlTraversalIT",
+    test_class = "grakn.core.graql.planning.GraqlTraversalIT",
     deps = [
         "//common",
         "//core",

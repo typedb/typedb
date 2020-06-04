@@ -60,7 +60,7 @@ public class LabelFragmentSetTest {
 
         Set<EquivalentFragmentSet> originalFragmentSets = ImmutableSet.of(
                 labelFragment,
-                isa(null, new Variable("abc"), new Variable("def"), true)
+                isa(null, new Variable("abc"), new Variable("def"))
         );
 
         Collection<EquivalentFragmentSet> fragmentSets = Sets.newHashSet(originalFragmentSets);

@@ -20,8 +20,6 @@ package grakn.core.graql.planning.gremlin.fragment;
 import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Label;
-import grakn.core.kb.concept.api.RelationType;
-import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.keyspace.KeyspaceStatistics;
 import graql.lang.property.VarProperty;
@@ -32,6 +30,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.Objects;
 import java.util.stream.Stream;
 
@@ -89,27 +88,26 @@ public class AttributeIndexFragment extends FragmentImpl {
         // as this is the most common usage/expensive component of an attribute
         // given that there's only 1 attribute of a type and value at any time
         Label attributeLabel = attributeLabel();
+        long totalOwnerships = 0;
+        long totalAttributes = 0;
 
-        AttributeType attributeType = conceptManager.getSchemaConcept(attributeLabel).asAttributeType();
-        Stream<AttributeType> attributeSubs = attributeType.subs();
+        AttributeType<?> attributeType = conceptManager.getSchemaConcept(attributeLabel).asAttributeType();
+        Stream<? extends AttributeType<?>> attributeSubs = attributeType.subs();
 
-        Label implicitAttributeType = Schema.ImplicitType.HAS.getLabel(attributeLabel);
-        SchemaConcept implicitAttributeRelationType = conceptManager.getSchemaConcept(implicitAttributeType);
-        double totalImplicitRels = 0.0;
-        if (implicitAttributeRelationType != null) {
-            RelationType implicitRelationType = implicitAttributeRelationType.asRelationType();
-            Stream<RelationType> implicitSubs = implicitRelationType.subs();
-            totalImplicitRels = implicitSubs.mapToLong(t -> statistics.count(conceptManager, t.label())).sum();
+        for (Iterator<? extends AttributeType<?>> it = attributeSubs.iterator(); it.hasNext(); ) {
+            AttributeType<?> attrType = it.next();
+            Label attrLabel = attrType.label();
+            totalAttributes += statistics.count(conceptManager, attrLabel);
+            totalOwnerships += statistics.countOwnerships(conceptManager, attrLabel);
         }
 
-        double totalAttributes = attributeSubs.mapToLong(t -> statistics.count(conceptManager, t.label())).sum();
         if (totalAttributes == 0) {
             // check against division by 0 and
             // short circuit can be done quickly if starting here
             return 0.0;
         } else {
             // may well be 0 or 1 if there are many attributes and not many owners!
-            return totalImplicitRels / totalAttributes;
+            return totalOwnerships / totalAttributes;
         }
     }
 

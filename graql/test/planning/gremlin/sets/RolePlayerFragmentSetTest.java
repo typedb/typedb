@@ -158,7 +158,7 @@ public class RolePlayerFragmentSetTest {
 
         Collection<EquivalentFragmentSet> fragmentSets = Sets.newHashSet(
                 EquivalentFragmentSets.rolePlayer(null, a, b, c, null),
-                EquivalentFragmentSets.isa(null, a, d, true),
+                EquivalentFragmentSets.isa(null, a, d),
                 EquivalentFragmentSets.label(null, d, ImmutableSet.of(magician))
         );
 
@@ -177,7 +177,7 @@ public class RolePlayerFragmentSetTest {
         when(conceptManager.getSchemaConcept(movie)).thenReturn(movieConcept);
         Collection<EquivalentFragmentSet> fragmentSets = Sets.newHashSet(
                 EquivalentFragmentSets.rolePlayer(null, a, b, c, null),
-                EquivalentFragmentSets.isa(null, a, d, true),
+                EquivalentFragmentSets.isa(null, a, d),
                 EquivalentFragmentSets.label(null, d, ImmutableSet.of(movie))
         );
 

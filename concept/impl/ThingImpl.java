@@ -18,35 +18,29 @@
 
 package grakn.core.concept.impl;
 
-import com.google.common.collect.Sets;
 import grakn.core.concept.cache.ConceptCache;
-import grakn.core.concept.structure.CastingImpl;
 import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
+import grakn.core.kb.concept.api.Casting;
 import grakn.core.kb.concept.api.Concept;
-import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.GraknConceptException;
-import grakn.core.kb.concept.api.Label;
-import grakn.core.kb.concept.api.LabelId;
 import grakn.core.kb.concept.api.Relation;
-import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
-import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.concept.manager.ConceptNotificationChannel;
-import grakn.core.kb.concept.structure.Casting;
 import grakn.core.kb.concept.structure.EdgeElement;
 import grakn.core.kb.concept.structure.VertexElement;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.Objects;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toSet;
@@ -95,33 +89,20 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
     @Override
     public void delete() {
         //Remove links to relations and return them
-        Set<Relation> relations = castingsInstance().map(casting -> {
+        castingsInstance().forEach(casting -> {
             Relation relation = casting.getRelation();
             Role role = casting.getRole();
             relation.unassign(role, this);
-            return relation;
-        }).collect(toSet());
+        });
+
+        deleteAttributeOwnerships();
 
         if (!isDeleted()) {
             // must happen before deleteNode() so we can access properties on the vertex
             conceptNotificationChannel.thingDeleted(this);
         }
 
-        this.edgeRelations().forEach(Concept::delete);
-
         deleteNode();
-
-        relations.stream()
-                .filter(rel -> !rel.isDeleted())
-                .forEach(relation -> {
-                    //NB: this only deletes reified implicit relations
-                    if (relation.type().isImplicit()) {
-                        relation.delete();
-                    } else {
-                        RelationImpl rel = (RelationImpl) relation;
-                        rel.cleanUp();
-                    }
-                });
     }
 
     /**
@@ -134,42 +115,16 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
     }
 
     @Override
-    public Stream<Attribute<?>> attributes(AttributeType... attributeTypes) {
-        Set<ConceptId> attributeTypesIds = Arrays.stream(attributeTypes).map(Concept::id).collect(toSet());
-        return attributes(getShortcutNeighbours(true), attributeTypesIds);
-    }
-
-    @Override
-    public Stream<Attribute<?>> keys(AttributeType... attributeTypes) {
-        Set<ConceptId> attributeTypesIds = Arrays.stream(attributeTypes).map(Concept::id).collect(toSet());
-        Set<ConceptId> keyTypeIds = type().keys().map(Concept::id).collect(toSet());
-
-        if (!attributeTypesIds.isEmpty()) {
-            keyTypeIds = Sets.intersection(attributeTypesIds, keyTypeIds);
+    public Stream<Attribute<?>> keys(AttributeType<?>... attributeTypes) {
+        Set<AttributeType<?>> attributeKeyTypes = new HashSet<>(Arrays.asList(attributeTypes));
+        List<AttributeType<?>> keyTypes = type().keys().collect(Collectors.toList());
+        List<AttributeType<?>> keysToRetrieve = keyTypes.stream().filter(attributeKeyTypes::contains).collect(Collectors.toList());
+        if (keysToRetrieve.isEmpty() && attributeTypes.length != 0) {
+            // if the user gave types to filter to that are NOT keys, return no keys
+            return Stream.empty();
         }
-
-        if (keyTypeIds.isEmpty()) return Stream.empty();
-
-        return attributes(getShortcutNeighbours(true), keyTypeIds);
-    }
-
-    /**
-     * Helper class which filters a Stream of Attribute to those of a specific set of AttributeType.
-     *
-     * @param conceptStream     The Stream to filter
-     * @param attributeTypesIds The AttributeType ConceptIds to filter to.
-     * @return the filtered stream
-     */
-    private <X extends Concept> Stream<Attribute<?>> attributes(Stream<X> conceptStream, Set<ConceptId> attributeTypesIds) {
-        Stream<Attribute<?>> attributeStream = conceptStream.
-                filter(concept -> concept.isAttribute() && !this.equals(concept)).
-                map(Concept::asAttribute);
-
-        if (!attributeTypesIds.isEmpty()) {
-            attributeStream = attributeStream.filter(attribute -> attributeTypesIds.contains(attribute.type().id()));
-        }
-
-        return attributeStream;
+        // if no types were given at all, default to all keys
+        return attributes(keyTypes.toArray(new AttributeType<?>[0]));
     }
 
     /**
@@ -182,42 +137,22 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
                 .map(edge -> CastingImpl.withThing(edge, this, conceptManager));
     }
 
-    private Set<Integer> implicitLabelsToIds(Set<Label> labels, Set<Schema.ImplicitType> implicitTypes) {
-        return labels.stream()
-                .flatMap(label -> implicitTypes.stream().map(it -> it.getLabel(label)))
-                .map(label -> conceptManager.convertToId(label))
-                .filter(id -> !id.equals(LabelId.invalid()))
-                .map(LabelId::getValue)
-                .collect(toSet());
-    }
-
-    <X extends Thing> Stream<X> getShortcutNeighbours(boolean ownerToValueOrdering, AttributeType... attributeTypes) {
-        Set<AttributeType> completeAttributeTypes = new HashSet<>(Arrays.asList(attributeTypes));
+    @Override
+    public Stream<Attribute<?>> attributes(AttributeType<?>... attributeTypes) {
+        Set<AttributeType<?>> completeAttributeTypes = new HashSet<>(Arrays.asList(attributeTypes));
         if (completeAttributeTypes.isEmpty()) {
             completeAttributeTypes.add(conceptManager.getMetaAttributeType());
         }
 
-        Set<Label> attributeHierarchyLabels = completeAttributeTypes.stream()
-                .flatMap(t -> (Stream<AttributeType>) t.subs())
-                .map(SchemaConcept::label)
+        Set<AttributeType<?>> typesWithSubs = completeAttributeTypes.stream()
+                .flatMap(AttributeType::subs)
                 .collect(toSet());
 
-        Set<Integer> ownerRoleIds = implicitLabelsToIds(
-                attributeHierarchyLabels,
-                Sets.newHashSet(
-                        Schema.ImplicitType.HAS_OWNER,
-                        Schema.ImplicitType.KEY_OWNER
-                ));
-        Set<Integer> valueRoleIds = implicitLabelsToIds(
-                attributeHierarchyLabels,
-                Sets.newHashSet(
-                        Schema.ImplicitType.HAS_VALUE,
-                        Schema.ImplicitType.KEY_VALUE
-                ));
+        Stream<Attribute<?>> attributesOwned = neighbours(Direction.OUT, Schema.EdgeLabel.ATTRIBUTE)
+                .filter(neighbour -> typesWithSubs.contains(neighbour.asThing().type()))
+                .map(Concept::asAttribute);
 
-        Stream<VertexElement> shortcutNeighbors = vertex().getShortcutNeighbors(ownerRoleIds, valueRoleIds, ownerToValueOrdering);
-        return shortcutNeighbors.map(vertexElement -> conceptManager.buildConcept(vertexElement));
-
+        return attributesOwned;
     }
 
     /**
@@ -226,31 +161,27 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
      */
     @Override
     public Stream<Relation> relations(Role... roles) {
-        return Stream.concat(reifiedRelations(roles), edgeRelations(roles));
+        Set<Integer> roleIds = Arrays.stream(roles).map(role -> role.labelId().getValue()).collect(Collectors.toSet());
+        Stream<VertexElement> relationVertices = vertex().relations(roleIds);
+        return relationVertices.map(vertexElement -> conceptManager.buildConcept(vertexElement));
     }
 
-    private Stream<Relation> reifiedRelations(Role... roles) {
-        Stream<VertexElement> reifiedRelationVertices = vertex().reifiedRelations(roles);
-        return reifiedRelationVertices.map(vertexElement -> conceptManager.buildConcept(vertexElement));
-    }
-
-    private Stream<Relation> edgeRelations(Role... roles) {
-        Set<Role> roleSet = new HashSet<>(Arrays.asList(roles));
-        // TODO move this into the AbstractElement and ElementFactory as well
-        Stream<EdgeElement> stream = vertex().getEdgesOfType(Direction.BOTH, Schema.EdgeLabel.ATTRIBUTE);
-
-        if (!roleSet.isEmpty()) {
-            stream = stream.filter(edge -> {
-                Set<Role> edgeRoles = new HashSet<>();
-                edgeRoles.add(conceptManager.getSchemaConcept(LabelId.of(edge.property(Schema.EdgeProperty.RELATION_ROLE_OWNER_LABEL_ID))));
-                if (this.isAttribute()) {
-                    edgeRoles.add(conceptManager.getSchemaConcept(LabelId.of(edge.property(Schema.EdgeProperty.RELATION_ROLE_VALUE_LABEL_ID))));
-                }
-                return !Sets.intersection(roleSet, edgeRoles).isEmpty();
-            });
+    private void deleteAttributeOwnerships() {
+        // delete ownerships of this Thing
+        if (isAttribute()) {
+            vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.ATTRIBUTE)
+                    .forEach(edge -> {
+                        Thing owner = conceptManager.buildConcept(edge.target()).asThing();
+                        conceptNotificationChannel.hasAttributeRemoved(owner, this.asAttribute(), isInferred());
+                        edge.delete();
+                    });
         }
-
-        return stream.map(edge -> conceptManager.buildRelation(edge));
+        vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.ATTRIBUTE)
+                .forEach(edge -> {
+                    Attribute attribute = conceptManager.buildConcept(edge.target()).asAttribute();
+                    conceptNotificationChannel.hasAttributeRemoved(this, attribute, attribute.isInferred());
+                    edge.delete();
+                });
     }
 
     @Override
@@ -260,72 +191,47 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
 
     @Override
     public T has(Attribute attribute) {
-        relhas(attribute);
+        attributeOwnership(attribute, false);
         return getThis();
     }
 
     @Override
-    public Relation attributeInferred(Attribute attribute) {
-        return attributeRelation(attribute, true);
+    public void attributeInferred(Attribute attribute) {
+        attributeOwnership(attribute, true);
     }
 
-    @Override
-    public Relation relhas(Attribute attribute) {
-        return attributeRelation(attribute, false);
-    }
-
-    private Relation attributeRelation(Attribute attribute, boolean isInferred) {
-        Schema.ImplicitType has = Schema.ImplicitType.HAS;
-        Schema.ImplicitType hasValue = Schema.ImplicitType.HAS_VALUE;
-        Schema.ImplicitType hasOwner = Schema.ImplicitType.HAS_OWNER;
-
-        //Is this attribute a key to me?
-        if (type().keys().anyMatch(key -> key.equals(attribute.type()))) {
-            has = Schema.ImplicitType.KEY;
-            hasValue = Schema.ImplicitType.KEY_VALUE;
-            hasOwner = Schema.ImplicitType.KEY_OWNER;
-        }
-
-        Label label = attribute.type().label();
-        RelationType hasAttribute = conceptManager.getSchemaConcept(has.getLabel(label));
-        Role hasAttributeOwner = conceptManager.getSchemaConcept(hasOwner.getLabel(label));
-        Role hasAttributeValue = conceptManager.getSchemaConcept(hasValue.getLabel(label));
-
-        if (hasAttribute == null || hasAttributeOwner == null || hasAttributeValue == null || type().playing().noneMatch(play -> play.equals(hasAttributeOwner))) {
+    private void attributeOwnership(Attribute attribute, boolean isInferred) {
+        if (type().has().noneMatch(attribute.type()::equals)) {
             throw GraknConceptException.hasNotAllowed(this, attribute);
         }
 
-        EdgeElement attributeEdge = addEdge(AttributeImpl.from(attribute), Schema.EdgeLabel.ATTRIBUTE);
-        if (isInferred) attributeEdge.property(Schema.EdgeProperty.IS_INFERRED, true);
+        if (!this.attributes(attribute.type()).anyMatch(attribute::equals)) {
+            EdgeElement attributeEdge = putEdge(AttributeImpl.from(attribute), Schema.EdgeLabel.ATTRIBUTE);
+            attributeEdge.property(Schema.EdgeProperty.ATTRIBUTE_OWNED_LABEL_ID, attribute.type().labelId().getValue());
+            if (isInferred) {
+                attributeEdge.property(Schema.EdgeProperty.IS_INFERRED, true);
+            }
+            conceptManager.createHasAttribute(this, attribute, isInferred);
+        }
 
-        return conceptManager.createHasAttributeRelation(attributeEdge, hasAttribute, hasAttributeOwner, hasAttributeValue, isInferred);
     }
 
     @Override
     public T unhas(Attribute attribute) {
-        Role roleHasOwner = conceptManager.getSchemaConcept(Schema.ImplicitType.HAS_OWNER.getLabel(attribute.type().label()));
-        Role roleKeyOwner = conceptManager.getSchemaConcept(Schema.ImplicitType.KEY_OWNER.getLabel(attribute.type().label()));
-
-        Role roleHasValue = conceptManager.getSchemaConcept(Schema.ImplicitType.HAS_VALUE.getLabel(attribute.type().label()));
-        Role roleKeyValue = conceptManager.getSchemaConcept(Schema.ImplicitType.KEY_VALUE.getLabel(attribute.type().label()));
-
         // delete attribute ownerships between this Thing and the Attribute
-        Stream<Relation> relations = relations(filterNulls(roleHasOwner, roleKeyOwner));
-        relations.filter(relation -> {
-            Stream<Thing> rolePlayers = relation.rolePlayers(filterNulls(roleHasValue, roleKeyValue));
-            return rolePlayers.anyMatch(rolePlayer -> rolePlayer.equals(attribute));
-        }).forEach(Concept::delete);
+        // TODO may need to be able to limit the number of times the edge is removed if there are multiple - this removes all
+        Optional<EdgeElement> edgeElement = vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.ATTRIBUTE)
+                .filter(edge -> edge.target().equals(ConceptVertex.from(attribute).vertex()))
+                .findAny();
 
-        conceptNotificationChannel.hasAttributeRemoved(this, attribute);
+        if (edgeElement.isPresent()) {
+            EdgeElement edge = edgeElement.get();
+            boolean isInferred = edge.propertyBoolean(Schema.EdgeProperty.IS_INFERRED);
+            edge.delete();
+            conceptNotificationChannel.hasAttributeRemoved(this, attribute, isInferred);
+        }
 
         return getThis();
-    }
-
-    /**
-     * Returns an array with all the nulls filtered out.
-     */
-    private Role[] filterNulls(Role... roles) {
-        return Arrays.stream(roles).filter(Objects::nonNull).toArray(Role[]::new);
     }
 
     /**

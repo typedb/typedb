@@ -26,7 +26,6 @@ java_test(
     test_class = "grakn.core.graql.analytics.ConnectedComponentIT",
     deps = [
         "//concept/answer",
-        "//core",
         "//dependencies/maven/artifacts/com/google/guava",
         "//kb/concept/api",
         "//kb/graql/exception",
@@ -59,8 +58,6 @@ java_test(
     classpath_resources = ["//test/resources:logback-test"],
     test_class = "grakn.core.graql.analytics.CountIT",
     deps = [
-        "//concept/answer",
-        "//core",
         "//kb/concept/api",
         "//kb/server",
         "//test/rule:grakn-test-server",
@@ -109,9 +106,7 @@ java_test(
     deps = [
         "//common",
         "//concept/answer",
-        "//core",
         "//dependencies/maven/artifacts/com/google/guava",
-        "//graql/analytics",
         "//graql/executor",
         "//graql/reasoner",
         "//kb/concept/api",
@@ -133,7 +128,6 @@ java_test(
     test_class = "grakn.core.graql.analytics.StatisticsIT",
     deps = [
         "//concept/answer",
-        "//core",
         "//dependencies/maven/artifacts/com/google/guava",
         "//kb/concept/api",
         "//kb/graql/exception",

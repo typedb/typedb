@@ -229,6 +229,7 @@ public class QueryExecutorImpl implements QueryExecutor {
             }
         }
 
+        // note: NOT lazy, to avoid modifying the stream while reading
         List<ConceptMap> toDelete = get(query.match().get()).collect(toList());
         toDelete.forEach(answer -> {
             WriteExecutorImpl.create(conceptManager, executors.build()).write(answer);

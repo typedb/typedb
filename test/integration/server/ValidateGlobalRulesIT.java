@@ -24,7 +24,7 @@ import grakn.core.kb.concept.api.EntityType;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Thing;
-import grakn.core.kb.concept.structure.Casting;
+import grakn.core.kb.concept.api.Casting;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import grakn.core.test.rule.GraknTestServer;
@@ -72,7 +72,7 @@ public class ValidateGlobalRulesIT {
 
         RelationImpl assertion = ConceptDowncasting.relation(hunts.create().
                 assign(witcher, geralt).assign(monster, werewolf));
-        assertion.reified().castingsRelation().forEach(rolePlayer ->
+        assertion.castingsRelation().forEach(rolePlayer ->
                 assertFalse(ValidateGlobalRules.validatePlaysAndRelatesStructure(rolePlayer).isEmpty()));
 
         hunter.plays(witcher);
@@ -80,7 +80,7 @@ public class ValidateGlobalRulesIT {
         boolean [] flags = {false, false};
         int count = 0;
 
-        for (Casting casting : assertion.reified().castingsRelation().collect(Collectors.toSet())) {
+        for (Casting casting : assertion.castingsRelation().collect(Collectors.toSet())) {
             flags[count] = !ValidateGlobalRules.validatePlaysAndRelatesStructure(casting).isEmpty();
             count++;
         }
@@ -89,7 +89,7 @@ public class ValidateGlobalRulesIT {
         wolf.sup(creature);
         creature.plays(monster);
 
-        for (Casting casting : assertion.reified().castingsRelation().collect(Collectors.toSet())) {
+        for (Casting casting : assertion.castingsRelation().collect(Collectors.toSet())) {
             assertFalse(ValidateGlobalRules.validatePlaysAndRelatesStructure(casting).isEmpty());
         }
     }
@@ -114,19 +114,19 @@ public class ValidateGlobalRulesIT {
                 .assign(role2, other1).assign(role1, entity));
 
         // Valid with only a single relation
-        relation1.reified().castingsRelation().forEach(rolePlayer ->
+        relation1.castingsRelation().forEach(rolePlayer ->
                 assertTrue(ValidateGlobalRules.validatePlaysAndRelatesStructure(rolePlayer).isEmpty()));
 
         RelationImpl relation2 = ConceptDowncasting.relation(relationType.create()
                 .assign(role2, other2).assign(role1, entity));
 
         // Invalid with multiple relations
-        relation1.reified().castingsRelation().forEach(rolePlayer -> {
+        relation1.castingsRelation().forEach(rolePlayer -> {
             if (rolePlayer.getRole().equals(role1)) {
                 assertFalse(ValidateGlobalRules.validatePlaysAndRelatesStructure(rolePlayer).isEmpty());
             }
         });
-        relation2.reified().castingsRelation().forEach(rolePlayer -> {
+        relation2.castingsRelation().forEach(rolePlayer -> {
             if (rolePlayer.getRole().equals(role1)) {
                 assertFalse(ValidateGlobalRules.validatePlaysAndRelatesStructure(rolePlayer).isEmpty());
             }

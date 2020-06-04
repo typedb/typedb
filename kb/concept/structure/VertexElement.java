@@ -19,14 +19,11 @@
 package grakn.core.kb.concept.structure;
 
 import grakn.core.core.Schema;
-import grakn.core.kb.concept.api.LabelId;
-import grakn.core.kb.concept.api.RelationType;
-import grakn.core.kb.concept.api.Role;
-import grakn.core.kb.concept.api.Type;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import javax.annotation.Nullable;
+import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -88,12 +85,7 @@ public interface VertexElement extends AbstractElement<Vertex> {
 
 
     // methods that should probably be removed from the interface
-    Stream<EdgeElement> roleCastingsEdges(Type type, Set<Integer> allowedRoleTypeIds);
-    boolean rolePlayerEdgeExists(String startVertexId, RelationType type, Role role, String endVertexId);
-    Stream<VertexElement> getShortcutNeighbors(Set<Integer> ownerRoleIds, Set<Integer> valueRoleIds,
-                                                      boolean ownerToValueOrdering);
-    Stream<EdgeElement> edgeRelationsConnectedToInstancesOfType(LabelId edgeInstanceLabelId);
-
-    Stream<VertexElement> reifiedRelations(Role... roles);
+    Stream<EdgeElement> roleCastingsEdges(Integer typeLabelId, Set<Integer> allowedRoleTypeIds);
+    Stream<VertexElement> relations(Set<Integer> roleIds);
 }
 

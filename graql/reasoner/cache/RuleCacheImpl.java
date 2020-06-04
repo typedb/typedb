@@ -116,11 +116,6 @@ public class RuleCacheImpl implements RuleCache {
      */
     private Stream<? extends Type> getTypes(Type type, boolean direct) {
         Stream<? extends Type> baseStream = direct ? Stream.of(type) : type.subs();
-        if (type.isImplicit()) {
-            return baseStream
-                    .flatMap(t -> Stream.of(t, conceptManager.getType(Schema.ImplicitType.explicitLabel(t.label()))))
-                    .filter(Objects::nonNull);
-        }
         return baseStream;
     }
 

@@ -49,10 +49,6 @@ public class ConceptMethod {
                 con.asConcept().delete();
                 return;
 
-            // SchemaConcept methods
-            case SCHEMACONCEPT_ISIMPLICIT_REQ:
-                con.asSchemaConcept().isImplicit();
-                return;
             case SCHEMACONCEPT_GETLABEL_REQ:
                 con.asSchemaConcept().label();
                 return;
@@ -141,8 +137,8 @@ public class ConceptMethod {
             case THING_TYPE_REQ:
                 con.asThing().type();
                 return;
-            case THING_RELHAS_REQ:
-                con.asThing().relhas(req.getThingRelhasReq().getAttribute());
+            case THING_HAS_REQ:
+                con.asThing().has(req.getThingHasReq().getAttribute());
                 return;
             case THING_UNHAS_REQ:
                 con.asThing().unhas(req.getThingUnhasReq().getAttribute());
@@ -329,16 +325,6 @@ public class ConceptMethod {
          */
         private class SchemaConcept {
 
-            private void isImplicit() {
-                Boolean implicit = concept.asSchemaConcept().isImplicit();
-
-                ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setSchemaConceptIsImplicitRes(ConceptProto.SchemaConcept.IsImplicit.Res.newBuilder()
-                                                               .setImplicit(implicit)).build();
-
-                responseSender.accept(transactionRes(response));
-            }
-
             private void label() {
                 Label label = concept.asSchemaConcept().label();
 
@@ -517,7 +503,7 @@ public class ConceptMethod {
             }
 
             private void keys() {
-                Stream<grakn.core.kb.concept.api.AttributeType> concepts = concept.asType().keys();
+                Stream<grakn.core.kb.concept.api.AttributeType<?>> concepts = concept.asType().keys();
 
                 Stream<SessionProto.Transaction.Res> responses = concepts.map(con -> {
                     ConceptProto.Method.Iter.Res res = ConceptProto.Method.Iter.Res.newBuilder()
@@ -530,7 +516,7 @@ public class ConceptMethod {
             }
 
             private void attributes() {
-                Stream<grakn.core.kb.concept.api.AttributeType> concepts = concept.asType().attributes();
+                Stream<grakn.core.kb.concept.api.AttributeType<?>> concepts = concept.asType().has();
 
                 Stream<SessionProto.Transaction.Res> responses = concepts.map(con -> {
                     ConceptProto.Method.Iter.Res res = ConceptProto.Method.Iter.Res.newBuilder()
@@ -827,13 +813,12 @@ public class ConceptMethod {
                 iterators.startBatchIterating(responses.iterator(), options);
             }
 
-            private void relhas(ConceptProto.Concept protoAttribute) {
+            private void has(ConceptProto.Concept protoAttribute) {
                 grakn.core.kb.concept.api.Attribute<?> attribute = convert(protoAttribute).asAttribute();
-                grakn.core.kb.concept.api.Relation relation = ConceptHolder.this.concept.asThing().relhas(attribute);
+                ConceptHolder.this.concept.asThing().has(attribute);
 
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setThingRelhasRes(ConceptProto.Thing.Relhas.Res.newBuilder()
-                                                   .setRelation(ResponseBuilder.Concept.concept(relation))).build();
+                        .setThingHasRes(ConceptProto.Thing.Has.Res.newBuilder().build()).build();
 
                 responseSender.accept(transactionRes(response));
             }

@@ -19,10 +19,9 @@
 package grakn.core.graql.executor.property;
 
 import com.google.common.collect.ImmutableSet;
-import grakn.core.core.Schema;
+import grakn.core.graql.planning.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.Concept;
-import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.graql.exception.GraqlSemanticException;
@@ -36,9 +35,6 @@ import graql.lang.statement.Variable;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
-
-import static grakn.core.graql.planning.gremlin.sets.EquivalentFragmentSets.neq;
-import static grakn.core.graql.planning.gremlin.sets.EquivalentFragmentSets.rolePlayer;
 
 public class HasAttributeExecutor  implements PropertyExecutor.Insertable, PropertyExecutor.Deletable {
 
@@ -54,25 +50,9 @@ public class HasAttributeExecutor  implements PropertyExecutor.Insertable, Prope
 
     @Override
     public Set<EquivalentFragmentSet> matchFragments() {
-        Label has = Schema.ImplicitType.HAS.getLabel(type);
-        Label key = Schema.ImplicitType.KEY.getLabel(type);
-
-        Label hasOwnerRole = Schema.ImplicitType.HAS_OWNER.getLabel(type);
-        Label keyOwnerRole = Schema.ImplicitType.KEY_OWNER.getLabel(type);
-        Label hasValueRole = Schema.ImplicitType.HAS_VALUE.getLabel(type);
-        Label keyValueRole = Schema.ImplicitType.KEY_VALUE.getLabel(type);
-
-        Variable edge1 = new Variable();
-        Variable edge2 = new Variable();
-
         return ImmutableSet.of(
                 //owner rolePlayer edge
-                rolePlayer(property, property.relation().var(), edge1, var, null,
-                           ImmutableSet.of(hasOwnerRole, keyOwnerRole), ImmutableSet.of(has, key)),
-                //value rolePlayer edge
-                rolePlayer(property, property.relation().var(), edge2, property.attribute().var(), null,
-                           ImmutableSet.of(hasValueRole, keyValueRole), ImmutableSet.of(has, key)),
-                neq(property, edge1, edge2)
+                EquivalentFragmentSets.attribute(property, var, property.attribute().var(), ImmutableSet.of(type))
         );
     }
 
@@ -108,15 +88,14 @@ public class HasAttributeExecutor  implements PropertyExecutor.Insertable, Prope
 
         @Override
         public Set<Variable> producedVars() {
-            return ImmutableSet.of(property.relation().var());
+            return ImmutableSet.of();
         }
 
         @Override
         public void execute(WriteExecutor executor) {
             Attribute attributeConcept = executor.getConcept(property.attribute().var()).asAttribute();
             Thing thing = executor.getConcept(var).asThing();
-            ConceptId relationId = thing.relhas(attributeConcept).id();
-            executor.getBuilder(property.relation().var()).id(relationId);
+            thing.has(attributeConcept);
         }
     }
 

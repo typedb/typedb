@@ -240,17 +240,13 @@ public class AtomicUnificationIT {
         String resource = "{ $x has resource $r;$r 'f'; };";
         String resource2 = "{ $r has resource $x;$x 'f'; };";
         String resource3 = "{ $r has resource 'f'; };";
-        String resource4 = "{ $x has resource $y via $r;$y 'f'; };";
-        String resource5 = "{ $y has resource $r via $x;$r 'f'; };";
         unification(resource, resource2, UnifierType.RULE,true, true, tx);
         unification(resource, resource3, UnifierType.RULE,true, true, tx);
         unification(resource2, resource3, UnifierType.RULE,true, true, tx);
-        unification(resource4, resource5, UnifierType.RULE,true, true, tx);
 
         unification(resource, resource2, UnifierType.EXACT,true, true, tx);
         unification(resource, resource3, UnifierType.EXACT,true, true, tx);
         unification(resource2, resource3, UnifierType.EXACT,true, true, tx);
-        unification(resource4, resource5, UnifierType.EXACT,true, true, tx);
     }
 
     @Test

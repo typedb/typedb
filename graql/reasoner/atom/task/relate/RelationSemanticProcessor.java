@@ -75,8 +75,8 @@ public class RelationSemanticProcessor implements SemanticProcessor<RelationAtom
         }
 
         Set<Unifier> unifiers = new HashSet<>();
-        if (parentAtom.isRelation()) {
-            RelationAtom parent = parentAtom.toRelationAtom();
+        if (parentAtom.isRelationAtom()) {
+            RelationAtom parent = (RelationAtom) parentAtom;
             Set<List<Pair<RelationProperty.RolePlayer, RelationProperty.RolePlayer>>> rpMappings = getRelationPlayerMappings(childAtom, parent, unifierType, ctx);
             boolean containsRoleVariables = parent.getRelationPlayers().stream()
                     .map(RelationProperty.RolePlayer::getRole)
@@ -253,7 +253,7 @@ public class RelationSemanticProcessor implements SemanticProcessor<RelationAtom
     public SemanticDifference computeSemanticDifference(RelationAtom parent, Atom child, Unifier unifier, ReasoningContext ctx) {
         SemanticDifference baseDiff = binarySemanticProcessor.computeSemanticDifference(parent.toIsaAtom(), child, unifier, ctx);
 
-        if (!child.isRelation()) return baseDiff;
+        if (!child.isRelationAtom()) return baseDiff;
         RelationAtom childAtom = (RelationAtom) child;
         Set<VariableDefinition> diff = new HashSet<>();
 

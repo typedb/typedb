@@ -25,7 +25,6 @@ java_library(
     deps = [
         "//common:common",
         "//core:core",
-        "//kb/concept/api:api",
 
         # External dependencies from Maven
         "//dependencies/maven/artifacts/com/google/code/findbugs:jsr305",

@@ -31,6 +31,7 @@ import grakn.core.kb.concept.api.Relation;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.SchemaConcept;
+import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import grakn.core.kb.server.cache.TransactionCache;
@@ -353,9 +354,9 @@ public class TransactionCacheIT {
     public void whenInsertingAndDeletingInferredEntity_instanceIsTracked(){
         EntityType someEntity = tx.putEntityType("someEntity");
         Entity entity = someEntity.addEntityInferred();
-        assertTrue(tx.cache().getInferredInstances().anyMatch(inst -> inst.equals(entity)));
+        assertTrue(tx.cache().getInferredInstances().contains(entity));
         entity.delete();
-        assertFalse(tx.cache().getInferredInstances().anyMatch(inst -> inst.equals(entity)));
+        assertFalse(tx.cache().getInferredInstances().contains(entity));
     }
 
     @Test
@@ -363,18 +364,18 @@ public class TransactionCacheIT {
         Role someRole = tx.putRole("someRole");
         RelationType someRelation = tx.putRelationType("someRelation").relates(someRole);
         Relation relation = someRelation.addRelationInferred();
-        assertTrue(tx.cache().getInferredInstances().anyMatch(inst -> inst.equals(relation)));
+        assertTrue(tx.cache().getInferredInstances().contains(relation));
         relation.delete();
-        assertFalse(tx.cache().getInferredInstances().anyMatch(inst -> inst.equals(relation)));
+        assertFalse(tx.cache().getInferredInstances().contains(relation));
     }
 
     @Test
     public void whenInsertingAndDeletingInferredAttribute_instanceIsTracked(){
         AttributeType<String> attributeType = tx.putAttributeType("resource", AttributeType.ValueType.STRING);
         Attribute attribute = attributeType.putAttributeInferred("banana");
-        assertTrue(tx.cache().getInferredInstances().anyMatch(inst -> inst.equals(attribute)));
+        assertTrue(tx.cache().getInferredInstances().contains(attribute));
         attribute.delete();
-        assertFalse(tx.cache().getInferredInstances().anyMatch(inst -> inst.equals(attribute)));
+        assertFalse(tx.cache().getInferredInstances().contains(attribute));
     }
 
     @Test
@@ -394,14 +395,15 @@ public class TransactionCacheIT {
     }
 
     @Test
-    public void whenInsertingAndDeletingInferredImplicitRelation_instanceIsTracked(){
+    public void whenInsertingAndDeletingInferredOwnership_ownershipIsTracked(){
         AttributeType<String> attributeType = tx.putAttributeType("resource", AttributeType.ValueType.STRING);
         EntityType someEntity = tx.putEntityType("someEntity").has(attributeType);
         Entity owner = someEntity.create();
         Attribute<String> attribute = attributeType.create("banana");
-        Relation implicitRelation = owner.attributeInferred(attribute);
-        assertTrue(tx.cache().getInferredInstances().anyMatch(inst -> inst.equals(implicitRelation)));
-        implicitRelation.delete();
-        assertFalse(tx.cache().getInferredInstances().anyMatch(inst -> inst.equals(implicitRelation)));
+        owner.attributeInferred(attribute);
+        Pair<Thing, Attribute> ownership = new Pair<>(owner, attribute);
+        assertTrue(tx.cache().getInferredOwnerships().contains(ownership));
+        owner.unhas(attribute);
+        assertFalse(tx.cache().getInferredOwnerships().contains(ownership));
     }
 }

@@ -20,11 +20,7 @@ package grakn.core.graql.reasoner;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.kb.concept.api.Attribute;
-import grakn.core.kb.concept.api.AttributeType;
-import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.Relation;
-import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
@@ -40,13 +36,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static grakn.core.core.Schema.ImplicitType.HAS;
-import static grakn.core.core.Schema.ImplicitType.HAS_OWNER;
-import static grakn.core.core.Schema.ImplicitType.HAS_VALUE;
-import static grakn.core.util.GraqlTestUtil.assertCollectionsEqual;
 import static grakn.core.util.GraqlTestUtil.assertCollectionsNonTriviallyEqual;
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
-import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
@@ -79,100 +70,6 @@ public class ReasoningIT {
                                 "get;")
                         .asGet());
                 assertEquals(25, answers.size());
-            }
-        }
-    }
-
-    @Test
-    public void attributeOwnerResultsAreConsistentBetweenDifferentAccessPoints() {
-        try (Session session = server.sessionWithNewKeyspace()) {
-            loadFromFileAndCommit(resourcePath, "resourceDirectionality.gql", session);
-            try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-                List<ConceptMap> answers = tx.execute(Graql.parse("match $x isa specific-indicator;get;").asGet(), false);
-
-                Concept indicator = answers.iterator().next().get("x");
-
-                GraqlGet attributeQuery = Graql.parse("match $x has attribute $r; $x id " + indicator.id().getValue() + ";get;");
-                GraqlGet attributeRelationQuery = Graql.parse("match (@has-attribute-owner: $x, $r) isa @has-attribute; $x id " + indicator.id().getValue() + ";get;");
-
-                Set<Attribute<Object>> attributes = tx.stream(attributeQuery, false).map(ans -> ans.get("r")).map(Concept::asAttribute).collect(toSet());
-                Set<Attribute<Object>> attributesFromImplicitRelation = tx.stream(attributeRelationQuery, false).map(ans -> ans.get("r")).map(Concept::asAttribute).collect(toSet());
-                Set<Attribute<?>> attributesFromAPI = indicator.asThing().attributes().collect(Collectors.toSet());
-
-                assertThat(attributes, empty());
-                assertEquals(attributes, attributesFromAPI);
-                assertEquals(attributes, attributesFromImplicitRelation);
-
-                tx.execute(Graql.parse("match $rmn 'someName' isa model-name, has specific-indicator 'someIndicator' via $a; insert $a has indicator-name 'someIndicatorName';").asInsert());
-
-                Set<Attribute<Object>> newAttributes = tx.stream(attributeQuery, false).map(ans -> ans.get("r")).map(Concept::asAttribute).collect(toSet());
-                Set<Attribute<Object>> newAttributesFromImplicitRelation = tx.stream(attributeRelationQuery, false).map(ans -> ans.get("r")).map(Concept::asAttribute).collect(toSet());
-                Set<Attribute<?>> newAttributesFromAPI = indicator.asThing().attributes().collect(Collectors.toSet());
-
-                assertThat(newAttributes, empty());
-                assertEquals(newAttributes, newAttributesFromAPI);
-                assertEquals(newAttributes, newAttributesFromImplicitRelation);
-            }
-        }
-    }
-
-    @Test
-    public void resourceHierarchiesAreRespected() {
-        try (Session session = server.sessionWithNewKeyspace()) {
-            loadFromFileAndCommit(resourcePath, "resourceHierarchy.gql", session);
-            try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-
-
-                Set<RelationType> relTypes = tx.getMetaRelationType().subs().collect(toSet());
-                List<ConceptMap> attributeSubs = tx.execute(Graql.parse("match $x sub attribute; get;").asGet());
-                List<ConceptMap> attributeRelationSubs = tx.execute(Graql.<GraqlGet>parse("match $x sub @has-attribute; get;"));
-
-                assertEquals(attributeSubs.size(), attributeRelationSubs.size());
-                assertTrue(attributeRelationSubs.stream().map(ans -> ans.get("x")).map(Concept::asRelationType).allMatch(relTypes::contains));
-
-                List<ConceptMap> baseResourceSubs = tx.execute(Graql.parse("match $x sub baseResource; get;").asGet());
-                List<ConceptMap> baseResourceRelationSubs = tx.execute(Graql.<GraqlGet>parse("match $x sub @has-baseResource; get;"));
-                assertEquals(baseResourceSubs.size(), baseResourceRelationSubs.size());
-
-                assertEquals(
-                        Sets.newHashSet(
-                                tx.getAttributeType("extendedResource"),
-                                tx.getAttributeType("anotherExtendedResource"),
-                                tx.getAttributeType("furtherExtendedResource"),
-                                tx.getAttributeType("simpleResource")
-                        ),
-                        tx.getEntityType("genericEntity").attributes().collect(toSet())
-                );
-            }
-        }
-    }
-
-    @Test
-    public void resourceOwnershipNotPropagatedWithinRelation() {
-        try (Session session = server.sessionWithNewKeyspace()) {
-            loadFromFileAndCommit(resourcePath, "resourceOwnership.gql", session);
-            try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-
-                String attributeName = "name";
-                String queryString = "match $x has " + attributeName + " $y; get;";
-
-                String implicitQueryString = "match " +
-                        "(" +
-                        HAS_OWNER.getLabel(attributeName).getValue() + ": $x, " +
-                        HAS_VALUE.getLabel(attributeName).getValue() + ": $y " +
-                        ") isa " + HAS.getLabel(attributeName).getValue() + ";get;";
-
-                List<ConceptMap> implicitAnswers = tx.execute(Graql.parse(implicitQueryString).asGet());
-                List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());
-
-                tx.getMetaEntityType().instances().forEach(entity -> assertThat(entity.attributes().collect(toSet()), empty()));
-
-                AttributeType<String> name = tx.getAttributeType("name");
-                Set<Attribute<String>> instances = name.instances().collect(Collectors.toSet());
-                instances.forEach(attribute -> assertThat(attribute.owners().collect(toSet()), empty()));
-
-                assertThat(answers, empty());
-                assertCollectionsEqual(implicitAnswers, answers);
             }
         }
     }
@@ -432,8 +329,8 @@ public class ReasoningIT {
     }
 
     //tests if partial substitutions are propagated correctly - atom disjointness may lead to variable loss (bug #15476)
-    @Test //Expected result: 2 relations obtained by correctly finding reified relations
-    public void reasoningWithReifiedRelations() {
+    @Test //Expected result: 2 relations obtained by correctly finding relations
+    public void reasoningWithRelations() {
         try (Session session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "testSet26.gql", session);
             try (Transaction tx = session.transaction(Transaction.Type.READ)) {
@@ -510,7 +407,6 @@ public class ReasoningIT {
             loadFromFileAndCommit(resourcePath, "testSet28b.gql", session);
             try (Transaction tx = session.transaction(Transaction.Type.READ)) {
 
-
                 String pattern = "{$a isa entity1;($a, $b); $b isa entity3;};";
                 String pattern2 = "{($c, $d);};";
                 String queryString = "match " +
@@ -523,10 +419,10 @@ public class ReasoningIT {
                 assertEquals(1, partialAnswers.size());
 
                 List<ConceptMap> partialAnswers2 = tx.execute(Graql.match(Graql.parsePatternList(pattern2)).get());
-                //(4 db relations  + 1 inferred + 1 resource) x 2 for variable swap
-                assertEquals(12, partialAnswers2.size());
+                //(4 db relations  + 1 inferred) x 2 for variable swap
+                assertEquals(10, partialAnswers2.size());
 
-                //1 relation satisfying ($a, $b) with types x (4 db relations + 1 inferred + 1 resource) x 2 for var change
+                //1 relation satisfying ($a, $b) with types x (4 db relations + 1 inferred) x 2 for var change
                 List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());
                 assertEquals(answers.size(), partialAnswers.size() * partialAnswers2.size());
                 answers.forEach(ans -> assertEquals(4, ans.size()));
@@ -553,7 +449,7 @@ public class ReasoningIT {
                         "};";
 
                 List<ConceptMap> entryAnswers = tx.execute(Graql.match(Graql.parsePatternList(entryPattern)).get());
-                assertEquals(3, entryAnswers.size());
+                assertEquals(2, entryAnswers.size());
 
                 String partialPattern = "{" +
                         "$a isa entity1;" +
@@ -569,7 +465,7 @@ public class ReasoningIT {
                         "get;";
 
                 List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());
-                assertEquals(7, answers.size());
+                assertEquals(6, answers.size());
                 answers.forEach(ans -> assertEquals(4, ans.size()));
             }
         }
