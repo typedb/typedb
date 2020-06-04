@@ -185,10 +185,10 @@ public abstract class IID {
                         value = "" + bytesToDouble(copyOfRange(bytes, VALUE_INDEX, VALUE_INDEX + DOUBLE_SIZE));
                         break;
                     case STRING:
-                        value = bytesToString(copyOfRange(bytes, VALUE_INDEX, bytes.length - Vertex.Type.LENGTH), STRING_ENCODING);
+                        value = bytesToString(copyOfRange(bytes, VALUE_INDEX, bytes.length - IID.Vertex.Type.LENGTH), STRING_ENCODING);
                         break;
                     case DATETIME:
-                        value = bytesToDateTime(copyOfRange(bytes, VALUE_INDEX, bytes.length - Vertex.Type.LENGTH), TIME_ZONE_ID).toString();
+                        value = bytesToDateTime(copyOfRange(bytes, VALUE_INDEX, bytes.length - IID.Vertex.Type.LENGTH), TIME_ZONE_ID).toString();
                         break;
                     default:
                         value = "";
@@ -197,8 +197,8 @@ public abstract class IID {
 
                 return "[" + Prefix.LENGTH + ": " + Schema.Index.ATTRIBUTE.toString() + "]" +
                         "[" + Vertex.Attribute.VALUE_TYPE_LENGTH + ": " + valueType.toString() + "]" +
-                        "[" + (bytes.length - (Prefix.LENGTH + Vertex.Attribute.VALUE_TYPE_LENGTH + Vertex.Type.LENGTH)) + ": " + value + "]" +
-                        "[" + Vertex.Type.LENGTH + ": " + IID.Vertex.Type.of(copyOfRange(bytes, bytes.length - Vertex.Type.LENGTH, bytes.length)).toString() + "]";
+                        "[" + (bytes.length - (Prefix.LENGTH + Vertex.Attribute.VALUE_TYPE_LENGTH + IID.Vertex.Type.LENGTH)) + ": " + value + "]" +
+                        "[" + IID.Vertex.Type.LENGTH + ": " + IID.Vertex.Type.of(copyOfRange(bytes, bytes.length - IID.Vertex.Type.LENGTH, bytes.length)).toString() + "]";
             }
         }
     }
@@ -414,8 +414,8 @@ public abstract class IID {
 
         public static class Type extends IID.Edge<Schema.Edge.Type, IID.Vertex.Type> {
 
-            private Vertex.Type start;
-            private Vertex.Type end;
+            private IID.Vertex.Type start;
+            private IID.Vertex.Type end;
 
             Type(byte[] bytes) {
                 super(bytes);
@@ -440,25 +440,25 @@ public abstract class IID {
             }
 
             @Override
-            public Vertex.Type start() {
+            public IID.Vertex.Type start() {
                 if (start != null) return start;
-                start = Vertex.Type.of(copyOfRange(bytes, 0, Vertex.Type.LENGTH));
+                start = IID.Vertex.Type.of(copyOfRange(bytes, 0, IID.Vertex.Type.LENGTH));
                 return start;
             }
 
             @Override
-            public Vertex.Type end() {
+            public IID.Vertex.Type end() {
                 if (end != null) return end;
-                end = Vertex.Type.of(copyOfRange(bytes, bytes.length - Vertex.Type.LENGTH, bytes.length));
+                end = IID.Vertex.Type.of(copyOfRange(bytes, bytes.length - IID.Vertex.Type.LENGTH, bytes.length));
                 return end;
             }
 
             @Override
             public String toString() {
                 start();
-                return "[" + Vertex.Type.LENGTH + ": " + start().toString() + "]" +
+                return "[" + IID.Vertex.Type.LENGTH + ": " + start().toString() + "]" +
                         "[" + Infix.LENGTH + ": " + schema().toString() + "]" +
-                        "[" + Vertex.Type.LENGTH + ": " + end().toString() + "]";
+                        "[" + IID.Vertex.Type.LENGTH + ": " + end().toString() + "]";
             }
         }
 
