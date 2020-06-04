@@ -63,18 +63,4 @@ public class Graphs {
     public void initialise() {
         typeGraph.initialise();
     }
-
-    /**
-     * Commits any writes captured in the graphs into storage.
-     *
-     * This operation may result in locking the storage to confirm that it gets
-     * committed. If it is locking, you must call {@code confirm(boolean committed)}
-     * to confirm whether the graph was successfully committed or not into storage.
-     *
-     * @return true if the operation results in locking the storage
-     */
-    public void commit() {
-        typeGraph.commit();
-        thingGraph.commit();
-    }
 }

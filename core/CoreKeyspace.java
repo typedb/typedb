@@ -65,7 +65,7 @@ public class CoreKeyspace implements Hypergraph.Keyspace {
     }
 
     private CoreKeyspace initialiseAndOpen() {
-        try (CoreSession session = createSessionAndOpen()) {
+        try (CoreSession session = createAndOpenSession(Hypergraph.Session.Type.SCHEMA)) {
             try (CoreTransaction txn = session.transaction(Hypergraph.Transaction.Type.WRITE)) {
                 if (txn.graph().isInitialised()) {
                     throw new HypergraphException("Invalid Keyspace Initialisation");
@@ -79,7 +79,7 @@ public class CoreKeyspace implements Hypergraph.Keyspace {
     }
 
     private CoreKeyspace loadAndOpen() {
-        try (CoreSession session = createSessionAndOpen()) {
+        try (CoreSession session = createAndOpenSession(Hypergraph.Session.Type.DATA)) {
             try (CoreTransaction txn = session.transaction(Hypergraph.Transaction.Type.READ)) {
                 keyGenerator.sync(txn.storage());
             }
@@ -88,8 +88,8 @@ public class CoreKeyspace implements Hypergraph.Keyspace {
         return this;
     }
 
-    CoreSession createSessionAndOpen() {
-        CoreSession session = new CoreSession(this);
+    CoreSession createAndOpenSession(Hypergraph.Session.Type type) {
+        CoreSession session = new CoreSession(this, type);
         sessions.add(session);
         return session;
     }

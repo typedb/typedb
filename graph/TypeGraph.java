@@ -40,6 +40,7 @@ public class TypeGraph implements Graph<IID.Vertex.Type, TypeVertex> {
     private final ConcurrentMap<IID.Vertex.Type, TypeVertex> typesByIID;
     private final ConcurrentMap<String, ManagedReadWriteLock> singleLabelLocks;
     private final ManagedReadWriteLock multiLabelLock;
+    private boolean hasWrites;
 
     TypeGraph(Graphs graphManager) {
         this.graphManager = graphManager;
@@ -180,6 +181,16 @@ public class TypeGraph implements Graph<IID.Vertex.Type, TypeVertex> {
             singleLabelLocks.get(vertex.scopedLabel()).unlockWrite();
             multiLabelLock.unlockRead();
         }
+    }
+
+    @Override
+    public void written() {
+        if (!hasWrites) hasWrites = true;
+    }
+
+    @Override
+    public boolean hasWrites() {
+        return hasWrites;
     }
 
     /**

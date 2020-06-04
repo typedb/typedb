@@ -20,6 +20,7 @@ package hypergraph.core;
 
 import hypergraph.Hypergraph;
 import hypergraph.common.concurrent.ManagedReadWriteLock;
+import hypergraph.common.exception.Error;
 import hypergraph.common.exception.HypergraphException;
 import hypergraph.concept.Concepts;
 import hypergraph.graph.Graphs;
@@ -81,6 +82,7 @@ class CoreTransaction implements Hypergraph.Transaction {
     }
 
     public CoreStorage storage() {
+        if (!isOpen.get()) throw new HypergraphException(Error.Transaction.CLOSED_TRANSACTION);
         return storage;
     }
 
@@ -96,11 +98,13 @@ class CoreTransaction implements Hypergraph.Transaction {
 
     @Override
     public Traversal traversal() {
+        if (!isOpen.get()) throw new HypergraphException(Error.Transaction.CLOSED_TRANSACTION);
         return traversal;
     }
 
     @Override
     public Concepts concepts() {
+        if (!isOpen.get()) throw new HypergraphException(Error.Transaction.CLOSED_TRANSACTION);
         return concepts;
     }
 
@@ -123,11 +127,24 @@ class CoreTransaction implements Hypergraph.Transaction {
      */
     @Override
     public void commit() {
-        if (type.equals(Type.READ)) {
-            throw new HypergraphException("Illegal Write Exception");
-        } else if (isOpen.compareAndSet(true, false)) {
+        if (isOpen.compareAndSet(true, false)) {
             try {
-                graph.commit();
+                if (type.equals(Type.READ)) {
+                    throw new HypergraphException(Error.Transaction.ILLEGAL_COMMIT);
+                } else if (session.type().equals(Hypergraph.Session.Type.DATA) && graph.type().hasWrites()) {
+                    throw new HypergraphException(Error.Transaction.DIRTY_SCHEMA_WRITES);
+                } else if (session.type().equals(Hypergraph.Session.Type.SCHEMA) && graph.thing().hasWrites()) {
+                    throw new HypergraphException(Error.Transaction.DIRTY_DATA_WRITES);
+                }
+
+                if (session.type().equals(Hypergraph.Session.Type.SCHEMA)) {
+                    graph.type().commit();
+                } else if (session.type().equals(Hypergraph.Session.Type.DATA)) {
+                    graph.thing().commit();
+                } else {
+                    assert false;
+                }
+
                 rocksTransaction.commit();
             } catch (RocksDBException e) {
                 throw new HypergraphException(e);
@@ -135,7 +152,7 @@ class CoreTransaction implements Hypergraph.Transaction {
                 closeResources();
             }
         } else {
-            throw new HypergraphException("Invalid Commit Exception");
+            throw new HypergraphException(Error.Transaction.CLOSED_TRANSACTION);
         }
     }
 

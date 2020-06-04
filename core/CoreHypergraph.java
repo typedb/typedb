@@ -82,9 +82,9 @@ public class CoreHypergraph implements Hypergraph {
     }
 
     @Override
-    public CoreSession session(String keyspace) {
+    public CoreSession session(String keyspace, Hypergraph.Session.Type type) {
         if (keyspaceMgr.contains(keyspace)) {
-            return keyspaceMgr.get(keyspace).createSessionAndOpen();
+            return keyspaceMgr.get(keyspace).createAndOpenSession(type);
         } else {
             throw new HypergraphException("There does not exists a keyspace with the name: " + keyspace);
         }

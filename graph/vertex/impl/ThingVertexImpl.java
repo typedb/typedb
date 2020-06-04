@@ -76,6 +76,11 @@ public abstract class ThingVertexImpl extends VertexImpl<IID.Vertex.Thing> imple
     }
 
     @Override
+    public void written() {
+        graph.written();
+    }
+
+    @Override
     public TypeVertex type() {
         return graph.typeGraph().convert(iid.type());
     }
@@ -94,6 +99,7 @@ public abstract class ThingVertexImpl extends VertexImpl<IID.Vertex.Thing> imple
 
         public Buffered(ThingGraph graph, IID.Vertex.Thing iid, boolean isInferred) {
             super(graph, iid, isInferred);
+            written();
         }
 
         @Override

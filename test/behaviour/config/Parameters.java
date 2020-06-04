@@ -93,14 +93,19 @@ public class Parameters {
 
     @ParameterType("read|write")
     public Hypergraph.Transaction.Type transaction_type(String type) {
-        return Hypergraph.Transaction.Type.of(type);
+        if (type.equals("read")) {
+            return Hypergraph.Transaction.Type.READ;
+        } else if (type.equals("write")) {
+            return Hypergraph.Transaction.Type.WRITE;
+        }
+        return null;
     }
 
     @DataTableType
     public List<Hypergraph.Transaction.Type> transaction_types(List<String> values) {
         List<Hypergraph.Transaction.Type> typeList = new ArrayList<>();
         for (String value : values) {
-            Hypergraph.Transaction.Type type = Hypergraph.Transaction.Type.of(value);
+            Hypergraph.Transaction.Type type = transaction_type(value);
             assertNotNull(type);
             typeList.add(type);
         }

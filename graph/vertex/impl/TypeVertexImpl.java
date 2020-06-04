@@ -90,6 +90,11 @@ public abstract class TypeVertexImpl extends VertexImpl<IID.Vertex.Type> impleme
     }
 
     @Override
+    public void written() {
+        graph.written();
+    }
+
+    @Override
     public String label() {
         return label;
     }
@@ -105,7 +110,8 @@ public abstract class TypeVertexImpl extends VertexImpl<IID.Vertex.Type> impleme
 
         public Buffered(TypeGraph graph, IID.Vertex.Type iid, String label, @Nullable String scope) {
             super(graph, iid, label, scope);
-            committed = new AtomicBoolean(false);
+            this.committed = new AtomicBoolean(false);
+            written();
         }
 
         @Override

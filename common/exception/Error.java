@@ -91,8 +91,16 @@ public abstract class Error<TYPE extends Error<TYPE>> {
 
     public static class Transaction extends Error<Error.Transaction> {
 
-        public static final TypeWrite ILLEGAL_OPERATION =
-                new TypeWrite(1, "Attempted an illegal operation!");
+        public static final Transaction ILLEGAL_OPERATION =
+                new Transaction(1, "Attempted an illegal operation!");
+        public static final Transaction CLOSED_TRANSACTION =
+                new Transaction(2, "The transaction has been closed and cannot perform any operation.");
+        public static final Transaction ILLEGAL_COMMIT =
+                new Transaction(3, "Only write transactions can be committed.");
+        public static final Transaction DIRTY_SCHEMA_WRITES =
+                new Transaction(4, "Contains schema writes when session type does not allow.");
+        public static final Transaction DIRTY_DATA_WRITES =
+                new Transaction(5, "Contains data writes when session type does not allow.");
 
         private static final String codePrefix = "TXN";
         private static final String descriptionPrefix = "Invalid Transaction Operation";
@@ -127,9 +135,9 @@ public abstract class Error<TYPE extends Error<TYPE>> {
         public static final ThingWrite ILLEGAL_ABSTRACT_WRITE =
                 new ThingWrite(1, "Attempted an illegal write of a new '%s' of abstract type '%s'.");
         public static final ThingWrite ILLEGAL_STRING_SIZE =
-                new ThingWrite(2, "Attempted to insert a string larger than the maximum size");
+                new ThingWrite(2, "Attempted to insert a string larger than the maximum size.");
         public static final ThingWrite CONCURRENT_ATTRIBUTE_WRITE_DELETE =
-                new ThingWrite(3, "Attempted concurrent modification of attributes (writes and deletes)");
+                new ThingWrite(3, "Attempted concurrent modification of attributes (writes and deletes).");
         private static final String codePrefix = "THW";
         private static final String descriptionPrefix = "Invalid Thing Write";
 
@@ -145,9 +153,9 @@ public abstract class Error<TYPE extends Error<TYPE>> {
     public static class TypeRead extends Error {
 
         public static final TypeRead TYPE_ROOT_MISMATCH =
-                new TypeRead(1, "Attempted to retrieve '%s' as '%s', while it is actually a '%s'");
+                new TypeRead(1, "Attempted to retrieve '%s' as '%s', while it is actually a '%s'.");
         public static final TypeRead VALUE_TYPE_MISMATCH =
-                new TypeRead(2, "Attempted to retrieve '%s' as AttributeType of ValueType '%s', while it actually has ValueType '%s'");
+                new TypeRead(2, "Attempted to retrieve '%s' as AttributeType of ValueType '%s', while it actually has ValueType '%s'.");
         private static final String codePrefix = "TYR";
         private static final String descriptionPrefix = "Invalid Type Read";
 

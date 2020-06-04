@@ -43,6 +43,7 @@ public class ThingGraph implements Graph<IID.Vertex.Thing, ThingVertex> {
     private final Graphs graphManager;
     private final ConcurrentMap<IID.Vertex.Thing, ThingVertex> thingsByIID;
     private final AttributesByIID attributesByIID;
+    private boolean hasWrites;
 
     ThingGraph(Graphs graphManager) {
         this.graphManager = graphManager;
@@ -190,6 +191,16 @@ public class ThingGraph implements Graph<IID.Vertex.Thing, ThingVertex> {
     @Override
     public void delete(ThingVertex vertex) {
         thingsByIID.remove(vertex.iid());
+    }
+
+    @Override
+    public void written() {
+        if (!hasWrites) hasWrites = true;
+    }
+
+    @Override
+    public boolean hasWrites() {
+        return hasWrites;
     }
 
     public void delete(AttributeVertex<?> vertex) {

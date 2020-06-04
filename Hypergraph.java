@@ -31,7 +31,9 @@ import java.util.Set;
  */
 public interface Hypergraph extends AutoCloseable {
 
-    Session session(String keyspace);
+    default Session session(String keyspace) { return session(keyspace, Session.Type.DATA); }
+
+    Session session(String keyspace, Session.Type type);
 
     KeyspaceManager keyspaces();
 
@@ -39,6 +41,9 @@ public interface Hypergraph extends AutoCloseable {
 
     void close();
 
+    /**
+     * Hypergraph Keyspace Manager
+     */
     interface KeyspaceManager {
 
         boolean contains(String keyspace);
@@ -72,11 +77,37 @@ public interface Hypergraph extends AutoCloseable {
 
         Transaction transaction(Transaction.Type type);
 
+        Session.Type type();
+
         Keyspace keyspace();
 
         boolean isOpen();
 
         void close();
+
+        enum Type {
+            DATA(0),
+            SCHEMA(1);
+
+            private final int id;
+            private final boolean isSchema;
+
+            Type(int id) {
+                this.id = id;
+                this.isSchema = id == 1;
+            }
+
+            public static Session.Type of(int value) {
+                for (Session.Type t : Session.Type.values()) {
+                    if (t.id == value) return t;
+                }
+                return null;
+            }
+
+            public boolean isData() { return !isSchema; }
+
+            public boolean isSchema() { return isSchema; }
+        }
     }
 
     /**
@@ -102,44 +133,24 @@ public interface Hypergraph extends AutoCloseable {
             READ(0),
             WRITE(1);
 
-            private final int type;
+            private final int id;
             private final boolean isWrite;
 
-            Type(int type) {
-                this.type = type;
-                this.isWrite = type == 1;
+            Type(int id) {
+                this.id = id;
+                this.isWrite = id == 1;
             }
 
             public static Type of(int value) {
                 for (Type t : Type.values()) {
-                    if (t.type == value) return t;
+                    if (t.id == value) return t;
                 }
                 return null;
             }
 
-            public static Type of(String value) {
-                for (Type t : Type.values()) {
-                    if (t.name().equalsIgnoreCase(value)) return t;
-                }
-                return null;
-            }
+            public boolean isRead() { return !isWrite; }
 
-            public int id() {
-                return type;
-            }
-
-            public boolean isRead() {
-                return !isWrite;
-            }
-
-            public boolean isWrite() {
-                return isWrite;
-            }
-
-            @Override
-            public String toString() {
-                return this.name();
-            }
+            public boolean isWrite() { return isWrite; }
         }
     }
 

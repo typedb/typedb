@@ -132,7 +132,7 @@ public class BasicTest {
             assertEquals(1, graph.keyspaces().getAll().size());
             assertEquals("my_data_keyspace", graph.keyspaces().getAll().iterator().next().name());
 
-            try (Hypergraph.Session session = graph.session("my_data_keyspace")) {
+            try (Hypergraph.Session session = graph.session("my_data_keyspace", Hypergraph.Session.Type.SCHEMA)) {
 
                 assertTrue(session.isOpen());
                 assertEquals("my_data_keyspace", session.keyspace().name());
@@ -246,7 +246,7 @@ public class BasicTest {
             assertEquals(1, graph.keyspaces().getAll().size());
             assertEquals("my_data_keyspace", graph.keyspaces().getAll().iterator().next().name());
 
-            try (Hypergraph.Session session = graph.session("my_data_keyspace")) {
+            try (Hypergraph.Session session = graph.session("my_data_keyspace", Hypergraph.Session.Type.SCHEMA)) {
 
                 assertTrue(session.isOpen());
                 assertEquals("my_data_keyspace", session.keyspace().name());
@@ -285,7 +285,7 @@ public class BasicTest {
 
         try (Hypergraph graph = CoreHypergraph.open(directory.toString())) {
             graph.keyspaces().create(keyspace);
-            try (Hypergraph.Session session = graph.session(keyspace)) {
+            try (Hypergraph.Session session = graph.session(keyspace, Hypergraph.Session.Type.SCHEMA)) {
                 try (Hypergraph.Transaction txn = session.transaction(Hypergraph.Transaction.Type.WRITE)) {
                     txn.concepts().putAttributeType("is-alive", Boolean.class);
                     txn.concepts().putAttributeType("age", Long.class);

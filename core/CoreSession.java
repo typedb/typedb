@@ -29,11 +29,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class CoreSession implements Hypergraph.Session {
 
     private final CoreKeyspace keyspace;
+    private final Type type;
     private final Set<CoreTransaction> transactions;
     private final AtomicBoolean isOpen;
 
-    CoreSession(CoreKeyspace keyspace) {
+    CoreSession(CoreKeyspace keyspace, Type type) {
         this.keyspace = keyspace;
+        this.type = type;
 
         transactions = ConcurrentHashMap.newKeySet();
         isOpen = new AtomicBoolean();
@@ -50,6 +52,11 @@ public class CoreSession implements Hypergraph.Session {
 
     void remove(CoreTransaction transaction) {
         transactions.remove(transaction);
+    }
+
+    @Override
+    public Type type() {
+        return type;
     }
 
     @Override
