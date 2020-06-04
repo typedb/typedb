@@ -54,5 +54,5 @@ dependencies:
 
   org.rocksdb:
     rocksdbjni:
-      version: "6.6.4"
+      version: "6.8.1"
       lang: java
