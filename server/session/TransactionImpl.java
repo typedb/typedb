@@ -100,6 +100,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.Stack;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -417,7 +418,7 @@ public class TransactionImpl implements Transaction {
         Stream<ConceptMap> explicitlyPersisted = inserted.peek(conceptMap -> {
             // mark all inferred concepts that are required for the insert for persistence explicitly
             // can avoid this potentially expensive check if there aren't any inferred concepts to start with
-            if (transactionCache.getInferredInstances().findAny().isPresent()) {
+            if (transactionCache.anyFactsInferred()) {
                 markConceptsForPersistence(conceptMap.concepts());
             }
         });
@@ -428,9 +429,13 @@ public class TransactionImpl implements Transaction {
     /**
      * Mark all objects inserted explicitly for persistence, if they are inferred
      * The inferred objects also transitively check their generating concepts to be marked for persistence
+     * "Dependant" concepts that are DIRECT dependants of a concept - concepts required to be persisted if we persist that concept
      *
      * We do the persistence operation at the top level in the Transaction, because we have access to the Caches here
      * However, it may be better performed directly in the ConceptManager or elsewhere
+     *
+     *
+     * TODO properly design this functionality and clean it up
      */
     private void markConceptsForPersistence(Collection<Concept> concepts) {
         Set<Thing> things = concepts.stream()
@@ -438,13 +443,42 @@ public class TransactionImpl implements Transaction {
                 .map(Concept::asThing)
                 .collect(Collectors.toSet());
 
-        ConceptUtils.getDependentConcepts(things)
-                .filter(Thing::isInferred)
-                .forEach(t -> {
-                    //as we are going to persist the concepts, reset the inferred flag
-                    ConceptVertex.from(t).vertex().property(Schema.VertexProperty.IS_INFERRED, false);
-                   transactionCache.inferredInstanceToPersist(t);
-                });
+        Set<Thing> visitedThings = new HashSet<>();
+        Stack<Thing> thingStack = new Stack<>();
+        thingStack.addAll(things);
+        while (!thingStack.isEmpty()) {
+            Thing thing = thingStack.pop();
+            if (!visitedThings.contains(thing)) {
+                if (thing.isRelation()) {
+                    // TODO persist inferred edges - not supported to persist inferred role playing yet
+
+                    thing.asRelation().rolePlayers()
+                            .filter(t -> !visitedThings.contains(t))
+                            .forEach(thingStack::add);
+
+                } else if (thing.isAttribute()) {
+                    // get all owners as a low level traversal
+                    ConceptVertex.from(thing).vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.ATTRIBUTE)
+                            .forEach(edge -> {
+                                Thing owner = conceptManager.buildConcept(edge.source());
+                                if (edge.propertyBoolean(Schema.EdgeProperty.IS_INFERRED)) {
+                                    // mark this edge for persistence
+                                    transactionCache.inferredOwnershipToPersist(owner, thing.asAttribute());
+                                    edge.property(Schema.EdgeProperty.IS_INFERRED, false);
+                                }
+                                if (!visitedThings.contains(owner)) {
+                                    thingStack.add(owner);
+                                }
+                            });
+                }
+
+                if (thing.isInferred()) {
+                    transactionCache.inferredInstanceToPersist(thing);
+                    ConceptVertex.from(thing).vertex().property(Schema.VertexProperty.IS_INFERRED, false);
+                }
+                visitedThings.add(thing);
+            }
+        }
     }
 
     // Delete query
@@ -727,7 +761,11 @@ public class TransactionImpl implements Transaction {
             return conceptManager.createEntityType(label, getMetaEntityType());
         }
 
-        ConceptUtils.validateBaseType(schemaConcept, Schema.BaseType.ENTITY_TYPE);
+        try {
+            ConceptUtils.validateBaseType(schemaConcept, Schema.BaseType.ENTITY_TYPE);
+        } catch (PropertyNotUniqueException e) {
+            throw GraknConceptException.propertyNotUnique(e.getMessage());
+        }
 
         return (EntityType) schemaConcept;
     }
@@ -812,7 +850,7 @@ public class TransactionImpl implements Transaction {
             if (Schema.MetaSchema.isMetaLabel(label)) {
                 throw GraknConceptException.metaTypeImmutable(label);
             } else if (!valueType.equals(attributeType.valueType())) {
-                throw GraknElementException.immutableProperty(attributeType.valueType(), valueType, Schema.VertexProperty.DATA_TYPE);
+                throw GraknElementException.immutableProperty(attributeType.valueType(), valueType, Schema.VertexProperty.VALUE_TYPE);
             }
         }
 
@@ -1113,12 +1151,13 @@ public class TransactionImpl implements Transaction {
      */
     @Override
     public void commit() throws TransactionException {
+
         if (!isOpen()) {
             throw TransactionException.transactionClosed(this, null);
         }
         try {
             checkMutationAllowed();
-            removeInferredConcepts();
+            removeInferredFacts();
             computeShardCandidates();
 
             // lock on the keyspace cache shared between concurrent tx's to the same keyspace
@@ -1138,9 +1177,14 @@ public class TransactionImpl implements Transaction {
         queryCache.clear();
     }
 
-    private void removeInferredConcepts() {
-        Set<Thing> inferredThingsToDiscard = transactionCache.getInferredInstancesToDiscard().collect(Collectors.toSet());
-        inferredThingsToDiscard.forEach(transactionCache::remove);
+    private void removeInferredFacts() {
+        transactionCache.getInferredOwnershipsToDiscard().forEach(pair -> {
+            Thing owner = pair.first();
+            Attribute<?> attribute = pair.second();
+            owner.unhas(attribute);
+        });
+
+        Set<Thing> inferredThingsToDiscard = transactionCache.getInferredInstancesToDiscard();
         inferredThingsToDiscard.forEach(Concept::delete);
     }
 

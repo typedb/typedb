@@ -20,13 +20,13 @@ package grakn.core.graql.reasoner.atom;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import grakn.common.util.Pair;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.CacheCasting;
 import grakn.core.graql.reasoner.ReasoningContext;
 import grakn.core.graql.reasoner.atom.binary.AttributeAtom;
 import grakn.core.graql.reasoner.atom.binary.IsaAtom;
 import grakn.core.graql.reasoner.atom.binary.OntologicalAtom;
-import grakn.core.graql.reasoner.atom.binary.RelationAtom;
 import grakn.core.graql.reasoner.atom.binary.TypeAtom;
 import grakn.core.graql.reasoner.atom.predicate.Predicate;
 import grakn.core.graql.reasoner.atom.predicate.VariablePredicate;
@@ -88,15 +88,11 @@ public abstract class Atom extends AtomicBase {
         return typeLabel;
     }
 
-    public RelationAtom toRelationAtom() {
-        throw ReasonerException.illegalAtomConversion(this, RelationAtom.class);
-    }
-
-    public AttributeAtom toAttributeAtom() { throw ReasonerException.illegalAtomConversion(this, AttributeAtom.class); }
-
     public IsaAtom toIsaAtom() {
         throw ReasonerException.illegalAtomConversion(this, IsaAtom.class);
     }
+
+    public AttributeAtom asAttributeAtom() { throw ReasonerException.illegalAtomConversion(this, AttributeAtom.class); }
 
     /**
      * Determines whether the subsumption relation between this (A) and provided atom (B) holds,
@@ -158,7 +154,7 @@ public abstract class Atom extends AtomicBase {
      * @return true if this atom is bounded - via substitution/specific resource or schema
      */
     public boolean isBounded() {
-        return isAttribute() && ((AttributeAtom) this).isValueEquality()
+        return isAttributeAtom() && ((AttributeAtom) this).isValueEquality()
                 || this instanceof OntologicalAtom
                 || isGround();
     }
@@ -215,6 +211,10 @@ public abstract class Atom extends AtomicBase {
                 || child.redefinesType()
                 || child.appendsRolePlayers())
                 && isRuleApplicableViaAtom(child.getRuleConclusionAtom());
+    }
+
+    public Set<Pair<Variable, Variable>> varDirectionality() {
+        return new HashSet<>();
     }
 
     public abstract boolean isRuleApplicableViaAtom(Atom headAtom);

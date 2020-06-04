@@ -835,30 +835,17 @@ public class QueryCacheIT {
         try(Transaction tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
             TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
             MultilevelSemanticCache cache = testTx.queryCache();
-            ReasonerQueryImpl baseQuery = testTx.reasonerQueryFactory().create(conjunction("{$x has resource $r via $rel;};"));
+            ReasonerQueryImpl baseQuery = testTx.reasonerQueryFactory().create(conjunction("{$x has resource $r;};"));
             Set<ConceptMap> answers = baseQuery.resolve(true).collect(toSet());
 
             ConceptMap answer = answers.iterator().next();
             Concept owner = answer.get("x");
             Concept attribute = answer.get("r");
-            Concept relation = answer.get("rel");
             Object value = attribute.asAttribute().value();
 
             ReasonerAtomicQuery ownerMapped = testTx.reasonerQueryFactory().atomic(conjunction("{$x has resource $r;$x id " + owner.id() + ";};"));
             ReasonerAtomicQuery ownerAndValueMapped = testTx.reasonerQueryFactory().atomic(conjunction("{$x has resource '" + value + "';$x id " + owner.id() +";};"));
             ReasonerAtomicQuery ownerAndValueMappedBaseType = testTx.reasonerQueryFactory().atomic(conjunction("{$x has attribute '" + value + "';$x id " + owner.id() +";};"));
-            ReasonerAtomicQuery ownerMappedWithRelVariable = testTx.reasonerQueryFactory().atomic(conjunction("{$x has resource $r via $rel;$x id " + owner.id() + ";};"));
-            ReasonerAtomicQuery ownerAndValueMappedWithRelVariable = testTx.reasonerQueryFactory().atomic(conjunction("{" +
-                    "$x has resource '" + value + "' via $rel;" +
-                    "$x id " + owner.id() + ";" +
-                    "};"
-            ));
-            ReasonerAtomicQuery ownerAndRelationMapped = testTx.reasonerQueryFactory().atomic(conjunction("{" +
-                    "$x has resource $r via $rel;" +
-                    "$x id " + owner.id() + ";" +
-                    "$rel id " + relation.id() + ";" +
-                    "};"
-            ));
             ReasonerAtomicQuery allMapped = testTx.reasonerQueryFactory().atomic(conjunction("{" +
                     "$x has resource $r;" +
                     "$x id " + owner.id() + ";" +
@@ -870,9 +857,6 @@ public class QueryCacheIT {
             assertTrue(allMapped.hasUniqueAnswer());
             assertFalse(ownerMapped.hasUniqueAnswer());
             assertFalse(ownerAndValueMappedBaseType.hasUniqueAnswer());
-            assertFalse(ownerMappedWithRelVariable.hasUniqueAnswer());
-            assertFalse(ownerAndValueMappedWithRelVariable.hasUniqueAnswer());
-            assertFalse(ownerAndRelationMapped.hasUniqueAnswer());
 
             ownerAndValueMapped.resolve(true)
                     .map(ans -> ans.explain(new LookupExplanation()))

@@ -147,7 +147,7 @@ public class KCoreIT {
     }
 
     @Test
-    public void testImplicitTypeShouldBeExcluded() {
+    public void testOwnershipsShouldBeExcluded() {
         addSchemaAndEntities();
 
         try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {

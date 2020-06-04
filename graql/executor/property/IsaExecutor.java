@@ -56,12 +56,12 @@ public class IsaExecutor implements PropertyExecutor.Insertable, PropertyExecuto
         Variable directTypeVar = new Variable();
         if (!property.isExplicit()) {
             return ImmutableSet.of(
-                    EquivalentFragmentSets.isa(property, var, directTypeVar, true),
+                    EquivalentFragmentSets.isa(property, var, directTypeVar),
                     EquivalentFragmentSets.sub(property, directTypeVar, property.type().var())
             );
         } else {
             return ImmutableSet.of(
-                    EquivalentFragmentSets.isa(property, var, property.type().var(), true)
+                    EquivalentFragmentSets.isa(property, var, property.type().var())
             );
         }
     }
@@ -143,11 +143,7 @@ public class IsaExecutor implements PropertyExecutor.Insertable, PropertyExecuto
         public TiebreakDeletionOrdering ordering(WriteExecutor executor) {
             Concept concept = executor.getConcept(var);
             if (concept.isRelation()) {
-                if (concept.asThing().type().isImplicit()) {
-                    return TiebreakDeletionOrdering.HAS;
-                } else {
-                    return TiebreakDeletionOrdering.RELATION;
-                }
+                return TiebreakDeletionOrdering.RELATION;
             } else {
                 return TiebreakDeletionOrdering.NON_RELATION;
             }

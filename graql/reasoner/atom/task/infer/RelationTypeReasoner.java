@@ -116,8 +116,6 @@ public class RelationTypeReasoner implements TypeReasoner<RelationAtom> {
                     );
                 })
                 .sorted(Comparator.comparing(p -> -p.second()))
-                //prioritise non-implicit relations
-                .sorted(Comparator.comparing(e -> e.first().isImplicit()))
                 .map(Pair::first)
                 //retain super types only
                 .filter(t -> Sets.intersection(ConceptUtils.nonMetaSups(t), compatibleConfigurations.keySet()).isEmpty())

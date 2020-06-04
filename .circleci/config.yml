@@ -147,6 +147,26 @@ jobs:
           command: bazel test //test/integration/graql/executor/... --test_output=errors
       - run-bazel-rbe:
           command: bazel test //test/integration/graql/query/... --test_output=errors
+      - run-bazel-rbe:
+          command: bazel test //test/integration/graql/planning/... --test_output=errors
+
+  test-integration-concept:
+    machine: true
+    working_directory: ~/grakn
+    steps:
+      - install-bazel-linux-rbe
+      - checkout
+      - run-bazel-rbe:
+          command: bazel test //test/integration/concept/... --test_output=errors
+
+  test-integration-keyspace:
+    machine: true
+    working_directory: ~/grakn
+    steps:
+      - install-bazel-linux-rbe
+      - checkout
+      - run-bazel-rbe:
+          command: bazel test //test/integration/keyspace/... --test_output=errors
 
   test-integration-reasoner:
     machine: true
@@ -480,6 +500,14 @@ workflows:
           filters:
             branches:
               ignore: grakn-release-branch
+      - test-integration-concept:
+          filters:
+            branches:
+              ignore: grakn-release-branch
+      - test-integration-keyspace:
+          filters:
+            branches:
+              ignore: grakn-release-branch
       - test-integration-reasoner:
           filters:
             branches:
@@ -506,6 +534,8 @@ workflows:
             - test-integration
             - test-integration-reasoner
             - test-integration-analytics
+            - test-integration-concept
+            - test-integration-keyspace
       - test-assembly-mac-zip:
           filters:
             branches:
@@ -524,6 +554,8 @@ workflows:
             - test-integration
             - test-integration-reasoner
             - test-integration-analytics
+            - test-integration-concept
+            - test-integration-keyspace
       - test-assembly-windows-zip:
           filters:
             branches:
@@ -542,6 +574,8 @@ workflows:
             - test-integration
             - test-integration-reasoner
             - test-integration-analytics
+            - test-integration-concept
+            - test-integration-keyspace
       - test-assembly-linux-targz:
           filters:
             branches:
@@ -560,6 +594,8 @@ workflows:
             - test-integration
             - test-integration-reasoner
             - test-integration-analytics
+            - test-integration-concept
+            - test-integration-keyspace
       - test-assembly-docker:
           filters:
             branches:
@@ -578,6 +614,8 @@ workflows:
             - test-integration
             - test-integration-reasoner
             - test-integration-analytics
+            - test-integration-concept
+            - test-integration-keyspace
       - deploy-apt-snapshot:
           filters:
             branches:

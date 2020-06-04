@@ -182,16 +182,6 @@ public class RelationAtom extends Atom {
     }
 
     @Override
-    public RelationAtom toRelationAtom() {
-        return converter.toRelationAtom(this, context());
-    }
-
-    @Override
-    public AttributeAtom toAttributeAtom() {
-        return converter.toAttributeAtom(this, context());
-    }
-
-    @Override
     public IsaAtom toIsaAtom() {
         return converter.toIsaAtom(this, context());
     }
@@ -404,7 +394,7 @@ public class RelationAtom extends Atom {
     }
 
     @Override
-    public boolean isRelation() {
+    public boolean isRelationAtom() {
         return true;
     }
 
@@ -414,7 +404,7 @@ public class RelationAtom extends Atom {
     }
 
     @Override
-    public boolean isType() {
+    public boolean isCompatibleWithTypeAtom() {
         return getTypeLabel() != null;
     }
 
@@ -537,8 +527,8 @@ public class RelationAtom extends Atom {
 
     @Override
     public boolean isRuleApplicableViaAtom(Atom ruleAtom) {
-        if (ruleAtom instanceof RelationAtom || ruleAtom instanceof AttributeAtom) {
-            RelationAtom atomWithType = typeReasoner.inferTypes(this.addType(ruleAtom.toRelationAtom().getSchemaConcept()), new ConceptMap(), context());
+        if (ruleAtom instanceof RelationAtom) {
+            RelationAtom atomWithType = typeReasoner.inferTypes(this.addType(ruleAtom.getSchemaConcept()), new ConceptMap(), context());
             return ruleAtom.isUnifiableWith(atomWithType);
         }
         return false;

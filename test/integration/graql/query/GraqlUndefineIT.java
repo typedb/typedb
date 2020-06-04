@@ -18,6 +18,7 @@
 package grakn.core.graql.query;
 
 import com.google.common.collect.ImmutableList;
+import grakn.core.common.exception.ErrorMessage;
 import grakn.core.graql.graph.MovieGraph;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Concept;
@@ -108,25 +109,23 @@ public class GraqlUndefineIT {
         tx.execute(Graql.define(type(NEW_TYPE.getValue()).sub(ENTITY).has("name")));
         tx.commit();
         tx = session.transaction(Transaction.Type.WRITE);
-        assertThat(tx.getType(NEW_TYPE).attributes().toArray(), hasItemInArray(tx.getAttributeType("name")));
+        assertThat(tx.getType(NEW_TYPE).has().toArray(), hasItemInArray(tx.getAttributeType("name")));
 
         tx.execute(Graql.undefine(type(NEW_TYPE.getValue()).has("name")));
         tx.commit();
         tx = session.transaction(Transaction.Type.WRITE);
-        assertThat(tx.getType(NEW_TYPE).attributes().toArray(), not(hasItemInArray(tx.getAttributeType("name"))));
+        assertThat(tx.getType(NEW_TYPE).has().toArray(), not(hasItemInArray(tx.getAttributeType("name"))));
     }
 
     @Test
-    public void whenUndefiningHasWhichDoesntExist_DoNothing() {
+    public void whenUndefiningHasWhichDoesntExist_Throw() {
         tx.execute(Graql.define(type(NEW_TYPE.getValue()).sub(ENTITY).has("name")));
         tx.commit();
         tx = session.transaction(Transaction.Type.WRITE);
-        assertThat(tx.getType(NEW_TYPE).attributes().toArray(), hasItemInArray(tx.getAttributeType("name")));
+        assertThat(tx.getType(NEW_TYPE).has().toArray(), hasItemInArray(tx.getAttributeType("name")));
 
-        tx.execute(Graql.undefine(type(NEW_TYPE.getValue()).has("title")));
-        tx.commit();
-        tx = session.transaction(Transaction.Type.WRITE);
-        assertThat(tx.getType(NEW_TYPE).attributes().toArray(), hasItemInArray(tx.getAttributeType("name")));
+        exception.expectMessage(ErrorMessage.ILLEGAL_TYPE_UNHAS_ATTRIBUTE_NOT_EXIST.getMessage(NEW_TYPE, "key", "title"));
+        tx.execute(Graql.undefine(type(NEW_TYPE.getValue()).key("title")));
     }
 
     @Test
@@ -143,16 +142,15 @@ public class GraqlUndefineIT {
     }
 
     @Test
-    public void whenUndefiningKeyWhichDoesntExist_DoNothing() {
+    public void whenUndefiningKeyWhichDoesntExist_Throw() {
         tx.execute(Graql.define(type(NEW_TYPE.getValue()).sub(ENTITY).key("name")));
         tx.commit();
         tx = session.transaction(Transaction.Type.WRITE);
         assertThat(tx.getType(NEW_TYPE).keys().toArray(), hasItemInArray(tx.getAttributeType("name")));
 
+        exception.expect(GraknConceptException.class);
+        exception.expectMessage(ErrorMessage.ILLEGAL_TYPE_UNHAS_ATTRIBUTE_NOT_EXIST.getMessage(NEW_TYPE, "key", "title"));
         tx.execute(Graql.undefine(type(NEW_TYPE.getValue()).key("title")));
-        tx.commit();
-        tx = session.transaction(Transaction.Type.WRITE);
-        assertThat(tx.getType(NEW_TYPE).keys().toArray(), hasItemInArray(tx.getAttributeType("name")));
     }
 
     @Test @Ignore // TODO: investigate how this is possible in the first place
@@ -343,9 +341,9 @@ public class GraqlUndefineIT {
         Role ancestor = tx.getRole("ancestor");
         Role descendant = tx.getRole("descendant");
 
-        assertThat(pokemon.attributes().toArray(), arrayContaining(pokedexNo));
+        assertThat(pokemon.has().toArray(), arrayContaining(pokedexNo));
         assertThat(evolution.roles().toArray(), arrayContainingInAnyOrder(ancestor, descendant));
-        assertThat(pokemon.playing().filter(r -> !r.isImplicit()).toArray(), arrayContainingInAnyOrder(ancestor, descendant));
+        assertThat(pokemon.playing().toArray(), arrayContainingInAnyOrder(ancestor, descendant));
 
         tx.execute(Graql.undefine(schema));
         tx.commit();

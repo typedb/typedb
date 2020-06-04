@@ -22,14 +22,17 @@ import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.GraknConceptException;
+import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.concept.manager.ConceptNotificationChannel;
 import grakn.core.kb.concept.structure.VertexElement;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import javax.annotation.Nullable;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 /**
  * An ontological element which models and categorises the various Attribute in the graph.
@@ -59,6 +62,25 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
     public AttributeType<D> sup(AttributeType<D> superType) {
         ((AttributeTypeImpl<D>) superType).sups().forEach(st -> checkInstancesMatchRegex(st.regex()));
         return super.sup(superType);
+    }
+
+    @Override
+    public Stream<Type> directOwnersAsKey() {
+        Stream<Type> directKeyOwners = neighbours(Direction.IN, Schema.EdgeLabel.KEY);
+        return directKeyOwners;
+    }
+
+    private Stream<Type> directOwners() {
+        Stream<Type> directHasOwners = neighbours(Direction.IN, Schema.EdgeLabel.HAS);
+        Stream<Type> directKeyOwners = neighbours(Direction.IN, Schema.EdgeLabel.KEY);
+        return Stream.concat(directHasOwners, directKeyOwners);
+    }
+
+    @Override
+    public Stream<Type> owners() {
+        // note that sups() includes self
+        Stream<Type> owners = sups().flatMap(parent -> (((AttributeTypeImpl<D>)parent).directOwners()));
+        return owners;
     }
 
     /**
@@ -167,7 +189,7 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
     @Nullable
     @Override
     public ValueType<D> valueType() {
-        String className = vertex().property(Schema.VertexProperty.DATA_TYPE);
+        String className = vertex().property(Schema.VertexProperty.VALUE_TYPE);
         if (className == null) return null;
 
         try {
@@ -183,6 +205,18 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
     @Override
     public String regex() {
         return vertex().property(Schema.VertexProperty.REGEX);
+    }
+
+    public long ownershipCount() {
+        Long count = vertex().property(Schema.VertexProperty.OWNERSHIP_COUNT);
+        if (count != null) {
+            return count;
+        }
+        return 0L;
+    }
+
+    public void writeOwnershipCount(long count) {
+        vertex().property(Schema.VertexProperty.OWNERSHIP_COUNT, count);
     }
 
     @Override

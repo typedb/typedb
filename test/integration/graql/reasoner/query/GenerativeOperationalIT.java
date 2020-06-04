@@ -232,7 +232,7 @@ public class GenerativeOperationalIT {
 
                 secondTree.keySet().forEach(p -> {
                     ReasonerAtomicQuery unrelated = reasonerQueryFactory.atomic(conjunction(p));
-                    if (!unrelated.getAtom().toAttributeAtom().isValueEquality()) {
+                    if (!unrelated.getAtom().asAttributeAtom().isValueEquality()) {
                         fuzzer.apply(p, ctx).forEach(fuzzedUnrelatedPattern -> {
                             ReasonerAtomicQuery fuzzedUnrelated = reasonerQueryFactory.atomic(conjunction(fuzzedUnrelatedPattern));
 

@@ -48,12 +48,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import static grakn.core.core.Schema.ImplicitType.HAS;
-import static grakn.core.core.Schema.ImplicitType.HAS_OWNER;
-import static grakn.core.core.Schema.ImplicitType.HAS_VALUE;
-import static grakn.core.core.Schema.ImplicitType.KEY;
-import static grakn.core.core.Schema.ImplicitType.KEY_OWNER;
-import static grakn.core.core.Schema.ImplicitType.KEY_VALUE;
 import static grakn.core.util.GraqlTestUtil.assertExists;
 import static grakn.core.util.GraqlTestUtil.assertNotExists;
 import static graql.lang.Graql.type;
@@ -191,10 +185,11 @@ public class GraqlDefineIT {
 
     @Test
     public void testDefineReferenceByName() {
-        String roleTypeLabel = HAS_OWNER.getLabel("title").getValue();
+        String roleTypeLabel = "a-role";
         tx.execute(Graql.define(
                 type("new-type").sub(Graql.Token.Type.ENTITY),
-                type("new-type").plays(roleTypeLabel)
+                type("new-type").plays(roleTypeLabel),
+                type("rel").sub(Graql.Token.Type.RELATION).relates(roleTypeLabel)
         ));
 
         tx.execute(Graql.insert(var("x").isa("new-type")));
@@ -222,24 +217,12 @@ public class GraqlDefineIT {
                 type("an-unconnected-resource-type").sub(Graql.Token.Type.ATTRIBUTE).value(Graql.Token.ValueType.LONG)
         ));
 
+        tx.getAttributeType(resourceType).owners();
         // Make sure a-new-type can have the given resource type, but not other resource types
         assertExists(tx, type("a-new-type").sub("entity").has(resourceType));
         assertNotExists(tx, type("a-new-type").has("title"));
         assertNotExists(tx, type("movie").has(resourceType));
         assertNotExists(tx, type("a-new-type").has("an-unconnected-resource-type"));
-
-        Statement hasResource = type(HAS.getLabel(resourceType).getValue());
-        Statement hasResourceOwner = type(HAS_OWNER.getLabel(resourceType).getValue());
-        Statement hasResourceValue = type(HAS_VALUE.getLabel(resourceType).getValue());
-
-        // Make sure the expected ontology elements are created
-        assertExists(tx, hasResource.sub(Graql.Token.Type.RELATION));
-        assertExists(tx, hasResourceOwner.sub(Graql.Token.Type.ROLE));
-        assertExists(tx, hasResourceValue.sub(Graql.Token.Type.ROLE));
-        assertExists(tx, hasResource.relates(hasResourceOwner));
-        assertExists(tx, hasResource.relates(hasResourceValue));
-        assertExists(tx, type("a-new-type").plays(hasResourceOwner));
-        assertExists(tx, type(resourceType).plays(hasResourceValue));
     }
 
     @Test
@@ -256,19 +239,6 @@ public class GraqlDefineIT {
         assertExists(tx, type("a-new-type").sub("entity").has(resourceType));
         assertNotExists(tx, type("a-new-type").sub("entity").key("title"));
         assertNotExists(tx, type("movie").sub("entity").key(resourceType));
-
-        Statement key = type(KEY.getLabel(resourceType).getValue());
-        Statement keyOwner = type(KEY_OWNER.getLabel(resourceType).getValue());
-        Statement keyValue = type(KEY_VALUE.getLabel(resourceType).getValue());
-
-        // Make sure the expected ontology elements are created
-        assertExists(tx, key.sub(Graql.Token.Type.RELATION));
-        assertExists(tx, keyOwner.sub(Graql.Token.Type.ROLE));
-        assertExists(tx, keyValue.sub(Graql.Token.Type.ROLE));
-        assertExists(tx, key.relates(keyOwner));
-        assertExists(tx, key.relates(keyValue));
-        assertExists(tx, type("a-new-type").plays(keyOwner));
-        assertExists(tx, type(resourceType).plays(keyValue));
     }
 
     @Test

@@ -236,7 +236,7 @@ public class DegreeIT {
             assertTrue(subgraphReferenceDegrees.containsAll(degrees));
 
             // create a subgraph excluding one attribute type only
-            HashSet<String> almostFullTypes = Sets.newHashSet("animal", "person", "mans-best-friend", "@has-name", "name");
+            HashSet<String> almostFullTypes = Sets.newHashSet("animal", "person", "mans-best-friend", "name");
             degrees = tx.execute(Graql.compute().centrality().using(DEGREE).in(almostFullTypes));
             assertTrue(almostFullReferenceDegrees.containsAll(degrees));
 

@@ -133,6 +133,17 @@ public class TraversalPlanFactoryImpl implements TraversalPlanFactory {
         // it's possible that some (or all) fragments are disconnected, e.g. $x isa person; $y isa dog;
         Collection<Set<Fragment>> connectedFragmentSets = getConnectedFragmentSets(allFragments);
 
+
+
+        /*
+        Fragments
+          -> Nodes including virtual middle nodes
+          -> Arborescence, including virtual middle nodes
+          -> List<Fragment>, by mapping virtual middle nodes back to fragments
+         */
+
+
+
         // build a query plan for each query subgraph separately
         for (Set<Fragment> connectedFragments : connectedFragmentSets) {
             // one of two cases - either we have a connected graph > 1 node, which is used to compute a MST, OR exactly 1 node
@@ -242,19 +253,7 @@ public class TraversalPlanFactoryImpl implements TraversalPlanFactory {
                 .limit(MAX_STARTING_POINTS)
                 .forEach(fragment -> {
                     Node node = allNodes.get(NodeId.of(NodeId.Type.VAR, fragment.start()));
-                    //TODO: this behaviour should be incorporated into the MST weight calculation
-                    if (fragment instanceof LabelFragment) {
-                        Type type = conceptManager.getType(Iterators.getOnlyElement(((LabelFragment) fragment).labels().iterator()));
-                        if (type != null && type.isImplicit()) {
-                            // implicit types have low priority because their instances may be edges
-                            lowPriorityStartingNodeSet.add(node);
-                        } else {
-                            // other labels/types are the ideal starting point as they are indexed
-                            highPriorityStartingNodeSet.add(node);
-                        }
-                    } else {
-                        highPriorityStartingNodeSet.add(node);
-                    }
+                    highPriorityStartingNodeSet.add(node);
                 });
 
         Set<Node> startingNodes;

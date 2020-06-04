@@ -69,6 +69,15 @@ public class Fragments {
                 varProperty, relation, rolePlayer, edge, role, roleLabels, relationTypeLabels);
     }
 
+    public static Fragment inAttribute(VarProperty varProperty, Variable attribute, Variable owner, Variable edge, ImmutableSet<Label> attributeTypeLabels) {
+        return new InAttributeFragment(varProperty, attribute, owner, edge);
+    }
+
+    public static Fragment outAttribute(VarProperty varProperty, Variable owner, Variable attribute, Variable edge, ImmutableSet<Label> attributeTypeLabels) {
+        return new OutAttributeFragment(varProperty, owner, attribute, edge, attributeTypeLabels);
+    }
+
+
     public static Fragment inSub(VarProperty varProperty, Variable start, Variable end, int subTraversalDepthlimit) {
         return new InSubFragment(varProperty, start, end, subTraversalDepthlimit);
     }
@@ -85,8 +94,8 @@ public class Fragments {
         return new OutRelatesFragment(varProperty, start, end);
     }
 
-    public static Fragment inIsa(VarProperty varProperty, Variable start, Variable end, boolean mayHaveEdgeInstances) {
-        return new InIsaFragment(varProperty, start, end, mayHaveEdgeInstances);
+    public static Fragment inIsa(VarProperty varProperty, Variable start, Variable end) {
+        return new InIsaFragment(varProperty, start, end);
     }
 
     public static Fragment outIsa(VarProperty varProperty, Variable start, Variable end) {
@@ -126,8 +135,8 @@ public class Fragments {
         return new RegexFragment(varProperty, start, regex);
     }
 
-    public static Fragment notInternal(VarProperty varProperty, Variable start) {
-        return new NotInternalFragment(varProperty, start);
+    public static Fragment notShard(VarProperty varProperty, Variable start) {
+        return new NotShardFragment(varProperty, start);
     }
 
     public static Fragment neq(VarProperty varProperty, Variable start, Variable other) {

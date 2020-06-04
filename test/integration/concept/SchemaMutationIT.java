@@ -18,7 +18,6 @@
 
 package grakn.core.concept;
 
-import com.google.common.collect.Iterables;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
@@ -42,7 +41,6 @@ import org.junit.rules.ExpectedException;
 
 import static grakn.core.common.exception.ErrorMessage.IS_ABSTRACT;
 import static grakn.core.common.exception.ErrorMessage.VALIDATION_CASTING;
-import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.junit.Assert.assertThat;
 
@@ -176,27 +174,22 @@ public class SchemaMutationIT {
 
     @Test
     public void whenChangingTheSuperTypeOfAnEntityTypeWhichHasAResource_EnsureTheResourceIsStillAccessibleViaTheRelationTypeInstances_ByPreventingChange() {
-        AttributeType<String> name = tx.putAttributeType("name", AttributeType.ValueType.STRING);
+        RelationType friendship = tx.putRelationType("friendship");
+        Role friend = tx.putRole("friend");
+        friendship.relates(friend);
 
         //Create a animal and allow animal to have a name
-        EntityType animal = tx.putEntityType("animal").has(name);
-
-        //Create a dog which is a animal and is therefore allowed to have a name
+        EntityType animal = tx.putEntityType("animal").plays(friend);
         EntityType dog = tx.putEntityType("dog").sup(animal);
-        RelationType has_name = tx.getRelationType("@has-name");
+
 
         //Create a dog and name it puppy
-        Attribute<String> puppy = name.create("puppy");
-        dog.create().has(puppy);
-
-        //Get The Relation which says that our dog is name puppy
-        Relation expectedEdge = Iterables.getOnlyElement(has_name.instances().collect(toSet()));
-        Role hasNameOwner = tx.getRole("@has-name-owner");
-
-        assertThat(expectedEdge.type().instances().collect(toSet()), hasItem(expectedEdge));
+        Relation friendInst = friendship.create();
+        Entity dogInst = dog.create();
+        friendInst.assign(friend, dogInst);
 
         expectedException.expect(GraknConceptException.class);
-        expectedException.expectMessage(GraknConceptException.changingSuperWillDisconnectRole(animal, tx.getMetaEntityType(), hasNameOwner).getMessage());
+        expectedException.expectMessage(GraknConceptException.changingSuperWillDisconnectRole(animal, tx.getMetaEntityType(), friend).getMessage());
 
         //make a dog to not be an animal, and expect exception thrown
         dog.sup(tx.getMetaEntityType());
