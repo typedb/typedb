@@ -136,15 +136,6 @@ jobs:
       - run-bazel-rbe:
           command: bazel test //test/behaviour/graql/language/match:test --test_output=errors
 
-  test-behaviour-graql-mutate:
-    machine: true
-    working_directory: ~/grakn
-    steps:
-      - install-bazel-linux-rbe
-      - checkout
-      - run-bazel-rbe:
-          command: bazel test //test/behaviour/graql/language/mutate:test --test_output=errors
-
   test-behaviour-graql-undefine:
     machine: true
     working_directory: ~/grakn
@@ -537,10 +528,6 @@ workflows:
           filters:
             branches:
               ignore: grakn-release-branch
-      - test-behaviour-graql-mutate:
-          filters:
-            branches:
-              ignore: grakn-release-branch
       - test-behaviour-graql-undefine:
           filters:
             branches:
@@ -590,7 +577,6 @@ workflows:
             - test-behaviour-graql-delete
             - test-behaviour-graql-insert
             - test-behaviour-graql-match
-            - test-behaviour-graql-mutate
             - test-behaviour-graql-undefine
             - test-behaviour-graql-reasoner
             - test-integration
@@ -615,7 +601,6 @@ workflows:
             - test-behaviour-graql-delete
             - test-behaviour-graql-insert
             - test-behaviour-graql-match
-            - test-behaviour-graql-mutate
             - test-behaviour-graql-undefine
             - test-behaviour-graql-reasoner
             - test-integration
@@ -640,7 +625,6 @@ workflows:
             - test-behaviour-graql-delete
             - test-behaviour-graql-insert
             - test-behaviour-graql-match
-            - test-behaviour-graql-mutate
             - test-behaviour-graql-undefine
             - test-behaviour-graql-reasoner
             - test-integration
@@ -665,7 +649,6 @@ workflows:
             - test-behaviour-graql-delete
             - test-behaviour-graql-insert
             - test-behaviour-graql-match
-            - test-behaviour-graql-mutate
             - test-behaviour-graql-undefine
             - test-behaviour-graql-reasoner
             - test-integration
@@ -690,7 +673,6 @@ workflows:
             - test-behaviour-graql-delete
             - test-behaviour-graql-insert
             - test-behaviour-graql-match
-            - test-behaviour-graql-mutate
             - test-behaviour-graql-undefine
             - test-behaviour-graql-reasoner
             - test-integration
