@@ -260,8 +260,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         @Nullable
         @Override
         public AttributeTypeImpl.Boolean sup() {
-            TypeVertex vertex = super.superTypeVertex();
-            return vertex != null ? of(vertex) : null;
+            return super.sup(AttributeTypeImpl.Boolean::of);
         }
 
         @Override
@@ -359,8 +358,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         @Nullable
         @Override
         public AttributeTypeImpl.Long sup() {
-            TypeVertex vertex = super.superTypeVertex();
-            return vertex != null ? of(vertex) : null;
+            return super.sup(AttributeTypeImpl.Long::of);
         }
 
         @Override
@@ -460,8 +458,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         @Nullable
         @Override
         public AttributeTypeImpl.Double sup() {
-            TypeVertex vertex = super.superTypeVertex();
-            return vertex != null ? of(vertex) : null;
+            return super.sup(AttributeTypeImpl.Double::of);
         }
 
         @Override
@@ -561,8 +558,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         @Nullable
         @Override
         public AttributeTypeImpl.String sup() {
-            TypeVertex vertex = super.superTypeVertex();
-            return vertex != null ? of(vertex) : null;
+            return super.sup(AttributeTypeImpl.String::of);
         }
 
         @Override
@@ -666,8 +662,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         @Nullable
         @Override
         public AttributeTypeImpl.DateTime sup() {
-            TypeVertex vertex = super.superTypeVertex();
-            return vertex != null ? of(vertex) : null;
+            return super.sup(AttributeTypeImpl.DateTime::of);
         }
 
         @Override

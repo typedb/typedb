@@ -84,15 +84,15 @@ public abstract class TypeImpl implements Type {
     }
 
     protected void superTypeVertex(TypeVertex superTypeVertex) {
-        vertex.outs().delete(Schema.Edge.Type.SUB, superTypeVertex());
+        vertex.outs().delete(Schema.Edge.Type.SUB, ((TypeImpl) sup()).vertex);
         vertex.outs().put(Schema.Edge.Type.SUB, superTypeVertex);
     }
 
     @Nullable
-    protected TypeVertex superTypeVertex() {
+    protected <TYPE> TYPE sup(Function<TypeVertex, TYPE> typeConstructor) {
         Iterator<TypeVertex> iterator = Iterators.filter(vertex.outs().edge(Schema.Edge.Type.SUB).to(),
                                                          v -> v.schema().equals(vertex.schema()));
-        if (iterator.hasNext()) return iterator.next();
+        if (iterator.hasNext()) return typeConstructor.apply(iterator.next());
         else return null;
     }
 

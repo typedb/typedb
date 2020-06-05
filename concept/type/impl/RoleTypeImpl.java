@@ -20,12 +20,15 @@ package hypergraph.concept.type.impl;
 
 import hypergraph.common.exception.Error;
 import hypergraph.common.exception.HypergraphException;
+import hypergraph.common.iterator.Iterators;
+import hypergraph.concept.type.RelationType;
 import hypergraph.concept.type.RoleType;
 import hypergraph.graph.TypeGraph;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.vertex.TypeVertex;
 
 import javax.annotation.Nullable;
+import java.util.Iterator;
 import java.util.stream.Stream;
 
 import static hypergraph.common.exception.Error.TypeWrite.INVALID_ROOT_TYPE_MUTATION;
@@ -68,8 +71,7 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
     @Nullable
     @Override
     public RoleTypeImpl sup() {
-        TypeVertex vertex = super.superTypeVertex();
-        return vertex != null ? of(vertex) : null;
+        return super.sup(RoleTypeImpl::of);
     }
 
     @Override
@@ -85,6 +87,17 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
     @Override
     public String scopedLabel() {
         return vertex.scopedLabel();
+    }
+
+    @Override
+    public RelationTypeImpl relation() {
+        Iterator<TypeVertex> v = vertex.ins().edge(Schema.Edge.Type.RELATES).from();
+        return RelationTypeImpl.of(v.next());
+    }
+
+    @Override
+    public Stream<RelationTypeImpl> relations() {
+        return relation().subs().filter(rel -> rel.roles().anyMatch(rol -> rol.equals(this)));
     }
 
     public void delete() {

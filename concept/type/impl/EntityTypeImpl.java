@@ -70,8 +70,7 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
     @Nullable
     @Override
     public EntityTypeImpl sup() {
-        TypeVertex vertex = super.superTypeVertex();
-        return vertex != null ? of(vertex) : null;
+        return super.sup(EntityTypeImpl::of);
     }
 
     @Override

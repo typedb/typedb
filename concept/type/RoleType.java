@@ -35,4 +35,8 @@ public interface RoleType extends Type {
     Stream<? extends RoleType> subs();
 
     String scopedLabel();
+
+    RelationType relation();
+
+    Stream<? extends RelationType> relations();
 }

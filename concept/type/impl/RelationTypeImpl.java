@@ -93,8 +93,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     @Nullable
     @Override
     public RelationTypeImpl sup() {
-        TypeVertex vertex = super.superTypeVertex();
-        return vertex != null ? of(vertex) : null;
+        return super.sup(RelationTypeImpl::of);
     }
 
     @Override
