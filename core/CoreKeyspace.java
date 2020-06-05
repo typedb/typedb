@@ -19,7 +19,6 @@
 package hypergraph.core;
 
 import hypergraph.Hypergraph;
-import hypergraph.common.concurrent.ManagedReadWriteLock;
 import hypergraph.common.exception.HypergraphException;
 import hypergraph.graph.util.KeyGenerator;
 import org.rocksdb.OptimisticTransactionDB;
@@ -30,10 +29,10 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Comparator;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.StampedLock;
 
 public class CoreKeyspace implements Hypergraph.Keyspace {
 
@@ -41,17 +40,17 @@ public class CoreKeyspace implements Hypergraph.Keyspace {
     private final CoreHypergraph core;
     private final OptimisticTransactionDB rocksDB;
     private final KeyGenerator.Persisted keyGenerator;
-    private final Set<CoreSession> sessions;
-    private final ManagedReadWriteLock schemaLock;
+    private final ConcurrentMap<CoreSession, Long> sessions;
+    private final StampedLock schemaLock;
     private final AtomicBoolean isOpen;
 
     private CoreKeyspace(CoreHypergraph core, String name) {
         this.name = name;
         this.core = core;
         keyGenerator = new KeyGenerator.Persisted();
-        sessions = ConcurrentHashMap.newKeySet();
+        sessions = new ConcurrentHashMap<>();
         isOpen = new AtomicBoolean(false);
-        schemaLock = new ManagedReadWriteLock();
+        schemaLock = new StampedLock();
 
         try {
             rocksDB = OptimisticTransactionDB.open(this.core.rocksOptions(), directory().toString());
@@ -93,20 +92,13 @@ public class CoreKeyspace implements Hypergraph.Keyspace {
     }
 
     CoreSession createAndOpenSession(Hypergraph.Session.Type type) {
-        try {
-            if (type.equals(Hypergraph.Session.Type.DATA)) {
-                schemaLock.lockRead();
-            } else if (type.equals(Hypergraph.Session.Type.SCHEMA)) {
-                schemaLock.lockWrite();
-            } else {
-                assert false;
-            }
-            CoreSession session = new CoreSession(this, type);
-            sessions.add(session);
-            return session;
-        } catch (InterruptedException e) {
-            throw new HypergraphException(e);
+        long schemaWriteLockStamp = 0;
+        if (type.equals(Hypergraph.Session.Type.SCHEMA)) {
+            schemaWriteLockStamp = schemaLock.writeLock();
         }
+        CoreSession session = new CoreSession(this, type);
+        sessions.put(session, schemaWriteLockStamp);
+        return session;
     }
 
     private Path directory() {
@@ -121,20 +113,24 @@ public class CoreKeyspace implements Hypergraph.Keyspace {
         return keyGenerator;
     }
 
-    public void remove(CoreSession session) {
-        sessions.remove(session);
-        if (session.type().equals(Hypergraph.Session.Type.DATA)) {
-            schemaLock.unlockRead();
-        } else if (session.type().equals(Hypergraph.Session.Type.SCHEMA)) {
-            schemaLock.unlockWrite();
-        } else {
-            assert false;
+    long acquireSchemaReadLock() {
+        return schemaLock.readLock();
+    }
+
+    void releaseSchemaReadLock(long stamp) {
+        schemaLock.unlockRead(stamp);
+    }
+
+    void remove(CoreSession session) {
+        long schemaWriteLockStamp = sessions.remove(session);
+        if (session.type().equals(Hypergraph.Session.Type.SCHEMA)) {
+            schemaLock.unlockWrite(schemaWriteLockStamp);
         }
     }
 
     void close() {
         if (isOpen.compareAndSet(true, false)) {
-            sessions.parallelStream().forEach(CoreSession::close);
+            sessions.keySet().forEach(CoreSession::close);
             rocksDB.close();
         }
     }

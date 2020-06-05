@@ -22,22 +22,22 @@ import hypergraph.Hypergraph;
 import hypergraph.graph.util.KeyGenerator;
 import org.rocksdb.OptimisticTransactionDB;
 
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class CoreSession implements Hypergraph.Session {
 
     private final CoreKeyspace keyspace;
     private final Type type;
-    private final Set<CoreTransaction> transactions;
+    private final ConcurrentMap<CoreTransaction, Long> transactions;
     private final AtomicBoolean isOpen;
 
     CoreSession(CoreKeyspace keyspace, Type type) {
         this.keyspace = keyspace;
         this.type = type;
 
-        transactions = ConcurrentHashMap.newKeySet();
+        transactions = new ConcurrentHashMap<>();
         isOpen = new AtomicBoolean();
         isOpen.set(true);
     }
@@ -51,7 +51,10 @@ public class CoreSession implements Hypergraph.Session {
     }
 
     void remove(CoreTransaction transaction) {
-        transactions.remove(transaction);
+        long schemaReadLockStamp = transactions.remove(transaction);
+        if (this.type.equals(Type.DATA) && transaction.type().equals(Hypergraph.Transaction.Type.WRITE)) {
+            keyspace.releaseSchemaReadLock(schemaReadLockStamp);
+        }
     }
 
     @Override
@@ -66,8 +69,12 @@ public class CoreSession implements Hypergraph.Session {
 
     @Override
     public CoreTransaction transaction(Hypergraph.Transaction.Type type) {
+        long schemaReadLockStamp = 0;
+        if (this.type.equals(Type.DATA) && type.equals(Hypergraph.Transaction.Type.WRITE)) {
+            schemaReadLockStamp = keyspace.acquireSchemaReadLock();
+        }
         CoreTransaction transaction = new CoreTransaction(this, type);
-        transactions.add(transaction);
+        transactions.put(transaction, schemaReadLockStamp);
         return transaction;
     }
 
@@ -79,7 +86,7 @@ public class CoreSession implements Hypergraph.Session {
     @Override
     public void close() {
         if (isOpen.compareAndSet(true, false)) {
-            transactions.parallelStream().forEach(CoreTransaction::close);
+            transactions.keySet().parallelStream().forEach(CoreTransaction::close);
             keyspace.remove(this);
         }
     }
