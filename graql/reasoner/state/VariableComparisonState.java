@@ -56,7 +56,7 @@ public class VariableComparisonState extends AnswerPropagatorState<ReasonerQuery
                                    Unifier u,
                                    AnswerPropagatorState parent,
                                    Set<ReasonerAtomicQuery> subGoals) {
-        super(q.withSubstitution(sub), sub, u, parent, subGoals);
+        super(q, sub, u, parent, subGoals);
 
         this.variablePredicates = getQuery().getAtoms(VariablePredicate.class).collect(Collectors.toSet());
         this.variablePredicateSub = AnswerUtil.joinAnswers(getQuery().getSubstitution(), sub)

@@ -24,6 +24,7 @@ import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.graql.reasoner.ResolutionIterator;
 import grakn.core.kb.graql.executor.TraversalExecutor;
 import grakn.core.graql.reasoner.ReasoningContext;
 import grakn.core.graql.reasoner.atom.Atom;
@@ -76,6 +77,7 @@ public class CompositeQuery extends ResolvableQuery {
 
     CompositeQuery(Conjunction<Pattern> pattern, TraversalExecutor traversalExecutor, ReasoningContext ctx) throws ReasonerException {
         super(traversalExecutor, ctx);
+        this.pattern = pattern;
         ReasonerQueryFactory queryFactory = context().queryFactory();
         Conjunction<Statement> positiveConj = Graql.and(
                 pattern.getPatterns().stream()
@@ -104,6 +106,11 @@ public class CompositeQuery extends ResolvableQuery {
     @Override
     public CompositeQuery asComposite() {
         return this;
+    }
+
+    @Override
+    public DisjunctiveQuery asDisjunctive() {
+        throw new RuntimeException("Not disjunctive");
     }
 
     /**
@@ -216,12 +223,26 @@ public class CompositeQuery extends ResolvableQuery {
     }
 
     @Override
-    public CompositeQuery inferTypes() {
-        return new CompositeQuery(getConjunctiveQuery().inferTypes(), getComplementQueries(), traversalExecutor, context());
+    public Stream<ConceptMap> resolve(Set<ReasonerAtomicQuery> subGoals, boolean infer) {
+        boolean doNotResolve = !infer || getAtoms().isEmpty() || (isPositive() && !isRuleResolvable());
+        if (doNotResolve) {
+            return traversalExecutor.traverse(getPattern());
+        } else {
+            return new ResolutionIterator(this, subGoals, context().queryCache()).hasStream();
+        }
     }
 
     @Override
-    public ResolvableQuery constantValuePredicateQuery() {
+    public CompositeQuery inferTypes() {
+        return new CompositeQuery(
+                getConjunctiveQuery().inferTypes(),
+                getComplementQueries(),
+                traversalExecutor,
+                context());
+    }
+
+    @Override
+    public CompositeQuery constantValuePredicateQuery() {
         return new CompositeQuery(
                 getConjunctiveQuery().constantValuePredicateQuery(),
                 getComplementQueries(),
@@ -270,6 +291,7 @@ public class CompositeQuery extends ResolvableQuery {
 
     @Override
     public String toString(){
+        // TODO Why not `return getPattern().toString();`?
         String complementString = getComplementQueries().stream()
                 .map(q -> "\nNOT {" + q.toString() + "\n}")
                 .collect(Collectors.joining());
@@ -277,14 +299,13 @@ public class CompositeQuery extends ResolvableQuery {
                 (!getComplementQueries().isEmpty()? complementString : "");
     }
 
+    // TODO only required for rules
     @Override
     public ReasonerQuery conjunction(ReasonerQuery q) {
+        HashSet<Pattern> patterns = new HashSet<>(this.getPattern().getPatterns());
+        patterns.add(q.getPattern());
         return new CompositeQuery(
-                Graql.and(
-                        Sets.union(
-                                this.getPattern().getPatterns(),
-                                q.getPattern().getPatterns()
-                        )),
+                Graql.and(patterns),
                 traversalExecutor,
                 context()
         );
@@ -315,16 +336,18 @@ public class CompositeQuery extends ResolvableQuery {
         if (pattern == null) {
             Set<Pattern> conjunctPatterns = Sets.newLinkedHashSet(getConjunctiveQuery().getPattern().getPatterns());
             getComplementQueries().stream().map(ResolvableQuery::getPattern).forEach(p -> {
-                if (p.getPatterns().size() == 1) {
-                    // Unwrap the conjunction if it has only one child pattern
-                    conjunctPatterns.add(Graql.not(Iterators.getOnlyElement(p.getPatterns().iterator())));
-                } else {
-                    conjunctPatterns.add(Graql.not(p));
-                }
+                conjunctPatterns.add(Graql.not(p));
             });
             pattern = Graql.and(conjunctPatterns);
         }
         return pattern;
+    }
+
+    @Override
+    public Pattern getPattern(ConceptMap sub){
+        HashSet<Pattern> patterns = getIdPredicatePatterns(sub.map());
+        patterns.addAll(getPattern().getPatterns());
+        return Graql.and(patterns);
     }
 
     @Override
@@ -395,4 +418,5 @@ public class CompositeQuery extends ResolvableQuery {
     public Iterator<ResolutionState> innerStateIterator(AnswerPropagatorState parent, Set<ReasonerAtomicQuery> subGoals) {
         return Iterators.singletonIterator(getConjunctiveQuery().resolutionState(getSubstitution(), parent.getUnifier(), parent, subGoals));
     }
+
 }

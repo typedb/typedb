@@ -28,6 +28,7 @@ import com.google.common.collect.Sets;
 import grakn.common.util.Pair;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.util.ConceptUtils;
+import grakn.core.graql.reasoner.ResolutionIterator;
 import grakn.core.kb.graql.executor.TraversalExecutor;
 import grakn.core.graql.reasoner.CacheCasting;
 import grakn.core.graql.reasoner.ReasoningContext;
@@ -74,6 +75,8 @@ import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
+import sun.reflect.generics.reflectiveObjects.NotImplementedException;
+
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -170,12 +173,27 @@ public class ReasonerQueryImpl extends ResolvableQuery {
     }
 
     @Override
+    public DisjunctiveQuery asDisjunctive() {
+        throw new RuntimeException("Not disjunctive"); //TODO What exception should this throw?
+    }
+
+    @Override
     public ReasonerQueryImpl withSubstitution(ConceptMap sub){
         return new ReasonerQueryImpl(Sets.union(this.getAtoms(),
-                AtomicUtil.answerToPredicates(sub,this)),
+                AtomicUtil.answerToPredicates(sub.map(),this)),
                 traversalPlanFactory,
                 traversalExecutor,
                 context());
+    }
+
+    @Override
+    public Stream<ConceptMap> resolve(Set<ReasonerAtomicQuery> subGoals, boolean infer) {
+        boolean doNotResolve = !infer || getAtoms().isEmpty() || (isPositive() && !isRuleResolvable());
+        if (doNotResolve) {
+            return traversalExecutor.traverse(getPattern());
+        } else {
+            return new ResolutionIterator(this, subGoals, context().queryCache()).hasStream();
+        }
     }
 
     @Override
@@ -246,7 +264,7 @@ public class ReasonerQueryImpl extends ResolvableQuery {
     public void checkValid() {
         getAtoms().forEach(Atomic::checkValid);
         //this creates the corresponding substitution and checks for id validity
-        ConceptMap substitution = getSubstitution();
+        ConceptMap substitution = getSubstitution(); //TODO This is dangling!
     }
 
     @Override
@@ -260,6 +278,13 @@ public class ReasonerQueryImpl extends ResolvableQuery {
             );
         }
         return pattern;
+    }
+
+    @Override
+    public Pattern getPattern(ConceptMap sub){
+        HashSet<Pattern> patterns = getIdPredicatePatterns(sub.map());
+        patterns.addAll(getPattern().getPatterns());
+        return Graql.and(patterns);
     }
 
     @Override
@@ -358,7 +383,7 @@ public class ReasonerQueryImpl extends ResolvableQuery {
         ConceptManager conceptManager = context().conceptManager();
         return Stream.concat(
                 getAtoms(IdPredicate.class),
-                AtomicUtil.answerToPredicates(sub, this).stream()
+                AtomicUtil.answerToPredicates(sub.map(), this).stream()
                 .map(IdPredicate.class::cast))
                 .filter(p -> !typedVars.contains(p.getVarName()))
                 .map(p -> new Pair<>(p.getVarName(), conceptManager.<Concept>getConcept(p.getPredicate())))
@@ -666,4 +691,5 @@ public class ReasonerQueryImpl extends ResolvableQuery {
     public Index index(){
         return Index.of(subbedVars());
     }
+
 }

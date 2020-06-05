@@ -35,6 +35,7 @@ public class RuleExplanation extends Explanation {
         this.rule = rule;
     }
     public RuleExplanation(List<ConceptMap> answers, Rule rule){
+        // TODO A RuleExplanation should now take a single answer
         super(answers);
         this.rule = rule;
     }

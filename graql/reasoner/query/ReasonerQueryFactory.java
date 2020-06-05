@@ -32,8 +32,10 @@ import grakn.core.kb.graql.reasoner.cache.QueryCache;
 import grakn.core.kb.graql.reasoner.cache.RuleCache;
 import grakn.core.kb.keyspace.KeyspaceStatistics;
 import graql.lang.pattern.Conjunction;
+import graql.lang.pattern.Disjunction;
 import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;
+import graql.lang.statement.Variable;
 
 import java.util.List;
 import java.util.Set;
@@ -83,6 +85,22 @@ public class ReasonerQueryFactory {
                 new ReasonerAtomicQuery(query.getAtoms(), traversalPlanFactory, traversalExecutor, ctx) :
                 query.isPositive() ?
                         query.getConjunctiveQuery() : query;
+    }
+
+    /**
+     * @param pattern disjunctive pattern defining the query
+     * @return a resolvable reasoner query constructed from provided disjunctive pattern
+     */
+    public ResolvableQuery resolvable(Disjunction<Conjunction<Pattern>> pattern, Set<Variable> bindingVars) {
+        DisjunctiveQuery query = new DisjunctiveQuery(pattern, bindingVars,  traversalExecutor, ctx);
+
+        CompositeQuery singleClause = query.singleClause();
+
+        if (singleClause != null) {
+            return singleClause.inferTypes();
+        } else {
+            return query;
+        }
     }
 
     /**

@@ -63,13 +63,8 @@ public class CompositeState extends AnswerPropagatorState<CompositeQuery> {
     private final Set<ResolvableQuery> complements;
 
     public CompositeState(CompositeQuery query, ConceptMap sub, Unifier u, AnswerPropagatorState parent, Set<ReasonerAtomicQuery> subGoals) {
-        super(query.withSubstitution(sub), sub, u, parent, subGoals);
+        super(query, sub, u, parent, subGoals);
         this.complements = getQuery().getComplementQueries();
-    }
-
-    @Override
-    public String toString(){
-        return getClass().getSimpleName() + "@" + Integer.toHexString(hashCode()) + "\n" + getQuery().toString();
     }
 
     @Override

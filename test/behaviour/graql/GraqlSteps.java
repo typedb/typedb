@@ -30,7 +30,7 @@ import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import grakn.core.test.behaviour.connection.ConnectionSteps;
 import graql.lang.Graql;
-import graql.lang.pattern.Conjunction;
+import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlDefine;
 import graql.lang.query.GraqlGet;
 import graql.lang.query.GraqlInsert;
@@ -50,12 +50,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
@@ -262,13 +259,14 @@ public class GraqlSteps {
     }
 
     private boolean matchAnswer(Map<String, String> answerIdentifiers, ConceptMap answer) {
+
+        if(!answerIdentifiers.keySet().equals(answer.map().keySet().stream().map(Variable::name).collect(Collectors.toSet()))) {
+            return false;
+        }
+
         for (Map.Entry<String, String> entry : answerIdentifiers.entrySet()) {
             String varName = entry.getKey();
             String identifier = entry.getValue();
-
-            if(!answer.map().containsKey(new Variable(varName))){
-                return false;
-            }
 
             if(!identifierChecks.containsKey(identifier)) {
                 throw new ScenarioDefinitionException(String.format("Identifier \"%s\" hasn't previously been declared", identifier));
@@ -309,10 +307,10 @@ public class GraqlSteps {
         ConceptMap answer = matchingAnswer.get();
 
         String queryWithIds = applyQueryTemplate(explanationEntry.get("pattern"), answer);
-        Conjunction<?> queryWithIdsConj = Graql.and(Graql.parsePatternList(queryWithIds));
+        Pattern queryWithIdsPattern = Graql.parsePattern(queryWithIds);
         assertEquals(
-                String.format("Explanation entry %d has an incorrect pattern.\nExpected: %s\nActual: %s", entryId, queryWithIdsConj, answer.getPattern()),
-                queryWithIdsConj, answer.getPattern());
+                String.format("Explanation entry %d has an incorrect pattern.\nExpected: %s\nActual: %s", entryId, queryWithIdsPattern, answer.getPattern()),
+                queryWithIdsPattern, answer.getPattern());
 
         String expectedRule = explanationEntry.get("rule");
         boolean hasExplanation = answer.explanation() != null && !answer.explanation().isEmpty();
@@ -333,7 +331,7 @@ public class GraqlSteps {
             assertEquals(String.format("Explanation entry %d should have as many children as it has answers. Instead, %d children were declared, and %d answers were found. Note, this entry could be wrongly declared as a rule, when it is a lookup.", entryId, children.length, explAnswers.size()),
                     children.length, explAnswers.size());
 
-            if (expectedRule.equals("join")) {
+            if (expectedRule.equals("join") || expectedRule.equals("negation") || expectedRule.equals("disjunction")) {
                 assertNull(String.format("Explanation entry %d is declared as a join, and should not have a rule attached, but one was found", entryId), explanation.isRuleExplanation() ? ((RuleExplanation)explanation).getRule() : null);
             } else {
                 // rule
@@ -368,8 +366,8 @@ public class GraqlSteps {
 
     private String applyQueryTemplate(String template, ConceptMap templateFiller) {
         // find shortest matching strings between <>
-        Pattern pattern = Pattern.compile("<.+?>");
-        Matcher matcher = pattern.matcher(template);
+        java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("<.+?>");
+        java.util.regex.Matcher matcher = pattern.matcher(template);
 
         StringBuilder builder = new StringBuilder();
         int i = 0;

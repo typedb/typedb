@@ -26,14 +26,11 @@ import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.answer.Numeric;
 import grakn.core.concept.answer.Void;
 import grakn.core.graql.executor.property.PropertyExecutorFactoryImpl;
-import grakn.core.graql.executor.util.LazyMergingStream;
 import grakn.core.graql.reasoner.query.ReasonerQueryFactory;
-import grakn.core.kb.concept.api.Concept;
-import grakn.core.kb.concept.api.GraknConceptException;
+import grakn.core.graql.reasoner.query.ResolvableQuery;
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.exception.GraqlSemanticException;
 import grakn.core.kb.graql.executor.QueryExecutor;
-import grakn.core.kb.graql.executor.WriteExecutor;
 import grakn.core.kb.graql.executor.property.PropertyExecutor;
 import grakn.core.kb.graql.executor.property.PropertyExecutorFactory;
 import grakn.core.kb.graql.reasoner.ReasonerCheckedException;
@@ -98,16 +95,12 @@ public class QueryExecutorImpl implements QueryExecutor {
         try {
             validateClause(matchClause);
 
-            // TODO: lazy flatMap() is automatically fixed in Java 10 or OpenJDK 8u222, remove workaround if these conditions met
-            // custom workaround to deal with non-lazy Java 8 flatMap() functions is in LazyMergingStream
-            Stream<Conjunction<Pattern>> conjunctions = matchClause.getPatterns().getNegationDNF().getPatterns().stream();
-            Stream<Stream<ConceptMap>> answerStreams = conjunctions
-                    .map(p -> reasonerQueryFactory.resolvable(p))
-                    // we return an answer with the substituted IDs in the pattern
-                    .map(q -> q.resolve(infer).map(ans -> ans.withPattern(q.withSubstitution(ans).getPattern())));
+            Set<Variable> bindingVars = matchClause.getPatterns().variables();
 
-            LazyMergingStream<ConceptMap> mergedStreams = new LazyMergingStream<>(answerStreams);
-            return mergedStreams.flatStream();
+            Disjunction<Conjunction<Pattern>> disjunction = matchClause.getPatterns().getNegationDNF();
+            ResolvableQuery resolvableQuery = reasonerQueryFactory.resolvable(disjunction, bindingVars);
+
+            return resolvableQuery.resolve(infer).map(ans -> ans.withPattern(resolvableQuery.withSubstitution(ans).getPattern()));
 
         } catch (ReasonerCheckedException e) {
             LOG.debug(e.getMessage());

@@ -24,7 +24,6 @@ import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
-import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
 import graql.lang.statement.Variable;
 
@@ -80,7 +79,10 @@ public interface ReasonerQuery{
      * @return the conjunction pattern that represent this query
      */
     @CheckReturnValue
-    Conjunction<Pattern> getPattern();
+    Pattern getPattern();
+
+    @CheckReturnValue
+    Pattern getPattern(ConceptMap sub);
 
     /**
      * @param type the class of Atomic to return

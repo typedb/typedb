@@ -20,22 +20,27 @@ package grakn.core.graql.reasoner.query;
 
 import com.google.common.annotations.VisibleForTesting;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.graql.reasoner.cache.MultilevelSemanticCache;
-import grakn.core.kb.graql.executor.TraversalExecutor;
 import grakn.core.graql.reasoner.ReasoningContext;
-import grakn.core.graql.reasoner.ResolutionIterator;
 import grakn.core.graql.reasoner.atom.Atom;
+import grakn.core.graql.reasoner.atom.AtomicUtil;
 import grakn.core.graql.reasoner.state.AnswerPropagatorState;
 import grakn.core.graql.reasoner.state.ResolutionState;
+import grakn.core.kb.concept.api.Concept;
+import grakn.core.kb.graql.executor.TraversalExecutor;
+import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
 import graql.lang.Graql;
+import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlGet;
+import graql.lang.statement.Variable;
 
 import javax.annotation.CheckReturnValue;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -68,12 +73,23 @@ public abstract class ResolvableQuery implements ReasonerQuery {
     @CheckReturnValue
     public abstract CompositeQuery asComposite();
 
+    @CheckReturnValue
+    public abstract DisjunctiveQuery asDisjunctive();
+
     /**
      * @param sub substitution to be inserted into the query
      * @return corresponding query with additional substitution
      */
     @CheckReturnValue
     public abstract ResolvableQuery withSubstitution(ConceptMap sub);
+
+    //TODO Should this be in the `ReasonerQuery` interface?
+    @CheckReturnValue
+    public HashSet<Pattern> getIdPredicatePatterns(Map<Variable, Concept> map) {
+        return AtomicUtil.answerToPredicates(map, this).stream()
+                .map(Atomic::getCombinedPattern)
+                .flatMap(p -> p.statements().stream()).collect(Collectors.toCollection(HashSet::new));
+    }
 
     /**
      * @return corresponding query with variable predicates removed
@@ -139,14 +155,7 @@ public abstract class ResolvableQuery implements ReasonerQuery {
      * @return stream of resolved answers
      */
     @CheckReturnValue
-    public Stream<ConceptMap> resolve(Set<ReasonerAtomicQuery> subGoals, boolean infer) {
-        boolean doNotResolve = !infer || getAtoms().isEmpty() || (isPositive() && !isRuleResolvable());
-        if (doNotResolve) {
-            return traversalExecutor.traverse(getPattern());
-        } else {
-            return new ResolutionIterator(this, subGoals, ctx.queryCache()).hasStream();
-        }
-    }
+    public abstract Stream<ConceptMap> resolve(Set<ReasonerAtomicQuery> subGoals, boolean infer);
 
     /**
      * @param sub      partial substitution
