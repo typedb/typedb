@@ -97,6 +97,12 @@ public class GraqlSteps {
         tx = session.transaction(Transaction.Type.WRITE);
     }
 
+    @Given("graql define without commit")
+    public void graql_define_without_commit(String defineQueryStatements) {
+        GraqlDefine graqlQuery = Graql.parse(String.join("\n", defineQueryStatements)).asDefine();
+        tx.execute(graqlQuery);
+    }
+
     @Given("graql define throws")
     public void graql_define_throws(String defineQueryStatements) {
         boolean threw = false;

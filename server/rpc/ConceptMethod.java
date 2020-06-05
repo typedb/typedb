@@ -645,8 +645,8 @@ public class ConceptMethod {
                     case BOOLEAN:
                         responseSender.accept(create(AttributeSerialiser.BOOLEAN.deserialise(protoValue.getBoolean())));
                         return;
-                    case DATE:
-                        responseSender.accept(create(AttributeSerialiser.DATE.deserialise(protoValue.getDate())));
+                    case DATETIME:
+                        responseSender.accept(create(AttributeSerialiser.DATE.deserialise(protoValue.getDatetime())));
                         return;
                     case DOUBLE:
                         responseSender.accept(create(AttributeSerialiser.DOUBLE.deserialise(protoValue.getDouble())));
