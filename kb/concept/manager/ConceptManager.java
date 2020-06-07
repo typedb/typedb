@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -29,11 +28,11 @@ import grakn.core.kb.concept.api.EntityType;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.LabelId;
 import grakn.core.kb.concept.api.Relation;
-import grakn.core.kb.concept.api.RelationStructure;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.SchemaConcept;
+import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.concept.structure.EdgeElement;
 import grakn.core.kb.concept.structure.Shard;
@@ -47,10 +46,7 @@ import java.util.Set;
 public interface ConceptManager {
 
     <T extends Concept> T buildConcept(Vertex vertex);
-    <T extends Concept> T buildConcept(Edge edge);
     <T extends Concept> T buildConcept(VertexElement vertex);
-    Relation buildRelation(EdgeElement edge);
-
 
     <T extends Type> T getType(Label label);
     <T extends SchemaConcept> T getSchemaConcept(Label label);
@@ -73,21 +69,14 @@ public interface ConceptManager {
     Role getMetaRole();
     Rule getMetaRule();
 
-
     Relation createRelation(RelationType relationType, boolean isInferred);
     Entity createEntity(EntityType entityType, boolean isInferred);
     <D> Attribute<D> createAttribute(AttributeType<D> dAttributeType, D value, boolean isInferred);
-    RelationType createImplicitRelationType(Label label);
-    Role createImplicitRole(Label label);
-    Relation createHasAttributeRelation(EdgeElement attributeEdge, RelationType hasAttribute, Role hasAttributeOwner,
-                                        Role hasAttributeValue, boolean isInferred);
-
-    // TODO this wants to return implementation RelationReified, not interface RelationStructure, using downcasts for now
-    RelationStructure createRelationReified(VertexElement relationVertex, RelationType type);
+    void createHasAttribute(Thing owner, Attribute attribute, boolean isInferred);
 
     EntityType createEntityType(Label label, EntityType superType);
     RelationType createRelationType(Label label, RelationType superType);
-    <V> AttributeType<V> createAttributeType(Label label, AttributeType<V> superType, AttributeType.DataType<V> dataType);
+    <V> AttributeType<V> createAttributeType(Label label, AttributeType<V> superType, AttributeType.ValueType<V> valueType);
     Rule createRule(Label label, Pattern when, Pattern then, Rule superType);
     Role createRole(Label label, Role superType);
 

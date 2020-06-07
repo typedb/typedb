@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -20,8 +19,8 @@
 package grakn.core.kb.concept.api;
 
 import javax.annotation.CheckReturnValue;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Stream;
 
 /**
@@ -31,10 +30,10 @@ import java.util.stream.Stream;
  * Relation are used to model n-ary relations between instances.
  */
 public interface Relation extends Thing {
-    //------------------------------------- Modifiers ----------------------------------
+////    ------------------------------------- Modifiers ----------------------------------
 
     /**
-     * Creates a relation from this instance to the provided Attribute.
+     * Creates an ownership from this instance to the provided Attribute.
      *
      * @param attribute The Attribute to which a relation is created
      * @return The instance itself
@@ -48,7 +47,7 @@ public interface Relation extends Thing {
      * Retrieve the associated RelationType for this Relation.
      *
      * @return The associated RelationType for this Relation.
-     * @see RelationType
+     * see RelationType
      */
     @Override
     RelationType type();
@@ -57,10 +56,10 @@ public interface Relation extends Thing {
      * Retrieve a list of all Instances involved in the Relation, and the Role they play.
      *
      * @return A list of all the role types and the instances playing them in this Relation.
-     * @see Role
+     * see Role
      */
     @CheckReturnValue
-    Map<Role, Set<Thing>> rolePlayersMap();
+    Map<Role, List<Thing>> rolePlayersMap();
 
     /**
      * Retrieves a list of every Thing involved in the Relation, filtered by Role played.
@@ -71,6 +70,7 @@ public interface Relation extends Thing {
      */
     @CheckReturnValue
     Stream<Thing> rolePlayers(Role... roles);
+    Stream<Casting> castingsRelation(Role... roles);
 
     /**
      * Expands this Relation to include a new role player which is playing a specific role.
@@ -80,15 +80,6 @@ public interface Relation extends Thing {
      * @return The Relation itself.
      */
     Relation assign(Role role, Thing player);
-
-    /**
-     * Removes the provided Attribute from this Relation
-     *
-     * @param attribute the Attribute to be removed
-     * @return The Relation itself
-     */
-    @Override
-    Relation unhas(Attribute attribute);
 
     /**
      * Removes the Thing which is playing a Role in this Relation.

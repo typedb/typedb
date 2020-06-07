@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -105,7 +104,7 @@ public class JanusPreviousPropertyStepStrategy extends AbstractTraversalStrategy
     }
 
     /**
-     * Replace the {@code graphStep} and {@code filterStep} with a new {@link JanusPreviousPropertyStep} in the given
+     * Replace the {@code graphStep} and {@code filterStep} with a new JanusPreviousPropertyStep in the given
      * {@code traversal}.
      */
     private void executeStrategy(

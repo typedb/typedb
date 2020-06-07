@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -24,7 +23,7 @@ import grakn.core.graph.diskstorage.StaticBuffer;
 import java.util.Objects;
 
 /**
- * Extends a {@link SliceQuery} to express a range for columns and a range for
+ * Extends a SliceQuery to express a range for columns and a range for
  * keys. Selects each key on the interval
  * {@code [keyStart inclusive, keyEnd exclusive)} for which there exists at
  * least one column between {@code [sliceStart inclusive, sliceEnd exclusive)}.

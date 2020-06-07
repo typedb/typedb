@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -33,7 +32,7 @@ import graql.lang.statement.Variable;
 
 import java.util.Set;
 
-public class ValueExecutor  implements PropertyExecutor.Insertable {
+public class ValueExecutor implements PropertyExecutor.Insertable {
 
     private final Variable var;
     private final ValueProperty property;
@@ -48,7 +47,7 @@ public class ValueExecutor  implements PropertyExecutor.Insertable {
     @Override
     public Set<EquivalentFragmentSet> matchFragments() {
         return ImmutableSet.of(
-                EquivalentFragmentSets.notInternalFragmentSet(property, var),
+//                EquivalentFragmentSets.notInternalFragmentSet(property, var),
                 EquivalentFragmentSets.value(property, var, operation)
         );
     }

@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -35,8 +34,8 @@ public enum Order {
     DESC;
 
     /**
-     * Modulates the result of a {@link Comparable#compareTo(Object)} execution for this specific
-     * order, i.e. it negates the result if the order is {@link #DESC}.
+     * Modulates the result of a Comparable#compareTo(Object) execution for this specific
+     * order, i.e. it negates the result if the order is #DESC.
      */
     public int modulateNaturalOrder(int compare) {
         switch (this) {

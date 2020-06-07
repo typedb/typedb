@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -24,10 +23,10 @@ import org.apache.tinkerpop.gremlin.process.traversal.Text;
 
 
 /**
- * A {@link JanusGraphPredicate} that just wraps a TinkerPop {@link Text} predicate.
+ * A JanusGraphPredicate that just wraps a TinkerPop Text predicate.
  * <p>
- * This enables JanusGraph to use TinkerPop {@link Text} predicates in places where it expects a
- * {@link JanusGraphPredicate}.
+ * This enables JanusGraph to use TinkerPop Text predicates in places where it expects a
+ * JanusGraphPredicate.
  */
 public class TinkerPopTextWrappingPredicate implements JanusGraphPredicate {
     private Text internalPredicate;

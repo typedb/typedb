@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -23,24 +22,27 @@ import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.GraknConceptException;
+import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.concept.manager.ConceptNotificationChannel;
 import grakn.core.kb.concept.structure.VertexElement;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import javax.annotation.Nullable;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 /**
  * An ontological element which models and categorises the various Attribute in the graph.
  * This ontological element behaves similarly to Type when defining how it relates to other
  * types. It has two additional functions to be aware of:
- * 1. It has a AttributeType.DataType constraining the data types of the values it's instances may take.
+ * 1. It has a AttributeType.ValueType constraining the value types of the values it's instances may take.
  * 2. Any of it's instances are unique to the type.
  * For example if you have a AttributeType modelling month throughout the year there can only be one January.
  *
- * @param <D> The data type of this resource type.
+ * @param <D> The value type of this resource type.
  *            Supported Types include: String, Long, Double, and Boolean
  */
 public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D>> implements AttributeType<D> {
@@ -62,13 +64,32 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
         return super.sup(superType);
     }
 
+    @Override
+    public Stream<Type> directOwnersAsKey() {
+        Stream<Type> directKeyOwners = neighbours(Direction.IN, Schema.EdgeLabel.KEY);
+        return directKeyOwners;
+    }
+
+    private Stream<Type> directOwners() {
+        Stream<Type> directHasOwners = neighbours(Direction.IN, Schema.EdgeLabel.HAS);
+        Stream<Type> directKeyOwners = neighbours(Direction.IN, Schema.EdgeLabel.KEY);
+        return Stream.concat(directHasOwners, directKeyOwners);
+    }
+
+    @Override
+    public Stream<Type> owners() {
+        // note that sups() includes self
+        Stream<Type> owners = sups().flatMap(parent -> (((AttributeTypeImpl<D>)parent).directOwners()));
+        return owners;
+    }
+
     /**
      * @param regex The regular expression which instances of this resource must conform to.
      * @return The AttributeType itself.
      */
     @Override
     public AttributeType<D> regex(String regex) {
-        if (dataType() == null || !dataType().equals(DataType.STRING)) {
+        if (valueType() == null || !valueType().equals(ValueType.STRING)) {
             throw GraknConceptException.cannotSetRegex(this);
         }
 
@@ -112,7 +133,7 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
     private Attribute<D> putAttribute(D value, boolean isInferred) {
         Objects.requireNonNull(value);
 
-        if (dataType().equals(DataType.STRING)) checkConformsToRegexes((String) value);
+        if (valueType().equals(ValueType.STRING)) checkConformsToRegexes((String) value);
 
         Attribute<D> instance = getAttribute(value);
         if (instance == null) {
@@ -134,7 +155,7 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
      * @throws GraknConceptException when the value does not conform to the regex of its types
      */
     private void checkConformsToRegexes(String value) {
-        //Not checking the datatype because the regex will always be null for non strings.
+        //Not checking the value type because the regex will always be null for non strings.
         this.sups().forEach(sup -> {
             String regex = sup.regex();
             if (regex != null && !Pattern.matches(regex, value)) {
@@ -167,14 +188,14 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
     @SuppressWarnings({"unchecked"})
     @Nullable
     @Override
-    public DataType<D> dataType() {
-        String className = vertex().property(Schema.VertexProperty.DATA_TYPE);
+    public ValueType<D> valueType() {
+        String className = vertex().property(Schema.VertexProperty.VALUE_TYPE);
         if (className == null) return null;
 
         try {
-            return (DataType<D>) DataType.of(Class.forName(className));
+            return (ValueType<D>) ValueType.of(Class.forName(className));
         } catch (ClassNotFoundException e) {
-            throw GraknConceptException.unsupportedDataType(className);
+            throw GraknConceptException.unsupportedValueType(className);
         }
     }
 
@@ -184,6 +205,18 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
     @Override
     public String regex() {
         return vertex().property(Schema.VertexProperty.REGEX);
+    }
+
+    public long ownershipCount() {
+        Long count = vertex().property(Schema.VertexProperty.OWNERSHIP_COUNT);
+        if (count != null) {
+            return count;
+        }
+        return 0L;
+    }
+
+    public void writeOwnershipCount(long count) {
+        vertex().property(Schema.VertexProperty.OWNERSHIP_COUNT, count);
     }
 
     @Override

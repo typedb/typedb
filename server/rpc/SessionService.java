@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,11 +17,10 @@
 
 package grakn.core.server.rpc;
 
-import brave.ScopedSpan;
-import brave.Span;
-import brave.propagation.TraceContext;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import grakn.benchmark.lib.instrumentation.ServerTracing;
+import grabl.tracing.client.GrablTracing;
+import grabl.tracing.client.GrablTracingThreadStatic;
+import grabl.tracing.client.GrablTracingThreadStatic.ThreadTrace;
 import grakn.core.concept.answer.Explanation;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
@@ -62,14 +60,21 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
+
+import static grabl.tracing.client.GrablTracingThreadStatic.traceOnThread;
 
 
 /**
  * Grakn RPC Session Service
  */
 public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
+
     private static final Logger LOG = LoggerFactory.getLogger(SessionService.class);
+
+    private static final int DEFAULT_BATCH_SIZE = 50;
+
     private final OpenRequest requestOpener;
     // Each client's connection obtains a unique ID, which we map to the shared session under the hood
     // if connecting to the same keyspace
@@ -145,7 +150,7 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
         private final AtomicBoolean terminated = new AtomicBoolean(false);
         private final ExecutorService threadExecutor;
         private final Map<String, Session> openSessions;
-        private final Iterators iterators = new Iterators();
+        private final Iterators iterators = new Iterators(this::onNextResponse);
 
         @Nullable
         private grakn.core.kb.server.Transaction tx = null;
@@ -170,17 +175,17 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
         @Override
         public void onNext(Transaction.Req request) {
             // !important: this is the gRPC thread
-            if (ServerTracing.tracingEnabledFromMessage(request)) {
-                TraceContext receivedTraceContext = ServerTracing.extractTraceContext(request);
-                Span queueSpan = ServerTracing.createChildSpanWithParentContext("Server receive queue", receivedTraceContext);
-                queueSpan.start();
-                queueSpan.tag("childNumber", "0");
-
-                // hop context & active Span across thread boundaries
-                submit(() -> handleRequest(request, queueSpan, receivedTraceContext));
-            } else {
-                submit(() -> handleRequest(request));
+            if (GrablTracingThreadStatic.isTracingEnabled()) {
+                Map<String, String> metadata = request.getMetadataMap();
+                String rootId = metadata.get("traceRootId");
+                String parentId = metadata.get("traceParentId");
+                if (rootId != null && parentId != null) {
+                    submit(() -> handleRequest(request, GrablTracingThreadStatic.getGrablTracing()
+                            .trace(UUID.fromString(rootId), UUID.fromString(parentId), "received")));
+                    return;
+                }
             }
+            submit(() -> handleRequest(request));
         }
 
         @Override
@@ -204,16 +209,13 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
             close(null);
         }
 
-        private void handleRequest(Transaction.Req request, Span queueSpan, TraceContext context) {
-            // this method variant is only called if tracing is active
-
-            // close the Span from gRPC thread
-            queueSpan.finish(); // time spent in queue
-
-            // create a new scoped span
-            ScopedSpan span = ServerTracing.startScopedChildSpanWithParentContext("Server handle request", context);
-            span.tag("childNumber", "1");
-            handleRequest(request);
+        private void handleRequest(Transaction.Req request, GrablTracing.Trace queueTrace) {
+            try (ThreadTrace trace = GrablTracingThreadStatic.continueTraceOnThread(
+                    queueTrace.getRootId(), queueTrace.getId(), "handle")
+            ) {
+                queueTrace.end();
+                handleRequest(request);
+            }
         }
 
         private void handleRequest(Transaction.Req request) {
@@ -225,20 +227,14 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
                     case COMMIT_REQ:
                         commit();
                         break;
-                    case QUERY_REQ:
-                        query(request.getQueryReq());
-                        break;
-                    case ITERATE_REQ:
-                        next(request.getIterateReq());
+                    case ITER_REQ:
+                        handleIterRequest(request.getIterReq());
                         break;
                     case GETSCHEMACONCEPT_REQ:
                         getSchemaConcept(request.getGetSchemaConceptReq());
                         break;
                     case GETCONCEPT_REQ:
                         getConcept(request.getGetConceptReq());
-                        break;
-                    case GETATTRIBUTES_REQ:
-                        getAttributes(request.getGetAttributesReq());
                         break;
                     case PUTENTITYTYPE_REQ:
                         putEntityType(request.getPutEntityTypeReq());
@@ -270,6 +266,30 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
             }
         }
 
+        public void handleIterRequest(Transaction.Iter.Req request) {
+            try {
+                switch (request.getReqCase()) {
+                    case ITERATORID:
+                        iterators.resumeBatchIterating(request.getIteratorId(), request.getOptions());
+                        break;
+                    case QUERY_ITER_REQ:
+                        query(request.getQueryIterReq(), request.getOptions());
+                        break;
+                    case CONCEPTMETHOD_ITER_REQ:
+                        conceptIterMethod(request.getConceptMethodIterReq(), request.getOptions());
+                        break;
+                    case GETATTRIBUTES_ITER_REQ:
+                        getAttributes(request.getGetAttributesIterReq(), request.getOptions());
+                        break;
+                    default:
+                    case REQ_NOT_SET:
+                        throw ResponseBuilder.exception(Status.INVALID_ARGUMENT);
+                }
+            } catch (Throwable e) {
+                close(e);
+            }
+        }
+
         public void close(@Nullable Throwable error) {
             if (!terminated.getAndSet(true)) {
                 if (tx != null) {
@@ -281,11 +301,6 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
                     responseSender.onError(ResponseBuilder.exception(error));
                 } else {
                     responseSender.onCompleted();
-                }
-
-                // just in case there's a trailing span, let's close it
-                if (ServerTracing.tracingActive()) {
-                    ServerTracing.currentSpan().finish();
                 }
 
                 threadExecutor.shutdownNow();
@@ -316,38 +331,35 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
 
             Transaction.Type type = request.getType();
             if (type != null && type.equals(Transaction.Type.WRITE)) {
-                tx = session.writeTransaction();
+                tx = session.transaction(grakn.core.kb.server.Transaction.Type.WRITE);
             } else if (type != null && type.equals(Transaction.Type.READ)) {
-                tx = session.readTransaction();
+                tx = session.transaction(grakn.core.kb.server.Transaction.Type.READ);
             } else {
                 throw TransactionException.create("Invalid Transaction Type");
             }
 
             Transaction.Res response = ResponseBuilder.Transaction.open();
-            onNextResponse(response);
-        }
+            responseSender.onNext(response);        }
 
         private void commit() {
             tx().commit();
             onNextResponse(ResponseBuilder.Transaction.commit());
         }
 
-        private void query(SessionProto.Transaction.Query.Req request) {
-            /* permanent tracing hooks, as performance here varies depending on query and what's in the graph */
-            int parseQuerySpanId = ServerTracing.startScopedChildSpan("Parsing Graql Query");
+        private void query(SessionProto.Transaction.Query.Iter.Req request, SessionProto.Transaction.Iter.Req.Options options) {
+            Transaction.Res response;
+            try (ThreadTrace trace = traceOnThread("query")) {
+                GraqlQuery query;
+                try (ThreadTrace parse = traceOnThread("parse")) {
+                    query = Graql.parse(request.getQuery());
+                }
 
-            GraqlQuery query = Graql.parse(request.getQuery());
+                try (ThreadTrace stream = traceOnThread("stream")) {
+                    Stream<Transaction.Res> responseStream = tx().stream(query, request.getInfer().equals(Transaction.Query.INFER.TRUE)).map(ResponseBuilder.Transaction.Iter::query);
 
-            ServerTracing.closeScopedChildSpan(parseQuerySpanId);
-
-            int createStreamSpanId = ServerTracing.startScopedChildSpan("Creating query stream");
-
-            Stream<Transaction.Res> responseStream = tx().stream(query, request.getInfer().equals(Transaction.Query.INFER.TRUE)).map(ResponseBuilder.Transaction.Iter::query);
-            Transaction.Res response = ResponseBuilder.Transaction.queryIterator(iterators.add(responseStream.iterator()));
-
-            ServerTracing.closeScopedChildSpan(createStreamSpanId);
-
-            onNextResponse(response);
+                    iterators.startBatchIterating(responseStream.iterator(), options);
+                }
+            }
         }
 
         private void getSchemaConcept(Transaction.GetSchemaConcept.Req request) {
@@ -362,15 +374,12 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
             onNextResponse(response);
         }
 
-        private void getAttributes(Transaction.GetAttributes.Req request) {
+        private void getAttributes(Transaction.GetAttributes.Iter.Req request, Transaction.Iter.Req.Options options) {
             Object value = request.getValue().getAllFields().values().iterator().next();
             Collection<Attribute<Object>> attributes = tx().getAttributesByValue(value);
 
             Iterator<Transaction.Res> iterator = attributes.stream().map(ResponseBuilder.Transaction.Iter::getAttributes).iterator();
-            int iteratorId = iterators.add(iterator);
-
-            Transaction.Res response = ResponseBuilder.Transaction.getAttributesIterator(iteratorId);
-            onNextResponse(response);
+            iterators.startBatchIterating(iterator, options);
         }
 
         private void putEntityType(Transaction.PutEntityType.Req request) {
@@ -381,9 +390,9 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
 
         private void putAttributeType(Transaction.PutAttributeType.Req request) {
             Label label = Label.of(request.getLabel());
-            AttributeType.DataType<?> dataType = ResponseBuilder.Concept.DATA_TYPE(request.getDataType());
+            AttributeType.ValueType<?> valueType = ResponseBuilder.Concept.VALUE_TYPE(request.getValueType());
 
-            AttributeType<?> attributeType = tx().putAttributeType(label, dataType);
+            AttributeType<?> attributeType = tx().putAttributeType(label, valueType);
             Transaction.Res response = ResponseBuilder.Transaction.putAttributeType(attributeType);
             onNextResponse(response);
         }
@@ -416,8 +425,12 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
 
         private void conceptMethod(Transaction.ConceptMethod.Req request) {
             Concept concept = nonNull(tx().getConcept(ConceptId.of(request.getId())));
-            Transaction.Res response = ConceptMethod.run(concept, request.getMethod(), iterators, tx());
-            onNextResponse(response);
+            ConceptMethod.run(concept, request.getMethod(), iterators, tx(), this::onNextResponse);
+        }
+
+        private void conceptIterMethod(Transaction.ConceptMethod.Iter.Req request, Transaction.Iter.Req.Options options) {
+            Concept concept = nonNull(tx().getConcept(ConceptId.of(request.getId())));
+            ConceptMethod.iter(concept, request.getMethod(), iterators, tx(), this::onNextResponse, options);
         }
 
         /**
@@ -432,17 +445,7 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
             onNextResponse(response);
         }
 
-        private void next(Transaction.Iter.Req iterate) {
-            int iteratorId = iterate.getId();
-            Transaction.Res response = iterators.next(iteratorId);
-            if (response == null) throw ResponseBuilder.exception(Status.FAILED_PRECONDITION);
-            onNextResponse(response);
-        }
-
         private void onNextResponse(Transaction.Res response) {
-            if (ServerTracing.tracingActive()) {
-                ServerTracing.currentSpan().finish();
-            }
             responseSender.onNext(response);
         }
     }
@@ -450,36 +453,103 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
     /**
      * Contains a mutable map of iterators of Transaction.Res for gRPC. These iterators are used for returning
      * lazy, streaming responses such as for Graql query results.
+     *
+     * The iterators operate by batching results to reduce total round-trips.
      */
-    class Iterators {
-        private final AtomicInteger iteratorIdCounter = new AtomicInteger(1);
-        private final Map<Integer, Iterator<Transaction.Res>> iterators = new ConcurrentHashMap<>();
+    static class Iterators {
+        private final Consumer<Transaction.Res> responseSender;
+        private final AtomicInteger iteratorIdCounter = new AtomicInteger(0);
+        private final Map<Integer, BatchingIterator> iterators = new ConcurrentHashMap<>();
 
-        public int add(Iterator<Transaction.Res> iterator) {
-            int iteratorId = iteratorIdCounter.getAndIncrement();
-            iterators.put(iteratorId, iterator);
-            return iteratorId;
+        public Iterators(Consumer<Transaction.Res> responseSender) {
+            this.responseSender = responseSender;
         }
 
-        public Transaction.Res next(int iteratorId) {
-            Iterator<Transaction.Res> iterator = iterators.get(iteratorId);
-            if (iterator == null) return null;
+        /**
+         * Hand off an iterator and begin batch iterating.
+         */
+        public void startBatchIterating(Iterator<Transaction.Res> iterator, @Nullable Transaction.Iter.Req.Options options) {
+            new BatchingIterator(iterator).iterateBatch(options);
+        }
 
-            Transaction.Res response;
-            if (iterator.hasNext()) {
-                response = iterator.next();
-            } else {
-                response = SessionProto.Transaction.Res.newBuilder()
-                        .setIterateRes(SessionProto.Transaction.Iter.Res.newBuilder()
-                                .setDone(true)).build();
-                stop(iteratorId);
+        /**
+         * Iterate the next batch of an existing iterator.
+         */
+        public void resumeBatchIterating(int iteratorId, Transaction.Iter.Req.Options options) {
+            BatchingIterator iterator = iterators.get(iteratorId);
+            if (iterator == null) {
+                throw ResponseBuilder.exception(Status.FAILED_PRECONDITION);
             }
-
-            return response;
+            iterator.iterateBatch(options);
         }
 
         public void stop(int iteratorId) {
             iterators.remove(iteratorId);
+        }
+
+        private int saveIterator(BatchingIterator iterator) {
+            int id = iteratorIdCounter.incrementAndGet();
+            iterators.put(id, iterator);
+            return id;
+        }
+
+        public class BatchingIterator {
+            private int id = 0;
+            private final Iterator<Transaction.Res> iterator;
+
+            public BatchingIterator(Iterator<Transaction.Res> iterator) {
+                this.iterator = iterator;
+            }
+
+            private boolean isSaved() {
+                return id != 0;
+            }
+
+            private void save() {
+                if (!isSaved()) {
+                    id = saveIterator(this);
+                }
+            }
+
+            private void end() {
+                if (isSaved()) {
+                    stop(id);
+                }
+            }
+
+            public void iterateBatch(@Nullable Transaction.Iter.Req.Options options) {
+                int batchSize = getSizeFrom(options);
+                for (int i = 0; i < batchSize && iterator.hasNext(); i++){
+                    responseSender.accept(iterator.next());
+                }
+
+                if (iterator.hasNext()) {
+                    save();
+                    responseSender.accept(SessionProto.Transaction.Res.newBuilder()
+                            .setIterRes(SessionProto.Transaction.Iter.Res.newBuilder()
+                                    .setIteratorId(id)).build());
+                } else {
+                    end();
+                    responseSender.accept(SessionProto.Transaction.Res.newBuilder()
+                            .setIterRes(SessionProto.Transaction.Iter.Res.newBuilder()
+                                    .setDone(true)).build());
+                }
+            }
+        }
+
+        private static int getSizeFrom(@Nullable Transaction.Iter.Req.Options options) {
+            if (options == null) {
+                return DEFAULT_BATCH_SIZE;
+            }
+            switch (options.getBatchSizeCase()) {
+                case ALL:
+                    return Integer.MAX_VALUE;
+                case NUMBER:
+                    return options.getNumber();
+                case BATCHSIZE_NOT_SET:
+                default:
+                    return DEFAULT_BATCH_SIZE;
+            }
         }
     }
 }

@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -19,8 +18,8 @@
 package grakn.core.graph.graphdb.types;
 
 import com.google.common.base.Preconditions;
-import org.apache.commons.lang.StringUtils;
 import grakn.core.graph.core.schema.Parameter;
+import org.apache.commons.lang.StringUtils;
 
 import java.util.Arrays;
 import java.util.List;

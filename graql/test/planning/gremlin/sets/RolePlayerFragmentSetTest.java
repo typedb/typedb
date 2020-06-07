@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -159,7 +158,7 @@ public class RolePlayerFragmentSetTest {
 
         Collection<EquivalentFragmentSet> fragmentSets = Sets.newHashSet(
                 EquivalentFragmentSets.rolePlayer(null, a, b, c, null),
-                EquivalentFragmentSets.isa(null, a, d, true),
+                EquivalentFragmentSets.isa(null, a, d),
                 EquivalentFragmentSets.label(null, d, ImmutableSet.of(magician))
         );
 
@@ -178,7 +177,7 @@ public class RolePlayerFragmentSetTest {
         when(conceptManager.getSchemaConcept(movie)).thenReturn(movieConcept);
         Collection<EquivalentFragmentSet> fragmentSets = Sets.newHashSet(
                 EquivalentFragmentSets.rolePlayer(null, a, b, c, null),
-                EquivalentFragmentSets.isa(null, a, d, true),
+                EquivalentFragmentSets.isa(null, a, d),
                 EquivalentFragmentSets.label(null, d, ImmutableSet.of(movie))
         );
 

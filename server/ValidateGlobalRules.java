@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -31,6 +30,8 @@ import grakn.core.graql.reasoner.query.CompositeQuery;
 import grakn.core.graql.reasoner.query.ReasonerQueryFactory;
 import grakn.core.graql.reasoner.rule.RuleUtils;
 import grakn.core.kb.concept.api.Attribute;
+import grakn.core.kb.concept.api.AttributeType;
+import grakn.core.kb.concept.api.Casting;
 import grakn.core.kb.concept.api.GraknConceptException;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Relation;
@@ -41,7 +42,6 @@ import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.concept.manager.ConceptManager;
-import grakn.core.kb.concept.structure.Casting;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import graql.lang.Graql;
@@ -52,6 +52,7 @@ import graql.lang.statement.Statement;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -59,8 +60,9 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static grakn.core.common.exception.ErrorMessage.VALIDATION_CASTING;
+import static grakn.core.common.exception.ErrorMessage.VALIDATION_MORE_THAN_ONE_KEY;
 import static grakn.core.common.exception.ErrorMessage.VALIDATION_MORE_THAN_ONE_USE_OF_KEY;
-import static grakn.core.common.exception.ErrorMessage.VALIDATION_NOT_EXACTLY_ONE_KEY;
+import static grakn.core.common.exception.ErrorMessage.VALIDATION_OWNS_NO_KEY;
 import static grakn.core.common.exception.ErrorMessage.VALIDATION_RELATION_CASTING_LOOP_FAIL;
 import static grakn.core.common.exception.ErrorMessage.VALIDATION_RELATION_TYPE;
 import static grakn.core.common.exception.ErrorMessage.VALIDATION_RELATION_TYPES_ROLES_SCHEMA;
@@ -93,7 +95,7 @@ public class ValidateGlobalRules {
     /**
      * This method checks if the plays edge has been added between the roleplayer's Type and
      * the Role being played.
-         * It also checks if the Role of the Casting has been linked to the RelationType of the
+     * It also checks if the Role of the Casting has been linked to the RelationType of the
      * Relation which the Casting connects to.
      *
      * @return Specific errors if any are found
@@ -117,7 +119,7 @@ public class ValidateGlobalRules {
      * Checks if the Role of the Casting has been linked to the RelationType of
      * the Relation which the Casting connects to.
      *
-     * @param role             the Role which the Casting refers to
+     * @param role         the Role which the Casting refers to
      * @param relationType the RelationType which should connect to the role
      * @param relation     the Relation which the Casting refers to
      * @return an error if one is found
@@ -134,7 +136,7 @@ public class ValidateGlobalRules {
     /**
      * Checks  if the plays edge has been added between the roleplayer's Type and
      * the Role being played.
-         * Also checks that required Role are satisfied
+     * Also checks that required Role are satisfied
      *
      * @param role  The Role which the role-player is playing
      * @param thing the role-player
@@ -240,49 +242,57 @@ public class ValidateGlobalRules {
      * @param thing The thing to be validated
      * @return An error message if the thing does not have all the required resources
      */
-    public static Optional<String> validateInstancePlaysAllRequiredRoles(ConceptManager conceptManager, Thing thing) {
+    static Optional<String> validateThingKeys(Thing thing) {
         TypeImpl<?, ?> type = (TypeImpl) thing.type();
 
-        while (type != null) {
-            Map<Role, Boolean> rolesAreRequired = type.directPlays();
-            for (Map.Entry<Role, Boolean> roleIsRequired : rolesAreRequired.entrySet()) {
-                if (roleIsRequired.getValue()) {
-                    Role role = roleIsRequired.getKey();
-                    Label attributeLabel = Schema.ImplicitType.explicitLabel(role.label());
-
-                    // Assert there is a relation for this type
-                    if (!Streams.containsOnly(thing.relations(role), 1)) {
-                        return Optional.of(VALIDATION_NOT_EXACTLY_ONE_KEY.getMessage(thing.id(), attributeLabel));
-                    }
-
-                    Optional<String> uniquenessViolation = validateKeyUniqueness(conceptManager, thing, role, type, attributeLabel);
-                    if (uniquenessViolation.isPresent()) return uniquenessViolation;
+        for (Iterator<AttributeType<?>> it = type.keys().iterator(); it.hasNext(); ) {
+            AttributeType keyType = it.next();
+            List<Attribute> keys = thing.attributes(keyType).collect(Collectors.toList());
+            if (keys.size() == 0) {
+                return Optional.of(VALIDATION_OWNS_NO_KEY.getMessage(thing, thing.type().label(), keyType.label()));
+            } else if (keys.size() > 1) {
+                return Optional.of(VALIDATION_MORE_THAN_ONE_KEY.getMessage(thing, thing.type().label(), keyType.label()));
+            }
+            for (Attribute key : keys) {
+                Optional<String> keyOwnedOnce = validateKeyOwnedOnceByType(key, type);
+                if (keyOwnedOnce.isPresent()) {
+                    return keyOwnedOnce;
                 }
             }
-            type = (TypeImpl) type.sup();
+        }
+
+        return Optional.empty();
+    }
+
+    // TODO this behaviour should be moved to another method, and optimised as it is very expensive
+    private static Optional<String> validateKeyOwnedOnceByType(Attribute<?> key, Type ownerType) {
+        // find the supertype of the ownertype that keys this attribute's type
+        Set<Type> directOwnersOfKeyType = key.type().directOwnersAsKey().collect(Collectors.toSet());
+        Type highestSupOwningKey = ownerType;
+        while (true) {
+            Type sup = highestSupOwningKey.sup();
+            if (!directOwnersOfKeyType.contains(sup)) {
+                break;
+            }
+            highestSupOwningKey = sup;
+        }
+
+        Set<Type> childrenOfHighestKeyedType = highestSupOwningKey.subs().collect(Collectors.toSet());
+        long owners = key.owners().filter(owner -> childrenOfHighestKeyedType.contains(owner.type())).limit(2).count();
+        if (owners != 1) {
+            return Optional.of(VALIDATION_MORE_THAN_ONE_USE_OF_KEY.getMessage(highestSupOwningKey.label(), key.value(), key.type().label()));
         }
         return Optional.empty();
     }
 
-    public static Optional<String> validateKeyUniqueness(ConceptManager conceptManager, Thing thing, Role role, Type ownerType, Label attributeLabel){
-        //validate key uniqueness
-        Relation keyRelation = thing.relations(role).findFirst().get();
-        final Role keyValueRole = conceptManager.getRole(Schema.ImplicitType.KEY_VALUE.getLabel(attributeLabel).getValue());
-        final Attribute<?> keyValue = keyRelation.rolePlayers(keyValueRole).findFirst().get().asAttribute();
-        if (keyValue.owners().filter(owner -> owner.type().sups().anyMatch(t -> t.equals(ownerType))).limit(2).count() > 1) {
-            Label resourceTypeLabel = Schema.ImplicitType.explicitLabel(role.label());
-            return Optional.of(VALIDATION_MORE_THAN_ONE_USE_OF_KEY.getMessage(ownerType.label(), keyValue.value(), resourceTypeLabel));
-        }
-        return Optional.empty();
-    }
 
     /**
      * @return Error messages if the rules in the db are not stratifiable (cycles with negation are present)
      */
-    public static Set<String> validateRuleStratifiability(ConceptManager conceptManager){
+    public static Set<String> validateRuleStratifiability(ConceptManager conceptManager) {
         Set<String> errors = new HashSet<>();
         List<Set<Type>> negativeCycles = RuleUtils.negativeCycles(conceptManager);
-        if (!negativeCycles.isEmpty()){
+        if (!negativeCycles.isEmpty()) {
             errors.add(ErrorMessage.VALIDATION_RULE_GRAPH_NOT_STRATIFIABLE.getMessage(negativeCycles));
         }
         return errors;
@@ -308,7 +318,7 @@ public class ValidateGlobalRules {
     }
 
     /**
-     * @param rule  the rule to be cast into a combined conjunction query
+     * @param rule the rule to be cast into a combined conjunction query
      * @return a combined conjunction created from statements from both the body and the head of the rule
      */
     private static ReasonerQuery combinedRuleQuery(ReasonerQueryFactory reasonerQueryFactory, Rule rule) {
@@ -320,7 +330,7 @@ public class ValidateGlobalRules {
     /**
      * NB: this only gets checked if the rule obeys the Horn clause form
      *
-     * @param rule  the rule to be validated ontologically
+     * @param rule the rule to be validated ontologically
      * @return Error messages if the rule has ontological inconsistencies
      */
     public static Set<String> validateRuleOntologically(ReasonerQueryFactory reasonerQueryFactory, Rule rule) {
@@ -335,7 +345,7 @@ public class ValidateGlobalRules {
     }
 
     /**
-     * @param rule  the rule to be validated
+     * @param rule the rule to be validated
      * @return Error messages if the rule head is invalid - is not a single-atom conjunction, doesn't contain illegal atomics and is ontologically valid
      */
     private static Set<String> validateRuleHead(ReasonerQueryFactory reasonerQueryFactory, Rule rule) {
@@ -394,18 +404,18 @@ public class ValidateGlobalRules {
                         .flatMap(statement -> statement.getTypes().stream())
                         .forEach(type -> {
                             SchemaConcept schemaConcept = conceptManager.getSchemaConcept(Label.of(type));
-                            if(schemaConcept == null){
+                            if (schemaConcept == null) {
                                 errors.add(ErrorMessage.VALIDATION_RULE_MISSING_ELEMENTS.getMessage(side, rule.label(), type));
                             } else {
-                                if(Schema.VertexProperty.RULE_WHEN.equals(side)){
-                                    if (schemaConcept.isType()){
-                                        if (p.isNegation()){
+                                if (Schema.VertexProperty.RULE_WHEN.equals(side)) {
+                                    if (schemaConcept.isType()) {
+                                        if (p.isNegation()) {
                                             RuleImpl.from(rule).addNegativeHypothesis(schemaConcept.asType());
                                         } else {
                                             RuleImpl.from(rule).addPositiveHypothesis(schemaConcept.asType());
                                         }
                                     }
-                                } else if (Schema.VertexProperty.RULE_THEN.equals(side)){
+                                } else if (Schema.VertexProperty.RULE_THEN.equals(side)) {
                                     if (schemaConcept.isType()) {
                                         RuleImpl.from(rule).addConclusion(schemaConcept.asType());
                                     }

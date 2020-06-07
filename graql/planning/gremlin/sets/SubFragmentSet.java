@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -32,7 +31,7 @@ import static grakn.core.graql.planning.gremlin.sets.EquivalentFragmentSets.frag
 import static grakn.core.graql.planning.gremlin.sets.EquivalentFragmentSets.labelOf;
 
 /**
- * @see EquivalentFragmentSets#sub(VarProperty, Variable, Variable)
+ * see EquivalentFragmentSets#sub(VarProperty, Variable, Variable)
  *
  */
 class SubFragmentSet extends EquivalentFragmentSetImpl {
@@ -84,7 +83,7 @@ class SubFragmentSet extends EquivalentFragmentSetImpl {
      *
      * <p>
      * However, we still keep the old LabelFragmentSet in case it is connected to anything.
-     * {@link LabelFragmentSet#REDUNDANT_LABEL_ELIMINATION_OPTIMISATION} will eventually remove it if it is not.
+     * LabelFragmentSet#REDUNDANT_LABEL_ELIMINATION_OPTIMISATION will eventually remove it if it is not.
      * </p>
      */
     static final FragmentSetOptimisation SUB_TRAVERSAL_ELIMINATION_OPTIMISATION = (fragmentSets, conceptManager) -> {

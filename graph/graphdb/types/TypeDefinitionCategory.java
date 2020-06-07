@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -20,7 +19,6 @@ package grakn.core.graph.graphdb.types;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
-import org.apache.tinkerpop.gremlin.structure.Direction;
 import grakn.core.graph.core.Cardinality;
 import grakn.core.graph.core.Multiplicity;
 import grakn.core.graph.core.schema.ConsistencyModifier;
@@ -30,7 +28,7 @@ import grakn.core.graph.graphdb.database.management.ModifierType;
 import grakn.core.graph.graphdb.internal.ElementCategory;
 import grakn.core.graph.graphdb.internal.Order;
 import grakn.core.graph.graphdb.internal.RelationCategory;
-import grakn.core.graph.graphdb.types.TypeDefinitionMap;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.Set;
 

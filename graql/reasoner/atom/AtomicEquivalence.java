@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -53,8 +52,6 @@ import java.util.stream.Stream;
 public abstract class AtomicEquivalence extends Equivalence<Atomic> {
 
     abstract public String name();
-
-    public <B extends Atomic, S extends B> boolean equivalentCollection(Collection<S> a1, Collection<S> a2){ return equivalence(a1, a2, this);}
 
     public static <B extends Atomic, S extends B> boolean equivalence(Collection<S> a1, Collection<S> a2, Equivalence<B> equiv){
         return ReasonerUtils.isEquivalentCollection(a1, a2, equiv);

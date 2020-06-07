@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -27,7 +26,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Implementations of {@link TimestampProvider} for different resolutions of time:
+ * Implementations of TimestampProvider for different resolutions of time:
  * <ul>
  * <li>NANO: nano-second time resolution based on System.nanoTime using a base-time established
  * by System.currentTimeMillis(). The exact resolution depends on the particular JVM and host machine.</li>

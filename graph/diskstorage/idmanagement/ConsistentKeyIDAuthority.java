@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -67,7 +66,7 @@ import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.
 import static grakn.core.graph.util.encoding.StringEncoding.UTF8_CHARSET;
 
 /**
- * {@link IDAuthority} implementation
+ * IDAuthority implementation
  * assuming that the backing store supports consistent key operations.
  * <p>
  * ID blocks are allocated by first applying for an id block, waiting for a
@@ -189,7 +188,7 @@ public class ConsistentKeyIDAuthority implements BackendOperation.TransactionalP
     }
 
     /**
-     * Returns the block size of the specified partition as determined by the configured {@link IDBlockSizer}.
+     * Returns the block size of the specified partition as determined by the configured IDBlockSizer.
      */
     private long getBlockSize(int idNamespace) {
         long blockSize = blockSizer.getBlockSize(idNamespace);

@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,11 +17,17 @@
 
 package grakn.core.server.rpc;
 
+import grakn.core.kb.server.keyspace.Keyspace;
+import grakn.core.server.keyspace.KeyspaceImpl;
+import grakn.core.server.keyspace.KeyspaceManager;
 import grakn.protocol.keyspace.KeyspaceProto;
 import grakn.protocol.keyspace.KeyspaceServiceGrpc;
 import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.stream.Collectors;
 
 
 /**
@@ -31,16 +36,16 @@ import org.slf4j.LoggerFactory;
 public class KeyspaceService extends KeyspaceServiceGrpc.KeyspaceServiceImplBase {
     private final Logger LOG = LoggerFactory.getLogger(KeyspaceService.class);
 
-    private final KeyspaceRequestsHandler requestsHandler;
+    private final KeyspaceManager keyspaceManager;
 
-    public KeyspaceService(KeyspaceRequestsHandler handler) {
-        this.requestsHandler = handler;
+    public KeyspaceService(KeyspaceManager keyspaceManager) {
+        this.keyspaceManager = keyspaceManager;
     }
 
     @Override
     public void retrieve(KeyspaceProto.Keyspace.Retrieve.Req request, StreamObserver<KeyspaceProto.Keyspace.Retrieve.Res> response) {
         try {
-            Iterable<String> list = this.requestsHandler.retrieve(request);
+            Iterable<String> list = this.keyspaceManager.keyspaces().stream().map(Keyspace::name).collect(Collectors.toList());
             response.onNext(KeyspaceProto.Keyspace.Retrieve.Res.newBuilder().addAllNames(list).build());
             response.onCompleted();
         } catch (RuntimeException e) {
@@ -52,7 +57,7 @@ public class KeyspaceService extends KeyspaceServiceGrpc.KeyspaceServiceImplBase
     @Override
     public void delete(KeyspaceProto.Keyspace.Delete.Req request, StreamObserver<KeyspaceProto.Keyspace.Delete.Res> response) {
         try {
-            this.requestsHandler.delete(request);
+            this.keyspaceManager.delete(new KeyspaceImpl(request.getName()));
             response.onNext(KeyspaceProto.Keyspace.Delete.Res.getDefaultInstance());
             response.onCompleted();
         } catch (RuntimeException e) {

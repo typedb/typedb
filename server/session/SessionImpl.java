@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -29,6 +28,7 @@ import grakn.core.kb.keyspace.ShardManager;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import grakn.core.kb.server.TransactionProvider;
+import grakn.core.kb.server.exception.GraknServerException;
 import grakn.core.kb.server.exception.SessionException;
 import grakn.core.kb.server.exception.TransactionException;
 import grakn.core.kb.server.keyspace.Keyspace;
@@ -59,11 +59,11 @@ public class SessionImpl implements Session {
     private final ShardManager shardManager;
     private Consumer<Session> onClose;
 
-    private boolean isClosed = false;
+    private boolean isOpen = true;
     private final TransactionProvider transactionProvider;
 
     /**
-     * Instantiates {@link SessionImpl} specific for internal use (within Grakn Server),
+     * Instantiates SessionImpl specific for internal use (within Grakn Server),
      * using provided Grakn configuration.
      *
      * @param keyspace to which keyspace the session should be bound to
@@ -79,7 +79,7 @@ public class SessionImpl implements Session {
         this.attributeManager = attributeManager;
         this.shardManager = shardManager;
 
-        Transaction tx = writeTransaction();
+        Transaction tx = transaction(Transaction.Type.WRITE);
 
         if (!keyspaceHasBeenInitialised(tx)) {
             initialiseMetaConcepts(tx);
@@ -93,16 +93,7 @@ public class SessionImpl implements Session {
     }
 
     @Override
-    public Transaction readTransaction() {
-        return transaction(Transaction.Type.READ);
-    }
-
-    @Override
-    public Transaction writeTransaction() {
-        return transaction(Transaction.Type.WRITE);
-    }
-
-    private Transaction transaction(Transaction.Type type) {
+    public Transaction transaction(Transaction.Type type) {
 
         // If graph is closed it means the session was already closed
         if (graph.isClosed()) {
@@ -170,7 +161,7 @@ public class SessionImpl implements Session {
      */
     @Override
     public void invalidate() {
-        isClosed = true;
+        isOpen = false;
     }
 
     /**
@@ -179,7 +170,7 @@ public class SessionImpl implements Session {
      **/
     @Override
     public void close() {
-        if (isClosed) {
+        if (!isOpen) {
             return;
         }
 
@@ -193,7 +184,12 @@ public class SessionImpl implements Session {
             this.onClose.accept(this);
         }
 
-        isClosed = true;
+        isOpen = false;
+    }
+
+    @Override
+    public boolean isOpen() {
+        return isOpen;
     }
 
     @Override

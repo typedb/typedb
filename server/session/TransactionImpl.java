@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -33,10 +32,10 @@ import grakn.core.concept.answer.ConceptSetMeasure;
 import grakn.core.concept.answer.Explanation;
 import grakn.core.concept.answer.Numeric;
 import grakn.core.concept.answer.Void;
-import grakn.core.core.AttributeSerialiser;
 import grakn.core.concept.impl.ConceptVertex;
 import grakn.core.concept.impl.SchemaConceptImpl;
 import grakn.core.concept.util.ConceptUtils;
+import grakn.core.core.AttributeSerialiser;
 import grakn.core.core.JanusTraversalSourceProvider;
 import grakn.core.core.Schema;
 import grakn.core.graph.core.JanusGraphTransaction;
@@ -63,7 +62,6 @@ import grakn.core.kb.concept.structure.PropertyNotUniqueException;
 import grakn.core.kb.concept.structure.VertexElement;
 import grakn.core.kb.graql.executor.ExecutorFactory;
 import grakn.core.kb.graql.executor.QueryExecutor;
-import grakn.core.kb.graql.planning.gremlin.TraversalPlanFactory;
 import grakn.core.kb.graql.reasoner.ReasonerException;
 import grakn.core.kb.graql.reasoner.cache.RuleCache;
 import grakn.core.kb.server.Session;
@@ -101,8 +99,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
+import java.util.Stack;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -115,7 +113,7 @@ public class TransactionImpl implements Transaction {
     private final long typeShardThreshold;
 
     // Shared Variables
-    protected final Session  session;
+    protected final Session session;
     protected final ConceptManager conceptManager;
     protected final ExecutorFactory executorFactory;
 
@@ -135,7 +133,6 @@ public class TransactionImpl implements Transaction {
     // reaching across threads in a single threaded janus transaction leads to errors
     private final ThreadLocal<Boolean> createdInCurrentThread = ThreadLocal.withInitial(() -> Boolean.FALSE);
 
-    protected final TraversalPlanFactory traversalPlanFactory;
     protected final JanusTraversalSourceProvider janusTraversalSourceProvider;
     protected final ReasonerQueryFactory reasonerQueryFactory;
     private final ReadWriteLock graphLock;
@@ -144,7 +141,7 @@ public class TransactionImpl implements Transaction {
                            JanusTraversalSourceProvider janusTraversalSourceProvider, TransactionCache transactionCache,
                            MultilevelSemanticCache queryCache, RuleCache ruleCache,
                            StatisticsDeltaImpl statisticsDelta, ExecutorFactory executorFactory,
-                           TraversalPlanFactory traversalPlanFactory, ReasonerQueryFactory reasonerQueryFactory,
+                            ReasonerQueryFactory reasonerQueryFactory,
                            ReadWriteLock graphLock, long typeShardThreshold) {
         createdInCurrentThread.set(true);
 
@@ -156,7 +153,6 @@ public class TransactionImpl implements Transaction {
 
         this.conceptManager = conceptManager;
         this.executorFactory = executorFactory;
-        this.traversalPlanFactory = traversalPlanFactory;
         this.reasonerQueryFactory = reasonerQueryFactory;
 
         this.transactionCache = transactionCache;
@@ -422,7 +418,7 @@ public class TransactionImpl implements Transaction {
         Stream<ConceptMap> explicitlyPersisted = inserted.peek(conceptMap -> {
             // mark all inferred concepts that are required for the insert for persistence explicitly
             // can avoid this potentially expensive check if there aren't any inferred concepts to start with
-            if (transactionCache.getInferredInstances().findAny().isPresent()) {
+            if (transactionCache.anyFactsInferred()) {
                 markConceptsForPersistence(conceptMap.concepts());
             }
         });
@@ -433,9 +429,13 @@ public class TransactionImpl implements Transaction {
     /**
      * Mark all objects inserted explicitly for persistence, if they are inferred
      * The inferred objects also transitively check their generating concepts to be marked for persistence
+     * "Dependant" concepts that are DIRECT dependants of a concept - concepts required to be persisted if we persist that concept
      *
      * We do the persistence operation at the top level in the Transaction, because we have access to the Caches here
      * However, it may be better performed directly in the ConceptManager or elsewhere
+     *
+     *
+     * TODO properly design this functionality and clean it up
      */
     private void markConceptsForPersistence(Collection<Concept> concepts) {
         Set<Thing> things = concepts.stream()
@@ -443,13 +443,42 @@ public class TransactionImpl implements Transaction {
                 .map(Concept::asThing)
                 .collect(Collectors.toSet());
 
-        ConceptUtils.getDependentConcepts(things)
-                .filter(Thing::isInferred)
-                .forEach(t -> {
-                    //as we are going to persist the concepts, reset the inferred flag
-                    ConceptVertex.from(t).vertex().property(Schema.VertexProperty.IS_INFERRED, false);
-                   transactionCache.inferredInstanceToPersist(t);
-                });
+        Set<Thing> visitedThings = new HashSet<>();
+        Stack<Thing> thingStack = new Stack<>();
+        thingStack.addAll(things);
+        while (!thingStack.isEmpty()) {
+            Thing thing = thingStack.pop();
+            if (!visitedThings.contains(thing)) {
+                if (thing.isRelation()) {
+                    // TODO persist inferred edges - not supported to persist inferred role playing yet
+
+                    thing.asRelation().rolePlayers()
+                            .filter(t -> !visitedThings.contains(t))
+                            .forEach(thingStack::add);
+
+                } else if (thing.isAttribute()) {
+                    // get all owners as a low level traversal
+                    ConceptVertex.from(thing).vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.ATTRIBUTE)
+                            .forEach(edge -> {
+                                Thing owner = conceptManager.buildConcept(edge.source());
+                                if (edge.propertyBoolean(Schema.EdgeProperty.IS_INFERRED)) {
+                                    // mark this edge for persistence
+                                    transactionCache.inferredOwnershipToPersist(owner, thing.asAttribute());
+                                    edge.property(Schema.EdgeProperty.IS_INFERRED, false);
+                                }
+                                if (!visitedThings.contains(owner)) {
+                                    thingStack.add(owner);
+                                }
+                            });
+                }
+
+                if (thing.isInferred()) {
+                    transactionCache.inferredInstanceToPersist(thing);
+                    ConceptVertex.from(thing).vertex().property(Schema.VertexProperty.IS_INFERRED, false);
+                }
+                visitedThings.add(thing);
+            }
+        }
     }
 
     // Delete query
@@ -732,7 +761,11 @@ public class TransactionImpl implements Transaction {
             return conceptManager.createEntityType(label, getMetaEntityType());
         }
 
-        ConceptUtils.validateBaseType(schemaConcept, Schema.BaseType.ENTITY_TYPE);
+        try {
+            ConceptUtils.validateBaseType(schemaConcept, Schema.BaseType.ENTITY_TYPE);
+        } catch (PropertyNotUniqueException e) {
+            throw GraknConceptException.propertyNotUnique(e.getMessage());
+        }
 
         return (EntityType) schemaConcept;
     }
@@ -794,30 +827,30 @@ public class TransactionImpl implements Transaction {
 
     /**
      * @param label    A unique label for the AttributeType
-     * @param dataType The data type of the AttributeType.
-     *                 Supported types include: DataType.STRING, DataType.LONG, DataType.DOUBLE, and DataType.BOOLEAN
+     * @param valueType The value type of the AttributeType.
+     *                 Supported types include: ValueType.STRING, ValueType.LONG, ValueType.DOUBLE, and ValueType.BOOLEAN
      * @param <V>
-     * @return A new or existing AttributeType with the provided label and data type.
+     * @return A new or existing AttributeType with the provided label and value type.
      * @throws TransactionException       if the graph is closed
      * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-AttributeType.
      * @throws GraknElementException       if the {@param label} is already in use by an existing AttributeType which is
-     *                                    unique or has a different datatype.
+     *                                    unique or has a different ValueType.
      */
     @Override
     @SuppressWarnings("unchecked")
-    public <V> AttributeType<V> putAttributeType(Label label, AttributeType.DataType<V> dataType) {
+    public <V> AttributeType<V> putAttributeType(Label label, AttributeType.ValueType<V> valueType) {
         checkGraphIsOpen();
         AttributeType<V> attributeType = conceptManager.getSchemaConcept(label);
         if (attributeType == null) {
-            attributeType = conceptManager.createAttributeType(label, getMetaAttributeType(), dataType);
+            attributeType = conceptManager.createAttributeType(label, getMetaAttributeType(), valueType);
         } else {
             ConceptUtils.validateBaseType(SchemaConceptImpl.from(attributeType), Schema.BaseType.ATTRIBUTE_TYPE);
-            //These checks is needed here because caching will return a type by label without checking the datatype
+            //These checks is needed here because caching will return a type by label without checking the ValueType
 
             if (Schema.MetaSchema.isMetaLabel(label)) {
                 throw GraknConceptException.metaTypeImmutable(label);
-            } else if (!dataType.equals(attributeType.dataType())) {
-                throw GraknElementException.immutableProperty(attributeType.dataType(), dataType, Schema.VertexProperty.DATA_TYPE);
+            } else if (!valueType.equals(attributeType.valueType())) {
+                throw GraknElementException.immutableProperty(attributeType.valueType(), valueType, Schema.VertexProperty.VALUE_TYPE);
             }
         }
 
@@ -825,8 +858,8 @@ public class TransactionImpl implements Transaction {
     }
 
     @Override
-    public <V> AttributeType<V> putAttributeType(String label, AttributeType.DataType<V> dataType) {
-        return putAttributeType(Label.of(label), dataType);
+    public <V> AttributeType<V> putAttributeType(String label, AttributeType.ValueType<V> valueType) {
+        return putAttributeType(Label.of(label), valueType);
     }
 
     /**
@@ -849,17 +882,7 @@ public class TransactionImpl implements Transaction {
             ConceptUtils.validateBaseType(SchemaConceptImpl.from(rule), Schema.BaseType.RULE);
         }
 
-        //NB: thenTypes() will be empty as type edges added on commit
-        //NB: this will cache also non-committed rules
-        if (rule.then() != null) {
-            rule.then().statements().stream()
-                    .flatMap(v -> v.getTypes().stream())
-                    .map(type -> this.<SchemaConcept>getSchemaConcept(Label.of(type)))
-                    .filter(Objects::nonNull)
-                    .filter(Concept::isType)
-                    .map(Concept::asType)
-                    .forEach(type -> ruleCache.updateRules(type, rule));
-        }
+        ruleCache.ackRuleInsertion(rule);
         return rule;
     }
 
@@ -968,15 +991,15 @@ public class TransactionImpl implements Transaction {
         checkGraphIsOpen();
         if (value == null) return Collections.emptySet();
 
-        // TODO: Remove this forced casting once we replace DataType to be Parameterised Generic Enum
-        AttributeType.DataType<V> dataType =
-                (AttributeType.DataType<V>) AttributeType.DataType.of(value.getClass());
-        if (dataType == null) {
-            throw TransactionException.unsupportedDataType(value);
+        // TODO: Remove this forced casting once we replace ValueType to be Parameterised Generic Enum
+        AttributeType.ValueType<V> valueType =
+                (AttributeType.ValueType<V>) AttributeType.ValueType.of(value.getClass());
+        if (valueType == null) {
+            throw TransactionException.unsupportedValueType(value);
         }
 
         HashSet<Attribute<V>> attributes = new HashSet<>();
-        conceptManager.getConcepts(Schema.VertexProperty.ofDataType(dataType), AttributeSerialiser.of(dataType).serialise(value))
+        conceptManager.getConcepts(Schema.VertexProperty.ofValueType(valueType), AttributeSerialiser.of(valueType).serialise(value))
                 .forEach(concept -> {
                     if (concept != null && concept.isAttribute()) {
                         attributes.add(concept.asAttribute());
@@ -1127,13 +1150,14 @@ public class TransactionImpl implements Transaction {
      * @throws InvalidKBException if graph does not comply with the grakn validation rules
      */
     @Override
-    public void commit() throws InvalidKBException {
+    public void commit() throws TransactionException {
+
         if (!isOpen()) {
-            return;
+            throw TransactionException.transactionClosed(this, null);
         }
         try {
             checkMutationAllowed();
-            removeInferredConcepts();
+            removeInferredFacts();
             computeShardCandidates();
 
             // lock on the keyspace cache shared between concurrent tx's to the same keyspace
@@ -1153,9 +1177,14 @@ public class TransactionImpl implements Transaction {
         queryCache.clear();
     }
 
-    private void removeInferredConcepts() {
-        Set<Thing> inferredThingsToDiscard = transactionCache.getInferredInstancesToDiscard().collect(Collectors.toSet());
-        inferredThingsToDiscard.forEach(inferred -> transactionCache.remove(inferred));
+    private void removeInferredFacts() {
+        transactionCache.getInferredOwnershipsToDiscard().forEach(pair -> {
+            Thing owner = pair.first();
+            Attribute<?> attribute = pair.second();
+            owner.unhas(attribute);
+        });
+
+        Set<Thing> inferredThingsToDiscard = transactionCache.getInferredInstancesToDiscard();
         inferredThingsToDiscard.forEach(Concept::delete);
     }
 

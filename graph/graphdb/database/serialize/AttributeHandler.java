@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -27,7 +26,7 @@ public interface AttributeHandler {
     /**
      * Converts the given (not-null) value to the this datatype V.
      * The given object will NOT be of type V.
-     * Throws an {@link IllegalArgumentException} if it cannot be converted.
+     * Throws an IllegalArgumentException if it cannot be converted.
      *
      * @param value to convert
      * @return converted to expected datatype

@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -37,13 +36,6 @@ import java.util.stream.Stream;
 
 public interface QueryExecutor {
     Stream<ConceptMap> match(MatchClause matchClause);
-
-    Stream<ConceptMap> traverse(Conjunction<Pattern> pattern);
-
-    /**
-     * @return resulting answer stream
-     */
-    Stream<ConceptMap> traverse(Conjunction<Pattern> pattern, GraqlTraversal graqlTraversal);
 
     Stream<ConceptMap> define(GraqlDefine query);
 

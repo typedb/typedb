@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -40,14 +39,14 @@ import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
 /**
- * {@link GraphComputer} Used For Analytics Algorithms
- * Wraps a Tinkerpop {@link GraphComputer} which enables the execution of pregel programs.
- * These programs are defined either via a {@link MapReduce} or a {@link VertexProgram}.
+ * GraphComputer Used For Analytics Algorithms
+ * Wraps a Tinkerpop GraphComputer which enables the execution of pregel programs.
+ * These programs are defined either via a MapReduce or a VertexProgram.
  * <p>
- * A {@link VertexProgram} is a computation executed on each vertex in parallel.
+ * A VertexProgram is a computation executed on each vertex in parallel.
  * Vertices communicate with each other through message passing.
  * <p>
- * {@link MapReduce} processed the vertices in a parallel manner by aggregating values emitted by vertices.
+ * MapReduce processed the vertices in a parallel manner by aggregating values emitted by vertices.
  * MapReduce can be executed alone or used to collect the results after executing a VertexProgram.
  */
 public class OLAPOperation {
@@ -123,10 +122,10 @@ public class OLAPOperation {
             edgeFilter = includesRolePlayerEdge ?
                     __.union(
                             __.bothE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()),
-                            __.bothE(Schema.EdgeLabel.ATTRIBUTE.getLabel())
-                                    .has(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID.name(), P.within(labelIds))) :
-                    __.bothE(Schema.EdgeLabel.ATTRIBUTE.getLabel())
-                            .has(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID.name(), P.within(labelIds));
+                            __.bothE(Schema.EdgeLabel.ATTRIBUTE.getLabel()) ) :
+//                                    .has(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID.name(), P.within(labelIds))) :
+                    __.bothE(Schema.EdgeLabel.ATTRIBUTE.getLabel()) ;
+//                            .has(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID.name(), P.within(labelIds));
         }
 
         graphComputer.vertices(vertexFilter).edges(edgeFilter);

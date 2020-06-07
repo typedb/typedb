@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -20,10 +19,6 @@
 package grakn.core.concept.structure;
 
 import grakn.core.core.Schema;
-import grakn.core.kb.concept.api.LabelId;
-import grakn.core.kb.concept.api.RelationType;
-import grakn.core.kb.concept.api.Role;
-import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.concept.structure.EdgeElement;
 import grakn.core.kb.concept.structure.GraknElementException;
 import grakn.core.kb.concept.structure.PropertyNotUniqueException;
@@ -44,7 +39,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-import static java.util.stream.Collectors.toSet;
 
 /**
  * Represent a Vertex in a TransactionOLTP
@@ -241,32 +235,18 @@ public class VertexElementImpl extends AbstractElementImpl<Vertex> implements Ve
                 .map(vertexElement -> elementFactory.getShard(vertexElement));
     }
 
-    public Stream<EdgeElement> roleCastingsEdges(Type type, Set<Integer> allowedRoleTypeIds) {
-        return elementFactory.rolePlayerEdges(id().toString(), type, allowedRoleTypeIds);
+    public Stream<EdgeElement> roleCastingsEdges(Integer typeLabelId, Set<Integer> allowedRoleTypeIds) {
+        return elementFactory.rolePlayerEdges(id().toString(), typeLabelId, allowedRoleTypeIds);
 
-    }
-
-    public boolean rolePlayerEdgeExists(String startVertexId, RelationType type, Role role, String endVertexId) {
-        return elementFactory.rolePlayerEdgeExists(startVertexId, type, role, endVertexId);
-    }
-
-    public Stream<VertexElement> getShortcutNeighbors(Set<Integer> ownerRoleIds, Set<Integer> valueRoleIds,
-                                                      boolean ownerToValueOrdering) {
-        return elementFactory.shortcutNeighbors(id().toString(), ownerRoleIds, valueRoleIds, ownerToValueOrdering);
-    }
-
-    public Stream<EdgeElement> edgeRelationsConnectedToInstancesOfType(LabelId edgeInstanceLabelId) {
-        return elementFactory.edgeRelationsConnectedToInstancesOfType(id().toString(), edgeInstanceLabelId);
     }
 
     @Override
-    public Stream<VertexElement> reifiedRelations(Role[] roles) {
-        if (roles.length == 0) {
+    public Stream<VertexElement> relations(Set<Integer> roleLabelIds) {
+        if (roleLabelIds.size() == 0) {
             return elementFactory.inFromSourceId(id().toString(), Schema.EdgeLabel.ROLE_PLAYER);
         } else {
-            Set<Integer> roleTypesIds = Arrays.stream(roles).map(r -> r.labelId().getValue()).collect(toSet());
             return elementFactory.inFromSourceIdWithProperty(id().toString(), Schema.EdgeLabel.ROLE_PLAYER,
-                    Schema.EdgeProperty.ROLE_LABEL_ID, roleTypesIds);
+                    Schema.EdgeProperty.ROLE_LABEL_ID, roleLabelIds);
         }
     }
 }

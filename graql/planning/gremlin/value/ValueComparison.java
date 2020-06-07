@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -194,8 +193,8 @@ public abstract class ValueComparison<T, U> extends ValueOperation<T, U> {
         private final java.lang.String gremlinVariable;
 
         private static final Map<Graql.Token.Comparator, Function<java.lang.String, P<java.lang.String>>> PREDICATES_VAR = varPredicates();
-        private static final java.lang.String[] VALUE_PROPERTIES = AttributeType.DataType.values().stream()
-                .map(Schema.VertexProperty::ofDataType).distinct()
+        private static final java.lang.String[] VALUE_PROPERTIES = AttributeType.ValueType.values().stream()
+                .map(Schema.VertexProperty::ofValueType).distinct()
                 .map(Enum::name).toArray(java.lang.String[]::new);
 
         Variable(Graql.Token.Comparator comparator, Statement value) {

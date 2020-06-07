@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -29,6 +28,7 @@ import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import graql.lang.property.ValueProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
+import java.util.Objects;
 
 /**
  * Class used to handle value predicates with a variable:
@@ -86,9 +86,19 @@ public class VariableValuePredicate extends VariablePredicate {
 
     @Override
     public int hashCode() {
-        int hashCode = 1;
-        hashCode = hashCode * 37 + this.getVarName().hashCode();
-        hashCode = hashCode * 37 + this.getPredicate().hashCode();
+        return Objects.hash(getVarName(), getPredicate(), operation());
+    }
+
+    @Override
+    public int alphaEquivalenceHashCode() {
+        int hashCode = super.alphaEquivalenceHashCode();
+        hashCode = hashCode * 37 + this.operation().hashCode();
+        return hashCode;
+    }
+
+    @Override
+    public int structuralEquivalenceHashCode() {
+        int hashCode = super.structuralEquivalenceHashCode();
         hashCode = hashCode * 37 + this.operation().hashCode();
         return hashCode;
     }
@@ -104,13 +114,6 @@ public class VariableValuePredicate extends VariablePredicate {
     }
 
     @Override
-    public int alphaEquivalenceHashCode() {
-        int hashCode = super.alphaEquivalenceHashCode();
-        hashCode = hashCode * 37 + this.operation().hashCode();
-        return hashCode;
-    }
-
-    @Override
     public boolean isStructurallyEquivalent(Object obj){
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
@@ -118,13 +121,6 @@ public class VariableValuePredicate extends VariablePredicate {
         VariableValuePredicate that = (VariableValuePredicate) obj;
         return this.operation().comparator().equals(that.operation().comparator())
                 && this.operation().value().equals(that.operation().value());
-    }
-
-    @Override
-    public int structuralEquivalenceHashCode() {
-        int hashCode = super.structuralEquivalenceHashCode();
-        hashCode = hashCode * 37 + this.operation().hashCode();
-        return hashCode;
     }
 
     @Override

@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -104,7 +103,7 @@ public abstract class AbstractElement implements InternalElement, Comparable<Jan
      */
 
     /**
-     * Long identifier used to compare elements. Often, this is the same as {@link #longId()}
+     * Long identifier used to compare elements. Often, this is the same as #longId()
      * but some instances of elements may be considered the same even if their ids differ. In that case,
      * this method should be overwritten to return an id that can be used for comparison.
      */

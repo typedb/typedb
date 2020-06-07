@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -21,16 +20,6 @@ package grakn.core.graph.graphdb.tinkerpop.optimize;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
-import org.apache.tinkerpop.gremlin.process.traversal.Order;
-import org.apache.tinkerpop.gremlin.process.traversal.step.HasContainerHolder;
-import org.apache.tinkerpop.gremlin.process.traversal.step.Profiling;
-import org.apache.tinkerpop.gremlin.process.traversal.step.map.GraphStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
-import org.apache.tinkerpop.gremlin.process.traversal.util.MutableMetrics;
-import org.apache.tinkerpop.gremlin.structure.Element;
-import org.apache.tinkerpop.gremlin.structure.Graph;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import grakn.core.graph.core.JanusGraphEdge;
 import grakn.core.graph.core.JanusGraphElement;
 import grakn.core.graph.core.JanusGraphQuery;
@@ -42,11 +31,18 @@ import grakn.core.graph.graphdb.query.JanusGraphPredicate;
 import grakn.core.graph.graphdb.query.graph.GraphCentricQuery;
 import grakn.core.graph.graphdb.query.graph.GraphCentricQueryBuilder;
 import grakn.core.graph.graphdb.query.profile.QueryProfiler;
-import grakn.core.graph.graphdb.tinkerpop.optimize.HasStepFolder;
-import grakn.core.graph.graphdb.tinkerpop.optimize.JanusGraphTraversalUtil;
-import grakn.core.graph.graphdb.tinkerpop.optimize.QueryInfo;
 import grakn.core.graph.graphdb.tinkerpop.profile.TP3ProfileWrapper;
 import grakn.core.graph.graphdb.util.MultiDistinctOrderedIterator;
+import org.apache.tinkerpop.gremlin.process.traversal.Order;
+import org.apache.tinkerpop.gremlin.process.traversal.step.HasContainerHolder;
+import org.apache.tinkerpop.gremlin.process.traversal.step.Profiling;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.GraphStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
+import org.apache.tinkerpop.gremlin.process.traversal.util.MutableMetrics;
+import org.apache.tinkerpop.gremlin.structure.Element;
+import org.apache.tinkerpop.gremlin.structure.Graph;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 
 import java.util.ArrayList;
 import java.util.Arrays;

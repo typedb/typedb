@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -35,14 +34,18 @@ public abstract class ResolutionState {
 
     private final ConceptMap sub;
     private final AnswerPropagatorState parentState;
+    private final long creationTime;
 
     ResolutionState(ConceptMap sub, AnswerPropagatorState parent){
         this.sub = sub;
         this.parentState = parent;
+        this.creationTime = System.currentTimeMillis();
     }
 
     @Override
     public String toString(){ return getClass().getSimpleName() + "@" + Integer.toHexString(hashCode());}
+
+    public long creationTime(){ return creationTime;}
 
     /**
      * @return new sub goal generated from this state
@@ -69,5 +72,5 @@ public abstract class ResolutionState {
     /**
      * @return parent state of this state
      */
-    AnswerPropagatorState getParentState(){ return parentState;}
+    public AnswerPropagatorState getParentState(){ return parentState;}
 }

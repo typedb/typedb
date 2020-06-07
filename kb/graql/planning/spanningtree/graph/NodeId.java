@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -37,7 +36,7 @@ public class NodeId {
      * If the node is an edge from the query, its type is the type of the fragment.
      **/
     public enum Type {
-        ISA, PLAYS, RELATES, SUB, VAR
+        ISA, PLAYS, RELATES, SUB, HAS, KEY, ATTRIBUTE, VAR
     }
 
     private final Type nodeIdType;

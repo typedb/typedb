@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -19,14 +18,13 @@
 package grakn.core.graph.graphdb.types.indextype;
 
 import com.google.common.collect.Iterables;
-import org.apache.tinkerpop.gremlin.structure.Direction;
 import grakn.core.graph.core.PropertyKey;
 import grakn.core.graph.core.schema.Parameter;
 import grakn.core.graph.graphdb.types.MixedIndexType;
 import grakn.core.graph.graphdb.types.ParameterIndexField;
 import grakn.core.graph.graphdb.types.SchemaSource;
 import grakn.core.graph.graphdb.types.TypeDefinitionCategory;
-import grakn.core.graph.graphdb.types.indextype.IndexTypeWrapper;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 
 public class MixedIndexTypeWrapper extends IndexTypeWrapper implements MixedIndexType {
 

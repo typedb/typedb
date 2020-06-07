@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -24,9 +23,9 @@ import com.google.common.base.Preconditions;
 import grakn.common.util.Pair;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
-import grakn.core.graql.reasoner.query.ReasonerQueryEquivalence;
 import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.kb.graql.executor.ExecutorFactory;
+import grakn.core.kb.graql.executor.TraversalExecutor;
 import grakn.core.kb.graql.planning.gremlin.TraversalPlanFactory;
 import grakn.core.kb.graql.reasoner.cache.CacheEntry;
 import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
@@ -41,7 +40,7 @@ import java.util.stream.Stream;
 
 /**
  *
- * Implementation of SemanticCache using {@link ReasonerQueryEquivalence#StructuralEquivalence}
+ * Implementation of SemanticCache using ReasonerQueryEquivalence#StructuralEquivalence
  * for query equivalence checks and IndexedAnswerSets for storing query answer sets.
  *
  */
@@ -49,8 +48,8 @@ public class MultilevelSemanticCache extends SemanticCache<Equivalence.Wrapper<R
 
     private static final Logger LOG = LoggerFactory.getLogger(MultilevelSemanticCache.class);
 
-    public MultilevelSemanticCache(ExecutorFactory executorFactory, TraversalPlanFactory traversalPlanFactory) {
-        super(executorFactory, traversalPlanFactory);
+    public MultilevelSemanticCache(TraversalPlanFactory traversalPlanFactory, TraversalExecutor traversalExecutor) {
+        super(traversalPlanFactory, traversalExecutor);
     }
 
     @Override public UnifierType unifierType() { return UnifierType.STRUCTURAL;}
@@ -120,7 +119,7 @@ public class MultilevelSemanticCache extends SemanticCache<Equivalence.Wrapper<R
                         .apply(answerIndex)
                         .flatMap(index -> answers.get(index).stream())
                         .flatMap(multiUnifier::apply)
-                .map(ans -> ans.withPattern(query.getPattern())),
+                .map(ans -> ans.withPattern(query.withSubstitution(ans).getPattern())),
                 multiUnifier
         );
     }

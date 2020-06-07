@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -20,7 +19,6 @@ package grakn.core.graph.graphdb.database.management;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
-import org.apache.tinkerpop.gremlin.structure.Element;
 import grakn.core.graph.core.Cardinality;
 import grakn.core.graph.core.PropertyKey;
 import grakn.core.graph.core.schema.JanusGraphIndex;
@@ -30,6 +28,7 @@ import grakn.core.graph.graphdb.types.CompositeIndexType;
 import grakn.core.graph.graphdb.types.IndexField;
 import grakn.core.graph.graphdb.types.IndexType;
 import grakn.core.graph.graphdb.types.MixedIndexType;
+import org.apache.tinkerpop.gremlin.structure.Element;
 
 
 public class JanusGraphIndexWrapper implements JanusGraphIndex {

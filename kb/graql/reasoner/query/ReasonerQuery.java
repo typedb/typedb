@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -110,14 +109,6 @@ public interface ReasonerQuery{
      */
     @CheckReturnValue
     boolean isRuleResolvable();
-
-    /**
-     * @param typedVar variable of interest
-     * @param parentType which playability in this query is to be checked
-     * @return true if typing the typeVar with type is compatible with role configuration of this query
-     */
-    @CheckReturnValue
-    boolean isTypeRoleCompatible(Variable typedVar, Type parentType);
 
     /**
      * @param parent query we want to unify this query with

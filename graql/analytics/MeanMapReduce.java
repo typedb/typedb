@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -44,8 +43,8 @@ public class MeanMapReduce extends StatisticsMapReduce<Map<String, Double>> {
     public MeanMapReduce() {
     }
 
-    public MeanMapReduce(Set<LabelId> selectedLabelIds, AttributeType.DataType resourceDataType, String degreeKey) {
-        super(selectedLabelIds, resourceDataType, degreeKey);
+    public MeanMapReduce(Set<LabelId> selectedLabelIds, AttributeType.ValueType valueType, String degreeKey) {
+        super(selectedLabelIds, valueType, degreeKey);
     }
 
     @Override

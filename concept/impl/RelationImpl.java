@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -19,35 +18,38 @@
 
 package grakn.core.concept.impl;
 
-import com.google.common.collect.Iterables;
-import grakn.core.kb.concept.api.Attribute;
-import grakn.core.kb.concept.api.AttributeType;
-import grakn.core.kb.concept.api.ConceptId;
+import grakn.core.core.Schema;
+import grakn.core.kb.concept.api.Casting;
+import grakn.core.kb.concept.api.GraknConceptException;
 import grakn.core.kb.concept.api.Relation;
-import grakn.core.kb.concept.api.RelationStructure;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Thing;
+import grakn.core.kb.concept.manager.ConceptManager;
+import grakn.core.kb.concept.manager.ConceptNotificationChannel;
+import grakn.core.kb.concept.structure.EdgeElement;
 import grakn.core.kb.concept.structure.VertexElement;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 
-import javax.annotation.Nullable;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
-import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
  * Encapsulates relations between Thing
  * A relation which is an instance of a RelationType defines how instances may relate to one another.
  */
-public class RelationImpl implements Relation, ConceptVertex {
-    private RelationStructure relationStructure;
+public class RelationImpl extends ThingImpl<Relation, RelationType> implements Relation, ConceptVertex {
 
-    public RelationImpl(RelationStructure relationStructure) {
-        this.relationStructure = relationStructure;
-        if (relationStructure.isReified()) {
-            ((RelationReified)relationStructure.reify()).owner(this);
-        }
+    public RelationImpl(VertexElement vertexElement, ConceptManager conceptManager, ConceptNotificationChannel conceptNotificationChannel){
+        super(vertexElement, conceptManager, conceptNotificationChannel);
     }
 
     public static RelationImpl from(Relation relation) {
@@ -55,103 +57,14 @@ public class RelationImpl implements Relation, ConceptVertex {
     }
 
     /**
-     * Gets the RelationReified if the Relation has been reified.
-     * To reify the Relation you use RelationImpl.reify().
-     * NOTE: This approach is done to make sure that only write operations will cause the Relation to reify
-     *
-     * @return The RelationReified if the Relation has been reified
-     */
-    @Nullable
-    public RelationReified reified() {
-        if (relationStructure.isReified()) return (RelationReified)relationStructure.reify();
-        return null;
-    }
-
-    /**
-     * Reifies and returns the RelationReified
-     */
-    private RelationReified reify() {
-        if (relationStructure.isReified()) return (RelationReified) relationStructure.reify();
-
-        //Get the role players to transfer
-        Map<Role, Set<Thing>> rolePlayers = structure().allRolePlayers();
-
-        //Now Reify
-        relationStructure = relationStructure.reify();
-
-        //Transfer relations
-        rolePlayers.forEach((role, things) -> {
-            Thing thing = Iterables.getOnlyElement(things);
-            assign(role, thing);
-        });
-
-        return (RelationReified) relationStructure.reify();
-    }
-
-    public RelationStructure structure() {
-        return relationStructure;
-    }
-
-    @Override
-    public Relation has(Attribute attribute) {
-        relhas(attribute);
-        return this;
-    }
-
-    @Override
-    public Relation relhas(Attribute attribute) {
-        return reify().relhas(attribute);
-    }
-
-    @Override
-    public Stream<Attribute<?>> attributes(AttributeType[] attributeTypes) {
-        return readFromReified((relationReified) -> relationReified.attributes(attributeTypes));
-    }
-
-    @Override
-    public Stream<Attribute<?>> keys(AttributeType[] attributeTypes) {
-        RelationReified relationReified = reified();
-        return relationReified != null? relationReified.attributes(attributeTypes) : Stream.empty();
-    }
-
-    @Override
-    public RelationType type() {
-        return structure().type();
-    }
-
-    @Override
-    public Stream<Relation> relations(Role... roles) {
-        return readFromReified((relationReified) -> relationReified.relations(roles));
-    }
-
-    @Override
-    public Stream<Role> roles() {
-        return readFromReified(ThingImpl::roles);
-    }
-
-    /**
-     * Reads some data from a RelationReified. If the Relation has not been reified then an empty
-     * Stream is returned.
-     */
-    private <X> Stream<X> readFromReified(Function<RelationReified, Stream<X>> producer) {
-        RelationReified relationReified = reified();
-        return relationReified != null? producer.apply(relationReified) : Stream.empty();
-    }
-
-    /**
      * Retrieve a list of all Thing involved in the Relation, and the Role they play.
      *
      * @return A list of all the Roles and the Things playing them in this Relation.
-     * @see Role
+     * see Role
      */
     @Override
-    public Map<Role, Set<Thing>> rolePlayersMap() {
-        return structure().allRolePlayers();
-    }
-
-    @Override
-    public Stream<Thing> rolePlayers(Role... roles) {
-        return structure().rolePlayers(roles);
+    public Map<Role, List<Thing>> rolePlayersMap() {
+        return allRolePlayers();
     }
 
     /**
@@ -163,37 +76,88 @@ public class RelationImpl implements Relation, ConceptVertex {
      */
     @Override
     public Relation assign(Role role, Thing player) {
-        reify().addRolePlayer(role, player);
+        addRolePlayer(role, player);
         return this;
-    }
-
-    @Override
-    public Relation unhas(Attribute attribute) {
-        RelationReified relationReified = reified();
-        if (relationReified != null) relationReified.unhas(attribute);
-        return this;
-    }
-
-    @Override
-    public boolean isInferred() {
-        return structure().isInferred();
     }
 
     @Override
     public void unassign(Role role, Thing player) {
-        RelationReified relationReified = reified();
-        if (relationReified != null){
-            relationReified.removeRolePlayer(role, player);
-        }
+        removeRolePlayerIfPresent(role, player);
+        // may need to clean up relation
+        cleanUp();
     }
 
     /**
-     * When a relation is deleted this cleans up any solitary casting and resources.
+     * Remove this relation if there are no more role player present
      */
     void cleanUp() {
-        Stream<Thing> rolePlayers = rolePlayers();
-        boolean performDeletion = rolePlayers.noneMatch(thing -> thing != null && thing.id() != null);
+        boolean performDeletion = !rolePlayers().findAny().isPresent();
         if (performDeletion) delete();
+    }
+
+    @Override
+    public Stream<Thing> rolePlayers(Role... roles) {
+        return castingsRelation(roles).map(Casting::getRolePlayer);
+    }
+
+    private Map<Role, List<Thing>> allRolePlayers() {
+        HashMap<Role, List<Thing>> roleMap = new HashMap<>();
+
+        //We add the role types explicitly so we can return them when there are no roleplayers
+        type().roles().forEach(roleType -> roleMap.put(roleType, new ArrayList<>()));
+        //All castings are used here because we need to iterate over all of them anyway
+        castingsRelation().forEach(rp -> roleMap.computeIfAbsent(rp.getRole(), (k) -> new ArrayList<>()).add(rp.getRolePlayer()));
+
+        return roleMap;
+    }
+
+
+    /**
+     * Remove a single single instance of specific role player playing a given role in this relation
+     * We could have duplicates, so we only operate on a single casting that is found
+     */
+    private void removeRolePlayerIfPresent(Role role, Thing thing) {
+        castingsRelation(role)
+                .filter(casting -> casting.getRole().equals(role) && casting.getRolePlayer().equals(thing))
+                .findAny()
+                .ifPresent(casting -> {
+                    casting.delete();
+                    conceptNotificationChannel.castingDeleted(casting);
+                });
+    }
+    private void addRolePlayer(Role role, Thing thing) {
+        Objects.requireNonNull(role);
+        Objects.requireNonNull(thing);
+
+        if (Schema.MetaSchema.isMetaLabel(role.label())) throw GraknConceptException.metaTypeImmutable(role.label());
+
+        //Do the actual put of the role and role player
+        EdgeElement edge = this.addEdge(ConceptVertex.from(thing), Schema.EdgeLabel.ROLE_PLAYER);
+        edge.property(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID, this.type().labelId().getValue());
+        edge.property(Schema.EdgeProperty.ROLE_LABEL_ID, role.labelId().getValue());
+        Casting casting = CastingImpl.create(edge, this, role, thing, conceptManager);
+        conceptNotificationChannel.rolePlayerCreated(casting);
+    }
+
+    /**
+     * Castings are retrieved from the perspective of the Relation
+     *
+     * @param roles The Role which the Things are playing
+     * @return The Casting which unify a Role and Thing with this Relation
+     */
+    @Override
+    public Stream<Casting> castingsRelation(Role... roles) {
+        Set<Role> roleSet = new HashSet<>(Arrays.asList(roles));
+        if (roleSet.isEmpty()) {
+            return vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.ROLE_PLAYER)
+                    .map(edge -> CastingImpl.withRelation(edge, this, conceptManager));
+        }
+
+        //Traversal is used so we can potentially optimise on the index
+        Set<Integer> roleTypesIds = roleSet.stream().map(r -> r.labelId().getValue()).collect(Collectors.toSet());
+
+        Stream<EdgeElement> castingsEdges = vertex().roleCastingsEdges(type().labelId().getValue(), roleTypesIds);
+        return castingsEdges.map(edge -> CastingImpl.withRelation(edge, this, conceptManager));
     }
 
     @Override
@@ -209,37 +173,21 @@ public class RelationImpl implements Relation, ConceptVertex {
     }
 
     @Override
-    public String toString() {
-        return structure().toString();
-    }
-
-    @Override
-    public ConceptId id() {
-        return structure().id();
-    }
-
-    @Override
-    public void delete() {
-        structure().delete();
-    }
-
-    @Override
-    public boolean isDeleted() {
-        return structure().isDeleted();
-    }
-
-    @Override
-    public VertexElement vertex() {
-        return reify().vertex();
-    }
-
-    @Override
-    public Relation attributeInferred(Attribute attribute) {
-        return reify().attributeInferred(attribute);
-    }
-
-    @Override
-    public Stream<Thing> getDependentConcepts() {
-        return Stream.concat(Stream.of(this), rolePlayers());
+    public String innerToString() {
+        StringBuilder description = new StringBuilder();
+        description.append("ID [").append(id()).append("] Type [").append(type().label()).append("] Roles and Role Players: \n");
+        for (Map.Entry<Role, List<Thing>> entry : allRolePlayers().entrySet()) {
+            if (entry.getValue().isEmpty()) {
+                description.append("    Role [").append(entry.getKey().label()).append("] not played by any instance \n");
+            } else {
+                StringBuilder instancesString = new StringBuilder();
+                for (Thing thing : entry.getValue()) {
+                    instancesString.append(thing.id()).append(",");
+                }
+                description.append("    Role [").append(entry.getKey().label()).append("] played by [").
+                        append(instancesString.toString()).append("] \n");
+            }
+        }
+        return description.toString();
     }
 }

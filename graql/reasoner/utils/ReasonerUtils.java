@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -27,12 +26,12 @@ import com.google.common.collect.Sets;
 import grakn.core.core.Schema;
 import grakn.core.graql.reasoner.atom.PropertyAtomicFactory;
 import grakn.core.graql.reasoner.atom.binary.TypeAtom;
-import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.reasoner.atom.predicate.ValuePredicate;
 import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.graql.reasoner.utils.conversion.RoleConverter;
 import grakn.core.graql.reasoner.utils.conversion.SchemaConceptConverter;
 import grakn.core.graql.reasoner.utils.conversion.TypeConverter;
+import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.RelationType;
@@ -40,6 +39,7 @@ import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.concept.manager.ConceptManager;
+import grakn.core.kb.graql.exception.GraqlSemanticException;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
 import graql.lang.property.IdProperty;
@@ -47,8 +47,6 @@ import graql.lang.property.TypeProperty;
 import graql.lang.property.ValueProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
-
-import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -56,9 +54,11 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 import static java.util.stream.Collectors.toSet;
 
@@ -72,43 +72,57 @@ import static java.util.stream.Collectors.toSet;
  */
 public class ReasonerUtils {
 
+    public static SchemaConcept typeFromLabel(Label label, ConceptManager conceptManager) {
+        SchemaConcept schemaConcept = conceptManager.getSchemaConcept(label);
+        if (schemaConcept == null) throw GraqlSemanticException.labelNotFound(label);
+        return schemaConcept;
+    }
+
     /**
-     * looks for an appropriate var property with a specified name among the vars and maps it to an IdPredicate,
-     * covers the case when specified variable name is user defined
+     * Looks for an appropriate var property with a specified name among the vars and maps it to a Label if possible.
+     * Covers the case when specified variable name is user defined.
      * @param typeVariable variable name of interest
      * @param vars VarAdmins to look for properties
-     * @param parent reasoner query the mapped predicate should belong to
      * @return mapped IdPredicate
      */
-    public static IdPredicate getUserDefinedIdPredicate(ConceptManager conceptManager, Variable typeVariable, Set<Statement> vars, ReasonerQuery parent){
+    public static Label getLabelFromUserDefinedVar(Variable typeVariable, Set<Statement> vars, ConceptManager conceptManager){
         return  vars.stream()
                 .filter(v -> v.var().equals(typeVariable))
-                .flatMap(v -> v.hasProperty(TypeProperty.class)?
-                        v.getProperties(TypeProperty.class).map(np -> IdPredicate.create(conceptManager, typeVariable, Label.of(np.name()), parent)) :
-                        v.getProperties(IdProperty.class).map(np -> IdPredicate.create(conceptManager, typeVariable, ConceptId.of(np.id()), parent)))
+                .flatMap(v -> {
+                    if (v.hasProperty(TypeProperty.class)){
+                        return v.getProperties(TypeProperty.class).map(np -> Label.of(np.name()));
+                    }
+                    return v.getProperties(IdProperty.class)
+                            .map(np -> ConceptId.of(np.id()))
+                            .map(conceptManager::<Concept>getConcept)
+                            .filter(Objects::nonNull)
+                            .map(t -> t.asSchemaConcept().label());
+                })
                 .findFirst().orElse(null);
     }
 
     /**
-     * looks for an appropriate var property with a specified name among the vars and maps it to an IdPredicate,
-     * covers both the cases when variable is and isn't user defined
+     * Looks for an appropriate var property with a specified name among the vars and maps it to a Label if possible.
+     * Covers both the cases when variable is and isn't user defined.
      * @param typeVariable variable name of interest
      * @param typeVar Statement to look for in case the variable name is not user defined
      * @param vars VarAdmins to look for properties
-     * @param parent reasoner query the mapped predicate should belong to
      * @return mapped IdPredicate
      */
     @Nullable
-    public static IdPredicate getIdPredicate(ConceptManager conceptManager, Variable typeVariable, Statement typeVar, Set<Statement> vars, ReasonerQuery parent){
-        IdPredicate predicate = null;
+    public static Label getLabel(Variable typeVariable, Statement typeVar, Set<Statement> vars, ConceptManager conceptManager){
+        Label label = null;
         //look for id predicate among vars
         if(typeVar.var().isReturned()) {
-            predicate = getUserDefinedIdPredicate(conceptManager, typeVariable, vars, parent);
+            label = getLabelFromUserDefinedVar(typeVariable, vars, conceptManager);
         } else {
             TypeProperty nameProp = typeVar.getProperty(TypeProperty.class).orElse(null);
-            if (nameProp != null) predicate = IdPredicate.create(conceptManager, typeVariable, Label.of(nameProp.name()), parent);
+            if (nameProp != null){
+                //NB: we do label conversion to make sure label is valid
+                label = typeFromLabel(Label.of(nameProp.name()), conceptManager).label();
+            }
         }
-        return predicate;
+        return label;
     }
 
     /**
@@ -308,30 +322,6 @@ public class ReasonerUtils {
         }
     }
 
-    /**
-     * @param a subtraction left operand
-     * @param b subtraction right operand
-     * @param <T> collection type
-     * @return new Collection containing a minus a - b.
-     * The cardinality of each element e in the returned Collection will be the cardinality of e in a minus the cardinality of e in b, or zero, whichever is greater.
-     */
-    public static <T> List<T> listDifference(List<T> a, List<T> b){
-        ArrayList<T> list = new ArrayList<>(a);
-        b.forEach(list::remove);
-        return list;
-    }
 
-    /**
-     *
-     * @param a union left operand
-     * @param b union right operand
-     * @param <T> list type
-     * @return new list being a union of the two operands
-     */
-    public static <T> List<T> listUnion(List<T> a, List<T> b){
-        List<T> union = new ArrayList<>(a);
-        union.addAll(b);
-        return union;
-    }
 }
 

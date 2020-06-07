@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -43,7 +42,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
- * Grakn Server's internal {@link SessionImpl} Factory
+ * Grakn Server's internal SessionImpl Factory
  * All components should use this factory so that every time a session to a new keyspace gets created
  * it is possible to also update the Keyspace Store (which tracks all existing keyspaces).
  */

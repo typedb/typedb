@@ -1,6 +1,5 @@
 #
-# GRAKN.AI - THE KNOWLEDGE GRAPH
-# Copyright (C) 2019 Grakn Labs Ltd
+# Copyright (C) 2020 Grakn Labs
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -31,7 +30,9 @@ load(
     "graknlabs_protocol",
     "graknlabs_client_java",
     "graknlabs_console",
-    "graknlabs_benchmark"
+    "graknlabs_simulation",
+    "graknlabs_verification",
+    "graknlabs_grabl_tracing",
 )
 graknlabs_build_tools()
 graknlabs_common()
@@ -39,7 +40,9 @@ graknlabs_graql()
 graknlabs_protocol()
 graknlabs_client_java()
 graknlabs_console()
-graknlabs_benchmark()
+graknlabs_simulation()
+graknlabs_verification()
+graknlabs_grabl_tracing()
 
 load("@graknlabs_build_tools//distribution:dependencies.bzl", "graknlabs_bazel_distribution")
 graknlabs_bazel_distribution()
@@ -108,14 +111,6 @@ graknlabs_graql_maven_dependencies = "maven_dependencies")
 graknlabs_graql_maven_dependencies()
 
 
-###############################
-# Load Benchmark dependencies #
-###############################
-load("@graknlabs_benchmark//dependencies/maven:dependencies.bzl",
-graknlabs_benchmark_maven_dependencies = "maven_dependencies")
-graknlabs_benchmark_maven_dependencies()
-
-
 #######################################
 # Load compiler dependencies for GRPC #
 #######################################
@@ -158,6 +153,25 @@ container_pull(
   repository = "library/openjdk",
   tag = "8"
 )
+
+
+################################
+# Load Simulation dependencies #
+################################
+
+load("@graknlabs_simulation//dependencies/maven:dependencies.bzl",
+graknlabs_simulation_dependencies = "maven_dependencies")
+graknlabs_simulation_dependencies()
+
+
+###################################
+# Load Grabl Tracing dependencies #
+###################################
+
+load("@graknlabs_grabl_tracing//dependencies/maven:dependencies.bzl",
+graknlabs_grabl_tracing_dependencies = "maven_dependencies")
+graknlabs_grabl_tracing_dependencies()
+
 
 #####################################
 # Load Bazel common workspace rules #

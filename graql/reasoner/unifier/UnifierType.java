@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -71,11 +70,6 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
         }
 
         @Override
-        public boolean typePlayability(ReasonerQuery query, Variable var, Type type) {
-            return true;
-        }
-
-        @Override
         public boolean typeCompatibility(Set<? extends SchemaConcept> parentTypes, Set<? extends SchemaConcept> childTypes) {
             return super.typeCompatibility(parentTypes, childTypes)
                     && parentTypes.equals(childTypes);
@@ -129,11 +123,6 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
         }
 
         @Override
-        public boolean typePlayability(ReasonerQuery query, Variable var, Type type) {
-            return true;
-        }
-
-        @Override
         public boolean typeCompatibility(Set<? extends SchemaConcept> parentTypes, Set<? extends SchemaConcept> childTypes) {
             return super.typeCompatibility(parentTypes, childTypes)
                     && parentTypes.equals(childTypes);
@@ -160,9 +149,9 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
      * Rule unifier, found between queries and rule heads, allows rule heads to be more general than matched queries.
      * Used in rule matching. The general condition of the child query C (rule head) and parent query P that needs to be satisfied is:
      *
-     * C >= P,
+     * P >= C,
      *
-     * i. e. parent specialises the child.
+     * i. e. child specialises the parent.
      *
      * If two queries are alpha-equivalent they are rule-unifiable.
      * Rule unification relaxes restrictions of exact unification in that it merely
@@ -195,8 +184,13 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
         }
 
         @Override
-        public boolean typePlayability(ReasonerQuery query, Variable var, Type type) {
-            return query.isTypeRoleCompatible(var, type);
+        public boolean typePlayabilityWithMatchSemantics(Atomic child, Variable var, Set<Type> types) {
+            return child.typesRoleCompatibleWithMatchSemantics(var, types);
+        }
+
+        @Override
+        public boolean typePlayabilityWithInsertSemantics(Atomic child, Variable var, Set<Type> types) {
+            return child.typesRoleCompatibleWithInsertSemantics(var, types);
         }
 
         @Override
@@ -252,6 +246,8 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
      *
      * Subsumption relation is NOT symmetric in general. The only case when it is symmetric is when parent and child
      * queries are alpha-equivalent.
+     *
+     * Used in the query cache
      */
     SUBSUMPTIVE {
 
@@ -279,8 +275,13 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
         }
 
         @Override
-        public boolean typePlayability(ReasonerQuery query, Variable var, Type type) {
-            return query.isTypeRoleCompatible(var, type);
+        public boolean typePlayabilityWithMatchSemantics(Atomic child, Variable var, Set<Type> types) {
+            return child.typesRoleCompatibleWithMatchSemantics(var, types);
+        }
+
+        @Override
+        public boolean typePlayabilityWithInsertSemantics(Atomic child, Variable var, Set<Type> types) {
+            return child.typesRoleCompatibleWithInsertSemantics(var, types);
         }
 
         @Override
@@ -292,8 +293,7 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
 
         @Override
         public boolean idCompatibility(Atomic parent, Atomic child) {
-            return parent == null
-                    || child != null && child.isSubsumedBy(parent);
+            return parent == null || child != null && child.isSubsumedBy(parent);
         }
 
         @Override
@@ -327,7 +327,8 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
      * Unifier type used to determine whether two queries are in a subsumption relation up to structural equivalence.
      * Consequently two queries that are structurally equivalent are structurally subsumptive.
      *
-     * */
+     * Used by query cache
+     */
     STRUCTURAL_SUBSUMPTIVE {
         @Override public ReasonerQueryEquivalence equivalence() { return SUBSUMPTIVE.equivalence(); }
 
@@ -341,7 +342,15 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
 
         @Override public boolean roleCompatibility(Role parent, Role child) { return SUBSUMPTIVE.roleCompatibility(parent, child); }
 
-        @Override public boolean typePlayability(ReasonerQuery query, Variable var, Type type) { return SUBSUMPTIVE.typePlayability(query, var, type); }
+        @Override
+        public boolean typePlayabilityWithMatchSemantics(Atomic child, Variable var, Set<Type> types) {
+            return SUBSUMPTIVE.typePlayabilityWithMatchSemantics(child, var, types);
+        }
+
+        @Override
+        public boolean typePlayabilityWithInsertSemantics(Atomic child, Variable var, Set<Type> types) {
+            return SUBSUMPTIVE.typePlayabilityWithInsertSemantics(child, var, types);
+        }
 
         @Override
         public boolean typeCompatibility(Set<? extends SchemaConcept> parentTypes, Set<? extends SchemaConcept> childTypes) {

@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -110,6 +109,10 @@ public abstract class ConceptImpl implements Concept, ConceptVertex {
             default:
                 throw GraknElementException.invalidDirection(direction);
         }
+    }
+
+    public <X extends Concept> Stream<X> directSubs() {
+        return neighbours(Direction.IN, Schema.EdgeLabel.SUB);
     }
 
     EdgeElement putEdge(ConceptVertex to, Schema.EdgeLabel label) {

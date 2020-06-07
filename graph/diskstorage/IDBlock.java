@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -19,7 +18,7 @@
 package grakn.core.graph.diskstorage;
 
 /**
- * Represents a block of ids. {@link #numIds()} return how many ids are in this block and {@link #getId(long)} retrieves
+ * Represents a block of ids. #numIds() return how many ids are in this block and #getId(long) retrieves
  * the id at the given position, where the position must be smaller than the number of ids in this block (similar to array access).
  * <p>
  * Any IDBlock implementation must be completely thread-safe.
@@ -35,7 +34,7 @@ public interface IDBlock {
     long numIds();
 
     /**
-     * Returns the id at the given index. Index must be non-negative and smaller than {@link #numIds()}.
+     * Returns the id at the given index. Index must be non-negative and smaller than #numIds().
      *
      * @param index
      * @return

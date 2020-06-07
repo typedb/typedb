@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -20,18 +19,13 @@
 package grakn.core.graph.core;
 
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
-import grakn.core.graph.core.JanusGraphProperty;
-import grakn.core.graph.core.JanusGraphRelation;
-import grakn.core.graph.core.JanusGraphTransaction;
-import grakn.core.graph.core.JanusGraphVertex;
-import grakn.core.graph.core.PropertyKey;
 
 /**
- * JanusGraphProperty is a {@link JanusGraphRelation} connecting a vertex to a value.
- * JanusGraphProperty extends {@link JanusGraphRelation}, with methods for retrieving the property's value and key.
+ * JanusGraphProperty is a JanusGraphRelation connecting a vertex to a value.
+ * JanusGraphProperty extends JanusGraphRelation, with methods for retrieving the property's value and key.
  *
- * @see JanusGraphRelation
- * @see PropertyKey
+ * see JanusGraphRelation
+ * see PropertyKey
  */
 public interface JanusGraphVertexProperty<V> extends JanusGraphRelation, VertexProperty<V>, JanusGraphProperty<V> {
 

@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -33,31 +32,27 @@ import static grakn.core.graql.planning.gremlin.sets.EquivalentFragmentSets.frag
 import static grakn.core.graql.planning.gremlin.sets.EquivalentFragmentSets.labelOf;
 
 /**
- * @see EquivalentFragmentSets#isa(VarProperty, Variable, Variable, boolean)
- *
+ * see EquivalentFragmentSets#isa(VarProperty, Variable, Variable, boolean)
  */
 class IsaFragmentSet extends EquivalentFragmentSetImpl {
 
     private final Variable instance;
     private final Variable type;
-    private final boolean mayHaveEdgeInstances;
 
     IsaFragmentSet(
             @Nullable VarProperty varProperty,
             Variable instance,
-            Variable type,
-            boolean mayHaveEdgeInstances) {
+            Variable type) {
         super(varProperty);
         this.instance = instance;
         this.type = type;
-        this.mayHaveEdgeInstances = mayHaveEdgeInstances;
     }
 
     @Override
     public final Set<Fragment> fragments() {
         return ImmutableSet.of(
                 Fragments.outIsa(varProperty(), instance(), type()),
-                Fragments.inIsa(varProperty(), type(), instance(), mayHaveEdgeInstances())
+                Fragments.inIsa(varProperty(), type(), instance())
         );
     }
 
@@ -69,48 +64,6 @@ class IsaFragmentSet extends EquivalentFragmentSetImpl {
         return type;
     }
 
-    private boolean mayHaveEdgeInstances() {
-        return mayHaveEdgeInstances;
-    }
-
-    /**
-     * We can skip the mid-traversal check for edge instances in the following case:
-     *
-     * <ol>
-     *     <li>There is an IsaFragmentSet {@code $x-[isa:with-edges]->$X}
-     *     <li>There is a LabelFragmentSet {@code $X[label:foo,bar]}
-     *     <li>The labels {@code foo} and {@code bar} are all not types that may have edge instances</li>
-     * </ol>
-     */
-    static final FragmentSetOptimisation SKIP_EDGE_INSTANCE_CHECK_OPTIMISATION = (fragments, conceptManager) -> {
-        Iterable<IsaFragmentSet> isaSets = fragmentSetOfType(IsaFragmentSet.class, fragments)::iterator;
-
-        for (IsaFragmentSet isaSet : isaSets) {
-            if (!isaSet.mayHaveEdgeInstances()) continue;
-
-            LabelFragmentSet labelSet = labelOf(isaSet.type(), fragments);
-
-            if (labelSet == null) continue;
-
-            boolean mayHaveEdgeInstances = labelSet.labels().stream()
-                    .map(conceptManager::<SchemaConcept>getSchemaConcept)
-                    .anyMatch(IsaFragmentSet::mayHaveEdgeInstances);
-
-            if (!mayHaveEdgeInstances) {
-                fragments.remove(isaSet);
-                fragments.add(EquivalentFragmentSets.isa(isaSet.varProperty(), isaSet.instance(), isaSet.type(), false));
-                return true;
-            }
-        }
-
-        return false;
-    };
-
-    // TODO this is bad form
-    private static boolean mayHaveEdgeInstances(SchemaConcept concept) {
-        return concept.isRelationType() && concept.isImplicit();
-    }
-
     @Override
     public boolean equals(Object o) {
         if (o == this) {
@@ -120,14 +73,13 @@ class IsaFragmentSet extends EquivalentFragmentSetImpl {
             IsaFragmentSet that = (IsaFragmentSet) o;
             return ((this.varProperty() == null) ? (that.varProperty() == null) : this.varProperty().equals(that.varProperty()))
                     && (this.instance.equals(that.instance()))
-                    && (this.type.equals(that.type()))
-                    && (this.mayHaveEdgeInstances == that.mayHaveEdgeInstances());
+                    && (this.type.equals(that.type()));
         }
         return false;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(varProperty(), instance, type, mayHaveEdgeInstances);
+        return Objects.hash(varProperty(), instance, type);
     }
 }

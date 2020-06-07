@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -77,17 +76,18 @@ public interface Type extends SchemaConcept {
      */
     Stream<Role> playing();
 
-    /**
-     * @return The AttributeTypes which this Type is linked with.
-     */
-    @CheckReturnValue
-    Stream<AttributeType> attributes();
 
+    Stream<AttributeType<?>> has();
+    Stream<AttributeType<?>> hasWithoutKeys();
+    Stream<AttributeType<?>> directHas();
     /**
      * @return The AttributeTypes which this Type is linked with as a key.
      */
     @CheckReturnValue
-    Stream<AttributeType> keys();
+    Stream<AttributeType<?>> keys();
+    Stream<AttributeType<?>> directHasWithoutKeys();
+    Stream<AttributeType<?>> directKeys();
+
 
     /**
      * @return The direct super of this Type
@@ -110,6 +110,7 @@ public interface Type extends SchemaConcept {
      */
     @CheckReturnValue
     Stream<? extends Type> subs();
+
 
     /**
      * Get all indirect instances of this type.

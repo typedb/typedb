@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,14 +17,13 @@
 
 package grakn.core.graph.graphdb.transaction;
 
-import grakn.core.graph.core.JanusGraphTransaction;
 import grakn.core.graph.core.schema.DefaultSchemaMaker;
 import grakn.core.graph.diskstorage.BaseTransactionConfig;
 
 /**
- * Provides configuration options for {@link JanusGraphTransaction}.
+ * Provides configuration options for JanusGraphTransaction.
  *
- * @see JanusGraphTransaction
+ * see JanusGraphTransaction
  */
 public interface TransactionConfiguration extends BaseTransactionConfig {
 
@@ -66,7 +64,7 @@ public interface TransactionConfiguration extends BaseTransactionConfig {
      * longer existing vertices. Use this setting with caution as it introduces additional overhead entailed by checking
      * the existence.
      * <p>
-     * Unlike {@link #hasVerifyExternalVertexExistence()} this is about internally verifying ids.
+     * Unlike #hasVerifyExternalVertexExistence() this is about internally verifying ids.
      *
      * @return True, if vertex existence is verified, else false
      */

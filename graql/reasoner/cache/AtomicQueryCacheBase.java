@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -23,6 +22,7 @@ import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.kb.graql.executor.ExecutorFactory;
+import grakn.core.kb.graql.executor.TraversalExecutor;
 import grakn.core.kb.graql.planning.gremlin.TraversalPlanFactory;
 
 import java.util.HashSet;
@@ -53,8 +53,8 @@ public abstract class AtomicQueryCacheBase<
     final private Set<ReasonerAtomicQuery> completeQueries = new HashSet<>();
     final private Set<QE> completeEntries = new HashSet<>();
 
-    AtomicQueryCacheBase(ExecutorFactory executorFactory, TraversalPlanFactory traversalPlanFactory) {
-        super(executorFactory, traversalPlanFactory);
+    AtomicQueryCacheBase(TraversalPlanFactory traversalPlanFactory, TraversalExecutor traversalExecutor) {
+        super(traversalPlanFactory, traversalExecutor);
     }
 
     public boolean isDBComplete(ReasonerAtomicQuery query){

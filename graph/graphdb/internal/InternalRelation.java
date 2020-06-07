@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -48,7 +47,7 @@ public interface InternalRelation extends JanusGraphRelation, InternalElement {
 
     /**
      * Number of vertices on this relation that are aware of its existence. This number will
-     * differ from {@link #getArity()}
+     * differ from #getArity()
      */
     int getLen();
 

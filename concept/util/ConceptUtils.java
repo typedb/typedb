@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -20,6 +19,7 @@
 package grakn.core.concept.util;
 
 import com.google.common.collect.Sets;
+import grakn.core.common.util.ListsUtil;
 import grakn.core.concept.impl.SchemaConceptImpl;
 import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.SchemaConcept;
@@ -29,17 +29,19 @@ import grakn.core.kb.concept.structure.PropertyNotUniqueException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.Stack;
 import java.util.stream.Stream;
 
+import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
 public class ConceptUtils {
 
     /**
-     * @param schemaConcepts entry {@link SchemaConcept} set
-     * @return top (most general) non-meta {@link SchemaConcept}s from within the provided set
+     * @param schemaConcepts entry SchemaConcept set
+     * @return top (most general) non-meta SchemaConcepts from within the provided set
      */
     public static <T extends SchemaConcept> Set<T> top(Set<T> schemaConcepts) {
         return schemaConcepts.stream()
@@ -48,8 +50,8 @@ public class ConceptUtils {
     }
 
     /**
-     * @param schemaConcepts entry {@link SchemaConcept} set
-     * @return bottom (most specific) non-meta {@link SchemaConcept}s from within the provided set
+     * @param schemaConcepts entry SchemaConcept set
+     * @return bottom (most specific) non-meta SchemaConcepts from within the provided set
      */
     public static <T extends SchemaConcept> Set<T> bottom(Set<T> schemaConcepts) {
         return schemaConcepts.stream()
@@ -58,8 +60,21 @@ public class ConceptUtils {
     }
 
     /**
-     * @param schemaConcepts entry {@link SchemaConcept} set
-     * @return top {@link SchemaConcept}s from within the provided set or meta concept if it exists
+     * @param schemaConcepts entry SchemaConcept set
+     * @return bottom (most specific) non-meta SchemaConcepts from within the provided set
+     */
+    public static <T extends SchemaConcept> List<T> bottom(List<T> schemaConcepts) {
+        return schemaConcepts.stream()
+                .filter(t -> {
+                    List<SchemaConcept> filteredSubs = t.subs().filter(t2 -> !t.equals(t2)).collect(toList());
+                    return schemaConcepts.stream().noneMatch(filteredSubs::contains);
+                })
+                .collect(toList());
+    }
+
+    /**
+     * @param schemaConcepts entry SchemaConcept set
+     * @return top SchemaConcepts from within the provided set or meta concept if it exists
      */
     public static <T extends SchemaConcept> Set<T> topOrMeta(Set<T> schemaConcepts) {
         Set<T> concepts = top(schemaConcepts);
@@ -117,8 +132,8 @@ public class ConceptUtils {
     /**
      * determines disjointness of parent-child types, parent defines the bound on the child
      *
-     * @param parent {@link SchemaConcept}
-     * @param child  {@link SchemaConcept}
+     * @param parent SchemaConcept
+     * @param child  SchemaConcept
      * @param direct flag indicating whether only direct types should be considered
      * @return true if types do not belong to the same type hierarchy, also:
      * - true if parent is null and
@@ -128,34 +143,10 @@ public class ConceptUtils {
         return parent != null && child == null || !typesCompatible(parent, child, direct) && !typesCompatible(child, parent, direct);
     }
 
-    /**
-     * Computes dependent concepts of a thing - concepts that need to be persisted if we persist the provided thing.
-     *
-     * @param topThings things dependants of which we want to retrieve
-     * @return stream of things that are dependants of the provided thing - includes non-direct dependants.
-     */
-    public static Stream<Thing> getDependentConcepts(Collection<Thing> topThings) {
-        Set<Thing> things = new HashSet<>(topThings);
-        Set<Thing> visitedThings = new HashSet<>();
-        Stack<Thing> thingStack = new Stack<>();
-        thingStack.addAll(topThings);
-        while (!thingStack.isEmpty()) {
-            Thing thing = thingStack.pop();
-            if (!visitedThings.contains(thing)) {
-                thing.getDependentConcepts()
-                        .peek(things::add)
-                        .filter(t -> !visitedThings.contains(t))
-                        .forEach(thingStack::add);
-                visitedThings.add(thing);
-            }
-        }
-        return things.stream();
-    }
-
     public static void validateBaseType(SchemaConceptImpl schemaConcept, Schema.BaseType expectedBaseType) {
         // throws if label is already taken for a different type
         if (!expectedBaseType.equals(schemaConcept.baseType())) {
-            throw PropertyNotUniqueException.cannotCreateProperty(schemaConcept, Schema.VertexProperty.SCHEMA_LABEL, schemaConcept.label());
+            throw PropertyNotUniqueException.cannotCreateProperty(schemaConcept.toString(), Schema.VertexProperty.SCHEMA_LABEL, schemaConcept.label());
         }
     }
 }

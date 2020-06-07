@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,9 +17,7 @@
 
 package grakn.core.graph.graphdb.query.vertex;
 
-import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Iterables;
 import grakn.core.graph.core.JanusGraphRelation;
 import grakn.core.graph.core.VertexList;
 import grakn.core.graph.diskstorage.Entry;
@@ -33,7 +30,6 @@ import grakn.core.graph.graphdb.query.profile.QueryProfiler;
 import grakn.core.graph.graphdb.transaction.RelationConstructor;
 import grakn.core.graph.graphdb.transaction.StandardJanusGraphTx;
 
-import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -41,9 +37,9 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 /**
- * This is an optimization of specifically for {@link VertexCentricQuery} that addresses the special but
+ * This is an optimization of specifically for VertexCentricQuery that addresses the special but
  * common case that the query is simple (i.e. comprised of only one sub-query and that query is fitted, i.e. does not require
- * in memory filtering). Under these assumptions we can remove a lot of the steps in {@link grakn.core.graph.graphdb.query.QueryProcessor}:
+ * in memory filtering). Under these assumptions we can remove a lot of the steps in grakn.core.graph.graphdb.query.QueryProcessor:
  * merging of result sets, in-memory filtering and the object instantiation required for in-memory filtering.
  * <p>
  * With those complexities removed, the query processor can be much simpler which makes it a lot faster and less
@@ -86,7 +82,7 @@ public class SimpleVertexQueryProcessor implements Iterable<Entry> {
     }
 
     /**
-     * Converts the entries from this query result into actual {@link JanusGraphRelation}.
+     * Converts the entries from this query result into actual JanusGraphRelation.
      */
     public Iterable<JanusGraphRelation> relations() {
         return RelationConstructor.readRelation(vertex, this, tx);
@@ -113,7 +109,7 @@ public class SimpleVertexQueryProcessor implements Iterable<Entry> {
     }
 
     /**
-     * Executes the query by executing its on {@link SliceQuery} sub-query.
+     * Executes the query by executing its on SliceQuery sub-query.
      *
      */
     private Iterator<Entry> getBasicIterator() {

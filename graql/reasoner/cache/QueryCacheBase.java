@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -20,9 +19,11 @@
 package grakn.core.graql.reasoner.cache;
 
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.answer.Explanation;
 import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
 import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.kb.graql.executor.ExecutorFactory;
+import grakn.core.kb.graql.executor.TraversalExecutor;
 import grakn.core.kb.graql.planning.gremlin.TraversalPlanFactory;
 import grakn.core.kb.graql.reasoner.ReasonerException;
 import grakn.core.kb.graql.reasoner.cache.CacheEntry;
@@ -56,9 +57,9 @@ public abstract class QueryCacheBase<
     private final Map<QE, CacheEntry<Q, SE>> cache;
     private final StructuralCache<Q> sCache;
 
-    QueryCacheBase(ExecutorFactory executorFactory, TraversalPlanFactory traversalPlanFactory) {
+    QueryCacheBase(TraversalPlanFactory traversalPlanFactory, TraversalExecutor traversalExecutor) {
         cache = new HashMap<>();
-        sCache = new StructuralCache<>(executorFactory, traversalPlanFactory);
+        sCache = new StructuralCache<>(traversalPlanFactory, traversalExecutor);
     }
 
     abstract UnifierType unifierType();
@@ -127,10 +128,7 @@ public abstract class QueryCacheBase<
 
     static <T extends ReasonerQueryImpl> void validateAnswer(ConceptMap answer, T query, Set<Variable> expectedVars){
         if (!answer.vars().equals(expectedVars)
-                || answer.explanation() == null
-                || (
-                        !answer.explanation().isRuleExplanation()
-                                && !answer.explanation().isLookupExplanation())){
+                || answer.explanation().getClass().equals(Explanation.class)) {
             throw ReasonerException.invalidQueryCacheEntry(query, answer);
         }
     }

@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -28,9 +27,9 @@ import java.util.stream.Stream;
  * Represent a literal Attribute in the graph.
  * Acts as an Thing when relating to other instances except it has the added functionality of:
  * 1. It is unique to its AttributeType based on it's value.
- * 2. It has an AttributeType.DataType associated with it which constrains the allowed values.
+ * 2. It has an AttributeType.ValueType associated with it which constrains the allowed values.
  *
- * @param <D> The data type of this resource type.
+ * @param <D> The value type of this resource type.
  *            Supported Types include: String, Long, Double, and Boolean
  */
 public interface Attribute<D> extends Thing {
@@ -53,12 +52,12 @@ public interface Attribute<D> extends Thing {
     AttributeType<D> type();
 
     /**
-     * Retrieves the data type of this Attribute's AttributeType.
+     * Retrieves the value type of this Attribute's AttributeType.
      *
-     * @return The data type of this Attribute's type.
+     * @return The value type of this Attribute's type.
      */
     @CheckReturnValue
-    AttributeType.DataType<D> dataType();
+    AttributeType.ValueType<D> valueType();
 
     /**
      * Retrieves the set of all Instances that possess this Attribute.
@@ -85,7 +84,7 @@ public interface Attribute<D> extends Thing {
     }
 
     /**
-     * Creates a relation from this instance to the provided Attribute.
+     * Creates an ownership from this instance to the provided Attribute.
      *
      * @param attribute The Attribute to which a relation is created
      * @return The instance itself

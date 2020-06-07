@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -22,7 +21,7 @@ import grakn.core.graph.core.JanusGraphVertex;
 import grakn.core.graph.core.VertexList;
 
 /**
- * Extends on the {@link VertexList} interface by provided methods to add elements to the list
+ * Extends on the VertexList interface by provided methods to add elements to the list
  * which is needed during query execution when the result list is created.
  *
  */

@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -19,16 +18,12 @@
 
 package grakn.core.graql.reasoner.atom.predicate;
 
-import com.google.common.collect.Sets;
-import grakn.core.common.exception.ErrorMessage;
 import grakn.core.graql.reasoner.atom.AtomicBase;
-import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
-
-import java.util.Set;
+import java.util.Objects;
 
 /**
  * AtomicBase extension serving as base class for predicate implementations.
@@ -48,24 +43,6 @@ public abstract class Predicate<T> extends AtomicBase {
     public abstract String getPredicateValue();
 
     @Override
-    public Set<String> validateAsRuleHead(Rule rule) {
-        return Sets.newHashSet(ErrorMessage.VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD.getMessage(rule.then(), rule.label()));
-    }
-
-    @Override
-    public boolean isStructurallyEquivalent(Object obj) {
-        return isAlphaEquivalent(obj);
-    }
-
-    @Override
-    public int structuralEquivalenceHashCode() {
-        return alphaEquivalenceHashCode();
-    }
-
-    @Override
-    public boolean isSubsumedBy(Atomic atom) { return this.isAlphaEquivalent(atom); }
-
-    @Override
     public boolean equals(Object obj) {
         if (obj == this) return true;
         if (obj == null || this.getClass() != obj.getClass()) return false;
@@ -75,12 +52,20 @@ public abstract class Predicate<T> extends AtomicBase {
     }
 
     @Override
+    public boolean isStructurallyEquivalent(Object obj) {
+        return isAlphaEquivalent(obj);
+    }
+
+    @Override
+    public boolean isSubsumedBy(Atomic atom) { return this.isAlphaEquivalent(atom); }
+
+    @Override
     public int hashCode() {
-        int h = 1;
-        h *= 1000003;
-        h ^= this.getVarName().hashCode();
-        h *= 1000003;
-        h ^= this.getPredicate().hashCode();
-        return h;
+        return Objects.hash(getVarName(), getPredicate());
+    }
+
+    @Override
+    public int structuralEquivalenceHashCode() {
+        return alphaEquivalenceHashCode();
     }
 }

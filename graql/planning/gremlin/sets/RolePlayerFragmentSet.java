@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -39,7 +38,7 @@ import java.util.stream.Stream;
 import static java.util.stream.Collectors.toSet;
 
 /**
- * @see EquivalentFragmentSets#rolePlayer(VarProperty, Variable, Variable, Variable, Variable)
+ * see EquivalentFragmentSets#rolePlayer(VarProperty, Variable, Variable, Variable, Variable)
  *
  */
 public class RolePlayerFragmentSet extends EquivalentFragmentSetImpl {
@@ -77,7 +76,7 @@ public class RolePlayerFragmentSet extends EquivalentFragmentSetImpl {
     }
 
     /**
-     * A query can use the role-type labels on a {@link Schema.EdgeLabel#ROLE_PLAYER} edge when the following criteria are met:
+     * A query can use the role-type labels on a Schema.EdgeLabel#ROLE_PLAYER edge when the following criteria are met:
      * <ol>
      *     <li>There is a RolePlayerFragmentSet {@code $r-[role-player:$e role:$R ...]->$p}
      *     <li>There is a LabelFragmentSet {@code $R[label:foo,bar]}
@@ -89,7 +88,7 @@ public class RolePlayerFragmentSet extends EquivalentFragmentSetImpl {
      * {@code $r-[role-player:$e roles:foo,bar ...]->$p}
      * <p>
      * In the special case where the role is specified as the meta {@code role}, no labels are added and the Role
-     * variable is detached from the {@link Schema.EdgeLabel#ROLE_PLAYER} edge.
+     * variable is detached from the Schema.EdgeLabel#ROLE_PLAYER edge.
      * <p>
      * However, we must still retain the LabelFragmentSet because it is possible it is selected as a result or
      * referred to elsewhere in the query.
@@ -133,52 +132,7 @@ public class RolePlayerFragmentSet extends EquivalentFragmentSetImpl {
     };
 
     /**
-     * For traversals associated with implicit relations (either via the has keyword or directly using the implicit relation):
-     *
-     * - expands the roles and relation types to include relevant hierarchies
-     * - as we have transaction information here, we additionally filter the non-relevant variant between key- and has- attribute options.
-     *
-     */
-    static final FragmentSetOptimisation IMPLICIT_RELATION_OPTIMISATION = (fragmentSets, conceptManager) -> {
-        Iterable<RolePlayerFragmentSet> rolePlayers =
-                EquivalentFragmentSets.fragmentSetOfType(RolePlayerFragmentSet.class, fragmentSets)::iterator;
-
-        for (RolePlayerFragmentSet rolePlayer : rolePlayers) {
-            @Nullable RolePlayerFragmentSet newRolePlayer = null;
-
-            @Nullable ImmutableSet<Label> relLabels = rolePlayer.relationTypeLabels;
-            @Nullable ImmutableSet<Label> roleLabels = rolePlayer.roleLabels;
-            if(relLabels == null || roleLabels == null) continue;
-
-            Set<RelationType> relTypes = relLabels.stream()
-                    .map(conceptManager::<SchemaConcept>getSchemaConcept)
-                    .filter(Objects::nonNull)
-                    .filter(Concept::isRelationType)
-                    .map(Concept::asRelationType)
-                    .collect(toSet());
-
-            Set<Role> roles = roleLabels.stream()
-                    .map(conceptManager::<SchemaConcept>getSchemaConcept)
-                    .filter(Objects::nonNull)
-                    .filter(Concept::isRole)
-                    .map(Concept::asRole)
-                    .collect(toSet());
-            if (Stream.concat(relTypes.stream(), roles.stream()).allMatch(SchemaConcept::isImplicit)) {
-                newRolePlayer = rolePlayer.substituteLabels(roles, relTypes);
-            }
-
-            if (newRolePlayer != null && !newRolePlayer.equals(rolePlayer)) {
-                fragmentSets.remove(rolePlayer);
-                fragmentSets.add(newRolePlayer);
-                return true;
-            }
-        }
-
-        return false;
-    };
-
-    /**
-     * A query can use the RelationType Labels on a {@link Schema.EdgeLabel#ROLE_PLAYER} edge when the following criteria are met:
+     * A query can use the RelationType Labels on a Schema.EdgeLabel#ROLE_PLAYER edge when the following criteria are met:
      * <ol>
      *     <li>There is a RolePlayerFragmentSet {@code $r-[role-player:$e ...]->$p}
      *         without any RelationType Labels specified

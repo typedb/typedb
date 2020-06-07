@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -19,10 +18,10 @@
 package grakn.core.graph.graphdb.util;
 
 import com.google.common.collect.Iterators;
+import grakn.core.graph.graphdb.tinkerpop.optimize.HasStepFolder.OrderEntry;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.ElementValueComparator;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.util.function.MultiComparator;
-import grakn.core.graph.graphdb.tinkerpop.optimize.HasStepFolder.OrderEntry;
 
 import java.util.ArrayList;
 import java.util.Comparator;

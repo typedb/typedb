@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -27,8 +26,10 @@ import grakn.core.concept.answer.ConceptSetMeasure;
 import grakn.core.concept.answer.Explanation;
 import grakn.core.concept.answer.Numeric;
 import grakn.core.concept.answer.Void;
+import grakn.core.graql.reasoner.explanation.RuleExplanation;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.ConceptId;
+import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.structure.PropertyNotUniqueException;
 import grakn.core.kb.graql.exception.GraqlSemanticException;
 import grakn.core.kb.server.exception.GraknServerException;
@@ -70,12 +71,6 @@ public class ResponseBuilder {
                     .build();
         }
 
-        static SessionProto.Transaction.Res queryIterator(int iteratorId) {
-            return SessionProto.Transaction.Res.newBuilder()
-                    .setQueryIter(SessionProto.Transaction.Query.Iter.newBuilder().setId(iteratorId))
-                    .build();
-        }
-
         static SessionProto.Transaction.Res getSchemaConcept(@Nullable grakn.core.kb.concept.api.Concept concept) {
             SessionProto.Transaction.GetSchemaConcept.Res.Builder res = SessionProto.Transaction.GetSchemaConcept.Res.newBuilder();
             if (concept == null) {
@@ -94,12 +89,6 @@ public class ResponseBuilder {
                 res.setConcept(ResponseBuilder.Concept.concept(concept));
             }
             return SessionProto.Transaction.Res.newBuilder().setGetConceptRes(res).build();
-        }
-
-        static SessionProto.Transaction.Res getAttributesIterator(int iteratorId) {
-            SessionProto.Transaction.GetAttributes.Iter.Builder res = SessionProto.Transaction.GetAttributes.Iter.newBuilder()
-                    .setId(iteratorId);
-            return SessionProto.Transaction.Res.newBuilder().setGetAttributesIter(res).build();
         }
 
         static SessionProto.Transaction.Res putEntityType(grakn.core.kb.concept.api.Concept concept) {
@@ -142,6 +131,13 @@ public class ResponseBuilder {
             AnswerProto.Explanation.Res.Builder explanationBuilder = AnswerProto.Explanation.Res.newBuilder()
                     .addAllExplanation(explanation.getAnswers().stream().map(Answer::conceptMap)
                             .collect(Collectors.toList()));
+
+            if (explanation.isRuleExplanation()) {
+                Rule rule = ((RuleExplanation) explanation).getRule();
+                ConceptProto.Concept ruleProto = Concept.concept(rule);
+                explanationBuilder.setRule(ruleProto);
+            }
+
             res.setExplanationRes(explanationBuilder.build());
             return res.build();
         }
@@ -153,22 +149,23 @@ public class ResponseBuilder {
 
             static SessionProto.Transaction.Res query(Object object) {
                 return SessionProto.Transaction.Res.newBuilder()
-                        .setIterateRes(SessionProto.Transaction.Iter.Res.newBuilder()
+                        .setIterRes(SessionProto.Transaction.Iter.Res.newBuilder()
                                 .setQueryIterRes(SessionProto.Transaction.Query.Iter.Res.newBuilder()
                                         .setAnswer(Answer.answer(object)))).build();
             }
 
             static SessionProto.Transaction.Res getAttributes(grakn.core.kb.concept.api.Concept concept) {
                 return SessionProto.Transaction.Res.newBuilder()
-                        .setIterateRes(SessionProto.Transaction.Iter.Res.newBuilder()
+                        .setIterRes(SessionProto.Transaction.Iter.Res.newBuilder()
                                 .setGetAttributesIterRes(SessionProto.Transaction.GetAttributes.Iter.Res.newBuilder()
                                         .setAttribute(Concept.concept(concept)))).build();
             }
 
             static SessionProto.Transaction.Res conceptMethod(ConceptProto.Method.Iter.Res methodResponse) {
                 return SessionProto.Transaction.Res.newBuilder()
-                        .setIterateRes(SessionProto.Transaction.Iter.Res.newBuilder()
-                                .setConceptMethodIterRes(methodResponse)).build();
+                        .setIterRes(SessionProto.Transaction.Iter.Res.newBuilder()
+                                .setConceptMethodIterRes(SessionProto.Transaction.ConceptMethod.Iter.Res.newBuilder()
+                                        .setResponse(methodResponse))).build();
             }
         }
     }
@@ -183,6 +180,31 @@ public class ResponseBuilder {
                     .setId(concept.id().getValue())
                     .setBaseType(getBaseType(concept))
                     .build();
+        }
+
+        public static ConceptProto.Concept conceptPrefilled(grakn.core.kb.concept.api.Concept concept) {
+            ConceptProto.Concept.Builder builder = ConceptProto.Concept.newBuilder()
+                    .setId(concept.id().getValue())
+                    .setBaseType(getBaseType(concept));
+
+            if (concept.isSchemaConcept()) {
+                builder.setLabelRes(ConceptProto.SchemaConcept.GetLabel.Res.newBuilder()
+                        .setLabel(concept.asSchemaConcept().label().getValue()));
+            } else if (concept.isThing()) {
+                builder.setTypeRes(ConceptProto.Thing.Type.Res.newBuilder()
+                        .setType(conceptPrefilled(concept.asThing().type())));
+                builder.setInferredRes(ConceptProto.Thing.IsInferred.Res.newBuilder()
+                        .setInferred(concept.asThing().isInferred()));
+
+                if (concept.isAttribute()) {
+                    builder.setValueRes(ConceptProto.Attribute.Value.Res.newBuilder()
+                            .setValue(attributeValue(concept.asAttribute().value())));
+                    builder.setValueTypeRes(ConceptProto.AttributeType.ValueType.Res.newBuilder()
+                            .setValueType(VALUE_TYPE(concept.asAttribute().valueType())));
+                }
+            }
+
+            return builder.build();
         }
 
         private static ConceptProto.Concept.BASE_TYPE getBaseType(grakn.core.kb.concept.api.Concept concept) {
@@ -209,45 +231,45 @@ public class ResponseBuilder {
             }
         }
 
-        static ConceptProto.AttributeType.DATA_TYPE DATA_TYPE(AttributeType.DataType<?> dataType) {
-            if (dataType.equals(AttributeType.DataType.STRING)) {
-                return ConceptProto.AttributeType.DATA_TYPE.STRING;
-            } else if (dataType.equals(AttributeType.DataType.BOOLEAN)) {
-                return ConceptProto.AttributeType.DATA_TYPE.BOOLEAN;
-            } else if (dataType.equals(AttributeType.DataType.INTEGER)) {
-                return ConceptProto.AttributeType.DATA_TYPE.INTEGER;
-            } else if (dataType.equals(AttributeType.DataType.LONG)) {
-                return ConceptProto.AttributeType.DATA_TYPE.LONG;
-            } else if (dataType.equals(AttributeType.DataType.FLOAT)) {
-                return ConceptProto.AttributeType.DATA_TYPE.FLOAT;
-            } else if (dataType.equals(AttributeType.DataType.DOUBLE)) {
-                return ConceptProto.AttributeType.DATA_TYPE.DOUBLE;
-            } else if (dataType.equals(AttributeType.DataType.DATE)) {
-                return ConceptProto.AttributeType.DATA_TYPE.DATE;
+        static ConceptProto.AttributeType.VALUE_TYPE VALUE_TYPE(AttributeType.ValueType<?> valueType) {
+            if (valueType.equals(AttributeType.ValueType.STRING)) {
+                return ConceptProto.AttributeType.VALUE_TYPE.STRING;
+            } else if (valueType.equals(AttributeType.ValueType.BOOLEAN)) {
+                return ConceptProto.AttributeType.VALUE_TYPE.BOOLEAN;
+            } else if (valueType.equals(AttributeType.ValueType.INTEGER)) {
+                return ConceptProto.AttributeType.VALUE_TYPE.INTEGER;
+            } else if (valueType.equals(AttributeType.ValueType.LONG)) {
+                return ConceptProto.AttributeType.VALUE_TYPE.LONG;
+            } else if (valueType.equals(AttributeType.ValueType.FLOAT)) {
+                return ConceptProto.AttributeType.VALUE_TYPE.FLOAT;
+            } else if (valueType.equals(AttributeType.ValueType.DOUBLE)) {
+                return ConceptProto.AttributeType.VALUE_TYPE.DOUBLE;
+            } else if (valueType.equals(AttributeType.ValueType.DATETIME)) {
+                return ConceptProto.AttributeType.VALUE_TYPE.DATETIME;
             } else {
-                throw GraknServerException.unreachableStatement("Unrecognised " + dataType);
+                throw GraknServerException.unreachableStatement("Unrecognised " + valueType);
             }
         }
 
-        public static AttributeType.DataType<?> DATA_TYPE(ConceptProto.AttributeType.DATA_TYPE dataType) {
-            switch (dataType) {
+        public static AttributeType.ValueType<?> VALUE_TYPE(ConceptProto.AttributeType.VALUE_TYPE valueType) {
+            switch (valueType) {
                 case STRING:
-                    return AttributeType.DataType.STRING;
+                    return AttributeType.ValueType.STRING;
                 case BOOLEAN:
-                    return AttributeType.DataType.BOOLEAN;
+                    return AttributeType.ValueType.BOOLEAN;
                 case INTEGER:
-                    return AttributeType.DataType.INTEGER;
+                    return AttributeType.ValueType.INTEGER;
                 case LONG:
-                    return AttributeType.DataType.LONG;
+                    return AttributeType.ValueType.LONG;
                 case FLOAT:
-                    return AttributeType.DataType.FLOAT;
+                    return AttributeType.ValueType.FLOAT;
                 case DOUBLE:
-                    return AttributeType.DataType.DOUBLE;
-                case DATE:
-                    return AttributeType.DataType.DATE;
+                    return AttributeType.ValueType.DOUBLE;
+                case DATETIME:
+                    return AttributeType.ValueType.DATETIME;
                 default:
                 case UNRECOGNIZED:
-                    throw new IllegalArgumentException("Unrecognised " + dataType);
+                    throw new IllegalArgumentException("Unrecognised " + valueType);
             }
         }
 
@@ -266,7 +288,7 @@ public class ResponseBuilder {
             } else if (value instanceof Double) {
                 builder.setDouble((double) value);
             } else if (value instanceof LocalDateTime) {
-                builder.setDate(((LocalDateTime) value).atZone(ZoneId.of("Z")).toInstant().toEpochMilli());
+                builder.setDatetime(((LocalDateTime) value).atZone(ZoneId.of("Z")).toInstant().toEpochMilli());
             } else {
                 throw GraknServerException.unreachableStatement("Unrecognised " + value);
             }
@@ -314,13 +336,16 @@ public class ResponseBuilder {
         static AnswerProto.ConceptMap conceptMap(ConceptMap answer) {
             AnswerProto.ConceptMap.Builder conceptMapProto = AnswerProto.ConceptMap.newBuilder();
             answer.map().forEach((var, concept) -> {
-                ConceptProto.Concept conceptProto = ResponseBuilder.Concept.concept(concept);
+                ConceptProto.Concept conceptProto = ResponseBuilder.Concept.conceptPrefilled(concept);
                 conceptMapProto.putMap(var.name(), conceptProto);
             });
 
+            if (answer.getPattern() != null) {
+                conceptMapProto.setPattern(answer.getPattern().toString());
+            }
+
             if (answer.explanation() != null && !answer.explanation().isEmpty()) {
                 conceptMapProto.setHasExplanation(true);
-                conceptMapProto.setPattern(answer.getPattern().toString());
             } else {
                 conceptMapProto.setHasExplanation(false);
             }

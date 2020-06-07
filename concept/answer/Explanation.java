@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -40,17 +39,6 @@ public class Explanation {
 
     public Explanation() {
         this(new ArrayList<>());
-    }
-
-    /**
-     * produce a new explanation with a provided parent answer
-     *
-     * @param ans parent answer
-     * @return new explanation with dependent answers
-     */
-    @CheckReturnValue
-    public Explanation childOf(ConceptMap ans) {
-        return new Explanation(ans.explanation().getAnswers());
     }
 
     /**

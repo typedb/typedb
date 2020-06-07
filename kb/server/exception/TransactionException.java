@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -51,14 +50,14 @@ public class TransactionException extends GraknException {
     }
 
     /**
-     * Thrown when using an unsupported datatype with resources
+     * Thrown when using an unsupported ValueType with resources
      */
-    public static TransactionException unsupportedDataType(Object value) {
-        return unsupportedDataType(value.getClass());
+    public static TransactionException unsupportedValueType(Object value) {
+        return unsupportedValueType(value.getClass());
     }
 
-    public static TransactionException unsupportedDataType(Class<?> clazz) {
-        return unsupportedDataType(clazz.getName());
+    public static TransactionException unsupportedValueType(Class<?> clazz) {
+        return unsupportedValueType(clazz.getName());
     }
 
     /**
@@ -66,13 +65,6 @@ public class TransactionException extends GraknException {
      */
     public static TransactionException transactionOpen(Transaction tx) {
         return create(ErrorMessage.TRANSACTION_ALREADY_OPEN.getMessage(tx.keyspace()));
-    }
-
-    /**
-     * Thrown when attempting to open an invalid type of transaction
-     */
-    public static TransactionException transactionInvalid(Object tx) {
-        return create("Unknown type of transaction [" + tx + "]");
     }
 
     /**

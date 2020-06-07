@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -31,7 +30,6 @@ import grakn.core.graph.diskstorage.BackendException;
 import grakn.core.graph.diskstorage.IDAuthority;
 import grakn.core.graph.diskstorage.configuration.Configuration;
 import grakn.core.graph.diskstorage.idmanagement.ConsistentKeyIDAuthority;
-import grakn.core.graph.diskstorage.keycolumnvalue.KeyColumnValueStore;
 import grakn.core.graph.graphdb.database.idassigner.placement.IDPlacementStrategy;
 import grakn.core.graph.graphdb.database.idassigner.placement.PartitionAssignment;
 import grakn.core.graph.graphdb.database.idassigner.placement.PartitionIDRange;

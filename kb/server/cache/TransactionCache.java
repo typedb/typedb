@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -34,7 +33,7 @@ import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.concept.api.Type;
-import grakn.core.kb.concept.structure.Casting;
+import grakn.core.kb.concept.api.Casting;
 import grakn.core.kb.keyspace.KeyspaceSchemaCache;
 
 import java.util.HashMap;
@@ -42,6 +41,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -73,6 +73,8 @@ public class TransactionCache {
     private final Set<Rule> modifiedRules = new HashSet<>();
     private final Set<Thing> inferredConcepts = new HashSet<>();
     private final Set<Thing> inferredConceptsToPersist = new HashSet<>();
+    private final Set<Pair<Thing, Attribute<?>>> inferredOwnerships = new HashSet<>();
+    private final Set<Pair<Thing, Attribute<?>>> inferredOwnershipsToPersist = new HashSet<>();
 
     private Map<Label, Long> newShards = new HashMap<>();
 
@@ -126,21 +128,16 @@ public class TransactionCache {
         }
     }
 
+
     public void trackForValidation(Casting casting) {
         modifiedCastings.add(casting);
     }
+
 
     public void removeFromValidation(Type type) {
         if (type.isRelationType()) {
             modifiedRelationTypes.remove(type.asRelationType());
         }
-    }
-
-    /**
-     * @return All the types labels currently cached in the transaction.
-     */
-    public Map<Label, LabelId> getLabelCache() {
-        return labelCache;
     }
 
     /**
@@ -251,6 +248,8 @@ public class TransactionCache {
         return (X) conceptCache.get(id);
     }
 
+    // ------------- Methods and state enabling persistence of inferred facts -----
+
     /**
      * Caches an inferred instance for possible persistence later.
      *
@@ -274,16 +273,41 @@ public class TransactionCache {
         inferredConceptsToPersist.add(t);
     }
 
-    public Stream<Thing> getInferredInstances() {
-        return inferredConcepts.stream();
+    public boolean anyFactsInferred() {
+        return inferredConcepts.size() > 0 || inferredOwnerships.size() > 0;
+    }
+
+    public void inferredOwnershipToPersist(Thing owner, Attribute<?> attribute) {
+        inferredOwnershipsToPersist.add(new Pair<>(owner, attribute));
+    }
+
+    public void hasAttributeCreated(Thing owner, Attribute<?> attribute, boolean isInferred) {
+        if (isInferred) {
+            inferredOwnerships.add(new Pair<>(owner, attribute));
+        }
+    }
+
+    public void hasAttributeDeleted(Thing owner, Attribute<?> attribute, boolean isInferred) {
+        if (isInferred) {
+            Pair<Thing, Attribute<?>> ownership = new Pair<>(owner, attribute);
+            inferredOwnerships.remove(ownership);
+            inferredOwnershipsToPersist.remove(ownership);
+        }
     }
 
     /**
      * @return cached things that are inferred
      */
-    public Stream<Thing> getInferredInstancesToDiscard() {
+    public Set<Thing> getInferredInstancesToDiscard() {
         return inferredConcepts.stream()
-                .filter(t -> !inferredConceptsToPersist.contains(t));
+                .filter(t -> !inferredConceptsToPersist.contains(t))
+                .collect(Collectors.toSet());
+    }
+
+    public Set<Pair<Thing, Attribute<?>>> getInferredOwnershipsToDiscard() {
+        return inferredOwnerships.stream()
+                .filter(pair -> !inferredOwnershipsToPersist.contains(pair))
+                .collect(Collectors.toSet());
     }
 
     /**
@@ -357,6 +381,9 @@ public class TransactionCache {
         return attributeCache;
     }
 
+
+    // --------- visible for testing - code smells, needs further refinement -----
+
     @VisibleForTesting
     public Map<ConceptId, Concept> getConceptCache() {
         return conceptCache;
@@ -367,4 +394,13 @@ public class TransactionCache {
         return schemaConceptCache;
     }
 
+    @VisibleForTesting
+    public Set<Thing> getInferredInstances() {
+        return inferredConcepts;
+    }
+
+    @VisibleForTesting
+    public Set<Pair<Thing, Attribute<?>>> getInferredOwnerships() {
+        return inferredOwnerships;
+    }
 }

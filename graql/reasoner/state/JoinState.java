@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -27,7 +26,6 @@ import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
 import grakn.core.graql.reasoner.utils.AnswerUtil;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
-
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -79,6 +77,7 @@ public class JoinState extends AnswerPropagatorState<ReasonerQueryImpl> {
                 merged.getPattern());
 
         if (answer.isEmpty()) return null;
+        //NB: if we know that it is a final answer we pass it directly to the conjunctive query
         if (subQueries.isEmpty()) return new AnswerState(answer, getUnifier(), getParentState());
         return new JoinState(subQueries, answer, getUnifier(), getParentState(), getVisitedSubGoals());
     }

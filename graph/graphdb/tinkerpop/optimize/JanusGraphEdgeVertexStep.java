@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -19,6 +18,10 @@
 package grakn.core.graph.graphdb.tinkerpop.optimize;
 
 import com.google.common.collect.Sets;
+import grakn.core.graph.core.JanusGraphMultiVertexQuery;
+import grakn.core.graph.graphdb.query.profile.QueryProfiler;
+import grakn.core.graph.graphdb.query.vertex.BasicVertexCentricQueryBuilder;
+import grakn.core.graph.graphdb.tinkerpop.profile.TP3ProfileWrapper;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
 import org.apache.tinkerpop.gremlin.process.traversal.step.Profiling;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.EdgeVertexStep;
@@ -27,18 +30,13 @@ import org.apache.tinkerpop.gremlin.process.traversal.util.MutableMetrics;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import grakn.core.graph.core.JanusGraphMultiVertexQuery;
-import grakn.core.graph.graphdb.query.profile.QueryProfiler;
-import grakn.core.graph.graphdb.query.vertex.BasicVertexCentricQueryBuilder;
-import grakn.core.graph.graphdb.tinkerpop.optimize.JanusGraphTraversalUtil;
-import grakn.core.graph.graphdb.tinkerpop.profile.TP3ProfileWrapper;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
 /**
- * A JanusGraphEdgeVertexStep is identical to a {@link EdgeVertexStep}. The only difference
+ * A JanusGraphEdgeVertexStep is identical to a EdgeVertexStep. The only difference
  * being that it can use multiQuery to pre-fetch the vertex properties prior to the execution
  * of any subsequent has steps and so eliminate the need for a network trip for each vertex.
  * It implements the optimisation enabled via the query.batch-property-prefetch config option.

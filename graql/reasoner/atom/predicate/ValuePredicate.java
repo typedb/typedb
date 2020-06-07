@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -19,7 +18,6 @@
 
 package grakn.core.graql.reasoner.atom.predicate;
 
-import grakn.core.graql.planning.gremlin.value.ValueComparison;
 import grakn.core.graql.planning.gremlin.value.ValueOperation;
 import grakn.core.kb.graql.reasoner.ReasonerException;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
@@ -29,13 +27,13 @@ import graql.lang.Graql;
 import graql.lang.property.ValueProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
-
-import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import javax.annotation.Nullable;
 
 /**
  * Predicate implementation specialising it to be an value predicate. Corresponds to ValueProperty.
@@ -96,11 +94,7 @@ public class ValuePredicate extends Predicate<ValueProperty.Operation> {
 
     @Override
     public int alphaEquivalenceHashCode() {
-        int hashCode = 1;
-        hashCode = hashCode * 37 + this.getPredicate().comparator().hashCode();
-        boolean useValue = ! (ValueOperation.of(getPredicate()) instanceof ValueComparison.Variable);
-        hashCode = hashCode * 37 + (useValue? this.getPredicate().value().hashCode() : 0);
-        return hashCode;
+        return Objects.hash(getPredicate().comparator(), getPredicate().value());
     }
 
     @Override

@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,6 +17,9 @@
  */
 
 package grakn.core.kb.concept.api;
+
+
+import com.sun.xml.internal.bind.v2.TODO;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
@@ -83,19 +85,10 @@ public interface SchemaConcept extends Concept {
     Stream<? extends SchemaConcept> subs();
 
     /**
-     * Return whether the SchemaConcept was created implicitly.
-     * By default, SchemaConcept are not implicit.
-     *
-     * @return returns true if the type was created implicitly through the Attribute syntax
-     */
-    @CheckReturnValue
-    Boolean isImplicit();
-
-    /**
      * Return the collection of Rule for which this SchemaConcept serves as a hypothesis.
      *
      * @return A collection of Rule for which this SchemaConcept serves as a hypothesis
-     * @see Rule
+     * see Rule
      */
     @CheckReturnValue
     Stream<Rule> whenRules();
@@ -104,7 +97,7 @@ public interface SchemaConcept extends Concept {
      * Return the collection of Rule for which this SchemaConcept serves as a conclusion.
      *
      * @return A collection of Rule for which this SchemaConcept serves as a conclusion
-     * @see Rule
+     * see Rule
      */
     @CheckReturnValue
     Stream<Rule> thenRules();

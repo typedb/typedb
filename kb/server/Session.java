@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -27,8 +26,7 @@ import grakn.core.kb.server.keyspace.Keyspace;
 import java.util.function.Consumer;
 
 public interface Session extends AutoCloseable {
-    Transaction readTransaction();
-    Transaction writeTransaction();
+    Transaction transaction(Transaction.Type type);
 
     /**
      * Method used by SessionFactory to register a callback function that has to be triggered when closing current session.
@@ -45,6 +43,8 @@ public interface Session extends AutoCloseable {
     void close();
 
     void invalidate();
+
+    boolean isOpen();
 
     Keyspace keyspace();
 

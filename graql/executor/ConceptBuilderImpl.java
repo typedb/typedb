@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -86,10 +85,10 @@ public class ConceptBuilderImpl implements ConceptBuilder {
     private final Map<BuilderParam<?>, Object> preProvidedParams = new HashMap<>();
 
     /**
-     * A set of parameters that were used for building the concept. Modified while executing {@link #build()}.
-     * This set starts empty. Every time {@link #use(BuilderParam)} or {@link #useOrDefault(BuilderParam, Object)}
+     * A set of parameters that were used for building the concept. Modified while executing #build().
+     * This set starts empty. Every time #use(BuilderParam) or #useOrDefault(BuilderParam, Object)
      * is called, the parameter is added to this set. After the concept is built, any parameter not in this set is
-     * considered "unexpected". If it is present in the field {@link #preProvidedParams}, then an error is thrown.
+     * considered "unexpected". If it is present in the field #preProvidedParams, then an error is thrown.
      * Simplified example of how this operates:
      * <pre>
      * // preProvidedParams = {LABEL: actor, SUPER_CONCEPT: role, VALUE: "Bob"}
@@ -149,8 +148,8 @@ public class ConceptBuilderImpl implements ConceptBuilder {
     }
 
     @Override
-    public ConceptBuilder dataType(AttributeType.DataType<?> dataType) {
-        return set(DATA_TYPE, dataType);
+    public ConceptBuilder valueType(AttributeType.ValueType<?> valueType) {
+        return set(VALUE_TYPE, valueType);
     }
 
     @Override
@@ -276,7 +275,7 @@ public class ConceptBuilderImpl implements ConceptBuilder {
     private static final BuilderParam<Label> LABEL = BuilderParam.of(Graql.Token.Property.TYPE);
     private static final BuilderParam<ConceptId> ID = BuilderParam.of(Graql.Token.Property.ID);
     private static final BuilderParam<Object> VALUE = BuilderParam.of(Graql.Token.Property.VALUE);
-    private static final BuilderParam<AttributeType.DataType<?>> DATA_TYPE = BuilderParam.of(Graql.Token.Property.DATA_TYPE);
+    private static final BuilderParam<AttributeType.ValueType<?>> VALUE_TYPE = BuilderParam.of(Graql.Token.Property.VALUE_TYPE);
     private static final BuilderParam<Pattern> WHEN = BuilderParam.of(Graql.Token.Property.WHEN);
     private static final BuilderParam<Pattern> THEN = BuilderParam.of(Graql.Token.Property.THEN);
     private static final BuilderParam<Unit> IS_ROLE = BuilderParam.of("role"); // TODO: replace this with a value registered in an enum
@@ -306,7 +305,7 @@ public class ConceptBuilderImpl implements ConceptBuilder {
     }
 
     /**
-     * Called during {@link #build()} whenever a particular parameter is expected in order to build the Concept.
+     * Called during #build() whenever a particular parameter is expected in order to build the Concept.
      * This method will return the parameter, if present and also record that it was expected, so that we can later
      * check for any unexpected properties.
      *
@@ -341,7 +340,7 @@ public class ConceptBuilderImpl implements ConceptBuilder {
         validateParam(concept, LABEL, SchemaConcept.class, SchemaConcept::label);
         validateParam(concept, ID, Concept.class, Concept::id);
         validateParam(concept, VALUE, Attribute.class, Attribute::value);
-        validateParam(concept, DATA_TYPE, AttributeType.class, AttributeType::dataType);
+        validateParam(concept, VALUE_TYPE, AttributeType.class, AttributeType::valueType);
         validateParam(concept, WHEN, Rule.class, Rule::when);
         validateParam(concept, THEN, Rule.class, Rule::then);
     }
@@ -395,8 +394,8 @@ public class ConceptBuilderImpl implements ConceptBuilder {
             concept = putSchemaConcept(label, () -> conceptManager.createRole(label, superConcept.asRole()), Role.class);
         } else if (superConcept.isAttributeType()) {
             AttributeType attributeType = superConcept.asAttributeType();
-            AttributeType.DataType<?> dataType = useOrDefault(DATA_TYPE, attributeType.dataType());
-            concept = putSchemaConcept(label, () -> conceptManager.createAttributeType(label, superConcept.asAttributeType(), dataType), AttributeType.class);
+            AttributeType.ValueType<?> valueType = useOrDefault(VALUE_TYPE, attributeType.valueType());
+            concept = putSchemaConcept(label, () -> conceptManager.createAttributeType(label, superConcept.asAttributeType(), valueType), AttributeType.class);
         } else if (superConcept.isRule()) {
             concept = putSchemaConcept(label, () -> conceptManager.createRule(label, use(WHEN), use(THEN), superConcept.asRule()), Rule.class);
         } else {
@@ -486,9 +485,9 @@ public class ConceptBuilderImpl implements ConceptBuilder {
 
     /**
      * Class with no fields and exactly one instance.
-     * Similar in use to Void, but the single instance is {@link Unit#INSTANCE} instead of {@code null}. Useful
+     * Similar in use to Void, but the single instance is Unit#INSTANCE instead of {@code null}. Useful
      * when {@code null} is not allowed.
-     * @see <a href=https://en.wikipedia.org/wiki/Unit_type>Wikipedia</a>
+     * see <a href=https://en.wikipedia.org/wiki/Unit_type>Wikipedia</a>
      */
     final static class Unit {
         private Unit() {

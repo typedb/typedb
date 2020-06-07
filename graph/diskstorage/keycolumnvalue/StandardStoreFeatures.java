@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -22,7 +21,7 @@ import grakn.core.graph.diskstorage.configuration.Configuration;
 import grakn.core.graph.diskstorage.util.time.TimestampProviders;
 
 /**
- * Immutable, {@link Builder}-customizable implementation of StoreFeatures.
+ * Immutable, Builder-customizable implementation of StoreFeatures.
  */
 public class StandardStoreFeatures implements StoreFeatures {
 
@@ -147,7 +146,7 @@ public class StandardStoreFeatures implements StoreFeatures {
     }
 
     /**
-     * The only way to instantiate {@link StandardStoreFeatures}.
+     * The only way to instantiate StandardStoreFeatures.
      */
     public static class Builder {
 

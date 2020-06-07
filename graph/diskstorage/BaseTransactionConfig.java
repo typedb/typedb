@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -36,7 +35,7 @@ public interface BaseTransactionConfig {
 
     /**
      * Sets the commit time of this transaction. If a commit time has already been set, this method throws
-     * an exception. Use {@link #hasCommitTime()} to check prior to setting.
+     * an exception. Use #hasCommitTime() to check prior to setting.
      */
     void setCommitTime(Instant time);
 
@@ -62,7 +61,7 @@ public interface BaseTransactionConfig {
      * Return any transaction-specific options.
      *
      * @return options for this tx
-     * @see #getCustomOption(ConfigOption)
+     * see #getCustomOption(ConfigOption)
      */
     Configuration getCustomOptions();
 }

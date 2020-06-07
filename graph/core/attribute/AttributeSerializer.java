@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -19,9 +18,6 @@
 package grakn.core.graph.core.attribute;
 
 import com.google.common.base.Preconditions;
-import grakn.core.graph.core.PropertyKey;
-import grakn.core.graph.core.schema.PropertyKeyMaker;
-import grakn.core.graph.core.schema.RelationTypeMaker;
 import grakn.core.graph.diskstorage.ScanBuffer;
 import grakn.core.graph.diskstorage.WriteBuffer;
 
@@ -35,12 +31,12 @@ import grakn.core.graph.diskstorage.WriteBuffer;
  * the database is initialized. Hence, the serializer must be on the classpath.
  * <br>
  * <p>
- * When a {@link PropertyKey} is defined using a data type specified via {@link PropertyKeyMaker} for which a custom serializer
+ * When a PropertyKey is defined using a data type specified via PropertyKeyMaker for which a custom serializer
  * is configured, then it will use this custom serializer for persistence operations.
  *
  * @param <V> Type of the attribute associated with the AttributeSerializer
- * @see RelationTypeMaker
- * @see <a href="https://docs.janusgraph.org/latest/serializer.html">
+ * see RelationTypeMaker
+ * see <a href="https://docs.janusgraph.org/latest/serializer.html">
  *      "Datatype and Attribute Serializer Configuration" manual chapter</a>
  */
 public interface AttributeSerializer<V> {
@@ -68,7 +64,7 @@ public interface AttributeSerializer<V> {
 
     /**
      * Verifies the given (not-null) attribute value is valid.
-     * Throws an {@link IllegalArgumentException} if the value is invalid,
+     * Throws an IllegalArgumentException if the value is invalid,
      * otherwise simply returns.
      *
      * @param value to verify
@@ -80,7 +76,7 @@ public interface AttributeSerializer<V> {
     /**
      * Converts the given (not-null) value to the expected data type V.
      * The given object will NOT be of type V.
-     * Throws an {@link IllegalArgumentException} if it cannot be converted.
+     * Throws an IllegalArgumentException if it cannot be converted.
      *
      * @param value to convert
      * @return converted to expected data type

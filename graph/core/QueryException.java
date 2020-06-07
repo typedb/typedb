@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,12 +17,8 @@
 
 package grakn.core.graph.core;
 
-import grakn.core.graph.core.JanusGraphException;
-import grakn.core.graph.core.JanusGraphQuery;
-import grakn.core.graph.core.JanusGraphVertex;
-
 /**
- * Exception thrown when a user defined query (e.g. a {@link JanusGraphVertex} or {@link JanusGraphQuery})
+ * Exception thrown when a user defined query (e.g. a JanusGraphVertex or JanusGraphQuery)
  * is invalid or could not be processed.
  */
 public class QueryException extends JanusGraphException {

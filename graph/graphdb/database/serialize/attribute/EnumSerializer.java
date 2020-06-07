@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -23,7 +22,6 @@ import grakn.core.graph.diskstorage.ScanBuffer;
 import grakn.core.graph.diskstorage.WriteBuffer;
 import grakn.core.graph.graphdb.database.idhandling.VariableLong;
 import grakn.core.graph.graphdb.database.serialize.OrderPreservingSerializer;
-import grakn.core.graph.graphdb.database.serialize.attribute.IntegerSerializer;
 
 public class EnumSerializer<E extends Enum> implements OrderPreservingSerializer<E> {
 

@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -23,7 +22,7 @@ import grakn.core.graph.graphdb.relations.RelationCache;
 /**
  * An entry is the primitive persistence unit used in the graph database storage backend.
  * <p>
- * An entry consists of a column and value both of which are general {@link java.nio.ByteBuffer}s.
+ * An entry consists of a column and value both of which are general java.nio.ByteBuffers.
  * The value may be null but the column may not.
  *
  */

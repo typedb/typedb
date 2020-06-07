@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -38,7 +37,7 @@ public class StringEncoding {
         return true;
     }
 
-    //Similar to {@link StringSerializer}
+    //Similar to StringSerializer
     public static int writeAsciiString(byte[] array, int startPos, String attribute) {
         Preconditions.checkArgument(isAsciiString(attribute));
         if (attribute.length() == 0) {

@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -19,7 +18,6 @@
 package grakn.core.graph.graphdb.transaction;
 
 import com.google.common.base.Preconditions;
-import grakn.core.graph.core.JanusGraphTransaction;
 import grakn.core.graph.core.TransactionBuilder;
 import grakn.core.graph.core.schema.DefaultSchemaMaker;
 import grakn.core.graph.diskstorage.BaseTransactionConfig;
@@ -33,7 +31,7 @@ import grakn.core.graph.graphdb.database.StandardJanusGraph;
 import java.time.Instant;
 
 /**
- * Used to configure a {@link JanusGraphTransaction}.
+ * Used to configure a JanusGraphTransaction.
  */
 public class StandardTransactionBuilder implements TransactionConfiguration, TransactionBuilder {
 

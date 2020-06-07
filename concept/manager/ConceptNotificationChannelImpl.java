@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -33,7 +32,7 @@ import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.concept.manager.ConceptListener;
 import grakn.core.kb.concept.manager.ConceptNotificationChannel;
-import grakn.core.kb.concept.structure.Casting;
+import grakn.core.kb.concept.api.Casting;
 
 import java.util.List;
 import java.util.function.Supplier;
@@ -53,11 +52,6 @@ public class ConceptNotificationChannelImpl implements ConceptNotificationChanne
     }
 
     @Override
-    public void relationEdgeDeleted(RelationType edgeTypeDeleted, boolean isInferredEdge, Supplier<Concept> wrappingConceptGetter) {
-        conceptListener.relationEdgeDeleted(edgeTypeDeleted, isInferredEdge, wrappingConceptGetter);
-    }
-
-    @Override
     public void schemaConceptDeleted(SchemaConcept schemaConcept) {
         conceptListener.schemaConceptDeleted(schemaConcept);
     }
@@ -69,7 +63,7 @@ public class ConceptNotificationChannelImpl implements ConceptNotificationChanne
 
     @Override
     public void labelAdded(SchemaConcept schemaConcept) {
-        conceptListener.labelRemoved(schemaConcept);
+        conceptListener.labelAdded(schemaConcept);
     }
 
     @Override
@@ -98,11 +92,6 @@ public class ConceptNotificationChannelImpl implements ConceptNotificationChanne
     }
 
     @Override
-    public void deleteReifiedOwner(Relation owner) {
-        conceptListener.deleteReifiedOwner(owner);
-    }
-
-    @Override
     public void relationRoleUnrelated(RelationType relationType, Role role, List<Casting> conceptsPlayingRole) {
         conceptListener.relationRoleUnrelated(relationType, role, conceptsPlayingRole);
     }
@@ -123,13 +112,18 @@ public class ConceptNotificationChannelImpl implements ConceptNotificationChanne
     }
 
     @Override
-    public void hasAttributeRelationCreated(Relation hasAttributeRelation, boolean isInferred) {
-        conceptListener.hasAttributeRelationCreated(hasAttributeRelation, isInferred);
+    public void hasAttributeCreated(Thing owner, Attribute attribute, boolean isInferred) {
+        conceptListener.hasAttributeCreated(owner, attribute, isInferred);
     }
 
     @Override
-    public void roleDeleted(Role role) {
-        conceptListener.roleDeleted(role);
+    public void hasAttributeRemoved(Thing owner, Attribute<?> owned, boolean isInferred) {
+        conceptListener.hasAttributeRemoved(owner, owned, isInferred);
+    }
+
+    @Override
+    public void roleUndefined(Role role) {
+        conceptListener.roleUndefined(role);
     }
 
     @Override

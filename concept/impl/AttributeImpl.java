@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -37,9 +36,9 @@ import java.util.stream.Stream;
  * Represent a literal resource in the graph.
  * Acts as an Thing when relating to other instances except it has the added functionality of:
  * 1. It is unique to its AttributeType based on it's value.
- * 2. It has a AttributeType.DataType associated with it which constrains the allowed values.
+ * 2. It has a AttributeType.ValueType associated with it which constrains the allowed values.
  *
- * @param <D> The data type of this resource type.
+ * @param <D> The value type of this attribute type.
  *            Supported Types include: String, Long, Double, and Boolean
  */
 public class AttributeImpl<D> extends ThingImpl<Attribute<D>, AttributeType<D>> implements Attribute<D> {
@@ -52,11 +51,11 @@ public class AttributeImpl<D> extends ThingImpl<Attribute<D>, AttributeType<D>> 
     }
 
     /**
-     * @return The data type of this Attribute's AttributeType.
+     * @return The value type of this Attribute's AttributeType.
      */
     @Override
-    public AttributeType.DataType<D> dataType() {
-        return type().dataType();
+    public AttributeType.ValueType<D> valueType() {
+        return type().valueType();
     }
 
     /**
@@ -64,12 +63,9 @@ public class AttributeImpl<D> extends ThingImpl<Attribute<D>, AttributeType<D>> 
      */
     @Override
     public Stream<Thing> owners() {
-        //Get Owner via implicit structure
-        Stream<Thing> implicitOwners = getShortcutNeighbours(false);
         //Get owners via edges
-        Stream<Thing> edgeOwners = neighbours(Direction.IN, Schema.EdgeLabel.ATTRIBUTE);
-
-        return Stream.concat(implicitOwners, edgeOwners);
+        Stream<Thing> owners = neighbours(Direction.IN, Schema.EdgeLabel.ATTRIBUTE);
+        return owners;
     }
 
     /**
@@ -77,24 +73,13 @@ public class AttributeImpl<D> extends ThingImpl<Attribute<D>, AttributeType<D>> 
      */
     @Override
     public D value() {
-        return AttributeSerialiser.of(dataType()).deserialise(
-                vertex().property(Schema.VertexProperty.ofDataType(dataType()))
+        return AttributeSerialiser.of(valueType()).deserialise(
+                vertex().property(Schema.VertexProperty.ofValueType(valueType()))
         );
     }
 
     @Override
     public String innerToString() {
         return super.innerToString() + "- Value [" + value() + "] ";
-    }
-
-    @Override
-    public Stream<Thing> getDependentConcepts() {
-        Label typeLabel = type().label();
-        Role hasRole = conceptManager.getRole(Schema.ImplicitType.HAS_VALUE.getLabel(typeLabel).getValue());
-        Role keyRole = conceptManager.getRole(Schema.ImplicitType.KEY_VALUE.getLabel(typeLabel).getValue());
-        Stream<Thing> conceptStream = Stream.of(this);
-        if (hasRole != null) conceptStream = Stream.concat(conceptStream, relations(hasRole));
-        if (keyRole != null) conceptStream = Stream.concat(conceptStream, relations(keyRole));
-        return conceptStream;
     }
 }

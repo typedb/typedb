@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -70,7 +69,7 @@ final public class JanusGraphFactory {
             TraversalStrategies strategies = TraversalStrategies.GlobalCache.getStrategies(StandardJanusGraphTx.class);
             strategies = strategies.clone().addStrategies(new JanusPreviousPropertyStepStrategy());
             //TODO: find out why Tinkerpop added these strategies. They result in many NoOpBarrier steps which slowed down our queries so we had to remove them.
-            // 2019 NOTE: find out if removing these strategies still makes a difference, probably not.
+            // 2020 NOTE: find out if removing these strategies still makes a difference, probably not.
             strategies.removeStrategies(PathRetractionStrategy.class, LazyBarrierStrategy.class);
             TraversalStrategies.GlobalCache.registerStrategies(StandardJanusGraphTx.class, strategies);
         }

@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -54,8 +53,8 @@ public class RuleState extends AnswerPropagatorState<ResolvableQuery> {
 
     @Override
     public String toString(){
-        return super.toString() + " to state @" + Integer.toHexString(getParentState().hashCode()) + "\n" +
-                rule + "\n" +
+        return getClass().getSimpleName() + " to state @" + Integer.toHexString(getParentState().hashCode()) + "\n" +
+                rule.getRule().label() + "\n" +
                 "Unifier: " + getUnifier();
     }
 

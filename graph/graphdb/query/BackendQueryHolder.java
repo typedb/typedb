@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -19,14 +18,12 @@
 package grakn.core.graph.graphdb.query;
 
 import com.google.common.base.Preconditions;
-import grakn.core.graph.graphdb.query.BackendQuery;
-import grakn.core.graph.graphdb.query.QueryExecutor;
 import grakn.core.graph.graphdb.query.profile.ProfileObservable;
 import grakn.core.graph.graphdb.query.profile.QueryProfiler;
 
 /**
- * Holds a {@link BackendQuery} and captures additional information that pertains to its execution and to be used by a
- * {@link QueryExecutor}:
+ * Holds a BackendQuery and captures additional information that pertains to its execution and to be used by a
+ * QueryExecutor:
  * <ul>
  *     <li>Whether the query is fitted, i.e., whether all results returned from executing the backend query are part
  *     of the result set or must be filtered in memory.</li>

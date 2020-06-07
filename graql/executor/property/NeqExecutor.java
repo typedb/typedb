@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -26,9 +25,13 @@ import grakn.core.kb.graql.planning.gremlin.EquivalentFragmentSet;
 import graql.lang.property.NeqProperty;
 import graql.lang.statement.Variable;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
-public class NeqExecutor  implements PropertyExecutor {
+public class NeqExecutor implements PropertyExecutor {
 
     private final Variable var;
     private final NeqProperty property;
@@ -40,11 +43,10 @@ public class NeqExecutor  implements PropertyExecutor {
 
     @Override
     public Set<EquivalentFragmentSet> matchFragments() {
-        return Sets.newHashSet(
-                EquivalentFragmentSets.notInternalFragmentSet(property, var),
-                EquivalentFragmentSets.notInternalFragmentSet(property, property.statement().var()),
-                EquivalentFragmentSets.neq(property, var, property.statement().var())
-        );
+//        return Sets.newHashSet(
+//                EquivalentFragmentSets.notInternalFragmentSet(property, var),
+//                EquivalentFragmentSets.notInternalFragmentSet(property, property.statement().var()),
+        return new HashSet<>(Collections.singletonList(EquivalentFragmentSets.neq(property, var, property.statement().var())));
     }
 
 }

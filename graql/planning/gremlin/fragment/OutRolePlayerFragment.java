@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -19,15 +18,12 @@
 package grakn.core.graql.planning.gremlin.fragment;
 
 import com.google.common.collect.ImmutableSet;
-import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.manager.ConceptManager;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
-import org.apache.tinkerpop.gremlin.process.traversal.Pop;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
-import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -37,13 +33,11 @@ import java.util.Collection;
 import java.util.Objects;
 
 import static grakn.core.core.Schema.EdgeLabel.ROLE_PLAYER;
-import static grakn.core.core.Schema.EdgeProperty.RELATION_ROLE_OWNER_LABEL_ID;
-import static grakn.core.core.Schema.EdgeProperty.RELATION_ROLE_VALUE_LABEL_ID;
 import static grakn.core.core.Schema.EdgeProperty.RELATION_TYPE_LABEL_ID;
 import static grakn.core.core.Schema.EdgeProperty.ROLE_LABEL_ID;
 
 /**
- * A fragment representing traversing a {@link Schema.EdgeLabel#ROLE_PLAYER} edge from the relation to the
+ * A fragment representing traversing a Schema.EdgeLabel#ROLE_PLAYER edge from the relation to the
  * role-player.
  * <p>
  * Part of a EquivalentFragmentSet, along with InRolePlayerFragment.
@@ -100,13 +94,11 @@ public class OutRolePlayerFragment extends AbstractRolePlayerFragment {
             GraphTraversal<Vertex, ? extends Element> traversal, ConceptManager conceptManager, Collection<Variable> vars) {
 
         return Fragments.union(traversal, ImmutableSet.of(
-                reifiedRelationTraversal(conceptManager, vars),
-                edgeRelationTraversal(conceptManager, Direction.OUT, RELATION_ROLE_OWNER_LABEL_ID, vars),
-                edgeRelationTraversal(conceptManager, Direction.IN, RELATION_ROLE_VALUE_LABEL_ID, vars)
+                relationTraversal(conceptManager, vars)
         ));
     }
 
-    private GraphTraversal<Element, Vertex> reifiedRelationTraversal(ConceptManager conceptManager, Collection<Variable> vars) {
+    private GraphTraversal<Element, Vertex> relationTraversal(ConceptManager conceptManager, Collection<Variable> vars) {
         GraphTraversal<Element, Vertex> traversal = Fragments.isVertex(__.identity());
 
         GraphTraversal<Element, Edge> edgeTraversal = traversal.outE(ROLE_PLAYER.getLabel()).as(edge().symbol());
@@ -118,24 +110,6 @@ public class OutRolePlayerFragment extends AbstractRolePlayerFragment {
         traverseToRole(edgeTraversal, role(), ROLE_LABEL_ID, vars);
 
         return edgeTraversal.inV();
-    }
-
-    private GraphTraversal<Element, Vertex> edgeRelationTraversal(
-            ConceptManager conceptManager, Direction direction, Schema.EdgeProperty roleProperty, Collection<Variable> vars) {
-
-        GraphTraversal<Element, Edge> edgeTraversal = Fragments.isEdge(__.start());
-
-        // Filter by any provided type labels
-        applyLabelsToTraversal(edgeTraversal, roleProperty, roleLabels(), conceptManager);
-        applyLabelsToTraversal(edgeTraversal, RELATION_TYPE_LABEL_ID, relationTypeLabels(), conceptManager);
-
-        traverseToRole(edgeTraversal, role(), roleProperty, vars);
-
-        // Identify the relation - role-player pair by combining the relation edge and direction into a map
-        edgeTraversal.as(RELATION_EDGE.symbol()).constant(direction).as(RELATION_DIRECTION.symbol());
-        edgeTraversal.select(Pop.last, RELATION_EDGE.symbol(), RELATION_DIRECTION.symbol()).as(edge().symbol()).select(RELATION_EDGE.symbol());
-
-        return edgeTraversal.toV(direction);
     }
 
     @Override

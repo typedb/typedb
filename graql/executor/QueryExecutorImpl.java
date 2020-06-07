@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -21,7 +20,6 @@ package grakn.core.graql.executor;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
-import grakn.benchmark.lib.instrumentation.ServerTracing;
 import grakn.core.concept.answer.Answer;
 import grakn.core.concept.answer.AnswerGroup;
 import grakn.core.concept.answer.ConceptMap;
@@ -34,14 +32,11 @@ import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.GraknConceptException;
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.exception.GraqlSemanticException;
-import grakn.core.kb.graql.executor.ExecutorFactory;
 import grakn.core.kb.graql.executor.QueryExecutor;
+import grakn.core.kb.graql.executor.WriteExecutor;
 import grakn.core.kb.graql.executor.property.PropertyExecutor;
 import grakn.core.kb.graql.executor.property.PropertyExecutorFactory;
-import grakn.core.kb.graql.planning.gremlin.GraqlTraversal;
-import grakn.core.kb.graql.planning.gremlin.TraversalPlanFactory;
 import grakn.core.kb.graql.reasoner.ReasonerCheckedException;
-import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Disjunction;
@@ -58,10 +53,6 @@ import graql.lang.query.MatchClause;
 import graql.lang.query.builder.Filterable;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
-import org.apache.tinkerpop.gremlin.structure.Edge;
-import org.apache.tinkerpop.gremlin.structure.Element;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -69,11 +60,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collector;
@@ -90,63 +79,40 @@ import static java.util.stream.Collectors.toList;
 public class QueryExecutorImpl implements QueryExecutor {
 
     private ConceptManager conceptManager;
-    private ExecutorFactory executorFactory;
     private final boolean infer;
-    private final TraversalPlanFactory traversalPlanFactory;
     private ReasonerQueryFactory reasonerQueryFactory;
     private final PropertyExecutorFactory propertyExecutorFactory;
     private static final Logger LOG = LoggerFactory.getLogger(QueryExecutorImpl.class);
 
-    QueryExecutorImpl(ConceptManager conceptManager, ExecutorFactory executorFactory, TraversalPlanFactory traversalPlanFactory, ReasonerQueryFactory reasonerQueryFactory, boolean infer) {
+    QueryExecutorImpl(ConceptManager conceptManager, ReasonerQueryFactory reasonerQueryFactory, boolean infer) {
         this.conceptManager = conceptManager;
-        this.executorFactory = executorFactory;
         this.infer = infer;
-        this.traversalPlanFactory = traversalPlanFactory;
         this.reasonerQueryFactory = reasonerQueryFactory;
         propertyExecutorFactory = new PropertyExecutorFactoryImpl();
     }
 
     @Override
     public Stream<ConceptMap> match(MatchClause matchClause) {
-
-        int createStreamSpanId = ServerTracing.startScopedChildSpan("QueryExecutor.match create stream");
-
         Stream<ConceptMap> answerStream;
 
         try {
             validateClause(matchClause);
 
-            if (!infer) {
+            // TODO: lazy flatMap() is automatically fixed in Java 10 or OpenJDK 8u222, remove workaround if these conditions met
+            // custom workaround to deal with non-lazy Java 8 flatMap() functions is in LazyMergingStream
+            Stream<Conjunction<Pattern>> conjunctions = matchClause.getPatterns().getNegationDNF().getPatterns().stream();
+            Stream<Stream<ConceptMap>> answerStreams = conjunctions
+                    .map(p -> reasonerQueryFactory.resolvable(p))
+                    // we return an answer with the substituted IDs in the pattern
+                    .map(q -> q.resolve(infer).map(ans -> ans.withPattern(q.withSubstitution(ans).getPattern())));
 
-                // TODO: lazy flatMap() is automatically fixed in Java 10 or OpenJDK 8u222, remove workaround if these conditions met
-                // custom workaround to deal with non-lazy Java 8 flatMap() functions is in LazyMergingStream
-                Stream<Conjunction<Statement>> conjunctions = matchClause.getPatterns().getDisjunctiveNormalForm().getPatterns().stream();
-                Stream<Stream<ConceptMap>> answerStreams = conjunctions
-                        .map(p -> reasonerQueryFactory.create(p))
-                        .map(ReasonerQuery::getPattern)
-                        .map(p -> traverse(p));
-
-                LazyMergingStream<ConceptMap> mergedStreams = new LazyMergingStream<>(answerStreams);
-                return mergedStreams.flatStream();
-
-            } else {
-
-                Stream<Conjunction<Pattern>> conjunctions = matchClause.getPatterns().getNegationDNF().getPatterns().stream();
-                Stream<Stream<ConceptMap>> answerStreams = conjunctions
-                        .map(p -> reasonerQueryFactory.resolvable(p).rewriteAtoms())
-                        // we return an answer with the substituted IDs in the pattern
-                        .map(q -> q.resolve().map(ans -> ans.withPattern(q.withSubstitution(ans).getPattern())));
-
-                LazyMergingStream<ConceptMap> mergedStreams = new LazyMergingStream<>(answerStreams);
-                return mergedStreams.flatStream();
-
-            }
+            LazyMergingStream<ConceptMap> mergedStreams = new LazyMergingStream<>(answerStreams);
+            return mergedStreams.flatStream();
         } catch (ReasonerCheckedException e) {
             LOG.debug(e.getMessage());
             answerStream = Stream.empty();
         }
 
-        ServerTracing.closeScopedChildSpan(createStreamSpanId);
         return answerStream;
     }
 
@@ -213,55 +179,9 @@ public class QueryExecutorImpl implements QueryExecutor {
         }
     }
 
-    @Override
-    public Stream<ConceptMap> traverse(Conjunction<Pattern> pattern) {
-        return traverse(pattern, traversalPlanFactory.createTraversal(pattern));
-    }
-
-    /**
-     * @return resulting answer stream
-     */
-    @Override
-    public Stream<ConceptMap> traverse(Conjunction<Pattern> pattern, GraqlTraversal graqlTraversal) {
-        Set<Variable> vars = Sets.filter(pattern.variables(), Variable::isReturned);
-        GraphTraversal<Vertex, Map<String, Element>> traversal = graqlTraversal.getGraphTraversal(vars);
-
-        return traversal.toStream()
-                .map(elements -> createAnswer(vars, elements))
-                .distinct()
-                .sequential()
-                .map(ConceptMap::new);
-    }
-
-    /**
-     * @param vars     set of variables of interest
-     * @param elements a map of vertices and edges where the key is the variable name
-     * @return a map of concepts where the key is the variable name
-     */
-    private Map<Variable, Concept> createAnswer(Set<Variable> vars, Map<String, Element> elements) {
-        Map<Variable, Concept> map = new HashMap<>();
-        for (Variable var : vars) {
-            Element element = elements.get(var.symbol());
-            if (element == null) {
-                throw GraqlSemanticException.unexpectedResult(var);
-            } else {
-                Concept result;
-                if (element instanceof Vertex) {
-                    result = conceptManager.buildConcept((Vertex) element);
-                } else {
-                    result = conceptManager.buildConcept((Edge) element);
-                }
-                Concept concept = result;
-                map.put(var, concept);
-            }
-        }
-        return map;
-    }
 
     @Override
     public Stream<ConceptMap> insert(GraqlInsert query) {
-        int createExecSpanId = ServerTracing.startScopedChildSpan("QueryExecutor.insert create executors");
-
         Collection<Statement> statements = query.statements().stream()
                 .flatMap(statement -> statement.innerStatements().stream())
                 .collect(Collectors.toList());
@@ -273,9 +193,6 @@ public class QueryExecutorImpl implements QueryExecutor {
             }
         }
 
-        ServerTracing.closeScopedChildSpan(createExecSpanId);
-
-        int answerStreamSpanId = ServerTracing.startScopedChildSpan("QueryExecutor.insert create answer stream");
 
         Stream<ConceptMap> answerStream;
         if (query.match() != null) {
@@ -287,7 +204,7 @@ public class QueryExecutorImpl implements QueryExecutor {
             LinkedHashSet<Variable> projectedVars = new LinkedHashSet<>(matchVars);
             projectedVars.retainAll(insertVars);
 
-            Stream<ConceptMap> answers = executorFactory.transactional(infer).get(match.get(projectedVars));
+            Stream<ConceptMap> answers = get(match.get(projectedVars));
             answerStream = answers
                     .flatMap(answer -> WriteExecutorImpl.create(conceptManager, executors.build()).write(answer))
                     .collect(toList()).stream();
@@ -295,55 +212,28 @@ public class QueryExecutorImpl implements QueryExecutor {
             answerStream = WriteExecutorImpl.create(conceptManager, executors.build()).write();
         }
 
-        ServerTracing.closeScopedChildSpan(answerStreamSpanId);
-
         return answerStream;
     }
 
 
     @Override
     public Void delete(GraqlDelete query) {
-        Stream<ConceptMap> answers = executorFactory.transactional(infer).match(query.match())
-                .map(result -> result.project(query.vars()))
-                .distinct();
+        Collection<Statement> statements = new ArrayList<>(query.statements());
 
-        answers = filter(query, answers);
-
-        // TODO: We should not need to collect toSet, once we fix ConceptId.id() to not use cache.
-        List<Concept> conceptsToDelete = answers
-                .flatMap(answer -> answer.concepts().stream())
-                .distinct()
-                // delete relations first: if the RPs are deleted, the relation is removed, so null by the time we try to delete it
-                // this minimises number of `concept was already removed` exceptions
-                .sorted(Comparator.comparing(concept -> !concept.isRelation()))
-                .collect(Collectors.toList());
-
-
-        conceptsToDelete.forEach(concept -> {
-            // a concept is either a schema concept or a thing
-            if (concept.isSchemaConcept()) {
-                throw GraqlSemanticException.deleteSchemaConcept(concept.asSchemaConcept());
-            } else if (concept.isThing()) {
-                try {
-                    // a concept may have been cleaned up already
-                    // for instance if role players of an implicit attribute relation are deleted, the janus edge disappears
-                    concept.delete();
-                } catch (IllegalStateException janusVertexDeleted) {
-                    if (janusVertexDeleted.getMessage().contains("was removed")) {
-                        // Tinkerpop throws this exception if we try to operate on a vertex that was already deleted
-                        // With the ordering of deletes, this edge case should only be hit when relations play roles in relations
-                        LOG.debug("Trying to deleted concept that was already removed", janusVertexDeleted);
-                    } else {
-                        throw janusVertexDeleted;
-                    }
-                }
-            } else {
-                throw GraknConceptException.unhandledConceptDeletion(concept);
+        ImmutableSet.Builder<PropertyExecutor.Writer> executors = ImmutableSet.builder();
+        for (Statement statement : statements) {
+            // we only operate on statements written by the user
+            for (VarProperty property : statement.properties()) {
+                executors.addAll(propertyExecutorFactory.deletable(statement.var(), property).deleteExecutors());
             }
-        });
+        }
 
-        // TODO: return deleted Concepts instead of ConceptIds
-        return new Void("Delete successful.");
+        // note: NOT lazy, to avoid modifying the stream while reading
+        List<ConceptMap> toDelete = get(query.match().get()).collect(toList());
+        toDelete.forEach(answer -> {
+            WriteExecutorImpl.create(conceptManager, executors.build()).write(answer);
+        });
+        return new Void(String.format("Deleted facts from %s matched answers.", toDelete.size()));
     }
 
     @Override
@@ -435,7 +325,7 @@ public class QueryExecutorImpl implements QueryExecutor {
         return answerGroups;
     }
 
-    @SuppressWarnings("unchecked") // All attribute values are comparable data types
+    @SuppressWarnings("unchecked") // All attribute values are comparable value types
     private Stream<ConceptMap> filter(Filterable query, Stream<ConceptMap> answers) {
         if (query.sort().isPresent()) {
             Variable var = query.sort().get().var();

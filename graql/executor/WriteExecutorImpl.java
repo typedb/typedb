@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -30,7 +29,6 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
 import com.google.common.collect.Sets;
-import grakn.benchmark.lib.instrumentation.ServerTracing;
 import grakn.core.common.util.Partition;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.kb.concept.api.Concept;
@@ -47,11 +45,14 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Queue;
@@ -232,34 +233,19 @@ public class WriteExecutorImpl implements WriteExecutor {
     public Stream<ConceptMap> write(ConceptMap preExisting) {
         concepts.putAll(preExisting.map());
 
-        // time to execute writers for properties
-        int executeWritersSpanId = ServerTracing.startScopedChildSpan("WriteExecutor.write execute writers");
-
+        // note that we _must_ call sortedWriters() for each concept map we want to write for now
+        // because we have to order deletions whose order depends on the concepts they represent
+        // eg. batch deletion based on ID have no ordering from the query itself
 
         for (Writer writer : sortedWriters()) {
             writer.execute(this);
         }
 
-        ServerTracing.closeScopedChildSpan(executeWritersSpanId);
-        // time to delete concepts marked for deletion
-
-        int deleteConceptsSpanId = ServerTracing.startScopedChildSpan("WriteExecutor.write delete concepts");
-
-
         for (Concept concept : conceptsToDelete) {
             concept.delete();
         }
 
-        ServerTracing.closeScopedChildSpan(deleteConceptsSpanId);
-
-        // time to build concepts
-        int buildConceptsSpanId = ServerTracing.startScopedChildSpan("WriteExecutor.write build concepts for answer");
-
         conceptBuilders.forEach((var, builder) -> buildConcept(var, builder));
-
-        ServerTracing.closeScopedChildSpan(buildConceptsSpanId);
-
-        int answerAndPersistId = ServerTracing.startScopedChildSpan("WriteExecutor.write create answers and persist dependent inferred concepts");
 
         ImmutableMap.Builder<Variable, Concept> allConcepts = ImmutableMap.<Variable, Concept>builder().putAll(concepts);
 
@@ -269,9 +255,6 @@ public class WriteExecutorImpl implements WriteExecutor {
         }
 
         Map<Variable, Concept> namedConcepts = Maps.filterKeys(allConcepts.build(), Variable::isReturned);
-
-
-        ServerTracing.closeScopedChildSpan(answerAndPersistId);
 
         return Stream.of(new ConceptMap(namedConcepts));
     }
@@ -294,6 +277,7 @@ public class WriteExecutorImpl implements WriteExecutor {
      * This method uses a topological sort (Kahn's algorithm) in order to find a valid ordering.
      */
     private ImmutableList<Writer> sortedWriters() {
+
         ImmutableList.Builder<Writer> sorted = ImmutableList.builder();
 
         // invertedDependencies is intended to just be a 'view' on dependencies, so when dependencies is modified
@@ -302,18 +286,23 @@ public class WriteExecutorImpl implements WriteExecutor {
         Multimap<Writer, Writer> invertedDependencies = HashMultimap.create();
         Multimaps.invertFrom(dependencies, invertedDependencies);
 
-        Queue<Writer> writerWithoutDependencies =
-                new ArrayDeque<>(Sets.filter(writers, property -> dependencies.get(property).isEmpty()));
+        Set<Writer> writersWithoutDependencies = Sets.filter(writers, property -> dependencies.get(property).isEmpty());
+        Set<Writer> writersWithoutDependants = Sets.filter(writers, property -> invertedDependencies.get(property).isEmpty());
+        Set<Writer> unorderedWriters = Sets.intersection(writersWithoutDependencies, writersWithoutDependants).immutableCopy();
+
+        Queue<Writer> connectedWritersWithoutDependencies =
+                new ArrayDeque<>(Sets.filter(writers, property -> !unorderedWriters.contains(property) && dependencies.get(property).isEmpty()));
 
         Writer property;
 
         // Retrieve the next property without any dependencies
-        while ((property = writerWithoutDependencies.poll()) != null) {
+        while ((property = connectedWritersWithoutDependencies.poll()) != null) {
             sorted.add(property);
 
             // We copy this into a new list because the underlying collection gets modified during iteration
             Collection<Writer> dependents = Lists.newArrayList(invertedDependencies.get(property));
 
+            List<Writer> unblockedWriters = new ArrayList<>();
             for (Writer dependent : dependents) {
                 // Because the property has been removed, the dependent no longer needs to depend on it
                 dependencies.remove(dependent, property);
@@ -322,10 +311,24 @@ public class WriteExecutorImpl implements WriteExecutor {
                 boolean hasNoDependencies = dependencies.get(dependent).isEmpty();
 
                 if (hasNoDependencies) {
-                    writerWithoutDependencies.add(dependent);
+                    if (writersWithoutDependants.contains(dependent)) {
+                        unblockedWriters.add(dependent);
+                    } else {
+                        connectedWritersWithoutDependencies.add(dependent);
+                    }
                 }
             }
+            // at this point, these writers are completely independent in their ordering
+            // we use a tie breaker based on the type of concept represented
+            unblockedWriters.sort(Comparator.comparing((w) -> w.ordering(this)));
+            connectedWritersWithoutDependencies.addAll(unblockedWriters);
         }
+
+        // these writers are completely independent in their ordering
+        // we use a tie breaker based on the type of concept represented
+        unorderedWriters.stream()
+                .sorted(Comparator.comparing((w) -> w.ordering(this)))
+                .forEach(sorted::add);
 
         if (!dependencies.isEmpty()) {
             // This means there must have been a loop. Pick an arbitrary remaining var to display
@@ -335,6 +338,7 @@ public class WriteExecutorImpl implements WriteExecutor {
 
         return sorted.build();
     }
+
 
     /**
      * Return a ConceptBuilder for given Variable. This can be used to provide information for how to create

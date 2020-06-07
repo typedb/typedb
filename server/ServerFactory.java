@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -21,14 +20,13 @@ package grakn.core.server;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import grakn.benchmark.lib.instrumentation.ServerTracing;
+import grabl.tracing.client.GrablTracing;
+import grabl.tracing.client.GrablTracingThreadStatic;
 import grakn.core.common.config.Config;
 import grakn.core.common.config.ConfigKey;
 import grakn.core.server.keyspace.KeyspaceManager;
-import grakn.core.server.rpc.KeyspaceRequestsHandler;
 import grakn.core.server.rpc.KeyspaceService;
 import grakn.core.server.rpc.OpenRequest;
-import grakn.core.server.rpc.ServerKeyspaceRequestsHandler;
 import grakn.core.server.rpc.ServerOpenRequest;
 import grakn.core.server.rpc.SessionService;
 import grakn.core.server.session.HadoopGraphFactory;
@@ -38,6 +36,8 @@ import grakn.core.server.util.LockManager;
 import io.grpc.netty.NettyServerBuilder;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.ExecutorService;
@@ -49,6 +49,8 @@ import java.util.concurrent.TimeUnit;
  */
 public class ServerFactory {
 
+    private static final Logger LOG = LoggerFactory.getLogger(ServerFactory.class);
+
     private static final int GRPC_EXECUTOR_THREADS = Runtime.getRuntime().availableProcessors() * 2; // default Netty way of assigning threads, probably expose in config in future
     private static final int ELG_THREADS = 4; // this could also be 1, but to avoid risks set it to 4, probably expose in config in future
 
@@ -57,7 +59,7 @@ public class ServerFactory {
      *
      * @return a Server instance configured for Grakn Core
      */
-    public static Server createServer(boolean benchmark) {
+    public static Server createServer(Grakn.Arguments arguments) {
         // Grakn Server configuration
         Config config = Config.create();
 
@@ -74,19 +76,31 @@ public class ServerFactory {
                 .withLocalDatacenter("datacenter1")
                 .build();
 
-        KeyspaceManager keyspaceManager = new KeyspaceManager(cqlSession);
         HadoopGraphFactory hadoopGraphFactory = new HadoopGraphFactory(config);
-
-        // session factory
         SessionFactory sessionFactory = new SessionFactory(lockManager, janusGraphFactory, hadoopGraphFactory, config);
+        KeyspaceManager keyspaceManager = new KeyspaceManager(cqlSession, janusGraphFactory, sessionFactory);
 
-        // Enable server tracing
-        if (benchmark) {
-            ServerTracing.initInstrumentation("server-instrumentation");
+        if (arguments.isGrablTracing()) {
+            LOG.info("Grabl tracing is enabled!");
+
+            GrablTracing grablTracingClient;
+            if (arguments.getGrablTracing().isSecureMode()) {
+                LOG.info("Using Grabl tracing secure mode");
+                grablTracingClient = GrablTracing.withLogging(GrablTracing.tracing(
+                        arguments.getGrablTracing().getUri(),
+                        arguments.getGrablTracing().getUsername(),
+                        arguments.getGrablTracing().getAccessToken()
+                ));
+            } else {
+                LOG.warn("Using Grabl tracing UNSECURED mode!!!");
+                grablTracingClient = GrablTracing.withLogging(GrablTracing.tracing(arguments.getGrablTracing().getUri()));
+            }
+            GrablTracingThreadStatic.setGlobalTracingClient(grablTracingClient);
+            LOG.info("Completed tracing setup");
         }
 
         // create gRPC server
-        io.grpc.Server serverRPC = createServerRPC(config, sessionFactory, keyspaceManager, janusGraphFactory);
+        io.grpc.Server serverRPC = createServerRPC(config, sessionFactory, keyspaceManager);
 
         return createServer(serverRPC);
     }
@@ -130,14 +144,11 @@ public class ServerFactory {
      * <p>
      * More info here: https://groups.google.com/d/msg/grpc-io/LrnAbWFozb0/VYCVarkWBQAJ
      */
-    private static io.grpc.Server createServerRPC(Config config, SessionFactory sessionFactory, KeyspaceManager keyspaceManager, JanusGraphFactory janusGraphFactory) {
+    private static io.grpc.Server createServerRPC(Config config, SessionFactory sessionFactory, KeyspaceManager keyspaceManager) {
         int grpcPort = config.getProperty(ConfigKey.GRPC_PORT);
         OpenRequest requestOpener = new ServerOpenRequest(sessionFactory);
 
         SessionService sessionService = new SessionService(requestOpener);
-
-        KeyspaceRequestsHandler requestsHandler = new ServerKeyspaceRequestsHandler(
-                keyspaceManager, sessionFactory, janusGraphFactory);
 
         Runtime.getRuntime().addShutdownHook(new Thread(sessionService::shutdown, "session-service-shutdown"));
 
@@ -152,7 +163,7 @@ public class ServerFactory {
                 .maxConnectionIdle(1, TimeUnit.HOURS)
                 .channelType(NioServerSocketChannel.class)
                 .addService(sessionService)
-                .addService(new KeyspaceService(requestsHandler))
+                .addService(new KeyspaceService(keyspaceManager))
                 .build();
     }
 

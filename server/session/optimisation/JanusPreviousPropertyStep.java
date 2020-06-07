@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -77,7 +76,7 @@ public class JanusPreviousPropertyStep<S> extends FlatMapStep<S, JanusGraphVerte
     }
 
     /**
-     * Look up vertices in Janus which have a property {@link JanusPreviousPropertyStep#propertyKey} with the given
+     * Look up vertices in Janus which have a property JanusPreviousPropertyStep#propertyKey with the given
      * value.
      * @param tx the Janus transaction to read from
      * @param value the value that the property should have

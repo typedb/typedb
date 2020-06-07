@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -23,7 +22,7 @@ import grakn.core.common.exception.ErrorMessage;
 import grakn.core.daemon.executor.Executor;
 import grakn.core.daemon.executor.Server;
 import grakn.core.daemon.executor.Storage;
-import grakn.core.server.templates.Version;
+import grakn.core.server.Version;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,6 +31,9 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 import java.util.Scanner;
 
@@ -44,7 +46,7 @@ public class GraknDaemon {
     private static final String SERVER = "server";
     private static final String STORAGE = "storage";
     private static final String EMPTY_STRING = "";
-    private static final String BENCHMARK_FLAG = "--benchmark";
+    private static final String OPTIONS = "--";
     private static final String VERSION_LABEL = "Version: ";
 
 
@@ -52,7 +54,7 @@ public class GraknDaemon {
     private final Server serverExecutor;
 
     /**
-     * Main function of the {@link GraknDaemon}. It is meant to be invoked by the 'grakn' bash script.
+     * Main function of the GraknDaemon. It is meant to be invoked by the 'grakn' bash script.
      * You should have 'grakn.dir' and 'grakn.conf' Java properties set.
      *
      * @param args arguments such as 'server start', 'server stop', 'clean', and so on
@@ -115,10 +117,11 @@ public class GraknDaemon {
 
                 System.out.println(logoString);
                 if (spaces > 0) {
-                    System.out.printf("%" + spaces + "s" + VERSION_LABEL + "%s\n", " ", Version.VERSION);
-                } else {
-                    System.out.print(VERSION_LABEL + " " + Version.VERSION + "\n");
+                    char[] charSpaces = new char[spaces];
+                    Arrays.fill(charSpaces, ' ');
+                    System.out.print(new String(charSpaces));
                 }
+                System.out.println(VERSION_LABEL + " " + Version.VERSION);
             } catch (IOException e) {
                 // DO NOTHING
             }
@@ -129,15 +132,22 @@ public class GraknDaemon {
      * Accepts various Grakn commands (eg., 'grakn server start')
      *
      * @param args arrays of arguments, eg., { 'server', 'start' }
-     *             option may be eg., `--benchmark`
      */
     public void run(String[] args) {
         String action = args.length > 1 ? args[1] : "";
         String option = args.length > 2 ? args[2] : "";
+
+        List<String> otherArgs = Collections.emptyList();
+        for (int i = 2; i < args.length; ++i) {
+            if (OPTIONS.equals(args[i])) {
+                otherArgs = Arrays.asList(args).subList(i + 1, args.length);
+            }
+        }
+
         switch (action) {
             case "start":
                 printGraknLogo();
-                serverStart(option);
+                serverStart(option, otherArgs);
                 break;
             case "stop":
                 printGraknLogo();
@@ -175,18 +185,18 @@ public class GraknDaemon {
         }
     }
 
-    private void serverStart(String arg) {
+    private void serverStart(String arg, List<String> otherArgs) {
         switch (arg) {
             case SERVER:
-                serverExecutor.startIfNotRunning(arg);
+                serverExecutor.startIfNotRunning(otherArgs);
                 break;
             case STORAGE:
                 storageExecutor.startIfNotRunning();
                 break;
-            case BENCHMARK_FLAG:
+            case OPTIONS:
             case EMPTY_STRING:
                 storageExecutor.startIfNotRunning();
-                serverExecutor.startIfNotRunning(arg);
+                serverExecutor.startIfNotRunning(otherArgs);
                 break;
             default:
                 serverHelp();
@@ -197,7 +207,7 @@ public class GraknDaemon {
         System.out.println("Usage: grakn server COMMAND\n" +
                                    "\n" +
                                    "COMMAND:\n" +
-                                   "start [" + SERVER + "|" + STORAGE + "|--benchmark] Start Grakn (or optionally, only one of the component, or with benchmarking enabled)\n" +
+                                   "start [" + SERVER + "|" + STORAGE + "] Start Grakn (or optionally, only one of the component)\n" +
                                    "stop [" + SERVER + "|" + STORAGE + "]   Stop Grakn (or optionally, only one of the component)\n" +
                                    "status                         Check if Grakn is running\n" +
                                    "clean                          DANGEROUS: wipe data completely\n" +
@@ -205,8 +215,7 @@ public class GraknDaemon {
                                    "\n" +
                                    "Tips:\n" +
                                    "- Start Grakn with 'grakn server start'\n" +
-                                   "- Start or stop only one component with, e.g. 'grakn server start storage' or 'grakn server stop storage', respectively\n" +
-                                   "- Start Grakn with Zipkin-enabled benchmarking with `grakn server start --benchmark`");
+                                   "- Start or stop only one component with, e.g. 'grakn server start storage' or 'grakn server stop storage', respectively\n");
     }
 
     private void serverStatus() {

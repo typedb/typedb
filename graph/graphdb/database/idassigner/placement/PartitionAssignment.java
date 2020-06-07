@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -19,7 +18,7 @@
 package grakn.core.graph.graphdb.database.idassigner.placement;
 
 /**
- * Utility interface used in {@link IDPlacementStrategy} to hold the partition assignment of
+ * Utility interface used in IDPlacementStrategy to hold the partition assignment of
  * a vertex (if it is already assigned a partition) or to be assigned a partition id.
  */
 public interface PartitionAssignment {

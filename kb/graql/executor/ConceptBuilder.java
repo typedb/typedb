@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -45,7 +44,7 @@ public interface ConceptBuilder {
 
     ConceptBuilder value(Object value);
 
-    ConceptBuilder dataType(AttributeType.DataType<?> dataType);
+    ConceptBuilder valueType(AttributeType.ValueType<?> valueType);
 
     ConceptBuilder when(Pattern when);
 

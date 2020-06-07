@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -25,7 +24,6 @@ import grakn.core.graph.diskstorage.EntryMetaData;
 import grakn.core.graph.diskstorage.ReadBuffer;
 import grakn.core.graph.diskstorage.StaticBuffer;
 import grakn.core.graph.graphdb.relations.RelationCache;
-import grakn.core.graph.util.encoding.StringEncoding;
 
 import java.nio.ByteBuffer;
 import java.util.AbstractList;

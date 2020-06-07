@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -27,5 +26,6 @@ import grakn.core.kb.concept.manager.ConceptManager;
  */
 public interface KeyspaceStatistics {
     long count(ConceptManager conceptManager, Label label);
+    long countOwnerships(ConceptManager conceptManager, Label attributeOwned);
     void commit(ConceptManager conceptManager, StatisticsDelta statisticsDelta);
 }

@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -19,7 +18,6 @@
 package grakn.core.graph.graphdb.relations;
 
 import com.google.common.base.Preconditions;
-import org.apache.tinkerpop.gremlin.structure.Direction;
 import grakn.core.graph.core.JanusGraphRelation;
 import grakn.core.graph.core.JanusGraphVertexProperty;
 import grakn.core.graph.core.PropertyKey;
@@ -29,13 +27,13 @@ import grakn.core.graph.graphdb.internal.InternalRelationType;
 import grakn.core.graph.graphdb.internal.InternalVertex;
 import grakn.core.graph.graphdb.internal.Order;
 import grakn.core.graph.graphdb.internal.OrderList;
-import grakn.core.graph.graphdb.relations.EdgeDirection;
 import grakn.core.graph.graphdb.transaction.StandardJanusGraphTx;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.Comparator;
 
 /**
- * A {@link Comparator} for {@link JanusGraphRelation} that uses a defined order to compare the relations with
+ * A Comparator for JanusGraphRelation that uses a defined order to compare the relations with
  * or otherwise uses the natural order of relations.
  */
 public class RelationComparator implements Comparator<InternalRelation> {

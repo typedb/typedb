@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,14 +17,12 @@
 
 package grakn.core.graph.graphdb.internal;
 
-import org.apache.tinkerpop.gremlin.structure.Direction;
 import grakn.core.graph.core.Multiplicity;
 import grakn.core.graph.core.RelationType;
 import grakn.core.graph.core.schema.ConsistencyModifier;
 import grakn.core.graph.core.schema.SchemaStatus;
-import grakn.core.graph.graphdb.internal.InternalVertex;
-import grakn.core.graph.graphdb.internal.Order;
 import grakn.core.graph.graphdb.types.IndexType;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 
 /**
  * Internal Type interface adding methods that should only be used by JanusGraph

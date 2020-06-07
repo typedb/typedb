@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -21,10 +20,13 @@ package grakn.core.kb.graql.exception;
 
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
+import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.Label;
+import grakn.core.kb.concept.api.Relation;
 import grakn.core.kb.concept.api.SchemaConcept;
+import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.concept.api.Type;
 import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;
@@ -104,6 +106,10 @@ public class GraqlSemanticException extends GraknException {
         return GraqlSemanticException.create("inserting property '%s' is not supported, try `define`", propertyName);
     }
 
+    public static GraqlSemanticException deleteUnsupportedProperty(String propertyName) {
+        return GraqlSemanticException.create("deleting property '%s' is not supported, try `define`", propertyName);
+    }
+
     public static GraqlSemanticException defineUnsupportedProperty(String propertyName) {
         return GraqlSemanticException.create("defining property '%s' is not supported, try `insert`", propertyName);
     }
@@ -179,7 +185,6 @@ public class GraqlSemanticException extends GraknException {
         return create("Missing an expected property `%s` in `%s`", property, var);
     }
 
-
     /**
      * Thrown when attempting to insert a concept that already exists.
      * <p>
@@ -218,16 +223,16 @@ public class GraqlSemanticException extends GraknException {
         return new GraqlSemanticException(ErrorMessage.K_SMALLER_THAN_TWO.getMessage());
     }
 
-    public static GraqlSemanticException incompatibleAttributeValue(AttributeType.DataType dataType, Object value) {
-        return new GraqlSemanticException("Value " + value + " is not compatible with attribute datatype: " + dataType.name());
+    public static GraqlSemanticException incompatibleAttributeValue(AttributeType.ValueType valueType, Object value) {
+        return new GraqlSemanticException("Value " + value + " is not compatible with attribute value type: " + valueType.name());
     }
 
-    public static GraqlSemanticException attributeMustBeANumber(AttributeType.DataType dataType, Label attributeType) {
-        return new GraqlSemanticException(attributeType + " must have data type of `long` or `double`, but was " + dataType.name());
+    public static GraqlSemanticException attributeMustBeANumber(AttributeType.ValueType valueType, Label attributeType) {
+        return new GraqlSemanticException(attributeType + " must have value type of `long` or `double`, but was " + valueType.name());
     }
 
-    public static GraqlSemanticException attributesWithDifferentDataTypes(Collection<String> attributeTypes) {
-        return new GraqlSemanticException("resource types " + attributeTypes + " have different data types");
+    public static GraqlSemanticException attributesWithDifferentValueTypes(Collection<String> attributeTypes) {
+        return new GraqlSemanticException("resource types " + attributeTypes + " have different value types");
     }
 
     public static GraqlSemanticException usingNegationWithReasoningOff(Pattern pattern) {
@@ -250,8 +255,37 @@ public class GraqlSemanticException extends GraknException {
         return create("'has' argument '%s' requires a label", var);
     }
 
-    public static GraqlSemanticException insertRolePlayerWithoutRoleType() {
-        return new GraqlSemanticException(ErrorMessage.INSERT_RELATION_WITHOUT_ROLE_TYPE.getMessage());
+    public static GraqlSemanticException insertRolePlayerWithoutRoleType(String relationPlayer) {
+        return new GraqlSemanticException(ErrorMessage.INSERT_RELATION_WITHOUT_ROLE_TYPE.getMessage(relationPlayer));
+    }
+
+    public static GraqlSemanticException deleteRolePlayerWithoutRoleType(String relationPlayer) {
+        return new GraqlSemanticException(ErrorMessage.DELETE_RELATION_PLAYER_WITHOUT_ROLE_TYPE.getMessage(relationPlayer));
+    }
+
+    public static GraqlSemanticException cannotDeleteOwnershipOfNonAttributes(Variable var, Concept concept) {
+        return new GraqlSemanticException(ErrorMessage.DELETE_OWNERSHIP_NOT_AN_ATTRIBUTE.getMessage(var, concept));
+    }
+
+    public static GraqlSemanticException cannotDeleteOwnershipTypeNotSatisfied(Variable var, Attribute attribute, Label requiredType) {
+        return new GraqlSemanticException(ErrorMessage.DELETE_OWNERSHIP_TYPE_NOT_SATISFIED.getMessage(var, attribute, requiredType));
+    }
+
+    public static GraqlSemanticException cannotDeleteRPNoCompatiblePlayer(Variable rolePlayerVar, Thing rolePlayer, Variable relationVar,
+                                                                          Relation relation, Label requiredRoleLabel) {
+        return new GraqlSemanticException(ErrorMessage.DELETE_ROLE_PLAYER_NO_COMPATIBLE_PLAYER.getMessage(rolePlayerVar, rolePlayer, relationVar, relation, requiredRoleLabel));
+    }
+
+    public static GraqlSemanticException cannotDeleteInstanceIncorrectTypeOrSubtype(Variable var, Concept concept, Label expectedType) {
+        return new GraqlSemanticException((ErrorMessage.DELETE_INSTANCE_INCORRECT_TYPE_OR_SUBTYPE.getMessage(var, concept, expectedType)));
+    }
+
+    public static GraqlSemanticException cannotDeleteInstanceIncorrectType(Variable var, Concept concept, Label expectedType) {
+        return new GraqlSemanticException((ErrorMessage.DELETE_INSTANCE_INCORRECT_TYPE.getMessage(var, concept, expectedType)));
+    }
+
+    public static GraqlSemanticException notARelationInstance(Variable var, Concept concept) {
+        return new GraqlSemanticException(ErrorMessage.NOT_A_RELATION_INSTANCE.getMessage(var, concept));
     }
 
     public static GraqlSemanticException insertAbstractOnNonType(SchemaConcept concept) {

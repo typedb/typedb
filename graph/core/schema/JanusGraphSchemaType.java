@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,15 +17,12 @@
 
 package grakn.core.graph.core.schema;
 
-import grakn.core.graph.core.RelationType;
-import grakn.core.graph.core.VertexLabel;
-
 /**
- * A JanusGraphSchemaType is a {@link JanusGraphSchemaElement} that represents a label or key
- * used in the graph. As such, a schema type is either a {@link RelationType}
- * or a {@link VertexLabel}.
+ * A JanusGraphSchemaType is a JanusGraphSchemaElement that represents a label or key
+ * used in the graph. As such, a schema type is either a RelationType
+ * or a VertexLabel.
  * <p>
- * JanusGraphSchemaTypes are a special {@link JanusGraphSchemaElement} in that they are referenced from the
+ * JanusGraphSchemaTypes are a special JanusGraphSchemaElement in that they are referenced from the
  * main graph when creating vertices, edges, and properties.
  */
 public interface JanusGraphSchemaType extends JanusGraphSchemaElement {

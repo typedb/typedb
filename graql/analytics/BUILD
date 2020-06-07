@@ -1,6 +1,5 @@
 #
-# GRAKN.AI - THE KNOWLEDGE GRAPH
-# Copyright (C) 2019 Grakn Labs Ltd
+# Copyright (C) 2020 Grakn Labs
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -39,7 +38,6 @@ java_library(
         "//dependencies/maven/artifacts/io/grpc:grpc-core",
         "//dependencies/maven/artifacts/io/grpc:grpc-api",
         "//dependencies/maven/artifacts/io/grpc:grpc-stub",
-        "//dependencies/maven/artifacts/io/zipkin/brave",
         "//dependencies/maven/artifacts/org/apache/cassandra:cassandra-all",
         "//dependencies/maven/artifacts/org/apache/thrift:libthrift",
         "//dependencies/maven/artifacts/org/apache/commons:commons-lang3",

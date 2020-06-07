@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -59,7 +58,7 @@ public class EntryArrayList extends ArrayList<Entry> implements EntryList {
 
     /**
      * This implementation is an inexact estimate.
-     * It's just the product of a constant ({@link #ENTRY_SIZE_ESTIMATE} times the array size.
+     * It's just the product of a constant (#ENTRY_SIZE_ESTIMATE times the array size.
      * The exact size could be calculated by iterating over the list and summing the remaining
      * size of each StaticBuffer in each Entry.
      *

@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -23,7 +22,6 @@ import grakn.core.graph.core.schema.SchemaStatus;
 import grakn.core.graph.graphdb.internal.InternalRelationType;
 import grakn.core.graph.graphdb.internal.Order;
 import grakn.core.graph.graphdb.types.IndexType;
-import grakn.core.graph.graphdb.types.system.EmptyVertex;
 
 import java.util.Collections;
 

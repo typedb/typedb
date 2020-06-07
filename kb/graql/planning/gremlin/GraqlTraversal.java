@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -42,9 +41,7 @@ public interface GraqlTraversal {
     /**
      * Get the {@code GraphTraversal} that this {@code GraqlTraversal} represents.
      */
-    // Because 'union' accepts an array, we can't use generics
-    @SuppressWarnings("unchecked")
-    GraphTraversal<Vertex, Map<String, Element>> getGraphTraversal(Set<Variable> vars);
+    GraphTraversal<Vertex, Map<String, Vertex>> getGraphTraversal(Set<Variable> vars);
 
     /**
      * @param transform map defining id transform var -> new id

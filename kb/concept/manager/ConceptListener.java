@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -31,7 +30,7 @@ import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.concept.api.Type;
-import grakn.core.kb.concept.structure.Casting;
+import grakn.core.kb.concept.api.Casting;
 
 import java.util.List;
 import java.util.function.Supplier;
@@ -54,7 +53,9 @@ public interface ConceptListener {
 
     void entityCreated(Entity entity, boolean isInferred);
 
-    void hasAttributeRelationCreated(Relation hasAttributeRelation, boolean isInferred);
+    void hasAttributeCreated(Thing owner, Attribute attribute, boolean isInferred);
+
+    void hasAttributeRemoved(Thing owner, Attribute<?> owned, boolean isInferred);
 
     void ruleCreated(Rule rule);
 
@@ -78,11 +79,10 @@ public interface ConceptListener {
 
     void castingDeleted(Casting casting);
 
-    void deleteReifiedOwner(Relation owner);
-
     void relationRoleUnrelated(RelationType relationType, Role role, List<Casting> conceptsPlayingRole);
 
-    void roleDeleted(Role role);
+    void roleUndefined(Role role);
 
     void rolePlayerCreated(Casting casting);
+
 }

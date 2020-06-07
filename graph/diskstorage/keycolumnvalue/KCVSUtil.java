@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -21,13 +20,6 @@ package grakn.core.graph.diskstorage.keycolumnvalue;
 import grakn.core.graph.diskstorage.BackendException;
 import grakn.core.graph.diskstorage.Entry;
 import grakn.core.graph.diskstorage.StaticBuffer;
-import grakn.core.graph.diskstorage.keycolumnvalue.KeyColumnValueStore;
-import grakn.core.graph.diskstorage.keycolumnvalue.KeyIterator;
-import grakn.core.graph.diskstorage.keycolumnvalue.KeyRangeQuery;
-import grakn.core.graph.diskstorage.keycolumnvalue.KeySliceQuery;
-import grakn.core.graph.diskstorage.keycolumnvalue.SliceQuery;
-import grakn.core.graph.diskstorage.keycolumnvalue.StoreFeatures;
-import grakn.core.graph.diskstorage.keycolumnvalue.StoreTransaction;
 import grakn.core.graph.diskstorage.util.BufferUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,7 +27,7 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 
 /**
- * Contains static utility methods for operating on {@link KeyColumnValueStore}.
+ * Contains static utility methods for operating on KeyColumnValueStore.
  */
 
 public class KCVSUtil {

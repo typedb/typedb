@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -31,9 +30,9 @@ public interface KeyIterator extends RecordIterator<StaticBuffer> {
      * <p>
      * Closing the returned sub-iterator has no effect on this iterator.
      *
-     * Calling {@link #next()} might close previously returned RecordIterators
+     * Calling #next() might close previously returned RecordIterators
      * depending on the implementation, hence it is important to iterate over
-     * (and close) the RecordIterator before calling {@link #next()} or {@link #hasNext()}.
+     * (and close) the RecordIterator before calling #next() or #hasNext().
      *
      */
     RecordIterator<Entry> getEntries();

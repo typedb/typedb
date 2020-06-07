@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -31,7 +30,7 @@ import graql.lang.statement.Variable;
 
 import java.util.Set;
 
-public class IdExecutor  implements PropertyExecutor.Referrable {
+public class IdExecutor implements PropertyExecutor.Referrable {
 
     private final Variable var;
     private final IdProperty property;
@@ -47,7 +46,6 @@ public class IdExecutor  implements PropertyExecutor.Referrable {
     public Set<EquivalentFragmentSet> matchFragments() {
         return ImmutableSet.of(EquivalentFragmentSets.id(property, var, id));
     }
-
 
     @Override
     public Referrer referrer() {

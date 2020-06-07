@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -39,36 +38,36 @@ import java.util.List;
 import java.util.function.BiPredicate;
 
 /**
- * A special kind of {@link BiPredicate} which marks all the predicates that are natively supported by
+ * A special kind of BiPredicate which marks all the predicates that are natively supported by
  * JanusGraph and known to the query optimizer. Contains some custom methods that JanusGraph needs for
  * query answering and evaluation.
  * <p>
- * This class contains a subclass used to convert Tinkerpop's {@link BiPredicate} implementations to the corresponding JanusGraph predicates.
+ * This class contains a subclass used to convert Tinkerpop's BiPredicate implementations to the corresponding JanusGraph predicates.
  */
 public interface JanusGraphPredicate extends BiPredicate<Object, Object> {
 
     /**
      * Whether the given condition is a valid condition for this predicate.
      * <p>
-     * For instance, the {@link Cmp#GREATER_THAN} would require that the condition is comparable and not null.
+     * For instance, the Cmp#GREATER_THAN would require that the condition is comparable and not null.
      */
     boolean isValidCondition(Object condition);
 
     /**
      * Whether the given class is a valid data type for a value to which this predicate may be applied.
      * <p>
-     * For instance, the {@link Cmp#GREATER_THAN} can only be applied to {@link Comparable} values.
+     * For instance, the Cmp#GREATER_THAN can only be applied to Comparable values.
      */
     boolean isValidValueType(Class<?> clazz);
 
     /**
      * Whether this predicate has a predicate that is semantically its negation.
-     * For instance, {@link Cmp#EQUAL} and {@link Cmp#NOT_EQUAL} are negatives of each other.
+     * For instance, Cmp#EQUAL and Cmp#NOT_EQUAL are negatives of each other.
      */
     boolean hasNegation();
 
     /**
-     * Returns the negation of this predicate if it exists, otherwise an exception is thrown. Check {@link #hasNegation()} first.
+     * Returns the negation of this predicate if it exists, otherwise an exception is thrown. Check #hasNegation() first.
      */
     @Override
     JanusGraphPredicate negate();

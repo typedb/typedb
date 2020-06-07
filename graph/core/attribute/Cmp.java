@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -19,9 +18,9 @@
 package grakn.core.graph.core.attribute;
 
 import com.google.common.base.Preconditions;
-import org.apache.commons.lang.ArrayUtils;
 import grakn.core.graph.graphdb.database.serialize.AttributeUtil;
 import grakn.core.graph.graphdb.query.JanusGraphPredicate;
+import org.apache.commons.lang.ArrayUtils;
 
 /**
  * Basic comparison relations for comparable (i.e. linearly ordered) objects.

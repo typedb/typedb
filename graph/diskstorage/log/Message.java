@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -19,12 +18,11 @@
 package grakn.core.graph.diskstorage.log;
 
 import grakn.core.graph.diskstorage.StaticBuffer;
-import grakn.core.graph.diskstorage.log.Log;
 
 import java.time.Instant;
 
 /**
- * Messages which are added to and received from the {@link Log}.
+ * Messages which are added to and received from the Log.
  *
  */
 public interface Message {

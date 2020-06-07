@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -164,15 +163,14 @@ public class RuleUtils {
                     .flatMap(type -> queryCacheImpl.getFamily(type).stream())
                     .map(Equivalence.Wrapper::get)
                     .filter(q -> queryCacheImpl.getParents(q).isEmpty())
-                    .filter(q -> q.getAtom().isRelation() || q.getAtom().isResource())
+                    .filter(q -> q.getAtom().isRelationAtom() || q.getAtom().isAttributeAtom())
                     .collect(toSet());
             //if we don't have full information (query answers in cache), we assume reiteration is needed
             if (!queries.stream().allMatch(q -> queryCacheImpl.isDBComplete(q))) return true;
 
             HashMultimap<Concept, Concept> conceptMap = HashMultimap.create();
             for (ReasonerAtomicQuery q : queries) {
-                RelationAtom relationAtom = q.getAtom().toRelationAtom();
-                Set<Pair<Variable, Variable>> varPairs = relationAtom.varDirectionality();
+                Set<Pair<Variable, Variable>> varPairs = q.getAtom().varDirectionality();
                 IndexedAnswerSet answers = queryCacheImpl.getEntry(q).cachedElement();
                 for (ConceptMap ans : answers) {
                     for (Pair<Variable, Variable> p : varPairs) {

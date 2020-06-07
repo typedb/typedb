@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -20,7 +19,6 @@ package grakn.core.graph.graphdb.database.cache;
 
 import grakn.core.graph.diskstorage.EntryList;
 import grakn.core.graph.graphdb.types.system.BaseRelationType;
-import grakn.core.graph.graphdb.types.system.SystemRelationType;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 /**
@@ -31,7 +29,7 @@ import org.apache.tinkerpop.gremlin.structure.Direction;
  * The SchemaCache speeds up two types of lookups:
  * <ul>
  *     <li>Retrieving a type by its name (index lookup)</li>
- *     <li>Retrieving the relations of a schema vertex for predefined {@link SystemRelationType}s</li>
+ *     <li>Retrieving the relations of a schema vertex for predefined SystemRelationTypes</li>
  * </ul>
  */
 public interface SchemaCache {

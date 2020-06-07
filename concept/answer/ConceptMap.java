@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -162,8 +161,8 @@ public class ConceptMap extends Answer {
      * @param exp explanation for this answer
      * @return explained answer
      */
-    public ConceptMap explain(Explanation exp, Pattern pattern) {
-        return new ConceptMap(this.map, exp.childOf(this), pattern);
+    public ConceptMap explain(Explanation exp) {
+        return new ConceptMap(this.map, exp, this.getPattern());
     }
 
     /**

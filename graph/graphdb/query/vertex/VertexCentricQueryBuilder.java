@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -29,22 +28,21 @@ import grakn.core.graph.diskstorage.keycolumnvalue.SliceQuery;
 import grakn.core.graph.graphdb.internal.InternalVertex;
 import grakn.core.graph.graphdb.internal.RelationCategory;
 import grakn.core.graph.graphdb.query.BackendQueryHolder;
-import grakn.core.graph.graphdb.query.QueryProcessor;
 import grakn.core.graph.graphdb.query.profile.QueryProfiler;
 
 import java.util.List;
 
 /**
- * Implementation of {@link JanusGraphVertexQuery} that extends {@link BasicVertexCentricQueryBuilder}
+ * Implementation of JanusGraphVertexQuery that extends BasicVertexCentricQueryBuilder
  * for all the query building and optimization and adds only the execution logic in
- * {@link #constructQuery(RelationCategory)}. However, there is
+ * #constructQuery(RelationCategory). However, there is
  * one important special case: If the constructed query is simple
- * then we use the {@link SimpleVertexQueryProcessor} to execute the query instead of the generic {@link QueryProcessor}
+ * then we use the SimpleVertexQueryProcessor to execute the query instead of the generic QueryProcessor
  * for performance reasons and we compute the result sets differently to make things faster and more memory efficient.
  * <p>
  * The simplified vertex processing only applies to loaded (i.e. non-mutated) vertices. The query can be configured
  * to only included loaded relations in the result set (which is needed, for instance, when computing index deltas in
- * IndexSerialize}) via {@link #queryOnlyLoaded()}.
+ * IndexSerialize}) via #queryOnlyLoaded().
  * <p>
  * All other methods just prepare or transform that result set to fit the particular method semantics.
  */

@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -22,13 +21,12 @@ import com.google.common.base.Functions;
 import grakn.core.graph.diskstorage.Entry;
 import grakn.core.graph.diskstorage.Mutation;
 import grakn.core.graph.diskstorage.StaticBuffer;
-import grakn.core.graph.diskstorage.keycolumnvalue.KeyColumnValueStore;
 import grakn.core.graph.diskstorage.keycolumnvalue.cache.KCVEntryMutation;
 
 import java.util.List;
 
 /**
- * {@link Mutation} type for {@link KeyColumnValueStore}.
+ * Mutation type for KeyColumnValueStore.
  *
  */
 

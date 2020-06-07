@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,13 +17,12 @@
 
 package grakn.core.graph.core;
 
-import grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration;
 import grakn.core.graph.graphdb.transaction.StandardJanusGraphTx;
 
 import java.time.Instant;
 
 /**
- * Constructor returned by {@link JanusGraph#buildTransaction()} to build a new transaction.
+ * Constructor returned by JanusGraph#buildTransaction() to build a new transaction.
  * The TransactionBuilder allows certain aspects of the resulting transaction to be configured up-front.
  */
 public interface TransactionBuilder {

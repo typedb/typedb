@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -76,6 +75,6 @@ class RoleExpansionState extends ResolutionState {
         return Sets.cartesianProduct(entryOptions).stream()
                 .map(mappingList -> new ConceptMap(
                         mappingList.stream().collect(Collectors.toMap(AbstractMap.SimpleImmutableEntry::getKey, AbstractMap.SimpleImmutableEntry::getValue)), answer.explanation(), answer.getPattern()))
-                .map(ans -> ans.explain(answer.explanation(), answer.getPattern()));
+                .map(ans -> new ConceptMap(ans.map(), answer.explanation(), answer.getPattern()));
     }
 }

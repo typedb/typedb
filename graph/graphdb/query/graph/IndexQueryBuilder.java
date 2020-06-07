@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -43,7 +42,7 @@ import java.util.List;
 import java.util.stream.Stream;
 
 /**
- * Implementation of {@link JanusGraphIndexQuery} for string based queries that are issued directly against the specified
+ * Implementation of JanusGraphIndexQuery for string based queries that are issued directly against the specified
  * indexing backend. It is assumed that the given string conforms to the query language of the indexing backend.
  * This class does not understand or verify the provided query. However, it will introspect the query and replace
  * any reference to `v.SOME_KEY`, `e.SOME_KEY` or `p.SOME_KEY` with the respective key reference. This replacement
@@ -53,7 +52,7 @@ import java.util.stream.Stream;
  * In addition to the query string, a number of parameters can be specified which will be passed verbatim to the indexing
  * backend during query execution.
  * <p>
- * This class essentially just acts as a builder, uses the {@link IndexSerializer} to execute the query, and then post-processes
+ * This class essentially just acts as a builder, uses the IndexSerializer to execute the query, and then post-processes
  * the result set to return to the user.
  */
 public class IndexQueryBuilder extends BaseQuery implements JanusGraphIndexQuery {

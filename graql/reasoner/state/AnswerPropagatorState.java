@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -21,10 +20,11 @@ package grakn.core.graql.reasoner.state;
 
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
+import grakn.core.graql.reasoner.query.ReasonerQueryEquivalence;
 import grakn.core.graql.reasoner.query.ResolvableQuery;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
-
 import java.util.Iterator;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -63,10 +63,25 @@ public abstract class AnswerPropagatorState<Q extends ResolvableQuery> extends R
         return subGoalIterator.hasNext()? subGoalIterator.next() : null;
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        AnswerPropagatorState<?> that = (AnswerPropagatorState<?>) o;
+        return ReasonerQueryEquivalence.Equality.equivalent(query, that.query) &&
+                Objects.equals(getSubstitution(), that.getSubstitution()) &&
+                Objects.equals(unifier, that.unifier);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(query, unifier, getSubstitution());
+    }
+
     /**
      * @return query corresponding to this query state
      */
-    Q getQuery(){ return query;}
+    public Q getQuery(){ return query;}
 
     /**@return set of already visited subGoals (atomic queries)
      */

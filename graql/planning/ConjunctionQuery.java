@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -45,7 +44,7 @@ import static java.util.stream.Collectors.toSet;
 
 /**
  * A query that does not contain any disjunctions, so it can be represented as a single gremlin traversal.
- * The {@code ConjunctionQuery} is passed a {@link Conjunction<Statement>}.
+ * The {@code ConjunctionQuery} is passed a Conjunction<Statement>.
  * EquivalentFragmentSets can be extracted from each GraqlTraversal.
  * The EquivalentFragmentSets are sorted to produce a set of lists of Fragments. Each list of fragments
  * describes a connected component in the query. Most queries are completely connected, so there will be only one
@@ -139,11 +138,11 @@ class ConjunctionQuery {
             traversals.addAll(newTraversals);
         });
 
-        if (!traversals.isEmpty()) {
+        if (!traversals.isEmpty() || !start.isReturned()) {
             return traversals.stream();
         } else {
             // If this variable has no properties, only confirm that it is not internal and nothing else.
-            return Stream.of(EquivalentFragmentSets.notInternalFragmentSet(null, start));
+            return Stream.of(EquivalentFragmentSets.notShardFragmentSet(null, start));
         }
     }
 }

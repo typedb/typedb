@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,13 +17,10 @@
 
 package grakn.core.graph.diskstorage.indexing;
 
-import grakn.core.graph.diskstorage.indexing.IndexFeatures;
-import grakn.core.graph.diskstorage.indexing.IndexProvider;
-import grakn.core.graph.diskstorage.indexing.KeyInformation;
 import grakn.core.graph.graphdb.query.JanusGraphPredicate;
 
 /**
- * An IndexInformation gives basic information on what a particular {@link IndexProvider} supports.
+ * An IndexInformation gives basic information on what a particular IndexProvider supports.
  *
  */
 

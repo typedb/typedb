@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -22,10 +21,8 @@ import com.google.common.base.Preconditions;
 import grakn.core.graph.core.JanusGraphRelation;
 import grakn.core.graph.diskstorage.keycolumnvalue.SliceQuery;
 import grakn.core.graph.graphdb.internal.OrderList;
-import grakn.core.graph.graphdb.internal.RelationCategory;
 import grakn.core.graph.graphdb.query.BackendQueryHolder;
 import grakn.core.graph.graphdb.query.BaseQuery;
-import grakn.core.graph.graphdb.query.ElementQuery;
 import grakn.core.graph.graphdb.query.QueryUtil;
 import grakn.core.graph.graphdb.query.condition.Condition;
 import grakn.core.graph.graphdb.query.condition.FixedCondition;
@@ -37,11 +34,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * The base implementation for {@link VertexCentricQuery} which does not yet contain a reference to the
- * base vertex of the query. This query is constructed by {@link BasicVertexCentricQueryBuilder#constructQuery(RelationCategory)}
+ * The base implementation for VertexCentricQuery which does not yet contain a reference to the
+ * base vertex of the query. This query is constructed by BasicVertexCentricQueryBuilder#constructQuery(RelationCategory)
  * and then later extended by single or multi-vertex query which add the vertex to the query.
  * <p>
- * This class override many methods in {@link ElementQuery} - check there
+ * This class override many methods in ElementQuery - check there
  * for a description.
  */
 public class BaseVertexCentricQuery extends BaseQuery implements ProfileObservable {
@@ -51,7 +48,7 @@ public class BaseVertexCentricQuery extends BaseQuery implements ProfileObservab
      */
     protected final Condition<JanusGraphRelation> condition;
     /**
-     * The individual component {@link SliceQuery} of this query. This query is considered an OR
+     * The individual component SliceQuery of this query. This query is considered an OR
      * of the individual components (possibly filtered by the condition if not fitted).
      */
     protected final List<BackendQueryHolder<SliceQuery>> queries;

@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -40,7 +39,6 @@ import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.structure.GraknElementException;
 import grakn.core.kb.concept.structure.PropertyNotUniqueException;
-import grakn.core.kb.graql.reasoner.cache.QueryCache;
 import grakn.core.kb.server.exception.InvalidKBException;
 import grakn.core.kb.server.exception.TransactionException;
 import grakn.core.kb.server.keyspace.Keyspace;
@@ -184,19 +182,18 @@ public interface Transaction extends AutoCloseable {
 
     /**
      * @param label    A unique label for the AttributeType
-     * @param dataType The data type of the AttributeType.
-     *                 Supported types include: DataType.STRING, DataType.LONG, DataType.DOUBLE, and DataType.BOOLEAN
+     * @param valueType The value type of the AttributeType.
+     *                 Supported types include: ValueType.STRING, ValueType.LONG, ValueType.DOUBLE, and ValueType.BOOLEAN
      * @param <V>
-     * @return A new or existing AttributeType with the provided label and data type.
+     * @return A new or existing AttributeType with the provided label and value type.
      * @throws TransactionException       if the graph is closed
      * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-AttributeType.
      * @throws GraknElementException if the {@param label} is already in use by an existing AttributeType which is
-     *                                    unique or has a different datatype.
+     *                                    unique or has a different ValueType.
      */
-    @SuppressWarnings("unchecked")
-    <V> AttributeType<V> putAttributeType(Label label, AttributeType.DataType<V> dataType);
+    <V> AttributeType<V> putAttributeType(Label label, AttributeType.ValueType<V> valueType);
 
-    <V> AttributeType<V> putAttributeType(String label, AttributeType.DataType<V> dataType);
+    <V> AttributeType<V> putAttributeType(String label, AttributeType.ValueType<V> valueType);
 
     /**
      * @param label A unique label for the Rule

@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -67,5 +66,9 @@ public class GraknServerException extends GraknException {
 
     public static GraknServerException fileWriteException(String filepath) {
         return create(ErrorMessage.FILE_WRITE_EXCEPTION.getMessage(filepath));
+    }
+
+    public static GraknServerException transactionClosedOnDifferentThread() {
+        return create(ErrorMessage.TRANSACTION_CLOSED_ON_DIFFERENT_THREAD.getMessage());
     }
 }

@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -29,7 +28,6 @@ import grakn.core.graql.reasoner.atom.binary.OntologicalAtom;
 import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.reasoner.atom.predicate.ValuePredicate;
 import grakn.core.kb.concept.api.ConceptId;
-import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.planning.gremlin.Fragment;
 import grakn.core.kb.graql.planning.gremlin.GraqlTraversal;
 import grakn.core.kb.graql.planning.gremlin.TraversalPlanFactory;
@@ -68,8 +66,8 @@ public class GraqlTraversalPlanner {
      * @param query for which the plan should be constructed
      * @return list of atoms in order they should be resolved using a refined GraqlTraversal procedure.
      */
-    public static ImmutableList<Atom> plan(ConceptManager conceptManager, TraversalPlanFactory traversalPlanFactory, ReasonerQuery query) {
-        return ImmutableList.copyOf(refinedPlan(conceptManager, traversalPlanFactory, query));
+    public static ImmutableList<Atom> plan(ReasonerQuery query, TraversalPlanFactory traversalPlanFactory) {
+        return ImmutableList.copyOf(refinedPlan(query, traversalPlanFactory));
     }
 
     private static long atomPredicates(Atom at, Set<IdPredicate> subs){
@@ -108,7 +106,7 @@ public class GraqlTraversalPlanner {
      * @param query top level query for which the plan is constructed
      * @return an optimally ordered list of provided atoms
      */
-    private static List<Atom> refinedPlan(ConceptManager conceptManager, TraversalPlanFactory traversalPlanFactory, ReasonerQuery query){
+    private static List<Atom> refinedPlan(ReasonerQuery query, TraversalPlanFactory traversalPlanFactory){
         List<Atom> atomsToProcess = query.getAtoms(Atom.class).filter(Atomic::isSelectable).collect(Collectors.toList());
         Set<IdPredicate> subs = query.getAtoms(IdPredicate.class).collect(Collectors.toSet());
         Set<Variable> vars = atomsToProcess.stream().anyMatch(Atom::isDisconnected)? query.getVarNames() : new HashSet<>();
@@ -130,7 +128,7 @@ public class GraqlTraversalPlanner {
                 first.getVarNames().stream()
                         .peek(vars::add)
                         .filter(v -> !subVariables.contains(v))
-                        .map(v -> IdPredicate.create(conceptManager, v, ConceptId.of(PLACEHOLDER_ID), query))
+                        .map(v -> IdPredicate.create(v, ConceptId.of(PLACEHOLDER_ID), query))
                         .forEach(subs::add);
             }
         }

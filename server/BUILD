@@ -1,6 +1,5 @@
 #
-# GRAKN.AI - THE KNOWLEDGE GRAPH
-# Copyright (C) 2019 Grakn Labs Ltd
+# Copyright (C) 2020 Grakn Labs
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -72,7 +71,7 @@ java_library(
         "@graknlabs_graql//java:graql",
         "@graknlabs_common//:common",
         "@graknlabs_protocol//grpc/java:protocol",
-        "@graknlabs_benchmark//lib:server-instrumentation",
+        "@graknlabs_grabl_tracing//client",
 
         # External dependencies from Maven
         "//dependencies/maven/artifacts/org/apache/hadoop:hadoop-annotations",
@@ -86,7 +85,6 @@ java_library(
         "//dependencies/maven/artifacts/io/grpc:grpc-stub",
         "//dependencies/maven/artifacts/io/grpc:grpc-api",
         "//dependencies/maven/artifacts/io/netty:netty-all",
-        "//dependencies/maven/artifacts/io/zipkin/brave:brave",
         "//dependencies/maven/artifacts/org/apache/cassandra:cassandra-all",
         "//dependencies/maven/artifacts/org/apache/commons:commons-lang3",
         "//dependencies/maven/artifacts/org/apache/hadoop:hadoop-common",
@@ -105,8 +103,7 @@ java_library(
         "//dependencies/maven/artifacts/ch/qos/logback:logback-classic",
         "//dependencies/maven/artifacts/ch/qos/logback:logback-core",
         "//dependencies/maven/artifacts/javax/servlet:javax-servlet-api",
-        "//graph-cql",
-        "//graph-hadoop"
+        "//mapreduce:mapreduce"
     ],
     resources = ["LICENSE"] + glob(["resources/*"]),
     resource_strip_prefix = "server",
@@ -127,6 +124,26 @@ java_binary(
     main_class = "grakn.core.daemon.GraknDaemon",
     runtime_deps = [
         "//daemon",
+        "//server:server"
+    ],
+    tags = ["maven_coordinates=io.grakn.core:grakn-server-bin:{pom_version}"],
+    visibility = ["//:__pkg__"],
+)
+
+java_binary(
+    name = "server-core-binary",
+    main_class = "grakn.core.server.Grakn",
+    runtime_deps = [
+        "//server:server"
+    ],
+    tags = ["maven_coordinates=io.grakn.core:grakn-server-bin:{pom_version}"],
+    visibility = ["//:__pkg__"],
+)
+
+java_binary(
+    name = "server-storage-binary",
+    main_class = "grakn.core.server.GraknStorage",
+    runtime_deps = [
         "//server:server"
     ],
     tags = ["maven_coordinates=io.grakn.core:grakn-server-bin:{pom_version}"],

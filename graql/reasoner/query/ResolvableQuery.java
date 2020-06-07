@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -19,13 +18,15 @@
 
 package grakn.core.graql.reasoner.query;
 
+import com.google.common.annotations.VisibleForTesting;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.graql.reasoner.cache.MultilevelSemanticCache;
+import grakn.core.kb.graql.executor.TraversalExecutor;
+import grakn.core.graql.reasoner.ReasoningContext;
 import grakn.core.graql.reasoner.ResolutionIterator;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.state.AnswerPropagatorState;
 import grakn.core.graql.reasoner.state.ResolutionState;
-import grakn.core.kb.graql.executor.ExecutorFactory;
-import grakn.core.kb.graql.reasoner.cache.QueryCache;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
 import graql.lang.Graql;
@@ -38,18 +39,16 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 /**
- *
  * Interface for resolvable reasoner queries.
- *
  */
 public abstract class ResolvableQuery implements ReasonerQuery {
 
-    final ExecutorFactory executorFactory;
-    final QueryCache queryCache;
+    private final ReasoningContext ctx;
+    protected final TraversalExecutor traversalExecutor;
 
-    ResolvableQuery(ExecutorFactory executorFactory, QueryCache queryCache) {
-        this.executorFactory = executorFactory;
-        this.queryCache = queryCache;
+    ResolvableQuery(TraversalExecutor traversalExecutor, ReasoningContext ctx) {
+        this.traversalExecutor = traversalExecutor;
+        this.ctx = ctx;
     }
 
     @CheckReturnValue
@@ -57,6 +56,11 @@ public abstract class ResolvableQuery implements ReasonerQuery {
 
     @CheckReturnValue
     public abstract Stream<Atom> selectAtoms();
+
+    @CheckReturnValue
+    public ReasoningContext context() {
+        return ctx;
+    }
 
     /**
      * @return this query in the composite form
@@ -99,6 +103,7 @@ public abstract class ResolvableQuery implements ReasonerQuery {
     /**
      * reiteration might be required if rule graph contains loops with negative flux
      * or there exists a rule which head satisfies body
+     *
      * @return true if because of the rule graph form, the resolution of this query may require reiteration
      */
     @CheckReturnValue
@@ -126,32 +131,33 @@ public abstract class ResolvableQuery implements ReasonerQuery {
 
     /**
      * resolves the query
+     *
      * @return stream of answers
      */
     @CheckReturnValue
-    public Stream<ConceptMap> resolve(){
-        return resolve(new HashSet<>());
+    @VisibleForTesting
+    public Stream<ConceptMap> resolve(boolean infer) {
+        return resolve(new HashSet<>(), infer);
     }
 
     /**
-     *
      * @param subGoals already visited subgoals
      * @return stream of resolved answers
      */
     @CheckReturnValue
-    public Stream<ConceptMap> resolve(Set<ReasonerAtomicQuery> subGoals){
-        boolean doNotResolve = getAtoms().isEmpty() || (isPositive() && !isRuleResolvable());
+    public Stream<ConceptMap> resolve(Set<ReasonerAtomicQuery> subGoals, boolean infer) {
+        boolean doNotResolve = !infer || getAtoms().isEmpty() || (isPositive() && !isRuleResolvable());
         if (doNotResolve) {
-            return executorFactory.transactional(true).traverse(getPattern());
+            return traversalExecutor.traverse(getPattern());
         } else {
-            return new ResolutionIterator(this, subGoals, queryCache).hasStream();
+            return new ResolutionIterator(this, subGoals, ctx.queryCache()).hasStream();
         }
     }
 
     /**
-     * @param sub partial substitution
-     * @param u unifier with parent state
-     * @param parent parent state
+     * @param sub      partial substitution
+     * @param u        unifier with parent state
+     * @param parent   parent state
      * @param subGoals set of visited sub goals
      * @return resolution state formed from this query
      */
@@ -159,7 +165,7 @@ public abstract class ResolvableQuery implements ReasonerQuery {
     public abstract ResolutionState resolutionState(ConceptMap sub, Unifier u, AnswerPropagatorState parent, Set<ReasonerAtomicQuery> subGoals);
 
     /**
-     * @param parent parent state
+     * @param parent   parent state
      * @param subGoals set of visited sub goals
      * @return inner query state iterator (db iter + unifier + state iter) for this query
      */

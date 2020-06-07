@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -100,7 +99,7 @@ public class RelationTypeInference {
                 Statement labelVar = inferredLabels.get(label);
                 IsaProperty isaProperty = new IsaProperty(labelVar);
                 EquivalentFragmentSet isaEquivalentFragmentSet = EquivalentFragmentSets.isa(isaProperty,
-                        relationVar, labelVar.var(), relationType.isImplicit());
+                        relationVar, labelVar.var());
                 inferredFragments.addAll(isaEquivalentFragmentSet.fragments());
             }
         });
@@ -171,8 +170,11 @@ public class RelationTypeInference {
     }
 
     private static void addAllPossibleRelations(Multimap<Type, RelationType> relationMap, Type metaType) {
-        metaType.subs().forEach(type -> type.playing().flatMap(Role::relations)
-                .forEach(relationType -> relationMap.put(type, relationType)));
+        metaType.subs()
+                .forEach(type ->
+                    type.playing().flatMap(Role::relations)
+                            .forEach(relationType -> relationMap.put(type, relationType))
+                );
     }
 
     private static Set<Type> getAllPossibleRelationTypes(

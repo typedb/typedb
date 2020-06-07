@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -35,7 +34,7 @@ public interface MessageReader {
     void updateState();
 
     /**
-     * Need to override this method because the {@link Log} uses this comparison
+     * Need to override this method because the Log uses this comparison
      * when un-registering readers
      *
      * @param other other reader to compare against

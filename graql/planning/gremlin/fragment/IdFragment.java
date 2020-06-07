@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,7 +17,6 @@
 
 package grakn.core.graql.planning.gremlin.fragment;
 
-import com.google.common.collect.ImmutableSet;
 import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.manager.ConceptManager;
@@ -30,8 +28,6 @@ import graql.lang.property.IdProperty;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
-import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
@@ -59,9 +55,6 @@ class IdFragment extends FragmentImpl {
 
     @Override
     public GraphTraversal<Vertex, ? extends Element> selectVariable(GraphTraversal<Vertex, ? extends Element> traversal) {
-        if (canOperateOnEdges()) {
-            traverseToEdges(traversal);
-        }
         traversal.as(start().symbol());
         return traversal;
     }
@@ -69,31 +62,11 @@ class IdFragment extends FragmentImpl {
     @Override
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
             GraphTraversal<Vertex, ? extends Element> traversal, ConceptManager conceptManager, Collection<Variable> vars) {
-        if (canOperateOnEdges()) {
-            return traversal.or(
-                    edgeTraversal(),
-                    vertexTraversal(__.start())
-            );
-        } else {
-            return vertexTraversal(traversal);
-        }
+        return traversal.hasId(Schema.elementId(id()));
     }
 
     private ConceptId id() {
         return id;
-    }
-
-    private GraphTraversal<Vertex, Vertex> vertexTraversal(GraphTraversal<Vertex, ? extends Element> traversal) {
-        return (GraphTraversal<Vertex, Vertex>) traversal.hasId(Schema.elementId(id()));
-    }
-
-    private GraphTraversal<Edge, Edge> edgeTraversal() {
-        return Fragments.union(
-                ImmutableSet.of(
-                    __.hasId(Schema.elementId(id())),
-                    __.has(Schema.VertexProperty.EDGE_RELATION_ID.name(), id().getValue())
-                )
-        );
     }
 
     @Override
@@ -109,17 +82,6 @@ class IdFragment extends FragmentImpl {
     @Override
     public boolean hasFixedFragmentCost() {
         return true;
-    }
-
-    boolean canOperateOnEdges() {
-        return Schema.isEdgeId(id());
-    }
-
-    void traverseToEdges(GraphTraversal<Vertex, ? extends Element> traversal) {
-        // if the ID may be for an edge,
-        // we must extend the traversal that normally just operates on vertices
-        // to operate on both edges and vertices
-        traversal.union(__.start(), __.outE(Schema.EdgeLabel.ATTRIBUTE.getLabel()));
     }
 
     @Override

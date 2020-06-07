@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -21,8 +20,6 @@ package grakn.core.graph.core;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
-import grakn.core.graph.core.JanusGraphElement;
-import grakn.core.graph.core.JanusGraphException;
 
 /**
  * Exception thrown when an element is invalid for the executing operation or when an operation could not be performed

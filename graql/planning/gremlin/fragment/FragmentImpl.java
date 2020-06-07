@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -89,7 +88,7 @@ public abstract class FragmentImpl implements Fragment {
     static final double COST_NODE_INDEX_VALUE = -Math.log(NUM_INSTANCES_PER_TYPE / NUM_RESOURCES_PER_VALUE);
 
     static final double COST_NODE_NEQ = -Math.log(2D);
-    static final double COST_NODE_DATA_TYPE = -Math.log(AttributeType.DataType.values().size() / 2D);
+    static final double COST_NODE_VALUE_TYPE = -Math.log(AttributeType.ValueType.values().size() / 2D);
     static final double COST_NODE_UNSPECIFIC_PREDICATE = -Math.log(2D);
     static final double COST_NODE_REGEX = -Math.log(2D);
     static final double COST_NODE_NOT_INTERNAL = -Math.log(1.1D);

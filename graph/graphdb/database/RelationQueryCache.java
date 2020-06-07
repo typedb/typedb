@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -20,11 +19,10 @@ package grakn.core.graph.graphdb.database;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import org.apache.tinkerpop.gremlin.structure.Direction;
 import grakn.core.graph.diskstorage.keycolumnvalue.SliceQuery;
-import grakn.core.graph.graphdb.database.EdgeSerializer;
 import grakn.core.graph.graphdb.internal.InternalRelationType;
 import grakn.core.graph.graphdb.internal.RelationCategory;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.EnumMap;
 import java.util.concurrent.ExecutionException;

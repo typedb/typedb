@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -54,8 +53,6 @@ import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.LabelId;
-import grakn.core.kb.concept.api.RelationType;
-import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.concept.api.Type;
@@ -63,6 +60,7 @@ import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.exception.GraqlSemanticException;
 import grakn.core.kb.graql.executor.ComputeExecutor;
 import grakn.core.kb.graql.executor.ExecutorFactory;
+import grakn.core.kb.graql.executor.TraversalExecutor;
 import grakn.core.kb.keyspace.KeyspaceStatistics;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
@@ -112,12 +110,14 @@ public class ComputeExecutorImpl implements ComputeExecutor {
     private static final Logger LOG = LoggerFactory.getLogger(ComputeExecutorImpl.class);
     private ConceptManager conceptManager;
     private ExecutorFactory executorFactory;
+    private TraversalExecutor traversalExecutor;
     private HadoopGraph hadoopGraph;
     private KeyspaceStatistics keyspaceStatistics;
 
-    ComputeExecutorImpl(ConceptManager conceptManager, ExecutorFactory executorFactory, HadoopGraph hadoopGraph, KeyspaceStatistics keyspaceStatistics) {
+    ComputeExecutorImpl(ConceptManager conceptManager, ExecutorFactory executorFactory, TraversalExecutor traversalExecutor, HadoopGraph hadoopGraph, KeyspaceStatistics keyspaceStatistics) {
         this.conceptManager = conceptManager;
         this.executorFactory = executorFactory;
+        this.traversalExecutor = traversalExecutor;
         this.hadoopGraph = hadoopGraph;
         this.keyspaceStatistics = keyspaceStatistics;
     }
@@ -219,14 +219,14 @@ public class ComputeExecutorImpl implements ComputeExecutor {
      */
     @Nullable
     private <S> S runComputeStatistics(GraqlCompute.Statistics.Value query) {
-        AttributeType.DataType<?> targetDataType = validateAndGetTargetDataType(query);
+        AttributeType.ValueType<?> targetValueType = validateAndGetTargetValueType(query);
         if (!targetContainsInstance(query)) return null;
 
         Set<LabelId> extendedScopeTypes = convertLabelsToIds(extendedScopeTypeLabels(query));
         Set<LabelId> targetTypes = convertLabelsToIds(targetTypeLabels(query));
 
-        VertexProgram program = initStatisticsVertexProgram(query, targetTypes, targetDataType);
-        StatisticsMapReduce<?> mapReduce = initStatisticsMapReduce(query, targetTypes, targetDataType);
+        VertexProgram program = initStatisticsVertexProgram(query, targetTypes, targetValueType);
+        StatisticsMapReduce<?> mapReduce = initStatisticsMapReduce(query, targetTypes, targetValueType);
         ComputerResult computerResult = compute(program, mapReduce, extendedScopeTypes);
 
         if (query.method().equals(MEDIAN)) {
@@ -241,31 +241,31 @@ public class ComputeExecutorImpl implements ComputeExecutor {
     }
 
     /**
-     * Helper method to validate that the target types are of one data type, and get that data type
+     * Helper method to validate that the target types are of one value type, and get that value type
      *
-     * @return the DataType of the target types
+     * @return the ValueType of the target types
      */
     @Nullable
-    private AttributeType.DataType<?> validateAndGetTargetDataType(GraqlCompute.Statistics.Value query) {
-        AttributeType.DataType<?> dataType = null;
+    private AttributeType.ValueType<?> validateAndGetTargetValueType(GraqlCompute.Statistics.Value query) {
+        AttributeType.ValueType<?> valueType = null;
         for (Type type : targetTypes(query)) {
             // check if the selected type is a attribute type
             if (!type.isAttributeType()) throw GraqlSemanticException.mustBeAttributeType(type.label());
             AttributeType<?> attributeType = type.asAttributeType();
-            if (dataType == null) {
-                // check if the attribute type has data-type LONG or DOUBLE
-                dataType = attributeType.dataType();
-                if (!dataType.equals(AttributeType.DataType.LONG) && !dataType.equals(AttributeType.DataType.DOUBLE)) {
-                    throw GraqlSemanticException.attributeMustBeANumber(dataType, attributeType.label());
+            if (valueType == null) {
+                // check if the attribute type has value type LONG or DOUBLE
+                valueType = attributeType.valueType();
+                if (!valueType.equals(AttributeType.ValueType.LONG) && !valueType.equals(AttributeType.ValueType.DOUBLE)) {
+                    throw GraqlSemanticException.attributeMustBeANumber(valueType, attributeType.label());
                 }
             } else {
-                // check if all the attribute types have the same data-type
-                if (!dataType.equals(attributeType.dataType())) {
-                    throw GraqlSemanticException.attributesWithDifferentDataTypes(query.of());
+                // check if all the attribute types have the same value type
+                if (!valueType.equals(attributeType.valueType())) {
+                    throw GraqlSemanticException.attributesWithDifferentValueTypes(query.of());
                 }
             }
         }
-        return dataType;
+        return valueType;
     }
 
     /**
@@ -273,11 +273,11 @@ public class ComputeExecutorImpl implements ComputeExecutor {
      *
      * @param query          representing the compute query
      * @param targetTypes    representing the attribute types in which the statistics computation is targeted for
-     * @param targetDataType representing the data type of the target attribute types
+     * @param targetValueType representing the value type of the target attribute types
      * @return an object which is a subclass of VertexProgram
      */
-    private VertexProgram initStatisticsVertexProgram(GraqlCompute query, Set<LabelId> targetTypes, AttributeType.DataType<?> targetDataType) {
-        if (query.method().equals(MEDIAN)) return new MedianVertexProgram(targetTypes, targetDataType);
+    private VertexProgram initStatisticsVertexProgram(GraqlCompute query, Set<LabelId> targetTypes, AttributeType.ValueType<?> targetValueType) {
+        if (query.method().equals(MEDIAN)) return new MedianVertexProgram(targetTypes, targetValueType);
         else return new DegreeStatisticsVertexProgram(targetTypes);
     }
 
@@ -285,23 +285,23 @@ public class ComputeExecutorImpl implements ComputeExecutor {
      * Helper method to initialise the MapReduce algorithm for compute statistics queries
      *
      * @param targetTypes    representing the attribute types in which the statistics computation is targeted for
-     * @param targetDataType representing the data type of the target attribute types
+     * @param targetValueType representing the value type of the target attribute types
      * @return an object which is a subclass of StatisticsMapReduce
      */
     private StatisticsMapReduce<?> initStatisticsMapReduce(GraqlCompute.Statistics.Value query,
                                                            Set<LabelId> targetTypes,
-                                                           AttributeType.DataType<?> targetDataType) {
+                                                           AttributeType.ValueType<?> targetValueType) {
         Graql.Token.Compute.Method method = query.method();
         if (method.equals(MIN)) {
-            return new MinMapReduce(targetTypes, targetDataType, DegreeVertexProgram.DEGREE);
+            return new MinMapReduce(targetTypes, targetValueType, DegreeVertexProgram.DEGREE);
         } else if (method.equals(MAX)) {
-            return new MaxMapReduce(targetTypes, targetDataType, DegreeVertexProgram.DEGREE);
+            return new MaxMapReduce(targetTypes, targetValueType, DegreeVertexProgram.DEGREE);
         } else if (method.equals(MEAN)) {
-            return new MeanMapReduce(targetTypes, targetDataType, DegreeVertexProgram.DEGREE);
+            return new MeanMapReduce(targetTypes, targetValueType, DegreeVertexProgram.DEGREE);
         } else if (method.equals(STD)) {
-            return new StdMapReduce(targetTypes, targetDataType, DegreeVertexProgram.DEGREE);
+            return new StdMapReduce(targetTypes, targetValueType, DegreeVertexProgram.DEGREE);
         } else if (method.equals(SUM)) {
-            return new SumMapReduce(targetTypes, targetDataType, DegreeVertexProgram.DEGREE);
+            return new SumMapReduce(targetTypes, targetValueType, DegreeVertexProgram.DEGREE);
         }
 
         return null;
@@ -408,7 +408,7 @@ public class ComputeExecutorImpl implements ComputeExecutor {
         if (!resultFromMemory.isEmpty()) {
             paths = getComputePathResultList(pathsAsEdgeList, fromID);
             if (scopeIncludesAttributes(query)) {
-                paths = getComputePathResultListIncludingImplicitRelations(paths);
+                paths = getComputePathResultList(paths);
             }
         } else {
             paths = Collections.emptyList();
@@ -639,7 +639,7 @@ public class ComputeExecutorImpl implements ComputeExecutor {
      * @param allPaths
      * @return
      */
-    private List<List<ConceptId>> getComputePathResultListIncludingImplicitRelations(List<List<ConceptId>> allPaths) {
+    private List<List<ConceptId>> getComputePathResultList(List<List<ConceptId>> allPaths) {
         List<List<ConceptId>> extendedPaths = new ArrayList<>();
         for (List<ConceptId> currentPath : allPaths) {
             boolean hasAttribute = currentPath.stream().anyMatch(conceptID -> conceptManager.getConcept(conceptID).isAttribute());
@@ -677,21 +677,6 @@ public class ComputeExecutorImpl implements ComputeExecutor {
         return extendedPaths;
     }
 
-    /**
-     * Helper method to get the label IDs of role players in a relation
-     *
-     * @return a set of type label IDs
-     */
-    private Set<Label> scopeTypeLabelsImplicitPlayers(GraqlCompute query) {
-        return scopeTypes(query)
-                .filter(Concept::isRelationType)
-                .map(Concept::asRelationType)
-                .filter(RelationType::isImplicit)
-                .flatMap(RelationType::roles)
-                .flatMap(Role::players)
-                .map(SchemaConcept::label)
-                .collect(toSet());
-    }
 
     /**
      * Get the resource edge id if there is one. Return null if not.
@@ -713,25 +698,11 @@ public class ComputeExecutorImpl implements ComputeExecutor {
     }
 
     /**
-     * Helper method to get implicit relation types of attributes
-     *
-     * @param types
-     * @return a set of type Labels
-     */
-    private static Set<Label> getAttributeImplicitRelationTypeLabes(Set<Type> types) {
-        // If the sub graph contains attributes, we may need to add implicit relations to the path
-        return types.stream()
-                .filter(Concept::isAttributeType)
-                .map(attributeType -> Schema.ImplicitType.HAS.getLabel(attributeType.label()))
-                .collect(toSet());
-    }
-
-    /**
      * Helper method to get the types to be included in the query target
      *
      * @return a set of Types
      */
-    private ImmutableSet<Type> targetTypes(Computable.Targetable<?> query) {
+    private Set<Type> targetTypes(Computable.Targetable<?> query) {
         if (query.of().isEmpty()) {
             throw GraqlSemanticException.statisticsAttributeTypesNotSpecified();
         }
@@ -776,7 +747,7 @@ public class ComputeExecutorImpl implements ComputeExecutor {
                         scopeLabels.stream()
                                 .map(type -> patternFunction.apply(attributeType, type))
                                 .map(pattern -> Graql.and(Collections.singleton(pattern)))
-                                .flatMap(pattern -> executorFactory.transactional(true).traverse(pattern))
+                                .flatMap(pattern -> traversalExecutor.traverse(pattern))
                 ).findFirst().isPresent();
     }
 
@@ -787,7 +758,7 @@ public class ComputeExecutorImpl implements ComputeExecutor {
      * @return a set of type labels
      */
     private Set<Label> extendedScopeTypeLabels(GraqlCompute.Statistics.Value query) {
-        Set<Label> extendedTypeLabels = getAttributeImplicitRelationTypeLabes(targetTypes(query));
+        Set<Label> extendedTypeLabels = targetTypes(query).stream().map(SchemaConcept::label).collect(toSet());
         extendedTypeLabels.addAll(scopeTypeLabels(query));
         extendedTypeLabels.addAll(query.of().stream().map(Label::of).collect(toSet()));
         return extendedTypeLabels;
@@ -805,13 +776,12 @@ public class ComputeExecutorImpl implements ComputeExecutor {
             ImmutableSet.Builder<Type> typeBuilder = ImmutableSet.builder();
 
             if (scopeIncludesAttributes(query)) {
-                // this implies that Attributes and Implicit relations are included
+                // this implies that Attributes are included
                 // always set with compute count and statistics
                 conceptManager.getMetaConcept().subs().forEach(typeBuilder::add);
             } else {
                 conceptManager.getMetaEntityType().subs().forEach(typeBuilder::add);
-                conceptManager.getMetaRelationType().subs()
-                        .filter(relationType -> !relationType.isImplicit()).forEach(typeBuilder::add);
+                conceptManager.getMetaRelationType().subs().forEach(typeBuilder::add);
             }
 
             return typeBuilder.build().stream();
@@ -822,10 +792,6 @@ public class ComputeExecutorImpl implements ComputeExecutor {
                 if (type == null) throw GraqlSemanticException.labelNotFound(label);
                 return type;
             }).flatMap(Type::subs);
-
-            if (!scopeIncludesAttributes(query)) {
-                subTypes = subTypes.filter(relationType -> !relationType.isImplicit());
-            }
 
             return subTypes;
         }
@@ -853,7 +819,7 @@ public class ComputeExecutorImpl implements ComputeExecutor {
                 .map(type -> Graql.var("x").isa(Graql.type(type.getValue())))
                 .map(Pattern.class::cast)
                 .map(pattern -> Graql.and(Collections.singleton(pattern)))
-                .flatMap(pattern -> executorFactory.transactional(false).traverse(pattern))
+                .flatMap(pattern -> traversalExecutor.traverse(pattern))
                 .findFirst().isPresent();
     }
 
@@ -877,7 +843,7 @@ public class ComputeExecutorImpl implements ComputeExecutor {
      * @return true if they exist, false if they don't
      */
     private boolean scopeIncludesAttributes(GraqlCompute query) {
-        return query.includesAttributes() || scopeIncludesImplicitOrAttributeTypes(query);
+        return query.includesAttributes() || scopeIncludesAttributeTypes(query);
     }
 
     /**
@@ -885,12 +851,12 @@ public class ComputeExecutorImpl implements ComputeExecutor {
      *
      * @return true if they exist, false if they don't
      */
-    private boolean scopeIncludesImplicitOrAttributeTypes(GraqlCompute query) {
+    private boolean scopeIncludesAttributeTypes(GraqlCompute query) {
         if (query.in().isEmpty()) return false;
         return query.in().stream().anyMatch(t -> {
             Label label = Label.of(t);
             SchemaConcept type = conceptManager.getSchemaConcept(label);
-            return (type != null && (type.isAttributeType() || type.isImplicit()));
+            return (type != null && (type.isAttributeType()));
         });
     }
 

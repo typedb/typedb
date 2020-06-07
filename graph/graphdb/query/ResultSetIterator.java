@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -25,7 +24,7 @@ import java.util.NoSuchElementException;
 
 /**
  * Wraps around a result set iterator to return up to the specified limit number of elements
- * and implement the {@link Iterator#remove()} method based on element's remove method.
+ * and implement the Iterator#remove() method based on element's remove method.
  */
 public class ResultSetIterator<R extends JanusGraphElement> implements Iterator<R> {
 

@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -48,7 +47,7 @@ public class AttributeUtil {
     }
 
     /**
-     * Compares the two elements like {@link java.util.Comparator#compare(Object, Object)} but returns
+     * Compares the two elements like java.util.Comparator#compare(Object, Object) but returns
      * null in case the two elements are not comparable.
      */
     public static Integer compare(Object a, Object b) {

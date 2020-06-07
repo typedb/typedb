@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -44,7 +43,7 @@ public class NodesUtilTest {
     public void testPropagateLabelsOverInIsa() {
         Map<Node, Set<Node>> mockParentToChildQPGraph = new HashMap<>();
         Fragment labelFragment = Fragments.label(null, new Variable("typeVar"), ImmutableSet.of(Label.of("someLabel")));
-        Fragment inIsaFragment = Fragments.inIsa(null, new Variable("typeVar"), new Variable("instanceVar"), true);
+        Fragment inIsaFragment = Fragments.inIsa(null, new Variable("typeVar"), new Variable("instanceVar"));
 
         Node labelNode = labelFragment.getNodes().iterator().next();
         labelNode.getFragmentsWithoutDependency().add(labelFragment);

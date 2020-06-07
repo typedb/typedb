@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -67,8 +66,8 @@ public class TTLKCVSManager implements KeyColumnValueStoreManager {
      * Returns true if the parameter supports at least one of the following:
      *
      * <ul>
-     * <li>cell-level TTL {@link StoreFeatures#hasCellTTL()}</li>
-     * <li>store-level TTL {@link StoreFeatures#hasStoreTTL()}</li>
+     * <li>cell-level TTL StoreFeatures#hasCellTTL()</li>
+     * <li>store-level TTL StoreFeatures#hasStoreTTL()</li>
      * </ul>
      *
      * @param features an arbitrary {@code StoreFeatures} instance

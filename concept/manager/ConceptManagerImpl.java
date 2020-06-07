@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -23,9 +22,7 @@ import grakn.core.concept.impl.AttributeImpl;
 import grakn.core.concept.impl.AttributeTypeImpl;
 import grakn.core.concept.impl.EntityImpl;
 import grakn.core.concept.impl.EntityTypeImpl;
-import grakn.core.concept.impl.RelationEdge;
 import grakn.core.concept.impl.RelationImpl;
-import grakn.core.concept.impl.RelationReified;
 import grakn.core.concept.impl.RelationTypeImpl;
 import grakn.core.concept.impl.RoleImpl;
 import grakn.core.concept.impl.RuleImpl;
@@ -42,11 +39,11 @@ import grakn.core.kb.concept.api.EntityType;
 import grakn.core.kb.concept.api.GraknConceptException;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.LabelId;
-import grakn.core.kb.concept.api.RelationStructure;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.SchemaConcept;
+import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.concept.manager.ConceptNotificationChannel;
@@ -58,12 +55,10 @@ import grakn.core.kb.server.cache.TransactionCache;
 import grakn.core.kb.server.exception.TemporaryWriteException;
 import graql.lang.pattern.Pattern;
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import javax.annotation.Nullable;
 import java.util.HashSet;
-import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -83,8 +78,8 @@ import static grakn.core.core.Schema.BaseType.RULE;
  *
  * In general, it will do one of the following primary operations
  * 1. `Create` a brand new Janus Vertex wrapped in a Schema Concept
- * 2. `Create` a brand new Janus Vertex or Edge, wrapped in a Thing Concept
- * 3. `Build` a Concept from an existing VertexElement or EdgeElement that has been provided from externally
+ * 2. `Create` a brand new Janus Vertex or Edge
+ * 3. `Build` a Concept from an existing VertexElement that has been provided from externally
  * 4. `Retrieve` a concept based on some unique identifier (eg. ID, attribute key, janus key/value, etc.)
  *
  * Where possible, the TransactionCache will be queried to avoid rebuilding a concept that is already built or retrieved
@@ -112,25 +107,13 @@ public class ConceptManagerImpl implements ConceptManager {
     /**
      * @param label             The Label of the SchemaConcept to create
      * @param baseType          The Schema.BaseType of the SchemaConcept to find or create
-     * @param isImplicit        a flag indicating if the label we are creating is for an implicit grakn.core.kb.concept.api.Type or not
      */
-    private VertexElement createSchemaVertex(Label label, Schema.BaseType baseType, boolean isImplicit) {
-        if (!isImplicit && label.getValue().startsWith(Schema.ImplicitType.RESERVED.getValue())) {
-            throw GraknConceptException.invalidLabelStart(label);
-        }
-
-        VertexElement vertexElement = addTypeVertex(getNextId(), label, baseType);
-
-        //Mark it as implicit here so we don't have to pass it down the constructors
-        if (isImplicit) {
-            vertexElement.property(Schema.VertexProperty.IS_IMPLICIT, true);
-        }
-
-        return vertexElement;
+    private VertexElement createSchemaVertex(Label label, Schema.BaseType baseType) {
+        return addTypeVertex(getNextId(), label, baseType);
     }
 
     public EntityType createEntityType(Label label, EntityType superType) {
-        VertexElement vertex = createSchemaVertex(label, ENTITY_TYPE, false);
+        VertexElement vertex = createSchemaVertex(label, ENTITY_TYPE);
         EntityTypeImpl entityType = new EntityTypeImpl(vertex, this, conceptNotificationChannel);
         entityType.createShard();
         entityType.sup(superType);
@@ -139,22 +122,15 @@ public class ConceptManagerImpl implements ConceptManager {
     }
 
     public RelationType createRelationType(Label label, RelationType superType) {
-        VertexElement vertex = createSchemaVertex(label, RELATION_TYPE, false);
+        VertexElement vertex = createSchemaVertex(label, RELATION_TYPE);
         return createRelationType(vertex, superType);
     }
 
-    // users cannot create implicit relation types themselves, this is internal behavior
-    @Override
-    public RelationType createImplicitRelationType(Label implicitRelationLabel) {
-        VertexElement vertex = createSchemaVertex(implicitRelationLabel, RELATION_TYPE, true);
-        return createRelationType(vertex, getMetaRelationType());
-    }
-
 
     @Override
-    public <V> AttributeType<V> createAttributeType(Label label, AttributeType<V> superType, AttributeType.DataType<V> dataType) {
-        VertexElement vertexElement = createSchemaVertex(label, ATTRIBUTE_TYPE, false);
-        vertexElement.propertyImmutable(Schema.VertexProperty.DATA_TYPE, dataType, null, AttributeType.DataType::name);
+    public <V> AttributeType<V> createAttributeType(Label label, AttributeType<V> superType, AttributeType.ValueType<V> valueType) {
+        VertexElement vertexElement = createSchemaVertex(label, ATTRIBUTE_TYPE);
+        vertexElement.propertyImmutable(Schema.VertexProperty.VALUE_TYPE, valueType, null, AttributeType.ValueType::name);
         AttributeType<V> attributeType = new AttributeTypeImpl<>(vertexElement, this, conceptNotificationChannel);
         attributeType.createShard();
         attributeType.sup(superType);
@@ -163,19 +139,13 @@ public class ConceptManagerImpl implements ConceptManager {
     }
 
     public Role createRole(Label label, Role superType) {
-        VertexElement vertexElement = createSchemaVertex(label, ROLE, false);
+        VertexElement vertexElement = createSchemaVertex(label, ROLE);
         return createRole(vertexElement, superType);
     }
 
-    // users cannot create implicit roles themselves, this is internal behavior
-    @Override
-    public Role createImplicitRole(Label implicitRoleLabel) {
-        VertexElement vertexElement = createSchemaVertex(implicitRoleLabel, ROLE, true);
-        return createRole(vertexElement, getMetaRole());
-    }
 
     public Rule createRule(Label label, Pattern when, Pattern then, Rule superType) {
-        VertexElement vertexElement = createSchemaVertex(label, RULE, false);
+        VertexElement vertexElement = createSchemaVertex(label, RULE);
         vertexElement.propertyImmutable(Schema.VertexProperty.RULE_WHEN, when, null, Pattern::toString);
         vertexElement.propertyImmutable(Schema.VertexProperty.RULE_THEN, then, null, Pattern::toString);
         RuleImpl rule = new RuleImpl(vertexElement, this, conceptNotificationChannel);
@@ -190,6 +160,7 @@ public class ConceptManagerImpl implements ConceptManager {
         RelationTypeImpl relationType = new RelationTypeImpl(vertex, this, conceptNotificationChannel);
         relationType.createShard();
         relationType.sup(superType);
+
         conceptNotificationChannel.relationTypeCreated(relationType);
         transactionCache.cacheConcept(relationType);
         return relationType;
@@ -262,18 +233,18 @@ public class ConceptManagerImpl implements ConceptManager {
 
         VertexElement vertex = createInstanceVertex(ATTRIBUTE, isInferred);
 
-        AttributeType.DataType<V> dataType = type.dataType();
+        AttributeType.ValueType<V> valueType = type.valueType();
 
         V convertedValue;
         try {
-            convertedValue = AttributeValueConverter.of(type.dataType()).convert(value);
+            convertedValue = AttributeValueConverter.of(type.valueType()).convert(value);
         } catch (ClassCastException e){
-            throw GraknConceptException.invalidAttributeValue(value, dataType);
+            throw GraknConceptException.invalidAttributeValue(type, value, valueType);
         }
 
         // set persisted value
-        Object valueToPersist = AttributeSerialiser.of(dataType).serialise(convertedValue);
-        Schema.VertexProperty property = Schema.VertexProperty.ofDataType(dataType);
+        Object valueToPersist = AttributeSerialiser.of(valueType).serialise(convertedValue);
+        Schema.VertexProperty property = Schema.VertexProperty.ofValueType(valueType);
         vertex.propertyImmutable(property, valueToPersist, null);
 
         // set unique index - combination of type and value to an indexed Janus property, used for lookups
@@ -288,37 +259,14 @@ public class ConceptManagerImpl implements ConceptManager {
     }
 
     /**
-     * Create a new Relation instance from an edge
+     * Create a new ownership from owner to attribute
      * Skip checking caches because this should be a brand new edge and concept
      */
     @Override
-    public RelationImpl createHasAttributeRelation(EdgeElement edge, RelationType relationType, Role owner, Role value, boolean isInferred) {
-        preCheckForInstanceCreation(relationType);
-
-        edge.propertyImmutable(Schema.EdgeProperty.RELATION_ROLE_OWNER_LABEL_ID, owner, null, o -> o.labelId().getValue());
-        edge.propertyImmutable(Schema.EdgeProperty.RELATION_ROLE_VALUE_LABEL_ID, value, null, v -> v.labelId().getValue());
-        edge.propertyImmutable(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID, relationType, null, t -> t.labelId().getValue());
-
-        RelationEdge relationEdge = new RelationEdge(edge, this, conceptNotificationChannel);
-        // because the Relation hierarchy is still wrong, RelationEdge and RelationImpl doesn't set type(type) like other instances do
-        RelationImpl newRelation = new RelationImpl(relationEdge);
-        conceptNotificationChannel.hasAttributeRelationCreated(newRelation, isInferred);
-
-        return newRelation;
+    public void createHasAttribute(Thing owner, Attribute attribute, boolean isInferred) {
+        conceptNotificationChannel.hasAttributeCreated(owner, attribute, isInferred);
     }
 
-    /**
-     * Used by RelationEdge when it needs to reify a relation
-     * NOTE The passed in vertex is already prepared outside of the ConceptManager
-     * @return ReifiedRelation
-     */
-    @Override
-    public RelationStructure createRelationReified(VertexElement vertex, RelationType type) {
-        preCheckForInstanceCreation(type);
-        RelationReified relationReified = new RelationReified(vertex, this, conceptNotificationChannel);
-        relationReified.type(TypeImpl.from(type));
-        return relationReified;
-    }
 
     /**
      * Create a new Relation instance from a vertex
@@ -328,13 +276,9 @@ public class ConceptManagerImpl implements ConceptManager {
     public RelationImpl createRelation(RelationType type, boolean isInferred) {
         preCheckForInstanceCreation(type);
         VertexElement vertex = createInstanceVertex(RELATION, isInferred);
-
-        // safe downcast from interface to implementation type
-        RelationReified relationReified = (RelationReified) createRelationReified(vertex, type);
-
-        RelationImpl newRelation = new RelationImpl(relationReified);
+        RelationImpl newRelation = new RelationImpl(vertex, this, conceptNotificationChannel);
+        newRelation.type(TypeImpl.from(type));
         conceptNotificationChannel.relationCreated(newRelation, isInferred);
-
         return newRelation;
     }
 
@@ -434,21 +378,13 @@ public class ConceptManagerImpl implements ConceptManager {
 
     @Override
     public <T extends Concept> T getConcept(ConceptId conceptId) {
-        if (transactionCache.isConceptCached(conceptId)) {
-            return transactionCache.getCachedConcept(conceptId);
+        if (!Schema.validateConceptId(conceptId)) {
+            // fail fast if the concept Id format is invalid
+            return null;
         }
 
-        // If edgeId, we are trying to fetch either:
-        // - a concept edge
-        // - a reified relation
-        if (Schema.isEdgeId(conceptId)) {
-            EdgeElement edgeElement = elementFactory.getEdgeElementWithId(Schema.elementId(conceptId));
-            if (edgeElement != null) {
-                return buildConcept(edgeElement);
-            }
-            // If element is still null,  it is possible we are referring to a ReifiedRelation which
-            // uses its previous EdgeRelation as an id so property must be fetched
-            return getConcept(Schema.VertexProperty.EDGE_RELATION_ID, conceptId.getValue());
+        if (transactionCache.isConceptCached(conceptId)) {
+            return transactionCache.getCachedConcept(conceptId);
         }
 
         Vertex vertex = elementFactory.getVertexWithId(Schema.elementId(conceptId));
@@ -617,7 +553,7 @@ public class ConceptManagerImpl implements ConceptManager {
             Concept concept;
             switch (type) {
                 case RELATION:
-                    concept = new RelationImpl(new RelationReified(vertexElement, this, conceptNotificationChannel));
+                    concept = new RelationImpl(vertexElement, this, conceptNotificationChannel);
                     break;
                 case TYPE:
                     concept = new TypeImpl(vertexElement, this, conceptNotificationChannel);
@@ -651,54 +587,6 @@ public class ConceptManagerImpl implements ConceptManager {
         }
         return (X) cachedConcept;
     }
-
-    /**
-     * Constructors are called directly because this is only called when reading a known Edge or Concept.
-     * Thus tracking the concept can be skipped.
-     *
-     * @param edge A Edge of an unknown type
-     * @return A concept built to the correct type
-     */
-    @Override
-    public <X extends Concept> X buildConcept(Edge edge) {
-        return buildConcept(elementFactory.buildEdgeElement(edge));
-    }
-
-    private <X extends Concept> X buildConcept(EdgeElement edgeElement) {
-        Schema.EdgeLabel label = Schema.EdgeLabel.valueOf(edgeElement.label().toUpperCase(Locale.getDefault()));
-
-        ConceptId conceptId = Schema.conceptId(edgeElement.element());
-        if (!transactionCache.isConceptCached(conceptId)) {
-            Concept concept;
-            switch (label) {
-                case ATTRIBUTE:
-                    concept = new RelationImpl(new RelationEdge(edgeElement, this, conceptNotificationChannel));
-                    break;
-                default:
-                    throw GraknConceptException.unknownConceptType(label.name());
-            }
-            transactionCache.cacheConcept(concept);
-        }
-        return transactionCache.getCachedConcept(conceptId);
-    }
-
-
-    /**
-     * Used by RelationEdge to build a RelationImpl object out of a provided Edge
-     * Build a concept around an prexisting edge that we may have cached
-     */
-    @Override
-    public RelationImpl buildRelation(EdgeElement edge) {
-        ConceptId conceptId = Schema.conceptId(edge.element());
-        if (!transactionCache.isConceptCached(conceptId)) {
-            RelationImpl relation = new RelationImpl(new RelationEdge(edge, this, conceptNotificationChannel));
-            transactionCache.cacheConcept(relation);
-            return relation;
-        } else {
-            return transactionCache.getCachedConcept(conceptId);
-        }
-    }
-
 
     /**
      * This is a helper method to get the base type of a vertex.

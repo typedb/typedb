@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -19,6 +18,7 @@
 
 package grakn.core.kb.keyspace;
 
+import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Type;
 
@@ -26,10 +26,13 @@ import java.util.HashMap;
 
 public interface StatisticsDelta {
     long delta(Label label);
+    long deltaOwnership(Label label);
 
     void increment(Type type);
+    void incrementOwnership(AttributeType<?> attribute);
 
     void decrement(Type type);
+    void decrementOwnership(AttributeType<?> attribute);
 
     /**
      * Special case decrement for attribute deduplication
@@ -38,4 +41,6 @@ public interface StatisticsDelta {
     void decrementAttribute(Label label);
 
     HashMap<Label, Long> instanceDeltas();
+
+    HashMap<Label, Long> ownershipDeltas();
 }

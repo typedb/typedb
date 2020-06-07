@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -23,7 +22,7 @@ import grakn.core.kb.graql.exception.GraqlSemanticException;
 import grakn.core.kb.graql.executor.property.PropertyExecutor;
 import grakn.core.kb.graql.executor.property.PropertyExecutorFactory;
 import graql.lang.property.AbstractProperty;
-import graql.lang.property.DataTypeProperty;
+import graql.lang.property.ValueTypeProperty;
 import graql.lang.property.HasAttributeProperty;
 import graql.lang.property.HasAttributeTypeProperty;
 import graql.lang.property.IdProperty;
@@ -44,8 +43,7 @@ import graql.lang.statement.Variable;
 public class PropertyExecutorFactoryImpl implements PropertyExecutorFactory {
 
     public PropertyExecutor.Definable definable(Variable var, VarProperty property) {
-        PropertyExecutorFactory propertyExecutorFactory = new PropertyExecutorFactoryImpl();
-        PropertyExecutor executor = propertyExecutorFactory.create(var, property);
+        PropertyExecutor executor = create(var, property);
 
         if (executor instanceof PropertyExecutor.Definable) {
             return (PropertyExecutor.Definable) executor;
@@ -55,8 +53,7 @@ public class PropertyExecutorFactoryImpl implements PropertyExecutorFactory {
     }
 
     public PropertyExecutor.Insertable insertable(Variable var, VarProperty property) {
-        PropertyExecutorFactory propertyExecutorFactory = new PropertyExecutorFactoryImpl();
-        PropertyExecutor executor = propertyExecutorFactory.create(var, property);
+        PropertyExecutor executor = create(var, property);
 
         if (executor instanceof PropertyExecutor.Insertable) {
             return (PropertyExecutor.Insertable) executor;
@@ -65,15 +62,26 @@ public class PropertyExecutorFactoryImpl implements PropertyExecutorFactory {
         }
     }
 
+    @Override
+    public PropertyExecutor.Deletable deletable(Variable var, VarProperty property) {
+        PropertyExecutor executor = create(var, property);
+
+        if (executor instanceof PropertyExecutor.Deletable) {
+            return (PropertyExecutor.Deletable) executor;
+        } else {
+            throw GraqlSemanticException.deleteUnsupportedProperty(property.keyword());
+        }
+    }
+
     public PropertyExecutor create(Variable var, VarProperty property) {
-        if (property instanceof DataTypeProperty) {
-            return new DataTypeExecutor(var, (DataTypeProperty) property);
+        if (property instanceof ValueTypeProperty) {
+            return new ValueTypeExecutor(var, (ValueTypeProperty) property);
 
         } else if (property instanceof HasAttributeProperty) {
             return new HasAttributeExecutor(var, (HasAttributeProperty) property);
 
         } else if (property instanceof HasAttributeTypeProperty) {
-            return new HasAttributeTypeExecutor(var, (HasAttributeTypeProperty) property, this);
+            return new HasAttributeTypeExecutor(var, (HasAttributeTypeProperty) property );
 
         } else if (property instanceof IdProperty) {
             return new IdExecutor(var, (IdProperty) property);

@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,7 +17,6 @@
 
 package grakn.core.graql.planning.gremlin.fragment;
 
-import grakn.core.core.Schema;
 import grakn.core.graql.planning.gremlin.value.ValueComparison;
 import grakn.core.graql.planning.gremlin.value.ValueOperation;
 import grakn.core.kb.concept.api.AttributeType;
@@ -98,25 +96,24 @@ public class ValueFragment extends FragmentImpl {
         // this is probably not the highest quality heuristic (plus it is a heavy operation), needs work
 
         Label attributeLabel = Label.of("attribute");
-        long totalImplicitRels = 0;
+        long totalOwnerships = 0;
         long totalAttributes = 0;
 
-        AttributeType attributeType = conceptManager.getSchemaConcept(attributeLabel).asAttributeType();
-        Stream<AttributeType> attributeSubs = attributeType.subs();
+        AttributeType<?> attributeType = conceptManager.getSchemaConcept(attributeLabel).asAttributeType();
+        Stream<? extends AttributeType<?>> attributeSubs = attributeType.subs();
 
-        for (Iterator<AttributeType> it = attributeSubs.iterator(); it.hasNext(); ) {
-            AttributeType attrType = it.next();
+        for (Iterator<? extends AttributeType<?>> it = attributeSubs.iterator(); it.hasNext(); ) {
+            AttributeType<?> attrType = it.next();
             Label attrLabel = attrType.label();
-            Label implicitAttrRelLabel = Schema.ImplicitType.HAS.getLabel(attrLabel);
             totalAttributes += statistics.count(conceptManager, attrLabel);
-            totalImplicitRels += statistics.count(conceptManager, implicitAttrRelLabel);
+            totalOwnerships += statistics.countOwnerships(conceptManager, attrLabel);
         }
 
         if (totalAttributes == 0) {
             // short circuiting can be done quickly if starting here
             return 0.0;
         } else {
-            return (double) totalImplicitRels / totalAttributes;
+            return (double) totalOwnerships / totalAttributes;
         }
     }
 

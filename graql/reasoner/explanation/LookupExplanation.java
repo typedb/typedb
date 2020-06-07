@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -19,28 +18,17 @@
 
 package grakn.core.graql.reasoner.explanation;
 
-import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.answer.Explanation;
 
 import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Explanation class for db lookup.
  */
 public class LookupExplanation extends Explanation {
 
-    private LookupExplanation(List<ConceptMap> answers){
-        super(answers);
-    }
-
     public LookupExplanation() {
         super(new ArrayList<>());
-    }
-
-    @Override
-    public LookupExplanation childOf(ConceptMap ans) {
-        return new LookupExplanation(ans.explanation().getAnswers());
     }
 
     @Override

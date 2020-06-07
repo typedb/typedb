@@ -27,5 +27,5 @@ REM install runtime dependency for the build
 C:\Python37\python.exe -m pip install wheel
 
 REM permanently set variables for Bazel build
-SETX BAZEL_SH c:\tools\msys64\usr\bin\bash.exe
+SETX BAZEL_SH "C:\Program Files\Git\usr\bin\bash.exe"
 SETX BAZEL_PYTHON C:\Python37\python.exe

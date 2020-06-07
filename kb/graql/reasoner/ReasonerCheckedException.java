@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -21,6 +20,7 @@ package grakn.core.kb.graql.reasoner;
 
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.kb.concept.api.ConceptId;
+import grakn.core.kb.concept.api.Label;
 import graql.lang.exception.GraqlException;
 
 public class ReasonerCheckedException extends GraqlException {
@@ -31,5 +31,9 @@ public class ReasonerCheckedException extends GraqlException {
 
     public static ReasonerCheckedException idNotFound(ConceptId id) {
         return new ReasonerCheckedException(ErrorMessage.ID_NOT_FOUND.getMessage(id));
+    }
+
+    public static ReasonerCheckedException labelNotFound(Label label) {
+        return new ReasonerCheckedException(ErrorMessage.LABEL_NOT_FOUND.getMessage(label));
     }
 }

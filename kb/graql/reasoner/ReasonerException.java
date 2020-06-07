@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -47,8 +46,8 @@ public class ReasonerException extends GraknException {
         return new ReasonerException(ErrorMessage.QUERY_CACHE_ANSWER_NOT_FOUND.getMessage(getQuery));
     }
 
-    public static ReasonerException maxIterationsReached(Class<?> clazz) {
-        return new ReasonerException(ErrorMessage.MAX_ITERATION_REACHED.getMessage(clazz.toString()));
+    public static ReasonerException atomNotMaterialisable(Atomic atom) {
+        return new ReasonerException(ErrorMessage.ATOM_NOT_MATERIALISABLE.getMessage(atom));
     }
 
     public static ReasonerException ambiguousType(Variable var, Set<Type> types) {
@@ -83,6 +82,10 @@ public class ReasonerException extends GraknException {
         return new ReasonerException(ErrorMessage.INVALID_CACHE_ENTRY.getMessage(query.toString(), answer.toString()));
     }
 
+    public static ReasonerException invalidResolutionProfilerAnswer(ReasonerQuery query, ConceptMap answer) {
+        return new ReasonerException(ErrorMessage.INVALID_RESOLUTION_PROFILER_ANSWER.getMessage(query.toString(), answer.toString()));
+    }
+
     public static ReasonerException nonRoleIdAssignedToRoleVariable(Statement var) {
         return new ReasonerException(ErrorMessage.ROLE_ID_IS_NOT_ROLE.getMessage(var.toString()));
     }
@@ -94,4 +97,5 @@ public class ReasonerException extends GraknException {
     public static ReasonerException unsafeNegationBlock(ReasonerQuery query) {
         return new ReasonerException(ErrorMessage.UNSAFE_NEGATION_BLOCK.getMessage(query));
     }
+
 }

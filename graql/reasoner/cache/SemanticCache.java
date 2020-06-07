@@ -1,6 +1,5 @@
 /*
- * GRAKN.AI - THE KNOWLEDGE GRAPH
- * Copyright (C) 2019 Grakn Labs Ltd
+ * Copyright (C) 2020 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -28,18 +27,17 @@ import grakn.core.graql.reasoner.rule.RuleUtils;
 import grakn.core.graql.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Type;
-import grakn.core.kb.graql.executor.ExecutorFactory;
+import grakn.core.kb.graql.executor.TraversalExecutor;
 import grakn.core.kb.graql.planning.gremlin.TraversalPlanFactory;
 import grakn.core.kb.graql.reasoner.cache.CacheEntry;
 import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
 import graql.lang.statement.Variable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.annotation.Nullable;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static java.util.stream.Collectors.toSet;
 
@@ -49,7 +47,7 @@ import static java.util.stream.Collectors.toSet;
  * and subsequently reusing their answer sets.
  *
  * Relies on the following concepts:
- * - Query Subsumption {@link ReasonerAtomicQuery#isSubsumedBy(ReasonerAtomicQuery)} )}
+ * - Query Subsumption ReasonerAtomicQuery#isSubsumedBy(ReasonerAtomicQuery) )}
  * Subsumption relation between a query C (child) and a provided query P (parent) holds if:
  *
  * C <= P,
@@ -81,8 +79,8 @@ public abstract class SemanticCache<
 
     private static final Logger LOG = LoggerFactory.getLogger(SemanticCache.class);
 
-    SemanticCache(ExecutorFactory executorFactory, TraversalPlanFactory traversalPlanFactory) {
-        super(executorFactory, traversalPlanFactory);
+    SemanticCache(TraversalPlanFactory traversalPlanFactory, TraversalExecutor traversalExecutor) {
+        super(traversalPlanFactory, traversalExecutor);
     }
 
     @Override
@@ -271,7 +269,6 @@ public abstract class SemanticCache<
     public Pair<Stream<ConceptMap>, MultiUnifier> getAnswerStreamWithUnifier(ReasonerAtomicQuery query) {
         CacheEntry<ReasonerAtomicQuery, SE> match = getEntry(query);
         boolean queryGround = query.isGround();
-        boolean queryDBComplete = isDBComplete(query);
 
         Pair<Stream<ConceptMap>, MultiUnifier> cachePair;
         if (match != null) {
@@ -297,6 +294,8 @@ public abstract class SemanticCache<
         //since ids in the parent entries are only placeholders, even if new answers are propagated they may not answer the query
         //NB: this does a GET at the moment
         boolean answersToGroundQuery = queryGround && answersQuery(query);
+        //we check the completion after possible answer propagation above
+        boolean queryDBComplete = isDBComplete(query);
 
         //if db complete or we found answers to ground query via propagation we don't need to hit the database
         if (queryDBComplete || answersToGroundQuery) return cachePair;
