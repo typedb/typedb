@@ -18,7 +18,7 @@
 
 package hypergraph.graph;
 
-import hypergraph.graph.util.IID;
+import hypergraph.graph.iid.IID;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.util.Storage;
 import hypergraph.graph.vertex.AttributeVertex;
@@ -35,7 +35,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import static hypergraph.graph.util.IID.Vertex.Thing.generate;
+import static hypergraph.graph.iid.IID.Vertex.Thing.generate;
 import static java.util.stream.Stream.concat;
 
 public class ThingGraph implements Graph<IID.Vertex.Thing, ThingVertex> {

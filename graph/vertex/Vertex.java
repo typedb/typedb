@@ -21,7 +21,7 @@ package hypergraph.graph.vertex;
 import hypergraph.graph.Graph;
 import hypergraph.graph.adjacency.Adjacency;
 import hypergraph.graph.edge.Edge;
-import hypergraph.graph.util.IID;
+import hypergraph.graph.iid.IID;
 import hypergraph.graph.util.Schema;
 
 public interface Vertex<

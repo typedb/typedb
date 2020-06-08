@@ -21,7 +21,7 @@ package hypergraph.graph.vertex;
 import hypergraph.graph.TypeGraph;
 import hypergraph.graph.adjacency.TypeAdjacency;
 import hypergraph.graph.edge.TypeEdge;
-import hypergraph.graph.util.IID;
+import hypergraph.graph.iid.IID;
 import hypergraph.graph.util.Schema;
 
 import java.util.Iterator;

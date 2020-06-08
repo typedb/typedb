@@ -18,7 +18,7 @@
 
 package hypergraph.graph;
 
-import hypergraph.graph.util.IID;
+import hypergraph.graph.iid.IID;
 import hypergraph.graph.util.Storage;
 import hypergraph.graph.vertex.Vertex;
 

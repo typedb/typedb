@@ -22,7 +22,7 @@ import hypergraph.graph.adjacency.Adjacency;
 import hypergraph.graph.adjacency.ThingAdjacency;
 import hypergraph.graph.edge.ThingEdge;
 import hypergraph.graph.edge.impl.ThingEdgeImpl;
-import hypergraph.graph.util.IID;
+import hypergraph.graph.iid.IID;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.vertex.ThingVertex;
 

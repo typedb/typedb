@@ -20,7 +20,7 @@ package hypergraph.graph;
 
 import hypergraph.common.concurrent.ManagedReadWriteLock;
 import hypergraph.common.exception.HypergraphException;
-import hypergraph.graph.util.IID;
+import hypergraph.graph.iid.IID;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.util.Storage;
 import hypergraph.graph.vertex.TypeVertex;
@@ -30,7 +30,7 @@ import javax.annotation.Nullable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-import static hypergraph.graph.util.IID.Vertex.Type.generate;
+import static hypergraph.graph.iid.IID.Vertex.Type.generate;
 import static hypergraph.graph.util.Schema.Vertex.Type.scopedLabel;
 
 public class TypeGraph implements Graph<IID.Vertex.Type, TypeVertex> {

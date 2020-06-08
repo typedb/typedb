@@ -18,7 +18,7 @@
 
 package hypergraph.graph.vertex;
 
-import hypergraph.graph.util.IID;
+import hypergraph.graph.iid.IID;
 
 public interface AttributeVertex<VALUE> extends ThingVertex {
 

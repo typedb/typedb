@@ -16,7 +16,10 @@
  *
  */
 
-package hypergraph.graph.util;
+package hypergraph.graph.iid;
+
+import hypergraph.graph.util.KeyGenerator;
+import hypergraph.graph.util.Schema;
 
 import javax.annotation.Nullable;
 import java.time.LocalDateTime;
@@ -71,7 +74,7 @@ public abstract class IID {
 
     public static class Prefix extends IID {
 
-        static final int LENGTH = 1;
+        public static final int LENGTH = 1;
 
         Prefix(byte[] bytes) {
             super(bytes);

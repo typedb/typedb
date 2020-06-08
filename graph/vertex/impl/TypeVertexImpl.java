@@ -25,7 +25,7 @@ import hypergraph.graph.adjacency.Adjacency;
 import hypergraph.graph.adjacency.TypeAdjacency;
 import hypergraph.graph.adjacency.impl.TypeAdjacencyImpl;
 import hypergraph.graph.edge.TypeEdge;
-import hypergraph.graph.util.IID;
+import hypergraph.graph.iid.IID;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.vertex.ThingVertex;
 import hypergraph.graph.vertex.TypeVertex;
@@ -34,7 +34,6 @@ import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
 
 import static hypergraph.common.collection.Bytes.join;
 

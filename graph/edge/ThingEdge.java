@@ -18,7 +18,7 @@
 
 package hypergraph.graph.edge;
 
-import hypergraph.graph.util.IID;
+import hypergraph.graph.iid.IID;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.vertex.ThingVertex;
 

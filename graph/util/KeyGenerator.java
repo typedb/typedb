@@ -18,6 +18,8 @@
 
 package hypergraph.graph.util;
 
+import hypergraph.graph.iid.IID;
+
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
