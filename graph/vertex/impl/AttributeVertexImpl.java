@@ -25,7 +25,8 @@ import hypergraph.graph.adjacency.Adjacency;
 import hypergraph.graph.adjacency.ThingAdjacency;
 import hypergraph.graph.adjacency.impl.ThingAdjacencyImpl;
 import hypergraph.graph.edge.Edge;
-import hypergraph.graph.iid.IID;
+import hypergraph.graph.iid.IndexIID;
+import hypergraph.graph.iid.VertexIID;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.vertex.AttributeVertex;
 
@@ -33,14 +34,14 @@ import java.time.LocalDateTime;
 
 public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl implements AttributeVertex<VALUE> {
 
-    private final IID.Vertex.Attribute<VALUE> attributeIID;
+    private final VertexIID.Attribute<VALUE> attributeIID;
 
-    AttributeVertexImpl(ThingGraph graph, IID.Vertex.Attribute<VALUE> iid, boolean isInferred) {
+    AttributeVertexImpl(ThingGraph graph, VertexIID.Attribute<VALUE> iid, boolean isInferred) {
         super(graph, iid, isInferred);
         this.attributeIID = iid;
     }
 
-    protected abstract IID.Index.Attribute index();
+    protected abstract IndexIID.Attribute index();
 
     @Override
     protected ThingAdjacency newAdjacency(Adjacency.Direction direction) {
@@ -48,7 +49,7 @@ public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl impleme
     }
 
     @Override
-    public IID.Vertex.Attribute<VALUE> iid() {
+    public VertexIID.Attribute<VALUE> iid() {
         return attributeIID;
     }
 
@@ -90,61 +91,61 @@ public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl impleme
 
     public static class Boolean extends AttributeVertexImpl<java.lang.Boolean> {
 
-        public Boolean(ThingGraph graph, IID.Vertex.Attribute<java.lang.Boolean> iid, boolean isInferred) {
+        public Boolean(ThingGraph graph, VertexIID.Attribute<java.lang.Boolean> iid, boolean isInferred) {
             super(graph, iid, isInferred);
         }
 
         @Override
-        protected IID.Index.Attribute index() {
-            return IID.Index.Attribute.of(value(), type().iid());
+        protected IndexIID.Attribute index() {
+            return IndexIID.Attribute.of(value(), type().iid());
         }
     }
 
     public static class Long extends AttributeVertexImpl<java.lang.Long> {
 
-        public Long(ThingGraph graph, IID.Vertex.Attribute<java.lang.Long> iid, boolean isInferred) {
+        public Long(ThingGraph graph, VertexIID.Attribute<java.lang.Long> iid, boolean isInferred) {
             super(graph, iid, isInferred);
         }
 
         @Override
-        protected IID.Index.Attribute index() {
-            return IID.Index.Attribute.of(value(), type().iid());
+        protected IndexIID.Attribute index() {
+            return IndexIID.Attribute.of(value(), type().iid());
         }
     }
 
     public static class Double extends AttributeVertexImpl<java.lang.Double> {
 
-        public Double(ThingGraph graph, IID.Vertex.Attribute<java.lang.Double> iid, boolean isInferred) {
+        public Double(ThingGraph graph, VertexIID.Attribute<java.lang.Double> iid, boolean isInferred) {
             super(graph, iid, isInferred);
         }
 
         @Override
-        protected IID.Index.Attribute index() {
-            return IID.Index.Attribute.of(value(), type().iid());
+        protected IndexIID.Attribute index() {
+            return IndexIID.Attribute.of(value(), type().iid());
         }
     }
 
     public static class String extends AttributeVertexImpl<java.lang.String> {
 
-        public String(ThingGraph graph, IID.Vertex.Attribute<java.lang.String> iid, boolean isInferred) {
+        public String(ThingGraph graph, VertexIID.Attribute<java.lang.String> iid, boolean isInferred) {
             super(graph, iid, isInferred);
         }
 
         @Override
-        protected IID.Index.Attribute index() {
-            return IID.Index.Attribute.of(value(), type().iid());
+        protected IndexIID.Attribute index() {
+            return IndexIID.Attribute.of(value(), type().iid());
         }
     }
 
     public static class DateTime extends AttributeVertexImpl<java.time.LocalDateTime> {
 
-        public DateTime(ThingGraph graph, IID.Vertex.Attribute<LocalDateTime> iid, boolean isInferred) {
+        public DateTime(ThingGraph graph, VertexIID.Attribute<LocalDateTime> iid, boolean isInferred) {
             super(graph, iid, isInferred);
         }
 
         @Override
-        protected IID.Index.Attribute index() {
-            return IID.Index.Attribute.of(value(), type().iid());
+        protected IndexIID.Attribute index() {
+            return IndexIID.Attribute.of(value(), type().iid());
         }
     }
 }

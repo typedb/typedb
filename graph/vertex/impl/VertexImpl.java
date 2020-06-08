@@ -18,9 +18,9 @@
 
 package hypergraph.graph.vertex.impl;
 
-import hypergraph.graph.iid.IID;
+import hypergraph.graph.iid.VertexIID;
 
-public abstract class VertexImpl<VERTEX_IID extends IID.Vertex> {
+public abstract class VertexImpl<VERTEX_IID extends VertexIID> {
 
     protected VERTEX_IID iid;
 

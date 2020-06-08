@@ -25,19 +25,19 @@ import hypergraph.graph.adjacency.Adjacency;
 import hypergraph.graph.adjacency.ThingAdjacency;
 import hypergraph.graph.adjacency.impl.ThingAdjacencyImpl;
 import hypergraph.graph.edge.Edge;
-import hypergraph.graph.iid.IID;
+import hypergraph.graph.iid.VertexIID;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.vertex.ThingVertex;
 import hypergraph.graph.vertex.TypeVertex;
 
-public abstract class ThingVertexImpl extends VertexImpl<IID.Vertex.Thing> implements ThingVertex {
+public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implements ThingVertex {
 
     final ThingGraph graph;
     final ThingAdjacency outs;
     final ThingAdjacency ins;
     boolean isInferred;
 
-    ThingVertexImpl(ThingGraph graph, IID.Vertex.Thing iid, boolean isInferred) {
+    ThingVertexImpl(ThingGraph graph, VertexIID.Thing iid, boolean isInferred) {
         super(iid);
         this.graph = graph;
         this.outs = newAdjacency(Adjacency.Direction.OUT);
@@ -96,7 +96,7 @@ public abstract class ThingVertexImpl extends VertexImpl<IID.Vertex.Thing> imple
 
     public static class Buffered extends ThingVertexImpl {
 
-        public Buffered(ThingGraph graph, IID.Vertex.Thing iid, boolean isInferred) {
+        public Buffered(ThingGraph graph, VertexIID.Thing iid, boolean isInferred) {
             super(graph, iid, isInferred);
             written();
         }
@@ -136,7 +136,7 @@ public abstract class ThingVertexImpl extends VertexImpl<IID.Vertex.Thing> imple
 
     public static class Persisted extends ThingVertexImpl {
 
-        public Persisted(ThingGraph graph, IID.Vertex.Thing iid) {
+        public Persisted(ThingGraph graph, VertexIID.Thing iid) {
             super(graph, iid, false);
         }
 

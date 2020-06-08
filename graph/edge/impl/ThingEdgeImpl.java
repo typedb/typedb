@@ -20,14 +20,15 @@ package hypergraph.graph.edge.impl;
 
 import hypergraph.graph.ThingGraph;
 import hypergraph.graph.edge.ThingEdge;
-import hypergraph.graph.iid.IID;
+import hypergraph.graph.iid.EdgeIID;
+import hypergraph.graph.iid.VertexIID;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.vertex.ThingVertex;
 
 public abstract class ThingEdgeImpl {
 
     public static class Buffered
-            extends EdgeImpl.Buffered<Schema.Edge.Thing, IID.Edge.Thing, ThingEdge, ThingVertex>
+            extends EdgeImpl.Buffered<Schema.Edge.Thing, EdgeIID.Thing, ThingEdge, ThingVertex>
             implements ThingEdge {
 
         public Buffered(Schema.Edge.Thing schema, ThingVertex from, ThingVertex to) {
@@ -40,8 +41,8 @@ public abstract class ThingEdgeImpl {
         }
 
         @Override
-        IID.Edge.Thing edgeIID(ThingVertex start, Schema.Infix infix, ThingVertex end) {
-            return IID.Edge.Thing.of(start.iid(), infix, end.iid());
+        EdgeIID.Thing edgeIID(ThingVertex start, Schema.Infix infix, ThingVertex end) {
+            return EdgeIID.Thing.of(start.iid(), infix, end.iid());
         }
 
         @Override
@@ -51,10 +52,10 @@ public abstract class ThingEdgeImpl {
     }
 
     public static class Persisted
-            extends EdgeImpl.Persisted<ThingGraph, Schema.Edge.Thing, IID.Edge.Thing, ThingEdge, IID.Vertex.Thing, ThingVertex>
+            extends EdgeImpl.Persisted<ThingGraph, Schema.Edge.Thing, EdgeIID.Thing, ThingEdge, VertexIID.Thing, ThingVertex>
             implements ThingEdge {
 
-        public Persisted(ThingGraph graph, IID.Edge.Thing iid) {
+        public Persisted(ThingGraph graph, EdgeIID.Thing iid) {
             super(graph, iid);
         }
 
@@ -64,8 +65,8 @@ public abstract class ThingEdgeImpl {
         }
 
         @Override
-        IID.Edge.Thing edgeIID(IID.Vertex.Thing start, Schema.Infix infix, IID.Vertex.Thing end) {
-            return IID.Edge.Thing.of(start, infix, end);
+        EdgeIID.Thing edgeIID(VertexIID.Thing start, Schema.Infix infix, VertexIID.Thing end) {
+            return EdgeIID.Thing.of(start, infix, end);
         }
 
         /**

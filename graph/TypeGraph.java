@@ -20,7 +20,8 @@ package hypergraph.graph;
 
 import hypergraph.common.concurrent.ManagedReadWriteLock;
 import hypergraph.common.exception.HypergraphException;
-import hypergraph.graph.iid.IID;
+import hypergraph.graph.iid.IndexIID;
+import hypergraph.graph.iid.VertexIID;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.util.Storage;
 import hypergraph.graph.vertex.TypeVertex;
@@ -30,14 +31,14 @@ import javax.annotation.Nullable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-import static hypergraph.graph.iid.IID.Vertex.Type.generate;
+import static hypergraph.graph.iid.VertexIID.Type.generate;
 import static hypergraph.graph.util.Schema.Vertex.Type.scopedLabel;
 
-public class TypeGraph implements Graph<IID.Vertex.Type, TypeVertex> {
+public class TypeGraph implements Graph<VertexIID.Type, TypeVertex> {
 
     private final Graphs graphManager;
     private final ConcurrentMap<String, TypeVertex> typesByLabel;
-    private final ConcurrentMap<IID.Vertex.Type, TypeVertex> typesByIID;
+    private final ConcurrentMap<VertexIID.Type, TypeVertex> typesByIID;
     private final ConcurrentMap<String, ManagedReadWriteLock> singleLabelLocks;
     private final ManagedReadWriteLock multiLabelLock;
     private boolean hasWrites;
@@ -88,7 +89,7 @@ public class TypeGraph implements Graph<IID.Vertex.Type, TypeVertex> {
     }
 
     @Override
-    public TypeVertex convert(IID.Vertex.Type iid) {
+    public TypeVertex convert(VertexIID.Type iid) {
         return typesByIID.computeIfAbsent(iid, i -> {
             TypeVertex vertex = new TypeVertexImpl.Persisted(this, i);
             typesByLabel.putIfAbsent(vertex.scopedLabel(), vertex);
@@ -109,11 +110,11 @@ public class TypeGraph implements Graph<IID.Vertex.Type, TypeVertex> {
             TypeVertex vertex = typesByLabel.get(scopedLabel);
             if (vertex != null) return vertex;
 
-            IID.Index.Type index = IID.Index.Type.of(label, scope);
+            IndexIID.Type index = IndexIID.Type.of(label, scope);
             byte[] iid = graphManager.storage().get(index.bytes());
             if (iid != null) {
                 vertex = typesByIID.computeIfAbsent(
-                        IID.Vertex.Type.of(iid), i -> new TypeVertexImpl.Persisted(this, i, label, scope)
+                        VertexIID.Type.of(iid), i -> new TypeVertexImpl.Persisted(this, i, label, scope)
                 );
                 typesByLabel.putIfAbsent(scopedLabel, vertex);
             }

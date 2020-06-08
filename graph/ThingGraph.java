@@ -18,7 +18,7 @@
 
 package hypergraph.graph;
 
-import hypergraph.graph.iid.IID;
+import hypergraph.graph.iid.VertexIID;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.util.Storage;
 import hypergraph.graph.vertex.AttributeVertex;
@@ -35,13 +35,13 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import static hypergraph.graph.iid.IID.Vertex.Thing.generate;
+import static hypergraph.graph.iid.VertexIID.Thing.generate;
 import static java.util.stream.Stream.concat;
 
-public class ThingGraph implements Graph<IID.Vertex.Thing, ThingVertex> {
+public class ThingGraph implements Graph<VertexIID.Thing, ThingVertex> {
 
     private final Graphs graphManager;
-    private final ConcurrentMap<IID.Vertex.Thing, ThingVertex> thingsByIID;
+    private final ConcurrentMap<VertexIID.Thing, ThingVertex> thingsByIID;
     private final AttributesByIID attributesByIID;
     private boolean hasWrites;
 
@@ -61,19 +61,19 @@ public class ThingGraph implements Graph<IID.Vertex.Thing, ThingVertex> {
     }
 
     @Override
-    public ThingVertex convert(IID.Vertex.Thing iid) {
+    public ThingVertex convert(VertexIID.Thing iid) {
         return null; // TODO
     }
 
-    public ThingVertex insert(IID.Vertex.Type typeIID, boolean isInferred) {
+    public ThingVertex insert(VertexIID.Type typeIID, boolean isInferred) {
         assert !typeIID.schema().equals(Schema.Vertex.Type.ATTRIBUTE_TYPE);
-        IID.Vertex.Thing iid = generate(graphManager.keyGenerator(), typeIID);
+        VertexIID.Thing iid = generate(graphManager.keyGenerator(), typeIID);
         ThingVertex vertex = new ThingVertexImpl.Buffered(this, iid, isInferred);
         thingsByIID.put(iid, vertex);
         return vertex;
     }
 
-    private <VALUE, ATT_IID extends IID.Vertex.Attribute<VALUE>, ATT_VERTEX extends AttributeVertex<VALUE>>
+    private <VALUE, ATT_IID extends VertexIID.Attribute<VALUE>, ATT_VERTEX extends AttributeVertex<VALUE>>
     ATT_VERTEX getOrReadFromStorage(Map<ATT_IID, ATT_VERTEX> map, ATT_IID attIID, Function<ATT_IID, ATT_VERTEX> vertexConstructor) {
         return map.computeIfAbsent(attIID, iid -> {
             byte[] val = storage().get(iid.bytes());
@@ -88,7 +88,7 @@ public class ThingGraph implements Graph<IID.Vertex.Thing, ThingVertex> {
 
         return getOrReadFromStorage(
                 attributesByIID.booleans,
-                new IID.Vertex.Attribute.Boolean(type.iid(), value),
+                new VertexIID.Attribute.Boolean(type.iid(), value),
                 iid -> new AttributeVertexImpl.Boolean(ThingGraph.this, iid, false)
         );
     }
@@ -99,7 +99,7 @@ public class ThingGraph implements Graph<IID.Vertex.Thing, ThingVertex> {
 
         return getOrReadFromStorage(
                 attributesByIID.longs,
-                new IID.Vertex.Attribute.Long(type.iid(), value),
+                new VertexIID.Attribute.Long(type.iid(), value),
                 iid -> new AttributeVertexImpl.Long(ThingGraph.this, iid, false)
         );
     }
@@ -110,7 +110,7 @@ public class ThingGraph implements Graph<IID.Vertex.Thing, ThingVertex> {
 
         return getOrReadFromStorage(
                 attributesByIID.doubles,
-                new IID.Vertex.Attribute.Double(type.iid(), value),
+                new VertexIID.Attribute.Double(type.iid(), value),
                 iid -> new AttributeVertexImpl.Double(ThingGraph.this, iid, false)
         );
     }
@@ -121,7 +121,7 @@ public class ThingGraph implements Graph<IID.Vertex.Thing, ThingVertex> {
 
         return getOrReadFromStorage(
                 attributesByIID.strings,
-                new IID.Vertex.Attribute.String(type.iid(), value),
+                new VertexIID.Attribute.String(type.iid(), value),
                 iid -> new AttributeVertexImpl.String(ThingGraph.this, iid, false)
         );
     }
@@ -132,7 +132,7 @@ public class ThingGraph implements Graph<IID.Vertex.Thing, ThingVertex> {
 
         return getOrReadFromStorage(
                 attributesByIID.dateTimes,
-                new IID.Vertex.Attribute.DateTime(type.iid(), value),
+                new VertexIID.Attribute.DateTime(type.iid(), value),
                 iid -> new AttributeVertexImpl.DateTime(ThingGraph.this, iid, false)
         );
     }
@@ -142,7 +142,7 @@ public class ThingGraph implements Graph<IID.Vertex.Thing, ThingVertex> {
         assert type.valueType().valueClass().equals(Boolean.class);
 
         return attributesByIID.booleans.computeIfAbsent(
-                new IID.Vertex.Attribute.Boolean(type.iid(), value),
+                new VertexIID.Attribute.Boolean(type.iid(), value),
                 iid -> new AttributeVertexImpl.Boolean(ThingGraph.this, iid, isInferred)
         );
     }
@@ -152,7 +152,7 @@ public class ThingGraph implements Graph<IID.Vertex.Thing, ThingVertex> {
         assert type.valueType().valueClass().equals(Long.class);
 
         return attributesByIID.longs.computeIfAbsent(
-                new IID.Vertex.Attribute.Long(type.iid(), value),
+                new VertexIID.Attribute.Long(type.iid(), value),
                 iid -> new AttributeVertexImpl.Long(ThingGraph.this, iid, isInferred)
         );
     }
@@ -162,7 +162,7 @@ public class ThingGraph implements Graph<IID.Vertex.Thing, ThingVertex> {
         assert type.valueType().valueClass().equals(Double.class);
 
         return attributesByIID.doubles.computeIfAbsent(
-                new IID.Vertex.Attribute.Double(type.iid(), value),
+                new VertexIID.Attribute.Double(type.iid(), value),
                 iid -> new AttributeVertexImpl.Double(ThingGraph.this, iid, isInferred)
         );
     }
@@ -173,7 +173,7 @@ public class ThingGraph implements Graph<IID.Vertex.Thing, ThingVertex> {
         assert value.length() <= Schema.STRING_MAX_LENGTH;
 
         return attributesByIID.strings.computeIfAbsent(
-                new IID.Vertex.Attribute.String(type.iid(), value),
+                new VertexIID.Attribute.String(type.iid(), value),
                 iid -> new AttributeVertexImpl.String(ThingGraph.this, iid, isInferred)
         );
     }
@@ -183,7 +183,7 @@ public class ThingGraph implements Graph<IID.Vertex.Thing, ThingVertex> {
         assert type.valueType().valueClass().equals(LocalDateTime.class);
 
         return attributesByIID.dateTimes.computeIfAbsent(
-                new IID.Vertex.Attribute.DateTime(type.iid(), value),
+                new VertexIID.Attribute.DateTime(type.iid(), value),
                 iid -> new AttributeVertexImpl.DateTime(ThingGraph.this, iid, isInferred)
         );
     }
@@ -236,11 +236,11 @@ public class ThingGraph implements Graph<IID.Vertex.Thing, ThingVertex> {
 
     private static class AttributesByIID {
 
-        private final ConcurrentMap<IID.Vertex.Attribute.Boolean, AttributeVertex<Boolean>> booleans;
-        private final ConcurrentMap<IID.Vertex.Attribute.Long, AttributeVertex<Long>> longs;
-        private final ConcurrentMap<IID.Vertex.Attribute.Double, AttributeVertex<Double>> doubles;
-        private final ConcurrentMap<IID.Vertex.Attribute.String, AttributeVertex<String>> strings;
-        private final ConcurrentMap<IID.Vertex.Attribute.DateTime, AttributeVertex<LocalDateTime>> dateTimes;
+        private final ConcurrentMap<VertexIID.Attribute.Boolean, AttributeVertex<Boolean>> booleans;
+        private final ConcurrentMap<VertexIID.Attribute.Long, AttributeVertex<Long>> longs;
+        private final ConcurrentMap<VertexIID.Attribute.Double, AttributeVertex<Double>> doubles;
+        private final ConcurrentMap<VertexIID.Attribute.String, AttributeVertex<String>> strings;
+        private final ConcurrentMap<VertexIID.Attribute.DateTime, AttributeVertex<LocalDateTime>> dateTimes;
 
         AttributesByIID() {
             booleans = new ConcurrentHashMap<>();
@@ -266,22 +266,22 @@ public class ThingGraph implements Graph<IID.Vertex.Thing, ThingVertex> {
             dateTimes.clear();
         }
 
-        public void remove(IID.Vertex.Attribute iid) {
+        public void remove(VertexIID.Attribute iid) {
             switch (iid.valueType()) {
                 case BOOLEAN:
-                    booleans.remove((IID.Vertex.Attribute.Boolean) iid);
+                    booleans.remove((VertexIID.Attribute.Boolean) iid);
                     break;
                 case LONG:
-                    longs.remove((IID.Vertex.Attribute.Long) iid);
+                    longs.remove((VertexIID.Attribute.Long) iid);
                     break;
                 case DOUBLE:
-                    doubles.remove((IID.Vertex.Attribute.Double) iid);
+                    doubles.remove((VertexIID.Attribute.Double) iid);
                     break;
                 case STRING:
-                    strings.remove((IID.Vertex.Attribute.String) iid);
+                    strings.remove((VertexIID.Attribute.String) iid);
                     break;
                 case DATETIME:
-                    dateTimes.remove((IID.Vertex.Attribute.DateTime) iid);
+                    dateTimes.remove((VertexIID.Attribute.DateTime) iid);
                     break;
             }
         }

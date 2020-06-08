@@ -21,11 +21,11 @@ package hypergraph.graph.vertex;
 import hypergraph.graph.Graph;
 import hypergraph.graph.adjacency.Adjacency;
 import hypergraph.graph.edge.Edge;
-import hypergraph.graph.iid.IID;
+import hypergraph.graph.iid.VertexIID;
 import hypergraph.graph.util.Schema;
 
 public interface Vertex<
-        VERTEX_IID extends IID.Vertex,
+        VERTEX_IID extends VertexIID,
         VERTEX_SCHEMA extends Schema.Vertex,
         VERTEX extends Vertex<VERTEX_IID, VERTEX_SCHEMA, VERTEX, EDGE_SCHEMA, EDGE>,
         EDGE_SCHEMA extends Schema.Edge,

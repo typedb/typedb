@@ -20,7 +20,8 @@ package hypergraph.graph.edge.impl;
 
 import hypergraph.graph.TypeGraph;
 import hypergraph.graph.edge.TypeEdge;
-import hypergraph.graph.iid.IID;
+import hypergraph.graph.iid.EdgeIID;
+import hypergraph.graph.iid.VertexIID;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.vertex.TypeVertex;
 
@@ -35,7 +36,7 @@ public class TypeEdgeImpl {
      * A Buffered Type Edge that connects two Type Vertices, and an overridden Type Vertex.
      */
     public static class Buffered
-            extends EdgeImpl.Buffered<Schema.Edge.Type, IID.Edge.Type, TypeEdge, TypeVertex>
+            extends EdgeImpl.Buffered<Schema.Edge.Type, EdgeIID.Type, TypeEdge, TypeVertex>
             implements TypeEdge {
 
         private final TypeGraph graph;
@@ -53,8 +54,8 @@ public class TypeEdgeImpl {
         }
 
         @Override
-        IID.Edge.Type edgeIID(TypeVertex start, Schema.Infix infix, TypeVertex end) {
-            return IID.Edge.Type.of(start.iid(), infix, end.iid());
+        EdgeIID.Type edgeIID(TypeVertex start, Schema.Infix infix, TypeVertex end) {
+            return EdgeIID.Type.of(start.iid(), infix, end.iid());
         }
 
         @Override
@@ -91,13 +92,13 @@ public class TypeEdgeImpl {
      * Persisted Type Edge that connects two Type Vertices, and an overridden Type Vertex
      */
     public static class Persisted
-            extends EdgeImpl.Persisted<TypeGraph, Schema.Edge.Type, IID.Edge.Type, TypeEdge, IID.Vertex.Type, TypeVertex>
+            extends EdgeImpl.Persisted<TypeGraph, Schema.Edge.Type, EdgeIID.Type, TypeEdge, VertexIID.Type, TypeVertex>
             implements TypeEdge {
 
-        private IID.Vertex.Type overriddenIID;
+        private VertexIID.Type overriddenIID;
         private TypeVertex overridden;
 
-        public Persisted(TypeGraph graph, IID.Edge.Type iid, @Nullable IID.Vertex.Type overriddenIID) {
+        public Persisted(TypeGraph graph, EdgeIID.Type iid, @Nullable VertexIID.Type overriddenIID) {
             super(graph, iid);
 
             if (iid.isOutwards()) {
@@ -114,8 +115,8 @@ public class TypeEdgeImpl {
         }
 
         @Override
-        IID.Edge.Type edgeIID(IID.Vertex.Type start, Schema.Infix infix, IID.Vertex.Type end) {
-            return IID.Edge.Type.of(start, infix, end);
+        EdgeIID.Type edgeIID(VertexIID.Type start, Schema.Infix infix, VertexIID.Type end) {
+            return EdgeIID.Type.of(start, infix, end);
         }
 
         @Override

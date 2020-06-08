@@ -18,13 +18,13 @@
 
 package hypergraph.graph.edge;
 
-import hypergraph.graph.iid.IID;
+import hypergraph.graph.iid.EdgeIID;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.vertex.Vertex;
 
 public interface Edge<
         EDGE_SCHEMA extends Schema.Edge,
-        EDGE_IID extends IID.Edge<EDGE_SCHEMA, ?>,
+        EDGE_IID extends EdgeIID<EDGE_SCHEMA, ?>,
         VERTEX extends Vertex> {
 
     /**

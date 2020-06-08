@@ -25,7 +25,8 @@ import hypergraph.graph.adjacency.Adjacency;
 import hypergraph.graph.adjacency.TypeAdjacency;
 import hypergraph.graph.adjacency.impl.TypeAdjacencyImpl;
 import hypergraph.graph.edge.TypeEdge;
-import hypergraph.graph.iid.IID;
+import hypergraph.graph.iid.IndexIID;
+import hypergraph.graph.iid.VertexIID;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.vertex.ThingVertex;
 import hypergraph.graph.vertex.TypeVertex;
@@ -37,7 +38,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static hypergraph.common.collection.Bytes.join;
 
-public abstract class TypeVertexImpl extends VertexImpl<IID.Vertex.Type> implements TypeVertex {
+public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implements TypeVertex {
 
     protected final TypeGraph graph;
     protected final TypeAdjacency outs;
@@ -50,7 +51,7 @@ public abstract class TypeVertexImpl extends VertexImpl<IID.Vertex.Type> impleme
     String regex;
 
 
-    TypeVertexImpl(TypeGraph graph, IID.Vertex.Type iid, String label, @Nullable String scope) {
+    TypeVertexImpl(TypeGraph graph, VertexIID.Type iid, String label, @Nullable String scope) {
         super(iid);
         this.graph = graph;
         this.label = label;
@@ -107,7 +108,7 @@ public abstract class TypeVertexImpl extends VertexImpl<IID.Vertex.Type> impleme
 
         private final AtomicBoolean committed;
 
-        public Buffered(TypeGraph graph, IID.Vertex.Type iid, String label, @Nullable String scope) {
+        public Buffered(TypeGraph graph, VertexIID.Type iid, String label, @Nullable String scope) {
             super(graph, iid, label, scope);
             this.committed = new AtomicBoolean(false);
             written();
@@ -193,7 +194,7 @@ public abstract class TypeVertexImpl extends VertexImpl<IID.Vertex.Type> impleme
         }
 
         void commitIndex() {
-            graph.storage().put(IID.Index.Type.of(label, scope).bytes(), iid.bytes());
+            graph.storage().put(IndexIID.Type.of(label, scope).bytes(), iid.bytes());
         }
 
         void commitProperties() {
@@ -232,18 +233,18 @@ public abstract class TypeVertexImpl extends VertexImpl<IID.Vertex.Type> impleme
 
     public static class Persisted extends TypeVertexImpl {
 
-        public Persisted(TypeGraph graph, IID.Vertex.Type iid, String label, @Nullable String scope) {
+        public Persisted(TypeGraph graph, VertexIID.Type iid, String label, @Nullable String scope) {
             super(graph, iid, label, scope);
         }
 
-        public Persisted(TypeGraph graph, IID.Vertex.Type iid) {
+        public Persisted(TypeGraph graph, VertexIID.Type iid) {
             super(graph, iid,
                   new String(graph.storage().get(join(iid.bytes(), Schema.Property.LABEL.infix().bytes()))),
                   getScope(graph, iid));
         }
 
         @Nullable
-        private static String getScope(TypeGraph graph, IID.Vertex.Type iid) {
+        private static String getScope(TypeGraph graph, VertexIID.Type iid) {
             byte[] scopeBytes = graph.storage().get(join(iid.bytes(), Schema.Property.SCOPE.infix().bytes()));
             if (scopeBytes != null) return new String(scopeBytes);
             else return null;
@@ -260,7 +261,7 @@ public abstract class TypeVertexImpl extends VertexImpl<IID.Vertex.Type> impleme
         }
 
         @Override
-        public void iid(IID.Vertex.Type iid) {
+        public void iid(VertexIID.Type iid) {
             throw new HypergraphException(Error.Transaction.ILLEGAL_OPERATION);
         }
 
@@ -273,8 +274,8 @@ public abstract class TypeVertexImpl extends VertexImpl<IID.Vertex.Type> impleme
         public TypeVertexImpl label(String label) {
             graph.update(this, this.label, scope, label, scope);
             graph.storage().put(join(iid.bytes(), Schema.Property.LABEL.infix().bytes()), label.getBytes());
-            graph.storage().delete(IID.Index.Type.of(this.label, scope).bytes());
-            graph.storage().put(IID.Index.Type.of(label, scope).bytes(), iid.bytes());
+            graph.storage().delete(IndexIID.Type.of(this.label, scope).bytes());
+            graph.storage().put(IndexIID.Type.of(label, scope).bytes(), iid.bytes());
             this.label = label;
             return this;
         }
@@ -283,8 +284,8 @@ public abstract class TypeVertexImpl extends VertexImpl<IID.Vertex.Type> impleme
         public TypeVertexImpl scope(String scope) {
             graph.update(this, label, this.scope, label, scope);
             graph.storage().put(join(iid.bytes(), Schema.Property.SCOPE.infix().bytes()), scope.getBytes());
-            graph.storage().delete(IID.Index.Type.of(label, this.scope).bytes());
-            graph.storage().put(IID.Index.Type.of(label, scope).bytes(), iid.bytes());
+            graph.storage().delete(IndexIID.Type.of(label, this.scope).bytes());
+            graph.storage().put(IndexIID.Type.of(label, scope).bytes(), iid.bytes());
             this.scope = scope;
             return this;
         }
@@ -340,7 +341,7 @@ public abstract class TypeVertexImpl extends VertexImpl<IID.Vertex.Type> impleme
             ins.deleteAll();
             outs.deleteAll();
             graph.delete(this);
-            graph.storage().delete(IID.Index.Type.of(label, scope).bytes());
+            graph.storage().delete(IndexIID.Type.of(label, scope).bytes());
             Iterator<byte[]> keys = graph.storage().iterate(iid.bytes(), (iid, value) -> iid);
             while (keys.hasNext()) graph.storage().delete(keys.next());
         }

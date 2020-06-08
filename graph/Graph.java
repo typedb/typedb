@@ -18,11 +18,11 @@
 
 package hypergraph.graph;
 
-import hypergraph.graph.iid.IID;
+import hypergraph.graph.iid.VertexIID;
 import hypergraph.graph.util.Storage;
 import hypergraph.graph.vertex.Vertex;
 
-public interface Graph<VERTEX_IID extends IID.Vertex, VERTEX extends Vertex> {
+public interface Graph<VERTEX_IID extends VertexIID, VERTEX extends Vertex> {
 
     Storage storage();
 

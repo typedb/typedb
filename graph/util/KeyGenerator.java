@@ -18,7 +18,8 @@
 
 package hypergraph.graph.util;
 
-import hypergraph.graph.iid.IID;
+import hypergraph.graph.iid.PrefixIID;
+import hypergraph.graph.iid.VertexIID;
 
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
@@ -35,8 +36,8 @@ import static java.util.Arrays.copyOfRange;
 
 public abstract class KeyGenerator {
 
-    protected final ConcurrentMap<IID.Prefix, AtomicInteger> typeKeys;
-    protected final ConcurrentMap<IID.Vertex.Type, AtomicLong> thingKeys;
+    protected final ConcurrentMap<PrefixIID, AtomicInteger> typeKeys;
+    protected final ConcurrentMap<VertexIID.Type, AtomicLong> thingKeys;
     protected final int initialValue;
     protected final int delta;
 
@@ -47,13 +48,13 @@ public abstract class KeyGenerator {
         this.delta = delta;
     }
 
-    public byte[] forType(IID.Prefix root) {
+    public byte[] forType(PrefixIID root) {
         return shortToBytes(typeKeys.computeIfAbsent(
                 root, k -> new AtomicInteger(initialValue)
         ).getAndAdd(delta));
     }
 
-    public byte[] forThing(IID.Vertex.Type typeIID) {
+    public byte[] forThing(VertexIID.Type typeIID) {
         return longToBytes(thingKeys.computeIfAbsent(
                 typeIID, k -> new AtomicLong(initialValue)
         ).getAndAdd(delta));
@@ -82,9 +83,9 @@ public abstract class KeyGenerator {
                 byte[] prefix = schema.prefix().bytes();
                 byte[] lastIID = storage.getLastKey(prefix);
                 AtomicInteger nextValue = lastIID != null ?
-                        new AtomicInteger(wrap(copyOfRange(lastIID, IID.Prefix.LENGTH, IID.Vertex.Type.LENGTH)).getShort() + delta) :
+                        new AtomicInteger(wrap(copyOfRange(lastIID, PrefixIID.LENGTH, VertexIID.Type.LENGTH)).getShort() + delta) :
                         new AtomicInteger(initialValue);
-                typeKeys.put(IID.Prefix.of(schema.prefix().bytes()), nextValue);
+                typeKeys.put(PrefixIID.of(schema.prefix().bytes()), nextValue);
             }
         }
 
@@ -96,17 +97,17 @@ public abstract class KeyGenerator {
             for (Schema.Vertex.Thing thingSchema : thingsWithGeneratedIID) {
                 byte[] typeSchema = thingSchema.type().prefix().bytes();
                 Iterator<byte[]> typeIterator = filter(storage.iterate(typeSchema, (iid, value) -> iid),
-                                                       iid -> iid.length == IID.Vertex.Type.LENGTH);
+                                                       iid -> iid.length == VertexIID.Type.LENGTH);
                 while (typeIterator.hasNext()) {
                     byte[] typeIID = typeIterator.next();
                     byte[] prefix = join(thingSchema.prefix().bytes(), typeIID);
                     byte[] lastIID = storage.getLastKey(prefix);
                     AtomicLong nextValue = lastIID != null ?
                             new AtomicLong(wrap(
-                                    copyOfRange(lastIID, IID.Vertex.Thing.PREFIX_TYPE_LENGTH, IID.Vertex.Thing.LENGTH)
+                                    copyOfRange(lastIID, VertexIID.Thing.PREFIX_TYPE_LENGTH, VertexIID.Thing.LENGTH)
                             ).getShort() + delta) :
                             new AtomicLong(initialValue);
-                    thingKeys.put(IID.Vertex.Type.of(typeIID), nextValue);
+                    thingKeys.put(VertexIID.Type.of(typeIID), nextValue);
                 }
             }
         }

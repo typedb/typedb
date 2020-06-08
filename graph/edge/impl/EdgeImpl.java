@@ -20,7 +20,8 @@ package hypergraph.graph.edge.impl;
 
 import hypergraph.graph.Graph;
 import hypergraph.graph.edge.Edge;
-import hypergraph.graph.iid.IID;
+import hypergraph.graph.iid.EdgeIID;
+import hypergraph.graph.iid.VertexIID;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.vertex.Vertex;
 
@@ -32,7 +33,7 @@ public abstract class EdgeImpl {
 
     static abstract class Buffered<
             EDGE_SCHEMA extends Schema.Edge,
-            EDGE_IID extends IID.Edge<EDGE_SCHEMA, ?>,
+            EDGE_IID extends EdgeIID<EDGE_SCHEMA, ?>,
             EDGE extends Edge<EDGE_SCHEMA, EDGE_IID, VERTEX>,
             VERTEX extends Vertex<?, ?, VERTEX, EDGE_SCHEMA, EDGE>> {
 
@@ -126,9 +127,9 @@ public abstract class EdgeImpl {
     static abstract class Persisted<
             GRAPH extends Graph<VERTEX_IID, VERTEX>,
             EDGE_SCHEMA extends Schema.Edge,
-            EDGE_IID extends IID.Edge<EDGE_SCHEMA, VERTEX_IID>,
+            EDGE_IID extends EdgeIID<EDGE_SCHEMA, VERTEX_IID>,
             EDGE extends Edge<EDGE_SCHEMA, EDGE_IID, VERTEX>,
-            VERTEX_IID extends IID.Vertex,
+            VERTEX_IID extends VertexIID,
             VERTEX extends Vertex<VERTEX_IID, ?, VERTEX, EDGE_SCHEMA, EDGE>> {
 
         final GRAPH graph;

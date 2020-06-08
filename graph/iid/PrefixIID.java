@@ -18,33 +18,23 @@
 
 package hypergraph.graph.iid;
 
-import java.util.Arrays;
+import hypergraph.graph.util.Schema;
 
-public abstract class IID {
+public class PrefixIID extends IID {
 
-    protected final byte[] bytes;
+    public static final int LENGTH = 1;
 
-    IID(byte[] bytes) {
-        this.bytes = bytes;
+    PrefixIID(byte[] bytes) {
+        super(bytes);
+        assert bytes.length == LENGTH;
     }
 
-    public byte[] bytes() {
-        return bytes;
-    }
-
-    @Override
-    public abstract String toString();
-
-    @Override
-    public boolean equals(Object object) {
-        if (this == object) return true;
-        if (object == null || getClass() != object.getClass()) return false;
-        IID that = (IID) object;
-        return Arrays.equals(this.bytes, that.bytes);
+    public static PrefixIID of(byte[] bytes) {
+        return new PrefixIID(bytes);
     }
 
     @Override
-    public final int hashCode() {
-        return Arrays.hashCode(bytes);
+    public String toString() {
+        return "[" + Schema.Prefix.of(bytes[0]).toString() + "]";
     }
 }
