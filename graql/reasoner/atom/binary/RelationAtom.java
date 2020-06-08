@@ -18,7 +18,15 @@
 
 package grakn.core.graql.reasoner.atom.binary;
 
-import com.google.common.collect.*;
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableListMultimap;
+import com.google.common.collect.ImmutableMultimap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ListMultimap;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.SetMultimap;
 import grakn.common.util.Pair;
 import grakn.core.common.util.Streams;
 import grakn.core.concept.answer.ConceptMap;
@@ -39,7 +47,11 @@ import grakn.core.graql.reasoner.atom.task.validate.RelationAtomValidator;
 import grakn.core.graql.reasoner.cache.SemanticDifference;
 import grakn.core.graql.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierType;
-import grakn.core.kb.concept.api.*;
+import grakn.core.kb.concept.api.Label;
+import grakn.core.kb.concept.api.Role;
+import grakn.core.kb.concept.api.Rule;
+import grakn.core.kb.concept.api.SchemaConcept;
+import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.reasoner.ReasonerCheckedException;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
