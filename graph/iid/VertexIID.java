@@ -18,6 +18,8 @@
 
 package hypergraph.graph.iid;
 
+import hypergraph.common.exception.Error;
+import hypergraph.common.exception.HypergraphException;
 import hypergraph.graph.util.KeyGenerator;
 import hypergraph.graph.util.Schema;
 
@@ -77,13 +79,13 @@ public abstract class VertexIID extends IID {
         @Override
         public String toString() {
             return "[" + PrefixIID.LENGTH + ": " + schema().toString() + "]" +
-                    "[" + (Type.LENGTH - PrefixIID.LENGTH) + ": " + bytesToShort(copyOfRange(bytes, PrefixIID.LENGTH, Type.LENGTH)) + "]";
+                    "[" + (VertexIID.Type.LENGTH - PrefixIID.LENGTH) + ": " + bytesToShort(copyOfRange(bytes, PrefixIID.LENGTH, VertexIID.Type.LENGTH)) + "]";
         }
     }
 
     public static class Thing extends VertexIID {
 
-        public static final int PREFIX_TYPE_LENGTH = PrefixIID.LENGTH + Type.LENGTH;
+        public static final int PREFIX_TYPE_LENGTH = PrefixIID.LENGTH + VertexIID.Type.LENGTH;
         public static final int LENGTH = PREFIX_TYPE_LENGTH + 8;
 
         public Thing(byte[] bytes) {
@@ -103,6 +105,14 @@ public abstract class VertexIID extends IID {
                                   keyGenerator.forThing(typeIID)));
         }
 
+        public static Thing of(byte[] bytes) {
+            if (Schema.Vertex.Type.of(bytes[PrefixIID.LENGTH + 1]).equals(Schema.Vertex.Type.ATTRIBUTE_TYPE)) {
+                return VertexIID.Attribute.of(bytes);
+            } else {
+                return new VertexIID.Thing(bytes);
+            }
+        }
+
         public Type type() {
             return Type.of(copyOfRange(bytes, PrefixIID.LENGTH, PREFIX_TYPE_LENGTH));
         }
@@ -111,10 +121,18 @@ public abstract class VertexIID extends IID {
             return Schema.Vertex.Thing.of(bytes[0]);
         }
 
+        public VertexIID.Attribute asAttribute() {
+            if (!schema().equals(Schema.Vertex.Thing.ATTRIBUTE)) {
+                throw new HypergraphException(Error.ThingRead.INVALID_IID_CASTING.format(VertexIID.Attribute.class.getCanonicalName()));
+            }
+
+            return VertexIID.Attribute.of(bytes);
+        }
+
         @Override
         public String toString() {
             return "[" + PrefixIID.LENGTH + ": " + schema().toString() + "]" +
-                    "[" + Type.LENGTH + ": " + type().toString() + "]" +
+                    "[" + VertexIID.Type.LENGTH + ": " + type().toString() + "]" +
                     "[" + (LENGTH - PREFIX_TYPE_LENGTH) + ": " + bytesToLong(copyOfRange(bytes, PREFIX_TYPE_LENGTH, LENGTH)) + "]";
         }
     }
@@ -122,8 +140,13 @@ public abstract class VertexIID extends IID {
     public static abstract class Attribute<VALUE> extends Thing {
 
         static final int VALUE_TYPE_LENGTH = 1;
-        static final int VALUE_INDEX = PrefixIID.LENGTH + Type.LENGTH + VALUE_TYPE_LENGTH;
+        static final int VALUE_INDEX = PrefixIID.LENGTH + VertexIID.Type.LENGTH + VALUE_TYPE_LENGTH;
         private final Schema.ValueType valueType;
+
+        Attribute(byte[] bytes) {
+            super(bytes);
+            valueType = Schema.ValueType.of(bytes[PREFIX_TYPE_LENGTH]);
+        }
 
         Attribute(Schema.ValueType valueType, Type typeIID, byte[] valueBytes) {
             super(join(
@@ -135,10 +158,48 @@ public abstract class VertexIID extends IID {
             this.valueType = valueType;
         }
 
+        public static VertexIID.Attribute of(byte[] bytes) {
+            switch (Schema.ValueType.of(bytes[PREFIX_TYPE_LENGTH])) {
+                case BOOLEAN:
+                    return new Attribute.Boolean(bytes);
+                case LONG:
+                    return new Attribute.Long(bytes);
+                case DOUBLE:
+                    return new Attribute.Double(bytes);
+                case STRING:
+                    return new Attribute.String(bytes);
+                case DATETIME:
+                    return new Attribute.DateTime(bytes);
+                default:
+                    assert false;
+                    return null;
+            }
+        }
+
         public abstract VALUE value();
 
         public Schema.ValueType valueType() {
             return valueType;
+        }
+
+        public VertexIID.Attribute.Boolean asBoolean() {
+            throw new HypergraphException(Error.ThingRead.INVALID_IID_CASTING.format(Boolean.class.getCanonicalName()));
+        }
+
+        public VertexIID.Attribute.Long asLong() {
+            throw new HypergraphException(Error.ThingRead.INVALID_IID_CASTING.format(Long.class.getCanonicalName()));
+        }
+
+        public VertexIID.Attribute.Double asDouble() {
+            throw new HypergraphException(Error.ThingRead.INVALID_IID_CASTING.format(Double.class.getCanonicalName()));
+        }
+
+        public VertexIID.Attribute.String asString() {
+            throw new HypergraphException(Error.ThingRead.INVALID_IID_CASTING.format(String.class.getCanonicalName()));
+        }
+
+        public VertexIID.Attribute.DateTime asDateTime() {
+            throw new HypergraphException(Error.ThingRead.INVALID_IID_CASTING.format(DateTime.class.getCanonicalName()));
         }
 
         @Override
@@ -167,12 +228,16 @@ public abstract class VertexIID extends IID {
             }
 
             return "[" + PrefixIID.LENGTH + ": " + Schema.Vertex.Thing.ATTRIBUTE.toString() + "]" +
-                    "[" + Type.LENGTH + ": " + type().toString() + "]" +
+                    "[" + VertexIID.Type.LENGTH + ": " + type().toString() + "]" +
                     "[" + VALUE_TYPE_LENGTH + ": " + valueType.toString() + "]" +
                     "[" + (bytes.length - VALUE_INDEX) + ": " + value + "]";
         }
 
         public static class Boolean extends Attribute<java.lang.Boolean> {
+
+            public Boolean(byte[] bytes) {
+                super(bytes);
+            }
 
             public Boolean(Type typeIID, boolean value) {
                 super(Schema.ValueType.BOOLEAN, typeIID, new byte[]{booleanToByte(value)});
@@ -182,9 +247,18 @@ public abstract class VertexIID extends IID {
             public java.lang.Boolean value() {
                 return byteToBoolean(bytes[VALUE_INDEX]);
             }
+
+            @Override
+            public Boolean asBoolean() {
+                return this;
+            }
         }
 
         public static class Long extends Attribute<java.lang.Long> {
+
+            public Long(byte[] bytes) {
+                super(bytes);
+            }
 
             public Long(Type typeIID, long value) {
                 super(Schema.ValueType.LONG, typeIID, longToBytes(value));
@@ -194,9 +268,18 @@ public abstract class VertexIID extends IID {
             public java.lang.Long value() {
                 return bytesToLong(copyOfRange(bytes, VALUE_INDEX, VALUE_INDEX + LONG_SIZE));
             }
+
+            @Override
+            public Long asLong() {
+                return this;
+            }
         }
 
         public static class Double extends Attribute<java.lang.Double> {
+
+            public Double(byte[] bytes) {
+                super(bytes);
+            }
 
             public Double(Type typeIID, double value) {
                 super(Schema.ValueType.DOUBLE, typeIID, doubleToBytes(value));
@@ -206,9 +289,18 @@ public abstract class VertexIID extends IID {
             public java.lang.Double value() {
                 return bytesToDouble(copyOfRange(bytes, VALUE_INDEX, VALUE_INDEX + DOUBLE_SIZE));
             }
+
+            @Override
+            public Double asDouble() {
+                return this;
+            }
         }
 
         public static class String extends Attribute<java.lang.String> {
+
+            public String(byte[] bytes) {
+                super(bytes);
+            }
 
             public String(Type typeIID, java.lang.String value) {
                 super(Schema.ValueType.STRING, typeIID, stringToBytes(value, STRING_ENCODING));
@@ -219,9 +311,18 @@ public abstract class VertexIID extends IID {
             public java.lang.String value() {
                 return bytesToString(copyOfRange(bytes, VALUE_INDEX, bytes.length), STRING_ENCODING);
             }
+
+            @Override
+            public String asString() {
+                return this;
+            }
         }
 
         public static class DateTime extends Attribute<java.time.LocalDateTime> {
+
+            public DateTime(byte[] bytes) {
+                super(bytes);
+            }
 
             public DateTime(Type typeIID, java.time.LocalDateTime value) {
                 super(Schema.ValueType.DATETIME, typeIID, dateTimeToBytes(value, TIME_ZONE_ID));
@@ -230,6 +331,11 @@ public abstract class VertexIID extends IID {
             @Override
             public java.time.LocalDateTime value() {
                 return bytesToDateTime(copyOfRange(bytes, VALUE_INDEX, bytes.length), TIME_ZONE_ID);
+            }
+
+            @Override
+            public DateTime asDateTime() {
+                return this;
             }
         }
     }

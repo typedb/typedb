@@ -18,7 +18,6 @@
 
 package hypergraph.graph.adjacency.impl;
 
-import hypergraph.common.iterator.Iterators;
 import hypergraph.graph.adjacency.Adjacency;
 import hypergraph.graph.edge.Edge;
 import hypergraph.graph.util.Schema;
@@ -34,6 +33,7 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 import static hypergraph.common.collection.Bytes.join;
+import static hypergraph.common.iterator.Iterators.apply;
 import static hypergraph.common.iterator.Iterators.link;
 
 public abstract class AdjacencyImpl<
@@ -112,12 +112,12 @@ public abstract class AdjacencyImpl<
 
         @Override
         public Iterator<VERTEX> to() {
-            return Iterators.apply(edgeIterator, Edge::to);
+            return apply(edgeIterator, Edge::to);
         }
 
         @Override
         public Iterator<VERTEX> from() {
-            return Iterators.apply(edgeIterator, Edge::from);
+            return apply(edgeIterator, Edge::from);
         }
     }
 

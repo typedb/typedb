@@ -130,6 +130,25 @@ public abstract class Error<TYPE extends Error<TYPE>> {
         }
     }
 
+    public static class ThingRead extends Error {
+
+        public static final ThingRead INVALID_IID_CASTING =
+                new ThingRead(1, "'Invalid IID casting to '%s'.");
+        public static final ThingRead INVALID_VERTEX_CASTING =
+                new ThingRead(2, "Invalid ThingVertex casting to '%s'.");
+
+        private static final String codePrefix = "THR";
+        private static final String descriptionPrefix = "Invalid Thing Read";
+
+        ThingRead(int number, String description) {
+            super(codePrefix, number, descriptionPrefix, description);
+        }
+
+        protected ThingRead getThis() {
+            return this;
+        }
+    }
+
     public static class ThingWrite extends Error {
 
         public static final ThingWrite ILLEGAL_ABSTRACT_WRITE =

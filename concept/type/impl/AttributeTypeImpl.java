@@ -36,10 +36,8 @@ import java.util.stream.Stream;
 
 import static hypergraph.common.exception.Error.ConceptRead.INVALID_CONCEPT_CASTING;
 import static hypergraph.common.exception.Error.TypeWrite.INVALID_ROOT_TYPE_MUTATION;
-import static java.util.Spliterator.IMMUTABLE;
-import static java.util.Spliterator.ORDERED;
-import static java.util.Spliterators.spliteratorUnknownSize;
-import static java.util.stream.StreamSupport.stream;
+import static hypergraph.common.iterator.Iterators.apply;
+import static hypergraph.common.iterator.Iterators.stream;
 
 public abstract class AttributeTypeImpl extends ThingTypeImpl implements AttributeType {
 
@@ -87,6 +85,9 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
     @Override
     public abstract Stream<? extends AttributeTypeImpl> subs();
+
+    @Override
+    public abstract Stream<? extends AttributeImpl<?>> instances();
 
     protected Iterator<TypeVertex> subTypeVertices(Schema.ValueType valueType) {
         return Iterators.tree(vertex, v -> Iterators.filter(v.ins().edge(Schema.Edge.Type.SUB).from(),
@@ -275,7 +276,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         @Override
         public Stream<AttributeImpl.Boolean> instances() {
-            return null; // TODO
+            return super.instances(v -> new AttributeImpl.Boolean(v.asAttribute().asBoolean()));
         }
 
         @Override
@@ -322,11 +323,10 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
             @Override
             public Stream<AttributeTypeImpl.Boolean> subs() {
-                Iterator<AttributeTypeImpl.Boolean> sups = Iterators.apply(
+                return stream(apply(
                         super.subTypeVertices(Schema.ValueType.BOOLEAN),
                         AttributeTypeImpl.Boolean::of
-                );
-                return stream(spliteratorUnknownSize(sups, ORDERED | IMMUTABLE), false);
+                ));
             }
         }
     }
@@ -373,7 +373,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         @Override
         public Stream<AttributeImpl.Long> instances() {
-            return null; // TODO
+            return super.instances(v -> new AttributeImpl.Long(v.asAttribute().asLong()));
         }
 
         @Override
@@ -422,11 +422,10 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
             @Override
             public Stream<AttributeTypeImpl.Long> subs() {
-                Iterator<AttributeTypeImpl.Long> sups = Iterators.apply(
+                return stream(apply(
                         super.subTypeVertices(Schema.ValueType.LONG),
                         AttributeTypeImpl.Long::of
-                );
-                return stream(spliteratorUnknownSize(sups, ORDERED | IMMUTABLE), false);
+                ));
             }
         }
     }
@@ -473,7 +472,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         @Override
         public Stream<AttributeImpl.Double> instances() {
-            return null; // TODO
+            return super.instances(v -> new AttributeImpl.Double(v.asAttribute().asDouble()));
         }
 
         @Override
@@ -522,11 +521,10 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
             @Override
             public Stream<AttributeTypeImpl.Double> subs() {
-                Iterator<AttributeTypeImpl.Double> sups = Iterators.apply(
+                return stream(apply(
                         super.subTypeVertices(Schema.ValueType.DOUBLE),
                         AttributeTypeImpl.Double::of
-                );
-                return stream(spliteratorUnknownSize(sups, ORDERED | IMMUTABLE), false);
+                ));
             }
         }
     }
@@ -573,7 +571,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         @Override
         public Stream<AttributeImpl.String> instances() {
-            return null; // TODO
+            return super.instances(v -> new AttributeImpl.String(v.asAttribute().asString()));
         }
 
         @Override
@@ -626,11 +624,10 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
             @Override
             public Stream<AttributeTypeImpl.String> subs() {
-                Iterator<AttributeTypeImpl.String> sups = Iterators.apply(
+                return stream(apply(
                         super.subTypeVertices(Schema.ValueType.STRING),
                         AttributeTypeImpl.String::of
-                );
-                return stream(spliteratorUnknownSize(sups, ORDERED | IMMUTABLE), false);
+                ));
             }
         }
     }
@@ -677,7 +674,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         @Override
         public Stream<AttributeImpl.DateTime> instances() {
-            return null; // TODO
+            return super.instances(v -> new AttributeImpl.DateTime(v.asAttribute().asDateTime()));
         }
 
         @Override
@@ -727,11 +724,10 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
             @Override
             public Stream<AttributeTypeImpl.DateTime> subs() {
-                Iterator<AttributeTypeImpl.DateTime> sups = Iterators.apply(
+                return stream(apply(
                         super.subTypeVertices(Schema.ValueType.DATETIME),
                         AttributeTypeImpl.DateTime::of
-                );
-                return stream(spliteratorUnknownSize(sups, ORDERED | IMMUTABLE), false);
+                ));
             }
         }
     }

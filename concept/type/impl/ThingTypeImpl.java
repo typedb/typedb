@@ -40,11 +40,8 @@ import static hypergraph.common.exception.Error.TypeWrite.INVALID_ROOT_TYPE_MUTA
 import static hypergraph.common.iterator.Iterators.apply;
 import static hypergraph.common.iterator.Iterators.filter;
 import static hypergraph.common.iterator.Iterators.link;
-import static java.util.Spliterator.IMMUTABLE;
-import static java.util.Spliterator.ORDERED;
-import static java.util.Spliterators.spliteratorUnknownSize;
+import static hypergraph.common.iterator.Iterators.stream;
 import static java.util.stream.Stream.concat;
-import static java.util.stream.StreamSupport.stream;
 
 public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
@@ -111,7 +108,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     public Stream<AttributeTypeImpl> keys() {
         Iterator<AttributeTypeImpl> keys = apply(vertex.outs().edge(Schema.Edge.Type.KEY).to(), AttributeTypeImpl::of);
         if (isRoot()) {
-            return stream(spliteratorUnknownSize(keys, ORDERED | IMMUTABLE), false);
+            return stream(keys);
         } else {
             Set<AttributeTypeImpl> direct = new HashSet<>(), overridden = new HashSet<>();
             keys.forEachRemaining(direct::add);
@@ -148,9 +145,10 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     }
 
     private Stream<AttributeTypeImpl> declaredAttributes() {
-        Iterator<AttributeTypeImpl> attributes = link(vertex.outs().edge(Schema.Edge.Type.KEY).to(),
-                                                      vertex.outs().edge(Schema.Edge.Type.HAS).to()).apply(AttributeTypeImpl::of);
-        return stream(spliteratorUnknownSize(attributes, ORDERED | IMMUTABLE), false);
+        return stream(link(
+                vertex.outs().edge(Schema.Edge.Type.KEY).to(),
+                vertex.outs().edge(Schema.Edge.Type.HAS).to()
+        ).apply(AttributeTypeImpl::of));
     }
 
     @Override
@@ -160,10 +158,13 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
     @Override
     public Stream<AttributeTypeImpl> attributes() {
-        Iterator<AttributeTypeImpl> attributes = link(vertex.outs().edge(Schema.Edge.Type.KEY).to(),
-                                                      vertex.outs().edge(Schema.Edge.Type.HAS).to()).apply(AttributeTypeImpl::of);
+        Iterator<AttributeTypeImpl> attributes = link(
+                vertex.outs().edge(Schema.Edge.Type.KEY).to(),
+                vertex.outs().edge(Schema.Edge.Type.HAS).to()
+        ).apply(AttributeTypeImpl::of);
+
         if (isRoot()) {
-            return stream(spliteratorUnknownSize(attributes, ORDERED | IMMUTABLE), false);
+            return stream(attributes);
         } else {
             Set<AttributeTypeImpl> direct = new HashSet<>(), overridden = new HashSet<>();
             attributes.forEachRemaining(direct::add);
@@ -200,15 +201,14 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     }
 
     private Stream<RoleTypeImpl> declaredPlays() {
-        Iterator<RoleTypeImpl> roles = apply(vertex.outs().edge(Schema.Edge.Type.PLAYS).to(), RoleTypeImpl::of);
-        return stream(spliteratorUnknownSize(roles, ORDERED | IMMUTABLE), false);
+        return stream(apply(vertex.outs().edge(Schema.Edge.Type.PLAYS).to(), RoleTypeImpl::of));
     }
 
     @Override
     public Stream<RoleTypeImpl> plays() {
         Iterator<RoleTypeImpl> roles = apply(vertex.outs().edge(Schema.Edge.Type.PLAYS).to(), RoleTypeImpl::of);
         if (isRoot()) {
-            return stream(spliteratorUnknownSize(roles, ORDERED | IMMUTABLE), false);
+            return stream(roles);
         } else {
             Set<RoleTypeImpl> direct = new HashSet<>(), overridden = new HashSet<>();
             roles.forEachRemaining(direct::add);

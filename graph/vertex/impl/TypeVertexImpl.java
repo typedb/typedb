@@ -34,9 +34,12 @@ import hypergraph.graph.vertex.TypeVertex;
 import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static hypergraph.common.collection.Bytes.join;
+import static hypergraph.common.iterator.Iterators.link;
 
 public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implements TypeVertex {
 
@@ -117,6 +120,11 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         @Override
         protected TypeAdjacency newAdjacency(Adjacency.Direction direction) {
             return new TypeAdjacencyImpl.Buffered(this, direction);
+        }
+
+        @Override
+        public void buffer(ThingVertex thingVertex) {
+            throw new HypergraphException(Error.Transaction.ILLEGAL_OPERATION);
         }
 
         @Override
@@ -233,8 +241,11 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
 
     public static class Persisted extends TypeVertexImpl {
 
+        private Set<ThingVertexImpl> instances;
+
         public Persisted(TypeGraph graph, VertexIID.Type iid, String label, @Nullable String scope) {
             super(graph, iid, label, scope);
+            instances = ConcurrentHashMap.newKeySet();
         }
 
         public Persisted(TypeGraph graph, VertexIID.Type iid) {
@@ -256,8 +267,16 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         }
 
         @Override
-        public Iterator<? extends ThingVertex> instances() {
-            return null; // TODO
+        public void buffer(ThingVertex thingVertex) {
+            instances.add((ThingVertexImpl) thingVertex);
+        }
+
+        @Override
+        public Iterator<ThingVertexImpl> instances() {
+            return link(instances.iterator(), graph.storage().iterate(
+                    join(Schema.Vertex.Thing.of(this.schema()).prefix().bytes(), iid.bytes(), Schema.Edge.Thing.ISA.in().bytes()),
+                    (key, value) -> ThingVertexImpl.of(graph.thingGraph(), VertexIID.Thing.of(key))
+            ));
         }
 
         @Override

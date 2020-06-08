@@ -18,11 +18,11 @@
 
 package hypergraph.concept.type.impl;
 
-import hypergraph.common.exception.HypergraphException;
 import hypergraph.common.iterator.Iterators;
 import hypergraph.concept.type.Type;
 import hypergraph.graph.TypeGraph;
 import hypergraph.graph.util.Schema;
+import hypergraph.graph.vertex.ThingVertex;
 import hypergraph.graph.vertex.TypeVertex;
 
 import javax.annotation.Nullable;
@@ -33,11 +33,8 @@ import java.util.stream.Stream;
 
 import static hypergraph.common.iterator.Iterators.apply;
 import static hypergraph.common.iterator.Iterators.loop;
+import static hypergraph.common.iterator.Iterators.stream;
 import static hypergraph.common.iterator.Iterators.tree;
-import static java.util.Spliterator.IMMUTABLE;
-import static java.util.Spliterator.ORDERED;
-import static java.util.Spliterators.spliteratorUnknownSize;
-import static java.util.stream.StreamSupport.stream;
 
 public abstract class TypeImpl implements Type {
 
@@ -97,24 +94,22 @@ public abstract class TypeImpl implements Type {
     }
 
     protected <TYPE> Stream<TYPE> sups(Function<TypeVertex, TYPE> typeConstructor) {
-        Iterator<TYPE> sups = apply(loop(
+        return stream(apply(loop(
                 vertex,
                 v -> v != null && v.schema().equals(this.vertex.schema()),
                 v -> {
                     Iterator<TypeVertex> p = v.outs().edge(Schema.Edge.Type.SUB).to();
                     if (p.hasNext()) return p.next();
                     else return null;
-                }), typeConstructor);
-        return stream(spliteratorUnknownSize(sups, ORDERED | IMMUTABLE), false);
+                }), typeConstructor));
     }
 
     protected <TYPE> Stream<TYPE> subs(Function<TypeVertex, TYPE> typeConstructor) {
-        Iterator<TYPE> subs = apply(tree(vertex, v -> v.ins().edge(Schema.Edge.Type.SUB).from()), typeConstructor);
-        return stream(spliteratorUnknownSize(subs, ORDERED | IMMUTABLE), false);
+        return stream(apply(tree(vertex, v -> v.ins().edge(Schema.Edge.Type.SUB).from()), typeConstructor));
     }
 
-    protected <THING> Stream<THING> instances(Function<TypeVertex, THING> thingConstructor) {
-        return null; // TODO
+    protected <THING> Stream<THING> instances(Function<ThingVertex, THING> thingConstructor) {
+        return stream(apply(vertex.instances(), thingConstructor::apply));
     }
 
     @Override

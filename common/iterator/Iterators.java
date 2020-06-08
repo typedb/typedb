@@ -24,6 +24,12 @@ import java.util.LinkedList;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
+
+import static java.util.Spliterator.IMMUTABLE;
+import static java.util.Spliterator.ORDERED;
+import static java.util.Spliterators.spliteratorUnknownSize;
 
 public class Iterators {
 
@@ -46,6 +52,10 @@ public class Iterators {
 
     public static <T, U> AppliedIterator<T, U> apply(Iterator<T> iterator, Function<T, U> function) {
         return new AppliedIterator<>(iterator, function);
+    }
+
+    public static <T> Stream<T> stream(Iterator<T> iterator) {
+        return StreamSupport.stream(spliteratorUnknownSize(iterator, ORDERED | IMMUTABLE), false);
     }
 
     public interface Composable<T> extends Iterator<T> {

@@ -23,7 +23,6 @@ import hypergraph.common.exception.HypergraphException;
 import hypergraph.concept.thing.Relation;
 import hypergraph.concept.thing.impl.RelationImpl;
 import hypergraph.concept.type.RelationType;
-import hypergraph.concept.type.Type;
 import hypergraph.graph.TypeGraph;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.vertex.ThingVertex;
@@ -37,15 +36,11 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static hypergraph.common.collection.Streams.compareSize;
 import static hypergraph.common.exception.Error.ThingWrite.ILLEGAL_ABSTRACT_WRITE;
 import static hypergraph.common.exception.Error.TypeWrite.INVALID_ROOT_TYPE_MUTATION;
 import static hypergraph.common.iterator.Iterators.apply;
 import static hypergraph.common.iterator.Iterators.filter;
-import static java.util.Spliterator.IMMUTABLE;
-import static java.util.Spliterator.ORDERED;
-import static java.util.Spliterators.spliteratorUnknownSize;
-import static java.util.stream.StreamSupport.stream;
+import static hypergraph.common.iterator.Iterators.stream;
 
 public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
 
@@ -107,8 +102,8 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     }
 
     @Override
-    public Stream<? extends RelationImpl> instances() {
-        return null; // TODO
+    public Stream<RelationImpl> instances() {
+        return super.instances(RelationImpl::new);
     }
 
     @Override
@@ -154,7 +149,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     public Stream<RoleTypeImpl> roles() {
         Iterator<RoleTypeImpl> roles = apply(vertex.outs().edge(Schema.Edge.Type.RELATES).to(), RoleTypeImpl::of);
         if (isRoot()) {
-            return stream(spliteratorUnknownSize(roles, ORDERED | IMMUTABLE), false);
+            return stream(roles);
         } else {
             Set<RoleTypeImpl> direct = new HashSet<>(), overridden = new HashSet<>();
             roles.forEachRemaining(direct::add);
@@ -166,8 +161,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     }
 
     private Stream<RoleTypeImpl> declaredRoles() {
-        Iterator<RoleTypeImpl> roles = apply(vertex.outs().edge(Schema.Edge.Type.RELATES).to(), RoleTypeImpl::of);
-        return stream(spliteratorUnknownSize(roles, ORDERED | IMMUTABLE), false);
+        return stream(apply(vertex.outs().edge(Schema.Edge.Type.RELATES).to(), RoleTypeImpl::of));
     }
 
     /**

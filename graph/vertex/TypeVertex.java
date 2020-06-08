@@ -45,6 +45,8 @@ public interface TypeVertex extends Vertex<
     @Override
     TypeAdjacency ins();
 
+    void buffer(ThingVertex thingVertex);
+
     Iterator<? extends ThingVertex> instances();
 
     String label();

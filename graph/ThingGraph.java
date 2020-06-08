@@ -258,7 +258,7 @@ public class ThingGraph implements Graph<VertexIID.Thing, ThingVertex> {
                                                dateTimes.values().stream()))));
         }
 
-        public void clear() {
+        void clear() {
             booleans.clear();
             longs.clear();
             doubles.clear();
@@ -266,7 +266,7 @@ public class ThingGraph implements Graph<VertexIID.Thing, ThingVertex> {
             dateTimes.clear();
         }
 
-        public void remove(VertexIID.Attribute iid) {
+        void remove(VertexIID.Attribute iid) {
             switch (iid.valueType()) {
                 case BOOLEAN:
                     booleans.remove((VertexIID.Attribute.Boolean) iid);

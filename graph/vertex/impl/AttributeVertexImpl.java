@@ -25,6 +25,7 @@ import hypergraph.graph.adjacency.Adjacency;
 import hypergraph.graph.adjacency.ThingAdjacency;
 import hypergraph.graph.adjacency.impl.ThingAdjacencyImpl;
 import hypergraph.graph.edge.Edge;
+import hypergraph.graph.iid.EdgeIID;
 import hypergraph.graph.iid.IndexIID;
 import hypergraph.graph.iid.VertexIID;
 import hypergraph.graph.util.Schema;
@@ -39,6 +40,24 @@ public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl impleme
     AttributeVertexImpl(ThingGraph graph, VertexIID.Attribute<VALUE> iid, boolean isInferred) {
         super(graph, iid, isInferred);
         this.attributeIID = iid;
+    }
+
+    public static AttributeVertexImpl<?> of(ThingGraph graph, VertexIID.Attribute iid) {
+        switch (iid.valueType()) {
+            case BOOLEAN:
+                return new AttributeVertexImpl.Boolean(graph, iid.asBoolean(), false);
+            case LONG:
+                return new AttributeVertexImpl.Long(graph, iid.asLong(), false);
+            case DOUBLE:
+                return new AttributeVertexImpl.Double(graph, iid.asDouble(), false);
+            case STRING:
+                return new AttributeVertexImpl.String(graph, iid.asString(), false);
+            case DATETIME:
+                return new AttributeVertexImpl.DateTime(graph, iid.asDateTime(), false);
+            default:
+                assert false;
+                return null;
+        }
     }
 
     protected abstract IndexIID.Attribute index();
@@ -71,6 +90,8 @@ public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl impleme
     @Override
     public void delete() {
         graph.storage().delete(attributeIID.bytes());
+        graph.storage().delete(EdgeIID.InwardsISA.of(type().iid(), iid).bytes());
+        graph.storage().delete(index().bytes());
         graph.delete(this);
     }
 
@@ -84,9 +105,35 @@ public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl impleme
     public void commit() {
         if (isInferred) throw new HypergraphException(Error.Transaction.ILLEGAL_OPERATION);
         graph.storage().putUntracked(attributeIID.bytes());
+        graph.storage().putUntracked(EdgeIID.InwardsISA.of(type().iid(), iid).bytes());
         graph.storage().putUntracked(index().bytes(), attributeIID.bytes());
         outs.forEach(Edge::commit);
         ins.forEach(Edge::commit);
+    }
+
+    @Override
+    public AttributeVertexImpl.Boolean asBoolean() {
+        throw new HypergraphException(Error.ThingRead.INVALID_VERTEX_CASTING.format(Boolean.class.getCanonicalName()));
+    }
+
+    @Override
+    public AttributeVertexImpl.Long asLong() {
+        throw new HypergraphException(Error.ThingRead.INVALID_VERTEX_CASTING.format(Long.class.getCanonicalName()));
+    }
+
+    @Override
+    public AttributeVertexImpl.Double asDouble() {
+        throw new HypergraphException(Error.ThingRead.INVALID_VERTEX_CASTING.format(Double.class.getCanonicalName()));
+    }
+
+    @Override
+    public AttributeVertexImpl.String asString() {
+        throw new HypergraphException(Error.ThingRead.INVALID_VERTEX_CASTING.format(String.class.getCanonicalName()));
+    }
+
+    @Override
+    public AttributeVertexImpl.DateTime asDateTime() {
+        throw new HypergraphException(Error.ThingRead.INVALID_VERTEX_CASTING.format(DateTime.class.getCanonicalName()));
     }
 
     public static class Boolean extends AttributeVertexImpl<java.lang.Boolean> {
@@ -98,6 +145,11 @@ public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl impleme
         @Override
         protected IndexIID.Attribute index() {
             return IndexIID.Attribute.of(value(), type().iid());
+        }
+
+        @Override
+        public Boolean asBoolean() {
+            return this;
         }
     }
 
@@ -111,6 +163,11 @@ public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl impleme
         protected IndexIID.Attribute index() {
             return IndexIID.Attribute.of(value(), type().iid());
         }
+
+        @Override
+        public Long asLong() {
+            return this;
+        }
     }
 
     public static class Double extends AttributeVertexImpl<java.lang.Double> {
@@ -122,6 +179,11 @@ public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl impleme
         @Override
         protected IndexIID.Attribute index() {
             return IndexIID.Attribute.of(value(), type().iid());
+        }
+
+        @Override
+        public Double asDouble() {
+            return this;
         }
     }
 
@@ -135,6 +197,11 @@ public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl impleme
         protected IndexIID.Attribute index() {
             return IndexIID.Attribute.of(value(), type().iid());
         }
+
+        @Override
+        public String asString() {
+            return this;
+        }
     }
 
     public static class DateTime extends AttributeVertexImpl<java.time.LocalDateTime> {
@@ -146,6 +213,11 @@ public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl impleme
         @Override
         protected IndexIID.Attribute index() {
             return IndexIID.Attribute.of(value(), type().iid());
+        }
+
+        @Override
+        public DateTime asDateTime() {
+            return this;
         }
     }
 }

@@ -328,6 +328,7 @@ public class BasicTest {
 
     @Test
     public void write_attributes_successfully() throws IOException {
+        LocalDateTime date_1991_1_1_0_0 = LocalDateTime.of(1991, 1, 1, 0, 0);
         reset_directory_and_create_attribute_types();
 
         try (Hypergraph graph = CoreHypergraph.open(directory.toString())) {
@@ -337,7 +338,22 @@ public class BasicTest {
                     age(txn).put(18);
                     score(txn).put(90.5);
                     name(txn).put("alice");
-                    dob(txn).put(LocalDateTime.of(1991, 1, 1, 0, 0));
+                    dob(txn).put(date_1991_1_1_0_0);
+
+                    assertEquals(1, isAlive(txn).instances().count());
+                    assertTrue(isAlive(txn).instances().anyMatch(att -> att.value().equals(true)));
+
+                    assertEquals(1, age(txn).instances().count());
+                    assertTrue(age(txn).instances().anyMatch(att -> att.value() == 18));
+
+                    assertEquals(1, score(txn).instances().count());
+                    assertTrue(score(txn).instances().anyMatch(att -> att.value() == 90.5));
+
+                    assertEquals(1, name(txn).instances().count());
+                    assertTrue(name(txn).instances().anyMatch(att -> att.value().equals("alice")));
+
+                    assertEquals(1, dob(txn).instances().count());
+                    assertTrue(dob(txn).instances().anyMatch(att -> att.value().equals(date_1991_1_1_0_0)));
 
                     txn.commit();
                 }
@@ -357,6 +373,21 @@ public class BasicTest {
                     assertEquals(90.5, score.value(), 0.001);
                     assertEquals("alice", name.value());
                     assertEquals(dateTime, dob.value());
+
+                    assertEquals(1, isAlive(txn).instances().count());
+                    assertTrue(isAlive(txn).instances().anyMatch(att -> att.value().equals(true)));
+
+                    assertEquals(1, age(txn).instances().count());
+                    assertTrue(age(txn).instances().anyMatch(att -> att.value() == 18));
+
+                    assertEquals(1, score(txn).instances().count());
+                    assertTrue(score(txn).instances().anyMatch(att -> att.value() == 90.5));
+
+                    assertEquals(1, name(txn).instances().count());
+                    assertTrue(name(txn).instances().anyMatch(att -> att.value().equals("alice")));
+
+                    assertEquals(1, dob(txn).instances().count());
+                    assertTrue(dob(txn).instances().anyMatch(att -> att.value().equals(date_1991_1_1_0_0)));
                 }
             }
         }
@@ -372,6 +403,10 @@ public class BasicTest {
 
     @Test
     public void write_different_attributes_in_parallel_successfully() throws IOException {
+        LocalDateTime date_1991_2_3_4_5 = LocalDateTime.of(1991, 2, 3, 4, 5);
+        LocalDateTime date_1992_3_4_5_6 = LocalDateTime.of(1992, 3, 4, 5, 6);
+        LocalDateTime date_1993_4_5_6_7 = LocalDateTime.of(1993, 4, 5, 6, 7);
+
         reset_directory_and_create_attribute_types();
 
         try (Hypergraph graph = CoreHypergraph.open(directory.toString())) {
@@ -391,9 +426,42 @@ public class BasicTest {
                 name(txn1).put("alice");
                 name(txn2).put("bob");
                 name(txn3).put("charlie");
-                dob(txn1).put(LocalDateTime.of(1991, 2, 3, 4, 5));
-                dob(txn2).put(LocalDateTime.of(1992, 3, 4, 5, 6));
-                dob(txn3).put(LocalDateTime.of(1993, 4, 5, 6, 7));
+                dob(txn1).put(date_1991_2_3_4_5);
+                dob(txn2).put(date_1992_3_4_5_6);
+                dob(txn3).put(date_1993_4_5_6_7);
+
+                assertEquals(1, isAlive(txn1).instances().count());
+                assertTrue(isAlive(txn1).instances().anyMatch(att -> att.value().equals(true)));
+                assertEquals(1, isAlive(txn2).instances().count());
+                assertTrue(isAlive(txn2).instances().anyMatch(att -> att.value().equals(false)));
+
+                assertEquals(1, age(txn1).instances().count());
+                assertTrue(age(txn1).instances().anyMatch(att -> att.value() == 17));
+                assertEquals(1, age(txn2).instances().count());
+                assertTrue(age(txn2).instances().anyMatch(att -> att.value() == 18));
+                assertEquals(1, age(txn3).instances().count());
+                assertTrue(age(txn3).instances().anyMatch(att -> att.value() == 19));
+
+                assertEquals(1, score(txn1).instances().count());
+                assertTrue(score(txn1).instances().anyMatch(att -> att.value() == 70.5));
+                assertEquals(1, score(txn2).instances().count());
+                assertTrue(score(txn2).instances().anyMatch(att -> att.value() == 80.6));
+                assertEquals(1, score(txn3).instances().count());
+                assertTrue(score(txn3).instances().anyMatch(att -> att.value() == 90.7));
+
+                assertEquals(1, name(txn1).instances().count());
+                assertTrue(name(txn1).instances().anyMatch(att -> att.value().equals("alice")));
+                assertEquals(1, name(txn2).instances().count());
+                assertTrue(name(txn2).instances().anyMatch(att -> att.value().equals("bob")));
+                assertEquals(1, name(txn3).instances().count());
+                assertTrue(name(txn3).instances().anyMatch(att -> att.value().equals("charlie")));
+
+                assertEquals(1, dob(txn1).instances().count());
+                assertTrue(dob(txn1).instances().anyMatch(att -> att.value().equals(date_1991_2_3_4_5)));
+                assertEquals(1, dob(txn2).instances().count());
+                assertTrue(dob(txn2).instances().anyMatch(att -> att.value().equals(date_1992_3_4_5_6)));
+                assertEquals(1, dob(txn3).instances().count());
+                assertTrue(dob(txn3).instances().anyMatch(att -> att.value().equals(date_1993_4_5_6_7)));
 
                 txn1.commit();
                 txn2.commit();
@@ -418,6 +486,30 @@ public class BasicTest {
                     assertEquals(d1, dob(txn).get(d1).value());
                     assertEquals(d2, dob(txn).get(d2).value());
                     assertEquals(d3, dob(txn).get(d3).value());
+
+                    assertEquals(2, isAlive(txn).instances().count());
+                    assertTrue(isAlive(txn).instances().anyMatch(att -> att.value().equals(true)));
+                    assertTrue(isAlive(txn).instances().anyMatch(att -> att.value().equals(false)));
+
+                    assertEquals(3, age(txn).instances().count());
+                    assertTrue(age(txn).instances().anyMatch(att -> att.value() == 17));
+                    assertTrue(age(txn).instances().anyMatch(att -> att.value() == 18));
+                    assertTrue(age(txn).instances().anyMatch(att -> att.value() == 19));
+
+                    assertEquals(3, score(txn).instances().count());
+                    assertTrue(score(txn).instances().anyMatch(att -> att.value() == 70.5));
+                    assertTrue(score(txn).instances().anyMatch(att -> att.value() == 80.6));
+                    assertTrue(score(txn).instances().anyMatch(att -> att.value() == 90.7));
+
+                    assertEquals(3, name(txn).instances().count());
+                    assertTrue(name(txn).instances().anyMatch(att -> att.value().equals("alice")));
+                    assertTrue(name(txn).instances().anyMatch(att -> att.value().equals("bob")));
+                    assertTrue(name(txn).instances().anyMatch(att -> att.value().equals("charlie")));
+
+                    assertEquals(3, dob(txn).instances().count());
+                    assertTrue(dob(txn).instances().anyMatch(att -> att.value().equals(date_1991_2_3_4_5)));
+                    assertTrue(dob(txn).instances().anyMatch(att -> att.value().equals(date_1992_3_4_5_6)));
+                    assertTrue(dob(txn).instances().anyMatch(att -> att.value().equals(date_1993_4_5_6_7)));
                 }
             }
         }
@@ -458,6 +550,41 @@ public class BasicTest {
                 dob(txn2).put(date_1992_2_3_4_5);
                 dob(txn3).put(date_1992_2_3_4_5);
 
+                assertEquals(1, isAlive(txn1).instances().count());
+                assertTrue(isAlive(txn1).instances().anyMatch(att -> att.value().equals(true)));
+                assertEquals(1, isAlive(txn2).instances().count());
+                assertTrue(isAlive(txn2).instances().anyMatch(att -> att.value().equals(true)));
+                assertEquals(1, isAlive(txn3).instances().count());
+                assertTrue(isAlive(txn2).instances().anyMatch(att -> att.value().equals(true)));
+
+                assertEquals(1, age(txn1).instances().count());
+                assertTrue(age(txn1).instances().anyMatch(att -> att.value() == 17));
+                assertEquals(1, age(txn2).instances().count());
+                assertTrue(age(txn2).instances().anyMatch(att -> att.value() == 17));
+                assertEquals(1, age(txn3).instances().count());
+                assertTrue(age(txn3).instances().anyMatch(att -> att.value() == 17));
+
+                assertEquals(1, score(txn1).instances().count());
+                assertTrue(score(txn1).instances().anyMatch(att -> att.value() == 70.5));
+                assertEquals(1, score(txn2).instances().count());
+                assertTrue(score(txn2).instances().anyMatch(att -> att.value() == 70.5));
+                assertEquals(1, score(txn3).instances().count());
+                assertTrue(score(txn3).instances().anyMatch(att -> att.value() == 70.5));
+
+                assertEquals(1, name(txn1).instances().count());
+                assertTrue(name(txn1).instances().anyMatch(att -> att.value().equals("alice")));
+                assertEquals(1, name(txn2).instances().count());
+                assertTrue(name(txn2).instances().anyMatch(att -> att.value().equals("alice")));
+                assertEquals(1, name(txn3).instances().count());
+                assertTrue(name(txn3).instances().anyMatch(att -> att.value().equals("alice")));
+
+                assertEquals(1, dob(txn1).instances().count());
+                assertTrue(dob(txn1).instances().anyMatch(att -> att.value().equals(date_1992_2_3_4_5)));
+                assertEquals(1, dob(txn2).instances().count());
+                assertTrue(dob(txn2).instances().anyMatch(att -> att.value().equals(date_1992_2_3_4_5)));
+                assertEquals(1, dob(txn3).instances().count());
+                assertTrue(dob(txn3).instances().anyMatch(att -> att.value().equals(date_1992_2_3_4_5)));
+
                 txn1.commit();
                 txn2.commit();
                 txn3.commit();
@@ -469,6 +596,21 @@ public class BasicTest {
                     assertEquals(70.5, score(txn).get(70.5).value(), 0.001);
                     assertEquals("alice", name(txn).get("alice").value());
                     assertEquals(date_1992_2_3_4_5, dob(txn).get(date_1992_2_3_4_5).value());
+
+                    assertEquals(1, isAlive(txn).instances().count());
+                    assertTrue(isAlive(txn).instances().anyMatch(att -> att.value().equals(true)));
+
+                    assertEquals(1, age(txn).instances().count());
+                    assertTrue(age(txn).instances().anyMatch(att -> att.value() == 17));
+
+                    assertEquals(1, score(txn).instances().count());
+                    assertTrue(score(txn).instances().anyMatch(att -> att.value() == 70.5));
+
+                    assertEquals(1, name(txn).instances().count());
+                    assertTrue(name(txn).instances().anyMatch(att -> att.value().equals("alice")));
+
+                    assertEquals(1, dob(txn).instances().count());
+                    assertTrue(dob(txn).instances().anyMatch(att -> att.value().equals(date_1992_2_3_4_5)));
                 }
             }
         }

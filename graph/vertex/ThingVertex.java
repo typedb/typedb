@@ -73,4 +73,11 @@ public interface ThingVertex extends Vertex<
      * @param isInferred indicating whether this vertex was a result of inference
      */
     void isInferred(boolean isInferred);
+
+    /**
+     * Casts this {@code ThingVertex} into an {@code AttributeVertex} if it is one.
+     *
+     * @return this object as an {@code AttributeVertex}
+     */
+    AttributeVertex<?> asAttribute();
 }

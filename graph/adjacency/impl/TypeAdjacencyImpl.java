@@ -18,7 +18,6 @@
 
 package hypergraph.graph.adjacency.impl;
 
-import hypergraph.common.iterator.Iterators;
 import hypergraph.graph.adjacency.TypeAdjacency;
 import hypergraph.graph.edge.TypeEdge;
 import hypergraph.graph.edge.impl.TypeEdgeImpl;
@@ -28,6 +27,8 @@ import hypergraph.graph.util.Schema;
 import hypergraph.graph.vertex.TypeVertex;
 
 import java.util.Iterator;
+
+import static hypergraph.common.iterator.Iterators.apply;
 
 public class TypeAdjacencyImpl {
 
@@ -58,7 +59,7 @@ public class TypeAdjacencyImpl {
         }
 
         public Iterator<TypeVertex> overridden() {
-            return Iterators.apply(edgeIterator, TypeEdge::overridden);
+            return apply(edgeIterator, TypeEdge::overridden);
         }
     }
 

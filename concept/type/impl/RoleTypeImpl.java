@@ -20,8 +20,6 @@ package hypergraph.concept.type.impl;
 
 import hypergraph.common.exception.Error;
 import hypergraph.common.exception.HypergraphException;
-import hypergraph.common.iterator.Iterators;
-import hypergraph.concept.type.RelationType;
 import hypergraph.concept.type.RoleType;
 import hypergraph.graph.TypeGraph;
 import hypergraph.graph.util.Schema;

@@ -20,12 +20,13 @@ package hypergraph.graph.iid;
 
 import hypergraph.graph.util.Schema;
 
-import java.util.Arrays;
-
 import static hypergraph.common.collection.Bytes.join;
 import static java.util.Arrays.copyOfRange;
 
-public abstract class EdgeIID<EDGE_SCHEMA extends Schema.Edge, VERTEX_IID extends VertexIID> extends IID {
+public abstract class EdgeIID<
+        EDGE_SCHEMA extends Schema.Edge,
+        VERTEX_IID_START extends VertexIID,
+        VERTEX_IID_END extends VertexIID> extends IID {
 
     EdgeIID(byte[] bytes) {
         super(bytes);
@@ -35,11 +36,18 @@ public abstract class EdgeIID<EDGE_SCHEMA extends Schema.Edge, VERTEX_IID extend
 
     public abstract EDGE_SCHEMA schema();
 
-    public abstract VERTEX_IID start();
+    public abstract VERTEX_IID_START start();
 
-    public abstract VERTEX_IID end();
+    public abstract VERTEX_IID_END end();
 
-    public static class Type extends EdgeIID<Schema.Edge.Type, VertexIID.Type> {
+    @Override
+    public String toString() {
+        return "[" + VertexIID.Type.LENGTH + ": " + start().toString() + "]" +
+                "[" + InfixIID.LENGTH + ": " + schema().toString() + "]" +
+                "[" + VertexIID.Type.LENGTH + ": " + end().toString() + "]";
+    }
+
+    public static class Type extends EdgeIID<Schema.Edge.Type, VertexIID.Type, VertexIID.Type> {
 
         private VertexIID.Type start;
         private VertexIID.Type end;
@@ -79,17 +87,9 @@ public abstract class EdgeIID<EDGE_SCHEMA extends Schema.Edge, VERTEX_IID extend
             end = VertexIID.Type.of(copyOfRange(bytes, bytes.length - VertexIID.Type.LENGTH, bytes.length));
             return end;
         }
-
-        @Override
-        public String toString() {
-            start();
-            return "[" + VertexIID.Type.LENGTH + ": " + start().toString() + "]" +
-                    "[" + InfixIID.LENGTH + ": " + schema().toString() + "]" +
-                    "[" + VertexIID.Type.LENGTH + ": " + end().toString() + "]";
-        }
     }
 
-    public static class Thing extends EdgeIID<Schema.Edge.Thing, VertexIID.Thing> {
+    public static class Thing extends EdgeIID<Schema.Edge.Thing, VertexIID.Thing, VertexIID.Thing> {
 
         Thing(byte[] bytes) {
             super(bytes);
@@ -122,10 +122,47 @@ public abstract class EdgeIID<EDGE_SCHEMA extends Schema.Edge, VERTEX_IID extend
         public VertexIID.Thing end() {
             return null; // TODO
         }
+    }
+
+    public static class InwardsISA extends EdgeIID<Schema.Edge.Thing, VertexIID.Type, VertexIID.Thing> {
+
+        private VertexIID.Type start;
+        private VertexIID.Thing end;
+
+        InwardsISA(byte[] bytes) {
+            super(bytes);
+        }
+
+        public static InwardsISA of(byte[] bytes) {
+            return new InwardsISA(bytes);
+        }
+
+        public static InwardsISA of(VertexIID.Type start, VertexIID.Thing end) {
+            return new InwardsISA(join(start.bytes, Schema.Edge.Thing.ISA.in().bytes(), end.bytes));
+        }
 
         @Override
-        public String toString() {
-            return Arrays.toString(bytes); // TODO
+        public boolean isOutwards() {
+            return false;
+        }
+
+        @Override
+        public Schema.Edge.Thing schema() {
+            return Schema.Edge.Thing.ISA;
+        }
+
+        @Override
+        public VertexIID.Type start() {
+            if (start != null) return start;
+            start = VertexIID.Type.of(copyOfRange(bytes, 0, VertexIID.Type.LENGTH));
+            return start;
+        }
+
+        @Override
+        public VertexIID.Thing end() {
+            if (end != null) return end;
+            end = VertexIID.Thing.of(copyOfRange(bytes, VertexIID.Type.LENGTH + 1, bytes.length));
+            return end;
         }
     }
 }

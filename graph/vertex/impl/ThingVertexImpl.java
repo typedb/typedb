@@ -27,6 +27,7 @@ import hypergraph.graph.adjacency.impl.ThingAdjacencyImpl;
 import hypergraph.graph.edge.Edge;
 import hypergraph.graph.iid.VertexIID;
 import hypergraph.graph.util.Schema;
+import hypergraph.graph.vertex.AttributeVertex;
 import hypergraph.graph.vertex.ThingVertex;
 import hypergraph.graph.vertex.TypeVertex;
 
@@ -43,6 +44,15 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
         this.outs = newAdjacency(Adjacency.Direction.OUT);
         this.ins = newAdjacency(Adjacency.Direction.IN);
         this.isInferred = isInferred;
+        this.type().buffer(this);
+    }
+
+    public static ThingVertexImpl of(ThingGraph graph, VertexIID.Thing iid) {
+        if (iid.schema().equals(Schema.Vertex.Thing.ATTRIBUTE)) {
+            return AttributeVertexImpl.of(graph, iid.asAttribute());
+        } else {
+            return new ThingVertexImpl.Persisted(graph, iid);
+        }
     }
 
     /**
@@ -92,6 +102,15 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
     @Override
     public void isInferred(boolean isInferred) {
         this.isInferred = isInferred;
+    }
+
+    @Override
+    public AttributeVertexImpl asAttribute() {
+        if (!schema().equals(Schema.Vertex.Thing.ATTRIBUTE)) {
+            throw new HypergraphException(Error.ThingRead.INVALID_VERTEX_CASTING.format(AttributeVertex.class.getCanonicalName()));
+        }
+
+        return AttributeVertexImpl.of(graph, iid.asAttribute());
     }
 
     public static class Buffered extends ThingVertexImpl {

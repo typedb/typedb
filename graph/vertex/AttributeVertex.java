@@ -20,6 +20,8 @@ package hypergraph.graph.vertex;
 
 import hypergraph.graph.iid.VertexIID;
 
+import java.time.LocalDateTime;
+
 public interface AttributeVertex<VALUE> extends ThingVertex {
 
     /**
@@ -36,4 +38,14 @@ public interface AttributeVertex<VALUE> extends ThingVertex {
      * @return the literal value stored in the vertex
      */
     VALUE value();
+
+    AttributeVertex<Boolean> asBoolean();
+
+    AttributeVertex<Long> asLong();
+
+    AttributeVertex<Double> asDouble();
+
+    AttributeVertex<String> asString();
+
+    AttributeVertex<LocalDateTime> asDateTime();
 }
