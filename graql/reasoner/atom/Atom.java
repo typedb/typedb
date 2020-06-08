@@ -408,14 +408,12 @@ public abstract class Atom extends AtomicBase {
 
     public abstract Atom rewriteWithTypeVariable();
 
-    public Atom rewriteWithPatternVariable(){ return this;}
-
     /**
-     * rewrites the atom to one with user defined relation variable
+     * rewrites the atom to one with a user defined pattern variable
      *
      * @return rewritten atom
      */
-    public Atom rewriteWithRelationVariable() { return this;}
+    public Atom rewriteWithPatternVariable(){ return this;}
 
     /**
      * attempt to find a UNIQUE unifier with the parent atom

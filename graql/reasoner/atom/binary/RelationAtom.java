@@ -18,16 +18,7 @@
 
 package grakn.core.graql.reasoner.atom.binary;
 
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableListMultimap;
-import com.google.common.collect.ImmutableMultimap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.ListMultimap;
-import com.google.common.collect.Multimap;
-import com.google.common.collect.SetMultimap;
-import com.google.common.collect.Sets;
+import com.google.common.collect.*;
 import grakn.common.util.Pair;
 import grakn.core.common.util.Streams;
 import grakn.core.concept.answer.ConceptMap;
@@ -48,11 +39,7 @@ import grakn.core.graql.reasoner.atom.task.validate.RelationAtomValidator;
 import grakn.core.graql.reasoner.cache.SemanticDifference;
 import grakn.core.graql.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierType;
-import grakn.core.kb.concept.api.Label;
-import grakn.core.kb.concept.api.Role;
-import grakn.core.kb.concept.api.Rule;
-import grakn.core.kb.concept.api.SchemaConcept;
-import grakn.core.kb.concept.api.Type;
+import grakn.core.kb.concept.api.*;
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.reasoner.ReasonerCheckedException;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
@@ -68,20 +55,10 @@ import graql.lang.statement.StatementInstance;
 import graql.lang.statement.StatementThing;
 import graql.lang.statement.Variable;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.SortedSet;
-import java.util.TreeSet;
+import javax.annotation.Nullable;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import javax.annotation.Nullable;
 
 /**
  * Atom implementation defining a relation atom corresponding to a combined RelationProperty
@@ -680,13 +657,13 @@ public class RelationAtom extends Atom {
      * @param parentAtom parent atom that triggers rewrite
      * @return new relation atom with user defined name if necessary or this
      */
-    private RelationAtom rewriteWithRelationVariable(Atom parentAtom) {
+    private RelationAtom rewriteWithPatternVariable(Atom parentAtom) {
         if (!parentAtom.getVarName().isReturned()) return this;
-        return rewriteWithRelationVariable();
+        return rewriteWithPatternVariable();
     }
 
     @Override
-    public RelationAtom rewriteWithRelationVariable() {
+    public RelationAtom rewriteWithPatternVariable() {
         if (this.getVarName().isReturned()) return this;
         StatementInstance newVar = new StatementThing(new Variable().asReturnedVar());
         Statement relVar = getPattern().getProperty(IsaProperty.class)
@@ -705,11 +682,6 @@ public class RelationAtom extends Atom {
     }
 
     @Override
-    public RelationAtom rewriteWithPatternVariable() {
-        return rewriteWithRelationVariable();
-    }
-
-    @Override
     public RelationAtom rewriteWithTypeVariable() {
         return create(this.getPattern(), this.getPredicateVariable().asReturnedVar(), this.getTypeLabel(), this.getPossibleTypes(), this.getParentQuery(), this.context());
     }
@@ -717,7 +689,7 @@ public class RelationAtom extends Atom {
     @Override
     public Atom rewriteToUserDefined(Atom parentAtom) {
         return this
-                .rewriteWithRelationVariable(parentAtom)
+                .rewriteWithPatternVariable(parentAtom)
                 .rewriteWithVariableRoles(parentAtom)
                 .rewriteWithTypeVariable(parentAtom);
     }
