@@ -44,9 +44,9 @@ public class SessionSteps {
         connection_open_schema_sessions_for_keyspaces(list(name));
     }
 
-    @When("connection open session for keyspace: {word}")
-    public void connection_open_session_for_keyspace(String name) {
-        connection_open_sessions_for_keyspaces(list(name));
+    @When("connection open (data) session for keyspace: {word}")
+    public void connection_open_data_session_for_keyspace(String name) {
+        connection_open_data_sessions_for_keyspaces(list(name));
     }
 
     @When("connection open schema session(s) for keyspace(s):")
@@ -56,19 +56,21 @@ public class SessionSteps {
         }
     }
 
-    @When("connection open session(s) for keyspace(s):")
-    public void connection_open_sessions_for_keyspaces(List<String> names) {
+    @When("connection open (data) session(s) for keyspace(s):")
+    public void connection_open_data_sessions_for_keyspaces(List<String> names) {
         for (String name : names) {
-            sessions.add(hypergraph.session(name));
+            sessions.add(hypergraph.session(name, Hypergraph.Session.Type.DATA));
         }
     }
 
-    @When("connection open sessions in parallel for keyspaces:")
-    public void connection_open_sessions_in_parallel_for_keyspaces(List<String> names) {
+    @When("connection open (data) sessions in parallel for keyspaces:")
+    public void connection_open_data_sessions_in_parallel_for_keyspaces(List<String> names) {
         assertTrue(THREAD_POOL_SIZE >= names.size());
 
         for (String name : names) {
-            sessionsParallel.add(CompletableFuture.supplyAsync(() -> hypergraph.session(name), threadPool));
+            sessionsParallel.add(CompletableFuture.supplyAsync(
+                    () -> hypergraph.session(name, Hypergraph.Session.Type.DATA), threadPool)
+            );
         }
     }
 

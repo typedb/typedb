@@ -357,9 +357,4 @@ public class ThingTypeSteps {
             assertFalse(actuals.contains(roleLabel));
         }
     }
-
-    @Then("{root_label}\\( ?{type_label} ?) creates instance successfully: {bool}")
-    public void thing_creates_instance_successfully(RootLabel rootLabel, String typeLabel, boolean isSuccessful) {
-
-    }
 }

@@ -36,7 +36,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static hypergraph.common.exception.Error.ThingWrite.ILLEGAL_ABSTRACT_WRITE;
 import static hypergraph.common.exception.Error.TypeWrite.INVALID_ROOT_TYPE_MUTATION;
 import static hypergraph.common.iterator.Iterators.apply;
 import static hypergraph.common.iterator.Iterators.filter;
@@ -205,9 +204,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
 
     @Override
     public RelationImpl create(boolean isInferred) {
-        if (isAbstract()) {
-            throw new HypergraphException(ILLEGAL_ABSTRACT_WRITE.format(Relation.class.getSimpleName(), label()));
-        }
+        validateIsCommitedAndNotAbstract(Relation.class);
         ThingVertex instance = vertex.graph().thingGraph().insert(vertex.iid(), isInferred);
         return new RelationImpl(instance);
     }

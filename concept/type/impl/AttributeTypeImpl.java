@@ -292,6 +292,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         @Override
         public Attribute.Boolean put(boolean value, boolean isInferred) {
+            validateIsCommitedAndNotAbstract(Attribute.class);
             AttributeVertex<java.lang.Boolean> attVertex = vertex.graph().thingGraph().put(vertex, value, isInferred);
             return new AttributeImpl.Boolean(attVertex);
         }
@@ -391,6 +392,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         @Override
         public Attribute.Long put(long value, boolean isInferred) {
+            validateIsCommitedAndNotAbstract(Attribute.class);
             AttributeVertex<java.lang.Long> attVertex = vertex.graph().thingGraph().put(vertex, value, isInferred);
             return new AttributeImpl.Long(attVertex);
         }
@@ -490,6 +492,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         @Override
         public Attribute.Double put(double value, boolean isInferred) {
+            validateIsCommitedAndNotAbstract(Attribute.class);
             AttributeVertex<java.lang.Double> attVertex = vertex.graph().thingGraph().put(vertex, value, isInferred);
             return new AttributeImpl.Double(attVertex);
         }
@@ -584,6 +587,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         @Override
         public Attribute.String put(java.lang.String value, boolean isInferred) {
+            validateIsCommitedAndNotAbstract(Attribute.class);
             if (value.length() > Schema.STRING_MAX_LENGTH) {
                 throw new HypergraphException(Error.ThingWrite.ILLEGAL_STRING_SIZE);
             }
@@ -692,6 +696,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         @Override
         public Attribute.DateTime put(LocalDateTime value, boolean isInferred) {
+            validateIsCommitedAndNotAbstract(Attribute.class);
             AttributeVertex<LocalDateTime> attVertex = vertex.graph().thingGraph().put(vertex, value, isInferred);
             if (!isInferred && attVertex.isInferred()) attVertex.isInferred(false);
             return new AttributeImpl.DateTime(attVertex);

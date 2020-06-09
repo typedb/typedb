@@ -102,4 +102,27 @@ public class AttributeTypeSteps {
             assertFalse(actuals.contains(subLabel));
         }
     }
+
+    @Then("attribute\\( ?{type_label} ?) as\\( ?{value_type} ?) fails at putting an instance")
+    public void attribute_as_boolean_fails_at_creating_an_instance(String typeLabel, Class<?> valueType) {
+        try {
+            if (valueType.equals(Boolean.class)) {
+                tx().concepts().getAttributeType(typeLabel).asBoolean().put(true);
+            } else if (valueType.equals(Long.class)) {
+                tx().concepts().getAttributeType(typeLabel).asLong().put(21);
+            } else if (valueType.equals(Double.class)) {
+                tx().concepts().getAttributeType(typeLabel).asDouble().put(21.0);
+            } else if (valueType.equals(String.class)) {
+                tx().concepts().getAttributeType(typeLabel).asString().put("alice");
+            } else if (valueType.equals(LocalDateTime.class)) {
+                tx().concepts().getAttributeType(typeLabel).asDateTime().put(LocalDateTime.of(1991, 2, 3, 4, 5));
+            } else {
+                throw new HypergraphException("unreachable");
+            }
+
+            fail();
+        } catch (Exception ignore) {
+            assertTrue(true);
+        }
+    }
 }

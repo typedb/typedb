@@ -98,9 +98,9 @@ public abstract class Error<TYPE extends Error<TYPE>> {
         public static final Transaction ILLEGAL_COMMIT =
                 new Transaction(3, "Only write transactions can be committed.");
         public static final Transaction DIRTY_SCHEMA_WRITES =
-                new Transaction(4, "Contains schema writes when session type does not allow.");
+                new Transaction(4, "Attempted schema writes when session type does not allow.");
         public static final Transaction DIRTY_DATA_WRITES =
-                new Transaction(5, "Contains data writes when session type does not allow.");
+                new Transaction(5, "Attempted data writes when session type does not allow.");
 
         private static final String codePrefix = "TXN";
         private static final String descriptionPrefix = "Invalid Transaction Operation";

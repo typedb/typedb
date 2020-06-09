@@ -18,6 +18,7 @@
 
 package hypergraph.concept.type.impl;
 
+import hypergraph.common.exception.Error;
 import hypergraph.common.exception.HypergraphException;
 import hypergraph.concept.thing.Thing;
 import hypergraph.concept.type.AttributeType;
@@ -35,6 +36,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import static hypergraph.common.exception.Error.ThingWrite.ILLEGAL_ABSTRACT_WRITE;
 import static hypergraph.common.exception.Error.TypeWrite.INVALID_KEY_ATTRIBUTE;
 import static hypergraph.common.exception.Error.TypeWrite.INVALID_ROOT_TYPE_MUTATION;
 import static hypergraph.common.iterator.Iterators.apply;
@@ -226,6 +228,14 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
             throw new HypergraphException("Invalid Type Removal: " + label() + " has instances");
         } else {
             vertex.delete();
+        }
+    }
+
+    void validateIsCommitedAndNotAbstract(Class<?> instanceClass) {
+        if (vertex.status().equals(Schema.Status.BUFFERED)) {
+            throw new HypergraphException(Error.Transaction.DIRTY_DATA_WRITES);
+        } else if (isAbstract()) {
+            throw new HypergraphException(ILLEGAL_ABSTRACT_WRITE.format(instanceClass.getSimpleName(), label()));
         }
     }
 

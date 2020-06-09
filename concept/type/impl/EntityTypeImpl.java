@@ -31,7 +31,6 @@ import hypergraph.graph.vertex.TypeVertex;
 import javax.annotation.Nullable;
 import java.util.stream.Stream;
 
-import static hypergraph.common.exception.Error.ThingWrite.ILLEGAL_ABSTRACT_WRITE;
 import static hypergraph.common.exception.Error.TypeWrite.INVALID_ROOT_TYPE_MUTATION;
 
 public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
@@ -94,9 +93,7 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
 
     @Override
     public EntityImpl create(boolean isInferred) {
-        if (isAbstract()) {
-            throw new HypergraphException(ILLEGAL_ABSTRACT_WRITE.format(Entity.class.getSimpleName(), label()));
-        }
+        validateIsCommitedAndNotAbstract(Entity.class);
         ThingVertex instance = vertex.graph().thingGraph().insert(vertex.iid(), isInferred);
         return new EntityImpl(instance);
     }

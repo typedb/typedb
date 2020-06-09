@@ -18,9 +18,24 @@
 
 package hypergraph.test.behaviour.concept.type.entitytype;
 
+import io.cucumber.java.en.Then;
+
+import static hypergraph.test.behaviour.connection.ConnectionSteps.tx;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 /**
  * Behaviour Steps specific to EntityTypes
  */
 public class EntityTypeSteps {
 
+    @Then("entity\\( ?{type_label} ?) fails at creating an instance")
+    public void entity_fails_at_creating_an_instance(String typeLabel) {
+        try {
+            tx().concepts().getEntityType(typeLabel).create();
+            fail();
+        } catch (Exception ignore) {
+            assertTrue(true);
+        }
+    }
 }
