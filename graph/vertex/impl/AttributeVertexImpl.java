@@ -89,6 +89,7 @@ public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl impleme
 
     @Override
     public void delete() {
+        type().unbuffer(this);
         graph.storage().delete(attributeIID.bytes());
         graph.storage().delete(EdgeIID.InwardsISA.of(type().iid(), iid).bytes());
         graph.storage().delete(index().bytes());

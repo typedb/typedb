@@ -128,6 +128,11 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         }
 
         @Override
+        public void unbuffer(ThingVertex thingVertex) {
+            throw new HypergraphException(Error.Transaction.ILLEGAL_OPERATION);
+        }
+
+        @Override
         public Iterator<? extends ThingVertex> instances() {
             return Collections.emptyIterator();
         }
@@ -269,6 +274,11 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         @Override
         public void buffer(ThingVertex thingVertex) {
             instances.add((ThingVertexImpl) thingVertex);
+        }
+
+        @Override
+        public void unbuffer(ThingVertex thingVertex) {
+            instances.remove((ThingVertexImpl) thingVertex); // keep the cast to avoid warning
         }
 
         @Override

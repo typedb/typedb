@@ -47,6 +47,8 @@ public interface TypeVertex extends Vertex<
 
     void buffer(ThingVertex thingVertex);
 
+    void unbuffer(ThingVertex thingVertex);
+
     Iterator<? extends ThingVertex> instances();
 
     String label();

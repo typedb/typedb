@@ -640,6 +640,8 @@ public class BasicTest {
 
                 try (Hypergraph.Transaction txn = session.transaction(Hypergraph.Transaction.Type.READ)) {
                     assertEquals("alice", name(txn).get("alice").value());
+                    assertEquals(1, name(txn).instances().count());
+                    assertTrue(name(txn).instances().anyMatch(att -> att.value().equals("alice")));
                 }
 
                 txn1 = session.transaction(Hypergraph.Transaction.Type.WRITE);
@@ -647,6 +649,10 @@ public class BasicTest {
 
                 name(txn1).put("alice");
                 name(txn2).get("alice").delete();
+
+                assertEquals(0, name(txn2).instances().count());
+                assertEquals(1, name(txn1).instances().count());
+                assertTrue(name(txn1).instances().anyMatch(att -> att.value().equals("alice")));
 
                 txn1.commit(); // write before delete
                 try {
@@ -658,6 +664,8 @@ public class BasicTest {
 
                 try (Hypergraph.Transaction txn = session.transaction(Hypergraph.Transaction.Type.READ)) {
                     assertEquals("alice", name(txn).get("alice").value());
+                    assertEquals(1, name(txn).instances().count());
+                    assertTrue(name(txn).instances().anyMatch(att -> att.value().equals("alice")));
                 }
 
                 txn1 = session.transaction(Hypergraph.Transaction.Type.WRITE);
@@ -671,6 +679,8 @@ public class BasicTest {
 
                 try (Hypergraph.Transaction txn = session.transaction(Hypergraph.Transaction.Type.READ)) {
                     assertEquals("alice", name(txn).get("alice").value());
+                    assertEquals(1, name(txn).instances().count());
+                    assertTrue(name(txn).instances().anyMatch(att -> att.value().equals("alice")));
                 }
 
                 txn1 = session.transaction(Hypergraph.Transaction.Type.WRITE);
@@ -689,6 +699,7 @@ public class BasicTest {
 
                 try (Hypergraph.Transaction txn = session.transaction(Hypergraph.Transaction.Type.READ)) {
                     assertNull(name(txn).get("alice"));
+                    assertEquals(0, name(txn).instances().count());
                 }
             }
         }
