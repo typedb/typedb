@@ -541,15 +541,20 @@ public class NegationIT {
     @Test
     public void whenEvaluatingNegationBlocks_weDoNotAckCompletionOfIncompleteQueries(){
         Config mockServerConfig = storage.createCompatibleServerConfig();
-        for(int i = 0 ; i < 10 ; i++) {
+        int expectedAnswers = 11;
+        //NB: failure might be intermittent
+        for(int i = 0 ; i < 5 ; i++) {
             try (Session session = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig)) {
-                loadFromFileAndCommit(resourcePath, "completeness.gql", session);
-                String query = "match (role-5: $var-8, role-6: $var-6) isa relationship-4; get;";
-
+                loadFromFileAndCommit(resourcePath, "negationCompleteness.gql", session);
+                String directionalClosure = "match (role-3: $x, role-4: $y) isa relation-4; get;";
+                String relationClosure = "match $r isa relation-4; get;";
                 try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-                    List<ConceptMap> answers = tx.execute(Graql.parse(query).asGet());
-                    System.out.println(answers.size());
-                    //assertEquals(11, answers.size());
+                    List<ConceptMap> answers = tx.execute(Graql.parse(directionalClosure).asGet());
+                    assertEquals(expectedAnswers, answers.size());
+                }
+                try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+                    List<ConceptMap> answers = tx.execute(Graql.parse(relationClosure).asGet());
+                    assertEquals(expectedAnswers, answers.size());
                 }
             }
         }

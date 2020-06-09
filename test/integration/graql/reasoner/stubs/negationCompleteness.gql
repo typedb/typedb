@@ -1,59 +1,55 @@
 define
-
 resource sub attribute, value string;
-someEntity sub entity,
-    has resource,
-    plays roleA,
-    plays roleB,
-    plays symmetricRole;
+
+entity-1 sub entity, has resource, plays role-2, plays role-4;
+entity-2 sub entity, has resource, plays role-1, plays role-3, plays role-4;
+entity-3 sub entity, has resource, plays role-1, plays role-3, plays role-4, plays symmetric-role;
+
+relation-2 sub relation, relates role-1, relates role-2;
+relation-4 sub relation, relates role-3, relates role-4;
+relation-5 sub relation, relates role-3, relates role-4;
+symmetric-relation sub relation, relates symmetric-role;
 
 
-dummyRelation sub relation, relates roleA, relates roleB;
-
-baseRelation sub relation, relates roleA, relates roleB;
-intermediateRelation sub relation, relates roleA, relates roleB;
-symmetricRelation sub relation, relates symmetricRole;
-
-transRelation sub relation, relates roleA, relates roleB;
-
-rule-1 sub rule, when {
-    (roleA: $x, roleB: $y) isa intermediateRelation;},
+rule-1 sub rule , when {
+    (role-3: $x, role-4: $y) isa relation-5;},
 then {
-    (roleA: $x, roleB: $y) isa transRelation;};
+    (role-3: $x, role-4: $y) isa relation-4;};
 
-rule-2 sub rule, when {
-    (roleA: $x, roleB: $y) isa baseRelation;
+rule-2 sub rule , when {
+    (role-1: $x, role-2: $y) isa relation-2;
     not {
-        (roleA: $x, roleB: $z) isa intermediateRelation;
-    };},
+    (role-3: $x, role-4: $z) isa relation-5;};},
 then {
-    (roleA: $x, roleB: $y) isa transRelation;};
+    (role-3: $x, role-4: $y) isa relation-4;};
 
-extra-rule sub rule, when {
-    (roleA: $x, roleB: $y) isa transRelation;
-    (roleA: $y, roleB: $z) isa transRelation;},
+trans-rule sub rule , when {
+    (role-3: $y, role-4: $z) isa relation-4;
+    (role-3: $x, role-4: $y) isa relation-4;},
 then {
-    (roleA: $x, roleB: $z) isa transRelation;};
+    (role-3: $x, role-4: $z) isa relation-4;};
 
-rule-3 sub rule, when {
-    (symmetricRole: $x, symmetricRole: $y) isa symmetricRelation;},
+rule-3 sub rule , when {
+    (symmetric-role: $x, symmetric-role: $y) isa symmetric-relation;},
 then {
-    (roleA: $x, roleB: $y) isa intermediateRelation;};
+    (role-3: $y, role-4: $x) isa relation-5;};
+
 
 insert
-$a isa someEntity, has resource "a";
-$b isa someEntity, has resource "b";
-$c isa someEntity, has resource "c";
-$d isa someEntity, has resource "d";
-$e isa someEntity, has resource "e";
+$d isa entity-1, has resource "d";
+$e isa entity-2, has resource "e";
 
-(roleA: $a, roleB: $d) isa intermediateRelation;
-(roleA: $b, roleB: $d) isa intermediateRelation;
-(roleA: $c, roleB: $d) isa intermediateRelation;
+$a isa entity-3, has resource "a";
+$b isa entity-3, has resource "b";
+$c isa entity-3, has resource "c";
 
-(roleA: $a, roleB: $e) isa baseRelation;
-(roleA: $b, roleB: $e) isa baseRelation;
-(roleA: $c, roleB: $e) isa baseRelation;
-(roleA: $d, roleB: $e) isa baseRelation;
+(role-1: $e, role-2: $d)  isa relation-2;
+(role-1: $a, role-2: $d) isa relation-2;
+(role-1: $b, role-2: $d)  isa relation-2;
+(role-1: $c, role-2: $d) isa relation-2;
 
-(symmetricRole: $b, symmetricRole: $c) isa symmetricRelation;
+(role-3: $a, role-4: $e)  isa relation-5;
+(role-3: $b, role-4: $e)  isa relation-5;
+(role-3: $c, role-4: $e) isa relation-5;
+
+(symmetric-role: $c, symmetric-role: $b ) isa symmetric-relation;
