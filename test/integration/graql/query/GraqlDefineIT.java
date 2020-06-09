@@ -97,66 +97,7 @@ public class GraqlDefineIT {
         session.close();
     }
 
-    @Test
-    public void testDefineSub() {
-        assertDefine(var("x").type("cool-movie").sub("movie"));
-    }
-
-    @Test
-    public void testDefineSchema() {
-        tx.execute(Graql.define(
-                type("pokemon").sub(Graql.Token.Type.ENTITY),
-                type("evolution").sub(Graql.Token.Type.RELATION),
-                type("evolves-from").sub(Graql.Token.Type.ROLE),
-                type("evolves-to").sub(Graql.Token.Type.ROLE),
-                type("evolution").relates("evolves-from").relates("evolves-to"),
-                type("pokemon").plays("evolves-from").plays("evolves-to").has("name")
-        ));
-
-        assertExists(tx, type("pokemon").sub(Graql.Token.Type.ENTITY));
-        assertExists(tx, type("evolution").sub(Graql.Token.Type.RELATION));
-        assertExists(tx, type("evolves-from").sub(Graql.Token.Type.ROLE));
-        assertExists(tx, type("evolves-to").sub(Graql.Token.Type.ROLE));
-        assertExists(tx, type("evolution").relates("evolves-from").relates("evolves-to"));
-        assertExists(tx, type("pokemon").plays("evolves-from").plays("evolves-to"));
-    }
-
-    @Test
-    public void testDefineIsAbstract() {
-        tx.execute(Graql.define(
-                type("concrete-type").sub(Graql.Token.Type.ENTITY),
-                type("abstract-type").isAbstract().sub(Graql.Token.Type.ENTITY)
-        ));
-
-        assertNotExists(tx, type("concrete-type").isAbstract());
-        assertExists(tx, type("abstract-type").isAbstract());
-    }
-
-    @Test
-    public void testDefineValueType() {
-        tx.execute(Graql.define(
-                type("my-type").sub(Graql.Token.Type.ATTRIBUTE).value(Graql.Token.ValueType.LONG)
-        ));
-
-        MatchClause match = Graql.match(var("x").type("my-type"));
-        AttributeType.ValueType valuetype = tx.stream(match).iterator().next().get("x").asAttributeType().valueType();
-
-        Assert.assertEquals(AttributeType.ValueType.LONG, valuetype);
-    }
-
-    @Test
-    public void testDefineSubResourceType() {
-        tx.execute(Graql.define(
-                type("my-type").sub(Graql.Token.Type.ATTRIBUTE).value(Graql.Token.ValueType.STRING),
-                type("sub-type").sub("my-type")
-        ));
-
-        MatchClause match = Graql.match(var("x").type("sub-type"));
-        AttributeType.ValueType valuetype = tx.stream(match).iterator().next().get("x").asAttributeType().valueType();
-
-        Assert.assertEquals(AttributeType.ValueType.STRING, valuetype);
-    }
-
+    // TODO: migrate
     @Test
     public void testDefineSubRole() {
         tx.execute(Graql.define(
@@ -169,6 +110,7 @@ public class GraqlDefineIT {
         assertExists(tx, type("spouse1"));
     }
 
+    // TODO: should we allow variables in defines?
     @Test
     public void testReferenceByVariableNameAndTypeLabel() {
         tx.execute(Graql.define(
@@ -183,72 +125,7 @@ public class GraqlDefineIT {
         assertExists(tx, type("123").plays("director"));
     }
 
-    @Test
-    public void testDefineReferenceByName() {
-        String roleTypeLabel = "a-role";
-        tx.execute(Graql.define(
-                type("new-type").sub(Graql.Token.Type.ENTITY),
-                type("new-type").plays(roleTypeLabel),
-                type("rel").sub(Graql.Token.Type.RELATION).relates(roleTypeLabel)
-        ));
-
-        tx.execute(Graql.insert(var("x").isa("new-type")));
-
-        MatchClause typeQuery = Graql.match(var("n").type("new-type"));
-
-        assertEquals(1, tx.stream(typeQuery).count());
-
-        // We checked count ahead of time
-        //noinspection OptionalGetWithoutIsPresent
-        EntityType newType = tx.stream(typeQuery.get("n")).map(ans -> ans.get("n")).findFirst().get().asEntityType();
-
-        assertTrue(newType.playing().anyMatch(role -> role.equals(tx.getRole(roleTypeLabel))));
-
-        assertExists(tx, var().isa("new-type"));
-    }
-
-    @Test
-    public void testHas() {
-        String resourceType = "a-new-resource-type";
-
-        tx.execute(Graql.define(
-                type("a-new-type").sub("entity").has(resourceType),
-                type(resourceType).sub(Graql.Token.Type.ATTRIBUTE).value(Graql.Token.ValueType.STRING),
-                type("an-unconnected-resource-type").sub(Graql.Token.Type.ATTRIBUTE).value(Graql.Token.ValueType.LONG)
-        ));
-
-        tx.getAttributeType(resourceType).owners();
-        // Make sure a-new-type can have the given resource type, but not other resource types
-        assertExists(tx, type("a-new-type").sub("entity").has(resourceType));
-        assertNotExists(tx, type("a-new-type").has("title"));
-        assertNotExists(tx, type("movie").has(resourceType));
-        assertNotExists(tx, type("a-new-type").has("an-unconnected-resource-type"));
-    }
-
-    @Test
-    public void whenDefiningAKey_appropriateSchemaConceptsAreCreated() {
-        String resourceType = "a-new-resource-type";
-
-        tx.execute(Graql.define(
-                type("a-new-type").sub("entity").key(resourceType),
-                type(resourceType).sub(Graql.Token.Type.ATTRIBUTE).value(Graql.Token.ValueType.STRING)
-        ));
-
-        // Make sure a-new-type can have the given resource type as a key or otherwise
-        assertExists(tx, type("a-new-type").sub("entity").key(resourceType));
-        assertExists(tx, type("a-new-type").sub("entity").has(resourceType));
-        assertNotExists(tx, type("a-new-type").sub("entity").key("title"));
-        assertNotExists(tx, type("movie").sub("entity").key(resourceType));
-    }
-
-    @Test
-    public void whenDefiningResourceTypeWithRegex_regexIsAppliedCorrectly() {
-        tx.execute(Graql.define(type("greeting").sub(Graql.Token.Type.ATTRIBUTE).value(Graql.Token.ValueType.STRING).regex("hello|good day")));
-
-        MatchClause match = Graql.match(var("x").type("greeting"));
-        assertEquals("hello|good day", tx.stream(match.get("x")).map(ans -> ans.get("x")).findFirst().get().asAttributeType().regex());
-    }
-
+    // TODO: should we allow variables in defines?
     @Test
     public void whenExecutingADefineQuery_ResultContainsAllInsertedVars() {
         Statement type = var("type");
@@ -260,16 +137,6 @@ public class GraqlDefineIT {
         ConceptMap result = tx.execute(query).get(0);
         assertThat(result.vars(), containsInAnyOrder(type.var(), type2.var()));
         assertEquals(result.get(type.var()), result.get(type2.var()));
-    }
-
-    @Test
-    public void whenChangingTheSuperOfAnExistingConcept_ApplyTheChange() {
-        EntityType newType = tx.putEntityType("a-new-type");
-        EntityType movie = tx.getEntityType("movie");
-
-        tx.execute(Graql.define(type("a-new-type").sub("movie")));
-
-        assertEquals(movie, newType.sup());
     }
 
     @Test
@@ -297,33 +164,10 @@ public class GraqlDefineIT {
     }
 
     @Test
-    public void whenDefiningAttributeTypeWithoutValueType_weThrow() {
-        exception.expect(GraqlSemanticException.class);
-        exception.expectMessage(
-                allOf(containsString("my-att"), containsString("value"), containsString("attribute"))
-        );
-        tx.execute(Graql.define(type("my-att").sub(Graql.Token.Type.ATTRIBUTE)));
-    }
-
-    @Test
-    public void whenDefiningRecursiveTypes_weThrow() {
-        exception.expect(GraqlSemanticException.class);
-        exception.expectMessage(allOf(containsString("thingy"), containsString("itself")));
-        tx.execute(Graql.define(type("thingy").sub("thingy")));
-    }
-
-    @Test
     public void whenDefiningAnOntologyConceptWithoutALabel_Throw() {
         exception.expect(GraqlSemanticException.class);
         exception.expectMessage(allOf(containsString("entity"), containsString("type")));
         tx.execute(Graql.define(var().sub("entity")));
-    }
-
-    @Test
-    public void whenATypeHasNonExistentResource_weThrow() {
-        exception.expect(GraqlSemanticException.class);
-        exception.expectMessage("nothing");
-        tx.execute(Graql.define(type("blah this").sub("entity").has("nothing")));
     }
 
     @Test
@@ -334,72 +178,6 @@ public class GraqlDefineIT {
     }
 
     @Test
-    public void whenSpecifyingExistingTypeWithIncorrectValueType_Throw() {
-        AttributeType name = tx.getAttributeType("name");
-
-        exception.expect(GraqlSemanticException.class);
-        exception.expectMessage(
-                GraqlSemanticException.insertPropertyOnExistingConcept("value", AttributeType.ValueType.BOOLEAN, name).getMessage()
-        );
-
-        tx.execute(Graql.define(type("name").value(Graql.Token.ValueType.BOOLEAN)));
-    }
-
-    @Test
-    public void whenSpecifyingValueTypeOnAnEntityType_Throw() {
-        exception.expect(GraqlSemanticException.class);
-        exception.expectMessage(
-                allOf(containsString("Unexpected property"), containsString("value"), containsString("my-type"))
-        );
-
-        tx.execute(Graql.define(type("my-type").sub("entity").value(Graql.Token.ValueType.BOOLEAN)));
-    }
-
-    @Test
-    public void whenDefiningRuleWithoutWhen_Throw() {
-        exception.expect(GraqlSemanticException.class);
-        exception.expectMessage(allOf(containsString("rule"), containsString("movie"), containsString("when")));
-        tx.execute(Graql.define(type("a-rule").sub(Graql.Token.Type.RULE).then(var("x").isa("movie"))));
-    }
-
-    @Test
-    public void whenDefiningRuleWithoutThen_Throw() {
-        exception.expect(GraqlSemanticException.class);
-        exception.expectMessage(allOf(containsString("rule"), containsString("movie"), containsString("then")));
-        tx.execute(Graql.define(type("a-rule").sub(Graql.Token.Type.RULE).when(var("x").isa("movie"))));
-    }
-
-    @Test
-    public void whenDefiningANonRuleWithAWhenPattern_Throw() {
-        Statement rule = type("yes").sub(Graql.Token.Type.ENTITY).when(var("x").isa("yes"));
-
-        exception.expect(GraqlSemanticException.class);
-        exception.expectMessage(anyOf(
-                // Either we see "entity" and an unexpected "when"...
-                allOf(containsString("unexpected property"), containsString("when")),
-                // ...or we see "when" and don't find the expected "then"
-                containsString(GraqlSemanticException.insertNoExpectedProperty("then", rule).getMessage()))
-        );
-
-        tx.execute(Graql.define(rule));
-    }
-
-    @Test
-    public void whenDefiningANonRuleWithAThenPattern_Throw() {
-        Statement rule = type("some-type").sub(Graql.Token.Type.ENTITY).then(var("x").isa("some-type"));
-
-        exception.expect(GraqlSemanticException.class);
-        exception.expectMessage(anyOf(
-                // Either we see "entity" and an unexpected "when"...
-                allOf(containsString("unexpected property"), containsString("then")),
-                // ...or we see "when" and don't find the expected "then"
-                containsString(GraqlSemanticException.insertNoExpectedProperty("when", rule).getMessage()))
-        );
-
-        tx.execute(Graql.define(rule));
-    }
-
-    @Test
     public void whenDefiningAThing_Throw() {
         exception.expect(GraqlSemanticException.class);
         exception.expectMessage(GraqlSemanticException.defineUnsupportedProperty(Graql.Token.Property.ISA.toString()).getMessage());
@@ -407,6 +185,7 @@ public class GraqlDefineIT {
         tx.execute(Graql.define(var("x").isa("movie")));
     }
 
+    // TODO: migrate
     @Test
     public void whenModifyingAThingInADefineQuery_Throw() {
         ConceptId id = tx.getEntityType("movie").instances().iterator().next().id();
@@ -420,6 +199,7 @@ public class GraqlDefineIT {
         tx.execute(Graql.define(var().id(id.getValue()).has("title", "Bob")));
     }
 
+    // TODO: this is weird
     @Test @Ignore
     public void whenSpecifyingLabelOfAnExistingConcept_LabelIsChanged() {
         tx.putEntityType("a-new-type");
@@ -441,16 +221,7 @@ public class GraqlDefineIT {
         assertEquals(queryString, defineQuery.toString());
     }
 
-    @Test
-    public void whenDefiningARelation_SubRoleDeclarationsCanBeSkipped() {
-        tx.execute(Graql.define(type("marriage").sub(Graql.Token.Type.RELATION).relates("husband").relates("wife")));
-
-        RelationType marriage = tx.getRelationType("marriage");
-        Role husband = tx.getRole("husband");
-        Role wife = tx.getRole("wife");
-        assertThat(marriage.roles().toArray(), arrayContainingInAnyOrder(husband, wife));
-    }
-
+    // TODO: migrate
     @Test
     public void whenDefiningARelation_SubRoleCasUseAs() {
         tx.execute(Graql.define(type("parentship").sub(Graql.Token.Type.RELATION)
@@ -466,42 +237,6 @@ public class GraqlDefineIT {
         assertThat(marriage.roles().toArray(), arrayContainingInAnyOrder(father, son));
         assertEquals(tx.getRole("parent"), father.sup());
         assertEquals(tx.getRole("child"), son.sup());
-    }
-
-    @Test
-    public void whenDefiningARule_SubRuleDeclarationsCanBeSkipped() {
-        Pattern when = Graql.parsePattern("$x isa entity;");
-        Pattern then = Graql.parsePattern("$x isa entity;");
-        Statement vars = type("my-rule").when(when).then(then);
-        tx.execute(Graql.define(vars));
-
-        assertNotNull(tx.getRule("my-rule"));
-    }
-
-    @Test
-    public void whenDefiningARelation_SubRoleDeclarationsCanBeSkipped_EvenWhenRoleInReferredToInOtherContexts() {
-        tx.execute(Graql.define(
-                type("marriage").sub(Graql.Token.Type.RELATION).relates("husband").relates("wife"),
-                type("person").plays("husband").plays("wife")
-        ));
-
-        RelationType marriage = tx.getRelationType("marriage");
-        EntityType person = tx.getEntityType("person");
-        Role husband = tx.getRole("husband");
-        Role wife = tx.getRole("wife");
-        assertThat(marriage.roles().toArray(), arrayContainingInAnyOrder(husband, wife));
-        assertThat(person.playing().toArray(), hasItemInArray(wife));
-        assertThat(person.playing().toArray(), hasItemInArray(husband));
-    }
-
-    @Test
-    public void whenDefiningARelationWithNonRoles_Throw() {
-        exception.expect(GraknException.class);
-
-        tx.execute(Graql.define(
-                type("marriage").sub(Graql.Token.Type.RELATION).relates("husband").relates("wife"),
-                type("wife").sub(Graql.Token.Type.ENTITY)
-        ));
     }
 
     private boolean schemaObjectsExist(Statement... vars){
