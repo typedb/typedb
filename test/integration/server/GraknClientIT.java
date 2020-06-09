@@ -1194,7 +1194,7 @@ public class GraknClientIT {
 
             exception.expect(RuntimeException.class);
 
-            tx.execute(query);
+            tx.execute(query).get();
         }
     }
 
