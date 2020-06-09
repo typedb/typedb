@@ -139,6 +139,7 @@ public class RuleUtils {
                                     .flatMap(t -> typeMap.get(t).stream())
                                     .sorted(Comparator.comparing(r -> -r.resolutionPriority()))
                                     .collect(toList());
+                            if(sortedRules.size() > 1) sortedRules.stream().map(r -> r.getRule().label()).forEach(System.out::println);
                             return sortedRules.stream();
                         });
     }

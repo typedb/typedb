@@ -1,0 +1,59 @@
+define
+
+resource sub attribute, value string;
+someEntity sub entity,
+    has resource,
+    plays roleA,
+    plays roleB,
+    plays symmetricRole;
+
+
+dummyRelation sub relation, relates roleA, relates roleB;
+
+baseRelation sub relation, relates roleA, relates roleB;
+intermediateRelation sub relation, relates roleA, relates roleB;
+symmetricRelation sub relation, relates symmetricRole;
+
+transRelation sub relation, relates roleA, relates roleB;
+
+rule-1 sub rule, when {
+    (roleA: $x, roleB: $y) isa intermediateRelation;},
+then {
+    (roleA: $x, roleB: $y) isa transRelation;};
+
+rule-2 sub rule, when {
+    (roleA: $x, roleB: $y) isa baseRelation;
+    not {
+        (roleA: $x, roleB: $z) isa intermediateRelation;
+    };},
+then {
+    (roleA: $x, roleB: $y) isa transRelation;};
+
+extra-rule sub rule, when {
+    (roleA: $x, roleB: $y) isa transRelation;
+    (roleA: $y, roleB: $z) isa transRelation;},
+then {
+    (roleA: $x, roleB: $z) isa transRelation;};
+
+rule-3 sub rule, when {
+    (symmetricRole: $x, symmetricRole: $y) isa symmetricRelation;},
+then {
+    (roleA: $x, roleB: $y) isa intermediateRelation;};
+
+insert
+$a isa someEntity, has resource "a";
+$b isa someEntity, has resource "b";
+$c isa someEntity, has resource "c";
+$d isa someEntity, has resource "d";
+$e isa someEntity, has resource "e";
+
+(roleA: $a, roleB: $d) isa intermediateRelation;
+(roleA: $b, roleB: $d) isa intermediateRelation;
+(roleA: $c, roleB: $d) isa intermediateRelation;
+
+(roleA: $a, roleB: $e) isa baseRelation;
+(roleA: $b, roleB: $e) isa baseRelation;
+(roleA: $c, roleB: $e) isa baseRelation;
+(roleA: $d, roleB: $e) isa baseRelation;
+
+(symmetricRole: $b, symmetricRole: $c) isa symmetricRelation;
