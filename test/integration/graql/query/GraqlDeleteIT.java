@@ -110,6 +110,7 @@ public class GraqlDeleteIT {
         session.close();
     }
 
+    // TODO: migrate
     @Test
     public void testDeleteMultiple() {
         tx.execute(Graql.define(type("fake-type").sub(ENTITY)));
@@ -122,88 +123,7 @@ public class GraqlDeleteIT {
         assertNotExists(tx, var().isa("fake-type"));
     }
 
-    @Test
-    public void testDeleteEntity() {
-
-        assertExists(tx, var().has("title", "Godfather"));
-        assertExists(tx, x.has("title", "Godfather"), var().rel(x).rel(y).isa("has-cast"));
-        assertExists(tx, var().has("name", "Don Vito Corleone"));
-
-        tx.execute(Graql.match(x.has("title", "Godfather")).delete(x.isa("thing")));
-
-        assertNotExists(tx, var().has("title", "Godfather"));
-        assertNotExists(tx, x.has("title", "Godfather"), var().rel(x).rel(y).isa("has-cast"));
-        assertExists(tx, var().has("name", "Don Vito Corleone"));
-    }
-
-    @Test
-    public void testDeleteRelation() {
-        assertExists(tx, kurtz);
-        assertExists(tx, marlonBrando);
-        assertExists(tx, apocalypseNow);
-        assertExists(tx, kurtzCastRelation);
-
-        tx.execute(kurtzCastRelation.delete(var("a").isa("thing")));
-
-        assertExists(tx, kurtz);
-        assertExists(tx, marlonBrando);
-        assertExists(tx, apocalypseNow);
-        assertNotExists(tx, kurtzCastRelation);
-    }
-
-    @Test
-    public void testDeleteAllRolePlayers() {
-        ConceptId id = tx.stream(kurtzCastRelation.get("a")).map(ans -> ans.get("a")).findFirst().get().id();
-
-        assertExists(tx, kurtz);
-        assertExists(tx, marlonBrando);
-        assertExists(tx, apocalypseNow);
-        assertTrue(checkIdExists(tx, id));
-
-        tx.execute(kurtz.delete(x.isa("thing")));
-
-        assertNotExists(tx, kurtz);
-        assertExists(tx, marlonBrando);
-        assertExists(tx, apocalypseNow);
-        assertTrue(checkIdExists(tx, id));
-
-        tx.execute(marlonBrando.delete(x.isa("thing")));
-
-        assertNotExists(tx, kurtz);
-        assertNotExists(tx, marlonBrando);
-        assertExists(tx, apocalypseNow);
-        assertTrue(checkIdExists(tx, id));
-
-        tx.execute(apocalypseNow.delete(x.isa("thing")));
-
-        assertNotExists(tx, kurtz);
-        assertNotExists(tx, marlonBrando);
-        assertNotExists(tx, apocalypseNow);
-        assertFalse(checkIdExists(tx, id));
-    }
-
-    private boolean checkIdExists(Transaction tx, ConceptId id) {
-        boolean exists;
-        try {
-            exists = !tx.execute(Graql.match(var().id(id.getValue()))).isEmpty();
-        } catch (GraqlSemanticException e) {
-            exists = false;
-        }
-        return exists;
-    }
-
-    @Test
-    public void whenDeletingPartOfMatchQuery_UpdateIsReflected() {
-        List<ConceptMap> answers = tx.execute(Graql.parse("match $r ($x, $y) isa has-genre; get;").asGet());
-        assertEquals(34, answers.size()); // 17 x 2
-        // we should end up deleting every role player in the relations, leading to relation cleanup
-        tx.execute(Graql.parse("match $r ($x, $y) isa has-genre; delete $r (role: $x);").asDelete());
-        answers = tx.execute(Graql.parse("match $r isa has-genre; get;").asGet());
-        assertEquals(0, answers.size());
-    }
-
-
-    @Ignore // TODO update when removing implicit attrs from higher level code
+    @Ignore // TODO update now that we removed implicit attrs from higher level code, then migrate if applicable
     @Test
     public void whenDeletingAResource_TheResourceAndOwnershipsAreDeleted() {
         ConceptId id = tx.stream(Graql.match(
@@ -221,6 +141,7 @@ public class GraqlDeleteIT {
         assertNotExists(tx, var().id(id.getValue()));
     }
 
+    // TODO: migrate
     @Test
     public void deleteRelation_AttributeOwnershipsDeleted() {
         Session session = graknServer.sessionWithNewKeyspace();
@@ -255,6 +176,7 @@ public class GraqlDeleteIT {
         assertEquals(aProvenance.owners().collect(Collectors.toList()).size(), 0);
     }
 
+    // TODO: migrate
     @Test
     public void deleteLastRolePlayer_RelationAndAttrOwnershipIsRemoved() {
         Session session = graknServer.sessionWithNewKeyspace();
@@ -290,49 +212,6 @@ public class GraqlDeleteIT {
         assertEquals(aProvenance.owners().collect(Collectors.toList()).size(), 0);
     }
 
-
-    @Test
-    public void afterDeletingAllInstances_TheTypeCanBeUndefined() {
-        MatchClause movie = Graql.match(x.isa("movie"));
-
-        assertNotNull(tx.getEntityType("movie"));
-        assertExists(tx, movie);
-
-        tx.execute(movie.delete(x.isa("movie")));
-
-        assertNotNull(tx.getEntityType("movie"));
-        assertNotExists(tx, movie);
-
-        tx.execute(Graql.undefine(type("movie").sub("production")));
-
-        assertNull(tx.getEntityType("movie"));
-    }
-
-    @Test
-    public void whenDeletingMultipleVariables_AllVariablesGetDeleted() {
-        tx.execute(Graql.define(type("fake-type").sub(ENTITY)));
-        tx.execute(Graql.insert(x.isa("fake-type"), y.isa("fake-type")));
-
-        assertEquals(2, tx.stream(Graql.match(x.isa("fake-type"))).count());
-
-        tx.execute(Graql.match(x.isa("fake-type"), y.isa("fake-type"), x.not(y.var())).delete(x.isa("fake-type"), y.isa("fake-type")));
-
-        assertNotExists(tx, var().isa("fake-type"));
-    }
-
-    @Test
-    public void whenDeletingWithNoArguments_AllVariablesGetDeleted() {
-        tx.execute(Graql.define(type("fake-type").sub(Graql.Token.Type.ENTITY)));
-        tx.execute(Graql.insert(x.isa("fake-type"), y.isa("fake-type")));
-
-        assertEquals(2, tx.stream(Graql.match(x.isa("fake-type"))).count());
-
-        tx.execute(Graql.match(x.isa("fake-type"), y.isa("fake-type"), x.not(y.var()))
-                .delete(var("x").isa("fake-type"), var("y").isa("fake-type")));
-
-        assertNotExists(tx, var().isa("fake-type"));
-    }
-
     @Test
     public void whenDeletingAVariableNotInTheQuery_Throw() {
         exception.expect(GraqlException.class);
@@ -353,7 +232,6 @@ public class GraqlDeleteIT {
         tx.execute(Graql.match(var()).delete((Statement) null));
     }
 
-
     @Test
     public void whenTypeDoesNotMatch_Throw() {
         tx.execute(Graql.insert(var().isa("production")));
@@ -363,7 +241,7 @@ public class GraqlDeleteIT {
         tx.execute(Graql.match(var("x").isa("production")).delete(var("x").isa("movie")));
     }
 
-
+    // TODO: AW: marker - continue from this point on Tuesday
     @Test
     public void whenDeletingAttributeOwnership_onlyOwnershipIsDeleted() {
         List<ConceptMap> answers = tx.execute(Graql.parse("match $x isa thing, has attribute $a; get; limit 1;").asGet());
