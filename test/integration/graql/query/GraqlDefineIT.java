@@ -97,48 +97,6 @@ public class GraqlDefineIT {
         session.close();
     }
 
-    // TODO: migrate
-    @Test
-    public void testDefineSubRole() {
-        tx.execute(Graql.define(
-                type("marriage").sub(Graql.Token.Type.RELATION).relates("spouse1").relates("spouse2"),
-                type("spouse").sub(Graql.Token.Type.ROLE),
-                type("spouse1").sub("spouse"),
-                type("spouse2").sub("spouse")
-        ));
-
-        assertExists(tx, type("spouse1"));
-    }
-
-    // TODO: should we allow variables in defines?
-    @Test
-    public void testReferenceByVariableNameAndTypeLabel() {
-        tx.execute(Graql.define(
-                var("abc").sub("entity"),
-                var("abc").type("123"),
-                type("123").plays("actor"),
-                var("abc").plays("director")
-        ));
-
-        assertExists(tx, type("123").sub("entity"));
-        assertExists(tx, type("123").plays("actor"));
-        assertExists(tx, type("123").plays("director"));
-    }
-
-    // TODO: should we allow variables in defines?
-    @Test
-    public void whenExecutingADefineQuery_ResultContainsAllInsertedVars() {
-        Statement type = var("type");
-        Statement type2 = var("type2");
-
-        // Note that two variables refer to the same type. They should both be in the result
-        GraqlDefine query = Graql.define(type.type("my-type").sub("entity"), type2.type("my-type"));
-
-        ConceptMap result = tx.execute(query).get(0);
-        assertThat(result.vars(), containsInAnyOrder(type.var(), type2.var()));
-        assertEquals(result.get(type.var()), result.get(type2.var()));
-    }
-
     @Test
     public void whenDefiningARuleUsingParsedPatterns_ruleIsPersistedCorrectly() {
         Pattern when = Graql.parsePattern("$x isa entity;");
@@ -185,35 +143,6 @@ public class GraqlDefineIT {
         tx.execute(Graql.define(var("x").isa("movie")));
     }
 
-    // TODO: migrate
-    @Test
-    public void whenModifyingAThingInADefineQuery_Throw() {
-        ConceptId id = tx.getEntityType("movie").instances().iterator().next().id();
-
-        exception.expect(GraqlSemanticException.class);
-        exception.expectMessage(anyOf(
-                is(GraqlSemanticException.defineUnsupportedProperty(Graql.Token.Property.HAS.toString()).getMessage()),
-                is(GraqlSemanticException.defineUnsupportedProperty(Graql.Token.Property.VALUE.toString()).getMessage())
-        ));
-
-        tx.execute(Graql.define(var().id(id.getValue()).has("title", "Bob")));
-    }
-
-    // TODO: this is weird
-    @Test @Ignore
-    public void whenSpecifyingLabelOfAnExistingConcept_LabelIsChanged() {
-        tx.putEntityType("a-new-type");
-
-        EntityType type = tx.getEntityType("a-new-type");
-        Label newLabel = Label.of("a-new-new-type");
-
-        // TODO: figure out how this was possible in the first place
-        //       how could we modify the label of a type by its ID????
-        tx.execute(Graql.define(type(newLabel.getValue()).id(type.id().getValue())));
-
-        assertEquals(newLabel, type.label());
-    }
-
     @Test
     public void whenCallingToStringOfDefineQuery_ReturnCorrectRepresentation() {
         String queryString = "define my-entity sub entity;";
@@ -221,25 +150,7 @@ public class GraqlDefineIT {
         assertEquals(queryString, defineQuery.toString());
     }
 
-    // TODO: migrate
-    @Test
-    public void whenDefiningARelation_SubRoleCasUseAs() {
-        tx.execute(Graql.define(type("parentship").sub(Graql.Token.Type.RELATION)
-                          .relates("parent")
-                          .relates("child")));
-        tx.execute(Graql.define(type("fatherhood").sub(Graql.Token.Type.RELATION)
-                          .relates("father", "parent")
-                          .relates("son", "child")));
-
-        RelationType marriage = tx.getRelationType("fatherhood");
-        Role father = tx.getRole("father");
-        Role son = tx.getRole("son");
-        assertThat(marriage.roles().toArray(), arrayContainingInAnyOrder(father, son));
-        assertEquals(tx.getRole("parent"), father.sup());
-        assertEquals(tx.getRole("child"), son.sup());
-    }
-
-    private boolean schemaObjectsExist(Statement... vars){
+    /*private boolean schemaObjectsExist(Statement... vars){
         boolean exist = true;
         try {
             for (Statement var : vars) {
@@ -269,5 +180,5 @@ public class GraqlDefineIT {
 
         // Make sure vars don't exist
         assertFalse(schemaObjectsExist(vars));
-    }
+    }*/
 }
