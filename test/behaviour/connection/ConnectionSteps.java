@@ -100,13 +100,13 @@ public class ConnectionSteps {
     }
 
     @After
-    public void close_transactions_and_sessions() {
+    public void connection_close() {
         hypergraph.close();
         hypergraph = null;
-        sessions = new ArrayList<>();
-        sessionsParallel = new ArrayList<>();
-        sessionsToTransactions = new HashMap<>();
-        sessionsToTransactionsParallel = new HashMap<>();
-        sessionsParallelToTransactionsParallel = new HashMap<>();
+        sessions.clear();
+        sessionsParallel.clear();
+        sessionsToTransactions.clear();
+        sessionsToTransactionsParallel.clear();
+        sessionsParallelToTransactionsParallel.clear();
     }
 }

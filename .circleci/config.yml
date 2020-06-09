@@ -102,6 +102,8 @@ jobs:
           command: bazel test //test/behaviour/concept/type/relationtype:test --test_output=errors
       - run-bazel-rbe:
           command: bazel test //test/behaviour/concept/type/attributetype:test --test_output=errors
+      - run-bazel-rbe:
+          command: bazel test //test/behaviour/concept/thing/attribute:test --test_output=errors
 
   test-traversal:
     machine: true

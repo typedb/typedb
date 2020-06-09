@@ -23,6 +23,7 @@ import io.cucumber.java.DataTableType;
 import io.cucumber.java.ParameterType;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -41,6 +42,12 @@ public class Parameters {
     @ParameterType("[0-9]+")
     public Integer number(String number) {
         return Integer.parseInt(number);
+    }
+
+    @ParameterType("\\d\\d\\d\\d-\\d\\d-\\d\\d \\d\\d:\\d\\d:\\d\\d")
+    public LocalDateTime datetime(String dateTime) {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        return LocalDateTime.parse(dateTime, formatter);
     }
 
     @ParameterType("entity|attribute|relation")
@@ -89,6 +96,11 @@ public class Parameters {
             default:
                 return null;
         }
+    }
+
+    @ParameterType("\\$([a-z]+)")
+    public String var(String variable) {
+        return variable.substring(1);
     }
 
     @ParameterType("read|write")

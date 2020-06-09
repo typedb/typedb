@@ -104,7 +104,7 @@ public class AttributeTypeSteps {
     }
 
     @Then("attribute\\( ?{type_label} ?) as\\( ?{value_type} ?) fails at putting an instance")
-    public void attribute_as_boolean_fails_at_creating_an_instance(String typeLabel, Class<?> valueType) {
+    public void attribute_as_fails_at_creating_an_instance(String typeLabel, Class<?> valueType) {
         try {
             if (valueType.equals(Boolean.class)) {
                 tx().concepts().getAttributeType(typeLabel).asBoolean().put(true);

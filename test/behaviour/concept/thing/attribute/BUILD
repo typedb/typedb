@@ -24,15 +24,16 @@ java_library(
         "AttributeSteps.java"
     ],
     deps = [
-#        # Internal Package Dependencies
-#        "//test/behaviour/connection:steps",
-#
-#        # Internal Repository Dependencies
-#        "@graknlabs_common//:common",
-#
-#        # External Maven Dependencies
-#        "//dependencies/maven/artifacts/junit:junit",
-#        "//dependencies/maven/artifacts/io/cucumber:cucumber-java",
+        # Internal Package Dependencies
+        "//test/behaviour/concept/thing/util:map",
+        "//test/behaviour/connection:steps",
+
+        # Internal Repository Dependencies
+        # "@graknlabs_common//:common",
+
+        # External Maven Dependencies
+        "//dependencies/maven/artifacts/junit:junit",
+        "//dependencies/maven/artifacts/io/cucumber:cucumber-java",
     ]
 )
 
@@ -47,7 +48,13 @@ java_test(
         "//dependencies/maven/artifacts/io/cucumber:cucumber-junit",
     ],
     runtime_deps = [
-        ":steps"
+        ":steps",
+        "//test/behaviour/config:parameters",
+        "//test/behaviour/concept/type/attributetype:steps",
+        "//test/behaviour/concept/type/thingtype:steps",
+        "//test/behaviour/connection/keyspace:steps",
+        "//test/behaviour/connection/session:steps",
+        "//test/behaviour/connection/transaction:steps",
     ],
     data = [
         "@graknlabs_verification//behaviour/concept/thing:attribute.feature",

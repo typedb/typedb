@@ -74,6 +74,14 @@ public class SessionSteps {
         }
     }
 
+    @When("connection close all sessions")
+    public void connection_close_all_sessions() {
+        for (Hypergraph.Session session : sessions) {
+            session.close();
+        }
+        sessions.clear();
+    }
+
     @Then("session(s) is/are null: {bool}")
     public void sessions_are_null(Boolean isNull) {
         for (Hypergraph.Session session : sessions) {
