@@ -88,12 +88,12 @@ public class NegationIT {
     public static void loadContext(){
         Config mockServerConfig = storage.createCompatibleServerConfig();
         negationSession = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig);
-        //loadFromFileAndCommit(resourcePath,"negation.gql", negationSession);
+        loadFromFileAndCommit(resourcePath,"negation.gql", negationSession);
         recipeSession = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig);
-        //loadFromFileAndCommit(resourcePath,"recipeTest.gql", recipeSession);
+        loadFromFileAndCommit(resourcePath,"recipeTest.gql", recipeSession);
         reachabilitySession = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig);
-        //ReachabilityGraph reachability = new ReachabilityGraph(reachabilitySession);
-        //reachability.load(3);
+        ReachabilityGraph reachability = new ReachabilityGraph(reachabilitySession);
+        reachability.load(3);
     }
 
     @AfterClass
@@ -538,6 +538,7 @@ public class NegationIT {
             }
         }
     }
+
     @Test
     public void whenEvaluatingNegationBlocks_weDoNotAckCompletionOfIncompleteQueries(){
         Config mockServerConfig = storage.createCompatibleServerConfig();
@@ -547,41 +548,10 @@ public class NegationIT {
             try (Session session = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig)) {
                 loadFromFileAndCommit(resourcePath, "negationCompleteness.gql", session);
                 String directionalClosure = "match (role-3: $x, role-4: $y) isa relation-4; get;";
-                String relationClosure = "match $r isa relation-4; get;";
                 try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
                     List<ConceptMap> answers = tx.execute(Graql.parse(directionalClosure).asGet());
                     assertEquals(expectedAnswers, answers.size());
                 }
-                try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-                    List<ConceptMap> answers = tx.execute(Graql.parse(relationClosure).asGet());
-                    assertEquals(expectedAnswers, answers.size());
-                }
-            }
-        }
-    }
-
-    @Test
-    public void whenEvaluatingNegationBlocks_weDoNotAckCompletionOfIncompleteQuerie2s(){
-        Config mockServerConfig = storage.createCompatibleServerConfig();
-        for(int i = 0 ; i < 10 ; i++) {
-            try (Session session = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig)) {
-                loadFromFileAndCommit(resourcePath, "negationCompleteness.gql", session);
-                String query = "match (roleA: $x, roleB: $y) isa transRelation; get;";
-
-                try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-                    List<ConceptMap> answers = tx.execute(Graql.parse(query).asGet());
-                    System.out.println(answers.size());
-                    //assertEquals(11, answers.size());
-                }
-
-                /*
-                try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-                    List<ConceptMap> answers = tx.execute(Graql.parse(thingClosure).asGet());
-                    System.out.println(answers.size());
-                    //assertEquals(21, answers.size());
-                }
-                */
-
             }
         }
     }
