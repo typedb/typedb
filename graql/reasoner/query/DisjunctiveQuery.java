@@ -2,7 +2,6 @@ package grakn.core.graql.reasoner.query;
 
 import com.google.common.collect.Iterators;
 import com.google.common.collect.SetMultimap;
-import grakn.core.graql.reasoner.atom.AtomicUtil;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.common.util.LazyMergingStream;
@@ -28,6 +27,7 @@ import graql.lang.statement.Variable;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -83,28 +83,23 @@ public class DisjunctiveQuery extends ResolvableQuery {
         return getClauses().stream().flatMap(q -> q.validateOntologically(ruleLabel).stream()).collect(Collectors.toSet());
     }
 
-    private ConceptMap filterBindingVars(ConceptMap sub) {
+    public HashMap<Variable, Concept> filterBindingVars(Map<Variable, Concept> map) {
 
         HashMap<Variable, Concept> bindingVarsMap = new HashMap<>();
 
-        bindingVars.forEach(b -> bindingVarsMap.put(b, sub.get(b)));
+        bindingVars.forEach(b -> {
+            if (map.get(b) != null) {
+                bindingVarsMap.put(b, map.get(b));
+            }
+        });
 
-        return new ConceptMap(bindingVarsMap, sub.explanation(), sub.getPattern());
+        return bindingVarsMap;
     }
 
     @Override
     public ResolvableQuery withSubstitution(ConceptMap sub) {
         return new DisjunctiveQuery(
                 getClauses().stream().map(q -> q.withSubstitution(sub)).collect(Collectors.toSet()),
-                getBindingVars(),
-                traversalExecutor,
-                context()
-        );
-    }
-
-    public DisjunctiveQuery withBindingVarsSubstitution(ConceptMap sub) {
-        return new DisjunctiveQuery(
-                getClauses().stream().map(q -> q.withSubstitution(filterBindingVars(sub))).collect(Collectors.toSet()),
                 getBindingVars(),
                 traversalExecutor,
                 context()
@@ -214,15 +209,9 @@ public class DisjunctiveQuery extends ResolvableQuery {
         return Graql.or(clauses.stream().map(CompositeQuery::getPattern).collect(Collectors.toSet()));
     }
 
-
     @Override
-    public Conjunction<Pattern> getPattern(ConceptMap sub) {
-        // TODO How can we rebuild the disjunction in proper Graql form (with unbound variables outside the disjunction) once it's already in disjunctive normal form?!
-
-//        HashSet<Pattern> patterns = AtomicUtil.answerToPredicates(filterBindingVars(sub).map(), this).stream()
-//                .map(Atomic::getCombinedPattern)
-//                .flatMap(p -> p.statements().stream()).collect(Collectors.toCollection(HashSet::new));
-        HashSet<Pattern> patterns = getIdPredicatePatterns(filterBindingVars(sub).map());
+    public Conjunction<Pattern> getPattern(Map<Variable, Concept> map) {
+        HashSet<Pattern> patterns = getIdPredicatePatterns(map);
         patterns.add(getPattern());
 
         return Graql.and(patterns);

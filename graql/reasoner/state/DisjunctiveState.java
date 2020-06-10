@@ -4,8 +4,11 @@ import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.explanation.DisjunctiveExplanation;
 import grakn.core.graql.reasoner.query.DisjunctiveQuery;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
+import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
+import graql.lang.statement.Variable;
 
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Set;
 
@@ -30,6 +33,15 @@ public class DisjunctiveState extends AnswerPropagatorState<DisjunctiveQuery> {
     @Override
     ResolutionState propagateAnswer(AnswerState state) {
         ConceptMap answer = consumeAnswer(state);
-        return !answer.isEmpty() ? new AnswerState(answer, getUnifier(), getParentState()) : null;
+
+        HashMap<Variable, Concept> outerScopeVarsSub = getQuery().filterBindingVars(answer.map());
+
+        return !answer.isEmpty() ?
+                new AnswerState(
+                        new ConceptMap(outerScopeVarsSub, answer.explanation(), getQuery().getPattern(outerScopeVarsSub)),
+                        getUnifier(),
+                        getParentState()
+                )
+                : null;
     }
 }

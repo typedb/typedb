@@ -25,6 +25,7 @@ import com.google.common.collect.Sets;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.ResolutionIterator;
+import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.graql.executor.TraversalExecutor;
 import grakn.core.graql.reasoner.ReasoningContext;
 import grakn.core.graql.reasoner.atom.Atom;
@@ -49,6 +50,7 @@ import graql.lang.statement.Variable;
 
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -319,7 +321,7 @@ public class CompositeQuery extends ResolvableQuery {
 
     @Override
     public Set<Variable> getVarNames() {
-        Set<Variable> varNames = getConjunctiveQuery().getVarNames();
+        Set<Variable> varNames = new HashSet<>(getConjunctiveQuery().getVarNames());
         getComplementQueries().stream().flatMap(q -> q.getVarNames().stream()).forEach(varNames::add);
         return varNames;
     }
@@ -336,7 +338,12 @@ public class CompositeQuery extends ResolvableQuery {
         if (pattern == null) {
             Set<Pattern> conjunctPatterns = Sets.newLinkedHashSet(getConjunctiveQuery().getPattern().getPatterns());
             getComplementQueries().stream().map(ResolvableQuery::getPattern).forEach(p -> {
-                conjunctPatterns.add(Graql.not(p));
+                if (p instanceof Conjunction && ((Conjunction<Pattern>) p).getPatterns().size() == 1) {
+                    // Unwrap the conjunction if it has only one child pattern
+                    conjunctPatterns.add(Graql.not(Iterators.getOnlyElement(((Conjunction<Pattern>) p).getPatterns().iterator())));
+                } else {
+                    conjunctPatterns.add(Graql.not(p));
+                }
             });
             pattern = Graql.and(conjunctPatterns);
         }
@@ -344,8 +351,8 @@ public class CompositeQuery extends ResolvableQuery {
     }
 
     @Override
-    public Pattern getPattern(ConceptMap sub){
-        HashSet<Pattern> patterns = getIdPredicatePatterns(sub.map());
+    public Pattern getPattern(Map<Variable, Concept> map){
+        HashSet<Pattern> patterns = getIdPredicatePatterns(map);
         patterns.addAll(getPattern().getPatterns());
         return Graql.and(patterns);
     }

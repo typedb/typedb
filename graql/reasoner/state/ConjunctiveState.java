@@ -50,7 +50,12 @@ public class ConjunctiveState extends AnswerPropagatorState<ReasonerQueryImpl> {
     @Override
     ResolutionState propagateAnswer(AnswerState state) {
         ConceptMap answer = consumeAnswer(state);
-        return !answer.isEmpty() ? new AnswerState(answer, getUnifier(), getParentState()) : null;
+        return !answer.isEmpty() ?
+                new AnswerState(
+                        new ConceptMap(answer.map(), answer.explanation(), getQuery().getPattern(answer.map())),
+                        getUnifier(),
+                        getParentState())
+                : null;
     }
 
     @Override

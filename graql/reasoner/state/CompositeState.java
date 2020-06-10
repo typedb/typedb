@@ -93,7 +93,10 @@ public class CompositeState extends AnswerPropagatorState<CompositeQuery> {
                 .noneMatch(q -> q.resolve(subGoals, true).findFirst().isPresent());
 
         return isNegationSatisfied?
-                new AnswerState(answer, getUnifier(), getParentState()) :
-                null;
+                new AnswerState(
+                        new ConceptMap(answer.map(), answer.explanation(), getQuery().getPattern(answer.map())),
+                        getUnifier(),
+                        getParentState())
+                : null;
     }
 }

@@ -75,7 +75,6 @@ import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -281,8 +280,8 @@ public class ReasonerQueryImpl extends ResolvableQuery {
     }
 
     @Override
-    public Pattern getPattern(ConceptMap sub){
-        HashSet<Pattern> patterns = getIdPredicatePatterns(sub.map());
+    public Pattern getPattern(Map<Variable, Concept> map){
+        HashSet<Pattern> patterns = getIdPredicatePatterns(map);
         patterns.addAll(getPattern().getPatterns());
         return Graql.and(patterns);
     }
@@ -350,7 +349,7 @@ public class ReasonerQueryImpl extends ResolvableQuery {
             getAtoms().forEach(atom -> vars.addAll(atom.getVarNames()));
             varNames = vars;
         }
-        return varNames;
+        return ImmutableSet.copyOf(varNames);
     }
 
     @Override

@@ -100,7 +100,7 @@ public class QueryExecutorImpl implements QueryExecutor {
             Disjunction<Conjunction<Pattern>> disjunction = matchClause.getPatterns().getNegationDNF();
             ResolvableQuery resolvableQuery = reasonerQueryFactory.resolvable(disjunction, bindingVars);
 
-            return resolvableQuery.resolve(infer).map(ans -> ans.withPattern(resolvableQuery.withSubstitution(ans).getPattern()));
+            return resolvableQuery.resolve(infer);
 
         } catch (ReasonerCheckedException e) {
             LOG.debug(e.getMessage());
