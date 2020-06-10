@@ -524,7 +524,7 @@ public class NegationIT {
      *
      * As a result, if it happens that a negated query has multiple answers and is visited more than a single time - because of the admissibility check, answers might be missed.
      */
-    public void whenBranchingOutToCheckNegationIsSatisfied_weDoNotUpdateGlobalSubGoals(){
+    public void whenEvaluatingNegationBlocks_weDoNotUpdateGlobalSubGoals(){
         Config mockServerConfig = storage.createCompatibleServerConfig();
         //NB: we are unable to highlight the issue deterministically atm so multiple runs are required
         for(int i = 0 ; i < 5 ; i++) {
@@ -534,6 +534,23 @@ public class NegationIT {
                 try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
                     List<ConceptMap> answers = tx.execute(Graql.parse(query).asGet());
                     Assert.assertTrue(answers.isEmpty());
+                }
+            }
+        }
+    }
+
+    @Test
+    public void whenEvaluatingNegationBlocks_weDoNotAckCompletionOfIncompleteQueries(){
+        Config mockServerConfig = storage.createCompatibleServerConfig();
+        int expectedAnswers = 11;
+        //NB: failure might be intermittent
+        for(int i = 0 ; i < 5 ; i++) {
+            try (Session session = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig)) {
+                loadFromFileAndCommit(resourcePath, "negationCompleteness.gql", session);
+                String directionalClosure = "match (role-3: $x, role-4: $y) isa relation-4; get;";
+                try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+                    List<ConceptMap> answers = tx.execute(Graql.parse(directionalClosure).asGet());
+                    assertEquals(expectedAnswers, answers.size());
                 }
             }
         }
