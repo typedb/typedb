@@ -24,7 +24,7 @@ java_test(
         "ChuLiuEdmondsTest.java",
         "graph/DenseWeightedGraph.java",
     ],
-    test_class = "grakn.core.graql.gremlin.spanningtree.ChuLiuEdmondsTest",
+    test_class = "grakn.core.graql.planning.spanningtree.ChuLiuEdmondsTest",
     deps = [
         "//dependencies/maven/artifacts/com/google/guava",
         "//kb/graql/planning",
@@ -36,7 +36,7 @@ java_test(
     name = "fibonacci-heap-test",
     size = "small",
     srcs = ["datastructure/FibonacciHeapTest.java"],
-    test_class = "grakn.core.graql.gremlin.spanningtree.datastructure.FibonacciHeapTest",
+    test_class = "grakn.core.graql.planning.spanningtree.datastructure.FibonacciHeapTest",
     deps = [
         "//dependencies/maven/artifacts/com/google/guava",
         "//kb/graql/planning",
@@ -47,7 +47,7 @@ java_test(
     name = "fibonacci-queue-test",
     size = "small",
     srcs = ["datastructure/FibonacciQueueTest.java"],
-    test_class = "grakn.core.graql.gremlin.spanningtree.datastructure.FibonacciQueueTest",
+    test_class = "grakn.core.graql.planning.spanningtree.datastructure.FibonacciQueueTest",
     deps = [
         "//dependencies/maven/artifacts/com/google/guava",
         "//kb/graql/planning",

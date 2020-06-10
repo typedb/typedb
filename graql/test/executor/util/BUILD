@@ -24,7 +24,7 @@ java_test(
         "//graql/executor",
         "//dependencies/maven/artifacts/org/mockito:mockito-core"
     ],
-    test_class = "grakn.core.common.util.LazyMergingStreamTest",
+    test_class = "grakn.core.graql.executor.util.LazyMergingStreamTest",
     size = "small"
 )
 

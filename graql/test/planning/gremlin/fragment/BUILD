@@ -21,7 +21,7 @@ java_test(
     name = "in-plays-fragment-test",
     size = "small",
     srcs = ["InPlaysFragmentTest.java"],
-    test_class = "grakn.core.graql.gremlin.fragmenttest.InPlaysFragmentTest",
+    test_class = "grakn.core.graql.planning.gremlin.fragment.InPlaysFragmentTest",
     deps = [
         "//core",
         "//dependencies/maven/artifacts/com/google/guava",
@@ -35,7 +35,7 @@ java_test(
     name = "isa-explicit-test",
     size = "small",
     srcs = ["IsaExplicitTest.java"],
-    test_class = "grakn.core.graql.gremlin.fragmenttest.IsaExplicitTest",
+    test_class = "grakn.core.graql.planning.gremlin.fragment.IsaExplicitTest",
     deps = ["@graknlabs_graql//java:graql"],
 )
 
@@ -43,7 +43,7 @@ java_test(
     name = "out-plays-fragment-test",
     size = "small",
     srcs = ["OutPlaysFragmentTest.java"],
-    test_class = "grakn.core.graql.gremlin.fragmenttest.OutPlaysFragmentTest",
+    test_class = "grakn.core.graql.planning.gremlin.fragment.OutPlaysFragmentTest",
     deps = [
         "//core",
         "//dependencies/maven/artifacts/com/google/guava",
