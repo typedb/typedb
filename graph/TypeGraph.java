@@ -65,19 +65,19 @@ public class TypeGraph implements Graph<VertexIID.Type, TypeVertex> {
     }
 
     public void initialise() throws HypergraphException {
-        TypeVertex rootThingType = insert(
+        TypeVertex rootThingType = create(
                 Schema.Vertex.Type.THING_TYPE,
                 Schema.Vertex.Type.Root.THING.label()).isAbstract(true);
-        TypeVertex rootEntityType = insert(
+        TypeVertex rootEntityType = create(
                 Schema.Vertex.Type.ENTITY_TYPE,
                 Schema.Vertex.Type.Root.ENTITY.label()).isAbstract(true);
-        TypeVertex rootAttributeType = insert(
+        TypeVertex rootAttributeType = create(
                 Schema.Vertex.Type.ATTRIBUTE_TYPE,
                 Schema.Vertex.Type.Root.ATTRIBUTE.label()).isAbstract(true).valueType(Schema.ValueType.OBJECT);
-        TypeVertex rootRelationType = insert(
+        TypeVertex rootRelationType = create(
                 Schema.Vertex.Type.RELATION_TYPE,
                 Schema.Vertex.Type.Root.RELATION.label()).isAbstract(true);
-        TypeVertex rootRoleType = insert(
+        TypeVertex rootRoleType = create(
                 Schema.Vertex.Type.ROLE_TYPE,
                 Schema.Vertex.Type.Root.ROLE.label(),
                 Schema.Vertex.Type.Root.RELATION.label()).isAbstract(true);
@@ -128,11 +128,11 @@ public class TypeGraph implements Graph<VertexIID.Type, TypeVertex> {
         }
     }
 
-    public TypeVertex insert(Schema.Vertex.Type type, String label) {
-        return insert(type, label, null);
+    public TypeVertex create(Schema.Vertex.Type type, String label) {
+        return create(type, label, null);
     }
 
-    public TypeVertex insert(Schema.Vertex.Type type, String label, @Nullable String scope) {
+    public TypeVertex create(Schema.Vertex.Type type, String label, @Nullable String scope) {
         String scopedLabel = scopedLabel(label, scope);
         try { // we intentionally use READ on multiLabelLock, as put() only concerns one label
             multiLabelLock.lockRead();

@@ -94,7 +94,7 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
     @Override
     public EntityImpl create(boolean isInferred) {
         validateIsCommitedAndNotAbstract(Entity.class);
-        ThingVertex instance = vertex.graph().thingGraph().insert(vertex.iid(), isInferred);
+        ThingVertex instance = vertex.graph().thingGraph().create(vertex.iid(), isInferred);
         return new EntityImpl(instance);
     }
 

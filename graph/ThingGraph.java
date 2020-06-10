@@ -65,7 +65,7 @@ public class ThingGraph implements Graph<VertexIID.Thing, ThingVertex> {
         return null; // TODO
     }
 
-    public ThingVertex insert(VertexIID.Type typeIID, boolean isInferred) {
+    public ThingVertex create(VertexIID.Type typeIID, boolean isInferred) {
         assert !typeIID.schema().equals(Schema.Vertex.Type.ATTRIBUTE_TYPE);
         VertexIID.Thing iid = generate(graphManager.keyGenerator(), typeIID);
         ThingVertex vertex = new ThingVertexImpl.Buffered(this, iid, isInferred);
