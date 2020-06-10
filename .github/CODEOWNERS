@@ -1,10 +1,9 @@
-/api/       @haikalpribadi
-/bin/       @lolski
-/concept/   @haikalpribadi
-/config/    @lolski         @vmax
-/console/   @haikalpribadi
-/daemon/    @haikalpribadi  @lolski
-/test/      @lolski
+*           @haikalpribadi @flyingsilverfin
 
-/dependencies/graknlabs/  @haikalpribadi
-/dependencies/maven/      @haikalpribadi @marco-scoppetta @lolski
+/.circleci/             @haikalpribadi @lolski
+/.circleci/windows/     @vmax
+/.github/               @haikalpribadi
+/config/                @lolski @vmax
+/daemon/                @haikalpribadi @lolski
+/dependencies/          @haikalpribadi @flyingsilverfin
+/graql/reasoner/        @flyingsilverfin
