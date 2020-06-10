@@ -77,7 +77,9 @@ jobs:
             --project-key=$SONARCLOUD_PROJECT_KEY \
             --commit-id=$CIRCLE_SHA1 \
             --branch=$CIRCLE_BRANCH
-  
+
+
+  # unit tests
   test-common:
     machine: true
     working_directory: ~/grakn
@@ -87,6 +89,26 @@ jobs:
       - run-bazel-rbe:
           command: bazel test //common/... --test_output=errors
 
+  test-server:
+    machine: true
+    working_directory: ~/grakn
+    steps:
+      - install-bazel-linux-rbe
+      - checkout
+      - run-bazel-rbe:
+          command: bazel test //server/... --test_output=errors
+
+  test-graql:
+    machine: true
+    working_directory: ~/grakn
+    steps:
+      - install-bazel-linux-rbe
+      - checkout
+      - run-bazel-rbe:
+          command: bazel test //server/... --test_output=errors
+
+
+  # behaviour tests
   test-behaviour-connection:
     machine: true
     working_directory: ~/grakn
@@ -154,15 +176,7 @@ jobs:
       - run-bazel-rbe:
           command: bazel test //test/behaviour/graql/reasoner/explanation:test --test_output=errors
 
-  test-server:
-    machine: true
-    working_directory: ~/grakn
-    steps:
-      - install-bazel-linux-rbe
-      - checkout
-      - run-bazel-rbe:
-          command: bazel test //server/... --test_output=errors
-
+  # integration tests
   test-integration:
     machine: true
     working_directory: ~/grakn
@@ -214,6 +228,7 @@ jobs:
       - run-bazel-rbe:
           command: bazel test //test/integration/graql/analytics/... --test_output=errors
 
+  # assembly tests
   test-assembly:
     machine: true
     working_directory: ~/grakn
@@ -508,6 +523,14 @@ workflows:
           filters:
             branches:
               ignore: grakn-release-branch
+      - test-server:
+          filters:
+            branches:
+              ignore: grakn-release-branch
+      - test-graql:
+          filters:
+            branches:
+              ignore: grakn-release-branch
       - test-behaviour-connection:
           filters:
             branches:
@@ -533,10 +556,6 @@ workflows:
             branches:
               ignore: grakn-release-branch
       - test-behaviour-graql-reasoner:
-          filters:
-            branches:
-              ignore: grakn-release-branch
-      - test-server:
           filters:
             branches:
               ignore: grakn-release-branch
@@ -572,6 +591,7 @@ workflows:
             - build-analysis
             - test-common
             - test-server
+            - test-graql
             - test-behaviour-connection
             - test-behaviour-graql-define
             - test-behaviour-graql-delete
@@ -596,6 +616,7 @@ workflows:
             - build-analysis
             - test-common
             - test-server
+            - test-graql
             - test-behaviour-connection
             - test-behaviour-graql-define
             - test-behaviour-graql-delete
@@ -620,6 +641,7 @@ workflows:
             - build-analysis
             - test-common
             - test-server
+            - test-graql
             - test-behaviour-connection
             - test-behaviour-graql-define
             - test-behaviour-graql-delete
@@ -644,6 +666,7 @@ workflows:
             - build-analysis
             - test-common
             - test-server
+            - test-graql
             - test-behaviour-connection
             - test-behaviour-graql-define
             - test-behaviour-graql-delete
@@ -668,6 +691,7 @@ workflows:
             - build-analysis
             - test-common
             - test-server
+            - test-graql
             - test-behaviour-connection
             - test-behaviour-graql-define
             - test-behaviour-graql-delete
