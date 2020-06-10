@@ -21,7 +21,7 @@ java_test(
     name = "concept-map-test",
     size = "small",
     srcs = ["ConceptMapTest.java"],
-    test_class = "grakn.core.graql.answer.ConceptMapTest",
+    test_class = "grakn.core.graql.reasoner.ConceptMapTest",
     deps = [
         "//concept/answer",
         "//dependencies/maven/artifacts/com/google/guava",

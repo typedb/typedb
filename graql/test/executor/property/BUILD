@@ -27,7 +27,7 @@ checkstyle_test(
 java_test(
     name = "regex-predicate-test",
     test_class = "grakn.core.graql.executor.property.ValueExecutorTest",
-    srcs = ["ValueExecutorTest.java"],
+    srcs = ["RegexExecutorTest.java"],
     deps = [
         "@graknlabs_graql//java:graql",
         "//graql/planning",
