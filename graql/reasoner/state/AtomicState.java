@@ -30,6 +30,7 @@ import grakn.core.graql.reasoner.query.ReasonerQueryFactory;
 import grakn.core.graql.reasoner.rule.InferenceRule;
 import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.graql.reasoner.utils.AnswerUtil;
+import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.graql.reasoner.cache.CacheEntry;
@@ -40,6 +41,7 @@ import graql.lang.statement.Variable;
 
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -135,11 +137,11 @@ public class AtomicState extends AnswerPropagatorState<ReasonerAtomicQuery> {
                 baseAnswer, rule.getHead().getRoleSubstitution())
         );
         if (answer.isEmpty()) return answer;
-
+        Map<Variable, Concept> joinedAnswerMap = AnswerUtil.joinAnswers(answer, query.getSubstitution()).project(query.getVarNames()).map();
         return new ConceptMap(
-                AnswerUtil.joinAnswers(answer, query.getSubstitution()).project(query.getVarNames()).map(),
+                joinedAnswerMap,
                 new RuleExplanation(Collections.singletonList(baseAnswer), rule.getRule()),
-                query.withSubstitution(baseAnswer).getPattern()
+                query.getPattern(joinedAnswerMap)
         );
     }
 
