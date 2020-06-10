@@ -105,7 +105,7 @@ jobs:
       - install-bazel-linux-rbe
       - checkout
       - run-bazel-rbe:
-          command: bazel test //server/... --test_output=errors
+          command: bazel test //graql/... --test_output=errors
 
 
   # behaviour tests
