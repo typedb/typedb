@@ -25,6 +25,8 @@ import com.google.common.collect.Sets;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.ResolutionIterator;
+import grakn.core.graql.reasoner.explanation.CompositeExplanation;
+import grakn.core.graql.reasoner.explanation.LookupExplanation;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.graql.executor.TraversalExecutor;
 import grakn.core.graql.reasoner.ReasoningContext;
@@ -228,7 +230,14 @@ public class CompositeQuery extends ResolvableQuery {
     public Stream<ConceptMap> resolve(Set<ReasonerAtomicQuery> subGoals, boolean infer) {
         boolean doNotResolve = !infer || getAtoms().isEmpty() || (isPositive() && !isRuleResolvable());
         if (doNotResolve) {
-            return traversalExecutor.traverse(getPattern());
+            return traversalExecutor.traverse(getPattern()).map(ans -> {
+                if (complementQueries.isEmpty()) {
+                    return new ConceptMap(ans.map(), ans.explanation(), getPattern(ans.map()));
+                } else {
+                    ConceptMap explanationAns = new ConceptMap(ans.map(), new LookupExplanation(), getConjunctiveQuery().getPattern(ans.map()));
+                    return new ConceptMap(ans.map(), new CompositeExplanation(explanationAns), getPattern(ans.map()));
+                }
+            });
         } else {
             return new ResolutionIterator(this, subGoals, context().queryCache()).hasStream();
         }
