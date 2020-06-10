@@ -61,16 +61,6 @@ public class DisjunctiveQuery extends ResolvableQuery {
         return this;
     }
 
-    /**
-     * @return conjunction if this disjunction has only one clause, null otherwise
-     */
-    public CompositeQuery singleClause() {
-        if (getClauses().size() == 1) {
-            return Iterators.getOnlyElement(getClauses().iterator());
-        }
-        return null;
-    }
-
     public Set<CompositeQuery> getClauses() {
         return new HashSet<>(clauses);
     }

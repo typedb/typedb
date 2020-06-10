@@ -92,24 +92,11 @@ public class ReasonerQueryFactory {
      * @return a resolvable reasoner query constructed from provided disjunctive pattern
      */
     public ResolvableQuery resolvable(Disjunction<Conjunction<Pattern>> pattern, Set<Variable> bindingVars) {
-        DisjunctiveQuery query = new DisjunctiveQuery(pattern, bindingVars,  traversalExecutor, ctx);
-
-        CompositeQuery singleClause = query.singleClause();
-
-        if (singleClause != null) {
-            return singleClause.inferTypes();
+        if (pattern.getPatterns().size() == 1) {
+            return resolvable(pattern.getPatterns().iterator().next());
         } else {
-            return query;
+            return new DisjunctiveQuery(pattern, bindingVars,  traversalExecutor, ctx).inferTypes();
         }
-    }
-
-    /**
-     * @param q   base query for substitution to be attached
-     * @param sub (partial) substitution
-     * @return resolvable query with the substitution contained in the query
-     */
-    public ResolvableQuery resolvable(ResolvableQuery q, ConceptMap sub) {
-        return q.withSubstitution(sub).inferTypes();
     }
 
     /**
