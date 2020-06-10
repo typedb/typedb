@@ -150,6 +150,10 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
     public boolean equals(java.lang.Object object) {
         if (this == object) return true;
         if (!(object instanceof AttributeTypeImpl)) return false;
+        // We do the above, as opposed to checking if (object == null || getClass() != object.getClass())
+        // because it is possible to compare a attribute root types wrapped in different type classes
+        // such as: root type wrapped in AttributeTypeImpl.Root and as in AttributeType.Boolean.Root
+
         AttributeTypeImpl that = (AttributeTypeImpl) object;
         return this.vertex.equals(that.vertex);
     }

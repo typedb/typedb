@@ -84,4 +84,17 @@ public abstract class ThingImpl implements Thing {
     public void delete() {
         vertex.delete();
     }
+
+    @Override
+    public boolean equals(Object object) {
+        if (this == object) return true;
+        if (object == null || getClass() != object.getClass()) return false;
+        ThingImpl that = (ThingImpl) object;
+        return this.vertex.equals(that.vertex);
+    }
+
+    @Override
+    public final int hashCode() {
+        return vertex.hashCode();
+    }
 }

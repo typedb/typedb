@@ -100,7 +100,7 @@ public class Parameters {
 
     @ParameterType("\\$([a-z]+)")
     public String var(String variable) {
-        return variable.substring(1);
+        return variable;
     }
 
     @ParameterType("read|write")
