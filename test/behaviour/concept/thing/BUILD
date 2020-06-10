@@ -19,18 +19,21 @@ package(default_visibility = ["//test/behaviour/concept/thing:__subpackages__"])
 load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
 java_library(
-    name = "map",
+    name = "steps",
     srcs = [
-        "ThingMap.java"
+        "ThingSteps.java"
     ],
     deps = [
         # Internal Package Dependencies
         "//concept:concept",
+        "//test/behaviour/config:parameters",
+        "//test/behaviour/concept/type/thingtype:steps",
 
         # Internal Repository Dependencies
         # "@graknlabs_common//:common",
 
         # External Maven Dependencies
+        "//dependencies/maven/artifacts/junit:junit",
         "//dependencies/maven/artifacts/io/cucumber:cucumber-java",
     ]
 )
@@ -38,6 +41,6 @@ java_library(
 checkstyle_test(
     name = "checkstyle",
     targets = [
-        ":map",
+        ":steps",
     ],
 )

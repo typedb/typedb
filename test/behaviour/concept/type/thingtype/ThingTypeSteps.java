@@ -46,7 +46,7 @@ import static org.junit.Assert.fail;
  */
 public class ThingTypeSteps {
 
-    private ThingType get_thing_type(RootLabel rootLabel, String typeLabel) {
+    public static ThingType get_thing_type(RootLabel rootLabel, String typeLabel) {
         switch (rootLabel) {
             case ENTITY:
                 return tx().concepts().getEntityType(typeLabel);

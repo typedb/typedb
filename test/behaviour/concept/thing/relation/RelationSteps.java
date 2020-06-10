@@ -18,6 +18,15 @@
 
 package hypergraph.test.behaviour.concept.thing.relation;
 
+import io.cucumber.java.en.When;
+
+import static hypergraph.test.behaviour.concept.thing.ThingSteps.put;
+import static hypergraph.test.behaviour.connection.ConnectionSteps.tx;
+
 public class RelationSteps {
 
+    @When("{var} = relation\\( ?{type_label} ?) create new instance")
+    public void relation_type_create_new_instance(String var, String typeLabel) {
+        put(var, tx().concepts().getRelationType(typeLabel).create());
+    }
 }

@@ -23,83 +23,67 @@ import io.cucumber.java.en.When;
 
 import java.time.LocalDateTime;
 
-import static hypergraph.test.behaviour.concept.thing.util.ThingMap.get;
-import static hypergraph.test.behaviour.concept.thing.util.ThingMap.put;
+import static hypergraph.test.behaviour.concept.thing.ThingSteps.get;
+import static hypergraph.test.behaviour.concept.thing.ThingSteps.put;
 import static hypergraph.test.behaviour.connection.ConnectionSteps.tx;
-import static java.util.Objects.isNull;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class AttributeSteps {
 
     @When("{var} = attribute\\( ?{type_label} ?) as\\( ?boolean ?) put: {bool}")
-    public void attribute_as_boolean_put(String var, String typeLabel, boolean value) {
+    public void attribute_type_as_boolean_put(String var, String typeLabel, boolean value) {
         put(var, tx().concepts().getAttributeType(typeLabel).asBoolean().put(value));
     }
 
     @When("{var} = attribute\\( ?{type_label} ?) as\\( ?long ?) put: {int}")
-    public void attribute_as_long_put(String var, String typeLabel, long value) {
+    public void attribute_type_as_long_put(String var, String typeLabel, long value) {
         put(var, tx().concepts().getAttributeType(typeLabel).asLong().put(value));
     }
 
     @When("{var} = attribute\\( ?{type_label} ?) as\\( ?double ?) put: {double}")
-    public void attribute_as_double_put(String var, String typeLabel, double value) {
+    public void attribute_type_as_double_put(String var, String typeLabel, double value) {
         put(var, tx().concepts().getAttributeType(typeLabel).asDouble().put(value));
     }
 
     @When("{var} = attribute\\( ?{type_label} ?) as\\( ?string ?) put: {word}")
-    public void attribute_as_string_put(String var, String typeLabel, String value) {
+    public void attribute_type_as_string_put(String var, String typeLabel, String value) {
         put(var, tx().concepts().getAttributeType(typeLabel).asString().put(value));
     }
 
     @When("{var} = attribute\\( ?{type_label} ?) as\\( ?datetime ?) put: {datetime}")
-    public void attribute_as_datetime_put(String var, String typeLabel, LocalDateTime value) {
+    public void attribute_type_as_datetime_put(String var, String typeLabel, LocalDateTime value) {
         put(var, tx().concepts().getAttributeType(typeLabel).asDateTime().put(value));
     }
 
     @When("{var} = attribute\\( ?{type_label} ?) as\\( ?boolean ?) get: {bool}")
-    public void attribute_as_boolean_get(String var, String typeLabel, boolean value) {
+    public void attribute_type_as_boolean_get(String var, String typeLabel, boolean value) {
         put(var, tx().concepts().getAttributeType(typeLabel).asBoolean().get(value));
     }
 
     @When("{var} = attribute\\( ?{type_label} ?) as\\( ?long ?) get: {int}")
-    public void attribute_as_long_get(String var, String typeLabel, long value) {
+    public void attribute_type_as_long_get(String var, String typeLabel, long value) {
         put(var, tx().concepts().getAttributeType(typeLabel).asLong().get(value));
     }
 
     @When("{var} = attribute\\( ?{type_label} ?) as\\( ?double ?) get: {double}")
-    public void attribute_as_double_get(String var, String typeLabel, double value) {
+    public void attribute_type_as_double_get(String var, String typeLabel, double value) {
         put(var, tx().concepts().getAttributeType(typeLabel).asDouble().get(value));
     }
 
     @When("{var} = attribute\\( ?{type_label} ?) as\\( ?string ?) get: {word}")
-    public void attribute_as_string_get(String var, String typeLabel, String value) {
+    public void attribute_type_as_string_get(String var, String typeLabel, String value) {
         put(var, tx().concepts().getAttributeType(typeLabel).asString().get(value));
     }
 
     @When("{var} = attribute\\( ?{type_label} ?) as\\( ?datetime ?) get: {datetime}")
-    public void attribute_as_datetime_get(String var, String typeLabel, LocalDateTime value) {
+    public void attribute_type_as_datetime_get(String var, String typeLabel, LocalDateTime value) {
         put(var, tx().concepts().getAttributeType(typeLabel).asDateTime().get(value));
     }
 
     @When("attribute\\( ?{type_label} ?) instances contain: {var}")
     public void attribute_instances_contain(String typeLabel, String var) {
         assertTrue(tx().concepts().getAttributeType(typeLabel).instances().anyMatch(i -> i.equals(get(var))));
-    }
-
-    @When("attribute {var} is deleted")
-    public void attribute_is_deleted(String var) {
-        get(var).asAttribute().delete();
-    }
-
-    @Then("attribute {var} is null: {bool}")
-    public void attribute_is_null(String var, boolean isNull) {
-        assertEquals(isNull, isNull(get(var)));
-    }
-
-    @Then("attribute {var} has type: {type_label}")
-    public void attribute_has_type(String var, String typeLabel) {
-        assertEquals(tx().concepts().getAttributeType(typeLabel), get(var).asAttribute().type());
     }
 
     @Then("attribute {var} has value type: {value_type}")

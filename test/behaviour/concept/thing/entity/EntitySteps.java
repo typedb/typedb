@@ -18,6 +18,15 @@
 
 package hypergraph.test.behaviour.concept.thing.entity;
 
+import io.cucumber.java.en.When;
+
+import static hypergraph.test.behaviour.concept.thing.ThingSteps.put;
+import static hypergraph.test.behaviour.connection.ConnectionSteps.tx;
+
 public class EntitySteps {
 
+    @When("{var} = entity\\( ?{type_label} ?) create new instance")
+    public void entity_type_create_new_instance(String var, String typeLabel) {
+        put(var, tx().concepts().getEntityType(typeLabel).create());
+    }
 }

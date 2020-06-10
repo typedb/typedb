@@ -16,15 +16,23 @@
  *
  */
 
-package hypergraph.test.behaviour.concept.thing.util;
+package hypergraph.test.behaviour.concept.thing;
 
 import hypergraph.concept.thing.Thing;
+import hypergraph.concept.type.ThingType;
+import hypergraph.test.behaviour.config.Parameters.RootLabel;
 import io.cucumber.java.After;
+import io.cucumber.java.en.Then;
+import io.cucumber.java.en.When;
 
 import java.util.HashMap;
 import java.util.Map;
 
-public class ThingMap {
+import static hypergraph.test.behaviour.concept.type.thingtype.ThingTypeSteps.get_thing_type;
+import static java.util.Objects.isNull;
+import static org.junit.Assert.assertEquals;
+
+public class ThingSteps {
 
     private static Map<String, Thing> things = new HashMap<>();
 
@@ -38,6 +46,22 @@ public class ThingMap {
 
     public static void remove(String variable) {
         things.remove(variable);
+    }
+
+    @Then("entity/attribute/relation {var} is null: {bool}")
+    public void thing_is_null(String var, boolean isNull) {
+        assertEquals(isNull, isNull(get(var)));
+    }
+
+    @Then("{root_label} {var} has type: {type_label}")
+    public void thing_has_type(RootLabel rootLabel, String var, String typeLabel) {
+        ThingType type = get_thing_type(rootLabel, typeLabel);
+        assertEquals(type, get(var).type());
+    }
+
+    @When("entity/attribute/relation {var} is deleted")
+    public void thing_is_deleted(String var) {
+        get(var).delete();
     }
 
     @After
