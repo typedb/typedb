@@ -97,7 +97,7 @@ public interface AttributeType extends ThingType {
 
         Attribute.Long put(long value, boolean isInferred);
 
-        Attribute.Long get(int value);
+        Attribute.Long get(long value);
     }
 
     interface Double extends AttributeType {

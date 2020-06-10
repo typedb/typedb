@@ -56,9 +56,39 @@ public class AttributeSteps {
         put(var, tx().concepts().getAttributeType(typeLabel).asDateTime().put(value));
     }
 
+    @When("{var} = attribute\\( ?{type_label} ?) as\\( ?boolean ?) get: {bool}")
+    public void attribute_as_get(String var, String typeLabel, boolean value) {
+        put(var, tx().concepts().getAttributeType(typeLabel).asBoolean().get(value));
+    }
+
+    @When("{var} = attribute\\( ?{type_label} ?) as\\( ?long ?) get: {int}")
+    public void attribute_as_get(String var, String typeLabel, long value) {
+        put(var, tx().concepts().getAttributeType(typeLabel).asLong().get(value));
+    }
+
+    @When("{var} = attribute\\( ?{type_label} ?) as\\( ?double ?) get: {double}")
+    public void attribute_as_get(String var, String typeLabel, double value) {
+        put(var, tx().concepts().getAttributeType(typeLabel).asDouble().get(value));
+    }
+
+    @When("{var} = attribute\\( ?{type_label} ?) as\\( ?string ?) get: {word}")
+    public void attribute_as_get(String var, String typeLabel, String value) {
+        put(var, tx().concepts().getAttributeType(typeLabel).asString().get(value));
+    }
+
+    @When("{var} = attribute\\( ?{type_label} ?) as\\( ?datetime ?) get: {datetime}")
+    public void attribute_as_get(String var, String typeLabel, LocalDateTime value) {
+        put(var, tx().concepts().getAttributeType(typeLabel).asDateTime().get(value));
+    }
+
+    @When("attribute {var} is deleted")
+    public void attribute_is_deleted(String var) {
+        get(var).asAttribute().delete();
+    }
+
     @Then("attribute {var} is null: {bool}")
     public void attribute_is_null(String var, boolean isNull) {
-        assertEquals(isNull, isNull(get(var).asAttribute()));
+        assertEquals(isNull, isNull(get(var)));
     }
 
     @Then("attribute {var} has type: {type_label}")

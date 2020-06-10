@@ -300,7 +300,8 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         @Override
         public Attribute.Boolean get(boolean value) {
             AttributeVertex<java.lang.Boolean> attVertex = vertex.graph().thingGraph().get(vertex, value);
-            return new AttributeImpl.Boolean(attVertex);
+            if (attVertex != null) return new AttributeImpl.Boolean(attVertex);
+            else return null;
         }
 
         private static class Root extends AttributeTypeImpl.Boolean {
@@ -398,9 +399,10 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         }
 
         @Override
-        public Attribute.Long get(int value) {
+        public Attribute.Long get(long value) {
             AttributeVertex<java.lang.Long> attVertex = vertex.graph().thingGraph().get(vertex, value);
-            return new AttributeImpl.Long(attVertex);
+            if (attVertex != null) return new AttributeImpl.Long(attVertex);
+            else return null;
         }
 
         private static class Root extends AttributeTypeImpl.Long {
@@ -500,7 +502,8 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         @Override
         public Attribute.Double get(double value) {
             AttributeVertex<java.lang.Double> attVertex = vertex.graph().thingGraph().get(vertex, value);
-            return new AttributeImpl.Double(attVertex);
+            if (attVertex != null) return new AttributeImpl.Double(attVertex);
+            else return null;
         }
 
         private static class Root extends AttributeTypeImpl.Double {
@@ -705,7 +708,8 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         @Override
         public Attribute.DateTime get(LocalDateTime value) {
             AttributeVertex<java.time.LocalDateTime> attVertex = vertex.graph().thingGraph().get(vertex, value);
-            return new AttributeImpl.DateTime(attVertex);
+            if (attVertex != null) return new AttributeImpl.DateTime(attVertex);
+            else return null;
         }
 
         private static class Root extends AttributeTypeImpl.DateTime {
