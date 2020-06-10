@@ -30,7 +30,7 @@ import static org.junit.Assert.fail;
 public class EntityTypeSteps {
 
     @Then("entity\\( ?{type_label} ?) fails at creating an instance")
-    public void entity_fails_at_creating_an_instance(String typeLabel) {
+    public void entity_type_fails_at_creating_an_instance(String typeLabel) {
         try {
             tx().concepts().getEntityType(typeLabel).create();
             fail();

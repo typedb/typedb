@@ -107,32 +107,32 @@ public class ThingTypeSteps {
     }
 
     @Then("{root_label}\\( ?{type_label} ?) is null: {bool}")
-    public void thing_is_null(RootLabel rootLabel, String typeLabel, boolean isNull) {
+    public void thing_type_is_null(RootLabel rootLabel, String typeLabel, boolean isNull) {
         assertEquals(isNull, isNull(get_thing_type(rootLabel, typeLabel)));
     }
 
     @When("{root_label}\\( ?{type_label} ?) set label: {type_label}")
-    public void thing_set_label(RootLabel rootLabel, String typeLabel, String newLabel) {
+    public void thing_type_set_label(RootLabel rootLabel, String typeLabel, String newLabel) {
         get_thing_type(rootLabel, typeLabel).label(newLabel);
     }
 
     @Then("{root_label}\\( ?{type_label} ?) get label: {type_label}")
-    public void thing_get_label(RootLabel rootLabel, String typeLabel, String getLabel) {
+    public void thing_type_get_label(RootLabel rootLabel, String typeLabel, String getLabel) {
         assertEquals(getLabel, get_thing_type(rootLabel, typeLabel).label());
     }
 
     @When("{root_label}\\( ?{type_label} ?) set abstract: {bool}")
-    public void thing_set_abstract(RootLabel rootLabel, String typeLabel, boolean isAbstract) {
+    public void thing_type_set_abstract(RootLabel rootLabel, String typeLabel, boolean isAbstract) {
         get_thing_type(rootLabel, typeLabel).isAbstract(isAbstract);
     }
 
     @Then("{root_label}\\( ?{type_label} ?) is abstract: {bool}")
-    public void thing_is_abstract(RootLabel rootLabel, String typeLabel, boolean isAbstract) {
+    public void thing_type_is_abstract(RootLabel rootLabel, String typeLabel, boolean isAbstract) {
         assertEquals(isAbstract, get_thing_type(rootLabel, typeLabel).isAbstract());
     }
 
     @When("{root_label}\\( ?{type_label} ?) set supertype: {type_label}")
-    public void thing_set_supertype(RootLabel rootLabel, String typeLabel, String superLabel) {
+    public void thing_type_set_supertype(RootLabel rootLabel, String typeLabel, String superLabel) {
         switch (rootLabel) {
             case ENTITY:
                 EntityType entitySuperType = tx().concepts().getEntityType(superLabel);
@@ -150,19 +150,19 @@ public class ThingTypeSteps {
     }
 
     @Then("{root_label}\\( ?{type_label} ?) get supertype: {type_label}")
-    public void thing_get_supertype(RootLabel rootLabel, String typeLabel, String superLabel) {
+    public void thing_type_get_supertype(RootLabel rootLabel, String typeLabel, String superLabel) {
         ThingType supertype = get_thing_type(rootLabel, superLabel);
         assertEquals(supertype, get_thing_type(rootLabel, typeLabel).sup());
     }
 
     @Then("{root_label}\\( ?{type_label} ?) get supertypes contain:")
-    public void thing_get_supertypes_contain(RootLabel rootLabel, String typeLabel, List<String> superLabels) {
+    public void thing_type_get_supertypes_contain(RootLabel rootLabel, String typeLabel, List<String> superLabels) {
         Set<String> actuals = get_thing_type(rootLabel, typeLabel).sups().map(ThingType::label).collect(toSet());
         assertTrue(actuals.containsAll(superLabels));
     }
 
     @Then("{root_label}\\( ?{type_label} ?) get supertypes do not contain:")
-    public void thing_get_supertypes_do_not_contain(RootLabel rootLabel, String typeLabel, List<String> superLabels) {
+    public void thing_type_get_supertypes_do_not_contain(RootLabel rootLabel, String typeLabel, List<String> superLabels) {
         Set<String> actuals = get_thing_type(rootLabel, typeLabel).sups().map(ThingType::label).collect(toSet());
         for (String superLabel : superLabels) {
             assertFalse(actuals.contains(superLabel));
@@ -170,13 +170,13 @@ public class ThingTypeSteps {
     }
 
     @Then("{root_label}\\( ?{type_label} ?) get subtypes contain:")
-    public void thing_get_subtypes_contain(RootLabel rootLabel, String typeLabel, List<String> subLabels) {
+    public void thing_type_get_subtypes_contain(RootLabel rootLabel, String typeLabel, List<String> subLabels) {
         Set<String> actuals = get_thing_type(rootLabel, typeLabel).subs().map(ThingType::label).collect(toSet());
         assertTrue(actuals.containsAll(subLabels));
     }
 
     @Then("{root_label}\\( ?{type_label} ?) get subtypes do not contain:")
-    public void thing_get_subtypes_do_not_contain(RootLabel rootLabel, String typeLabel, List<String> subLabels) {
+    public void thing_type_get_subtypes_do_not_contain(RootLabel rootLabel, String typeLabel, List<String> subLabels) {
         Set<String> actuals = get_thing_type(rootLabel, typeLabel).subs().map(ThingType::label).collect(toSet());
         for (String subLabel : subLabels) {
             assertFalse(actuals.contains(subLabel));
@@ -184,20 +184,20 @@ public class ThingTypeSteps {
     }
 
     @When("{root_label}\\( ?{type_label} ?) set key attribute: {type_label}")
-    public void thing_set_key_attribute(RootLabel rootLabel, String typeLabel, String attributeLabel) {
+    public void thing_type_set_key_attribute(RootLabel rootLabel, String typeLabel, String attributeLabel) {
         AttributeType attributeType = tx().concepts().getAttributeType(attributeLabel);
         get_thing_type(rootLabel, typeLabel).key(attributeType);
     }
 
     @When("{root_label}\\( ?{type_label} ?) set key attribute: {type_label} as {type_label}")
-    public void thing_set_key_attribute_as(RootLabel rootLabel, String typeLabel, String attributeLabel, String overriddenLabel) {
+    public void thing_type_set_key_attribute_as(RootLabel rootLabel, String typeLabel, String attributeLabel, String overriddenLabel) {
         AttributeType attributeType = tx().concepts().getAttributeType(attributeLabel);
         AttributeType overriddenType = tx().concepts().getAttributeType(overriddenLabel);
         get_thing_type(rootLabel, typeLabel).key(attributeType, overriddenType);
     }
 
     @Then("{root_label}\\( ?{type_label} ?) fails at setting key attribute: {type_label}")
-    public void thing_fails_at_setting_key_attribute(RootLabel rootLabel, String typeLabel, String attributeLabel) {
+    public void thing_type_fails_at_setting_key_attribute(RootLabel rootLabel, String typeLabel, String attributeLabel) {
         AttributeType attributeType = tx().concepts().getAttributeType(attributeLabel);
         try {
             get_thing_type(rootLabel, typeLabel).key(attributeType);
@@ -208,7 +208,7 @@ public class ThingTypeSteps {
     }
 
     @Then("{root_label}\\( ?{type_label} ?) fails at setting key attribute: {type_label} as {type_label}")
-    public void thing_fails_at_setting_key_attribute_as(RootLabel rootLabel, String typeLabel, String attributeLabel, String overriddenLabel) {
+    public void thing_type_fails_at_setting_key_attribute_as(RootLabel rootLabel, String typeLabel, String attributeLabel, String overriddenLabel) {
         AttributeType attributeType = tx().concepts().getAttributeType(attributeLabel);
         AttributeType overriddenType = tx().concepts().getAttributeType(overriddenLabel);
         try {
@@ -220,19 +220,19 @@ public class ThingTypeSteps {
     }
 
     @When("{root_label}\\( ?{type_label} ?) remove key attribute: {type_label}")
-    public void thing_remove_key_attribute(RootLabel rootLabel, String typeLabel, String attributeLabel) {
+    public void thing_type_remove_key_attribute(RootLabel rootLabel, String typeLabel, String attributeLabel) {
         AttributeType attributeType = tx().concepts().getAttributeType(attributeLabel);
         get_thing_type(rootLabel, typeLabel).unkey(attributeType);
     }
 
     @Then("{root_label}\\( ?{type_label} ?) get key attributes contain:")
-    public void thing_get_key_attributes_contain(RootLabel rootLabel, String typeLabel, List<String> attributeLabels) {
+    public void thing_type_get_key_attributes_contain(RootLabel rootLabel, String typeLabel, List<String> attributeLabels) {
         Set<String> actuals = get_thing_type(rootLabel, typeLabel).keys().map(Type::label).collect(toSet());
         assertTrue(actuals.containsAll(attributeLabels));
     }
 
     @Then("{root_label}\\( ?{type_label} ?) get key attributes do not contain:")
-    public void thing_get_key_attributes_do_not_contain(RootLabel rootLabel, String typeLabel, List<String> attributeLabels) {
+    public void thing_type_get_key_attributes_do_not_contain(RootLabel rootLabel, String typeLabel, List<String> attributeLabels) {
         Set<String> actuals = get_thing_type(rootLabel, typeLabel).keys().map(Type::label).collect(toSet());
         for (String attributeLabel : attributeLabels) {
             assertFalse(actuals.contains(attributeLabel));
@@ -240,13 +240,13 @@ public class ThingTypeSteps {
     }
 
     @When("{root_label}\\( ?{type_label} ?) set has attribute: {type_label}")
-    public void thing_set_has_attribute(RootLabel rootLabel, String typeLabel, String attributeLabel) {
+    public void thing_type_set_has_attribute(RootLabel rootLabel, String typeLabel, String attributeLabel) {
         AttributeType attributeType = tx().concepts().getAttributeType(attributeLabel);
         get_thing_type(rootLabel, typeLabel).has(attributeType);
     }
 
     @Then("{root_label}\\( ?{type_label} ?) fails at setting has attribute: {type_label}")
-    public void thing_fails_at_setting_has_attribute(RootLabel rootLabel, String typeLabel, String attributeLabel) {
+    public void thing_type_fails_at_setting_has_attribute(RootLabel rootLabel, String typeLabel, String attributeLabel) {
         AttributeType attributeType = tx().concepts().getAttributeType(attributeLabel);
         try {
             get_thing_type(rootLabel, typeLabel).has(attributeType);
@@ -257,14 +257,14 @@ public class ThingTypeSteps {
     }
 
     @When("{root_label}\\( ?{type_label} ?) set has attribute: {type_label} as {type_label}")
-    public void thing_set_has_attribute_as(RootLabel rootLabel, String typeLabel, String attributeLabel, String overriddenLabel) {
+    public void thing_type_set_has_attribute_as(RootLabel rootLabel, String typeLabel, String attributeLabel, String overriddenLabel) {
         AttributeType attributeType = tx().concepts().getAttributeType(attributeLabel);
         AttributeType overriddenType = tx().concepts().getAttributeType(overriddenLabel);
         get_thing_type(rootLabel, typeLabel).has(attributeType, overriddenType);
     }
 
     @Then("{root_label}\\( ?{type_label} ?) fails at setting has attribute: {type_label} as {type_label}")
-    public void thing_fails_at_setting_has_attribute_as(RootLabel rootLabel, String typeLabel, String attributeLabel, String overriddenLabel) {
+    public void thing_type_fails_at_setting_has_attribute_as(RootLabel rootLabel, String typeLabel, String attributeLabel, String overriddenLabel) {
         AttributeType attributeType = tx().concepts().getAttributeType(attributeLabel);
         AttributeType overriddenType = tx().concepts().getAttributeType(overriddenLabel);
         try {
@@ -276,19 +276,19 @@ public class ThingTypeSteps {
     }
 
     @When("{root_label}\\( ?{type_label} ?) remove has attribute: {type_label}")
-    public void thing_remove_has_attribute(RootLabel rootLabel, String typeLabel, String attributeLabel) {
+    public void thing_type_remove_has_attribute(RootLabel rootLabel, String typeLabel, String attributeLabel) {
         AttributeType attributeType = tx().concepts().getAttributeType(attributeLabel);
         get_thing_type(rootLabel, typeLabel).unhas(attributeType);
     }
 
     @Then("{root_label}\\( ?{type_label} ?) get has attributes contain:")
-    public void thing_get_has_attributes_contain(RootLabel rootLabel, String typeLabel, List<String> attributeLabels) {
+    public void thing_type_get_has_attributes_contain(RootLabel rootLabel, String typeLabel, List<String> attributeLabels) {
         Set<String> actuals = get_thing_type(rootLabel, typeLabel).attributes().map(Type::label).collect(toSet());
         assertTrue(actuals.containsAll(attributeLabels));
     }
 
     @Then("{root_label}\\( ?{type_label} ?) get has attributes do not contain:")
-    public void thing_get_has_attributes_do_not_contain(RootLabel rootLabel, String typeLabel, List<String> attributeLabels) {
+    public void thing_type_get_has_attributes_do_not_contain(RootLabel rootLabel, String typeLabel, List<String> attributeLabels) {
         Set<String> actuals = get_thing_type(rootLabel, typeLabel).attributes().map(Type::label).collect(toSet());
         for (String attributeLabel : attributeLabels) {
             assertFalse(actuals.contains(attributeLabel));
@@ -296,13 +296,13 @@ public class ThingTypeSteps {
     }
 
     @When("{root_label}\\( ?{type_label} ?) set plays role: {scoped_label}")
-    public void thing_set_plays_role(RootLabel rootLabel, String typeLabel, Parameters.ScopedLabel roleLabel) {
+    public void thing_type_set_plays_role(RootLabel rootLabel, String typeLabel, Parameters.ScopedLabel roleLabel) {
         RoleType roleType = tx().concepts().getRelationType(roleLabel.scope()).role(roleLabel.role());
         get_thing_type(rootLabel, typeLabel).plays(roleType);
     }
 
     @When("{root_label}\\( ?{type_label} ?) fails at setting plays role: {scoped_label}")
-    public void thing_fails_at_setting_plays_role(RootLabel rootLabel, String typeLabel, Parameters.ScopedLabel roleLabel) {
+    public void thing_type_fails_at_setting_plays_role(RootLabel rootLabel, String typeLabel, Parameters.ScopedLabel roleLabel) {
         RoleType roleType = tx().concepts().getRelationType(roleLabel.scope()).role(roleLabel.role());
         try {
             get_thing_type(rootLabel, typeLabel).plays(roleType);
@@ -313,7 +313,7 @@ public class ThingTypeSteps {
     }
 
     @When("{root_label}\\( ?{type_label} ?) set plays role: {scoped_label} as {type_label}")
-    public void thing_set_plays_role_as(RootLabel rootLabel, String typeLabel, Parameters.ScopedLabel roleLabel, String overriddenLabel) {
+    public void thing_type_set_plays_role_as(RootLabel rootLabel, String typeLabel, Parameters.ScopedLabel roleLabel, String overriddenLabel) {
         RoleType roleType = tx().concepts().getRelationType(roleLabel.scope()).role(roleLabel.role());
         RoleType overriddenType = tx().concepts().getRelationType(roleLabel.scope()).sups()
                 .flatMap(RelationType::roles).filter(r -> r.label().equals(overriddenLabel)).findAny().get();
@@ -321,7 +321,7 @@ public class ThingTypeSteps {
     }
 
     @When("{root_label}\\( ?{type_label} ?) fails at setting plays role: {scoped_label} as {scoped_label}")
-    public void thing_fails_at_setting_plays_role_as(RootLabel rootLabel, String typeLabel, Parameters.ScopedLabel roleLabel, Parameters.ScopedLabel overriddenLabel) {
+    public void thing_type_fails_at_setting_plays_role_as(RootLabel rootLabel, String typeLabel, Parameters.ScopedLabel roleLabel, Parameters.ScopedLabel overriddenLabel) {
         RoleType roleType = tx().concepts().getRelationType(roleLabel.scope()).role(roleLabel.role());
         RoleType overriddenType = tx().concepts().getRelationType(overriddenLabel.scope()).role(overriddenLabel.role());
         try {
@@ -333,13 +333,13 @@ public class ThingTypeSteps {
     }
 
     @When("{root_label}\\( ?{type_label} ?) remove plays role: {scoped_label}")
-    public void thing_remove_plays_role(RootLabel rootLabel, String typeLabel, Parameters.ScopedLabel roleLabel) {
+    public void thing_type_remove_plays_role(RootLabel rootLabel, String typeLabel, Parameters.ScopedLabel roleLabel) {
         RoleType roleType = tx().concepts().getRelationType(roleLabel.scope()).role(roleLabel.role());
         get_thing_type(rootLabel, typeLabel).unplay(roleType);
     }
 
     @Then("{root_label}\\( ?{type_label} ?) get playing roles contain:")
-    public void thing_get_playing_roles_contain(RootLabel rootLabel, String typeLabel, List<Parameters.ScopedLabel> roleLabels) {
+    public void thing_type_get_playing_roles_contain(RootLabel rootLabel, String typeLabel, List<Parameters.ScopedLabel> roleLabels) {
         Set<Parameters.ScopedLabel> actuals = get_thing_type(rootLabel, typeLabel).plays().map(r -> {
             String[] labels = r.scopedLabel().split(":");
             return new Parameters.ScopedLabel(labels[0], labels[1]);
@@ -348,7 +348,7 @@ public class ThingTypeSteps {
     }
 
     @Then("{root_label}\\( ?{type_label} ?) get playing roles do not contain:")
-    public void thing_get_playing_roles_do_not_contain(RootLabel rootLabel, String typeLabel, List<Parameters.ScopedLabel> roleLabels) {
+    public void thing_type_get_playing_roles_do_not_contain(RootLabel rootLabel, String typeLabel, List<Parameters.ScopedLabel> roleLabels) {
         Set<Parameters.ScopedLabel> actuals = get_thing_type(rootLabel, typeLabel).plays().map(r -> {
             String[] labels = r.scopedLabel().split(":");
             return new Parameters.ScopedLabel(labels[0], labels[1]);

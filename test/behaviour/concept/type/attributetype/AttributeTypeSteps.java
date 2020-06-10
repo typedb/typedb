@@ -40,24 +40,24 @@ import static org.junit.Assert.fail;
  */
 public class AttributeTypeSteps {
 
-    @When("put attribute type: {type_label}, value type: {value_type}")
-    public void put_attribute_type_value_type(String typeLabel, Class<?> valueType) {
+    @When("put attribute type: {type_label}, with value type: {value_type}")
+    public void put_attribute_type_with_value_type(String typeLabel, Class<?> valueType) {
         tx().concepts().putAttributeType(typeLabel, valueType);
     }
 
     @Then("attribute\\( ?{type_label} ?) get value type: {value_type}")
-    public void attribute_get_value_type(String typeLabel, Class<?> valueType) {
+    public void attribute_type_get_value_type(String typeLabel, Class<?> valueType) {
         assertEquals(valueType, tx().concepts().getAttributeType(typeLabel).valueType());
     }
 
     @Then("attribute\\( ?{type_label} ?) get supertype value type: {value_type}")
-    public void attribute_get_supertype_value_type(String typeLabel, Class<?> valueType) {
+    public void attribute_type_get_supertype_value_type(String typeLabel, Class<?> valueType) {
         AttributeType supertype = tx().concepts().getAttributeType(typeLabel).sup();
         assertEquals(valueType, supertype.valueType());
     }
 
     @Then("attribute\\( ?{type_label} ?) fails at setting supertype: {type_label}")
-    public void attribute_fails_at_setting_supertype(String typeLabel, String superLabel) {
+    public void attribute_type_fails_at_setting_supertype(String typeLabel, String superLabel) {
         AttributeType superType = tx().concepts().getAttributeType(superLabel);
         try {
             tx().concepts().getAttributeType(typeLabel).sup(superType);
@@ -67,7 +67,7 @@ public class AttributeTypeSteps {
         }
     }
 
-    private AttributeType attribute_as_value_type(String typeLabel, Class<?> valueType) {
+    private AttributeType attribute_type_as_value_type(String typeLabel, Class<?> valueType) {
         AttributeType attributeType = tx().concepts().getAttributeType(typeLabel);
 
         if (valueType.equals(Object.class)) {
@@ -88,15 +88,15 @@ public class AttributeTypeSteps {
     }
 
     @Then("attribute\\( ?{type_label} ?) as\\( ?{value_type} ?) get subtypes contain:")
-    public void attribute_as_get_subtypes_contain(String typeLabel, Class<?> valueType, List<String> subLabels) {
-        AttributeType attributeType = attribute_as_value_type(typeLabel, valueType);
+    public void attribute_type_as_value_type_get_subtypes_contain(String typeLabel, Class<?> valueType, List<String> subLabels) {
+        AttributeType attributeType = attribute_type_as_value_type(typeLabel, valueType);
         Set<String> actuals = attributeType.subs().map(ThingType::label).collect(toSet());
         assertTrue(actuals.containsAll(subLabels));
     }
 
     @Then("attribute\\( ?{type_label} ?) as\\( ?{value_type} ?) get subtypes do not contain:")
-    public void attribute_as_get_subtypes_do_not_contain(String typeLabel, Class<?> valueType, List<String> subLabels) {
-        AttributeType attributeType = attribute_as_value_type(typeLabel, valueType);
+    public void attribute_type_as_value_type_get_subtypes_do_not_contain(String typeLabel, Class<?> valueType, List<String> subLabels) {
+        AttributeType attributeType = attribute_type_as_value_type(typeLabel, valueType);
         Set<String> actuals = attributeType.subs().map(ThingType::label).collect(toSet());
         for (String subLabel : subLabels) {
             assertFalse(actuals.contains(subLabel));
@@ -104,7 +104,7 @@ public class AttributeTypeSteps {
     }
 
     @Then("attribute\\( ?{type_label} ?) as\\( ?{value_type} ?) fails at putting an instance")
-    public void attribute_as_fails_at_creating_an_instance(String typeLabel, Class<?> valueType) {
+    public void attribute_type_as_value_type_fails_at_creating_an_instance(String typeLabel, Class<?> valueType) {
         try {
             if (valueType.equals(Boolean.class)) {
                 tx().concepts().getAttributeType(typeLabel).asBoolean().put(true);
