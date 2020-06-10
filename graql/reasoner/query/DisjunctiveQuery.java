@@ -2,6 +2,8 @@ package grakn.core.graql.reasoner.query;
 
 import com.google.common.collect.Iterators;
 import com.google.common.collect.SetMultimap;
+import grakn.core.graql.reasoner.explanation.DisjunctiveExplanation;
+import grakn.core.graql.reasoner.explanation.LookupExplanation;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.common.util.LazyMergingStream;
@@ -111,9 +113,12 @@ public class DisjunctiveQuery extends ResolvableQuery {
 
         boolean doNotResolve = !infer || getAtoms().isEmpty() || (isPositive() && !isRuleResolvable());
         if (doNotResolve) {
-
-            Stream<Stream<ConceptMap>> answerStreams = clauses.stream().map(c -> traversalExecutor.traverse(c.getPattern()));
-
+            Stream<Stream<ConceptMap>> answerStreams = clauses.stream().map(clause ->
+                    traversalExecutor.traverse(clause.getPattern()).map(ans -> {
+                        ConceptMap clauseAns = new ConceptMap(ans.map(), new LookupExplanation(), clause.getPattern(ans.map()));
+                        HashMap<Variable, Concept> bindingVarsSub = filterBindingVars(ans.map());
+                        return new ConceptMap(bindingVarsSub, new DisjunctiveExplanation(clauseAns), getPattern(bindingVarsSub));
+                    }));
             LazyMergingStream<ConceptMap> mergedStreams = new LazyMergingStream<>(answerStreams);
             return mergedStreams.flatStream();
         } else {
