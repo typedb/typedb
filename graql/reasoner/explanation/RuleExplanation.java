@@ -22,7 +22,7 @@ import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.answer.Explanation;
 import grakn.core.kb.concept.api.Rule;
 
-import java.util.List;
+import java.util.Collections;
 
 /**
  * Explanation class for rule application.
@@ -34,9 +34,8 @@ public class RuleExplanation extends Explanation {
     public RuleExplanation(Rule rule){
         this.rule = rule;
     }
-    public RuleExplanation(List<ConceptMap> answers, Rule rule){
-        // TODO A RuleExplanation should now take a single answer
-        super(answers);
+    public RuleExplanation(ConceptMap answer, Rule rule){
+        super(Collections.singletonList(answer));
         this.rule = rule;
     }
 

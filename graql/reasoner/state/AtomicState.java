@@ -19,6 +19,7 @@
 package grakn.core.graql.reasoner.state;
 
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Iterables;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.CacheCasting;
 import grakn.core.graql.reasoner.ReasoningContext;
@@ -39,7 +40,6 @@ import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
 import graql.lang.statement.Variable;
 
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
@@ -140,7 +140,7 @@ public class AtomicState extends AnswerPropagatorState<ReasonerAtomicQuery> {
         Map<Variable, Concept> joinedAnswerMap = AnswerUtil.joinAnswers(answer, query.getSubstitution()).project(query.getVarNames()).map();
         return new ConceptMap(
                 joinedAnswerMap,
-                new RuleExplanation(Collections.singletonList(baseAnswer), rule.getRule()),
+                new RuleExplanation(baseAnswer, rule.getRule()),
                 query.getPattern(joinedAnswerMap)
         );
     }
@@ -166,7 +166,7 @@ public class AtomicState extends AnswerPropagatorState<ReasonerAtomicQuery> {
         ConceptMap materialisedSub = ruleHead.materialise(baseAnswer).findFirst().orElse(null);
         ConceptMap answer = baseAnswer;
         if (materialisedSub != null) {
-            RuleExplanation ruleExplanation = new RuleExplanation(Collections.singletonList(baseAnswer), rule.getRule());
+            RuleExplanation ruleExplanation = new RuleExplanation(baseAnswer, rule.getRule());
             ConceptMap ruleAnswer = materialisedSub.explain(ruleExplanation);
             queryCache.record(ruleHead, ruleAnswer);
             Atom ruleAtom = ruleHead.getAtom();
@@ -182,7 +182,7 @@ public class AtomicState extends AnswerPropagatorState<ReasonerAtomicQuery> {
 
         return new ConceptMap(
                 AnswerUtil.joinAnswers(answer, query.getSubstitution()).project(query.getVarNames()).map(),
-                new RuleExplanation(answer.explanation().getAnswers(), rule.getRule()),
+                new RuleExplanation(Iterables.getOnlyElement(answer.explanation().getAnswers()), rule.getRule()),
                 query.withSubstitution(answer).getPattern());
     }
 }
