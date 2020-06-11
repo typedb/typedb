@@ -123,40 +123,6 @@ public class GraqlInsertIT {
     }
 
     @Test
-    public void testInsertId() {
-        assertInsert(var("x").has("name", "abc").isa("genre"));
-    }
-
-    @Test
-    public void testInsertValue() {
-        assertInsert(var("x").val(LocalDateTime.of(1992, 10, 7, 13, 14, 15)).isa("release-date"));
-    }
-
-    @Test
-    public void testInsertIsa() {
-        assertInsert(var("x").has("title", "Titanic").isa("movie"));
-    }
-
-    @Test
-    public void testInsertMultiple() {
-        assertInsert(
-                var("x").has("name", "123").isa("person"),
-                var("y").val(123L).isa("runtime"),
-                var("z").isa("language")
-        );
-    }
-
-    @Test
-    public void testInsertResource() {
-        assertInsert(var("x").isa("movie").has("title", "Gladiator").has("runtime", 100L));
-    }
-
-    @Test
-    public void testInsertName() {
-        assertInsert(var("x").isa("movie").has("title", "Hello"));
-    }
-
-    @Test
     public void testInsertRelation() {
         Statement rel = var("r").isa("has-genre").rel("genre-of-production", "x").rel("production-with-genre", "y");
         Statement x = var("x").has("title", "Godfather").isa("movie");
