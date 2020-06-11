@@ -40,6 +40,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static hypergraph.common.collection.Bytes.join;
+import static hypergraph.common.iterator.Iterators.filter;
 import static hypergraph.common.iterator.Iterators.link;
 
 public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implements TypeVertex {
@@ -284,10 +285,12 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
 
         @Override
         public Iterator<ThingVertexImpl> instances() {
-            return link(instances.iterator(), graph.storage().iterate(
+            return link(instances.iterator(), filter(graph.storage().iterate(
                     join(iid.bytes(), Schema.Edge.Thing.ISA.in().bytes()),
                     (key, value) -> ThingVertexImpl.of(graph.thingGraph(), EdgeIID.InwardsISA.of(key).end())
-            ));
+            ), thingVertex -> !instances.contains(thingVertex)));
+            // TODO: Can we figure out how to do a "distinct iterator" that is more efficient?
+            //       The one above still has to construct a full ThingVertexImpl and then check against a set
         }
 
         @Override
