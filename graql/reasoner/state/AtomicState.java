@@ -64,7 +64,7 @@ public class AtomicState extends AnswerPropagatorState<ReasonerAtomicQuery> {
                        AnswerPropagatorState parent,
                        Set<ReasonerAtomicQuery> subGoals,
                        ReasoningContext ctx) {
-        super(query, sub, u, parent, subGoals);
+        super(query.withSubstitution(sub), sub, u, parent, subGoals);
         this.ctx = ctx;
     }
 
