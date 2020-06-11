@@ -129,13 +129,6 @@ public class GraqlDefineIT {
     }
 
     @Test
-    public void whenDefiningMetaType_Throw() {
-        exception.expect(GraknConceptException.class);
-        exception.expectMessage(ErrorMessage.INVALID_SUPER_TYPE.getMessage("my-metatype", Graql.Token.Type.THING));
-        tx.execute(Graql.define(type("my-metatype").sub(Graql.Token.Type.THING)));
-    }
-
-    @Test
     public void whenDefiningAThing_Throw() {
         exception.expect(GraqlSemanticException.class);
         exception.expectMessage(GraqlSemanticException.defineUnsupportedProperty(Graql.Token.Property.ISA.toString()).getMessage());
@@ -149,36 +142,4 @@ public class GraqlDefineIT {
         GraqlDefine defineQuery = Graql.parse(queryString).asDefine();
         assertEquals(queryString, defineQuery.toString());
     }
-
-    /*private boolean schemaObjectsExist(Statement... vars){
-        boolean exist = true;
-        try {
-            for (Statement var : vars) {
-                exist = !tx.execute(Graql.match(var)).isEmpty();
-                if (!exist) break;
-            }
-        } catch(GraqlSemanticException e){
-            exist = false;
-        }
-        return exist;
-    }
-
-    private void assertDefine(Statement... vars) {
-        // Make sure vars don't exist
-        assertFalse(schemaObjectsExist(vars));
-
-        // Define all vars
-        tx.execute(Graql.define(vars));
-
-        // Make sure all vars exist
-        for (Statement var : vars) {
-            assertExists(tx, var);
-        }
-
-        // Undefine all vars
-        tx.execute(Graql.undefine(vars));
-
-        // Make sure vars don't exist
-        assertFalse(schemaObjectsExist(vars));
-    }*/
 }
