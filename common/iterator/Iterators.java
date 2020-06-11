@@ -21,6 +21,7 @@ package hypergraph.common.iterator;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
@@ -44,6 +45,10 @@ public class Iterators {
     @SafeVarargs
     public static <T> LinkedIterators<T> link(Iterator<T>... iterators) {
         return new LinkedIterators<>(new LinkedList<>(Arrays.asList(iterators)));
+    }
+
+    public static <T> LinkedIterators<T> link(List<Iterator<T>> iterators) {
+        return new LinkedIterators<>(new LinkedList<>(iterators));
     }
 
     public static <T> FilteredIterator<T> filter(Iterator<T> iterator, Predicate<T> predicate) {

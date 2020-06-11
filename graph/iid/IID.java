@@ -23,6 +23,7 @@ import java.util.Arrays;
 public abstract class IID {
 
     protected final byte[] bytes;
+    protected int hash = 0;
 
     IID(byte[] bytes) {
         this.bytes = bytes;
@@ -45,6 +46,7 @@ public abstract class IID {
 
     @Override
     public final int hashCode() {
-        return Arrays.hashCode(bytes);
+        if (hash == 0) hash = Arrays.hashCode(bytes);
+        return hash;
     }
 }

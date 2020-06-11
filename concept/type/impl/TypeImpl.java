@@ -29,6 +29,7 @@ import javax.annotation.Nullable;
 import java.util.Iterator;
 import java.util.Objects;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static hypergraph.common.iterator.Iterators.apply;
@@ -109,8 +110,10 @@ public abstract class TypeImpl implements Type {
     }
 
     protected <THING> Stream<THING> instances(Function<ThingVertex, THING> thingConstructor) {
-        // TODO traverse subtypes to collect their instances
-        return stream(apply(vertex.instances(), thingConstructor::apply));
+        Iterator<? extends ThingVertex> instances = Iterators.link(
+                subs().map(t -> ((TypeImpl) t).vertex.instances()).collect(Collectors.toList())
+        );
+        return stream(apply(instances, thingConstructor::apply));
     }
 
     @Override
