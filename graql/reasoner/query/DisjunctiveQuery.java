@@ -207,7 +207,7 @@ public class DisjunctiveQuery extends ResolvableQuery {
 
     @Override
     public Set<Variable> getVarNames() {
-        return getClauses().stream().flatMap(c -> c.getVarNames().stream()).collect(Collectors.toSet());
+        return bindingVars;
     }
 
     @Override
