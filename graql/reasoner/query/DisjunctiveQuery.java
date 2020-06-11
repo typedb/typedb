@@ -1,18 +1,35 @@
+/*
+ * Copyright (C) 2020 Grakn Labs
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
+ */
+
 package grakn.core.graql.reasoner.query;
 
-import com.google.common.collect.Iterators;
 import com.google.common.collect.SetMultimap;
-import grakn.core.graql.reasoner.explanation.DisjunctiveExplanation;
-import grakn.core.graql.reasoner.explanation.LookupExplanation;
-import grakn.core.kb.concept.api.Concept;
-import grakn.core.concept.answer.ConceptMap;
 import grakn.core.common.util.LazyMergingStream;
+import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.ReasoningContext;
 import grakn.core.graql.reasoner.ResolutionIterator;
 import grakn.core.graql.reasoner.atom.Atom;
+import grakn.core.graql.reasoner.explanation.DisjunctiveExplanation;
+import grakn.core.graql.reasoner.explanation.LookupExplanation;
 import grakn.core.graql.reasoner.state.AnswerPropagatorState;
 import grakn.core.graql.reasoner.state.DisjunctiveState;
 import grakn.core.graql.reasoner.state.ResolutionState;
+import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.graql.executor.TraversalExecutor;
