@@ -54,6 +54,7 @@ public enum ErrorMessage {
     BACKEND_EXCEPTION("Backend Exception."),
     INITIALIZATION_EXCEPTION("Graph for keyspace [%s] not properly initialized. Missing keyspace name resource"),
     SESSION_CLOSED("The session for graph [%s] is closed. Create a new session to interact with the graph."),
+    SESSION_NOT_FOUND("The client session with session ID [%s] was not found. Create a new session to interact with the graph."),
     LOCKING_EXCEPTION("Internal locking exception. Please clear the transaction and try again."),
     CANNOT_BE_KEY_AND_ATTRIBUTE("The Type [%s] cannot have the Attribute Type [%s] as a key and as an attribute"),
     ILLEGAL_TYPE_UNHAS_ATTRIBUTE_WITH_INSTANCE("Failed to: undefine [%s] %s [%s]. There exists instance of this pattern."),

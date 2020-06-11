@@ -18,6 +18,7 @@
 
 package grakn.core.kb.server.exception;
 
+import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
 
 public class SessionException extends GraknException {
@@ -30,4 +31,9 @@ public class SessionException extends GraknException {
     public String getName() {
         return this.getClass().getName();
     }
+
+    public static SessionException sessionNotFound(String sessionId) {
+        return new SessionException(ErrorMessage.SESSION_NOT_FOUND.getMessage(sessionId));
+    }
+
 }
