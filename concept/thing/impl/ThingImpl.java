@@ -23,7 +23,6 @@ import hypergraph.concept.thing.Relation;
 import hypergraph.concept.thing.Thing;
 import hypergraph.concept.type.AttributeType;
 import hypergraph.concept.type.RoleType;
-import hypergraph.concept.type.impl.ThingTypeImpl;
 import hypergraph.graph.vertex.ThingVertex;
 
 import java.util.Objects;
@@ -36,9 +35,6 @@ public abstract class ThingImpl implements Thing {
     protected ThingImpl(ThingVertex vertex) {
         this.vertex = Objects.requireNonNull(vertex);
     }
-
-    @Override
-    public abstract ThingTypeImpl type();
 
     @Override
     public boolean isInferred() {

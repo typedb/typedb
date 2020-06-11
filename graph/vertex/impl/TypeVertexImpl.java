@@ -25,6 +25,7 @@ import hypergraph.graph.adjacency.Adjacency;
 import hypergraph.graph.adjacency.TypeAdjacency;
 import hypergraph.graph.adjacency.impl.TypeAdjacencyImpl;
 import hypergraph.graph.edge.TypeEdge;
+import hypergraph.graph.iid.EdgeIID;
 import hypergraph.graph.iid.IndexIID;
 import hypergraph.graph.iid.VertexIID;
 import hypergraph.graph.util.Schema;
@@ -284,8 +285,8 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         @Override
         public Iterator<ThingVertexImpl> instances() {
             return link(instances.iterator(), graph.storage().iterate(
-                    join(Schema.Vertex.Thing.of(this.schema()).prefix().bytes(), iid.bytes(), Schema.Edge.Thing.ISA.in().bytes()),
-                    (key, value) -> ThingVertexImpl.of(graph.thingGraph(), VertexIID.Thing.of(key))
+                    join(iid.bytes(), Schema.Edge.Thing.ISA.in().bytes()),
+                    (key, value) -> ThingVertexImpl.of(graph.thingGraph(), EdgeIID.InwardsISA.of(key).end())
             ));
         }
 

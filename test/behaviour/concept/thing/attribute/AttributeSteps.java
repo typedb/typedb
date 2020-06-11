@@ -31,6 +31,16 @@ import static org.junit.Assert.assertTrue;
 
 public class AttributeSteps {
 
+    @When("attribute\\( ?{type_label} ?) instances contain: {var}")
+    public void attribute_instances_contain(String typeLabel, String var) {
+        assertTrue(tx().concepts().getAttributeType(typeLabel).instances().anyMatch(i -> i.equals(get(var))));
+    }
+
+    @Then("attribute {var} has value type: {value_type}")
+    public void attribute_has_value_type(String var, Class<?> valueType) {
+        assertEquals(valueType, get(var).asAttribute().type().valueType());
+    }
+
     @When("{var} = attribute\\( ?{type_label} ?) as\\( ?boolean ?) put: {bool}")
     public void attribute_type_as_boolean_put(String var, String typeLabel, boolean value) {
         put(var, tx().concepts().getAttributeType(typeLabel).asBoolean().put(value));
@@ -79,16 +89,6 @@ public class AttributeSteps {
     @When("{var} = attribute\\( ?{type_label} ?) as\\( ?datetime ?) get: {datetime}")
     public void attribute_type_as_datetime_get(String var, String typeLabel, LocalDateTime value) {
         put(var, tx().concepts().getAttributeType(typeLabel).asDateTime().get(value));
-    }
-
-    @When("attribute\\( ?{type_label} ?) instances contain: {var}")
-    public void attribute_instances_contain(String typeLabel, String var) {
-        assertTrue(tx().concepts().getAttributeType(typeLabel).instances().anyMatch(i -> i.equals(get(var))));
-    }
-
-    @Then("attribute {var} has value type: {value_type}")
-    public void attribute_has_type(String var, Class<?> valueType) {
-        assertEquals(valueType, get(var).asAttribute().type().valueType());
     }
 
     @Then("attribute {var} has boolean value: {bool}")

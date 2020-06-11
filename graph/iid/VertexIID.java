@@ -106,7 +106,7 @@ public abstract class VertexIID extends IID {
         }
 
         public static Thing of(byte[] bytes) {
-            if (Schema.Vertex.Type.of(bytes[PrefixIID.LENGTH + 1]).equals(Schema.Vertex.Type.ATTRIBUTE_TYPE)) {
+            if (Schema.Vertex.Type.of(bytes[PrefixIID.LENGTH]).equals(Schema.Vertex.Type.ATTRIBUTE_TYPE)) {
                 return VertexIID.Attribute.of(bytes);
             } else {
                 return new VertexIID.Thing(bytes);

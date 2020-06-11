@@ -25,6 +25,7 @@ import hypergraph.graph.adjacency.Adjacency;
 import hypergraph.graph.adjacency.ThingAdjacency;
 import hypergraph.graph.adjacency.impl.ThingAdjacencyImpl;
 import hypergraph.graph.edge.Edge;
+import hypergraph.graph.iid.EdgeIID;
 import hypergraph.graph.iid.VertexIID;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.vertex.AttributeVertex;
@@ -44,7 +45,6 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
         this.outs = newAdjacency(Adjacency.Direction.OUT);
         this.ins = newAdjacency(Adjacency.Direction.IN);
         this.isInferred = isInferred;
-        this.type().buffer(this);
     }
 
     public static ThingVertexImpl of(ThingGraph graph, VertexIID.Thing iid) {
@@ -117,6 +117,7 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
 
         public Buffered(ThingGraph graph, VertexIID.Thing iid, boolean isInferred) {
             super(graph, iid, isInferred);
+            this.type().buffer(this);
             written();
         }
 
@@ -134,22 +135,17 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
         public void commit() {
             if (isInferred) throw new HypergraphException(Error.Transaction.ILLEGAL_OPERATION);
             graph.storage().put(iid.bytes());
-            commitIndex();
-            commitEdges();
-        }
-
-        private void commitIndex() {
-            // TODO
-        }
-
-        private void commitEdges() {
+            graph.storage().put(EdgeIID.InwardsISA.of(type().iid(), iid).bytes());
             outs.forEach(Edge::commit);
             ins.forEach(Edge::commit);
         }
 
         @Override
         public void delete() {
-            // TODO
+            outs.deleteAll();
+            ins.deleteAll();
+            type().unbuffer(this);
+            graph.delete(this);
         }
     }
 
@@ -176,17 +172,17 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
 
         @Override
         public void commit() {
-            commitEdges();
-        }
-
-        private void commitEdges() {
             outs.forEach(Edge::commit);
             ins.forEach(Edge::commit);
         }
 
         @Override
         public void delete() {
-            // TODO
+            outs.forEach(Edge::commit);
+            ins.forEach(Edge::commit);
+            graph.storage().delete(iid.bytes());
+            graph.storage().delete(EdgeIID.InwardsISA.of(type().iid(), iid).bytes());
+            graph.delete(this);
         }
     }
 }

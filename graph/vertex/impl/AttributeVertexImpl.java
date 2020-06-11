@@ -37,23 +37,24 @@ public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl impleme
 
     private final VertexIID.Attribute<VALUE> attributeIID;
 
-    AttributeVertexImpl(ThingGraph graph, VertexIID.Attribute<VALUE> iid, boolean isInferred) {
+    AttributeVertexImpl(ThingGraph graph, VertexIID.Attribute<VALUE> iid, boolean isInferred, boolean buffer) {
         super(graph, iid, isInferred);
         this.attributeIID = iid;
+        if (buffer) type().buffer(this);
     }
 
     public static AttributeVertexImpl<?> of(ThingGraph graph, VertexIID.Attribute iid) {
         switch (iid.valueType()) {
             case BOOLEAN:
-                return new AttributeVertexImpl.Boolean(graph, iid.asBoolean(), false);
+                return new AttributeVertexImpl.Boolean(graph, iid.asBoolean());
             case LONG:
-                return new AttributeVertexImpl.Long(graph, iid.asLong(), false);
+                return new AttributeVertexImpl.Long(graph, iid.asLong());
             case DOUBLE:
-                return new AttributeVertexImpl.Double(graph, iid.asDouble(), false);
+                return new AttributeVertexImpl.Double(graph, iid.asDouble());
             case STRING:
-                return new AttributeVertexImpl.String(graph, iid.asString(), false);
+                return new AttributeVertexImpl.String(graph, iid.asString());
             case DATETIME:
-                return new AttributeVertexImpl.DateTime(graph, iid.asDateTime(), false);
+                return new AttributeVertexImpl.DateTime(graph, iid.asDateTime());
             default:
                 assert false;
                 return null;
@@ -89,7 +90,11 @@ public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl impleme
 
     @Override
     public void delete() {
+        outs.forEach(Edge::delete);
+        ins.forEach(Edge::delete);
+
         type().unbuffer(this);
+
         graph.storage().delete(attributeIID.bytes());
         graph.storage().delete(EdgeIID.InwardsISA.of(type().iid(), iid).bytes());
         graph.storage().delete(index().bytes());
@@ -139,8 +144,12 @@ public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl impleme
 
     public static class Boolean extends AttributeVertexImpl<java.lang.Boolean> {
 
-        public Boolean(ThingGraph graph, VertexIID.Attribute<java.lang.Boolean> iid, boolean isInferred) {
-            super(graph, iid, isInferred);
+        public Boolean(ThingGraph graph, VertexIID.Attribute<java.lang.Boolean> iid) {
+            this(graph, iid, false, false);
+        }
+
+        public Boolean(ThingGraph graph, VertexIID.Attribute<java.lang.Boolean> iid, boolean isInferred, boolean buffer) {
+            super(graph, iid, isInferred, buffer);
         }
 
         @Override
@@ -156,8 +165,12 @@ public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl impleme
 
     public static class Long extends AttributeVertexImpl<java.lang.Long> {
 
-        public Long(ThingGraph graph, VertexIID.Attribute<java.lang.Long> iid, boolean isInferred) {
-            super(graph, iid, isInferred);
+        public Long(ThingGraph graph, VertexIID.Attribute.Long iid) {
+            this(graph, iid, false, false);
+        }
+
+        public Long(ThingGraph graph, VertexIID.Attribute<java.lang.Long> iid, boolean isInferred, boolean buffer) {
+            super(graph, iid, isInferred, buffer);
         }
 
         @Override
@@ -173,8 +186,12 @@ public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl impleme
 
     public static class Double extends AttributeVertexImpl<java.lang.Double> {
 
-        public Double(ThingGraph graph, VertexIID.Attribute<java.lang.Double> iid, boolean isInferred) {
-            super(graph, iid, isInferred);
+        public Double(ThingGraph graph, VertexIID.Attribute.Double iid) {
+            this(graph, iid, false, false);
+        }
+
+        public Double(ThingGraph graph, VertexIID.Attribute<java.lang.Double> iid, boolean isInferred, boolean buffer) {
+            super(graph, iid, isInferred, buffer);
         }
 
         @Override
@@ -190,8 +207,12 @@ public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl impleme
 
     public static class String extends AttributeVertexImpl<java.lang.String> {
 
-        public String(ThingGraph graph, VertexIID.Attribute<java.lang.String> iid, boolean isInferred) {
-            super(graph, iid, isInferred);
+        public String(ThingGraph graph, VertexIID.Attribute.String iid) {
+            this(graph, iid, false, false);
+        }
+
+        public String(ThingGraph graph, VertexIID.Attribute<java.lang.String> iid, boolean isInferred, boolean buffer) {
+            super(graph, iid, isInferred, buffer);
         }
 
         @Override
@@ -207,8 +228,12 @@ public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl impleme
 
     public static class DateTime extends AttributeVertexImpl<java.time.LocalDateTime> {
 
-        public DateTime(ThingGraph graph, VertexIID.Attribute<LocalDateTime> iid, boolean isInferred) {
-            super(graph, iid, isInferred);
+        public DateTime(ThingGraph graph, VertexIID.Attribute.DateTime iid) {
+            this(graph, iid, false, false);
+        }
+
+        public DateTime(ThingGraph graph, VertexIID.Attribute<LocalDateTime> iid, boolean isInferred, boolean buffer) {
+            super(graph, iid, isInferred, buffer);
         }
 
         @Override

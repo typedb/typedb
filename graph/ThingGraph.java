@@ -89,7 +89,7 @@ public class ThingGraph implements Graph<VertexIID.Thing, ThingVertex> {
         return getOrReadFromStorage(
                 attributesByIID.booleans,
                 new VertexIID.Attribute.Boolean(type.iid(), value),
-                iid -> new AttributeVertexImpl.Boolean(ThingGraph.this, iid, false)
+                iid -> new AttributeVertexImpl.Boolean(ThingGraph.this, iid)
         );
     }
 
@@ -100,7 +100,7 @@ public class ThingGraph implements Graph<VertexIID.Thing, ThingVertex> {
         return getOrReadFromStorage(
                 attributesByIID.longs,
                 new VertexIID.Attribute.Long(type.iid(), value),
-                iid -> new AttributeVertexImpl.Long(ThingGraph.this, iid, false)
+                iid -> new AttributeVertexImpl.Long(ThingGraph.this, iid)
         );
     }
 
@@ -111,7 +111,7 @@ public class ThingGraph implements Graph<VertexIID.Thing, ThingVertex> {
         return getOrReadFromStorage(
                 attributesByIID.doubles,
                 new VertexIID.Attribute.Double(type.iid(), value),
-                iid -> new AttributeVertexImpl.Double(ThingGraph.this, iid, false)
+                iid -> new AttributeVertexImpl.Double(ThingGraph.this, iid)
         );
     }
 
@@ -122,7 +122,7 @@ public class ThingGraph implements Graph<VertexIID.Thing, ThingVertex> {
         return getOrReadFromStorage(
                 attributesByIID.strings,
                 new VertexIID.Attribute.String(type.iid(), value),
-                iid -> new AttributeVertexImpl.String(ThingGraph.this, iid, false)
+                iid -> new AttributeVertexImpl.String(ThingGraph.this, iid)
         );
     }
 
@@ -133,7 +133,7 @@ public class ThingGraph implements Graph<VertexIID.Thing, ThingVertex> {
         return getOrReadFromStorage(
                 attributesByIID.dateTimes,
                 new VertexIID.Attribute.DateTime(type.iid(), value),
-                iid -> new AttributeVertexImpl.DateTime(ThingGraph.this, iid, false)
+                iid -> new AttributeVertexImpl.DateTime(ThingGraph.this, iid)
         );
     }
 
@@ -143,7 +143,7 @@ public class ThingGraph implements Graph<VertexIID.Thing, ThingVertex> {
 
         return attributesByIID.booleans.computeIfAbsent(
                 new VertexIID.Attribute.Boolean(type.iid(), value),
-                iid -> new AttributeVertexImpl.Boolean(ThingGraph.this, iid, isInferred)
+                iid -> new AttributeVertexImpl.Boolean(ThingGraph.this, iid, isInferred, true)
         );
     }
 
@@ -153,7 +153,7 @@ public class ThingGraph implements Graph<VertexIID.Thing, ThingVertex> {
 
         return attributesByIID.longs.computeIfAbsent(
                 new VertexIID.Attribute.Long(type.iid(), value),
-                iid -> new AttributeVertexImpl.Long(ThingGraph.this, iid, isInferred)
+                iid -> new AttributeVertexImpl.Long(ThingGraph.this, iid, isInferred, true)
         );
     }
 
@@ -163,7 +163,7 @@ public class ThingGraph implements Graph<VertexIID.Thing, ThingVertex> {
 
         return attributesByIID.doubles.computeIfAbsent(
                 new VertexIID.Attribute.Double(type.iid(), value),
-                iid -> new AttributeVertexImpl.Double(ThingGraph.this, iid, isInferred)
+                iid -> new AttributeVertexImpl.Double(ThingGraph.this, iid, isInferred, true)
         );
     }
 
@@ -174,7 +174,7 @@ public class ThingGraph implements Graph<VertexIID.Thing, ThingVertex> {
 
         return attributesByIID.strings.computeIfAbsent(
                 new VertexIID.Attribute.String(type.iid(), value),
-                iid -> new AttributeVertexImpl.String(ThingGraph.this, iid, isInferred)
+                iid -> new AttributeVertexImpl.String(ThingGraph.this, iid, isInferred, true)
         );
     }
 
@@ -184,7 +184,7 @@ public class ThingGraph implements Graph<VertexIID.Thing, ThingVertex> {
 
         return attributesByIID.dateTimes.computeIfAbsent(
                 new VertexIID.Attribute.DateTime(type.iid(), value),
-                iid -> new AttributeVertexImpl.DateTime(ThingGraph.this, iid, isInferred)
+                iid -> new AttributeVertexImpl.DateTime(ThingGraph.this, iid, isInferred, true)
         );
     }
 

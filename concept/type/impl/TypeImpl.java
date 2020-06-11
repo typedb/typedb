@@ -109,6 +109,7 @@ public abstract class TypeImpl implements Type {
     }
 
     protected <THING> Stream<THING> instances(Function<ThingVertex, THING> thingConstructor) {
+        // TODO traverse subtypes to collect their instances
         return stream(apply(vertex.instances(), thingConstructor::apply));
     }
 

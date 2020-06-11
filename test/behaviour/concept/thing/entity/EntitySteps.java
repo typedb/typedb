@@ -18,15 +18,34 @@
 
 package hypergraph.test.behaviour.concept.thing.entity;
 
+import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 
+import static hypergraph.test.behaviour.concept.thing.ThingSteps.get;
 import static hypergraph.test.behaviour.concept.thing.ThingSteps.put;
 import static hypergraph.test.behaviour.connection.ConnectionSteps.tx;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class EntitySteps {
 
     @When("{var} = entity\\( ?{type_label} ?) create new instance")
     public void entity_type_create_new_instance(String var, String typeLabel) {
         put(var, tx().concepts().getEntityType(typeLabel).create());
+    }
+
+    @When("{var} = entity\\( ?{type_label} ?) get first instance")
+    public void entity_type_get_first_instance(String var, String typeLabel) {
+        put(var, tx().concepts().getEntityType(typeLabel).instances().findFirst().orElse(null));
+    }
+
+    @Then("entity\\( ?{type_label} ?) instances contain: {var}")
+    public void entity_type_instances_contain(String typeLabel, String var) {
+        assertTrue(tx().concepts().getEntityType(typeLabel).instances().anyMatch(i -> i.equals(get(var))));
+    }
+
+    @Then("entity\\( ?{type_label} ?) instances is empty")
+    public void entity_type_instances_is_empty(String typeLabel) {
+        assertEquals(0, tx().concepts().getEntityType(typeLabel).instances().count());
     }
 }
