@@ -350,7 +350,7 @@ public class ReasonerQueryImpl extends ResolvableQuery {
             getAtoms().forEach(atom -> vars.addAll(atom.getVarNames()));
             varNames = vars;
         }
-        return ImmutableSet.copyOf(varNames);
+        return varNames;
     }
 
     @Override
