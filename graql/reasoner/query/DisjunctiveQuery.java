@@ -232,7 +232,7 @@ public class DisjunctiveQuery extends ResolvableQuery {
     @Override
     public ConceptMap getSubstitution() {
         // TODO What should this do, given that there could be a substitution for any of its clauses
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -298,7 +298,7 @@ public class DisjunctiveQuery extends ResolvableQuery {
     public Iterator<ResolutionState> innerStateIterator(AnswerPropagatorState parent, Set<ReasonerAtomicQuery> subGoals) {
 //        TODO Does the substitution make sense here?
 //        TODO Is the unifier correct?
-        return clauses.stream().map(c -> c.resolutionState(getSubstitution(), parent.getUnifier(), parent, subGoals)).iterator();
+        return clauses.stream().map(c -> c.resolutionState(c.getSubstitution(), parent.getUnifier(), parent, subGoals)).iterator();
     }
 
 }
