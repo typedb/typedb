@@ -89,6 +89,7 @@ public class ReasonerQueryFactory {
 
     /**
      * @param pattern disjunctive pattern defining the query
+     * @param bindingVars the set of variables in the outer scope of the disjunction
      * @return a resolvable reasoner query constructed from provided disjunctive pattern
      */
     public ResolvableQuery resolvable(Disjunction<Conjunction<Pattern>> pattern, Set<Variable> bindingVars) {

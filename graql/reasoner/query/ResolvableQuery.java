@@ -83,7 +83,10 @@ public abstract class ResolvableQuery implements ReasonerQuery {
     @CheckReturnValue
     public abstract ResolvableQuery withSubstitution(ConceptMap sub);
 
-    //TODO Should this be in the `ReasonerQuery` interface?
+    /**
+     * @param map map of variables to concepts from which to build a set of id predicate patterns
+     * @return set of id predicate patterns
+     */
     @CheckReturnValue
     public HashSet<Pattern> getIdPredicatePatterns(Map<Variable, Concept> map) {
         return AtomicUtil.answerToPredicates(map, this).stream()
