@@ -134,17 +134,37 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
         @Override
         public void commit() {
             if (isInferred) throw new HypergraphException(Error.Transaction.ILLEGAL_OPERATION);
-            graph.storage().put(iid.bytes());
-            graph.storage().put(EdgeIID.InwardsISA.of(type().iid(), iid).bytes());
-            outs.forEach(Edge::commit);
-            ins.forEach(Edge::commit);
+            commitVertexToStorage();
+            commitEdges();
         }
 
         @Override
         public void delete() {
+            deleteEdges();
+            deleteVertexFromType();
+            deleteVertexFromGraph();
+        }
+
+        private void commitVertexToStorage() {
+            graph.storage().put(iid.bytes());
+            graph.storage().put(EdgeIID.InwardsISA.of(type().iid(), iid).bytes());
+        }
+
+        private void commitEdges() {
+            outs.forEach(Edge::commit);
+            ins.forEach(Edge::commit);
+        }
+
+        private void deleteEdges() {
             outs.deleteAll();
             ins.deleteAll();
+        }
+
+        private void deleteVertexFromType() {
             type().unbuffer(this);
+        }
+
+        private void deleteVertexFromGraph() {
             graph.delete(this);
         }
     }
@@ -172,16 +192,32 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
 
         @Override
         public void commit() {
-            outs.forEach(Edge::commit);
-            ins.forEach(Edge::commit);
+            commitEdges();
         }
 
         @Override
         public void delete() {
+            deleteEdges();
+            deleteVertexFromStorage();
+            deleteVertexFromGraph();
+        }
+
+        private void commitEdges() {
             outs.forEach(Edge::commit);
             ins.forEach(Edge::commit);
+        }
+
+        private void deleteEdges() {
+            outs.forEach(Edge::commit);
+            ins.forEach(Edge::commit);
+        }
+
+        private void deleteVertexFromStorage() {
             graph.storage().delete(iid.bytes());
             graph.storage().delete(EdgeIID.InwardsISA.of(type().iid(), iid).bytes());
+        }
+
+        private void deleteVertexFromGraph() {
             graph.delete(this);
         }
     }
