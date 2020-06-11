@@ -81,7 +81,6 @@ public class CompositeQuery extends ResolvableQuery {
 
     CompositeQuery(Conjunction<Pattern> pattern, TraversalExecutor traversalExecutor, ReasoningContext ctx) throws ReasonerException {
         super(traversalExecutor, ctx);
-        this.pattern = pattern;
         ReasonerQueryFactory queryFactory = context().queryFactory();
         Conjunction<Statement> positiveConj = Graql.and(
                 pattern.getPatterns().stream()
