@@ -16,7 +16,7 @@
  *
  */
 
-package grakn.core.common.test;
+package grakn.core.common.util.test;
 
 import grakn.core.common.util.LazyMergingStream;
 import org.junit.Test;

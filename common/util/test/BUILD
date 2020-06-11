@@ -24,7 +24,7 @@ java_test(
         "//common",
         "//dependencies/maven/artifacts/org/mockito:mockito-core"
     ],
-    test_class = "grakn.core.common.util.LazyMergingStreamTest",
+    test_class = "grakn.core.common.util.test.LazyMergingStreamTest",
     size = "small"
 )
 
@@ -34,4 +34,3 @@ checkstyle_test(
         ":lazy-merging-stream-test"
     ],
 )
-
