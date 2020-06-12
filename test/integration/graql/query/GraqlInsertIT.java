@@ -123,82 +123,6 @@ public class GraqlInsertIT {
     }
 
     @Test
-    public void testInsertRelation() {
-        Statement rel = var("r").isa("has-genre").rel("genre-of-production", "x").rel("production-with-genre", "y");
-        Statement x = var("x").has("title", "Godfather").isa("movie");
-        Statement y = var("y").has("name", "comedy").isa("genre");
-        Statement[] vars = new Statement[]{rel, x, y};
-        Pattern[] patterns = new Pattern[]{rel, x, y};
-
-        assertNotExists(tx, patterns);
-
-        tx.execute(Graql.insert(vars));
-        assertExists(tx, patterns);
-
-        tx.execute(Graql.match(patterns).delete(var("r").isa("has-genre")));
-        assertNotExists(tx, patterns);
-    }
-
-    @Test
-    public void testInsertSameVarName() {
-        tx.execute(Graql.insert(var("x").has("title", "SW"), var("x").has("title", "Star Wars").isa("movie")));
-
-        assertExists(tx, var("x").isa("movie").has("title", "SW"));
-        assertExists(tx, var("x").isa("movie").has("title", "Star Wars"));
-        assertExists(tx, var("x").isa("movie").has("title", "SW").has("title", "Star Wars"));
-    }
-
-    @Test
-    public void testInsertRepeat() {
-        Statement language = var("x").has("name", "123").isa("language");
-        GraqlInsert query = Graql.insert(language);
-
-        assertEquals(0, tx.stream(Graql.match(language)).count());
-        tx.execute(query);
-        assertEquals(1, tx.stream(Graql.match(language)).count());
-        tx.execute(query);
-        assertEquals(2, tx.stream(Graql.match(language)).count());
-        tx.execute(query);
-        assertEquals(3, tx.stream(Graql.match(language)).count());
-
-        tx.execute(Graql.match(language).delete(var("x").isa("language")));
-        assertEquals(0, tx.stream(Graql.match(language)).count());
-    }
-
-    @Test
-    public void testMatchInsertQuery() {
-        Statement language1 = var("x").isa("language").has("name", "123");
-        Statement language2 = var("x").isa("language").has("name", "456");
-
-        tx.execute(Graql.insert(language1, language2));
-        assertExists(tx, language1);
-        assertExists(tx, language2);
-
-        tx.execute(Graql.match(var("x").isa("language")).insert(var("x").has("name", "HELLO")));
-        assertExists(tx, var("x").isa("language").has("name", "123").has("name", "HELLO"));
-        assertExists(tx, var("x").isa("language").has("name", "456").has("name", "HELLO"));
-
-        tx.execute(Graql.match(var("x").isa("language")).delete(var("x").isa("language")));
-        assertNotExists(tx, language1);
-        assertNotExists(tx, language2);
-    }
-
-
-    @Test
-    public void testIterateInsertResults() {
-        GraqlInsert insert = Graql.insert(
-                var("x").has("name", "123").isa("person"),
-                var("z").has("name", "xyz").isa("language")
-        );
-
-        Set<ConceptMap> results = tx.stream(insert).collect(toSet());
-        assertEquals(1, results.size());
-        ConceptMap result = results.iterator().next();
-        assertEquals(ImmutableSet.of(new Variable("x"), new Variable("z")), result.vars());
-        assertThat(result.concepts(), Matchers.everyItem(notNullValue(Concept.class)));
-    }
-
-    @Test
     public void testMatchInsertShouldInsertDataEvenWhenResultsAreNotCollected() {
         Statement language1 = var("x").isa("language").has("name", "123");
         Statement language2 = var("x").isa("language").has("name", "456");
@@ -215,20 +139,6 @@ public class GraqlInsertIT {
     }
 
     @Test
-    public void testErrorWhenInsertWithPredicate() {
-        exception.expect(GraqlSemanticException.class);
-        exception.expectMessage("predicate");
-        tx.execute(Graql.insert(var().id("123").gt(3)));
-    }
-
-    @Test
-    public void testErrorWhenInsertWithMultipleIds() {
-        exception.expect(GraqlException.class);
-        exception.expectMessage(allOf(containsString("id"), containsString("123"), containsString("456")));
-        tx.execute(Graql.insert(var().id("123").id("456").isa("movie")));
-    }
-
-    @Test
     public void whenInsertingAResourceWithMultipleValues_Throw() {
         Statement varPattern = var().val("123").val("456").isa("title");
 
@@ -242,43 +152,8 @@ public class GraqlInsertIT {
     }
 
     @Test
-    public void testErrorWhenSubRelation() {
-        exception.expect(IllegalArgumentException.class);
-        tx.execute(Graql.insert(
-                var().sub("has-genre").rel("genre-of-production", "x").rel("production-with-genre", "y"),
-                var("x").id("Godfather").isa("movie"),
-                var("y").id("comedy").isa("genre")
-        ));
-    }
-
-    @Test
     public void testInsertRepeatType() {
         assertInsert(var("x").has("title", "WOW A TITLE").isa("movie").isa("movie"));
-    }
-
-    @Test
-    public void testKeyCorrectUsage() throws InvalidKBException {
-        tx.execute(Graql.define(
-                type("a-new-type").sub("entity").key("a-new-resource-type"),
-                type("a-new-resource-type").sub(Graql.Token.Type.ATTRIBUTE).value(Graql.Token.ValueType.STRING)
-        ));
-
-        tx.execute(Graql.insert(var().isa("a-new-type").has("a-new-resource-type", "hello")));
-    }
-
-    @Test
-    public void whenInsertingAThingWithTwoKeyResources_Throw() throws InvalidKBException {
-        tx.execute(Graql.define(
-                type("a-new-type").sub("entity").key("a-new-attribute-type"),
-                type("a-new-attribute-type").sub(Graql.Token.Type.ATTRIBUTE).value(Graql.Token.ValueType.STRING)
-        ));
-
-        tx.execute(Graql.insert(
-                var().isa("a-new-type").has("a-new-attribute-type", "hello").has("a-new-attribute-type", "goodbye")
-        ));
-
-        exception.expect(InvalidKBException.class);
-        tx.commit();
     }
 
     @Ignore // TODO: Un-ignore this when constraints are designed and implemented
@@ -295,19 +170,6 @@ public class GraqlInsertIT {
                 var("x").isa("a-new-type").has("a-new-resource-type", "hello"),
                 var("y").isa("a-new-type").has("a-new-resource-type", "hello")
         ));
-
-        exception.expect(InvalidKBException.class);
-        tx.commit();
-    }
-
-    @Test
-    public void testKeyRequiredOwner() throws InvalidKBException {
-        tx.execute(Graql.define(
-                type("a-new-type").sub("entity").key("a-new-resource-type"),
-                type("a-new-resource-type").sub(Graql.Token.Type.ATTRIBUTE).value(Graql.Token.ValueType.STRING)
-        ));
-
-        tx.execute(Graql.insert(var().isa("a-new-type")));
 
         exception.expect(InvalidKBException.class);
         tx.commit();
