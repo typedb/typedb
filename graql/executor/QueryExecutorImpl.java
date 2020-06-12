@@ -111,10 +111,7 @@ public class QueryExecutorImpl implements QueryExecutor {
                     .map(q -> q.resolve(infer).map(ans -> ans.withPattern(q.withSubstitution(ans).getPattern())));
 
             LazyMergingStream<ConceptMap> mergedStreams = new LazyMergingStream<>(answerStreams);
-            return mergedStreams
-                    .flatStream()
-                    .peek(answer -> explanationCache.putIfAbsent(answer, answer.explanation()));
-
+            return mergedStreams.flatStream();
         } catch (ReasonerCheckedException e) {
             LOG.debug(e.getMessage());
             answerStream = Stream.empty();
@@ -278,9 +275,12 @@ public class QueryExecutorImpl implements QueryExecutor {
     @Override
     public Stream<ConceptMap> get(GraqlGet query) {
         //NB: we need distinct as projection can produce duplicates
-        Stream<ConceptMap> answers = match(query.match()).map(ans -> ans.project(query.vars())).distinct();
+        Stream<ConceptMap> answers = match(query.match())
+                .map(ans -> ans.project(query.vars()))
+                .distinct();
 
-        answers = filter(query, answers);
+        answers = filter(query, answers)
+                .peek(answer -> explanationCache.putIfAbsent(answer, answer.explanation()));
 
         return answers;
     }
