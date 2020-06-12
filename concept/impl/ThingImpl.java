@@ -36,6 +36,7 @@ import grakn.core.kb.concept.structure.VertexElement;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -116,16 +117,20 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
 
     @Override
     public Stream<Attribute<?>> keys(AttributeType<?>... attributeTypes) {
-        Set<AttributeType<?>> attributeKeyTypes = new HashSet<>(Arrays.asList(attributeTypes));
         List<AttributeType<?>> keyTypes = type().keys().collect(Collectors.toList());
-        List<AttributeType<?>> keysToRetrieve = keyTypes.stream().filter(attributeKeyTypes::contains).collect(Collectors.toList());
-        if (keysToRetrieve.isEmpty() && attributeTypes.length != 0) {
-            // if the user gave types to filter to that are NOT keys, return no keys
-            return Stream.empty();
+        if (attributeTypes.length == 0) {
+            return attributes(keyTypes.toArray(new AttributeType<?>[0]));
         }
-        // if no types were given at all, default to all keys
-        return attributes(keyTypes.toArray(new AttributeType<?>[0]));
+
+        Set<AttributeType<?>> attributeTypeSet = new HashSet<>();
+        Collections.addAll(attributeTypeSet, attributeTypes);
+
+        attributeTypeSet.retainAll(keyTypes);
+
+        if (attributeTypeSet.isEmpty()) return Stream.empty();
+        else return attributes(attributeTypeSet.toArray(new AttributeType<?>[0]));
     }
+
 
     /**
      * Castings are retrieved from the perspective of the Thing which is a role player in a Relation
@@ -205,7 +210,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
             throw GraknConceptException.hasNotAllowed(this, attribute);
         }
 
-        if (!this.attributes(attribute.type()).anyMatch(attribute::equals)) {
+        if (this.attributes(attribute.type()).noneMatch(attribute::equals)) {
             EdgeElement attributeEdge = putEdge(AttributeImpl.from(attribute), Schema.EdgeLabel.ATTRIBUTE);
             attributeEdge.property(Schema.EdgeProperty.ATTRIBUTE_OWNED_LABEL_ID, attribute.type().labelId().getValue());
             if (isInferred) {
