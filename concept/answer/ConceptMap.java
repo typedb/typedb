@@ -30,6 +30,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
@@ -141,16 +142,19 @@ public class ConceptMap extends Answer {
                 .map(e -> "[" + e.getKey() + "/" + e.getValue().id() + "]").collect(Collectors.joining());
     }
 
+    /*
+    NOTE: we do _not_ use the (potentially deeply nested) explanations as part of the equals()
+     */
     @Override
     public boolean equals(Object obj) {
         if (obj == this) return true;
         if (obj == null || getClass() != obj.getClass()) return false;
         ConceptMap a2 = (ConceptMap) obj;
-        return map.equals(a2.map);
+        return map.equals(a2.map) && pattern.equals(a2.pattern);
     }
 
     @Override
-    public int hashCode() { return map.hashCode();}
+    public int hashCode() { return Objects.hash(map, pattern); }
 
     public void forEach(BiConsumer<Variable, Concept> consumer) {
         map.forEach(consumer);

@@ -23,6 +23,7 @@ import com.google.common.collect.Sets;
 import grakn.core.concept.answer.Answer;
 import grakn.core.concept.answer.AnswerGroup;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.answer.Explanation;
 import grakn.core.concept.answer.Numeric;
 import grakn.core.concept.answer.Void;
 import grakn.core.graql.executor.property.PropertyExecutorFactoryImpl;
@@ -63,6 +64,7 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collector;
@@ -79,13 +81,15 @@ import static java.util.stream.Collectors.toList;
 public class QueryExecutorImpl implements QueryExecutor {
 
     private ConceptManager conceptManager;
+    private Map<ConceptMap, Explanation> explanationCache;
     private final boolean infer;
     private ReasonerQueryFactory reasonerQueryFactory;
     private final PropertyExecutorFactory propertyExecutorFactory;
     private static final Logger LOG = LoggerFactory.getLogger(QueryExecutorImpl.class);
 
-    QueryExecutorImpl(ConceptManager conceptManager, ReasonerQueryFactory reasonerQueryFactory, boolean infer) {
+    QueryExecutorImpl(ConceptManager conceptManager, ReasonerQueryFactory reasonerQueryFactory, Map<ConceptMap, Explanation> explanationCache, boolean infer) {
         this.conceptManager = conceptManager;
+        this.explanationCache = explanationCache;
         this.infer = infer;
         this.reasonerQueryFactory = reasonerQueryFactory;
         propertyExecutorFactory = new PropertyExecutorFactoryImpl();
@@ -107,7 +111,9 @@ public class QueryExecutorImpl implements QueryExecutor {
                     .map(q -> q.resolve(infer).map(ans -> ans.withPattern(q.withSubstitution(ans).getPattern())));
 
             LazyMergingStream<ConceptMap> mergedStreams = new LazyMergingStream<>(answerStreams);
-            return mergedStreams.flatStream();
+            return mergedStreams
+                    .flatStream()
+                    .peek(answer -> explanationCache.putIfAbsent(answer, answer.explanation()));
 
         } catch (ReasonerCheckedException e) {
             LOG.debug(e.getMessage());

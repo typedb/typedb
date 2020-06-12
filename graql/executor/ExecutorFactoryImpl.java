@@ -18,6 +18,8 @@
 
 package grakn.core.graql.executor;
 
+import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.answer.Explanation;
 import grakn.core.graql.reasoner.query.ReasonerQueryFactory;
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.executor.ComputeExecutor;
@@ -28,6 +30,8 @@ import grakn.core.kb.graql.planning.gremlin.TraversalPlanFactory;
 import grakn.core.kb.keyspace.KeyspaceStatistics;
 import org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph;
 
+import java.util.Map;
+
 public class ExecutorFactoryImpl implements ExecutorFactory {
 
     private final ConceptManager conceptManager;
@@ -36,13 +40,15 @@ public class ExecutorFactoryImpl implements ExecutorFactory {
     private TraversalPlanFactory traversalPlanFactory;
     private TraversalExecutor traversalExecutor;
     private ReasonerQueryFactory reasonerQueryFactory;
+    private Map<ConceptMap, Explanation> explanationCache;
 
-    public ExecutorFactoryImpl(ConceptManager conceptManager, HadoopGraph hadoopGraph, KeyspaceStatistics keyspaceStatistics, TraversalPlanFactory traversalPlanFactory, TraversalExecutor traversalExecutor) {
+    public ExecutorFactoryImpl(ConceptManager conceptManager, HadoopGraph hadoopGraph, KeyspaceStatistics keyspaceStatistics, TraversalPlanFactory traversalPlanFactory, TraversalExecutor traversalExecutor, Map<ConceptMap, Explanation> explanationCache) {
         this.conceptManager = conceptManager;
         this.hadoopGraph = hadoopGraph;
         this.keyspaceStatistics = keyspaceStatistics;
         this.traversalPlanFactory = traversalPlanFactory;
         this.traversalExecutor = traversalExecutor;
+        this.explanationCache = explanationCache;
     }
 
     @Override
@@ -52,7 +58,7 @@ public class ExecutorFactoryImpl implements ExecutorFactory {
 
     @Override
     public QueryExecutor transactional(boolean infer) {
-        return new QueryExecutorImpl(conceptManager, reasonerQueryFactory, infer);
+        return new QueryExecutorImpl(conceptManager, reasonerQueryFactory, explanationCache, infer);
     }
 
     public void setReasonerQueryFactory(ReasonerQueryFactory reasonerQueryFactory) {

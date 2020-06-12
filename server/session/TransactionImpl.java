@@ -97,8 +97,10 @@ import javax.annotation.CheckReturnValue;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -120,6 +122,7 @@ public class TransactionImpl implements Transaction {
     // Caches
     protected final MultilevelSemanticCache queryCache;
     protected final RuleCache ruleCache;
+    protected final Map<ConceptMap, Explanation> explanationCache;
     protected final TransactionCache transactionCache;
 
     // TransactionOLTP Specific
@@ -139,7 +142,7 @@ public class TransactionImpl implements Transaction {
 
     public TransactionImpl(Session session, JanusGraphTransaction janusTransaction, ConceptManager conceptManager,
                            JanusTraversalSourceProvider janusTraversalSourceProvider, TransactionCache transactionCache,
-                           MultilevelSemanticCache queryCache, RuleCache ruleCache,
+                           MultilevelSemanticCache queryCache, RuleCache ruleCache, Map<ConceptMap, Explanation> explanationCache,
                            StatisticsDeltaImpl statisticsDelta, ExecutorFactory executorFactory,
                             ReasonerQueryFactory reasonerQueryFactory,
                            ReadWriteLock graphLock, long typeShardThreshold) {
@@ -158,6 +161,7 @@ public class TransactionImpl implements Transaction {
         this.transactionCache = transactionCache;
         this.queryCache = queryCache;
         this.ruleCache = ruleCache;
+        this.explanationCache = explanationCache;
 
         this.uncomittedStatisticsDelta = statisticsDelta;
 
@@ -1092,33 +1096,13 @@ public class TransactionImpl implements Transaction {
     }
 
     @Override
-    public Explanation explanation(Pattern queryPattern) {
-        GraqlGet getQuery = Graql.match(queryPattern).get();
-        ResolvableQuery q = reasonerQueryFactory.resolvable(Iterables.getOnlyElement(getQuery.match().getPatterns().getNegationDNF().getPatterns()));
+    public Explanation explanation(ConceptMap explainable) {
+        Explanation explanation = explanationCache.get(explainable);
 
-        Explanation explanation;
-        if (q.isAtomic()) {
-            // If the query is atomic, looking up the query in the cache will result in retrieving the answer associated with the query
-            // we then return the answer's explanation
-            // Only atomic queries are retrievable directly from the cache
-            ReasonerAtomicQuery asAtomicQuery = reasonerQueryFactory.atomic(q.selectAtoms().findFirst().get());
-            ConceptMap originatingAnswer = queryCache.getAnswerStream(asAtomicQuery).findFirst().orElse(null);
-            if (originatingAnswer == null) { throw ReasonerException.queryCacheAnswerNotFound(getQuery); }
-            explanation = originatingAnswer.explanation();
-        } else {
-            // If the query is not atomic, we can break it down into sub queries and retrieve each component's answer
-            // these are the same components used to re-construct the explanation for our original query, which we
-            // whenever we set the pattern, we need to provide the correct variable ID substitutions as well
-            List<ConceptMap> maps = q.selectAtoms()
-                    .map(atom -> reasonerQueryFactory.atomic(atom))
-                    .flatMap(aq -> {
-                        Stream<ConceptMap> answerStream = queryCache.getAnswerStream(aq);
-                        return answerStream.map(conceptMap -> conceptMap.withPattern(aq.withSubstitution(conceptMap).getPattern()));
-                    })
-                    .collect(Collectors.toList());
-            explanation = new JoinExplanation(maps);
+        // populate the sub-answer's explanations into the cache, this only grows on each call to explanation()
+        for (ConceptMap partialAnswer : explanation.getAnswers()) {
+            explanationCache.putIfAbsent(partialAnswer, partialAnswer.explanation());
         }
-
         return explanation;
     }
 

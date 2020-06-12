@@ -326,7 +326,7 @@ public interface Transaction extends AutoCloseable {
      */
     Rule getRule(String label);
 
-    Explanation explanation(Pattern queryPattern);
+    Explanation explanation(ConceptMap explainable);
 
     @Override
     void close();
