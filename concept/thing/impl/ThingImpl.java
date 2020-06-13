@@ -128,6 +128,6 @@ public abstract class ThingImpl implements Thing {
 
     @Override
     public final int hashCode() {
-        return vertex.hashCode();
+        return vertex.hashCode(); // does not need caching
     }
 }

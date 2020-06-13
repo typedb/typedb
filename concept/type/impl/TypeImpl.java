@@ -133,6 +133,6 @@ public abstract class TypeImpl implements Type {
 
     @Override
     public final int hashCode() {
-        return vertex.hashCode();
+        return vertex.hashCode(); // does not need caching
     }
 }

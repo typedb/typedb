@@ -41,6 +41,7 @@ public abstract class EdgeImpl {
         final VERTEX from;
         final VERTEX to;
         final AtomicBoolean committed;
+        private int hash;
 
         /**
          * Default constructor for {@code EdgeImpl.Buffered}.
@@ -120,7 +121,8 @@ public abstract class EdgeImpl {
          */
         @Override
         public final int hashCode() {
-            return hash(schema, from, to);
+            if (hash == 0) hash = hash(schema, from, to);
+            return hash;
         }
     }
 
@@ -139,6 +141,7 @@ public abstract class EdgeImpl {
         final VERTEX_IID fromIID;
         final VERTEX_IID toIID;
         final AtomicBoolean isDeleted;
+        private int hash;
 
         VERTEX from;
         VERTEX to;
@@ -256,7 +259,8 @@ public abstract class EdgeImpl {
          */
         @Override
         public final int hashCode() {
-            return hash(schema, fromIID.hashCode(), toIID.hashCode());
+            if (hash == 0) hash = hash(schema, fromIID.hashCode(), toIID.hashCode());
+            return hash;
         }
     }
 }
