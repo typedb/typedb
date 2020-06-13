@@ -202,12 +202,20 @@ public abstract class EdgeImpl {
             if (from != null) return from;
             from = graph.convert(fromIID);
             return from;
+            // TODO: Edge traversal optimisation
+            //       We could cache this edge, so we don't need to read it from storage again:
+            //       from.outs().putNonRecursive(getThis()); -- do the same for this.to().
+            //       We'd also have to make AdjacencyImpl.Persisted.edge() return an iterator of *distinct* edges.
         }
 
         public VERTEX to() {
             if (to != null) return to;
             to = graph.convert(toIID);
             return to;
+            // TODO: Edge traversal optimisation
+            //       We could cache this edge, so we don't need to read it from storage again:
+            //       to.ins().putNonRecursive(getThis()); -- do the same for this.from().
+            //       We'd also have to make AdjacencyImpl.Persisted.edge() return an iterator of *distinct* edges.
         }
 
         /**

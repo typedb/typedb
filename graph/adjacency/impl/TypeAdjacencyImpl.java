@@ -82,7 +82,7 @@ public class TypeAdjacencyImpl {
 
         @Override
         protected TypeEdge newPersistedEdge(byte[] key, byte[] value) {
-            VertexIID.Type overridden = (value == null || value.length == 0) ? null : VertexIID.Type.of(value);
+            VertexIID.Type overridden = ((value.length == 0) ? null : VertexIID.Type.of(value));
             return new TypeEdgeImpl.Persisted(owner.graph(), EdgeIID.Type.of(key), overridden);
         }
     }
