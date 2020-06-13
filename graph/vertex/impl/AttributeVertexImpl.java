@@ -74,6 +74,11 @@ public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl impleme
     }
 
     @Override
+    public Schema.ValueType valueType() {
+        return attributeIID.valueType();
+    }
+
+    @Override
     public Schema.Status status() {
         return Schema.Status.IMMUTABLE;
     }

@@ -30,9 +30,13 @@ public class RelationImpl extends ThingImpl implements Relation {
 
     private final Set<RoleImpl> roles;
 
-    public RelationImpl(ThingVertex vertex) {
+    private RelationImpl(ThingVertex vertex) {
         super(vertex);
         this.roles = new HashSet<>();
+    }
+
+    public static RelationImpl of(ThingVertex vertex) {
+        return new RelationImpl(vertex);
     }
 
     @Override
@@ -42,6 +46,6 @@ public class RelationImpl extends ThingImpl implements Relation {
 
     @Override
     public RelationImpl has(Attribute attribute) {
-        return null; //TODO
+        return (RelationImpl) super.has(attribute).asRelation();
     }
 }

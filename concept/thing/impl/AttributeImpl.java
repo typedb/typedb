@@ -25,14 +25,17 @@ import hypergraph.graph.util.Schema;
 import hypergraph.graph.vertex.AttributeVertex;
 
 import java.time.LocalDateTime;
+import java.util.stream.Stream;
 
 import static hypergraph.common.exception.Error.ConceptRead.INVALID_CONCEPT_CASTING;
+import static hypergraph.common.iterator.Iterators.apply;
+import static hypergraph.common.iterator.Iterators.stream;
 
 public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribute {
 
-    protected final AttributeVertex<VALUE> attributeVertex;
+    final AttributeVertex<VALUE> attributeVertex;
 
-    public AttributeImpl(AttributeVertex<VALUE> vertex) {
+    AttributeImpl(AttributeVertex<VALUE> vertex) {
         super(vertex);
         this.attributeVertex = vertex;
     }
@@ -46,7 +49,42 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
 
     @Override
     public AttributeImpl has(Attribute attribute) {
-        return null; //TODO
+        return (AttributeImpl) super.has(attribute).asAttribute();
+    }
+
+    @Override
+    public Stream<? extends ThingImpl> owners() {
+        return stream(apply(vertex.ins().edge(Schema.Edge.Thing.HAS).from(), v -> {
+            switch (v.schema()) {
+                case ENTITY:
+                    return EntityImpl.of(v);
+                case RELATION:
+                    return RelationImpl.of(v);
+                case ATTRIBUTE:
+                    return AttributeImpl.of(v.asAttribute());
+                default:
+                    assert false;
+                    return null;
+            }
+        }));
+    }
+
+    public static AttributeImpl<?> of(AttributeVertex<?> vertex) {
+        switch (vertex.valueType()) {
+            case BOOLEAN:
+                return new AttributeImpl.Boolean(vertex.asBoolean());
+            case LONG:
+                return new AttributeImpl.Long(vertex.asLong());
+            case DOUBLE:
+                return new AttributeImpl.Double(vertex.asDouble());
+            case STRING:
+                return new AttributeImpl.String(vertex.asString());
+            case DATETIME:
+                return new AttributeImpl.DateTime(vertex.asDateTime());
+            default:
+                assert false;
+                return null;
+        }
     }
 
     @Override

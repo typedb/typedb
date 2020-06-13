@@ -29,8 +29,10 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static hypergraph.test.behaviour.concept.type.thingtype.ThingTypeSteps.get_thing_type;
+import static hypergraph.test.behaviour.connection.ConnectionSteps.tx;
 import static java.util.Objects.isNull;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class ThingSteps {
 
@@ -59,9 +61,24 @@ public class ThingSteps {
         assertEquals(type, get(var).type());
     }
 
-    @When("entity/attribute/relation {var} is deleted")
+    @When("delete entity:/attribute:/relation: {var}")
     public void thing_is_deleted(String var) {
         get(var).delete();
+    }
+
+    @When("entity/attribute/relation {var} set key: {var}")
+    public void thing_set_key(String var1, String var2) {
+        get(var1).has(get(var2).asAttribute());
+    }
+
+    @When("entity/attribute/relation {var} get keys\\( ?{type_label} ?) contain: {var}")
+    public void thing_get_keys_contains(String var1, String typeLabel, String var2) {
+        assertTrue(get(var1).keys(tx().concepts().getAttributeType(typeLabel)).anyMatch(k -> k.equals(get(var2))));
+    }
+
+    @When("entity/attribute/relation {var} get keys contain: {var}")
+    public void thing_get_keys_contains(String var1, String var2) {
+        assertTrue(get(var1).keys().anyMatch(k -> k.equals(get(var2))));
     }
 
     @After

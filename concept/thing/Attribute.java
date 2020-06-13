@@ -20,6 +20,8 @@ package hypergraph.concept.thing;
 
 import hypergraph.concept.type.AttributeType;
 
+import java.util.stream.Stream;
+
 public interface Attribute extends Thing {
 
     /**
@@ -46,6 +48,13 @@ public interface Attribute extends Thing {
      */
     @Override
     Attribute has(Attribute attribute);
+
+    /**
+     * Get a stream of all {@code Thing} instances that own this {@code Attribute}.
+     *
+     * @return stream of all {@code Thing} instances that own this {@code Attribute}
+     */
+    Stream<? extends Thing> owners();
 
     Attribute.Boolean asBoolean();
 

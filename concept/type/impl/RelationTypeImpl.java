@@ -102,7 +102,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
 
     @Override
     public Stream<RelationImpl> instances() {
-        return super.instances(RelationImpl::new);
+        return super.instances(RelationImpl::of);
     }
 
     @Override
@@ -206,7 +206,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     public RelationImpl create(boolean isInferred) {
         validateIsCommitedAndNotAbstract(Relation.class);
         ThingVertex instance = vertex.graph().thingGraph().create(vertex.iid(), isInferred);
-        return new RelationImpl(instance);
+        return RelationImpl.of(instance);
     }
 
     public static class Root extends RelationTypeImpl {

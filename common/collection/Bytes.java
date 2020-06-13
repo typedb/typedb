@@ -64,6 +64,7 @@ public class Bytes {
     }
 
     public static Short bytesToShort(byte[] bytes) {
+        assert bytes.length == SHORT_SIZE;
         return ByteBuffer.wrap(bytes).getShort();
     }
 
@@ -90,6 +91,7 @@ public class Bytes {
     }
 
     public static long bytesToLong(byte[] bytes) {
+        assert bytes.length == LONG_SIZE;
         return ByteBuffer.wrap(bytes).getLong();
     }
 

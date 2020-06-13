@@ -19,6 +19,7 @@
 package hypergraph.graph.vertex;
 
 import hypergraph.graph.iid.VertexIID;
+import hypergraph.graph.util.Schema;
 
 import java.time.LocalDateTime;
 
@@ -31,6 +32,13 @@ public interface AttributeVertex<VALUE> extends ThingVertex {
      */
     @Override
     VertexIID.Attribute<VALUE> iid();
+
+    /**
+     * Returns the {@code ValueType} of this {@code Attribute}
+     *
+     * @return the {@code ValueType} of this {@code Attribute}
+     */
+    Schema.ValueType valueType();
 
     /**
      * Returns the literal value stored in the vertex, if it represents an attribute.

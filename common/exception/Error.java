@@ -157,6 +157,12 @@ public abstract class Error<TYPE extends Error<TYPE>> {
                 new ThingWrite(2, "Attempted to insert a string larger than the maximum size.");
         public static final ThingWrite CONCURRENT_ATTRIBUTE_WRITE_DELETE =
                 new ThingWrite(3, "Attempted concurrent modification of attributes (writes and deletes).");
+        public static final ThingWrite THING_ATTRIBUTE_UNDEFINED =
+                new ThingWrite(4, "Attempted to assign an attribute to a(n) '%s' that is not defined to have that attribute type.");
+        public static final ThingWrite THING_KEY_OVER =
+                new ThingWrite(5, "Attempted to assign a key to a(n) '%s' when it already has one.");
+        public static final ThingWrite THING_KEY_TAKEN =
+                new ThingWrite(6, "Attempted to assign a key that has been taken onto a(n) '%s'.");
         private static final String codePrefix = "THW";
         private static final String descriptionPrefix = "Invalid Thing Write";
 

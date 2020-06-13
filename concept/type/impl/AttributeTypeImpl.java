@@ -89,7 +89,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
     @Override
     public abstract Stream<? extends AttributeImpl<?>> instances();
 
-    protected Iterator<TypeVertex> subTypeVertices(Schema.ValueType valueType) {
+    Iterator<TypeVertex> subTypeVertices(Schema.ValueType valueType) {
         return Iterators.tree(vertex, v -> Iterators.filter(v.ins().edge(Schema.Edge.Type.SUB).from(),
                                                             sv -> sv.valueType().equals(valueType)));
     }
@@ -234,7 +234,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         @Override
         public Stream<? extends AttributeImpl<?>> instances() {
-            return null; // TODO
+            return super.instances(v -> AttributeImpl.of(v.asAttribute()));
         }
     }
 

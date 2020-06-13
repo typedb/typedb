@@ -29,12 +29,13 @@ import hypergraph.concept.type.RelationType;
 import hypergraph.concept.type.RoleType;
 import hypergraph.concept.type.ThingType;
 import hypergraph.concept.type.Type;
+import hypergraph.graph.iid.IID;
 
 import static hypergraph.common.exception.Error.ConceptRead.INVALID_CONCEPT_CASTING;
 
 public interface Concept {
 
-    byte[] iid(); // TODO: Return HEX String
+    String iid();
 
     default Type asType() {
         throw new HypergraphException(INVALID_CONCEPT_CASTING.format(Type.class.getCanonicalName()));

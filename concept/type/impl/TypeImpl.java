@@ -29,19 +29,20 @@ import javax.annotation.Nullable;
 import java.util.Iterator;
 import java.util.Objects;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static hypergraph.common.iterator.Iterators.apply;
+import static hypergraph.common.iterator.Iterators.link;
 import static hypergraph.common.iterator.Iterators.loop;
 import static hypergraph.common.iterator.Iterators.stream;
 import static hypergraph.common.iterator.Iterators.tree;
+import static java.util.stream.Collectors.toList;
 
 public abstract class TypeImpl implements Type {
 
-    protected final TypeVertex vertex;
+    public final TypeVertex vertex;
 
-    protected TypeImpl(TypeVertex vertex) {
+    TypeImpl(TypeVertex vertex) {
         this.vertex = Objects.requireNonNull(vertex);
     }
 
@@ -56,7 +57,9 @@ public abstract class TypeImpl implements Type {
     }
 
     @Override
-    public byte[] iid() { return vertex.iid().bytes(); }
+    public String iid() {
+        return vertex.iid().toHexString();
+    }
 
     @Override
     public boolean isRoot() { return false; }
@@ -81,20 +84,20 @@ public abstract class TypeImpl implements Type {
         return vertex.isAbstract();
     }
 
-    protected void superTypeVertex(TypeVertex superTypeVertex) {
+    void superTypeVertex(TypeVertex superTypeVertex) {
         vertex.outs().delete(Schema.Edge.Type.SUB, ((TypeImpl) sup()).vertex);
         vertex.outs().put(Schema.Edge.Type.SUB, superTypeVertex);
     }
 
     @Nullable
-    protected <TYPE> TYPE sup(Function<TypeVertex, TYPE> typeConstructor) {
+    <TYPE> TYPE sup(Function<TypeVertex, TYPE> typeConstructor) {
         Iterator<TypeVertex> iterator = Iterators.filter(vertex.outs().edge(Schema.Edge.Type.SUB).to(),
                                                          v -> v.schema().equals(vertex.schema()));
         if (iterator.hasNext()) return typeConstructor.apply(iterator.next());
         else return null;
     }
 
-    protected <TYPE> Stream<TYPE> sups(Function<TypeVertex, TYPE> typeConstructor) {
+    <TYPE> Stream<TYPE> sups(Function<TypeVertex, TYPE> typeConstructor) {
         return stream(apply(loop(
                 vertex,
                 v -> v != null && v.schema().equals(this.vertex.schema()),
@@ -105,15 +108,14 @@ public abstract class TypeImpl implements Type {
                 }), typeConstructor));
     }
 
-    protected <TYPE> Stream<TYPE> subs(Function<TypeVertex, TYPE> typeConstructor) {
+    <TYPE> Stream<TYPE> subs(Function<TypeVertex, TYPE> typeConstructor) {
         return stream(apply(tree(vertex, v -> v.ins().edge(Schema.Edge.Type.SUB).from()), typeConstructor));
     }
 
-    protected <THING> Stream<THING> instances(Function<ThingVertex, THING> thingConstructor) {
-        Iterator<? extends ThingVertex> instances = Iterators.link(
-                subs().map(t -> ((TypeImpl) t).vertex.instances()).collect(Collectors.toList())
-        );
-        return stream(apply(instances, thingConstructor::apply));
+    <THING> Stream<THING> instances(Function<ThingVertex, THING> thingConstructor) {
+        return stream(apply(link(
+                subs().map(t -> ((TypeImpl) t).vertex.instances()).collect(toList())
+        ), thingConstructor::apply));
     }
 
     @Override

@@ -21,12 +21,18 @@ package hypergraph.concept.thing.impl;
 import hypergraph.concept.thing.Attribute;
 import hypergraph.concept.thing.Entity;
 import hypergraph.concept.type.impl.EntityTypeImpl;
+import hypergraph.graph.util.Schema;
 import hypergraph.graph.vertex.ThingVertex;
 
 public class EntityImpl extends ThingImpl implements Entity {
 
-    public EntityImpl(ThingVertex vertex) {
+    private EntityImpl(ThingVertex vertex) {
         super(vertex);
+        assert vertex.schema().equals(Schema.Vertex.Thing.ENTITY);
+    }
+
+    public static EntityImpl of(ThingVertex vertex) {
+        return new EntityImpl(vertex);
     }
 
     @Override
@@ -36,6 +42,6 @@ public class EntityImpl extends ThingImpl implements Entity {
 
     @Override
     public EntityImpl has(Attribute attribute) {
-        return null; //TODO
+        return (EntityImpl) super.has(attribute).asEntity();
     }
 }

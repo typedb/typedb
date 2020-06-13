@@ -83,7 +83,7 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
 
     @Override
     public Stream<EntityImpl> instances() {
-        return super.instances(EntityImpl::new);
+        return super.instances(EntityImpl::of);
     }
 
     @Override
@@ -95,7 +95,7 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
     public EntityImpl create(boolean isInferred) {
         validateIsCommitedAndNotAbstract(Entity.class);
         ThingVertex instance = vertex.graph().thingGraph().create(vertex.iid(), isInferred);
-        return new EntityImpl(instance);
+        return EntityImpl.of(instance);
     }
 
     private static class Root extends EntityTypeImpl {

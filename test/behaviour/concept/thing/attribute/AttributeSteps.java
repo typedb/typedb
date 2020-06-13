@@ -32,8 +32,13 @@ import static org.junit.Assert.assertTrue;
 public class AttributeSteps {
 
     @When("attribute\\( ?{type_label} ?) instances contain: {var}")
-    public void attribute_instances_contain(String typeLabel, String var) {
+    public void attribute_type_instances_contain(String typeLabel, String var) {
         assertTrue(tx().concepts().getAttributeType(typeLabel).instances().anyMatch(i -> i.equals(get(var))));
+    }
+
+    @Then("attribute {var} get owners contain: {var}")
+    public void attribute_get_owners_contain(String var1, String var2) {
+        assertTrue(get(var1).asAttribute().owners().anyMatch(o -> o.equals(get(var2))));
     }
 
     @Then("attribute {var} has value type: {value_type}")

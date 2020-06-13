@@ -19,6 +19,7 @@
 package hypergraph.concept.type;
 
 import hypergraph.concept.Concept;
+import hypergraph.graph.iid.VertexIID;
 
 import java.util.stream.Stream;
 
@@ -26,6 +27,9 @@ public interface Type extends Concept {
 
     @Override
     default Type asType() { return this; }
+
+    @Override
+    String iid();
 
     Long count();
 
