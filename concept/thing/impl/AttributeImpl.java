@@ -40,6 +40,24 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
         this.attributeVertex = vertex;
     }
 
+    public static AttributeImpl<?> of(AttributeVertex<?> vertex) {
+        switch (vertex.valueType()) {
+            case BOOLEAN:
+                return new AttributeImpl.Boolean(vertex.asBoolean());
+            case LONG:
+                return new AttributeImpl.Long(vertex.asLong());
+            case DOUBLE:
+                return new AttributeImpl.Double(vertex.asDouble());
+            case STRING:
+                return new AttributeImpl.String(vertex.asString());
+            case DATETIME:
+                return new AttributeImpl.DateTime(vertex.asDateTime());
+            default:
+                assert false;
+                return null;
+        }
+    }
+
     public abstract VALUE value();
 
     @Override
@@ -67,24 +85,6 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
                     return null;
             }
         }));
-    }
-
-    public static AttributeImpl<?> of(AttributeVertex<?> vertex) {
-        switch (vertex.valueType()) {
-            case BOOLEAN:
-                return new AttributeImpl.Boolean(vertex.asBoolean());
-            case LONG:
-                return new AttributeImpl.Long(vertex.asLong());
-            case DOUBLE:
-                return new AttributeImpl.Double(vertex.asDouble());
-            case STRING:
-                return new AttributeImpl.String(vertex.asString());
-            case DATETIME:
-                return new AttributeImpl.DateTime(vertex.asDateTime());
-            default:
-                assert false;
-                return null;
-        }
     }
 
     @Override

@@ -65,8 +65,11 @@ public abstract class IndexIID extends IID {
 
         @Override
         public String toString() {
-            return "[" + PrefixIID.LENGTH + ": " + Schema.Index.TYPE.toString() + "]" +
-                    "[" + (bytes.length - PrefixIID.LENGTH) + ": " + bytesToString(copyOfRange(bytes, PrefixIID.LENGTH, bytes.length), STRING_ENCODING) + "]";
+            if (readableString == null) {
+                readableString = "[" + PrefixIID.LENGTH + ": " + Schema.Index.TYPE.toString() + "]" +
+                        "[" + (bytes.length - PrefixIID.LENGTH) + ": " + bytesToString(copyOfRange(bytes, PrefixIID.LENGTH, bytes.length), STRING_ENCODING) + "]";
+            }
+            return readableString;
         }
     }
 
@@ -103,7 +106,7 @@ public abstract class IndexIID extends IID {
         }
 
         @Override
-        public String toString() {
+        public String toString() { // TODO: simplify by calling abstract value() that is defined by each subclass
             Schema.ValueType valueType = Schema.ValueType.of(bytes[PrefixIID.LENGTH]);
             String value;
             assert valueType != null;

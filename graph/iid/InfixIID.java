@@ -35,6 +35,7 @@ public class InfixIID extends IID {
 
     @Override
     public String toString() {
-        return "[" + Schema.Infix.of(bytes[0]).toString() + "]";
+        if (readableString == null) readableString = "[" + Schema.Infix.of(bytes[0]).toString() + "]";
+        return readableString;
     }
 }

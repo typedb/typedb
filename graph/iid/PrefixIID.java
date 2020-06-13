@@ -35,6 +35,7 @@ public class PrefixIID extends IID {
 
     @Override
     public String toString() {
-        return "[" + Schema.Prefix.of(bytes[0]).toString() + "]";
+        if (readableString == null) readableString = "[" + Schema.Prefix.of(bytes[0]).toString() + "]";
+        return readableString;
     }
 }

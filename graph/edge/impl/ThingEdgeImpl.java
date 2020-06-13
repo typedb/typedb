@@ -31,8 +31,11 @@ public abstract class ThingEdgeImpl {
             extends EdgeImpl.Buffered<Schema.Edge.Thing, EdgeIID.Thing, ThingEdge, ThingVertex>
             implements ThingEdge {
 
+        final ThingGraph graph;
+
         public Buffered(Schema.Edge.Thing schema, ThingVertex from, ThingVertex to) {
             super(schema, from, to);
+            graph = from.graph();
         }
 
         @Override
@@ -47,7 +50,10 @@ public abstract class ThingEdgeImpl {
 
         @Override
         public void commit() {
-            // TODO
+            if (committed.compareAndSet(false, true)) {
+                if (schema.out() != null) graph.storage().put((outIID().bytes()));
+                if (schema.in() != null) graph.storage().put(inIID().bytes());
+            }
         }
     }
 

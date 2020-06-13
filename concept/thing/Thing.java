@@ -22,7 +22,6 @@ import hypergraph.concept.Concept;
 import hypergraph.concept.type.AttributeType;
 import hypergraph.concept.type.RoleType;
 import hypergraph.concept.type.ThingType;
-import hypergraph.graph.iid.VertexIID;
 
 import java.util.Collections;
 import java.util.List;

@@ -42,9 +42,12 @@ public abstract class EdgeIID<
 
     @Override
     public String toString() {
-        return "[" + VertexIID.Type.LENGTH + ": " + start().toString() + "]" +
-                "[" + InfixIID.LENGTH + ": " + schema().toString() + "]" +
-                "[" + VertexIID.Type.LENGTH + ": " + end().toString() + "]";
+        if (readableString == null) {
+            readableString = "[" + start().bytes.length + ": " + start().toString() + "]" +
+                    "[" + InfixIID.LENGTH + ": " + schema().toString() + "]" +
+                    "[" + end().bytes.length + ": " + end().toString() + "]";
+        }
+        return readableString;
     }
 
     public static class Type extends EdgeIID<Schema.Edge.Type, VertexIID.Type, VertexIID.Type> {
@@ -91,6 +94,10 @@ public abstract class EdgeIID<
 
     public static class Thing extends EdgeIID<Schema.Edge.Thing, VertexIID.Thing, VertexIID.Thing> {
 
+        private VertexIID.Thing start;
+        private VertexIID.Thing end;
+        private Schema.Edge.Thing schema;
+
         Thing(byte[] bytes) {
             super(bytes);
         }
@@ -103,24 +110,37 @@ public abstract class EdgeIID<
             return new Thing(join(start.bytes(), infix.bytes(), end.bytes()));
         }
 
+        private int schemaIndex() {
+            return start().bytes.length;
+        }
+
         @Override
         public boolean isOutwards() {
-            return false; // TODO
+            return Schema.Edge.isOut(bytes[schemaIndex()]);
         }
 
         @Override
         public Schema.Edge.Thing schema() {
-            return null; // TODO
+            if (schema == null) schema = Schema.Edge.Thing.of(bytes[schemaIndex()]);
+            return schema;
         }
 
         @Override
         public VertexIID.Thing start() {
-            return null; // TODO
+            if (start == null) {
+                start = VertexIID.Thing.extract(bytes, 0);
+            }
+
+            return start;
         }
 
         @Override
         public VertexIID.Thing end() {
-            return null; // TODO
+            if (end == null) {
+                end = VertexIID.Thing.extract(bytes, schemaIndex() + 1);
+            }
+
+            return end;
         }
     }
 

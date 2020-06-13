@@ -141,10 +141,9 @@ public abstract class EdgeImpl {
         final VERTEX_IID fromIID;
         final VERTEX_IID toIID;
         final AtomicBoolean isDeleted;
-        private int hash;
-
         VERTEX from;
         VERTEX to;
+        private int hash;
 
         /**
          * Default constructor for {@code Edge.Persisted}.

@@ -25,6 +25,7 @@ public abstract class IID {
     // TODO: convert HEX_ARRAY to byte[] once upgraded to Java 9+
     private static final char[] HEX_ARRAY = "0123456789abcdef".toCharArray();
     protected final byte[] bytes;
+    protected String readableString; // for debugging
     private String hexString;
     private int hash = 0;
 
@@ -51,7 +52,7 @@ public abstract class IID {
     }
 
     @Override
-    public abstract String toString();
+    public abstract String toString(); // for debugging
 
     @Override
     public boolean equals(Object object) {

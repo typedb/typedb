@@ -476,7 +476,7 @@ public class Schema {
 
             public static Thing of(byte infix) {
                 for (Thing t : Thing.values()) {
-                    if (t.out.key == infix || t.in.key == infix) {
+                    if ((t.out != null && t.out.key == infix) || (t.in != null && t.in.key == infix)) {
                         return t;
                     }
                 }

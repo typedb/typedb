@@ -83,7 +83,9 @@ public class TypeEdgeImpl {
                     if (overridden != null) graph.storage().put(outIID().bytes(), overridden.iid().bytes());
                     else graph.storage().put((outIID().bytes()));
                 }
-                if (schema.in() != null) graph.storage().put(inIID().bytes());
+                if (schema.in() != null) {
+                    graph.storage().put(inIID().bytes());
+                }
             }
         }
     }

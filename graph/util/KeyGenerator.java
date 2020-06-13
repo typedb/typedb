@@ -104,7 +104,7 @@ public abstract class KeyGenerator {
                     byte[] lastIID = storage.getLastKey(prefix);
                     AtomicLong nextValue = lastIID != null ?
                             new AtomicLong(wrap(
-                                    copyOfRange(lastIID, VertexIID.Thing.PREFIX_TYPE_LENGTH, VertexIID.Thing.LENGTH)
+                                    copyOfRange(lastIID, VertexIID.Thing.PREFIX_W_TYPE_LENGTH, VertexIID.Thing.DEFAULT_LENGTH)
                             ).getShort() + delta) :
                             new AtomicLong(initialValue);
                     thingKeys.put(VertexIID.Type.of(typeIID), nextValue);

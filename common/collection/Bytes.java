@@ -31,6 +31,7 @@ public class Bytes {
     public static final int INTEGER_SIZE = 4;
     public static final int LONG_SIZE = 8;
     public static final int DOUBLE_SIZE = 8;
+    public static final int DATETIME_SIZE = LONG_SIZE;
 
     public static byte[] join(byte[]... byteArrays) {
         int length = 0;
@@ -97,6 +98,16 @@ public class Bytes {
 
     public static byte[] doubleToBytes(double value) {
         return ByteBuffer.allocate(DOUBLE_SIZE).putDouble(value).array();
+        // TODO: We need to implement a custom byte representation of doubles.
+        //       The bytes need to be lexicographically sortable in the same
+        //       order as the numerical values of themselves.
+        //       I.e. The bytes of -10 need to come before -1, -1 before 0,
+        //       0 before 1, and 1 before 10, and so on. This is not true with
+        //       the (default) 2's complement byte representation of doubles.
+        //       We need to XOR all positive numbers with 0x8000... and XOR
+        //       negative numbers with 0xffff... This should flip the sign bit
+        //       on both (so negative numbers go first), and then reverse the
+        //       ordering on negative numbers.
     }
 
     public static double bytesToDouble(byte[] bytes) {
