@@ -71,8 +71,8 @@ public class ThingSteps {
         get(var1).has(get(var2).asAttribute());
     }
 
-    @When("entity/attribute/relation {var} remove key: {var}")
-    public void thing_remove_key(String var1, String var2) {
+    @When("entity/attribute/relation {var} remove has: {var}")
+    public void thing_remove_has(String var1, String var2) {
         get(var1).unhas(get(var2).asAttribute());
     }
 
