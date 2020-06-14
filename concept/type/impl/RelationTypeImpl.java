@@ -186,7 +186,6 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
 
     @Override
     public void delete() {
-        // TODO: Check if a type has any intances too
         if (subs().anyMatch(s -> !s.equals(this))) {
             throw new HypergraphException("Invalid Type Removal: " + label() + " has subtypes");
         } else if (subs().flatMap(RelationTypeImpl::instances).findAny().isPresent()) {

@@ -27,7 +27,7 @@ java_test(
     deps = [
         # Internal Package Dependencies
 
-        # TODO: Add your addition debugging dependencies here
+        # Add your additional debugging dependencies here
         # e.g. "//test/behaviour/connection/session:steps",
 
         # External Maven Dependencies

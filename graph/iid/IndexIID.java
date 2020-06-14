@@ -106,19 +106,18 @@ public abstract class IndexIID extends IID {
         }
 
         @Override
-        public String toString() { // TODO: simplify by calling abstract value() that is defined by each subclass
+        public String toString() {
             Schema.ValueType valueType = Schema.ValueType.of(bytes[PrefixIID.LENGTH]);
             String value;
-            assert valueType != null;
             switch (valueType) {
                 case BOOLEAN:
                     value = byteToBoolean(bytes[VALUE_INDEX]).toString();
                     break;
                 case LONG:
-                    value = "" + bytesToLong(copyOfRange(bytes, VALUE_INDEX, VALUE_INDEX + LONG_SIZE));
+                    value = bytesToLong(copyOfRange(bytes, VALUE_INDEX, VALUE_INDEX + LONG_SIZE)) + "";
                     break;
                 case DOUBLE:
-                    value = "" + bytesToDouble(copyOfRange(bytes, VALUE_INDEX, VALUE_INDEX + DOUBLE_SIZE));
+                    value = bytesToDouble(copyOfRange(bytes, VALUE_INDEX, VALUE_INDEX + DOUBLE_SIZE)) + "";
                     break;
                 case STRING:
                     value = bytesToString(copyOfRange(bytes, VALUE_INDEX, bytes.length - VertexIID.Type.LENGTH), STRING_ENCODING);
