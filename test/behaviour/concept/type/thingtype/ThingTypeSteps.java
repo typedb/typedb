@@ -183,15 +183,15 @@ public class ThingTypeSteps {
         }
     }
 
-    @When("{root_label}\\( ?{type_label} ?) set key attribute: {type_label}")
-    public void thing_type_set_key_attribute(RootLabel rootLabel, String typeLabel, String attributeLabel) {
-        AttributeType attributeType = tx().concepts().getAttributeType(attributeLabel);
+    @When("{root_label}\\( ?{type_label} ?) set key attribute type: {type_label}")
+    public void thing_type_set_key_attribute_type(RootLabel rootLabel, String typeLabel, String attTypeLabel) {
+        AttributeType attributeType = tx().concepts().getAttributeType(attTypeLabel);
         get_thing_type(rootLabel, typeLabel).key(attributeType);
     }
 
-    @When("{root_label}\\( ?{type_label} ?) set key attribute: {type_label} as {type_label}")
-    public void thing_type_set_key_attribute_as(RootLabel rootLabel, String typeLabel, String attributeLabel, String overriddenLabel) {
-        AttributeType attributeType = tx().concepts().getAttributeType(attributeLabel);
+    @When("{root_label}\\( ?{type_label} ?) set key attribute type: {type_label} as {type_label}")
+    public void thing_type_set_key_attribute_type_as(RootLabel rootLabel, String typeLabel, String attTypeLabel, String overriddenLabel) {
+        AttributeType attributeType = tx().concepts().getAttributeType(attTypeLabel);
         AttributeType overriddenType = tx().concepts().getAttributeType(overriddenLabel);
         get_thing_type(rootLabel, typeLabel).key(attributeType, overriddenType);
     }
