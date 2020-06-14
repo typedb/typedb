@@ -85,6 +85,12 @@ public abstract class EdgeImpl {
             return to;
         }
 
+        /**
+         * Deletes this {@code Edge} from connecting between two {@code Vertex}.
+         *
+         * A {@code EdgeImpl.Buffered} can only exist in the adjacency cache of
+         * each {@code Vertex}, and does not exist in storage.
+         */
         public void delete() {
             from.outs().deleteNonRecursive(getThis());
             to.ins().deleteNonRecursive(getThis());
@@ -93,9 +99,10 @@ public abstract class EdgeImpl {
         /**
          * Determine the equality of a {@code EdgeImpl.Buffered} against another.
          *
-         * We only use {@code schema}, {@code from} and {@code to} as the are the fixed properties
-         * that do not change, unlike {@code overridden}. They are also the canonical properties
-         * required to identify a {@code EdgeImpl.Buffered} uniquely.
+         * We only use {@code schema}, {@code from} and {@code to} as the are
+         * the fixed properties that do not change, unlike {@code overridden}.
+         * They are also the canonical properties required to uniquely identify
+         * a {@code EdgeImpl.Buffered} uniquely.
          *
          * @param object that we want to compare against
          * @return true if equal, else false
@@ -113,9 +120,10 @@ public abstract class EdgeImpl {
         /**
          * Determine the equality of a {@code Edge.Buffered} against another.
          *
-         * We only use {@code schema}, {@code from} and {@code to} as the are the fixed properties
-         * that do not change, unlike {@code overridden}. They are also the canonical properties
-         * required to identify a {@code Edge.Buffered} uniquely.
+         * We only use {@code schema}, {@code from} and {@code to} as the are
+         * the fixed properties that do not change, unlike {@code overridden}.
+         * They are also the canonical properties required to uniquely identify
+         * a {@code EdgeImpl.Buffered}.
          *
          * @return int of the hashcode
          */
@@ -148,10 +156,11 @@ public abstract class EdgeImpl {
         /**
          * Default constructor for {@code Edge.Persisted}.
          *
-         * The edge can be constructed from an {@code iid} that represents either an inwards
-         * or outwards pointing edge. Thus, we extract the {@code start} and {@code end} of it,
-         * and use the {@code infix} of the edge {@code iid} to determine the direction,
-         * and which vertex becomes {@code fromIID} or {@code toIID}.
+         * The edge can be constructed from an {@code iid} that represents
+         * either an inwards or outwards pointing edge. Thus, we extract the
+         * {@code start} and {@code end} of it, and use the {@code infix} of the
+         * edge {@code iid} to determine the direction, and which vertex becomes
+         * {@code fromIID} or {@code toIID}.
          *
          * The head of this edge may or may not be overriding another vertex.
          * If it does the {@code overriddenIID} will not be null.
@@ -221,10 +230,11 @@ public abstract class EdgeImpl {
         /**
          * Delete operation of a persisted edge.
          *
-         * This operation can only be performed once, and thus protected by {@code isDelete} boolean.
-         * The delete operation involves removing this edge from the {@code from.outs()} and
-         * {@code to.ins()} edge collections, and then delete both directions of this edge
-         * from the graph storage.
+         * This operation can only be performed once, and thus protected by
+         * {@code isDelete} atomic boolean. The delete operation involves
+         * removing this edge from the {@code from.outs()} and {@code to.ins()}
+         * edge collections in case it is cached. Then, delete both directions
+         * of this edge from the graph storage.
          */
         public void delete() {
             if (isDeleted.compareAndSet(false, true)) {
@@ -238,9 +248,10 @@ public abstract class EdgeImpl {
         /**
          * Determine the equality of a {@code Edge} against another.
          *
-         * We only use {@code schema}, {@code fromIID} and {@code toIID} as the are the fixed properties
-         * that do not change, unlike {@code overriddenIID} and {@code isDeleted}. They are also the
-         * canonical properties required to identify a {@code EdgeImpl.Persisted} uniquely.
+         * We only use {@code schema}, {@code fromIID} and {@code toIID} as the
+         * are the fixed properties that do not change, unlike
+         * {@code overriddenIID} and {@code isDeleted}. They are also the
+         * canonical properties required to identify a {@code Persisted} edge.
          *
          * @param object that that we want to compare against
          * @return true if equal, else false
@@ -258,9 +269,11 @@ public abstract class EdgeImpl {
         /**
          * HashCode of a {@code EdgeImpl.Persisted}.
          *
-         * We only use {@code schema}, {@code fromIID} and {@code toIID} as the are the fixed properties
-         * that do not change, unlike {@code overriddenIID} and {@code isDeleted}. They are also the
-         * canonical properties required to identify a {@code EdgeImpl.Persisted} uniquely.
+         * We only use {@code schema}, {@code fromIID} and {@code toIID} as the
+         * are the fixed properties that do not change, unlike
+         * {@code overriddenIID} and {@code isDeleted}. They are also the
+         * canonical properties required to uniquely identify an
+         * {@code EdgeImpl.Persisted}.
          *
          * @return int of the hashcode
          */
