@@ -30,6 +30,7 @@ import hypergraph.graph.util.Schema;
 import hypergraph.graph.vertex.ThingVertex;
 import hypergraph.graph.vertex.TypeVertex;
 
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
@@ -85,9 +86,10 @@ public abstract class ThingImpl implements Thing {
     public Stream<? extends Attribute> keys(List<AttributeType> attributeTypes) {
         if (attributeTypes.isEmpty()) return attributes(type().keys().collect(toList()));
 
-        attributeTypes.retainAll(type().keys().collect(toList()));
-        if (attributeTypes.isEmpty()) return Stream.empty();
-        else return attributes(attributeTypes);
+        List<AttributeType> keyTypes = new ArrayList<>(attributeTypes);
+        keyTypes.retainAll(type().keys().collect(toList()));
+        if (keyTypes.isEmpty()) return Stream.empty();
+        else return attributes(keyTypes);
     }
 
     @Override
