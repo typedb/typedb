@@ -39,13 +39,13 @@ public class EntitySteps {
         put(var, tx().concepts().getEntityType(typeLabel).instances().findFirst().orElse(null));
     }
 
-    @Then("entity\\( ?{type_label} ?) instances contain: {var}")
-    public void entity_type_instances_contain(String typeLabel, String var) {
+    @Then("entity\\( ?{type_label} ?) get instances contain: {var}")
+    public void entity_type_get_instances_contain(String typeLabel, String var) {
         assertTrue(tx().concepts().getEntityType(typeLabel).instances().anyMatch(i -> i.equals(get(var))));
     }
 
-    @Then("entity\\( ?{type_label} ?) instances is empty")
-    public void entity_type_instances_is_empty(String typeLabel) {
+    @Then("entity\\( ?{type_label} ?) get instances is empty")
+    public void entity_type_get_instances_is_empty(String typeLabel) {
         assertEquals(0, tx().concepts().getEntityType(typeLabel).instances().count());
     }
 }

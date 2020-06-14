@@ -31,8 +31,8 @@ import static org.junit.Assert.assertTrue;
 
 public class AttributeSteps {
 
-    @When("attribute\\( ?{type_label} ?) instances contain: {var}")
-    public void attribute_type_instances_contain(String typeLabel, String var) {
+    @When("attribute\\( ?{type_label} ?) get instances contain: {var}")
+    public void attribute_type_get_instances_contain(String typeLabel, String var) {
         assertTrue(tx().concepts().getAttributeType(typeLabel).instances().anyMatch(i -> i.equals(get(var))));
     }
 
