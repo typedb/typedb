@@ -62,7 +62,7 @@ public class ThingGraph implements Graph<VertexIID.Thing, ThingVertex> {
 
     @Override
     public ThingVertex convert(VertexIID.Thing iid) {
-        return ThingVertexImpl.of(this, iid);
+        return thingsByIID.computeIfAbsent(iid, i -> ThingVertexImpl.of(this, i));
     }
 
     public ThingVertex create(VertexIID.Type typeIID, boolean isInferred) {
