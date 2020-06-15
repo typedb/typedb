@@ -94,6 +94,7 @@ public class CompositeQuery extends ResolvableQuery {
         this.complementQueries = complementPattern.stream()
                 .map(queryFactory::resolvable)
                 .collect(Collectors.toSet());
+        assert !this.complementQueries.isEmpty();
 
         if (!isNegationSafe()){
             throw ReasonerException.unsafeNegationBlock(this);
@@ -108,6 +109,7 @@ public class CompositeQuery extends ResolvableQuery {
 
     @Override
     public CompositeQuery asComposite() {
+        assert !this.complementQueries.isEmpty();
         return this;
     }
 
