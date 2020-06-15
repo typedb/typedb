@@ -39,7 +39,7 @@ public class ExplanationCacheImpl implements ExplanationCache {
      */
     @Override
     public void record(ConceptMap answer, Explanation explanation) {
-
+        cache.putIfAbsent(answer, explanation);
     }
 
     @Override

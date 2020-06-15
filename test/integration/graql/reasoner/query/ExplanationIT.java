@@ -27,8 +27,10 @@ import grakn.core.graql.reasoner.graph.GeoGraph;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
+import grakn.core.kb.server.cache.ExplanationCache;
 import grakn.core.test.rule.GraknTestStorage;
 import grakn.core.test.rule.SessionUtil;
+import grakn.core.test.rule.TestTransactionProvider;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.property.IdProperty;
@@ -53,6 +55,8 @@ import static graql.lang.Graql.var;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 
 public class ExplanationIT {
 
@@ -300,22 +304,81 @@ public class ExplanationIT {
 
     @Test
     public void whenQueryingWithExplainFlag_explanationIsCached() {
+        try (Transaction tx = explanationSession.transaction(Transaction.Type.WRITE)) {
+            String query = "match $x isa inferredRelation; get;";
+            List<ConceptMap> answers = tx.execute(Graql.parse(query).asGet(), true, true);
 
+            TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
+            ExplanationCache explanationCache = testTx.explanationCache();
+
+            // each answer should have an entry in the explanationCache
+            for (ConceptMap answer : answers) {
+                Explanation explanation = explanationCache.get(answer);
+                assertNotNull(explanation);
+                assertEquals(answer.explanation(), explanation);
+            }
+        }
     }
+
 
     @Test
     public void whenQueryingWithDefaults_explanationIsNotCached() {
+        try (Transaction tx = explanationSession.transaction(Transaction.Type.WRITE)) {
+            String query = "match $x isa inferredRelation; get;";
+            List<ConceptMap> answers = tx.execute(Graql.parse(query).asGet(), true);
 
+            TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
+            ExplanationCache explanationCache = testTx.explanationCache();
+
+            // each answer should NOT have an entry in the explanationCache, even if inferred an answer
+            for (ConceptMap answer : answers) {
+                assertNull(explanationCache.get(answer));
+            }
+        }
     }
 
     @Test
-    public void whenRequestingSubExplanation_subExplanationsAreCachedLazily() {
+    public void whenRequestingSubExplanationViaTransaction_subExplanationsAreCachedLazily() {
+        try (Transaction tx = explanationSession.transaction(Transaction.Type.WRITE)) {
+            String query = "match $x isa inferredRelation; get;";
+            List<ConceptMap> answers = tx.execute(Graql.parse(query).asGet(), true, true);
 
+            TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
+            ExplanationCache explanationCache = testTx.explanationCache();
+
+            for (ConceptMap answer : answers) {
+                Explanation explanation = testTx.explanation(answer);
+
+                // each sub-explanation should now be in the cache
+                for (ConceptMap subAnswer : explanation.getAnswers()) {
+                    Explanation subExplanation = explanationCache.get(subAnswer);
+                    assertNotNull(subExplanation);
+                    assertEquals(subExplanation, subAnswer.explanation());
+                }
+            }
+        }
     }
 
     @Test
     public void onDelete_explanationCacheIsCleared() {
+        try (Transaction tx = explanationSession.transaction(Transaction.Type.WRITE)) {
+            String query = "match $x isa inferredRelation; get;";
+            List<ConceptMap> answers = tx.execute(Graql.parse(query).asGet(), true, true);
 
+            TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
+            ExplanationCache explanationCache = testTx.explanationCache();
+
+            for (ConceptMap answer : answers) {
+                assertNotNull(explanationCache.get(answer));
+            }
+
+            // execute a delete query
+            tx.execute(Graql.parse("match $x isa value; delete $x isa value;").asDelete());
+
+            for (ConceptMap answer : answers) {
+                assertNull(explanationCache.get(answer));
+            }
+        }
     }
 
     /**

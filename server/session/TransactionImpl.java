@@ -19,7 +19,6 @@
 package grakn.core.server.session;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import grakn.common.util.Pair;
 import grakn.core.common.exception.ErrorMessage;
@@ -40,10 +39,7 @@ import grakn.core.core.JanusTraversalSourceProvider;
 import grakn.core.core.Schema;
 import grakn.core.graph.core.JanusGraphTransaction;
 import grakn.core.graql.reasoner.cache.MultilevelSemanticCache;
-import grakn.core.graql.reasoner.explanation.JoinExplanation;
-import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.reasoner.query.ReasonerQueryFactory;
-import grakn.core.graql.reasoner.query.ResolvableQuery;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Concept;
@@ -62,7 +58,6 @@ import grakn.core.kb.concept.structure.PropertyNotUniqueException;
 import grakn.core.kb.concept.structure.VertexElement;
 import grakn.core.kb.graql.executor.ExecutorFactory;
 import grakn.core.kb.graql.executor.QueryExecutor;
-import grakn.core.kb.graql.reasoner.ReasonerException;
 import grakn.core.kb.graql.reasoner.cache.RuleCache;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
@@ -73,7 +68,6 @@ import grakn.core.kb.server.exception.TransactionException;
 import grakn.core.kb.server.keyspace.Keyspace;
 import grakn.core.keyspace.StatisticsDeltaImpl;
 import grakn.core.server.Validator;
-import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlCompute;
 import graql.lang.query.GraqlDefine;
@@ -98,10 +92,8 @@ import javax.annotation.CheckReturnValue;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -412,6 +404,11 @@ public class TransactionImpl implements Transaction {
     }
 
     @Override
+    public List<ConceptMap> execute(GraqlInsert query, boolean infer, boolean explain) {
+        return stream(query, infer, explain).collect(Collectors.toList());
+    }
+
+    @Override
     public Stream<ConceptMap> stream(GraqlInsert query) {
         return stream(query, true);
     }
@@ -525,6 +522,11 @@ public class TransactionImpl implements Transaction {
     @Override
     public List<ConceptMap> execute(GraqlGet query, boolean infer) {
         return stream(query, infer).collect(Collectors.toList());
+    }
+
+    @Override
+    public List<ConceptMap> execute(GraqlGet query, boolean infer, boolean explain) {
+        return stream(query, infer, explain).collect(Collectors.toList());
     }
 
     @Override

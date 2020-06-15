@@ -233,6 +233,12 @@ public class QueryExecutorImpl implements QueryExecutor {
         toDelete.forEach(answer -> {
             WriteExecutorImpl.create(conceptManager, executors.build()).write(answer);
         });
+
+        // if we deleted anything, we clear the explanation cache
+        if (toDelete.size() > 0) {
+            explanationCache.clear();
+        }
+
         return new Void(String.format("Deleted facts from %s matched answers.", toDelete.size()));
     }
 

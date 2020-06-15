@@ -208,6 +208,7 @@ public class TestTransactionProvider implements TransactionProvider {
             return transactionCache;
         }
 
+        public ExplanationCache explanationCache() { return explanationCache; }
 
         public MultilevelSemanticCache queryCache() {
             return queryCache;

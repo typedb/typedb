@@ -71,6 +71,7 @@ public interface Transaction extends AutoCloseable {
 
     List<ConceptMap> execute(GraqlInsert query);
     List<ConceptMap> execute(GraqlInsert query, boolean infer);
+    List<ConceptMap> execute(GraqlInsert query, boolean infer, boolean explainable);
     Stream<ConceptMap> stream(GraqlInsert query);
     Stream<ConceptMap> stream(GraqlInsert query, boolean infer);
     Stream<ConceptMap> stream(GraqlInsert query, boolean infer, boolean explainable);
@@ -82,6 +83,7 @@ public interface Transaction extends AutoCloseable {
 
     List<ConceptMap> execute(GraqlGet query);
     List<ConceptMap> execute(GraqlGet query, boolean infer);
+    List<ConceptMap> execute(GraqlGet query, boolean infer, boolean explainable);
     Stream<ConceptMap> stream(GraqlGet query);
     Stream<ConceptMap> stream(GraqlGet query, boolean infer);
     Stream<ConceptMap> stream(GraqlGet query, boolean infer, boolean explainable);
