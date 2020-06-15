@@ -66,6 +66,8 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import static grabl.tracing.client.GrablTracingThreadStatic.traceOnThread;
+import static grakn.core.kb.server.Transaction.DEFAULT_EXPLAIN;
+import static grakn.core.kb.server.Transaction.DEFAULT_INFER;
 
 
 /**
@@ -366,8 +368,25 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
 
                 try (ThreadTrace stream = traceOnThread("stream")) {
 
-                    boolean infer = request.getInfer().equals(Transaction.Query.INFER.TRUE);
-                    boolean explain = request.getExplain();
+                    // unpack the options into server side values for now, may use an Options object once this grows
+                    boolean infer;
+                    boolean explain;
+
+                    Transaction.Query.Options queryOptions = request.getOptions();
+
+                    Transaction.Query.Options.InferCase inferOption = queryOptions.getInferCase();
+                    if (inferOption.equals(Transaction.Query.Options.InferCase.INFER_NOT_SET)) {
+                        infer = DEFAULT_INFER;
+                    } else {
+                        infer = queryOptions.getInferFlag();
+                    }
+
+                    Transaction.Query.Options.ExplainCase explainOption = queryOptions.getExplainCase();
+                    if (explainOption.equals(Transaction.Query.Options.ExplainCase.EXPLAIN_NOT_SET)) {
+                        explain = DEFAULT_EXPLAIN;
+                    } else {
+                        explain = queryOptions.getExplainFlag();
+                    }
 
                     Stream<Transaction.Res> responseStream = tx()
                             .stream(query, infer, explain)

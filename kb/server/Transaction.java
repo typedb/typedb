@@ -58,6 +58,10 @@ import java.util.List;
 import java.util.stream.Stream;
 
 public interface Transaction extends AutoCloseable {
+
+    public static final boolean DEFAULT_INFER = true;
+    public static final boolean DEFAULT_EXPLAIN = false;
+
     void open(Type type);
 
     Session session();
