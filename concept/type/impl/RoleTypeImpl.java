@@ -102,6 +102,11 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
         vertex.delete();
     }
 
+    @Override
+    public void validate() {
+        // TODO: validate role type
+    }
+
     public static class Root extends RoleTypeImpl {
 
         Root(TypeVertex vertex) {

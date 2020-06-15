@@ -61,6 +61,11 @@ public class ThingGraph implements Graph<VertexIID.Thing, ThingVertex> {
     }
 
     @Override
+    public Stream<ThingVertex> vertices() {
+        return concat(thingsByIID.values().stream(), attributesByIID.valueStream());
+    }
+
+    @Override
     public ThingVertex convert(VertexIID.Thing iid) {
         return thingsByIID.computeIfAbsent(iid, i -> ThingVertexImpl.of(this, i));
     }

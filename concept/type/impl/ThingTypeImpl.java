@@ -231,6 +231,11 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         }
     }
 
+    @Override
+    public void validate() {
+        // TODO: validate generic thing type
+    }
+
     void validateIsCommitedAndNotAbstract(Class<?> instanceClass) {
         if (vertex.status().equals(Schema.Status.BUFFERED)) {
             throw new HypergraphException(Error.Transaction.DIRTY_DATA_WRITES);
@@ -286,5 +291,13 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         public Stream<? extends Thing> instances() {
             return subs().filter(t -> !t.isAbstract()).flatMap(ThingType::instances);
         }
+
+        /**
+         * No-op validation method of the root type 'thing'.
+         *
+         * There's nothing to validate for the root type 'thing'.
+         */
+        @Override
+        public void validate() {}
     }
 }

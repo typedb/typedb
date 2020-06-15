@@ -236,8 +236,8 @@ public abstract class EdgeImpl {
          */
         public void delete() {
             if (deleted.compareAndSet(false, true)) {
-                if (from != null) from.outs().deleteNonRecursive(getThis());
-                if (to != null) to.ins().deleteNonRecursive(getThis());
+                from().outs().deleteNonRecursive(getThis());
+                to().ins().deleteNonRecursive(getThis());
                 graph.storage().delete(this.outIID.bytes());
                 graph.storage().delete(this.inIID.bytes());
             }

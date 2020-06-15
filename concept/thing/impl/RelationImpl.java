@@ -48,4 +48,9 @@ public class RelationImpl extends ThingImpl implements Relation {
     public RelationImpl has(Attribute attribute) {
         return (RelationImpl) super.has(attribute).asRelation();
     }
+
+    @Override
+    public void validate() {
+        // TODO: validate relation
+    }
 }

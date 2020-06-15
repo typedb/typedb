@@ -71,19 +71,19 @@ public abstract class Error<TYPE extends Error<TYPE>> {
         return String.format("[%s] %s", code(), description);
     }
 
-    public static class Storage extends Error<Error.Storage> {
+    public static class Internal extends Error<Internal> {
 
-        public static final Storage INVALID_BYTE_INTERPRETATION =
-                new Storage(1, "Invalid byte interpretation!");
+        public static final Internal UNRECOGNISED_VALUE =
+                new Internal(1, "Unrecognised schema value!");
 
-        private static final String codePrefix = "STR";
-        private static final String descriptionPrefix = "Invalid Storage State";
+        private static final String codePrefix = "INT";
+        private static final String descriptionPrefix = "Invalid Internal State";
 
-        Storage(int number, String description) {
+        Internal(int number, String description) {
             super(codePrefix, number, descriptionPrefix, description);
         }
 
-        protected Error.Storage getThis() {
+        protected Internal getThis() {
             return this;
         }
 
@@ -91,16 +91,18 @@ public abstract class Error<TYPE extends Error<TYPE>> {
 
     public static class Transaction extends Error<Error.Transaction> {
 
+        public static final Transaction UNSUPPORTED_OPERATION =
+                new Transaction(1, "Unsupported operation: calling '%s' for '%s' is not supported.");
         public static final Transaction ILLEGAL_OPERATION =
-                new Transaction(1, "Attempted an illegal operation!");
+                new Transaction(2, "Attempted an illegal operation!");
         public static final Transaction CLOSED_TRANSACTION =
-                new Transaction(2, "The transaction has been closed and cannot perform any operation.");
+                new Transaction(3, "The transaction has been closed and cannot perform any operation.");
         public static final Transaction ILLEGAL_COMMIT =
-                new Transaction(3, "Only write transactions can be committed.");
+                new Transaction(4, "Only write transactions can be committed.");
         public static final Transaction DIRTY_SCHEMA_WRITES =
-                new Transaction(4, "Attempted schema writes when session type does not allow.");
+                new Transaction(5, "Attempted schema writes when session type does not allow.");
         public static final Transaction DIRTY_DATA_WRITES =
-                new Transaction(5, "Attempted data writes when session type does not allow.");
+                new Transaction(6, "Attempted data writes when session type does not allow.");
 
         private static final String codePrefix = "TXN";
         private static final String descriptionPrefix = "Invalid Transaction Operation";

@@ -138,8 +138,10 @@ class CoreTransaction implements Hypergraph.Transaction {
                 }
 
                 if (session.type().equals(Hypergraph.Session.Type.SCHEMA)) {
+                    concepts.validateTypes();
                     graph.type().commit();
                 } else if (session.type().equals(Hypergraph.Session.Type.DATA)) {
+                    concepts.validateThings();
                     graph.thing().commit();
                 } else {
                     assert false;

@@ -208,6 +208,11 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
         return RelationImpl.of(instance);
     }
 
+    @Override
+    public void validate() {
+        // TODO: validate relation type
+    }
+
     public static class Root extends RelationTypeImpl {
 
         Root(TypeVertex vertex) {

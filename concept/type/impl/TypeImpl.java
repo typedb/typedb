@@ -18,6 +18,8 @@
 
 package hypergraph.concept.type.impl;
 
+import hypergraph.common.exception.Error;
+import hypergraph.common.exception.HypergraphException;
 import hypergraph.common.iterator.Iterators;
 import hypergraph.concept.type.Type;
 import hypergraph.graph.TypeGraph;
@@ -54,6 +56,23 @@ public abstract class TypeImpl implements Type {
         this.vertex = graph.create(schema, label, scope);
         TypeVertex superTypeVertex = graph.get(schema.root().label(), schema.root().scope());
         vertex.outs().put(Schema.Edge.Type.SUB, superTypeVertex);
+    }
+
+    public static TypeImpl of(TypeVertex vertex) {
+        switch (vertex.schema()) {
+            case ENTITY_TYPE:
+                return EntityTypeImpl.of(vertex);
+            case ATTRIBUTE_TYPE:
+                return AttributeTypeImpl.of(vertex);
+            case RELATION_TYPE:
+                return RelationTypeImpl.of(vertex);
+            case ROLE_TYPE:
+                return RoleTypeImpl.of(vertex);
+            case THING_TYPE:
+                return new ThingTypeImpl.Root(vertex);
+            default:
+                throw new HypergraphException(Error.Internal.UNRECOGNISED_VALUE);
+        }
     }
 
     @Override

@@ -22,9 +22,13 @@ import hypergraph.graph.iid.VertexIID;
 import hypergraph.graph.util.Storage;
 import hypergraph.graph.vertex.Vertex;
 
+import java.util.stream.Stream;
+
 public interface Graph<VERTEX_IID extends VertexIID, VERTEX extends Vertex> {
 
     Storage storage();
+
+    Stream<VERTEX> vertices();
 
     VERTEX convert(VERTEX_IID iid);
 

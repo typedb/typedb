@@ -51,6 +51,19 @@ public abstract class ThingImpl implements Thing {
         this.vertex = Objects.requireNonNull(vertex);
     }
 
+    public static ThingImpl of(ThingVertex vertex) {
+        switch (vertex.schema()) {
+            case ENTITY:
+                return EntityImpl.of(vertex);
+            case ATTRIBUTE:
+                return AttributeImpl.of(vertex.asAttribute());
+            case RELATION:
+                return RelationImpl.of(vertex);
+            default:
+                throw new HypergraphException(Error.Internal.UNRECOGNISED_VALUE);
+        }
+    }
+
     @Override
     public String iid() {
         return vertex.iid().toHexString();
@@ -118,6 +131,11 @@ public abstract class ThingImpl implements Thing {
     @Override
     public void delete() {
         vertex.delete();
+    }
+
+    @Override
+    public void validate() {
+        // TODO: validate generic thing
     }
 
     @Override

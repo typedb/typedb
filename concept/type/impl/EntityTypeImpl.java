@@ -98,6 +98,11 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
         return EntityImpl.of(instance);
     }
 
+    @Override
+    public void validate() {
+        // TODO: validate entity type
+    }
+
     private static class Root extends EntityTypeImpl {
 
         private Root(TypeVertex vertex) {

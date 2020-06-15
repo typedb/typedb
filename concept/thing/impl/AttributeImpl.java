@@ -88,6 +88,11 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
     }
 
     @Override
+    public void validate() {
+        // TODO: validate attribute
+    }
+
+    @Override
     public AttributeImpl.Boolean asBoolean() {
         throw new HypergraphException(INVALID_CONCEPT_CASTING.format(Attribute.Boolean.class.getCanonicalName()));
     }

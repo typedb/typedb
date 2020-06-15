@@ -178,12 +178,12 @@ public class BasicTest {
 
                     Stream<Consumer<Hypergraph.Transaction>> typeAssertions = Stream.of(
                             tx -> {
-                                AttributeType name = tx.concepts().putAttributeTypeString("name");
+                                AttributeType name = tx.concepts().putAttributeType("name", String.class).asString();
                                 Util.assertNotNulls(name);
                                 assertEquals(rootAttributeType, name.sup());
                             },
                             tx -> {
-                                AttributeType.Long age = tx.concepts().putAttributeTypeLong("age");
+                                AttributeType.Long age = tx.concepts().putAttributeType("age", Long.class).asLong();
                                 Util.assertNotNulls(age);
                                 assertEquals(rootAttributeType, age.sup());
                             },
@@ -256,7 +256,7 @@ public class BasicTest {
                 }
 
                 try (Hypergraph.Transaction transaction = session.transaction(Hypergraph.Transaction.Type.WRITE)) {
-                    AttributeType.String gender = transaction.concepts().putAttributeTypeString("gender");
+                    AttributeType.String gender = transaction.concepts().putAttributeType("gender", String.class).asString();
                     EntityType school = transaction.concepts().putEntityType("school");
                     RelationType teaching = transaction.concepts().putRelationType("teaching");
                     teaching.relates("teacher");

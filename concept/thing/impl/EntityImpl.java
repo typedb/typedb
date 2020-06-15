@@ -44,4 +44,9 @@ public class EntityImpl extends ThingImpl implements Entity {
     public EntityImpl has(Attribute attribute) {
         return (EntityImpl) super.has(attribute).asEntity();
     }
+
+    @Override
+    public void validate() {
+        // TODO: validate entity
+    }
 }

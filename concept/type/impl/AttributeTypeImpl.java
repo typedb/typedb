@@ -116,6 +116,11 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
     }
 
     @Override
+    public void validate() {
+        // TODO: validate attribute type
+    }
+
+    @Override
     public AttributeTypeImpl.Root asObject() {
         if (this.valueType().equals(java.lang.Object.class)) return new AttributeTypeImpl.Root(this.vertex);
         else throw new HypergraphException(INVALID_CONCEPT_CASTING.format(AttributeType.class.getCanonicalName()));

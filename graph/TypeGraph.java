@@ -30,6 +30,7 @@ import hypergraph.graph.vertex.impl.TypeVertexImpl;
 import javax.annotation.Nullable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.stream.Stream;
 
 import static hypergraph.graph.iid.VertexIID.Type.generate;
 import static hypergraph.graph.util.Schema.Vertex.Type.scopedLabel;
@@ -86,6 +87,11 @@ public class TypeGraph implements Graph<VertexIID.Type, TypeVertex> {
         rootAttributeType.outs().put(Schema.Edge.Type.SUB, rootThingType);
         rootRelationType.outs().put(Schema.Edge.Type.SUB, rootThingType);
         rootRelationType.outs().put(Schema.Edge.Type.RELATES, rootRoleType);
+    }
+
+    @Override
+    public Stream<TypeVertex> vertices() {
+        return typesByIID.values().stream();
     }
 
     @Override

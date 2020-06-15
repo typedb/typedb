@@ -102,7 +102,7 @@ public class Schema {
             for (Prefix i : Prefix.values()) {
                 if (i.key == key) return i;
             }
-            throw new HypergraphException(Error.Storage.INVALID_BYTE_INTERPRETATION);
+            throw new HypergraphException(Error.Internal.UNRECOGNISED_VALUE);
         }
 
         public byte[] bytes() {
@@ -151,7 +151,7 @@ public class Schema {
             for (Infix i : Infix.values()) {
                 if (i.key == key) return i;
             }
-            throw new HypergraphException(Error.Storage.INVALID_BYTE_INTERPRETATION);
+            throw new HypergraphException(Error.Internal.UNRECOGNISED_VALUE);
         }
 
         public byte[] bytes() {
@@ -239,7 +239,7 @@ public class Schema {
                     return t;
                 }
             }
-            throw new HypergraphException(Error.Storage.INVALID_BYTE_INTERPRETATION);
+            throw new HypergraphException(Error.Internal.UNRECOGNISED_VALUE);
         }
 
         public static ValueType of(Class<?> valueClass) {
@@ -248,7 +248,7 @@ public class Schema {
                     return t;
                 }
             }
-            throw new HypergraphException(Error.Storage.INVALID_BYTE_INTERPRETATION);
+            throw new HypergraphException(Error.Internal.UNRECOGNISED_VALUE);
         }
 
         public byte[] bytes() {
@@ -321,7 +321,7 @@ public class Schema {
                 for (Type t : Type.values()) {
                     if (t.prefix.key == prefix) return t;
                 }
-                throw new HypergraphException(Error.Storage.INVALID_BYTE_INTERPRETATION);
+                throw new HypergraphException(Error.Internal.UNRECOGNISED_VALUE);
             }
 
             /**
@@ -392,14 +392,14 @@ public class Schema {
                 for (Thing t : Thing.values()) {
                     if (t.prefix.key == prefix) return t;
                 }
-                throw new HypergraphException(Error.Storage.INVALID_BYTE_INTERPRETATION);
+                throw new HypergraphException(Error.Internal.UNRECOGNISED_VALUE);
             }
 
             public static Thing of(Type type) {
                 for (Thing t : Thing.values()) {
                     if (t.type().equals(type)) return t;
                 }
-                throw new HypergraphException(Error.Storage.INVALID_BYTE_INTERPRETATION);
+                throw new HypergraphException(Error.Internal.UNRECOGNISED_VALUE);
             }
 
             @Override
@@ -445,7 +445,7 @@ public class Schema {
                         return t;
                     }
                 }
-                throw new HypergraphException(Error.Storage.INVALID_BYTE_INTERPRETATION);
+                throw new HypergraphException(Error.Internal.UNRECOGNISED_VALUE);
             }
 
             @Override
@@ -480,7 +480,7 @@ public class Schema {
                         return t;
                     }
                 }
-                throw new HypergraphException(Error.Storage.INVALID_BYTE_INTERPRETATION);
+                throw new HypergraphException(Error.Internal.UNRECOGNISED_VALUE);
             }
 
             @Override
