@@ -187,7 +187,6 @@ public class GraqlInsertIT {
         tx.execute(Graql.insert(type("bobby").val("bob").isa("name")));
     }
 
-    // TODO: MARKER: continue from this point on Monday
     @Test(expected = Exception.class)
     public void matchInsertNullVar() {
         tx.execute(Graql.match(var("x").isa("movie")).insert((Statement) null));
@@ -245,19 +244,6 @@ public class GraqlInsertIT {
     }
 
     @Test
-    public void whenSpecifyingExistingConceptIdWithIncorrectType_Throw() {
-        EntityType movie = tx.getEntityType("movie");
-        EntityType person = tx.getEntityType("person");
-
-        Concept aMovie = movie.instances().iterator().next();
-
-        exception.expect(GraqlSemanticException.class);
-        exception.expectMessage(GraqlSemanticException.insertPropertyOnExistingConcept("isa", person, aMovie).getMessage());
-
-        tx.execute(Graql.insert(var("x").id(aMovie.id().getValue()).isa("person")));
-    }
-
-    @Test
     public void whenInsertingASchemaConcept_Throw() {
         exception.expect(GraqlSemanticException.class);
         exception.expectMessage(GraqlSemanticException.insertUnsupportedProperty(Graql.Token.Property.SUB.toString()).getMessage());
@@ -279,16 +265,6 @@ public class GraqlInsertIT {
     public void whenMatchInsertingExistingConcept_weDoNoOp() {
         Statement matchStatement = var("x").isa("movie");
         Statement insertStatement = var("x");
-
-        List<ConceptMap> before = tx.execute(Graql.match(matchStatement));
-        tx.execute(Graql.match(matchStatement).insert(insertStatement));
-        assertCollectionsNonTriviallyEqual(before, tx.execute(Graql.match(matchStatement)));
-    }
-
-    @Test
-    public void whenMatchInsertingExistingEntity_weDoNoOp() {
-        Statement matchStatement = var("x").isa("movie");
-        Statement insertStatement = var("x").isa("movie");
 
         List<ConceptMap> before = tx.execute(Graql.match(matchStatement));
         tx.execute(Graql.match(matchStatement).insert(insertStatement));
