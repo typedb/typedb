@@ -48,7 +48,15 @@ java_test(
         "//dependencies/maven/artifacts/io/cucumber:cucumber-junit",
     ],
     runtime_deps = [
-        ":steps"
+        ":steps",
+        "//test/behaviour/config:parameters",
+        "//test/behaviour/concept/thing/attribute:steps",
+        "//test/behaviour/concept/type/attributetype:steps",
+        "//test/behaviour/concept/type/relationtype:steps",
+        "//test/behaviour/concept/type/thingtype:steps",
+        "//test/behaviour/connection/keyspace:steps",
+        "//test/behaviour/connection/session:steps",
+        "//test/behaviour/connection/transaction:steps",
     ],
     data = [
         "@graknlabs_verification//behaviour/concept/thing:relation.feature",

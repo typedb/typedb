@@ -18,15 +18,34 @@
 
 package hypergraph.test.behaviour.concept.thing.relation;
 
+import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 
+import static hypergraph.test.behaviour.concept.thing.ThingSteps.get;
 import static hypergraph.test.behaviour.concept.thing.ThingSteps.put;
 import static hypergraph.test.behaviour.connection.ConnectionSteps.tx;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class RelationSteps {
 
     @When("{var} = relation\\( ?{type_label} ?) create new instance")
     public void relation_type_create_new_instance(String var, String typeLabel) {
         put(var, tx().concepts().getRelationType(typeLabel).create());
+    }
+
+    @When("{var} = relation\\( ?{type_label} ?) get first instance")
+    public void relation_type_get_first_instance(String var, String typeLabel) {
+        put(var, tx().concepts().getRelationType(typeLabel).instances().findFirst().orElse(null));
+    }
+
+    @Then("relation\\( ?{type_label} ?) get instances contain: {var}")
+    public void relation_type_get_instances_contain(String typeLabel, String var) {
+        assertTrue(tx().concepts().getRelationType(typeLabel).instances().anyMatch(i -> i.equals(get(var))));
+    }
+
+    @Then("relation\\( ?{type_label} ?) get instances is empty")
+    public void relation_type_get_instances_is_empty(String typeLabel) {
+        assertEquals(0, tx().concepts().getRelationType(typeLabel).instances().count());
     }
 }
