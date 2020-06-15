@@ -138,11 +138,11 @@ class ConjunctionQuery {
             traversals.addAll(newTraversals);
         });
 
-        if (!traversals.isEmpty()) {
+        if (!traversals.isEmpty() || !start.isReturned()) {
             return traversals.stream();
         } else {
             // If this variable has no properties, only confirm that it is not internal and nothing else.
-            return Stream.of(EquivalentFragmentSets.notInternalFragmentSet(null, start));
+            return Stream.of(EquivalentFragmentSets.notShardFragmentSet(null, start));
         }
     }
 }

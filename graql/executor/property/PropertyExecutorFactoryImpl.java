@@ -81,7 +81,7 @@ public class PropertyExecutorFactoryImpl implements PropertyExecutorFactory {
             return new HasAttributeExecutor(var, (HasAttributeProperty) property);
 
         } else if (property instanceof HasAttributeTypeProperty) {
-            return new HasAttributeTypeExecutor(var, (HasAttributeTypeProperty) property, this);
+            return new HasAttributeTypeExecutor(var, (HasAttributeTypeProperty) property );
 
         } else if (property instanceof IdProperty) {
             return new IdExecutor(var, (IdProperty) property);

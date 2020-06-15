@@ -78,11 +78,9 @@ java_test(
     test_class = "grakn.core.graql.reasoner.reasoning.AttributeAttachmentIT",
     deps = [
         "//concept/answer",
-        "//core",
         "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//kb/server",
-        "//kb/concept/api",
         "//test/rule:grakn-test-server",
         "//test/integration/util:graql-test-util",
         "@graknlabs_graql//java:graql",

@@ -32,6 +32,7 @@ import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.server.Session;
+import grakn.core.kb.server.exception.SessionException;
 import grakn.core.kb.server.exception.TransactionException;
 import grakn.protocol.session.AnswerProto;
 import grakn.protocol.session.SessionProto;
@@ -131,6 +132,9 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
     public void close(SessionProto.Session.Close.Req request, StreamObserver<SessionProto.Session.Close.Res> responseObserver) {
         try {
             String sessionId = request.getSessionId();
+            if (!transactionListeners.containsKey(sessionId)) {
+                throw SessionException.sessionNotFound(sessionId);
+            }
             transactionListeners.remove(sessionId).forEach(transactionListener -> transactionListener.close(null));
             openSessions.remove(sessionId).close();
             responseObserver.onNext(SessionProto.Session.Close.Res.newBuilder().build());
@@ -330,7 +334,11 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
                 throw ResponseBuilder.exception(Status.FAILED_PRECONDITION);
             }
 
+            // TODO throw a graceful exception if the session ID does not exist anymore -- server may have restarted
             sessionId = request.getSessionId();
+            if (!transactionListeners.containsKey(sessionId)) {
+                throw SessionException.sessionNotFound(sessionId);
+            }
             transactionListeners.get(sessionId).add(this);
 
             Session session = openSessions.get(sessionId);
@@ -345,7 +353,8 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
             }
 
             Transaction.Res response = ResponseBuilder.Transaction.open();
-            responseSender.onNext(response);        }
+            responseSender.onNext(response);
+        }
 
         private void commit() {
             tx().commit();
@@ -525,7 +534,7 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
 
             public void iterateBatch(@Nullable Transaction.Iter.Req.Options options) {
                 int batchSize = getSizeFrom(options);
-                for (int i = 0; i < batchSize && iterator.hasNext(); i++){
+                for (int i = 0; i < batchSize && iterator.hasNext(); i++) {
                     responseSender.accept(iterator.next());
                 }
 

@@ -93,8 +93,6 @@ public class GenericSchemaGraph {
         Attribute<Object> resource = resources.next();
         Attribute<Object> anotherResource = resources.next();
 
-        Relation implicitRelation = resource.relations().iterator().next();
-
         this.differentTypeResourceVariants = new TypePattern(
                 resourceType.label(), anotherResourceType.label(), tx.getMetaAttributeType().label(),
                 resource.id(), anotherResource.id());
@@ -107,8 +105,7 @@ public class GenericSchemaGraph {
                 resourceType.label(), anotherResourceType.label(),
                 entityType.label(), anotherEntityType.label(),
                 baseRoleEntity.id(), anotherEntity.id(),
-                resource.id(), anotherResource.id(),
-                implicitRelation.id());
+                resource.id(), anotherResource.id());
 
         this.differentRelationVariants = new RelationPattern(
                 ImmutableMultimap.of(

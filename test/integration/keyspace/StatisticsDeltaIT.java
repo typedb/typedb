@@ -65,7 +65,6 @@ public class StatisticsDeltaIT {
         session.close();
     }
 
-
     @Test
     public void newTransactionsInitialisedWithEmptyStatsDelta() {
         TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
@@ -96,7 +95,7 @@ public class StatisticsDeltaIT {
         long personDelta = statisticsDelta.delta(Label.of("person"));
         assertEquals(2, personDelta);
         tx.close();
-}
+    }
 
     @Test
     public void addingRelationsIncrementsCorrectly() {
@@ -141,7 +140,7 @@ public class StatisticsDeltaIT {
     }
 
     @Test
-    public void addingAttributeOwnersIncrementsImplicitRelations() {
+    public void addingAttributeOwnersIncrementsOwnerships() {
         TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
         StatisticsDelta statisticsDelta = testTx.uncomittedStatisticsDelta();
 
@@ -158,8 +157,8 @@ public class StatisticsDeltaIT {
         assertEquals(2, ageDelta);
         long personDelta = statisticsDelta.delta(Label.of("person"));
         assertEquals(2, personDelta);
-        long implicitAgeRelation = statisticsDelta.delta(Label.of("@has-age"));
-        assertEquals(3, implicitAgeRelation);
+        long ageOwnerships = statisticsDelta.deltaOwnership(Label.of("age"));
+        assertEquals(3, ageOwnerships);
         tx.close();
     }
 
@@ -181,7 +180,7 @@ public class StatisticsDeltaIT {
         tx.getConcept(id1).delete();
 
         // test Graql deletion
-        tx.execute(Graql.parse("match $x id " + id2 + "; delete $x;").asDelete());
+        tx.execute(Graql.parse("match $x id " + id2 + "; delete $x isa entity;").asDelete());
 
         long personDelta = statisticsDelta.delta(Label.of("person"));
         assertEquals(-2, personDelta);
@@ -211,8 +210,8 @@ public class StatisticsDeltaIT {
         tx.getConcept(id1).delete();
 
         // test Graql deletion
-        tx.execute(Graql.parse("match $x id " + id2 + "; delete $x;").asDelete());
-        tx.execute(Graql.parse("match $x id " + id3 + "; delete $x;").asDelete());
+        tx.execute(Graql.parse("match $x id " + id2 + "; delete $x isa relation;").asDelete());
+        tx.execute(Graql.parse("match $x id " + id3 + "; delete $x isa relation;").asDelete());
 
         long friendshipDelta = statisticsDelta.delta(Label.of("friendship"));
         assertEquals(-3, friendshipDelta);
@@ -235,7 +234,7 @@ public class StatisticsDeltaIT {
         tx.getConcept(lastAttributeId).delete();
 
         // test Graql deletion
-        tx.execute(Graql.parse("match $x 50 isa age; $y 51 isa age; $z 52 isa age; delete $x, $y, $z;").asDelete());
+        tx.execute(Graql.parse("match $x 50 isa age; $y 51 isa age; $z 52 isa age; delete $x isa attribute; $y isa attribute; $z isa attribute;").asDelete());
 
         long ageDelta = statisticsDelta.delta(Label.of("age"));
         assertEquals(-4, ageDelta);
@@ -243,7 +242,7 @@ public class StatisticsDeltaIT {
     }
 
     @Test
-    public void deletingAttributeDecrementsImplicitRelsAndAttribute() {
+    public void deletingAttributeDecrementsOwnershipsAndAttribute() {
 
         // test concept API insertion
         AttributeType ageType = tx.getAttributeType("age");
@@ -265,14 +264,14 @@ public class StatisticsDeltaIT {
         tx.getConcept(age2Id).delete();
 
         // test deletion
-        tx.execute(Graql.parse("match $x 1 isa age; delete $x;").asDelete());
+        tx.execute(Graql.parse("match $x 1 isa age; delete $x isa attribute;").asDelete());
 
         long ageDelta = statisticsDelta.delta(Label.of("age"));
         assertEquals(-2, ageDelta);
         long personDelta = statisticsDelta.delta(Label.of("person"));
         assertEquals(0, personDelta);
-        long implicitAgeRelation = statisticsDelta.delta(Label.of("@has-age"));
-        assertEquals(-3, implicitAgeRelation);
+        long ageOwnerships = statisticsDelta.deltaOwnership(Label.of("age"));
+        assertEquals(-3, ageOwnerships);
 
         tx.close();
     }
@@ -292,8 +291,8 @@ public class StatisticsDeltaIT {
 
         long ageDelta = statisticsDelta.delta(Label.of("age"));
         assertEquals(1, ageDelta);
-        long implicitAgeRelation = statisticsDelta.delta(Label.of("@has-age"));
-        assertEquals(1, implicitAgeRelation);
+        long ageOwnerships = statisticsDelta.deltaOwnership(Label.of("age"));
+        assertEquals(1, ageOwnerships);
 
         // test ConceptAPI deletion
         age1.delete();
@@ -303,8 +302,8 @@ public class StatisticsDeltaIT {
         assertEquals(0, personDeltaAfter);
         long ageDeltaAfter = statisticsDelta.delta(Label.of("age"));
         assertEquals(0, ageDeltaAfter);
-        long implicitAgeRelationAfter = statisticsDelta.delta(Label.of("@has-age"));
-        assertEquals(0, implicitAgeRelationAfter);
+        long ageOwnershipsAfter = statisticsDelta.deltaOwnership(Label.of("age"));
+        assertEquals(0, ageOwnershipsAfter);
 
         tx.close();
     }

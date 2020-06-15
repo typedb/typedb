@@ -31,11 +31,11 @@ import java.util.Set;
  * see EquivalentFragmentSets#notInternalFragmentSet(VarProperty, Variable)
  *
  */
-class NotInternalFragmentSet extends EquivalentFragmentSetImpl {
+class NotShardFragmentSet extends EquivalentFragmentSetImpl {
 
     private final Variable var;
 
-    NotInternalFragmentSet(
+    NotShardFragmentSet(
             @Nullable VarProperty varProperty,
             Variable var) {
         super(varProperty);
@@ -44,7 +44,7 @@ class NotInternalFragmentSet extends EquivalentFragmentSetImpl {
 
     @Override
     public final Set<Fragment> fragments() {
-        return ImmutableSet.of(Fragments.notInternal(varProperty(), var));
+        return ImmutableSet.of(Fragments.notShard(varProperty(), var));
     }
 
     @Override
@@ -52,8 +52,8 @@ class NotInternalFragmentSet extends EquivalentFragmentSetImpl {
         if (o == this) {
             return true;
         }
-        if (o instanceof NotInternalFragmentSet) {
-            NotInternalFragmentSet that = (NotInternalFragmentSet) o;
+        if (o instanceof NotShardFragmentSet) {
+            NotShardFragmentSet that = (NotShardFragmentSet) o;
             return ((this.varProperty() == null) ? (that.varProperty() == null) : this.varProperty().equals(that.varProperty()))
                     && (this.var.equals(that.var));
         }

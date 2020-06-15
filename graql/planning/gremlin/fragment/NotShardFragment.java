@@ -30,9 +30,9 @@ import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Objects;
 
-class NotInternalFragment extends FragmentImpl {
+class NotShardFragment extends FragmentImpl {
 
-    NotInternalFragment(@Nullable VarProperty varProperty, Variable start) {
+    NotShardFragment(@Nullable VarProperty varProperty, Variable start) {
         super(varProperty, start);
     }
 
@@ -44,7 +44,7 @@ class NotInternalFragment extends FragmentImpl {
 
     @Override
     public String name() {
-        return "[not-internal]";
+        return "[not-shard]";
     }
 
     @Override
@@ -62,8 +62,8 @@ class NotInternalFragment extends FragmentImpl {
         if (o == this) {
             return true;
         }
-        if (o instanceof NotInternalFragment) {
-            NotInternalFragment that = (NotInternalFragment) o;
+        if (o instanceof NotShardFragment) {
+            NotShardFragment that = (NotShardFragment) o;
             return ((this.varProperty == null) ? (that.varProperty() == null) : this.varProperty.equals(that.varProperty()))
                     && (this.start.equals(that.start()));
         }

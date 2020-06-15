@@ -28,6 +28,7 @@ import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.graql.exception.GraqlSemanticException;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
 import graql.lang.statement.Variable;
+
 import java.util.HashSet;
 import java.util.Set;
 
@@ -60,8 +61,6 @@ public class BasicAtomValidator implements AtomValidator<Atom> {
         SchemaConcept schemaConcept = atom.getSchemaConcept();
         if (schemaConcept == null) {
             errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_ATOM_WITH_AMBIGUOUS_SCHEMA_CONCEPT.getMessage(rule.then(), rule.label()));
-        } else if (schemaConcept.isImplicit()) {
-            errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_ATOM_WITH_IMPLICIT_SCHEMA_CONCEPT.getMessage(rule.then(), rule.label()));
         }
         return errors;
     }

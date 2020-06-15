@@ -97,7 +97,7 @@ public class BenchmarkBigIT {
                                                  String relationLabel, int N, GraknClient.Session session) {
         try (GraknClient.Transaction transaction = session.transaction().write()) {
             Statement entity = new Statement(new Variable().asReturnedVar());
-            ConceptId[] instances = transaction.stream(Graql.match(entity.isa(entityLabel)).get())
+            ConceptId[] instances = transaction.stream(Graql.match(entity.isa(entityLabel)).get()).get()
                     .map(ans -> ans.get(entity.var().name()).id())
                     .toArray(ConceptId[]::new);
 
@@ -212,7 +212,7 @@ public class BenchmarkBigIT {
 
             try (GraknClient.Transaction transaction = session.transaction().write()) {
                 Statement entityVar = new Statement(new Variable().asReturnedVar());
-                ConceptId[] instances = transaction.stream(Graql.match(entityVar.isa(entityLabel.getValue())).get())
+                ConceptId[] instances = transaction.stream(Graql.match(entityVar.isa(entityLabel.getValue())).get()).get()
                         .map(ans -> ans.get(entityVar.var().name()).id())
                         .toArray(ConceptId[]::new);
 
@@ -348,8 +348,8 @@ public class BenchmarkBigIT {
 
         try (GraknClient.Session session = new GraknClient(server.grpcUri()).session(keyspace)) {
             try (GraknClient.Transaction tx = session.transaction().read()) {
-                ConceptId firstId = Iterables.getOnlyElement(tx.execute(Graql.parse("match $x has index 'first';get;").asGet())).get("x").id();
-                ConceptId lastId = Iterables.getOnlyElement(tx.execute(Graql.parse("match $x has index '" + N + "';get;").asGet())).get("x").id();
+                ConceptId firstId = Iterables.getOnlyElement(tx.execute(Graql.parse("match $x has index 'first';get;").asGet()).get()).get("x").id();
+                ConceptId lastId = Iterables.getOnlyElement(tx.execute(Graql.parse("match $x has index '" + N + "';get;").asGet()).get()).get("x").id();
                 String queryPattern = "(fromRole: $x, toRole: $y) isa relation" + N + ";";
                 String queryString = "match " + queryPattern + " get;";
                 String subbedQueryString = "match " + queryPattern +
@@ -397,7 +397,7 @@ public class BenchmarkBigIT {
 
     private List<ConceptMap> executeQuery(String queryString, GraknClient.Transaction transaction, String msg) {
         final long startTime = System.currentTimeMillis();
-        List<ConceptMap> results = transaction.execute(Graql.parse(queryString).asGet());
+        List<ConceptMap> results = transaction.execute(Graql.parse(queryString).asGet()).get();
         final long answerTime = System.currentTimeMillis() - startTime;
         System.out.println(msg + " results = " + results.size() + " answerTime: " + answerTime);
         return results;

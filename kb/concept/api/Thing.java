@@ -67,16 +67,7 @@ public interface Thing extends Concept {
      * @param attribute The Attribute to which a Relation is created
      * @return The instance itself
      */
-    Thing has(Attribute attribute);
-
-    /**
-     * Creates a Relation from this instance to the provided Attribute.
-     * This has the same effect as #has(Attribute), but returns the new Relation.
-     *
-     * @param attribute The Attribute to which a Relation is created
-     * @return The Relation connecting the Thing and the Attribute
-     */
-    Relation relhas(Attribute attribute);
+    <T extends Thing> T has(Attribute attribute);
 
     /**
      * Retrieves a collection of Attribute attached to this Thing
@@ -86,7 +77,7 @@ public interface Thing extends Concept {
      * see Attribute
      */
     @CheckReturnValue
-    Stream<Attribute<?>> attributes(AttributeType... attributeTypes);
+    Stream<Attribute<?>> attributes(AttributeType<?>... attributeTypes);
 
     /**
      * Retrieves a collection of Attribute attached to this Thing as a key
@@ -96,7 +87,7 @@ public interface Thing extends Concept {
      * see Attribute
      */
     @CheckReturnValue
-    Stream<Attribute<?>> keys(AttributeType... attributeTypes);
+    Stream<Attribute<?>> keys(AttributeType<?>... attributeTypes);
 
     /**
      * Removes the provided Attribute from this Thing
@@ -118,12 +109,8 @@ public interface Thing extends Concept {
     /**
      * Add an inferred attribute ownership to this Thing
      */
-    Relation attributeInferred(Attribute attribute);
+    void attributeInferred(Attribute attribute);
 
-    /**
-     * Return concepts that are DIRECT dependants of this concept - concepts required to be persisted if we persist this concept.
-     */
-    default Stream<Thing> getDependentConcepts(){ return Stream.of(this);}
 
     //------------------------------------- Other ---------------------------------
     @Deprecated

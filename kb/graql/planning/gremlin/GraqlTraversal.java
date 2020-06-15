@@ -41,9 +41,7 @@ public interface GraqlTraversal {
     /**
      * Get the {@code GraphTraversal} that this {@code GraqlTraversal} represents.
      */
-    // Because 'union' accepts an array, we can't use generics
-    @SuppressWarnings("unchecked")
-    GraphTraversal<Vertex, Map<String, Element>> getGraphTraversal(Set<Variable> vars);
+    GraphTraversal<Vertex, Map<String, Vertex>> getGraphTraversal(Set<Variable> vars);
 
     /**
      * @param transform map defining id transform var -> new id
