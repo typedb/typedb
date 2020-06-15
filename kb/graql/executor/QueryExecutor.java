@@ -41,11 +41,12 @@ public interface QueryExecutor {
 
     Stream<ConceptMap> undefine(GraqlUndefine query);
 
-    Stream<ConceptMap> insert(GraqlInsert query);
+    Stream<ConceptMap> insert(GraqlInsert query, boolean explainable);
 
     Void delete(GraqlDelete query);
 
     Stream<ConceptMap> get(GraqlGet query);
+    Stream<ConceptMap> get(GraqlGet query, boolean explainable);
 
     Stream<Numeric> aggregate(GraqlGet.Aggregate query);
 

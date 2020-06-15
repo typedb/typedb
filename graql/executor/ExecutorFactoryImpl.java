@@ -18,8 +18,6 @@
 
 package grakn.core.graql.executor;
 
-import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concept.answer.Explanation;
 import grakn.core.graql.reasoner.query.ReasonerQueryFactory;
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.executor.ComputeExecutor;
@@ -28,9 +26,9 @@ import grakn.core.kb.graql.executor.QueryExecutor;
 import grakn.core.kb.graql.executor.TraversalExecutor;
 import grakn.core.kb.graql.planning.gremlin.TraversalPlanFactory;
 import grakn.core.kb.keyspace.KeyspaceStatistics;
+import grakn.core.kb.server.cache.ExplanationCache;
 import org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph;
 
-import java.util.Map;
 
 public class ExecutorFactoryImpl implements ExecutorFactory {
 
@@ -40,9 +38,9 @@ public class ExecutorFactoryImpl implements ExecutorFactory {
     private TraversalPlanFactory traversalPlanFactory;
     private TraversalExecutor traversalExecutor;
     private ReasonerQueryFactory reasonerQueryFactory;
-    private Map<ConceptMap, Explanation> explanationCache;
+    private ExplanationCache explanationCache;
 
-    public ExecutorFactoryImpl(ConceptManager conceptManager, HadoopGraph hadoopGraph, KeyspaceStatistics keyspaceStatistics, TraversalPlanFactory traversalPlanFactory, TraversalExecutor traversalExecutor, Map<ConceptMap, Explanation> explanationCache) {
+    public ExecutorFactoryImpl(ConceptManager conceptManager, HadoopGraph hadoopGraph, KeyspaceStatistics keyspaceStatistics, TraversalPlanFactory traversalPlanFactory, TraversalExecutor traversalExecutor, ExplanationCache explanationCache) {
         this.conceptManager = conceptManager;
         this.hadoopGraph = hadoopGraph;
         this.keyspaceStatistics = keyspaceStatistics;

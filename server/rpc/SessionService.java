@@ -365,7 +365,13 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
                 }
 
                 try (ThreadTrace stream = traceOnThread("stream")) {
-                    Stream<Transaction.Res> responseStream = tx().stream(query, request.getInfer().equals(Transaction.Query.INFER.TRUE)).map(ResponseBuilder.Transaction.Iter::query);
+
+                    boolean infer = request.getInfer().equals(Transaction.Query.INFER.TRUE);
+                    boolean explainable = request.getExplainable();
+
+                    Stream<Transaction.Res> responseStream = tx()
+                            .stream(query, infer, explainable)
+                            .map(ResponseBuilder.Transaction.Iter::query);
 
                     iterators.startBatchIterating(responseStream.iterator(), options);
                 }

@@ -50,8 +50,10 @@ import grakn.core.kb.keyspace.StatisticsDelta;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import grakn.core.kb.server.TransactionProvider;
+import grakn.core.kb.server.cache.ExplanationCache;
 import grakn.core.kb.server.cache.TransactionCache;
 import grakn.core.keyspace.StatisticsDeltaImpl;
+import grakn.core.server.cache.ExplanationCacheImpl;
 import grakn.core.server.session.TransactionImpl;
 import org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph;
 
@@ -91,7 +93,7 @@ public class TestTransactionProvider implements TransactionProvider {
         ConceptNotificationChannel conceptNotificationChannel = new ConceptNotificationChannelImpl();
         TransactionCache transactionCache = new TransactionCache(keyspaceSchemaCache);
         StatisticsDeltaImpl statisticsDelta = new StatisticsDeltaImpl();
-        Map<ConceptMap, Explanation> explanationCache = new HashMap<>();
+        ExplanationCacheImpl explanationCache = new ExplanationCacheImpl();
 
         // Janus elements
         StandardJanusGraphTx janusGraphTransaction = graph.newThreadBoundTransaction();
@@ -140,7 +142,7 @@ public class TestTransactionProvider implements TransactionProvider {
         public TestTransaction(Session session, StandardJanusGraphTx janusGraphTransaction,
                                ConceptManagerImpl conceptManager, JanusTraversalSourceProvider janusTraversalSourceProvider,
                                TransactionCache transactionCache, MultilevelSemanticCache queryCache,
-                               RuleCacheImpl ruleCache, Map<ConceptMap, Explanation> explanationCache, StatisticsDeltaImpl statisticsDelta,
+                               RuleCacheImpl ruleCache, ExplanationCache explanationCache, StatisticsDeltaImpl statisticsDelta,
                                ExecutorFactoryImpl executorFactory, TraversalPlanFactory traversalPlanFactory,
                                TraversalExecutor traversalExecutor, ReasonerQueryFactory reasonerQueryFactory,
                                ReadWriteLock graphLock, long typeShardThreshold,

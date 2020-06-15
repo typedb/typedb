@@ -23,21 +23,18 @@ import com.google.common.collect.Sets;
 import grakn.core.concept.answer.Answer;
 import grakn.core.concept.answer.AnswerGroup;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concept.answer.Explanation;
 import grakn.core.concept.answer.Numeric;
 import grakn.core.concept.answer.Void;
 import grakn.core.graql.executor.property.PropertyExecutorFactoryImpl;
 import grakn.core.graql.executor.util.LazyMergingStream;
 import grakn.core.graql.reasoner.query.ReasonerQueryFactory;
-import grakn.core.kb.concept.api.Concept;
-import grakn.core.kb.concept.api.GraknConceptException;
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.exception.GraqlSemanticException;
 import grakn.core.kb.graql.executor.QueryExecutor;
-import grakn.core.kb.graql.executor.WriteExecutor;
 import grakn.core.kb.graql.executor.property.PropertyExecutor;
 import grakn.core.kb.graql.executor.property.PropertyExecutorFactory;
 import grakn.core.kb.graql.reasoner.ReasonerCheckedException;
+import grakn.core.kb.server.cache.ExplanationCache;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Disjunction;
@@ -64,7 +61,6 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collector;
@@ -81,13 +77,13 @@ import static java.util.stream.Collectors.toList;
 public class QueryExecutorImpl implements QueryExecutor {
 
     private ConceptManager conceptManager;
-    private Map<ConceptMap, Explanation> explanationCache;
+    private ExplanationCache explanationCache;
     private final boolean infer;
     private ReasonerQueryFactory reasonerQueryFactory;
     private final PropertyExecutorFactory propertyExecutorFactory;
     private static final Logger LOG = LoggerFactory.getLogger(QueryExecutorImpl.class);
 
-    QueryExecutorImpl(ConceptManager conceptManager, ReasonerQueryFactory reasonerQueryFactory, Map<ConceptMap, Explanation> explanationCache, boolean infer) {
+    QueryExecutorImpl(ConceptManager conceptManager, ReasonerQueryFactory reasonerQueryFactory, ExplanationCache explanationCache, boolean infer) {
         this.conceptManager = conceptManager;
         this.explanationCache = explanationCache;
         this.infer = infer;
@@ -185,7 +181,7 @@ public class QueryExecutorImpl implements QueryExecutor {
 
 
     @Override
-    public Stream<ConceptMap> insert(GraqlInsert query) {
+    public Stream<ConceptMap> insert(GraqlInsert query, boolean explainable) {
         Collection<Statement> statements = query.statements().stream()
                 .flatMap(statement -> statement.innerStatements().stream())
                 .collect(Collectors.toList());
@@ -208,7 +204,7 @@ public class QueryExecutorImpl implements QueryExecutor {
             LinkedHashSet<Variable> projectedVars = new LinkedHashSet<>(matchVars);
             projectedVars.retainAll(insertVars);
 
-            Stream<ConceptMap> answers = get(match.get(projectedVars));
+            Stream<ConceptMap> answers = get(match.get(projectedVars), explainable);
             answerStream = answers
                     .flatMap(answer -> WriteExecutorImpl.create(conceptManager, executors.build()).write(answer))
                     .collect(toList()).stream();
@@ -271,17 +267,22 @@ public class QueryExecutorImpl implements QueryExecutor {
         return WriteExecutorImpl.create(conceptManager, executors.build()).write();
     }
 
-
     @Override
     public Stream<ConceptMap> get(GraqlGet query) {
+        return get(query, false);
+    }
+
+    @Override
+    public Stream<ConceptMap> get(GraqlGet query, boolean explainable) {
         //NB: we need distinct as projection can produce duplicates
         Stream<ConceptMap> answers = match(query.match())
                 .map(ans -> ans.project(query.vars()))
                 .distinct();
 
-        answers = filter(query, answers)
-                .peek(answer -> explanationCache.putIfAbsent(answer, answer.explanation()));
-
+        answers = filter(query, answers);
+        if (explainable) {
+            answers = answers.peek(answer -> explanationCache.record(answer, answer.explanation()));
+        }
         return answers;
     }
 

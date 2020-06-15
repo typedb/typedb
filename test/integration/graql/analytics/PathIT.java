@@ -20,9 +20,6 @@ package grakn.core.graql.analytics;
 import com.google.common.collect.Lists;
 import grakn.core.common.config.Config;
 import grakn.core.concept.answer.ConceptList;
-import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concept.answer.Explanation;
-import grakn.core.graql.executor.ExecutorFactoryImpl;
 import grakn.core.graql.reasoner.query.ReasonerQueryFactory;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
@@ -49,10 +46,8 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -450,14 +445,6 @@ public class PathIT {
 
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
             TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
-            ConceptManager conceptManager = testTx.conceptManager();
-            TraversalPlanFactory traversalPlanFactory = testTx.traversalPlanFactory();
-            Map<ConceptMap, Explanation> explanationCache = new HashMap<>();
-            ReasonerQueryFactory reasonerQueryFactory = testTx.reasonerQueryFactory();
-            TraversalExecutor traversalExecutor = testTx.traversalExecutor();
-
-            ExecutorFactoryImpl executorFactory = new ExecutorFactoryImpl(conceptManager, null, null, traversalPlanFactory, traversalExecutor, explanationCache);
-            executorFactory.setReasonerQueryFactory(reasonerQueryFactory);
             List<ConceptList> allPaths;
 
             // Path from power3 to power3

@@ -48,6 +48,7 @@ import grakn.core.kb.server.Transaction;
 import grakn.core.kb.server.TransactionProvider;
 import grakn.core.kb.server.cache.TransactionCache;
 import grakn.core.keyspace.StatisticsDeltaImpl;
+import grakn.core.server.cache.ExplanationCacheImpl;
 import org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph;
 
 import java.util.HashMap;
@@ -88,7 +89,7 @@ public class TransactionProviderImpl implements TransactionProvider {
         ConceptNotificationChannel conceptNotificationChannel = new ConceptNotificationChannelImpl();
         TransactionCache transactionCache = new TransactionCache(keyspaceSchemaCache);
         StatisticsDeltaImpl statisticsDelta = new StatisticsDeltaImpl();
-        Map<ConceptMap, Explanation> explanationCache = new HashMap<>();
+        ExplanationCacheImpl explanationCache = new ExplanationCacheImpl();
 
         // Janus elements
         JanusGraphTransaction janusGraphTransaction = graph.newThreadBoundTransaction();
