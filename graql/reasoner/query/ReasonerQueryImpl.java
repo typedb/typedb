@@ -173,7 +173,7 @@ public class ReasonerQueryImpl extends ResolvableQuery {
 
     @Override
     public DisjunctiveQuery asDisjunctive() {
-        throw new RuntimeException("Not disjunctive"); //TODO What exception should this throw?
+        throw ReasonerException.illegalQueryConversion(this.getClass(), DisjunctiveQuery.class);
     }
 
     @Override
