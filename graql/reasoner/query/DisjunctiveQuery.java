@@ -257,12 +257,12 @@ public class DisjunctiveQuery extends ResolvableQuery {
 
     @Override
     public SetMultimap<Variable, Type> getVarTypeMap(boolean inferTypes) {
-        return getVarTypeMap(); // TODO Seems a weird thing to do since that throws an exception
+        return getVarTypeMap();
     }
 
     @Override
     public SetMultimap<Variable, Type> getVarTypeMap(ConceptMap sub) {
-        return getVarTypeMap(); // TODO Seems a weird thing to do since that throws an exception
+        return getVarTypeMap();
     }
 
     @Override
@@ -296,8 +296,6 @@ public class DisjunctiveQuery extends ResolvableQuery {
 
     @Override
     public Iterator<ResolutionState> innerStateIterator(AnswerPropagatorState parent, Set<ReasonerAtomicQuery> subGoals) {
-//        TODO Does the substitution make sense here?
-//        TODO Is the unifier correct?
         return clauses.stream().map(c -> c.resolutionState(c.getSubstitution(), parent.getUnifier(), parent, subGoals)).iterator();
     }
 
