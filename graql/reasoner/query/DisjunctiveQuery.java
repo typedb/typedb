@@ -218,7 +218,6 @@ public class DisjunctiveQuery extends ResolvableQuery {
 
     @Override
     public Disjunction<Pattern> getPattern() {
-        // TODO How can we rebuild the disjunction in proper Graql form (with unbound variables outside the disjunction) once it's already in disjunctive normal form?!
         return Graql.or(clauses.stream().map(CompositeQuery::getPattern).collect(Collectors.toSet()));
     }
 
