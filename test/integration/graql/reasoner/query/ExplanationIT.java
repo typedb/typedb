@@ -20,13 +20,15 @@ package grakn.core.graql.reasoner.query;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
+import grakn.core.common.config.Config;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.answer.Explanation;
 import grakn.core.graql.reasoner.graph.GeoGraph;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
-import grakn.core.test.rule.GraknTestServer;
+import grakn.core.test.rule.GraknTestStorage;
+import grakn.core.test.rule.SessionUtil;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.property.IdProperty;
@@ -57,17 +59,17 @@ public class ExplanationIT {
     private static String resourcePath = "test/integration/graql/reasoner/stubs/";
 
     @ClassRule
-    public static final GraknTestServer server = new GraknTestServer();
+    public static final GraknTestStorage storage = new GraknTestStorage();
 
     private static Session geoSession;
     private static Session explanationSession;
 
     @BeforeClass
     public static void loadContext() {
-        geoSession = server.sessionWithNewKeyspace();
+        geoSession = emptySession();
         GeoGraph geoGraph = new GeoGraph(geoSession);
         geoGraph.load();
-        explanationSession = server.sessionWithNewKeyspace();
+        explanationSession = emptySession();
         loadFromFileAndCommit(resourcePath, "explanations.gql", explanationSession);
     }
 
@@ -75,6 +77,11 @@ public class ExplanationIT {
     public static void closeSession() {
         geoSession.close();
         explanationSession.close();
+    }
+
+    private static Session emptySession() {
+        Config mockServerConfig = storage.createCompatibleServerConfig();
+        return SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig);
     }
 
     @Test
@@ -290,6 +297,27 @@ public class ExplanationIT {
         }
     }
 
+
+    @Test
+    public void whenQueryingWithExplainFlag_explanationIsCached() {
+
+    }
+
+    @Test
+    public void whenQueryingWithDefaults_explanationIsNotCached() {
+
+    }
+
+    @Test
+    public void whenRequestingSubExplanation_subExplanationsAreCachedLazily() {
+
+    }
+
+    @Test
+    public void onDelete_explanationCacheIsCleared() {
+
+    }
+
     /**
      * Validates issue#3061 is fixed.
      * <p>
@@ -312,7 +340,7 @@ public class ExplanationIT {
     @Ignore("We cannot solve this with current answer handling/cache implementation. Maybe cardinality constraints would help?")
     @Test
     public void whenRulesAreMutuallyRecursive_explanationsAreRecognisedAsRuleOnes() {
-        try (Session session = server.sessionWithNewKeyspace()) {
+        try (Session session = emptySession()) {
             loadFromFileAndCommit(resourcePath, "testSet30.gql", session);
             for (int i = 0; i < 10; i++) {
                 try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
