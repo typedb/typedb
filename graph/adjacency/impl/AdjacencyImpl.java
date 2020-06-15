@@ -217,21 +217,20 @@ public abstract class AdjacencyImpl<
 
         @Override
         public void delete(EDGE_SCHEMA schema, VERTEX adjacent) {
-            Optional<EDGE> container;
+            Optional<EDGE> edgeOpt;
             Predicate<EDGE> predicate = direction.isOut()
                     ? e -> e.to().equals(adjacent)
                     : e -> e.from().equals(adjacent);
 
-            if (edges.containsKey(schema) &&
-                    (container = edges.get(schema).stream().filter(predicate).findAny()).isPresent()) {
-                edges.get(schema).remove(container.get());
-            } else {
-                Schema.Infix infix = direction.isOut() ? schema.out() : schema.in();
-                byte[] edgeIID = join(owner.iid().bytes(), infix.bytes(), adjacent.iid().bytes());
-                byte[] overriddenIID;
-                if ((overriddenIID = owner.graph().storage().get(edgeIID)) != null) {
-                    (newPersistedEdge(edgeIID, overriddenIID)).delete();
-                }
+            if (edges.containsKey(schema) && (edgeOpt = edges.get(schema).stream().filter(predicate).findAny()).isPresent()) {
+                edgeOpt.get().delete();
+            }
+
+            Schema.Infix infix = direction.isOut() ? schema.out() : schema.in();
+            byte[] edgeIID = join(owner.iid().bytes(), infix.bytes(), adjacent.iid().bytes());
+            byte[] iidValueBytes;
+            if ((iidValueBytes = owner.graph().storage().get(edgeIID)) != null) {
+                (newPersistedEdge(edgeIID, iidValueBytes)).delete();
             }
         }
 
