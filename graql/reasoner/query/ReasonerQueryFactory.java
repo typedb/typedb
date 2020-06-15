@@ -19,6 +19,7 @@
 package grakn.core.graql.reasoner.query;
 
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Iterators;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.kb.graql.executor.TraversalExecutor;
 import grakn.core.graql.reasoner.ReasoningContext;
@@ -94,7 +95,7 @@ public class ReasonerQueryFactory {
      */
     public ResolvableQuery resolvable(Disjunction<Conjunction<Pattern>> pattern, Set<Variable> bindingVars) {
         if (pattern.getPatterns().size() == 1) {
-            return resolvable(pattern.getPatterns().iterator().next());
+            return resolvable(Iterators.getOnlyElement(pattern.getPatterns().iterator()));
         } else {
             return new DisjunctiveQuery(pattern, bindingVars,  traversalExecutor, ctx).inferTypes();
         }
