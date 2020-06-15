@@ -299,7 +299,6 @@ public class CompositeQuery extends ResolvableQuery {
         return getPattern().toString();
     }
 
-    // TODO only required for rules
     @Override
     public ReasonerQuery conjunction(ReasonerQuery q) {
         HashSet<Pattern> patterns = new HashSet<>(this.getPattern().getPatterns());

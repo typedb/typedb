@@ -178,21 +178,6 @@ public class DisjunctiveQuery extends ResolvableQuery {
     @Override
     public ReasonerQuery conjunction(ReasonerQuery q) {
         throw new UnsupportedOperationException();
-//        return new DisjunctiveQuery(
-//                getClauses().stream()
-//                        .map(CompositeQuery::getPattern)
-//                        .map(p -> Graql.and(
-//                                Sets.union(
-//                                        p.getPatterns(), getPattern().getPatterns()
-//                                )
-//                        ))
-//                        .map(p -> new CompositeQuery(
-//                                p, traversalExecutor, context()
-//                        ))
-//                        .collect(Collectors.toSet()),
-//                traversalExecutor,
-//                context()
-//        );
     }
 
     @Override
