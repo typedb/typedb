@@ -271,63 +271,6 @@ public class GraqlInsertIT {
         assertCollectionsNonTriviallyEqual(before, tx.execute(Graql.match(matchStatement)));
     }
 
-    @Test
-    public void whenMatchInsertingExistingRelation_weDoNoOp() {
-        Statement matchStatement = var("r").isa("directed-by");
-        Statement insertStatement = var("r").isa("directed-by");
-
-        List<ConceptMap> before = tx.execute(Graql.match(matchStatement));
-        tx.execute(Graql.match(matchStatement).insert(insertStatement));
-        assertCollectionsNonTriviallyEqual(before, tx.execute(Graql.match(matchStatement)));
-    }
-
-    @Test
-    public void whenMatchInsertingExistingAttribute_weDoNoOp() {
-        Statement matchStatement = var("a").isa("name");
-        Statement insertStatement = var("a").isa("name");
-        List<ConceptMap> before = tx.execute(Graql.match(matchStatement));
-        tx.execute(Graql.match(matchStatement).insert(insertStatement));
-        assertCollectionsNonTriviallyEqual(before, tx.execute(Graql.match(matchStatement)));
-    }
-
-    @Test
-    public void whenAppendingRolePlayerToARelation_additionIsSuccessful() {
-        Statement matchStatement = var("r").isa("directed-by");
-        Statement insertStatement = var("r").rel("director", "player");
-        Statement insertStatement2 = var("player").isa("person");
-        tx.execute(Graql.match(matchStatement).insert(insertStatement, insertStatement2));
-    }
-
-    @Test
-    public void whenAppendingRolePlayerToASpecificRelation_additionIsSuccessful() {
-        Set<Statement> matchStatements = Sets.newHashSet(
-                var("r").rel("production-being-directed", var("x")).isa("directed-by"),
-                var("x").has("title", "Chinese Coffee")
-        );
-        Set<Statement> insertStatements = Sets.newHashSet(
-                var("y").isa("person"),
-                var("r").rel("director", var("y"))
-        );
-        ConceptMap answer = Iterables.getOnlyElement(tx.execute(Graql.match(matchStatements).insert(insertStatements)));
-
-        assertTrue(
-                tx.getConcept(answer.get("r").id()).asRelation().rolePlayers().anyMatch(rp -> rp.id().equals(answer.get("y").id()))
-        );
-    }
-
-    @Test
-    public void whenAddingNewAttributeOwner_operationIsSuccessful() {
-        Statement matchStatement = var("x").isa("production").has("title", var("attr"));
-        Statement insertStatement = var("newProduction").isa("production").has("title", var("attr"));
-        List<Numeric> oldCount = tx.execute(Graql.match(matchStatement).get("x").count());
-
-        tx.execute(Graql.match(matchStatement).insert(insertStatement));
-
-        // expect there to be twice as many productions with titles!
-        List<Numeric> newCount = tx.execute(Graql.match(matchStatement).get("x").count());
-        assertEquals(oldCount.get(0).number().intValue() * 2, newCount.get(0).number().intValue());
-    }
-
     private void assertInsert(Statement... vars) {
         // Make sure vars don't exist
         for (Statement var : vars) {
