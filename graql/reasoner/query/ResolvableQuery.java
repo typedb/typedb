@@ -21,6 +21,7 @@ package grakn.core.graql.reasoner.query;
 import com.google.common.annotations.VisibleForTesting;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.ReasoningContext;
+import grakn.core.graql.reasoner.ResolutionIterator;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.AtomicUtil;
 import grakn.core.graql.reasoner.state.AnswerPropagatorState;
@@ -158,7 +159,21 @@ public abstract class ResolvableQuery implements ReasonerQuery {
      * @return stream of resolved answers
      */
     @CheckReturnValue
-    public abstract Stream<ConceptMap> resolve(Set<ReasonerAtomicQuery> subGoals, boolean infer);
+    public Stream<ConceptMap> resolve(Set<ReasonerAtomicQuery> subGoals, boolean infer){
+        boolean doNotResolve = !infer || getAtoms().isEmpty() || (isPositive() && !isRuleResolvable());
+        if (doNotResolve) {
+            return traverse();
+        } else {
+            return new ResolutionIterator(this, subGoals, context().queryCache()).hasStream();
+        }
+    }
+
+    /**
+     * Directly traverse data without inference in answer to this query
+     * @return stream of traversed answers
+     */
+    @CheckReturnValue
+    public abstract Stream<ConceptMap> traverse();
 
     /**
      * @param sub      partial substitution

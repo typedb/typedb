@@ -186,14 +186,9 @@ public class ReasonerQueryImpl extends ResolvableQuery {
     }
 
     @Override
-    public Stream<ConceptMap> resolve(Set<ReasonerAtomicQuery> subGoals, boolean infer) {
-        boolean doNotResolve = !infer || getAtoms().isEmpty() || (isPositive() && !isRuleResolvable());
-        if (doNotResolve) {
-            return traversalExecutor.traverse(getPattern()).map(ans ->
-                    new ConceptMap(ans.map(), new LookupExplanation(), getPattern(ans.map())));
-        } else {
-            return new ResolutionIterator(this, subGoals, context().queryCache()).hasStream();
-        }
+    public Stream<ConceptMap> traverse(){
+        return traversalExecutor.traverse(getPattern()).map(ans ->
+                new ConceptMap(ans.map(), new LookupExplanation(), getPattern(ans.map())));
     }
 
     @Override

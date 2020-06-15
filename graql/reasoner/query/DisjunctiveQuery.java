@@ -117,21 +117,15 @@ public class DisjunctiveQuery extends ResolvableQuery {
     }
 
     @Override
-    public Stream<ConceptMap> resolve(Set<ReasonerAtomicQuery> subGoals, boolean infer) {
-
-        boolean doNotResolve = !infer || getAtoms().isEmpty() || (isPositive() && !isRuleResolvable());
-        if (doNotResolve) {
-            Stream<Stream<ConceptMap>> answerStreams = clauses.stream().map(clause ->
-                    traversalExecutor.traverse(clause.getPattern()).map(ans -> {
-                        ConceptMap clauseAns = new ConceptMap(ans.map(), new LookupExplanation(), clause.getPattern(ans.map()));
-                        HashMap<Variable, Concept> bindingVarsSub = filterBindingVars(ans.map());
-                        return new ConceptMap(bindingVarsSub, new DisjunctiveExplanation(clauseAns), getPattern(bindingVarsSub));
-                    }));
-            LazyMergingStream<ConceptMap> mergedStreams = new LazyMergingStream<>(answerStreams);
-            return mergedStreams.flatStream();
-        } else {
-            return new ResolutionIterator(this, subGoals, context().queryCache()).hasStream();
-        }
+    public Stream<ConceptMap> traverse(){
+        Stream<Stream<ConceptMap>> answerStreams = clauses.stream().map(clause ->
+                traversalExecutor.traverse(clause.getPattern()).map(ans -> {
+                    ConceptMap clauseAns = new ConceptMap(ans.map(), new LookupExplanation(), clause.getPattern(ans.map()));
+                    HashMap<Variable, Concept> bindingVarsSub = filterBindingVars(ans.map());
+                    return new ConceptMap(bindingVarsSub, new DisjunctiveExplanation(clauseAns), getPattern(bindingVarsSub));
+                }));
+        LazyMergingStream<ConceptMap> mergedStreams = new LazyMergingStream<>(answerStreams);
+        return mergedStreams.flatStream();
     }
 
     @Override
@@ -225,7 +219,6 @@ public class DisjunctiveQuery extends ResolvableQuery {
     public Conjunction<Pattern> getPattern(Map<Variable, Concept> map) {
         HashSet<Pattern> patterns = getIdPredicatePatterns(map);
         patterns.add(getPattern());
-
         return Graql.and(patterns);
     }
 

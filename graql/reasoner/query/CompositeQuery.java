@@ -226,20 +226,15 @@ public class CompositeQuery extends ResolvableQuery {
     }
 
     @Override
-    public Stream<ConceptMap> resolve(Set<ReasonerAtomicQuery> subGoals, boolean infer) {
-        boolean doNotResolve = !infer || getAtoms().isEmpty() || (isPositive() && !isRuleResolvable());
-        if (doNotResolve) {
-            return traversalExecutor.traverse(getPattern()).map(ans -> {
-                if (complementQueries.isEmpty()) {
-                    return new ConceptMap(ans.map(), ans.explanation(), getPattern(ans.map()));
-                } else {
-                    ConceptMap explanationAns = new ConceptMap(ans.map(), new LookupExplanation(), getConjunctiveQuery().getPattern(ans.map()));
-                    return new ConceptMap(ans.map(), new CompositeExplanation(explanationAns), getPattern(ans.map()));
-                }
-            });
-        } else {
-            return new ResolutionIterator(this, subGoals, context().queryCache()).hasStream();
-        }
+    public Stream<ConceptMap> traverse(){
+        return traversalExecutor.traverse(getPattern()).map(ans -> {
+            if (complementQueries.isEmpty()) {
+                return new ConceptMap(ans.map(), ans.explanation(), getPattern(ans.map()));
+            } else {
+                ConceptMap explanationAns = new ConceptMap(ans.map(), new LookupExplanation(), getConjunctiveQuery().getPattern(ans.map()));
+                return new ConceptMap(ans.map(), new CompositeExplanation(explanationAns), getPattern(ans.map()));
+            }
+        });
     }
 
     @Override
