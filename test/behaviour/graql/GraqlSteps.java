@@ -153,6 +153,11 @@ public class GraqlSteps {
         tx = session.transaction(Transaction.Type.WRITE);
     }
 
+    @Given("graql insert without commit")
+    public void graql_insert_without_commit(String insertQueryStatements) {
+        GraqlQuery graqlQuery = Graql.parse(String.join("\n", insertQueryStatements));
+        tx.execute(graqlQuery);
+    }
 
     @Given("graql insert throws")
     public void graql_insert_throws(String insertQueryStatements) {
