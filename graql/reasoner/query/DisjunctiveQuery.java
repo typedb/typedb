@@ -157,7 +157,7 @@ public class DisjunctiveQuery extends ResolvableQuery {
     @Override
     ResolvableQuery copy() {
         return new DisjunctiveQuery(
-                new HashSet<>(getClauses()),
+                getClauses(),
                 getBindingVars(),
                 traversalExecutor,
                 context());
