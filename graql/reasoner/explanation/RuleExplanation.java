@@ -35,6 +35,8 @@ public class RuleExplanation extends Explanation {
         this.rule = rule;
     }
     public RuleExplanation(ConceptMap answer, Rule rule){
+        // Only ever contains one answer, such that this explanation explains the rule body in it's entirety. This is in
+        // line with the user expectation of seeing a pattern equivalent to the rule's `when` in this explanation's answer
         super(Collections.singletonList(answer));
         this.rule = rule;
     }
