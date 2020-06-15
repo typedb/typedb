@@ -53,7 +53,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class DisjunctiveQuery extends ResolvableQuery {
-    private final Set<CompositeQuery> clauses;
+    private final Set<ResolvableQuery> clauses;
     private final Set<Variable> bindingVars;
 
     public DisjunctiveQuery(Disjunction<Conjunction<Pattern>> pattern, Set<Variable> bindingVars, TraversalExecutor traversalExecutor, ReasoningContext ctx) {
@@ -63,7 +63,7 @@ public class DisjunctiveQuery extends ResolvableQuery {
         this.bindingVars = bindingVars;
     }
 
-    public DisjunctiveQuery(Set<CompositeQuery> clauses, Set<Variable> bindingVars, TraversalExecutor traversalExecutor, ReasoningContext ctx) {
+    public DisjunctiveQuery(Set<ResolvableQuery> clauses, Set<Variable> bindingVars, TraversalExecutor traversalExecutor, ReasoningContext ctx) {
         super(traversalExecutor, ctx);
         this.clauses = clauses;
         this.bindingVars = bindingVars;
@@ -79,7 +79,7 @@ public class DisjunctiveQuery extends ResolvableQuery {
         return this;
     }
 
-    public Set<CompositeQuery> getClauses() {
+    public Set<ResolvableQuery> getClauses() {
         return new HashSet<>(clauses);
     }
 
@@ -119,7 +119,7 @@ public class DisjunctiveQuery extends ResolvableQuery {
     @Override
     public Stream<ConceptMap> traverse(){
         Stream<Stream<ConceptMap>> answerStreams = clauses.stream().map(clause ->
-                traversalExecutor.traverse(clause.getPattern()).map(ans -> {
+                clause.traverse().map(ans -> {
                     ConceptMap clauseAns = new ConceptMap(ans.map(), new LookupExplanation(), clause.getPattern(ans.map()));
                     HashMap<Variable, Concept> bindingVarsSub = filterBindingVars(ans.map());
                     return new ConceptMap(bindingVarsSub, new DisjunctiveExplanation(clauseAns), getPattern(bindingVarsSub));
@@ -131,7 +131,7 @@ public class DisjunctiveQuery extends ResolvableQuery {
     @Override
     ResolvableQuery inferTypes() {
         return new DisjunctiveQuery(
-                getClauses().stream().map(CompositeQuery::inferTypes).collect(Collectors.toSet()),
+                getClauses().stream().map(ResolvableQuery::inferTypes).collect(Collectors.toSet()),
                 getBindingVars(),
                 traversalExecutor,
                 context()
@@ -141,7 +141,7 @@ public class DisjunctiveQuery extends ResolvableQuery {
     @Override
     ResolvableQuery constantValuePredicateQuery() {
         return new DisjunctiveQuery(
-                getClauses().stream().map(CompositeQuery::constantValuePredicateQuery).collect(Collectors.toSet()),
+                getClauses().stream().map(ResolvableQuery::constantValuePredicateQuery).collect(Collectors.toSet()),
                 getBindingVars(),
                 traversalExecutor,
                 context()
@@ -160,7 +160,7 @@ public class DisjunctiveQuery extends ResolvableQuery {
     @Override
     public boolean isAtomic() {
         // TODO unclear of the meaning of atomicity in this case
-        return getClauses().stream().allMatch(CompositeQuery::isAtomic);
+        return getClauses().stream().allMatch(ResolvableQuery::isAtomic);
     }
 
     @Override
@@ -197,7 +197,7 @@ public class DisjunctiveQuery extends ResolvableQuery {
 
     @Override
     public void checkValid() {
-        clauses.forEach(CompositeQuery::checkValid);
+        clauses.forEach(ResolvableQuery::checkValid);
     }
 
     @Override
@@ -212,7 +212,7 @@ public class DisjunctiveQuery extends ResolvableQuery {
 
     @Override
     public Disjunction<Pattern> getPattern() {
-        return Graql.or(clauses.stream().map(CompositeQuery::getPattern).collect(Collectors.toSet()));
+        return Graql.or(clauses.stream().map(ResolvableQuery::getPattern).collect(Collectors.toSet()));
     }
 
     @Override
@@ -276,7 +276,7 @@ public class DisjunctiveQuery extends ResolvableQuery {
     @Override
     public DisjunctiveQuery rewrite() {
         return new DisjunctiveQuery(
-                clauses.stream().map(CompositeQuery::rewrite).collect(Collectors.toSet()),
+                clauses.stream().map(ResolvableQuery::rewrite).collect(Collectors.toSet()),
                 getBindingVars(),
                 traversalExecutor,
                 context());
