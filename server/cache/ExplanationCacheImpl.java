@@ -24,9 +24,10 @@ import grakn.core.kb.server.cache.ExplanationCache;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 public class ExplanationCacheImpl implements ExplanationCache {
-    Map<ConceptMap, Explanation> cache;
+    Map<AnswerEntry, Explanation> cache;
 
     public ExplanationCacheImpl() {
         cache = new HashMap<>();
@@ -39,16 +40,43 @@ public class ExplanationCacheImpl implements ExplanationCache {
      */
     @Override
     public void record(ConceptMap answer, Explanation explanation) {
-        cache.putIfAbsent(answer, explanation);
+        cache.putIfAbsent(AnswerEntry.of(answer), explanation);
     }
 
     @Override
     public Explanation get(ConceptMap answer) {
-        return cache.get(answer);
+        return cache.get(AnswerEntry.of(answer));
     }
 
     @Override
     public void clear() {
         cache.clear();
+    }
+
+
+    private static class AnswerEntry {
+        private ConceptMap answer;
+
+        private AnswerEntry(ConceptMap answer) {
+            this.answer = answer;
+        }
+
+        public static AnswerEntry of(ConceptMap answer) {
+            return new AnswerEntry(answer);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(answer.map(), answer.getPattern());
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (obj == this) return true;
+            if (obj == null || this.getClass() != obj.getClass()) return false;
+            AnswerEntry that = (AnswerEntry) obj;
+            return this.answer.map().equals(that.answer.map())
+                    && this.answer.getPattern().equals(that.answer.getPattern());
+        }
     }
 }

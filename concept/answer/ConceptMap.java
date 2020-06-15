@@ -150,11 +150,11 @@ public class ConceptMap extends Answer {
         if (obj == this) return true;
         if (obj == null || getClass() != obj.getClass()) return false;
         ConceptMap a2 = (ConceptMap) obj;
-        return map.equals(a2.map) && pattern.equals(a2.pattern);
+        return map.equals(a2.map);
     }
 
     @Override
-    public int hashCode() { return Objects.hash(map, pattern); }
+    public int hashCode() { return Objects.hash(map); }
 
     public void forEach(BiConsumer<Variable, Concept> consumer) {
         map.forEach(consumer);
