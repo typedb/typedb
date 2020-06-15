@@ -59,6 +59,10 @@ public class Iterators {
         return new AppliedIterator<>(iterator, function);
     }
 
+    public static <T> DistinctIterator<T> distinct(Iterator<T> iterator) {
+        return new DistinctIterator<>(iterator);
+    }
+
     public static <T> Stream<T> stream(Iterator<T> iterator) {
         return StreamSupport.stream(spliteratorUnknownSize(iterator, ORDERED | IMMUTABLE), false);
     }

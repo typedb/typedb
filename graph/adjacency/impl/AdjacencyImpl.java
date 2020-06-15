@@ -34,6 +34,7 @@ import java.util.function.Predicate;
 
 import static hypergraph.common.collection.Bytes.join;
 import static hypergraph.common.iterator.Iterators.apply;
+import static hypergraph.common.iterator.Iterators.distinct;
 import static hypergraph.common.iterator.Iterators.link;
 
 public abstract class AdjacencyImpl<
@@ -189,7 +190,7 @@ public abstract class AdjacencyImpl<
             if (edges.get(schema) == null) {
                 return util.newIteratorBuilder(storageIterator);
             } else {
-                return util.newIteratorBuilder(link(edges.get(schema).iterator(), storageIterator));
+                return util.newIteratorBuilder(distinct(link(edges.get(schema).iterator(), storageIterator)));
             }
         }
 

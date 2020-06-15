@@ -41,6 +41,7 @@ public abstract class EdgeImpl {
         final VERTEX from;
         final VERTEX to;
         final AtomicBoolean committed;
+        final AtomicBoolean deleted;
         private int hash;
 
         /**
@@ -55,6 +56,7 @@ public abstract class EdgeImpl {
             this.from = from;
             this.to = to;
             committed = new AtomicBoolean(false);
+            deleted = new AtomicBoolean(false);
         }
 
         abstract EDGE getThis();
@@ -92,8 +94,10 @@ public abstract class EdgeImpl {
          * each {@code Vertex}, and does not exist in storage.
          */
         public void delete() {
-            from.outs().deleteNonRecursive(getThis());
-            to.ins().deleteNonRecursive(getThis());
+            if (deleted.compareAndSet(false, true)) {
+                from.outs().deleteNonRecursive(getThis());
+                to.ins().deleteNonRecursive(getThis());
+            }
         }
 
         /**
@@ -148,7 +152,7 @@ public abstract class EdgeImpl {
         final EDGE_IID inIID;
         final VERTEX_IID fromIID;
         final VERTEX_IID toIID;
-        final AtomicBoolean isDeleted;
+        final AtomicBoolean deleted;
         VERTEX from;
         VERTEX to;
         private int hash;
@@ -184,7 +188,7 @@ public abstract class EdgeImpl {
                 outIID = edgeIID(iid.end(), iid.schema().out(), iid.start());
             }
 
-            isDeleted = new AtomicBoolean(false);
+            deleted = new AtomicBoolean(false);
         }
 
         abstract EDGE getThis();
@@ -210,21 +214,15 @@ public abstract class EdgeImpl {
         public VERTEX from() {
             if (from != null) return from;
             from = graph.convert(fromIID);
+            from.outs().putNonRecursive(getThis());
             return from;
-            // TODO: Edge traversal optimisation
-            //       We could cache this edge, so we don't need to read it from storage again:
-            //       from.outs().putNonRecursive(getThis()); -- do the same for this.to().
-            //       We'd also have to make AdjacencyImpl.Persisted.edge() return an iterator of *distinct* edges.
         }
 
         public VERTEX to() {
             if (to != null) return to;
             to = graph.convert(toIID);
+            to.ins().putNonRecursive(getThis());
             return to;
-            // TODO: Edge traversal optimisation
-            //       We could cache this edge, so we don't need to read it from storage again:
-            //       to.ins().putNonRecursive(getThis()); -- do the same for this.from().
-            //       We'd also have to make AdjacencyImpl.Persisted.edge() return an iterator of *distinct* edges.
         }
 
         /**
@@ -237,7 +235,7 @@ public abstract class EdgeImpl {
          * of this edge from the graph storage.
          */
         public void delete() {
-            if (isDeleted.compareAndSet(false, true)) {
+            if (deleted.compareAndSet(false, true)) {
                 if (from != null) from.outs().deleteNonRecursive(getThis());
                 if (to != null) to.ins().deleteNonRecursive(getThis());
                 graph.storage().delete(this.outIID.bytes());
