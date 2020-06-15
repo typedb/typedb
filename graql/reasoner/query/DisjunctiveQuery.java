@@ -90,7 +90,7 @@ public class DisjunctiveQuery extends ResolvableQuery {
     // Only needed for a disjunction to be the body of a rule
     @Override
     public Set<String> validateOntologically(Label ruleLabel) {
-        return getClauses().stream().flatMap(q -> q.validateOntologically(ruleLabel).stream()).collect(Collectors.toSet());
+        throw new UnsupportedOperationException("A disjunctions in rule body is not yet supported");
     }
 
     public HashMap<Variable, Concept> filterBindingVars(Map<Variable, Concept> map) {
