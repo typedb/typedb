@@ -272,7 +272,7 @@ public class GraknClientIT {
                     var("z").isa("content").has("name", "z"),
                     var("infer").rel("contained", "x").rel("container", "z").isa("contains")
             );
-            ConceptMap answer = Iterables.getOnlyElement(tx.execute(Graql.match(patterns).get()).get());
+            ConceptMap answer = Iterables.getOnlyElement(tx.execute(Graql.match(patterns).get(), GraknClient.Options.explain(true)).get());
 
             Set<ConceptMap> deductions = deductions(answer);
             assertTrue(deductions.stream().anyMatch(ans -> {

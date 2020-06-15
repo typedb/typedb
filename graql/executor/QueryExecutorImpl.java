@@ -287,7 +287,11 @@ public class QueryExecutorImpl implements QueryExecutor {
 
         answers = filter(query, answers);
         if (explain) {
+            // record the explanations if the user indicated they will retrieved them
             answers = answers.peek(answer -> explanationCache.record(answer, answer.explanation()));
+        } else {
+            // null out the explanations if the user does not want the explanation
+            answers = answers.map(answer -> new ConceptMap(answer.map(), null, answer.getPattern()));
         }
         return answers;
     }
