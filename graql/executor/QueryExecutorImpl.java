@@ -181,7 +181,7 @@ public class QueryExecutorImpl implements QueryExecutor {
 
 
     @Override
-    public Stream<ConceptMap> insert(GraqlInsert query, boolean explainable) {
+    public Stream<ConceptMap> insert(GraqlInsert query, boolean explain) {
         Collection<Statement> statements = query.statements().stream()
                 .flatMap(statement -> statement.innerStatements().stream())
                 .collect(Collectors.toList());
@@ -204,7 +204,7 @@ public class QueryExecutorImpl implements QueryExecutor {
             LinkedHashSet<Variable> projectedVars = new LinkedHashSet<>(matchVars);
             projectedVars.retainAll(insertVars);
 
-            Stream<ConceptMap> answers = get(match.get(projectedVars), explainable);
+            Stream<ConceptMap> answers = get(match.get(projectedVars), explain);
             answerStream = answers
                     .flatMap(answer -> WriteExecutorImpl.create(conceptManager, executors.build()).write(answer))
                     .collect(toList()).stream();
@@ -279,14 +279,14 @@ public class QueryExecutorImpl implements QueryExecutor {
     }
 
     @Override
-    public Stream<ConceptMap> get(GraqlGet query, boolean explainable) {
+    public Stream<ConceptMap> get(GraqlGet query, boolean explain) {
         //NB: we need distinct as projection can produce duplicates
         Stream<ConceptMap> answers = match(query.match())
                 .map(ans -> ans.project(query.vars()))
                 .distinct();
 
         answers = filter(query, answers);
-        if (explainable) {
+        if (explain) {
             answers = answers.peek(answer -> explanationCache.record(answer, answer.explanation()));
         }
         return answers;

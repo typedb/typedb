@@ -419,9 +419,9 @@ public class TransactionImpl implements Transaction {
     }
 
     @Override
-    public Stream<ConceptMap> stream(GraqlInsert query, boolean infer, boolean explainable) {
+    public Stream<ConceptMap> stream(GraqlInsert query, boolean infer, boolean explain) {
         checkMutationAllowed();
-        Stream<ConceptMap> inserted = executor(infer).insert(query, explainable);
+        Stream<ConceptMap> inserted = executor(infer).insert(query, explain);
 
         Stream<ConceptMap> explicitlyPersisted = inserted.peek(conceptMap -> {
             // mark all inferred concepts that are required for the insert for persistence explicitly
@@ -540,8 +540,8 @@ public class TransactionImpl implements Transaction {
     }
 
     @Override
-    public Stream<ConceptMap> stream(GraqlGet query, boolean infer, boolean explainable) {
-        return executor(infer).get(query, explainable);
+    public Stream<ConceptMap> stream(GraqlGet query, boolean infer, boolean explain) {
+        return executor(infer).get(query, explain);
     }
 
     // Aggregate Query
@@ -669,8 +669,8 @@ public class TransactionImpl implements Transaction {
     }
 
     @Override
-    public List<? extends Answer> execute(GraqlQuery query, boolean infer, boolean explainable) {
-        return stream(query, infer, explainable).collect(Collectors.toList());
+    public List<? extends Answer> execute(GraqlQuery query, boolean infer, boolean explain) {
+        return stream(query, infer, explain).collect(Collectors.toList());
     }
 
     @Override
@@ -684,7 +684,7 @@ public class TransactionImpl implements Transaction {
     }
 
     @Override
-    public Stream<? extends Answer> stream(GraqlQuery query, boolean infer, boolean explainable) {
+    public Stream<? extends Answer> stream(GraqlQuery query, boolean infer, boolean explain) {
         if (query instanceof GraqlDefine) {
             return stream((GraqlDefine) query);
 
@@ -692,13 +692,13 @@ public class TransactionImpl implements Transaction {
             return stream((GraqlUndefine) query);
 
         } else if (query instanceof GraqlInsert) {
-            return stream((GraqlInsert) query, infer, explainable);
+            return stream((GraqlInsert) query, infer, explain);
 
         } else if (query instanceof GraqlDelete) {
             return stream((GraqlDelete) query, infer);
 
         } else if (query instanceof GraqlGet) {
-            return stream((GraqlGet) query, infer, explainable);
+            return stream((GraqlGet) query, infer, explain);
 
         } else if (query instanceof GraqlGet.Aggregate) {
             return stream((GraqlGet.Aggregate) query, infer);

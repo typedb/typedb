@@ -71,10 +71,10 @@ public interface Transaction extends AutoCloseable {
 
     List<ConceptMap> execute(GraqlInsert query);
     List<ConceptMap> execute(GraqlInsert query, boolean infer);
-    List<ConceptMap> execute(GraqlInsert query, boolean infer, boolean explainable);
+    List<ConceptMap> execute(GraqlInsert query, boolean infer, boolean explain);
     Stream<ConceptMap> stream(GraqlInsert query);
     Stream<ConceptMap> stream(GraqlInsert query, boolean infer);
-    Stream<ConceptMap> stream(GraqlInsert query, boolean infer, boolean explainable);
+    Stream<ConceptMap> stream(GraqlInsert query, boolean infer, boolean explain);
 
     List<Void> execute(GraqlDelete query);
     List<Void> execute(GraqlDelete query, boolean infer);
@@ -83,10 +83,10 @@ public interface Transaction extends AutoCloseable {
 
     List<ConceptMap> execute(GraqlGet query);
     List<ConceptMap> execute(GraqlGet query, boolean infer);
-    List<ConceptMap> execute(GraqlGet query, boolean infer, boolean explainable);
+    List<ConceptMap> execute(GraqlGet query, boolean infer, boolean explain);
     Stream<ConceptMap> stream(GraqlGet query);
     Stream<ConceptMap> stream(GraqlGet query, boolean infer);
-    Stream<ConceptMap> stream(GraqlGet query, boolean infer, boolean explainable);
+    Stream<ConceptMap> stream(GraqlGet query, boolean infer, boolean explain);
 
     List<Numeric> execute(GraqlGet.Aggregate query);
     List<Numeric> execute(GraqlGet.Aggregate query, boolean infer);
@@ -114,10 +114,10 @@ public interface Transaction extends AutoCloseable {
 
     List<? extends Answer> execute(GraqlQuery query);
     List<? extends Answer> execute(GraqlQuery query, boolean infer);
-    List<? extends Answer> execute(GraqlQuery query, boolean infer, boolean explainable);
+    List<? extends Answer> execute(GraqlQuery query, boolean infer, boolean explain);
     Stream<? extends Answer> stream(GraqlQuery query);
     Stream<? extends Answer> stream(GraqlQuery query, boolean infer);
-    Stream<? extends Answer> stream(GraqlQuery query, boolean infer, boolean explainable);
+    Stream<? extends Answer> stream(GraqlQuery query, boolean infer, boolean explain);
 
     boolean isOpen();
 
@@ -301,7 +301,7 @@ public interface Transaction extends AutoCloseable {
      */
     Rule getRule(String label);
 
-    Explanation explanation(ConceptMap explainable);
+    Explanation explanation(ConceptMap explain);
 
     @Override
     void close();
