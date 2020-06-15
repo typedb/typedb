@@ -33,6 +33,7 @@ import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.graql.executor.TraversalExecutor;
+import grakn.core.kb.graql.reasoner.ReasonerException;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
@@ -70,7 +71,7 @@ public class DisjunctiveQuery extends ResolvableQuery {
 
     @Override
     public CompositeQuery asComposite() {
-        throw new RuntimeException("Not composite"); //TODO What exception should this throw?
+        throw ReasonerException.illegalQueryConversion(this.getClass(), CompositeQuery.class);
     }
 
     @Override

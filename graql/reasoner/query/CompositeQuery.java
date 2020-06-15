@@ -113,7 +113,7 @@ public class CompositeQuery extends ResolvableQuery {
 
     @Override
     public DisjunctiveQuery asDisjunctive() {
-        throw new RuntimeException("Not disjunctive");
+        throw ReasonerException.illegalQueryConversion(this.getClass(), DisjunctiveQuery.class);
     }
 
     /**
