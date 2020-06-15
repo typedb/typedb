@@ -299,12 +299,7 @@ public class CompositeQuery extends ResolvableQuery {
 
     @Override
     public String toString(){
-        // TODO Why not `return getPattern().toString();`?
-        String complementString = getComplementQueries().stream()
-                .map(q -> "\nNOT {" + q.toString() + "\n}")
-                .collect(Collectors.joining());
-        return getConjunctiveQuery().toString() +
-                (!getComplementQueries().isEmpty()? complementString : "");
+        return getPattern().toString();
     }
 
     // TODO only required for rules
