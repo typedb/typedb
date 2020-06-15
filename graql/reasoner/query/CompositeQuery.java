@@ -340,14 +340,7 @@ public class CompositeQuery extends ResolvableQuery {
     public Conjunction<Pattern> getPattern() {
         if (pattern == null) {
             Set<Pattern> conjunctPatterns = Sets.newLinkedHashSet(getConjunctiveQuery().getPattern().getPatterns());
-            getComplementQueries().stream().map(ResolvableQuery::getPattern).forEach(p -> {
-                if (p instanceof Conjunction && ((Conjunction<Pattern>) p).getPatterns().size() == 1) {
-                    // Unwrap the conjunction if it has only one child pattern
-                    conjunctPatterns.add(Graql.not(Iterators.getOnlyElement(((Conjunction<Pattern>) p).getPatterns().iterator())));
-                } else {
-                    conjunctPatterns.add(Graql.not(p));
-                }
-            });
+            getComplementQueries().stream().map(ResolvableQuery::getPattern).forEach(p -> conjunctPatterns.add(Graql.not(p)));
             pattern = Graql.and(conjunctPatterns);
         }
         return pattern;

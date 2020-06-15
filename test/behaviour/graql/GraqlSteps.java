@@ -340,11 +340,13 @@ public class GraqlSteps {
                 assertEquals(String.format("Incorrect rule label for explanation entry %d with rule %s.\nExpected: %s\nActual: %s", entryId, ruleLabel, expectedRule, ruleLabel), expectedRule, ruleLabel);
 
                 Map<String, String> expectedRuleDefinition = rules.get(expectedRule);
-                String when = Objects.requireNonNull(rule.when()).toString();
-                assertEquals(String.format("Incorrect rule body (when) for explanation entry %d with rule %s.\nExpected: %s\nActual: %s", entryId, ruleLabel, expectedRuleDefinition.get("when"), when), expectedRuleDefinition.get("when"), when);
+                Pattern when = Graql.parsePattern(Objects.requireNonNull(rule.when()).toString());
+                assertEquals(String.format("Incorrect rule body (when) for explanation entry %d with rule %s.\nExpected: %s\nActual: %s", entryId, ruleLabel, expectedRuleDefinition.get("when"), when),
+                        Graql.parsePattern(expectedRuleDefinition.get("when")), when);
 
-                String then = Objects.requireNonNull(rule.then()).toString();
-                assertEquals(String.format("Incorrect rule head (then) for explanation entry %d with rule %s.\nExpected: %s\nActual: %s", entryId, ruleLabel, expectedRuleDefinition.get("then"), then), expectedRuleDefinition.get("then"), then);
+                Pattern then = Graql.parsePattern(Objects.requireNonNull(rule.then()).toString());
+                assertEquals(String.format("Incorrect rule head (then) for explanation entry %d with rule %s.\nExpected: %s\nActual: %s", entryId, ruleLabel, expectedRuleDefinition.get("then"), then),
+                        Graql.parsePattern(expectedRuleDefinition.get("then")), then);
             }
             for (String child : children) {
                 // Recurse
