@@ -231,7 +231,7 @@ public class DisjunctiveQuery extends ResolvableQuery {
 
     @Override
     public ConceptMap getSubstitution() {
-        // TODO What should this do, given that there could be a substitution for any of its clauses
+        // When this method is needed it should be a substitution over the binding variables
         throw new UnsupportedOperationException();
     }
 
