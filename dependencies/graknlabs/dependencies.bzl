@@ -42,7 +42,7 @@ def graknlabs_protocol():
     git_repository(
         name = "graknlabs_protocol",
         remote = "https://github.com/flyingsilverfin/protocol",
-        commit = "49684dcd658195400e18de43393a8f34877988d4",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_protocol
+        commit = "6ce57b7df71f27aa68007f4bb819d5a8963aba45",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_protocol
     )
 
 def graknlabs_client_java():
