@@ -240,8 +240,9 @@ public class TransactionImpl implements Transaction {
         //this should ack all inserts that weren't deduplicated so that we have correct attributes in attributesCommitted
         transactionCache.getNewAttributes().forEach((indexPair, conceptId) -> {
             String index = indexPair.second();
-            if (!deduplicatedIndices.contains(index))
+            if (!deduplicatedIndices.contains(index)) {
                 session.attributeManager().attributesCommitted().put(index, conceptId);
+            }
         });
 
     }
