@@ -199,9 +199,9 @@ public class GraqlSteps {
     public void graql_query(String graqlQueryStatements) {
         GraqlQuery graqlQuery = Graql.parse(String.join("\n", graqlQueryStatements));
         if (graqlQuery instanceof GraqlGet) {
-            tx.execute(graqlQuery.asGet(), true, true); // always use inference and have explanations
+            answers = tx.execute(graqlQuery.asGet(), true, true); // always use inference and have explanations
         } else if (graqlQuery instanceof GraqlInsert) {
-            tx.execute(graqlQuery.asInsert(), true, true); // always use inference and have explanations
+            answers = tx.execute(graqlQuery.asInsert(), true, true); // always use inference and have explanations
         } else {
             throw new ScenarioDefinitionException("Only match-get and inserted supported for now");
         }
