@@ -19,7 +19,6 @@
 package grakn.core.server.session;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import grakn.common.util.Pair;
 import grakn.core.common.exception.ErrorMessage;
@@ -40,10 +39,7 @@ import grakn.core.core.JanusTraversalSourceProvider;
 import grakn.core.core.Schema;
 import grakn.core.graph.core.JanusGraphTransaction;
 import grakn.core.graql.reasoner.cache.MultilevelSemanticCache;
-import grakn.core.graql.reasoner.explanation.JoinExplanation;
-import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.reasoner.query.ReasonerQueryFactory;
-import grakn.core.graql.reasoner.query.ResolvableQuery;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Concept;
@@ -62,17 +58,16 @@ import grakn.core.kb.concept.structure.PropertyNotUniqueException;
 import grakn.core.kb.concept.structure.VertexElement;
 import grakn.core.kb.graql.executor.ExecutorFactory;
 import grakn.core.kb.graql.executor.QueryExecutor;
-import grakn.core.kb.graql.reasoner.ReasonerException;
 import grakn.core.kb.graql.reasoner.cache.RuleCache;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
+import grakn.core.kb.server.cache.ExplanationCache;
 import grakn.core.kb.server.cache.TransactionCache;
 import grakn.core.kb.server.exception.InvalidKBException;
 import grakn.core.kb.server.exception.TransactionException;
 import grakn.core.kb.server.keyspace.Keyspace;
 import grakn.core.keyspace.StatisticsDeltaImpl;
 import grakn.core.server.Validator;
-import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlCompute;
 import graql.lang.query.GraqlDefine;
@@ -120,6 +115,7 @@ public class TransactionImpl implements Transaction {
     // Caches
     protected final MultilevelSemanticCache queryCache;
     protected final RuleCache ruleCache;
+    protected final ExplanationCache explanationCache;
     protected final TransactionCache transactionCache;
 
     // TransactionOLTP Specific
@@ -139,9 +135,9 @@ public class TransactionImpl implements Transaction {
 
     public TransactionImpl(Session session, JanusGraphTransaction janusTransaction, ConceptManager conceptManager,
                            JanusTraversalSourceProvider janusTraversalSourceProvider, TransactionCache transactionCache,
-                           MultilevelSemanticCache queryCache, RuleCache ruleCache,
+                           MultilevelSemanticCache queryCache, RuleCache ruleCache, ExplanationCache explanationCache,
                            StatisticsDeltaImpl statisticsDelta, ExecutorFactory executorFactory,
-                            ReasonerQueryFactory reasonerQueryFactory,
+                           ReasonerQueryFactory reasonerQueryFactory,
                            ReadWriteLock graphLock, long typeShardThreshold) {
         createdInCurrentThread.set(true);
 
@@ -158,6 +154,7 @@ public class TransactionImpl implements Transaction {
         this.transactionCache = transactionCache;
         this.queryCache = queryCache;
         this.ruleCache = ruleCache;
+        this.explanationCache = explanationCache;
 
         this.uncomittedStatisticsDelta = statisticsDelta;
 
@@ -178,16 +175,17 @@ public class TransactionImpl implements Transaction {
      * - use a lock if there is a tx that deletes attributes
      * - use a lock if there is a tx that mutates key implicit relations
      * - otherwise do not lock
+     *
      * @return true if graph lock need to be acquired for commit
      */
     @VisibleForTesting
-    public boolean commitLockRequired(){
+    public boolean commitLockRequired() {
         String txId = this.janusTransaction.toString();
         boolean attributeLockRequired = session.attributeManager().requiresLock(txId);
         boolean shardLockRequired = session.shardManager().requiresLock(txId);
         boolean keyLockRequired = false;
         Set<String> modifiedKeyIndices = transactionCache.getModifiedKeyIndices();
-        if (!modifiedKeyIndices.isEmpty()){
+        if (!modifiedKeyIndices.isEmpty()) {
             Set<String> insertedIndices = transactionCache.getNewAttributes().keySet().stream().map(Pair::second).collect(Collectors.toSet());
             keyLockRequired = modifiedKeyIndices.stream().anyMatch(keyIndex -> !insertedIndices.contains(keyIndex));
         }
@@ -199,12 +197,12 @@ public class TransactionImpl implements Transaction {
                 // contains attributes that we are removing in this transaction.
                 || !transactionCache.getRemovedAttributes().isEmpty()
                 || keyLockRequired;
-        if (lockRequired){
+        if (lockRequired) {
             LOG.debug(txId + " needs lock: " +
-                    (attributeLockRequired? "attribute" : "") +
-                    (shardLockRequired? "shard" : "") +
-                    (keyLockRequired? "key" : "")+
-                    (!transactionCache.getRemovedAttributes().isEmpty()? "delete" : ""));
+                    (attributeLockRequired ? "attribute" : "") +
+                    (shardLockRequired ? "shard" : "") +
+                    (keyLockRequired ? "key" : "") +
+                    (!transactionCache.getRemovedAttributes().isEmpty() ? "delete" : ""));
         }
         return lockRequired;
     }
@@ -232,7 +230,7 @@ public class TransactionImpl implements Transaction {
         LOG.trace("Graph committed.");
     }
 
-    private void ackCommit(Set<String> deduplicatedIndices){
+    private void ackCommit(Set<String> deduplicatedIndices) {
         String txId = this.janusTransaction.toString();
         session.shardManager().ackCommit(transactionCache.getNewShards().keySet(), txId);
         //this should ack all inserts so that insert requests are cleared
@@ -242,9 +240,10 @@ public class TransactionImpl implements Transaction {
         //this should ack all inserts that weren't deduplicated so that we have correct attributes in attributesCommitted
         transactionCache.getNewAttributes().forEach((indexPair, conceptId) -> {
             String index = indexPair.second();
-            if (!deduplicatedIndices.contains(index)) session.attributeManager().attributesCommitted().put(index, conceptId);
+            if (!deduplicatedIndices.contains(index)) {
+                session.attributeManager().attributesCommitted().put(index, conceptId);
+            }
         });
-
     }
 
     // When there are new attributes in the current transaction that is about to be committed
@@ -275,16 +274,16 @@ public class TransactionImpl implements Transaction {
         uncomittedStatisticsDelta.instanceDeltas().entrySet().stream()
                 .filter(e -> !Schema.MetaSchema.isMetaLabel(e.getKey()))
                 .forEach(e -> {
-            Label label = e.getKey();
-            Long uncommittedCount = e.getValue();
-            long instanceCount = session.keyspaceStatistics().count(conceptManager, label) + uncommittedCount;
-            long hardCheckpoint = getShardCheckpoint(label);
-            if (instanceCount - hardCheckpoint >= typeShardThreshold) {
-                session().shardManager().ackShardRequest(label, txId);
-                //update cache to signal fulfillment of shard request later at commit time
-                transactionCache.getNewShards().put(label, instanceCount);
-            }
-        });
+                    Label label = e.getKey();
+                    Long uncommittedCount = e.getValue();
+                    long instanceCount = session.keyspaceStatistics().count(conceptManager, label) + uncommittedCount;
+                    long hardCheckpoint = getShardCheckpoint(label);
+                    if (instanceCount - hardCheckpoint >= typeShardThreshold) {
+                        session().shardManager().ackShardRequest(label, txId);
+                        //update cache to signal fulfillment of shard request later at commit time
+                        transactionCache.getNewShards().put(label, instanceCount);
+                    }
+                });
     }
 
     private void createNewTypeShardsWhenThresholdReached() {
@@ -299,7 +298,7 @@ public class TransactionImpl implements Transaction {
                         shard(getType(label).id());
                         setShardCheckpoint(label, instanceCount);
                     }
-        });
+                });
     }
 
     private void merge(ConceptId duplicateId, ConceptId targetId) {
@@ -376,7 +375,7 @@ public class TransactionImpl implements Transaction {
     @Override
     public Stream<ConceptMap> stream(GraqlDefine query) {
         checkMutationAllowed();
-        return executorFactory.transactional( false).define(query);
+        return executorFactory.transactional(false).define(query);
     }
 
     // Undefine Query
@@ -395,13 +394,18 @@ public class TransactionImpl implements Transaction {
     // Insert query
 
     @Override
-    public List<ConceptMap> execute(GraqlInsert query, boolean infer) {
-        return stream(query, infer).collect(Collectors.toList());
+    public List<ConceptMap> execute(GraqlInsert query) {
+        return execute(query, true);
     }
 
     @Override
-    public List<ConceptMap> execute(GraqlInsert query) {
-        return execute(query, true);
+    public List<ConceptMap> execute(GraqlInsert query, boolean infer) {
+        return stream(query, infer, false).collect(Collectors.toList());
+    }
+
+    @Override
+    public List<ConceptMap> execute(GraqlInsert query, boolean infer, boolean explain) {
+        return stream(query, infer, explain).collect(Collectors.toList());
     }
 
     @Override
@@ -409,11 +413,15 @@ public class TransactionImpl implements Transaction {
         return stream(query, true);
     }
 
-
     @Override
     public Stream<ConceptMap> stream(GraqlInsert query, boolean infer) {
+        return stream(query, infer, false);
+    }
+
+    @Override
+    public Stream<ConceptMap> stream(GraqlInsert query, boolean infer, boolean explain) {
         checkMutationAllowed();
-        Stream<ConceptMap> inserted = executor().insert(query);
+        Stream<ConceptMap> inserted = executor(infer).insert(query, explain);
 
         Stream<ConceptMap> explicitlyPersisted = inserted.peek(conceptMap -> {
             // mark all inferred concepts that are required for the insert for persistence explicitly
@@ -430,11 +438,11 @@ public class TransactionImpl implements Transaction {
      * Mark all objects inserted explicitly for persistence, if they are inferred
      * The inferred objects also transitively check their generating concepts to be marked for persistence
      * "Dependant" concepts that are DIRECT dependants of a concept - concepts required to be persisted if we persist that concept
-     *
+     * <p>
      * We do the persistence operation at the top level in the Transaction, because we have access to the Caches here
      * However, it may be better performed directly in the ConceptManager or elsewhere
-     *
-     *
+     * <p>
+     * <p>
      * TODO properly design this functionality and clean it up
      */
     private void markConceptsForPersistence(Collection<Concept> concepts) {
@@ -517,13 +525,23 @@ public class TransactionImpl implements Transaction {
     }
 
     @Override
+    public List<ConceptMap> execute(GraqlGet query, boolean infer, boolean explain) {
+        return stream(query, infer, explain).collect(Collectors.toList());
+    }
+
+    @Override
     public Stream<ConceptMap> stream(GraqlGet query) {
         return stream(query, true);
     }
 
     @Override
     public Stream<ConceptMap> stream(GraqlGet query, boolean infer) {
-        return executor(infer).get(query);
+        return stream(query, infer, false);
+    }
+
+    @Override
+    public Stream<ConceptMap> stream(GraqlGet query, boolean infer, boolean explain) {
+        return executor(infer).get(query, explain);
     }
 
     // Aggregate Query
@@ -647,7 +665,12 @@ public class TransactionImpl implements Transaction {
 
     @Override
     public List<? extends Answer> execute(GraqlQuery query, boolean infer) {
-        return stream(query, infer).collect(Collectors.toList());
+        return execute(query, infer, false);
+    }
+
+    @Override
+    public List<? extends Answer> execute(GraqlQuery query, boolean infer, boolean explain) {
+        return stream(query, infer, explain).collect(Collectors.toList());
     }
 
     @Override
@@ -657,6 +680,11 @@ public class TransactionImpl implements Transaction {
 
     @Override
     public Stream<? extends Answer> stream(GraqlQuery query, boolean infer) {
+        return stream(query, infer, false);
+    }
+
+    @Override
+    public Stream<? extends Answer> stream(GraqlQuery query, boolean infer, boolean explain) {
         if (query instanceof GraqlDefine) {
             return stream((GraqlDefine) query);
 
@@ -664,13 +692,13 @@ public class TransactionImpl implements Transaction {
             return stream((GraqlUndefine) query);
 
         } else if (query instanceof GraqlInsert) {
-            return stream((GraqlInsert) query, infer);
+            return stream((GraqlInsert) query, infer, explain);
 
         } else if (query instanceof GraqlDelete) {
             return stream((GraqlDelete) query, infer);
 
         } else if (query instanceof GraqlGet) {
-            return stream((GraqlGet) query, infer);
+            return stream((GraqlGet) query, infer, explain);
 
         } else if (query instanceof GraqlGet.Aggregate) {
             return stream((GraqlGet.Aggregate) query, infer);
@@ -826,14 +854,14 @@ public class TransactionImpl implements Transaction {
 
 
     /**
-     * @param label    A unique label for the AttributeType
+     * @param label     A unique label for the AttributeType
      * @param valueType The value type of the AttributeType.
-     *                 Supported types include: ValueType.STRING, ValueType.LONG, ValueType.DOUBLE, and ValueType.BOOLEAN
+     *                  Supported types include: ValueType.STRING, ValueType.LONG, ValueType.DOUBLE, and ValueType.BOOLEAN
      * @param <V>
      * @return A new or existing AttributeType with the provided label and value type.
      * @throws TransactionException       if the graph is closed
      * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-AttributeType.
-     * @throws GraknElementException       if the {@param label} is already in use by an existing AttributeType which is
+     * @throws GraknElementException      if the {@param label} is already in use by an existing AttributeType which is
      *                                    unique or has a different ValueType.
      */
     @Override
@@ -1092,33 +1120,13 @@ public class TransactionImpl implements Transaction {
     }
 
     @Override
-    public Explanation explanation(Pattern queryPattern) {
-        GraqlGet getQuery = Graql.match(queryPattern).get();
-        ResolvableQuery q = reasonerQueryFactory.resolvable(Iterables.getOnlyElement(getQuery.match().getPatterns().getNegationDNF().getPatterns()));
+    public Explanation explanation(ConceptMap explainable) {
+        Explanation explanation = explanationCache.get(explainable);
 
-        Explanation explanation;
-        if (q.isAtomic()) {
-            // If the query is atomic, looking up the query in the cache will result in retrieving the answer associated with the query
-            // we then return the answer's explanation
-            // Only atomic queries are retrievable directly from the cache
-            ReasonerAtomicQuery asAtomicQuery = reasonerQueryFactory.atomic(q.selectAtoms().findFirst().get());
-            ConceptMap originatingAnswer = queryCache.getAnswerStream(asAtomicQuery).findFirst().orElse(null);
-            if (originatingAnswer == null) { throw ReasonerException.queryCacheAnswerNotFound(getQuery); }
-            explanation = originatingAnswer.explanation();
-        } else {
-            // If the query is not atomic, we can break it down into sub queries and retrieve each component's answer
-            // these are the same components used to re-construct the explanation for our original query, which we
-            // whenever we set the pattern, we need to provide the correct variable ID substitutions as well
-            List<ConceptMap> maps = q.selectAtoms()
-                    .map(atom -> reasonerQueryFactory.atomic(atom))
-                    .flatMap(aq -> {
-                        Stream<ConceptMap> answerStream = queryCache.getAnswerStream(aq);
-                        return answerStream.map(conceptMap -> conceptMap.withPattern(aq.withSubstitution(conceptMap).getPattern()));
-                    })
-                    .collect(Collectors.toList());
-            explanation = new JoinExplanation(maps);
+        // populate the sub-answer's explanations into the cache, this only grows on each call to explanation()
+        for (ConceptMap partialAnswer : explanation.getAnswers()) {
+            explanationCache.record(partialAnswer, partialAnswer.explanation());
         }
-
         return explanation;
     }
 
@@ -1267,11 +1275,11 @@ public class TransactionImpl implements Transaction {
 
     // shortcut helpers
     private QueryExecutor executor() {
-        return executorFactory.transactional( true);
+        return executorFactory.transactional(true);
     }
 
     private QueryExecutor executor(boolean infer) {
-        return executorFactory.transactional( infer);
+        return executorFactory.transactional(infer);
     }
 
     // ----------- Exposed low level methods that should not be exposed here TODO refactor

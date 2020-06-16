@@ -20,7 +20,6 @@ package grakn.core.graql.analytics;
 import com.google.common.collect.Lists;
 import grakn.core.common.config.Config;
 import grakn.core.concept.answer.ConceptList;
-import grakn.core.graql.executor.ExecutorFactoryImpl;
 import grakn.core.graql.reasoner.query.ReasonerQueryFactory;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
@@ -446,13 +445,6 @@ public class PathIT {
 
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
             TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
-            ConceptManager conceptManager = testTx.conceptManager();
-            TraversalPlanFactory traversalPlanFactory = testTx.traversalPlanFactory();
-            ReasonerQueryFactory reasonerQueryFactory = testTx.reasonerQueryFactory();
-            TraversalExecutor traversalExecutor = testTx.traversalExecutor();
-
-            ExecutorFactoryImpl executorFactory = new ExecutorFactoryImpl(conceptManager, null, null, traversalPlanFactory, traversalExecutor);
-            executorFactory.setReasonerQueryFactory(reasonerQueryFactory);
             List<ConceptList> allPaths;
 
             // Path from power3 to power3

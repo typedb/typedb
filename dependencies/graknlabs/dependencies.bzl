@@ -41,22 +41,22 @@ def graknlabs_graql():
 def graknlabs_protocol():
     git_repository(
         name = "graknlabs_protocol",
-        remote = "https://github.com/graknlabs/protocol",
-        commit = "4ad2dfeaeca85f4ba2f2b42c263d3adf3e36acc3",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_protocol
+        remote = "https://github.com/flyingsilverfin/protocol",
+        commit = "6ce57b7df71f27aa68007f4bb819d5a8963aba45",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_protocol
     )
 
 def graknlabs_client_java():
     git_repository(
         name = "graknlabs_client_java",
-        remote = "https://github.com/graknlabs/client-java",
-        commit = "9078e5b6442e91f78b71a0d4a7216a0a7dafe30c",
+        remote = "https://github.com/adammitchelldev/client-java",
+        commit = "0edf3b38f94536a2e6949110bc8e16887df24d23",
     )
 
 def graknlabs_console():
     git_repository(
         name = "graknlabs_console",
-        remote = "https://github.com/graknlabs/console",
-        commit = "46f270b4aad861ea21b607b41c785a264bb2a414", # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_console
+        remote = "https://github.com/adammitchelldev/console",
+        commit = "d4653e7804ee505d762a4065077b168012b16ea2", # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_console
     )
 
 def graknlabs_simulation():

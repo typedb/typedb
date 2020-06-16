@@ -69,16 +69,17 @@ java_test(
     ],
     test_class = "grakn.core.graql.reasoner.query.ExplanationIT",
     deps = [
+        "//common",
         "//concept/answer",
-        "//dependencies/maven/artifacts/com/google/guava",
-        "//dependencies/maven/artifacts/commons-collections",
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//kb/concept/api",
         "//kb/server",
         "//test/integration/graql/reasoner/graph:geo-graph",
         "//test/rule:grakn-test-server",
         "//test/integration/util:graql-test-util",
         "@graknlabs_graql//java:graql",
+        "//dependencies/maven/artifacts/com/google/guava",
+        "//dependencies/maven/artifacts/commons-collections",
+        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
     ],
 )
 
