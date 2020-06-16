@@ -18,6 +18,7 @@
 
 package hypergraph.concept.type.impl;
 
+import hypergraph.common.collection.Streams;
 import hypergraph.common.exception.Error;
 import hypergraph.common.exception.HypergraphException;
 import hypergraph.concept.thing.Relation;
@@ -196,7 +197,16 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
         }
     }
 
-    @Override // TODO: force to take in at least one role player
+    @Override
+    public void validate() {
+        super.validate();
+        if (Streams.compareSize(this.roles(), 1) < 0) {
+            throw new HypergraphException(Error.TypeWrite.INVALID_RELATION_NO_ROLE.format(this.label()));
+        }
+        // TODO: Add any validation that would apply to all RelationTypes here
+    }
+
+    @Override
     public RelationImpl create() {
         return create(false);
     }
@@ -206,11 +216,6 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
         validateIsCommitedAndNotAbstract(Relation.class);
         ThingVertex instance = vertex.graph().thing().create(vertex.iid(), isInferred);
         return RelationImpl.of(instance);
-    }
-
-    @Override
-    public void validate() {
-        // TODO: validate relation type
     }
 
     public static class Root extends RelationTypeImpl {

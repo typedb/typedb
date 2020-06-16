@@ -19,6 +19,19 @@
 package hypergraph.concept.thing.impl;
 
 import hypergraph.concept.thing.Role;
+import hypergraph.graph.vertex.ThingVertex;
+
+import java.util.Objects;
 
 public class RoleImpl implements Role {
+
+    private ThingVertex vertex;
+
+    private RoleImpl(ThingVertex vertex) {
+        this.vertex = Objects.requireNonNull(vertex);
+    }
+
+    public static RoleImpl of(ThingVertex vertex) {
+        return new RoleImpl(vertex);
+    }
 }

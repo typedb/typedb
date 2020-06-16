@@ -20,9 +20,13 @@ package hypergraph.concept.type.impl;
 
 import hypergraph.common.exception.Error;
 import hypergraph.common.exception.HypergraphException;
+import hypergraph.concept.thing.Entity;
+import hypergraph.concept.thing.impl.EntityImpl;
+import hypergraph.concept.thing.impl.RoleImpl;
 import hypergraph.concept.type.RoleType;
 import hypergraph.graph.TypeGraph;
 import hypergraph.graph.util.Schema;
+import hypergraph.graph.vertex.ThingVertex;
 import hypergraph.graph.vertex.TypeVertex;
 
 import javax.annotation.Nullable;
@@ -104,7 +108,17 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
 
     @Override
     public void validate() {
-        // TODO: validate role type
+        // TODO: Add any validation that would apply to all RoleTypes here
+    }
+
+    public RoleImpl create() {
+        return create(false);
+    }
+
+    public RoleImpl create(boolean isInferred) {
+        validateIsCommitedAndNotAbstract(Entity.class);
+        ThingVertex instance = vertex.graph().thing().create(vertex.iid(), isInferred);
+        return RoleImpl.of(instance);
     }
 
     public static class Root extends RoleTypeImpl {

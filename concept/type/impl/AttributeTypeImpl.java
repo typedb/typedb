@@ -117,7 +117,8 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
     @Override
     public void validate() {
-        // TODO: validate attribute type
+        super.validate();
+        // TODO: Add any validation that would apply to all AttributeTypes here
     }
 
     @Override

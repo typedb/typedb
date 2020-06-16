@@ -33,6 +33,7 @@ import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
+import static hypergraph.common.exception.Error.ThingWrite.ILLEGAL_ABSTRACT_WRITE;
 import static hypergraph.common.iterator.Iterators.apply;
 import static hypergraph.common.iterator.Iterators.link;
 import static hypergraph.common.iterator.Iterators.loop;
@@ -135,6 +136,19 @@ public abstract class TypeImpl implements Type {
         return stream(apply(link(
                 subs().map(t -> ((TypeImpl) t).vertex.instances()).collect(toList())
         ), thingConstructor::apply));
+    }
+
+    @Override
+    public void validate() {
+        // TODO: Add any validation that would apply to all Types here
+    }
+
+    void validateIsCommitedAndNotAbstract(Class<?> instanceClass) {
+        if (vertex.status().equals(Schema.Status.BUFFERED)) {
+            throw new HypergraphException(Error.Transaction.DIRTY_DATA_WRITES);
+        } else if (isAbstract()) {
+            throw new HypergraphException(ILLEGAL_ABSTRACT_WRITE.format(instanceClass.getSimpleName(), label()));
+        }
     }
 
     @Override

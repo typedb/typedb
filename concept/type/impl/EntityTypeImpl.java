@@ -87,6 +87,12 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
     }
 
     @Override
+    public void validate() {
+        super.validate();
+        // TODO: Add any validation that would apply to all EntityTypes here
+    }
+
+    @Override
     public EntityImpl create() {
         return create(false);
     }
@@ -96,11 +102,6 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
         validateIsCommitedAndNotAbstract(Entity.class);
         ThingVertex instance = vertex.graph().thing().create(vertex.iid(), isInferred);
         return EntityImpl.of(instance);
-    }
-
-    @Override
-    public void validate() {
-        // TODO: validate entity type
     }
 
     private static class Root extends EntityTypeImpl {

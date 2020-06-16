@@ -205,6 +205,10 @@ public abstract class Error<TYPE extends Error<TYPE>> {
                 new TypeWrite(3, "AttributeType '%s' has value type '%s', and cannot have supertype '%s' with value type '%s'.");
         public static final TypeWrite INVALID_KEY_ATTRIBUTE =
                 new TypeWrite(4, "AttributeType '%s' has value type '%s', and cannot and cannot be used as a type key.");
+        public static final TypeWrite INVALID_NON_ABSTRACT_SUPERTYPE =
+                new TypeWrite(5, "The type '%s' is abstract, but has a supertype '%s' which is not abstract.");
+        public static final TypeWrite INVALID_RELATION_NO_ROLE =
+                new TypeWrite(6, "RelationType '%s' does not relate any role type");
 
         private static final String codePrefix = "TYW";
         private static final String descriptionPrefix = "Invalid Type Definition";
