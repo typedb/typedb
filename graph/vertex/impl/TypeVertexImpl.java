@@ -95,8 +95,9 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
     }
 
     @Override
-    public void written() {
-        graph.written();
+    public void setModified() {
+        isModified = true;
+        graph.setModified();
     }
 
     @Override
@@ -116,7 +117,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         public Buffered(TypeGraph graph, VertexIID.Type iid, String label, @Nullable String scope) {
             super(graph, iid, label, scope);
             this.committed = new AtomicBoolean(false);
-            written();
+            setModified();
         }
 
         @Override
@@ -166,6 +167,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         @Override
         public TypeVertexImpl isAbstract(boolean isAbstract) {
             this.isAbstract = isAbstract;
+            this.setModified();
             return this;
         }
 
@@ -177,6 +179,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         @Override
         public TypeVertexImpl valueType(Schema.ValueType valueType) {
             this.valueType = valueType;
+            this.setModified();
             return this;
         }
 
@@ -188,6 +191,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         @Override
         public TypeVertexImpl regex(String regex) {
             this.regex = regex;
+            this.setModified();
             return this;
         }
 
@@ -287,7 +291,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         public Iterator<ThingVertexImpl> instances() {
             return link(instances.iterator(), filter(graph.storage().iterate(
                     join(iid.bytes(), Schema.Edge.Thing.ISA.in().bytes()),
-                    (key, value) -> ThingVertexImpl.of(graph.thingGraph(), EdgeIID.InwardsISA.of(key).end())
+                    (key, value) -> ThingVertexImpl.of(graph.thing(), EdgeIID.InwardsISA.of(key).end())
             ), thingVertex -> !instances.contains(thingVertex)));
             // TODO: Can we figure out how to do a "distinct iterator" that is more efficient?
             //       The one above still has to construct a full ThingVertexImpl and then check against a set
@@ -336,6 +340,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
             if (isAbstract) graph.storage().put(join(iid.bytes(), Schema.Property.ABSTRACT.infix().bytes()));
             else graph.storage().delete(join(iid.bytes(), Schema.Property.ABSTRACT.infix().bytes()));
             this.isAbstract = isAbstract;
+            this.setModified();
             return this;
         }
 
@@ -351,6 +356,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         public TypeVertexImpl valueType(Schema.ValueType valueType) {
             graph.storage().put(join(iid.bytes(), Schema.Property.VALUE_TYPE.infix().bytes()), valueType.bytes());
             this.valueType = valueType;
+            this.setModified();
             return this;
         }
 
@@ -366,6 +372,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         public TypeVertexImpl regex(String regex) {
             graph.storage().put(join(iid.bytes(), Schema.Property.REGEX.infix().bytes()), regex.getBytes());
             this.regex = regex;
+            this.setModified();
             return this;
         }
 

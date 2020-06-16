@@ -131,9 +131,9 @@ class CoreTransaction implements Hypergraph.Transaction {
             try {
                 if (type.equals(Type.READ)) {
                     throw new HypergraphException(Error.Transaction.ILLEGAL_COMMIT);
-                } else if (session.type().equals(Hypergraph.Session.Type.DATA) && graph.type().hasWrites()) {
+                } else if (session.type().equals(Hypergraph.Session.Type.DATA) && graph.type().isModified()) {
                     throw new HypergraphException(Error.Transaction.DIRTY_SCHEMA_WRITES);
-                } else if (session.type().equals(Hypergraph.Session.Type.SCHEMA) && graph.thing().hasWrites()) {
+                } else if (session.type().equals(Hypergraph.Session.Type.SCHEMA) && graph.thing().isModified()) {
                     throw new HypergraphException(Error.Transaction.DIRTY_DATA_WRITES);
                 }
 

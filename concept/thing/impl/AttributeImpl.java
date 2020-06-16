@@ -35,7 +35,7 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
 
     final AttributeVertex<VALUE> attributeVertex;
 
-    AttributeImpl(AttributeVertex<VALUE> vertex) {
+    private AttributeImpl(AttributeVertex<VALUE> vertex) {
         super(vertex);
         this.attributeVertex = vertex;
     }

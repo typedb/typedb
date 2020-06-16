@@ -42,7 +42,7 @@ public class TypeGraph implements Graph<VertexIID.Type, TypeVertex> {
     private final ConcurrentMap<VertexIID.Type, TypeVertex> typesByIID;
     private final ConcurrentMap<String, ManagedReadWriteLock> singleLabelLocks;
     private final ManagedReadWriteLock multiLabelLock;
-    private boolean hasWrites;
+    private boolean isModified;
 
     TypeGraph(Graphs graphManager) {
         this.graphManager = graphManager;
@@ -52,7 +52,7 @@ public class TypeGraph implements Graph<VertexIID.Type, TypeVertex> {
         multiLabelLock = new ManagedReadWriteLock();
     }
 
-    public ThingGraph thingGraph() {
+    public ThingGraph thing() {
         return graphManager.thing();
     }
 
@@ -191,13 +191,13 @@ public class TypeGraph implements Graph<VertexIID.Type, TypeVertex> {
     }
 
     @Override
-    public void written() {
-        if (!hasWrites) hasWrites = true;
+    public void setModified() {
+        if (!isModified) isModified = true;
     }
 
     @Override
-    public boolean hasWrites() {
-        return hasWrites;
+    public boolean isModified() {
+        return isModified;
     }
 
     /**

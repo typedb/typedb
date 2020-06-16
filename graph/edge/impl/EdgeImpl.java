@@ -214,14 +214,14 @@ public abstract class EdgeImpl {
         public VERTEX from() {
             if (from != null) return from;
             from = graph.convert(fromIID);
-            from.outs().putNonRecursive(getThis());
+            from.outs().load(getThis());
             return from;
         }
 
         public VERTEX to() {
             if (to != null) return to;
             to = graph.convert(toIID);
-            to.ins().putNonRecursive(getThis());
+            to.ins().load(getThis());
             return to;
         }
 

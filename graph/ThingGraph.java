@@ -43,7 +43,7 @@ public class ThingGraph implements Graph<VertexIID.Thing, ThingVertex> {
     private final Graphs graphManager;
     private final ConcurrentMap<VertexIID.Thing, ThingVertex> thingsByIID;
     private final AttributesByIID attributesByIID;
-    private boolean hasWrites;
+    private boolean isModified;
 
     ThingGraph(Graphs graphManager) {
         this.graphManager = graphManager;
@@ -51,7 +51,7 @@ public class ThingGraph implements Graph<VertexIID.Thing, ThingVertex> {
         attributesByIID = new AttributesByIID();
     }
 
-    public TypeGraph typeGraph() {
+    public TypeGraph type() {
         return graphManager.type();
     }
 
@@ -199,13 +199,13 @@ public class ThingGraph implements Graph<VertexIID.Thing, ThingVertex> {
     }
 
     @Override
-    public void written() {
-        if (!hasWrites) hasWrites = true;
+    public void setModified() {
+        if (!isModified) isModified = true;
     }
 
     @Override
-    public boolean hasWrites() {
-        return hasWrites;
+    public boolean isModified() {
+        return isModified;
     }
 
     public void delete(AttributeVertex<?> vertex) {

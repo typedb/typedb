@@ -19,38 +19,29 @@
 package hypergraph.concept;
 
 import hypergraph.common.exception.HypergraphException;
-import hypergraph.concept.thing.Thing;
 import hypergraph.concept.thing.impl.ThingImpl;
 import hypergraph.concept.type.AttributeType;
 import hypergraph.concept.type.EntityType;
 import hypergraph.concept.type.RelationType;
 import hypergraph.concept.type.ThingType;
-import hypergraph.concept.type.Type;
 import hypergraph.concept.type.impl.AttributeTypeImpl;
 import hypergraph.concept.type.impl.EntityTypeImpl;
 import hypergraph.concept.type.impl.RelationTypeImpl;
 import hypergraph.concept.type.impl.ThingTypeImpl;
 import hypergraph.concept.type.impl.TypeImpl;
 import hypergraph.graph.Graphs;
-import hypergraph.graph.iid.VertexIID;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.vertex.TypeVertex;
-
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+import hypergraph.graph.vertex.Vertex;
 
 import static hypergraph.common.exception.Error.Transaction.UNSUPPORTED_OPERATION;
 
 public final class Concepts {
 
     private final Graphs graph;
-    private final ConcurrentMap<VertexIID.Type, Type> types;
-    private final ConcurrentMap<VertexIID.Thing, Thing> things;
 
     public Concepts(Graphs graph) {
         this.graph = graph;
-        this.types = new ConcurrentHashMap<>();
-        this.things = new ConcurrentHashMap<>();
     }
 
     public ThingType getRootType() {
@@ -132,10 +123,14 @@ public final class Concepts {
     }
 
     public void validateTypes() {
-        graph.type().vertices().parallel().forEach(v -> types.computeIfAbsent(v.iid(), i -> TypeImpl.of(v)).validate());
+        graph.type().vertices().parallel()
+                .filter(Vertex::isModified)
+                .forEach(v -> TypeImpl.of(v).validate());
     }
 
     public void validateThings() {
-        graph.thing().vertices().parallel().forEach(v -> things.computeIfAbsent(v.iid(), i -> ThingImpl.of(v)).validate());
+        graph.thing().vertices().parallel()
+                .filter(v -> !v.isInferred() && v.isModified())
+                .forEach(v -> ThingImpl.of(v).validate());
     }
 }

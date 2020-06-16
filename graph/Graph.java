@@ -34,9 +34,9 @@ public interface Graph<VERTEX_IID extends VertexIID, VERTEX extends Vertex> {
 
     void delete(VERTEX vertex);
 
-    void written();
+    void setModified();
 
-    boolean hasWrites();
+    boolean isModified();
 
     void commit();
 

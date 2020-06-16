@@ -49,6 +49,8 @@ public interface Adjacency<
 
     void putNonRecursive(EDGE edge);
 
+    void load(EDGE edge);
+
     void delete(EDGE_SCHEMA schema, VERTEX adjacent);
 
     /**

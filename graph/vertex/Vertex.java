@@ -50,7 +50,9 @@ public interface Vertex<
 
     Adjacency<EDGE_SCHEMA, EDGE, VERTEX> ins();
 
-    void written();
+    void setModified();
+
+    boolean isModified();
 
     void delete();
 

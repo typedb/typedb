@@ -63,17 +63,26 @@ public abstract class AdjacencyImpl<
         EDGE edge = util.newBufferedEdge(schema, from, to);
         edges.computeIfAbsent(schema, e -> ConcurrentHashMap.newKeySet()).add(edge);
         to.ins().putNonRecursive(edge);
-        owner.written();
+        owner.setModified();
     }
 
     @Override
     public void putNonRecursive(EDGE edge) {
+        load(edge);
+        owner.setModified();
+    }
+
+    @Override
+    public void load(EDGE edge) {
         edges.computeIfAbsent(edge.schema(), e -> ConcurrentHashMap.newKeySet()).add(edge);
     }
 
     @Override
     public void deleteNonRecursive(EDGE edge) {
-        if (edges.containsKey(edge.schema())) edges.get(edge.schema()).remove(edge);
+        if (edges.containsKey(edge.schema())) {
+            edges.get(edge.schema()).remove(edge);
+            owner.setModified();
+        }
     }
 
     @Override

@@ -45,6 +45,7 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
         this.outs = newAdjacency(Adjacency.Direction.OUT);
         this.ins = newAdjacency(Adjacency.Direction.IN);
         this.isInferred = isInferred;
+        this.isModified = false;
     }
 
     public static ThingVertexImpl of(ThingGraph graph, VertexIID.Thing iid) {
@@ -85,13 +86,14 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
     }
 
     @Override
-    public void written() {
-        graph.written();
+    public void setModified() {
+        isModified = true;
+        graph.setModified();
     }
 
     @Override
     public TypeVertex type() {
-        return graph.typeGraph().convert(iid.type());
+        return graph.type().convert(iid.type());
     }
 
     @Override
@@ -118,7 +120,7 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
         public Buffered(ThingGraph graph, VertexIID.Thing iid, boolean isInferred) {
             super(graph, iid, isInferred);
             this.type().buffer(this);
-            written();
+            setModified();
         }
 
         @Override

@@ -302,13 +302,13 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         @Override
         public Attribute.Boolean put(boolean value, boolean isInferred) {
             validateIsCommitedAndNotAbstract(Attribute.class);
-            AttributeVertex<java.lang.Boolean> attVertex = vertex.graph().thingGraph().put(vertex, value, isInferred);
+            AttributeVertex<java.lang.Boolean> attVertex = vertex.graph().thing().put(vertex, value, isInferred);
             return new AttributeImpl.Boolean(attVertex);
         }
 
         @Override
         public Attribute.Boolean get(boolean value) {
-            AttributeVertex<java.lang.Boolean> attVertex = vertex.graph().thingGraph().get(vertex, value);
+            AttributeVertex<java.lang.Boolean> attVertex = vertex.graph().thing().get(vertex, value);
             if (attVertex != null) return new AttributeImpl.Boolean(attVertex);
             else return null;
         }
@@ -403,13 +403,13 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         @Override
         public Attribute.Long put(long value, boolean isInferred) {
             validateIsCommitedAndNotAbstract(Attribute.class);
-            AttributeVertex<java.lang.Long> attVertex = vertex.graph().thingGraph().put(vertex, value, isInferred);
+            AttributeVertex<java.lang.Long> attVertex = vertex.graph().thing().put(vertex, value, isInferred);
             return new AttributeImpl.Long(attVertex);
         }
 
         @Override
         public Attribute.Long get(long value) {
-            AttributeVertex<java.lang.Long> attVertex = vertex.graph().thingGraph().get(vertex, value);
+            AttributeVertex<java.lang.Long> attVertex = vertex.graph().thing().get(vertex, value);
             if (attVertex != null) return new AttributeImpl.Long(attVertex);
             else return null;
         }
@@ -504,13 +504,13 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         @Override
         public Attribute.Double put(double value, boolean isInferred) {
             validateIsCommitedAndNotAbstract(Attribute.class);
-            AttributeVertex<java.lang.Double> attVertex = vertex.graph().thingGraph().put(vertex, value, isInferred);
+            AttributeVertex<java.lang.Double> attVertex = vertex.graph().thing().put(vertex, value, isInferred);
             return new AttributeImpl.Double(attVertex);
         }
 
         @Override
         public Attribute.Double get(double value) {
-            AttributeVertex<java.lang.Double> attVertex = vertex.graph().thingGraph().get(vertex, value);
+            AttributeVertex<java.lang.Double> attVertex = vertex.graph().thing().get(vertex, value);
             if (attVertex != null) return new AttributeImpl.Double(attVertex);
             else return null;
         }
@@ -603,13 +603,13 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             if (value.length() > Schema.STRING_MAX_LENGTH) {
                 throw new HypergraphException(Error.ThingWrite.ILLEGAL_STRING_SIZE);
             }
-            AttributeVertex<java.lang.String> attVertex = vertex.graph().thingGraph().put(vertex, value, isInferred);
+            AttributeVertex<java.lang.String> attVertex = vertex.graph().thing().put(vertex, value, isInferred);
             return new AttributeImpl.String(attVertex);
         }
 
         @Override
         public Attribute.String get(java.lang.String value) {
-            AttributeVertex<java.lang.String> attVertex = vertex.graph().thingGraph().get(vertex, value);
+            AttributeVertex<java.lang.String> attVertex = vertex.graph().thing().get(vertex, value);
             if (attVertex != null) return new AttributeImpl.String(attVertex);
             else return null;
         }
@@ -709,14 +709,14 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         @Override
         public Attribute.DateTime put(LocalDateTime value, boolean isInferred) {
             validateIsCommitedAndNotAbstract(Attribute.class);
-            AttributeVertex<LocalDateTime> attVertex = vertex.graph().thingGraph().put(vertex, value, isInferred);
+            AttributeVertex<LocalDateTime> attVertex = vertex.graph().thing().put(vertex, value, isInferred);
             if (!isInferred && attVertex.isInferred()) attVertex.isInferred(false);
             return new AttributeImpl.DateTime(attVertex);
         }
 
         @Override
         public Attribute.DateTime get(LocalDateTime value) {
-            AttributeVertex<java.time.LocalDateTime> attVertex = vertex.graph().thingGraph().get(vertex, value);
+            AttributeVertex<java.time.LocalDateTime> attVertex = vertex.graph().thing().get(vertex, value);
             if (attVertex != null) return new AttributeImpl.DateTime(attVertex);
             else return null;
         }

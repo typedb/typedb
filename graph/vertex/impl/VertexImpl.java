@@ -23,6 +23,7 @@ import hypergraph.graph.iid.VertexIID;
 public abstract class VertexImpl<VERTEX_IID extends VertexIID> {
 
     protected VERTEX_IID iid;
+    protected boolean isModified;
 
     VertexImpl(VERTEX_IID iid) {
         this.iid = iid;
@@ -34,6 +35,10 @@ public abstract class VertexImpl<VERTEX_IID extends VertexIID> {
 
     public void iid(VERTEX_IID iid) {
         this.iid = iid;
+    }
+
+    public boolean isModified() {
+        return isModified;
     }
 
     @Override
