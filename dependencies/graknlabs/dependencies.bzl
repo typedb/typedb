@@ -48,8 +48,8 @@ def graknlabs_protocol():
 def graknlabs_client_java():
     git_repository(
         name = "graknlabs_client_java",
-        remote = "https://github.com/graknlabs/client-java",
-        commit = "dfb601484afeb8ee622828072c565479e74da2b1",
+        remote = "https://github.com/lolski/client-java",
+        commit = "8fc602af6294b1775e6d4fd5c7566d24364efe8c",
     )
 
 def graknlabs_console():
