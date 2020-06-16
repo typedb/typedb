@@ -572,9 +572,6 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
         }
 
         private static int getSizeFrom(@Nullable Transaction.Iter.Req.Options options) {
-            if (options == null) {
-                return DEFAULT_BATCH_SIZE;
-            }
             switch (options.getBatchSizeCase()) {
                 case ALL:
                     return Integer.MAX_VALUE;
