@@ -272,7 +272,7 @@ public class GraknClientIT {
                     var("z").isa("content").has("name", "z"),
                     var("infer").rel("contained", "x").rel("container", "z").isa("contains")
             );
-            ConceptMap answer = Iterables.getOnlyElement(tx.execute(Graql.match(patterns).get(), GraknClient.Options.explain(true)).get());
+            ConceptMap answer = Iterables.getOnlyElement(tx.execute(Graql.match(patterns).get(), GraknClient.Transaction.Options.explain(true)).get());
 
             Set<ConceptMap> deductions = deductions(answer);
             assertTrue(deductions.stream().anyMatch(ans -> {
@@ -317,7 +317,7 @@ public class GraknClientIT {
                     var("z").isa("content").has("name", "z"),
                     var("infer").rel("contained", "x").rel("container", "z").isa("contains")
             );
-            ConceptMap answer = Iterables.getOnlyElement(tx.execute(Graql.match(patterns).get(), GraknClient.Options.explain(true)).get());
+            ConceptMap answer = Iterables.getOnlyElement(tx.execute(Graql.match(patterns).get(), GraknClient.Transaction.Options.explain(true)).get());
 
             final int ruleStatements = tx.getRule("transitive-location").when().statements().size();
 
@@ -352,7 +352,7 @@ public class GraknClientIT {
                     var("z").isa("content").has("name", "z"),
                     rel("contained", "x").rel("container", "y").isa("contains"),
                     rel("contained", "y").rel("container", "z").isa("contains")
-            ), GraknClient.Options.explain(true));
+            ), GraknClient.Transaction.Options.explain(true));
             tx.commit();
         }
         try (GraknClient.Transaction tx = remoteSession.transaction().write()) {
@@ -361,7 +361,7 @@ public class GraknClientIT {
                     var("z").isa("content").has("name", "z"),
                     var("infer").rel("contained", "x").rel("container", "z").isa("contains")
             );
-            ConceptMap answer = Iterables.getOnlyElement(tx.execute(Graql.match(patterns).get(), GraknClient.Options.explain(true)).get());
+            ConceptMap answer = Iterables.getOnlyElement(tx.execute(Graql.match(patterns).get(), GraknClient.Transaction.Options.explain(true)).get());
 
 
             List<Pattern> patterns2 = Lists.newArrayList(
@@ -369,7 +369,7 @@ public class GraknClientIT {
                     var("z2").isa("content").has("name", "z"),
                     var().rel("contained", "x2").rel("container", "z2").isa("contains")
             );
-            ConceptMap answer2 = Iterables.getOnlyElement(tx.execute(Graql.match(patterns2).get(), GraknClient.Options.explain(true)).get());
+            ConceptMap answer2 = Iterables.getOnlyElement(tx.execute(Graql.match(patterns2).get(), GraknClient.Transaction.Options.explain(true)).get());
             testExplanation(answer2);
         }
     }
