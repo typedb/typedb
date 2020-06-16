@@ -148,7 +148,7 @@ public class GraqlSteps {
     @Given("graql insert")
     public void graql_insert(String insertQueryStatements) {
         GraqlQuery graqlQuery = Graql.parse(String.join("\n", insertQueryStatements));
-        tx.execute(graqlQuery);
+        tx.execute(graqlQuery, true, true); // always use inference and have explanations
         tx.commit();
         tx = session.transaction(Transaction.Type.WRITE);
     }
@@ -199,9 +199,9 @@ public class GraqlSteps {
     public void graql_query(String graqlQueryStatements) {
         GraqlQuery graqlQuery = Graql.parse(String.join("\n", graqlQueryStatements));
         if (graqlQuery instanceof GraqlGet) {
-            answers = tx.execute(graqlQuery.asGet());
+            tx.execute(graqlQuery.asGet(), true, true); // always use inference and have explanations
         } else if (graqlQuery instanceof GraqlInsert) {
-            answers = tx.execute(graqlQuery.asInsert());
+            tx.execute(graqlQuery.asInsert(), true, true); // always use inference and have explanations
         } else {
             throw new ScenarioDefinitionException("Only match-get and inserted supported for now");
         }

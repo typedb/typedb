@@ -244,7 +244,6 @@ public class TransactionImpl implements Transaction {
                 session.attributeManager().attributesCommitted().put(index, conceptId);
             }
         });
-
     }
 
     // When there are new attributes in the current transaction that is about to be committed
