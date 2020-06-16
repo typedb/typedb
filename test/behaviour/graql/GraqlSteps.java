@@ -284,6 +284,24 @@ public class GraqlSteps {
         }
     }
 
+    @Then("order of answer concepts is")
+    public void order_of_answer_concepts_is(List<Map<String, String>> answersIdentifiers) {
+        assertEquals(
+                String.format("The number of identifier entries (rows) should match the number of answers, but found %d identifier entries and %d answers",
+                        answersIdentifiers.size(), answers.size()),
+                answersIdentifiers.size(), answers.size()
+        );
+
+        for (int i = 0; i < answers.size(); i++) {
+            final ConceptMap answer = answers.get(i);
+            final Map<String, String> answerIdentifiers = answersIdentifiers.get(i);
+            assertTrue(
+                    String.format("The answer at index %d does not match the identifier entry (row) at index %d", i, i),
+                    matchAnswer(answerIdentifiers, answer)
+            );
+        }
+    }
+
     private boolean matchAnswer(Map<String, String> answerIdentifiers, ConceptMap answer) {
         for (Map.Entry<String, String> entry : answerIdentifiers.entrySet()) {
             String varName = entry.getKey();
