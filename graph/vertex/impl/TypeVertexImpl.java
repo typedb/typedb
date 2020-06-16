@@ -96,8 +96,10 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
 
     @Override
     public void setModified() {
-        isModified = true;
-        graph.setModified();
+        if (!isModified) {
+            isModified = true;
+            graph.setModified();
+        }
     }
 
     @Override

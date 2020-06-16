@@ -87,8 +87,10 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
 
     @Override
     public void setModified() {
-        isModified = true;
-        graph.setModified();
+        if (!isModified) {
+            isModified = true;
+            graph.setModified();
+        }
     }
 
     @Override
