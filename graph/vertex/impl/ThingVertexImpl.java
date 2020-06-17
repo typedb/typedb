@@ -212,8 +212,8 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
         }
 
         private void deleteEdges() {
-            outs.forEach(Edge::commit);
-            ins.forEach(Edge::commit);
+            outs.forEach(Edge::delete);
+            ins.forEach(Edge::delete);
         }
 
         private void deleteVertexFromStorage() {

@@ -97,11 +97,6 @@ public abstract class AdjacencyImpl<
         for (EDGE_SCHEMA schema : util.schemaValues()) delete(schema);
     }
 
-    @Override
-    public void forEach(Consumer<EDGE> function) {
-        edges.forEach((key, set) -> set.forEach(function));
-    }
-
     protected static abstract class Util<
             EDGE_SCHEMA extends Schema.Edge,
             EDGE extends Edge<EDGE_SCHEMA, ?, VERTEX>,
@@ -184,6 +179,11 @@ public abstract class AdjacencyImpl<
             InfixIID infix = infixIID(schema);
             if (infix != null && edges.containsKey(infix)) edges.get(infix).forEach(Edge::delete);
         }
+
+        @Override
+        public void forEach(Consumer<EDGE> function) {
+            edges.forEach((key, set) -> set.forEach(function));
+        }
     }
 
     protected static abstract class Persisted<
@@ -199,19 +199,21 @@ public abstract class AdjacencyImpl<
 
         abstract EDGE newPersistedEdge(byte[] key, byte[] value);
 
-        @Override
-        public ITER_BUILDER edge(EDGE_SCHEMA schema) {
-            InfixIID infix = infixIID(schema);
+        private Iterator<EDGE> edgeIterator(InfixIID infix) {
             Iterator<EDGE> storageIterator = owner.graph().storage().iterate(
-                    join(owner.iid().bytes(), direction.isOut() ? schema.out().bytes() : schema.in().bytes()),
+                    join(owner.iid().bytes(), infix.bytes()),
                     this::newPersistedEdge
             );
 
             if (edges.get(infix) == null) {
-                return util.newIteratorBuilder(storageIterator);
+                return storageIterator;
             } else {
-                return util.newIteratorBuilder(distinct(link(edges.get(infix).iterator(), storageIterator)));
+                return distinct(link(edges.get(infix).iterator(), storageIterator));
             }
+        }
+        @Override
+        public ITER_BUILDER edge(EDGE_SCHEMA schema) {
+            return util.newIteratorBuilder(edgeIterator(infixIID(schema)));
         }
 
         @Override
@@ -263,6 +265,14 @@ public abstract class AdjacencyImpl<
                     this::newPersistedEdge
             );
             storageIterator.forEachRemaining(Edge::delete);
+        }
+
+        @Override
+        public void forEach(Consumer<EDGE> function) {
+            for (EDGE_SCHEMA schema : util.schemaValues()) {
+                InfixIID infix = infixIID(schema);
+                if (infix != null) edgeIterator(infix).forEachRemaining(function);
+            }
         }
     }
 }
