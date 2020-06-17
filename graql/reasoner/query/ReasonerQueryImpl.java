@@ -258,6 +258,8 @@ public class ReasonerQueryImpl extends ResolvableQuery {
     @Override
     public void checkValid() {
         getAtoms().forEach(Atomic::checkValid);
+        //this creates the corresponding substitution and checks for id validity
+        ConceptMap substitution = getSubstitution();
     }
 
     @Override
