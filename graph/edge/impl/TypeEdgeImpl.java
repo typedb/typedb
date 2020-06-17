@@ -43,7 +43,7 @@ public class TypeEdgeImpl {
         private TypeVertex overridden;
 
         public Buffered(Schema.Edge.Type schema, TypeVertex from, TypeVertex to) {
-            super(schema, from, to);
+            super(from, schema, to);
             this.graph = from.graph();
             assert this.graph == to.graph();
         }

@@ -23,4 +23,14 @@ import hypergraph.graph.util.Schema;
 import hypergraph.graph.vertex.ThingVertex;
 
 public interface ThingAdjacency extends Adjacency<Schema.Edge.Thing, ThingEdge, ThingVertex> {
+
+    /**
+     * Puts an adjacent vertex over an edge with a given schema.
+     *
+     * ...
+     *
+     * @param schema   of the edge that will connect the owner to the adjacent vertex
+     * @param adjacent the adjacent vertex
+     */
+    void put(Schema.Edge.Thing schema, ThingVertex adjacent);
 }

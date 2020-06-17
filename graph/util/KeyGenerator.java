@@ -85,7 +85,7 @@ public abstract class KeyGenerator {
                 AtomicInteger nextValue = lastIID != null ?
                         new AtomicInteger(wrap(copyOfRange(lastIID, PrefixIID.LENGTH, VertexIID.Type.LENGTH)).getShort() + delta) :
                         new AtomicInteger(initialValue);
-                typeKeys.put(PrefixIID.of(schema.prefix().bytes()), nextValue);
+                typeKeys.put(PrefixIID.of(schema.prefix()), nextValue);
             }
         }
 

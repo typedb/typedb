@@ -43,8 +43,8 @@ public abstract class ThingAdjacencyImpl {
         }
 
         @Override
-        protected ThingEdge newBufferedEdge(Schema.Edge.Thing schema, ThingVertex from, ThingVertex to) {
-            return new ThingEdgeImpl.Buffered(schema, from, to);
+        protected ThingEdge newBufferedEdge(ThingVertex from, Schema.Edge.Thing schema, ThingVertex to) {
+            return new ThingEdgeImpl.Buffered(from, schema, to);
         }
     }
 

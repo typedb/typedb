@@ -24,13 +24,13 @@ public class PrefixIID extends IID {
 
     public static final int LENGTH = 1;
 
-    PrefixIID(byte[] bytes) {
+    private PrefixIID(byte[] bytes) {
         super(bytes);
         assert bytes.length == LENGTH;
     }
 
-    public static PrefixIID of(byte[] bytes) {
-        return new PrefixIID(bytes);
+    public static PrefixIID of(Schema.Prefix prefix) {
+        return new PrefixIID(prefix.bytes());
     }
 
     @Override

@@ -33,8 +33,8 @@ public abstract class ThingEdgeImpl {
 
         final ThingGraph graph;
 
-        public Buffered(Schema.Edge.Thing schema, ThingVertex from, ThingVertex to) {
-            super(schema, from, to);
+        public Buffered(ThingVertex from, Schema.Edge.Thing schema, ThingVertex to) {
+            super(from, schema, to);
             graph = from.graph();
         }
 

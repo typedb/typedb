@@ -62,7 +62,7 @@ public class ThingSteps {
     }
 
     @When("delete entity:/attribute:/relation: {var}")
-    public void thing_is_deleted(String var) {
+    public void delete_entity(String var) {
         get(var).delete();
     }
 

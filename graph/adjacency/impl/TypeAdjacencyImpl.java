@@ -45,7 +45,7 @@ public class TypeAdjacencyImpl {
         }
 
         @Override
-        protected TypeEdge newBufferedEdge(Schema.Edge.Type schema, TypeVertex from, TypeVertex to) {
+        protected TypeEdge newBufferedEdge(TypeVertex from, Schema.Edge.Type schema, TypeVertex to) {
             return new TypeEdgeImpl.Buffered(schema, from, to);
         }
     }

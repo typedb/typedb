@@ -70,7 +70,7 @@ public abstract class VertexIID extends IID {
          * @return a byte array representing a new IID for a {@code TypeVertex}
          */
         public static Type generate(KeyGenerator keyGenerator, Schema.Vertex.Type schema) {
-            return of(join(schema.prefix().bytes(), keyGenerator.forType(PrefixIID.of(schema.prefix().bytes()))));
+            return of(join(schema.prefix().bytes(), keyGenerator.forType(PrefixIID.of(schema.prefix()))));
         }
 
         public Schema.Vertex.Type schema() {

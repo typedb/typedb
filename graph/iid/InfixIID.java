@@ -24,13 +24,13 @@ public class InfixIID extends IID {
 
     static final int LENGTH = 1;
 
-    InfixIID(byte[] bytes) {
+    private InfixIID(byte[] bytes) {
         super(bytes);
         assert bytes.length == LENGTH;
     }
 
-    public static InfixIID of(byte[] bytes) {
-        return new InfixIID(bytes);
+    public static InfixIID of(Schema.Infix infix) {
+        return new InfixIID(infix.bytes());
     }
 
     @Override

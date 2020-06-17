@@ -20,6 +20,7 @@ package hypergraph.graph.adjacency.impl;
 
 import hypergraph.graph.adjacency.Adjacency;
 import hypergraph.graph.edge.Edge;
+import hypergraph.graph.iid.InfixIID;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.vertex.Vertex;
 
@@ -46,7 +47,7 @@ public abstract class AdjacencyImpl<
 
     final VERTEX owner;
     final Direction direction;
-    final ConcurrentMap<EDGE_SCHEMA, Set<EDGE>> edges;
+    final ConcurrentMap<InfixIID, Set<EDGE>> edges;
     final Util<EDGE_SCHEMA, EDGE, VERTEX, ITER_BUILDER> util;
 
     AdjacencyImpl(VERTEX owner, Direction direction, Util<EDGE_SCHEMA, EDGE, VERTEX, ITER_BUILDER> util) {
@@ -56,12 +57,18 @@ public abstract class AdjacencyImpl<
         this.util = util;
     }
 
+    InfixIID infixIID(EDGE_SCHEMA prefix) {
+        Schema.Infix infix = direction.isOut() ? prefix.out() : prefix.in();
+        if (infix != null) return InfixIID.of(infix);
+        return null;
+    }
+
     @Override
     public void put(EDGE_SCHEMA schema, VERTEX adjacent) {
         VERTEX from = direction.isOut() ? owner : adjacent;
         VERTEX to = direction.isOut() ? adjacent : owner;
-        EDGE edge = util.newBufferedEdge(schema, from, to);
-        edges.computeIfAbsent(schema, e -> ConcurrentHashMap.newKeySet()).add(edge);
+        EDGE edge = util.newBufferedEdge(from, schema, to);
+        edges.computeIfAbsent(infixIID(schema), e -> ConcurrentHashMap.newKeySet()).add(edge);
         to.ins().putNonRecursive(edge);
         owner.setModified();
     }
@@ -74,13 +81,13 @@ public abstract class AdjacencyImpl<
 
     @Override
     public void load(EDGE edge) {
-        edges.computeIfAbsent(edge.schema(), e -> ConcurrentHashMap.newKeySet()).add(edge);
+        edges.computeIfAbsent(infixIID(edge.schema()), e -> ConcurrentHashMap.newKeySet()).add(edge);
     }
 
     @Override
     public void deleteNonRecursive(EDGE edge) {
-        if (edges.containsKey(edge.schema())) {
-            edges.get(edge.schema()).remove(edge);
+        if (edges.containsKey(infixIID(edge.schema()))) {
+            edges.get(infixIID(edge.schema())).remove(edge);
             owner.setModified();
         }
     }
@@ -106,7 +113,7 @@ public abstract class AdjacencyImpl<
 
         protected abstract ITER_BUILDER newIteratorBuilder(Iterator<EDGE> edgeIterator);
 
-        protected abstract EDGE newBufferedEdge(EDGE_SCHEMA schema, VERTEX from, VERTEX to);
+        protected abstract EDGE newBufferedEdge(VERTEX from, EDGE_SCHEMA schema, VERTEX to);
     }
 
     protected static abstract class IteratorBuilderImpl<
@@ -145,34 +152,37 @@ public abstract class AdjacencyImpl<
         @Override
         public ITER_BUILDER edge(EDGE_SCHEMA schema) {
             Set<EDGE> t;
-            if ((t = edges.get(schema)) != null) return util.newIteratorBuilder(t.iterator());
+            if ((t = edges.get(infixIID(schema))) != null) return util.newIteratorBuilder(t.iterator());
             return util.newIteratorBuilder(Collections.emptyIterator());
         }
 
         @Override
         public EDGE edge(EDGE_SCHEMA schema, VERTEX adjacent) {
-            if (edges.containsKey(schema)) {
+            InfixIID infix = infixIID(schema);
+            if (edges.containsKey(infix)) {
                 Predicate<EDGE> predicate = direction.isOut()
                         ? e -> e.to().equals(adjacent)
                         : e -> e.from().equals(adjacent);
-                return edges.get(schema).stream().filter(predicate).findAny().orElse(null);
+                return edges.get(infix).stream().filter(predicate).findAny().orElse(null);
             }
             return null;
         }
 
         @Override
         public void delete(EDGE_SCHEMA schema, VERTEX adjacent) {
-            if (edges.containsKey(schema)) {
+            InfixIID infix = infixIID(schema);
+            if (edges.containsKey(infix)) {
                 Predicate<EDGE> predicate = direction.isOut()
                         ? e -> e.to().equals(adjacent)
                         : e -> e.from().equals(adjacent);
-                edges.get(schema).stream().filter(predicate).forEach(Edge::delete);
+                edges.get(infix).stream().filter(predicate).forEach(Edge::delete);
             }
         }
 
         @Override
         public void delete(EDGE_SCHEMA schema) {
-            if (edges.containsKey(schema)) edges.get(schema).forEach(Edge::delete);
+            InfixIID infix = infixIID(schema);
+            if (infix != null && edges.containsKey(infix)) edges.get(infix).forEach(Edge::delete);
         }
     }
 
@@ -191,30 +201,30 @@ public abstract class AdjacencyImpl<
 
         @Override
         public ITER_BUILDER edge(EDGE_SCHEMA schema) {
+            InfixIID infix = infixIID(schema);
             Iterator<EDGE> storageIterator = owner.graph().storage().iterate(
                     join(owner.iid().bytes(), direction.isOut() ? schema.out().bytes() : schema.in().bytes()),
                     this::newPersistedEdge
             );
 
-            if (edges.get(schema) == null) {
+            if (edges.get(infix) == null) {
                 return util.newIteratorBuilder(storageIterator);
             } else {
-                return util.newIteratorBuilder(distinct(link(edges.get(schema).iterator(), storageIterator)));
+                return util.newIteratorBuilder(distinct(link(edges.get(infix).iterator(), storageIterator)));
             }
         }
 
         @Override
         public EDGE edge(EDGE_SCHEMA schema, VERTEX adjacent) {
+            InfixIID infix = infixIID(schema);
             Optional<EDGE> container;
             Predicate<EDGE> predicate = direction.isOut()
                     ? e -> e.to().equals(adjacent)
                     : e -> e.from().equals(adjacent);
 
-            if (edges.containsKey(schema) &&
-                    (container = edges.get(schema).stream().filter(predicate).findAny()).isPresent()) {
+            if (edges.containsKey(infix) && (container = edges.get(infix).stream().filter(predicate).findAny()).isPresent()) {
                 return container.get();
             } else {
-                Schema.Infix infix = direction.isOut() ? schema.out() : schema.in();
                 byte[] edgeIID = join(owner.iid().bytes(), infix.bytes(), adjacent.iid().bytes());
                 byte[] overriddenIID;
                 if ((overriddenIID = owner.graph().storage().get(edgeIID)) != null) {
@@ -227,16 +237,16 @@ public abstract class AdjacencyImpl<
 
         @Override
         public void delete(EDGE_SCHEMA schema, VERTEX adjacent) {
+            InfixIID infix = infixIID(schema);
             Optional<EDGE> edgeOpt;
             Predicate<EDGE> predicate = direction.isOut()
                     ? e -> e.to().equals(adjacent)
                     : e -> e.from().equals(adjacent);
 
-            if (edges.containsKey(schema) && (edgeOpt = edges.get(schema).stream().filter(predicate).findAny()).isPresent()) {
+            if (edges.containsKey(infix) && (edgeOpt = edges.get(infix).stream().filter(predicate).findAny()).isPresent()) {
                 edgeOpt.get().delete();
             }
 
-            Schema.Infix infix = direction.isOut() ? schema.out() : schema.in();
             byte[] edgeIID = join(owner.iid().bytes(), infix.bytes(), adjacent.iid().bytes());
             byte[] iidValueBytes;
             if ((iidValueBytes = owner.graph().storage().get(edgeIID)) != null) {
@@ -246,7 +256,8 @@ public abstract class AdjacencyImpl<
 
         @Override
         public void delete(EDGE_SCHEMA schema) {
-            if (edges.containsKey(schema)) edges.get(schema).parallelStream().forEach(Edge::delete);
+            InfixIID infix = infixIID(schema);
+            if (edges.containsKey(infix)) edges.get(infix).parallelStream().forEach(Edge::delete);
             Iterator<EDGE> storageIterator = owner.graph().storage().iterate(
                     join(owner.iid().bytes(), direction.isOut() ? schema.out().bytes() : schema.in().bytes()),
                     this::newPersistedEdge

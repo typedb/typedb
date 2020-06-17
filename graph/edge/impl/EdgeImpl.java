@@ -47,11 +47,11 @@ public abstract class EdgeImpl {
         /**
          * Default constructor for {@code EdgeImpl.Buffered}.
          *
-         * @param schema the edge {@code Schema}
          * @param from   the tail vertex
+         * @param schema the edge {@code Schema}
          * @param to     the head vertex
          */
-        Buffered(EDGE_SCHEMA schema, VERTEX from, VERTEX to) {
+        Buffered(VERTEX from, EDGE_SCHEMA schema, VERTEX to) {
             this.schema = schema;
             this.from = from;
             this.to = to;
