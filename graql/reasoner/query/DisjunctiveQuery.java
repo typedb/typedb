@@ -159,15 +159,12 @@ public class DisjunctiveQuery extends ResolvableQuery {
 
     @Override
     public boolean isAtomic() {
-        // TODO unclear of the meaning of atomicity in this case
-        return getClauses().stream().allMatch(ResolvableQuery::isAtomic);
+        throw new UnsupportedOperationException();
     }
 
     @Override
     boolean isEquivalent(ResolvableQuery q) {
-        DisjunctiveQuery that = q.asDisjunctive();
-        return that.getClauses().size() == getClauses().size()
-                && getClauses().stream().allMatch(clause -> that.getClauses().stream().anyMatch(clause::isEquivalent));
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -192,7 +189,7 @@ public class DisjunctiveQuery extends ResolvableQuery {
 
     @Override
     public Set<Atomic> getAtoms() {
-        return getClauses().stream().flatMap(c -> c.getAtoms().stream()).collect(Collectors.toSet());
+        throw new UnsupportedOperationException();
     }
 
     @Override

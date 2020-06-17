@@ -32,7 +32,6 @@ import java.util.Set;
 
 public class DisjunctiveState extends AnswerPropagatorState<DisjunctiveQuery> {
 
-    // TODO Surely the subGoals won't necessarily be atomic and may be whole conjunctions
     public DisjunctiveState(DisjunctiveQuery query, ConceptMap sub, Unifier u, AnswerPropagatorState parent, Set<ReasonerAtomicQuery> subGoals) {
         super(query, sub, u, parent, subGoals);
     }
