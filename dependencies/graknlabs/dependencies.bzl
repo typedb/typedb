@@ -35,28 +35,28 @@ def graknlabs_graql():
     git_repository(
         name = "graknlabs_graql",
         remote = "https://github.com/graknlabs/graql",
-        commit = "4e37a87cb562e47f04c270c6147eac2567d4a223",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_graql
+        tag = "1.0.7",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_graql
     )
 
 def graknlabs_protocol():
     git_repository(
         name = "graknlabs_protocol",
         remote = "https://github.com/graknlabs/protocol",
-        commit = "8ba9a34eb208195fed6c98d4cfc11c8036a83c92",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_protocol
+        tag = "1.0.6",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_protocol
     )
 
 def graknlabs_client_java():
     git_repository(
         name = "graknlabs_client_java",
         remote = "https://github.com/graknlabs/client-java",
-        commit = "5b2b4228b4b5a6fd2ca2e8611729bf6d8abeaf62",
+        tag = "1.8.0",
     )
 
 def graknlabs_console():
     git_repository(
         name = "graknlabs_console",
         remote = "https://github.com/graknlabs/console",
-        commit = "8f81f72cad42fef9029dfb6f4311ca824e68256e", # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_console
+        tag = "1.0.6", # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_console
     )
 
 def graknlabs_simulation():
@@ -77,5 +77,5 @@ def graknlabs_grabl_tracing():
     git_repository(
         name = "graknlabs_grabl_tracing",
         remote = "https://github.com/graknlabs/grabl-tracing",
-        commit = "c533775da0af19c5913e725486d68cc849b0dbdb", # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_grabl_tracing
+        commit = "0.1.0", # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_grabl_tracing
     )
