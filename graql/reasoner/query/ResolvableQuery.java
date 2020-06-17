@@ -160,7 +160,7 @@ public abstract class ResolvableQuery implements ReasonerQuery {
      */
     @CheckReturnValue
     public Stream<ConceptMap> resolve(Set<ReasonerAtomicQuery> subGoals, boolean infer){
-        boolean doNotResolve = !infer || getAtoms().isEmpty() || (isPositive() && !isRuleResolvable());
+        boolean doNotResolve = !infer || (isPositive() && !isRuleResolvable());
         if (doNotResolve) {
             return traverse();
         } else {
