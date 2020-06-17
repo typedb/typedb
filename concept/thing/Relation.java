@@ -19,6 +19,11 @@
 package hypergraph.concept.thing;
 
 import hypergraph.concept.type.RelationType;
+import hypergraph.concept.type.RoleType;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Stream;
 
 public interface Relation extends Thing {
 
@@ -46,5 +51,15 @@ public interface Relation extends Thing {
      */
     @Override
     Relation has(Attribute attribute);
+
+    Relation assign(RoleType roleType, Thing player);
+
+    Relation unassign(RoleType roleType, Thing player);
+
+    default Stream<? extends Thing> players(RoleType roleTypes) {
+        return players(Collections.singletonList(roleTypes));
+    }
+
+    Stream<? extends Thing> players(List<RoleType> roleTypes);
 
 }

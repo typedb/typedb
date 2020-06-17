@@ -165,6 +165,8 @@ public abstract class Error<TYPE extends Error<TYPE>> {
                 new ThingWrite(5, "Attempted to assign a key to a(n) '%s' when it already has one.");
         public static final ThingWrite THING_KEY_TAKEN =
                 new ThingWrite(6, "Attempted to assign a key that has been taken onto a(n) '%s'.");
+        public static final ThingWrite RELATION_UNRELATED_ROLE =
+                new ThingWrite(7, "Relation type '%s' does not relate role type '%s'.");
         private static final String codePrefix = "THW";
         private static final String descriptionPrefix = "Invalid Thing Write";
 

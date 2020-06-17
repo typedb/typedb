@@ -48,4 +48,14 @@ public class RelationSteps {
     public void relation_type_get_instances_is_empty(String typeLabel) {
         assertEquals(0, tx().concepts().getRelationType(typeLabel).instances().count());
     }
+
+    @When("relation {var} set player for role\\( ?{type_label} ?): {var}")
+    public void relation_set_player_for_role(String var1, String roleTypeLabel, String var2) {
+        get(var1).asRelation().assign(get(var1).asRelation().type().role(roleTypeLabel), get(var2));
+    }
+
+    @Then("relation {var} get player for role\\( ?{type_label} ?): {var}")
+    public void relation_get_player_for_role(String var1, String roleTypeLabel, String var2) {
+        assertTrue(get(var1).asRelation().players(get(var1).asRelation().type().role(roleTypeLabel)).anyMatch(p -> p.equals(get(var2))));
+    }
 }

@@ -18,21 +18,24 @@
 
 package hypergraph.concept.thing.impl;
 
+import hypergraph.common.exception.Error;
+import hypergraph.common.exception.HypergraphException;
 import hypergraph.concept.thing.Attribute;
 import hypergraph.concept.thing.Relation;
+import hypergraph.concept.thing.Thing;
+import hypergraph.concept.type.RoleType;
 import hypergraph.concept.type.impl.RelationTypeImpl;
+import hypergraph.concept.type.impl.RoleTypeImpl;
+import hypergraph.graph.util.Schema;
 import hypergraph.graph.vertex.ThingVertex;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.List;
+import java.util.stream.Stream;
 
 public class RelationImpl extends ThingImpl implements Relation {
 
-    private final Set<RoleImpl> roles;
-
     private RelationImpl(ThingVertex vertex) {
         super(vertex);
-        this.roles = new HashSet<>();
     }
 
     public static RelationImpl of(ThingVertex vertex) {
@@ -47,6 +50,29 @@ public class RelationImpl extends ThingImpl implements Relation {
     @Override
     public RelationImpl has(Attribute attribute) {
         return (RelationImpl) super.has(attribute).asRelation();
+    }
+
+    @Override
+    public Relation assign(RoleType roleType, Thing player) {
+        if (this.type().roles().noneMatch(t -> t.equals(roleType))) {
+            throw new HypergraphException(Error.ThingWrite.RELATION_UNRELATED_ROLE.format(this.type().label(), roleType.label()));
+        }
+
+        RoleImpl role = ((RoleTypeImpl) roleType).create();
+        vertex.outs().put(Schema.Edge.Thing.RELATES, role.vertex);
+        ((ThingImpl) player).vertex.outs().put(Schema.Edge.Thing.PLAYS, role.vertex);
+        role.createShortcutEdge();
+        return this;
+    }
+
+    @Override
+    public Relation unassign(RoleType roleType, Thing player) {
+        return null;
+    }
+
+    @Override
+    public Stream<? extends Thing> players(List<RoleType> roleTypes) {
+        return null;
     }
 
     @Override

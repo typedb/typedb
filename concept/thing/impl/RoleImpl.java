@@ -25,7 +25,7 @@ import java.util.Objects;
 
 public class RoleImpl implements Role {
 
-    private ThingVertex vertex;
+    ThingVertex vertex;
 
     private RoleImpl(ThingVertex vertex) {
         this.vertex = Objects.requireNonNull(vertex);
@@ -33,5 +33,9 @@ public class RoleImpl implements Role {
 
     public static RoleImpl of(ThingVertex vertex) {
         return new RoleImpl(vertex);
+    }
+
+    void createShortcutEdge() {
+        // TODO: create role shortcut edge
     }
 }

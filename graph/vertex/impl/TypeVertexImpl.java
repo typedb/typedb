@@ -254,7 +254,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
 
     public static class Persisted extends TypeVertexImpl {
 
-        private Set<ThingVertexImpl> instances;
+        private final Set<ThingVertexImpl> instances;
 
         public Persisted(TypeGraph graph, VertexIID.Type iid, String label, @Nullable String scope) {
             super(graph, iid, label, scope);
@@ -265,6 +265,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
             super(graph, iid,
                   new String(graph.storage().get(join(iid.bytes(), Schema.Property.LABEL.infix().bytes()))),
                   getScope(graph, iid));
+            instances = ConcurrentHashMap.newKeySet();
         }
 
         @Nullable
