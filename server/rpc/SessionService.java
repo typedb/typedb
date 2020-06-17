@@ -43,6 +43,7 @@ import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlQuery;
 import io.grpc.Status;
+import io.grpc.StatusException;
 import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,6 +57,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
@@ -187,12 +189,12 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
                 String rootId = metadata.get("traceRootId");
                 String parentId = metadata.get("traceParentId");
                 if (rootId != null && parentId != null) {
-                    submit(() -> handleRequest(request, GrablTracingThreadStatic.getGrablTracing()
+                    process(() -> handleRequest(request, GrablTracingThreadStatic.getGrablTracing()
                             .trace(UUID.fromString(rootId), UUID.fromString(parentId), "received")));
                     return;
                 }
             }
-            submit(() -> handleRequest(request));
+            process(() -> handleRequest(request));
         }
 
         @Override
@@ -322,8 +324,12 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
             }
         }
 
-        private void submit(Runnable runnable) {
-            threadExecutor.submit(runnable);
+        private void process(Runnable runnable) {
+            try {
+                threadExecutor.submit(runnable).get();
+            } catch (InterruptedException | ExecutionException ex) {
+                // Exception will have been handled already
+            }
         }
 
         private void open(Transaction.Open.Req request) {
