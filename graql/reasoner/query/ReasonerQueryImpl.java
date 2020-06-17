@@ -28,7 +28,6 @@ import com.google.common.collect.Sets;
 import grakn.common.util.Pair;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.util.ConceptUtils;
-import grakn.core.graql.reasoner.ResolutionIterator;
 import grakn.core.kb.graql.executor.TraversalExecutor;
 import grakn.core.graql.reasoner.CacheCasting;
 import grakn.core.graql.reasoner.ReasoningContext;
@@ -258,8 +257,8 @@ public class ReasonerQueryImpl extends ResolvableQuery {
     @Override
     public void checkValid() {
         getAtoms().forEach(Atomic::checkValid);
-        //this creates the corresponding substitution and checks for id validity
-        ConceptMap substitution = getSubstitution();
+        // Check for id validity
+        getIdPredicates().forEach(this::getValidConceptFromIdPredicate);
     }
 
     @Override
@@ -490,24 +489,45 @@ public class ReasonerQueryImpl extends ResolvableQuery {
         return transform;
     }
 
+    /**
+     * Retrieve the conjunct ID predicates this query contains
+     * @return ID predicates
+     */
+    private Set<IdPredicate> getIdPredicates() {
+        Set<Variable> varNames = getVarNames();
+        Set<IdPredicate> idPredicates = isas()
+                .map(TypeAtom::getTypePredicate)
+                .filter(Objects::nonNull)
+                .filter(p -> varNames.contains(p.getVarName()))
+                .collect(Collectors.toSet());
+        getAtoms(IdPredicate.class).forEach(idPredicates::add);
+        return idPredicates;
+    }
+
+    /**
+     * Retrieve a Concept based on an ID predicate, ensuring that the ID is a valid reference to a Concept
+     * @param idPredicate ID predicate to look up
+     * @return a validated concept
+     */
+    private Concept getValidConceptFromIdPredicate(IdPredicate idPredicate) {
+        ConceptManager conceptManager = context().conceptManager();
+        Concept concept = conceptManager.getConcept(idPredicate.getPredicate());
+        if (concept == null) {
+            throw ReasonerCheckedException.idNotFound(idPredicate.getPredicate());
+        }
+        return concept;
+    }
+
     /** Does id predicates -> answer conversion
      * @return substitution obtained from all id predicates (including internal) in the query
      */
     public ConceptMap getSubstitution(){
         if (substitution == null) {
-            ConceptManager conceptManager = context().conceptManager();
-            Set<Variable> varNames = getVarNames();
-            Set<IdPredicate> predicates = isas()
-                    .map(TypeAtom::getTypePredicate)
-                    .filter(Objects::nonNull)
-                    .filter(p -> varNames.contains(p.getVarName()))
-                    .collect(Collectors.toSet());
-            getAtoms(IdPredicate.class).forEach(predicates::add);
+            Set<IdPredicate> idPredicates = getIdPredicates();
 
             HashMap<Variable, Concept> answerMap = new HashMap<>();
-            predicates.forEach(p -> {
-                Concept concept = conceptManager.getConcept(p.getPredicate());
-                if (concept == null) throw ReasonerCheckedException.idNotFound(p.getPredicate());
+            idPredicates.forEach(p -> {
+                Concept concept = getValidConceptFromIdPredicate(p);
                 answerMap.put(p.getVarName(), concept);
             });
             substitution = new ConceptMap(answerMap);
