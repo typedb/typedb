@@ -470,7 +470,7 @@ workflows:
           filters:
             branches:
               ignore: grakn-release-branch
-      - test-behaviour-graql-reasoner:
+      - test-behaviour-graql-explanation:
           filters:
             branches:
               ignore: grakn-release-branch
