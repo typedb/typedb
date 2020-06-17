@@ -117,14 +117,16 @@ jobs:
       - run-bazel-rbe:
           command: bazel test //test/behaviour/graql/language/delete:test --test_output=errors
 
-  test-behaviour-graql-reasoner:
+  test-behaviour-graql-explanation:
     machine: true
     working_directory: ~/grakn
     steps:
       - install-bazel-linux-rbe
       - checkout
       - run-bazel-rbe:
-          command: bazel test //test/behaviour/graql/reasoner/explanation:test --test_output=errors
+          command: bazel test //test/behaviour/graql/explanation/language:test --test_output=errors
+      - run-bazel-rbe:
+          command: bazel test //test/behaviour/graql/explanation/reasoner:test --test_output=errors
 
   test-server:
     machine: true

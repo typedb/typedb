@@ -22,9 +22,9 @@ load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 java_test(
     name = "test",
     srcs = [
-        "ExplanationTest.java",
+        "LanguageTest.java",
     ],
-    test_class = "grakn.core.test.behaviour.graql.reasoner.explanation.ExplanationTest",
+    test_class = "grakn.core.test.behaviour.graql.explanation.language.LanguageTest",
     deps = [
         # Package dependencies
         "//test/behaviour/server:server",
@@ -39,7 +39,7 @@ java_test(
         "//test/behaviour/config:parameters",
     ],
     data = [
-        "@graknlabs_verification//behaviour/graql/reasoner:explanation.feature",
+        "@graknlabs_verification//behaviour/graql/explanation:language.feature",
     ],
     classpath_resources = ["//test/resources:logback-test"],
     size = "medium",
