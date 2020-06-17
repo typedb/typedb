@@ -49,14 +49,14 @@ def graknlabs_client_java():
     git_repository(
         name = "graknlabs_client_java",
         remote = "https://github.com/adammitchelldev/client-java",
-        commit = "0edf3b38f94536a2e6949110bc8e16887df24d23",
+        commit = "8f0892a3e5ede90496248485ce4534f36aec599c",
     )
 
 def graknlabs_console():
     git_repository(
         name = "graknlabs_console",
         remote = "https://github.com/adammitchelldev/console",
-        commit = "d4653e7804ee505d762a4065077b168012b16ea2", # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_console
+        commit = "370bfc172a276e6990235c316b3089bf50adbaf8", # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_console
     )
 
 def graknlabs_simulation():
