@@ -19,11 +19,15 @@
 package hypergraph.graph.adjacency;
 
 import hypergraph.graph.edge.Edge;
+import hypergraph.graph.iid.VertexIID;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.vertex.Vertex;
 
 import java.util.Iterator;
+import java.util.List;
 import java.util.function.Consumer;
+
+import static java.util.Collections.emptyList;
 
 public interface Adjacency<
         EDGE_SCHEMA extends Schema.Edge,

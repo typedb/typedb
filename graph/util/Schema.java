@@ -424,6 +424,8 @@ public class Schema {
 
         Infix in();
 
+        boolean isOptimisation();
+
         enum Type implements Edge {
             SUB(Infix.EDGE_SUB_OUT, Infix.EDGE_SUB_IN),
             KEY(Infix.EDGE_KEY_OUT, Infix.EDGE_KEY_IN),
@@ -453,25 +455,33 @@ public class Schema {
                 return out;
             }
 
+            @Override
             public Infix in() {
                 return in;
+            }
+
+            @Override
+            public boolean isOptimisation() {
+                return false;
             }
         }
 
         enum Thing implements Edge {
-            ISA(null, Infix.EDGE_ISA_IN),
-            HAS(Infix.EDGE_HAS_OUT, Infix.EDGE_HAS_IN),
-            PLAYS(Infix.EDGE_PLAYS_OUT, Infix.EDGE_PLAYS_IN),
-            RELATES(Infix.EDGE_RELATES_OUT, Infix.EDGE_RELATES_IN),
-            OPT_ROLE(Infix.EDGE_OPT_ROLE_OUT, Infix.EDGE_OPT_ROLE_IN),
-            OPT_RELATION(Infix.EDGE_OPT_RELATION_OUT, null);
+            ISA(null, Infix.EDGE_ISA_IN, false),
+            HAS(Infix.EDGE_HAS_OUT, Infix.EDGE_HAS_IN, false),
+            PLAYS(Infix.EDGE_PLAYS_OUT, Infix.EDGE_PLAYS_IN, false),
+            RELATES(Infix.EDGE_RELATES_OUT, Infix.EDGE_RELATES_IN, false),
+            OPT_ROLE(Infix.EDGE_OPT_ROLE_OUT, Infix.EDGE_OPT_ROLE_IN, true),
+            OPT_RELATION(Infix.EDGE_OPT_RELATION_OUT, null, true);
 
             private final Infix out;
             private final Infix in;
+            private final boolean isOptimisation;
 
-            Thing(Infix out, Infix in) {
+            Thing(Infix out, Infix in, boolean isOptimisation) {
                 this.out = out;
                 this.in = in;
+                this.isOptimisation = isOptimisation;
             }
 
             public static Thing of(byte infix) {
@@ -491,6 +501,11 @@ public class Schema {
             @Override
             public Infix in() {
                 return in;
+            }
+
+            @Override
+            public boolean isOptimisation() {
+                return isOptimisation;
             }
         }
     }

@@ -61,7 +61,7 @@ public class RelationImpl extends ThingImpl implements Relation {
         RoleImpl role = ((RoleTypeImpl) roleType).create();
         vertex.outs().put(Schema.Edge.Thing.RELATES, role.vertex);
         ((ThingImpl) player).vertex.outs().put(Schema.Edge.Thing.PLAYS, role.vertex);
-        role.createShortcutEdge();
+        role.optimise();
         return this;
     }
 

@@ -20,17 +20,27 @@ package hypergraph.graph.iid;
 
 import hypergraph.graph.util.Schema;
 
+import java.util.List;
+
+import static hypergraph.common.collection.Bytes.join;
+
 public class InfixIID extends IID {
 
     static final int LENGTH = 1;
 
     private InfixIID(byte[] bytes) {
         super(bytes);
-        assert bytes.length == LENGTH;
     }
 
     public static InfixIID of(Schema.Infix infix) {
         return new InfixIID(infix.bytes());
+    }
+
+    public static InfixIID of(Schema.Infix infix, List<VertexIID> metadata) {
+        byte[][] byteArrays = new byte[metadata.size() + 1][];
+        byteArrays[0] = infix.bytes();
+        for (int i = 1; i <= metadata.size(); i++) byteArrays[i] = metadata.get(i).bytes;
+        return new InfixIID(join(byteArrays));
     }
 
     @Override

@@ -19,18 +19,33 @@
 package hypergraph.graph.adjacency;
 
 import hypergraph.graph.edge.ThingEdge;
+import hypergraph.graph.iid.VertexIID;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.vertex.ThingVertex;
+
+import java.util.List;
 
 public interface ThingAdjacency extends Adjacency<Schema.Edge.Thing, ThingEdge, ThingVertex> {
 
     /**
      * Puts an adjacent vertex over an edge with a given schema.
      *
-     * ...
+     * The owner of this {@code Adjacency} map will also be added as an adjacent
+     * vertex to the provided vertex, through an opposite facing edge stored in
+     * an {@code Adjacency} map with an opposite direction to this one. I.e.
+     * This is a recursive put operation.
      *
      * @param schema   of the edge that will connect the owner to the adjacent vertex
+     * @param metadata which will be appended to {@code schema} as {@code Infix}
      * @param adjacent the adjacent vertex
      */
-    void put(Schema.Edge.Thing schema, ThingVertex adjacent);
+    void put(Schema.Edge.Thing schema, List<VertexIID> metadata, ThingVertex adjacent);
+
+    IteratorBuilder<ThingVertex> edge(Schema.Edge.Thing schema, List<VertexIID> metadata);
+
+    ThingEdge edge(Schema.Edge.Thing schema, List<VertexIID> metadata, ThingVertex adjacent);
+
+    void delete(Schema.Edge.Thing schema, List<VertexIID> metadata, ThingVertex adjacent);
+
+    void delete(Schema.Edge.Thing schema, List<VertexIID> metadata);
 }
