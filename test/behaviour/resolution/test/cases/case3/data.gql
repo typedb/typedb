@@ -1,0 +1,3 @@
+insert
+$p isa man, has name "Bob";
+$p1 isa woman, has name "Susan";

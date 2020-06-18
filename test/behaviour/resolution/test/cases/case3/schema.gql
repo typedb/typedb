@@ -1,0 +1,32 @@
+define
+
+name sub attribute,
+    value string;
+
+last-name sub name;
+
+person sub entity,
+    key name,
+    has last-name,
+    plays sibling;
+
+man sub person;
+woman sub person;
+
+siblingship sub relation,
+    relates sibling;
+
+a-man-is-called-bob sub rule,
+when {
+    $p isa man;
+}, then {
+    $p has last-name "Smith";
+};
+
+bobs-sister-is-susan sub rule,
+when {
+    $p isa man, has last-name "Smith";
+    $p1 isa woman, has name "Susan";
+}, then {
+    (sibling: $p, sibling: $p1) isa siblingship;
+};

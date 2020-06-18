@@ -1,0 +1,36 @@
+define
+
+label sub attribute,
+    value string;
+
+# ===== Properties =====
+
+type-label sub label;
+
+role-label sub label;
+
+var-property sub relation,
+    abstract,
+    plays body,
+    plays head;
+
+isa-property sub var-property,
+    relates instance,
+    has type-label;
+
+has-attribute-property sub var-property,
+    relates owner;
+
+relation-property sub var-property,
+    relates roleplayer,
+    relates rel,
+    has role-label;
+
+# ===== Inference =====
+
+rule-label sub label;
+
+resolution sub relation,
+    relates body,
+    relates head,
+    has rule-label;
