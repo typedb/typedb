@@ -26,12 +26,14 @@ import static org.junit.Assert.assertEquals;
 
 public class TestSchemaManager {
 
+    private static final String KEYSPACE = "test_schema_manager";
+
     @ClassRule
     public static final GraknTestServer graknTestServer = new GraknTestServer();
 
     @BeforeClass
     public static void beforeClass() {
-        try (Session session = graknTestServer.sessionWithNewKeyspace()) {
+        try (Session session = graknTestServer.session(KEYSPACE)) {
             try {
                 Path schemaPath = Paths.get("test", "behaviour", "resolution", "test", "cases", "case2", "schema.gql").toAbsolutePath();
                 loadGqlFile(session, schemaPath);
@@ -45,7 +47,7 @@ public class TestSchemaManager {
     @Test
     public void testResolutionSchemaRolesPlayedAreCorrect() {
 
-        try (Session session = graknTestServer.sessionWithNewKeyspace()) {
+        try (Session session = graknTestServer.session(KEYSPACE)) {
 
             addResolutionSchema(session);
             connectResolutionSchema(session);
@@ -80,7 +82,7 @@ public class TestSchemaManager {
     @Test
     public void testResolutionSchemaRelationRolePlayedIsCorrect() {
 
-        try (Session session = graknTestServer.sessionWithNewKeyspace()) {
+        try (Session session = graknTestServer.session(KEYSPACE)) {
 
             addResolutionSchema(session);
             connectResolutionSchema(session);
@@ -108,7 +110,7 @@ public class TestSchemaManager {
     @Test
     public void testResolutionSchemaAttributesOwnedAreCorrect() {
 
-        try (Session session = graknTestServer.sessionWithNewKeyspace()) {
+        try (Session session = graknTestServer.session(KEYSPACE)) {
 
             addResolutionSchema(session);
             connectResolutionSchema(session);
@@ -137,7 +139,7 @@ public class TestSchemaManager {
 
     @Test
     public void testGetAllRulesReturnsExpectedRules() {
-        try (Session session = graknTestServer.sessionWithNewKeyspace()) {
+        try (Session session = graknTestServer.session(KEYSPACE)) {
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
                 Set<Rule> rules = SchemaManager.getAllRules(tx);
                 assertEquals(2, rules.size());
@@ -155,7 +157,7 @@ public class TestSchemaManager {
 
     @Test
     public void testUndefineAllRulesSuccessfullyUndefinesAllRules() {
-        try (Session session = graknTestServer.sessionWithNewKeyspace()) {
+        try (Session session = graknTestServer.session(KEYSPACE)) {
             SchemaManager.undefineAllRules(session);
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
                 List<String> ruleLabels = tx.stream(Graql.match(Graql.var("x").sub("rule")).get("x")).map(ans -> ans.get("x").asRule().label().toString()).collect(Collectors.toList());

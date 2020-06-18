@@ -21,7 +21,7 @@ import static org.junit.Assert.assertEquals;
 
 public class TestCompleter {
 
-    private static final String GRAKN_KEYSPACE = "query_completer";
+    private static final String KEYSPACE = "test_query_completer";
 
     @ClassRule
     public static final GraknTestServer graknTestServer = new GraknTestServer();
@@ -54,7 +54,7 @@ public class TestCompleter {
                 "$r2-c1 has company-id 0;"
         ));
 
-        try (Session session = graknTestServer.session(GRAKN_KEYSPACE)) {
+        try (Session session = graknTestServer.session(KEYSPACE)) {
 
             loadTestCase(session, "case4");
 
@@ -78,7 +78,7 @@ public class TestCompleter {
 
     @Test
     public void testDeduplicationOfInferredConcepts() {
-        try (Session session = graknTestServer.session(GRAKN_KEYSPACE)) {
+        try (Session session = graknTestServer.session(KEYSPACE)) {
 
             loadTestCase(session, "case1");
 

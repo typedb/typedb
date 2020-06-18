@@ -90,9 +90,7 @@ public class SchemaManager {
             RelationType attrPropRel = tx.execute(Graql.match(Graql.var("x").sub("has-attribute-property")).get()).get(0).get("x").asRelationType();
             
             GraqlGet typesToConnectQuery = Graql.match(
-                    Graql.var("x").sub("thing"),
-                    Graql.not(Graql.var("x").sub("@has-attribute")),
-                    Graql.not(Graql.var("x").sub("@key-attribute"))
+                    Graql.var("x").sub("thing")
             ).get();
             tx.stream(typesToConnectQuery).map(ans -> ans.get("x").asType()).forEach(type -> {
                 if (type.isAttributeType()) {
@@ -123,8 +121,6 @@ public class SchemaManager {
         Transaction tx = session.transaction(Transaction.Type.READ);
 
         GraqlGet instancesQuery = Graql.match(Graql.var("x").sub("thing"),
-                Graql.not(Graql.var("x").sub("@has-attribute")),
-                Graql.not(Graql.var("x").sub("@key-attribute")),
                 Graql.not(Graql.var("x").sub("attribute")),
                 Graql.not(Graql.var("x").type("entity")),
                 Graql.not(Graql.var("x").type("relation")),

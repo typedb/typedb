@@ -20,8 +20,6 @@ import static org.junit.Assert.assertEquals;
 
 public class QueryBuilderIT {
 
-    private static final String GRAKN_KEYSPACE = "query_builder_it";
-
     @ClassRule
     public static final GraknTestServer graknTestServer = new GraknTestServer();
 
@@ -55,7 +53,7 @@ public class QueryBuilderIT {
 
         GraqlGet inferenceQuery = Graql.parse("match $com isa company, has is-liable $lia; get;");
 
-        try (Session session = graknTestServer.session(GRAKN_KEYSPACE)) {
+        try (Session session = graknTestServer.sessionWithNewKeyspace()) {
 
             loadTestCase(session, "case4");
 
@@ -89,7 +87,7 @@ public class QueryBuilderIT {
 
         GraqlGet inferenceQuery = Graql.parse("match $c isa company, has name $n; get;");
 
-        try (Session session = graknTestServer.session(GRAKN_KEYSPACE)) {
+        try (Session session = graknTestServer.sessionWithNewKeyspace()) {
 
             loadTestCase(session, "case5");
 
@@ -110,7 +108,7 @@ public class QueryBuilderIT {
 
         Set<Statement> keyStatements;
 
-        try (Session session = graknTestServer.session(GRAKN_KEYSPACE)) {
+        try (Session session = graknTestServer.sessionWithNewKeyspace()) {
 
             loadTestCase(session, "case2");
 

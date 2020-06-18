@@ -1,5 +1,6 @@
 package grakn.core.test.behaviour.resolution.test;
 
+import grakn.core.kb.server.Session;
 import grakn.core.test.behaviour.resolution.Resolution;
 import grakn.core.test.rule.GraknTestServer;
 import graql.lang.Graql;
@@ -25,7 +26,9 @@ public class TestResolution {
                 "$continent isa continent; " +
                 "$area isa area; get;").asGet();
 
-        Resolution resolution_test = new Resolution(graknTestServer, schemaPath, dataPath);
+        Session completeSession = graknTestServer.sessionWithNewKeyspace();
+        Session testSession = graknTestServer.sessionWithNewKeyspace();
+        Resolution resolution_test = new Resolution(completeSession, testSession, schemaPath, dataPath);
         resolution_test.testQuery(inferenceQuery);
         resolution_test.testCompleteness();
         resolution_test.close();
@@ -37,7 +40,9 @@ public class TestResolution {
         Path dataPath = Paths.get("test", "behaviour", "resolution", "test", "cases", "case2", "data.gql").toAbsolutePath();
         GraqlGet inferenceQuery = Graql.parse("match $transaction has currency $currency; get;").asGet();
 
-        Resolution resolution_test = new Resolution(graknTestServer, schemaPath, dataPath);
+        Session completeSession = graknTestServer.sessionWithNewKeyspace();
+        Session testSession = graknTestServer.sessionWithNewKeyspace();
+        Resolution resolution_test = new Resolution(completeSession, testSession, schemaPath, dataPath);
         resolution_test.testQuery(inferenceQuery);
         resolution_test.testCompleteness();
         resolution_test.close();
@@ -49,7 +54,9 @@ public class TestResolution {
         Path dataPath = Paths.get("test", "behaviour", "resolution", "test", "cases", "case3", "data.gql").toAbsolutePath();
         GraqlGet inferenceQuery = Graql.parse("match (sibling: $p, sibling: $p1) isa siblingship; $p != $p1; get;").asGet();
 
-        Resolution resolution_test = new Resolution(graknTestServer, schemaPath, dataPath);
+        Session completeSession = graknTestServer.sessionWithNewKeyspace();
+        Session testSession = graknTestServer.sessionWithNewKeyspace();
+        Resolution resolution_test = new Resolution(completeSession, testSession, schemaPath, dataPath);
         resolution_test.testQuery(inferenceQuery);
         resolution_test.testCompleteness();
         resolution_test.close();
@@ -61,7 +68,9 @@ public class TestResolution {
         Path dataPath = Paths.get("test", "behaviour", "resolution", "test", "cases", "case4", "data.gql").toAbsolutePath();
         GraqlGet inferenceQuery = Graql.parse("match $com isa company, has is-liable $lia; get;").asGet();
 
-        Resolution resolution_test = new Resolution(graknTestServer, schemaPath, dataPath);
+        Session completeSession = graknTestServer.sessionWithNewKeyspace();
+        Session testSession = graknTestServer.sessionWithNewKeyspace();
+        Resolution resolution_test = new Resolution(completeSession, testSession, schemaPath, dataPath);
         resolution_test.testQuery(inferenceQuery);
         resolution_test.testCompleteness();
         resolution_test.close();
@@ -73,7 +82,9 @@ public class TestResolution {
         Path dataPath = Paths.get("test", "behaviour", "resolution", "test", "cases", "case5", "data.gql").toAbsolutePath();
         GraqlGet inferenceQuery = Graql.parse("match $c isa company, has name $n; get;").asGet();
 
-        Resolution resolution_test = new Resolution(graknTestServer, schemaPath, dataPath);
+        Session completeSession = graknTestServer.sessionWithNewKeyspace();
+        Session testSession = graknTestServer.sessionWithNewKeyspace();
+        Resolution resolution_test = new Resolution(completeSession, testSession, schemaPath, dataPath);
         resolution_test.testQuery(inferenceQuery);
         resolution_test.testCompleteness();
         resolution_test.close();
@@ -89,7 +100,9 @@ public class TestResolution {
                 "not {$com has is-liable $liability;}; " +
                 "get;").asGet();
 
-        Resolution resolution_test = new Resolution(graknTestServer, schemaPath, dataPath);
+        Session completeSession = graknTestServer.sessionWithNewKeyspace();
+        Session testSession = graknTestServer.sessionWithNewKeyspace();
+        Resolution resolution_test = new Resolution(completeSession, testSession, schemaPath, dataPath);
         resolution_test.testQuery(inferenceQuery);
         resolution_test.testCompleteness();
         resolution_test.close();
@@ -102,7 +115,9 @@ public class TestResolution {
         GraqlGet inferenceQuery = Graql.parse("" +
                 "match $com isa company, has is-liable $lia; $lia true; get;").asGet();
 
-        Resolution resolution_test = new Resolution(graknTestServer, schemaPath, dataPath);
+        Session completeSession = graknTestServer.sessionWithNewKeyspace();
+        Session testSession = graknTestServer.sessionWithNewKeyspace();
+        Resolution resolution_test = new Resolution(completeSession, testSession, schemaPath, dataPath);
         resolution_test.testQuery(inferenceQuery);
         resolution_test.testCompleteness();
         resolution_test.close();

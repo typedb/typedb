@@ -6,7 +6,6 @@ import grakn.core.kb.server.Transaction;
 import grakn.core.test.behaviour.resolution.complete.Completer;
 import grakn.core.test.behaviour.resolution.complete.SchemaManager;
 import grakn.core.test.behaviour.resolution.resolve.QueryBuilder;
-import grakn.core.test.rule.GraknTestServer;
 import graql.lang.query.GraqlGet;
 
 import java.io.IOException;
@@ -18,44 +17,41 @@ import static grakn.core.test.behaviour.resolution.common.Utils.thingCount;
 
 public class Resolution {
 
-    private static final String COMPLETE_KEYSPACE = "complete";
-    private static final String TEST_KEYSPACE = "test";
     private final Path schemaPath;
     private final Path dataPath;
-    private Session completeSession;
+    private Session completionSession;
     private Session testSession;
     private int completedInferredThingCount;
     private int initialThingCount;
 
-    public Resolution(GraknTestServer graknTestServer, Path schemaPath, Path dataPath) {
+    public Resolution(Session completionSession, Session testSession, Path schemaPath, Path dataPath) {
+        this.completionSession = completionSession;
+        this.testSession = testSession;
         this.schemaPath = schemaPath;
         this.dataPath = dataPath;
 
-        testSession = graknTestServer.session(TEST_KEYSPACE);
-        completeSession = graknTestServer.session(COMPLETE_KEYSPACE);
-
-        initialiseKeyspace(testSession);
-        initialiseKeyspace(completeSession);
+        initialiseKeyspace(this.testSession);
+        initialiseKeyspace(this.completionSession);
 
         // TODO Check that nothing in the given schema conflicts with the resolution schema
         // TODO Also check that all of the data in the initial data given has keys/ is uniquely identifiable
 
         // Complete the KB-complete
-        Completer completer = new Completer(completeSession);
-        try (Transaction tx = completeSession.transaction(Transaction.Type.WRITE)) {
+        Completer completer = new Completer(this.completionSession);
+        try (Transaction tx = this.completionSession.transaction(Transaction.Type.WRITE)) {
             completer.loadRules(tx, SchemaManager.getAllRules(tx));
         }
 
-        SchemaManager.undefineAllRules(completeSession);
-        SchemaManager.enforceAllTypesHaveKeys(completeSession);
-        SchemaManager.addResolutionSchema(completeSession);
-        SchemaManager.connectResolutionSchema(completeSession);
-        initialThingCount = thingCount(completeSession);
+        SchemaManager.undefineAllRules(this.completionSession);
+        SchemaManager.enforceAllTypesHaveKeys(this.completionSession);
+        SchemaManager.addResolutionSchema(this.completionSession);
+        SchemaManager.connectResolutionSchema(this.completionSession);
+        initialThingCount = thingCount(this.completionSession);
         completedInferredThingCount = completer.complete();
     }
 
     public void close() {
-        completeSession.close();
+        completionSession.close();
         testSession.close();
     }
 
@@ -67,7 +63,7 @@ public class Resolution {
             queries = rb.buildMatchGet(tx, inferenceQuery);
         }
 
-        try (Transaction tx = completeSession.transaction(Transaction.Type.READ)) {
+        try (Transaction tx = completionSession.transaction(Transaction.Type.READ)) {
             for (GraqlGet query: queries) {
                 testResolution(tx, query);
             }
