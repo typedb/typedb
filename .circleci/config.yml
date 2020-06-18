@@ -140,6 +140,15 @@ jobs:
       - run-bazel-rbe:
           command: bazel test //test/behaviour/graql/language/delete:test --test_output=errors
 
+  test-behaviour-graql-get:
+    machine: true
+    working_directory: ~/grakn
+    steps:
+      - install-bazel-linux-rbe
+      - checkout
+      - run-bazel-rbe:
+          command: bazel test //test/behaviour/graql/language/get:test --test_output=errors
+
   test-behaviour-graql-insert:
     machine: true
     working_directory: ~/grakn
@@ -543,6 +552,10 @@ workflows:
           filters:
             branches:
               ignore: grakn-release-branch
+      - test-behaviour-graql-get
+          filters:
+            branches:
+              ignore: grakn-release-branch
       - test-behaviour-graql-insert:
           filters:
             branches:
@@ -595,6 +608,7 @@ workflows:
             - test-behaviour-connection
             - test-behaviour-graql-define
             - test-behaviour-graql-delete
+            - test-behaviour-graql-get
             - test-behaviour-graql-insert
             - test-behaviour-graql-match
             - test-behaviour-graql-undefine
@@ -620,6 +634,7 @@ workflows:
             - test-behaviour-connection
             - test-behaviour-graql-define
             - test-behaviour-graql-delete
+            - test-behaviour-graql-get
             - test-behaviour-graql-insert
             - test-behaviour-graql-match
             - test-behaviour-graql-undefine
@@ -645,6 +660,7 @@ workflows:
             - test-behaviour-connection
             - test-behaviour-graql-define
             - test-behaviour-graql-delete
+            - test-behaviour-graql-get
             - test-behaviour-graql-insert
             - test-behaviour-graql-match
             - test-behaviour-graql-undefine
@@ -670,6 +686,7 @@ workflows:
             - test-behaviour-connection
             - test-behaviour-graql-define
             - test-behaviour-graql-delete
+            - test-behaviour-graql-get
             - test-behaviour-graql-insert
             - test-behaviour-graql-match
             - test-behaviour-graql-undefine
@@ -695,6 +712,7 @@ workflows:
             - test-behaviour-connection
             - test-behaviour-graql-define
             - test-behaviour-graql-delete
+            - test-behaviour-graql-get
             - test-behaviour-graql-insert
             - test-behaviour-graql-match
             - test-behaviour-graql-undefine
