@@ -35,6 +35,7 @@ java_library(
         "//kb/graql/exception",
         "//kb/graql/planning",
         "//kb/keyspace",
+        "//kb/server",
         "//concept/answer",
         "//graql/analytics",
         "//graql/reasoner",  # TODO should this be pointing the other way?

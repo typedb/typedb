@@ -20,13 +20,17 @@ package grakn.core.graql.reasoner.query;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
+import grakn.core.common.config.Config;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.answer.Explanation;
 import grakn.core.graql.reasoner.graph.GeoGraph;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
-import grakn.core.test.rule.GraknTestServer;
+import grakn.core.kb.server.cache.ExplanationCache;
+import grakn.core.test.rule.GraknTestStorage;
+import grakn.core.test.rule.SessionUtil;
+import grakn.core.test.rule.TestTransactionProvider;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.property.IdProperty;
@@ -51,23 +55,25 @@ import static graql.lang.Graql.var;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 
 public class ExplanationIT {
 
     private static String resourcePath = "test/integration/graql/reasoner/stubs/";
 
     @ClassRule
-    public static final GraknTestServer server = new GraknTestServer();
+    public static final GraknTestStorage storage = new GraknTestStorage();
 
     private static Session geoSession;
     private static Session explanationSession;
 
     @BeforeClass
     public static void loadContext() {
-        geoSession = server.sessionWithNewKeyspace();
+        geoSession = emptySession();
         GeoGraph geoGraph = new GeoGraph(geoSession);
         geoGraph.load();
-        explanationSession = server.sessionWithNewKeyspace();
+        explanationSession = emptySession();
         loadFromFileAndCommit(resourcePath, "explanations.gql", explanationSession);
     }
 
@@ -77,13 +83,18 @@ public class ExplanationIT {
         explanationSession.close();
     }
 
+    private static Session emptySession() {
+        Config mockServerConfig = storage.createCompatibleServerConfig();
+        return SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig);
+    }
+
     @Test
     public void whenExplainingNonRuleResolvableQuery_explanationsAreEmpty() {
         try (Transaction tx = geoSession.transaction(Transaction.Type.READ)) {
             String queryString = "match $x isa city, has name $n; get;";
 
             GraqlGet query = Graql.parse(queryString);
-            List<ConceptMap> answers = tx.execute(query);
+            List<ConceptMap> answers = tx.execute(query, true, true);
             answers.forEach(ans -> Assert.assertTrue(ans.explanation().isEmpty()));
         }
     }
@@ -94,7 +105,7 @@ public class ExplanationIT {
             String queryString = "match $x isa city, has name $n; get;";
 
             GraqlGet query = Graql.parse(queryString);
-            List<ConceptMap> answers = tx.execute(query, false);
+            List<ConceptMap> answers = tx.execute(query, false, true);
             answers.forEach(ans -> Assert.assertTrue(ans.explanation().isEmpty()));
         }
     }
@@ -114,7 +125,7 @@ public class ExplanationIT {
             ConceptMap answer3 = new ConceptMap(ImmutableMap.of(var("x").var(), polibuda, var("y").var(), poland));
             ConceptMap answer4 = new ConceptMap(ImmutableMap.of(var("x").var(), polibuda, var("y").var(), europe));
 
-            List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());
+            List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet(), true, true);
             testExplanation(answers);
 
             ConceptMap queryAnswer1 = findAnswer(answer1, answers);
@@ -165,7 +176,7 @@ public class ExplanationIT {
             ConceptMap answer1 = new ConceptMap(ImmutableMap.of(var("x").var(), polibuda, var("y").var(), poland));
             ConceptMap answer2 = new ConceptMap(ImmutableMap.of(var("x").var(), uw, var("y").var(), poland));
 
-            List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());
+            List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet(), true, true);
             testExplanation(answers);
 
             ConceptMap queryAnswer1 = findAnswer(answer1, answers);
@@ -205,7 +216,7 @@ public class ExplanationIT {
                     "$y id " + europe.id() + "; get;";
 
             GraqlGet query = Graql.parse(queryString);
-            List<ConceptMap> answers = tx.execute(query);
+            List<ConceptMap> answers = tx.execute(query, true, true);
             assertEquals(answers.size(), 1);
 
             ConceptMap answer = answers.iterator().next();
@@ -231,7 +242,7 @@ public class ExplanationIT {
                     "get $y;";
 
             GraqlGet query = Graql.parse(queryString);
-            List<ConceptMap> answers = tx.execute(query);
+            List<ConceptMap> answers = tx.execute(query, true, true);
             assertEquals(answers.size(), 1);
             testExplanation(answers);
         }
@@ -246,7 +257,7 @@ public class ExplanationIT {
                     "$w has name $wName; get;";
 
             GraqlGet query = Graql.parse(queryString);
-            List<ConceptMap> answers = tx.execute(query);
+            List<ConceptMap> answers = tx.execute(query, true, true);
             testExplanation(answers);
         }
     }
@@ -260,7 +271,7 @@ public class ExplanationIT {
                     "get;";
 
             GraqlGet query = Graql.parse(queryString);
-            List<ConceptMap> answers = tx.execute(query);
+            List<ConceptMap> answers = tx.execute(query, true, true);
             testExplanation(answers);
             answers.stream()
                     .filter(ans -> ans.explanations().stream().anyMatch(Explanation::isRuleExplanation))
@@ -278,7 +289,7 @@ public class ExplanationIT {
             String queryString = "match $x isa same-tag-column-link; get;";
 
             GraqlGet query = Graql.parse(queryString);
-            List<ConceptMap> answers = tx.execute(query);
+            List<ConceptMap> answers = tx.execute(query,true, true);
             testExplanation(answers);
             answers.stream()
                     .filter(ans -> ans.explanations().stream().anyMatch(Explanation::isRuleExplanation))
@@ -287,6 +298,102 @@ public class ExplanationIT {
                         assertEquals(explanations.stream().filter(Explanation::isRuleExplanation).count(), 1);
                         assertEquals(explanations.stream().filter(Explanation::isLookupExplanation).count(), 3);
                     });
+        }
+    }
+
+
+    @Test
+    public void whenQueryingWithExplainFlag_explanationIsCached() {
+        try (Transaction tx = explanationSession.transaction(Transaction.Type.WRITE)) {
+            String query = "match $x isa inferredRelation; get;";
+            List<ConceptMap> answers = tx.execute(Graql.parse(query).asGet(), true, true);
+
+            TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
+            ExplanationCache explanationCache = testTx.explanationCache();
+
+            // each answer should have an entry in the explanationCache
+            for (ConceptMap answer : answers) {
+                Explanation explanation = explanationCache.get(answer);
+                assertNotNull(explanation);
+                assertEquals(answer.explanation(), explanation);
+            }
+        }
+    }
+
+
+    @Test
+    public void whenQueryingWithDefaults_explanationIsNotCached() {
+        try (Transaction tx = explanationSession.transaction(Transaction.Type.WRITE)) {
+            String query = "match $x isa inferredRelation; get;";
+            List<ConceptMap> answers = tx.execute(Graql.parse(query).asGet());
+
+            TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
+            ExplanationCache explanationCache = testTx.explanationCache();
+
+            // each answer should NOT have an entry in the explanationCache, even if inferred an answer
+            for (ConceptMap answer : answers) {
+                assertNull(explanationCache.get(answer));
+            }
+        }
+    }
+
+    @Test
+    public void whenQueryingWithNoExplain_explanationIsNotCached() {
+        try (Transaction tx = explanationSession.transaction(Transaction.Type.WRITE)) {
+            String query = "match $x isa inferredRelation; get;";
+            List<ConceptMap> answers = tx.execute(Graql.parse(query).asGet(), true, false);
+
+            TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
+            ExplanationCache explanationCache = testTx.explanationCache();
+
+            // each answer should NOT have an entry in the explanationCache, even if inferred an answer
+            for (ConceptMap answer : answers) {
+                assertNull(explanationCache.get(answer));
+            }
+        }
+    }
+
+    @Test
+    public void whenRequestingSubExplanationViaTransaction_subExplanationsAreCachedLazily() {
+        try (Transaction tx = explanationSession.transaction(Transaction.Type.WRITE)) {
+            String query = "match $x isa inferredRelation; get;";
+            List<ConceptMap> answers = tx.execute(Graql.parse(query).asGet(), true, true);
+
+            TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
+            ExplanationCache explanationCache = testTx.explanationCache();
+
+            for (ConceptMap answer : answers) {
+                Explanation explanation = testTx.explanation(answer);
+
+                // each sub-explanation should now be in the cache
+                for (ConceptMap subAnswer : explanation.getAnswers()) {
+                    Explanation subExplanation = explanationCache.get(subAnswer);
+                    assertNotNull(subExplanation);
+                    assertEquals(subExplanation, subAnswer.explanation());
+                }
+            }
+        }
+    }
+
+    @Test
+    public void onDelete_explanationCacheIsCleared() {
+        try (Transaction tx = explanationSession.transaction(Transaction.Type.WRITE)) {
+            String query = "match $x isa inferredRelation; get;";
+            List<ConceptMap> answers = tx.execute(Graql.parse(query).asGet(), true, true);
+
+            TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
+            ExplanationCache explanationCache = testTx.explanationCache();
+
+            for (ConceptMap answer : answers) {
+                assertNotNull(explanationCache.get(answer));
+            }
+
+            // execute a delete query
+            tx.execute(Graql.parse("match $x isa value; delete $x isa value;").asDelete());
+
+            for (ConceptMap answer : answers) {
+                assertNull(explanationCache.get(answer));
+            }
         }
     }
 
@@ -312,12 +419,12 @@ public class ExplanationIT {
     @Ignore("We cannot solve this with current answer handling/cache implementation. Maybe cardinality constraints would help?")
     @Test
     public void whenRulesAreMutuallyRecursive_explanationsAreRecognisedAsRuleOnes() {
-        try (Session session = server.sessionWithNewKeyspace()) {
+        try (Session session = emptySession()) {
             loadFromFileAndCommit(resourcePath, "testSet30.gql", session);
             for (int i = 0; i < 10; i++) {
                 try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
                     String queryString = "match $p isa pair, has name 'ff'; get;";
-                    List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());
+                    List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet(), true, true);
                     answers.forEach(joinedAnswer -> {
                         testExplanation(joinedAnswer);
                         joinedAnswer.explanation().getAnswers()
@@ -368,6 +475,9 @@ public class ExplanationIT {
     }
 
     private void answerHasConsistentExplanations(ConceptMap answer) {
+        if (answer.explanation() == null) {
+            throw new RuntimeException("answer has null explanation");
+        }
         Set<ConceptMap> answers = answer.explanation().deductions().stream()
                 .filter(a -> !a.explanation().isJoinExplanation())
                 .collect(Collectors.toSet());

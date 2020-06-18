@@ -18,6 +18,8 @@
 
 package grakn.core.server.session;
 
+import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.answer.Explanation;
 import grakn.core.concept.manager.ConceptListenerImpl;
 import grakn.core.concept.manager.ConceptManagerImpl;
 import grakn.core.concept.manager.ConceptNotificationChannelImpl;
@@ -46,8 +48,11 @@ import grakn.core.kb.server.Transaction;
 import grakn.core.kb.server.TransactionProvider;
 import grakn.core.kb.server.cache.TransactionCache;
 import grakn.core.keyspace.StatisticsDeltaImpl;
+import grakn.core.server.cache.ExplanationCacheImpl;
 import org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.locks.ReadWriteLock;
 
 /**
@@ -84,6 +89,7 @@ public class TransactionProviderImpl implements TransactionProvider {
         ConceptNotificationChannel conceptNotificationChannel = new ConceptNotificationChannelImpl();
         TransactionCache transactionCache = new TransactionCache(keyspaceSchemaCache);
         StatisticsDeltaImpl statisticsDelta = new StatisticsDeltaImpl();
+        ExplanationCacheImpl explanationCache = new ExplanationCacheImpl();
 
         // Janus elements
         JanusGraphTransaction janusGraphTransaction = graph.newThreadBoundTransaction();
@@ -95,9 +101,10 @@ public class TransactionProviderImpl implements TransactionProvider {
         ConceptManager conceptManager = new ConceptManagerImpl(elementFactory, transactionCache, conceptNotificationChannel, attributeManager);
         TraversalPlanFactory traversalPlanFactory = new TraversalPlanFactoryImpl(janusTraversalSourceProvider, conceptManager, propertyExecutorFactory, typeShardThreshold, keyspaceStatistics);
         TraversalExecutor traversalExecutor = new TraversalExecutorImpl(traversalPlanFactory, conceptManager);
-        ExecutorFactoryImpl executorFactory = new ExecutorFactoryImpl(conceptManager, hadoopGraph, keyspaceStatistics, traversalPlanFactory, traversalExecutor);
+        ExecutorFactoryImpl executorFactory = new ExecutorFactoryImpl(conceptManager, hadoopGraph, keyspaceStatistics, traversalPlanFactory, traversalExecutor, explanationCache);
         RuleCacheImpl ruleCache = new RuleCacheImpl(conceptManager, keyspaceStatistics);
         MultilevelSemanticCache queryCache = new MultilevelSemanticCache(traversalPlanFactory, traversalExecutor);
+
 
         PropertyAtomicFactory propertyAtomicFactory = new PropertyAtomicFactory(conceptManager, ruleCache, queryCache, keyspaceStatistics);
         ReasonerQueryFactory reasonerQueryFactory = new ReasonerQueryFactory(conceptManager, queryCache, ruleCache, keyspaceStatistics, executorFactory, propertyAtomicFactory, traversalPlanFactory, traversalExecutor);
@@ -107,7 +114,8 @@ public class TransactionProviderImpl implements TransactionProvider {
 
         TransactionImpl tx = new TransactionImpl(
                 session, janusGraphTransaction, conceptManager,
-                janusTraversalSourceProvider, transactionCache, queryCache, ruleCache, statisticsDelta,
+                janusTraversalSourceProvider, transactionCache, queryCache,
+                ruleCache,  explanationCache, statisticsDelta,
                 executorFactory, reasonerQueryFactory,
                 graphLock, typeShardThreshold
         );

@@ -765,14 +765,16 @@ workflows:
       - sync-dependencies-snapshot:
           filters:
             branches:
-              only: master
+              only:
+                - master
           requires:
             - test-deployment-linux-apt
             - test-deployment-linux-rpm
       - release-approval:
           filters:
             branches:
-              only: master
+              only:
+                - master
           requires:
             - sync-dependencies-snapshot
 

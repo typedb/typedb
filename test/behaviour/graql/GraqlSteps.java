@@ -155,7 +155,7 @@ public class GraqlSteps {
     @Given("graql insert")
     public void graql_insert(String insertQueryStatements) {
         GraqlQuery graqlQuery = Graql.parse(String.join("\n", insertQueryStatements));
-        tx.execute(graqlQuery);
+        tx.execute(graqlQuery, true, true); // always use inference and have explanations
         tx.commit();
         tx = session.transaction(Transaction.Type.WRITE);
     }
@@ -211,9 +211,9 @@ public class GraqlSteps {
         answerGroups = null;
         numericAnswerGroups = null;
         if (graqlQuery instanceof GraqlGet) {
-            answers = tx.execute(graqlQuery.asGet());
+            answers = tx.execute(graqlQuery.asGet(), true, true); // always use inference and have explanations
         } else if (graqlQuery instanceof GraqlInsert) {
-            answers = tx.execute(graqlQuery.asInsert());
+            answers = tx.execute(graqlQuery.asInsert(), true, true); // always use inference and have explanations
         } else if (graqlQuery instanceof GraqlGet.Aggregate) {
             numericAnswers = tx.execute(graqlQuery.asGetAggregate());
         } else if (graqlQuery instanceof GraqlGet.Group) {

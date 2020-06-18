@@ -26,7 +26,9 @@ import grakn.core.kb.graql.executor.QueryExecutor;
 import grakn.core.kb.graql.executor.TraversalExecutor;
 import grakn.core.kb.graql.planning.gremlin.TraversalPlanFactory;
 import grakn.core.kb.keyspace.KeyspaceStatistics;
+import grakn.core.kb.server.cache.ExplanationCache;
 import org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph;
+
 
 public class ExecutorFactoryImpl implements ExecutorFactory {
 
@@ -36,13 +38,15 @@ public class ExecutorFactoryImpl implements ExecutorFactory {
     private TraversalPlanFactory traversalPlanFactory;
     private TraversalExecutor traversalExecutor;
     private ReasonerQueryFactory reasonerQueryFactory;
+    private ExplanationCache explanationCache;
 
-    public ExecutorFactoryImpl(ConceptManager conceptManager, HadoopGraph hadoopGraph, KeyspaceStatistics keyspaceStatistics, TraversalPlanFactory traversalPlanFactory, TraversalExecutor traversalExecutor) {
+    public ExecutorFactoryImpl(ConceptManager conceptManager, HadoopGraph hadoopGraph, KeyspaceStatistics keyspaceStatistics, TraversalPlanFactory traversalPlanFactory, TraversalExecutor traversalExecutor, ExplanationCache explanationCache) {
         this.conceptManager = conceptManager;
         this.hadoopGraph = hadoopGraph;
         this.keyspaceStatistics = keyspaceStatistics;
         this.traversalPlanFactory = traversalPlanFactory;
         this.traversalExecutor = traversalExecutor;
+        this.explanationCache = explanationCache;
     }
 
     @Override
@@ -52,7 +56,7 @@ public class ExecutorFactoryImpl implements ExecutorFactory {
 
     @Override
     public QueryExecutor transactional(boolean infer) {
-        return new QueryExecutorImpl(conceptManager, reasonerQueryFactory, infer);
+        return new QueryExecutorImpl(conceptManager, reasonerQueryFactory, explanationCache, infer);
     }
 
     public void setReasonerQueryFactory(ReasonerQueryFactory reasonerQueryFactory) {
