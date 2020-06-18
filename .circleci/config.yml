@@ -552,7 +552,7 @@ workflows:
           filters:
             branches:
               ignore: grakn-release-branch
-      - test-behaviour-graql-get
+      - test-behaviour-graql-get:
           filters:
             branches:
               ignore: grakn-release-branch
