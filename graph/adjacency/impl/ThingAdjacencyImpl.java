@@ -246,8 +246,7 @@ public abstract class ThingAdjacencyImpl implements Adjacency<Schema.Edge.Thing,
                 return container.get();
             } else {
                 byte[] edgeIID = join(owner.iid().bytes(), infix.bytes(), adjacent.iid().bytes());
-                byte[] overriddenIID;
-                if ((overriddenIID = owner.graph().storage().get(edgeIID)) != null) {
+                if (owner.graph().storage().get(edgeIID) != null) {
                     return new ThingEdgeImpl.Persisted(owner.graph(), EdgeIID.Thing.of(edgeIID));
                 }
             }
@@ -258,18 +257,17 @@ public abstract class ThingAdjacencyImpl implements Adjacency<Schema.Edge.Thing,
         @Override
         public void delete(Schema.Edge.Thing schema, List<VertexIID> metadata, ThingVertex adjacent) {
             InfixIID infix = infixIID(schema);
-            Optional<ThingEdge> edgeOpt;
+            Optional<ThingEdge> edge;
             Predicate<ThingEdge> predicate = direction.isOut()
                     ? e -> e.to().equals(adjacent)
                     : e -> e.from().equals(adjacent);
 
-            if (edges.containsKey(infix) && (edgeOpt = edges.get(infix).stream().filter(predicate).findAny()).isPresent()) {
-                edgeOpt.get().delete();
+            if (edges.containsKey(infix) && (edge = edges.get(infix).stream().filter(predicate).findAny()).isPresent()) {
+                edge.get().delete();
             }
 
             byte[] edgeIID = join(owner.iid().bytes(), infix.bytes(), adjacent.iid().bytes());
-            byte[] iidValueBytes;
-            if ((iidValueBytes = owner.graph().storage().get(edgeIID)) != null) {
+            if (owner.graph().storage().get(edgeIID) != null) {
                 ((ThingEdge) new ThingEdgeImpl.Persisted(owner.graph(), EdgeIID.Thing.of(edgeIID))).delete();
             }
         }
