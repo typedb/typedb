@@ -44,7 +44,6 @@ import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static graql.lang.Graql.and;
 import static graql.lang.Graql.var;
@@ -333,45 +332,6 @@ public class QueryPlannerIT {
         }
     }
 
-    @Test
-    public void avoidImplicitTypes() {
-        /*
-        Idea is: originally, the query planner could start at high priority starting nodes (non-implicit labels),
-        low priority starting nodes (implicit labels which may represent edges instead of vertices), or worst case any
-        valid node.
-
-        This test ensures that we don't use implicit nodes as starting points if it can be avoided.
-        In general implicit relations are non-reified and they correspond to an edge.
-        */
-        Pattern pattern = and(
-                x.isa(thingy2),
-                y.isa(thingy4),
-                var().rel(x).rel(y));
-
-        ImmutableList<? extends Fragment> plan = getPlan(pattern);
-        assertEquals(3L, plan.stream().filter(LabelFragment.class::isInstance).count());
-        List<? extends Fragment> nonLabelFragments = plan.stream().filter(f -> !(f instanceof LabelFragment)).collect(Collectors.toList());
-        //first fragment after label fragments is an isa fragment so we skip it
-        Fragment firstRolePlayerFragment = nonLabelFragments.get(1);
-        String relationStartVarName = firstRolePlayerFragment.start().name();
-
-        // should start from relation
-        assertNotEquals(relationStartVarName, x.var().name());
-        assertNotEquals(relationStartVarName, y.var().name());
-
-        pattern = and(
-                x.isa(resourceType),
-                y.isa(thingy4),
-                var().rel(x).rel(y));
-        plan = getPlan(pattern);
-        assertEquals(3L, plan.stream().filter(LabelFragment.class::isInstance).count());
-        String relationEndVarName = firstRolePlayerFragment.end().name();
-
-        // should start from a role player
-        assertTrue(relationEndVarName.equals(x.var().name()) || relationEndVarName.equals(y.var().name()));
-        //check next fragment after first role player fragment
-        assertTrue(nonLabelFragments.get(nonLabelFragments.indexOf(firstRolePlayerFragment)+1) instanceof OutIsaFragment);
-    }
 
     @Test
     public void sameLabelFragmentShouldNotBeAddedTwice() {

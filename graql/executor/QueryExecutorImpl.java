@@ -34,6 +34,7 @@ import grakn.core.kb.graql.executor.QueryExecutor;
 import grakn.core.kb.graql.executor.property.PropertyExecutor;
 import grakn.core.kb.graql.executor.property.PropertyExecutorFactory;
 import grakn.core.kb.graql.reasoner.ReasonerCheckedException;
+import grakn.core.kb.server.cache.ExplanationCache;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Disjunction;
@@ -76,13 +77,15 @@ import static java.util.stream.Collectors.toList;
 public class QueryExecutorImpl implements QueryExecutor {
 
     private ConceptManager conceptManager;
+    private ExplanationCache explanationCache;
     private final boolean infer;
     private ReasonerQueryFactory reasonerQueryFactory;
     private final PropertyExecutorFactory propertyExecutorFactory;
     private static final Logger LOG = LoggerFactory.getLogger(QueryExecutorImpl.class);
 
-    QueryExecutorImpl(ConceptManager conceptManager, ReasonerQueryFactory reasonerQueryFactory, boolean infer) {
+    QueryExecutorImpl(ConceptManager conceptManager, ReasonerQueryFactory reasonerQueryFactory, ExplanationCache explanationCache, boolean infer) {
         this.conceptManager = conceptManager;
+        this.explanationCache = explanationCache;
         this.infer = infer;
         this.reasonerQueryFactory = reasonerQueryFactory;
         propertyExecutorFactory = new PropertyExecutorFactoryImpl();
@@ -101,7 +104,6 @@ public class QueryExecutorImpl implements QueryExecutor {
             ResolvableQuery resolvableQuery = reasonerQueryFactory.resolvable(disjunction, bindingVars);
 
             return resolvableQuery.resolve(infer);
-
         } catch (ReasonerCheckedException e) {
             LOG.debug(e.getMessage());
             answerStream = Stream.empty();
@@ -175,7 +177,7 @@ public class QueryExecutorImpl implements QueryExecutor {
 
 
     @Override
-    public Stream<ConceptMap> insert(GraqlInsert query) {
+    public Stream<ConceptMap> insert(GraqlInsert query, boolean explain) {
         Collection<Statement> statements = query.statements().stream()
                 .flatMap(statement -> statement.innerStatements().stream())
                 .collect(Collectors.toList());
@@ -198,7 +200,7 @@ public class QueryExecutorImpl implements QueryExecutor {
             LinkedHashSet<Variable> projectedVars = new LinkedHashSet<>(matchVars);
             projectedVars.retainAll(insertVars);
 
-            Stream<ConceptMap> answers = get(match.get(projectedVars));
+            Stream<ConceptMap> answers = get(match.get(projectedVars), explain);
             answerStream = answers
                     .flatMap(answer -> WriteExecutorImpl.create(conceptManager, executors.build()).write(answer))
                     .collect(toList()).stream();
@@ -222,10 +224,17 @@ public class QueryExecutorImpl implements QueryExecutor {
             }
         }
 
+        // note: NOT lazy, to avoid modifying the stream while reading
         List<ConceptMap> toDelete = get(query.match().get()).collect(toList());
         toDelete.forEach(answer -> {
             WriteExecutorImpl.create(conceptManager, executors.build()).write(answer);
         });
+
+        // if we deleted anything, we clear the explanation cache
+        if (toDelete.size() > 0) {
+            explanationCache.clear();
+        }
+
         return new Void(String.format("Deleted facts from %s matched answers.", toDelete.size()));
     }
 
@@ -260,14 +269,26 @@ public class QueryExecutorImpl implements QueryExecutor {
         return WriteExecutorImpl.create(conceptManager, executors.build()).write();
     }
 
-
     @Override
     public Stream<ConceptMap> get(GraqlGet query) {
+        return get(query, false);
+    }
+
+    @Override
+    public Stream<ConceptMap> get(GraqlGet query, boolean explain) {
         //NB: we need distinct as projection can produce duplicates
-        Stream<ConceptMap> answers = match(query.match()).map(ans -> ans.project(query.vars())).distinct();
+        Stream<ConceptMap> answers = match(query.match())
+                .map(ans -> ans.project(query.vars()))
+                .distinct();
 
         answers = filter(query, answers);
-
+        if (explain) {
+            // record the explanations if the user indicated they will retrieved them
+            answers = answers.peek(answer -> explanationCache.record(answer, answer.explanation()));
+        } else {
+            // null out the explanations if the user does not want the explanation
+            answers = answers.map(answer -> new ConceptMap(answer.map(), null, answer.getPattern()));
+        }
         return answers;
     }
 

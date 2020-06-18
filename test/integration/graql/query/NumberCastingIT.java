@@ -55,7 +55,7 @@ public class NumberCastingIT {
         try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             tx.putAttributeType("attr-long", AttributeType.ValueType.LONG);
             tx.putAttributeType("attr-double", AttributeType.ValueType.DOUBLE);
-            tx.putAttributeType("attr-date", AttributeType.ValueType.DATE);
+            tx.putAttributeType("attr-date", AttributeType.ValueType.DATETIME);
             tx.commit();
         }
     }

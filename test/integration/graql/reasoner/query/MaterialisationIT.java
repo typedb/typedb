@@ -22,9 +22,13 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import grakn.core.common.config.Config;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.impl.ConceptImpl;
+import grakn.core.core.Schema;
+import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.Entity;
 import grakn.core.kb.concept.api.Relation;
+import grakn.core.kb.concept.structure.EdgeElement;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import grakn.core.test.rule.GraknTestStorage;
@@ -34,9 +38,11 @@ import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.time.LocalDate;
@@ -50,7 +56,9 @@ import java.util.stream.Collectors;
 import static grakn.core.util.GraqlTestUtil.assertCollectionsNonTriviallyEqual;
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
 import static java.util.stream.Collectors.toSet;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 public class MaterialisationIT {
@@ -155,7 +163,7 @@ public class MaterialisationIT {
     }
 
     @Test
-    public void whenMaterialisingImplicitRelations_appropriateAttributeIsCorrectlyCreatedAndAttached() {
+    public void whenMaterialisingOwnerships_appropriateAttributeIsCorrectlyCreatedAndAttached() {
         try(Transaction tx = materialisationTestSession.transaction(Transaction.Type.WRITE)) {
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
@@ -165,9 +173,7 @@ public class MaterialisationIT {
             Statement attribute = Graql.var("x").has("resource-string", "materialised").id(entity.id().getValue());
             Conjunction<Statement> pattern = Graql.and(Collections.singleton(attribute));
             ReasonerAtomicQuery attributeQuery = reasonerQueryFactory.atomic(pattern);
-            ReasonerAtomicQuery implicitRelationQuery = reasonerQueryFactory.atomic(attributeQuery.getAtom().toRelationAtom());
-
-            List<ConceptMap> materialised = materialiseWithoutDuplicates(implicitRelationQuery.getPattern(),reasonerQueryFactory, tx);
+            List<ConceptMap> materialised = attributeQuery.materialise(new ConceptMap()).collect(Collectors.toList());
             assertTrue(tx.execute(attributeQuery.getQuery()).containsAll(materialised));
         }
     }
@@ -202,18 +208,22 @@ public class MaterialisationIT {
             assertTrue(Iterables.getOnlyElement(resourceAnswers).get("r").asAttribute().isInferred());
 
             materialiseWithoutDuplicates(reuseResourcePattern,reasonerQueryFactory, tx);
-            assertTrue(Iterables.getOnlyElement(
-                    tx.execute(Graql.parse("match" +
-                            "$x has resource-string $r via $rel;" +
-                            "$x id " + secondEntity.id().getValue() + ";" +
-                            "$r id " + resource.id().getValue() + ";" +
-                            "get;").asGet(), false)).get("rel").asRelation().isInferred());
-            assertFalse(Iterables.getOnlyElement(
-                    tx.execute(Graql.parse("match" +
-                            "$x has resource-string $r via $rel;" +
-                            "$x id " + firstEntity.id().getValue() + ";" +
-                            "$r id " + resource.id().getValue() + ";" +
-                            "get;").asGet(), false)).get("rel").asRelation().isInferred());
+
+            Attribute<Object> attr = tx.getConcept(resource.id()).asAttribute();
+            List<Attribute<?>> owned = tx.getConcept(secondEntity.id()).asThing().attributes(attr.type())
+                    .filter(attributeOwned -> attributeOwned.equals(attr))
+                    .collect(Collectors.toList());
+            assertEquals(1, owned.size());
+
+            EdgeElement inferredOwnershipEdge = ((ConceptImpl)resource).vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.ATTRIBUTE)
+                    .filter(edge -> Schema.conceptId(edge.source().element()).equals(secondEntity.id()))
+                    .findFirst().get();
+            assertNotNull(inferredOwnershipEdge);
+
+            EdgeElement ownershipEdge = ((ConceptImpl)resource).vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.ATTRIBUTE)
+                    .filter(edge -> Schema.conceptId(edge.source().element()).equals(firstEntity.id()))
+                    .findFirst().get();
+            assertNotNull(ownershipEdge);
         }
     }
 

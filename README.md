@@ -3,7 +3,7 @@
 ---
 [![CircleCI](https://circleci.com/gh/graknlabs/grakn/tree/master.svg?style=shield)](https://circleci.com/gh/graknlabs/grakn/tree/master)
 [![GitHub release](https://img.shields.io/github/release/graknlabs/grakn.svg)](https://github.com/graknlabs/grakn/releases/latest)
-[![Slack Status](http://grakn-slackin.herokuapp.com/badge.svg)](https://grakn.ai/slack)
+[![Discord](https://img.shields.io/discord/665254494820368395?color=7389D8&label=chat&logo=discord&logoColor=ffffff)](https://grakn.ai/discord)
 [![Discussion Forum](https://img.shields.io/discourse/https/discuss.grakn.ai/topics.svg)](https://discuss.grakn.ai)
 [![Stack Overflow](https://img.shields.io/badge/stackoverflow-grakn-796de3.svg)](https://stackoverflow.com/questions/tagged/grakn)
 [![Stack Overflow](https://img.shields.io/badge/stackoverflow-graql-3dce8c.svg)](https://stackoverflow.com/questions/tagged/graql)
@@ -49,7 +49,9 @@ You can visit the [Setup Guide](https://dev.grakn.ai/docs/running-grakn/install-
 1. Make sure you have the following dependencies installed on your machine:
     - Java 8
     - Python >= 2.7 and Pip >= 18.1
-    - [Bazel](http://docs.bazel.build/install.html)
+    - [Bazel](http://bazel.build/). We use [Bazelisk](https://github.com/bazelbuild/bazelisk) to manage Bazel versions which runs the build with the Bazel version specified in [`.bazelversion`](https://github.com/graknlabs/grakn/blob/master/.bazelversion). In order to install it, follow platform-specific guide:
+        - macOS (Darwin): `brew install bazelbuild/tap/bazelisk`
+        - Linux: `wget https://github.com/bazelbuild/bazelisk/releases/download/v1.4.0/bazelisk-linux-amd64 -O /usr/local/bin/bazel`
 1. Depending on your Operating System, you can build Grakn with either one of the following commands: 
 ```
 $ bazel build //:assemble-linux-targz

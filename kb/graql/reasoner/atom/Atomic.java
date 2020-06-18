@@ -80,19 +80,19 @@ public interface Atomic {
      * @return true if the atomic corresponds to a type atom
      * */
     @CheckReturnValue
-    default boolean isType(){ return false;}
+    default boolean isCompatibleWithTypeAtom(){ return false;}
 
     /**
      * @return true if the atomic corresponds to a relation atom
      * */
     @CheckReturnValue
-    default boolean isRelation(){return false;}
+    default boolean isRelationAtom(){return false;}
 
     /**
      * @return true if the atomic corresponds to a resource atom
      */
     @CheckReturnValue
-    default boolean isAttribute(){ return false;}
+    default boolean isAttributeAtom(){ return false;}
 
     /**
      * @return if atom contains properties considering only explicit type hierarchies

@@ -89,37 +89,4 @@ public class RelationTypeIT {
         assertThat(relationType.roles().collect(toSet()), containsInAnyOrder(role2));
     }
 
-    @Test
-    public void whenCallingInstancesOnImplicitRelationType_RelationEdgesAreReturned(){
-        AttributeType<String> attributeType = tx.putAttributeType("My Special Attribute Type", AttributeType.ValueType.STRING);
-        Attribute<String> attribute = attributeType.create("Ad thing");
-
-        EntityType entityType = tx.putEntityType("My Special Entity Type").has(attributeType);
-        Entity entity = entityType.create();
-
-        RelationType implicitRelationType = tx.getRelationType(Schema.ImplicitType.HAS.getLabel(attributeType.label()).getValue());
-
-        assertNotNull(implicitRelationType);
-        assertThat(implicitRelationType.instances().collect(toSet()), empty());
-
-        entity.has(attribute);
-
-        assertEquals(1, implicitRelationType.instances().count());
-    }
-
-    @Test
-    public void whenSettingAnImplicitRelationTypeWithInstancesAbstract_Throw(){
-        AttributeType<String> attributeType = tx.putAttributeType("My Special Attribute Type", AttributeType.ValueType.STRING);
-        Attribute<String> attribute = attributeType.create("Ad thing");
-
-        EntityType entityType = tx.putEntityType("My Special Entity Type").has(attributeType);
-        entityType.create().has(attribute);
-
-        RelationType implicitRelationType = tx.getRelationType(Schema.ImplicitType.HAS.getLabel(attributeType.label()).getValue());
-
-        expectedException.expect(GraknConceptException.class);
-        expectedException.expectMessage(GraknConceptException.addingInstancesToAbstractType(implicitRelationType).getMessage());
-
-        implicitRelationType.isAbstract(true);
-    }
 }

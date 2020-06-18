@@ -26,7 +26,6 @@ import grakn.core.kb.concept.api.Entity;
 import grakn.core.kb.concept.api.EntityType;
 import grakn.core.kb.concept.api.GraknConceptException;
 import grakn.core.kb.concept.api.Label;
-import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.concept.structure.PropertyNotUniqueException;
@@ -96,8 +95,8 @@ public class EntityTypeIT {
     @Test
     public void whenCreatingEntityTypeUsingLabelTakenByAnotherType_Throw(){
         Role original = tx.putRole("Role Type");
-        expectedException.expect(PropertyNotUniqueException.class);
-        expectedException.expectMessage(PropertyNotUniqueException.cannotCreateProperty(original, Schema.VertexProperty.SCHEMA_LABEL, original.label()).getMessage());
+        expectedException.expect(GraknConceptException.class);
+        expectedException.expectMessage(PropertyNotUniqueException.cannotCreateProperty(original.toString(), Schema.VertexProperty.SCHEMA_LABEL, original.label()).getMessage());
         tx.putEntityType(original.label());
     }
 
@@ -276,89 +275,6 @@ public class EntityTypeIT {
     }
 
     @Test
-    public void whenAddingResourcesWithSubTypesToEntityTypes_EnsureImplicitStructureFollowsSubTypes(){
-        EntityType entityType1 = tx.putEntityType("Entity Type 1");
-        EntityType entityType2 = tx.putEntityType("Entity Type 2");
-
-        Label superLabel = Label.of("Super Attribute Type");
-        Label label = Label.of("Attribute Type");
-
-        AttributeType superAttributeType = tx.putAttributeType(superLabel, AttributeType.ValueType.STRING);
-        AttributeType attributeType = tx.putAttributeType(label, AttributeType.ValueType.STRING).sup(superAttributeType);
-        AttributeType metaType = tx.getMetaAttributeType();
-
-        entityType1.has(superAttributeType);
-        entityType2.has(attributeType);
-
-        //Check role types are only built explicitly
-        assertThat(entityType1.playing().collect(toSet()),
-                containsInAnyOrder(tx.getRole(Schema.ImplicitType.HAS_OWNER.getLabel(superLabel).getValue())));
-
-        assertThat(entityType2.playing().collect(toSet()),
-                containsInAnyOrder(tx.getRole(Schema.ImplicitType.HAS_OWNER.getLabel(label).getValue())));
-
-        //Check Implicit Types Follow SUB Structure
-        RelationType superRelation = tx.getRelationType(Schema.ImplicitType.HAS.getLabel(superAttributeType.label()).getValue());
-        Role superRoleOwner = tx.getRole(Schema.ImplicitType.HAS_OWNER.getLabel(superAttributeType.label()).getValue());
-        Role superRoleValue = tx.getRole(Schema.ImplicitType.HAS_VALUE.getLabel(superAttributeType.label()).getValue());
-
-        RelationType relation = tx.getRelationType(Schema.ImplicitType.HAS.getLabel(attributeType.label()).getValue());
-        Role roleOwner = tx.getRole(Schema.ImplicitType.HAS_OWNER.getLabel(attributeType.label()).getValue());
-        Role roleValue = tx.getRole(Schema.ImplicitType.HAS_VALUE.getLabel(attributeType.label()).getValue());
-
-        RelationType metaRelation = tx.getRelationType(Schema.ImplicitType.HAS.getLabel(metaType.label()).getValue());
-        Role metaRoleOwner = tx.getRole(Schema.ImplicitType.HAS_OWNER.getLabel(metaType.label()).getValue());
-        Role metaRoleValue = tx.getRole(Schema.ImplicitType.HAS_VALUE.getLabel(metaType.label()).getValue());
-
-        assertEquals(superRoleOwner, roleOwner.sup());
-        assertEquals(superRoleValue, roleValue.sup());
-        assertEquals(superRelation, relation.sup());
-
-        assertEquals(metaRoleOwner, superRoleOwner.sup());
-        assertEquals(metaRoleValue, superRoleValue.sup());
-        assertEquals(metaRelation, superRelation.sup());
-    }
-
-    @Test
-    public void whenAddingResourceWithAbstractSuperTypeToEntityType_EnsureImplicitStructureFollowsSubTypes(){
-        EntityType entityType = tx.putEntityType("Entity Type");
-
-        Label superLabel = Label.of("Abstract Super Attribute Type");
-        Label label = Label.of("Attribute Type");
-
-        AttributeType superAttributeType = tx.putAttributeType(superLabel, AttributeType.ValueType.STRING);
-        AttributeType attributeType = tx.putAttributeType(label, AttributeType.ValueType.STRING).sup(superAttributeType);
-        AttributeType metaType = tx.getMetaAttributeType();
-
-        entityType.has(attributeType);
-
-        //Check role types are only built explicitly
-        assertThat(entityType.playing().collect(toSet()),
-                containsInAnyOrder(tx.getRole(Schema.ImplicitType.HAS_OWNER.getLabel(label).getValue())));
-
-        //Check Implicit Types Follow SUB Structure
-        RelationType superRelation = tx.getRelationType(Schema.ImplicitType.HAS.getLabel(superAttributeType.label()).getValue());
-        Role superRoleOwner = tx.getRole(Schema.ImplicitType.HAS_OWNER.getLabel(superAttributeType.label()).getValue());
-        Role superRoleValue = tx.getRole(Schema.ImplicitType.HAS_VALUE.getLabel(superAttributeType.label()).getValue());
-
-        RelationType relation = tx.getRelationType(Schema.ImplicitType.HAS.getLabel(attributeType.label()).getValue());
-        Role roleOwner = tx.getRole(Schema.ImplicitType.HAS_OWNER.getLabel(attributeType.label()).getValue());
-        Role roleValue = tx.getRole(Schema.ImplicitType.HAS_VALUE.getLabel(attributeType.label()).getValue());
-
-        RelationType metaRelation = tx.getRelationType(Schema.ImplicitType.HAS.getLabel(metaType.label()).getValue());
-        Role metaRoleOwner = tx.getRole(Schema.ImplicitType.HAS_OWNER.getLabel(metaType.label()).getValue());
-        Role metaRoleValue = tx.getRole(Schema.ImplicitType.HAS_VALUE.getLabel(metaType.label()).getValue());
-
-        assertEquals(superRoleOwner, roleOwner.sup());
-        assertEquals(superRoleValue, roleValue.sup());
-        assertEquals(superRelation, relation.sup());
-
-        assertEquals(metaRoleOwner, superRoleOwner.sup());
-        assertEquals(metaRoleValue, superRoleValue.sup());
-        assertEquals(metaRelation, superRelation.sup());
-    }
-
-    @Test
     public void whenDeletingTypeWithEntities_Throw(){
         EntityType entityTypeA = tx.putEntityType("entityTypeA");
         EntityType entityTypeB = tx.putEntityType("entityTypeB");
@@ -417,11 +333,11 @@ public class EntityTypeIT {
         AttributeType r2 = tx.putAttributeType("r2", AttributeType.ValueType.LONG);
         AttributeType r3 = tx.putAttributeType("r3", AttributeType.ValueType.BOOLEAN);
 
-        assertTrue("Entity is linked to resources when it shouldn't", e1.attributes().collect(toSet()).isEmpty());
+        assertTrue("Entity is linked to resources when it shouldn't", e1.has().collect(toSet()).isEmpty());
         e1.has(r1);
         e1.has(r2);
         e1.has(r3);
-        assertThat(e1.attributes().collect(toSet()), containsInAnyOrder(r1, r2, r3));
+        assertThat(e1.has().collect(toSet()), containsInAnyOrder(r1, r2, r3));
     }
 
     @Test
@@ -433,9 +349,9 @@ public class EntityTypeIT {
         EntityType entityType2 = tx.putEntityType("EntityType 2");
 
         assertThat(entityType1.keys().collect(toSet()), is(empty()));
-        assertThat(entityType1.attributes().collect(toSet()), is(empty()));
+        assertThat(entityType1.has().collect(toSet()), is(empty()));
         assertThat(entityType2.keys().collect(toSet()), is(empty()));
-        assertThat(entityType2.attributes().collect(toSet()), is(empty()));
+        assertThat(entityType2.has().collect(toSet()), is(empty()));
 
         //Link the resources
         entityType1.has(attributeType1);
@@ -444,8 +360,8 @@ public class EntityTypeIT {
         entityType2.key(attributeType1);
         entityType2.key(attributeType2);
 
-        assertThat(entityType1.attributes().collect(toSet()), containsInAnyOrder(attributeType1, attributeType2));
-        assertThat(entityType2.attributes().collect(toSet()), containsInAnyOrder(attributeType1, attributeType2));
+        assertThat(entityType1.has().collect(toSet()), containsInAnyOrder(attributeType1, attributeType2));
+        assertThat(entityType2.has().collect(toSet()), containsInAnyOrder(attributeType1, attributeType2));
 
         assertThat(entityType1.keys().collect(toSet()), containsInAnyOrder(attributeType2));
         assertThat(entityType2.keys().collect(toSet()), containsInAnyOrder(attributeType1, attributeType2));
@@ -474,9 +390,8 @@ public class EntityTypeIT {
 
         entityType.has(attributeType);
 
-        expectedException.expect(TransactionException.class);
+        expectedException.expect(GraknConceptException.class);
         expectedException.expectMessage(CANNOT_BE_KEY_AND_ATTRIBUTE.getMessage(entityType.label(), attributeType.label()));
-
         entityType.key(attributeType);
     }
 
@@ -487,7 +402,7 @@ public class EntityTypeIT {
 
         entityType.key(attributeType);
 
-        expectedException.expect(TransactionException.class);
+        expectedException.expect(GraknConceptException.class);
         expectedException.expectMessage(CANNOT_BE_KEY_AND_ATTRIBUTE.getMessage(entityType.label(), attributeType.label()));
 
         entityType.has(attributeType);
@@ -516,7 +431,7 @@ public class EntityTypeIT {
         Concept thing = tx.getMetaConcept();
         String reservedWord = Graql.Token.Type.THING.toString();
 
-        expectedException.expect(TransactionException.class);
+        expectedException.expect(GraknConceptException.class);
         expectedException.expectMessage(UNIQUE_PROPERTY_TAKEN.getMessage(Schema.VertexProperty.SCHEMA_LABEL, "thing", thing));
 
         tx.putEntityType(reservedWord);
@@ -527,9 +442,9 @@ public class EntityTypeIT {
         AttributeType<String> name = tx.putAttributeType("name", AttributeType.ValueType.STRING);
         AttributeType<Integer> age = tx.putAttributeType("age", AttributeType.ValueType.INTEGER);
         EntityType person = tx.putEntityType("person").has(name).has(age);
-        assertThat(person.attributes().collect(toSet()), containsInAnyOrder(name, age));
+        assertThat(person.has().collect(toSet()), containsInAnyOrder(name, age));
         person.unhas(name);
-        assertThat(person.attributes().collect(toSet()), containsInAnyOrder(age));
+        assertThat(person.has().collect(toSet()), containsInAnyOrder(age));
     }
 
     @Test
@@ -539,12 +454,12 @@ public class EntityTypeIT {
         AttributeType<Integer> id = tx.putAttributeType("id", AttributeType.ValueType.INTEGER);
         EntityType person = tx.putEntityType("person").has(name).has(age).key(id);
 
-        assertThat(person.attributes().collect(toSet()), containsInAnyOrder(name, age, id));
+        assertThat(person.has().collect(toSet()), containsInAnyOrder(name, age, id));
         assertThat(person.keys().collect(toSet()), containsInAnyOrder(id));
 
         //Key is removed
         person.unkey(id);
-        assertThat(person.attributes().collect(toSet()), containsInAnyOrder(name, age));
+        assertThat(person.has().collect(toSet()), containsInAnyOrder(name, age));
         assertThat(person.keys().collect(toSet()), empty());
     }
 
@@ -555,7 +470,7 @@ public class EntityTypeIT {
         AttributeType<Integer> id = tx.putAttributeType("id", AttributeType.ValueType.INTEGER);
         EntityType person = tx.putEntityType("person").has(name).has(age).key(id);
 
-        assertThat(person.attributes().collect(toSet()), containsInAnyOrder(name, age, id));
+        assertThat(person.has().collect(toSet()), containsInAnyOrder(name, age, id));
         assertThat(person.keys().collect(toSet()), containsInAnyOrder(id));
 
         expectedException.expect(GraknConceptException.class);
@@ -563,15 +478,4 @@ public class EntityTypeIT {
                 person.label().getValue(), id.label().getValue(), false).getMessage());
         person.unhas(id);
     }
-
-    @Test
-    public void whenCreatingAnEntityTypeWithLabelStartingWithReservedCharachter_Throw(){
-        String label = "@what-a-dumb-label-name";
-
-        expectedException.expect(GraknConceptException.class);
-        expectedException.expectMessage(GraknConceptException.invalidLabelStart(Label.of(label)).getMessage());
-
-        tx.putEntityType(label);
-    }
-
 }

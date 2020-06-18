@@ -21,7 +21,6 @@ java_test(
     test_class = "grakn.core.graql.reasoner.ReasoningIT",
     deps = [
         "//concept/answer",
-        "//core",
         "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/commons-collections",
         "//dependencies/maven/artifacts/org/apache/commons:commons-math3",

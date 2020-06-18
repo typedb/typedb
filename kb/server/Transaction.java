@@ -58,6 +58,10 @@ import java.util.List;
 import java.util.stream.Stream;
 
 public interface Transaction extends AutoCloseable {
+
+    public static final boolean DEFAULT_INFER = true;
+    public static final boolean DEFAULT_EXPLAIN = false;
+
     void open(Type type);
 
     Session session();
@@ -65,84 +69,59 @@ public interface Transaction extends AutoCloseable {
     Keyspace keyspace();
 
     List<ConceptMap> execute(GraqlDefine query);
-
     Stream<ConceptMap> stream(GraqlDefine query);
-
     List<ConceptMap> execute(GraqlUndefine query);
-
     Stream<ConceptMap> stream(GraqlUndefine query);
 
-    List<ConceptMap> execute(GraqlInsert query, boolean infer);
-
     List<ConceptMap> execute(GraqlInsert query);
-
+    List<ConceptMap> execute(GraqlInsert query, boolean infer);
+    List<ConceptMap> execute(GraqlInsert query, boolean infer, boolean explain);
     Stream<ConceptMap> stream(GraqlInsert query);
-
     Stream<ConceptMap> stream(GraqlInsert query, boolean infer);
+    Stream<ConceptMap> stream(GraqlInsert query, boolean infer, boolean explain);
 
     List<Void> execute(GraqlDelete query);
-
     List<Void> execute(GraqlDelete query, boolean infer);
-
     Stream<Void> stream(GraqlDelete query);
-
     Stream<Void> stream(GraqlDelete query, boolean infer);
 
     List<ConceptMap> execute(GraqlGet query);
-
     List<ConceptMap> execute(GraqlGet query, boolean infer);
-
+    List<ConceptMap> execute(GraqlGet query, boolean infer, boolean explain);
     Stream<ConceptMap> stream(GraqlGet query);
-
     Stream<ConceptMap> stream(GraqlGet query, boolean infer);
+    Stream<ConceptMap> stream(GraqlGet query, boolean infer, boolean explain);
 
     List<Numeric> execute(GraqlGet.Aggregate query);
-
     List<Numeric> execute(GraqlGet.Aggregate query, boolean infer);
-
     Stream<Numeric> stream(GraqlGet.Aggregate query);
-
     Stream<Numeric> stream(GraqlGet.Aggregate query, boolean infer);
 
     List<AnswerGroup<ConceptMap>> execute(GraqlGet.Group query);
-
     List<AnswerGroup<ConceptMap>> execute(GraqlGet.Group query, boolean infer);
-
     Stream<AnswerGroup<ConceptMap>> stream(GraqlGet.Group query);
-
     Stream<AnswerGroup<ConceptMap>> stream(GraqlGet.Group query, boolean infer);
 
     List<AnswerGroup<Numeric>> execute(GraqlGet.Group.Aggregate query);
-
     List<AnswerGroup<Numeric>> execute(GraqlGet.Group.Aggregate query, boolean infer);
-
     Stream<AnswerGroup<Numeric>> stream(GraqlGet.Group.Aggregate query);
-
     Stream<AnswerGroup<Numeric>> stream(GraqlGet.Group.Aggregate query, boolean infer);
 
     List<Numeric> execute(GraqlCompute.Statistics query);
-
     Stream<Numeric> stream(GraqlCompute.Statistics query);
-
     List<ConceptList> execute(GraqlCompute.Path query);
-
     Stream<ConceptList> stream(GraqlCompute.Path query);
-
     List<ConceptSetMeasure> execute(GraqlCompute.Centrality query);
-
     Stream<ConceptSetMeasure> stream(GraqlCompute.Centrality query);
-
     List<ConceptSet> execute(GraqlCompute.Cluster query);
-
     Stream<ConceptSet> stream(GraqlCompute.Cluster query);
 
     List<? extends Answer> execute(GraqlQuery query);
-
     List<? extends Answer> execute(GraqlQuery query, boolean infer);
-
+    List<? extends Answer> execute(GraqlQuery query, boolean infer, boolean explain);
     Stream<? extends Answer> stream(GraqlQuery query);
-
     Stream<? extends Answer> stream(GraqlQuery query, boolean infer);
+    Stream<? extends Answer> stream(GraqlQuery query, boolean infer, boolean explain);
 
     boolean isOpen();
 
@@ -326,7 +305,7 @@ public interface Transaction extends AutoCloseable {
      */
     Rule getRule(String label);
 
-    Explanation explanation(Pattern queryPattern);
+    Explanation explanation(ConceptMap explain);
 
     @Override
     void close();

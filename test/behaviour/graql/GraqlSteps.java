@@ -94,6 +94,29 @@ public class GraqlSteps {
         tx = session.transaction(Transaction.Type.WRITE);
     }
 
+    @Given("graql define without commit")
+    public void graql_define_without_commit(String defineQueryStatements) {
+        GraqlDefine graqlQuery = Graql.parse(String.join("\n", defineQueryStatements)).asDefine();
+        tx.execute(graqlQuery);
+    }
+
+    @Given("graql define throws")
+    public void graql_define_throws(String defineQueryStatements) {
+        boolean threw = false;
+        try {
+            GraqlDefine graqlQuery = Graql.parse(String.join("\n", defineQueryStatements)).asDefine();
+            tx.execute(graqlQuery);
+            tx.commit();
+        } catch (RuntimeException e) {
+            threw = true;
+        } finally {
+            tx.close();
+            tx = session.transaction(Transaction.Type.WRITE);
+        }
+
+        assertTrue(threw);
+    }
+
     @Given("graql undefine")
     public void graql_undefine(String undefineQueryStatements) {
         GraqlUndefine graqlQuery = Graql.parse(String.join("\n", undefineQueryStatements)).asUndefine();
@@ -122,7 +145,7 @@ public class GraqlSteps {
     @Given("graql insert")
     public void graql_insert(String insertQueryStatements) {
         GraqlQuery graqlQuery = Graql.parse(String.join("\n", insertQueryStatements));
-        tx.execute(graqlQuery);
+        tx.execute(graqlQuery, true, true); // always use inference and have explanations
         tx.commit();
         tx = session.transaction(Transaction.Type.WRITE);
     }
@@ -173,9 +196,9 @@ public class GraqlSteps {
     public void graql_query(String graqlQueryStatements) {
         GraqlQuery graqlQuery = Graql.parse(String.join("\n", graqlQueryStatements));
         if (graqlQuery instanceof GraqlGet) {
-            answers = tx.execute(graqlQuery.asGet());
+            answers = tx.execute(graqlQuery.asGet(), true, true); // always use inference and have explanations
         } else if (graqlQuery instanceof GraqlInsert) {
-            answers = tx.execute(graqlQuery.asInsert());
+            answers = tx.execute(graqlQuery.asInsert(), true, true); // always use inference and have explanations
         } else {
             throw new ScenarioDefinitionException("Only match-get and inserted supported for now");
         }

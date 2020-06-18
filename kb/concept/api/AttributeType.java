@@ -69,6 +69,13 @@ public interface AttributeType<D> extends Type {
      */
     AttributeType<D> sup(AttributeType<D> type);
 
+    Stream<Type> directOwnersAsKey();
+
+    Stream<Type> owners();
+
+    @Override
+    void writeCount(Long count);
+
     /**
      * Sets the Role which instances of this AttributeType may play.
      *
@@ -206,6 +213,14 @@ public interface AttributeType<D> extends Type {
     @Nullable
     String regex();
 
+
+    /**
+     * Return the number of things that own this attribute (not including uncomitted ownerships)
+     * @return
+     */
+    long ownershipCount();
+    void writeOwnershipCount(long count);
+
     //------------------------------------- Other ---------------------------------
     @SuppressWarnings("unchecked")
     @Deprecated
@@ -222,6 +237,7 @@ public interface AttributeType<D> extends Type {
         return true;
     }
 
+
     /**
      * A class used to hold the supported value types of resources and any other concepts.
      * This is used tp constrain value value types to only those we explicitly support.
@@ -233,9 +249,9 @@ public interface AttributeType<D> extends Type {
             @Override
             public Set<ValueType<?>> comparableValueTypes() { return Collections.singleton(ValueType.BOOLEAN); }
         };
-        public static final ValueType<LocalDateTime> DATE = new ValueType<LocalDateTime>(LocalDateTime.class){
+        public static final ValueType<LocalDateTime> DATETIME = new ValueType<LocalDateTime>(LocalDateTime.class){
             @Override
-            public Set<ValueType<?>> comparableValueTypes() { return Collections.singleton(ValueType.DATE); }
+            public Set<ValueType<?>> comparableValueTypes() { return Collections.singleton(ValueType.DATETIME); }
         };
         public static final ValueType<Double> DOUBLE = new ValueType<Double>(Double.class){
             @Override
@@ -269,7 +285,7 @@ public interface AttributeType<D> extends Type {
             public Set<ValueType<?>> comparableValueTypes() { return Collections.singleton(ValueType.STRING); }
         };
 
-        private static final List<ValueType<?>> values = list(BOOLEAN, DATE, DOUBLE, FLOAT, INTEGER, LONG, STRING);
+        private static final List<ValueType<?>> values = list(BOOLEAN, DATETIME, DOUBLE, FLOAT, INTEGER, LONG, STRING);
 
         private final Class<D> dataClass;
 

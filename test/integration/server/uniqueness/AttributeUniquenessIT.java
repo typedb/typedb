@@ -342,43 +342,6 @@ public class AttributeUniquenessIT {
     }
 
     @Test
-    public void shouldAlsoMergeReifiedEdgesWhenMerging() {
-        String ownedAttributeLabel = "owned-attribute";
-        String ownedAttributeValue = "owned-attribute-value";
-
-        // define the schema
-        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-            tx.execute(Graql.define(
-                    type(ownedAttributeLabel).sub("attribute").value(Graql.Token.ValueType.STRING),
-                    type("owner").sub("entity").has(ownedAttributeLabel)
-            ));
-            tx.commit();
-        }
-
-        // use the 'via' feature when inserting to force reification
-        GraqlInsert query1 = Graql.parse("insert $owner isa owner, has owned-attribute '" + ownedAttributeValue + "' via $reified;").asInsert();
-        GraqlInsert query2 = Graql.parse("insert $owner isa owner, has owned-attribute '" + ownedAttributeValue + "' via $reified;").asInsert();
-        GraqlInsert query3 = Graql.parse("insert $owner isa owner, has owned-attribute '" + ownedAttributeValue + "' via $reified;").asInsert();
-        insertConcurrently(Collections.list(query1, query2, query3));
-
-        // verify
-        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-            Set<String> owned = new HashSet<>();
-            Set<String> owner = new HashSet<>();
-            List<ConceptMap> conceptMaps = tx.execute(Graql.match(
-                    var("owned").isa(ownedAttributeLabel).val(ownedAttributeValue),
-                    var("owner").isa("owner")).get());
-            for (ConceptMap conceptMap : conceptMaps) {
-                owned.add(conceptMap.get("owned").asAttribute().id().getValue());
-                owner.add(conceptMap.get("owner").asEntity().id().getValue());
-            }
-
-            assertThat(owned, hasSize(1));
-            assertThat(owner, hasSize(3));
-        }
-    }
-
-    @Test
     public void shouldAlsoMergeRolePlayerEdgesInTheMerging() {
         String ownedAttributeLabel = "owned-attribute";
         String ownedAttributeValue = "owned-attribute-value";

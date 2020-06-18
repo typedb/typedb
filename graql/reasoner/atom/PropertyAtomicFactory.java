@@ -169,14 +169,13 @@ public class PropertyAtomicFactory {
         return IdPredicate.create(var, ConceptId.of(property.id()), parent);
     }
 
-
     private Atomic relation(Variable var, RelationProperty property, ReasonerQuery parent, Statement statement, Set<Statement> otherStatements) {
-        //set varName as user defined if reified
-        //reified if contains more properties than the RelationProperty itself and potential IsaProperty
-        boolean isReified = statement.properties().stream()
+        // set varName as user defined if "reified"
+        // "reified" if contains more properties than the RelationProperty itself and potential IsaProperty
+        boolean isUsedAsVertex = statement.properties().stream()
                 .filter(prop -> !RelationProperty.class.isInstance(prop))
                 .anyMatch(prop -> !IsaProperty.class.isInstance(prop));
-        Statement relVar = isReified ? new Statement(var.asReturnedVar()) : new Statement(var);
+        Statement relVar = isUsedAsVertex ? new Statement(var.asReturnedVar()) : new Statement(var);
 
         ConceptManager conceptManager = ctx.conceptManager();
         for (RelationProperty.RolePlayer rp : property.relationPlayers()) {
@@ -256,7 +255,6 @@ public class PropertyAtomicFactory {
 
         //NB: we always make the attribute variable explicit
         Variable attributeVariable = property.attribute().var().asReturnedVar();
-        Variable relationVariable = property.relation().var();
         Variable predicateVariable = new Variable();
         Set<ValuePredicate> predicates = getValuePredicates(attributeVariable, property.attribute(), otherStatements,
                 parent,this);
@@ -266,22 +264,20 @@ public class PropertyAtomicFactory {
         Label typeLabel = typeVar != null ? getLabel(predicateVariable, typeVar, otherStatements, ctx.conceptManager()) : null;
 
         //add resource atom
-        Statement resVar = relationVariable.isReturned() ?
-                new Statement(varName).has(property.type(), new Statement(attributeVariable), new Statement(relationVariable)) :
-                new Statement(varName).has(property.type(), new Statement(attributeVariable));
-        return AttributeAtom.create(resVar, attributeVariable, relationVariable, predicateVariable, typeLabel, predicates, parent, ctx);
+        Statement resVar = new Statement(varName).has(property.type(), new Statement(attributeVariable));
+        return AttributeAtom.create(resVar, attributeVariable, predicateVariable, typeLabel, predicates, parent, ctx);
     }
 
 
     private ValueTypeAtom valueType(Variable var, ValueTypeProperty property, ReasonerQuery parent) {
         ImmutableMap.Builder<Graql.Token.ValueType, AttributeType.ValueType<?>> valueTypesBuilder = new ImmutableMap.Builder<>();
         valueTypesBuilder.put(Graql.Token.ValueType.BOOLEAN, AttributeType.ValueType.BOOLEAN);
-        valueTypesBuilder.put(Graql.Token.ValueType.DATE, AttributeType.ValueType.DATE);
+        valueTypesBuilder.put(Graql.Token.ValueType.DATETIME, AttributeType.ValueType.DATETIME);
         valueTypesBuilder.put(Graql.Token.ValueType.DOUBLE, AttributeType.ValueType.DOUBLE);
         valueTypesBuilder.put(Graql.Token.ValueType.LONG, AttributeType.ValueType.LONG);
         valueTypesBuilder.put(Graql.Token.ValueType.STRING, AttributeType.ValueType.STRING);
         ImmutableMap<Graql.Token.ValueType, AttributeType.ValueType<?>> valueTypes = valueTypesBuilder.build();
-        return ValueTypeAtom.create(var, property, parent, valueTypes.get(property.valueType()));
+        return ValueTypeAtom.create(var, property, parent, valueTypes.get(property.ValueType()));
     }
 
     private Atomic isAbstract(Variable var, ReasonerQuery parent) {

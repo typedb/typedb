@@ -40,7 +40,7 @@ public class NeqIdPredicateIT {
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
 
-    @Test //Expected result: 2 relations obtained by correctly finding reified relations
+    @Test //Expected result: 2 relations obtained by correctly finding relations
     public void reasoningWithNeqProperty() {
         try(Session session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "testSet27.gql", session);

@@ -41,7 +41,4 @@ public class EntityImpl extends ThingImpl<Entity, EntityType> implements Entity 
     public static EntityImpl from(Entity entity) {
         return (EntityImpl) entity;
     }
-
-    @Override
-    public Stream<Thing> getDependentConcepts() { return Stream.of(this); }
 }

@@ -104,7 +104,7 @@ public class NodeImpl implements Node{
         if (state instanceof AnswerPropagatorState){
             ResolvableQuery query = ((AnswerPropagatorState) state).getQuery();
             Set<Variable> atomVars = query.getAtoms().stream()
-                    .filter(at -> at.isRelation() || at.isAttribute())
+                    .filter(at -> at.isRelationAtom() || at.isAttributeAtom())
                     .map(Atomic::getVarName)
                     .collect(Collectors.toSet());
             Set<Variable> vars = query.getVarNames();

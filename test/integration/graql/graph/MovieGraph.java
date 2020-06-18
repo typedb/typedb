@@ -17,7 +17,6 @@
 
 package grakn.core.graql.graph;
 
-import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.EntityType;
@@ -41,6 +40,7 @@ public class MovieGraph {
     private static AttributeType<Long> tmdbVoteCount, runtime;
     private static AttributeType<Double> tmdbVoteAverage;
     private static AttributeType<LocalDateTime> releaseDate;
+    private static RelationType hasNameWithProvenance;
     private static RelationType hasCast, authoredBy, directedBy, hasGenre, hasCluster;
     private static Role productionBeingDirected, director, productionWithCast, actor, characterBeingPlayed;
     private static Role genreOfProduction, productionWithGenre, clusterOfProduction, productionWithCluster;
@@ -77,7 +77,7 @@ public class MovieGraph {
 
         tmdbVoteCount = tx.putAttributeType("tmdb-vote-count", AttributeType.ValueType.LONG);
         tmdbVoteAverage = tx.putAttributeType("tmdb-vote-average", AttributeType.ValueType.DOUBLE);
-        releaseDate = tx.putAttributeType("release-date", AttributeType.ValueType.DATE);
+        releaseDate = tx.putAttributeType("release-date", AttributeType.ValueType.DATETIME);
         runtime = tx.putAttributeType("runtime", AttributeType.ValueType.LONG);
         gender = tx.putAttributeType("gender", AttributeType.ValueType.STRING).regex("(fe)?male");
         realName = tx.putAttributeType("real-name", AttributeType.ValueType.STRING);
@@ -87,6 +87,13 @@ public class MovieGraph {
         work = tx.putRole("work");
         author = tx.putRole("author");
         authoredBy = tx.putRelationType("authored-by").relates(work).relates(author);
+
+        Role provenancedNameOwner = tx.putRole("provenanced-name-owner");
+        Role provenancedNameValue = tx.putRole("provenanced-name-value");
+        hasNameWithProvenance = tx.putRelationType("has-name-with-provenance").relates(provenancedNameOwner).relates(provenancedNameValue);
+        name.plays(provenancedNameValue);
+
+        hasNameWithProvenance.has(provenance); // the provenance
 
         productionBeingDirected = tx.putRole("production-being-directed").sup(work);
         director = tx.putRole("director").sup(author);
@@ -114,7 +121,7 @@ public class MovieGraph {
 
         production = tx.putEntityType("production")
                 .plays(productionWithCluster).plays(productionBeingDirected).plays(productionWithCast).plays(work)
-                .plays(productionWithGenre);
+                .plays(productionWithGenre).plays(provenancedNameOwner);
 
         production.has(title);
         production.has(tmdbVoteCount);
@@ -130,8 +137,8 @@ public class MovieGraph {
                 .plays(director).plays(actor).plays(characterBeingPlayed).plays(author);
 
         person.has(gender);
-        person.has(name);
         person.has(realName);
+        person.has(name);
 
         genre = tx.putEntityType("genre").plays(genreOfProduction);
         genre.key(name);
@@ -149,7 +156,6 @@ public class MovieGraph {
         cluster = tx.putEntityType("cluster").plays(clusterOfProduction);
         cluster.has(name);
 
-        tx.getType(Schema.ImplicitType.HAS.getLabel("title")).has(provenance);
         authoredBy.has(provenance);
     }
 

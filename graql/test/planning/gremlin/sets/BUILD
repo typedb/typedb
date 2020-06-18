@@ -21,7 +21,7 @@ java_test(
     name = "label-fragment-set-test",
     size = "small",
     srcs = ["LabelFragmentSetTest.java"],
-    test_class = "grakn.core.graql.gremlin.sets.LabelFragmentSetTest",
+    test_class = "grakn.core.graql.planning.gremlin.sets.LabelFragmentSetTest",
     deps = [
         "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
@@ -38,7 +38,7 @@ java_test(
     name = "roleplayer-fragment-set-test",
     size = "small",
     srcs = ["RolePlayerFragmentSetTest.java"],
-    test_class = "grakn.core.graql.gremlin.sets.RolePlayerFragmentSetTest",
+    test_class = "grakn.core.graql.planning.gremlin.sets.RolePlayerFragmentSetTest",
     deps = [
         "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",

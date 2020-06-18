@@ -21,7 +21,7 @@ java_test(
     name = "nodes-util-test",
     size = "small",
     srcs = ["NodesUtilTest.java"],
-    test_class = "grakn.core.graql.gremlin.NodesUtilTest",
+    test_class = "grakn.core.graql.planning.NodesUtilTest",
     deps = [
         "//dependencies/maven/artifacts/com/google/guava",
         "//graql/planning",

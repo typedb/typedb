@@ -33,7 +33,7 @@ public abstract class AttributeValueConverter<SOURCE, TARGET>{
 
     private static Map<AttributeType.ValueType<?>, AttributeValueConverter<?, ?>> converters = ImmutableMap.<AttributeType.ValueType<?>, AttributeValueConverter<?, ?>>builder()
             .put(AttributeType.ValueType.BOOLEAN, new IdentityConverter<Boolean, Boolean>())
-            .put(AttributeType.ValueType.DATE, new DateConverter())
+            .put(AttributeType.ValueType.DATETIME, new DateConverter())
             .put(AttributeType.ValueType.DOUBLE, new DoubleConverter())
             .put(AttributeType.ValueType.FLOAT, new FloatConverter())
             .put(AttributeType.ValueType.INTEGER, new IntegerConverter())

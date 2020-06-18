@@ -40,12 +40,12 @@ public class EquivalentFragmentSets {
 
     private static final ImmutableCollection<FragmentSetOptimisation> OPTIMISATIONS = ImmutableSet.of(
             RolePlayerFragmentSet.ROLE_OPTIMISATION,
-            RolePlayerFragmentSet.IMPLICIT_RELATION_OPTIMISATION,
+//            RolePlayerFragmentSet.IMPLICIT_RELATION_OPTIMISATION,
             AttributeIndexFragmentSet.ATTRIBUTE_INDEX_OPTIMISATION,
             RolePlayerFragmentSet.RELATION_TYPE_OPTIMISATION,
             LabelFragmentSet.REDUNDANT_LABEL_ELIMINATION_OPTIMISATION,
-            SubFragmentSet.SUB_TRAVERSAL_ELIMINATION_OPTIMISATION,
-            IsaFragmentSet.SKIP_EDGE_INSTANCE_CHECK_OPTIMISATION
+            SubFragmentSet.SUB_TRAVERSAL_ELIMINATION_OPTIMISATION
+//            IsaFragmentSet.SKIP_EDGE_INSTANCE_CHECK_OPTIMISATION
     );
 
     /**
@@ -58,6 +58,18 @@ public class EquivalentFragmentSets {
     public static EquivalentFragmentSet plays(VarProperty varProperty, Variable type, Variable role, boolean required) {
         return new PlaysFragmentSet(varProperty, type, role, required);
     }
+
+    /**
+     * An EquivalentFragmentSet that indicates a variable that is a Thing having an ownership of an Attribute instance
+     * @param varProperty
+     * @param owner
+     * @param attribute
+     * @return
+     */
+    public static EquivalentFragmentSet attribute(VarProperty varProperty, Variable owner, Variable attribute, ImmutableSet<Label> attributeTypeLabels) {
+        return new AttributeFragmentSet(varProperty, owner, attribute, attributeTypeLabels);
+    }
+
 
     /**
      * Describes the edge connecting a Relation to a role-player.
@@ -99,16 +111,16 @@ public class EquivalentFragmentSets {
     /**
      * An EquivalentFragmentSet that indicates a variable is not a casting or a shard.
      */
-    public static EquivalentFragmentSet notInternalFragmentSet(VarProperty varProperty, Variable start) {
-        return new NotInternalFragmentSet(varProperty, start);
+    public static EquivalentFragmentSet notShardFragmentSet(VarProperty varProperty, Variable start) {
+        return new NotShardFragmentSet(varProperty, start);
     }
 
     /**
      * An EquivalentFragmentSet that indicates a variable is a direct instance of a type.
      */
     public static EquivalentFragmentSet isa(
-            VarProperty varProperty, Variable instance, Variable type, boolean mayHaveEdgeInstances) {
-        return new IsaFragmentSet(varProperty, instance, type, mayHaveEdgeInstances);
+            VarProperty varProperty, Variable instance, Variable type) {
+        return new IsaFragmentSet(varProperty, instance, type);
     }
 
     /**

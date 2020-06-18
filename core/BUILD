@@ -27,13 +27,10 @@ java_library(
     name = "core",
     srcs = glob(["*.java"]),
     deps = [
-        "//common:common",
         "//kb/concept/api:api",
 
         # TEMPORARY
         "//graph",
-
-
 
         # External dependenicies from @graknlabs
         "@graknlabs_graql//java:graql",

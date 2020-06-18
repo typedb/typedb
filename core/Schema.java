@@ -44,14 +44,12 @@ import java.util.Map;
 
 import static grakn.common.util.Collections.map;
 import static grakn.common.util.Collections.pair;
-import static grakn.core.common.exception.ErrorMessage.INVALID_IMPLICIT_TYPE;
 
 /**
  * A type enum which restricts the types of links/concepts which can be created
  */
 public final class Schema {
     private final static String PREFIX_VERTEX = "V";
-    private final static String PREFIX_EDGE = "E";
 
     private Schema() {
         throw new UnsupportedOperationException();
@@ -61,9 +59,8 @@ public final class Schema {
         return ConceptId.of(PREFIX_VERTEX + vertexId);
     }
 
-    public static ConceptId conceptId(Element element) {
-        String prefix = element instanceof Edge ? PREFIX_EDGE : PREFIX_VERTEX;
-        return ConceptId.of(prefix + element.id().toString());
+    public static ConceptId conceptId(Vertex element) {
+        return ConceptId.of(PREFIX_VERTEX + element.id().toString());
     }
 
     public static String elementId(ConceptId conceptId) {
@@ -72,17 +69,11 @@ public final class Schema {
 
     public static boolean validateConceptId(ConceptId conceptId) throws GraknConceptException {
         try {
-            if (!isEdgeId(conceptId)) {
-                Long.parseLong(elementId(conceptId));
-            }
+            Long.parseLong(elementId(conceptId));
         } catch (NumberFormatException e) {
             return false;
         }
         return true;
-    }
-
-    public static boolean isEdgeId(ConceptId conceptId) {
-        return conceptId.getValue().startsWith(Schema.PREFIX_EDGE);
     }
 
     /**
@@ -93,11 +84,13 @@ public final class Schema {
         SUB("sub"),
         RELATES("relates"),
         PLAYS("plays"),
+        HAS("schema-has"), // has schema edge
+        KEY("schema-key"), // key schema edge -- "key" is a reserved keyword!
         POSITIVE_HYPOTHESIS("positive-hypothesis"),
         NEGATIVE_HYPOTHESIS("negative-hypothesis"),
         CONCLUSION("conclusion"),
         ROLE_PLAYER("role-player"),
-        ATTRIBUTE("attribute"),
+        ATTRIBUTE("attribute"), // attribute ownership edge
         SHARD("shard");
 
         private final String label;
@@ -195,26 +188,19 @@ public final class Schema {
      */
     public enum VertexProperty {
         // Schema concept properties
-        SCHEMA_LABEL(String.class), LABEL_ID(Integer.class), INSTANCE_COUNT(Long.class), TYPE_SHARD_CHECKPOINT(Long.class), IS_ABSTRACT(Boolean.class),
+        SCHEMA_LABEL(String.class), LABEL_ID(Integer.class), INSTANCE_COUNT(Long.class), OWNERSHIP_COUNT(Long.class), TYPE_SHARD_CHECKPOINT(Long.class), IS_ABSTRACT(Boolean.class),
 
         // Attribute schema concept properties
-        // TODO change to `VALUE_TYPE` when no longer require preserving DB compatibility
-        REGEX(String.class), DATA_TYPE(String.class),
+        REGEX(String.class), VALUE_TYPE(String.class),
 
         // Attribute concept properties
         INDEX(String.class),
-
-        // Reified relations' ID (exported from a previously non-reified edge ID)
-        EDGE_RELATION_ID(String.class),
 
         // Properties on all Concept vertices
         THING_TYPE_LABEL_ID(Integer.class), IS_INFERRED(Boolean.class),
 
         // Misc. properties
         CURRENT_LABEL_ID(Integer.class), RULE_WHEN(String.class), RULE_THEN(String.class), CURRENT_SHARD(String.class),
-
-        // Relation properties
-        IS_IMPLICIT(Boolean.class),
 
         //Supported Value Types
         VALUE_STRING(String.class), VALUE_LONG(Long.class),
@@ -226,7 +212,7 @@ public final class Schema {
 
         private static Map<AttributeType.ValueType, VertexProperty> valueTypeVertexProperty = map(
                 pair(AttributeType.ValueType.BOOLEAN, VertexProperty.VALUE_BOOLEAN),
-                pair(AttributeType.ValueType.DATE, VertexProperty.VALUE_DATE),
+                pair(AttributeType.ValueType.DATETIME, VertexProperty.VALUE_DATE),
                 pair(AttributeType.ValueType.DOUBLE, VertexProperty.VALUE_DOUBLE),
                 pair(AttributeType.ValueType.FLOAT, VertexProperty.VALUE_FLOAT),
                 pair(AttributeType.ValueType.INTEGER, VertexProperty.VALUE_INTEGER),
@@ -258,7 +244,10 @@ public final class Schema {
         ROLE_LABEL_ID(Integer.class),
         RELATION_TYPE_LABEL_ID(Integer.class),
         REQUIRED(Boolean.class),
-        IS_INFERRED(Boolean.class);
+        IS_INFERRED(Boolean.class),
+        // forwards compatibility
+        ATTRIBUTE_OWNED_LABEL_ID(Integer.class),
+        ATTRIBUTE_OWNER_LABEL_ID(Integer.class);
 
         private final Class valueType;
 
@@ -269,95 +258,6 @@ public final class Schema {
         @CheckReturnValue
         public Class getPropertyClass() {
             return valueType;
-        }
-    }
-
-    /**
-     * This stores the schema which is required when implicitly creating roles for the has-Attribute methods
-     */
-    public enum ImplicitType {
-        /**
-         * Reserved character used by all implicit Types
-         */
-        RESERVED("@"),
-
-        /**
-         * The label of the generic has-Attribute relation, used for attaching Attributes to instances with the 'has' syntax
-         */
-        HAS("@has-%s"),
-
-        /**
-         * The label of a role in has-Attribute, played by the owner of the Attribute
-         */
-        HAS_OWNER("@has-%s-owner"),
-
-        /**
-         * The label of a role in has-Attribute, played by the Attribute
-         */
-        HAS_VALUE("@has-%s-value"),
-
-        /**
-         * The label of the generic key relation, used for attaching Attributes to instances with the 'has' syntax and additionally constraining them to be unique
-         */
-        KEY("@key-%s"),
-
-        /**
-         * The label of a role in key, played by the owner of the key
-         */
-        KEY_OWNER("@key-%s-owner"),
-
-        /**
-         * The label of a role in key, played by the Attribute
-         */
-        KEY_VALUE("@key-%s-value");
-
-        private final String label;
-
-        ImplicitType(String label) {
-            this.label = label;
-        }
-
-        @CheckReturnValue
-        public Label getLabel(Label attributeType) {
-            return attributeType.map(attribute -> String.format(label, attribute));
-        }
-
-        @CheckReturnValue
-        public Label getLabel(String attributeType) {
-            return Label.of(String.format(label, attributeType));
-        }
-
-        @CheckReturnValue
-        public String getValue() {
-            return label;
-        }
-
-        /**
-         * Helper method which converts the implicit type label back into the original label from which is was built.
-         *
-         * @param implicitType the implicit type label
-         * @return The original label which was used to build this type
-         */
-        @CheckReturnValue
-        public static Label explicitLabel(Label implicitType) {
-            if (!(implicitType.getValue().startsWith("@key") || implicitType.getValue().startsWith("@has"))) {
-                throw new IllegalArgumentException(INVALID_IMPLICIT_TYPE.getMessage(implicitType));
-            }
-
-            int endIndex = implicitType.getValue().length();
-            // We need to exclude the scenario where the user literally names their attributes 'value' or 'owner'
-            // which will result in @has-value, @has-owner, @key-value, @key-owner as legitimate implicit-relation names
-            if (implicitType.getValue().length() > 10 && (implicitType.getValue().endsWith("-value") || implicitType.getValue().endsWith("-owner"))) {
-                endIndex = implicitType.getValue().lastIndexOf("-");
-            }
-
-            //return the Label without the `@has-`or '@key-' prefix
-            return Label.of(implicitType.getValue().substring(5, endIndex));
-        }
-
-        @CheckReturnValue
-        public static boolean isKey(Label implicitType) {
-            return implicitType.getValue().startsWith("@key");
         }
     }
 

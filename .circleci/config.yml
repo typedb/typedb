@@ -77,7 +77,9 @@ jobs:
             --project-key=$SONARCLOUD_PROJECT_KEY \
             --commit-id=$CIRCLE_SHA1 \
             --branch=$CIRCLE_BRANCH
-  
+
+
+  # unit tests
   test-common:
     machine: true
     working_directory: ~/grakn
@@ -87,6 +89,26 @@ jobs:
       - run-bazel-rbe:
           command: bazel test //common/... --test_output=errors
 
+  test-server:
+    machine: true
+    working_directory: ~/grakn
+    steps:
+      - install-bazel-linux-rbe
+      - checkout
+      - run-bazel-rbe:
+          command: bazel test //server/... --test_output=errors
+
+  test-graql:
+    machine: true
+    working_directory: ~/grakn
+    steps:
+      - install-bazel-linux-rbe
+      - checkout
+      - run-bazel-rbe:
+          command: bazel test //graql/... --test_output=errors
+
+
+  # behaviour tests
   test-behaviour-connection:
     machine: true
     working_directory: ~/grakn
@@ -100,7 +122,7 @@ jobs:
       - run-bazel-rbe:
           command: bazel test //test/behaviour/connection/transaction:test --test_output=errors
 
-  test-behaviour-graql-language:
+  test-behaviour-graql-define:
     machine: true
     working_directory: ~/grakn
     steps:
@@ -108,14 +130,42 @@ jobs:
       - checkout
       - run-bazel-rbe:
           command: bazel test //test/behaviour/graql/language/define:test --test_output=errors
-      - run-bazel-rbe:
-          command: bazel test //test/behaviour/graql/language/undefine:test --test_output=errors
-      - run-bazel-rbe:
-          command: bazel test //test/behaviour/graql/language/insert:test --test_output=errors
-      - run-bazel-rbe:
-          command: bazel test //test/behaviour/graql/language/match:test --test_output=errors
+
+  test-behaviour-graql-delete:
+    machine: true
+    working_directory: ~/grakn
+    steps:
+      - install-bazel-linux-rbe
+      - checkout
       - run-bazel-rbe:
           command: bazel test //test/behaviour/graql/language/delete:test --test_output=errors
+
+  test-behaviour-graql-insert:
+    machine: true
+    working_directory: ~/grakn
+    steps:
+      - install-bazel-linux-rbe
+      - checkout
+      - run-bazel-rbe:
+          command: bazel test //test/behaviour/graql/language/insert:test --test_output=errors
+
+  test-behaviour-graql-match:
+    machine: true
+    working_directory: ~/grakn
+    steps:
+      - install-bazel-linux-rbe
+      - checkout
+      - run-bazel-rbe:
+          command: bazel test //test/behaviour/graql/language/match:test --test_output=errors
+
+  test-behaviour-graql-undefine:
+    machine: true
+    working_directory: ~/grakn
+    steps:
+      - install-bazel-linux-rbe
+      - checkout
+      - run-bazel-rbe:
+          command: bazel test //test/behaviour/graql/language/undefine:test --test_output=errors
 
   test-behaviour-graql-explanation:
     machine: true
@@ -128,15 +178,7 @@ jobs:
       - run-bazel-rbe:
           command: bazel test //test/behaviour/graql/explanation/reasoner:test --test_output=errors
 
-  test-server:
-    machine: true
-    working_directory: ~/grakn
-    steps:
-      - install-bazel-linux-rbe
-      - checkout
-      - run-bazel-rbe:
-          command: bazel test //server/... --test_output=errors
-
+  # integration tests
   test-integration:
     machine: true
     working_directory: ~/grakn
@@ -149,6 +191,26 @@ jobs:
           command: bazel test //test/integration/graql/executor/... --test_output=errors
       - run-bazel-rbe:
           command: bazel test //test/integration/graql/query/... --test_output=errors
+      - run-bazel-rbe:
+          command: bazel test //test/integration/graql/planning/... --test_output=errors
+
+  test-integration-concept:
+    machine: true
+    working_directory: ~/grakn
+    steps:
+      - install-bazel-linux-rbe
+      - checkout
+      - run-bazel-rbe:
+          command: bazel test //test/integration/concept/... --test_output=errors
+
+  test-integration-keyspace:
+    machine: true
+    working_directory: ~/grakn
+    steps:
+      - install-bazel-linux-rbe
+      - checkout
+      - run-bazel-rbe:
+          command: bazel test //test/integration/keyspace/... --test_output=errors
 
   test-integration-reasoner:
     machine: true
@@ -168,6 +230,7 @@ jobs:
       - run-bazel-rbe:
           command: bazel test //test/integration/graql/analytics/... --test_output=errors
 
+  # assembly tests
   test-assembly:
     machine: true
     working_directory: ~/grakn
@@ -462,11 +525,35 @@ workflows:
           filters:
             branches:
               ignore: grakn-release-branch
+      - test-server:
+          filters:
+            branches:
+              ignore: grakn-release-branch
+      - test-graql:
+          filters:
+            branches:
+              ignore: grakn-release-branch
       - test-behaviour-connection:
           filters:
             branches:
               ignore: grakn-release-branch
-      - test-behaviour-graql-language:
+      - test-behaviour-graql-define:
+          filters:
+            branches:
+              ignore: grakn-release-branch
+      - test-behaviour-graql-delete:
+          filters:
+            branches:
+              ignore: grakn-release-branch
+      - test-behaviour-graql-insert:
+          filters:
+            branches:
+              ignore: grakn-release-branch
+      - test-behaviour-graql-match:
+          filters:
+            branches:
+              ignore: grakn-release-branch
+      - test-behaviour-graql-undefine:
           filters:
             branches:
               ignore: grakn-release-branch
@@ -474,11 +561,15 @@ workflows:
           filters:
             branches:
               ignore: grakn-release-branch
-      - test-server:
+      - test-integration:
           filters:
             branches:
               ignore: grakn-release-branch
-      - test-integration:
+      - test-integration-concept:
+          filters:
+            branches:
+              ignore: grakn-release-branch
+      - test-integration-keyspace:
           filters:
             branches:
               ignore: grakn-release-branch
@@ -502,12 +593,19 @@ workflows:
             - build-analysis
             - test-common
             - test-server
+            - test-graql
             - test-behaviour-connection
-            - test-behaviour-graql-language
+            - test-behaviour-graql-define
+            - test-behaviour-graql-delete
+            - test-behaviour-graql-insert
+            - test-behaviour-graql-match
+            - test-behaviour-graql-undefine
             - test-behaviour-graql-explanation
             - test-integration
             - test-integration-reasoner
             - test-integration-analytics
+            - test-integration-concept
+            - test-integration-keyspace
       - test-assembly-mac-zip:
           filters:
             branches:
@@ -520,12 +618,19 @@ workflows:
             - build-analysis
             - test-common
             - test-server
+            - test-graql
             - test-behaviour-connection
-            - test-behaviour-graql-language
+            - test-behaviour-graql-define
+            - test-behaviour-graql-delete
+            - test-behaviour-graql-insert
+            - test-behaviour-graql-match
+            - test-behaviour-graql-undefine
             - test-behaviour-graql-explanation
             - test-integration
             - test-integration-reasoner
             - test-integration-analytics
+            - test-integration-concept
+            - test-integration-keyspace
       - test-assembly-windows-zip:
           filters:
             branches:
@@ -538,12 +643,19 @@ workflows:
             - build-analysis
             - test-common
             - test-server
+            - test-graql
             - test-behaviour-connection
-            - test-behaviour-graql-language
+            - test-behaviour-graql-define
+            - test-behaviour-graql-delete
+            - test-behaviour-graql-insert
+            - test-behaviour-graql-match
+            - test-behaviour-graql-undefine
             - test-behaviour-graql-explanation
             - test-integration
             - test-integration-reasoner
             - test-integration-analytics
+            - test-integration-concept
+            - test-integration-keyspace
       - test-assembly-linux-targz:
           filters:
             branches:
@@ -556,12 +668,19 @@ workflows:
             - build-analysis
             - test-common
             - test-server
+            - test-graql
             - test-behaviour-connection
-            - test-behaviour-graql-language
+            - test-behaviour-graql-define
+            - test-behaviour-graql-delete
+            - test-behaviour-graql-insert
+            - test-behaviour-graql-match
+            - test-behaviour-graql-undefine
             - test-behaviour-graql-explanation
             - test-integration
             - test-integration-reasoner
             - test-integration-analytics
+            - test-integration-concept
+            - test-integration-keyspace
       - test-assembly-docker:
           filters:
             branches:
@@ -574,12 +693,19 @@ workflows:
             - build-analysis
             - test-common
             - test-server
+            - test-graql
             - test-behaviour-connection
-            - test-behaviour-graql-language
+            - test-behaviour-graql-define
+            - test-behaviour-graql-delete
+            - test-behaviour-graql-insert
+            - test-behaviour-graql-match
+            - test-behaviour-graql-undefine
             - test-behaviour-graql-explanation
             - test-integration
             - test-integration-reasoner
             - test-integration-analytics
+            - test-integration-concept
+            - test-integration-keyspace
       - deploy-apt-snapshot:
           filters:
             branches:
@@ -623,14 +749,16 @@ workflows:
       - sync-dependencies-snapshot:
           filters:
             branches:
-              only: master
+              only:
+                - master
           requires:
             - test-deployment-linux-apt
             - test-deployment-linux-rpm
       - release-approval:
           filters:
             branches:
-              only: master
+              only:
+                - master
           requires:
             - sync-dependencies-snapshot
 
