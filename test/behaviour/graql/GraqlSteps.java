@@ -19,7 +19,11 @@
 package grakn.core.test.behaviour.graql;
 
 import com.google.common.collect.Iterators;
-import grakn.core.concept.answer.*;
+import grakn.core.concept.answer.Answer;
+import grakn.core.concept.answer.AnswerGroup;
+import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.answer.Explanation;
+import grakn.core.concept.answer.Numeric;
 import grakn.core.graql.reasoner.explanation.RuleExplanation;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.Concept;
@@ -53,8 +57,12 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 public class GraqlSteps {
 
