@@ -19,9 +19,7 @@
 package grakn.core.test.behaviour.graql;
 
 import com.google.common.collect.Iterators;
-import grakn.core.concept.answer.Answer;
-import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concept.answer.Explanation;
+import grakn.core.concept.answer.*;
 import grakn.core.graql.reasoner.explanation.RuleExplanation;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.Concept;
@@ -55,11 +53,8 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
+import static org.junit.Assert.assertNotNull;
 
 public class GraqlSteps {
 
@@ -67,7 +62,11 @@ public class GraqlSteps {
     private static Transaction tx = null;
 
     private static List<ConceptMap> answers;
+    private static List<Numeric> numericAnswers;
+    private static List<AnswerGroup<ConceptMap>> answerGroups;
+    private static List<AnswerGroup<Numeric>> numericAnswerGroups;
     HashMap<String, UniquenessCheck> identifierChecks = new HashMap<>();
+    HashMap<String, String> groupIdentifiers = new HashMap<>();
     private Map<String, Map<String, String>> rules;
 
     @After
@@ -198,13 +197,50 @@ public class GraqlSteps {
     @When("get answers of graql query")
     public void graql_query(String graqlQueryStatements) {
         GraqlQuery graqlQuery = Graql.parse(String.join("\n", graqlQueryStatements));
+        // Erase answers from previous steps to avoid polluting the result space
+        answers = null;
+        numericAnswers = null;
+        answerGroups = null;
+        numericAnswerGroups = null;
         if (graqlQuery instanceof GraqlGet) {
             answers = tx.execute(graqlQuery.asGet());
         } else if (graqlQuery instanceof GraqlInsert) {
             answers = tx.execute(graqlQuery.asInsert());
+        } else if (graqlQuery instanceof GraqlGet.Aggregate) {
+            numericAnswers = tx.execute(graqlQuery.asGetAggregate());
+        } else if (graqlQuery instanceof GraqlGet.Group) {
+            answerGroups = tx.execute(graqlQuery.asGetGroup());
+        } else if (graqlQuery instanceof GraqlGet.Group.Aggregate) {
+            numericAnswerGroups = tx.execute(graqlQuery.asGetGroupAggregate());
         } else {
-            throw new ScenarioDefinitionException("Only match-get and inserted supported for now");
+            throw new ScenarioDefinitionException("Only match-get, insert, aggregate, group and group aggregate supported for now");
         }
+    }
+
+    @When("graql get throws")
+    public void graql_get_throws(String graqlQueryStatements) {
+        boolean threw = true;
+        try {
+            GraqlQuery graqlQuery = Graql.parse(String.join("\n", graqlQueryStatements));
+            if (graqlQuery instanceof GraqlGet) {
+                tx.execute(graqlQuery.asGet());
+            } else if (graqlQuery instanceof GraqlGet.Aggregate) {
+                tx.execute(graqlQuery.asGetAggregate());
+            } else if (graqlQuery instanceof GraqlGet.Group) {
+                tx.execute(graqlQuery.asGetGroup());
+            } else if (graqlQuery instanceof GraqlGet.Group.Aggregate) {
+                tx.execute(graqlQuery.asGetGroupAggregate());
+            } else {
+                throw new ScenarioDefinitionException("Expected a match-get, aggregate, group or group aggregate query, but got a different query type");
+            }
+            tx.commit();
+        } catch (RuntimeException e) {
+            threw = true;
+        } finally {
+            tx.close();
+            tx = session.transaction(Transaction.Type.WRITE);
+        }
+        assertTrue(threw);
     }
 
     @Then("answer size is: {number}")
@@ -300,6 +336,130 @@ public class GraqlSteps {
                     matchAnswer(answerIdentifiers, answer)
             );
         }
+    }
+
+    @Then("aggregate value is: {double}")
+    public void aggregate_value_is(double expectedAnswer) {
+        assertNotNull("The last executed query was not an aggregate query", numericAnswers);
+        assertEquals(String.format("Expected 1 answer, but got %d answers", numericAnswers.size()), 1, numericAnswers.size());
+        assertEquals(String.format("Expected answer to equal %f, but it was %f", expectedAnswer, numericAnswers.get(0).number().doubleValue()),
+                expectedAnswer,
+                numericAnswers.get(0).number().doubleValue(),
+                0.01);
+    }
+
+    @Then("aggregate answer is empty")
+    public void aggregate_answer_is_empty() {
+        assertNotNull("The last executed query was not an aggregate query", numericAnswers);
+        assertEquals("Aggregate answer is not empty, it has a value", 0, numericAnswers.size());
+    }
+
+    @Then("group identifiers are")
+    public void group_identifiers_are(Map<String, Map<String, String>> identifiers) {
+        for (Map.Entry<String, Map<String, String>> entry : identifiers.entrySet()) {
+            String groupIdentifier = entry.getKey();
+            Map<String, String> variables = entry.getValue();
+            groupIdentifiers.put(groupIdentifier, variables.get("owner"));
+        }
+    }
+
+    @Then("answer groups are")
+    public void answer_groups_are(List<Map<String, String>> answerIdentifierTable) {
+        Map<String, List<Map<String, String>>> answerIdentifierGroups = new HashMap<>();
+        for (Map<String, String> answerIdentifierRow : answerIdentifierTable) {
+            String groupIdentifier = answerIdentifierRow.get("group");
+            String groupOwnerIdentifier = groupIdentifiers.get(groupIdentifier);
+            if (!answerIdentifierGroups.containsKey(groupOwnerIdentifier)) {
+                answerIdentifierGroups.put(groupOwnerIdentifier, new ArrayList<>());
+            }
+            Map<String, String> answerIdentifiers = new HashMap<>();
+            for (Map.Entry<String, String> variable : answerIdentifierRow.entrySet()) {
+                if (variable.getKey().equals("group")) { continue; }
+                answerIdentifiers.put(variable.getKey(), variable.getValue());
+            }
+            answerIdentifierGroups.get(groupOwnerIdentifier).add(answerIdentifiers);
+        }
+
+        assertEquals(
+                String.format("The number of distinct group identifiers should match the number of answer groups, but found %d distinct group identifiers and %d answer groups",
+                        answerIdentifierGroups.size(), answerGroups.size()),
+                answerIdentifierGroups.size(), answerGroups.size()
+        );
+
+        for (Map.Entry<String, List<Map<String, String>>> answerIdentifierGroup : answerIdentifierGroups.entrySet()) {
+            String groupIdentifier = answerIdentifierGroup.getKey();
+            AnswerGroup<ConceptMap> matchingAnswerGroup = null;
+            Concept groupOwner = null;
+            for (AnswerGroup<ConceptMap> answerGroup : answerGroups) {
+                if (identifierChecks.get(groupIdentifier).check(answerGroup.owner())) {
+                    matchingAnswerGroup = answerGroup;
+                    groupOwner = answerGroup.owner();
+                    break;
+                }
+            }
+            assertNotNull(String.format("The group identifier %s does not match any of the answer group owners", groupIdentifier), groupOwner);
+
+            List<Map<String, String>> answersIdentifiers = answerIdentifierGroup.getValue();
+            for (ConceptMap answer : matchingAnswerGroup.answers()) {
+                List<Map<String, String>> matchingIdentifiers = new ArrayList<>();
+
+                for (Map<String, String> answerIdentifiers : answersIdentifiers) {
+
+                    if (matchAnswer(answerIdentifiers, answer)) {
+                        matchingIdentifiers.add(answerIdentifiers);
+                    }
+                }
+                assertEquals(
+                        String.format("An identifier entry (row) should match 1-to-1 to an answer, but there were %d matching identifier entries for answer with variables %s",
+                                matchingIdentifiers.size(), answer.map().keySet().toString()),
+                        1, matchingIdentifiers.size()
+                );
+            }
+        }
+    }
+
+    @Then("group aggregate values are")
+    public void group_aggregate_values_are(List<Map<String, String>> answerIdentifierTable) {
+        Map<String, Double> expectations = new HashMap<>();
+        for (Map<String, String> answerIdentifierRow : answerIdentifierTable) {
+            String groupIdentifier = answerIdentifierRow.get("group");
+            String groupOwnerIdentifier = groupIdentifiers.get(groupIdentifier);
+            double expectedAnswer = Double.parseDouble(answerIdentifierRow.get("value"));
+            expectations.put(groupOwnerIdentifier, expectedAnswer);
+        }
+
+        assertEquals(
+                String.format("The number of distinct group identifiers should match the number of answer groups, but found %d distinct group identifiers and %d answer groups",
+                        expectations.size(), numericAnswerGroups.size()),
+                expectations.size(), numericAnswerGroups.size()
+        );
+
+        for (Map.Entry<String, Double> expectation : expectations.entrySet()) {
+            String groupIdentifier = expectation.getKey();
+            double expectedAnswer = expectation.getValue();
+            AnswerGroup<Numeric> matchingAnswerGroup = null;
+            Concept groupOwner = null;
+            for (AnswerGroup<Numeric> answerGroup : numericAnswerGroups) {
+                if (identifierChecks.get(groupIdentifier).check(answerGroup.owner())) {
+                    matchingAnswerGroup = answerGroup;
+                    groupOwner = answerGroup.owner();
+                    break;
+                }
+            }
+            assertNotNull(String.format("The group identifier %s does not match any of the answer group owners", groupIdentifier), groupOwner);
+
+            double actualAnswer = matchingAnswerGroup.answers().get(0).number().doubleValue();
+            assertEquals(
+                    String.format("Expected answer %f for group %s, but got %f",
+                            expectedAnswer, groupIdentifier, actualAnswer),
+                    expectedAnswer, actualAnswer, 0.01
+            );
+        }
+    }
+
+    @Then("number of groups is: {int}")
+    public void number_of_groups_is(int expectedGroupCount) {
+        assertEquals(expectedGroupCount, answerGroups.size());
     }
 
     private boolean matchAnswer(Map<String, String> answerIdentifiers, ConceptMap answer) {
