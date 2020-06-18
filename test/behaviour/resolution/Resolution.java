@@ -1,26 +1,25 @@
 package grakn.core.test.behaviour.resolution;
 
-import grakn.client.GraknClient;
-import grakn.client.GraknClient.Session;
-import grakn.client.GraknClient.Transaction;
-import grakn.client.answer.ConceptMap;
-import grakn.verification.resolution.complete.Completer;
-import grakn.verification.resolution.complete.SchemaManager;
-import grakn.verification.resolution.resolve.QueryBuilder;
+import grakn.core.concept.answer.ConceptMap;
+import grakn.core.kb.server.Session;
+import grakn.core.kb.server.Transaction;
+import grakn.core.test.behaviour.resolution.complete.Completer;
+import grakn.core.test.behaviour.resolution.complete.SchemaManager;
+import grakn.core.test.behaviour.resolution.resolve.QueryBuilder;
+import grakn.core.test.rule.GraknTestServer;
 import graql.lang.query.GraqlGet;
 
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 
-import static grakn.verification.resolution.common.Utils.loadGqlFile;
-import static grakn.verification.resolution.common.Utils.thingCount;
+import static grakn.core.test.behaviour.resolution.common.Utils.loadGqlFile;
+import static grakn.core.test.behaviour.resolution.common.Utils.thingCount;
 
 public class Resolution {
 
     private static final String COMPLETE_KEYSPACE = "complete";
     private static final String TEST_KEYSPACE = "test";
-    private static GraknClient graknClient;
     private final Path schemaPath;
     private final Path dataPath;
     private Session completeSession;
@@ -28,13 +27,12 @@ public class Resolution {
     private int completedInferredThingCount;
     private int initialThingCount;
 
-    public Resolution(String graknUri, Path schemaPath, Path dataPath) {
+    public Resolution(GraknTestServer graknTestServer, Path schemaPath, Path dataPath) {
         this.schemaPath = schemaPath;
         this.dataPath = dataPath;
-        graknClient = new GraknClient(graknUri);
 
-        testSession = graknClient.session(TEST_KEYSPACE);
-        completeSession = graknClient.session(COMPLETE_KEYSPACE);
+        testSession = graknTestServer.session(TEST_KEYSPACE);
+        completeSession = graknTestServer.session(COMPLETE_KEYSPACE);
 
         initialiseKeyspace(testSession);
         initialiseKeyspace(completeSession);
@@ -44,7 +42,7 @@ public class Resolution {
 
         // Complete the KB-complete
         Completer completer = new Completer(completeSession);
-        try (Transaction tx = completeSession.transaction().write()) {
+        try (Transaction tx = completeSession.transaction(Transaction.Type.WRITE)) {
             completer.loadRules(tx, SchemaManager.getAllRules(tx));
         }
 
@@ -59,19 +57,17 @@ public class Resolution {
     public void close() {
         completeSession.close();
         testSession.close();
-        graknClient.keyspaces().delete(COMPLETE_KEYSPACE);
-        graknClient.keyspaces().delete(TEST_KEYSPACE);
     }
 
     public void testQuery(GraqlGet inferenceQuery) {
         QueryBuilder rb = new QueryBuilder();
         List<GraqlGet> queries;
 
-        try (Transaction tx = testSession.transaction().read()) {
+        try (Transaction tx = testSession.transaction(Transaction.Type.READ)) {
             queries = rb.buildMatchGet(tx, inferenceQuery);
         }
 
-        try (Transaction tx = completeSession.transaction().read()) {
+        try (Transaction tx = completeSession.transaction(Transaction.Type.READ)) {
             for (GraqlGet query: queries) {
                 testResolution(tx, query);
             }

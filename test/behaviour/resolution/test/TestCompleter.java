@@ -1,52 +1,30 @@
 package grakn.core.test.behaviour.resolution.test;
 
-import grakn.client.GraknClient;
-import grakn.client.answer.ConceptMap;
-import grakn.verification.resolution.complete.Completer;
-import grakn.verification.resolution.complete.SchemaManager;
+import grakn.core.concept.answer.ConceptMap;
+import grakn.core.kb.server.Session;
+import grakn.core.kb.server.Transaction;
+import grakn.core.test.behaviour.resolution.complete.Completer;
+import grakn.core.test.behaviour.resolution.complete.SchemaManager;
+import grakn.core.test.rule.GraknTestServer;
 import graql.lang.Graql;
 import graql.lang.query.GraqlGet;
 import graql.lang.statement.Statement;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
 
-import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.TimeoutException;
 
-import static grakn.verification.resolution.common.Utils.getStatements;
-import static grakn.verification.resolution.test.LoadTest.loadTestCase;
+import static grakn.core.test.behaviour.resolution.common.Utils.getStatements;
+import static grakn.core.test.behaviour.resolution.test.LoadTest.loadTestCase;
 import static org.junit.Assert.assertEquals;
 
 public class TestCompleter {
 
-    private static final String GRAKN_URI = "localhost:48555";
     private static final String GRAKN_KEYSPACE = "query_completer";
-    private static GraknForTest graknForTest;
-    private static GraknClient graknClient;
 
-    @BeforeClass
-    public static void beforeClass() throws InterruptedException, IOException, TimeoutException {
-        Path graknArchive = Paths.get("external", "graknlabs_grakn_core", "grakn-core-all-linux.tar.gz");
-        graknForTest = new GraknForTest(graknArchive);
-        graknForTest.start();
-        graknClient = new GraknClient(GRAKN_URI);
-    }
-
-    @AfterClass
-    public static void afterClass() throws InterruptedException, IOException, TimeoutException {
-        graknForTest.stop();
-    }
-
-    @After
-    public void after() {
-        graknClient.keyspaces().delete(GRAKN_KEYSPACE);
-    }
+    @ClassRule
+    public static final GraknTestServer graknTestServer = new GraknTestServer();
 
     @Test
     public void testValidResolutionHasExactlyOneAnswer() {
@@ -76,12 +54,12 @@ public class TestCompleter {
                 "$r2-c1 has company-id 0;"
         ));
 
-        try (GraknClient.Session session = graknClient.session(GRAKN_KEYSPACE)) {
+        try (Session session = graknTestServer.session(GRAKN_KEYSPACE)) {
 
             loadTestCase(session, "case4");
 
             Completer completer = new Completer(session);
-            try (GraknClient.Transaction tx = session.transaction().write()) {
+            try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
                 completer.loadRules(tx, SchemaManager.getAllRules(tx));
             }
 
@@ -90,7 +68,7 @@ public class TestCompleter {
             SchemaManager.connectResolutionSchema(session);
             completer.complete();
 
-            try (GraknClient.Transaction tx = session.transaction().read()) {
+            try (Transaction tx = session.transaction(Transaction.Type.READ)) {
                 List<ConceptMap> answers = tx.execute(Graql.match(expectedResolutionStatements).get());
 
                 assertEquals(answers.size(), 1);
@@ -100,12 +78,12 @@ public class TestCompleter {
 
     @Test
     public void testDeduplicationOfInferredConcepts() {
-        try (GraknClient.Session session = graknClient.session(GRAKN_KEYSPACE)) {
+        try (Session session = graknTestServer.session(GRAKN_KEYSPACE)) {
 
             loadTestCase(session, "case1");
 
             Completer completer = new Completer(session);
-            try (GraknClient.Transaction tx = session.transaction().write()) {
+            try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
                 completer.loadRules(tx, SchemaManager.getAllRules(tx));
             }
 
@@ -114,7 +92,7 @@ public class TestCompleter {
             SchemaManager.connectResolutionSchema(session);
             completer.complete();
 
-            try (GraknClient.Transaction tx = session.transaction().read()) {
+            try (Transaction tx = session.transaction(Transaction.Type.READ)) {
                 GraqlGet inferredAnswersQuery = Graql.match(Graql.var("lh").isa("location-hierarchy")).get();
                 List<ConceptMap> inferredAnswers = tx.execute(inferredAnswersQuery);
                 assertEquals(6, inferredAnswers.size());

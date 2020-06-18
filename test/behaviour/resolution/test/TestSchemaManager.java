@@ -1,14 +1,14 @@
 package grakn.core.test.behaviour.resolution.test;
 
-import grakn.client.GraknClient;
-import grakn.client.concept.Rule;
-import grakn.verification.resolution.complete.SchemaManager;
+import grakn.core.kb.concept.api.Rule;
+import grakn.core.kb.server.Session;
+import grakn.core.kb.server.Transaction;
+import grakn.core.test.behaviour.resolution.complete.SchemaManager;
+import grakn.core.test.rule.GraknTestServer;
 import graql.lang.Graql;
 import graql.lang.query.GraqlGet;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -17,39 +17,23 @@ import java.nio.file.Paths;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
-import static grakn.verification.resolution.common.Utils.loadGqlFile;
-import static grakn.verification.resolution.complete.SchemaManager.addResolutionSchema;
-import static grakn.verification.resolution.complete.SchemaManager.connectResolutionSchema;
+import static grakn.core.test.behaviour.resolution.common.Utils.loadGqlFile;
+import static grakn.core.test.behaviour.resolution.complete.SchemaManager.addResolutionSchema;
+import static grakn.core.test.behaviour.resolution.complete.SchemaManager.connectResolutionSchema;
 import static org.junit.Assert.assertEquals;
 
 public class TestSchemaManager {
 
-    private static final String GRAKN_URI = "localhost:48555";
-    private static final String GRAKN_KEYSPACE = "case2";
-    private static GraknForTest graknForTest;
-    private static GraknClient graknClient;
+    @ClassRule
+    public static final GraknTestServer graknTestServer = new GraknTestServer();
 
     @BeforeClass
-    public static void beforeClass() throws InterruptedException, IOException, TimeoutException {
-        Path graknArchive = Paths.get("external", "graknlabs_grakn_core", "grakn-core-all-linux.tar.gz");
-        graknForTest = new GraknForTest(graknArchive);
-        graknForTest.start();
-        graknClient = new GraknClient(GRAKN_URI);
-    }
-
-    @AfterClass
-    public static void afterClass() throws InterruptedException, IOException, TimeoutException {
-        graknForTest.stop();
-    }
-
-    @Before
-    public void before() {
-        try (GraknClient.Session session = graknClient.session(GRAKN_KEYSPACE)) {
+    public static void beforeClass() {
+        try (Session session = graknTestServer.sessionWithNewKeyspace()) {
             try {
-                Path schemaPath = Paths.get("resolution", "test", "cases", "case2", "schema.gql").toAbsolutePath();
+                Path schemaPath = Paths.get("test", "behaviour", "resolution", "test", "cases", "case2", "schema.gql").toAbsolutePath();
                 loadGqlFile(session, schemaPath);
             } catch (IOException e) {
                 e.printStackTrace();
@@ -58,20 +42,15 @@ public class TestSchemaManager {
         }
     }
 
-    @After
-    public void after() {
-        graknClient.keyspaces().delete(GRAKN_KEYSPACE);
-    }
-
     @Test
     public void testResolutionSchemaRolesPlayedAreCorrect() {
 
-        try (GraknClient.Session session = graknClient.session(GRAKN_KEYSPACE)) {
+        try (Session session = graknTestServer.sessionWithNewKeyspace()) {
 
             addResolutionSchema(session);
             connectResolutionSchema(session);
 
-            try (GraknClient.Transaction tx = session.transaction().write()) {
+            try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
 
                 GraqlGet roleplayersQuery = Graql.match(
                         Graql.var("x").plays("instance"),
@@ -101,12 +80,12 @@ public class TestSchemaManager {
     @Test
     public void testResolutionSchemaRelationRolePlayedIsCorrect() {
 
-        try (GraknClient.Session session = graknClient.session(GRAKN_KEYSPACE)) {
+        try (Session session = graknTestServer.sessionWithNewKeyspace()) {
 
             addResolutionSchema(session);
             connectResolutionSchema(session);
 
-            try (GraknClient.Transaction tx = session.transaction().write()) {
+            try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
 
                 GraqlGet roleplayersQuery = Graql.match(
                         Graql.var("x").plays("rel")
@@ -129,16 +108,16 @@ public class TestSchemaManager {
     @Test
     public void testResolutionSchemaAttributesOwnedAreCorrect() {
 
-        try (GraknClient.Session session = graknClient.session(GRAKN_KEYSPACE)) {
+        try (Session session = graknTestServer.sessionWithNewKeyspace()) {
 
             addResolutionSchema(session);
             connectResolutionSchema(session);
 
-            try (GraknClient.Transaction tx = session.transaction().write()) {
+            try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
 
                 GraqlGet clauseAttributesQuery = Graql.match(Graql.var("x").sub("has-attribute-property")).get();
 
-                Set<String> attributeTypes = tx.execute(clauseAttributesQuery).get(0).get("x").asRelationType().asRemote(tx).attributes().map(a -> a.label().toString()).collect(Collectors.toSet());
+                Set<String> attributeTypes = tx.execute(clauseAttributesQuery).get(0).get("x").asRelationType().has().map(a -> a.label().toString()).collect(Collectors.toSet());
 
                 HashSet<String> expectedAttributeTypes = new HashSet<String>() {
                     {
@@ -158,8 +137,8 @@ public class TestSchemaManager {
 
     @Test
     public void testGetAllRulesReturnsExpectedRules() {
-        try (GraknClient.Session session = graknClient.session(GRAKN_KEYSPACE)) {
-            try (GraknClient.Transaction tx = session.transaction().write()) {
+        try (Session session = graknTestServer.sessionWithNewKeyspace()) {
+            try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
                 Set<Rule> rules = SchemaManager.getAllRules(tx);
                 assertEquals(2, rules.size());
 
@@ -176,9 +155,9 @@ public class TestSchemaManager {
 
     @Test
     public void testUndefineAllRulesSuccessfullyUndefinesAllRules() {
-        try (GraknClient.Session session = graknClient.session(GRAKN_KEYSPACE)) {
+        try (Session session = graknTestServer.sessionWithNewKeyspace()) {
             SchemaManager.undefineAllRules(session);
-            try (GraknClient.Transaction tx = session.transaction().write()) {
+            try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
                 List<String> ruleLabels = tx.stream(Graql.match(Graql.var("x").sub("rule")).get("x")).map(ans -> ans.get("x").asRule().label().toString()).collect(Collectors.toList());
                 assertEquals(1, ruleLabels.size());
                 assertEquals("rule", ruleLabels.get(0));

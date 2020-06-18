@@ -1,12 +1,11 @@
 package grakn.core.test.behaviour.resolution.complete;
 
-import grakn.client.GraknClient;
-import grakn.client.GraknClient.Transaction;
-import grakn.client.answer.ConceptMap;
-import grakn.client.concept.Concept;
-import grakn.client.concept.ValueType;
-import grakn.client.concept.type.AttributeType;
-import grakn.verification.resolution.resolve.QueryBuilder;
+import grakn.core.concept.answer.ConceptMap;
+import grakn.core.kb.concept.api.AttributeType;
+import grakn.core.kb.concept.api.Concept;
+import grakn.core.kb.server.Session;
+import grakn.core.kb.server.Transaction;
+import grakn.core.test.behaviour.resolution.resolve.QueryBuilder;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.property.IsaProperty;
@@ -25,23 +24,23 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static grakn.verification.resolution.resolve.QueryBuilder.generateKeyStatements;
+import static grakn.core.test.behaviour.resolution.resolve.QueryBuilder.generateKeyStatements;
+
 
 public class Completer {
 
     private static int numInferredConcepts;
-    private final GraknClient.Session session;
+    private final Session session;
     private Set<Rule> rules;
 
-    public Completer(GraknClient.Session session) {
+    public Completer(Session session) {
         this.session = session;
     }
 
-    public void loadRules(Transaction tx, Set<grakn.client.concept.Rule> graknRules) {
+    public void loadRules(Transaction tx, Set<grakn.core.kb.concept.api.Rule> graknRules) {
         Set<Rule> rules = new HashSet<>();
-        for (grakn.client.concept.Rule graknRule : graknRules) {
-            grakn.client.concept.Rule.Remote remoteRule = graknRule.asRemote(tx);
-            rules.add(new Rule(Objects.requireNonNull(remoteRule.when()), Objects.requireNonNull(remoteRule.then()), graknRule.label().toString()));
+        for (grakn.core.kb.concept.api.Rule graknRule : graknRules) {
+            rules.add(new Rule(Objects.requireNonNull(graknRule.when()), Objects.requireNonNull(graknRule.then()), graknRule.label().toString()));
         }
         this.rules = rules;
     }
@@ -51,7 +50,7 @@ public class Completer {
 
         while (allRulesRerun) {
             allRulesRerun = false;
-            try (Transaction tx = session.transaction().write()) {
+            try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
 
                 for (Rule rule : rules) {
                     allRulesRerun = allRulesRerun | completeRule(tx, rule);
@@ -79,14 +78,14 @@ public class Completer {
             Set<Variable> connectingVars = new HashSet<>(rule.when.variables());
             connectingVars.retainAll(rule.then.variables());
 
-            Map<Variable, Concept<?>> whenMap = whenIterator.next().map();
+            Map<Variable, Concept> whenMap = whenIterator.next().map();
 
             // Get the concept map for those connected variables by filtering the answer we already have for the `when`
-            Map<Variable, Concept<?>> connectingAnswerMap = whenMap.entrySet().stream().filter(entry -> connectingVars.contains(entry.getKey())).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+            Map<Variable, Concept> connectingAnswerMap = whenMap.entrySet().stream().filter(entry -> connectingVars.contains(entry.getKey())).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
             // We now have the answer but with only the connecting variables left
 
             // Get statements to match for the connecting concepts via their keys/uniqueness
-            Set<Statement> connectingKeyStatements = generateKeyStatements(tx, connectingAnswerMap);
+            Set<Statement> connectingKeyStatements = generateKeyStatements(connectingAnswerMap);
 
             List<ConceptMap> thenAnswers = tx.execute(Graql.match(rule.then, Graql.and(connectingKeyStatements)).get());
 
@@ -95,7 +94,7 @@ public class Completer {
             if (thenAnswers.size() == 0) {
                 // We've found somewhere the rule can be applied
                 HashSet<Statement> matchWhenStatements = new HashSet<>();
-                matchWhenStatements.addAll(generateKeyStatements(tx, whenMap));
+                matchWhenStatements.addAll(generateKeyStatements(whenMap));
                 matchWhenStatements.addAll(rule.when.statements());
 
                 Set<Statement> insertNewThenStatements = new HashSet<>();
@@ -117,8 +116,8 @@ public class Completer {
                         // Check if it was this exact rule that previously inserted this `then` for these exact `when` instances
 
                         Set<Statement> checkStatements = new HashSet<>();
-                        checkStatements.addAll(generateKeyStatements(tx, whenMap));
-                        checkStatements.addAll(generateKeyStatements(tx, thenAnswer.map()));
+                        checkStatements.addAll(generateKeyStatements(whenMap));
+                        checkStatements.addAll(generateKeyStatements(thenAnswer.map()));
                         checkStatements.addAll(ruleInferenceStatements);
                         checkStatements.addAll(rule.when.statements());
                         checkStatements.addAll(rule.then.statements());
@@ -130,8 +129,8 @@ public class Completer {
                         if (ans.size() == 0) {
                             // This `then` has been previously inferred, but not in this exact scenario, so we add this resolution to the previously inserted inference
                             Set<Statement> matchStatements = new HashSet<>();
-                            matchStatements.addAll(generateKeyStatements(tx, whenMap));
-                            matchStatements.addAll(generateKeyStatements(tx, thenAnswer.map()));
+                            matchStatements.addAll(generateKeyStatements(whenMap));
+                            matchStatements.addAll(generateKeyStatements(thenAnswer.map()));
                             matchStatements.addAll(rule.when.statements());
                             matchStatements.addAll(rule.then.statements());
 
@@ -163,10 +162,10 @@ public class Completer {
                     GraqlGet query = Graql.match(Graql.var("x").sub(((IsaProperty) p).type())).get();
                     List<ConceptMap> ans = tx.execute(query);
                     ans.forEach(a -> {
-                        Set<? extends AttributeType.Remote<?>> keys = a.get("x").asType().asRemote(tx).keys().collect(Collectors.toSet());
+                        Set<? extends AttributeType> keys = a.get("x").asType().keys().collect(Collectors.toSet());
                         keys.forEach(k -> {
                             String keyTypeLabel = k.label().toString();
-                            ValueType<?> v = k.valueType();
+                            AttributeType.ValueType<?> v = k.valueType();
                             String randomKeyValue = UUID.randomUUID().toString();
 
                             assert v != null;

@@ -1,9 +1,11 @@
 package grakn.core.test.behaviour.resolution.resolve;
 
-import grakn.client.GraknClient.Transaction;
-import grakn.client.answer.ConceptMap;
-import grakn.client.answer.Explanation;
-import grakn.client.concept.Concept;
+import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.answer.Explanation;
+import grakn.core.graql.reasoner.explanation.LookupExplanation;
+import grakn.core.graql.reasoner.explanation.RuleExplanation;
+import grakn.core.kb.concept.api.Concept;
+import grakn.core.kb.server.Transaction;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
@@ -48,7 +50,7 @@ public class QueryBuilder {
 
     private LinkedHashSet<Statement> resolutionStatements(Transaction tx, ConceptMap answer, Integer ruleResolutionIndex) {
 
-        Pattern qp = answer.queryPattern();
+        Pattern qp = answer.getPattern();
 
         if (qp == null) {
             throw new RuntimeException("Answer is missing a pattern. Either patterns are broken or the initial query did not require inference.");
@@ -57,9 +59,9 @@ public class QueryBuilder {
         qp = makeAnonVarsExplicit(qp);
 
         LinkedHashSet<Statement> answerStatements = new LinkedHashSet<>(prefixVars(removeIdStatements(qp.statements()), ruleResolutionIndex));
-        answerStatements.addAll(prefixVars(generateKeyStatements(tx, answer.map()), ruleResolutionIndex));
+        answerStatements.addAll(prefixVars(generateKeyStatements(answer.map()), ruleResolutionIndex));
 
-        if (answer.hasExplanation()) {
+        if (!(answer.explanation() instanceof LookupExplanation)) {
 
             Explanation explanation = answer.explanation();
 
@@ -69,12 +71,12 @@ public class QueryBuilder {
 
                 ruleResolutionIndex += 1;
 
-                Set<Statement> whenStatements = new LinkedHashSet<>(prefixVars(makeAnonVarsExplicit(Objects.requireNonNull(explanation.getRule().when())).statements(), ruleResolutionIndex));
+                Set<Statement> whenStatements = new LinkedHashSet<>(prefixVars(makeAnonVarsExplicit(Objects.requireNonNull(((RuleExplanation)explanation).getRule().when())).statements(), ruleResolutionIndex));
                 answerStatements.addAll(whenStatements);
-                Set<Statement> thenStatements = new LinkedHashSet<>(prefixVars(makeAnonVarsExplicit(Objects.requireNonNull(explanation.getRule().then())).statements(), ruleResolutionIndex));
+                Set<Statement> thenStatements = new LinkedHashSet<>(prefixVars(makeAnonVarsExplicit(Objects.requireNonNull(((RuleExplanation)explanation).getRule().then())).statements(), ruleResolutionIndex));
                 answerStatements.addAll(thenStatements);
 
-                String ruleLabel = explanation.getRule().label().toString();
+                String ruleLabel = ((RuleExplanation)explanation).getRule().label().toString();
                 answerStatements.addAll(inferenceStatements(whenStatements, thenStatements, ruleLabel));
                 answerStatements.addAll(resolutionStatements(tx, explAns, ruleResolutionIndex));
             } else {
@@ -235,12 +237,12 @@ public class QueryBuilder {
      * @param varMap variable map of concepts
      * @return Statements that check for the keys of the given concepts
      */
-    public static Set<Statement> generateKeyStatements(Transaction tx, Map<Variable, Concept<?>> varMap) {
+    public static Set<Statement> generateKeyStatements(Map<Variable, Concept> varMap) {
         LinkedHashSet<Statement> statements = new LinkedHashSet<>();
 
-        for (Map.Entry<Variable, Concept<?>> entry : varMap.entrySet()) {
+        for (Map.Entry<Variable, Concept> entry : varMap.entrySet()) {
             Variable var = entry.getKey();
-            Concept<?> concept = entry.getValue();
+            Concept concept = entry.getValue();
 
             if (concept.isAttribute()) {
 
@@ -263,7 +265,7 @@ public class QueryBuilder {
 
             } else if (concept.isEntity() | concept.isRelation()){
 
-                concept.asThing().asRemote(tx).keys().forEach(attribute -> {
+                concept.asThing().keys().forEach(attribute -> {
 
                     String typeLabel = attribute.type().label().toString();
                     Statement statement = Graql.var(var);

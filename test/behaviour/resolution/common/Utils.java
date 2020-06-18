@@ -1,6 +1,7 @@
 package grakn.core.test.behaviour.resolution.common;
 
-import grakn.client.GraknClient;
+import grakn.core.kb.server.Session;
+import grakn.core.kb.server.Transaction;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
@@ -19,11 +20,11 @@ import static com.google.common.collect.Iterables.getOnlyElement;
 
 public class Utils {
 
-    public static void loadGqlFile(GraknClient.Session session, Path... gqlPath) throws IOException {
+    public static void loadGqlFile(Session session, Path... gqlPath) throws IOException {
         for (Path path : gqlPath) {
             String query = new String(Files.readAllBytes(path), StandardCharsets.UTF_8);
 
-            try (GraknClient.Transaction tx = session.transaction().write()) {
+            try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
                 tx.execute((GraqlQuery) Graql.parse(query));
                 tx.commit();
             }
@@ -35,8 +36,8 @@ public class Utils {
      * @param session Grakn Session
      * @return number of instances
      */
-    public static int thingCount(GraknClient.Session session) {
-        try (GraknClient.Transaction tx = session.transaction().read()) {
+    public static int thingCount(Session session) {
+        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
             return getOnlyElement(tx.execute(Graql.match(Graql.var("x").isa("thing")).get().count())).number().intValue();
         }
     }

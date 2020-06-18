@@ -1,25 +1,10 @@
 java_library(
-    name = "grakn-for-test",
-    srcs = ["GraknForTest.java"],
-    deps = [
-        "//dependencies/maven/artifacts/ch/qos/logback:logback-classic",
-        "//dependencies/maven/artifacts/com/google/guava:guava",
-        "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
-        "//dependencies/maven/artifacts/org/zeroturnaround:zt-exec",
-    ],
-    data = [
-        "@graknlabs_grakn_core//:assemble-linux-targz",
-    ],
-    visibility = ["//visibility:public"]
-)
-
-java_library(
     name = "load-test",
     srcs = ["LoadTest.java"],
     deps = [
-        "//resolution/common:common",
-        # External dependencies from @graknlabs
-        "@graknlabs_client_java//:client-java",
+        "//test/behaviour/resolution/common:common",
+        "//kb/server:server",
+        "//kb/concept/api:api",
     ],
     visibility = ["//visibility:public"]
 )
@@ -29,33 +14,30 @@ java_test(
     srcs = [
         "QueryBuilderIT.java",
     ],
-    test_class = "grakn.verification.resolution.test.QueryBuilderIT",
+    test_class = "grakn.core.test.behaviour.resolution.test.QueryBuilderIT",
     deps = [
-        "//resolution/common",
-        "//resolution/resolve",
-        "//resolution/test:grakn-for-test",
-        "//resolution/test:load-test",
+        "//test/behaviour/resolution/common",
+        "//test/behaviour/resolution/resolve",
+        "//test/behaviour/resolution/test:load-test",
+        "//test/rule:grakn-test-server",
+        "//kb/server:server",
+        "//kb/concept/api:api",
+        "//concept/answer:answer",
 
         # External dependencies from @graknlabs
-        "@graknlabs_client_java//:client-java",
         "@graknlabs_graql//java:graql",
     ],
     data = [
-        "@graknlabs_grakn_core//:assemble-linux-targz", # Make sure to pass the path in args below
-        "//resolution/test/cases/case1:schema.gql",
-        "//resolution/test/cases/case1:data.gql",
-        "//resolution/test/cases/case2:schema.gql",
-        "//resolution/test/cases/case2:data.gql",
-        "//resolution/test/cases/case3:schema.gql",
-        "//resolution/test/cases/case3:data.gql",
-        "//resolution/test/cases/case4:schema.gql",
-        "//resolution/test/cases/case4:data.gql",
-        "//resolution/test/cases/case5:schema.gql",
-        "//resolution/test/cases/case5:data.gql",
-    ],
-    args = [ # The order of the arguments matter
-        "grakn-core", # Keep at index 0, will be accessible at args[1]
-        "$(location @graknlabs_grakn_core//:assemble-linux-targz)", # Keep at index 1, will be accessible at args[2]
+        "//test/behaviour/resolution/test/cases/case1:schema.gql",
+        "//test/behaviour/resolution/test/cases/case1:data.gql",
+        "//test/behaviour/resolution/test/cases/case2:schema.gql",
+        "//test/behaviour/resolution/test/cases/case2:data.gql",
+        "//test/behaviour/resolution/test/cases/case3:schema.gql",
+        "//test/behaviour/resolution/test/cases/case3:data.gql",
+        "//test/behaviour/resolution/test/cases/case4:schema.gql",
+        "//test/behaviour/resolution/test/cases/case4:data.gql",
+        "//test/behaviour/resolution/test/cases/case5:schema.gql",
+        "//test/behaviour/resolution/test/cases/case5:data.gql",
     ],
     size="medium"
 )
@@ -65,14 +47,15 @@ java_test(
     srcs = [
         "TestQueryBuilder.java",
     ],
-    test_class = "grakn.verification.resolution.test.TestQueryBuilder",
+    test_class = "grakn.core.test.behaviour.resolution.test.TestQueryBuilder",
     deps = [
-        "//resolution/common",
-        "//resolution/resolve",
+        "//test/behaviour/resolution/common",
+        "//test/behaviour/resolution/resolve",
         "//dependencies/maven/artifacts/com/google/guava",
+        "//kb/server:server",
+        "//kb/concept/api:api",
 
         # External dependencies from @graknlabs
-        "@graknlabs_client_java//:client-java",
         "@graknlabs_graql//java:graql",
     ],
     size="small"
@@ -83,24 +66,21 @@ java_test(
     srcs = [
         "TestSchemaManager.java",
     ],
-    test_class = "grakn.verification.resolution.test.TestSchemaManager",
+    test_class = "grakn.core.test.behaviour.resolution.test.TestSchemaManager",
     deps = [
-        "//resolution/common",
-        "//resolution/complete",
-        "//resolution/test:grakn-for-test",
+        "//test/behaviour/resolution/common",
+        "//test/behaviour/resolution/complete",
+        "//test/rule:grakn-test-server",
+        "//kb/server:server",
+        "//kb/concept/api:api",
 
         # External dependencies from @graknlabs
-        "@graknlabs_client_java//:client-java",
         "@graknlabs_graql//java:graql",
     ],
     data = [
-        # TODO Why does this work without the schema and data here?
-        "@graknlabs_grakn_core//:assemble-linux-targz", # Make sure to pass the path in args below
-    ],
-    args = [ # The order of the arguments matter
-        "grakn-core", # Keep at index 0, will be accessible at args[1]
-        "$(location @graknlabs_grakn_core//:assemble-linux-targz)", # Keep at index 1, will be accessible at args[2]
-    ],
+            "//test/behaviour/resolution/test/cases/case2:schema.gql",
+            "//test/behaviour/resolution/test/cases/case2:data.gql",
+        ],
     size="medium"
 )
 
@@ -109,27 +89,24 @@ java_test(
     srcs = [
         "TestCompleter.java",
     ],
-    test_class = "grakn.verification.resolution.test.TestCompleter",
+    test_class = "grakn.core.test.behaviour.resolution.test.TestCompleter",
     deps = [
-        "//resolution/common",
-        "//resolution/complete",
-        "//resolution/test:grakn-for-test",
-        "//resolution/test:load-test",
+        "//test/behaviour/resolution/common",
+        "//test/behaviour/resolution/complete",
+        "//test/rule:grakn-test-server",
+        "//test/behaviour/resolution/test:load-test",
+        "//concept/answer:answer",
+        "//kb/server:server",
+        "//kb/concept/api:api",
 
         # External dependencies from @graknlabs
-        "@graknlabs_client_java//:client-java",
         "@graknlabs_graql//java:graql",
     ],
     data = [
-        "//resolution/test/cases/case1:schema.gql",
-        "//resolution/test/cases/case1:data.gql",
-        "//resolution/test/cases/case4:schema.gql",
-        "//resolution/test/cases/case4:data.gql",
-        "@graknlabs_grakn_core//:assemble-linux-targz", # Make sure to pass the path in args below
-    ],
-    args = [ # The order of the arguments matter
-        "grakn-core", # Keep at index 0, will be accessible at args[1]
-        "$(location @graknlabs_grakn_core//:assemble-linux-targz)", # Keep at index 1, will be accessible at args[2]
+        "//test/behaviour/resolution/test/cases/case1:schema.gql",
+        "//test/behaviour/resolution/test/cases/case1:data.gql",
+        "//test/behaviour/resolution/test/cases/case4:schema.gql",
+        "//test/behaviour/resolution/test/cases/case4:data.gql",
     ],
     size="medium"
 )
@@ -139,34 +116,31 @@ java_test(
     srcs = [
         "TestResolution.java",
     ],
-    test_class = "grakn.verification.resolution.test.TestResolution",
+    test_class = "grakn.core.test.behaviour.resolution.test.TestResolution",
     deps = [
-        "//resolution:resolution-lib",
-        "//resolution/test:grakn-for-test",
+        "//test/behaviour/resolution:resolution-lib",
+        "//test/rule:grakn-test-server",
+        "//kb/server:server",
+        "//kb/concept/api:api",
 
         # External dependencies from @graknlabs
         "@graknlabs_graql//java:graql",
     ],
     data = [
-        "//resolution/test/cases/case1:schema.gql",
-        "//resolution/test/cases/case1:data.gql",
-        "//resolution/test/cases/case2:schema.gql",
-        "//resolution/test/cases/case2:data.gql",
-        "//resolution/test/cases/case3:schema.gql",
-        "//resolution/test/cases/case3:data.gql",
-        "//resolution/test/cases/case4:schema.gql",
-        "//resolution/test/cases/case4:data.gql",
-        "//resolution/test/cases/case5:schema.gql",
-        "//resolution/test/cases/case5:data.gql",
-        "//resolution/test/cases/case6:schema.gql",
-        "//resolution/test/cases/case6:data.gql",
-        "//resolution/test/cases/case7:schema.gql",
-        "//resolution/test/cases/case7:data.gql",
-        "@graknlabs_grakn_core//:assemble-linux-targz", # Make sure to pass the path in args below
-    ],
-    args = [ # The order of the arguments matter
-        "grakn-core", # Keep at index 0, will be accessible at args[1]
-        "$(location @graknlabs_grakn_core//:assemble-linux-targz)", # Keep at index 1, will be accessible at args[2]
+        "//test/behaviour/resolution/test/cases/case1:schema.gql",
+        "//test/behaviour/resolution/test/cases/case1:data.gql",
+        "//test/behaviour/resolution/test/cases/case2:schema.gql",
+        "//test/behaviour/resolution/test/cases/case2:data.gql",
+        "//test/behaviour/resolution/test/cases/case3:schema.gql",
+        "//test/behaviour/resolution/test/cases/case3:data.gql",
+        "//test/behaviour/resolution/test/cases/case4:schema.gql",
+        "//test/behaviour/resolution/test/cases/case4:data.gql",
+        "//test/behaviour/resolution/test/cases/case5:schema.gql",
+        "//test/behaviour/resolution/test/cases/case5:data.gql",
+        "//test/behaviour/resolution/test/cases/case6:schema.gql",
+        "//test/behaviour/resolution/test/cases/case6:data.gql",
+        "//test/behaviour/resolution/test/cases/case7:schema.gql",
+        "//test/behaviour/resolution/test/cases/case7:data.gql",
     ],
     size="medium"
 )

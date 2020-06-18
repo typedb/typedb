@@ -8,12 +8,14 @@ java_library(
     ),
     visibility = ["//visibility:public"],
     deps = [
-        "//resolution/common:common",
-        "//resolution/resolve:resolve",
-        "@graknlabs_client_java//:client-java",
+        "//test/behaviour/resolution/common:common",
+        "//test/behaviour/resolution/resolve:resolve",
+        "//kb/server:server",
+        "//kb/concept/api:api",
+        "//concept/answer:answer",
         "@graknlabs_graql//java:graql",
     ],
     data = [
-        "//resolution/complete:completion_schema.gql",
+        "//test/behaviour/resolution/complete:completion_schema.gql",
     ],
 )
