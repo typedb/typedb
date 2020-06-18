@@ -189,7 +189,7 @@ public class DisjunctiveQuery extends ResolvableQuery {
 
     @Override
     public Set<Atomic> getAtoms() {
-        throw new UnsupportedOperationException();
+        return getClauses().stream().flatMap(c -> c.getAtoms().stream()).collect(Collectors.toSet());
     }
 
     @Override
