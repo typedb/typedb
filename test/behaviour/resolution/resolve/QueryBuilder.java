@@ -7,6 +7,8 @@ import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.server.Transaction;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
+import graql.lang.pattern.Disjunction;
+import graql.lang.pattern.Negation;
 import graql.lang.pattern.Pattern;
 import graql.lang.property.HasAttributeProperty;
 import graql.lang.property.IsaProperty;
@@ -21,6 +23,7 @@ import graql.lang.statement.Variable;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -200,11 +203,37 @@ public class QueryBuilder {
     }
 
     public static Pattern makeAnonVarsExplicit(Pattern pattern) {
-        return new Conjunction<>(pattern.statements().stream().map(QueryBuilder::makeAnonVarExplicit).collect(Collectors.toSet()));
+        if (pattern instanceof Statement) {
+            return makeAnonVarsExplicit((Statement) pattern);
+        } else if (pattern instanceof Conjunction) {
+            return makeAnonVarsExplicit((Conjunction) pattern);
+        } else if (pattern instanceof Negation) {
+            return makeAnonVarsExplicit((Negation) pattern);
+        } else if (pattern instanceof Disjunction) {
+            return makeAnonVarsExplicit((Disjunction) pattern);
+        }
+        throw new UnsupportedOperationException();
     }
 
-    private static Statement makeAnonVarExplicit(Statement statement) {
+    private static Conjunction makeAnonVarsExplicit(Conjunction<Pattern> pattern) {
+        Set<Pattern> patterns = pattern.getPatterns();
+        HashSet<Pattern> newPatterns = new HashSet<>();
+        patterns.forEach(p -> newPatterns.add(makeAnonVarsExplicit(p)));
+        return new Conjunction<>(newPatterns);
+    }
 
+    private static Disjunction makeAnonVarsExplicit(Disjunction<Pattern> pattern) {
+        Set<Pattern> patterns = pattern.getPatterns();
+        HashSet<Pattern> newPatterns = new HashSet<>();
+        patterns.forEach(p -> newPatterns.add(makeAnonVarsExplicit(p)));
+        return new Disjunction<>(newPatterns);
+    }
+
+    private static Negation makeAnonVarsExplicit(Negation<Pattern> pattern) {
+        return new Negation<>(makeAnonVarsExplicit(pattern.getPattern()));
+    }
+
+    private static Statement makeAnonVarsExplicit(Statement statement) {
         if (statement.var().isReturned()) {
             return statement;
         } else {
