@@ -6,6 +6,7 @@ import grakn.core.kb.server.Transaction;
 import grakn.core.test.behaviour.resolution.resolve.QueryBuilder;
 import grakn.core.test.rule.GraknTestServer;
 import graql.lang.Graql;
+import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlGet;
 import graql.lang.statement.Statement;
 import org.junit.ClassRule;
@@ -98,6 +99,98 @@ public class QueryBuilderIT {
                 Set<Statement> statements = kbCompleteQuery.match().getPatterns().statements();
 
                 assertEquals(expectedResolutionStatements, statements);
+            }
+        }
+    }
+
+//    @Test
+//    public void testMatchGetQueryIsCorrect_case6() {
+//
+//
+//        Set<Statement> expectedResolutionStatements = getStatements(Graql.parsePatternList("" +
+////                // Level 0
+////                "{ $c id V8352; { $c isa company; $c has name $n1; $n1 == \"the-company\"; not { $c has is-liable $lia; }; } or { $n2 == \"another-company\"; $c isa company; $c has name $n2; not { $c has is-liable $lia; }; }; };" +
+////                // Level 1
+////                "{ $n2 == \"another-company\"; $c id V8352; $c isa company; $n2 id V12464; $c has name $n2; not { $c has is-liable $lia; }; };" +
+////                //Level 2
+////                "{ $n2 == \"another-company\"; $c isa company; $c id V8352; $n2 id V12464; $c has name $n2; };" +
+//
+//
+//                // Level 0
+//                "{ $r0-c has company-id 1; { $r0-c isa company; $r0-c has name $r0-n1; $r0-n1 == \"the-company\"; not { $r0-c has is-liable $r0-lia; }; } or { $r0-n2 == \"another-company\"; $r0-c isa company; $r0-c has name $r0-n2; not { $r0-c has is-liable $r0-lia; }; }; };" +
+//                // Level 1
+//                "{ $r1-n2 == \"another-company\"; $r1-c id V8352; $r1-c isa company; $r1-n2 id V12464; $r1-c has name $r1-n2; not { $r1-c has is-liable $r1-lia; }; };" +
+//                //Level 2
+//                "{ $r2-n2 == \"another-company\"; $r2-c isa company; $r2-c id V8352; $r2-n2 id V12464; $r2-c has name $r2-n2; };" +
+//
+//                ""));
+//
+//        Set<Statement> expectedResolutionStatements = getStatements(Graql.parsePatternList("" +
+//                "$r0-c isa company; " +
+//                "{$r0-c has name $r0-n1; $r0-n1 \"the-company\";} or {$r0-c has name $r0-n2; $r0-n2 \"another-company\";}; " +
+//                "not {$r0-c has is-liable $r0-lia;}; " +
+//                "$r0-c has company-id 0;" +
+//                "$r1-c isa company;" +
+//                "$r1-c has name $r1-n;" +
+//                "$r1-n2 \"another-company\";" +
+//                "$x0 (instance: $r1-c) isa isa-property, has type-label \"company\";" +
+//                "$x1 (owner: $r1-c) isa has-attribute-property, has name $r1-n2;" +
+//                "$_ (body: $x0, head: $x1) isa resolution, has rule-label \"company-has-name\";" +
+//                "$r1-c has company-id 0;"
+//        ));
+//
+//        GraqlGet inferenceQuery = Graql.parse("" +
+//                "match $c isa company; " +
+//                "{$c has name $n1; $n1 \"the-company\";} or {$c has name $n2; $n2 \"another-company\";}; " +
+//                "not {$c has is-liable $lia;}; " +
+//                "get;").asGet();
+//
+//        try (Session session = graknTestServer.sessionWithNewKeyspace()) {
+//
+//            loadTestCase(session, "case6");
+//
+//            QueryBuilder qb = new QueryBuilder();
+//            try (Transaction tx = session.transaction(Transaction.Type.READ)) {
+//                List<GraqlGet> kbCompleteQueries = qb.buildMatchGet(tx, inferenceQuery);
+//                GraqlGet kbCompleteQuery = kbCompleteQueries.get(0);
+//                Set<Statement> statements = kbCompleteQuery.match().getPatterns().statements();
+//
+//                assertEquals(expectedResolutionStatements, statements);
+//            }
+//        }
+//    }
+
+    @Test
+    public void testMatchGetQueryIsCorrect_case8() {
+
+
+        Pattern expectedResolutionPattern = Graql.parsePattern("" +
+//                // Level 0
+                "{ $r0-c has company-id 0; { $r0-n2 == \"some-name\"; $r0-c isa company; $r0-c has name $r0-n2; } or { $r0-c isa company; $r0-n1 == \"the-company\"; $r0-c has name $r0-n1; }; };" +
+//                // Level 1
+                "{ $r1-c isa company; $r1-n1 == \"the-company\"; $r1-n1 \"the-company\"; $r1-c has company-id 0; $r1-c has name $r1-n1; };" +
+                "$x0 (instance: $r1-c) isa isa-property, has type-label \"company\";" +
+                "$x1 (owner: $r1-c) isa has-attribute-property, has name $r1-n;" +
+                "$_ (body: $x0, head: $x1) isa resolution, has rule-label \"company-has-name\";" +
+//                //Level 2
+                "{ $r2-c2 has company-id 0; $r2-c2 isa company; };");
+
+        GraqlGet inferenceQuery = Graql.parse("" +
+                "match $c isa company; " +
+                "{$c has name $n1; $n1 \"the-company\";} or {$c has name $n2; $n2 \"some-name\";}; " +
+                "get;").asGet();
+
+        try (Session session = graknTestServer.sessionWithNewKeyspace()) {
+
+            loadTestCase(session, "case8");
+
+            QueryBuilder qb = new QueryBuilder();
+            try (Transaction tx = session.transaction(Transaction.Type.READ)) {
+                List<GraqlGet> kbCompleteQueries = qb.buildMatchGet(tx, inferenceQuery);
+                GraqlGet kbCompleteQuery = kbCompleteQueries.get(0);
+                Pattern pattern = kbCompleteQuery.match().getPatterns();
+
+                assertEquals(expectedResolutionPattern, pattern);
             }
         }
     }

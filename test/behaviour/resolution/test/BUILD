@@ -38,7 +38,10 @@ java_test(
         "//test/behaviour/resolution/test/cases/case4:data.gql",
         "//test/behaviour/resolution/test/cases/case5:schema.gql",
         "//test/behaviour/resolution/test/cases/case5:data.gql",
+        "//test/behaviour/resolution/test/cases/case8:schema.gql",
+        "//test/behaviour/resolution/test/cases/case8:data.gql",
     ],
+    classpath_resources = ["//test/resources:logback-test"],
     size="medium"
 )
 
@@ -58,6 +61,7 @@ java_test(
         # External dependencies from @graknlabs
         "@graknlabs_graql//java:graql",
     ],
+    classpath_resources = ["//test/resources:logback-test"],
     size="small"
 )
 
@@ -81,6 +85,7 @@ java_test(
             "//test/behaviour/resolution/test/cases/case2:schema.gql",
             "//test/behaviour/resolution/test/cases/case2:data.gql",
         ],
+    classpath_resources = ["//test/resources:logback-test"],
     size="medium"
 )
 
@@ -108,6 +113,7 @@ java_test(
         "//test/behaviour/resolution/test/cases/case4:schema.gql",
         "//test/behaviour/resolution/test/cases/case4:data.gql",
     ],
+    classpath_resources = ["//test/resources:logback-test"],
     size="medium"
 )
 
@@ -142,5 +148,6 @@ java_test(
         "//test/behaviour/resolution/test/cases/case7:schema.gql",
         "//test/behaviour/resolution/test/cases/case7:data.gql",
     ],
+    classpath_resources = ["//test/resources:logback-test"],
     size="medium"
 )
