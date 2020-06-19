@@ -2,7 +2,6 @@ package grakn.core.test.behaviour.resolution.resolve;
 
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.answer.Explanation;
-import grakn.core.graql.reasoner.explanation.LookupExplanation;
 import grakn.core.graql.reasoner.explanation.RuleExplanation;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.server.Transaction;
@@ -38,7 +37,7 @@ public class QueryBuilder {
     private int nextVarIndex = 0;
 
     public List<GraqlGet> buildMatchGet(Transaction tx, GraqlGet query) {
-            List<ConceptMap> answers = tx.execute(query);
+            List<ConceptMap> answers = tx.execute(query, true, true);
 
             ArrayList<GraqlGet> resolutionQueries = new ArrayList<>();
             for (ConceptMap answer : answers) {
@@ -61,11 +60,11 @@ public class QueryBuilder {
         LinkedHashSet<Statement> answerStatements = new LinkedHashSet<>(prefixVars(removeIdStatements(qp.statements()), ruleResolutionIndex));
         answerStatements.addAll(prefixVars(generateKeyStatements(answer.map()), ruleResolutionIndex));
 
-        if (!(answer.explanation() instanceof LookupExplanation)) {
+        if (answer.explanation() != null) {
 
             Explanation explanation = answer.explanation();
 
-            if (explanation.getAnswers().size() == 1) {
+            if (explanation.isRuleExplanation()) {
 
                 ConceptMap explAns = getOnlyElement(explanation.getAnswers());
 
