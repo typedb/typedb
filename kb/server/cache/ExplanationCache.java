@@ -16,24 +16,20 @@
  *
  */
 
-package grakn.core.kb.server.exception;
+package grakn.core.kb.server.cache;
 
-import grakn.core.common.exception.ErrorMessage;
-import grakn.core.common.exception.GraknException;
+import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.answer.Explanation;
 
-public class SessionException extends GraknException {
+public interface ExplanationCache {
+    /**
+     * Record the explanation tree for a computed ConceptMap
+     * @param answer
+     * @param explanation
+     */
+    void record(ConceptMap answer, Explanation explanation);
 
-    public SessionException(String message) {
-        super(message);
-    }
+    Explanation get(ConceptMap answer);
 
-    @Override
-    public String getName() {
-        return this.getClass().getName();
-    }
-
-    public static SessionException sessionNotFound(String sessionId) {
-        return new SessionException(ErrorMessage.SESSION_NOT_FOUND.getMessage(sessionId));
-    }
-
+    void clear();
 }

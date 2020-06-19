@@ -21,9 +21,9 @@ load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 java_test(
     name = "test",
     srcs = [
-        "MatchTest.java",
+        "GetTest.java",
     ],
-    test_class = "grakn.core.test.behaviour.graql.language.match.MatchTest",
+    test_class = "grakn.core.test.behaviour.graql.language.get.GetTest",
     deps = [
         # Package dependencies
         "//test/behaviour/server:server",
@@ -38,7 +38,7 @@ java_test(
         "//test/behaviour/config:parameters",
     ],
     data = [
-        "@graknlabs_verification//behaviour/graql/language:match.feature",
+        "@graknlabs_verification//behaviour/graql/language:get.feature",
     ],
     classpath_resources = ["//test/resources:logback-test"],
     size = "large",

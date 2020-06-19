@@ -107,7 +107,6 @@ java_test(
         "//common",
         "//concept/answer",
         "//dependencies/maven/artifacts/com/google/guava",
-        "//graql/executor",
         "//graql/reasoner",
         "//kb/concept/api",
         "//kb/concept/manager",
