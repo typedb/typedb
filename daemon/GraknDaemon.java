@@ -25,6 +25,14 @@ import grakn.core.daemon.executor.Storage;
 import grakn.core.server.Version;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import picocli.CommandLine;
+import picocli.CommandLine.Command;
+import picocli.CommandLine.Help.Ansi.Style;
+import picocli.CommandLine.Help.ColorScheme;
+import picocli.CommandLine.HelpCommand;
+import picocli.CommandLine.Option;
+import picocli.CommandLine.Parameters;
+import picocli.CommandLine.ParentCommand;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -43,12 +51,7 @@ import java.util.Scanner;
 public class GraknDaemon {
     private static final Logger LOG = LoggerFactory.getLogger(GraknDaemon.class);
 
-    private static final String SERVER = "server";
-    private static final String STORAGE = "storage";
-    private static final String EMPTY_STRING = "";
-    private static final String OPTIONS = "--";
     private static final String VERSION_LABEL = "Version: ";
-
 
     private final Storage storageExecutor;
     private final Server serverExecutor;
@@ -60,31 +63,29 @@ public class GraknDaemon {
      * @param args arguments such as 'server start', 'server stop', 'clean', and so on
      */
     public static void main(String[] args) {
+        String commandName = args[0];
+        String[] realArgs = Arrays.copyOfRange(args, 1, args.length);
+        System.exit(GraknDaemon.buildCommand(commandName).execute(realArgs));
+    }
+
+    private GraknDaemon(boolean showLogo) {
         try {
             Path graknHome = Paths.get(Objects.requireNonNull(SystemProperty.CURRENT_DIRECTORY.value()));
             Path graknProperties = Paths.get(Objects.requireNonNull(SystemProperty.CONFIGURATION_FILE.value()));
             assertEnvironment(graknHome, graknProperties);
 
             Executor bootupProcessExecutor = new Executor();
-            GraknDaemon daemon = new GraknDaemon(
-                    new Storage(bootupProcessExecutor, graknHome, graknProperties),
-                    new Server(bootupProcessExecutor, graknHome, graknProperties)
-            );
+            storageExecutor = new Storage(bootupProcessExecutor, graknHome, graknProperties);
+            serverExecutor = new Server(bootupProcessExecutor, graknHome, graknProperties);
 
-            daemon.run(args);
-            System.exit(0);
-
+            if (showLogo) {
+                printGraknLogo();
+            }
         } catch (RuntimeException ex) {
             LOG.error(ErrorMessage.UNABLE_TO_START_GRAKN.getMessage(), ex);
             System.out.println(ErrorMessage.UNABLE_TO_START_GRAKN.getMessage());
-            System.err.println(ex.getMessage());
-            System.exit(1);
+            throw ex;
         }
-    }
-
-    private GraknDaemon(Storage storageExecutor, Server serverExecutor) {
-        this.storageExecutor = storageExecutor;
-        this.serverExecutor = serverExecutor;
     }
 
     /**
@@ -113,7 +114,7 @@ public class GraknDaemon {
             try {
                 String logoString = new String(Files.readAllBytes(ascii), StandardCharsets.UTF_8);
                 int lineLength = logoString.split("\n")[0].length();
-                int spaces = lineLength - (VERSION_LABEL.length() + Version.VERSION.length());
+                int spaces = lineLength - (VERSION_LABEL.length() + Version.VERSION.length()) - 1;
 
                 System.out.println(logoString);
                 if (spaces > 0) {
@@ -128,121 +129,154 @@ public class GraknDaemon {
         }
     }
 
-    /**
-     * Accepts various Grakn commands (eg., 'grakn server start')
-     *
-     * @param args arrays of arguments, eg., { 'server', 'start' }
-     */
-    public void run(String[] args) {
-        String action = args.length > 1 ? args[1] : "";
-        String option = args.length > 2 ? args[2] : "";
-
-        List<String> otherArgs = Collections.emptyList();
-        for (int i = 2; i < args.length; ++i) {
-            if (OPTIONS.equals(args[i])) {
-                otherArgs = Arrays.asList(args).subList(i + 1, args.length);
-            }
-        }
-
-        switch (action) {
-            case "start":
-                printGraknLogo();
-                serverStart(option, otherArgs);
-                break;
-            case "stop":
-                printGraknLogo();
-                serverStop(option);
-                break;
-            case "status":
-                printGraknLogo();
-                serverStatus();
-                break;
-            case "clean":
-                clean();
-                break;
-            case "version":
-                version();
-                break;
-            default:
-                serverHelp();
-        }
-    }
-
-    private void serverStop(String arg) {
-        switch (arg) {
-            case SERVER:
-                serverExecutor.stop();
-                break;
-            case STORAGE:
-                storageExecutor.stop();
-                break;
-            case EMPTY_STRING:
-                serverExecutor.stop();
-                storageExecutor.stop();
-                break;
-            default:
-                serverHelp();
-        }
-    }
-
-    private void serverStart(String arg, List<String> otherArgs) {
-        switch (arg) {
-            case SERVER:
-                serverExecutor.startIfNotRunning(otherArgs);
-                break;
-            case STORAGE:
-                storageExecutor.startIfNotRunning();
-                break;
-            case OPTIONS:
-            case EMPTY_STRING:
-                storageExecutor.startIfNotRunning();
-                serverExecutor.startIfNotRunning(otherArgs);
-                break;
-            default:
-                serverHelp();
-        }
-    }
-
-    private void serverHelp() {
-        System.out.println("Usage: grakn server COMMAND\n" +
-                                   "\n" +
-                                   "COMMAND:\n" +
-                                   "start [" + SERVER + "|" + STORAGE + "] Start Grakn (or optionally, only one of the component)\n" +
-                                   "stop [" + SERVER + "|" + STORAGE + "]   Stop Grakn (or optionally, only one of the component)\n" +
-                                   "status                         Check if Grakn is running\n" +
-                                   "clean                          DANGEROUS: wipe data completely\n" +
-                                   "version                        Print version of Grakn server\n" +
-                                   "\n" +
-                                   "Tips:\n" +
-                                   "- Start Grakn with 'grakn server start'\n" +
-                                   "- Start or stop only one component with, e.g. 'grakn server start storage' or 'grakn server stop storage', respectively\n");
-    }
-
     private void serverStatus() {
         storageExecutor.status();
         serverExecutor.status();
     }
 
-    private void version() {
-        System.out.println(Version.VERSION);
-    }
-
-    private void clean() {
+    private void clean(boolean overrideYes) {
         boolean storage = storageExecutor.isRunning();
         boolean server = serverExecutor.isRunning();
         if (storage || server) {
             System.out.println("Grakn is still running! Please do a shutdown with 'grakn server stop' before performing a cleanup.");
             return;
         }
-        System.out.print("Are you sure you want to delete all stored data and logs? [y/N] ");
-        System.out.flush();
-        String response = new Scanner(System.in, StandardCharsets.UTF_8.name()).next();
-        if (!response.equals("y") && !response.equals("Y")) {
-            System.out.println("Response '" + response + "' did not equal 'y' or 'Y'.  Canceling clean operation.");
-            return;
+        if (!overrideYes) {
+            System.out.print("Are you sure you want to delete all stored data and logs? [y/N] ");
+            System.out.flush();
+            String response = new Scanner(System.in, StandardCharsets.UTF_8.name()).next();
+            if (!response.equals("y") && !response.equals("Y")) {
+                System.out.println("Response '" + response + "' did not equal 'y' or 'Y'.  Canceling clean operation.");
+                return;
+            }
         }
         storageExecutor.clean();
         serverExecutor.clean();
+    }
+
+    public static CommandLine buildCommand(String name) {
+        return GraknDaemonCommand.buildCommand(name);
+    }
+
+    @Command(
+            mixinStandardHelpOptions = true,
+            version = Version.VERSION,
+            subcommands = {
+                    GraknDaemonCommand.Start.class,
+                    GraknDaemonCommand.Stop.class,
+                    HelpCommand.class
+            }
+    )
+    static class GraknDaemonCommand {
+
+        // Disallow external command building, must obtain from .buildCommand()
+        private GraknDaemonCommand() {
+        }
+
+        @Option(
+                names = {"-l", "--no-logo"},
+                negatable = true,
+                description = "Toggle displaying the ASCII-art logo"
+        )
+        boolean showLogo = true;
+
+        @Command(
+                name = "start",
+                description = "Start Grakn (or optionally, only one of the components)",
+                synopsisSubcommandLabel = "[server | storage]",
+                subcommands = HelpCommand.class
+        )
+        public static class Start implements Runnable {
+
+            @ParentCommand
+            GraknDaemonCommand parent;
+
+            @Parameters(hidden = true)
+            List<String> args = Collections.emptyList();
+
+            @Override
+            public void run() {
+                GraknDaemon daemon = new GraknDaemon(parent.showLogo);
+                daemon.storageExecutor.startIfNotRunning();
+                daemon.serverExecutor.startIfNotRunning(args);
+            }
+
+            @Command(description = "Start the Grakn main server only")
+            public void server(@Parameters(hidden = true) List<String> args) {
+                GraknDaemon daemon = new GraknDaemon(parent.showLogo);
+                daemon.serverExecutor.startIfNotRunning(args == null ? Collections.emptyList() : args);
+            }
+
+            @Command(description = "Stop the Grakn main server")
+            public void storage() {
+                GraknDaemon daemon = new GraknDaemon(parent.showLogo);
+                daemon.storageExecutor.startIfNotRunning();
+            }
+        }
+
+        @Command(
+                name = "stop",
+                description = "Stop Grakn (or optionally, only one of the components)",
+                synopsisSubcommandLabel = "[server | storage]",
+                subcommands = HelpCommand.class
+        )
+        public static class Stop implements Runnable {
+
+            @ParentCommand
+            GraknDaemonCommand parent;
+
+            @Override
+            public void run() {
+                GraknDaemon daemon = new GraknDaemon(parent.showLogo);
+                daemon.serverExecutor.stop();
+                daemon.storageExecutor.stop();
+            }
+
+            @Command(description = "Stop the Grakn main server only")
+            public void server() {
+                GraknDaemon daemon = new GraknDaemon(parent.showLogo);
+                daemon.serverExecutor.stop();
+            }
+
+            @Command(description = "Stop the Grakn Storage server only")
+            public void storage() {
+                GraknDaemon daemon = new GraknDaemon(parent.showLogo);
+                daemon.storageExecutor.stop();
+            }
+        }
+
+        @Command(description = "Check if Grakn is running")
+        public void status() {
+            GraknDaemon daemon = new GraknDaemon(showLogo);
+            daemon.serverStatus();
+        }
+
+        @Command(description = "DANGEROUS: wipe data completely")
+        public void clean(@Option(names = {"-y", "--yes"},
+                description = "Override request for confirmation") boolean overrideYes) {
+            GraknDaemon daemon = new GraknDaemon(showLogo);
+            daemon.clean(overrideYes);
+        }
+
+        @Command(description = "Print version of Grakn server")
+        public void version() {
+            System.out.println(Version.VERSION);
+        }
+
+        private static final ColorScheme COLOR_SCHEME = new ColorScheme.Builder()
+                .commands    (Style.fg_white, Style.bold)
+                .options     (Style.fg_cyan)
+                .parameters  (Style.fg_yellow)
+                .optionParams(Style.italic)
+                .errors      (Style.fg_red, Style.bold)
+                .stackTraces (Style.italic)
+                .build();
+
+        public static CommandLine buildCommand(String name) {
+            return new CommandLine(new GraknDaemonCommand())
+                    .setCommandName(name)
+                    .setColorScheme(COLOR_SCHEME);
+        }
     }
 }
 
