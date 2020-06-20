@@ -18,7 +18,6 @@
 
 package hypergraph.graph.edge;
 
-import hypergraph.graph.iid.EdgeIID;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.vertex.TypeVertex;
 
@@ -27,7 +26,7 @@ import hypergraph.graph.vertex.TypeVertex;
  *
  * This edge can only have a schema of type {@code Schema.Edge.Type}.
  */
-public interface TypeEdge extends Edge<Schema.Edge.Type, EdgeIID.Type, TypeVertex> {
+public interface TypeEdge extends Edge<Schema.Edge.Type, TypeVertex> {
 
     /**
      * Returns the type vertex overridden by the head of this type edge.

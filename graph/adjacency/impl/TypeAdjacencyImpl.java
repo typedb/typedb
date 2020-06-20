@@ -42,7 +42,7 @@ import static hypergraph.common.iterator.Iterators.apply;
 import static hypergraph.common.iterator.Iterators.distinct;
 import static hypergraph.common.iterator.Iterators.link;
 
-public abstract class TypeAdjacencyImpl implements Adjacency<Schema.Edge.Type, TypeEdge, TypeVertex> {
+public abstract class TypeAdjacencyImpl implements TypeAdjacency {
 
     final TypeVertex owner;
     final Adjacency.Direction direction;
