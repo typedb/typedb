@@ -23,8 +23,6 @@ import hypergraph.graph.iid.VertexIID;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.vertex.ThingVertex;
 
-import java.util.List;
-
 public interface ThingAdjacency extends Adjacency<Schema.Edge.Thing, ThingEdge, ThingVertex> {
 
     /**
@@ -39,13 +37,13 @@ public interface ThingAdjacency extends Adjacency<Schema.Edge.Thing, ThingEdge, 
      * @param metadata which will be appended to {@code schema} as {@code Infix}
      * @param adjacent the adjacent vertex
      */
-    void put(Schema.Edge.Thing schema, List<VertexIID> metadata, ThingVertex adjacent);
+    void put(Schema.Edge.Thing schema, VertexIID.Type metadata, ThingVertex adjacent);
 
-    IteratorBuilder<ThingVertex> edge(Schema.Edge.Thing schema, List<VertexIID> metadata);
+    IteratorBuilder<ThingVertex> edge(Schema.Edge.Thing schema, VertexIID.Type metadata);
 
-    ThingEdge edge(Schema.Edge.Thing schema, List<VertexIID> metadata, ThingVertex adjacent);
+    ThingEdge edge(Schema.Edge.Thing schema, VertexIID.Type metadata, ThingVertex adjacent);
 
-    void delete(Schema.Edge.Thing schema, List<VertexIID> metadata, ThingVertex adjacent);
+    void delete(Schema.Edge.Thing schema, VertexIID.Type metadata, ThingVertex adjacent);
 
-    void delete(Schema.Edge.Thing schema, List<VertexIID> metadata);
+    void delete(Schema.Edge.Thing schema, VertexIID.Type metadata);
 }

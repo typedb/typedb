@@ -140,4 +140,10 @@ public class Bytes {
     public static java.time.LocalDateTime bytesToDateTime(byte[] bytes, ZoneId timeZoneID) {
         return LocalDateTime.ofInstant(Instant.ofEpochMilli(bytesToLong(bytes)), timeZoneID);
     }
+
+    public static boolean arrayContains(byte[] container, int from, byte[] contained) {
+        if ((container.length - from) > contained.length) return false;
+        for (int i = 0; i < contained.length; i++) if (container[from + i] != contained[i]) return false;
+        return true;
+    }
 }

@@ -18,7 +18,7 @@
 
 package hypergraph.graph.edge;
 
-import hypergraph.graph.iid.EdgeIID;
+import hypergraph.graph.iid.VertexIID;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.vertex.ThingVertex;
 
@@ -27,4 +27,7 @@ import hypergraph.graph.vertex.ThingVertex;
  *
  * This edge can only have a schema of type {@code Schema.Edge.Thing}.
  */
-public interface ThingEdge extends Edge<Schema.Edge.Thing, EdgeIID.Thing, ThingVertex> {}
+public interface ThingEdge extends Edge<Schema.Edge.Thing, ThingVertex> {
+
+    boolean hasMetaData(VertexIID.Type metadata);
+}

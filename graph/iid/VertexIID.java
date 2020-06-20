@@ -62,6 +62,10 @@ public abstract class VertexIID extends IID {
             return new Type(bytes);
         }
 
+        static VertexIID.Type extract(byte[] bytes, int from) {
+            return new VertexIID.Type(copyOfRange(bytes, from, from + LENGTH));
+        }
+
         /**
          * Generate an IID for a {@code TypeVertex} for a given {@code Schema}
          *
@@ -109,7 +113,7 @@ public abstract class VertexIID extends IID {
                                   keyGenerator.forThing(typeIID)));
         }
 
-        public static VertexIID.Thing of(byte[] bytes) {
+        static VertexIID.Thing of(byte[] bytes) {
             if (Schema.Vertex.Type.of(bytes[PrefixIID.LENGTH]).equals(Schema.Vertex.Type.ATTRIBUTE_TYPE)) {
                 return VertexIID.Attribute.of(bytes);
             } else {
@@ -117,7 +121,7 @@ public abstract class VertexIID extends IID {
             }
         }
 
-        public static VertexIID.Thing extract(byte[] bytes, int from) {
+        static VertexIID.Thing extract(byte[] bytes, int from) {
             if (Schema.Vertex.Thing.of(bytes[from]).equals(Schema.Vertex.Thing.ATTRIBUTE)) {
                 return VertexIID.Attribute.extract(bytes, from);
             } else {

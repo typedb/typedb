@@ -31,7 +31,7 @@ import static java.util.Collections.emptyList;
 
 public interface Adjacency<
         EDGE_SCHEMA extends Schema.Edge,
-        EDGE extends Edge<EDGE_SCHEMA, ?, VERTEX>,
+        EDGE extends Edge<?, VERTEX>,
         VERTEX extends Vertex<?, ?, VERTEX, EDGE_SCHEMA, EDGE>> {
 
     IteratorBuilder<VERTEX> edge(EDGE_SCHEMA schema);

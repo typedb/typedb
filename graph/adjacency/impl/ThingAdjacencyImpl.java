@@ -31,7 +31,6 @@ import hypergraph.graph.vertex.ThingVertex;
 
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -42,14 +41,14 @@ import java.util.function.Predicate;
 import static hypergraph.common.collection.Bytes.join;
 import static hypergraph.common.iterator.Iterators.apply;
 import static hypergraph.common.iterator.Iterators.distinct;
+import static hypergraph.common.iterator.Iterators.filter;
 import static hypergraph.common.iterator.Iterators.link;
-import static java.util.Collections.emptyList;
 
-public abstract class ThingAdjacencyImpl implements Adjacency<Schema.Edge.Thing, ThingEdge, ThingVertex> {
+public abstract class ThingAdjacencyImpl implements ThingAdjacency {
 
     final ThingVertex owner;
     final Direction direction;
-    final ConcurrentMap<InfixIID, Set<ThingEdge>> edges;
+    final ConcurrentMap<InfixIID.Thing, Set<ThingEdge>> edges;
 
     ThingAdjacencyImpl(ThingVertex owner, Direction direction) {
         this.owner = owner;
@@ -57,47 +56,67 @@ public abstract class ThingAdjacencyImpl implements Adjacency<Schema.Edge.Thing,
         this.edges = new ConcurrentHashMap<>();
     }
 
-    InfixIID infixIID(Schema.Edge.Thing prefix) {
-        return infixIID(prefix, Collections.emptyList());
+    InfixIID.Thing infixIID(Schema.Edge.Thing schema) {
+        return infixIID(schema, null);
     }
 
-    InfixIID infixIID(Schema.Edge.Thing prefix, List<VertexIID> metadata) {
-        Schema.Infix infix = direction.isOut() ? prefix.out() : prefix.in();
-        if (infix != null) return InfixIID.of(infix, metadata);
+    InfixIID.Thing infixIID(Schema.Edge.Thing schema, VertexIID.Type metadata) {
+        Schema.Infix infix = direction.isOut() ? schema.out() : schema.in();
+        if (infix != null) return InfixIID.Thing.of(infix, metadata);
         return null;
     }
 
-    public abstract ThingIteratorBuilderImpl edge(Schema.Edge.Thing schema, List<VertexIID> metadata);
+    abstract ThingIteratorBuilderImpl edge(InfixIID.Thing infix);
 
-    public abstract ThingEdge edge(Schema.Edge.Thing schema, List<VertexIID> metadata, ThingVertex adjacent);
+    abstract ThingEdge edge(InfixIID.Thing infix, ThingVertex adjacent);
 
-    public abstract void delete(Schema.Edge.Thing schema, List<VertexIID> metadata, ThingVertex adjacent);
+    abstract void delete(InfixIID.Thing infix, ThingVertex adjacent);
 
-    public abstract void delete(Schema.Edge.Thing schema, List<VertexIID> metadata);
+    abstract void delete(InfixIID.Thing infix);
+
+    @Override
+    public ThingIteratorBuilderImpl edge(Schema.Edge.Thing schema, VertexIID.Type metadata) {
+        return edge(infixIID(schema, metadata));
+    }
 
     @Override
     public ThingIteratorBuilderImpl edge(Schema.Edge.Thing schema) {
-        return edge(schema, emptyList());
+        return edge(infixIID(schema));
+    }
+
+    @Override
+    public ThingEdge edge(Schema.Edge.Thing schema, VertexIID.Type metadata, ThingVertex adjacent) {
+        return edge(infixIID(schema, metadata), adjacent);
     }
 
     @Override
     public ThingEdge edge(Schema.Edge.Thing schema, ThingVertex adjacent) {
-        return edge(schema, emptyList(), adjacent);
+        return edge(infixIID(schema), adjacent);
+    }
+
+    @Override
+    public void delete(Schema.Edge.Thing schema, VertexIID.Type metadata, ThingVertex adjacent) {
+        delete(infixIID(schema, metadata), adjacent);
+    }
+
+    @Override
+    public void delete(Schema.Edge.Thing schema, VertexIID.Type metadata) {
+        delete(infixIID(schema, metadata));
     }
 
     @Override
     public void delete(Schema.Edge.Thing schema, ThingVertex adjacent) {
-        delete(schema, emptyList(), adjacent);
+        delete(infixIID(schema), adjacent);
     }
 
     @Override
     public void delete(Schema.Edge.Thing schema) {
-        delete(schema, emptyList());
+        delete(infixIID(schema));
     }
 
     @Override
     public void deleteNonRecursive(ThingEdge edge) {
-        InfixIID infix = infixIID(edge.schema());
+        InfixIID.Thing infix = infixIID(edge.schema());
         if (edges.containsKey(infix)) {
             edges.get(infix).remove(edge);
             owner.setModified();
@@ -106,13 +125,13 @@ public abstract class ThingAdjacencyImpl implements Adjacency<Schema.Edge.Thing,
 
     @Override
     public void put(Schema.Edge.Thing schema, ThingVertex adjacent) {
-        put(schema, emptyList(), adjacent);
+        put(schema, null, adjacent);
     }
 
-    public void put(Schema.Edge.Thing schema, List<VertexIID> metadata, ThingVertex adjacent) {
+    public void put(Schema.Edge.Thing schema, VertexIID.Type metadata, ThingVertex adjacent) {
         ThingVertex from = direction.isOut() ? owner : adjacent;
         ThingVertex to = direction.isOut() ? adjacent : owner;
-        ThingEdge edge = new ThingEdgeImpl.Buffered(from, schema, to);
+        ThingEdge edge = new ThingEdgeImpl.Buffered(from, schema, metadata, to);
         edges.computeIfAbsent(infixIID(schema, metadata), e -> ConcurrentHashMap.newKeySet()).add(edge);
         to.ins().putNonRecursive(edge);
         owner.setModified();
@@ -161,22 +180,21 @@ public abstract class ThingAdjacencyImpl implements Adjacency<Schema.Edge.Thing,
         }
 
         @Override
-        public ThingIteratorBuilderImpl edge(Schema.Edge.Thing schema, List<VertexIID> metadata) {
+        ThingIteratorBuilderImpl edge(InfixIID.Thing infix) {
             Set<ThingEdge> edges;
 
-            if (schema.isOptimisation() && (edges = this.edges.get(infixIID(schema, metadata))) != null) {
+            if (infix.isOptimisation() && (edges = this.edges.get(infix)) != null) {
                 return new ThingIteratorBuilderImpl(edges.iterator());
-            } else if (!schema.isOptimisation() && (edges = this.edges.get(infixIID(schema))) != null) {
-//                return new ThingIteratorBuilderImpl(filter(edges.iterator(), e -> e.infix().hasMetaData(metadata)));
-                return new ThingIteratorBuilderImpl(edges.iterator());
+            } else if (!infix.isOptimisation() && (edges = this.edges.get(infix.withoutMetaData())) != null) { // TODO: Look up by infix.withoutMetaData()
+                if (!infix.hasMetaData()) return new ThingIteratorBuilderImpl(edges.iterator());
+                else return new ThingIteratorBuilderImpl(filter(edges.iterator(), e -> e.to().type().iid().equals(infix.metadata())));
             } else {
                 return new ThingIteratorBuilderImpl(Collections.emptyIterator());
             }
         }
 
         @Override
-        public ThingEdge edge(Schema.Edge.Thing schema, List<VertexIID> metadata, ThingVertex adjacent) {
-            InfixIID infix = infixIID(schema);
+        ThingEdge edge(InfixIID.Thing infix, ThingVertex adjacent) {
             if (edges.containsKey(infix)) {
                 Predicate<ThingEdge> predicate = direction.isOut()
                         ? e -> e.to().equals(adjacent)
@@ -187,8 +205,7 @@ public abstract class ThingAdjacencyImpl implements Adjacency<Schema.Edge.Thing,
         }
 
         @Override
-        public void delete(Schema.Edge.Thing schema, List<VertexIID> metadata, ThingVertex adjacent) {
-            InfixIID infix = infixIID(schema);
+        void delete(InfixIID.Thing infix, ThingVertex adjacent) {
             if (edges.containsKey(infix)) {
                 Predicate<ThingEdge> predicate = direction.isOut()
                         ? e -> e.to().equals(adjacent)
@@ -198,8 +215,7 @@ public abstract class ThingAdjacencyImpl implements Adjacency<Schema.Edge.Thing,
         }
 
         @Override
-        public void delete(Schema.Edge.Thing schema, List<VertexIID> metadata) {
-            InfixIID infix = infixIID(schema);
+        public void delete(InfixIID.Thing infix) {
             if (infix != null && edges.containsKey(infix)) edges.get(infix).forEach(Edge::delete);
         }
 
@@ -216,7 +232,7 @@ public abstract class ThingAdjacencyImpl implements Adjacency<Schema.Edge.Thing,
             super(owner, direction);
         }
 
-        private Iterator<ThingEdge> edgeIterator(InfixIID infix) {
+        private Iterator<ThingEdge> edgeIterator(InfixIID.Thing infix) {
             Iterator<ThingEdge> storageIterator = owner.graph().storage().iterate(
                     join(owner.iid().bytes(), infix.bytes()),
                     (key, value) -> new ThingEdgeImpl.Persisted(owner.graph(), EdgeIID.Thing.of(key))
@@ -230,13 +246,12 @@ public abstract class ThingAdjacencyImpl implements Adjacency<Schema.Edge.Thing,
         }
 
         @Override
-        public ThingIteratorBuilderImpl edge(Schema.Edge.Thing schema, List<VertexIID> metadata) {
-            return new ThingIteratorBuilderImpl(edgeIterator(infixIID(schema)));
+        ThingIteratorBuilderImpl edge(InfixIID.Thing infix) {
+            return new ThingIteratorBuilderImpl(edgeIterator(infix));
         }
 
         @Override
-        public ThingEdge edge(Schema.Edge.Thing schema, List<VertexIID> metadata, ThingVertex adjacent) {
-            InfixIID infix = infixIID(schema);
+        ThingEdge edge(InfixIID.Thing infix, ThingVertex adjacent) {
             Optional<ThingEdge> container;
             Predicate<ThingEdge> predicate = direction.isOut()
                     ? e -> e.to().equals(adjacent)
@@ -255,8 +270,7 @@ public abstract class ThingAdjacencyImpl implements Adjacency<Schema.Edge.Thing,
         }
 
         @Override
-        public void delete(Schema.Edge.Thing schema, List<VertexIID> metadata, ThingVertex adjacent) {
-            InfixIID infix = infixIID(schema);
+        void delete(InfixIID.Thing infix, ThingVertex adjacent) {
             Optional<ThingEdge> edge;
             Predicate<ThingEdge> predicate = direction.isOut()
                     ? e -> e.to().equals(adjacent)
@@ -273,11 +287,10 @@ public abstract class ThingAdjacencyImpl implements Adjacency<Schema.Edge.Thing,
         }
 
         @Override
-        public void delete(Schema.Edge.Thing schema, List<VertexIID> metadata) {
-            InfixIID infix = infixIID(schema);
+        void delete(InfixIID.Thing infix) {
             if (edges.containsKey(infix)) edges.get(infix).parallelStream().forEach(Edge::delete);
             Iterator<ThingEdge> storageIterator = owner.graph().storage().iterate(
-                    join(owner.iid().bytes(), direction.isOut() ? schema.out().bytes() : schema.in().bytes()),
+                    join(owner.iid().bytes(), infix.bytes()),
                     (key, value) -> new ThingEdgeImpl.Persisted(owner.graph(), EdgeIID.Thing.of(key))
             );
             storageIterator.forEachRemaining(Edge::delete);
@@ -286,7 +299,7 @@ public abstract class ThingAdjacencyImpl implements Adjacency<Schema.Edge.Thing,
         @Override
         public void forEach(Consumer<ThingEdge> function) {
             for (Schema.Edge.Thing schema : Schema.Edge.Thing.values()) {
-                InfixIID infix = infixIID(schema);
+                InfixIID.Thing infix = infixIID(schema);
                 if (infix != null) edgeIterator(infix).forEachRemaining(function);
             }
         }

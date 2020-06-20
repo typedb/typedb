@@ -56,21 +56,6 @@ public class Schema {
         }
     }
 
-    public enum IID {
-        TYPE(3),
-        THING(12);
-
-        private final int length;
-
-        IID(int length) {
-            this.length = length;
-        }
-
-        public int length() {
-            return length;
-        }
-    }
-
     /**
      * The values in this class will be used as 'prefixes' within an IID in the
      * of every object database, and must not overlap with each other.
@@ -137,14 +122,19 @@ public class Schema {
         EDGE_PLAYS_IN(-60),
         EDGE_RELATES_OUT(70),
         EDGE_RELATES_IN(-70),
-        EDGE_OPT_ROLE_OUT(100),
-        EDGE_OPT_ROLE_IN(-100),
-        EDGE_OPT_RELATION_OUT(110); // EDGE_OPT_RELATION_IN does not exist by design
+        EDGE_OPT_ROLE_OUT(100, true),
+        EDGE_OPT_ROLE_IN(-100, true);
 
         private final byte key;
+        private final boolean isOptimisation;
 
         Infix(int key) {
+            this(key, false);
+        }
+
+        Infix(int key, boolean isOptimisation) {
             this.key = (byte) key;
+            this.isOptimisation = isOptimisation;
         }
 
         public static Infix of(byte key) {
@@ -156,6 +146,10 @@ public class Schema {
 
         public byte[] bytes() {
             return new byte[]{key};
+        }
+
+        public boolean isOptimisation() {
+            return isOptimisation;
         }
     }
 
@@ -467,21 +461,30 @@ public class Schema {
         }
 
         enum Thing implements Edge {
-            ISA(null, Infix.EDGE_ISA_IN, false),
-            HAS(Infix.EDGE_HAS_OUT, Infix.EDGE_HAS_IN, false),
-            PLAYS(Infix.EDGE_PLAYS_OUT, Infix.EDGE_PLAYS_IN, false),
-            RELATES(Infix.EDGE_RELATES_OUT, Infix.EDGE_RELATES_IN, false),
-            OPT_ROLE(Infix.EDGE_OPT_ROLE_OUT, Infix.EDGE_OPT_ROLE_IN, true),
-            OPT_RELATION(Infix.EDGE_OPT_RELATION_OUT, null, true);
+            ISA(null, Infix.EDGE_ISA_IN),
+            HAS(Infix.EDGE_HAS_OUT, Infix.EDGE_HAS_IN),
+            PLAYS(Infix.EDGE_PLAYS_OUT, Infix.EDGE_PLAYS_IN),
+            RELATES(Infix.EDGE_RELATES_OUT, Infix.EDGE_RELATES_IN),
+            OPT_ROLE(Infix.EDGE_OPT_ROLE_OUT, Infix.EDGE_OPT_ROLE_IN, true);
 
             private final Infix out;
             private final Infix in;
             private final boolean isOptimisation;
 
+            Thing(Infix out, Infix in) {
+                this(out, in, false);
+            }
+
             Thing(Infix out, Infix in, boolean isOptimisation) {
                 this.out = out;
                 this.in = in;
                 this.isOptimisation = isOptimisation;
+                assert out == null || out.isOptimisation() == isOptimisation;
+                assert in == null || in.isOptimisation() == isOptimisation;
+            }
+
+            public static Thing of(Infix infix) {
+                return of(infix.key);
             }
 
             public static Thing of(byte infix) {

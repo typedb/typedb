@@ -16,32 +16,29 @@
  *
  */
 
-package hypergraph.concept.thing.impl
+package hypergraph.concept.thing.impl;
 
-import hypergraph.concept.thing.Role
-import hypergraph.graph.util.Schema
-import hypergraph.graph.vertex.ThingVertex
+import hypergraph.concept.thing.Role;
+import hypergraph.graph.util.Schema;
+import hypergraph.graph.vertex.ThingVertex;
 
-import java.util.Objects.requireNonNull
+import static java.util.Objects.requireNonNull;
 
-class RoleImpl private constructor(vertex: ThingVertex) : Role {
+public class RoleImpl implements Role {
 
-    internal val vertex: ThingVertex
+    final ThingVertex vertex;
 
-    init {
-        this.vertex = requireNonNull(vertex)
+    private RoleImpl(ThingVertex vertex) {
+        this.vertex = requireNonNull(vertex);
     }
 
-    internal fun optimise() {
-        val relation = vertex.ins().edge(Schema.Edge.Thing.RELATES).from().next()
-        val player = vertex.ins().edge(Schema.Edge.Thing.PLAYS).from().next()
-        relation.outs().put(Schema.Edge.Thing.OPT_ROLE)
+    public static RoleImpl of(ThingVertex vertex) {
+        return new RoleImpl(vertex);
     }
 
-    companion object {
-
-        fun of(vertex: ThingVertex): RoleImpl {
-            return RoleImpl(vertex)
-        }
+    void optimise() {
+        ThingVertex relation = vertex.ins().edge(Schema.Edge.Thing.RELATES).from().next();
+        ThingVertex player = vertex.ins().edge(Schema.Edge.Thing.PLAYS).from().next();
+//        relation.outs().put(Schema.Edge.Thing.OPT_ROLE);
     }
 }

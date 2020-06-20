@@ -25,35 +25,47 @@ import static java.util.Arrays.copyOfRange;
 
 public abstract class EdgeIID<
         EDGE_SCHEMA extends Schema.Edge,
+        EDGE_INFIX extends InfixIID<EDGE_SCHEMA>,
         VERTEX_IID_START extends VertexIID,
         VERTEX_IID_END extends VertexIID> extends IID {
+
+    EDGE_INFIX infix;
+    VERTEX_IID_START start;
+    VERTEX_IID_END end;
 
     EdgeIID(byte[] bytes) {
         super(bytes);
     }
 
-    public abstract boolean isOutwards();
-
-    public abstract EDGE_SCHEMA schema();
+    public abstract EDGE_INFIX infix();
 
     public abstract VERTEX_IID_START start();
 
     public abstract VERTEX_IID_END end();
 
+    int infixIndex() {
+        return start().bytes.length;
+    }
+
+    public EDGE_SCHEMA schema() {
+        return infix().schema();
+    }
+
+    public boolean isOutwards() {
+        return infix().isOutwards();
+    }
+
     @Override
     public String toString() {
         if (readableString == null) {
             readableString = "[" + start().bytes.length + ": " + start().toString() + "]" +
-                    "[" + InfixIID.LENGTH + ": " + schema().toString() + "]" +
+                    "[" + infix().length() + ": " + infix().toString() + "]" +
                     "[" + end().bytes.length + ": " + end().toString() + "]";
         }
         return readableString;
     }
 
-    public static class Type extends EdgeIID<Schema.Edge.Type, VertexIID.Type, VertexIID.Type> {
-
-        private VertexIID.Type start;
-        private VertexIID.Type end;
+    public static class Type extends EdgeIID<Schema.Edge.Type, InfixIID.Type, VertexIID.Type, VertexIID.Type> {
 
         Type(byte[] bytes) {
             super(bytes);
@@ -68,19 +80,14 @@ public abstract class EdgeIID<
         }
 
         @Override
-        public boolean isOutwards() {
-            return Schema.Edge.isOut(bytes[VertexIID.Type.LENGTH]);
-        }
-
-        @Override
-        public Schema.Edge.Type schema() {
-            return Schema.Edge.Type.of(bytes[VertexIID.Type.LENGTH]);
+        public InfixIID.Type infix() {
+            if (infix == null) infix = InfixIID.Type.extract(bytes, VertexIID.Type.LENGTH);
+            return infix;
         }
 
         @Override
         public VertexIID.Type start() {
-            if (start != null) return start;
-            start = VertexIID.Type.of(copyOfRange(bytes, 0, VertexIID.Type.LENGTH));
+            if (start == null) start = VertexIID.Type.of(copyOfRange(bytes, 0, VertexIID.Type.LENGTH));
             return start;
         }
 
@@ -92,11 +99,7 @@ public abstract class EdgeIID<
         }
     }
 
-    public static class Thing extends EdgeIID<Schema.Edge.Thing, VertexIID.Thing, VertexIID.Thing> {
-
-        private VertexIID.Thing start;
-        private VertexIID.Thing end;
-        private Schema.Edge.Thing schema;
+    public static class Thing extends EdgeIID<Schema.Edge.Thing, InfixIID.Thing, VertexIID.Thing, VertexIID.Thing> {
 
         Thing(byte[] bytes) {
             super(bytes);
@@ -110,41 +113,27 @@ public abstract class EdgeIID<
             return new Thing(join(start.bytes(), infix.bytes(), end.bytes()));
         }
 
-        private int schemaIndex() {
-            return start().bytes.length;
-        }
-
         @Override
-        public boolean isOutwards() {
-            return Schema.Edge.isOut(bytes[schemaIndex()]);
-        }
-
-        @Override
-        public Schema.Edge.Thing schema() {
-            if (schema == null) schema = Schema.Edge.Thing.of(bytes[schemaIndex()]);
-            return schema;
+        public InfixIID.Thing infix() {
+            if (infix == null) infix = InfixIID.Thing.extract(bytes, infixIndex());
+            return infix;
         }
 
         @Override
         public VertexIID.Thing start() {
-            if (start == null) {
-                start = VertexIID.Thing.extract(bytes, 0);
-            }
+            if (start == null) start = VertexIID.Thing.extract(bytes, 0);
 
             return start;
         }
 
         @Override
         public VertexIID.Thing end() {
-            if (end == null) {
-                end = VertexIID.Thing.extract(bytes, schemaIndex() + 1);
-            }
-
+            if (end == null) end = VertexIID.Thing.extract(bytes, infixIndex() + 1);
             return end;
         }
     }
 
-    public static class InwardsISA extends EdgeIID<Schema.Edge.Thing, VertexIID.Type, VertexIID.Thing> {
+    public static class InwardsISA extends EdgeIID<Schema.Edge.Thing, InfixIID.Thing, VertexIID.Type, VertexIID.Thing> {
 
         private VertexIID.Type start;
         private VertexIID.Thing end;
@@ -162,13 +151,8 @@ public abstract class EdgeIID<
         }
 
         @Override
-        public boolean isOutwards() {
-            return false;
-        }
-
-        @Override
-        public Schema.Edge.Thing schema() {
-            return Schema.Edge.Thing.ISA;
+        public InfixIID.Thing infix() {
+            return InfixIID.Thing.of(Schema.Edge.Thing.ISA.in());
         }
 
         @Override
