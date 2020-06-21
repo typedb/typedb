@@ -27,8 +27,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
-import picocli.CommandLine.Help.Ansi.Style;
-import picocli.CommandLine.Help.ColorScheme;
 import picocli.CommandLine.HelpCommand;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
@@ -154,11 +152,17 @@ public class GraknDaemon {
         serverExecutor.clean();
     }
 
+    public static CommandLine buildCommand() {
+        return GraknDaemonCommand.buildCommand("server");
+    }
+
     public static CommandLine buildCommand(String name) {
         return GraknDaemonCommand.buildCommand(name);
     }
 
     @Command(
+            name = "server",
+            description = "Control Grakn server instances",
             mixinStandardHelpOptions = true,
             version = Version.VERSION,
             subcommands = {
@@ -263,19 +267,9 @@ public class GraknDaemon {
             System.out.println(Version.VERSION);
         }
 
-        private static final ColorScheme COLOR_SCHEME = new ColorScheme.Builder()
-                .commands    (Style.fg_white, Style.bold)
-                .options     (Style.fg_cyan)
-                .parameters  (Style.fg_yellow)
-                .optionParams(Style.italic)
-                .errors      (Style.fg_red, Style.bold)
-                .stackTraces (Style.italic)
-                .build();
-
         public static CommandLine buildCommand(String name) {
             return new CommandLine(new GraknDaemonCommand())
-                    .setCommandName(name)
-                    .setColorScheme(COLOR_SCHEME);
+                    .setCommandName(name);
         }
     }
 }

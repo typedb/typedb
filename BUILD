@@ -27,10 +27,12 @@ load("@io_bazel_rules_docker//contrib:push-all.bzl", "docker_push")
 
 assemble_targz(
     name = "assemble-linux-targz",
-    targets = ["//server:server-deps",
+    targets = ["//cli:cli-deps",
+               "//server:server-deps",
                "@graknlabs_console//:console-deps",
                "@graknlabs_common//bin:assemble-bash-targz"],
     additional_files = {
+        "//cli:conf/logback.xml": "cli/conf/logback.xml",
         "//server:conf/logback.xml": "server/conf/logback.xml",
         "@graknlabs_console//config/logback:logback.xml": "console/conf/logback.xml",
         "//server:conf/grakn.properties": "server/conf/grakn.properties",
@@ -53,7 +55,8 @@ assemble_targz(
 
 assemble_zip(
     name = "assemble-mac-zip",
-    targets = ["//server:server-deps",
+    targets = ["//cli:cli-deps",
+               "//server:server-deps",
                "@graknlabs_console//:console-deps",
                "@graknlabs_common//bin:assemble-bash-targz"],
     additional_files = {
