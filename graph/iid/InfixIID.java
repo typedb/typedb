@@ -99,7 +99,7 @@ public abstract class InfixIID<EDGE_SCHEMA extends Schema.Edge> extends IID {
             Schema.Edge.Thing schema = Schema.Edge.Thing.of(bytes[from]);
             if (!schema.isOptimisation()) {
                 return new InfixIID.Thing(new byte[]{bytes[from]});
-            } else if ((schema.equals(Schema.Edge.Thing.OPT_ROLE))) {
+            } else if ((schema.equals(Schema.Edge.Thing.ROLEPLAYER))) {
                 return OptimisedRole.extract(bytes, from);
             } else {
                 assert false;
@@ -126,7 +126,7 @@ public abstract class InfixIID<EDGE_SCHEMA extends Schema.Edge> extends IID {
             return new InfixIID.Thing(copy);
         }
 
-        public InfixIID.Thing withoutData() {
+        public InfixIID.Thing withoutTail() {
             if (bytes.length == SCHEMA_LENGTH) return this;
             else return new Thing(new byte[]{bytes[0]});
         }
@@ -155,7 +155,7 @@ public abstract class InfixIID<EDGE_SCHEMA extends Schema.Edge> extends IID {
         }
 
         public static InfixIID.OptimisedRole of(Schema.Infix infix, VertexIID.Type type) {
-            assert type != null && Schema.Edge.Thing.of(infix).equals(Schema.Edge.Thing.OPT_ROLE);
+            assert type != null && Schema.Edge.Thing.of(infix).equals(Schema.Edge.Thing.ROLEPLAYER);
             return new InfixIID.OptimisedRole(join(infix.bytes(), type.bytes()));
         }
 

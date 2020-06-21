@@ -32,6 +32,8 @@ import hypergraph.graph.vertex.ThingVertex;
 import java.util.List;
 import java.util.stream.Stream;
 
+import static hypergraph.common.iterator.Iterators.stream;
+
 public class RelationImpl extends ThingImpl implements Relation {
 
     private RelationImpl(ThingVertex vertex) {
@@ -72,7 +74,9 @@ public class RelationImpl extends ThingImpl implements Relation {
 
     @Override
     public Stream<? extends Thing> players(List<RoleType> roleTypes) {
-        return null;
+        return roleTypes.stream().flatMap(roleType -> stream(
+                vertex.outs().edge(Schema.Edge.Thing.ROLEPLAYER, ((RoleTypeImpl) roleType).vertex.iid()).to()
+        )).map(ThingImpl::of);
     }
 
     @Override

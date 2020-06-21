@@ -43,7 +43,6 @@ import java.util.function.Predicate;
 import static hypergraph.common.collection.Bytes.join;
 import static hypergraph.common.iterator.Iterators.apply;
 import static hypergraph.common.iterator.Iterators.distinct;
-import static hypergraph.common.iterator.Iterators.filter;
 import static hypergraph.common.iterator.Iterators.link;
 
 public abstract class ThingAdjacencyImpl implements ThingAdjacency {
@@ -199,7 +198,7 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
 
             if (infix.isOptimisation() && (edges = this.edges.get(infix)) != null) {
                 return new ThingIteratorBuilderImpl(edges.iterator());
-            } else if (!infix.isOptimisation() && (edges = this.edges.get(infix.withoutData())) != null) {
+            } else if (!infix.isOptimisation() && (edges = this.edges.get(infix.withoutTail())) != null) {
                 if (!infix.hasTail()) return new ThingIteratorBuilderImpl(edges.iterator());
                 else {
                     assert false; // for now. TODO

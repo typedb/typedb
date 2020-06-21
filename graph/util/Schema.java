@@ -122,8 +122,8 @@ public class Schema {
         EDGE_PLAYS_IN(-60),
         EDGE_RELATES_OUT(70),
         EDGE_RELATES_IN(-70),
-        EDGE_OPT_ROLE_OUT(100, true),
-        EDGE_OPT_ROLE_IN(-100, true);
+        EDGE_ROLEPLAYER_OUT(100, true),
+        EDGE_ROLEPLAYER_IN(-100, true);
 
         private final byte key;
         private final boolean isOptimisation;
@@ -469,7 +469,7 @@ public class Schema {
             HAS(Infix.EDGE_HAS_OUT, Infix.EDGE_HAS_IN),
             PLAYS(Infix.EDGE_PLAYS_OUT, Infix.EDGE_PLAYS_IN),
             RELATES(Infix.EDGE_RELATES_OUT, Infix.EDGE_RELATES_IN),
-            OPT_ROLE(Infix.EDGE_OPT_ROLE_OUT, Infix.EDGE_OPT_ROLE_IN, true);
+            ROLEPLAYER(Infix.EDGE_ROLEPLAYER_OUT, Infix.EDGE_ROLEPLAYER_IN, true);
 
             private final Infix out;
             private final Infix in;

@@ -40,6 +40,6 @@ public class RoleImpl implements Role {
     void optimise() {
         ThingVertex relation = vertex.ins().edge(Schema.Edge.Thing.RELATES).from().next();
         ThingVertex player = vertex.ins().edge(Schema.Edge.Thing.PLAYS).from().next();
-        relation.outs().put(Schema.Edge.Thing.OPT_ROLE, player, vertex.type().iid(), SuffixIID.of(vertex.iid().key()));
+        relation.outs().put(Schema.Edge.Thing.ROLEPLAYER, player, vertex.type().iid(), SuffixIID.of(vertex.iid().key()));
     }
 }
