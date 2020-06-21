@@ -293,7 +293,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         @Override
         public Iterator<ThingVertexImpl> instances() {
             return link(instances.iterator(), filter(graph.storage().iterate(
-                    join(iid.bytes(), Schema.Edge.Thing.ISA.in().bytes()),
+                    join(iid.bytes(), Schema.Edge.ISA.in().bytes()),
                     (key, value) -> ThingVertexImpl.of(graph.thing(), EdgeIID.InwardsISA.of(key).end())
             ), thingVertex -> !instances.contains(thingVertex)));
             // TODO: Can we figure out how to do a "distinct iterator" that is more efficient?

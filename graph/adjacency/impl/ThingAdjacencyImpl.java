@@ -63,8 +63,7 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
 
     InfixIID.Thing infixIID(Schema.Edge.Thing schema, VertexIID.Type infixTail) {
         Schema.Infix infix = direction.isOut() ? schema.out() : schema.in();
-        if (infix != null) return InfixIID.Thing.of(infix, infixTail);
-        return null;
+        return InfixIID.Thing.of(infix, infixTail);
     }
 
     abstract ThingIteratorBuilderImpl edge(InfixIID.Thing infix);
@@ -316,8 +315,7 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
         @Override
         public void forEach(Consumer<ThingEdge> function) {
             for (Schema.Edge.Thing schema : Schema.Edge.Thing.values()) {
-                InfixIID.Thing infix = infixIID(schema);
-                if (infix != null) edgeIterator(infix).forEachRemaining(function);
+                edgeIterator(infixIID(schema)).forEachRemaining(function);
             }
         }
     }

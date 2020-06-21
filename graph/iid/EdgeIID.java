@@ -151,12 +151,12 @@ public abstract class EdgeIID<
         }
 
         public static InwardsISA of(VertexIID.Type start, VertexIID.Thing end) {
-            return new InwardsISA(join(start.bytes, Schema.Edge.Thing.ISA.in().bytes(), end.bytes));
+            return new InwardsISA(join(start.bytes, Schema.Edge.ISA.in().bytes(), end.bytes));
         }
 
         @Override
         public InfixIID.Thing infix() {
-            return InfixIID.Thing.of(Schema.Edge.Thing.ISA.in());
+            return InfixIID.Thing.of(Schema.Edge.ISA.in());
         }
 
         @Override

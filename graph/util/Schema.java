@@ -424,6 +424,18 @@ public class Schema {
 
         boolean isOptimisation();
 
+        Edge ISA = new Edge() {
+
+            @Override
+            public Infix out() { return null; }
+
+            @Override
+            public Infix in() { return Infix.EDGE_ISA_IN; }
+
+            @Override
+            public boolean isOptimisation() { return false; }
+        };
+
         enum Type implements Edge {
             SUB(Infix.EDGE_SUB_OUT, Infix.EDGE_SUB_IN),
             KEY(Infix.EDGE_KEY_OUT, Infix.EDGE_KEY_IN),
@@ -465,7 +477,6 @@ public class Schema {
         }
 
         enum Thing implements Edge {
-            ISA(null, Infix.EDGE_ISA_IN),
             HAS(Infix.EDGE_HAS_OUT, Infix.EDGE_HAS_IN),
             PLAYS(Infix.EDGE_PLAYS_OUT, Infix.EDGE_PLAYS_IN),
             RELATES(Infix.EDGE_RELATES_OUT, Infix.EDGE_RELATES_IN),
