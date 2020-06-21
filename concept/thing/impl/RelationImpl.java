@@ -55,9 +55,11 @@ public class RelationImpl extends ThingImpl implements Relation {
     }
 
     @Override
-    public Relation assign(RoleType roleType, Thing player) {
+    public RelationImpl assign(RoleType roleType, Thing player) {
         if (this.type().roles().noneMatch(t -> t.equals(roleType))) {
-            throw new HypergraphException(Error.ThingWrite.RELATION_UNRELATED_ROLE.format(this.type().label(), roleType.label()));
+            throw new HypergraphException(
+                    Error.ThingWrite.RELATION_UNRELATED_ROLE.format(this.type().label(), roleType.label())
+            );
         }
 
         RoleImpl role = ((RoleTypeImpl) roleType).create();
@@ -68,15 +70,24 @@ public class RelationImpl extends ThingImpl implements Relation {
     }
 
     @Override
-    public Relation unassign(RoleType roleType, Thing player) {
+    public RelationImpl unassign(RoleType roleType, Thing player) {
         return null;
     }
 
     @Override
-    public Stream<? extends Thing> players(List<RoleType> roleTypes) {
-        return roleTypes.stream().flatMap(roleType -> stream(
-                vertex.outs().edge(Schema.Edge.Thing.ROLEPLAYER, ((RoleTypeImpl) roleType).vertex.iid()).to()
-        )).map(ThingImpl::of);
+    public Stream<? extends ThingImpl> players() {
+        return stream(vertex.outs().edge(Schema.Edge.Thing.ROLEPLAYER).to()).map(ThingImpl::of);
+    }
+
+    @Override
+    public Stream<? extends ThingImpl> players(RoleType roleType) {
+        return stream(vertex.outs().edge(Schema.Edge.Thing.ROLEPLAYER, ((RoleTypeImpl) roleType).vertex.iid()).to())
+                .map(ThingImpl::of);
+    }
+
+    @Override
+    public Stream<? extends ThingImpl> players(List<RoleType> roleTypes) {
+        return roleTypes.stream().flatMap(this::players);
     }
 
     @Override

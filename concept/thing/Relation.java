@@ -56,9 +56,9 @@ public interface Relation extends Thing {
 
     Relation unassign(RoleType roleType, Thing player);
 
-    default Stream<? extends Thing> players(RoleType roleTypes) {
-        return players(Collections.singletonList(roleTypes));
-    }
+    Stream<? extends Thing> players();
+
+    Stream<? extends Thing> players(RoleType roleTypes);
 
     Stream<? extends Thing> players(List<RoleType> roleTypes);
 
