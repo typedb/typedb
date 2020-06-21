@@ -130,7 +130,7 @@ public final class Concepts {
 
     public void validateThings() {
         graph.thing().vertices().parallel()
-                .filter(v -> !v.isInferred() && v.isModified())
+                .filter(v -> !v.isInferred() && v.isModified() && !v.schema().equals(Schema.Vertex.Thing.ROLE))
                 .forEach(v -> ThingImpl.of(v).validate());
     }
 }
