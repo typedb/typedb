@@ -18,6 +18,8 @@
 
 package hypergraph.test.behaviour.concept.thing.entity;
 
+import hypergraph.concept.thing.Attribute;
+import hypergraph.concept.type.EntityType;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 
@@ -37,6 +39,14 @@ public class EntitySteps {
     @When("{var} = entity\\( ?{type_label} ?) get first instance")
     public void entity_type_get_first_instance(String var, String typeLabel) {
         put(var, tx().concepts().getEntityType(typeLabel).instances().findFirst().orElse(null));
+    }
+
+    @When("{var} = entity\\( ?{type_label} ?) get instance with key: {var}")
+    public void entity_type_get_instance_with_key(String var1, String typeLabel, String var2) {
+        EntityType ownerType = tx().concepts().getEntityType(typeLabel);
+        Attribute attribute = get(var2).asAttribute();
+        assertTrue(ownerType.keys().anyMatch(key -> key.equals(attribute.type())));
+        put(var1, attribute.owners().filter(owner -> owner.type().equals(ownerType)).findFirst().get());
     }
 
     @Then("entity\\( ?{type_label} ?) get instances contain: {var}")

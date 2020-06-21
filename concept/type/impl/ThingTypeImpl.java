@@ -80,6 +80,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         } else if (filter(vertex.outs().edge(Schema.Edge.Type.HAS).to(), v -> v.equals(attributeTypeImpl.vertex)).hasNext()) {
             throw new HypergraphException("Invalid Key Assignment: " + attributeTypeImpl.label() + " is already used as an attribute");
         } else if (sups().filter(s -> !s.equals(this)).flatMap(ThingType::attributes).anyMatch(a -> a.equals(attributeTypeImpl))) {
+            // TODO: should this be relaxed to just .flatMap(ThingType::keys) ?
             throw new HypergraphException("Invalid Attribute Assignment: " + attributeTypeImpl.label() + " is already inherited and/or overridden ");
         }
 
