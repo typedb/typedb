@@ -19,6 +19,7 @@
 package hypergraph.concept.thing.impl;
 
 import hypergraph.concept.thing.Role;
+import hypergraph.graph.iid.SuffixIID;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.vertex.ThingVertex;
 
@@ -39,6 +40,6 @@ public class RoleImpl implements Role {
     void optimise() {
         ThingVertex relation = vertex.ins().edge(Schema.Edge.Thing.RELATES).from().next();
         ThingVertex player = vertex.ins().edge(Schema.Edge.Thing.PLAYS).from().next();
-//        relation.outs().put(Schema.Edge.Thing.OPT_ROLE);
+        relation.outs().put(Schema.Edge.Thing.OPT_ROLE, player, vertex.type().iid(), SuffixIID.of(vertex.iid().key()));
     }
 }

@@ -25,10 +25,12 @@ import hypergraph.graph.edge.ThingEdge;
 import hypergraph.graph.edge.impl.ThingEdgeImpl;
 import hypergraph.graph.iid.EdgeIID;
 import hypergraph.graph.iid.InfixIID;
+import hypergraph.graph.iid.SuffixIID;
 import hypergraph.graph.iid.VertexIID;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.vertex.ThingVertex;
 
+import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Optional;
@@ -60,9 +62,9 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
         return infixIID(schema, null);
     }
 
-    InfixIID.Thing infixIID(Schema.Edge.Thing schema, VertexIID.Type metadata) {
+    InfixIID.Thing infixIID(Schema.Edge.Thing schema, VertexIID.Type infixTail) {
         Schema.Infix infix = direction.isOut() ? schema.out() : schema.in();
-        if (infix != null) return InfixIID.Thing.of(infix, metadata);
+        if (infix != null) return InfixIID.Thing.of(infix, infixTail);
         return null;
     }
 
@@ -75,8 +77,8 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
     abstract void delete(InfixIID.Thing infix);
 
     @Override
-    public ThingIteratorBuilderImpl edge(Schema.Edge.Thing schema, VertexIID.Type metadata) {
-        return edge(infixIID(schema, metadata));
+    public ThingIteratorBuilderImpl edge(Schema.Edge.Thing schema, VertexIID.Type infixTail) {
+        return edge(infixIID(schema, infixTail));
     }
 
     @Override
@@ -85,8 +87,8 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
     }
 
     @Override
-    public ThingEdge edge(Schema.Edge.Thing schema, VertexIID.Type metadata, ThingVertex adjacent) {
-        return edge(infixIID(schema, metadata), adjacent);
+    public ThingEdge edge(Schema.Edge.Thing schema, VertexIID.Type infixTail, ThingVertex adjacent) {
+        return edge(infixIID(schema, infixTail), adjacent);
     }
 
     @Override
@@ -95,13 +97,13 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
     }
 
     @Override
-    public void delete(Schema.Edge.Thing schema, VertexIID.Type metadata, ThingVertex adjacent) {
-        delete(infixIID(schema, metadata), adjacent);
+    public void delete(Schema.Edge.Thing schema, VertexIID.Type infixTail, ThingVertex adjacent) {
+        delete(infixIID(schema, infixTail), adjacent);
     }
 
     @Override
-    public void delete(Schema.Edge.Thing schema, VertexIID.Type metadata) {
-        delete(infixIID(schema, metadata));
+    public void delete(Schema.Edge.Thing schema, VertexIID.Type infixTail) {
+        delete(infixIID(schema, infixTail));
     }
 
     @Override
@@ -125,14 +127,26 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
 
     @Override
     public void put(Schema.Edge.Thing schema, ThingVertex adjacent) {
-        put(schema, null, adjacent);
+        put(schema, adjacent, null, null);
     }
 
-    public void put(Schema.Edge.Thing schema, VertexIID.Type metadata, ThingVertex adjacent) {
+    public void put(Schema.Edge.Thing schema, ThingVertex adjacent,
+                    @Nullable VertexIID.Type infixTail, @Nullable SuffixIID suffixTail) {
         ThingVertex from = direction.isOut() ? owner : adjacent;
         ThingVertex to = direction.isOut() ? adjacent : owner;
-        ThingEdge edge = new ThingEdgeImpl.Buffered(from, schema, metadata, to);
-        edges.computeIfAbsent(infixIID(schema, metadata), e -> ConcurrentHashMap.newKeySet()).add(edge);
+
+        ThingEdge edge;
+        InfixIID.Thing infix;
+        if (infixTail == null) {
+            assert suffixTail == null;
+            edge = new ThingEdgeImpl.Buffered(schema, from, to);
+            infix = infixIID(schema);
+        } else {
+            edge = new ThingEdgeImpl.Buffered(schema, from, to, infixTail, suffixTail);
+            infix = infixIID(schema, infixTail);
+        }
+
+        edges.computeIfAbsent(infix, e -> ConcurrentHashMap.newKeySet()).add(edge);
         to.ins().putNonRecursive(edge);
         owner.setModified();
     }
@@ -185,9 +199,13 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
 
             if (infix.isOptimisation() && (edges = this.edges.get(infix)) != null) {
                 return new ThingIteratorBuilderImpl(edges.iterator());
-            } else if (!infix.isOptimisation() && (edges = this.edges.get(infix.withoutMetaData())) != null) { // TODO: Look up by infix.withoutMetaData()
-                if (!infix.hasMetaData()) return new ThingIteratorBuilderImpl(edges.iterator());
-                else return new ThingIteratorBuilderImpl(filter(edges.iterator(), e -> e.to().type().iid().equals(infix.metadata())));
+            } else if (!infix.isOptimisation() && (edges = this.edges.get(infix.withoutData())) != null) {
+                if (!infix.hasTail()) return new ThingIteratorBuilderImpl(edges.iterator());
+                else {
+                    assert false; // for now. TODO
+                    return null;
+                }
+//                else return new ThingIteratorBuilderImpl(filter(edges.iterator(), e -> e.to().type().iid().equals(infix.tail())));
             } else {
                 return new ThingIteratorBuilderImpl(Collections.emptyIterator());
             }

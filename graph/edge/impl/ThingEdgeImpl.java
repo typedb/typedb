@@ -22,11 +22,13 @@ import hypergraph.graph.ThingGraph;
 import hypergraph.graph.edge.Edge;
 import hypergraph.graph.edge.ThingEdge;
 import hypergraph.graph.iid.EdgeIID;
+import hypergraph.graph.iid.InfixIID;
+import hypergraph.graph.iid.SuffixIID;
 import hypergraph.graph.iid.VertexIID;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.vertex.ThingVertex;
 
-import javax.annotation.Nullable;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.util.Objects.hash;
@@ -47,24 +49,40 @@ public abstract class ThingEdgeImpl implements Edge<Schema.Edge.Thing, ThingVert
         private final ThingVertex to;
         private final AtomicBoolean committed;
         private final AtomicBoolean deleted;
-        private final VertexIID.Type metadata;
+        private VertexIID.Type infixTail;
+        private SuffixIID suffixTail;
         private int hash;
 
         /**
          * Default constructor for {@code ThingEdgeImpl.Buffered}.
          *
-         * @param from   the tail vertex
          * @param schema the edge {@code Schema}
+         * @param from   the tail vertex
          * @param to     the head vertex
          */
-        public Buffered(ThingVertex from, Schema.Edge.Thing schema, @Nullable VertexIID.Type metadata, ThingVertex to) {
+        public Buffered(Schema.Edge.Thing schema, ThingVertex from, ThingVertex to) {
             super(from.graph(), schema);
             assert this.graph == to.graph();
             this.from = from;
             this.to = to;
-            this.metadata = metadata;
             committed = new AtomicBoolean(false);
             deleted = new AtomicBoolean(false);
+        }
+
+        /**
+         * Constructor for an optimised {@code ThingEdgeImpl.Buffered}.
+         *
+         * @param schema     the edge {@code Schema}
+         * @param from       the tail vertex
+         * @param to         the head vertex
+         * @param infixTail  metadata to append to the the {@code Infix} of the edge
+         * @param suffixTail metadata to append to the the end of the edge
+         */
+        public Buffered(Schema.Edge.Thing schema, ThingVertex from, ThingVertex to, VertexIID.Type infixTail, SuffixIID suffixTail) {
+            this(schema, from, to);
+            assert schema.isOptimisation() && infixTail != null && suffixTail != null;
+            this.infixTail = infixTail;
+            this.suffixTail = suffixTail;
         }
 
         @Override
@@ -83,8 +101,8 @@ public abstract class ThingEdgeImpl implements Edge<Schema.Edge.Thing, ThingVert
         }
 
         @Override
-        public boolean hasMetaData(VertexIID.Type metadata) {
-            return this.metadata != null && this.metadata.equals(metadata);
+        public boolean hasInfixTail(VertexIID.Type infixTail) {
+            return this.infixTail != null && this.infixTail.equals(infixTail);
         }
 
         /**
@@ -104,12 +122,16 @@ public abstract class ThingEdgeImpl implements Edge<Schema.Edge.Thing, ThingVert
         @Override
         public void commit() {
             if (committed.compareAndSet(false, true)) {
-                if (schema.out() != null) {
-                    graph.storage().put(EdgeIID.Thing.of(from().iid(), schema.out(), to().iid()).bytes());
+                EdgeIID.Thing outIID, inIID;
+                if (schema.isOptimisation()) {
+                    outIID = EdgeIID.Thing.of(from.iid(), InfixIID.Thing.of(schema.out(), infixTail), to.iid(), suffixTail);
+                    inIID = EdgeIID.Thing.of(to.iid(), InfixIID.Thing.of(schema.in(), infixTail), from.iid(), suffixTail);
+                } else {
+                    outIID = EdgeIID.Thing.of(from.iid(), InfixIID.Thing.of(schema.out()), to.iid());
+                    inIID = EdgeIID.Thing.of(to.iid(), InfixIID.Thing.of(schema.in()), from.iid());
                 }
-                if (schema.in() != null) {
-                    graph.storage().put(EdgeIID.Thing.of(to().iid(), schema.in(), from().iid()).bytes());
-                }
+                graph.storage().put(outIID.bytes());
+                graph.storage().put(inIID.bytes());
             }
         }
 
@@ -131,7 +153,9 @@ public abstract class ThingEdgeImpl implements Edge<Schema.Edge.Thing, ThingVert
             ThingEdgeImpl.Buffered that = (ThingEdgeImpl.Buffered) object;
             return (this.schema.equals(that.schema) &&
                     this.from.equals(that.from) &&
-                    this.to.equals(that.to));
+                    this.to.equals(that.to) &&
+                    Objects.equals(this.infixTail, that.infixTail) &&
+                    Objects.equals(this.suffixTail, that.suffixTail));
         }
 
         /**
@@ -146,7 +170,7 @@ public abstract class ThingEdgeImpl implements Edge<Schema.Edge.Thing, ThingVert
          */
         @Override
         public final int hashCode() {
-            if (hash == 0) hash = hash(schema, from, to);
+            if (hash == 0) hash = hash(schema, from, to, infixTail, suffixTail);
             return hash;
         }
     }
@@ -187,24 +211,15 @@ public abstract class ThingEdgeImpl implements Edge<Schema.Edge.Thing, ThingVert
                 fromIID = iid.start();
                 toIID = iid.end();
                 outIID = iid;
-                inIID = edgeIID(iid.end(), iid.schema().in(), iid.start());
+                inIID = EdgeIID.Thing.of(iid.end(), iid.infix().inwards(), iid.start());
             } else {
                 fromIID = iid.end();
                 toIID = iid.start();
                 inIID = iid;
-                outIID = edgeIID(iid.end(), iid.schema().out(), iid.start());
+                outIID = EdgeIID.Thing.of(iid.end(), iid.infix().outwards(), iid.start());
             }
 
             deleted = new AtomicBoolean(false);
-        }
-
-        ThingEdgeImpl.Persisted getThis() {
-            return this;
-        }
-
-
-        EdgeIID.Thing edgeIID(VertexIID.Thing start, Schema.Infix infix, VertexIID.Thing end) {
-            return EdgeIID.Thing.of(start, infix, end);
         }
 
         @Override
@@ -216,7 +231,7 @@ public abstract class ThingEdgeImpl implements Edge<Schema.Edge.Thing, ThingVert
         public ThingVertex from() {
             if (from != null) return from;
             from = graph.convert(fromIID);
-            from.outs().load(getThis());
+            from.outs().load(this);
             return from;
         }
 
@@ -224,13 +239,13 @@ public abstract class ThingEdgeImpl implements Edge<Schema.Edge.Thing, ThingVert
         public ThingVertex to() {
             if (to != null) return to;
             to = graph.convert(toIID);
-            to.ins().load(getThis());
+            to.ins().load(this);
             return to;
         }
 
         @Override
-        public boolean hasMetaData(VertexIID.Type metadata) {
-            return outIID.infix().containsMetaData(metadata);
+        public boolean hasInfixTail(VertexIID.Type infixTail) {
+            return outIID.infix().containsTail(infixTail);
         }
 
         /**
@@ -245,8 +260,8 @@ public abstract class ThingEdgeImpl implements Edge<Schema.Edge.Thing, ThingVert
         @Override
         public void delete() {
             if (deleted.compareAndSet(false, true)) {
-                from().outs().deleteNonRecursive(getThis());
-                to().ins().deleteNonRecursive(getThis());
+                from().outs().deleteNonRecursive(this);
+                to().ins().deleteNonRecursive(this);
                 graph.storage().delete(this.outIID.bytes());
                 graph.storage().delete(this.inIID.bytes());
             }

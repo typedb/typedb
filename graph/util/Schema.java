@@ -144,6 +144,10 @@ public class Schema {
             throw new HypergraphException(Error.Internal.UNRECOGNISED_VALUE);
         }
 
+        public byte key() {
+            return key;
+        }
+
         public byte[] bytes() {
             return new byte[]{key};
         }

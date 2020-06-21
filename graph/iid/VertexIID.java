@@ -23,6 +23,8 @@ import hypergraph.common.exception.HypergraphException;
 import hypergraph.graph.util.KeyGenerator;
 import hypergraph.graph.util.Schema;
 
+import java.util.Arrays;
+
 import static hypergraph.common.collection.Bytes.DATETIME_SIZE;
 import static hypergraph.common.collection.Bytes.DOUBLE_SIZE;
 import static hypergraph.common.collection.Bytes.LONG_SIZE;
@@ -135,6 +137,10 @@ public abstract class VertexIID extends IID {
 
         public Schema.Vertex.Thing schema() {
             return Schema.Vertex.Thing.of(bytes[0]);
+        }
+
+        public byte[] key() {
+            return copyOfRange(bytes, PREFIX_W_TYPE_LENGTH, bytes.length);
         }
 
         public VertexIID.Attribute asAttribute() {

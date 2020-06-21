@@ -23,6 +23,8 @@ import hypergraph.common.exception.Error;
 import hypergraph.common.exception.HypergraphException;
 import hypergraph.graph.util.Schema;
 
+import java.util.Arrays;
+
 import static hypergraph.common.collection.Bytes.join;
 
 public abstract class InfixIID<EDGE_SCHEMA extends Schema.Edge> extends IID {
@@ -78,18 +80,18 @@ public abstract class InfixIID<EDGE_SCHEMA extends Schema.Edge> extends IID {
             super(bytes);
         }
 
-        static InfixIID.Thing of(Schema.Infix infix) {
+        public static InfixIID.Thing of(Schema.Infix infix) {
             return new InfixIID.Thing(infix.bytes());
         }
 
-        public static InfixIID.Thing of(Schema.Infix infix, VertexIID.Type metadata) {
+        public static InfixIID.Thing of(Schema.Infix infix, VertexIID.Type infixTail) {
             return of(infix);
 //            if (!infix.isOptimisation()) {
-//                assert metadata == null;
+//                assert infixTail == null;
 //                return of(infix);
 //            } else {
 //                // For now, we only have OPT_ROLE as an optimisation edge
-//                return InfixIID.OptimisedRole.of(infix, metadata);
+//                return InfixIID.OptimisedRole.of(infix, infixTail);
 //            }
         }
 
@@ -110,7 +112,21 @@ public abstract class InfixIID<EDGE_SCHEMA extends Schema.Edge> extends IID {
             return Schema.Edge.Thing.of(bytes[0]);
         }
 
-        public InfixIID.Thing withoutMetaData() {
+        public InfixIID.Thing outwards() {
+            if (isOutwards()) return this;
+            byte[] copy = Arrays.copyOf(bytes, bytes.length);
+            copy[0] = schema().out().key();
+            return new InfixIID.Thing(copy);
+        }
+
+        public InfixIID.Thing inwards() {
+            if (!isOutwards()) return this;
+            byte[] copy = Arrays.copyOf(bytes, bytes.length);
+            copy[0] = schema().in().key();
+            return new InfixIID.Thing(copy);
+        }
+
+        public InfixIID.Thing withoutData() {
             if (bytes.length == SCHEMA_LENGTH) return this;
             else return new Thing(new byte[]{bytes[0]});
         }
@@ -119,15 +135,15 @@ public abstract class InfixIID<EDGE_SCHEMA extends Schema.Edge> extends IID {
             return schema().isOptimisation();
         }
 
-        public boolean hasMetaData() {
+        public boolean hasTail() {
             return bytes.length > SCHEMA_LENGTH;
         }
 
-        public VertexIID.Type metadata() {
+        public VertexIID.Type tail() {
             return null;
         }
 
-        public boolean containsMetaData(VertexIID.Type metadata) {
+        public boolean containsTail(VertexIID.Type infixTail) {
             return false;
         }
     }
@@ -147,12 +163,12 @@ public abstract class InfixIID<EDGE_SCHEMA extends Schema.Edge> extends IID {
             return new InfixIID.OptimisedRole(join(new byte[]{bytes[0]}, VertexIID.Type.extract(bytes, from + SCHEMA_LENGTH).bytes()));
         }
 
-        public VertexIID.Type metadata() {
+        public VertexIID.Type tail() {
             return VertexIID.Type.extract(bytes, SCHEMA_LENGTH);
         }
 
-        public boolean containsMetaData(VertexIID.Type metadata) {
-            return Bytes.arrayContains(bytes, SCHEMA_LENGTH, metadata.bytes);
+        public boolean containsTail(VertexIID.Type infixTail) {
+            return Bytes.arrayContains(bytes, SCHEMA_LENGTH, infixTail.bytes);
         }
     }
 }

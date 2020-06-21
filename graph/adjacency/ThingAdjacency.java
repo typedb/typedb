@@ -19,6 +19,7 @@
 package hypergraph.graph.adjacency;
 
 import hypergraph.graph.edge.ThingEdge;
+import hypergraph.graph.iid.SuffixIID;
 import hypergraph.graph.iid.VertexIID;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.vertex.ThingVertex;
@@ -33,17 +34,18 @@ public interface ThingAdjacency extends Adjacency<Schema.Edge.Thing, ThingEdge, 
      * an {@code Adjacency} map with an opposite direction to this one. I.e.
      * This is a recursive put operation.
      *
-     * @param schema   of the edge that will connect the owner to the adjacent vertex
-     * @param metadata which will be appended to {@code schema} as {@code Infix}
-     * @param adjacent the adjacent vertex
+     * @param schema     of the edge that will connect the owner to the adjacent vertex
+     * @param adjacent   the adjacent vertex
+     * @param infixTail  which will be appended to the {@code Infix} of the edge
+     * @param suffixTail which will be appended to the end of the edge
      */
-    void put(Schema.Edge.Thing schema, VertexIID.Type metadata, ThingVertex adjacent);
+    void put(Schema.Edge.Thing schema, ThingVertex adjacent, VertexIID.Type infixTail, SuffixIID suffixTail);
 
-    IteratorBuilder<ThingVertex> edge(Schema.Edge.Thing schema, VertexIID.Type metadata);
+    IteratorBuilder<ThingVertex> edge(Schema.Edge.Thing schema, VertexIID.Type infixTail);
 
-    ThingEdge edge(Schema.Edge.Thing schema, VertexIID.Type metadata, ThingVertex adjacent);
+    ThingEdge edge(Schema.Edge.Thing schema, VertexIID.Type infixTail, ThingVertex adjacent);
 
-    void delete(Schema.Edge.Thing schema, VertexIID.Type metadata, ThingVertex adjacent);
+    void delete(Schema.Edge.Thing schema, VertexIID.Type infixTail, ThingVertex adjacent);
 
-    void delete(Schema.Edge.Thing schema, VertexIID.Type metadata);
+    void delete(Schema.Edge.Thing schema, VertexIID.Type infixTail);
 }

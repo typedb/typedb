@@ -109,8 +109,12 @@ public abstract class EdgeIID<
             return new Thing(bytes);
         }
 
-        public static Thing of(VertexIID.Thing start, Schema.Infix infix, VertexIID.Thing end) {
+        public static Thing of(VertexIID.Thing start, InfixIID.Thing infix, VertexIID.Thing end) {
             return new Thing(join(start.bytes(), infix.bytes(), end.bytes()));
+        }
+
+        public static Thing of(VertexIID.Thing start, InfixIID.Thing infix, VertexIID.Thing end, SuffixIID suffix) {
+            return new Thing(join(start.bytes(), infix.bytes(), end.bytes(), suffix.bytes()));
         }
 
         @Override

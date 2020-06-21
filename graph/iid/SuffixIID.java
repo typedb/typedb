@@ -16,18 +16,23 @@
  *
  */
 
-package hypergraph.graph.edge;
+package hypergraph.graph.iid;
 
-import hypergraph.graph.iid.VertexIID;
-import hypergraph.graph.util.Schema;
-import hypergraph.graph.vertex.ThingVertex;
+import java.util.Arrays;
 
-/**
- * An edge between two {@code ThingVertex}.
- *
- * This edge can only have a schema of type {@code Schema.Edge.Thing}.
- */
-public interface ThingEdge extends Edge<Schema.Edge.Thing, ThingVertex> {
+public class SuffixIID extends IID {
 
-    boolean hasInfixTail(VertexIID.Type infixTail);
+    private SuffixIID(byte[] bytes) {
+        super(bytes);
+    }
+
+    public static SuffixIID of(byte[] bytes) {
+        return new SuffixIID(bytes);
+    }
+
+    @Override
+    public String toString() {
+        if (readableString == null) readableString = "[" + Arrays.toString(bytes) + "]";
+        return readableString;
+    }
 }
