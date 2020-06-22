@@ -495,7 +495,15 @@ public class GraqlSteps {
                 throw new ScenarioDefinitionException(String.format("Identifier \"%s\" hasn't previously been declared", identifier));
             }
 
-            if(!identifierChecks.get(identifier).check(answer.get(varName))) {
+            // This concept may have been retrieved in an old transaction, so reload it from the current one
+            final Concept staleConcept = answer.get(varName);
+            final Concept concept = tx.getConcept(staleConcept.id());
+
+            if (concept.isDeleted()) {
+                return false;
+            }
+
+            if(!identifierChecks.get(identifier).check(concept)) {
                 return false;
             }
         }
