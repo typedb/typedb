@@ -207,6 +207,20 @@ public class GraqlSteps {
         assertTrue(threw);
     }
 
+    @When("get answers of graql insert")
+    public void get_answers_of_graql_insert(String graqlQueryStatements) {
+        GraqlInsert graqlQuery = Graql.parse(String.join("\n", graqlQueryStatements)).asInsert();
+        // Erase answers from previous steps to avoid polluting the result space
+        answers = null;
+        numericAnswers = null;
+        answerGroups = null;
+        numericAnswerGroups = null;
+
+        answers = tx.execute(graqlQuery, true, true);
+        tx.commit();
+        tx = session.transaction(Transaction.Type.WRITE);
+    }
+
     @When("get answers of graql query")
     public void graql_query(String graqlQueryStatements) {
         GraqlQuery graqlQuery = Graql.parse(String.join("\n", graqlQueryStatements));
@@ -218,7 +232,7 @@ public class GraqlSteps {
         if (graqlQuery instanceof GraqlGet) {
             answers = tx.execute(graqlQuery.asGet(), true, true); // always use inference and have explanations
         } else if (graqlQuery instanceof GraqlInsert) {
-            answers = tx.execute(graqlQuery.asInsert(), true, true); // always use inference and have explanations
+            throw new ScenarioDefinitionException("Insert is not supported; use `get answers of graql insert` instead");
         } else if (graqlQuery instanceof GraqlGet.Aggregate) {
             numericAnswers = tx.execute(graqlQuery.asGetAggregate());
         } else if (graqlQuery instanceof GraqlGet.Group) {
@@ -226,7 +240,7 @@ public class GraqlSteps {
         } else if (graqlQuery instanceof GraqlGet.Group.Aggregate) {
             numericAnswerGroups = tx.execute(graqlQuery.asGetGroupAggregate());
         } else {
-            throw new ScenarioDefinitionException("Only match-get, insert, aggregate, group and group aggregate supported for now");
+            throw new ScenarioDefinitionException("Only match-get, aggregate, group and group aggregate supported for now");
         }
     }
 
@@ -486,7 +500,15 @@ public class GraqlSteps {
                 throw new ScenarioDefinitionException(String.format("Identifier \"%s\" hasn't previously been declared", identifier));
             }
 
-            if(!identifierChecks.get(identifier).check(answer.get(varName))) {
+            // This concept may have been retrieved in an old transaction, so reload it from the current one
+            final Concept staleConcept = answer.get(varName);
+            final Concept concept = tx.getConcept(staleConcept.id());
+
+            if (concept.isDeleted()) {
+                return false;
+            }
+
+            if(!identifierChecks.get(identifier).check(concept)) {
                 return false;
             }
         }
