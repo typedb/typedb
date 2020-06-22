@@ -28,7 +28,7 @@ public class TestQueryBuilder {
                 "$transaction isa transaction;\n"
         ));
 
-        Set<Statement> statementsWithoutIds = QueryBuilder.removeIdStatements(statementsWithIds);
+        Set<Statement> statementsWithoutIds = QueryBuilder.removeIdProperties(statementsWithIds);
 
         assertEquals(expectedStatements, statementsWithoutIds);
     }
@@ -39,7 +39,7 @@ public class TestQueryBuilder {
 
         Statement expectedPropsStatement = getOnlyElement(Graql.parsePattern("$x0 (owner: $transaction) isa has-attribute-property, has currency $currency;").statements());
 
-        Statement propsStatement = getOnlyElement(new QueryBuilder().statementToProperties(statement).values());
+        Statement propsStatement = getOnlyElement(new QueryBuilder().statementToResolutionProperties(statement).values());
 
         assertEquals(expectedPropsStatement, propsStatement);
     }
@@ -50,7 +50,7 @@ public class TestQueryBuilder {
 
         Statement expectedPropsStatement = getOnlyElement(Graql.parsePattern("$x0 (owner: $transaction) isa has-attribute-property, has currency \"GBP\";").statements());
 
-        Statement propsStatement = getOnlyElement(new QueryBuilder().statementToProperties(statement).values());
+        Statement propsStatement = getOnlyElement(new QueryBuilder().statementToResolutionProperties(statement).values());
 
         assertEquals(expectedPropsStatement, propsStatement);
     }
@@ -64,7 +64,7 @@ public class TestQueryBuilder {
                 "$x1 (rel: $locates, roleplayer: $country) isa relation-property, has role-label \"locates_location\";"
         ));
 
-        Set<Statement> propsStatements = new HashSet<>(new QueryBuilder().statementToProperties(statement).values());
+        Set<Statement> propsStatements = new HashSet<>(new QueryBuilder().statementToResolutionProperties(statement).values());
 
         assertEquals(expectedPropsStatements, propsStatements);
     }
@@ -72,7 +72,7 @@ public class TestQueryBuilder {
     @Test
     public void testStatementToPropertiesForIsa() {
         Statement statement = getOnlyElement(Graql.parsePattern("$transaction isa transaction;").statements());
-        Statement propStatement = getOnlyElement(new QueryBuilder().statementToProperties(statement).values());
+        Statement propStatement = getOnlyElement(new QueryBuilder().statementToResolutionProperties(statement).values());
         Statement expectedPropStatement = getOnlyElement(Graql.parsePattern("$x0 (instance: $transaction) isa isa-property, has type-label \"transaction\";").statements());
         assertEquals(expectedPropStatement, propStatement);
     }
