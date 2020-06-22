@@ -3,7 +3,6 @@ package grakn.core.test.behaviour.resolution.resolve;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.answer.Explanation;
 import grakn.core.graql.reasoner.explanation.RuleExplanation;
-import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.server.Transaction;
 import graql.lang.Graql;
@@ -62,7 +61,7 @@ public class QueryBuilder {
             throw new RuntimeException("Answer is missing a pattern. Either patterns are broken or the initial query did not require inference.");
         }
         Integer finalRuleResolutionIndex1 = ruleResolutionIndex;
-        resolutionPatterns.add(recursePattern(answerPattern, p -> {
+        resolutionPatterns.add(visitStatements(answerPattern, p -> {
             Statement withoutIds = removeIdProperties(makeAnonVarsExplicit(p));
             return withoutIds == null ? null : prefixVars(withoutIds, finalRuleResolutionIndex1);
         }));
@@ -81,11 +80,11 @@ public class QueryBuilder {
                 Integer finalRuleResolutionIndex0 = ruleResolutionIndex;
 
                 Pattern whenPattern = Objects.requireNonNull(((RuleExplanation) explanation).getRule().when());
-                whenPattern = recursePattern(whenPattern, p -> prefixVars(makeAnonVarsExplicit(p), finalRuleResolutionIndex0));
+                whenPattern = visitStatements(whenPattern, p -> prefixVars(makeAnonVarsExplicit(p), finalRuleResolutionIndex0));
                 resolutionPatterns.add(whenPattern);
 
                 Pattern thenPattern = Objects.requireNonNull(((RuleExplanation) explanation).getRule().then());
-                thenPattern = recursePattern(thenPattern, p -> prefixVars(makeAnonVarsExplicit(p), finalRuleResolutionIndex0));
+                thenPattern = visitStatements(thenPattern, p -> prefixVars(makeAnonVarsExplicit(p), finalRuleResolutionIndex0));
                 resolutionPatterns.add(thenPattern);
 
                 String ruleLabel = ((RuleExplanation)explanation).getRule().label().toString();
@@ -100,34 +99,45 @@ public class QueryBuilder {
         return Graql.and(resolutionPatterns);
     }
 
-//    private static <T extends Pattern, U extends T> U recursePattern(T pattern, StatementVisitor visitor) {
-    private static Pattern recursePattern(Pattern pattern, StatementVisitor visitor) {
+    private static Pattern visitStatements(Pattern pattern, StatementVisitor visitor) {
         if (pattern instanceof Statement) {
             return visitor.visitStatement((Statement) pattern);
         } else if (pattern instanceof Conjunction) {
-            Set<? extends Pattern> patterns = ((Conjunction<? extends Pattern>) pattern).getPatterns();
-            HashSet<Pattern> newPatterns = new HashSet<>();
-            patterns.forEach(p -> {
-                Pattern childPattern = recursePattern(p, visitor);
-                if (childPattern != null) {
-                    newPatterns.add(childPattern);
-                }
-            });
-            return new Conjunction<>(newPatterns);
+            return visitStatements((Conjunction<? extends Pattern>) pattern, visitor);
         } else if (pattern instanceof Negation) {
-            return new Negation<>(recursePattern(((Negation) pattern).getPattern(), visitor));
+            return visitStatements((Negation<? extends Pattern>) pattern, visitor);
         } else if (pattern instanceof Disjunction) {
-            Set<? extends Pattern> patterns = ((Disjunction<? extends Pattern>) pattern).getPatterns();
-            HashSet<Pattern> newPatterns = new HashSet<>();
-            patterns.forEach(p -> {
-                Pattern childPattern = recursePattern(p, visitor);
-                if (childPattern != null) {
-                    newPatterns.add(childPattern);
-                }
-            });
-            return new Disjunction<>(newPatterns);
+            return visitStatements((Disjunction<? extends Pattern>) pattern, visitor);
         }
         throw new UnsupportedOperationException();
+    }
+
+    private static Conjunction<? extends Pattern> visitStatements(Conjunction<? extends Pattern> pattern, StatementVisitor visitor) {
+        Set<? extends Pattern> patterns = pattern.getPatterns();
+        HashSet<Pattern> newPatterns = new HashSet<>();
+        patterns.forEach(p -> {
+            Pattern childPattern = visitStatements(p, visitor);
+            if (childPattern != null) {
+                newPatterns.add(childPattern);
+            }
+        });
+        return new Conjunction<>(newPatterns);
+    }
+
+    private static Negation<? extends Pattern> visitStatements(Negation<? extends Pattern> pattern, StatementVisitor visitor) {
+        return new Negation<>(visitStatements(pattern.getPattern(), visitor));
+    }
+
+    private static Disjunction<? extends Pattern> visitStatements(Disjunction<? extends Pattern> pattern, StatementVisitor visitor) {
+        Set<? extends Pattern> patterns = pattern.getPatterns();
+        HashSet<Pattern> newPatterns = new HashSet<>();
+        patterns.forEach(p -> {
+            Pattern childPattern = visitStatements(p, visitor);
+            if (childPattern != null) {
+                newPatterns.add(childPattern);
+            }
+        });
+        return new Disjunction<>(newPatterns);
     }
 
     @FunctionalInterface interface StatementVisitor {
@@ -178,13 +188,23 @@ public class QueryBuilder {
         return Statement.create(new Variable(newVarName), newProperties);
     }
 
+//    public Conjunction inferenceStatements(Conjunction<? extends Pattern> whenPattern, Conjunction<? extends Pattern> thenPattern, String ruleLabel) {
+//        String inferenceType = "resolution";
+//        String inferenceRuleLabelType = "rule-label";
+//        Variable ruleVar = new Variable(getNextVar("rule"));
+//        Statement relation = Graql.var(ruleVar).isa(inferenceType).has(inferenceRuleLabelType, ruleLabel);
+//        Conjunction<? extends Pattern> body = recursePattern(whenPattern, p -> statementToResolutionConjunction(p, ruleVar, "body"));
+//        Conjunction<? extends Pattern> head = recursePattern(thenPattern, p -> statementToResolutionConjunction(p, ruleVar, "head"));
+//        return Graql.and(body, head, relation);
+//    }
+
     public Conjunction inferenceStatements(Pattern whenPattern, Pattern thenPattern, String ruleLabel) {
         String inferenceType = "resolution";
         String inferenceRuleLabelType = "rule-label";
         Variable ruleVar = new Variable(getNextVar("rule"));
         Statement relation = Graql.var(ruleVar).isa(inferenceType).has(inferenceRuleLabelType, ruleLabel);
-        Pattern body = recursePattern(whenPattern, p -> statementToResolutionConjunction(p, ruleVar, "body"));
-        Pattern head = recursePattern(thenPattern, p -> statementToResolutionConjunction(p, ruleVar, "head"));
+        Pattern body = visitStatements(whenPattern, p -> statementToResolutionConjunction(p, ruleVar, "body"));
+        Pattern head = visitStatements(thenPattern, p -> statementToResolutionConjunction(p, ruleVar, "head"));
         return Graql.and(body, head, relation);
     }
 

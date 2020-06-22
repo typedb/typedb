@@ -163,17 +163,31 @@ public class QueryBuilderIT {
     @Test
     public void testMatchGetQueryIsCorrect_case8() {
 
-
         Pattern expectedResolutionPattern = Graql.parsePattern("" +
 //                // Level 0
-                "{ $r0-c has company-id 0; { $r0-n2 == \"some-name\"; $r0-c isa company; $r0-c has name $r0-n2; } or { $r0-c isa company; $r0-n1 == \"the-company\"; $r0-c has name $r0-n1; }; };" +
+                "{ $r0-c has company-id 0; { $r0-n2 == \"some-name\"; $r0-c isa company; $r0-c has name $r0-n2; } or { $r0-c isa company; $r0-n1 == \"the-company\"; $r0-c has name $r0-n1; }; " +
 //                // Level 1
-                "{ $r1-c isa company; $r1-n1 == \"the-company\"; $r1-n1 \"the-company\"; $r1-c has company-id 0; $r1-c has name $r1-n1; };" +
-                "$x0 (instance: $r1-c) isa isa-property, has type-label \"company\";" +
-                "$x1 (owner: $r1-c) isa has-attribute-property, has name $r1-n;" +
-                "$_ (body: $x0, head: $x1) isa resolution, has rule-label \"company-has-name\";" +
+                "$r1-c isa company; $r1-n1 == \"the-company\"; $r1-n1 \"the-company\"; $r1-c has company-id 0; $r1-c has name $r1-n1; " +
+                "$x0 (instance: $r1-c) isa isa-property, has type-label \"company\"; " +
+                "$x1 (owner: $r1-c) isa has-attribute-property, has name $r1-n; " +
+                "$_ (body: $x0, head: $x1) isa resolution, has rule-label \"company-has-name\"; " +
 //                //Level 2
-                "{ $r2-c2 has company-id 0; $r2-c2 isa company; };");
+                "$r2-c2 has company-id 0; $r2-c2 isa company; };");
+
+        /**
+         * Actual:
+         * {
+         *      {
+         *          {
+         *              { $r0-c isa company; $r0-c has name $r0-n2; $r0-n2 == "some-name"; } or { $r0-c has name $r0-n1; $r0-c isa company; $r0-n1 == "the-company"; };
+         *          };
+         *          $r0-c has company-id 0;
+         *          { $r0-c has name $r0-n1; $r0-c isa company; $r0-n1 == "the-company"; };
+         *          $r0-n1 "the-company" isa name;
+         *          { $r1-c2 isa company; };
+         *          { $r1-n2 "the-company"; $r1-c2 has name $r1-n2; };
+         *          { $x0 isa resolution, has rule-label "company-has-name"; { $x0 (body: $x0); $x0 (instance: $r1-c2) isa isa-property, has type-label "company"; }; {  }; { $x0 (head: $x1); $x1 (owner: $r1-c2) isa has-attribute-property, has name $r1-n2; }; }; { { $r1-c2 isa company; }; $r1-c2 has company-id 0; }; }; };
+         */
 
         GraqlGet inferenceQuery = Graql.parse("" +
                 "match $c isa company; " +
@@ -194,6 +208,13 @@ public class QueryBuilderIT {
             }
         }
     }
+/**
+ * Expected :{ $r0-c has company-id 0; { $r0-n2 == "some-name"; $r0-c isa company; $r0-c has name $r0-n2; } or { $r0-c isa company; $r0-n1 == "the-company"; $r0-c has name $r0-n1; }; $r1-c isa company; $r1-n1 == "the-company"; $r1-n1 "the-company"; $r1-c has company-id 0; $r1-c has name $r1-n1; $x0 (instance: $r1-c) isa isa-property, has type-label "company"; $x1 (owner: $r1-c) isa has-attribute-property, has name $r1-n; $_ (body: $x0, head: $x1) isa resolution, has rule-label "company-has-name"; $r2-c2 has company-id 0; $r2-c2 isa company; };
+ * Actual   :{ $r0-c has name $r0-n1; $r0-c isa company; $r0-c has name $r0-n2; $r0-n1 == "the-company"; $r0-n2 == "some-name"; $r0-c has company-id 0; $r0-n1 "the-company"; $r1-c2 isa company; $r1-n2 "the-company"; $r1-c2 has name $r1-n2; $x0 (instance: $r1-c2) isa isa-property, has type-label "company"; $x1 (owner: $r1-c2) isa has-attribute-property, has name $r1-n2; $_ (body: $x0, head: $x1) isa resolution, has rule-label "company-has-name"; $r1-c2 has company-id 0; };
+ */
+
+
+
 
     @Test
     public void testKeysStatementsAreGeneratedCorrectly() {
