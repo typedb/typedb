@@ -43,7 +43,8 @@ commands:
 
 jobs:
   build:
-    machine: true
+    machine: 
+      image: ubuntu-1604:201903-01
     working_directory: ~/grakn
     steps:
       - install-bazel-linux-rbe
@@ -55,7 +56,8 @@ jobs:
           no_output_timeout: 30m
 
   build-checkstyle:
-    machine: true
+    machine: 
+      image: ubuntu-1604:201903-01
     working_directory: ~/grakn
     steps:
       - install-bazel-linux-rbe
@@ -65,7 +67,8 @@ jobs:
           command: bazel test $(bazel query 'kind(checkstyle_test, //...)')
 
   build-analysis:
-    machine: true
+    machine: 
+      image: ubuntu-1604:201903-01
     working_directory: ~/grakn
     steps:
       - install-bazel-linux-rbe
@@ -81,7 +84,8 @@ jobs:
 
   # unit tests
   test-common:
-    machine: true
+    machine: 
+      image: ubuntu-1604:201903-01
     working_directory: ~/grakn
     steps:
       - install-bazel-linux-rbe
@@ -90,7 +94,8 @@ jobs:
           command: bazel test //common/... --test_output=errors
 
   test-server:
-    machine: true
+    machine: 
+      image: ubuntu-1604:201903-01
     working_directory: ~/grakn
     steps:
       - install-bazel-linux-rbe
@@ -99,7 +104,8 @@ jobs:
           command: bazel test //server/... --test_output=errors
 
   test-graql:
-    machine: true
+    machine: 
+      image: ubuntu-1604:201903-01
     working_directory: ~/grakn
     steps:
       - install-bazel-linux-rbe
@@ -110,7 +116,8 @@ jobs:
 
   # behaviour tests
   test-behaviour-connection:
-    machine: true
+    machine: 
+      image: ubuntu-1604:201903-01
     working_directory: ~/grakn
     steps:
       - install-bazel-linux-rbe
@@ -123,7 +130,8 @@ jobs:
           command: bazel test //test/behaviour/connection/transaction:test --test_output=errors
 
   test-behaviour-graql-define:
-    machine: true
+    machine: 
+      image: ubuntu-1604:201903-01
     working_directory: ~/grakn
     steps:
       - install-bazel-linux-rbe
@@ -132,7 +140,8 @@ jobs:
           command: bazel test //test/behaviour/graql/language/define:test --test_output=errors
 
   test-behaviour-graql-delete:
-    machine: true
+    machine: 
+      image: ubuntu-1604:201903-01
     working_directory: ~/grakn
     steps:
       - install-bazel-linux-rbe
@@ -150,7 +159,8 @@ jobs:
           command: bazel test //test/behaviour/graql/language/get:test --test_output=errors
 
   test-behaviour-graql-insert:
-    machine: true
+    machine: 
+      image: ubuntu-1604:201903-01
     working_directory: ~/grakn
     steps:
       - install-bazel-linux-rbe
@@ -159,7 +169,8 @@ jobs:
           command: bazel test //test/behaviour/graql/language/insert:test --test_output=errors
 
   test-behaviour-graql-match:
-    machine: true
+    machine: 
+      image: ubuntu-1604:201903-01
     working_directory: ~/grakn
     steps:
       - install-bazel-linux-rbe
@@ -168,7 +179,8 @@ jobs:
           command: bazel test //test/behaviour/graql/language/match:test --test_output=errors
 
   test-behaviour-graql-undefine:
-    machine: true
+    machine: 
+      image: ubuntu-1604:201903-01
     working_directory: ~/grakn
     steps:
       - install-bazel-linux-rbe
@@ -177,7 +189,8 @@ jobs:
           command: bazel test //test/behaviour/graql/language/undefine:test --test_output=errors
 
   test-behaviour-graql-reasoner:
-    machine: true
+    machine: 
+      image: ubuntu-1604:201903-01
     working_directory: ~/grakn
     steps:
       - install-bazel-linux-rbe
@@ -187,7 +200,8 @@ jobs:
 
   # integration tests
   test-integration:
-    machine: true
+    machine: 
+      image: ubuntu-1604:201903-01
     working_directory: ~/grakn
     steps:
       - install-bazel-linux-rbe
@@ -202,7 +216,8 @@ jobs:
           command: bazel test //test/integration/graql/planning/... --test_output=errors
 
   test-integration-concept:
-    machine: true
+    machine: 
+      image: ubuntu-1604:201903-01
     working_directory: ~/grakn
     steps:
       - install-bazel-linux-rbe
@@ -211,7 +226,8 @@ jobs:
           command: bazel test //test/integration/concept/... --test_output=errors
 
   test-integration-keyspace:
-    machine: true
+    machine: 
+      image: ubuntu-1604:201903-01
     working_directory: ~/grakn
     steps:
       - install-bazel-linux-rbe
@@ -220,7 +236,8 @@ jobs:
           command: bazel test //test/integration/keyspace/... --test_output=errors
 
   test-integration-reasoner:
-    machine: true
+    machine: 
+      image: ubuntu-1604:201903-01
     working_directory: ~/grakn
     steps:
       - install-bazel-linux-rbe
@@ -229,7 +246,8 @@ jobs:
           command: bazel test //test/integration/graql/reasoner/... --test_output=errors
 
   test-integration-analytics:
-    machine: true
+    machine: 
+      image: ubuntu-1604:201903-01
     working_directory: ~/grakn
     steps:
       - install-bazel-linux-rbe
@@ -239,7 +257,8 @@ jobs:
 
   # assembly tests
   test-assembly:
-    machine: true
+    machine: 
+      image: ubuntu-1604:201903-01
     working_directory: ~/grakn
     steps:
       - install-bazel-linux-rbe
@@ -280,7 +299,8 @@ jobs:
       - run: .circleci\windows\test-assembly.bat
 
   test-assembly-linux-targz:
-    machine: true
+    machine: 
+      image: ubuntu-1604:201903-01
     working_directory: ~/grakn
     steps:
       - install-bazel-linux-rbe
@@ -301,7 +321,8 @@ jobs:
           destination: logs/cassandra.log
 
   test-assembly-docker:
-    machine: true
+    machine: 
+      image: ubuntu-1604:201903-01
     working_directory: ~/grakn
     steps:
       - install-bazel-linux-rbe
@@ -315,7 +336,8 @@ jobs:
           destination: logs/cassandra.log
 
   deploy-apt-snapshot:
-    machine: true
+    machine: 
+      image: ubuntu-1604:201903-01
     working_directory: ~/grakn
     steps:
       - install-bazel-linux-rbe
@@ -327,7 +349,8 @@ jobs:
           bazel run --define version=$(git rev-parse HEAD) //:deploy-apt -- snapshot
 
   deploy-rpm-snapshot:
-    machine: true
+    machine: 
+      image: ubuntu-1604:201903-01
     working_directory: ~/grakn
     steps:
       - install-bazel-linux-rbe
@@ -340,7 +363,8 @@ jobs:
           bazel run --define version=$(git rev-parse HEAD) //:deploy-rpm -- snapshot
 
   test-deployment-linux-apt:
-    machine: true
+    machine: 
+      image: ubuntu-1604:201903-01
     working_directory: ~/grakn
     steps:
       - install-bazel-linux-rbe
@@ -363,7 +387,8 @@ jobs:
           destination: logs/cassandra.log
 
   test-deployment-linux-rpm:
-    machine: true
+    machine: 
+      image: ubuntu-1604:201903-01
     working_directory: ~/grakn
     steps:
       - checkout
@@ -377,7 +402,8 @@ jobs:
           destination: logs/cassandra.log
 
   sync-dependencies-snapshot:
-    machine: true
+    machine: 
+      image: ubuntu-1604:201903-01
     steps:
       - install-bazel-linux-rbe
       - checkout
@@ -392,7 +418,8 @@ jobs:
         # TODO: Remove console once #5270 is solved
 
   release-approval:
-    machine: true
+    machine: 
+      image: ubuntu-1604:201903-01
     steps:
       - install-bazel-linux-rbe
       - checkout
@@ -402,7 +429,8 @@ jobs:
           bazel run @graknlabs_build_tools//ci:release-approval
 
   release-validate:
-    machine: true
+    machine: 
+      image: ubuntu-1604:201903-01
     steps:
       - install-bazel-linux-rbe
       - checkout
@@ -411,7 +439,8 @@ jobs:
             graknlabs_common graknlabs_graql graknlabs_protocol graknlabs_console
 
   deploy-github:
-    machine: true
+    machine: 
+      image: ubuntu-1604:201903-01
     working_directory: ~/grakn
     steps:
       - install-bazel-linux-rbe
@@ -425,7 +454,8 @@ jobs:
           bazel run --define version=$(cat VERSION) //:deploy-github -- $CIRCLE_SHA1
 
   deploy-apt:
-    machine: true
+    machine: 
+      image: ubuntu-1604:201903-01
     working_directory: ~/grakn
     steps:
       - install-bazel-linux-rbe
@@ -438,7 +468,8 @@ jobs:
           bazel run --define version=$(cat VERSION) //:deploy-apt -- release
 
   deploy-rpm:
-    machine: true
+    machine: 
+      image: ubuntu-1604:201903-01
     working_directory: ~/grakn
     steps:
       - install-bazel-linux-rbe
@@ -452,7 +483,8 @@ jobs:
           bazel run --define version=$(cat VERSION) //:deploy-rpm -- release
 
   deploy-brew:
-    machine: true
+    machine: 
+      image: ubuntu-1604:201903-01
     working_directory: ~/grakn
     steps:
       - install-bazel-linux-rbe
@@ -462,7 +494,8 @@ jobs:
           bazel run --define version=$(cat VERSION) //:deploy-brew -- release
 
   deploy-docker:
-    machine: true
+    machine: 
+      image: ubuntu-1604:201903-01
     working_directory: ~/grakn
     steps:
       - install-bazel-linux-rbe
@@ -472,7 +505,8 @@ jobs:
           bazel run //:deploy-docker
 
   sync-dependencies-release:
-    machine: true
+    machine: 
+      image: ubuntu-1604:201903-01
     steps:
       - install-bazel-linux-rbe
       - checkout
@@ -486,7 +520,8 @@ jobs:
           docs:master examples:master kglib:master
 
   release-notification:
-    machine: true
+    machine: 
+      image: ubuntu-1604:201903-01
     working_directory: ~/grakn
     steps:
       - install-bazel-linux-rbe
@@ -506,7 +541,8 @@ jobs:
           --body "This is an automated email to inform you that Grakn $(cat VERSION) has been released. Please update the Grakn version accordingly."
 
   release-cleanup:
-    machine: true
+    machine: 
+      image: ubuntu-1604:201903-01
     steps:
       - checkout
       - run: git push --delete https://$REPO_GITHUB_TOKEN@github.com/graknlabs/grakn $CIRCLE_BRANCH
