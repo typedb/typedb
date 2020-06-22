@@ -20,26 +20,20 @@ version: 2.1
 orbs:
   win: circleci/windows@2.0.0
 commands:
-  install-bazel-linux-rbe:
+  bazel-install-linux:
     steps:
-      - run: curl -OL https://raw.githubusercontent.com/graknlabs/build-tools/master/ci/install-bazel-linux.sh
-      - run: bash ./install-bazel-linux.sh && rm ./install-bazel-linux.sh
-      - run: curl -OL https://raw.githubusercontent.com/graknlabs/build-tools/master/ci/install-bazel-rbe.sh
-      - run: bash ./install-bazel-rbe.sh && rm ./install-bazel-rbe.sh
-
-  install-bazel-mac:
+      - run: bash ./tools/bazelinstall/linux.sh
+      - run: bash ./tools/bazelinstall/rbe.sh
+  bazel-install-mac:
     steps:
-      - run: curl -OL https://raw.githubusercontent.com/graknlabs/build-tools/master/ci/install-bazel-mac.sh
-      - run: bash ./install-bazel-mac.sh && rm ./install-bazel-mac.sh
+      - run: bash ./tools/bazelinstall/mac.sh
 
-  run-bazel-rbe:
+  bazel-run:
     parameters:
       command:
-        type: string
+          type: string
     steps:
-      - run:
-          command: bazel run @graknlabs_build_tools//ci:run-bazel-rbe -- << parameters.command >>
-          no_output_timeout: 1h
+      - run: bazel run @graknlabs_dependencies//tools/bazelrun:rbe -- << parameters.command >>
 
 jobs:
   build:
@@ -52,7 +46,7 @@ jobs:
       - run-bazel-rbe:
           command: bazel build //...
       - run:
-          command: bazel run @graknlabs_build_tools//unused_deps -- list
+          command: bazel run @graknlabs_dependencies//tools/unuseddeps:unused-deps -- list
           no_output_timeout: 30m
 
   build-checkstyle:
@@ -62,7 +56,7 @@ jobs:
     steps:
       - install-bazel-linux-rbe
       - checkout
-      - run: bazel run @graknlabs_build_tools//checkstyle:test-coverage
+      - run: bazel run @graknlabs_dependencies//tools/checkstyle:test-coverage
       - run-bazel-rbe:
           command: bazel test $(bazel query 'kind(checkstyle_test, //...)')
 
@@ -75,7 +69,7 @@ jobs:
       - checkout
       - run: |
           SONARCLOUD_CODE_ANALYSIS_CREDENTIAL=$SONARCLOUD_CREDENTIAL \
-            bazel run @graknlabs_build_tools//sonarcloud:code-analysis -- \
+            bazel run @graknlabs_dependencies//tools/sonarcloud:code-analysis -- \
             --organisation=$SONARCLOUD_ORGANISATION \
             --project-key=$SONARCLOUD_PROJECT_KEY \
             --commit-id=$CIRCLE_SHA1 \
@@ -275,12 +269,12 @@ jobs:
       - checkout
       - run-bazel-rbe:
           command: bazel build //:assemble-mac-zip
-      - run: TEST_CACHE_TOKEN=$REPO_GITHUB_TOKEN bazel run @graknlabs_build_tools//ci:test-cache -- --file $(pwd)/bazel-bin/grakn-core-all-mac.zip --get
+      - run: TEST_CACHE_TOKEN=$REPO_GITHUB_TOKEN bazel run @graknlabs_dependencies//tools/cache:cache -- --file $(pwd)/bazel-bin/grakn-core-all-mac.zip --get
       - run: unzip bazel-bin/grakn-core-all-mac.zip -d bazel-bin/
       - run: nohup bazel-bin/grakn-core-all-mac/grakn server start
       - run: bazel test //test/common:grakn-application-test --test_output=streamed --spawn_strategy=local --cache_test_results=no
       - run: bazel-bin/grakn-core-all-mac/grakn server stop
-      - run: TEST_CACHE_TOKEN=$REPO_GITHUB_TOKEN bazel run @graknlabs_build_tools//ci:test-cache -- --file $(pwd)/bazel-bin/grakn-core-all-mac.zip --save-success
+      - run: TEST_CACHE_TOKEN=$REPO_GITHUB_TOKEN bazel run @graknlabs_dependencies//tools/cache:cache -- --file $(pwd)/bazel-bin/grakn-core-all-mac.zip --save-success
       - store_artifacts:
           path: bazel-bin/grakn-core-all-mac/logs/grakn.log
           destination: logs/grakn.log
@@ -307,12 +301,12 @@ jobs:
       - checkout
       - run-bazel-rbe:
           command: bazel build //:assemble-linux-targz
-      - run: TEST_CACHE_TOKEN=$REPO_GITHUB_TOKEN bazel run @graknlabs_build_tools//ci:test-cache -- --file $(pwd)/bazel-bin/grakn-core-all-linux.tar.gz --get
+      - run: TEST_CACHE_TOKEN=$REPO_GITHUB_TOKEN bazel run @graknlabs_dependencies//tools/cache:cache -- --file $(pwd)/bazel-bin/grakn-core-all-linux.tar.gz --get
       - run: tar -xf bazel-bin/grakn-core-all-linux.tar.gz -C bazel-bin
       - run: nohup bazel-bin/grakn-core-all-linux/grakn server start
       - run: bazel test //test/common:grakn-application-test --test_output=streamed --spawn_strategy=local --cache_test_results=no
       - run: bazel-bin/grakn-core-all-linux/grakn server stop
-      - run: TEST_CACHE_TOKEN=$REPO_GITHUB_TOKEN bazel run @graknlabs_build_tools//ci:test-cache -- --file $(pwd)/bazel-bin/grakn-core-all-linux.tar.gz --save-success
+      - run: TEST_CACHE_TOKEN=$REPO_GITHUB_TOKEN bazel run @graknlabs_dependencies//tools/cache:cache -- --file $(pwd)/bazel-bin/grakn-core-all-linux.tar.gz --save-success
       - store_artifacts:
           path: bazel-bin/grakn-core-all-linux/logs/grakn.log
           destination: logs/grakn.log
@@ -409,7 +403,7 @@ jobs:
       - checkout
       - run: |
           export SYNC_DEPENDENCIES_TOKEN=$REPO_GITHUB_TOKEN
-          bazel run @graknlabs_build_tools//ci:sync-dependencies -- \
+          bazel run @graknlabs_dependencies//tools/sync:dependencies -- \
           --source grakn@$CIRCLE_SHA1 \
           --targets \
           grakn-kgms:master workbase:master \
@@ -426,7 +420,7 @@ jobs:
       - run: |
           export RELEASE_APPROVAL_USERNAME=$REPO_GITHUB_USERNAME
           export RELEASE_APPROVAL_TOKEN=$REPO_GITHUB_TOKEN
-          bazel run @graknlabs_build_tools//ci:release-approval
+          bazel run @graknlabs_dependencies//tools/release:approval
 
   release-validate:
     machine: 
@@ -435,7 +429,7 @@ jobs:
       - install-bazel-linux-rbe
       - checkout
       - run: |
-          bazel run @graknlabs_build_tools//ci:release-validate-deps -- \
+          bazel run @graknlabs_dependencies//tools/release:validate-deps -- \
             graknlabs_common graknlabs_graql graknlabs_protocol graknlabs_console
 
   deploy-github:
@@ -448,7 +442,7 @@ jobs:
       - run: |
           pip install certifi
           export RELEASE_NOTES_TOKEN=$REPO_GITHUB_TOKEN
-          bazel run @graknlabs_build_tools//ci:release-notes -- grakn $(cat VERSION) ./RELEASE_TEMPLATE.md
+          bazel run @graknlabs_dependencies//tools/release:create-notes -- grakn $(cat VERSION) ./RELEASE_TEMPLATE.md
       - run: |
           export DEPLOY_GITHUB_TOKEN=$REPO_GITHUB_TOKEN
           bazel run --define version=$(cat VERSION) //:deploy-github -- $CIRCLE_SHA1
@@ -512,7 +506,7 @@ jobs:
       - checkout
       - run: |
           export SYNC_DEPENDENCIES_TOKEN=$REPO_GITHUB_TOKEN
-          bazel run @graknlabs_build_tools//ci:sync-dependencies -- \
+          bazel run @graknlabs_dependencies//tools/sync:dependencies -- \
           --source grakn@$(cat VERSION) \
           --targets \
           grakn-kgms:master workbase:master biograkn:master \

@@ -17,7 +17,7 @@
 #
 package(default_visibility = ["//visibility:public"])
 
-load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
+load("@graknlabs_dependencies//tools/checkstyle:rules.bzl", "checkstyle_test")
 
 # This package is currently a bit of a catch-all for thing sa lot of different packages depend on
 # Over time hopefully it will emerge what it should be named or how it should be split up

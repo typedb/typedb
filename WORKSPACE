@@ -23,6 +23,11 @@ workspace(name = "graknlabs_grakn_core")
 load("//dependencies/graknlabs:dependencies.bzl", "graknlabs_dependencies")
 graknlabs_dependencies()
 
+load("@graknlabs_dependencies//builder/antlr:deps.bzl", antlr_deps = "deps")
+antlr_deps()
+load("@rules_antlr//antlr:deps.bzl", "antlr_dependencies")
+antlr_dependencies()
+
 load("@graknlabs_dependencies//builder/bazel:deps.bzl","bazel_common", "bazel_deps", "bazel_toolchain")
 bazel_common()
 bazel_deps()
@@ -115,15 +120,9 @@ unuseddeps_deps()
 load("//dependencies/graknlabs:dependencies.bzl", "graknlabs_graql")
 graknlabs_graql()
 
-load("@graknlabs_graql//dependencies/compilers:dependencies.bzl", "antlr_dependencies")
-antlr_dependencies()
-
-load("@rules_antlr//antlr:deps.bzl", "antlr_dependencies")
-antlr_dependencies()
-
-load("@graknlabs_graql//dependencies/maven:dependencies.bzl",
-graknlabs_graql_maven_dependencies = "maven_dependencies")
-graknlabs_graql_maven_dependencies()
+load("@graknlabs_dependencies//library/maven:rules.bzl", "maven")
+load("@graknlabs_graql//dependencies/maven:artifacts.bzl", "artifacts")
+maven(artifacts)
 
 ##########################
 # Load @graknlabs_common #
