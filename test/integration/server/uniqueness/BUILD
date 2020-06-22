@@ -58,7 +58,7 @@ java_test(
         "@graknlabs_graql//java:graql",
         "//dependencies/maven/artifacts/commons-io",
         "//dependencies/maven/artifacts/commons-lang",
-        "@com-google-guava-guava//jar",
+        "//dependencies/maven/artifacts/com/google/guava:guava",
     ],
 )
 

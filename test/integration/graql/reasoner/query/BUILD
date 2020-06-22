@@ -183,7 +183,7 @@ java_test(
         "//kb/server",
         "//test/integration/graql/reasoner/graph:geo-graph",
         "//test/rule:grakn-test-server",
-        "@com-google-guava-guava//jar",
+        "//dependencies/maven/artifacts/com/google/guava:guava",
         "@graknlabs_graql//java:graql",
     ],
 )

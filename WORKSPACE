@@ -105,6 +105,21 @@ rules_pkg_dependencies()
 load("@graknlabs_dependencies//distribution/docker:deps.bzl", docker_deps = "deps")
 docker_deps()
 
+load("@io_bazel_rules_docker//repositories:repositories.bzl",
+bazel_rules_docker_repositories = "repositories")
+bazel_rules_docker_repositories()
+
+load("@io_bazel_rules_docker//repositories:deps.bzl", bazel_rules_docker_container_deps = "deps")
+bazel_rules_docker_container_deps()
+
+load("@io_bazel_rules_docker//container:container.bzl", "container_pull")
+container_pull(
+  name = "openjdk_image",
+  registry = "index.docker.io",
+  repository = "library/openjdk",
+  tag = "8"
+)
+
 load("@graknlabs_dependencies//tools/checkstyle:deps.bzl", checkstyle_deps = "deps")
 checkstyle_deps()
 
@@ -161,6 +176,8 @@ graknlabs_client_java()
 ###########################
 # Load @graknlabs_console #
 ###########################
+load("//dependencies/graknlabs:dependencies.bzl", "graknlabs_console")
+graknlabs_console()
 
 ##############################
 # Load @graknlabs_simulation #
@@ -169,6 +186,8 @@ graknlabs_client_java()
 ################################
 # Load @graknlabs_verification #
 ################################
+load("//dependencies/graknlabs:dependencies.bzl", "graknlabs_verification")
+graknlabs_verification()
 
 #########################
 # Create Workspace Refs #
