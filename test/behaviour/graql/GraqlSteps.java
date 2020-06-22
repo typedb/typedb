@@ -212,6 +212,7 @@ public class GraqlSteps {
         numericAnswerGroups = null;
 
         answers = tx.execute(graqlQuery, true, true);
+        tx.commit();
     }
 
     @When("get answers of graql query")
