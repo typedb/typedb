@@ -213,6 +213,7 @@ public class GraqlSteps {
 
         answers = tx.execute(graqlQuery, true, true);
         tx.commit();
+        tx = session.transaction(Transaction.Type.WRITE);
     }
 
     @When("get answers of graql query")
