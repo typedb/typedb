@@ -16,6 +16,7 @@
 #
 
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
+load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_file")
 
 def graknlabs_build_tools():
     git_repository(
@@ -52,11 +53,11 @@ def graknlabs_client_java():
         tag = "1.8.0",
     )
 
-def graknlabs_console():
-    git_repository(
-        name = "graknlabs_console",
-        remote = "https://github.com/graknlabs/console",
-        tag = "1.0.6", # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_console
+def graknlabs_console_deps():
+    http_file(
+        name = "graknlabs_console_deps",
+        urls = ["https://repo.grakn.ai/repository/distribution-snapshot/graknlabs_console/console-deps/af962a55d81d49a5741ce6f8e0376f1f1fc63fe1/console-deps-af962a55d81d49a5741ce6f8e0376f1f1fc63fe1.tgz"],
+        downloaded_file_path = "console-deps.tgz",
     )
 
 def graknlabs_simulation():
@@ -70,7 +71,7 @@ def graknlabs_verification():
     git_repository(
         name = "graknlabs_verification",
         remote = "https://github.com/alexjpwalker/verification",
-        commit = "bef8d336123c32cc807cb1e4da416fcf756dd15e",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_verification
+        commit = "dc1cbc77047f649ecc23f79a61904409aa052523",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_verification
     )
 
 def graknlabs_grabl_tracing():
