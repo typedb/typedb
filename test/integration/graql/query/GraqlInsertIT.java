@@ -156,25 +156,6 @@ public class GraqlInsertIT {
         assertInsert(var("x").has("title", "WOW A TITLE").isa("movie").isa("movie"));
     }
 
-    @Ignore // TODO: Un-ignore this when constraints are designed and implemented
-    @Test
-    public void testKeyUniqueValue() throws InvalidKBException {
-        tx.execute(Graql.define(
-                type("a-new-type").sub("entity").key("a-new-resource-type"),
-                type("a-new-resource-type")
-                        .sub(Graql.Token.Type.ATTRIBUTE)
-                        .value(Graql.Token.ValueType.STRING)
-        ));
-
-        tx.execute(Graql.insert(
-                var("x").isa("a-new-type").has("a-new-resource-type", "hello"),
-                var("y").isa("a-new-type").has("a-new-resource-type", "hello")
-        ));
-
-        exception.expect(InvalidKBException.class);
-        tx.commit();
-    }
-
     @Test
     public void whenInsertingAnInstanceWithALabel_Throw() {
         exception.expect(IllegalArgumentException.class);
