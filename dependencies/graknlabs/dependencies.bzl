@@ -57,8 +57,6 @@ def graknlabs_console_deps():
     http_file(
         name = "graknlabs_console_deps",
         urls = ["https://repo.grakn.ai/repository/distribution-snapshot/graknlabs_console/console-distribution/53207e305a75460965db7a5e52146f5a38cbc411/console-distribution.tgz"],
-        build_file = "//dependencies/graknlabs:graknlabs_console.BUILD",
-        workspace_file_content = "workspace(name = 'graknlabs_console_deps')",
     )
 
 def graknlabs_simulation():
