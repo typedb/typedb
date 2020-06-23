@@ -17,7 +17,7 @@
 
 package(default_visibility = ["@graknlabs_grakn_core//__subpackages__"])
 
-load("@graknlabs_dependencies//tools/checkstyle:rules.bzl", "checkstyle_test")
+load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 
 java_library(
     name = "common",

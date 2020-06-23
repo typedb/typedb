@@ -58,7 +58,7 @@ load("@rules_python//python:pip.bzl", "pip_repositories", "pip3_import")
 pip_repositories()
 pip3_import(
     name = "graknlabs_dependencies_ci_pip",
-    requirements = "@graknlabs_dependencies//tools:requirements.txt",
+    requirements = "@graknlabs_dependencies//tool:requirements.txt",
 )
 load("@graknlabs_dependencies_ci_pip//:requirements.bzl",
 graknlabs_dependencies_ci_pip_install = "pip_install")
@@ -121,13 +121,13 @@ container_pull(
   tag = "8"
 )
 
-load("@graknlabs_dependencies//tools/checkstyle:deps.bzl", checkstyle_deps = "deps")
+load("@graknlabs_dependencies//tool/checkstyle:deps.bzl", checkstyle_deps = "deps")
 checkstyle_deps()
 
-load("@graknlabs_dependencies//tools/sonarcloud:deps.bzl", "sonarcloud_dependencies")
+load("@graknlabs_dependencies//tool/sonarcloud:deps.bzl", "sonarcloud_dependencies")
 sonarcloud_dependencies()
 
-load("@graknlabs_dependencies//tools/unuseddeps:deps.bzl", unuseddeps_deps = "deps")
+load("@graknlabs_dependencies//tool/unuseddeps:deps.bzl", unuseddeps_deps = "deps")
 unuseddeps_deps()
 
 #########################
