@@ -265,7 +265,7 @@ jobs:
       xcode: "10.2.1"
     working_directory: ~/grakn
     steps:
-      - install-bazel-mac
+      - bazel-install-mac
       - checkout
       - bazel-run-rbe:
           command: bazel build //:assemble-mac-zip
