@@ -275,7 +275,7 @@ public class QueryBuilder {
         if (propertiesWithoutIds.isEmpty()) {
             return null;
         }
-        return new Statement(statement.var(), propertiesWithoutIds);
+        return Statement.create(statement.var(), propertiesWithoutIds);
     }
 
     /**

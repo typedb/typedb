@@ -2,11 +2,13 @@ package grakn.core.test.behaviour.resolution.test;
 
 import grakn.core.test.behaviour.resolution.resolve.QueryBuilder;
 import graql.lang.Graql;
+import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;
 import org.junit.Test;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static com.google.common.collect.Iterables.getOnlyElement;
 import static grakn.core.test.behaviour.resolution.common.Utils.getStatements;
@@ -27,14 +29,15 @@ public class TestQueryBuilder {
                 "$transaction has currency $currency;\n" +
                 "$transaction isa transaction;\n"
         ));
+        expectedStatements.add(null);
 
-        Set<Statement> statementsWithoutIds = QueryBuilder.removeIdProperties(statementsWithIds);
+        Set<Statement> statementsWithoutIds = statementsWithIds.stream().map(QueryBuilder::removeIdProperties).collect(Collectors.toSet());
 
         assertEquals(expectedStatements, statementsWithoutIds);
     }
 
     @Test
-    public void testStatementToPropertiesForVariableAttributeOwnership() {
+    public void testStatementToResolutionPropertiesForVariableAttributeOwnership() {
         Statement statement = getOnlyElement(Graql.parsePattern("$transaction has currency $currency;").statements());
 
         Statement expectedPropsStatement = getOnlyElement(Graql.parsePattern("$x0 (owner: $transaction) isa has-attribute-property, has currency $currency;").statements());
@@ -45,7 +48,7 @@ public class TestQueryBuilder {
     }
 
     @Test
-    public void testStatementToPropertiesForAttributeOwnership() {
+    public void testStatementToResolutionPropertiesForAttributeOwnership() {
         Statement statement = getOnlyElement(Graql.parsePattern("$transaction has currency \"GBP\";").statements());
 
         Statement expectedPropsStatement = getOnlyElement(Graql.parsePattern("$x0 (owner: $transaction) isa has-attribute-property, has currency \"GBP\";").statements());
@@ -56,7 +59,7 @@ public class TestQueryBuilder {
     }
 
     @Test
-    public void testStatementToPropertiesForRelation() {
+    public void testStatementToResolutionPropertiesForRelation() {
         Statement statement = getOnlyElement(Graql.parsePattern("$locates (locates_located: $transaction, locates_location: $country);").statements());
 
         Set<Statement> expectedPropsStatements = getStatements(Graql.parsePatternList("" +
@@ -70,7 +73,7 @@ public class TestQueryBuilder {
     }
 
     @Test
-    public void testStatementToPropertiesForIsa() {
+    public void testStatementToResolutionPropertiesForIsa() {
         Statement statement = getOnlyElement(Graql.parsePattern("$transaction isa transaction;").statements());
         Statement propStatement = getOnlyElement(new QueryBuilder().statementToResolutionProperties(statement).values());
         Statement expectedPropStatement = getOnlyElement(Graql.parsePattern("$x0 (instance: $transaction) isa isa-property, has type-label \"transaction\";").statements());
@@ -80,19 +83,19 @@ public class TestQueryBuilder {
     @Test
     public void testStatementsForRuleApplication() {
 
-        Set<Statement> whenStatements = getStatements(Graql.parsePatternList("" +
-                "$country isa country; " +
+        Pattern when = Graql.parsePattern("" +
+                "{ $country isa country; " +
                 "$transaction isa transaction;" +
                 "$country has currency $currency; " +
-                "$locates (locates_located: $transaction, locates_location: $country) isa locates; "
-        ));
+                "$locates (locates_located: $transaction, locates_location: $country) isa locates; };"
+        );
 
-        Set<Statement> thenStatements = getStatements(Graql.parsePatternList("" +
-                "$transaction has currency $currency; "
-        ));
+        Pattern then = Graql.parsePattern("" +
+                "{ $transaction has currency $currency; };"
+        );
 
-        Set<Statement> expectedStatements = getStatements(Graql.parsePatternList("" +
-                "$x0 (instance: $country) isa isa-property, has type-label \"country\";" +
+        Pattern expected = Graql.parsePattern("" +
+                "{ $x0 (instance: $country) isa isa-property, has type-label \"country\";" +
                 "$x1 (instance: $transaction) isa isa-property, has type-label \"transaction\";" + //TODO When inserted, the supertype labels should be owned too
                 // TODO Should we also have an isa-property for $currency?
                 "$x2 (owner: $country) isa has-attribute-property, has currency $currency;" +
@@ -112,11 +115,9 @@ public class TestQueryBuilder {
                 "    body: $x5,\n" +
                 "    head: $x6\n" +
                 ") isa resolution, \n" +
-                "has rule-label \"transaction-currency-is-that-of-the-country\";"));  //TODO can be split into conjunction
+                "has rule-label \"transaction-currency-is-that-of-the-country\"; };");  //TODO can be split into conjunction
 
-        Set<Statement> resolutionStatements;
-
-        resolutionStatements = new QueryBuilder().inferenceStatements(whenStatements, thenStatements, "transaction-currency-is-that-of-the-country");
-        assertEquals(expectedStatements, resolutionStatements);
+        Pattern resolution = new QueryBuilder().inferenceStatements(when, then, "transaction-currency-is-that-of-the-country");
+        assertEquals(expected, resolution);
     }
 }
