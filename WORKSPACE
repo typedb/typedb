@@ -29,7 +29,7 @@ load(
     "graknlabs_graql",
     "graknlabs_protocol",
     "graknlabs_client_java",
-    "graknlabs_console_deps",
+    "graknlabs_console_distribution",
     "graknlabs_simulation",
     "graknlabs_verification",
     "graknlabs_grabl_tracing",
@@ -39,7 +39,7 @@ graknlabs_common()
 graknlabs_graql()
 graknlabs_protocol()
 graknlabs_client_java()
-graknlabs_console_deps()
+graknlabs_console_distribution()
 graknlabs_simulation()
 graknlabs_verification()
 graknlabs_grabl_tracing()
