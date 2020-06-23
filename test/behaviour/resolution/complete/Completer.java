@@ -7,6 +7,8 @@ import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import grakn.core.test.behaviour.resolution.resolve.QueryBuilder;
 import graql.lang.Graql;
+import graql.lang.pattern.Conjunction;
+import graql.lang.pattern.Disjunction;
 import graql.lang.pattern.Pattern;
 import graql.lang.property.IsaProperty;
 import graql.lang.query.GraqlGet;
@@ -25,6 +27,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static grakn.core.test.behaviour.resolution.resolve.QueryBuilder.generateKeyStatements;
+import static grakn.core.test.behaviour.resolution.resolve.QueryBuilder.visitStatements;
 
 
 public class Completer {
@@ -69,56 +72,59 @@ public class Completer {
 
         QueryBuilder qb = new QueryBuilder();
 
-        // Get all the places that the `when` could be applied to
-        Stream<ConceptMap> whenAnswers = tx.stream(Graql.match(rule.when).get());
-        Iterator<ConceptMap> whenIterator = whenAnswers.iterator();
-        while (whenIterator.hasNext()) {
+        // Use the DNF so that we can know each `when` if free of disjunctions. Disjunctions in the `when` will otherwise complicate things significantly
+        Set<Conjunction<Pattern>> disjunctiveWhens = rule.when.getNegationDNF().getPatterns();
+        for (Conjunction<Pattern> when : disjunctiveWhens) {
+            // Get all the places that the `when` could be applied to
+            Stream<ConceptMap> whenAnswers = tx.stream(Graql.match(when).get());
+            Iterator<ConceptMap> whenIterator = whenAnswers.iterator();
+            while (whenIterator.hasNext()) {
 
-            // Get the variables of the rule that connect the `when` and the `then`, since this determines whether an inferred `then` should be duplicated
-            Set<Variable> connectingVars = new HashSet<>(rule.when.variables());
-            connectingVars.retainAll(rule.then.variables());
+                // Get the variables of the rule that connect the `when` and the `then`, since this determines whether an inferred `then` should be duplicated
+                Set<Variable> connectingVars = new HashSet<>(rule.when.variables());
+                connectingVars.retainAll(rule.then.variables());
 
-            Map<Variable, Concept> whenMap = whenIterator.next().map();
+                Map<Variable, Concept> whenMap = whenIterator.next().map();
 
-            // Get the concept map for those connected variables by filtering the answer we already have for the `when`
-            Map<Variable, Concept> connectingAnswerMap = whenMap.entrySet().stream().filter(entry -> connectingVars.contains(entry.getKey())).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-            // We now have the answer but with only the connecting variables left
+                // Get the concept map for those connected variables by filtering the answer we already have for the `when`
+                Map<Variable, Concept> connectingAnswerMap = whenMap.entrySet().stream().filter(entry -> connectingVars.contains(entry.getKey())).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+                // We now have the answer but with only the connecting variables left
 
-            // Get statements to match for the connecting concepts via their keys/uniqueness
-            Set<Statement> connectingKeyStatements = generateKeyStatements(connectingAnswerMap);
+                // Get statements to match for the connecting concepts via their keys/uniqueness
+                Set<Statement> connectingKeyStatements = generateKeyStatements(connectingAnswerMap);
 
-            List<ConceptMap> thenAnswers = tx.execute(Graql.match(rule.then, Graql.and(connectingKeyStatements)).get());
+                List<ConceptMap> thenAnswers = tx.execute(Graql.match(rule.then, Graql.and(connectingKeyStatements)).get());
 
-            Set<Statement> ruleInferenceStatements = qb.inferenceStatements(rule.when.statements(), rule.then.statements(), rule.label);
+                Conjunction<? extends Pattern> ruleResolutionConjunction = qb.ruleResolutionConjunction(rule.when, rule.then, rule.label);
 
-            if (thenAnswers.size() == 0) {
-                // We've found somewhere the rule can be applied
-                HashSet<Statement> matchWhenStatements = new HashSet<>();
-                matchWhenStatements.addAll(generateKeyStatements(whenMap));
-                matchWhenStatements.addAll(rule.when.statements());
+                if (thenAnswers.size() == 0) {
+                    // We've found somewhere the rule can be applied
+                    HashSet<Statement> matchWhenPatterns = new HashSet<>();
+                    matchWhenPatterns.addAll(generateKeyStatements(whenMap));
+                    matchWhenPatterns.addAll(rule.when.statements());
 
-                Set<Statement> insertNewThenStatements = new HashSet<>();
-                insertNewThenStatements.addAll(rule.then.statements());
-                insertNewThenStatements.addAll(getThenKeyStatements(tx, rule.then));
-                insertNewThenStatements.addAll(ruleInferenceStatements);
-                HashSet<Variable> insertedVars = new HashSet<>(rule.then.variables());
-                insertedVars.removeAll(rule.when.variables());
-                numInferredConcepts += insertedVars.size();
+                    Set<Statement> insertNewThenStatements = new HashSet<>();
+                    insertNewThenStatements.addAll(rule.then.statements());
+                    insertNewThenStatements.addAll(getThenKeyStatements(tx, rule.then));
+                    insertNewThenStatements.add(ruleResolutionConjunction);
+                    HashSet<Variable> insertedVars = new HashSet<>(rule.then.variables());
+                    insertedVars.removeAll(rule.when.variables());
+                    numInferredConcepts += insertedVars.size();
 
-                // Apply the rule, with the records of how the inference was made
-                List<ConceptMap> inserted = tx.execute(Graql.match(Graql.and(matchWhenStatements)).insert(insertNewThenStatements));
-                assert inserted.size() == 1;
-                foundResult.set(true);
-            } else {
-                thenAnswers.forEach(thenAnswer -> {
-                    // If it is *not* inferred, then do nothing, as rules shouldn't infer facts that are already present
+                    // Apply the rule, with the records of how the inference was made
+                    List<ConceptMap> inserted = tx.execute(Graql.match(Graql.and(matchWhenPatterns)).insert(insertNewThenStatements));
+                    assert inserted.size() == 1;
+                    foundResult.set(true);
+                } else {
+                    thenAnswers.forEach(thenAnswer -> {
+                        // If it is *not* inferred, then do nothing, as rules shouldn't infer facts that are already present
 //                    if (!isInferred(thenAnswer)) { // TODO check if the answer is inferred
                         // Check if it was this exact rule that previously inserted this `then` for these exact `when` instances
 
                         Set<Statement> checkStatements = new HashSet<>();
                         checkStatements.addAll(generateKeyStatements(whenMap));
                         checkStatements.addAll(generateKeyStatements(thenAnswer.map()));
-                        checkStatements.addAll(ruleInferenceStatements);
+                        checkStatements.addAll(ruleResolutionConjunction);
                         checkStatements.addAll(rule.when.statements());
                         checkStatements.addAll(rule.then.statements());
                         List<ConceptMap> ans = tx.execute(Graql.match(checkStatements).get());
@@ -134,12 +140,13 @@ public class Completer {
                             matchStatements.addAll(rule.when.statements());
                             matchStatements.addAll(rule.then.statements());
 
-                            List<ConceptMap> inserted = tx.execute(Graql.match(matchStatements).insert(ruleInferenceStatements));
+                            List<ConceptMap> inserted = tx.execute(Graql.match(matchStatements).insert(ruleResolutionConjunction));
                             assert inserted.size() == 1;
                             foundResult.set(true);
                         }
 //                    }
-                });
+                    });
+                }
             }
         }
         return foundResult.get();
@@ -190,8 +197,8 @@ public class Completer {
         private String label;
 
         Rule(Pattern when, Pattern then, String label) {
-            this.when = QueryBuilder.makeAnonVarsExplicit(when);
-            this.then = QueryBuilder.makeAnonVarsExplicit(then);
+            this.when = visitStatements(when, QueryBuilder::makeAnonVarsExplicit);
+            this.then = visitStatements(then, QueryBuilder::makeAnonVarsExplicit);
             this.label = label;
         }
     }

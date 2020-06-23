@@ -88,7 +88,7 @@ public class QueryBuilder {
                 resolutionPatterns.add(thenPattern);
 
                 String ruleLabel = ((RuleExplanation)explanation).getRule().label().toString();
-                resolutionPatterns.add(inferenceStatements(whenPattern, thenPattern, ruleLabel));
+                resolutionPatterns.add(ruleResolutionConjunction(whenPattern, thenPattern, ruleLabel));
                 resolutionPatterns.add(resolutionPattern(tx, explAns, ruleResolutionIndex));
             } else {
                 for (ConceptMap explAns : explanation.getAnswers()) {
@@ -99,7 +99,7 @@ public class QueryBuilder {
         return Graql.and(resolutionPatterns);
     }
 
-    private static Pattern visitStatements(Pattern pattern, StatementVisitor visitor) {
+    public static Pattern visitStatements(Pattern pattern, StatementVisitor visitor) {
         if (pattern instanceof Statement) {
             return visitor.visitStatement((Statement) pattern);
         } else if (pattern instanceof Conjunction) {
@@ -140,11 +140,11 @@ public class QueryBuilder {
         return new Disjunction<>(newPatterns);
     }
 
-    @FunctionalInterface interface StatementVisitor {
+    @FunctionalInterface public interface StatementVisitor {
         Pattern visitStatement(Statement pattern);
     }
 
-    private static Statement makeAnonVarsExplicit(Statement statement) {
+    public static Statement makeAnonVarsExplicit(Statement statement) {
         if (statement.var().isReturned()) {
             return statement;
         } else {
@@ -188,17 +188,7 @@ public class QueryBuilder {
         return Statement.create(new Variable(newVarName), newProperties);
     }
 
-//    public Conjunction inferenceStatements(Conjunction<? extends Pattern> whenPattern, Conjunction<? extends Pattern> thenPattern, String ruleLabel) {
-//        String inferenceType = "resolution";
-//        String inferenceRuleLabelType = "rule-label";
-//        Variable ruleVar = new Variable(getNextVar("rule"));
-//        Statement relation = Graql.var(ruleVar).isa(inferenceType).has(inferenceRuleLabelType, ruleLabel);
-//        Conjunction<? extends Pattern> body = recursePattern(whenPattern, p -> statementToResolutionConjunction(p, ruleVar, "body"));
-//        Conjunction<? extends Pattern> head = recursePattern(thenPattern, p -> statementToResolutionConjunction(p, ruleVar, "head"));
-//        return Graql.and(body, head, relation);
-//    }
-
-    public Conjunction inferenceStatements(Pattern whenPattern, Pattern thenPattern, String ruleLabel) {
+    public Conjunction<? extends Pattern> ruleResolutionConjunction(Pattern whenPattern, Pattern thenPattern, String ruleLabel) {
         String inferenceType = "resolution";
         String inferenceRuleLabelType = "rule-label";
         Variable ruleVar = new Variable(getNextVar("rule"));

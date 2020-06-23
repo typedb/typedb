@@ -117,7 +117,7 @@ public class TestQueryBuilder {
                 ") isa resolution, \n" +
                 "has rule-label \"transaction-currency-is-that-of-the-country\"; };");  //TODO can be split into conjunction
 
-        Pattern resolution = new QueryBuilder().inferenceStatements(when, then, "transaction-currency-is-that-of-the-country");
+        Pattern resolution = new QueryBuilder().ruleResolutionConjunction(when, then, "transaction-currency-is-that-of-the-country");
         assertEquals(expected, resolution);
     }
 }
