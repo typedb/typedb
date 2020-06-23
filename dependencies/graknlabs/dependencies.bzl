@@ -53,18 +53,27 @@ def graknlabs_client_java():
     )
 
 def graknlabs_console():
-    git_repository(
+    native.local_repository(
         name = "graknlabs_console",
-        remote = "https://github.com/graknlabs/console",
-        tag = "1.0.6", # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_console
+        path = "/Users/lolski/grakn.ai/graknlabs/console"
     )
+    # git_repository(
+    #     name = "graknlabs_console",
+    #     remote = "https://github.com/graknlabs/console",
+    #     tag = "1.0.6", # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_console
+    # )
 
 def graknlabs_simulation():
-    git_repository(
+    native.local_repository(
         name = "graknlabs_simulation",
-        remote = "https://github.com/graknlabs/simulation",
-        commit = "33ead5a0258be5bd76318d62ebdbacbb1edf6bed", # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_simulation
+        path = "/Users/lolski/grakn.ai/graknlabs/simulation"
     )
+
+    # git_repository(
+    #     name = "graknlabs_simulation",
+    #     remote = "https://github.com/graknlabs/simulation",
+    #     commit = "33ead5a0258be5bd76318d62ebdbacbb1edf6bed", # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_simulation
+    # )
 
 def graknlabs_verification():
     git_repository(
