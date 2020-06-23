@@ -18,15 +18,15 @@
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 
 def graknlabs_dependencies():
-    native.local_repository(
-        name = "graknlabs_dependencies",
-        path = "/Users/lolski/grakn.ai/graknlabs/dependencies"
-    )
-    # git_repository(
+    # native.local_repository(
     #     name = "graknlabs_dependencies",
-    #     remote = "https://github.com/lolski/dependencies",
-    #     commit = "79c216d01b370efef02aaf31b087adeb26f1854c",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_dependencies
+    #     path = "/Users/lolski/grakn.ai/graknlabs/dependencies"
     # )
+    git_repository(
+        name = "graknlabs_dependencies",
+        remote = "https://github.com/lolski/dependencies",
+        commit = "dd58b33370129658aaaf0b2ea25d583fa6b7f06f",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_dependencies
+    )
 
 def graknlabs_common():
     git_repository(
@@ -50,16 +50,16 @@ def graknlabs_protocol():
     )
 
 def graknlabs_client_java():
-    native.local_repository(
-        name = "graknlabs_client_java",
-        path = "/Users/lolski/grakn.ai/graknlabs/client-java"    
-    )
-
-    # git_repository(
+    # native.local_repository(
     #     name = "graknlabs_client_java",
-    #     remote = "https://github.com/lolski/client-java",
-    #     commit = "ca405533491063b67ebb611dcee3f1860b7e13d0",
+    #     path = "/Users/lolski/grakn.ai/graknlabs/client-java"    
     # )
+
+    git_repository(
+        name = "graknlabs_client_java",
+        remote = "https://github.com/lolski/client-java",
+        commit = "acec08f3d2f54c143bfdb63075775cf1b1b0c2ed",
+    )
 
 def graknlabs_console():
     # native.local_repository(
