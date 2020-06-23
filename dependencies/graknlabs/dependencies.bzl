@@ -84,16 +84,15 @@ def graknlabs_simulation():
     )
 
 def graknlabs_verification():
-    native.local_repository(
-        name = "graknlabs_verification",
-        path = "/Users/lolski/grakn.ai/graknlabs/verification"
-    )
-
-    # git_repository(
+    # native.local_repository(
     #     name = "graknlabs_verification",
-    #     remote = "https://github.com/graknlabs/verification",
-    #     commit = "dc1cbc77047f649ecc23f79a61904409aa052523",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_verification
+    #     path = "/Users/lolski/grakn.ai/graknlabs/verification"
     # )
+    git_repository(
+        name = "graknlabs_verification",
+        remote = "https://github.com/lolski/verification",
+        commit = "db5195de97fbfe151ee7e07aa0f2b7503524c47a",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_verification
+    )
 
 def graknlabs_grabl_tracing():
     git_repository(
