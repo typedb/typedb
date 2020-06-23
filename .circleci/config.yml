@@ -22,22 +22,24 @@ orbs:
 commands:
   bazel-install-linux:
     steps:
-      mkdir install
-      cd install
-      curl -OL https://raw.githubusercontent.com/lolski/build-tools/refactor/tools/bazelinstall/linux.sh
-      bash ./linux.sh
-      curl -OL https://raw.githubusercontent.com/lolski/build-tools/refactor/tools/bazelinstall/rbe.sh
-      bash ./rbe.sh
-      cd ..
-      rm -rf install
+      - run: |
+          mkdir install
+          cd install
+          curl -OL https://raw.githubusercontent.com/lolski/build-tools/refactor/tools/bazelinstall/linux.sh
+          bash ./linux.sh
+          curl -OL https://raw.githubusercontent.com/lolski/build-tools/refactor/tools/bazelinstall/rbe.sh
+          bash ./rbe.sh
+          cd ..
+          rm -rf install
   bazel-install-mac:
     steps:
-      mkdir install
-      cd install
-      curl -OL https://raw.githubusercontent.com/lolski/build-tools/refactor/tools/bazelinstall/mac.sh
-      bash ./mac.sh
-      cd ..
-      rm -rf install
+      - run: |
+          mkdir install
+          cd install
+          curl -OL https://raw.githubusercontent.com/lolski/build-tools/refactor/tools/bazelinstall/mac.sh
+          bash ./mac.sh
+          cd ..
+          rm -rf install
 
   bazel-run-rbe:
     parameters:
