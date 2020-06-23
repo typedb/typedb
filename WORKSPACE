@@ -45,6 +45,7 @@ node_grpc_compile()
 
 load("@graknlabs_dependencies//builder/java:deps.bzl", java_deps = "deps")
 java_deps()
+load("@graknlabs_dependencies//library/maven:rules.bzl", "maven")
 
 load("@graknlabs_dependencies//builder/nodejs:deps.bzl", nodejs_deps = "deps")
 nodejs_deps()
@@ -135,9 +136,7 @@ unuseddeps_deps()
 load("//dependencies/graknlabs:dependencies.bzl", "graknlabs_graql")
 graknlabs_graql()
 
-load("@graknlabs_dependencies//library/maven:rules.bzl", "maven")
-load("@graknlabs_graql//dependencies/maven:artifacts.bzl", "artifacts")
-maven(artifacts)
+load("@graknlabs_graql//dependencies/maven:artifacts.bzl", graknlabs_graql_artifacts = "artifacts")
 
 ##########################
 # Load @graknlabs_common #
@@ -161,6 +160,8 @@ com_github_grpc_grpc_deps()
 load("@stackb_rules_proto//java:deps.bzl", "java_grpc_compile")
 java_grpc_compile()
 
+load("@graknlabs_protocol//dependencies/maven:artifacts.bzl", graknlabs_protocol_artifacts = "artifacts")
+
 #################################
 # Load @graknlabs_grabl_tracing #
 #################################
@@ -172,6 +173,7 @@ graknlabs_grabl_tracing()
 ###############################
 load("//dependencies/graknlabs:dependencies.bzl", "graknlabs_client_java")
 graknlabs_client_java()
+load("@graknlabs_client_java//dependencies/maven:artifacts.bzl", graknlabs_client_java_artifacts = "artifacts")
 
 ###########################
 # Load @graknlabs_console #
@@ -189,12 +191,27 @@ graknlabs_console()
 load("//dependencies/graknlabs:dependencies.bzl", "graknlabs_verification")
 graknlabs_verification()
 
+##############################
+# Load @graknlabs_grakn_core #
+##############################
+load("//dependencies/maven:dependencies.bzl", "maven_dependencies")
+
 #########################
 # Create Workspace Refs #
 #########################
 load("@graknlabs_bazel_distribution//common:rules.bzl", "workspace_refs")
 workspace_refs(
     name = "graknlabs_grakn_core_workspace_refs"
+)
+
+########################
+# Load Maven Artifacts #
+########################
+maven_dependencies()
+maven(
+    graknlabs_graql_artifacts +
+    graknlabs_protocol_artifacts +
+    graknlabs_client_java_artifacts
 )
 
 # ################################

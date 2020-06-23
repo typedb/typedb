@@ -18,11 +18,15 @@
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 
 def graknlabs_dependencies():
-    git_repository(
+    native.local_repository(
         name = "graknlabs_dependencies",
-        remote = "https://github.com/lolski/dependencies",
-        commit = "79c216d01b370efef02aaf31b087adeb26f1854c",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_dependencies
+        path = "/Users/lolski/grakn.ai/graknlabs/dependencies"
     )
+    # git_repository(
+    #     name = "graknlabs_dependencies",
+    #     remote = "https://github.com/lolski/dependencies",
+    #     commit = "79c216d01b370efef02aaf31b087adeb26f1854c",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_dependencies
+    # )
 
 def graknlabs_common():
     git_repository(
@@ -46,11 +50,16 @@ def graknlabs_protocol():
     )
 
 def graknlabs_client_java():
-    git_repository(
+    native.local_repository(
         name = "graknlabs_client_java",
-        remote = "https://github.com/lolski/client-java",
-        commit = "ca405533491063b67ebb611dcee3f1860b7e13d0",
+        path = "/Users/lolski/grakn.ai/graknlabs/client-java"    
     )
+
+    # git_repository(
+    #     name = "graknlabs_client_java",
+    #     remote = "https://github.com/lolski/client-java",
+    #     commit = "ca405533491063b67ebb611dcee3f1860b7e13d0",
+    # )
 
 def graknlabs_console():
     # native.local_repository(
@@ -75,11 +84,16 @@ def graknlabs_simulation():
     )
 
 def graknlabs_verification():
-    git_repository(
+    native.local_repository(
         name = "graknlabs_verification",
-        remote = "https://github.com/graknlabs/verification",
-        commit = "dc1cbc77047f649ecc23f79a61904409aa052523",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_verification
+        path = "/Users/lolski/grakn.ai/graknlabs/verification"
     )
+
+    # git_repository(
+    #     name = "graknlabs_verification",
+    #     remote = "https://github.com/graknlabs/verification",
+    #     commit = "dc1cbc77047f649ecc23f79a61904409aa052523",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_verification
+    # )
 
 def graknlabs_grabl_tracing():
     git_repository(
