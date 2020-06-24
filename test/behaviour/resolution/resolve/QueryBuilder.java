@@ -33,6 +33,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.google.common.collect.Iterables.getOnlyElement;
@@ -46,7 +47,8 @@ public class QueryBuilder {
 
             ArrayList<GraqlGet> resolutionQueries = new ArrayList<>();
             for (ConceptMap answer : answers) {
-                resolutionQueries.add(Graql.match(resolutionPattern(tx, answer, 0)).get());
+                ConjunctionFlatteningVisitor flattener = new ConjunctionFlatteningVisitor();
+                resolutionQueries.add(Graql.match(flattener.visitPattern(resolutionPattern(tx, answer, 0))).get());
             }
             System.out.print(resolutionQueries);
             return resolutionQueries;
@@ -61,10 +63,13 @@ public class QueryBuilder {
             throw new RuntimeException("Answer is missing a pattern. Either patterns are broken or the initial query did not require inference.");
         }
         Integer finalRuleResolutionIndex1 = ruleResolutionIndex;
-        resolutionPatterns.add(visitStatements(answerPattern, p -> {
+
+        StatementVisitor statementVisitor = new StatementVisitor(p -> {
             Statement withoutIds = removeIdProperties(makeAnonVarsExplicit(p));
             return withoutIds == null ? null : prefixVars(withoutIds, finalRuleResolutionIndex1);
-        }));
+        });
+
+        resolutionPatterns.add(statementVisitor.visitPattern(answerPattern));
 
         generateKeyStatements(answer.map()).forEach(statement -> resolutionPatterns.add(prefixVars(statement, finalRuleResolutionIndex1)));
 
@@ -79,12 +84,14 @@ public class QueryBuilder {
                 ruleResolutionIndex += 1;
                 Integer finalRuleResolutionIndex0 = ruleResolutionIndex;
 
+                StatementVisitor ruleStatementVisitor = new StatementVisitor(p -> prefixVars(makeAnonVarsExplicit(p), finalRuleResolutionIndex0));
+
                 Pattern whenPattern = Objects.requireNonNull(((RuleExplanation) explanation).getRule().when());
-                whenPattern = visitStatements(whenPattern, p -> prefixVars(makeAnonVarsExplicit(p), finalRuleResolutionIndex0));
+                whenPattern = ruleStatementVisitor.visitPattern(whenPattern);
                 resolutionPatterns.add(whenPattern);
 
                 Pattern thenPattern = Objects.requireNonNull(((RuleExplanation) explanation).getRule().then());
-                thenPattern = visitStatements(thenPattern, p -> prefixVars(makeAnonVarsExplicit(p), finalRuleResolutionIndex0));
+                thenPattern = ruleStatementVisitor.visitPattern(thenPattern);
                 resolutionPatterns.add(thenPattern);
 
                 String ruleLabel = ((RuleExplanation)explanation).getRule().label().toString();
@@ -99,49 +106,86 @@ public class QueryBuilder {
         return Graql.and(resolutionPatterns);
     }
 
-    public static Pattern visitStatements(Pattern pattern, StatementVisitor visitor) {
-        if (pattern instanceof Statement) {
-            return visitor.visitStatement((Statement) pattern);
-        } else if (pattern instanceof Conjunction) {
-            return visitStatements((Conjunction<? extends Pattern>) pattern, visitor);
-        } else if (pattern instanceof Negation) {
-            return visitStatements((Negation<? extends Pattern>) pattern, visitor);
-        } else if (pattern instanceof Disjunction) {
-            return visitStatements((Disjunction<? extends Pattern>) pattern, visitor);
+    public abstract class PatternVisitor {
+        Pattern visitPattern(Pattern pattern) {
+            if (pattern instanceof Statement) {
+                return visitStatement((Statement) pattern);
+            } else if (pattern instanceof Conjunction) {
+                return visitConjunction((Conjunction<? extends Pattern>) pattern);
+            } else if (pattern instanceof Negation) {
+                return visitNegation((Negation<? extends Pattern>) pattern);
+            } else if (pattern instanceof Disjunction) {
+                return visitDisjunction((Disjunction<? extends Pattern>) pattern);
+            }
+            throw new UnsupportedOperationException();
         }
-        throw new UnsupportedOperationException();
+
+        Pattern visitStatement(Statement pattern) {
+            return pattern;
+        }
+
+        Pattern visitConjunction(Conjunction<? extends Pattern> pattern) {
+            Set<? extends Pattern> patterns = pattern.getPatterns();
+            HashSet<Pattern> newPatterns = new HashSet<>();
+            patterns.forEach(p -> {
+                Pattern childPattern = visitPattern(p);
+                if (childPattern != null) {
+                    newPatterns.add(childPattern);
+                }
+            });
+            return new Conjunction<>(newPatterns);
+        }
+
+        Pattern visitNegation(Negation<? extends Pattern> pattern) {
+            return new Negation<>(visitPattern(pattern.getPattern()));
+        }
+
+        Pattern visitDisjunction(Disjunction<? extends Pattern> pattern) {
+            Set<? extends Pattern> patterns = pattern.getPatterns();
+            HashSet<Pattern> newPatterns = new HashSet<>();
+            patterns.forEach(p -> {
+                Pattern childPattern = visitPattern(p);
+                if (childPattern != null) {
+                    newPatterns.add(childPattern);
+                }
+            });
+            return new Disjunction<>(newPatterns);
+        }
     }
 
-    private static Conjunction<? extends Pattern> visitStatements(Conjunction<? extends Pattern> pattern, StatementVisitor visitor) {
-        Set<? extends Pattern> patterns = pattern.getPatterns();
-        HashSet<Pattern> newPatterns = new HashSet<>();
-        patterns.forEach(p -> {
-            Pattern childPattern = visitStatements(p, visitor);
-            if (childPattern != null) {
-                newPatterns.add(childPattern);
+    public class StatementVisitor extends PatternVisitor {
+
+        private Function<Statement, Pattern> function;
+
+        StatementVisitor(Function<Statement, Pattern> function) {
+            this.function = function;
+        }
+
+        @Override
+        Pattern visitStatement(Statement pattern) {
+            return function.apply(pattern);
+        }
+    }
+
+    public class ConjunctionFlatteningVisitor extends PatternVisitor {
+        Pattern visitConjunction(Conjunction<? extends Pattern> pattern) {
+            Set<? extends Pattern> patterns = pattern.getPatterns();
+            HashSet<Pattern> newPatterns = new HashSet<>();
+            patterns.forEach(p -> {
+                Pattern childPattern = visitPattern(p);
+                if (childPattern instanceof Conjunction) {
+                    newPatterns.addAll(((Conjunction<? extends Pattern>) childPattern).getPatterns());
+                } else if (childPattern != null) {
+                    newPatterns.add(visitPattern(childPattern));
+                }
+            });
+            if (newPatterns.size() == 0) {
+                return null;
+            } else if (newPatterns.size() == 1) {
+                return getOnlyElement(newPatterns);
             }
-        });
-        return new Conjunction<>(newPatterns);
-    }
-
-    private static Negation<? extends Pattern> visitStatements(Negation<? extends Pattern> pattern, StatementVisitor visitor) {
-        return new Negation<>(visitStatements(pattern.getPattern(), visitor));
-    }
-
-    private static Disjunction<? extends Pattern> visitStatements(Disjunction<? extends Pattern> pattern, StatementVisitor visitor) {
-        Set<? extends Pattern> patterns = pattern.getPatterns();
-        HashSet<Pattern> newPatterns = new HashSet<>();
-        patterns.forEach(p -> {
-            Pattern childPattern = visitStatements(p, visitor);
-            if (childPattern != null) {
-                newPatterns.add(childPattern);
-            }
-        });
-        return new Disjunction<>(newPatterns);
-    }
-
-    @FunctionalInterface public interface StatementVisitor {
-        Pattern visitStatement(Statement pattern);
+            return new Conjunction<>(newPatterns);
+        }
     }
 
     public static Statement makeAnonVarsExplicit(Statement statement) {
@@ -193,8 +237,10 @@ public class QueryBuilder {
         String inferenceRuleLabelType = "rule-label";
         Variable ruleVar = new Variable(getNextVar("rule"));
         Statement relation = Graql.var(ruleVar).isa(inferenceType).has(inferenceRuleLabelType, ruleLabel);
-        Pattern body = visitStatements(whenPattern, p -> statementToResolutionConjunction(p, ruleVar, "body"));
-        Pattern head = visitStatements(thenPattern, p -> statementToResolutionConjunction(p, ruleVar, "head"));
+        StatementVisitor bodyVisitor = new StatementVisitor(p -> statementToResolutionConjunction(p, ruleVar, "body"));
+        StatementVisitor headVisitor = new StatementVisitor(p -> statementToResolutionConjunction(p, ruleVar, "head"));
+        Pattern body = bodyVisitor.visitPattern(whenPattern);
+        Pattern head = headVisitor.visitPattern(thenPattern);
         return Graql.and(body, head, relation);
     }
 
