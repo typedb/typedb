@@ -5,10 +5,11 @@ import grakn.core.concept.answer.Explanation;
 import grakn.core.graql.reasoner.explanation.RuleExplanation;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.server.Transaction;
+import grakn.core.test.behaviour.resolution.common.ConjunctionFlatteningVisitor;
+import grakn.core.test.behaviour.resolution.common.NegationRemovalVisitor;
+import grakn.core.test.behaviour.resolution.common.StatementVisitor;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
-import graql.lang.pattern.Disjunction;
-import graql.lang.pattern.Negation;
 import graql.lang.pattern.Pattern;
 import graql.lang.property.HasAttributeProperty;
 import graql.lang.property.IdProperty;
@@ -25,7 +26,6 @@ import graql.lang.statement.Variable;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -33,7 +33,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.google.common.collect.Iterables.getOnlyElement;
@@ -104,88 +103,6 @@ public class QueryBuilder {
             }
         }
         return Graql.and(resolutionPatterns);
-    }
-
-    public abstract class PatternVisitor {
-        Pattern visitPattern(Pattern pattern) {
-            if (pattern instanceof Statement) {
-                return visitStatement((Statement) pattern);
-            } else if (pattern instanceof Conjunction) {
-                return visitConjunction((Conjunction<? extends Pattern>) pattern);
-            } else if (pattern instanceof Negation) {
-                return visitNegation((Negation<? extends Pattern>) pattern);
-            } else if (pattern instanceof Disjunction) {
-                return visitDisjunction((Disjunction<? extends Pattern>) pattern);
-            }
-            throw new UnsupportedOperationException();
-        }
-
-        Pattern visitStatement(Statement pattern) {
-            return pattern;
-        }
-
-        Pattern visitConjunction(Conjunction<? extends Pattern> pattern) {
-            Set<? extends Pattern> patterns = pattern.getPatterns();
-            HashSet<Pattern> newPatterns = new HashSet<>();
-            patterns.forEach(p -> {
-                Pattern childPattern = visitPattern(p);
-                if (childPattern != null) {
-                    newPatterns.add(childPattern);
-                }
-            });
-            return new Conjunction<>(newPatterns);
-        }
-
-        Pattern visitNegation(Negation<? extends Pattern> pattern) {
-            return new Negation<>(visitPattern(pattern.getPattern()));
-        }
-
-        Pattern visitDisjunction(Disjunction<? extends Pattern> pattern) {
-            Set<? extends Pattern> patterns = pattern.getPatterns();
-            HashSet<Pattern> newPatterns = new HashSet<>();
-            patterns.forEach(p -> {
-                Pattern childPattern = visitPattern(p);
-                if (childPattern != null) {
-                    newPatterns.add(childPattern);
-                }
-            });
-            return new Disjunction<>(newPatterns);
-        }
-    }
-
-    public class StatementVisitor extends PatternVisitor {
-
-        private Function<Statement, Pattern> function;
-
-        StatementVisitor(Function<Statement, Pattern> function) {
-            this.function = function;
-        }
-
-        @Override
-        Pattern visitStatement(Statement pattern) {
-            return function.apply(pattern);
-        }
-    }
-
-    public class ConjunctionFlatteningVisitor extends PatternVisitor {
-        Pattern visitConjunction(Conjunction<? extends Pattern> pattern) {
-            Set<? extends Pattern> patterns = pattern.getPatterns();
-            HashSet<Pattern> newPatterns = new HashSet<>();
-            patterns.forEach(p -> {
-                Pattern childPattern = visitPattern(p);
-                if (childPattern instanceof Conjunction) {
-                    newPatterns.addAll(((Conjunction<? extends Pattern>) childPattern).getPatterns());
-                } else if (childPattern != null) {
-                    newPatterns.add(visitPattern(childPattern));
-                }
-            });
-            if (newPatterns.size() == 0) {
-                return null;
-            } else if (newPatterns.size() == 1) {
-                return getOnlyElement(newPatterns);
-            }
-            return new Conjunction<>(newPatterns);
-        }
     }
 
     public static Statement makeAnonVarsExplicit(Statement statement) {
@@ -291,7 +208,7 @@ public class QueryBuilder {
     private String getNextVar(String prefix){
         nextVarIndex.putIfAbsent(prefix, 0);
         int currentIndex = nextVarIndex.get(prefix);
-        String nextVar = "x" + currentIndex;
+        String nextVar = prefix + currentIndex;
         nextVarIndex.put(prefix, currentIndex + 1);
         return nextVar;
     }

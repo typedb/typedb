@@ -5,10 +5,11 @@ import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
+import grakn.core.test.behaviour.resolution.common.NegationRemovalVisitor;
+import grakn.core.test.behaviour.resolution.common.StatementVisitor;
 import grakn.core.test.behaviour.resolution.resolve.QueryBuilder;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
-import graql.lang.pattern.Disjunction;
 import graql.lang.pattern.Pattern;
 import graql.lang.property.IsaProperty;
 import graql.lang.query.GraqlGet;
@@ -27,7 +28,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static grakn.core.test.behaviour.resolution.resolve.QueryBuilder.generateKeyStatements;
-import static grakn.core.test.behaviour.resolution.resolve.QueryBuilder.visitStatements;
 
 
 public class Completer {
@@ -95,7 +95,10 @@ public class Completer {
 
                 List<ConceptMap> thenAnswers = tx.execute(Graql.match(rule.then, Graql.and(connectingKeyStatements)).get());
 
-                Conjunction<? extends Pattern> ruleResolutionConjunction = qb.ruleResolutionConjunction(rule.when, rule.then, rule.label);
+                // We already know that the rule doesn't contain any disjunctions as we previously used negationDNF,
+                // now we make sure negation blocks are removed, so that we know it must be a conjunct set of statements
+                NegationRemovalVisitor negationRemover = new NegationRemovalVisitor();
+                Pattern ruleResolutionConjunction = negationRemover.visitPattern(qb.ruleResolutionConjunction(rule.when, rule.then, rule.label));
 
                 if (thenAnswers.size() == 0) {
                     // We've found somewhere the rule can be applied
@@ -106,7 +109,7 @@ public class Completer {
                     Set<Statement> insertNewThenStatements = new HashSet<>();
                     insertNewThenStatements.addAll(rule.then.statements());
                     insertNewThenStatements.addAll(getThenKeyStatements(tx, rule.then));
-                    insertNewThenStatements.add(ruleResolutionConjunction);
+                    insertNewThenStatements.addAll(ruleResolutionConjunction.statements());
                     HashSet<Variable> insertedVars = new HashSet<>(rule.then.variables());
                     insertedVars.removeAll(rule.when.variables());
                     numInferredConcepts += insertedVars.size();
@@ -124,7 +127,7 @@ public class Completer {
                         Set<Statement> checkStatements = new HashSet<>();
                         checkStatements.addAll(generateKeyStatements(whenMap));
                         checkStatements.addAll(generateKeyStatements(thenAnswer.map()));
-                        checkStatements.addAll(ruleResolutionConjunction);
+                        checkStatements.addAll(ruleResolutionConjunction.statements());
                         checkStatements.addAll(rule.when.statements());
                         checkStatements.addAll(rule.then.statements());
                         List<ConceptMap> ans = tx.execute(Graql.match(checkStatements).get());
@@ -140,7 +143,7 @@ public class Completer {
                             matchStatements.addAll(rule.when.statements());
                             matchStatements.addAll(rule.then.statements());
 
-                            List<ConceptMap> inserted = tx.execute(Graql.match(matchStatements).insert(ruleResolutionConjunction));
+                            List<ConceptMap> inserted = tx.execute(Graql.match(matchStatements).insert(ruleResolutionConjunction.statements()));
                             assert inserted.size() == 1;
                             foundResult.set(true);
                         }
@@ -197,8 +200,9 @@ public class Completer {
         private String label;
 
         Rule(Pattern when, Pattern then, String label) {
-            this.when = visitStatements(when, QueryBuilder::makeAnonVarsExplicit);
-            this.then = visitStatements(then, QueryBuilder::makeAnonVarsExplicit);
+            StatementVisitor visitor = new StatementVisitor(QueryBuilder::makeAnonVarsExplicit);
+            this.when = visitor.visitPattern(when);
+            this.then = visitor.visitPattern(then);
             this.label = label;
         }
     }

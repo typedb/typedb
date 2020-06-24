@@ -7,6 +7,7 @@ java_library(
     visibility = ["//visibility:public"],
     deps = [
         "//dependencies/maven/artifacts/com/google/guava",
+        "//test/behaviour/resolution/common:common",
         "//concept/answer:answer",
         "//graql/reasoner:reasoner",
         "//kb/concept/api:api",

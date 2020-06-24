@@ -54,7 +54,7 @@ public class TestCompleter {
                 "$r2-c1 has company-id 0;"
         ));
 
-        try (Session session = graknTestServer.session(KEYSPACE)) {
+        try (Session session = graknTestServer.sessionWithNewKeyspace()) {
 
             loadTestCase(session, "case4");
 
@@ -78,7 +78,7 @@ public class TestCompleter {
 
     @Test
     public void testDeduplicationOfInferredConcepts() {
-        try (Session session = graknTestServer.session(KEYSPACE)) {
+        try (Session session = graknTestServer.sessionWithNewKeyspace()) {
 
             loadTestCase(session, "case1");
 
