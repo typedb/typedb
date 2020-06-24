@@ -63,12 +63,9 @@ public class AttributeImpl<D> extends ThingImpl<Attribute<D>, AttributeType<D>> 
      */
     @Override
     public Stream<Thing> owners() {
-        //Get Owner via implicit structure
-        Stream<Thing> implicitOwners = getShortcutNeighbours(false);
         //Get owners via edges
-        Stream<Thing> edgeOwners = neighbours(Direction.IN, Schema.EdgeLabel.ATTRIBUTE);
-
-        return Stream.concat(implicitOwners, edgeOwners);
+        Stream<Thing> owners = neighbours(Direction.IN, Schema.EdgeLabel.ATTRIBUTE);
+        return owners;
     }
 
     /**
@@ -84,16 +81,5 @@ public class AttributeImpl<D> extends ThingImpl<Attribute<D>, AttributeType<D>> 
     @Override
     public String innerToString() {
         return super.innerToString() + "- Value [" + value() + "] ";
-    }
-
-    @Override
-    public Stream<Thing> getDependentConcepts() {
-        Label typeLabel = type().label();
-        Role hasRole = conceptManager.getRole(Schema.ImplicitType.HAS_VALUE.getLabel(typeLabel).getValue());
-        Role keyRole = conceptManager.getRole(Schema.ImplicitType.KEY_VALUE.getLabel(typeLabel).getValue());
-        Stream<Thing> conceptStream = Stream.of(this);
-        if (hasRole != null) conceptStream = Stream.concat(conceptStream, relations(hasRole));
-        if (keyRole != null) conceptStream = Stream.concat(conceptStream, relations(keyRole));
-        return conceptStream;
     }
 }

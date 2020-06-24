@@ -25,8 +25,7 @@ import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.concept.manager.ConceptNotificationChannel;
-import grakn.core.kb.concept.structure.Casting;
-import grakn.core.kb.concept.structure.EdgeElement;
+import grakn.core.kb.concept.api.Casting;
 import grakn.core.kb.concept.structure.VertexElement;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
@@ -124,33 +123,5 @@ public class RelationTypeImpl extends TypeImpl<RelationType, Relation> implement
     @Override
     void trackRolePlayers() {
         conceptNotificationChannel.trackRelationInstancesRolePlayers(this);
-    }
-
-    @Override
-    public Stream<Relation> instancesDirect() {
-        Stream<Relation> instances = super.instancesDirect();
-
-        //If the relation type is implicit then we need to get any relation edges it may have.
-        if (isImplicit()) instances = Stream.concat(instances, relationEdges());
-
-        return instances;
-    }
-
-    private Stream<Relation> relationEdges() {
-        //Unfortunately this is a slow process
-        return roles()
-                .flatMap(Role::players)
-                .flatMap(type -> {
-                    //Traversal is used here to take advantage of vertex centric index
-                    // we use this more complex traversal to get to the instances of the Types that can
-                    // play a role of this relation type
-                    // from there we can access the edges that represent non-reified Concepts
-                    // currently only Attribute can be non-reified
-
-                    Stream<EdgeElement> edgeRelationsConnectedToTypeInstances = ConceptVertex.from(type).vertex()
-                            .edgeRelationsConnectedToInstancesOfType(labelId());
-
-                    return edgeRelationsConnectedToTypeInstances.map(conceptManager::buildRelation);
-                });
     }
 }

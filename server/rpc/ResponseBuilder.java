@@ -34,6 +34,7 @@ import grakn.core.kb.concept.structure.PropertyNotUniqueException;
 import grakn.core.kb.graql.exception.GraqlSemanticException;
 import grakn.core.kb.server.exception.GraknServerException;
 import grakn.core.kb.server.exception.InvalidKBException;
+import grakn.core.kb.server.exception.SessionException;
 import grakn.core.kb.server.exception.TemporaryWriteException;
 import grakn.core.kb.server.exception.TransactionException;
 import grakn.protocol.session.AnswerProto;
@@ -190,9 +191,6 @@ public class ResponseBuilder {
             if (concept.isSchemaConcept()) {
                 builder.setLabelRes(ConceptProto.SchemaConcept.GetLabel.Res.newBuilder()
                         .setLabel(concept.asSchemaConcept().label().getValue()));
-                builder.setIsImplicitRes(ConceptProto.SchemaConcept.IsImplicit.Res.newBuilder()
-                        .setImplicit(concept.asSchemaConcept().isImplicit()));
-
             } else if (concept.isThing()) {
                 builder.setTypeRes(ConceptProto.Thing.Type.Res.newBuilder()
                         .setType(conceptPrefilled(concept.asThing().type())));
@@ -248,7 +246,7 @@ public class ResponseBuilder {
             } else if (valueType.equals(AttributeType.ValueType.DOUBLE)) {
                 return ConceptProto.AttributeType.VALUE_TYPE.DOUBLE;
             } else if (valueType.equals(AttributeType.ValueType.DATETIME)) {
-                return ConceptProto.AttributeType.VALUE_TYPE.DATE;
+                return ConceptProto.AttributeType.VALUE_TYPE.DATETIME;
             } else {
                 throw GraknServerException.unreachableStatement("Unrecognised " + valueType);
             }
@@ -268,7 +266,7 @@ public class ResponseBuilder {
                     return AttributeType.ValueType.FLOAT;
                 case DOUBLE:
                     return AttributeType.ValueType.DOUBLE;
-                case DATE:
+                case DATETIME:
                     return AttributeType.ValueType.DATETIME;
                 default:
                 case UNRECOGNIZED:
@@ -291,7 +289,7 @@ public class ResponseBuilder {
             } else if (value instanceof Double) {
                 builder.setDouble((double) value);
             } else if (value instanceof LocalDateTime) {
-                builder.setDate(((LocalDateTime) value).atZone(ZoneId.of("Z")).toInstant().toEpochMilli());
+                builder.setDatetime(((LocalDateTime) value).atZone(ZoneId.of("Z")).toInstant().toEpochMilli());
             } else {
                 throw GraknServerException.unreachableStatement("Unrecognised " + value);
             }
@@ -414,6 +412,8 @@ public class ResponseBuilder {
             } else if (e instanceof TransactionException | e instanceof GraqlSemanticException |
                     e instanceof GraqlException | e instanceof InvalidKBException) {
                 return exception(Status.INVALID_ARGUMENT, message);
+            } else if (e instanceof SessionException) {
+                return exception(Status.UNAVAILABLE, message);
             }
         } else if (e instanceof StatusRuntimeException) {
             return (StatusRuntimeException) e;

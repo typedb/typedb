@@ -69,6 +69,13 @@ public interface AttributeType<D> extends Type {
      */
     AttributeType<D> sup(AttributeType<D> type);
 
+    Stream<Type> directOwnersAsKey();
+
+    Stream<Type> owners();
+
+    @Override
+    void writeCount(Long count);
+
     /**
      * Sets the Role which instances of this AttributeType may play.
      *
@@ -206,6 +213,14 @@ public interface AttributeType<D> extends Type {
     @Nullable
     String regex();
 
+
+    /**
+     * Return the number of things that own this attribute (not including uncomitted ownerships)
+     * @return
+     */
+    long ownershipCount();
+    void writeOwnershipCount(long count);
+
     //------------------------------------- Other ---------------------------------
     @SuppressWarnings("unchecked")
     @Deprecated
@@ -221,6 +236,7 @@ public interface AttributeType<D> extends Type {
     default boolean isAttributeType() {
         return true;
     }
+
 
     /**
      * A class used to hold the supported value types of resources and any other concepts.

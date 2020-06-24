@@ -18,10 +18,10 @@
 
 package grakn.core.concept;
 
-import com.google.common.collect.Iterables;
 import grakn.core.common.config.Config;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.concept.answer.Void;
+import grakn.core.concept.impl.ConceptVertex;
 import grakn.core.core.JanusTraversalSourceProvider;
 import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.Attribute;
@@ -30,7 +30,6 @@ import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.Entity;
 import grakn.core.kb.concept.api.EntityType;
-import grakn.core.kb.concept.api.GraknConceptException;
 import grakn.core.kb.concept.api.Relation;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
@@ -46,6 +45,7 @@ import graql.lang.Graql;
 import graql.lang.query.GraqlDefine;
 import graql.lang.query.GraqlDelete;
 import graql.lang.query.GraqlInsert;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.hamcrest.Matchers;
 import org.junit.After;
@@ -273,21 +273,6 @@ public class RelationIT {
     }
 
     @Test
-    public void whenAttemptingToLinkTheInstanceOfAResourceRelationToTheResourceWhichCreatedIt_ThrowIfTheRelationTypeDoesNotHavePermissionToPlayTheNecessaryRole(){
-        AttributeType<String> attributeType = tx.putAttributeType("what a pain", AttributeType.ValueType.STRING);
-        Attribute<String> attribute = attributeType.create("a real pain");
-
-        EntityType entityType = tx.putEntityType("yay").has(attributeType);
-        Relation implicitRelation = Iterables.getOnlyElement(entityType.create().has(attribute).relations().collect(Collectors.toSet()));
-
-        expectedException.expect(GraknConceptException.class);
-        expectedException.expectMessage(GraknConceptException.hasNotAllowed(implicitRelation, attribute).getMessage());
-
-        implicitRelation.has(attribute);
-    }
-
-
-    @Test
     public void whenAddingDuplicateRelationsWithDifferentKeys_EnsureTheyCanBeCommitted(){
         Role role1 = tx.putRole("dark");
         Role role2 = tx.putRole("souls");
@@ -350,7 +335,8 @@ public class RelationIT {
         Relation relation = relationType.create();
 
         relation.attributeInferred(attribute);
-        assertTrue(relation.relations().findAny().get().isInferred());
+        assertTrue(ConceptVertex.from(relation).vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.ATTRIBUTE)
+                .anyMatch(edge -> edge.propertyBoolean(Schema.EdgeProperty.IS_INFERRED)));
     }
 
     @Test
@@ -429,7 +415,7 @@ public class RelationIT {
 
         // try to delete the inferred relationship
         tx = session.transaction(Transaction.Type.WRITE);
-        GraqlDelete delete = Graql.parse("match $r isa aunthood; delete $r;").asDelete();
+        GraqlDelete delete = Graql.parse("match $r isa aunthood; delete $r isa relation;").asDelete();
         List<Void> deletedConcepts = tx.execute(delete);
 
         // normally throws on commit

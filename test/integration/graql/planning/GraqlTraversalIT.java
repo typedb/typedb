@@ -110,7 +110,7 @@ public class GraqlTraversalIT {
     private static final Fragment xId = id(null, x.var(), ConceptId.of("Titanic"));
     private static final Fragment yId = id(null, y.var(), ConceptId.of("movie"));
     private static final Fragment xIsaY = outIsa(null, x.var(), y.var());
-    private static final Fragment yTypeOfX = inIsa(null, y.var(), x.var(), true);
+    private static final Fragment yTypeOfX = inIsa(null, y.var(), x.var());
 
     private static final GraqlTraversal fastIsaTraversal = traversal(yId, yTypeOfX);
     private final String ROLE_PLAYER_EDGE = Schema.EdgeLabel.ROLE_PLAYER.getLabel();
@@ -145,7 +145,7 @@ public class GraqlTraversalIT {
     @Test
     public void testComplexityConnectedVsDisconnected() {
         GraqlTraversal connectedDoubleIsa = traversal(xIsaY, outIsa(null, y.var(), z.var()));
-        GraqlTraversal disconnectedDoubleIsa = traversal(xIsaY, inIsa(null, z.var(), y.var(), true));
+        GraqlTraversal disconnectedDoubleIsa = traversal(xIsaY, inIsa(null, z.var(), y.var()));
         assertFaster(connectedDoubleIsa, disconnectedDoubleIsa);
     }
 
@@ -168,7 +168,7 @@ public class GraqlTraversalIT {
         GraqlTraversal fromInstance =
                 traversal(outIsa(null, x.var(), xx.var()), id(null, xx.var(), ConceptId.of("_")), inRolePlayer(x.var(), z.var()), outRolePlayer(z.var(), y.var()));
         GraqlTraversal fromType =
-                traversal(id(null, xx.var(), ConceptId.of("_")), inIsa(null, xx.var(), x.var(), true), inRolePlayer(x.var(), z.var()), outRolePlayer(z.var(), y.var()));
+                traversal(id(null, xx.var(), ConceptId.of("_")), inIsa(null, xx.var(), x.var()), inRolePlayer(x.var(), z.var()), outRolePlayer(z.var(), y.var()));
         assertFaster(fromType, fromInstance);
     }
 

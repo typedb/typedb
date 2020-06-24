@@ -105,10 +105,8 @@ public class QueryValidityIT {
     public void whenQueryingForInexistentResourceId_emptyResultReturned(){
         String queryString = "match $x has name $y; $x id V1337; get;";
         String queryString2 = "match $x has name $y; $y id V1337; get;";
-        String queryString3 = "match $x has name $y via $r; $r id V1337; get;";
         assertThat(tx.execute(Graql.parse(queryString).asGet()), empty());
         assertThat(tx.execute(Graql.parse(queryString2).asGet()), empty());
-        assertThat(tx.execute(Graql.parse(queryString3).asGet()), empty());
     }
 
     @Test (expected = GraqlSemanticException.class)

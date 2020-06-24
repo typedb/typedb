@@ -19,7 +19,6 @@
 package grakn.core.concept.manager;
 
 import grakn.core.concept.impl.RelationImpl;
-import grakn.core.concept.impl.RelationReified;
 import grakn.core.concept.impl.ThingImpl;
 import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.Attribute;
@@ -36,7 +35,7 @@ import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.concept.manager.ConceptListener;
-import grakn.core.kb.concept.structure.Casting;
+import grakn.core.kb.concept.api.Casting;
 import grakn.core.kb.graql.reasoner.cache.QueryCache;
 import grakn.core.kb.graql.reasoner.cache.RuleCache;
 import grakn.core.kb.keyspace.AttributeManager;
@@ -130,17 +129,9 @@ public class ConceptListenerImpl implements ConceptListener {
             transactionCache.trackForValidation(thing);
         }
 
-        //acknowledge key relation modification if the thing is one
-        if (thingType.isImplicit() && Schema.ImplicitType.isKey(thingType.label())){
-            thing.asRelation().rolePlayers()
-                    .filter(Concept::isAttribute)
-                    .map(Concept::asAttribute)
-                    .forEach(key -> {
-                        Label label = Schema.ImplicitType.explicitLabel(thingType.label());
-                        String index = Schema.generateAttributeIndex(label, key.value().toString());
-                        transactionCache.addModifiedKeyIndex(index);
-                    });
-        }
+        // TODO this is probably the source of most KEY-related errors
+
+
     }
 
     @Override
@@ -173,15 +164,26 @@ public class ConceptListenerImpl implements ConceptListener {
     }
 
     @Override
-    public void hasAttributeRelationCreated(Relation hasAttributeRelation, boolean isInferred) {
-        thingCreated(hasAttributeRelation, isInferred);
+    public void hasAttributeCreated(Thing owner, Attribute attribute, boolean isInferred) {
+        //acknowledge key relation modification if the thing is one
+        if (owner.type().keys().anyMatch(attribute.type()::equals)) {
+            Label label = attribute.type().label();
+            String index = Schema.generateAttributeIndex(label, attribute.value().toString());
+            transactionCache.addModifiedKeyIndex(index);
+        }
+
+        statistics.incrementOwnership(attribute.type());
+        transactionCache.hasAttributeCreated(owner, attribute, isInferred);
     }
 
     @Override
-    public void hasAttributeRemoved(Thing owner, Attribute<?> owned) {
-        if (owner.type().keys().anyMatch(key -> key.equals(owned.type()))) {
+    public void hasAttributeRemoved(Thing owner, Attribute<?> attribute, boolean isInferred) {
+        if (owner.type().keys().anyMatch(key -> key.equals(attribute.type()))) {
             transactionCache.trackForValidation(owner);
         }
+
+        statistics.decrementOwnership(attribute.type());
+        transactionCache.hasAttributeDeleted(owner, attribute, isInferred);
     }
 
     @Override
@@ -221,10 +223,7 @@ public class ConceptListenerImpl implements ConceptListener {
     public void trackRelationInstancesRolePlayers(RelationType relationType) {
         relationType.instances().forEach(concept -> {
             RelationImpl relation = RelationImpl.from(concept);
-            RelationReified reifedRelation = relation.reified();
-            if (reifedRelation != null) {
-                reifedRelation.castingsRelation().forEach(rolePlayer -> transactionCache.trackForValidation(rolePlayer));
-            }
+            relation.castingsRelation().forEach(rolePlayer -> transactionCache.trackForValidation(rolePlayer));
         });
     }
 
@@ -243,14 +242,6 @@ public class ConceptListenerImpl implements ConceptListener {
     @Override
     public void castingDeleted(Casting casting) {
        transactionCache.deleteCasting(casting);
-    }
-
-    @Override
-    public void deleteReifiedOwner(Relation owner) {
-        transactionCache.getNewRelations().remove(owner);
-        if (owner.isInferred()) {
-            transactionCache.removeInferredInstance(owner);
-        }
     }
 
     @Override

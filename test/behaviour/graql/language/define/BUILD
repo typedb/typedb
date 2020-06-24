@@ -42,7 +42,7 @@ java_test(
         "@graknlabs_verification//behaviour/graql/language:define.feature",
     ],
     classpath_resources = ["//test/resources:logback-test"],
-    size = "large",
+    size = "enormous",
     visibility = ["//visibility:public"]
 )
 
@@ -50,6 +50,5 @@ checkstyle_test(
     name = "checkstyle",
     targets = [
         ":test",
-
     ],
 )

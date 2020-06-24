@@ -23,11 +23,8 @@ java_library(
     name = "structure",
     srcs = glob(["*.java"]),
     deps = [
-        "//kb/concept/api",
         "//kb/concept/structure",
-        "//kb/concept/manager",
         "//core",
-        "//concept/cache:conceptcache",
         "//graph",
 
         # External dependencies from Maven

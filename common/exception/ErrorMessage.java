@@ -54,11 +54,12 @@ public enum ErrorMessage {
     BACKEND_EXCEPTION("Backend Exception."),
     INITIALIZATION_EXCEPTION("Graph for keyspace [%s] not properly initialized. Missing keyspace name resource"),
     SESSION_CLOSED("The session for graph [%s] is closed. Create a new session to interact with the graph."),
+    SESSION_NOT_FOUND("The client session with session ID [%s] was not found. Create a new session to interact with the graph."),
     LOCKING_EXCEPTION("Internal locking exception. Please clear the transaction and try again."),
     CANNOT_BE_KEY_AND_ATTRIBUTE("The Type [%s] cannot have the Attribute Type [%s] as a key and as an attribute"),
-    ILLEGAL_TYPE_UNHAS_ATTRIBUTE_WITH_INSTANCE("Failed to: undefine [%s] [%s] [%s]. There exists instance of this pattern."),
-    ILLEGAL_TYPE_UNHAS_ATTRIBUTE_INHERITED("Failed to: undefine [%s] [%s] [%s]. Attribute property is inherited from a super type."),
-    ILLEGAL_TYPE_UNHAS_ATTRIBUTE_NOT_EXIST("Failed to: undefine [%s] [%s] [%s]. Attribute property does not exist."),
+    ILLEGAL_TYPE_UNHAS_ATTRIBUTE_WITH_INSTANCE("Failed to: undefine [%s] %s [%s]. There exists instance of this pattern."),
+    ILLEGAL_TYPE_UNHAS_ATTRIBUTE_INHERITED("Failed to: undefine ownership of [%s] %s [%s]. Attribute ownership is inherited from a super type."),
+    ILLEGAL_TYPE_UNHAS_ATTRIBUTE_NOT_EXIST("Failed to: undefine [%s] %s [%s]. Attribute ownership does not exist."),
     TX_CLOSED("The transaction for keyspace [%s] is closed. Use the session to get a new transaction for the graph."),
     TRANSACTION_ALREADY_OPEN("A transaction is already open on this thread for graph [%s]. Close the current transaction before opening a new one in the same thread."),
     TRANSACTION_READ_ONLY("This transaction on graph [%s] is read only"),
@@ -71,7 +72,6 @@ public enum ErrorMessage {
     RESERVED_WORD("The word [%s] is reserved internally and cannot be used"),
     INVALID_PROPERTY_USE("The concept [%s] cannot contain vertex property [%s]"),
     UNKNOWN_CONCEPT("Unknown concept type [%s]"),
-    INVALID_IMPLICIT_TYPE("Label [%s] is not an implicit label"),
     LABEL_TAKEN("The label [%s] has already been used"),
     INVALID_KEYSPACE_NAME("Keyspace name is invalid: [%s]. Keyspace name cannot start with a number, " +
             "and can only contain maximum 48 characters of lower case, alphanumeric and underscore characters."),
@@ -88,7 +88,8 @@ public enum ErrorMessage {
     VALIDATION_ROLE_TYPE_MISSING_RELATION_TYPE("Role [%s] does not have a relates connection to any Relation Type. \n"),
     VALIDATION_RELATION_TYPE("Relation Type [%s] does not have one or more roles \n"),
 
-    VALIDATION_NOT_EXACTLY_ONE_KEY("Thing [%s] of type [%s] does not have exactly one key of type [%s]. It either has no keys assigned to it, or it has more than one. \n"),
+    VALIDATION_OWNS_NO_KEY("Thing [%s] of type [%s] does not have the required key of type [%s]. \n"),
+    VALIDATION_MORE_THAN_ONE_KEY("Thing [%s] of type [%s] has more than one key of type [%s] \n"),
     VALIDATION_MORE_THAN_ONE_USE_OF_KEY("There is more than one thing of type [%s] that owns the key [%s] of type [%s]. \n"),
 
     VALIDATION_RELATION_TYPES_ROLES_SCHEMA("The Role [%s] which is connected to Relation Type [%s] " +
@@ -121,10 +122,6 @@ public enum ErrorMessage {
     VALIDATION_RULE_ILLEGAL_HEAD_ATOM_WITH_UNBOUND_VARIABLE("Atom [%s] is not allowed to form a rule head of rule [%s] as it contains an unbound variable\n"),
 
     VALIDATION_RULE_ILLEGAL_HEAD_ATOM_WITH_AMBIGUOUS_SCHEMA_CONCEPT("Atom [%s] is not allowed to form a rule head of rule [%s] as it has an ambiguous schema concept\n"),
-
-    VALIDATION_RULE_ILLEGAL_HEAD_ATOM_WITH_IMPLICIT_SCHEMA_CONCEPT("Atom [%s] is not allowed to form a rule head of rule [%s] as it has an implicit schema concept\n"),
-
-    VALIDATION_RULE_ILLEGAL_HEAD_RELATION_WITH_IMPLICIT_ROLE("Relation [%s] is not allowed to form a rule head of rule [%s] as it has an implicit role\n"),
 
     VALIDATION_RULE_ILLEGAL_HEAD_RELATION_WITH_AMBIGUOUS_ROLE("Relation [%s] is not allowed to form a rule head of rule [%s] as it has an ambiguous (unspecified, variable or meta) role\n"),
 

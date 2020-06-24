@@ -21,6 +21,7 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import grabl.tracing.client.GrablTracing;
 import grabl.tracing.client.GrablTracingThreadStatic;
 import grabl.tracing.client.GrablTracingThreadStatic.ThreadTrace;
+import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.answer.Explanation;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
@@ -32,6 +33,7 @@ import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.server.Session;
+import grakn.core.kb.server.exception.SessionException;
 import grakn.core.kb.server.exception.TransactionException;
 import grakn.protocol.session.AnswerProto;
 import grakn.protocol.session.SessionProto;
@@ -41,6 +43,7 @@ import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlQuery;
 import io.grpc.Status;
+import io.grpc.StatusException;
 import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,6 +57,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
@@ -64,6 +68,8 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import static grabl.tracing.client.GrablTracingThreadStatic.traceOnThread;
+import static grakn.core.kb.server.Transaction.DEFAULT_EXPLAIN;
+import static grakn.core.kb.server.Transaction.DEFAULT_INFER;
 
 
 /**
@@ -129,6 +135,9 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
     public void close(SessionProto.Session.Close.Req request, StreamObserver<SessionProto.Session.Close.Res> responseObserver) {
         try {
             String sessionId = request.getSessionId();
+            if (!transactionListeners.containsKey(sessionId)) {
+                throw SessionException.sessionNotFound(sessionId);
+            }
             transactionListeners.remove(sessionId).forEach(transactionListener -> transactionListener.close(null));
             openSessions.remove(sessionId).close();
             responseObserver.onNext(SessionProto.Session.Close.Res.newBuilder().build());
@@ -180,12 +189,12 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
                 String rootId = metadata.get("traceRootId");
                 String parentId = metadata.get("traceParentId");
                 if (rootId != null && parentId != null) {
-                    submit(() -> handleRequest(request, GrablTracingThreadStatic.getGrablTracing()
+                    process(() -> handleRequest(request, GrablTracingThreadStatic.getGrablTracing()
                             .trace(UUID.fromString(rootId), UUID.fromString(parentId), "received")));
                     return;
                 }
             }
-            submit(() -> handleRequest(request));
+            process(() -> handleRequest(request));
         }
 
         @Override
@@ -315,8 +324,12 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
             }
         }
 
-        private void submit(Runnable runnable) {
-            threadExecutor.submit(runnable);
+        private void process(Runnable runnable) {
+            try {
+                threadExecutor.submit(runnable).get();
+            } catch (InterruptedException | ExecutionException ex) {
+                // Exception will have been handled already
+            }
         }
 
         private void open(Transaction.Open.Req request) {
@@ -324,7 +337,11 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
                 throw ResponseBuilder.exception(Status.FAILED_PRECONDITION);
             }
 
+            // TODO throw a graceful exception if the session ID does not exist anymore -- server may have restarted
             sessionId = request.getSessionId();
+            if (!transactionListeners.containsKey(sessionId)) {
+                throw SessionException.sessionNotFound(sessionId);
+            }
             transactionListeners.get(sessionId).add(this);
 
             Session session = openSessions.get(sessionId);
@@ -339,7 +356,8 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
             }
 
             Transaction.Res response = ResponseBuilder.Transaction.open();
-            responseSender.onNext(response);        }
+            responseSender.onNext(response);
+        }
 
         private void commit() {
             tx().commit();
@@ -355,7 +373,30 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
                 }
 
                 try (ThreadTrace stream = traceOnThread("stream")) {
-                    Stream<Transaction.Res> responseStream = tx().stream(query, request.getInfer().equals(Transaction.Query.INFER.TRUE)).map(ResponseBuilder.Transaction.Iter::query);
+
+                    // unpack the options into server side values for now, may use an Options object once this grows
+                    boolean infer;
+                    boolean explain;
+
+                    Transaction.Query.Options queryOptions = request.getOptions();
+
+                    Transaction.Query.Options.InferCase inferOption = queryOptions.getInferCase();
+                    if (inferOption.equals(Transaction.Query.Options.InferCase.INFER_NOT_SET)) {
+                        infer = DEFAULT_INFER;
+                    } else {
+                        infer = queryOptions.getInferFlag();
+                    }
+
+                    Transaction.Query.Options.ExplainCase explainOption = queryOptions.getExplainCase();
+                    if (explainOption.equals(Transaction.Query.Options.ExplainCase.EXPLAIN_NOT_SET)) {
+                        explain = DEFAULT_EXPLAIN;
+                    } else {
+                        explain = queryOptions.getExplainFlag();
+                    }
+
+                    Stream<Transaction.Res> responseStream = tx()
+                            .stream(query, infer, explain)
+                            .map(ResponseBuilder.Transaction.Iter::query);
 
                     iterators.startBatchIterating(responseStream.iterator(), options);
                 }
@@ -434,13 +475,12 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
         }
 
         /**
-         * Reconstruct and return the explanation associated with the ConceptMap provided by the user
+         * Reconstruct local ConceptMap and return the explanation associated with the ConceptMap provided by the user
          */
         private void explanation(AnswerProto.Explanation.Req explanationReq) {
-            // extract and reconstruct query pattern with the required IDs
             AnswerProto.ConceptMap explainable = explanationReq.getExplainable();
-            Pattern queryPattern = Graql.parsePattern(explainable.getPattern());
-            Explanation explanation = tx.explanation(queryPattern);
+            ConceptMap localAnswer = RequestReader.conceptMap(explainable, tx);
+            Explanation explanation = tx.explanation(localAnswer);
             Transaction.Res response = ResponseBuilder.Transaction.explanation(explanation);
             onNextResponse(response);
         }
@@ -519,7 +559,7 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
 
             public void iterateBatch(@Nullable Transaction.Iter.Req.Options options) {
                 int batchSize = getSizeFrom(options);
-                for (int i = 0; i < batchSize && iterator.hasNext(); i++){
+                for (int i = 0; i < batchSize && iterator.hasNext(); i++) {
                     responseSender.accept(iterator.next());
                 }
 
@@ -538,9 +578,6 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
         }
 
         private static int getSizeFrom(@Nullable Transaction.Iter.Req.Options options) {
-            if (options == null) {
-                return DEFAULT_BATCH_SIZE;
-            }
             switch (options.getBatchSizeCase()) {
                 case ALL:
                     return Integer.MAX_VALUE;

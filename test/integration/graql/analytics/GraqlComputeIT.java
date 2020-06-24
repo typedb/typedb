@@ -63,14 +63,12 @@ import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 import static graql.lang.Graql.Token.Compute.Algorithm.CONNECTED_COMPONENT;
-import static graql.lang.Graql.Token.Compute.Algorithm.DEGREE;
 import static graql.lang.query.GraqlCompute.Argument.contains;
 import static junit.framework.TestCase.assertNull;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 public class GraqlComputeIT {
 
@@ -107,37 +105,6 @@ public class GraqlComputeIT {
     @Rule
     public ExpectedException expectedEx = ExpectedException.none();
 
-    @Test
-    public void testNullResourceDoesNotBreakAnalytics() throws InvalidKBException {
-        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-            // make slightly odd graph
-            Label resourceTypeId = Label.of("degree");
-            EntityType thingy = tx.putEntityType("thingy");
-
-            AttributeType<Long> attribute = tx.putAttributeType(resourceTypeId, AttributeType.ValueType.LONG);
-            thingy.has(attribute);
-
-            Role degreeOwner = tx.getRole(Schema.ImplicitType.HAS_OWNER.getLabel(resourceTypeId).getValue());
-            Role degreeValue = tx.getRole(Schema.ImplicitType.HAS_VALUE.getLabel(resourceTypeId).getValue());
-            RelationType relationType = tx.putRelationType(Schema.ImplicitType.HAS.getLabel(resourceTypeId))
-                    .relates(degreeOwner)
-                    .relates(degreeValue);
-            thingy.plays(degreeOwner);
-
-            Entity thisThing = thingy.create();
-            relationType.create().assign(degreeOwner, thisThing);
-
-            tx.commit();
-        }
-
-        // the null role-player caused analytics to fail at some stage
-        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-            tx.execute(Graql.compute().centrality().using(DEGREE));
-        } catch (RuntimeException e) {
-            e.printStackTrace();
-            fail();
-        }
-    }
 
     private BiFunction<Label, Transaction, Integer> instanceCount = (typeLabel, tx) ->
             tx.execute(Graql.match(Graql.var("x").isaX(typeLabel.getValue())).get()).size();
@@ -164,8 +131,6 @@ public class GraqlComputeIT {
         addSchemaAndEntities();
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
             //this should return all things BUT NOT attributes or implicit relations
-            Label metaAttributeLabel = tx.getMetaAttributeType().label();
-            Label topImplicitType = Schema.ImplicitType.HAS.getLabel(metaAttributeLabel);
             GraqlGet thingQuery = Graql.match(
                     Graql.and(
                             Graql.var("x").isa(tx.getMetaConcept().label().getValue())
@@ -204,10 +169,9 @@ public class GraqlComputeIT {
     public void whenComputingCountOfMultipleTypes_resultantCountIsASum() {
         addSchemaAndEntities();
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-            Label implicitLabel = Schema.ImplicitType.HAS.getLabel(someAttribute);
-            GraqlCompute.Statistics.Count query = Graql.compute().count().in(thingy, implicitLabel.getValue());
+            GraqlCompute.Statistics.Count query = Graql.compute().count().in(thingy, someAttribute);
             assertEquals(
-                    typeCount(Label.of(thingy), tx) + typeCount(implicitLabel, tx),
+                    typeCount(Label.of(thingy), tx) + typeCount(Label.of(someAttribute), tx),
                     Iterables.getOnlyElement(tx.execute(query)).number()
             );
         }
@@ -317,19 +281,9 @@ public class GraqlComputeIT {
 
             Entity theResourceOwner = thingy.create();
 
-            Role resourceOwner = tx.getRole(Schema.ImplicitType.HAS_OWNER.getLabel(resourceTypeId).getValue());
-            Role resourceValue = tx.getRole(Schema.ImplicitType.HAS_VALUE.getLabel(resourceTypeId).getValue());
-            RelationType relationType = tx.getRelationType(Schema.ImplicitType.HAS.getLabel(resourceTypeId).getValue());
-
-            relationType.create()
-                    .assign(resourceOwner, theResourceOwner)
-                    .assign(resourceValue, resource.create(1L));
-            relationType.create()
-                    .assign(resourceOwner, theResourceOwner)
-                    .assign(resourceValue, resource.create(2L));
-            relationType.create()
-                    .assign(resourceOwner, theResourceOwner)
-                    .assign(resourceValue, resource.create(3L));
+            theResourceOwner.has(resource.create(1L));
+            theResourceOwner.has(resource.create(2L));
+            theResourceOwner.has(resource.create(3L));
 
             tx.commit();
         }
