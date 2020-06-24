@@ -19,7 +19,6 @@
 package hypergraph.graph.edge.impl;
 
 import hypergraph.graph.TypeGraph;
-import hypergraph.graph.edge.Edge;
 import hypergraph.graph.edge.TypeEdge;
 import hypergraph.graph.iid.EdgeIID;
 import hypergraph.graph.iid.VertexIID;
@@ -34,7 +33,7 @@ import static java.util.Objects.hash;
 /**
  * A Type Edge that connects two Type Vertices, and an overridden Type Vertex.
  */
-public abstract class TypeEdgeImpl implements Edge<Schema.Edge.Type, TypeVertex> {
+public abstract class TypeEdgeImpl implements TypeEdge {
 
     final TypeGraph graph;
     final Schema.Edge.Type schema;
@@ -78,6 +77,16 @@ public abstract class TypeEdgeImpl implements Edge<Schema.Edge.Type, TypeVertex>
         }
 
         @Override
+        public EdgeIID.Type outIID() {
+            return EdgeIID.Type.of(from().iid(), schema.out(), to().iid());
+        }
+
+        @Override
+        public EdgeIID.Type inIID() {
+            return EdgeIID.Type.of(to().iid(), schema.in(), from().iid());
+        }
+
+        @Override
         public TypeVertex from() {
             return from;
         }
@@ -106,8 +115,12 @@ public abstract class TypeEdgeImpl implements Edge<Schema.Edge.Type, TypeVertex>
         @Override
         public void delete() {
             if (deleted.compareAndSet(false, true)) {
-                from.outs().deleteNonRecursive(this);
-                to.ins().deleteNonRecursive(this);
+                from.outs().removeFromBuffer(this);
+                to.ins().removeFromBuffer(this);
+                if (from instanceof Persisted && to instanceof Persisted) {
+                    graph.storage().delete(outIID().bytes());
+                    graph.storage().delete(inIID().bytes());
+                }
             }
         }
 
@@ -123,12 +136,11 @@ public abstract class TypeEdgeImpl implements Edge<Schema.Edge.Type, TypeVertex>
         public void commit() {
             if (committed.compareAndSet(false, true)) {
                 if (schema.out() != null) {
-                    EdgeIID.Type outIID = EdgeIID.Type.of(from().iid(), schema.out(), to().iid());
-                    if (overridden != null) graph.storage().put(outIID.bytes(), overridden.iid().bytes());
-                    else graph.storage().put(outIID.bytes());
+                    if (overridden != null) graph.storage().put(outIID().bytes(), overridden.iid().bytes());
+                    else graph.storage().put(outIID().bytes());
                 }
                 if (schema.in() != null) {
-                    graph.storage().put(EdgeIID.Type.of(to().iid(), schema.in(), from().iid()).bytes());
+                    graph.storage().put(inIID().bytes());
                 }
             }
         }
@@ -233,10 +245,20 @@ public abstract class TypeEdgeImpl implements Edge<Schema.Edge.Type, TypeVertex>
         }
 
         @Override
+        public EdgeIID.Type outIID() {
+            return outIID;
+        }
+
+        @Override
+        public EdgeIID.Type inIID() {
+            return inIID;
+        }
+
+        @Override
         public TypeVertex from() {
             if (from != null) return from;
             from = graph.convert(fromIID);
-            from.outs().load(this);
+            from.outs().loadToBuffer(this);
             return from;
         }
 
@@ -244,7 +266,7 @@ public abstract class TypeEdgeImpl implements Edge<Schema.Edge.Type, TypeVertex>
         public TypeVertex to() {
             if (to != null) return to;
             to = graph.convert(toIID);
-            to.ins().load(this);
+            to.ins().loadToBuffer(this);
             return to;
         }
 
@@ -284,8 +306,8 @@ public abstract class TypeEdgeImpl implements Edge<Schema.Edge.Type, TypeVertex>
         @Override
         public void delete() {
             if (deleted.compareAndSet(false, true)) {
-                from().outs().deleteNonRecursive(this);
-                to().ins().deleteNonRecursive(this);
+                from().outs().removeFromBuffer(this);
+                to().ins().removeFromBuffer(this);
                 graph.storage().delete(this.outIID.bytes());
                 graph.storage().delete(this.inIID.bytes());
             }

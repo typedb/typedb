@@ -90,6 +90,10 @@ public class Schema {
             throw new HypergraphException(Error.Internal.UNRECOGNISED_VALUE);
         }
 
+        public byte key() {
+            return key;
+        }
+
         public byte[] bytes() {
             return new byte[]{key};
         }
@@ -414,16 +418,6 @@ public class Schema {
 
     public interface Edge {
 
-        static boolean isOut(byte infix) {
-            return infix > 0;
-        }
-
-        Infix out();
-
-        Infix in();
-
-        boolean isOptimisation();
-
         Edge ISA = new Edge() {
 
             @Override
@@ -435,6 +429,16 @@ public class Schema {
             @Override
             public boolean isOptimisation() { return false; }
         };
+
+        static boolean isOut(byte infix) {
+            return infix > 0;
+        }
+
+        Infix out();
+
+        Infix in();
+
+        boolean isOptimisation();
 
         enum Type implements Edge {
             SUB(Infix.EDGE_SUB_OUT, Infix.EDGE_SUB_IN),
@@ -480,20 +484,22 @@ public class Schema {
             HAS(Infix.EDGE_HAS_OUT, Infix.EDGE_HAS_IN),
             PLAYS(Infix.EDGE_PLAYS_OUT, Infix.EDGE_PLAYS_IN),
             RELATES(Infix.EDGE_RELATES_OUT, Infix.EDGE_RELATES_IN),
-            ROLEPLAYER(Infix.EDGE_ROLEPLAYER_OUT, Infix.EDGE_ROLEPLAYER_IN, true);
+            ROLEPLAYER(Infix.EDGE_ROLEPLAYER_OUT, Infix.EDGE_ROLEPLAYER_IN, true, 1);
 
             private final Infix out;
             private final Infix in;
             private final boolean isOptimisation;
+            private final int tailSize;
 
             Thing(Infix out, Infix in) {
-                this(out, in, false);
+                this(out, in, false, 0);
             }
 
-            Thing(Infix out, Infix in, boolean isOptimisation) {
+            Thing(Infix out, Infix in, boolean isOptimisation, int tailSize) {
                 this.out = out;
                 this.in = in;
                 this.isOptimisation = isOptimisation;
+                this.tailSize = tailSize;
                 assert out == null || out.isOptimisation() == isOptimisation;
                 assert in == null || in.isOptimisation() == isOptimisation;
             }
@@ -524,6 +530,14 @@ public class Schema {
             @Override
             public boolean isOptimisation() {
                 return isOptimisation;
+            }
+
+            public int tailSize() {
+                return tailSize;
+            }
+
+            public int lookAhead() {
+                return tailSize + 2;
             }
         }
     }

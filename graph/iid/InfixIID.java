@@ -18,14 +18,12 @@
 
 package hypergraph.graph.iid;
 
-import hypergraph.common.collection.Bytes;
-import hypergraph.common.exception.Error;
-import hypergraph.common.exception.HypergraphException;
 import hypergraph.graph.util.Schema;
 
 import java.util.Arrays;
 
 import static hypergraph.common.collection.Bytes.join;
+import static java.util.Arrays.copyOfRange;
 
 public abstract class InfixIID<EDGE_SCHEMA extends Schema.Edge> extends IID {
 
@@ -47,7 +45,13 @@ public abstract class InfixIID<EDGE_SCHEMA extends Schema.Edge> extends IID {
 
     @Override
     public String toString() { // TODO
-        if (readableString == null) readableString = "[" + Schema.Infix.of(bytes[0]).toString() + "]";
+        if (readableString == null) {
+            readableString = "[1:" + Schema.Infix.of(bytes[0]).toString() + "]";
+            if (bytes.length > 1) {
+                readableString += "[" + (bytes.length - 1) + ": " +
+                        Arrays.toString(copyOfRange(bytes, 1, bytes.length)) + "]";
+            }
+        }
         return readableString;
     }
 
@@ -80,30 +84,34 @@ public abstract class InfixIID<EDGE_SCHEMA extends Schema.Edge> extends IID {
             super(bytes);
         }
 
-        public static InfixIID.Thing of(Schema.Infix infix) {
-            return new InfixIID.Thing(infix.bytes());
-        }
-
-        public static InfixIID.Thing of(Schema.Infix infix, VertexIID.Type infixTail) {
-            return of(infix);
-//            if (!infix.isOptimisation()) {
-//                assert infixTail == null;
-//                return of(infix);
-//            } else {
-//                // For now, we only have OPT_ROLE as an optimisation edge
-//                return InfixIID.OptimisedRole.of(infix, infixTail);
-//            }
-        }
-
         static InfixIID.Thing extract(byte[] bytes, int from) {
             Schema.Edge.Thing schema = Schema.Edge.Thing.of(bytes[from]);
-            if (!schema.isOptimisation()) {
-                return new InfixIID.Thing(new byte[]{bytes[from]});
-            } else if ((schema.equals(Schema.Edge.Thing.ROLEPLAYER))) {
-                return OptimisedRole.extract(bytes, from);
+            if ((schema.equals(Schema.Edge.Thing.ROLEPLAYER))) {
+                return RolePlayer.extract(bytes, from);
             } else {
-                assert false;
-                throw new HypergraphException(Error.Internal.UNRECOGNISED_VALUE);
+                return new InfixIID.Thing(new byte[]{bytes[from]});
+            }
+        }
+
+        public static InfixIID.Thing of(Schema.Infix infix) {
+            if (Schema.Edge.Thing.of(infix).equals(Schema.Edge.Thing.ROLEPLAYER)) {
+                return new InfixIID.RolePlayer(infix.bytes());
+            } else {
+                return new InfixIID.Thing(infix.bytes());
+            }
+        }
+
+        public static InfixIID.Thing of(Schema.Infix infix, IID... tail) {
+            byte[][] iidBytes = new byte[tail.length + 1][];
+            iidBytes[0] = infix.bytes();
+            for (int i = 0; i < tail.length; i++) {
+                iidBytes[i + 1] = tail[i].bytes();
+            }
+
+            if (Schema.Edge.Thing.of(infix).equals(Schema.Edge.Thing.ROLEPLAYER)) {
+                return new InfixIID.RolePlayer(join(iidBytes));
+            } else {
+                return new InfixIID.Thing(join(iidBytes));
             }
         }
 
@@ -126,49 +134,30 @@ public abstract class InfixIID<EDGE_SCHEMA extends Schema.Edge> extends IID {
             return new InfixIID.Thing(copy);
         }
 
-        public InfixIID.Thing withoutTail() {
-            if (bytes.length == SCHEMA_LENGTH) return this;
-            else return new Thing(new byte[]{bytes[0]});
-        }
-
-        public boolean isOptimisation() {
-            return schema().isOptimisation();
-        }
-
-        public boolean hasTail() {
-            return bytes.length > SCHEMA_LENGTH;
-        }
-
-        public VertexIID.Type tail() {
+        public InfixIID.RolePlayer asRolePlayer() {
+            if (this instanceof InfixIID.RolePlayer) return (InfixIID.RolePlayer) this;
+            else assert false;
             return null;
-        }
-
-        public boolean containsTail(VertexIID.Type infixTail) {
-            return false;
         }
     }
 
-    public static class OptimisedRole extends InfixIID.Thing {
+    public static class RolePlayer extends InfixIID.Thing {
 
-        private OptimisedRole(byte[] bytes) {
+        private RolePlayer(byte[] bytes) {
             super(bytes);
         }
 
-        public static InfixIID.OptimisedRole of(Schema.Infix infix, VertexIID.Type type) {
+        public static RolePlayer of(Schema.Infix infix, VertexIID.Type type) {
             assert type != null && Schema.Edge.Thing.of(infix).equals(Schema.Edge.Thing.ROLEPLAYER);
-            return new InfixIID.OptimisedRole(join(infix.bytes(), type.bytes()));
+            return new RolePlayer(join(infix.bytes(), type.bytes()));
         }
 
-        static InfixIID.Thing extract(byte[] bytes, int from) {
-            return new InfixIID.OptimisedRole(join(new byte[]{bytes[0]}, VertexIID.Type.extract(bytes, from + SCHEMA_LENGTH).bytes()));
+        static RolePlayer extract(byte[] bytes, int from) {
+            return new RolePlayer(join(new byte[]{bytes[from]}, VertexIID.Type.extract(bytes, from + SCHEMA_LENGTH).bytes()));
         }
 
         public VertexIID.Type tail() {
             return VertexIID.Type.extract(bytes, SCHEMA_LENGTH);
-        }
-
-        public boolean containsTail(VertexIID.Type infixTail) {
-            return Bytes.arrayContains(bytes, SCHEMA_LENGTH, infixTail.bytes);
         }
     }
 }

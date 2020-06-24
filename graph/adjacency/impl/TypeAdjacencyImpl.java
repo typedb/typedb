@@ -54,28 +54,29 @@ public abstract class TypeAdjacencyImpl implements TypeAdjacency {
         this.edges = new ConcurrentHashMap<>();
     }
 
+    private void putNonRecursive(TypeEdge edge) {
+        loadToBuffer(edge);
+        owner.setModified();
+    }
+
+    @Override
     public void put(Schema.Edge.Type schema, TypeVertex adjacent) {
         TypeVertex from = direction.isOut() ? owner : adjacent;
         TypeVertex to = direction.isOut() ? adjacent : owner;
         TypeEdge edge = new TypeEdgeImpl.Buffered(schema, from, to);
         edges.computeIfAbsent(schema, e -> ConcurrentHashMap.newKeySet()).add(edge);
-        to.ins().putNonRecursive(edge);
+        if (direction.isOut()) ((TypeAdjacencyImpl) to.ins()).putNonRecursive(edge);
+        else ((TypeAdjacencyImpl) from.outs()).putNonRecursive(edge);
         owner.setModified();
     }
 
     @Override
-    public void putNonRecursive(TypeEdge edge) {
-        load(edge);
-        owner.setModified();
-    }
-
-    @Override
-    public void load(TypeEdge edge) {
+    public void loadToBuffer(TypeEdge edge) {
         edges.computeIfAbsent(edge.schema(), e -> ConcurrentHashMap.newKeySet()).add(edge);
     }
 
     @Override
-    public void deleteNonRecursive(TypeEdge edge) {
+    public void removeFromBuffer(TypeEdge edge) {
         if (edges.containsKey(edge.schema())) {
             edges.get(edge.schema()).remove(edge);
             owner.setModified();
@@ -132,16 +133,6 @@ public abstract class TypeAdjacencyImpl implements TypeAdjacency {
                 return edges.get(schema).stream().filter(predicate).findAny().orElse(null);
             }
             return null;
-        }
-
-        @Override
-        public void delete(Schema.Edge.Type schema, TypeVertex adjacent) {
-            if (edges.containsKey(schema)) {
-                Predicate<TypeEdge> predicate = direction.isOut()
-                        ? e -> e.to().equals(adjacent)
-                        : e -> e.from().equals(adjacent);
-                edges.get(schema).stream().filter(predicate).forEach(Edge::delete);
-            }
         }
 
         @Override
@@ -208,24 +199,6 @@ public abstract class TypeAdjacencyImpl implements TypeAdjacency {
             }
 
             return null;
-        }
-
-        @Override
-        public void delete(Schema.Edge.Type schema, TypeVertex adjacent) {
-            Optional<TypeEdge> edgeOpt;
-            Predicate<TypeEdge> predicate = direction.isOut()
-                    ? e -> e.to().equals(adjacent)
-                    : e -> e.from().equals(adjacent);
-
-            if (edges.containsKey(schema) && (edgeOpt = edges.get(schema).stream().filter(predicate).findAny()).isPresent()) {
-                edgeOpt.get().delete();
-            }
-
-            byte[] edgeIID = edgeIID(schema, adjacent);
-            byte[] overriddenIID;
-            if ((overriddenIID = owner.graph().storage().get(edgeIID)) != null) {
-                (newPersistedEdge(edgeIID, overriddenIID)).delete();
-            }
         }
 
         @Override

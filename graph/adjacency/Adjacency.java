@@ -19,23 +19,36 @@
 package hypergraph.graph.adjacency;
 
 import hypergraph.graph.edge.Edge;
-import hypergraph.graph.iid.VertexIID;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.vertex.Vertex;
 
 import java.util.Iterator;
-import java.util.List;
 import java.util.function.Consumer;
-
-import static java.util.Collections.emptyList;
 
 public interface Adjacency<
         EDGE_SCHEMA extends Schema.Edge,
-        EDGE extends Edge<?, VERTEX>,
+        EDGE extends Edge<?, ?, VERTEX>,
         VERTEX extends Vertex<?, ?, VERTEX, EDGE_SCHEMA, EDGE>> {
 
+    /**
+     * Returns an {@code IteratorBuilder} to retrieve vertices of a set of edges.
+     *
+     * This method allows us to traverse the graph, by going from one vertex to
+     * another, that are connected by edges that match the provided {@code schema}.
+     *
+     * @param schema the {@code Schema} to filter the type of edges
+     * @return an {@code IteratorBuilder} to retrieve vertices of a set of edges.
+     */
     IteratorBuilder<VERTEX> edge(EDGE_SCHEMA schema);
 
+    /**
+     * Returns an edge of type {@code schema} that connects to an {@code adjacent}
+     * vertex.
+     *
+     * @param schema   type of the edge to filter by
+     * @param adjacent vertex that the edge connects to
+     * @return an edge of type {@code schema} that connects to {@code adjacent}.
+     */
     EDGE edge(EDGE_SCHEMA schema, VERTEX adjacent);
 
     /**
@@ -51,27 +64,22 @@ public interface Adjacency<
      */
     void put(EDGE_SCHEMA schema, VERTEX adjacent);
 
-    void putNonRecursive(EDGE edge);
-
-    void load(EDGE edge);
-
-    void delete(EDGE_SCHEMA schema, VERTEX adjacent);
-
     /**
-     * Deletes an edge with a given schema from the {@code Adjacency} map.
+     * Deletes all edges with a given schema from the {@code Adjacency} map.
      *
-     * Deleting the edge renders all adjacent vertices connected through this
-     * edge to no longer be connected to the owner of this {@code Adjacency}
-     * map, both through this {@code Adjacency} or the opposite one that the
-     * disconnected vertices own. I.e. this is a recursive delete operation
+     * This is a recursive delete operation. Deleting the edges from this
+     * {@code Adjacency} map will also delete it from the {@code Adjacency} map
+     * of the previously adjacent vertex.
      *
-     * @param schema of the edge that will connect the owner to the adjacent vertex
+     * @param schema type of the edge to the adjacent vertex
      */
     void delete(EDGE_SCHEMA schema);
 
-    void deleteNonRecursive(EDGE edge);
-
     void deleteAll();
+
+    void loadToBuffer(EDGE edge);
+
+    void removeFromBuffer(EDGE edge);
 
     void forEach(Consumer<EDGE> function);
 

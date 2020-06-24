@@ -39,10 +39,10 @@ public class LinkedIterators<T> implements Iterators.Composable<T> {
 
     @Override
     public boolean hasNext() {
-        while (!iterators.get(0).hasNext() && iterators.size() > 1) {
+        while (!iterators.isEmpty() && !iterators.get(0).hasNext() && iterators.size() > 1) {
             iterators.remove(0);
         }
-        return iterators.get(0).hasNext();
+        return !iterators.isEmpty() && iterators.get(0).hasNext();
     }
 
     @Override

@@ -105,7 +105,7 @@ public abstract class TypeImpl implements Type {
     }
 
     void superTypeVertex(TypeVertex superTypeVertex) {
-        vertex.outs().delete(Schema.Edge.Type.SUB, ((TypeImpl) sup()).vertex);
+        vertex.outs().edge(Schema.Edge.Type.SUB, ((TypeImpl) sup()).vertex).delete();
         vertex.outs().put(Schema.Edge.Type.SUB, superTypeVertex);
     }
 

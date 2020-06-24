@@ -92,7 +92,7 @@ public abstract class ThingImpl implements Thing {
 
     @Override
     public void unhas(Attribute attribute) {
-        vertex.outs().delete(Schema.Edge.Thing.HAS, ((AttributeImpl) attribute).vertex);
+        vertex.outs().edge(Schema.Edge.Thing.HAS, ((AttributeImpl) attribute).vertex).delete();
     }
 
     @Override

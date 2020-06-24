@@ -23,8 +23,6 @@ import hypergraph.common.exception.HypergraphException;
 import hypergraph.graph.util.KeyGenerator;
 import hypergraph.graph.util.Schema;
 
-import java.util.Arrays;
-
 import static hypergraph.common.collection.Bytes.DATETIME_SIZE;
 import static hypergraph.common.collection.Bytes.DOUBLE_SIZE;
 import static hypergraph.common.collection.Bytes.LONG_SIZE;

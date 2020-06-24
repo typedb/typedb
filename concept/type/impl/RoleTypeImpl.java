@@ -21,7 +21,6 @@ package hypergraph.concept.type.impl;
 import hypergraph.common.exception.Error;
 import hypergraph.common.exception.HypergraphException;
 import hypergraph.concept.thing.Entity;
-import hypergraph.concept.thing.impl.EntityImpl;
 import hypergraph.concept.thing.impl.RoleImpl;
 import hypergraph.concept.type.RoleType;
 import hypergraph.graph.TypeGraph;

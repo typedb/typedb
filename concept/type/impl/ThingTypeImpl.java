@@ -97,7 +97,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
     @Override
     public void unkey(AttributeType attributeType) {
-        vertex.outs().delete(Schema.Edge.Type.KEY, ((AttributeTypeImpl) attributeType).vertex);
+        vertex.outs().edge(Schema.Edge.Type.KEY, ((AttributeTypeImpl) attributeType).vertex).delete();
     }
 
     @Override
@@ -142,7 +142,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
     @Override
     public void unhas(AttributeType attributeType) {
-        vertex.outs().delete(Schema.Edge.Type.HAS, ((AttributeTypeImpl) attributeType).vertex);
+        vertex.outs().edge(Schema.Edge.Type.HAS, ((AttributeTypeImpl) attributeType).vertex).delete();
     }
 
     private Stream<AttributeTypeImpl> declaredAttributes() {
@@ -198,7 +198,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     @Override
     public void unplay(RoleType roleType) {
         RoleTypeImpl roleTypeImpl = (RoleTypeImpl) roleType;
-        vertex.outs().delete(Schema.Edge.Type.PLAYS, roleTypeImpl.vertex);
+        vertex.outs().edge(Schema.Edge.Type.PLAYS, roleTypeImpl.vertex).delete();
     }
 
     private Stream<RoleTypeImpl> declaredPlays() {

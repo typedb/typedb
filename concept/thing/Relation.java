@@ -21,7 +21,6 @@ package hypergraph.concept.thing;
 import hypergraph.concept.type.RelationType;
 import hypergraph.concept.type.RoleType;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
 

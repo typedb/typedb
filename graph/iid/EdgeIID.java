@@ -32,6 +32,8 @@ public abstract class EdgeIID<
     EDGE_INFIX infix;
     VERTEX_IID_START start;
     VERTEX_IID_END end;
+    SuffixIID suffix;
+    int endIndex, infixIndex, suffixIndex;
 
     EdgeIID(byte[] bytes) {
         super(bytes);
@@ -44,7 +46,18 @@ public abstract class EdgeIID<
     public abstract VERTEX_IID_END end();
 
     int infixIndex() {
-        return start().bytes.length;
+        if (infixIndex == 0) infixIndex = start().bytes.length;
+        return infixIndex;
+    }
+
+    int endIndex() {
+        if (endIndex == 0) endIndex = infixIndex() + infix().bytes.length;
+        return endIndex;
+    }
+
+    int suffixIndex() {
+        if (suffixIndex == 0) suffixIndex = endIndex() + end().bytes.length;
+        return suffixIndex;
     }
 
     public EDGE_SCHEMA schema() {
@@ -123,6 +136,11 @@ public abstract class EdgeIID<
             return infix;
         }
 
+        public SuffixIID suffix() {
+            if (suffix == null) suffix = SuffixIID.of(copyOfRange(bytes, suffixIndex(), bytes.length));
+            return suffix;
+        }
+
         @Override
         public VertexIID.Thing start() {
             if (start == null) start = VertexIID.Thing.extract(bytes, 0);
@@ -132,7 +150,7 @@ public abstract class EdgeIID<
 
         @Override
         public VertexIID.Thing end() {
-            if (end == null) end = VertexIID.Thing.extract(bytes, infixIndex() + 1);
+            if (end == null) end = VertexIID.Thing.extract(bytes, endIndex());
             return end;
         }
     }

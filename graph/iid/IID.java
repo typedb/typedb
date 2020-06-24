@@ -24,10 +24,10 @@ public abstract class IID {
 
     // TODO: convert HEX_ARRAY to byte[] once upgraded to Java 9+
     private static final char[] HEX_ARRAY = "0123456789abcdef".toCharArray();
-    private String hexString;
-    private int hash = 0;
     protected final byte[] bytes;
     String readableString; // for debugging
+    private String hexString;
+    private int hash = 0;
 
     IID(byte[] bytes) {
         this.bytes = bytes;
