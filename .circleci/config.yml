@@ -20,28 +20,28 @@ version: 2.1
 orbs:
   win: circleci/windows@2.0.0
 commands:
-  bazel-install-linux:
+  install-bazel-linux:
     steps:
       - run: |
           mkdir install
           cd install
-          curl -OL https://raw.githubusercontent.com/lolski/build-tools/refactor/tools/bazelinstall/linux.sh
+          curl -OL https://raw.githubusercontent.com/lolski/build-tools/refactor/tool/bazelinstall/linux.sh
           bash ./linux.sh
-          curl -OL https://raw.githubusercontent.com/lolski/build-tools/refactor/tools/bazelinstall/rbe.sh
+          curl -OL https://raw.githubusercontent.com/lolski/build-tools/refactor/tool/bazelinstall/rbe.sh
           bash ./rbe.sh
           cd ..
           rm -rf install
-  bazel-install-mac:
+  install-bazel-mac:
     steps:
       - run: |
           mkdir install
           cd install
-          curl -OL https://raw.githubusercontent.com/lolski/build-tools/refactor/tools/bazelinstall/mac.sh
+          curl -OL https://raw.githubusercontent.com/lolski/build-tools/refactor/tool/bazelinstall/mac.sh
           bash ./mac.sh
           cd ..
           rm -rf install
 
-  bazel-run-rbe:
+  run-bazel:
     parameters:
       command:
           type: string
@@ -54,9 +54,9 @@ jobs:
       image: ubuntu-1604:201903-01
     working_directory: ~/grakn
     steps:
-      - bazel-install-linux
+      - install-bazel-linux
       - checkout
-      - bazel-run-rbe:
+      - run-bazel:
           command: bazel build //...
       - run:
           command: bazel run @graknlabs_dependencies//tool/unuseddeps:unused-deps -- list
@@ -67,10 +67,10 @@ jobs:
       image: ubuntu-1604:201903-01
     working_directory: ~/grakn
     steps:
-      - bazel-install-linux
+      - install-bazel-linux
       - checkout
       - run: bazel run @graknlabs_dependencies//tool/checkstyle:test-coverage
-      - bazel-run-rbe:
+      - run-bazel:
           command: bazel test $(bazel query 'kind(checkstyle_test, //...)')
 
   build-analysis:
@@ -78,7 +78,7 @@ jobs:
       image: ubuntu-1604:201903-01
     working_directory: ~/grakn
     steps:
-      - bazel-install-linux
+      - install-bazel-linux
       - checkout
       - run: |
           SONARCLOUD_CODE_ANALYSIS_CREDENTIAL=$SONARCLOUD_CREDENTIAL \
@@ -95,9 +95,9 @@ jobs:
       image: ubuntu-1604:201903-01
     working_directory: ~/grakn
     steps:
-      - bazel-install-linux
+      - install-bazel-linux
       - checkout
-      - bazel-run-rbe:
+      - run-bazel:
           command: bazel test //common/... --test_output=errors
 
   test-server:
@@ -105,9 +105,9 @@ jobs:
       image: ubuntu-1604:201903-01
     working_directory: ~/grakn
     steps:
-      - bazel-install-linux
+      - install-bazel-linux
       - checkout
-      - bazel-run-rbe:
+      - run-bazel:
           command: bazel test //server/... --test_output=errors
 
   test-graql:
@@ -115,9 +115,9 @@ jobs:
       image: ubuntu-1604:201903-01
     working_directory: ~/grakn
     steps:
-      - bazel-install-linux
+      - install-bazel-linux
       - checkout
-      - bazel-run-rbe:
+      - run-bazel:
           command: bazel test //graql/... --test_output=errors
 
 
@@ -127,13 +127,13 @@ jobs:
       image: ubuntu-1604:201903-01
     working_directory: ~/grakn
     steps:
-      - bazel-install-linux
+      - install-bazel-linux
       - checkout
-      - bazel-run-rbe:
+      - run-bazel:
           command: bazel test //test/behaviour/connection/keyspace:test --test_output=errors
-      - bazel-run-rbe:
+      - run-bazel:
           command: bazel test //test/behaviour/connection/session:test --test_output=errors
-      - bazel-run-rbe:
+      - run-bazel:
           command: bazel test //test/behaviour/connection/transaction:test --test_output=errors
 
   test-behaviour-graql-define:
@@ -141,9 +141,9 @@ jobs:
       image: ubuntu-1604:201903-01
     working_directory: ~/grakn
     steps:
-      - bazel-install-linux
+      - install-bazel-linux
       - checkout
-      - bazel-run-rbe:
+      - run-bazel:
           command: bazel test //test/behaviour/graql/language/define:test --test_output=errors
 
   test-behaviour-graql-delete:
@@ -151,18 +151,18 @@ jobs:
       image: ubuntu-1604:201903-01
     working_directory: ~/grakn
     steps:
-      - bazel-install-linux
+      - install-bazel-linux
       - checkout
-      - bazel-run-rbe:
+      - run-bazel:
           command: bazel test //test/behaviour/graql/language/delete:test --test_output=errors
 
   test-behaviour-graql-get:
     machine: true
     working_directory: ~/grakn
     steps:
-      - bazel-install-linux
+      - install-bazel-linux
       - checkout
-      - bazel-run-rbe:
+      - run-bazel:
           command: bazel test //test/behaviour/graql/language/get:test --test_output=errors
 
   test-behaviour-graql-insert:
@@ -170,9 +170,9 @@ jobs:
       image: ubuntu-1604:201903-01
     working_directory: ~/grakn
     steps:
-      - bazel-install-linux
+      - install-bazel-linux
       - checkout
-      - bazel-run-rbe:
+      - run-bazel:
           command: bazel test //test/behaviour/graql/language/insert:test --test_output=errors
 
   test-behaviour-graql-match:
@@ -180,9 +180,9 @@ jobs:
       image: ubuntu-1604:201903-01
     working_directory: ~/grakn
     steps:
-      - bazel-install-linux
+      - install-bazel-linux
       - checkout
-      - bazel-run-rbe:
+      - run-bazel:
           command: bazel test //test/behaviour/graql/language/match:test --test_output=errors
 
   test-behaviour-graql-undefine:
@@ -190,9 +190,9 @@ jobs:
       image: ubuntu-1604:201903-01
     working_directory: ~/grakn
     steps:
-      - bazel-install-linux
+      - install-bazel-linux
       - checkout
-      - bazel-run-rbe:
+      - run-bazel:
           command: bazel test //test/behaviour/graql/language/undefine:test --test_output=errors
 
   test-behaviour-graql-reasoner:
@@ -200,9 +200,9 @@ jobs:
       image: ubuntu-1604:201903-01
     working_directory: ~/grakn
     steps:
-      - bazel-install-linux
+      - install-bazel-linux
       - checkout
-      - bazel-run-rbe:
+      - run-bazel:
           command: bazel test //test/behaviour/graql/reasoner/explanation:test --test_output=errors
 
   # integration tests
@@ -211,15 +211,15 @@ jobs:
       image: ubuntu-1604:201903-01
     working_directory: ~/grakn
     steps:
-      - bazel-install-linux
+      - install-bazel-linux
       - checkout
-      - bazel-run-rbe:
+      - run-bazel:
           command: bazel test //test/integration/server/... --test_output=errors
-      - bazel-run-rbe:
+      - run-bazel:
           command: bazel test //test/integration/graql/executor/... --test_output=errors
-      - bazel-run-rbe:
+      - run-bazel:
           command: bazel test //test/integration/graql/query/... --test_output=errors
-      - bazel-run-rbe:
+      - run-bazel:
           command: bazel test //test/integration/graql/planning/... --test_output=errors
 
   test-integration-concept:
@@ -227,9 +227,9 @@ jobs:
       image: ubuntu-1604:201903-01
     working_directory: ~/grakn
     steps:
-      - bazel-install-linux
+      - install-bazel-linux
       - checkout
-      - bazel-run-rbe:
+      - run-bazel:
           command: bazel test //test/integration/concept/... --test_output=errors
 
   test-integration-keyspace:
@@ -237,9 +237,9 @@ jobs:
       image: ubuntu-1604:201903-01
     working_directory: ~/grakn
     steps:
-      - bazel-install-linux
+      - install-bazel-linux
       - checkout
-      - bazel-run-rbe:
+      - run-bazel:
           command: bazel test //test/integration/keyspace/... --test_output=errors
 
   test-integration-reasoner:
@@ -247,9 +247,9 @@ jobs:
       image: ubuntu-1604:201903-01
     working_directory: ~/grakn
     steps:
-      - bazel-install-linux
+      - install-bazel-linux
       - checkout
-      - bazel-run-rbe:
+      - run-bazel:
           command: bazel test //test/integration/graql/reasoner/... --test_output=errors
 
   test-integration-analytics:
@@ -257,9 +257,9 @@ jobs:
       image: ubuntu-1604:201903-01
     working_directory: ~/grakn
     steps:
-      - bazel-install-linux
+      - install-bazel-linux
       - checkout
-      - bazel-run-rbe:
+      - run-bazel:
           command: bazel test //test/integration/graql/analytics/... --test_output=errors
 
   # assembly tests
@@ -268,9 +268,9 @@ jobs:
       image: ubuntu-1604:201903-01
     working_directory: ~/grakn
     steps:
-      - bazel-install-linux
+      - install-bazel-linux
       - checkout
-      - bazel-run-rbe:
+      - run-bazel:
           command: bazel test //test/assembly:test-assembly --test_output=streamed --spawn_strategy=local
 
   test-assembly-mac-zip:
@@ -278,9 +278,9 @@ jobs:
       xcode: "10.2.1"
     working_directory: ~/grakn
     steps:
-      - bazel-install-mac
+      - install-bazel-mac
       - checkout
-      - bazel-run-rbe:
+      - run-bazel:
           command: bazel build //:assemble-mac-zip
       - run: TEST_CACHE_TOKEN=$REPO_GITHUB_TOKEN bazel run @graknlabs_dependencies//tool/cache:cache -- --file $(pwd)/bazel-bin/grakn-core-all-mac.zip --get
       - run: unzip bazel-bin/grakn-core-all-mac.zip -d bazel-bin/
@@ -310,9 +310,9 @@ jobs:
       image: ubuntu-1604:201903-01
     working_directory: ~/grakn
     steps:
-      - bazel-install-linux
+      - install-bazel-linux
       - checkout
-      - bazel-run-rbe:
+      - run-bazel:
           command: bazel build //:assemble-linux-targz
       - run: TEST_CACHE_TOKEN=$REPO_GITHUB_TOKEN bazel run @graknlabs_dependencies//tool/cache:cache -- --file $(pwd)/bazel-bin/grakn-core-all-linux.tar.gz --get
       - run: tar -xf bazel-bin/grakn-core-all-linux.tar.gz -C bazel-bin
@@ -332,7 +332,7 @@ jobs:
       image: ubuntu-1604:201903-01
     working_directory: ~/grakn
     steps:
-      - bazel-install-linux
+      - install-bazel-linux
       - checkout
       - run: test/assembly/docker.py
       - store_artifacts:
@@ -347,7 +347,7 @@ jobs:
       image: ubuntu-1604:201903-01
     working_directory: ~/grakn
     steps:
-      - bazel-install-linux
+      - install-bazel-linux
       - checkout
       - run: |
           export DEPLOY_APT_USERNAME=$REPO_GRAKN_USERNAME
@@ -360,7 +360,7 @@ jobs:
       image: ubuntu-1604:201903-01
     working_directory: ~/grakn
     steps:
-      - bazel-install-linux
+      - install-bazel-linux
       - checkout
       - run: sudo apt-get update && sudo apt-get install rpm
       - run: |
@@ -374,7 +374,7 @@ jobs:
       image: ubuntu-1604:201903-01
     working_directory: ~/grakn
     steps:
-      - bazel-install-linux
+      - install-bazel-linux
       - checkout
       - run: sudo add-apt-repository 'deb [ arch=all ] https://repo.grakn.ai/repository/apt-snapshot/ trusty main'
       - run: sudo add-apt-repository 'deb [ arch=all ] https://repo.grakn.ai/repository/apt/ trusty main'
@@ -412,7 +412,7 @@ jobs:
     machine: 
       image: ubuntu-1604:201903-01
     steps:
-      - bazel-install-linux
+      - install-bazel-linux
       - checkout
       - run: |
           export SYNC_DEPENDENCIES_TOKEN=$REPO_GITHUB_TOKEN
@@ -428,7 +428,7 @@ jobs:
     machine: 
       image: ubuntu-1604:201903-01
     steps:
-      - bazel-install-linux
+      - install-bazel-linux
       - checkout
       - run: |
           export RELEASE_APPROVAL_USERNAME=$REPO_GITHUB_USERNAME
@@ -439,7 +439,7 @@ jobs:
     machine: 
       image: ubuntu-1604:201903-01
     steps:
-      - bazel-install-linux
+      - install-bazel-linux
       - checkout
       - run: |
           bazel run @graknlabs_dependencies//tool/release:validate-deps -- \
@@ -450,7 +450,7 @@ jobs:
       image: ubuntu-1604:201903-01
     working_directory: ~/grakn
     steps:
-      - bazel-install-linux
+      - install-bazel-linux
       - checkout
       - run: |
           pip install certifi
@@ -465,7 +465,7 @@ jobs:
       image: ubuntu-1604:201903-01
     working_directory: ~/grakn
     steps:
-      - bazel-install-linux
+      - install-bazel-linux
       - checkout
       - run: cat VERSION
       - run: |
@@ -479,7 +479,7 @@ jobs:
       image: ubuntu-1604:201903-01
     working_directory: ~/grakn
     steps:
-      - bazel-install-linux
+      - install-bazel-linux
       - checkout
       - run: sudo apt-get update && sudo apt-get install rpm
       - run: cat VERSION
@@ -494,7 +494,7 @@ jobs:
       image: ubuntu-1604:201903-01
     working_directory: ~/grakn
     steps:
-      - bazel-install-linux
+      - install-bazel-linux
       - checkout
       - run: |
           export DEPLOY_BREW_TOKEN=$REPO_GITHUB_TOKEN
@@ -505,7 +505,7 @@ jobs:
       image: ubuntu-1604:201903-01
     working_directory: ~/grakn
     steps:
-      - bazel-install-linux
+      - install-bazel-linux
       - checkout
       - run: |
           docker login -u $REPO_DOCKER_USERNAME -p $REPO_DOCKER_PASSWORD
@@ -515,7 +515,7 @@ jobs:
     machine: 
       image: ubuntu-1604:201903-01
     steps:
-      - bazel-install-linux
+      - install-bazel-linux
       - checkout
       - run: |
           export SYNC_DEPENDENCIES_TOKEN=$REPO_GITHUB_TOKEN
@@ -531,7 +531,7 @@ jobs:
       image: ubuntu-1604:201903-01
     working_directory: ~/grakn
     steps:
-      - bazel-install-linux
+      - install-bazel-linux
       - checkout
       - run: |
           curl http://www.jetmore.org/john/code/swaks/files/swaks-20130209.0/swaks -o swaks
