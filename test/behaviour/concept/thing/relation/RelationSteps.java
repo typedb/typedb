@@ -51,7 +51,7 @@ public class RelationSteps {
 
     @When("relation {var} set player for role\\( ?{type_label} ?): {var}")
     public void relation_set_player_for_role(String var1, String roleTypeLabel, String var2) {
-        get(var1).asRelation().assign(get(var1).asRelation().type().role(roleTypeLabel), get(var2));
+        get(var1).asRelation().relate(get(var1).asRelation().type().role(roleTypeLabel), get(var2));
     }
 
     @Then("relation {var} get player for role\\( ?{type_label} ?): {var}")

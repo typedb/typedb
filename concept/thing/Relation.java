@@ -51,9 +51,9 @@ public interface Relation extends Thing {
     @Override
     Relation has(Attribute attribute);
 
-    Relation assign(RoleType roleType, Thing player);
+    Relation relate(RoleType roleType, Thing player);
 
-    Relation unassign(RoleType roleType, Thing player);
+    void unrelate(RoleType roleType, Thing player);
 
     Stream<? extends Thing> players();
 

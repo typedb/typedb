@@ -49,6 +49,12 @@ public abstract class VertexIID extends IID {
         super(bytes);
     }
 
+    public abstract Schema.Vertex schema();
+
+    public PrefixIID prefix() {
+        return PrefixIID.of(schema().prefix());
+    }
+
     public static class Type extends VertexIID {
 
         public static final int LENGTH = PrefixIID.LENGTH + 2;

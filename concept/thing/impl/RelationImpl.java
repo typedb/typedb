@@ -29,6 +29,7 @@ import hypergraph.concept.type.impl.RoleTypeImpl;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.vertex.ThingVertex;
 
+import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -55,7 +56,7 @@ public class RelationImpl extends ThingImpl implements Relation {
     }
 
     @Override
-    public RelationImpl assign(RoleType roleType, Thing player) {
+    public RelationImpl relate(RoleType roleType, Thing player) {
         if (this.type().roles().noneMatch(t -> t.equals(roleType))) {
             throw new HypergraphException(
                     Error.ThingWrite.RELATION_UNRELATED_ROLE.format(this.type().label(), roleType.label())
@@ -70,8 +71,9 @@ public class RelationImpl extends ThingImpl implements Relation {
     }
 
     @Override
-    public RelationImpl unassign(RoleType roleType, Thing player) {
-        return null;
+    public void unrelate(RoleType roleType, Thing player) {
+        Iterator<ThingVertex> role = vertex.outs().edge(Schema.Edge.Thing.RELATES, ((RoleTypeImpl) roleType).vertex.iid()).to();
+        if (role.hasNext()) role.next().delete();
     }
 
     @Override
