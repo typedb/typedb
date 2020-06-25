@@ -38,6 +38,7 @@ import static hypergraph.test.behaviour.connection.ConnectionSteps.sessionsToTra
 import static hypergraph.test.behaviour.connection.ConnectionSteps.threadPool;
 import static java.util.Objects.isNull;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class TransactionSteps {
@@ -78,6 +79,16 @@ public class TransactionSteps {
         sessionsToTransactions.get(sessions.get(0)).get(0).commit();
     }
 
+    @Then("transaction commits successfully: {bool}")
+    public void transaction_commits_successfully(boolean successfully) {
+        try {
+            sessionsToTransactions.get(sessions.get(0)).get(0).commit();
+            assertTrue(successfully);
+        } catch (RuntimeException ignore) {
+            assertFalse(successfully);
+        }
+    }
+
     @Then("for each session, transaction(s) commit(s)")
     public void for_each_session_transactions_commit() {
         for (Hypergraph.Session session : sessions) {
@@ -91,13 +102,12 @@ public class TransactionSteps {
     public void for_each_session_transactions_commits_successfully(boolean successfully) {
         for (Hypergraph.Session session : sessions) {
             for (Hypergraph.Transaction transaction : sessionsToTransactions.get(session)) {
-                boolean hasException = false;
                 try {
                     transaction.commit();
-                } catch (RuntimeException commitException) {
-                    hasException = true;
+                    assertTrue(successfully);
+                } catch (RuntimeException ignore) {
+                    assertFalse(successfully);
                 }
-                assertEquals(successfully, !hasException);
             }
         }
     }

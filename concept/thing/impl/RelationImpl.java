@@ -94,6 +94,8 @@ public class RelationImpl extends ThingImpl implements Relation {
 
     @Override
     public void validate() {
-        // TODO: validate relation
+        if (!vertex.outs().edge(Schema.Edge.Thing.RELATES).to().hasNext()) {
+            throw new HypergraphException(Error.ThingWrite.RELATION_NO_PLAYER.format(type().label()));
+        }
     }
 }

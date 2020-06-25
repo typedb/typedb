@@ -167,6 +167,8 @@ public abstract class Error<TYPE extends Error<TYPE>> {
                 new ThingWrite(6, "Attempted to assign a key that has been taken onto a(n) '%s'.");
         public static final ThingWrite RELATION_UNRELATED_ROLE =
                 new ThingWrite(7, "Relation type '%s' does not relate role type '%s'.");
+        public static final ThingWrite RELATION_NO_PLAYER =
+                new ThingWrite(8, "Relation instance of type '%s' does not have any role player");
         private static final String codePrefix = "THW";
         private static final String descriptionPrefix = "Invalid Thing Write";
 
