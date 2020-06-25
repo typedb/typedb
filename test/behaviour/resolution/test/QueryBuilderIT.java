@@ -326,7 +326,7 @@ public class QueryBuilderIT {
 
         Set<Statement> expectedStatements = getStatements(Graql.parsePatternList(
                 "$transaction has transaction-id 0;\n" +
-                        "$currency \"GBP\";\n"
+                "$currency \"GBP\" isa currency;\n"
         ));
 
         assertEquals(expectedStatements, keyStatements);

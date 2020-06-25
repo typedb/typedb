@@ -124,6 +124,7 @@ java_test(
     ],
     test_class = "grakn.core.test.behaviour.resolution.test.TestResolution",
     deps = [
+        "//test/behaviour/resolution/common",
         "//test/behaviour/resolution:resolution-lib",
         "//test/rule:grakn-test-server",
         "//kb/server:server",

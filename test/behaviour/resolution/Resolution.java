@@ -8,33 +8,23 @@ import grakn.core.test.behaviour.resolution.complete.SchemaManager;
 import grakn.core.test.behaviour.resolution.resolve.QueryBuilder;
 import graql.lang.query.GraqlGet;
 
-import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 
-import static grakn.core.test.behaviour.resolution.common.Utils.loadGqlFile;
 import static grakn.core.test.behaviour.resolution.common.Utils.thingCount;
 
 public class Resolution {
 
-    private final Path schemaPath;
-    private final Path dataPath;
     private Session completionSession;
     private Session testSession;
     private int completedInferredThingCount;
     private int initialThingCount;
 
-    public Resolution(Session completionSession, Session testSession, Path schemaPath, Path dataPath) {
+    public Resolution(Session completionSession, Session testSession) {
         this.completionSession = completionSession;
         this.testSession = testSession;
-        this.schemaPath = schemaPath;
-        this.dataPath = dataPath;
-
-        initialiseKeyspace(this.testSession);
-        initialiseKeyspace(this.completionSession);
 
         // TODO Check that nothing in the given schema conflicts with the resolution schema
-        // TODO Also check that all of the data in the initial data given has keys/ is uniquely identifiable
 
         // Complete the KB-complete
         Completer completer = new Completer(this.completionSession);
@@ -83,18 +73,6 @@ public class Resolution {
         if (answers.size() != 1) {
             String msg = String.format("Resolution query had %d answers, it should have had 1. The query is:\n %s", answers.size(), query);
             throw new RuntimeException(msg);
-        }
-    }
-
-    private void initialiseKeyspace(Session session) {
-        try {
-            // Load a schema incl. rules
-            loadGqlFile(session, schemaPath);
-            // Load data
-            loadGqlFile(session, dataPath);
-        } catch (IOException e) {
-            e.printStackTrace();
-            System.exit(1);
         }
     }
 }

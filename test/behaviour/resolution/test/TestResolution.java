@@ -8,13 +8,51 @@ import graql.lang.query.GraqlGet;
 import org.junit.ClassRule;
 import org.junit.Test;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import static grakn.core.test.behaviour.resolution.common.Utils.loadGqlFile;
+
 public class TestResolution {
+
+    private void initialiseKeyspace(Session session, Path schemaPath, Path dataPath) {
+        try {
+            // Load a schema incl. rules
+            loadGqlFile(session, schemaPath);
+            // Load data
+            loadGqlFile(session, dataPath);
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.exit(1);
+        }
+    }
 
     @ClassRule
     public static final GraknTestServer graknTestServer = new GraknTestServer();
+
+    @Test
+    public void testResolutionTestPassesWhenCorrect() {
+        Path schemaPath = Paths.get("test", "behaviour", "resolution", "test", "cases", "case1", "schema.gql").toAbsolutePath();
+        Path dataPath = Paths.get("test", "behaviour", "resolution", "test", "cases", "case1", "data.gql").toAbsolutePath();
+        GraqlGet inferenceQuery = Graql.parse("" +
+                "match $lh (location-hierarchy_superior: $continent, " +
+                "location-hierarchy_subordinate: $area) isa location-hierarchy; " +
+                "$continent isa continent; " +
+                "$area isa area; get;").asGet();
+
+
+        Session completionSession = graknTestServer.sessionWithNewKeyspace();
+        initialiseKeyspace(completionSession, schemaPath, dataPath);
+
+        Session testSession = graknTestServer.sessionWithNewKeyspace();
+        initialiseKeyspace(testSession, schemaPath, dataPath);
+
+        Resolution resolution_test = new Resolution(completionSession, testSession);
+        resolution_test.testQuery(inferenceQuery);
+        resolution_test.testCompleteness();
+        resolution_test.close();
+    }
 
     @Test
     public void testCase1HappyPath() {
@@ -28,7 +66,7 @@ public class TestResolution {
 
         Session completeSession = graknTestServer.sessionWithNewKeyspace();
         Session testSession = graknTestServer.sessionWithNewKeyspace();
-        Resolution resolution_test = new Resolution(completeSession, testSession, schemaPath, dataPath);
+        Resolution resolution_test = new Resolution(completeSession, testSession);
         resolution_test.testQuery(inferenceQuery);
         resolution_test.testCompleteness();
         resolution_test.close();
@@ -42,7 +80,7 @@ public class TestResolution {
 
         Session completeSession = graknTestServer.sessionWithNewKeyspace();
         Session testSession = graknTestServer.sessionWithNewKeyspace();
-        Resolution resolution_test = new Resolution(completeSession, testSession, schemaPath, dataPath);
+        Resolution resolution_test = new Resolution(completeSession, testSession);
         resolution_test.testQuery(inferenceQuery);
         resolution_test.testCompleteness();
         resolution_test.close();
@@ -56,7 +94,7 @@ public class TestResolution {
 
         Session completeSession = graknTestServer.sessionWithNewKeyspace();
         Session testSession = graknTestServer.sessionWithNewKeyspace();
-        Resolution resolution_test = new Resolution(completeSession, testSession, schemaPath, dataPath);
+        Resolution resolution_test = new Resolution(completeSession, testSession);
         resolution_test.testQuery(inferenceQuery);
         resolution_test.testCompleteness();
         resolution_test.close();
@@ -70,7 +108,7 @@ public class TestResolution {
 
         Session completeSession = graknTestServer.sessionWithNewKeyspace();
         Session testSession = graknTestServer.sessionWithNewKeyspace();
-        Resolution resolution_test = new Resolution(completeSession, testSession, schemaPath, dataPath);
+        Resolution resolution_test = new Resolution(completeSession, testSession);
         resolution_test.testQuery(inferenceQuery);
         resolution_test.testCompleteness();
         resolution_test.close();
@@ -84,7 +122,7 @@ public class TestResolution {
 
         Session completeSession = graknTestServer.sessionWithNewKeyspace();
         Session testSession = graknTestServer.sessionWithNewKeyspace();
-        Resolution resolution_test = new Resolution(completeSession, testSession, schemaPath, dataPath);
+        Resolution resolution_test = new Resolution(completeSession, testSession);
         resolution_test.testQuery(inferenceQuery);
         resolution_test.testCompleteness();
         resolution_test.close();
@@ -102,7 +140,7 @@ public class TestResolution {
 
         Session completeSession = graknTestServer.sessionWithNewKeyspace();
         Session testSession = graknTestServer.sessionWithNewKeyspace();
-        Resolution resolution_test = new Resolution(completeSession, testSession, schemaPath, dataPath);
+        Resolution resolution_test = new Resolution(completeSession, testSession);
         resolution_test.testQuery(inferenceQuery);
         resolution_test.testCompleteness();
         resolution_test.close();
@@ -117,7 +155,7 @@ public class TestResolution {
 
         Session completeSession = graknTestServer.sessionWithNewKeyspace();
         Session testSession = graknTestServer.sessionWithNewKeyspace();
-        Resolution resolution_test = new Resolution(completeSession, testSession, schemaPath, dataPath);
+        Resolution resolution_test = new Resolution(completeSession, testSession);
         resolution_test.testQuery(inferenceQuery);
         resolution_test.testCompleteness();
         resolution_test.close();
