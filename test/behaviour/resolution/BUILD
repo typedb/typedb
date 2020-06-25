@@ -1,3 +1,5 @@
+load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
+
 java_library(
     name = "resolution-lib",
     srcs = glob([
@@ -47,4 +49,35 @@ java_binary(
     ],
     main_class = "grakn.verification.resolution.Resolution",
         runtime_deps = [":resolution-lib"],
+)
+
+
+
+java_library(
+    name = "steps",
+    srcs = [
+        "ResolutionSteps.java"
+    ],
+    deps = [
+        # Package dependencies
+        "//kb/server",
+        "//graql/reasoner",
+        "//concept/answer",
+
+        # Grakn Labs dependencies
+        "@graknlabs_graql//java:graql",
+
+        # External dependencies from Maven
+        "//dependencies/maven/artifacts/junit:junit",
+        "//dependencies/maven/artifacts/io/cucumber:cucumber-java",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+checkstyle_test(
+    name = "checkstyle",
+    targets = [
+        ":resolution-lib",
+        ":steps",
+    ],
 )
