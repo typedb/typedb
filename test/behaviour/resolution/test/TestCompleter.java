@@ -21,8 +21,6 @@ import static org.junit.Assert.assertEquals;
 
 public class TestCompleter {
 
-    private static final String KEYSPACE = "test_query_completer";
-
     @ClassRule
     public static final GraknTestServer graknTestServer = new GraknTestServer();
 

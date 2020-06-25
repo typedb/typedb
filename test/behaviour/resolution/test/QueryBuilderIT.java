@@ -177,16 +177,108 @@ public class QueryBuilderIT {
         /**
          * Actual:
          * {
+         *  {
+         *      {
+         *          { $r0-n2 == "some-name"; $r0-c isa company; $r0-c has name $r0-n2; } or { $r0-c has name $r0-n1; $r0-c isa company; $r0-n1 == "the-company"; };
+         *      };
+         *      $r0-c has company-id 0;
+         *      { $r0-c has name $r0-n1; $r0-c isa company; $r0-n1 == "the-company"; };
+         *      $r0-n1 "the-company" isa name;
+         *      { $r1-c2 isa company; };
+         *      { $r1-n2 "the-company"; $r1-c2 has name $r1-n2; };
          *      {
          *          {
-         *              { $r0-c isa company; $r0-c has name $r0-n2; $r0-n2 == "some-name"; } or { $r0-c has name $r0-n1; $r0-c isa company; $r0-n1 == "the-company"; };
+         *              { $x0 (body: $x0); $x0 (instance: $r1-c2) isa isa-property, has type-label "company"; };
          *          };
-         *          $r0-c has company-id 0;
-         *          { $r0-c has name $r0-n1; $r0-c isa company; $r0-n1 == "the-company"; };
-         *          $r0-n1 "the-company" isa name;
+         *          {
+         *              {  };
+         *              { $x0 (head: $x1); $x1 (owner: $r1-c2) isa has-attribute-property, has name $r1-n2; };
+         *          };
+         *          $x0 isa resolution, has rule-label "company-has-name";
+         *      };
+         *      {
          *          { $r1-c2 isa company; };
-         *          { $r1-n2 "the-company"; $r1-c2 has name $r1-n2; };
-         *          { $x0 isa resolution, has rule-label "company-has-name"; { $x0 (body: $x0); $x0 (instance: $r1-c2) isa isa-property, has type-label "company"; }; {  }; { $x0 (head: $x1); $x1 (owner: $r1-c2) isa has-attribute-property, has name $r1-n2; }; }; { { $r1-c2 isa company; }; $r1-c2 has company-id 0; }; }; };
+         *          $r1-c2 has company-id 0;
+         *      };
+         *   };
+         * };
+         *
+         * {
+         *  {
+         *      {
+         *          { $r0-c isa company; $r0-c has name $r0-n2; $r0-n2 == "some-name"; } or { $r0-c has name $r0-n1; $r0-c isa company; $r0-n1 == "the-company"; };
+         *      };
+         *      $r0-c has company-id 0;
+         *      { $r0-c has name $r0-n1; $r0-c isa company; $r0-n1 == "the-company"; };
+         *      $r0-n1 "the-company" isa name;
+         *      { $r1-c2 isa company; };
+         *      { $r1-c2 has name $r1-n2; $r1-n2 "the-company"; };
+         *      {
+         *          { $x0 (instance: $r1-c2) isa isa-property, has type-label "company"; $x0 (body: $x0); };
+         *          { $x0 (head: $x1); $x1 (owner: $r1-c2) isa has-attribute-property, has name $r1-n2; };
+         *          $x0 isa resolution, has rule-label "company-has-name";
+         *      };
+         *      {
+         *          { $r1-c2 isa company; };
+         *          $r1-c2 has company-id 0;
+         *      };
+         *  };
+         * };
+         *
+         * {
+         *  {
+         *  $r0-n1 "the-company" isa name;
+         *  { $r1-c2 has company-id 0; $r1-c2 isa company; };
+         *  { $r0-c has name $r0-n1; $r0-c isa company; $r0-n1 == "the-company"; };
+         *  { $x0 isa resolution, has rule-label "company-has-name";
+         *      { $x0 (head: $x1); $x1 (owner: $r1-c2) isa has-attribute-property, has name $r1-n2; };
+         *      { $x0 (instance: $r1-c2) isa isa-property, has type-label "company"; $x0 (body: $x0); };
+         *  };
+         *  $r1-c2 isa company;
+         *  { $r0-c has name $r0-n1; $r0-c isa company; $r0-n1 == "the-company"; } or { $r0-c isa company; $r0-c has name $r0-n2; $r0-n2 == "some-name"; };
+         *  { $r1-n2 "the-company"; $r1-c2 has name $r1-n2; };
+         *  $r0-c has company-id 0;
+         *  };
+         *  };
+         *
+         *  {
+         *      {
+         *          $r0-c has company-id 0; $r0-c has name $r0-n1; $r1-n2 "the-company"; $x0 (head: $x1); $r0-c isa company; $r0-n1 "the-company" isa name; $r1-c2 has company-id 0; $x1 (owner: $r1-c2) isa has-attribute-property, has name $r1-n2; $r0-n1 == "the-company";
+         *          { $r0-c has name $r0-n1; $r0-c isa company; $r0-n1 == "the-company"; } or { $r0-c isa company; $r0-c has name $r0-n2; $r0-n2 == "some-name"; };
+         *          $x0 (body: $x0); $x0 isa resolution, has rule-label "company-has-name"; $x0 (instance: $r1-c2) isa isa-property, has type-label "company"; $r1-c2 isa company; $r1-c2 has name $r1-n2;
+         *      };
+         *  };
+         *
+         *  {
+         *      {
+         *          $r0-c has name $r0-n1; $x0 (instance: $r1-c2) isa isa-property, has type-label "company"; $x0 (head: $x1); $r0-c isa company; $r0-n1 "the-company" isa name; $x0 isa resolution, has rule-label "company-has-name"; $x1 (owner: $r1-c2) isa has-attribute-property, has name $r1-n2; $r1-n2 "the-company"; $r1-c2 has company-id 0; $r0-c has company-id 0; $x0 (body: $x0);
+         *          { $r0-c isa company; $r0-c has name $r0-n2; $r0-n2 == "some-name"; } or { $r0-c has name $r0-n1; $r0-c isa company; $r0-n1 == "the-company"; };
+         *          $r0-n1 == "the-company"; $r1-c2 isa company; $r1-c2 has name $r1-n2;
+         *      };
+         *  };
+         *
+         *  {
+         *      $r0-c has name $r0-n1; $r0-n1 "the-company" isa name; $x0 (head: $x1); $r0-c isa company; $r1-n2 "the-company";
+         *      { $r0-c has name $r0-n1; $r0-c isa company; $r0-n1 == "the-company"; } or { $r0-c isa company; $r0-c has name $r0-n2; $r0-n2 == "some-name"; };
+         *      $x0 isa resolution, has rule-label "company-has-name"; $r1-c2 has company-id 0; $x1 (owner: $r1-c2) isa has-attribute-property, has name $r1-n2; $r0-n1 == "the-company"; $x0 (instance: $r1-c2) isa isa-property, has type-label "company"; $x0 (body: $x0); $r0-c has company-id 0; $r1-c2 isa company; $r1-c2 has name $r1-n2;
+         *  };
+         *
+         *  {
+         *      {
+         *          $r0-c has name $r0-n1; $x0 (head: $x1); $r0-c isa company; $x0 (instance: $r1-c2) isa isa-property, has type-label "company"; $x1 (owner: $r1-c2) isa has-attribute-property, has name $r1-n2; $r0-n1 "the-company" isa name; $x0 isa resolution, has rule-label "company-has-name"; $r0-c has company-id 0; $r1-n2 "the-company"; $x0 (body: $x0); $r1-c2 has company-id 0; $r0-n1 == "the-company"; $r1-c2 isa company; $r1-c2 has name $r1-n2;
+         *          { $r0-c isa company; $r0-c has name $r0-n2; $r0-n2 == "some-name"; } or { $r0-c has name $r0-n1; $r0-c isa company; $r0-n1 == "the-company"; };
+         *      };
+         *  };
+         *
+         *  {
+         *      {
+         *          $r0-c has name $r0-n1; $r0-c isa company; $r1-n2 "the-company"; $r0-n1 "the-company" isa name; $r1-c2 has company-id 0; $x0 (instance: $r1-c2) isa isa-property, has type-label "company"; $rule0 isa resolution, has rule-label "company-has-name"; $x1 (owner: $r1-c2) isa has-attribute-property, has name $r1-n2; $r0-n1 == "the-company"; $rule0 (body: $x0); $rule0 (head: $x1);
+         *          { $r0-c isa company; $r0-c has name $r0-n2; $r0-n2 == "some-name"; } or { $r0-c has name $r0-n1; $r0-c isa company; $r0-n1 == "the-company"; };
+         *          $r1-c2 isa company; $r1-c2 has name $r1-n2; $r0-c has company-id 0;
+         *      };
+         *  };
+         *
+         *
          */
 
         GraqlGet inferenceQuery = Graql.parse("" +

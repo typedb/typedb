@@ -149,6 +149,13 @@ public class QueryBuilder {
         return Statement.create(new Variable(newVarName), newProperties);
     }
 
+    /**
+     * Constructs the Grakn structure that captures how the result of a rule was inferred
+     * @param whenPattern `when` of the rule
+     * @param thenPattern `then` of the rule
+     * @param ruleLabel rule label
+     * @return Pattern for the structure that *connects* the variables involved in the rule
+     */
     public Conjunction<? extends Pattern> ruleResolutionConjunction(Pattern whenPattern, Pattern thenPattern, String ruleLabel) {
         String inferenceType = "resolution";
         String inferenceRuleLabelType = "rule-label";
@@ -156,19 +163,26 @@ public class QueryBuilder {
         Statement relation = Graql.var(ruleVar).isa(inferenceType).has(inferenceRuleLabelType, ruleLabel);
         StatementVisitor bodyVisitor = new StatementVisitor(p -> statementToResolutionConjunction(p, ruleVar, "body"));
         StatementVisitor headVisitor = new StatementVisitor(p -> statementToResolutionConjunction(p, ruleVar, "head"));
-        Pattern body = bodyVisitor.visitPattern(whenPattern);
+        NegationRemovalVisitor negationStripper = new NegationRemovalVisitor();
+        Pattern body = bodyVisitor.visitPattern(negationStripper.visitPattern(whenPattern));
         Pattern head = headVisitor.visitPattern(thenPattern);
         return Graql.and(body, head, relation);
     }
 
-    private Conjunction<Statement> statementToResolutionConjunction(Statement statement, Variable ruleVar, String ruleRole) {
-        LinkedHashMap<String, Statement> stringStatementMap = statementToResolutionProperties(statement);
-        LinkedHashSet<Statement> s = new LinkedHashSet<>();
-        for (String var : stringStatementMap.keySet()) {
-            s.add(Graql.var(ruleVar).rel(ruleRole, Graql.var(var)));
+    private Pattern statementToResolutionConjunction(Statement statement, Variable ruleVar, String ruleRole) {
+        LinkedHashMap<String, Statement> resolutionProperties = statementToResolutionProperties(statement);
+        if (resolutionProperties.isEmpty()) {
+            return null;
+        } else {
+            LinkedHashSet<Statement> s = new LinkedHashSet<>();
+            Statement ruleStatement = Graql.var(ruleVar);
+            for (String var : resolutionProperties.keySet()) {
+                ruleStatement = ruleStatement.rel(ruleRole, Graql.var(var));
+            }
+            s.add(ruleStatement);
+            s.addAll(resolutionProperties.values());
+            return Graql.and(s);
         }
-        s.addAll(stringStatementMap.values());
-        return Graql.and(s);
     }
 
     public LinkedHashMap<String, Statement> statementToResolutionProperties(Statement statement) {
