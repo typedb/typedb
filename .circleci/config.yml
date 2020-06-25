@@ -21,10 +21,10 @@ version: 2.1
 commands:
   install-bazel-linux-rbe:
     steps:
-      - run: curl -OL https://raw.githubusercontent.com/graknlabs/build-tools/master/ci/install-bazel-linux.sh
-      - run: bash ./install-bazel-linux.sh && rm ./install-bazel-linux.sh
-      - run: curl -OL https://raw.githubusercontent.com/graknlabs/build-tools/master/ci/install-bazel-rbe.sh
-      - run: bash ./install-bazel-rbe.sh && rm ./install-bazel-rbe.sh
+      - run: curl -OL https://raw.githubusercontent.com/graknlabs/dependencies/master/tool/bazelinstall/linux.sh
+      - run: bash ./linux.sh && rm ./linux.sh
+      - run: curl -OL https://raw.githubusercontent.com/graknlabs/dependencies/master/tool/bazelinstall/rbe.sh
+      - run: bash ./rbe.sh && rm ./rbe.sh
 
   run-bazel-rbe:
     parameters:
