@@ -14,6 +14,7 @@ import graql.lang.pattern.Pattern;
 import graql.lang.property.HasAttributeProperty;
 import graql.lang.property.IdProperty;
 import graql.lang.property.IsaProperty;
+import graql.lang.property.NeqProperty;
 import graql.lang.property.RelationProperty;
 import graql.lang.property.TypeProperty;
 import graql.lang.property.VarProperty;
@@ -142,6 +143,10 @@ public class QueryBuilder {
                 } else {
                     newProperties.add(hasProp);
                 }
+            } else if (prop instanceof NeqProperty) {
+                NeqProperty neqProp = (NeqProperty) prop;
+                String newComparedVarName = prefix + neqProp.statement().var().name();
+                newProperties.add(new NeqProperty(Graql.var(newComparedVarName)));
             } else {
                 newProperties.add(prop);
             }
