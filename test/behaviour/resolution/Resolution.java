@@ -45,7 +45,32 @@ public class Resolution {
         testSession.close();
     }
 
+    /**
+     * Run a query against the completion keyspace and the test keyspace and assert that they have the same number of
+     * answers.
+     * @param inferenceQuery The reference query to make against both keyspaces
+     */
     public void testQuery(GraqlGet inferenceQuery) {
+        Transaction testTx = testSession.transaction(Transaction.Type.READ);
+        int testResultsCount = testTx.execute(inferenceQuery).size();
+        testTx.close();
+
+        Transaction completionTx = completionSession.transaction(Transaction.Type.READ);
+        int completionResultsCount = completionTx.execute(inferenceQuery).size();
+        completionTx.close();
+        if (completionResultsCount != testResultsCount) {
+            String msg = String.format("Query had an incorrect number of answers. Expected %d answers, actual was %d." +
+                            " The query is:\n %s", completionResultsCount, testResultsCount, inferenceQuery);
+            throw new RuntimeException(msg);
+        }
+    }
+
+    /**
+     * For each answer to a query, fully explore its explanation to construct a query that will check it was resolved
+     * as expected. Run this query on the completion keyspace to verify.
+     * @param inferenceQuery The reference query to make against both keyspaces
+     */
+    public void testResolution(GraqlGet inferenceQuery) {
         QueryBuilder rb = new QueryBuilder();
         List<GraqlGet> queries;
 
@@ -53,25 +78,30 @@ public class Resolution {
             queries = rb.buildMatchGet(tx, inferenceQuery);
         }
 
+        if (queries.size() == 0) {
+            String msg = String.format("No resolution queries were constructed for query %s", inferenceQuery);
+            throw new RuntimeException(msg);
+        }
+
         try (Transaction tx = completionSession.transaction(Transaction.Type.READ)) {
             for (GraqlGet query: queries) {
-                testResolution(tx, query);
+                List<ConceptMap> answers = tx.execute(query);
+                if (answers.size() != 1) {
+                    String msg = String.format("Resolution query had %d answers, it should have had 1. The query is:\n %s", answers.size(), query);
+                    throw new RuntimeException(msg);
+                }
             }
         }
     }
 
+    /**
+     * It is possible that rules could trigger when they should not. Testing for completeness checks the number of
+     * inferred facts in the completion keyspace against the total number that are inferred in the test keyspace
+     */
     public void testCompleteness() {
         int testInferredCount = thingCount(testSession) - initialThingCount;
         if (testInferredCount != completedInferredThingCount) {
             String msg = String.format("The complete KB contains %d inferred concepts, whereas the test KB contains %d inferred concepts.", completedInferredThingCount, testInferredCount);
-            throw new RuntimeException(msg);
-        }
-    }
-
-    private void testResolution(Transaction tx, GraqlGet query) {
-        List<ConceptMap> answers = tx.execute(query);
-        if (answers.size() != 1) {
-            String msg = String.format("Resolution query had %d answers, it should have had 1. The query is:\n %s", answers.size(), query);
             throw new RuntimeException(msg);
         }
     }

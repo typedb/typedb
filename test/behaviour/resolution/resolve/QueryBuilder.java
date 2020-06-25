@@ -42,15 +42,15 @@ public class QueryBuilder {
     private HashMap<String, Integer> nextVarIndex = new HashMap<>();
 
     public List<GraqlGet> buildMatchGet(Transaction tx, GraqlGet query) {
-            List<ConceptMap> answers = tx.execute(query, true, true);
+        List<ConceptMap> answers = tx.execute(query, true, true);
 
-            ArrayList<GraqlGet> resolutionQueries = new ArrayList<>();
-            for (ConceptMap answer : answers) {
-                ConjunctionFlatteningVisitor flattener = new ConjunctionFlatteningVisitor();
-                resolutionQueries.add(Graql.match(flattener.visitPattern(resolutionPattern(tx, answer, 0))).get());
-            }
-            System.out.print(resolutionQueries);
-            return resolutionQueries;
+        ArrayList<GraqlGet> resolutionQueries = new ArrayList<>();
+        for (ConceptMap answer : answers) {
+            ConjunctionFlatteningVisitor flattener = new ConjunctionFlatteningVisitor();
+            resolutionQueries.add(Graql.match(flattener.visitPattern(resolutionPattern(tx, answer, 0))).get());
+        }
+        System.out.print(resolutionQueries);
+        return resolutionQueries;
     }
 
     private Conjunction<Pattern> resolutionPattern(Transaction tx, ConceptMap answer, Integer ruleResolutionIndex) {
@@ -149,40 +149,83 @@ public class QueryBuilder {
         return Statement.create(new Variable(newVarName), newProperties);
     }
 
-    /**
-     * Constructs the Grakn structure that captures how the result of a rule was inferred
-     * @param whenPattern `when` of the rule
-     * @param thenPattern `then` of the rule
-     * @param ruleLabel rule label
-     * @return Pattern for the structure that *connects* the variables involved in the rule
-     */
+
+    // This implementation for `ruleResolutionConjunction` takes account of disjunctions in rules, however it produces
+    // a format for the relation query that seems to be far slower (causing tests to run 2x slower overall), and so it
+    // has been put aside for now in favour of an adaptation of the old, simpler, implementation.
+//    /**
+//     * Constructs the Grakn structure that captures how the result of a rule was inferred
+//     * @param whenPattern `when` of the rule
+//     * @param thenPattern `then` of the rule
+//     * @param ruleLabel rule label
+//     * @return Pattern for the structure that *connects* the variables involved in the rule
+//     */
+//    public Conjunction<? extends Pattern> ruleResolutionConjunction(Pattern whenPattern, Pattern thenPattern, String ruleLabel) {
+//        String inferenceType = "resolution";
+//        String inferenceRuleLabelType = "rule-label";
+//        Variable ruleVar = new Variable(getNextVar("rule"));
+//        Statement relation = Graql.var(ruleVar).isa(inferenceType).has(inferenceRuleLabelType, ruleLabel);
+//        StatementVisitor bodyVisitor = new StatementVisitor(p -> statementToResolutionConjunction(p, ruleVar, "body"));
+//        StatementVisitor headVisitor = new StatementVisitor(p -> statementToResolutionConjunction(p, ruleVar, "head"));
+//        NegationRemovalVisitor negationStripper = new NegationRemovalVisitor();
+//        Pattern body = bodyVisitor.visitPattern(negationStripper.visitPattern(whenPattern));
+//        Pattern head = headVisitor.visitPattern(thenPattern);
+//        return Graql.and(body, head, relation);
+//    }
+//
+//    private Pattern statementToResolutionConjunction(Statement statement, Variable ruleVar, String ruleRole) {
+//        LinkedHashMap<String, Statement> resolutionProperties = statementToResolutionProperties(statement);
+//        if (resolutionProperties.isEmpty()) {
+//            return null;
+//        } else {
+//            LinkedHashSet<Statement> s = new LinkedHashSet<>();
+//            Statement ruleStatement = Graql.var(ruleVar);
+//            for (String var : resolutionProperties.keySet()) {
+//                ruleStatement = ruleStatement.rel(ruleRole, Graql.var(var));
+//            }
+//            s.add(ruleStatement);
+//            s.addAll(resolutionProperties.values());
+//            return Graql.and(s);
+//        }
+//    }
+
+    // This implementation doesn't handle disjunctions in rules.
     public Conjunction<? extends Pattern> ruleResolutionConjunction(Pattern whenPattern, Pattern thenPattern, String ruleLabel) {
+
+        NegationRemovalVisitor negationStripper = new NegationRemovalVisitor();
+        Set<Statement> whenStatements = negationStripper.visitPattern(whenPattern).statements();
+        Set<Statement> thenStatements = negationStripper.visitPattern(thenPattern).statements();
+
         String inferenceType = "resolution";
         String inferenceRuleLabelType = "rule-label";
-        Variable ruleVar = new Variable(getNextVar("rule"));
-        Statement relation = Graql.var(ruleVar).isa(inferenceType).has(inferenceRuleLabelType, ruleLabel);
-        StatementVisitor bodyVisitor = new StatementVisitor(p -> statementToResolutionConjunction(p, ruleVar, "body"));
-        StatementVisitor headVisitor = new StatementVisitor(p -> statementToResolutionConjunction(p, ruleVar, "head"));
-        NegationRemovalVisitor negationStripper = new NegationRemovalVisitor();
-        Pattern body = bodyVisitor.visitPattern(negationStripper.visitPattern(whenPattern));
-        Pattern head = headVisitor.visitPattern(thenPattern);
-        return Graql.and(body, head, relation);
-    }
 
-    private Pattern statementToResolutionConjunction(Statement statement, Variable ruleVar, String ruleRole) {
-        LinkedHashMap<String, Statement> resolutionProperties = statementToResolutionProperties(statement);
-        if (resolutionProperties.isEmpty()) {
-            return null;
-        } else {
-            LinkedHashSet<Statement> s = new LinkedHashSet<>();
-            Statement ruleStatement = Graql.var(ruleVar);
-            for (String var : resolutionProperties.keySet()) {
-                ruleStatement = ruleStatement.rel(ruleRole, Graql.var(var));
-            }
-            s.add(ruleStatement);
-            s.addAll(resolutionProperties.values());
-            return Graql.and(s);
+        Statement relation = Graql.var().isa(inferenceType).has(inferenceRuleLabelType, ruleLabel);
+
+        LinkedHashMap<String, Statement> whenProps = new LinkedHashMap<>();
+
+        for (Statement whenStatement : whenStatements) {
+            whenProps.putAll(statementToResolutionProperties(whenStatement));
         }
+
+        for (String whenVar : whenProps.keySet()) {
+            relation = relation.rel("body", Graql.var(whenVar));
+        }
+
+        LinkedHashMap<String, Statement> thenProps = new LinkedHashMap<>();
+
+        for (Statement thenStatement : thenStatements) {
+            thenProps.putAll(statementToResolutionProperties(thenStatement));
+        }
+
+        for (String thenVar : thenProps.keySet()) {
+            relation = relation.rel("head", Graql.var(thenVar));
+        }
+
+        LinkedHashSet<Statement> result = new LinkedHashSet<>();
+        result.addAll(whenProps.values());
+        result.addAll(thenProps.values());
+        result.add(relation);
+        return Graql.and(result);
     }
 
     public LinkedHashMap<String, Statement> statementToResolutionProperties(Statement statement) {
