@@ -29,13 +29,8 @@ commands:
 
   install-bazel-mac:
     steps:
-      - run: |
-          mkdir install
-          cd install
-          curl -OL https://raw.githubusercontent.com/lolski/build-tools/refactor/tool/bazelinstall/mac.sh
-          bash ./mac.sh
-          cd ..
-          rm -rf install
+      - run: curl -OL https://raw.githubusercontent.com/graknlabs/dependencies/master/tool/bazelinstall/mac.sh
+      - run: bash ./mac.sh && rm ./mac.sh
 
   run-bazel:
     parameters:
