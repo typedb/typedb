@@ -1,0 +1,265 @@
+package grakn.core.server.migrate;
+
+import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.protobuf.Parser;
+import grakn.common.util.Pair;
+import grakn.core.kb.concept.api.Attribute;
+import grakn.core.kb.concept.api.ConceptId;
+import grakn.core.kb.concept.api.Entity;
+import grakn.core.kb.concept.api.Relation;
+import grakn.core.kb.concept.api.Role;
+import grakn.core.kb.concept.api.Thing;
+import grakn.core.kb.server.Session;
+import grakn.core.kb.server.Transaction;
+import grakn.core.server.Version;
+import grakn.core.server.migrate.proto.MigrateProto;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.BufferedInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+public class Import implements AutoCloseable {
+
+    private static final Logger LOG = LoggerFactory.getLogger(Import.class);
+
+    private static final int BATCH_SIZE = 1_000;
+
+    private final Session session;
+    private final InputStream inputStream;
+    private final Parser<MigrateProto.Item> itemParser;
+
+    private Transaction currentTransaction;
+    private int count = 0;
+
+    Map<String, String> idMap = new HashMap<>();
+
+    // Pair of LOCAL attribute ids to FOREIGN key ids
+    List<Pair<String, List<String>>> attributeKeyOwnerships = new ArrayList<>();
+
+    private long entityCount = 0;
+    private long attributeCount = 0;
+    private long relationCount = 0;
+    private long ownershipCount = 0;
+    private long roleCount = 0;
+    private long keyOwnershipCount = 0;
+
+    public Import(Session session, Path inputFile) throws IOException {
+        this.session = session;
+
+        this.inputStream = new BufferedInputStream(Files.newInputStream(inputFile));
+        this.itemParser = MigrateProto.Item.parser();
+        // TODO read header here
+    }
+
+    @Override
+    public void close() throws IOException {
+        currentTransaction.close();
+        inputStream.close();
+    }
+
+    private MigrateProto.Item read() throws InvalidProtocolBufferException {
+        return itemParser.parseDelimitedFrom(inputStream);
+    }
+
+    private void write() {
+        count++;
+        if (count >= BATCH_SIZE) {
+            currentTransaction.commit();
+            currentTransaction = session.transaction(Transaction.Type.WRITE);
+        }
+    }
+
+    private void flush() {
+        currentTransaction.commit();
+    }
+
+    public void execute() throws InvalidProtocolBufferException {
+        currentTransaction = session.transaction(Transaction.Type.WRITE);
+
+        MigrateProto.Item item;
+        while ((item = read()) != null) {
+            switch (item.getItemCase()) {
+                case HEADER:
+                    MigrateProto.Item.Header header = item.getHeader();
+                    LOG.info("Importing {} from Grakn {} to {} in Grakn {}",
+                            header.getOriginalKeyspace(),
+                            header.getGraknVersion(),
+                            session.keyspace().name(),
+                            Version.VERSION);
+                    break;
+                case ATTRIBUTE:
+                    insertAttribute(item.getAttribute());
+                    break;
+                case ENTITY:
+                    insertEntity(item.getEntity());
+                    break;
+                case RELATION:
+                    insertRelation(item.getRelation());
+                    break;
+                case OWNERSHIP:
+                    insertOwnership(item.getOwnership());
+                    break;
+                case CHECKSUMS:
+                    checkChecksums(item.getChecksums());
+                    break;
+            }
+        }
+
+        insertAttributeKeyOwnerships();
+
+        flush();
+
+        LOG.info("Imported {} entities, {} attributes, {} relations ({} roles), {} ownerships, {} key ownerships",
+                entityCount,
+                attributeCount,
+                relationCount,
+                roleCount,
+                ownershipCount,
+                keyOwnershipCount);
+    }
+
+    private void check(List<String> errors, String name, long expected, long actual) {
+        if (actual != expected) {
+            errors.add(name + " count was incorrect, was " + actual + " but should be " + expected);
+        }
+    }
+
+    private void checkChecksums(MigrateProto.Item.Checksums checksums) {
+        List<String> errors = new ArrayList<>();
+
+        check(errors, "Attribute", checksums.getAttributeCount(), attributeCount);
+        check(errors, "Entity", checksums.getEntityCount(), entityCount);
+        check(errors, "Relation", checksums.getRelationCount(), relationCount);
+        check(errors, "Role", checksums.getRoleCount(), roleCount);
+        check(errors, "Ownership", checksums.getOwnershipCount(), ownershipCount);
+        check(errors, "Key Ownership", checksums.getKeyOwnershipCount(), keyOwnershipCount);
+
+        if (errors.size() > 0) {
+            throw new IllegalStateException(String.join("\n", errors));
+        }
+    }
+
+    private void insertAttribute(MigrateProto.Item.Attribute attributeMessage) {
+        Attribute<?> attribute = currentTransaction.getAttributeType(attributeMessage.getLabel())
+                .create(valueFrom(attributeMessage.getValue()));
+
+        String attributeId = attribute.id().toString();
+
+        if (attributeMessage.getKeysCount() > 0) {
+            List<String> keyIdStrings = new ArrayList<>(attributeMessage.getKeysCount());
+
+            for (MigrateProto.Item.Key keyMessage : attributeMessage.getKeysList()) {
+                keyIdStrings.add(keyMessage.getId());
+            }
+
+            attributeKeyOwnerships.add(new Pair<>(attributeId, keyIdStrings));
+        }
+
+        idMap.put(attributeMessage.getId(), attributeId);
+
+        attributeCount++;
+        write();
+    }
+
+    private void insertAttributeKeyOwnerships() {
+        for (Pair<String, List<String>> attributeKeyOwnership : attributeKeyOwnerships) {
+            Attribute<?> attribute = currentTransaction.getConcept(ConceptId.of(attributeKeyOwnership.first()));
+
+            for (String keyIdString : attributeKeyOwnership.second()) {
+                Attribute<?> key = currentTransaction.getConcept(ConceptId.of(idMap.get(keyIdString)));
+                attribute.has(key);
+                keyOwnershipCount++;
+            }
+
+            write();
+        }
+
+        attributeKeyOwnerships.clear();
+    }
+
+    private void insertEntity(MigrateProto.Item.Entity entityMessage) {
+        Entity entity = currentTransaction.getEntityType(entityMessage.getLabel()).create();
+
+        for (MigrateProto.Item.Key keyMessage : entityMessage.getKeysList()) {
+            ConceptId localKeyId = ConceptId.of(idMap.get(keyMessage.getId()));
+            Attribute<?> key = currentTransaction.getConcept(localKeyId);
+            entity.has(key);
+            keyOwnershipCount++;
+        }
+
+        idMap.put(entityMessage.getId(), entity.id().toString());
+
+        entityCount++;
+        write();
+    }
+
+    private void insertRelation(MigrateProto.Item.Relation relationMessage) {
+        Relation relation = currentTransaction.getRelationType(relationMessage.getLabel())
+                .create();
+
+        for (MigrateProto.Item.Relation.Role roleMessage : relationMessage.getRoleList()) {
+            Role role = currentTransaction.getRole(roleMessage.getLabel());
+
+            for (MigrateProto.Item.Relation.Role.Player playerMessage : roleMessage.getPlayerList()) {
+                ConceptId localPlayerId = ConceptId.of(idMap.get(playerMessage.getId()));
+                relation.assign(role, currentTransaction.getConcept(localPlayerId));
+                roleCount++;
+            }
+        }
+
+        for (MigrateProto.Item.Key keyMessage : relationMessage.getKeysList()) {
+            ConceptId localKeyId = ConceptId.of(idMap.get(keyMessage.getId()));
+            Attribute<?> key = currentTransaction.getConcept(localKeyId);
+            relation.has(key);
+            keyOwnershipCount++;
+        }
+
+        idMap.put(relationMessage.getId(), relation.id().toString());
+
+        relationCount++;
+        write();
+    }
+
+    private void insertOwnership(MigrateProto.Item.Ownership ownership) {
+        ConceptId localOwnerId = ConceptId.of(idMap.get(ownership.getOwnerId()));
+        ConceptId localAttributeId = ConceptId.of(idMap.get(ownership.getAttributeId()));
+        Thing thing = currentTransaction.getConcept(localOwnerId);
+        Attribute<?> attribute = currentTransaction.getConcept(localAttributeId);
+        thing.has(attribute);
+
+        ownershipCount++;
+        write();
+    }
+
+    private Object valueFrom(MigrateProto.ValueObject valueObject) {
+        switch (valueObject.getValueCase()) {
+            case STRING:
+                return valueObject.getString();
+            case BOOLEAN:
+                return valueObject.getBoolean();
+            case INTEGER:
+                return valueObject.getInteger();
+            case LONG:
+                return valueObject.getLong();
+            case FLOAT:
+                return valueObject.getFloat();
+            case DOUBLE:
+                return valueObject.getDouble();
+            case DATETIME:
+                return Instant.ofEpochMilli(valueObject.getDatetime()).atZone(ZoneId.of("Z")).toLocalDateTime();
+            case VALUE_NOT_SET:
+            default:
+                throw new IllegalStateException("No value type was matched.");
+        }
+    }
+}

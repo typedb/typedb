@@ -98,6 +98,11 @@ dependencies:
       version: "2.6"
       lang: java
 
+  com.google.protobuf:
+    protobuf-java:
+      version: "3.9.0"
+      lang: java
+
   io.grpc:
     grpc-core:
       version: "1.24.1"

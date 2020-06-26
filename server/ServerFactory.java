@@ -20,11 +20,19 @@ package grakn.core.server;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import com.google.protobuf.Parser;
 import grabl.tracing.client.GrablTracing;
 import grabl.tracing.client.GrablTracingThreadStatic;
 import grakn.core.common.config.Config;
 import grakn.core.common.config.ConfigKey;
+import grakn.core.common.config.SystemProperty;
+import grakn.core.kb.server.Session;
+import grakn.core.kb.server.keyspace.Keyspace;
+import grakn.core.server.keyspace.KeyspaceImpl;
 import grakn.core.server.keyspace.KeyspaceManager;
+import grakn.core.server.migrate.Export;
+import grakn.core.server.migrate.Import;
+import grakn.core.server.migrate.proto.MigrateProto;
 import grakn.core.server.rpc.KeyspaceService;
 import grakn.core.server.rpc.OpenRequest;
 import grakn.core.server.rpc.ServerOpenRequest;
@@ -39,7 +47,13 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.BufferedInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.InetSocketAddress;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -98,6 +112,32 @@ public class ServerFactory {
             GrablTracingThreadStatic.setGlobalTracingClient(grablTracingClient);
             LOG.info("Completed tracing setup");
         }
+
+        keyspaceManager.keyspaces().forEach(keyspace -> {
+
+            Path backupPath = Paths.get(SystemProperty.CURRENT_DIRECTORY.value(), "backup", keyspace.name() + ".grakn");
+
+            try (Export export = new Export(sessionFactory.session(keyspace), Paths.get(SystemProperty.CURRENT_DIRECTORY.value(), "backup"))) {
+                export.export();
+
+                InputStream input = new BufferedInputStream(Files.newInputStream(backupPath));
+
+                Parser<MigrateProto.Item> parser = MigrateProto.Item.parser();
+
+                MigrateProto.Item item;
+                while ((item =parser.parseDelimitedFrom(input)) != null) {
+                    LOG.info(item.toString());
+                }
+            } catch (IOException e) {
+                LOG.error("An error occurred during export testing.", e);
+            }
+
+            try (Import anImport = new Import(sessionFactory.session(keyspace), backupPath)) {
+                anImport.execute();
+            } catch (IOException e) {
+                LOG.error("An error occurred during import testing.", e);
+            }
+        });
 
         // create gRPC server
         io.grpc.Server serverRPC = createServerRPC(config, sessionFactory, keyspaceManager);

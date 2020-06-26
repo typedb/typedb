@@ -1,0 +1,99 @@
+//
+// Copyright (C) 2020 Grakn Labs
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as
+// published by the Free Software Foundation, either version 3 of the
+// License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Affero General Public License for more details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+//
+
+syntax = "proto3";
+
+option java_package = "grakn.core.server.migrate.proto";
+option java_outer_classname = "MigrateProto";
+
+package migrate;
+
+
+message Item {
+    oneof item {
+        Attribute attribute = 1;
+        Entity entity = 2;
+        Relation relation = 3;
+        Ownership ownership = 4;
+
+        Header header = 15;
+        Checksums checksums = 16;
+    }
+
+    message Entity {
+        string id = 1;
+        string label = 2;
+        repeated Key keys = 3;
+    }
+
+    message Attribute {
+        string id = 1;
+        string label = 2;
+        repeated Key keys = 3;
+        ValueObject value = 4;
+    }
+
+    message Key {
+        string id = 1;
+    }
+
+    message Relation {
+        string id = 1;
+        string label = 2;
+        repeated Key keys = 3;
+        repeated Role role = 4;
+        message Role {
+            string label = 1;
+            repeated Player player = 2;
+            message Player {
+                string id = 1;
+            }
+        }
+    }
+
+    message Ownership {
+        string owner_id = 1;
+        string attribute_id = 2;
+    }
+
+    message Header {
+        string grakn_version = 1;
+        string original_keyspace = 2;
+    }
+
+    message Checksums {
+        int64 entity_count = 1;
+        int64 attribute_count = 2;
+        int64 relation_count = 3;
+        int64 role_count = 4;
+        int64 ownership_count = 5;
+        int64 key_ownership_count = 6;
+    }
+}
+
+// Attribute Value object
+message ValueObject {
+    oneof value {
+        string string = 1;
+        bool boolean = 2;
+        int32 integer = 3;
+        int64 long = 4;
+        float float = 5;
+        double double = 6;
+        int64 datetime = 7; // time since epoch in milliseconds
+    }
+}
