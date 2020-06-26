@@ -1,4 +1,4 @@
-load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
+load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 
 java_library(
     name = "query-test-util",
@@ -183,7 +183,7 @@ java_test(
         "//kb/server",
         "//test/integration/graql/reasoner/graph:geo-graph",
         "//test/rule:grakn-test-server",
-        "@com-google-guava-guava//jar",
+        "//dependencies/maven/artifacts/com/google/guava:guava",
         "@graknlabs_graql//java:graql",
     ],
 )

@@ -29,7 +29,7 @@ assemble_targz(
     name = "assemble-linux-targz",
     targets = ["//server:server-deps",
                "@graknlabs_console//:console-deps",
-               "@graknlabs_common//bin:assemble-bash-targz"],
+               "@graknlabs_dependencies//distribution:assemble-bash-targz"],
     additional_files = {
         "//server:conf/logback.xml": "server/conf/logback.xml",
         "@graknlabs_console//config/logback:logback.xml": "console/conf/logback.xml",
@@ -55,7 +55,7 @@ assemble_zip(
     name = "assemble-mac-zip",
     targets = ["//server:server-deps",
                "@graknlabs_console//:console-deps",
-               "@graknlabs_common//bin:assemble-bash-targz"],
+               "@graknlabs_dependencies//distribution:assemble-bash-targz"],
     additional_files = {
         "//server:conf/logback.xml": "server/conf/logback.xml",
         "@graknlabs_console//config/logback:logback.xml": "console/conf/logback.xml",
@@ -81,7 +81,7 @@ assemble_zip(
     name = "assemble-windows-zip",
     targets = ["//server:server-deps",
                "@graknlabs_console//:console-deps",
-               "@graknlabs_common//bin:assemble-bat-targz"],
+               "@graknlabs_dependencies//distribution:assemble-bat-targz"],
     additional_files = {
         "//server:conf/logback.xml": "server/conf/logback.xml",
         "@graknlabs_console//config/logback:logback.xml": "console/conf/logback.xml",
@@ -159,27 +159,27 @@ deploy_github(
 deploy_brew(
     name = "deploy-brew",
     checksum = "//:checksum-mac",
-    deployment_properties = "@graknlabs_build_tools//:deployment.properties",
+    deployment_properties = "@graknlabs_dependencies//distribution:deployment.properties",
     formula = "//config/brew:grakn-core.rb",
 )
 
 deploy_rpm(
     name = "deploy-rpm",
     target = ":assemble-linux-rpm",
-    deployment_properties = "@graknlabs_build_tools//:deployment.properties",
+    deployment_properties = "@graknlabs_dependencies//distribution:deployment.properties",
 )
 
 deploy_apt(
     name = "deploy-apt",
     target = ":assemble-linux-apt",
-    deployment_properties = "@graknlabs_build_tools//:deployment.properties",
+    deployment_properties = "@graknlabs_dependencies//distribution:deployment.properties",
 )
 
 container_image(
     name = "assemble-docker",
     base = "@openjdk_image//image",
     tars = [":assemble-linux-targz"],
-    files = ["@graknlabs_common//bin:grakn-docker.sh"],
+    files = ["@graknlabs_dependencies//binary:grakn-docker.sh"],
     ports = ["48555"],
     cmd = ["./grakn-docker.sh"],
     volumes = ["/server/db"]

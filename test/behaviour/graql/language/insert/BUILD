@@ -17,7 +17,7 @@
 
 
 package(default_visibility = ["//visibility:__subpackages__"])
-load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
+load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 
 java_test(
     name = "test",
@@ -42,7 +42,7 @@ java_test(
         "@graknlabs_verification//behaviour/graql/language:insert.feature",
     ],
     classpath_resources = ["//test/resources:logback-test"],
-    size = "medium",
+    size = "large",
     visibility = ["//visibility:public"]
 )
 
