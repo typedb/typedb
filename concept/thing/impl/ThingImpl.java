@@ -25,13 +25,16 @@ import hypergraph.concept.thing.Relation;
 import hypergraph.concept.thing.Thing;
 import hypergraph.concept.type.AttributeType;
 import hypergraph.concept.type.RoleType;
+import hypergraph.concept.type.impl.RoleTypeImpl;
 import hypergraph.concept.type.impl.TypeImpl;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.vertex.ThingVertex;
 import hypergraph.graph.vertex.TypeVertex;
+import hypergraph.graph.vertex.impl.ThingVertexImpl;
 
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -39,6 +42,7 @@ import java.util.stream.Stream;
 
 import static hypergraph.common.iterator.Iterators.apply;
 import static hypergraph.common.iterator.Iterators.filter;
+import static hypergraph.common.iterator.Iterators.link;
 import static hypergraph.common.iterator.Iterators.stream;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
@@ -96,7 +100,7 @@ public abstract class ThingImpl implements Thing {
     }
 
     @Override
-    public Stream<? extends Attribute> keys(List<AttributeType> attributeTypes) {
+    public Stream<? extends AttributeImpl> keys(List<AttributeType> attributeTypes) {
         if (attributeTypes.isEmpty()) return attributes(type().keys().collect(toList()));
 
         List<AttributeType> keyTypes = new ArrayList<>(attributeTypes);
@@ -106,7 +110,7 @@ public abstract class ThingImpl implements Thing {
     }
 
     @Override
-    public Stream<? extends Attribute> attributes(List<AttributeType> attributeTypes) {
+    public Stream<? extends AttributeImpl> attributes(List<AttributeType> attributeTypes) {
         Iterator<ThingVertex> vertices;
         if (!attributeTypes.isEmpty()) {
             Set<TypeVertex> filter = attributeTypes.stream().map(t -> ((TypeImpl) t).vertex).collect(toSet());
@@ -120,12 +124,20 @@ public abstract class ThingImpl implements Thing {
 
     @Override
     public Stream<? extends RoleType> roles() {
-        return null; // TODO
+        return stream(apply(apply(vertex.outs().edge(Schema.Edge.Thing.PLAYS).to(), ThingVertex::type), RoleTypeImpl::of));
     }
 
     @Override
-    public Stream<? extends Relation> relations(List<RoleType> roleTypes) {
-        return null; // TODO
+    public Stream<? extends RelationImpl> relations(List<RoleType> roleTypes) {
+        if (roleTypes.isEmpty()) {
+            return stream(apply(vertex.ins().edge(Schema.Edge.Thing.ROLEPLAYER).from(), RelationImpl::of));
+        } else {
+            List<Iterator<ThingVertex>> iterators = new LinkedList<>();
+            for (RoleType roleType : roleTypes) {
+                iterators.add(vertex.ins().edge(Schema.Edge.Thing.ROLEPLAYER, ((RoleTypeImpl) roleType).vertex.iid()).from());
+            }
+            return stream(apply(link(iterators), RelationImpl::of));
+        }
     }
 
     @Override

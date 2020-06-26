@@ -20,7 +20,9 @@ package hypergraph.test.behaviour.concept.thing;
 
 import hypergraph.concept.thing.Thing;
 import hypergraph.concept.type.ThingType;
+import hypergraph.test.behaviour.config.Parameters;
 import hypergraph.test.behaviour.config.Parameters.RootLabel;
+import hypergraph.test.behaviour.config.Parameters.ScopedLabel;
 import io.cucumber.java.After;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
@@ -114,6 +116,28 @@ public class ThingSteps {
     @Then("entity/attribute/relation {var} get attributes do not contain: {var}")
     public void thing_get_attributes_do_not_contain(String var1, String var2) {
         assertTrue(get(var1).attributes().noneMatch(k -> k.equals(get(var2))));
+    }
+
+    @Then("entity/attribute/relation {var} get relations\\( ?{scoped_label} ?) contain: {var}")
+    public void thing_get_relations_contain(String var1, ScopedLabel scopedLabel, String var2) {
+        assertTrue(get(var1).relations(tx().concepts().getRelationType(scopedLabel.scope()).role(scopedLabel.role()))
+                           .anyMatch(k -> k.equals(get(var2))));
+    }
+
+    @Then("entity/attribute/relation {var} get relations contain: {var}")
+    public void thing_get_relations_contain(String var1, String var2) {
+        assertTrue(get(var1).relations().anyMatch(k -> k.equals(get(var2))));
+    }
+
+    @Then("entity/attribute/relation {var} get relations\\( ?{scoped_label} ?) do not contain: {var}")
+    public void thing_get_relations_do_not_contain(String var1, ScopedLabel scopedLabel, String var2) {
+        assertTrue(get(var1).relations(tx().concepts().getRelationType(scopedLabel.scope()).role(scopedLabel.role()))
+                           .noneMatch(k -> k.equals(get(var2))));
+    }
+
+    @Then("entity/attribute/relation {var} get relations do not contain: {var}")
+    public void thing_get_relations_do_not_contain(String var1, String var2) {
+        assertTrue(get(var1).relations().noneMatch(k -> k.equals(get(var2))));
     }
 
     @After

@@ -162,6 +162,25 @@ public interface Thing extends Concept {
     /**
      * Get all {@code Relation} instances that this {@code Thing} is plays in.
      *
+     * @return a stream of {@code Relation} that this {@code Thing} plays in
+     */
+    default Stream<? extends Relation> relations() {
+        return relations(Collections.emptyList());
+    }
+
+    /**
+     * Get all {@code Relation} instances that this {@code Thing} is plays in.
+     *
+     * @param roleType that this {@code Thing} can play
+     * @return a stream of {@code Relation} that this {@code Thing} plays in
+     */
+    default Stream<? extends Relation> relations(RoleType roleType) {
+        return relations(Collections.singletonList(roleType));
+    }
+
+    /**
+     * Get all {@code Relation} instances that this {@code Thing} is plays in.
+     *
      * @param roleTypes that this {@code Thing} can play
      * @return a stream of {@code Relation} that this {@code Thing} plays in
      */
