@@ -74,6 +74,7 @@ import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
+
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -170,12 +171,23 @@ public class ReasonerQueryImpl extends ResolvableQuery {
     }
 
     @Override
+    public DisjunctiveQuery asDisjunctive() {
+        throw ReasonerException.illegalQueryConversion(this.getClass(), DisjunctiveQuery.class);
+    }
+
+    @Override
     public ReasonerQueryImpl withSubstitution(ConceptMap sub){
         return new ReasonerQueryImpl(Sets.union(this.getAtoms(),
-                AtomicUtil.answerToPredicates(sub,this)),
+                AtomicUtil.answerToPredicates(sub.map(),this)),
                 traversalPlanFactory,
                 traversalExecutor,
                 context());
+    }
+
+    @Override
+    public Stream<ConceptMap> traverse(){
+        return traversalExecutor.traverse(getPattern()).map(ans ->
+                new ConceptMap(ans.map(), new LookupExplanation(), getPattern(ans.map())));
     }
 
     @Override
@@ -245,8 +257,8 @@ public class ReasonerQueryImpl extends ResolvableQuery {
     @Override
     public void checkValid() {
         getAtoms().forEach(Atomic::checkValid);
-        //this creates the corresponding substitution and checks for id validity
-        ConceptMap substitution = getSubstitution();
+        // Check for id validity
+        getIdPredicates().forEach(this::getValidConceptFromIdPredicate);
     }
 
     @Override
@@ -260,6 +272,13 @@ public class ReasonerQueryImpl extends ResolvableQuery {
             );
         }
         return pattern;
+    }
+
+    @Override
+    public Pattern getPattern(Map<Variable, Concept> map){
+        HashSet<Pattern> patterns = getIdPredicatePatterns(map);
+        patterns.addAll(getPattern().getPatterns());
+        return Graql.and(patterns);
     }
 
     @Override
@@ -325,7 +344,7 @@ public class ReasonerQueryImpl extends ResolvableQuery {
             getAtoms().forEach(atom -> vars.addAll(atom.getVarNames()));
             varNames = vars;
         }
-        return varNames;
+        return new HashSet<>(varNames);
     }
 
     @Override
@@ -358,7 +377,7 @@ public class ReasonerQueryImpl extends ResolvableQuery {
         ConceptManager conceptManager = context().conceptManager();
         return Stream.concat(
                 getAtoms(IdPredicate.class),
-                AtomicUtil.answerToPredicates(sub, this).stream()
+                AtomicUtil.answerToPredicates(sub.map(), this).stream()
                 .map(IdPredicate.class::cast))
                 .filter(p -> !typedVars.contains(p.getVarName()))
                 .map(p -> new Pair<>(p.getVarName(), conceptManager.<Concept>getConcept(p.getPredicate())))
@@ -470,24 +489,45 @@ public class ReasonerQueryImpl extends ResolvableQuery {
         return transform;
     }
 
+    /**
+     * Retrieve the conjunct ID predicates this query contains
+     * @return ID predicates
+     */
+    private Set<IdPredicate> getIdPredicates() {
+        Set<Variable> varNames = getVarNames();
+        Set<IdPredicate> idPredicates = isas()
+                .map(TypeAtom::getTypePredicate)
+                .filter(Objects::nonNull)
+                .filter(p -> varNames.contains(p.getVarName()))
+                .collect(Collectors.toSet());
+        getAtoms(IdPredicate.class).forEach(idPredicates::add);
+        return idPredicates;
+    }
+
+    /**
+     * Retrieve a Concept based on an ID predicate, ensuring that the ID is a valid reference to a Concept
+     * @param idPredicate ID predicate to look up
+     * @return a validated concept
+     */
+    private Concept getValidConceptFromIdPredicate(IdPredicate idPredicate) {
+        ConceptManager conceptManager = context().conceptManager();
+        Concept concept = conceptManager.getConcept(idPredicate.getPredicate());
+        if (concept == null) {
+            throw ReasonerCheckedException.idNotFound(idPredicate.getPredicate());
+        }
+        return concept;
+    }
+
     /** Does id predicates -> answer conversion
      * @return substitution obtained from all id predicates (including internal) in the query
      */
     public ConceptMap getSubstitution(){
         if (substitution == null) {
-            ConceptManager conceptManager = context().conceptManager();
-            Set<Variable> varNames = getVarNames();
-            Set<IdPredicate> predicates = isas()
-                    .map(TypeAtom::getTypePredicate)
-                    .filter(Objects::nonNull)
-                    .filter(p -> varNames.contains(p.getVarName()))
-                    .collect(Collectors.toSet());
-            getAtoms(IdPredicate.class).forEach(predicates::add);
+            Set<IdPredicate> idPredicates = getIdPredicates();
 
             HashMap<Variable, Concept> answerMap = new HashMap<>();
-            predicates.forEach(p -> {
-                Concept concept = conceptManager.getConcept(p.getPredicate());
-                if (concept == null) throw ReasonerCheckedException.idNotFound(p.getPredicate());
+            idPredicates.forEach(p -> {
+                Concept concept = getValidConceptFromIdPredicate(p);
                 answerMap.put(p.getVarName(), concept);
             });
             substitution = new ConceptMap(answerMap);
@@ -666,4 +706,5 @@ public class ReasonerQueryImpl extends ResolvableQuery {
     public Index index(){
         return Index.of(subbedVars());
     }
+
 }

@@ -15,23 +15,40 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
+
+package(default_visibility = ["//visibility:__subpackages__"])
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 
 java_test(
-    name = "lazy-merging-stream-test",
-    srcs = ["LazyMergingStreamTest.java"],
-    deps = [
-        "//graql/executor",
-        "//dependencies/maven/artifacts/org/mockito:mockito-core"
+    name = "test",
+    srcs = [
+        "LanguageTest.java",
     ],
-    test_class = "grakn.core.graql.executor.util.LazyMergingStreamTest",
-    size = "small"
+    test_class = "grakn.core.test.behaviour.graql.explanation.language.LanguageTest",
+    deps = [
+        # Package dependencies
+        "//test/behaviour/server:server",
+
+        # External dependencies from Maven
+        "//dependencies/maven/artifacts/io/cucumber:cucumber-junit",
+    ],
+    runtime_deps = [
+        "//test/behaviour/graql:steps",
+        "//test/behaviour/connection:steps",
+        "//test/behaviour/connection/session:steps",
+        "//test/behaviour/config:parameters",
+    ],
+    data = [
+        "@graknlabs_verification//behaviour/graql/explanation:language.feature",
+    ],
+    classpath_resources = ["//test/resources:logback-test"],
+    size = "medium",
+    visibility = ["//visibility:public"]
 )
 
 checkstyle_test(
     name = "checkstyle",
     targets = [
-        ":lazy-merging-stream-test"
+        ":test",
     ],
 )
-

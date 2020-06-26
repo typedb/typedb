@@ -18,27 +18,19 @@
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 
 java_test(
-    name = "pattern-it",
-    size = "medium",
-    srcs = ["PatternIT.java"],
-    classpath_resources = ["//test/resources:logback-test"],
-    test_class = "grakn.core.graql.query.pattern.PatternIT",
+    name = "lazy-merging-stream-test",
+    srcs = ["LazyMergingStreamTest.java"],
     deps = [
-        "//concept/answer",
-        "//dependencies/maven/artifacts/com/google/guava",
-        "//kb/server",
-        "//kb/graql/exception",
-        "//kb/concept/api",
-        "//test/integration/graql/graph:movie-graph",
-        "//test/rule:grakn-test-server",
-        "//test/integration/util:graql-test-util",
-        "@graknlabs_graql//java:graql",
+        "//common",
+        "//dependencies/maven/artifacts/org/mockito:mockito-core"
     ],
+    test_class = "grakn.core.common.util.test.LazyMergingStreamTest",
+    size = "small"
 )
 
 checkstyle_test(
     name = "checkstyle",
     targets = [
-        ":pattern-it",
+        ":lazy-merging-stream-test"
     ],
 )

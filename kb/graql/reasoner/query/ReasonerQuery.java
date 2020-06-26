@@ -20,15 +20,16 @@ package grakn.core.kb.graql.reasoner.query;
 
 import com.google.common.collect.SetMultimap;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
-import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
 import graql.lang.statement.Variable;
 
 import javax.annotation.CheckReturnValue;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -80,7 +81,10 @@ public interface ReasonerQuery{
      * @return the conjunction pattern that represent this query
      */
     @CheckReturnValue
-    Conjunction<Pattern> getPattern();
+    Pattern getPattern();
+
+    @CheckReturnValue
+    Pattern getPattern(Map<Variable, Concept> map);
 
     /**
      * @param type the class of Atomic to return

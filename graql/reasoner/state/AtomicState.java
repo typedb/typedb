@@ -19,6 +19,7 @@
 package grakn.core.graql.reasoner.state;
 
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Iterables;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.CacheCasting;
 import grakn.core.graql.reasoner.ReasoningContext;
@@ -30,6 +31,7 @@ import grakn.core.graql.reasoner.query.ReasonerQueryFactory;
 import grakn.core.graql.reasoner.rule.InferenceRule;
 import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.graql.reasoner.utils.AnswerUtil;
+import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.graql.reasoner.cache.CacheEntry;
@@ -38,8 +40,8 @@ import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
 import graql.lang.statement.Variable;
 
-import java.util.Collections;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -135,11 +137,11 @@ public class AtomicState extends AnswerPropagatorState<ReasonerAtomicQuery> {
                 baseAnswer, rule.getHead().getRoleSubstitution())
         );
         if (answer.isEmpty()) return answer;
-
+        Map<Variable, Concept> joinedAnswerMap = AnswerUtil.joinAnswers(answer, query.getSubstitution()).project(query.getVarNames()).map();
         return new ConceptMap(
-                AnswerUtil.joinAnswers(answer, query.getSubstitution()).project(query.getVarNames()).map(),
-                new RuleExplanation(Collections.singletonList(baseAnswer), rule.getRule()),
-                query.withSubstitution(baseAnswer).getPattern()
+                joinedAnswerMap,
+                new RuleExplanation(baseAnswer, rule.getRule()),
+                query.getPattern(joinedAnswerMap)
         );
     }
 
@@ -164,7 +166,7 @@ public class AtomicState extends AnswerPropagatorState<ReasonerAtomicQuery> {
         ConceptMap materialisedSub = ruleHead.materialise(baseAnswer).findFirst().orElse(null);
         ConceptMap answer = baseAnswer;
         if (materialisedSub != null) {
-            RuleExplanation ruleExplanation = new RuleExplanation(Collections.singletonList(baseAnswer), rule.getRule());
+            RuleExplanation ruleExplanation = new RuleExplanation(baseAnswer, rule.getRule());
             ConceptMap ruleAnswer = materialisedSub.explain(ruleExplanation);
             queryCache.record(ruleHead, ruleAnswer);
             answer = unifier.apply(ruleAnswer.project(headVars));
@@ -173,7 +175,7 @@ public class AtomicState extends AnswerPropagatorState<ReasonerAtomicQuery> {
 
         return new ConceptMap(
                 AnswerUtil.joinAnswers(answer, query.getSubstitution()).project(query.getVarNames()).map(),
-                new RuleExplanation(answer.explanation().getAnswers(), rule.getRule()),
+                new RuleExplanation(Iterables.getOnlyElement(answer.explanation().getAnswers()), rule.getRule()),
                 query.withSubstitution(answer).getPattern());
     }
 }
