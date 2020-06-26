@@ -115,14 +115,6 @@ public class DirectIsaIT {
     }
 
     @Test
-    public void whenInsertIsaExplicit_InsertsADirectInstanceOfAType() {
-        tx.execute(Graql.insert(var("x").isaX("superType1")));
-        assertEquals(1, tx.execute(Graql.parse("match $z isa! superType1; get; count;").asGetAggregate()).get(0).number().intValue());
-        assertEquals(2, tx.execute(Graql.parse("match $z isa superType1; get; count;").asGetAggregate()).get(0).number().intValue());
-
-    }
-
-    @Test
     public void testMatchIsaAndIsaExplicitReturnDifferentPlans() {
         Statement x = var("x");
         Statement y = var("y");
