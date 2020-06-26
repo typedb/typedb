@@ -60,6 +60,10 @@ java_test(
     ],
     classpath_resources = ["//test/resources:logback-test"],
     size = "large",
+    # TODO: due to DriverTimeoutException this test is not executed remotely
+    # (though still cached). Remove this tag once test is split into
+    # small chunks and takes less time to execute
+    tags = ["no-remote-exec"]
 )
 
 checkstyle_test(
