@@ -19,4 +19,6 @@
 package hypergraph.concept.thing;
 
 public interface Role {
+
+    void delete();
 }

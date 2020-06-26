@@ -26,13 +26,16 @@ import hypergraph.concept.thing.Thing;
 import hypergraph.concept.type.RoleType;
 import hypergraph.concept.type.impl.RelationTypeImpl;
 import hypergraph.concept.type.impl.RoleTypeImpl;
+import hypergraph.graph.iid.PrefixIID;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.vertex.ThingVertex;
+import hypergraph.graph.vertex.TypeVertex;
 
 import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Stream;
 
+import static hypergraph.common.iterator.Iterators.filter;
 import static hypergraph.common.iterator.Iterators.stream;
 
 public class RelationImpl extends ThingImpl implements Relation {
@@ -72,8 +75,15 @@ public class RelationImpl extends ThingImpl implements Relation {
 
     @Override
     public void unrelate(RoleType roleType, Thing player) {
-        Iterator<ThingVertex> role = vertex.outs().edge(Schema.Edge.Thing.RELATES, ((RoleTypeImpl) roleType).vertex.iid()).to();
-        if (role.hasNext()) role.next().delete();
+        TypeVertex roleTypeVertex = ((RoleTypeImpl) roleType).vertex;
+        Iterator<ThingVertex> role = filter(
+                vertex.outs().edge(Schema.Edge.Thing.RELATES, PrefixIID.of(Schema.Vertex.Thing.ROLE.prefix()), roleTypeVertex.iid()).to(),
+                v -> v.ins().edge(Schema.Edge.Thing.PLAYS, ((ThingImpl) player).vertex) != null
+        );
+        if (role.hasNext()) {
+            RoleImpl.of(role.next()).delete();
+            if (!vertex.outs().edge(Schema.Edge.Thing.RELATES).to().hasNext()) this.delete();
+        }
     }
 
     @Override

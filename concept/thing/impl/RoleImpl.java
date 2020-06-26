@@ -42,4 +42,11 @@ public class RoleImpl implements Role {
         ThingVertex player = vertex.ins().edge(Schema.Edge.Thing.PLAYS).from().next();
         relation.outs().put(Schema.Edge.Thing.ROLEPLAYER, player, vertex.type().iid(), SuffixIID.of(vertex.iid().key()));
     }
+
+    public void delete() {
+        ThingVertex relation = vertex.ins().edge(Schema.Edge.Thing.RELATES).from().next();
+        ThingVertex player = vertex.ins().edge(Schema.Edge.Thing.PLAYS).from().next();
+        relation.outs().edge(Schema.Edge.Thing.ROLEPLAYER, player, vertex.type().iid(), SuffixIID.of(vertex.iid().key())).delete();
+        vertex.delete();
+    }
 }

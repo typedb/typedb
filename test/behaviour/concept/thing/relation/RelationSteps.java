@@ -54,8 +54,28 @@ public class RelationSteps {
         get(var1).asRelation().relate(get(var1).asRelation().type().role(roleTypeLabel), get(var2));
     }
 
-    @Then("relation {var} get player for role\\( ?{type_label} ?): {var}")
-    public void relation_get_player_for_role(String var1, String roleTypeLabel, String var2) {
+    @When("relation {var} remove player for role\\( ?{type_label} ?): {var}")
+    public void relation_remove_player_for_role(String var1, String roleTypeLabel, String var2) {
+        get(var1).asRelation().unrelate(get(var1).asRelation().type().role(roleTypeLabel), get(var2));
+    }
+
+    @Then("relation {var} get players contain: {var}")
+    public void relation_get_players_contain(String var1, String var2) {
+        assertTrue(get(var1).asRelation().players().anyMatch(p -> p.equals(get(var2))));
+    }
+
+    @Then("relation {var} get players do not contain: {var}")
+    public void relation_get_players_do_not_contain(String var1, String var2) {
+        assertTrue(get(var1).asRelation().players().noneMatch(p -> p.equals(get(var2))));
+    }
+
+    @Then("relation {var} get players for role\\( ?{type_label} ?) contain: {var}")
+    public void relation_get_player_for_role_contain(String var1, String roleTypeLabel, String var2) {
         assertTrue(get(var1).asRelation().players(get(var1).asRelation().type().role(roleTypeLabel)).anyMatch(p -> p.equals(get(var2))));
+    }
+
+    @Then("relation {var} get players for role\\( ?{type_label} ?) do not contain: {var}")
+    public void relation_get_player_for_role_do_not_contain(String var1, String roleTypeLabel, String var2) {
+        assertTrue(get(var1).asRelation().players(get(var1).asRelation().type().role(roleTypeLabel)).noneMatch(p -> p.equals(get(var2))));
     }
 }
