@@ -335,7 +335,7 @@ public class GraqlSteps {
                 String.format("Explanation entry %d has an incorrect pattern.\nExpected: %s\nActual: %s", entryId, queryWithIdsPattern, answer.getPattern()),
                 queryWithIdsPattern, answer.getPattern());
 
-        String expectedRule = explanationEntry.get("rule");
+        String expectedRule = explanationEntry.get("explanation");
         boolean hasExplanation = answer.explanation() != null && !answer.explanation().isEmpty();
 
         if (expectedRule.equals("lookup")) {
