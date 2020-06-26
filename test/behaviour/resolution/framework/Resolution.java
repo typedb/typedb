@@ -1,16 +1,16 @@
-package grakn.core.test.behaviour.resolution;
+package grakn.core.test.behaviour.resolution.framework;
 
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
-import grakn.core.test.behaviour.resolution.complete.Completer;
-import grakn.core.test.behaviour.resolution.complete.SchemaManager;
-import grakn.core.test.behaviour.resolution.resolve.QueryBuilder;
+import grakn.core.test.behaviour.resolution.framework.complete.Completer;
+import grakn.core.test.behaviour.resolution.framework.complete.SchemaManager;
+import grakn.core.test.behaviour.resolution.framework.resolve.QueryBuilder;
 import graql.lang.query.GraqlGet;
 
 import java.util.List;
 
-import static grakn.core.test.behaviour.resolution.common.Utils.thingCount;
+import static grakn.core.test.behaviour.resolution.framework.common.Utils.thingCount;
 
 public class Resolution {
 

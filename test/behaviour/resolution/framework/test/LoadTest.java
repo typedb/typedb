@@ -1,4 +1,4 @@
-package grakn.core.test.behaviour.resolution.test;
+package grakn.core.test.behaviour.resolution.framework.test;
 
 import grakn.core.kb.server.Session;
 
@@ -6,7 +6,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-import static grakn.core.test.behaviour.resolution.common.Utils.loadGqlFile;
+import static grakn.core.test.behaviour.resolution.framework.common.Utils.loadGqlFile;
 
 
 public class LoadTest {

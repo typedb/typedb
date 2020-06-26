@@ -1,4 +1,4 @@
-package grakn.core.test.behaviour.resolution.complete;
+package grakn.core.test.behaviour.resolution.framework.complete;
 
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.kb.concept.api.Type;
@@ -19,11 +19,11 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static grakn.core.test.behaviour.resolution.common.Utils.loadGqlFile;
+import static grakn.core.test.behaviour.resolution.framework.common.Utils.loadGqlFile;
 
 
 public class SchemaManager {
-    private static final Path SCHEMA_PATH = Paths.get("test", "behaviour", "resolution", "complete", "completion_schema.gql").toAbsolutePath();
+    private static final Path SCHEMA_PATH = Paths.get("test", "behaviour", "resolution", "framework", "complete", "completion_schema.gql").toAbsolutePath();
 
     private static HashSet<String> EXCLUDED_ENTITY_TYPES = new HashSet<String>() {
         {

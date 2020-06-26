@@ -1,4 +1,4 @@
-package grakn.core.test.behaviour.resolution.common;
+package grakn.core.test.behaviour.resolution.framework.common;
 
 import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;

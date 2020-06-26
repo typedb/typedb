@@ -1,4 +1,4 @@
-package grakn.core.test.behaviour.resolution.common;
+package grakn.core.test.behaviour.resolution.framework.common;
 
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;

@@ -1,10 +1,10 @@
-package grakn.core.test.behaviour.resolution.test;
+package grakn.core.test.behaviour.resolution.framework.test;
 
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
-import grakn.core.test.behaviour.resolution.complete.Completer;
-import grakn.core.test.behaviour.resolution.complete.SchemaManager;
+import grakn.core.test.behaviour.resolution.framework.complete.Completer;
+import grakn.core.test.behaviour.resolution.framework.complete.SchemaManager;
 import grakn.core.test.rule.GraknTestServer;
 import graql.lang.Graql;
 import graql.lang.query.GraqlGet;
@@ -15,8 +15,8 @@ import org.junit.Test;
 import java.util.List;
 import java.util.Set;
 
-import static grakn.core.test.behaviour.resolution.common.Utils.getStatements;
-import static grakn.core.test.behaviour.resolution.test.LoadTest.loadTestCase;
+import static grakn.core.test.behaviour.resolution.framework.common.Utils.getStatements;
+import static grakn.core.test.behaviour.resolution.framework.test.LoadTest.loadTestCase;
 import static org.junit.Assert.assertEquals;
 
 public class TestCompleter {

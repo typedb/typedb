@@ -1,6 +1,6 @@
-package grakn.core.test.behaviour.resolution.test;
+package grakn.core.test.behaviour.resolution.framework.test;
 
-import grakn.core.test.behaviour.resolution.resolve.QueryBuilder;
+import grakn.core.test.behaviour.resolution.framework.resolve.QueryBuilder;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;
@@ -11,7 +11,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static com.google.common.collect.Iterables.getOnlyElement;
-import static grakn.core.test.behaviour.resolution.common.Utils.getStatements;
+import static grakn.core.test.behaviour.resolution.framework.common.Utils.getStatements;
 import static org.junit.Assert.assertEquals;
 
 public class TestQueryBuilder {

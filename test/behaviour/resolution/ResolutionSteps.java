@@ -19,6 +19,7 @@
 package grakn.core.test.behaviour.resolution;
 
 import grakn.core.kb.server.Transaction;
+import grakn.core.test.behaviour.resolution.framework.Resolution;
 import graql.lang.Graql;
 import graql.lang.query.GraqlDefine;
 import graql.lang.query.GraqlGet;

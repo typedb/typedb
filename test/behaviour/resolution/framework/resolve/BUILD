@@ -1,13 +1,12 @@
 java_library(
     name = "resolve",
-    srcs = glob([
-        "*.java",
-        ]
-    ),
+    srcs = [
+        "QueryBuilder.java",
+    ],
     visibility = ["//visibility:public"],
     deps = [
         "//dependencies/maven/artifacts/com/google/guava",
-        "//test/behaviour/resolution/common:common",
+        "//test/behaviour/resolution/framework/common:common",
         "//concept/answer:answer",
         "//graql/reasoner:reasoner",
         "//kb/concept/api:api",

@@ -1,13 +1,13 @@
-package grakn.core.test.behaviour.resolution.resolve;
+package grakn.core.test.behaviour.resolution.framework.resolve;
 
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.answer.Explanation;
 import grakn.core.graql.reasoner.explanation.RuleExplanation;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.server.Transaction;
-import grakn.core.test.behaviour.resolution.common.ConjunctionFlatteningVisitor;
-import grakn.core.test.behaviour.resolution.common.NegationRemovalVisitor;
-import grakn.core.test.behaviour.resolution.common.StatementVisitor;
+import grakn.core.test.behaviour.resolution.framework.common.ConjunctionFlatteningVisitor;
+import grakn.core.test.behaviour.resolution.framework.common.NegationRemovalVisitor;
+import grakn.core.test.behaviour.resolution.framework.common.StatementVisitor;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
@@ -50,7 +50,6 @@ public class QueryBuilder {
             ConjunctionFlatteningVisitor flattener = new ConjunctionFlatteningVisitor();
             resolutionQueries.add(Graql.match(flattener.visitPattern(resolutionPattern(tx, answer, 0))).get());
         }
-        System.out.print(resolutionQueries);
         return resolutionQueries;
     }
 

@@ -1,8 +1,8 @@
-package grakn.core.test.behaviour.resolution.test;
+package grakn.core.test.behaviour.resolution.framework.test;
 
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
-import grakn.core.test.behaviour.resolution.Resolution;
+import grakn.core.test.behaviour.resolution.framework.Resolution;
 import grakn.core.test.rule.GraknTestServer;
 import graql.lang.Graql;
 import graql.lang.query.GraqlGet;
@@ -13,7 +13,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-import static grakn.core.test.behaviour.resolution.common.Utils.loadGqlFile;
+import static grakn.core.test.behaviour.resolution.framework.common.Utils.loadGqlFile;
 import static junit.framework.TestCase.assertNotNull;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertThat;

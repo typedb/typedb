@@ -1,9 +1,9 @@
-package grakn.core.test.behaviour.resolution.test;
+package grakn.core.test.behaviour.resolution.framework.test;
 
 import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
-import grakn.core.test.behaviour.resolution.complete.SchemaManager;
+import grakn.core.test.behaviour.resolution.framework.complete.SchemaManager;
 import grakn.core.test.rule.GraknTestServer;
 import graql.lang.Graql;
 import graql.lang.query.GraqlGet;
@@ -19,9 +19,9 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static grakn.core.test.behaviour.resolution.common.Utils.loadGqlFile;
-import static grakn.core.test.behaviour.resolution.complete.SchemaManager.addResolutionSchema;
-import static grakn.core.test.behaviour.resolution.complete.SchemaManager.connectResolutionSchema;
+import static grakn.core.test.behaviour.resolution.framework.common.Utils.loadGqlFile;
+import static grakn.core.test.behaviour.resolution.framework.complete.SchemaManager.addResolutionSchema;
+import static grakn.core.test.behaviour.resolution.framework.complete.SchemaManager.connectResolutionSchema;
 import static org.junit.Assert.assertEquals;
 
 public class TestSchemaManager {

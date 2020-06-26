@@ -1,13 +1,13 @@
-package grakn.core.test.behaviour.resolution.complete;
+package grakn.core.test.behaviour.resolution.framework.complete;
 
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
-import grakn.core.test.behaviour.resolution.common.NegationRemovalVisitor;
-import grakn.core.test.behaviour.resolution.common.StatementVisitor;
-import grakn.core.test.behaviour.resolution.resolve.QueryBuilder;
+import grakn.core.test.behaviour.resolution.framework.common.NegationRemovalVisitor;
+import grakn.core.test.behaviour.resolution.framework.common.StatementVisitor;
+import grakn.core.test.behaviour.resolution.framework.resolve.QueryBuilder;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
@@ -27,7 +27,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static grakn.core.test.behaviour.resolution.resolve.QueryBuilder.generateKeyStatements;
+import static grakn.core.test.behaviour.resolution.framework.resolve.QueryBuilder.generateKeyStatements;
 
 
 public class Completer {

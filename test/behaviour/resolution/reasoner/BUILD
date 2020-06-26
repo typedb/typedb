@@ -15,35 +15,41 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
+
+#package(default_visibility = ["//visibility:__subpackages__"])
 package(default_visibility = ["//test/behaviour:__subpackages__"])
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 
-java_library(
-    name = "steps",
+java_test(
+    name = "test",
     srcs = [
-        "ResolutionSteps.java"
+        "ReasonerTest.java",
     ],
+    test_class = "grakn.core.test.behaviour.resolution.reasoner.ReasonerTest",
     deps = [
         # Package dependencies
-        "//test/behaviour/resolution/framework:resolution-lib",
-        "//kb/server",
-        "//graql/reasoner",
-        "//concept/answer",
-        "//test/behaviour/connection:steps",
-
-        # Grakn Labs dependencies
-        "@graknlabs_graql//java:graql",
+        "//test/behaviour/server:server",
 
         # External dependencies from Maven
-        "//dependencies/maven/artifacts/junit:junit",
-        "//dependencies/maven/artifacts/io/cucumber:cucumber-java",
+        "//dependencies/maven/artifacts/io/cucumber:cucumber-junit",
     ],
-    visibility = ["//visibility:public"],
+    runtime_deps = [
+        "//test/behaviour/connection:steps",
+        "//test/behaviour/connection/session:steps",
+        "//test/behaviour/config:parameters",
+        "//test/behaviour/resolution:steps",
+    ],
+    data = [
+        "@graknlabs_verification//behaviour/resolution/reasoner:reasoner.feature",
+    ],
+    classpath_resources = ["//test/resources:logback-test"],
+    size = "medium",
+    visibility = ["//visibility:public"]
 )
 
 checkstyle_test(
     name = "checkstyle",
     targets = [
-        ":steps",
+        ":test",
     ],
 )
