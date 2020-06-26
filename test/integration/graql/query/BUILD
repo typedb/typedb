@@ -198,21 +198,6 @@ java_test(
     ],
 )
 
-java_test(
-    name = "query-validity-it",
-    size = "medium",
-    srcs = ["QueryValidityIT.java"],
-    classpath_resources = ["//test/resources:logback-test"],
-    test_class = "grakn.core.graql.query.QueryValidityIT",
-    deps = [
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
-        "//kb/graql/exception",
-        "//kb/server",
-        "//test/rule:grakn-test-server",
-        "@graknlabs_graql//java:graql",
-    ],
-)
-
 checkstyle_test(
     name = "checkstyle",
     targets = [
@@ -225,7 +210,6 @@ checkstyle_test(
         ":query-admin-it",
         ":query-error-it",
         ":query-planner-it",
-        ":query-validity-it",
         ":number-casting-it",
     ],
 )
