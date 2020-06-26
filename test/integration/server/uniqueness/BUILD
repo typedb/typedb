@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
+load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 
 java_test(
     name = "attribute-uniqueness-it",
@@ -58,7 +58,7 @@ java_test(
         "@graknlabs_graql//java:graql",
         "//dependencies/maven/artifacts/commons-io",
         "//dependencies/maven/artifacts/commons-lang",
-        "@com-google-guava-guava//jar",
+        "//dependencies/maven/artifacts/com/google/guava:guava",
     ],
 )
 

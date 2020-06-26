@@ -20,7 +20,7 @@ package(default_visibility = ["//visibility:public"])
 load("@graknlabs_bazel_distribution//apt:rules.bzl", "assemble_apt", "deploy_apt")
 load("@graknlabs_bazel_distribution//common:rules.bzl", "assemble_targz", "java_deps", "assemble_zip")
 load("@graknlabs_bazel_distribution//rpm:rules.bzl", "assemble_rpm", "deploy_rpm")
-load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
+load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 
 exports_files(
     glob(["conf/**", "services/**"]),
@@ -161,7 +161,7 @@ java_deps(
 assemble_targz(
     name = "assemble-linux-targz",
     output_filename = "grakn-core-server-linux",
-    targets = [":server-deps", "@graknlabs_common//bin:assemble-bash-targz"],
+    targets = [":server-deps", "@graknlabs_dependencies//distribution:assemble-bash-targz"],
     additional_files = {
         "//server:conf/logback.xml": "server/conf/logback.xml",
         "//server:conf/grakn.properties": "server/conf/grakn.properties",
@@ -184,7 +184,7 @@ assemble_targz(
 assemble_zip(
     name = "assemble-mac-zip",
     output_filename = "grakn-core-server-mac",
-    targets = [":server-deps", "@graknlabs_common//bin:assemble-bash-targz"],
+    targets = [":server-deps", "@graknlabs_dependencies//distribution:assemble-bash-targz"],
     additional_files = {
         "//server:conf/logback.xml": "server/conf/logback.xml",
         "//server:conf/grakn.properties": "server/conf/grakn.properties",
@@ -207,7 +207,7 @@ assemble_zip(
 assemble_zip(
     name = "assemble-windows-zip",
     output_filename = "grakn-core-server-windows",
-    targets = [":server-deps", "@graknlabs_common//bin:assemble-bat-targz"],
+    targets = [":server-deps", "@graknlabs_dependencies//distribution:assemble-bat-targz"],
     additional_files = {
         "//server:conf/logback.xml": "server/conf/logback.xml",
         "//server:conf/grakn.properties": "server/conf/grakn.properties",
@@ -264,7 +264,7 @@ assemble_apt(
 deploy_apt(
     name = "deploy-apt",
     target = ":assemble-linux-apt",
-    deployment_properties = "@graknlabs_build_tools//:deployment.properties",
+    deployment_properties = "@graknlabs_dependencies//distribution:deployment.properties",
 )
 
 assemble_rpm(
@@ -299,5 +299,5 @@ assemble_rpm(
 deploy_rpm(
     name = "deploy-rpm",
     target = ":assemble-linux-rpm",
-    deployment_properties = "@graknlabs_build_tools//:deployment.properties",
+    deployment_properties = "@graknlabs_dependencies//distribution:deployment.properties",
 )
