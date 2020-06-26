@@ -8,7 +8,6 @@ import grakn.core.test.behaviour.resolution.complete.SchemaManager;
 import grakn.core.test.behaviour.resolution.resolve.QueryBuilder;
 import graql.lang.query.GraqlGet;
 
-import java.nio.file.Path;
 import java.util.List;
 
 import static grakn.core.test.behaviour.resolution.common.Utils.thingCount;

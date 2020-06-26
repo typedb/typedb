@@ -18,7 +18,6 @@
 
 package grakn.core.test.behaviour.resolution;
 
-import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import graql.lang.Graql;
 import graql.lang.query.GraqlDefine;
@@ -28,27 +27,16 @@ import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 
-import java.util.HashSet;
-import java.util.Set;
+import static grakn.core.test.behaviour.connection.ConnectionSteps.sessions;
 
 public class ResolutionSteps {
-
-    private static Session completionSession = null;
-    private static Session testSession = null;
 
     private static GraqlGet query;
     private Resolution resolution;
 
-    private Set<Session> sessions() {
-        HashSet<Session> sessions = new HashSet<>();
-        sessions.add(completionSession);
-        sessions.add(testSession);
-        return sessions;
-    }
-
     @Given("graql define")
     public void graql_define(String defineQueryStatements) {
-        sessions().forEach(session -> {
+        sessions.forEach(session -> {
             Transaction tx = session.transaction(Transaction.Type.WRITE);
             GraqlDefine graqlQuery = Graql.parse(String.join("\n", defineQueryStatements)).asDefine();
             tx.execute(graqlQuery);
@@ -58,7 +46,7 @@ public class ResolutionSteps {
 
     @Given("graql insert")
     public void graql_insert(String insertQueryStatements) {
-        sessions().forEach(session -> {
+        sessions.forEach(session -> {
             Transaction tx = session.transaction(Transaction.Type.WRITE);
             GraqlQuery graqlQuery = Graql.parse(String.join("\n", insertQueryStatements));
             tx.execute(graqlQuery, true, true); // always use inference and have explanations
@@ -68,7 +56,10 @@ public class ResolutionSteps {
 
     @When("reference kb is completed")
     public void reference_kb_is_completed() {
-        resolution = new Resolution(completionSession, testSession);
+        if (sessions.size() < 2) {
+            throw new RuntimeException("Two sessions must be defined, each with a separate keyspace");
+        }
+        resolution = new Resolution(sessions.get(0), sessions.get(1));
     }
 
     @Then("for graql query")
