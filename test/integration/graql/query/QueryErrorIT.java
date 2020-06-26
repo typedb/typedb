@@ -83,49 +83,10 @@ public class QueryErrorIT {
         session.close();
     }
 
-    @Test
-    public void testErrorNonExistentConceptType() {
-        exception.expect(GraqlSemanticException.class);
-        exception.expectMessage("film");
-        //noinspection ResultOfMethodCallIgnored
-        tx.stream(Graql.match(var("x").isa("film")));
-    }
-
-    @Test
-    public void testErrorNotARole() {
-        exception.expect(GraqlSemanticException.class);
-        exception.expectMessage(allOf(containsString("role"), containsString("person"), containsString("isa person")));
-        //noinspection ResultOfMethodCallIgnored
-        tx.stream(Graql.match(var("x").isa("movie"), var().rel("person", "y").rel("x")));
-    }
-
-    @Test
-    public void testErrorNonExistentResourceType() {
-        exception.expect(GraqlSemanticException.class);
-        exception.expectMessage("thingy");
-        tx.execute(Graql.match(var("x").has("thingy", "value")).delete(var("x").isa("thing")));
-    }
-
     @Test @Ignore // TODO: enable this properly after fixing issue #4664
     public void whenMatchingWildcardHas_Throw() {
         exception.expect(GraqlSemanticException.class);
         tx.execute(Graql.match(type("thing").has(var("x"))).get());
-    }
-
-    @Test
-    public void whenMatchingHasWithNonExistentType_Throw() {
-        exception.expect(GraqlSemanticException.class);
-        exception.expectMessage(GraqlSemanticException.labelNotFound(Label.of("heffalump")).getMessage());
-        tx.execute(Graql.match(var("x").has("heffalump", "foo")).get());
-    }
-
-    @Test
-    public void testErrorNotARelation() {
-        exception.expect(GraqlSemanticException.class);
-        exception.expectMessage(allOf(
-                containsString("relation"), containsString("movie"), containsString("separate"), containsString(";")));
-        //noinspection ResultOfMethodCallIgnored
-        tx.stream(Graql.match(var().isa("movie").rel("x").rel("y")));
     }
 
     @Test
