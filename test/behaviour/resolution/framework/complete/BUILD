@@ -19,3 +19,10 @@ java_library(
         "//test/behaviour/resolution/framework/complete:completion_schema.gql",
     ],
 )
+
+checkstyle_test(
+    name = "checkstyle",
+    targets = [
+        ":complete",
+    ],
+)

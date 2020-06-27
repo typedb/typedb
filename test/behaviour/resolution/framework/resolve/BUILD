@@ -14,3 +14,10 @@ java_library(
         "@graknlabs_graql//java:graql",
     ],
 )
+
+checkstyle_test(
+    name = "checkstyle",
+    targets = [
+        ":resolve",
+    ],
+)

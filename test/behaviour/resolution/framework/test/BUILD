@@ -9,7 +9,7 @@ java_library(
 )
 
 java_test(
-    name = "QueryBuilderIT",
+    name = "query-builder-it",
     srcs = [
         "QueryBuilderIT.java",
     ],
@@ -44,7 +44,7 @@ java_test(
 )
 
 java_test(
-    name = "TestQueryBuilder",
+    name = "test-query-builder",
     srcs = [
         "TestQueryBuilder.java",
     ],
@@ -64,7 +64,7 @@ java_test(
 )
 
 java_test(
-    name = "TestSchemaManager",
+    name = "test-schema-manager",
     srcs = [
         "TestSchemaManager.java",
     ],
@@ -88,7 +88,7 @@ java_test(
 )
 
 java_test(
-    name = "TestCompleter",
+    name = "test-completer",
     srcs = [
         "TestCompleter.java",
     ],
@@ -115,7 +115,7 @@ java_test(
 )
 
 java_test(
-    name = "TestResolution",
+    name = "test-resolution",
     srcs = [
         "TestResolution.java",
     ],
@@ -147,4 +147,16 @@ java_test(
     ],
     classpath_resources = ["//test/resources:logback-test"],
     size="medium"
+)
+
+checkstyle_test(
+    name = "checkstyle",
+    targets = [
+        ":load-test",
+        ":query-builder-it",
+        ":test-query-builder",
+        ":test-schema-manager",
+        ":test-completer",
+        ":test-resolution",
+    ],
 )
