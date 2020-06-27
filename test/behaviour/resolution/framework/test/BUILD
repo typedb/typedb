@@ -15,7 +15,7 @@ java_test(
     srcs = [
         "QueryBuilderIT.java",
     ],
-    test_class = "grakn.core.test.behaviour.resolution.test.QueryBuilderIT",
+    test_class = "grakn.core.test.behaviour.resolution.framework.test.QueryBuilderIT",
     deps = [
         "//test/behaviour/resolution/framework/common",
         "//test/behaviour/resolution/framework/resolve",
@@ -50,7 +50,7 @@ java_test(
     srcs = [
         "TestQueryBuilder.java",
     ],
-    test_class = "grakn.core.test.behaviour.resolution.test.TestQueryBuilder",
+    test_class = "grakn.core.test.behaviour.resolution.framework.test.TestQueryBuilder",
     deps = [
         "//test/behaviour/resolution/framework/common",
         "//test/behaviour/resolution/framework/resolve",
@@ -70,7 +70,7 @@ java_test(
     srcs = [
         "TestSchemaManager.java",
     ],
-    test_class = "grakn.core.test.behaviour.resolution.test.TestSchemaManager",
+    test_class = "grakn.core.test.behaviour.resolution.framework.test.TestSchemaManager",
     deps = [
         "//test/behaviour/resolution/framework/common",
         "//test/behaviour/resolution/framework/complete",
@@ -94,7 +94,7 @@ java_test(
     srcs = [
         "TestCompleter.java",
     ],
-    test_class = "grakn.core.test.behaviour.resolution.test.TestCompleter",
+    test_class = "grakn.core.test.behaviour.resolution.framework.test.TestCompleter",
     deps = [
         "//test/behaviour/resolution/framework/common",
         "//test/behaviour/resolution/framework/complete",
@@ -121,9 +121,9 @@ java_test(
     srcs = [
         "TestResolution.java",
     ],
-    test_class = "grakn.core.test.behaviour.resolution.test.TestResolution",
+    test_class = "grakn.core.test.behaviour.resolution.framework.test.TestResolution",
     deps = [
-        "//test/behaviour/resolution/framework/common",
+        "//test/behaviour/resolution/framework/common:common",
         "//test/behaviour/resolution/framework:resolution-lib",
         "//test/rule:grakn-test-server",
         "//kb/server:server",

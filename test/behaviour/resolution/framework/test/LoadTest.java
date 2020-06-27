@@ -13,8 +13,8 @@ public class LoadTest {
 
     public static void loadTestCase(Session session, String testCase) {
         try {
-            Path schemaPath = Paths.get("test", "behaviour", "resolution", "test", "cases", testCase, "schema.gql").toAbsolutePath();
-            Path dataPath = Paths.get("test", "behaviour", "resolution", "test", "cases", testCase, "data.gql").toAbsolutePath();
+            Path schemaPath = Paths.get("test", "behaviour", "resolution", "framework", "test", "cases", testCase, "schema.gql").toAbsolutePath();
+            Path dataPath = Paths.get("test", "behaviour", "resolution", "framework", "test", "cases", testCase, "data.gql").toAbsolutePath();
             // Load a schema incl. rules
             loadGqlFile(session, schemaPath);
             // Load data
