@@ -119,6 +119,9 @@ public interface Type extends SchemaConcept {
     @CheckReturnValue
     Stream<? extends Thing> instances();
 
+    @CheckReturnValue
+    Stream<? extends Thing> instancesDirect();
+
     /**
      * Return if the type is set to abstract.
      * By default, types are not abstract.

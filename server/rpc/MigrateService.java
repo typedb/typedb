@@ -52,7 +52,7 @@ public class MigrateService extends MigrateServiceGrpc.MigrateServiceImplBase {
             anImport.execute();
             responseObserver.onNext(MigrateProto.ImportFile.Res.getDefaultInstance());
             responseObserver.onCompleted();
-        } catch (IOException e) {
+        } catch (Exception e) {
             LOG.error("An error occurred during export testing.", e);
             responseObserver.onError(new StatusRuntimeException(Status.ABORTED));
         }
