@@ -1,3 +1,4 @@
+load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 exports_files(["completion_schema.gql"])
 
 java_library(

@@ -1,3 +1,5 @@
+load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
+
 java_library(
     name = "common",
     srcs = [
@@ -16,8 +18,8 @@ java_library(
 )
 
 checkstyle_test(
-    name = "common",
+    name = "checkstyle",
     targets = [
-        ":resolve",
+        ":common",
     ],
 )
