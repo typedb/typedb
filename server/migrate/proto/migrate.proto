@@ -50,7 +50,6 @@ message Item {
         Attribute attribute = 1;
         Entity entity = 2;
         Relation relation = 3;
-        Ownership ownership = 4;
 
         Header header = 15;
         Checksums checksums = 16;
@@ -59,13 +58,13 @@ message Item {
     message Entity {
         string id = 1;
         string label = 2;
-        repeated Key keys = 3;
+        repeated OwnedAttribute attribute = 3;
     }
 
     message Attribute {
         string id = 1;
         string label = 2;
-        repeated Key keys = 3;
+        repeated OwnedAttribute attribute = 3;
         ValueObject value = 4;
     }
 
@@ -76,7 +75,7 @@ message Item {
     message Relation {
         string id = 1;
         string label = 2;
-        repeated Key keys = 3;
+        repeated OwnedAttribute attribute = 3;
         repeated Role role = 4;
         message Role {
             string label = 1;
@@ -87,9 +86,8 @@ message Item {
         }
     }
 
-    message Ownership {
-        string owner_id = 1;
-        string attribute_id = 2;
+    message OwnedAttribute {
+        string id = 1;
     }
 
     message Header {

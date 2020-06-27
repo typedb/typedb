@@ -11,7 +11,6 @@ import grakn.core.kb.concept.api.EntityType;
 import grakn.core.kb.concept.api.Relation;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
-import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import grakn.core.server.Version;
@@ -47,18 +46,18 @@ public class Import implements AutoCloseable {
     Map<String, String> idMap = new HashMap<>();
 
     // Pair of LOCAL attribute ids to FOREIGN key ids
-    List<Pair<String, List<String>>> attributeKeyOwnerships = new ArrayList<>();
+    List<Pair<String, List<String>>> attributeOwnerships = new ArrayList<>();
 
     Map<String, AttributeType<?>> attributeTypeCache = new HashMap<>();
     Map<String, EntityType> entityTypeCache = new HashMap<>();
     Map<String, RelationType> relationTypeCache = new HashMap<>();
+    Map<String, Attribute<?>> attributeCache = new HashMap<>();
 
     private long entityCount = 0;
     private long attributeCount = 0;
     private long relationCount = 0;
     private long ownershipCount = 0;
     private long roleCount = 0;
-    private long keyOwnershipCount = 0;
 
     public Import(Session session, Path inputFile) throws IOException {
         this.session = session;
@@ -81,20 +80,25 @@ public class Import implements AutoCloseable {
     private void write() {
         count++;
         if (count >= BATCH_SIZE) {
-            LOG.info("Commit start, inserted {} things", count);
-            long time = System.nanoTime();
-            currentTransaction.commit();
-            LOG.info("Commit end, took {}s", (double)(System.nanoTime() - time) / 1_000_000_000.0);
-            currentTransaction = session.transaction(Transaction.Type.WRITE);
-            count = 0;
-            attributeTypeCache.clear();
-            entityTypeCache.clear();
-            relationTypeCache.clear();
+            commit();
         }
     }
 
-    private void flush() {
+    private void commit() {
+        LOG.info("Commit start, inserted {} things", count);
+        long time = System.nanoTime();
         currentTransaction.commit();
+        LOG.info("Commit end, took {}s", (double)(System.nanoTime() - time) / 1_000_000_000.0);
+        currentTransaction = session.transaction(Transaction.Type.WRITE);
+        count = 0;
+        attributeTypeCache.clear();
+        entityTypeCache.clear();
+        relationTypeCache.clear();
+        attributeCache.clear();
+    }
+
+    private void flush() {
+        commit();
     }
 
     public void execute() throws InvalidProtocolBufferException {
@@ -120,9 +124,6 @@ public class Import implements AutoCloseable {
                 case RELATION:
                     insertRelation(item.getRelation());
                     break;
-                case OWNERSHIP:
-                    insertOwnership(item.getOwnership());
-                    break;
                 case CHECKSUMS:
                     checkChecksums(item.getChecksums());
                     break;
@@ -133,13 +134,12 @@ public class Import implements AutoCloseable {
 
         flush();
 
-        LOG.info("Imported {} entities, {} attributes, {} relations ({} roles), {} ownerships, {} key ownerships",
+        LOG.info("Imported {} entities, {} attributes, {} relations ({} roles), {} ownerships",
                 entityCount,
                 attributeCount,
                 relationCount,
                 roleCount,
-                ownershipCount,
-                keyOwnershipCount);
+                ownershipCount);
     }
 
     private void check(List<String> errors, String name, long expected, long actual) {
@@ -156,7 +156,6 @@ public class Import implements AutoCloseable {
         check(errors, "Relation", checksums.getRelationCount(), relationCount);
         check(errors, "Role", checksums.getRoleCount(), roleCount);
         check(errors, "Ownership", checksums.getOwnershipCount(), ownershipCount);
-        check(errors, "Key Ownership", checksums.getKeyOwnershipCount(), keyOwnershipCount);
 
         if (errors.size() > 0) {
             throw new IllegalStateException(String.join("\n", errors));
@@ -170,37 +169,40 @@ public class Import implements AutoCloseable {
                 .create(valueFrom(attributeMessage.getValue()));
 
         String attributeId = attribute.id().toString();
+        idMap.put(attributeMessage.getId(), attributeId);
 
-        if (attributeMessage.getKeysCount() > 0) {
-            List<String> keyIdStrings = new ArrayList<>(attributeMessage.getKeysCount());
+        if (attributeMessage.getAttributeCount() > 0) {
+            List<String> attributeIdStrings = new ArrayList<>(attributeMessage.getAttributeCount());
 
-            for (MigrateProto.Item.Key keyMessage : attributeMessage.getKeysList()) {
-                keyIdStrings.add(keyMessage.getId());
+            for (MigrateProto.Item.OwnedAttribute ownedMessage : attributeMessage.getAttributeList()) {
+                attributeIdStrings.add(ownedMessage.getId());
             }
 
-            attributeKeyOwnerships.add(new Pair<>(attributeId, keyIdStrings));
+            attributeOwnerships.add(new Pair<>(attributeId, attributeIdStrings));
         }
-
-        idMap.put(attributeMessage.getId(), attributeId);
 
         attributeCount++;
         write();
     }
 
     private void insertAttributeKeyOwnerships() {
-        for (Pair<String, List<String>> attributeKeyOwnership : attributeKeyOwnerships) {
-            Attribute<?> attribute = currentTransaction.getConcept(ConceptId.of(attributeKeyOwnership.first()));
+        for (Pair<String, List<String>> attributeKeyOwnership : attributeOwnerships) {
+            Attribute<?> owner = attributeCache.computeIfAbsent(
+                    attributeKeyOwnership.first(), // First is local ID
+                    id -> currentTransaction.getConcept(ConceptId.of(id)));
 
-            for (String keyIdString : attributeKeyOwnership.second()) {
-                Attribute<?> key = currentTransaction.getConcept(ConceptId.of(idMap.get(keyIdString)));
-                attribute.has(key);
-                keyOwnershipCount++;
+            for (String attributeIdString : attributeKeyOwnership.second()) {
+                Attribute<?> owned = attributeCache.computeIfAbsent(
+                        idMap.get(attributeIdString), // Second is foreign ID, remember to map
+                        id -> currentTransaction.getConcept(ConceptId.of(id)));
+                owner.has(owned);
+                ownershipCount++;
             }
 
             write();
         }
 
-        attributeKeyOwnerships.clear();
+        attributeOwnerships.clear();
     }
 
     private void insertEntity(MigrateProto.Item.Entity entityMessage) {
@@ -209,14 +211,15 @@ public class Import implements AutoCloseable {
                         l -> currentTransaction.getEntityType(l))
                 .create();
 
-        for (MigrateProto.Item.Key keyMessage : entityMessage.getKeysList()) {
-            ConceptId localKeyId = ConceptId.of(idMap.get(keyMessage.getId()));
-            Attribute<?> key = currentTransaction.getConcept(localKeyId);
-            entity.has(key);
-            keyOwnershipCount++;
-        }
-
         idMap.put(entityMessage.getId(), entity.id().toString());
+
+        for (MigrateProto.Item.OwnedAttribute attributeMessage : entityMessage.getAttributeList()) {
+            Attribute<?> attribute = attributeCache.computeIfAbsent(
+                    idMap.get(attributeMessage.getId()),
+                    id -> currentTransaction.getConcept(ConceptId.of(id)));
+            entity.has(attribute);
+            ownershipCount++;
+        }
 
         entityCount++;
         write();
@@ -228,6 +231,8 @@ public class Import implements AutoCloseable {
                         l -> currentTransaction.getRelationType(l))
                 .create();
 
+        idMap.put(relationMessage.getId(), relation.id().toString());
+
         for (MigrateProto.Item.Relation.Role roleMessage : relationMessage.getRoleList()) {
             Role role = currentTransaction.getRole(roleMessage.getLabel());
 
@@ -238,29 +243,27 @@ public class Import implements AutoCloseable {
             }
         }
 
-        for (MigrateProto.Item.Key keyMessage : relationMessage.getKeysList()) {
-            ConceptId localKeyId = ConceptId.of(idMap.get(keyMessage.getId()));
-            Attribute<?> key = currentTransaction.getConcept(localKeyId);
-            relation.has(key);
-            keyOwnershipCount++;
+        for (MigrateProto.Item.OwnedAttribute attributeMessage : relationMessage.getAttributeList()) {
+            ConceptId localAttributeId = ConceptId.of(idMap.get(attributeMessage.getId()));
+            Attribute<?> attribute = currentTransaction.getConcept(localAttributeId);
+            relation.has(attribute);
+            ownershipCount++;
         }
-
-        idMap.put(relationMessage.getId(), relation.id().toString());
 
         relationCount++;
         write();
     }
 
-    private void insertOwnership(MigrateProto.Item.Ownership ownership) {
-        ConceptId localOwnerId = ConceptId.of(idMap.get(ownership.getOwnerId()));
-        ConceptId localAttributeId = ConceptId.of(idMap.get(ownership.getAttributeId()));
-        Thing thing = currentTransaction.getConcept(localOwnerId);
-        Attribute<?> attribute = currentTransaction.getConcept(localAttributeId);
-        thing.has(attribute);
-
-        ownershipCount++;
-        write();
-    }
+//    private void insertOwnership(MigrateProto.Item.Ownership ownership) {
+//        ConceptId localOwnerId = ConceptId.of(idMap.get(ownership.getOwnerId()));
+//        ConceptId localAttributeId = ConceptId.of(idMap.get(ownership.getAttributeId()));
+//        Thing thing = currentTransaction.getConcept(localOwnerId);
+//        Attribute<?> attribute = currentTransaction.getConcept(localAttributeId);
+//        thing.has(attribute);
+//
+//        ownershipCount++;
+//        write();
+//    }
 
     private <T> T valueFrom(MigrateProto.ValueObject valueObject) {
         switch (valueObject.getValueCase()) {

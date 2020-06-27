@@ -19,11 +19,8 @@
 package grakn.core.server.migrate;
 
 import grakn.core.kb.concept.api.Attribute;
-import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Entity;
-import grakn.core.kb.concept.api.EntityType;
 import grakn.core.kb.concept.api.Relation;
-import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.server.Session;
@@ -81,7 +78,6 @@ public class Export implements AutoCloseable {
         writeAttributes();
         writeEntities();
         writeRelations();
-        writeOwnerships();
 
         write(MigrateProto.Item.newBuilder()
                 .setChecksums(MigrateProto.Item.Checksums.newBuilder()
@@ -89,19 +85,17 @@ public class Export implements AutoCloseable {
                         .setAttributeCount(attributeCount)
                         .setRelationCount(relationCount)
                         .setRoleCount(roleCount)
-                        .setOwnershipCount(ownershipCount)
-                        .setKeyOwnershipCount(keyOwnershipCount))
+                        .setOwnershipCount(ownershipCount))
                 .build());
 
         outputStream.flush();
 
-        LOG.info("Exported {} entities, {} attributes, {} relations ({} roles), {} ownerships, {} key ownerships",
+        LOG.info("Exported {} entities, {} attributes, {} relations ({} roles), {} ownerships",
                 entityCount,
                 attributeCount,
                 relationCount,
                 roleCount,
-                ownershipCount,
-                keyOwnershipCount);
+                ownershipCount);
     }
 
     private void write(MigrateProto.Item item) throws IOException {
@@ -116,20 +110,18 @@ public class Export implements AutoCloseable {
             Iterator<Attribute<?>> iterator = attributes.iterator();
             while (iterator.hasNext()) {
                 Attribute<?> attribute = iterator.next();
-                AttributeType<?> attributeType = attribute.type();
 
                 MigrateProto.Item.Attribute.Builder attributeBuilder = MigrateProto.Item.Attribute.newBuilder()
                         .setId(attribute.id().toString())
-                        .setLabel(attributeType.label().toString())
+                        .setLabel(attribute.type().label().toString())
                         .setValue(valueOf(attribute.value()));
 
-                attribute.keys(attributeType.keys().toArray(AttributeType[]::new))
-                        .forEach(key -> {
-                            attributeBuilder.addKeys(
-                                    MigrateProto.Item.Key.newBuilder()
-                                            .setId(key.id().toString()));
-                            keyOwnershipCount++;
-                        });
+                attribute.attributes().forEach(a -> {
+                    attributeBuilder.addAttribute(
+                            MigrateProto.Item.OwnedAttribute.newBuilder()
+                                    .setId(a.id().toString()));
+                    ownershipCount++;
+                });
 
                 write(MigrateProto.Item.newBuilder().setAttribute(attributeBuilder).build());
                 attributeCount++;
@@ -144,19 +136,17 @@ public class Export implements AutoCloseable {
             Iterator<Entity> iterator = entities.iterator();
             while (iterator.hasNext()) {
                 Entity entity = iterator.next();
-                EntityType entityType = entity.type();
 
                 MigrateProto.Item.Entity.Builder entityBuilder = MigrateProto.Item.Entity.newBuilder()
                         .setId(entity.id().toString())
-                        .setLabel(entityType.label().toString());
+                        .setLabel(entity.type().label().toString());
 
-                entity.keys(entityType.keys().toArray(AttributeType[]::new))
-                        .forEach(key -> {
-                            entityBuilder.addKeys(
-                                    MigrateProto.Item.Key.newBuilder()
-                                            .setId(key.id().toString()));
-                            keyOwnershipCount++;
-                        });
+                entity.attributes().forEach(a -> {
+                    entityBuilder.addAttribute(
+                            MigrateProto.Item.OwnedAttribute.newBuilder()
+                                    .setId(a.id().toString()));
+                    ownershipCount++;
+                });
 
                 write(MigrateProto.Item.newBuilder().setEntity(entityBuilder).build());
                 entityCount++;
@@ -171,8 +161,7 @@ public class Export implements AutoCloseable {
             Iterator<Relation> iterator = relations.iterator();
             while (iterator.hasNext()) {
                 Relation relation = iterator.next();
-                RelationType relationType = relation.type();
-                String label = relationType.label().toString();
+                String label = relation.type().label().toString();
                 if (label.startsWith("@")) {
                     continue;
                 }
@@ -196,13 +185,12 @@ public class Export implements AutoCloseable {
                     roleCount++;
                 }
 
-                relation.keys(relationType.keys().toArray(AttributeType[]::new))
-                        .forEach(key -> {
-                            relationBuilder.addKeys(
-                                    MigrateProto.Item.Key.newBuilder()
-                                            .setId(key.id().toString()));
-                            keyOwnershipCount++;
-                        });
+                relation.attributes().forEach(a -> {
+                    relationBuilder.addAttribute(
+                            MigrateProto.Item.OwnedAttribute.newBuilder()
+                                    .setId(a.id().toString()));
+                    ownershipCount++;
+                });
 
                 MigrateProto.Item item = MigrateProto.Item.newBuilder()
                         .setRelation(relationBuilder)
@@ -210,40 +198,6 @@ public class Export implements AutoCloseable {
 
                 write(item);
                 relationCount++;
-            }
-        }
-    }
-
-    private void writeOwnerships() throws IOException {
-        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-
-            Stream<Attribute<?>> attributes = tx.getMetaAttributeType().instances();
-
-            Iterator<Attribute<?>> attributeIterator = attributes.iterator();
-            while (attributeIterator.hasNext()) {
-                Attribute<?> attribute = attributeIterator.next();
-
-                String attributeId = attribute.id().toString();
-
-                Stream<Thing> owners = attribute.owners();
-                Iterator<Thing> ownerIterator = owners.iterator();
-                while (ownerIterator.hasNext()) {
-                    Thing owner = ownerIterator.next();
-
-                    // Ignore key ownership, this is the thing's responsibility
-                    if (owner.keys(attribute.type()).findAny().isPresent()) {
-                        continue;
-                    }
-
-                    MigrateProto.Item item = MigrateProto.Item.newBuilder()
-                            .setOwnership(MigrateProto.Item.Ownership.newBuilder()
-                                    .setAttributeId(attributeId)
-                                    .setOwnerId(owner.id().toString())
-                            ).build();
-
-                    write(item);
-                    ownershipCount++;
-                }
             }
         }
     }
