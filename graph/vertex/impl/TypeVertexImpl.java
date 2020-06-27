@@ -40,6 +40,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static hypergraph.common.collection.Bytes.join;
+import static hypergraph.common.iterator.Iterators.distinct;
 import static hypergraph.common.iterator.Iterators.filter;
 import static hypergraph.common.iterator.Iterators.link;
 
@@ -254,7 +255,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
 
     public static class Persisted extends TypeVertexImpl {
 
-        private final Set<ThingVertexImpl> instances;
+        private final Set<ThingVertex> instances;
 
         public Persisted(TypeGraph graph, VertexIID.Type iid, String label, @Nullable String scope) {
             super(graph, iid, label, scope);
@@ -282,20 +283,20 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
 
         @Override
         public void buffer(ThingVertex thingVertex) {
-            instances.add((ThingVertexImpl) thingVertex);
+            instances.add(thingVertex);
         }
 
         @Override
         public void unbuffer(ThingVertex thingVertex) {
-            instances.remove((ThingVertexImpl) thingVertex); // keep the cast to avoid warning
+            instances.remove(thingVertex); // keep the cast to avoid warning
         }
 
         @Override
-        public Iterator<ThingVertexImpl> instances() {
-            return link(instances.iterator(), filter(graph.storage().iterate(
+        public Iterator<ThingVertex> instances() {
+            return distinct(link(instances.iterator(), graph.storage().iterate(
                     join(iid.bytes(), Schema.Edge.ISA.in().bytes()),
-                    (key, value) -> ThingVertexImpl.of(graph.thing(), EdgeIID.InwardsISA.of(key).end())
-            ), thingVertex -> !instances.contains(thingVertex)));
+                    (key, value) -> graph.thing().convert(EdgeIID.InwardsISA.of(key).end())
+            )));
             // TODO: Can we figure out how to do a "distinct iterator" that is more efficient?
             //       The one above still has to construct a full ThingVertexImpl and then check against a set
         }

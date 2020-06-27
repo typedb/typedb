@@ -123,6 +123,11 @@ public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl impleme
     }
 
     @Override
+    public AttributeVertexImpl asAttribute() {
+        return this;
+    }
+
+    @Override
     public AttributeVertexImpl.Boolean asBoolean() {
         throw new HypergraphException(Error.ThingRead.INVALID_VERTEX_CASTING.format(Boolean.class.getCanonicalName()));
     }

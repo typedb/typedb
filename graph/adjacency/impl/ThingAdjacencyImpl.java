@@ -111,13 +111,13 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
     }
 
     @Override
-    public ThingEdge edge(Schema.Edge.Thing schema, ThingVertex adjacent, VertexIID.Type infixTail, SuffixIID suffixTail) {
+    public ThingEdge edge(Schema.Edge.Thing schema, ThingVertex adjacent, ThingVertex optimised) {
         assert schema.isOptimisation();
         Predicate<ThingEdge> predicate = direction.isOut()
-                ? e -> e.to().equals(adjacent) && e.outIID().suffix().equals(suffixTail)
-                : e -> e.from().equals(adjacent) && e.inIID().suffix().equals(suffixTail);
+                ? e -> e.to().equals(adjacent) && e.outIID().suffix().equals(SuffixIID.of(optimised.iid().key()))
+                : e -> e.from().equals(adjacent) && e.inIID().suffix().equals(SuffixIID.of(optimised.iid().key()));
         Iterator<ThingEdge> iterator = bufferedEdgeIterator(
-                schema, new IID[]{infixTail, PrefixIID.of(adjacent.schema().prefix()), adjacent.type().iid()}
+                schema, new IID[]{optimised.type().iid(), PrefixIID.of(adjacent.schema().prefix()), adjacent.type().iid()}
         );
         ThingEdge edge = null;
         while (iterator.hasNext()) {
@@ -166,12 +166,12 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
         put(schema, edge, infixes, true, true);
     }
 
-    public void put(Schema.Edge.Thing schema, ThingVertex adjacent, VertexIID.Type infixTail, SuffixIID suffixTail) {
+    public void put(Schema.Edge.Thing schema, ThingVertex adjacent, ThingVertex optimised) {
         assert schema.isOptimisation();
         ThingEdge edge = direction.isOut()
-                ? new ThingEdgeImpl.Buffered(schema, owner, adjacent, infixTail, suffixTail)
-                : new ThingEdgeImpl.Buffered(schema, adjacent, owner, infixTail, suffixTail);
-        IID[] infixes = new IID[]{infixTail, PrefixIID.of(adjacent.schema().prefix()), adjacent.type().iid()};
+                ? new ThingEdgeImpl.Buffered(schema, owner, adjacent, optimised)
+                : new ThingEdgeImpl.Buffered(schema, adjacent, owner, optimised);
+        IID[] infixes = new IID[]{optimised.type().iid(), PrefixIID.of(adjacent.schema().prefix()), adjacent.type().iid()};
         put(schema, edge, infixes, true, true);
     }
 
@@ -289,12 +289,13 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
         }
 
         @Override
-        public ThingEdge edge(Schema.Edge.Thing schema, ThingVertex adjacent, VertexIID.Type infixTail, SuffixIID suffixTail) {
+        public ThingEdge edge(Schema.Edge.Thing schema, ThingVertex adjacent, ThingVertex optimised) {
             assert schema.isOptimisation();
-            ThingEdge edge = super.edge(schema, adjacent, infixTail, suffixTail);
+            ThingEdge edge = super.edge(schema, adjacent, optimised);
             if (edge != null) return edge;
 
-            EdgeIID.Thing edgeIID = EdgeIID.Thing.of(owner.iid(), infixIID(schema, infixTail), adjacent.iid(), suffixTail);
+            EdgeIID.Thing edgeIID = EdgeIID.Thing.of(owner.iid(), infixIID(schema, optimised.type().iid()),
+                                                     adjacent.iid(), SuffixIID.of(optimised.iid().key()));
             if (owner.graph().storage().get(edgeIID.bytes()) == null) return null;
             else return new ThingEdgeImpl.Persisted(owner.graph(), edgeIID);
         }

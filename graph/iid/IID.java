@@ -37,6 +37,10 @@ public abstract class IID {
         return bytes;
     }
 
+    boolean isEmpty() {
+        return bytes.length == 0;
+    }
+
     public String toHexString() {
         if (hexString == null) {
             char[] hexChars = new char[bytes.length * 2];

@@ -110,11 +110,7 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
 
     @Override
     public AttributeVertexImpl asAttribute() {
-        if (!schema().equals(Schema.Vertex.Thing.ATTRIBUTE)) {
-            throw new HypergraphException(Error.ThingRead.INVALID_VERTEX_CASTING.format(AttributeVertex.class.getCanonicalName()));
-        }
-
-        return AttributeVertexImpl.of(graph, iid.asAttribute());
+        throw new HypergraphException(Error.ThingRead.INVALID_VERTEX_CASTING.format(AttributeVertex.class.getCanonicalName()));
     }
 
     public static class Buffered extends ThingVertexImpl {

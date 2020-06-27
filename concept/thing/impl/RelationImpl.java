@@ -29,7 +29,6 @@ import hypergraph.concept.type.impl.RoleTypeImpl;
 import hypergraph.graph.iid.PrefixIID;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.vertex.ThingVertex;
-import hypergraph.graph.vertex.TypeVertex;
 
 import java.util.Iterator;
 import java.util.List;
@@ -75,9 +74,10 @@ public class RelationImpl extends ThingImpl implements Relation {
 
     @Override
     public void unrelate(RoleType roleType, Thing player) {
-        TypeVertex roleTypeVertex = ((RoleTypeImpl) roleType).vertex;
         Iterator<ThingVertex> role = filter(
-                vertex.outs().edge(Schema.Edge.Thing.RELATES, PrefixIID.of(Schema.Vertex.Thing.ROLE.prefix()), roleTypeVertex.iid()).to(),
+                vertex.outs().edge(Schema.Edge.Thing.RELATES,
+                                   PrefixIID.of(Schema.Vertex.Thing.ROLE.prefix()),
+                                   ((RoleTypeImpl) roleType).vertex.iid()).to(),
                 v -> v.ins().edge(Schema.Edge.Thing.PLAYS, ((ThingImpl) player).vertex) != null
         );
         if (role.hasNext()) {

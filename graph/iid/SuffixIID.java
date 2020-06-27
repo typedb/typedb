@@ -32,7 +32,7 @@ public class SuffixIID extends IID {
 
     @Override
     public String toString() {
-        if (readableString == null) readableString = "[" + Arrays.toString(bytes) + "]";
+        if (readableString == null) readableString = "Suffix: " + Arrays.toString(bytes);
         return readableString;
     }
 }

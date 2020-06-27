@@ -46,11 +46,10 @@ public abstract class ThingEdgeImpl implements ThingEdge {
 
     public static class Buffered extends ThingEdgeImpl implements ThingEdge {
 
+        private final AtomicBoolean committed;
         private final ThingVertex from;
         private final ThingVertex to;
-        private final AtomicBoolean committed;
-        private VertexIID.Type infixTail;
-        private SuffixIID suffixTail;
+        private ThingVertex optimised;
         private int hash;
 
         /**
@@ -71,17 +70,15 @@ public abstract class ThingEdgeImpl implements ThingEdge {
         /**
          * Constructor for an optimised {@code ThingEdgeImpl.Buffered}.
          *
-         * @param schema     the edge {@code Schema}
-         * @param from       the tail vertex
-         * @param to         the head vertex
-         * @param infixTail  metadata to append to the the {@code Infix} of the edge
-         * @param suffixTail metadata to append to the the end of the edge
+         * @param schema    the edge {@code Schema}
+         * @param from      the tail vertex
+         * @param to        the head vertex
+         * @param optimised vertex that this optimised edge is compressing
          */
-        public Buffered(Schema.Edge.Thing schema, ThingVertex from, ThingVertex to, VertexIID.Type infixTail, SuffixIID suffixTail) {
+        public Buffered(Schema.Edge.Thing schema, ThingVertex from, ThingVertex to, ThingVertex optimised) {
             this(schema, from, to);
-            assert schema.isOptimisation() && infixTail != null && suffixTail != null;
-            this.infixTail = infixTail;
-            this.suffixTail = suffixTail;
+            assert schema.isOptimisation() && optimised != null;
+            this.optimised = optimised;
         }
 
         @Override
@@ -92,7 +89,8 @@ public abstract class ThingEdgeImpl implements ThingEdge {
         @Override
         public EdgeIID.Thing outIID() {
             if (schema.isOptimisation()) {
-                return EdgeIID.Thing.of(from.iid(), InfixIID.Thing.of(schema.out(), infixTail), to.iid(), suffixTail);
+                return EdgeIID.Thing.of(from.iid(), InfixIID.Thing.of(schema.out(), optimised.type().iid()),
+                                        to.iid(), SuffixIID.of(optimised.iid().key()));
             } else {
                 return EdgeIID.Thing.of(from.iid(), InfixIID.Thing.of(schema.out()), to.iid());
             }
@@ -101,7 +99,8 @@ public abstract class ThingEdgeImpl implements ThingEdge {
         @Override
         public EdgeIID.Thing inIID() {
             if (schema.isOptimisation()) {
-                return EdgeIID.Thing.of(to.iid(), InfixIID.Thing.of(schema.in(), infixTail), from.iid(), suffixTail);
+                return EdgeIID.Thing.of(to.iid(), InfixIID.Thing.of(schema.in(), optimised.type().iid()),
+                                        from.iid(), SuffixIID.of(optimised.iid().key()));
             } else {
                 return EdgeIID.Thing.of(to.iid(), InfixIID.Thing.of(schema.in()), from.iid());
             }
@@ -162,8 +161,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
             return (this.schema.equals(that.schema) &&
                     this.from.equals(that.from) &&
                     this.to.equals(that.to) &&
-                    Objects.equals(this.infixTail, that.infixTail) &&
-                    Objects.equals(this.suffixTail, that.suffixTail));
+                    Objects.equals(this.optimised, that.optimised));
         }
 
         /**
@@ -178,7 +176,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
          */
         @Override
         public final int hashCode() {
-            if (hash == 0) hash = hash(schema, from, to, infixTail, suffixTail);
+            if (hash == 0) hash = hash(schema, from, to, optimised);
             return hash;
         }
     }
@@ -215,12 +213,12 @@ public abstract class ThingEdgeImpl implements ThingEdge {
                 fromIID = iid.start();
                 toIID = iid.end();
                 outIID = iid;
-                inIID = EdgeIID.Thing.of(iid.end(), iid.infix().inwards(), iid.start());
+                inIID = EdgeIID.Thing.of(iid.end(), iid.infix().inwards(), iid.start(), iid.suffix());
             } else {
                 fromIID = iid.end();
                 toIID = iid.start();
                 inIID = iid;
-                outIID = EdgeIID.Thing.of(iid.end(), iid.infix().outwards(), iid.start());
+                outIID = EdgeIID.Thing.of(iid.end(), iid.infix().outwards(), iid.start(), iid.suffix());
             }
         }
 

@@ -67,7 +67,33 @@ public class ThingGraph implements Graph<VertexIID.Thing, ThingVertex> {
 
     @Override
     public ThingVertex convert(VertexIID.Thing iid) {
-        return thingsByIID.computeIfAbsent(iid, i -> ThingVertexImpl.of(this, i));
+//        return thingsByIID.computeIfAbsent(iid, i -> ThingVertexImpl.of(this, i));
+        if (iid.schema().equals(Schema.Vertex.Thing.ATTRIBUTE)) {
+            VertexIID.Attribute attIID = iid.asAttribute();
+            switch (attIID.valueType()) {
+                case BOOLEAN:
+                    return attributesByIID.booleans.computeIfAbsent(attIID.asBoolean(), iid1 ->
+                            new AttributeVertexImpl.Boolean(this, iid1));
+                case LONG:
+                    return attributesByIID.longs.computeIfAbsent(attIID.asLong(), iid1 ->
+                            new AttributeVertexImpl.Long(this, iid1));
+                case DOUBLE:
+                    return attributesByIID.doubles.computeIfAbsent(attIID.asDouble(), iid1 ->
+                            new AttributeVertexImpl.Double(this, iid1));
+                case STRING:
+                    return attributesByIID.strings.computeIfAbsent(attIID.asString(), iid1 ->
+                            new AttributeVertexImpl.String(this, iid1));
+                case DATETIME:
+                    return attributesByIID.dateTimes.computeIfAbsent(attIID.asDateTime(), iid1 ->
+                            new AttributeVertexImpl.DateTime(this, iid1));
+                default:
+                    assert false;
+                    return null;
+            }
+        }
+        else {
+            return thingsByIID.computeIfAbsent(iid, i -> ThingVertexImpl.of(this, i));
+        }
     }
 
     public ThingVertex create(VertexIID.Type typeIID, boolean isInferred) {
@@ -230,7 +256,7 @@ public class ThingGraph implements Graph<VertexIID.Thing, ThingVertex> {
      */
     @Override
     public void commit() {
-        thingsByIID.values().parallelStream().filter(v -> !v.isInferred()).forEach(
+        thingsByIID.values().parallelStream().filter(v -> v.status().equals(Schema.Status.BUFFERED) && !v.isInferred()).forEach(
                 vertex -> vertex.iid(generate(graphManager.storage().keyGenerator(), vertex.type().iid()))
         ); // thingByIID no longer contains valid mapping from IID to TypeVertex
         thingsByIID.values().stream().filter(v -> !v.isInferred()).forEach(Vertex::commit);

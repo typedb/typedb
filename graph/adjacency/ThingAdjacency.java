@@ -20,8 +20,6 @@ package hypergraph.graph.adjacency;
 
 import hypergraph.graph.edge.ThingEdge;
 import hypergraph.graph.iid.IID;
-import hypergraph.graph.iid.SuffixIID;
-import hypergraph.graph.iid.VertexIID;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.vertex.ThingVertex;
 
@@ -42,30 +40,29 @@ public interface ThingAdjacency extends Adjacency<Schema.Edge.Thing, ThingEdge, 
 
     /**
      * Returns an edge of type {@code schema} that connects to an {@code adjacent}
-     * vertex with the provided {@code infixTail} and {@code suffixTail}.
+     * vertex, that is an optimisation edge over a given {@code optimised} vertex.
      *
-     * @param schema     type of the edge to filter by
-     * @param adjacent   vertex that the edge connects to
-     * @param infixTail  appending the {@code Infix} of the edge
-     * @param suffixTail appending to the end of the edge
+     * @param schema    type of the edge to filter by
+     * @param adjacent  vertex that the edge connects to
+     * @param optimised vertex that this optimised edge is compressing
      * @return an edge of type {@code schema} that connects to {@code adjacent}.
      */
-    ThingEdge edge(Schema.Edge.Thing schema, ThingVertex adjacent, VertexIID.Type infixTail, SuffixIID suffixTail);
+    ThingEdge edge(Schema.Edge.Thing schema, ThingVertex adjacent, ThingVertex optimised);
 
     /**
-     * Puts an edge of type {@code schema} from the owner to an adjacent vertex.
+     * Puts an edge of type {@code schema} from the owner to an adjacent vertex,
+     * which is an optimisation edge over a given {@code optimised} vertex.
      *
      * The owner of this {@code Adjacency} map will also be added as an adjacent
      * vertex to the provided vertex, through an opposite facing edge stored in
      * an {@code Adjacency} map with an opposite direction to this one. I.e.
      * This is a recursive put operation.
      *
-     * @param schema     type of the edge
-     * @param adjacent   the adjacent vertex
-     * @param infixTail  which will be appended to the {@code Infix} of the edge
-     * @param suffixTail which will be appended to the end of the edge
+     * @param schema    type of the edge
+     * @param adjacent  the adjacent vertex
+     * @param optimised vertex that this optimised edge is compressing
      */
-    void put(Schema.Edge.Thing schema, ThingVertex adjacent, VertexIID.Type infixTail, SuffixIID suffixTail);
+    void put(Schema.Edge.Thing schema, ThingVertex adjacent, ThingVertex optimised);
 
     /**
      * Deletes a set of edges that match the provided properties.
