@@ -44,6 +44,11 @@ public class RelationSteps {
         assertTrue(tx().concepts().getRelationType(typeLabel).instances().anyMatch(i -> i.equals(get(var))));
     }
 
+    @Then("relation\\( ?{type_label} ?) get instances do not contain: {var}")
+    public void relation_type_get_instances_do_not_contain(String typeLabel, String var) {
+        assertTrue(tx().concepts().getRelationType(typeLabel).instances().noneMatch(i -> i.equals(get(var))));
+    }
+
     @Then("relation\\( ?{type_label} ?) get instances is empty")
     public void relation_type_get_instances_is_empty(String typeLabel) {
         assertEquals(0, tx().concepts().getRelationType(typeLabel).instances().count());

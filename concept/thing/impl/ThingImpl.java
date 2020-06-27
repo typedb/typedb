@@ -74,6 +74,11 @@ public abstract class ThingImpl implements Thing {
     }
 
     @Override
+    public boolean isDeleted() {
+        return vertex.isDeleted();
+    }
+
+    @Override
     public boolean isInferred() {
         return vertex.isInferred();
     }
@@ -81,12 +86,12 @@ public abstract class ThingImpl implements Thing {
     @Override
     public Thing has(Attribute attribute) {
         if (type().attributes().noneMatch(t -> t.equals(attribute.type()))) {
-            throw new HypergraphException(Error.ThingWrite.THING_ATTRIBUTE_UNDEFINED.format(vertex.schema().name()));
+            throw new HypergraphException(Error.ThingWrite.THING_ATTRIBUTE_UNDEFINED.format(vertex.type().label()));
         } else if (type().keys().anyMatch(t -> t.equals(attribute.type()))) {
             if (keys(attribute.type()).findAny().isPresent()) {
-                throw new HypergraphException(Error.ThingWrite.THING_KEY_OVER.format(vertex.schema().name()));
+                throw new HypergraphException(Error.ThingWrite.THING_KEY_OVER.format(vertex.type().label()));
             } else if (attribute.owners().findAny().isPresent()) {
-                throw new HypergraphException(Error.ThingWrite.THING_KEY_TAKEN.format(vertex.schema().name()));
+                throw new HypergraphException(Error.ThingWrite.THING_KEY_TAKEN.format(vertex.type().label()));
             }
         }
 

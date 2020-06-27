@@ -32,12 +32,15 @@ import hypergraph.graph.vertex.AttributeVertex;
 import hypergraph.graph.vertex.ThingVertex;
 import hypergraph.graph.vertex.TypeVertex;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implements ThingVertex {
 
-    final ThingGraph graph;
-    final ThingAdjacency outs;
-    final ThingAdjacency ins;
-    boolean isInferred;
+    protected final ThingGraph graph;
+    protected final ThingAdjacency outs;
+    protected final ThingAdjacency ins;
+    protected final AtomicBoolean isDeleted;
+    protected boolean isInferred;
 
     ThingVertexImpl(ThingGraph graph, VertexIID.Thing iid, boolean isInferred) {
         super(iid);
@@ -46,6 +49,7 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
         this.ins = newAdjacency(Adjacency.Direction.IN);
         this.isInferred = isInferred;
         this.isModified = false;
+        this.isDeleted = new AtomicBoolean(false);
     }
 
     public static ThingVertexImpl of(ThingGraph graph, VertexIID.Thing iid) {
@@ -109,6 +113,12 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
     }
 
     @Override
+
+    public boolean isDeleted() {
+        return isDeleted.get();
+    }
+
+    @Override
     public AttributeVertexImpl asAttribute() {
         throw new HypergraphException(Error.ThingRead.INVALID_VERTEX_CASTING.format(AttributeVertex.class.getCanonicalName()));
     }
@@ -140,9 +150,11 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
 
         @Override
         public void delete() {
-            deleteEdges();
-            deleteVertexFromType();
-            deleteVertexFromGraph();
+            if (isDeleted.compareAndSet(false, true)) {
+                deleteEdges();
+                deleteVertexFromType();
+                deleteVertexFromGraph();
+            }
         }
 
         private void commitVertexToStorage() {
@@ -197,9 +209,11 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
 
         @Override
         public void delete() {
-            deleteEdges();
-            deleteVertexFromStorage();
-            deleteVertexFromGraph();
+            if (isDeleted.compareAndSet(false, true)) {
+                deleteEdges();
+                deleteVertexFromStorage();
+                deleteVertexFromGraph();
+            }
         }
 
         private void commitEdges() {

@@ -95,15 +95,17 @@ public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl impleme
 
     @Override
     public void delete() {
-        outs.forEach(Edge::delete);
-        ins.forEach(Edge::delete);
+        if (isDeleted.compareAndSet(false, true)) {
+            outs.forEach(Edge::delete);
+            ins.forEach(Edge::delete);
 
-        type().unbuffer(this);
+            type().unbuffer(this);
 
-        graph.storage().delete(attributeIID.bytes());
-        graph.storage().delete(EdgeIID.InwardsISA.of(type().iid(), iid).bytes());
-        graph.storage().delete(index().bytes());
-        graph.delete(this);
+            graph.storage().delete(attributeIID.bytes());
+            graph.storage().delete(EdgeIID.InwardsISA.of(type().iid(), iid).bytes());
+            graph.storage().delete(index().bytes());
+            graph.delete(this);
+        }
     }
 
     /**

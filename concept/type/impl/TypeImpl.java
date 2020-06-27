@@ -82,6 +82,11 @@ public abstract class TypeImpl implements Type {
     }
 
     @Override
+    public boolean isDeleted() {
+        return vertex.isDeleted();
+    }
+
+    @Override
     public boolean isRoot() { return false; }
 
     @Override

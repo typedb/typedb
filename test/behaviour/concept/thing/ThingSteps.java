@@ -57,6 +57,11 @@ public class ThingSteps {
         assertEquals(isNull, isNull(get(var)));
     }
 
+    @Then("entity/attribute/relation {var} is deleted: {bool}")
+    public void thing_is_deleted(String var, boolean isDeleted) {
+        assertEquals(isDeleted, get(var).isDeleted());
+    }
+
     @Then("{root_label} {var} has type: {type_label}")
     public void thing_has_type(RootLabel rootLabel, String var, String typeLabel) {
         ThingType type = get_thing_type(rootLabel, typeLabel);

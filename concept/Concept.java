@@ -38,6 +38,8 @@ public interface Concept {
 
     void validate();
 
+    boolean isDeleted();
+
     default Type asType() {
         throw new HypergraphException(INVALID_CONCEPT_CASTING.format(Type.class.getCanonicalName()));
     }

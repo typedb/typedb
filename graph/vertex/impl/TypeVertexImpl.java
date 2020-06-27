@@ -41,7 +41,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static hypergraph.common.collection.Bytes.join;
 import static hypergraph.common.iterator.Iterators.distinct;
-import static hypergraph.common.iterator.Iterators.filter;
 import static hypergraph.common.iterator.Iterators.link;
 
 public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implements TypeVertex {
@@ -49,12 +48,13 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
     protected final TypeGraph graph;
     protected final TypeAdjacency outs;
     protected final TypeAdjacency ins;
+    protected final AtomicBoolean isDeleted;
 
-    String label;
-    String scope;
-    Boolean isAbstract;
-    Schema.ValueType valueType;
-    String regex;
+    protected String label;
+    protected String scope;
+    protected Boolean isAbstract;
+    protected Schema.ValueType valueType;
+    protected String regex;
 
 
     TypeVertexImpl(TypeGraph graph, VertexIID.Type iid, String label, @Nullable String scope) {
@@ -64,6 +64,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         this.scope = scope;
         this.outs = newAdjacency(Adjacency.Direction.OUT);
         this.ins = newAdjacency(Adjacency.Direction.IN);
+        this.isDeleted = new AtomicBoolean(false);
     }
 
     /**
@@ -113,13 +114,18 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         return Schema.Vertex.Type.scopedLabel(label, scope);
     }
 
+    @Override
+    public boolean isDeleted() {
+        return isDeleted.get();
+    }
+
     public static class Buffered extends TypeVertexImpl {
 
-        private final AtomicBoolean committed;
+        private final AtomicBoolean isCommitted;
 
         public Buffered(TypeGraph graph, VertexIID.Type iid, String label, @Nullable String scope) {
             super(graph, iid, label, scope);
-            this.committed = new AtomicBoolean(false);
+            this.isCommitted = new AtomicBoolean(false);
             setModified();
         }
 
@@ -159,7 +165,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
 
         @Override
         public Schema.Status status() {
-            return committed.get() ? Schema.Status.COMMITTED : Schema.Status.BUFFERED;
+            return isCommitted.get() ? Schema.Status.COMMITTED : Schema.Status.BUFFERED;
         }
 
         @Override
@@ -200,14 +206,16 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
 
         @Override
         public void delete() {
-            ins.deleteAll();
-            outs.deleteAll();
-            graph.delete(this);
+            if (isDeleted.compareAndSet(false, true)) {
+                ins.deleteAll();
+                outs.deleteAll();
+                graph.delete(this);
+            }
         }
 
         @Override
         public void commit() {
-            if (committed.compareAndSet(false, true)) {
+            if (isCommitted.compareAndSet(false, true)) {
                 graph.storage().put(iid.bytes());
                 commitIndex();
                 commitProperties();
@@ -382,12 +390,14 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
 
         @Override
         public void delete() {
-            ins.deleteAll();
-            outs.deleteAll();
-            graph.delete(this);
-            graph.storage().delete(IndexIID.Type.of(label, scope).bytes());
-            Iterator<byte[]> keys = graph.storage().iterate(iid.bytes(), (iid, value) -> iid);
-            while (keys.hasNext()) graph.storage().delete(keys.next());
+            if (isDeleted.compareAndSet(false, true)) {
+                ins.deleteAll();
+                outs.deleteAll();
+                graph.delete(this);
+                graph.storage().delete(IndexIID.Type.of(label, scope).bytes());
+                Iterator<byte[]> keys = graph.storage().iterate(iid.bytes(), (iid, value) -> iid);
+                while (keys.hasNext()) graph.storage().delete(keys.next());
+            }
         }
 
         @Override

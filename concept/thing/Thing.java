@@ -190,4 +190,11 @@ public interface Thing extends Concept {
      * Deletes this {@code Thing} from the system.
      */
     void delete();
+
+    /**
+     * Returns true if this {@code Thing} has been deleted.
+     *
+     * @return true if this {@code Thing} has been deleted
+     */
+    boolean isDeleted();
 }

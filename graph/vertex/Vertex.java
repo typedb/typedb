@@ -56,6 +56,8 @@ public interface Vertex<
 
     void delete();
 
+    boolean isDeleted();
+
     /**
      * Commits this {@code ThingVertex} to be persisted onto storage.
      */
