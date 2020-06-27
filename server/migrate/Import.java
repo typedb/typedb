@@ -4,9 +4,12 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Parser;
 import grakn.common.util.Pair;
 import grakn.core.kb.concept.api.Attribute;
+import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.Entity;
+import grakn.core.kb.concept.api.EntityType;
 import grakn.core.kb.concept.api.Relation;
+import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.server.Session;
@@ -32,7 +35,7 @@ public class Import implements AutoCloseable {
 
     private static final Logger LOG = LoggerFactory.getLogger(Import.class);
 
-    private static final int BATCH_SIZE = 1_000;
+    private static final int BATCH_SIZE = 10_000;
 
     private final Session session;
     private final InputStream inputStream;
@@ -45,6 +48,10 @@ public class Import implements AutoCloseable {
 
     // Pair of LOCAL attribute ids to FOREIGN key ids
     List<Pair<String, List<String>>> attributeKeyOwnerships = new ArrayList<>();
+
+    Map<String, AttributeType<?>> attributeTypeCache = new HashMap<>();
+    Map<String, EntityType> entityTypeCache = new HashMap<>();
+    Map<String, RelationType> relationTypeCache = new HashMap<>();
 
     private long entityCount = 0;
     private long attributeCount = 0;
@@ -74,8 +81,15 @@ public class Import implements AutoCloseable {
     private void write() {
         count++;
         if (count >= BATCH_SIZE) {
+            LOG.info("Commit start, inserted {} things", count);
+            long time = System.nanoTime();
             currentTransaction.commit();
+            LOG.info("Commit end, took {}s", (double)(System.nanoTime() - time) / 1_000_000_000.0);
             currentTransaction = session.transaction(Transaction.Type.WRITE);
+            count = 0;
+            attributeTypeCache.clear();
+            entityTypeCache.clear();
+            relationTypeCache.clear();
         }
     }
 
@@ -150,7 +164,9 @@ public class Import implements AutoCloseable {
     }
 
     private void insertAttribute(MigrateProto.Item.Attribute attributeMessage) {
-        Attribute<?> attribute = currentTransaction.getAttributeType(attributeMessage.getLabel())
+        Attribute<?> attribute = attributeTypeCache.computeIfAbsent(
+                        attributeMessage.getLabel(),
+                        l -> currentTransaction.getAttributeType(l))
                 .create(valueFrom(attributeMessage.getValue()));
 
         String attributeId = attribute.id().toString();
@@ -188,7 +204,10 @@ public class Import implements AutoCloseable {
     }
 
     private void insertEntity(MigrateProto.Item.Entity entityMessage) {
-        Entity entity = currentTransaction.getEntityType(entityMessage.getLabel()).create();
+        Entity entity = entityTypeCache.computeIfAbsent(
+                        entityMessage.getLabel(),
+                        l -> currentTransaction.getEntityType(l))
+                .create();
 
         for (MigrateProto.Item.Key keyMessage : entityMessage.getKeysList()) {
             ConceptId localKeyId = ConceptId.of(idMap.get(keyMessage.getId()));
@@ -204,7 +223,9 @@ public class Import implements AutoCloseable {
     }
 
     private void insertRelation(MigrateProto.Item.Relation relationMessage) {
-        Relation relation = currentTransaction.getRelationType(relationMessage.getLabel())
+        Relation relation = relationTypeCache.computeIfAbsent(
+                        relationMessage.getLabel(),
+                        l -> currentTransaction.getRelationType(l))
                 .create();
 
         for (MigrateProto.Item.Relation.Role roleMessage : relationMessage.getRoleList()) {
@@ -241,22 +262,18 @@ public class Import implements AutoCloseable {
         write();
     }
 
-    private Object valueFrom(MigrateProto.ValueObject valueObject) {
+    private <T> T valueFrom(MigrateProto.ValueObject valueObject) {
         switch (valueObject.getValueCase()) {
             case STRING:
-                return valueObject.getString();
+                return (T) valueObject.getString();
             case BOOLEAN:
-                return valueObject.getBoolean();
-            case INTEGER:
-                return valueObject.getInteger();
+                return (T) (Boolean) valueObject.getBoolean();
             case LONG:
-                return valueObject.getLong();
-            case FLOAT:
-                return valueObject.getFloat();
+                return (T) (Long) valueObject.getLong();
             case DOUBLE:
-                return valueObject.getDouble();
+                return (T) (Double) valueObject.getDouble();
             case DATETIME:
-                return Instant.ofEpochMilli(valueObject.getDatetime()).atZone(ZoneId.of("Z")).toLocalDateTime();
+                return (T) Instant.ofEpochMilli(valueObject.getDatetime()).atZone(ZoneId.of("Z")).toLocalDateTime();
             case VALUE_NOT_SET:
             default:
                 throw new IllegalStateException("No value type was matched.");

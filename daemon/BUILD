@@ -36,6 +36,7 @@ java_library(
         "//dependencies/maven/artifacts/commons-io:commons-io",
         "//dependencies/maven/artifacts/org/apache/cassandra:cassandra-all",
         "//dependencies/maven/artifacts/org/zeroturnaround:zt-exec",
+        "//dependencies/maven/artifacts/io/grpc:grpc-api",
     ],
     runtime_deps = [
         "//dependencies/maven/artifacts/ch/qos/logback:logback-classic",

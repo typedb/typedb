@@ -34,6 +34,7 @@ import grakn.core.server.migrate.Export;
 import grakn.core.server.migrate.Import;
 import grakn.core.server.migrate.proto.MigrateProto;
 import grakn.core.server.rpc.KeyspaceService;
+import grakn.core.server.rpc.MigrateService;
 import grakn.core.server.rpc.OpenRequest;
 import grakn.core.server.rpc.ServerOpenRequest;
 import grakn.core.server.rpc.SessionService;
@@ -113,32 +114,6 @@ public class ServerFactory {
             LOG.info("Completed tracing setup");
         }
 
-        keyspaceManager.keyspaces().forEach(keyspace -> {
-
-            Path backupPath = Paths.get(SystemProperty.CURRENT_DIRECTORY.value(), "backup", keyspace.name() + ".grakn");
-
-            try (Export export = new Export(sessionFactory.session(keyspace), Paths.get(SystemProperty.CURRENT_DIRECTORY.value(), "backup"))) {
-                export.export();
-
-                InputStream input = new BufferedInputStream(Files.newInputStream(backupPath));
-
-                Parser<MigrateProto.Item> parser = MigrateProto.Item.parser();
-
-                MigrateProto.Item item;
-                while ((item =parser.parseDelimitedFrom(input)) != null) {
-                    LOG.info(item.toString());
-                }
-            } catch (IOException e) {
-                LOG.error("An error occurred during export testing.", e);
-            }
-
-            try (Import anImport = new Import(sessionFactory.session(keyspace), backupPath)) {
-                anImport.execute();
-            } catch (IOException e) {
-                LOG.error("An error occurred during import testing.", e);
-            }
-        });
-
         // create gRPC server
         io.grpc.Server serverRPC = createServerRPC(config, sessionFactory, keyspaceManager);
 
@@ -190,6 +165,8 @@ public class ServerFactory {
 
         SessionService sessionService = new SessionService(requestOpener);
 
+        MigrateService migrateService = new MigrateService(sessionFactory);
+
         Runtime.getRuntime().addShutdownHook(new Thread(sessionService::shutdown, "session-service-shutdown"));
 
         NioEventLoopGroup eventLoopGroup = new NioEventLoopGroup(ELG_THREADS, new ThreadFactoryBuilder().setNameFormat("grpc-ELG-handler-%d").build());
@@ -204,6 +181,7 @@ public class ServerFactory {
                 .channelType(NioServerSocketChannel.class)
                 .addService(sessionService)
                 .addService(new KeyspaceService(keyspaceManager))
+                .addService(migrateService)
                 .build();
     }
 

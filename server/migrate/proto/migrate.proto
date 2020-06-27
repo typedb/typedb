@@ -22,6 +22,28 @@ option java_outer_classname = "MigrateProto";
 
 package migrate;
 
+service MigrateService {
+    rpc exportFile (ExportFile.Req) returns (ExportFile.Res);
+    rpc importFile (ImportFile.Req) returns (ImportFile.Res);
+}
+
+message ExportFile {
+    message Req {
+        string name = 1;
+        string path = 2;
+    }
+
+    message Res {}
+}
+
+message ImportFile {
+    message Req {
+        string name = 1;
+        string path = 2;
+    }
+
+    message Res {}
+}
 
 message Item {
     oneof item {
@@ -90,10 +112,8 @@ message ValueObject {
     oneof value {
         string string = 1;
         bool boolean = 2;
-        int32 integer = 3;
-        int64 long = 4;
-        float float = 5;
-        double double = 6;
-        int64 datetime = 7; // time since epoch in milliseconds
+        int64 long = 3;
+        double double = 4;
+        int64 datetime = 5; // time since epoch in milliseconds
     }
 }

@@ -57,13 +57,12 @@ public class Export implements AutoCloseable {
     long keyOwnershipCount = 0;
     long roleCount = 0;
 
-    public Export(Session session, Path outputDir) throws IOException {
+    public Export(Session session, Path output) throws IOException {
         this.session = session;
 
-        Files.createDirectories(outputDir);
+        Files.createDirectories(output.getParent());
 
-        Path outputFile = outputDir.resolve(session.keyspace().name() + ".grakn");
-        this.outputStream = new BufferedOutputStream(Files.newOutputStream(outputFile));
+        this.outputStream = new BufferedOutputStream(Files.newOutputStream(output));
     }
 
     @Override
@@ -215,13 +214,11 @@ public class Export implements AutoCloseable {
         }
     }
 
-    // TODO we shouldn't serialize keys here
-    private long writeOwnerships() throws IOException {
+    private void writeOwnerships() throws IOException {
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
 
             Stream<Attribute<?>> attributes = tx.getMetaAttributeType().instances();
 
-            long count = 0;
             Iterator<Attribute<?>> attributeIterator = attributes.iterator();
             while (attributeIterator.hasNext()) {
                 Attribute<?> attribute = attributeIterator.next();
@@ -248,8 +245,6 @@ public class Export implements AutoCloseable {
                     ownershipCount++;
                 }
             }
-
-            return count;
         }
     }
 
@@ -260,11 +255,11 @@ public class Export implements AutoCloseable {
         } else if (value instanceof Boolean) {
             valueObject.setBoolean((Boolean) value);
         } else if (value instanceof Integer) {
-            valueObject.setInteger((Integer) value);
+            valueObject.setLong((Integer) value);
         } else if (value instanceof Long) {
             valueObject.setLong((Long) value);
         } else if (value instanceof Float) {
-            valueObject.setFloat((Float) value);
+            valueObject.setDouble((Float) value);
         } else if (value instanceof Double) {
             valueObject.setDouble((Double) value);
         } else if (value instanceof LocalDateTime) {

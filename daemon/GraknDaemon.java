@@ -17,12 +17,20 @@
 
 package grakn.core.daemon;
 
+import grakn.core.common.config.Config;
+import grakn.core.common.config.ConfigKey;
 import grakn.core.common.config.SystemProperty;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.daemon.executor.Executor;
 import grakn.core.daemon.executor.Server;
 import grakn.core.daemon.executor.Storage;
 import grakn.core.server.Version;
+import grakn.core.server.migrate.proto.MigrateProto;
+import grakn.core.server.migrate.proto.MigrateServiceGrpc;
+import grakn.core.server.rpc.MigrateService;
+import io.grpc.Channel;
+import io.grpc.ManagedChannel;
+import io.grpc.ManagedChannelBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,6 +39,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -134,15 +143,26 @@ public class GraknDaemon {
      * @param args arrays of arguments, eg., { 'server', 'start' }
      */
     public void run(String[] args) {
-        String action = args.length > 1 ? args[1] : "";
-        String option = args.length > 2 ? args[2] : "";
+//        String action = args.length > 1 ? args[1] : "";
+//        String option = args.length > 2 ? args[2] : "";
 
-        List<String> otherArgs = Collections.emptyList();
-        for (int i = 2; i < args.length; ++i) {
-            if (OPTIONS.equals(args[i])) {
-                otherArgs = Arrays.asList(args).subList(i + 1, args.length);
-            }
+//        List<String> mainArgs = new ArrayList<>();
+//        List<String> otherArgs = Collections.emptyList();
+
+        // Ignore command name arg by starting at one
+
+        int splitPoint = 1;
+        while (splitPoint < args.length && !OPTIONS.equals(args[splitPoint])) {
+            splitPoint++;
         }
+
+        List<String> mainArgs = Arrays.asList(args).subList(1, splitPoint);
+        List<String> otherArgs = splitPoint < args.length
+                ? Arrays.asList(args).subList(splitPoint + 1, args.length)
+                : Collections.emptyList();
+
+        String action = mainArgs.size() > 0 ? mainArgs.get(0) : "";
+        String option = mainArgs.size() > 1 ? mainArgs.get(1) : "";
 
         switch (action) {
             case "start":
@@ -162,6 +182,12 @@ public class GraknDaemon {
                 break;
             case "version":
                 version();
+                break;
+            case "export":
+                export(mainArgs.subList(1, mainArgs.size()));
+                break;
+            case "import":
+                import_(mainArgs.subList(1, mainArgs.size()));
                 break;
             default:
                 serverHelp();
@@ -243,6 +269,30 @@ public class GraknDaemon {
         }
         storageExecutor.clean();
         serverExecutor.clean();
+    }
+
+    private void export(List<String> args) {
+        String keyspace = args.get(0);
+        String path = Paths.get(args.get(1)).toAbsolutePath().toString();
+        MigrateServiceGrpc.MigrateServiceBlockingStub stub = connectLocal();
+        MigrateProto.ExportFile.Res res = stub.exportFile(MigrateProto.ExportFile.Req.newBuilder().setName(keyspace).setPath(path).build());
+    }
+
+    private void import_(List<String> args) {
+        String keyspace = args.get(0);
+        String path = Paths.get(args.get(1)).toAbsolutePath().toString();
+        MigrateServiceGrpc.MigrateServiceBlockingStub stub = connectLocal();
+        MigrateProto.ImportFile.Res res = stub.importFile(MigrateProto.ImportFile.Req.newBuilder().setName(keyspace).setPath(path).build());
+    }
+
+    private MigrateServiceGrpc.MigrateServiceBlockingStub connectLocal() {
+        ManagedChannel channel = ManagedChannelBuilder.forTarget("localhost:" + readPort())
+                .usePlaintext().build();
+        return MigrateServiceGrpc.newBlockingStub(channel);
+    }
+
+    private int readPort() {
+        return Config.read(Paths.get(Objects.requireNonNull(SystemProperty.CONFIGURATION_FILE.value()))).getProperty(ConfigKey.GRPC_PORT);
     }
 }
 
