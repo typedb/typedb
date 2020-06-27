@@ -27,8 +27,6 @@ java_library(
         # Package dependencies
         "//test/behaviour/resolution/framework:resolution-lib",
         "//kb/server",
-        "//graql/reasoner",
-        "//concept/answer",
         "//test/behaviour/connection:steps",
 
         # Grakn Labs dependencies

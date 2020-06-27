@@ -4,7 +4,6 @@ java_library(
     deps = [
         "//test/behaviour/resolution/framework/common:common",
         "//kb/server:server",
-        "//kb/concept/api:api",
     ],
     visibility = ["//visibility:public"]
 )
@@ -20,9 +19,8 @@ java_test(
         "//test/behaviour/resolution/framework/resolve",
         "//test/behaviour/resolution/framework/test:load-test",
         "//test/rule:grakn-test-server",
-        "//kb/server:server",
-        "//kb/concept/api:api",
         "//concept/answer:answer",
+        "//kb/server:server",
 
         # External dependencies from @graknlabs
         "@graknlabs_graql//java:graql",
@@ -102,7 +100,6 @@ java_test(
         "//test/behaviour/resolution/framework/test:load-test",
         "//concept/answer:answer",
         "//kb/server:server",
-        "//kb/concept/api:api",
 
         # External dependencies from @graknlabs
         "@graknlabs_graql//java:graql",
@@ -128,7 +125,6 @@ java_test(
         "//test/behaviour/resolution/framework:resolution-lib",
         "//test/rule:grakn-test-server",
         "//kb/server:server",
-        "//kb/concept/api:api",
 
         # External dependencies from @graknlabs
         "@graknlabs_graql//java:graql",
