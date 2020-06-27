@@ -42,6 +42,9 @@ import java.time.ZoneId;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class Export implements AutoCloseable {
     private static final Logger LOG = LoggerFactory.getLogger(Export.class);
@@ -49,12 +52,11 @@ public class Export implements AutoCloseable {
     private final Session session;
     private final BufferedOutputStream outputStream;
 
-    long attributeCount = 0;
-    long entityCount = 0;
-    long relationCount = 0;
-    long ownershipCount = 0;
-    long keyOwnershipCount = 0;
-    long roleCount = 0;
+    AtomicLong attributeCount = new AtomicLong(0);
+    AtomicLong entityCount = new AtomicLong(0);
+    AtomicLong relationCount = new AtomicLong(0);
+    AtomicLong ownershipCount = new AtomicLong(0);
+    AtomicLong roleCount = new AtomicLong(0);
 
     public Export(Session session, Path output) throws IOException {
         this.session = session;
@@ -83,14 +85,16 @@ public class Export implements AutoCloseable {
 
         write(MigrateProto.Item.newBuilder()
                 .setChecksums(MigrateProto.Item.Checksums.newBuilder()
-                        .setEntityCount(entityCount)
-                        .setAttributeCount(attributeCount)
-                        .setRelationCount(relationCount)
-                        .setRoleCount(roleCount)
-                        .setOwnershipCount(ownershipCount))
+                        .setEntityCount(entityCount.get())
+                        .setAttributeCount(attributeCount.get())
+                        .setRelationCount(relationCount.get())
+                        .setRoleCount(roleCount.get())
+                        .setOwnershipCount(ownershipCount.get()))
                 .build());
 
-        outputStream.flush();
+        synchronized (outputStream) {
+            outputStream.flush();
+        }
 
         LOG.info("Exported {} entities, {} attributes, {} relations ({} roles), {} ownerships",
                 entityCount,
@@ -101,155 +105,195 @@ public class Export implements AutoCloseable {
     }
 
     private void write(MigrateProto.Item item) throws IOException {
-        item.writeDelimitedTo(outputStream);
-    }
-
-    private void writeAttributes() throws IOException {
-        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-            Iterator<AttributeType<?>> attributeTypes = tx.getMetaAttributeType().subs().iterator();
-            while (attributeTypes.hasNext()) {
-                AttributeType<?> attributeType = attributeTypes.next();
-
-                if (attributeType.isAbstract()) {
-                    continue;
-                }
-
-                writeAttributeInstancesOfType(attributeType);
-            }
+        synchronized (outputStream) {
+            item.writeDelimitedTo(outputStream);
         }
     }
 
-    private <D> void writeAttributeInstancesOfType(AttributeType<D> attributeType) throws IOException {
-        String label = attributeType.label().toString();
+    private void writeAttributes() {
+        List<String> attributeLabels;
+
+        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
+            attributeLabels = ((Stream<AttributeType<?>>) tx.getMetaAttributeType().subs())
+                    .filter(at -> !at.isAbstract())
+                    .map(at -> at.label().toString())
+                    .collect(Collectors.toList());
+        }
+
+        attributeLabels.parallelStream().forEach(label -> {
+            try {
+                writeAttributeInstancesOfType(label);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    private <D> void writeAttributeInstancesOfType(String label) throws IOException {
         LOG.info("Writing attribute type: {}", label);
 
-        AttributeType<?>[] ownedTypes = attributeType.attributes().toArray(AttributeType[]::new);
-
-        Iterator<Attribute<D>> attributes = attributeType.instancesDirect().iterator();
-        while (attributes.hasNext()) {
-            Attribute<D> attribute = attributes.next();
-
-            MigrateProto.Item.Attribute.Builder attributeBuilder = MigrateProto.Item.Attribute.newBuilder()
-                    .setId(attribute.id().toString())
-                    .setLabel(label)
-                    .setValue(valueOf(attribute.value()));
-
-            attribute.attributes(ownedTypes).forEach(a -> {
-                attributeBuilder.addAttribute(
-                        MigrateProto.Item.OwnedAttribute.newBuilder()
-                                .setId(a.id().toString()));
-                ownershipCount++;
-            });
-
-            write(MigrateProto.Item.newBuilder().setAttribute(attributeBuilder).build());
-            attributeCount++;
-        }
-    }
-
-    private void writeEntities() throws IOException {
+        long localOwnershipCount = 0;
+        long localAttributeCount = 0;
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-            Iterator<? extends EntityType> entityTypes = tx.getMetaEntityType().subs().iterator();
-            while (entityTypes.hasNext()) {
-                EntityType entityType = entityTypes.next();
+            AttributeType<D> attributeType = tx.getAttributeType(label);
+            AttributeType<?>[] ownedTypes = attributeType.attributes().toArray(AttributeType[]::new);
+            Iterator<Attribute<D>> attributes = attributeType.instancesDirect().iterator();
+            while (attributes.hasNext()) {
+                Attribute<D> attribute = attributes.next();
 
-                if (entityType.isAbstract()) {
-                    continue;
+                MigrateProto.Item.Attribute.Builder attributeBuilder = MigrateProto.Item.Attribute.newBuilder()
+                        .setId(attribute.id().toString())
+                        .setLabel(label)
+                        .setValue(valueOf(attribute.value()));
+
+                localOwnershipCount += attribute.attributes(ownedTypes).peek(a -> {
+                    attributeBuilder.addAttribute(
+                            MigrateProto.Item.OwnedAttribute.newBuilder()
+                                    .setId(a.id().toString()));
+                }).count();
+
+                write(MigrateProto.Item.newBuilder().setAttribute(attributeBuilder).build());
+                localAttributeCount++;
+                if (localAttributeCount % 1_000 == 0) {
+                    LOG.info("Exported {}: count: {}, ownerships: {}", label, localAttributeCount, localOwnershipCount);
                 }
-
-                writeEntityInstancesOfType(entityType);
             }
         }
+
+        LOG.info("Exported {}: count: {}, ownerships: {}", label, localAttributeCount, localOwnershipCount);
+        ownershipCount.addAndGet(localOwnershipCount);
+        attributeCount.addAndGet(localAttributeCount);
     }
 
-    private void writeEntityInstancesOfType(EntityType entityType) throws IOException {
-        String label = entityType.label().toString();
+    private void writeEntities() {
+        List<String> entityLabels;
+
+        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
+            entityLabels = tx.getMetaEntityType().subs()
+                    .filter(at -> !at.isAbstract())
+                    .map(at -> at.label().toString())
+                    .collect(Collectors.toList());
+        }
+
+        entityLabels.parallelStream().forEach(label -> {
+            try {
+                writeEntityInstancesOfType(label);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    private void writeEntityInstancesOfType(String label) throws IOException {
         LOG.info("Writing entity type: {}", label);
 
-        AttributeType<?>[] ownedTypes = entityType.attributes().toArray(AttributeType[]::new);
-
-        Iterator<Entity> entities = entityType.instancesDirect().iterator();
-        while (entities.hasNext()) {
-            Entity entity = entities.next();
-
-            MigrateProto.Item.Entity.Builder entityBuilder = MigrateProto.Item.Entity.newBuilder()
-                    .setId(entity.id().toString())
-                    .setLabel(label);
-
-            entity.attributes(ownedTypes).forEach(a -> {
-                entityBuilder.addAttribute(
-                        MigrateProto.Item.OwnedAttribute.newBuilder()
-                                .setId(a.id().toString()));
-                ownershipCount++;
-            });
-
-            write(MigrateProto.Item.newBuilder().setEntity(entityBuilder).build());
-            entityCount++;
-        }
-    }
-
-    private void writeRelations() throws IOException {
+        long localOwnershipCount = 0;
+        long localEntityCount = 0;
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-            Iterator<? extends RelationType> relationTypes = tx.getMetaRelationType().subs().iterator();
-            while (relationTypes.hasNext()) {
-                RelationType relationType = relationTypes.next();
+            EntityType entityType = tx.getEntityType(label);
+            AttributeType<?>[] ownedTypes = entityType.attributes().toArray(AttributeType[]::new);
+            Iterator<Entity> entities = entityType.instancesDirect().iterator();
+            while (entities.hasNext()) {
+                Entity entity = entities.next();
 
-                if (relationType.isAbstract()) {
-                    continue;
+                MigrateProto.Item.Entity.Builder entityBuilder = MigrateProto.Item.Entity.newBuilder()
+                        .setId(entity.id().toString())
+                        .setLabel(label);
+
+                localOwnershipCount += entity.attributes(ownedTypes).peek(a -> {
+                    entityBuilder.addAttribute(
+                            MigrateProto.Item.OwnedAttribute.newBuilder()
+                                    .setId(a.id().toString()));
+                }).count();
+
+                write(MigrateProto.Item.newBuilder().setEntity(entityBuilder).build());
+                localEntityCount++;
+                if (localEntityCount % 1_000 == 0) {
+                    LOG.info("Exported {}: count: {}, ownerships: {}", label, localEntityCount, localOwnershipCount);
                 }
-
-                // Ignore meta relations (inferred has)
-                if (relationType.label().toString().startsWith("@")) {
-                    continue;
-                }
-
-                writeRelationInstancesOfType(relationType);
             }
         }
+
+        LOG.info("Exported {}: count: {}, ownerships: {}", label, localEntityCount, localOwnershipCount);
+
+        ownershipCount.addAndGet(localOwnershipCount);
+        entityCount.addAndGet(localEntityCount);
     }
 
-    private void writeRelationInstancesOfType(RelationType relationType) throws IOException {
-        String label = relationType.label().toString();
+    private void writeRelations() {
+        List<String> relationLabels;
+
+        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
+            relationLabels = tx.getMetaRelationType().subs()
+                    .filter(at -> !at.isAbstract())
+                    .map(at -> at.label().toString())
+                    .filter(label -> !label.startsWith("@"))
+                    .collect(Collectors.toList());
+        }
+
+        relationLabels.parallelStream().forEach(label -> {
+            try {
+                writeRelationInstancesOfType(label);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    private void writeRelationInstancesOfType(String label) throws IOException {
         LOG.info("Writing relation type: {}", label);
 
-        AttributeType<?>[] ownedTypes = relationType.attributes().toArray(AttributeType[]::new);
+        long localOwnershipCount = 0;
+        long localRelationCount = 0;
+        long localRoleCount = 0;
+        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
+            RelationType relationType = tx.getRelationType(label);
+            AttributeType<?>[] ownedTypes = relationType.attributes().toArray(AttributeType[]::new);
+            Iterator<Relation> relations = relationType.instancesDirect().iterator();
+            while (relations.hasNext()) {
+                Relation relation = relations.next();
 
-        Iterator<Relation> relations = relationType.instancesDirect().iterator();
-        while (relations.hasNext()) {
-            Relation relation = relations.next();
+                MigrateProto.Item.Relation.Builder relationBuilder = MigrateProto.Item.Relation.newBuilder()
+                        .setId(relation.id().toString())
+                        .setLabel(label);
 
-            MigrateProto.Item.Relation.Builder relationBuilder = MigrateProto.Item.Relation.newBuilder()
-                    .setId(relation.id().toString())
-                    .setLabel(label);
+                Map<Role, List<Thing>> roleMap = relation.rolePlayersMap();
+                for (Map.Entry<Role, List<Thing>> roleEntry : roleMap.entrySet()) {
 
-            Map<Role, List<Thing>> roleMap = relation.rolePlayersMap();
-            for (Map.Entry<Role, List<Thing>> roleEntry : roleMap.entrySet()) {
+                    MigrateProto.Item.Relation.Role.Builder roleBuilder = MigrateProto.Item.Relation.Role.newBuilder()
+                            .setLabel(roleEntry.getKey().label().toString());
 
-                MigrateProto.Item.Relation.Role.Builder roleBuilder = MigrateProto.Item.Relation.Role.newBuilder()
-                        .setLabel(roleEntry.getKey().label().toString());
+                    for (Thing player : roleEntry.getValue()) {
+                        roleBuilder.addPlayer(MigrateProto.Item.Relation.Role.Player.newBuilder()
+                                .setId(player.id().toString()));
+                    }
 
-                for (Thing player : roleEntry.getValue()) {
-                    roleBuilder.addPlayer(MigrateProto.Item.Relation.Role.Player.newBuilder()
-                            .setId(player.id().toString()));
+                    relationBuilder.addRole(roleBuilder);
+                    localRoleCount++;
                 }
 
-                relationBuilder.addRole(roleBuilder);
-                roleCount++;
+                localOwnershipCount += relation.attributes(ownedTypes)
+                        .peek(a -> relationBuilder.addAttribute(
+                                MigrateProto.Item.OwnedAttribute.newBuilder()
+                                        .setId(a.id().toString())))
+                        .count();
+
+                MigrateProto.Item item = MigrateProto.Item.newBuilder()
+                        .setRelation(relationBuilder)
+                        .build();
+
+                write(item);
+                localRelationCount++;
+                if (localRelationCount % 1_000 == 0) {
+                    LOG.info("Exported {}: count: {}, ownerships: {}, roles: {}", label, localRelationCount, localOwnershipCount, localRoleCount);
+                }
             }
-
-            relation.attributes(ownedTypes).forEach(a -> {
-                relationBuilder.addAttribute(
-                        MigrateProto.Item.OwnedAttribute.newBuilder()
-                                .setId(a.id().toString()));
-                ownershipCount++;
-            });
-
-            MigrateProto.Item item = MigrateProto.Item.newBuilder()
-                    .setRelation(relationBuilder)
-                    .build();
-
-            write(item);
-            relationCount++;
         }
+
+        LOG.info("Exported {}: count: {}, ownerships: {}, roles: {}", label, localRelationCount, localOwnershipCount, localRoleCount);
+        roleCount.addAndGet(localRoleCount);
+        ownershipCount.addAndGet(localOwnershipCount);
+        relationCount.addAndGet(localRelationCount);
     }
 
     private MigrateProto.ValueObject.Builder valueOf(Object value) {
