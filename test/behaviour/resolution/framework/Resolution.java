@@ -28,7 +28,7 @@ public class Resolution {
         // Complete the KB-complete
         Completer completer = new Completer(this.completionSession);
         try (Transaction tx = this.completionSession.transaction(Transaction.Type.WRITE)) {
-            completer.loadRules(tx, SchemaManager.getAllRules(tx));
+            completer.loadRules(SchemaManager.getAllRules(tx));
         }
 
         SchemaManager.undefineAllRules(this.completionSession);
@@ -57,9 +57,9 @@ public class Resolution {
         Transaction completionTx = completionSession.transaction(Transaction.Type.READ);
         int completionResultsCount = completionTx.execute(inferenceQuery).size();
         completionTx.close();
-        if (completionResultsCount != testResultsCount) {
-            String msg = String.format("Query had an incorrect number of answers. Expected %d answers, actual was %d." +
-                            " The query is:\n %s", completionResultsCount, testResultsCount, inferenceQuery);
+        if (completionResultsCount < testResultsCount) {
+            String msg = String.format("Query had too many answers. Expected %d answers or less, actual was %d, " +
+                            "for query :\n %s", completionResultsCount, testResultsCount, inferenceQuery);
             throw new RuntimeException(msg);
         }
     }

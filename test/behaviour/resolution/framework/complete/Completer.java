@@ -32,7 +32,7 @@ import static grakn.core.test.behaviour.resolution.framework.resolve.QueryBuilde
 
 public class Completer {
 
-    private static int numInferredConcepts;
+    private int numInferredConcepts;
     private final Session session;
     private Set<Rule> rules;
 
@@ -40,7 +40,7 @@ public class Completer {
         this.session = session;
     }
 
-    public void loadRules(Transaction tx, Set<grakn.core.kb.concept.api.Rule> graknRules) {
+    public void loadRules(Set<grakn.core.kb.concept.api.Rule> graknRules) {
         Set<Rule> rules = new HashSet<>();
         for (grakn.core.kb.concept.api.Rule graknRule : graknRules) {
             rules.add(new Rule(Objects.requireNonNull(graknRule.when()), Objects.requireNonNull(graknRule.then()), graknRule.label().toString()));
@@ -64,7 +64,7 @@ public class Completer {
         return numInferredConcepts;
     }
 
-    private static boolean completeRule(Transaction tx, Rule rule) {
+    private boolean completeRule(Transaction tx, Rule rule) {
 
         AtomicBoolean foundResult = new AtomicBoolean(false);
         // TODO When making match queries be careful that user-provided rules could trigger due to elements of the
@@ -122,6 +122,7 @@ public class Completer {
                     thenAnswers.forEach(thenAnswer -> {
                         // If it is *not* inferred, then do nothing, as rules shouldn't infer facts that are already present
 //                    if (!isInferred(thenAnswer)) { // TODO check if the answer is inferred
+
                         // Check if it was this exact rule that previously inserted this `then` for these exact `when` instances
 
                         Set<Statement> checkStatements = new HashSet<>();
@@ -163,7 +164,7 @@ public class Completer {
      */
     // TODO Surprised that this worked, surely it should have inserted additional keys for the concepts in the
     //  `then` that are pre-existing?
-    private static HashSet<Statement> getThenKeyStatements(Transaction tx, Pattern then) {
+    private HashSet<Statement> getThenKeyStatements(Transaction tx, Pattern then) {
         HashSet<Statement> keyStatements = new HashSet<>();
         then.statements().forEach(s -> {
             s.properties().forEach(p -> {

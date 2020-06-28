@@ -33,7 +33,7 @@ import static grakn.core.test.behaviour.connection.ConnectionSteps.sessions;
 public class ResolutionSteps {
 
     private static GraqlGet query;
-    private Resolution resolution;
+    private static Resolution resolution;
 
     @Given("graql define")
     public void graql_define(String defineQueryStatements) {

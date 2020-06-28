@@ -58,7 +58,7 @@ public class TestCompleter {
 
             Completer completer = new Completer(session);
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-                completer.loadRules(tx, SchemaManager.getAllRules(tx));
+                completer.loadRules(SchemaManager.getAllRules(tx));
             }
 
             SchemaManager.undefineAllRules(session);
@@ -82,7 +82,7 @@ public class TestCompleter {
 
             Completer completer = new Completer(session);
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-                completer.loadRules(tx, SchemaManager.getAllRules(tx));
+                completer.loadRules(SchemaManager.getAllRules(tx));
             }
 
             SchemaManager.undefineAllRules(session);
