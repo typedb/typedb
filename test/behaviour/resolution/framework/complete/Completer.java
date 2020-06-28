@@ -102,9 +102,9 @@ public class Completer {
 
                 if (thenAnswers.size() == 0) {
                     // We've found somewhere the rule can be applied
-                    HashSet<Statement> matchWhenPatterns = new HashSet<>();
+                    HashSet<Pattern> matchWhenPatterns = new HashSet<>();
                     matchWhenPatterns.addAll(generateKeyStatements(whenMap));
-                    matchWhenPatterns.addAll(rule.when.statements());
+                    matchWhenPatterns.add(rule.when);
 
                     Set<Statement> insertNewThenStatements = new HashSet<>();
                     insertNewThenStatements.addAll(rule.then.statements());
@@ -115,7 +115,7 @@ public class Completer {
                     numInferredConcepts += insertedVars.size();
 
                     // Apply the rule, with the records of how the inference was made
-                    List<ConceptMap> inserted = tx.execute(Graql.match(Graql.and(matchWhenPatterns)).insert(insertNewThenStatements));
+                    List<ConceptMap> inserted = tx.execute(Graql.match(matchWhenPatterns).insert(insertNewThenStatements));
                     assert inserted.size() == 1;
                     foundResult.set(true);
                 } else {
@@ -125,26 +125,26 @@ public class Completer {
 
                         // Check if it was this exact rule that previously inserted this `then` for these exact `when` instances
 
-                        Set<Statement> checkStatements = new HashSet<>();
-                        checkStatements.addAll(generateKeyStatements(whenMap));
-                        checkStatements.addAll(generateKeyStatements(thenAnswer.map()));
-                        checkStatements.addAll(ruleResolutionConjunction.statements());
-                        checkStatements.addAll(rule.when.statements());
-                        checkStatements.addAll(rule.then.statements());
-                        List<ConceptMap> ans = tx.execute(Graql.match(checkStatements).get());
+                        Set<Pattern> check = new HashSet<>();
+                        check.addAll(generateKeyStatements(whenMap));
+                        check.addAll(generateKeyStatements(thenAnswer.map()));
+                        check.addAll(ruleResolutionConjunction.statements());
+                        check.add(rule.when);
+                        check.addAll(rule.then.statements());
+                        List<ConceptMap> ans = tx.execute(Graql.match(check).get());
 
                         // Failure here means either a rule has been applied twice in the same place, or something else, perhaps the queries, has gone wrong
                         assert ans.size() <= 1;
 
                         if (ans.size() == 0) {
                             // This `then` has been previously inferred, but not in this exact scenario, so we add this resolution to the previously inserted inference
-                            Set<Statement> matchStatements = new HashSet<>();
-                            matchStatements.addAll(generateKeyStatements(whenMap));
-                            matchStatements.addAll(generateKeyStatements(thenAnswer.map()));
-                            matchStatements.addAll(rule.when.statements());
-                            matchStatements.addAll(rule.then.statements());
+                            Set<Pattern> match = new HashSet<>();
+                            match.addAll(generateKeyStatements(whenMap));
+                            match.addAll(generateKeyStatements(thenAnswer.map()));
+                            match.add(rule.when);
+                            match.addAll(rule.then.statements());
 
-                            List<ConceptMap> inserted = tx.execute(Graql.match(matchStatements).insert(ruleResolutionConjunction.statements()));
+                            List<ConceptMap> inserted = tx.execute(Graql.match(match).insert(ruleResolutionConjunction.statements()));
                             assert inserted.size() == 1;
                             foundResult.set(true);
                         }
