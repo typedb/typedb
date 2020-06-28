@@ -146,6 +146,8 @@ java_test(
         "//test/behaviour/resolution/framework/test/cases/case6:data.gql",
         "//test/behaviour/resolution/framework/test/cases/case7:schema.gql",
         "//test/behaviour/resolution/framework/test/cases/case7:data.gql",
+        "//test/behaviour/resolution/framework/test/cases/basic:schema.gql",
+        "//test/behaviour/resolution/framework/test/cases/basic:data.gql",
     ],
     classpath_resources = ["//test/resources:logback-test"],
     size="medium"

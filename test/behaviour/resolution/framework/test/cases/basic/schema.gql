@@ -1,0 +1,15 @@
+define
+
+name sub attribute, value string;
+company-id sub attribute, value long;
+
+company sub entity,
+  has name,
+  key company-id;
+
+company-has-name sub rule,
+when {
+  $c isa company;
+}, then {
+  $c has name "the-company";
+};

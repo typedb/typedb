@@ -240,6 +240,25 @@ public class TestResolution {
         resolution_test.close();
     }
 
+    @Test
+    public void testResolutionPassesForABasicRule() {
+        Path schemaPath = Paths.get("test", "behaviour", "resolution", "framework", "test", "cases", "basic", "schema.gql").toAbsolutePath();
+        Path dataPath = Paths.get("test", "behaviour", "resolution", "framework", "test", "cases", "basic", "data.gql").toAbsolutePath();
+        GraqlGet inferenceQuery = Graql.parse("match $transaction has currency $currency; get;").asGet();
+
+        Session completionSession = graknTestServer.sessionWithNewKeyspace();
+        initialiseKeyspace(completionSession, schemaPath, dataPath);
+
+        Session testSession = graknTestServer.sessionWithNewKeyspace();
+        initialiseKeyspace(testSession, schemaPath, dataPath);
+
+        Resolution resolution_test = new Resolution(completionSession, testSession);
+        resolution_test.testQuery(inferenceQuery);
+        resolution_test.testResolution(inferenceQuery);
+        resolution_test.testCompleteness();
+        resolution_test.close();
+    }
+
 
     @Test
     public void testCase1HappyPath() {
