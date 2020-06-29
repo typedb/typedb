@@ -136,6 +136,7 @@ jobs:
       - checkout
       - run-bazel:
           command: bazel test //test/behaviour/graql/language/define:test --test_output=errors
+      - run:
           no_output_timeout: 30m
 
   test-behaviour-graql-delete:
@@ -147,6 +148,7 @@ jobs:
       - checkout
       - run-bazel:
           command: bazel test //test/behaviour/graql/language/delete:test --test_output=errors
+      - run:
           no_output_timeout: 30m
 
   test-behaviour-graql-get:
@@ -157,6 +159,7 @@ jobs:
       - checkout
       - run-bazel:
           command: bazel test //test/behaviour/graql/language/get:test --test_output=errors
+      - run:
           no_output_timeout: 30m
 
   test-behaviour-graql-insert:
@@ -168,6 +171,7 @@ jobs:
       - checkout
       - run-bazel:
           command: bazel test //test/behaviour/graql/language/insert:test --test_output=errors
+      - run:
           no_output_timeout: 30m
 
   test-behaviour-graql-match:
@@ -179,6 +183,7 @@ jobs:
       - checkout
       - run-bazel:
           command: bazel test //test/behaviour/graql/language/match:test --test_output=errors
+      - run:
           no_output_timeout: 30m
 
   test-behaviour-graql-undefine:
@@ -190,6 +195,7 @@ jobs:
       - checkout
       - run-bazel:
           command: bazel test //test/behaviour/graql/language/undefine:test --test_output=errors
+      - run:
           no_output_timeout: 30m
 
   test-behaviour-graql-explanation:
