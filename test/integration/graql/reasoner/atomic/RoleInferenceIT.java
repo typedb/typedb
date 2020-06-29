@@ -32,7 +32,6 @@ import grakn.core.test.rule.SessionUtil;
 import grakn.core.test.rule.TestTransactionProvider;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
-import graql.lang.statement.Label;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 import org.junit.AfterClass;
@@ -85,8 +84,8 @@ public class RoleInferenceIT {
         String patternString2 = "{ ($x, $y) isa binary; $x isa entity1; $y isa entity2; };";
 
         ImmutableSetMultimap<Role, Variable> correctRoleMap = ImmutableSetMultimap.of(
-                tx.getRole(Label.of("role1",""), new Variable("x"),
-                tx.getRole(Label.of("role2", ""), new Variable("y"));
+                tx.getRole("role1"), new Variable("x"),
+                tx.getRole("role2"), new Variable("y"));
         roleInference(patternString, correctRoleMap, reasonerQueryFactory);
         roleInference(patternString2, correctRoleMap, reasonerQueryFactory);
         tx.close();

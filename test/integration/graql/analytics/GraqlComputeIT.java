@@ -30,7 +30,6 @@ import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.Entity;
 import grakn.core.kb.concept.api.EntityType;
-import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.SchemaConcept;
@@ -44,6 +43,7 @@ import graql.lang.exception.GraqlException;
 import graql.lang.query.GraqlCompute;
 import graql.lang.query.GraqlGet;
 import graql.lang.query.GraqlQuery;
+import graql.lang.statement.Label;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -107,7 +107,7 @@ public class GraqlComputeIT {
 
 
     private BiFunction<Label, Transaction, Integer> instanceCount = (typeLabel, tx) ->
-            tx.execute(Graql.match(Graql.var("x").isaX(typeLabel.getValue())).get()).size();
+            tx.execute(Graql.match(Graql.var("x").isaX(typeLabel.name())).get()).size();
 
     private long totalCount(Transaction tx){
         SchemaConcept thing = tx.getSchemaConcept(Schema.MetaSchema.THING.getLabel());
@@ -133,7 +133,7 @@ public class GraqlComputeIT {
             //this should return all things BUT NOT attributes or implicit relations
             GraqlGet thingQuery = Graql.match(
                     Graql.and(
-                            Graql.var("x").isa(tx.getMetaConcept().label().getValue())
+                            Graql.var("x").isa(tx.getMetaConcept().label().name())
                     )
             ).get();
             assertEquals(
@@ -424,11 +424,11 @@ public class GraqlComputeIT {
             entityId3 = entity3.id().getValue();
             entityId4 = entity4.id().getValue();
 
-            Role role1 = tx.putRole("role1");
-            Role role2 = tx.putRole("role2");
+            RelationType relationType = tx.putRelationType(related).relates("role1").relates("role2");
+            Role role1 = relationType.role("role1");
+            Role role2 = relationType.role("role2");
             entityType1.plays(role1).plays(role2);
             entityType2.plays(role1).plays(role2);
-            RelationType relationType = tx.putRelationType(related).relates(role1).relates(role2);
 
             relationId12 = relationType.create()
                     .assign(role1, entity1)

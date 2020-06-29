@@ -105,14 +105,14 @@ public class AttributeIT {
         EntityType randomThing = tx.putEntityType("A Thing");
         AttributeType<String> attributeType = tx.putAttributeType("A Attribute Thing", AttributeType.ValueType.STRING);
         RelationType hasResource = tx.putRelationType("Has Attribute");
-        Role resourceRole = tx.putRole("Attribute Role");
-        Role actorRole = tx.putRole("Actor");
         Thing pacino = randomThing.create();
         Thing jennifer = randomThing.create();
         Thing bob = randomThing.create();
         Thing alice = randomThing.create();
         Attribute<String> birthDate = attributeType.create("10/10/10");
-        hasResource.relates(resourceRole).relates(actorRole);
+        hasResource.relates("Attribute Role").relates("Actor");
+        Role resourceRole = hasResource.role("Attribute Role");
+        Role actorRole = hasResource.role("Actor");
 
         assertThat(birthDate.owners().collect(toSet()), empty());
 
