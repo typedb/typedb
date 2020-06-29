@@ -117,7 +117,7 @@ public class AttributeSteps {
     }
 
     @Then("attribute {var} has string value: {word}")
-    public void attribute_has_boolean_value(String var, String value) {
+    public void attribute_has_string_value(String var, String value) {
         assertEquals(value, get(var).asAttribute().asString().value());
     }
 

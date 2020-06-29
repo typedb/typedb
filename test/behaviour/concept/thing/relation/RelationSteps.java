@@ -18,8 +18,13 @@
 
 package hypergraph.test.behaviour.concept.thing.relation;
 
+import hypergraph.concept.thing.Attribute;
+import hypergraph.concept.thing.Thing;
+import hypergraph.concept.type.RelationType;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
+
+import java.time.LocalDateTime;
 
 import static hypergraph.test.behaviour.concept.thing.ThingSteps.get;
 import static hypergraph.test.behaviour.concept.thing.ThingSteps.put;
@@ -34,9 +39,77 @@ public class RelationSteps {
         put(var, tx().concepts().getRelationType(typeLabel).create());
     }
 
-    @When("{var} = relation\\( ?{type_label} ?) get first instance")
-    public void relation_type_get_first_instance(String var, String typeLabel) {
-        put(var, tx().concepts().getRelationType(typeLabel).instances().findFirst().orElse(null));
+    @When("{var} = relation\\( ?{type_label} ?) create new instance with key\\( ?{type_label} ?): {bool}")
+    public void relation_type_create_new_instance_with_key(String var, String type, String keyType, boolean keyValue) {
+        Attribute.Boolean key = tx().concepts().getAttributeType(keyType).asBoolean().put(keyValue);
+        put(var, tx().concepts().getRelationType(type).create().has(key));
+    }
+
+    @When("{var} = relation\\( ?{type_label} ?) create new instance with key\\( ?{type_label} ?): {int}")
+    public void relation_type_create_new_instance_with_key(String var, String type, String keyType, int keyValue) {
+        Attribute.Long key = tx().concepts().getAttributeType(keyType).asLong().put(keyValue);
+        put(var, tx().concepts().getRelationType(type).create().has(key));
+    }
+
+    @When("{var} = relation\\( ?{type_label} ?) create new instance with key\\( ?{type_label} ?): {double}")
+    public void relation_type_create_new_instance_with_key(String var, String type, String keyType, double keyValue) {
+        Attribute.Double key = tx().concepts().getAttributeType(keyType).asDouble().put(keyValue);
+        put(var, tx().concepts().getRelationType(type).create().has(key));
+    }
+
+    @When("{var} = relation\\( ?{type_label} ?) create new instance with key\\( ?{type_label} ?): {word}")
+    public void relation_type_create_new_instance_with_key(String var, String type, String keyType, String keyValue) {
+        Attribute.String key = tx().concepts().getAttributeType(keyType).asString().put(keyValue);
+        put(var, tx().concepts().getRelationType(type).create().has(key));
+    }
+
+    @When("{var} = relation\\( ?{type_label} ?) create new instance with key\\( ?{type_label} ?): {datetime}")
+    public void relation_type_create_new_instance_with_key(String var, String type, String keyType, LocalDateTime keyValue) {
+        Attribute.DateTime key = tx().concepts().getAttributeType(keyType).asDateTime().put(keyValue);
+        put(var, tx().concepts().getRelationType(type).create().has(key));
+    }
+
+    @When("{var} = relation\\( ?{type_label} ?) get instance with key: {var}")
+    public void relation_type_get_instance_with_key(String var1, String type, String var2) {
+        put(var1, get(var2).asAttribute().owners()
+                .filter(owner -> owner.type().equals(tx().concepts().getRelationType(type)))
+                .findFirst().orElse(null));
+    }
+
+    @When("{var} = relation\\( ?{type_label} ?) get instance with key\\( ?{type_label} ?): {bool}")
+    public void relation_type_get_instance_with_key(String var1, String type, String keyType, boolean keyValue) {
+        put(var1, tx().concepts().getAttributeType(keyType).asBoolean().get(keyValue).owners()
+                .filter(owner -> owner.type().equals(tx().concepts().getRelationType(type)))
+                .findFirst().orElse(null));
+    }
+
+    @When("{var} = relation\\( ?{type_label} ?) get instance with key\\( ?{type_label} ?): {long}")
+    public void relation_type_get_instance_with_key(String var1, String type, String keyType, long keyValue) {
+        put(var1, tx().concepts().getAttributeType(keyType).asLong().get(keyValue).owners()
+                .filter(owner -> owner.type().equals(tx().concepts().getRelationType(type)))
+                .findFirst().orElse(null));
+    }
+
+    @When("{var} = relation\\( ?{type_label} ?) get instance with key\\( ?{type_label} ?): {double}")
+    public void relation_type_get_instance_with_key(String var1, String type, String keyType, double keyValue) {
+        put(var1, tx().concepts().getAttributeType(keyType).asDouble().get(keyValue).owners()
+                .filter(owner -> owner.type().equals(tx().concepts().getRelationType(type)))
+                .findFirst().orElse(null));
+    }
+
+
+    @When("{var} = relation\\( ?{type_label} ?) get instance with key\\( ?{type_label} ?): {word}")
+    public void relation_type_get_instance_with_key(String var1, String type, String keyType, String keyValue) {
+        put(var1, tx().concepts().getAttributeType(keyType).asString().get(keyValue).owners()
+                .filter(owner -> owner.type().equals(tx().concepts().getRelationType(type)))
+                .findFirst().orElse(null));
+    }
+
+    @When("{var} = relation\\( ?{type_label} ?) get instance with key\\( ?{type_label} ?): {datetime}")
+    public void relation_type_get_instance_with_key(String var1, String type, String keyType, LocalDateTime keyValue) {
+        put(var1, tx().concepts().getAttributeType(keyType).asDateTime().get(keyValue).owners()
+                .filter(owner -> owner.type().equals(tx().concepts().getRelationType(type)))
+                .findFirst().orElse(null));
     }
 
     @Then("relation\\( ?{type_label} ?) get instances contain: {var}")

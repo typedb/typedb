@@ -21,16 +21,15 @@ package hypergraph.concept.thing.impl;
 import hypergraph.common.exception.Error;
 import hypergraph.common.exception.HypergraphException;
 import hypergraph.concept.thing.Attribute;
-import hypergraph.concept.thing.Relation;
 import hypergraph.concept.thing.Thing;
 import hypergraph.concept.type.AttributeType;
 import hypergraph.concept.type.RoleType;
+import hypergraph.concept.type.Type;
 import hypergraph.concept.type.impl.RoleTypeImpl;
 import hypergraph.concept.type.impl.TypeImpl;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.vertex.ThingVertex;
 import hypergraph.graph.vertex.TypeVertex;
-import hypergraph.graph.vertex.impl.ThingVertexImpl;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -89,9 +88,9 @@ public abstract class ThingImpl implements Thing {
             throw new HypergraphException(Error.ThingWrite.THING_ATTRIBUTE_UNDEFINED.format(vertex.type().label()));
         } else if (type().keys().anyMatch(t -> t.equals(attribute.type()))) {
             if (keys(attribute.type()).findAny().isPresent()) {
-                throw new HypergraphException(Error.ThingWrite.THING_KEY_OVER.format(vertex.type().label()));
+                throw new HypergraphException(Error.ThingWrite.THING_KEY_OVER.format(attribute.type().label(), vertex.type().label()));
             } else if (attribute.owners().findAny().isPresent()) {
-                throw new HypergraphException(Error.ThingWrite.THING_KEY_TAKEN.format(vertex.type().label()));
+                throw new HypergraphException(Error.ThingWrite.THING_KEY_TAKEN.format(attribute.type().label(), vertex.type().label()));
             }
         }
 
@@ -152,7 +151,21 @@ public abstract class ThingImpl implements Thing {
 
     @Override
     public void validate() {
-        // TODO: validate generic thing
+        if (keys().map(Attribute::type).count() < type().keys().count()) {
+            Set<AttributeType> missing = type().keys().collect(toSet());
+            missing.removeAll(keys().map(Attribute::type).collect(toSet()));
+            throw new HypergraphException(Error.ThingWrite.THING_KEY_MISSING.format(this.vertex.type().label(), printTypeSet(missing)));
+        }
+    }
+
+    private String printTypeSet(Set<? extends Type> types) {
+        Type[] array = types.toArray(new Type[0]);
+        StringBuilder string = new StringBuilder();
+        for (int i = 0; i < array.length; i++) {
+            string.append('\'').append(array[i].label()).append('\'');
+            if (i < array.length - 1) string.append(", ");
+        }
+        return string.toString();
     }
 
     @Override

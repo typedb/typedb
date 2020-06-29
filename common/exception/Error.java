@@ -162,13 +162,15 @@ public abstract class Error<TYPE extends Error<TYPE>> {
         public static final ThingWrite THING_ATTRIBUTE_UNDEFINED =
                 new ThingWrite(4, "Attempted to assign an attribute to a(n) '%s' that is not defined to have that attribute type.");
         public static final ThingWrite THING_KEY_OVER =
-                new ThingWrite(5, "Attempted to assign a key to a(n) '%s' when it already has one.");
+                new ThingWrite(5, "Attempted to assign a key of type '%s' onto a(n) '%s' that already has one.");
         public static final ThingWrite THING_KEY_TAKEN =
-                new ThingWrite(6, "Attempted to assign a key that had been assigned onto a(n) '%s'.");
+                new ThingWrite(6, "Attempted to assign a key of type '%s' that had been taken by another '%s'.");
+        public static final ThingWrite THING_KEY_MISSING =
+                new ThingWrite(7, "Attempted to commit a(n) '%s' that is missing key(s) of type(s): %s"); // don't put quotes around the last %s
         public static final ThingWrite RELATION_UNRELATED_ROLE =
-                new ThingWrite(7, "Relation type '%s' does not relate role type '%s'.");
+                new ThingWrite(8, "Relation type '%s' does not relate role type '%s'.");
         public static final ThingWrite RELATION_NO_PLAYER =
-                new ThingWrite(8, "Relation instance of type '%s' does not have any role player");
+                new ThingWrite(9, "Relation instance of type '%s' does not have any role player");
         private static final String codePrefix = "THW";
         private static final String descriptionPrefix = "Invalid Thing Write";
 
