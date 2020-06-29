@@ -11,10 +11,12 @@ import grakn.core.kb.concept.api.EntityType;
 import grakn.core.kb.concept.api.Relation;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
+import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import grakn.core.server.Version;
 import grakn.core.server.migrate.proto.MigrateProto;
+import grakn.core.server.session.TransactionImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,13 +47,18 @@ public class Import implements AutoCloseable {
 
     Map<String, String> idMap = new HashMap<>();
 
-    // Pair of LOCAL attribute ids to FOREIGN key ids
-    List<Pair<String, List<String>>> attributeOwnerships = new ArrayList<>();
+    // Pair of IMPORTED thing ids to list of ORIGINAL attribute ids
+    List<Pair<String, List<String>>> missingAttributeOwnerships = new ArrayList<>();
+
+    // Pair of IMPORTED relation ids to map of role LABEL to lists of ORIGINAL player ids
+    List<Pair<String, Map<String, List<String>>>> missingRolePlayers = new ArrayList<>();
 
     Map<String, AttributeType<?>> attributeTypeCache = new HashMap<>();
     Map<String, EntityType> entityTypeCache = new HashMap<>();
     Map<String, RelationType> relationTypeCache = new HashMap<>();
-    Map<String, Attribute<?>> attributeCache = new HashMap<>();
+    Map<String, Role> roleCache = new HashMap<>();
+
+    Map<String, Thing> thingCache = new HashMap<>();
 
     private long entityCount = 0;
     private long attributeCount = 0;
@@ -84,17 +91,23 @@ public class Import implements AutoCloseable {
         }
     }
 
+    private void newTransaction() {
+        currentTransaction = session.transaction(Transaction.Type.WRITE);
+        ((TransactionImpl) currentTransaction).disableCommitValidation();
+    }
+
     private void commit() {
         LOG.info("Commit start, inserted {} things", count);
         long time = System.nanoTime();
         currentTransaction.commit();
         LOG.info("Commit end, took {}s", (double)(System.nanoTime() - time) / 1_000_000_000.0);
-        currentTransaction = session.transaction(Transaction.Type.WRITE);
+        newTransaction();
         count = 0;
         attributeTypeCache.clear();
         entityTypeCache.clear();
         relationTypeCache.clear();
-        attributeCache.clear();
+        roleCache.clear();
+        thingCache.clear();
     }
 
     private void flush() {
@@ -102,7 +115,7 @@ public class Import implements AutoCloseable {
     }
 
     public void execute() throws InvalidProtocolBufferException {
-        currentTransaction = session.transaction(Transaction.Type.WRITE);
+        newTransaction();
 
         MigrateProto.Item item;
         while ((item = read()) != null) {
@@ -130,7 +143,8 @@ public class Import implements AutoCloseable {
             }
         }
 
-        insertAttributeKeyOwnerships();
+        insertMissingRolePlayersAtEnd();
+        insertMissingAttributeOwnershipsAtEnd();
 
         flush();
 
@@ -168,41 +182,15 @@ public class Import implements AutoCloseable {
                         l -> currentTransaction.getAttributeType(l))
                 .create(valueFrom(attributeMessage.getValue()));
 
+        String originalId = attributeMessage.getId();
         String attributeId = attribute.id().toString();
-        idMap.put(attributeMessage.getId(), attributeId);
+        idMap.put(originalId, attributeId);
+        thingCache.put(originalId, attribute);
 
-        if (attributeMessage.getAttributeCount() > 0) {
-            List<String> attributeIdStrings = new ArrayList<>(attributeMessage.getAttributeCount());
-
-            for (MigrateProto.Item.OwnedAttribute ownedMessage : attributeMessage.getAttributeList()) {
-                attributeIdStrings.add(ownedMessage.getId());
-            }
-
-            attributeOwnerships.add(new Pair<>(attributeId, attributeIdStrings));
-        }
+        insertOwnedAttributesThatExist(attribute, attributeMessage.getAttributeList());
 
         attributeCount++;
         write();
-    }
-
-    private void insertAttributeKeyOwnerships() {
-        for (Pair<String, List<String>> attributeKeyOwnership : attributeOwnerships) {
-            Attribute<?> owner = attributeCache.computeIfAbsent(
-                    attributeKeyOwnership.first(), // First is local ID
-                    id -> currentTransaction.getConcept(ConceptId.of(id)));
-
-            for (String attributeIdString : attributeKeyOwnership.second()) {
-                Attribute<?> owned = attributeCache.computeIfAbsent(
-                        idMap.get(attributeIdString), // Second is foreign ID, remember to map
-                        id -> currentTransaction.getConcept(ConceptId.of(id)));
-                owner.has(owned);
-                ownershipCount++;
-            }
-
-            write();
-        }
-
-        attributeOwnerships.clear();
     }
 
     private void insertEntity(MigrateProto.Item.Entity entityMessage) {
@@ -211,15 +199,11 @@ public class Import implements AutoCloseable {
                         l -> currentTransaction.getEntityType(l))
                 .create();
 
+        String originalId = entityMessage.getId();
         idMap.put(entityMessage.getId(), entity.id().toString());
+        thingCache.put(originalId, entity);
 
-        for (MigrateProto.Item.OwnedAttribute attributeMessage : entityMessage.getAttributeList()) {
-            Attribute<?> attribute = attributeCache.computeIfAbsent(
-                    idMap.get(attributeMessage.getId()),
-                    id -> currentTransaction.getConcept(ConceptId.of(id)));
-            entity.has(attribute);
-            ownershipCount++;
-        }
+        insertOwnedAttributesThatExist(entity, entityMessage.getAttributeList());
 
         entityCount++;
         write();
@@ -232,27 +216,116 @@ public class Import implements AutoCloseable {
                         l -> currentTransaction.getRelationType(l))
                 .create();
 
-        idMap.put(relationMessage.getId(), relation.id().toString());
+        String originalId = relationMessage.getId();
+        String importedId = relation.id().toString();
+        idMap.put(originalId, importedId);
+        thingCache.put(originalId, relation);
+
+        Map<String, List<String>> missingRolePlayers = new HashMap<>();
 
         for (MigrateProto.Item.Relation.Role roleMessage : relationMessage.getRoleList()) {
-            Role role = currentTransaction.getRole(roleMessage.getLabel());
+            List<String> missingPlayers = new ArrayList<>();
+            Role role = null;
 
             for (MigrateProto.Item.Relation.Role.Player playerMessage : roleMessage.getPlayerList()) {
-                ConceptId localPlayerId = ConceptId.of(idMap.get(playerMessage.getId()));
-                relation.assign(role, currentTransaction.getConcept(localPlayerId));
-                roleCount++;
+                String originalPlayerId = playerMessage.getId();
+                Thing player = thingCache.get(originalPlayerId);
+                if (player == null) {
+                    String importedPlayerId = idMap.get(originalPlayerId);
+                    if (importedPlayerId != null) {
+                        player = currentTransaction.getConcept(ConceptId.of(importedPlayerId));
+                        thingCache.put(originalPlayerId, player);
+                    }
+                }
+
+                if (player != null) {
+                    if (role == null) {
+                        role = roleCache.computeIfAbsent(roleMessage.getLabel(), l -> currentTransaction.getRole(l));
+                    }
+                    relation.assign(role, player);
+                    roleCount++;
+                } else {
+                    missingPlayers.add(originalPlayerId);
+                }
+            }
+
+            if (!missingPlayers.isEmpty()) {
+                missingRolePlayers.put(roleMessage.getLabel(), missingPlayers);
             }
         }
 
-        for (MigrateProto.Item.OwnedAttribute attributeMessage : relationMessage.getAttributeList()) {
-            ConceptId localAttributeId = ConceptId.of(idMap.get(attributeMessage.getId()));
-            Attribute<?> attribute = currentTransaction.getConcept(localAttributeId);
-            relation.has(attribute);
-            ownershipCount++;
-        }
+        this.missingRolePlayers.add(new Pair<>(importedId, missingRolePlayers));
+
+        insertOwnedAttributesThatExist(relation, relationMessage.getAttributeList());
 
         relationCount++;
         write();
+    }
+
+    private void insertOwnedAttributesThatExist(Thing thing, List<MigrateProto.Item.OwnedAttribute> owned) {
+        List<String> missingOwnerships = new ArrayList<>();
+
+        for (MigrateProto.Item.OwnedAttribute ownedMessage : owned) {
+            String ownedOriginalId = ownedMessage.getId();
+            Attribute<?> ownedAttribute = (Attribute<?>) thingCache.get(ownedOriginalId);
+            if (ownedAttribute == null) {
+                String ownedNewId = idMap.get(ownedOriginalId);
+                if (ownedNewId != null) {
+                    ownedAttribute = currentTransaction.getConcept(ConceptId.of(ownedNewId));
+                    thingCache.put(ownedOriginalId, ownedAttribute);
+                }
+            }
+
+            if (ownedAttribute != null) {
+                thing.has(ownedAttribute);
+                ownershipCount++;
+            } else {
+                missingOwnerships.add(ownedMessage.getId());
+            }
+        }
+
+        if (!missingOwnerships.isEmpty()) {
+            missingAttributeOwnerships.add(new Pair<>(thing.id().toString(), missingOwnerships));
+        }
+    }
+
+    private void insertMissingAttributeOwnershipsAtEnd() {
+        for (Pair<String, List<String>> attributeKeyOwnership : missingAttributeOwnerships) {
+            Attribute<?> owner = currentTransaction.getConcept(ConceptId.of(attributeKeyOwnership.first()));
+
+            for (String attributeIdString : attributeKeyOwnership.second()) {
+                Attribute<?> owned = (Attribute<?>) thingCache.computeIfAbsent(
+                        idMap.get(attributeIdString), // Second is foreign ID, remember to map
+                        id -> currentTransaction.getConcept(ConceptId.of(id)));
+                owner.has(owned);
+                ownershipCount++;
+            }
+
+            write();
+        }
+
+        missingAttributeOwnerships.clear();
+    }
+
+    private void insertMissingRolePlayersAtEnd() {
+        for (Pair<String, Map<String, List<String>>> missingRolePlayers : this.missingRolePlayers) {
+            Relation relation = currentTransaction.getConcept(ConceptId.of(missingRolePlayers.first()));
+
+            missingRolePlayers.second().forEach((roleLabel, missingPlayers) -> {
+                Role role = roleCache.computeIfAbsent(roleLabel, l -> currentTransaction.getRole(l));
+
+                for (String playerOriginalId : missingPlayers) {
+                    Thing player = thingCache.computeIfAbsent(playerOriginalId,
+                            poi -> currentTransaction.getConcept(ConceptId.of(idMap.get(poi))));
+                    relation.assign(role, player);
+                    roleCount++;
+                }
+            });
+
+            write();
+        }
+
+        missingRolePlayers.clear();
     }
 
     private <T> T valueFrom(MigrateProto.ValueObject valueObject) {
