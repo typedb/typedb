@@ -29,17 +29,14 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static grakn.core.test.behaviour.resolution.framework.common.Utils.loadGqlFile;
 import static grakn.core.test.behaviour.resolution.framework.complete.SchemaManager.addResolutionSchema;
 import static grakn.core.test.behaviour.resolution.framework.complete.SchemaManager.connectResolutionSchema;
+import static grakn.core.test.behaviour.resolution.framework.test.LoadTest.loadTestStub;
 import static org.junit.Assert.assertEquals;
 
 public class TestSchemaManager {
@@ -51,15 +48,7 @@ public class TestSchemaManager {
 
     @BeforeClass
     public static void beforeClass() {
-        try (Session session = graknTestServer.session(KEYSPACE)) {
-            try {
-                Path schemaPath = Paths.get("test", "behaviour", "resolution", "framework", "test", "cases", "complex_recursion", "schema.gql").toAbsolutePath();
-                loadGqlFile(session, schemaPath);
-            } catch (IOException e) {
-                e.printStackTrace();
-                System.exit(1);
-            }
-        }
+        loadTestStub(graknTestServer.session(KEYSPACE), "complex_recursion");
     }
 
     @Test

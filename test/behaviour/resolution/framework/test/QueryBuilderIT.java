@@ -32,7 +32,7 @@ import org.junit.Test;
 import java.util.Set;
 
 import static grakn.core.test.behaviour.resolution.framework.common.Utils.getStatements;
-import static grakn.core.test.behaviour.resolution.framework.test.LoadTest.loadTestCase;
+import static grakn.core.test.behaviour.resolution.framework.test.LoadTest.loadTestStub;
 import static org.junit.Assert.assertEquals;
 
 public class QueryBuilderIT {
@@ -48,7 +48,7 @@ public class QueryBuilderIT {
 
         try (Session session = graknTestServer.sessionWithNewKeyspace()) {
 
-            loadTestCase(session, "complex_recursion");
+            loadTestStub(session, "complex_recursion");
 
             try (Transaction tx = session.transaction(Transaction.Type.READ)) {
                 ConceptMap answer = tx.execute(inferenceQuery).get(0);

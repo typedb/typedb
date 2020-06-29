@@ -34,7 +34,7 @@ import java.util.List;
 import java.util.Set;
 
 import static grakn.core.test.behaviour.resolution.framework.common.Utils.getStatements;
-import static grakn.core.test.behaviour.resolution.framework.test.LoadTest.loadTestCase;
+import static grakn.core.test.behaviour.resolution.framework.test.LoadTest.loadTestStub;
 import static org.junit.Assert.assertEquals;
 
 public class TestCompleter {
@@ -72,7 +72,7 @@ public class TestCompleter {
 
         try (Session session = graknTestServer.sessionWithNewKeyspace()) {
 
-            loadTestCase(session, "basic_recursion");
+            loadTestStub(session, "basic_recursion");
 
             Completer completer = new Completer(session);
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
@@ -96,7 +96,7 @@ public class TestCompleter {
     public void testDeduplicationOfInferredConcepts() {
         try (Session session = graknTestServer.sessionWithNewKeyspace()) {
 
-            loadTestCase(session, "transitivity");
+            loadTestStub(session, "transitivity");
 
             Completer completer = new Completer(session);
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {

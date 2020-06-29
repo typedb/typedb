@@ -27,38 +27,23 @@ import graql.lang.query.GraqlGet;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-
-import static grakn.core.test.behaviour.resolution.framework.common.Utils.loadGqlFile;
+import static grakn.core.test.behaviour.resolution.framework.test.LoadTest.loadTestStub;
 import static junit.framework.TestCase.assertNotNull;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertThat;
 
 public class TestResolution {
 
-    private void initialiseKeyspace(Session session, Path schemaPath, Path dataPath) {
-        try {
-            // Load a schema incl. rules
-            loadGqlFile(session, schemaPath);
-            // Load data
-            loadGqlFile(session, dataPath);
-        } catch (IOException e) {
-            e.printStackTrace();
-            System.exit(1);
-        }
-    }
 
     @ClassRule
     public static final GraknTestServer graknTestServer = new GraknTestServer();
 
-    private void resolutionHappyPathTest(Path schemaPath, Path dataPath, GraqlGet inferenceQuery) {
+    private void resolutionHappyPathTest(String stubName, GraqlGet inferenceQuery) {
         Session completionSession = graknTestServer.sessionWithNewKeyspace();
-        initialiseKeyspace(completionSession, schemaPath, dataPath);
+        loadTestStub(completionSession, stubName);
 
         Session testSession = graknTestServer.sessionWithNewKeyspace();
-        initialiseKeyspace(testSession, schemaPath, dataPath);
+        loadTestStub(testSession, stubName);
 
         Resolution resolution_test = new Resolution(completionSession, testSession);
         resolution_test.testQuery(inferenceQuery);
@@ -69,21 +54,16 @@ public class TestResolution {
 
     @Test
     public void testResolutionPassesForTransitivity() {
-        Path schemaPath = Paths.get("test", "behaviour", "resolution", "framework", "test", "cases", "transitivity", "schema.gql").toAbsolutePath();
-        Path dataPath = Paths.get("test", "behaviour", "resolution", "framework", "test", "cases", "transitivity", "data.gql").toAbsolutePath();
         GraqlGet inferenceQuery = Graql.parse("" +
                 "match $lh (location-hierarchy_superior: $continent, " +
                 "location-hierarchy_subordinate: $area) isa location-hierarchy; " +
                 "$continent isa continent; " +
                 "$area isa area; get;").asGet();
-
-        resolutionHappyPathTest(schemaPath, dataPath, inferenceQuery);
+        resolutionHappyPathTest("transitivity", inferenceQuery);
     }
 
     @Test
     public void testResolutionThrowsForTransitivityWhenRuleIsNotTriggered() {
-        Path schemaPath = Paths.get("test", "behaviour", "resolution", "framework", "test", "cases", "transitivity", "schema.gql").toAbsolutePath();
-        Path dataPath = Paths.get("test", "behaviour", "resolution", "framework", "test", "cases", "transitivity", "data.gql").toAbsolutePath();
         GraqlGet inferenceQuery = Graql.parse("" +
                 "match $lh (location-hierarchy_superior: $continent, " +
                 "location-hierarchy_subordinate: $area) isa location-hierarchy; " +
@@ -92,10 +72,10 @@ public class TestResolution {
 
 
         Session completionSession = graknTestServer.sessionWithNewKeyspace();
-        initialiseKeyspace(completionSession, schemaPath, dataPath);
+        loadTestStub(completionSession, "transitivity");
 
         Session testSession = graknTestServer.sessionWithNewKeyspace();
-        initialiseKeyspace(testSession, schemaPath, dataPath);
+        loadTestStub(testSession, "transitivity");
 
         // Undefine a rule in the keyspace under test such that the expected facts will not be inferred
         Transaction tx = testSession.transaction(Transaction.Type.WRITE);
@@ -136,8 +116,6 @@ public class TestResolution {
 
     @Test
     public void testResolutionThrowsForTransitivityWhenRuleTriggersTooOften() {
-        Path schemaPath = Paths.get("test", "behaviour", "resolution", "framework", "test", "cases", "transitivity", "schema.gql").toAbsolutePath();
-        Path dataPath = Paths.get("test", "behaviour", "resolution", "framework", "test", "cases", "transitivity", "data.gql").toAbsolutePath();
         GraqlGet inferenceQuery = Graql.parse("" +
                 "match $lh (location-hierarchy_superior: $continent, " +
                 "location-hierarchy_subordinate: $area) isa location-hierarchy; " +
@@ -146,10 +124,10 @@ public class TestResolution {
 
 
         Session completionSession = graknTestServer.sessionWithNewKeyspace();
-        initialiseKeyspace(completionSession, schemaPath, dataPath);
+        loadTestStub(completionSession, "transitivity");
 
         Session testSession = graknTestServer.sessionWithNewKeyspace();
-        initialiseKeyspace(testSession, schemaPath, dataPath);
+        loadTestStub(testSession, "transitivity");
 
         // Undefine a rule in the keyspace under test such that the expected facts will not be inferred
         Transaction tx = testSession.transaction(Transaction.Type.WRITE);
@@ -185,8 +163,6 @@ public class TestResolution {
 
     @Test
     public void testResolutionThrowsForTransitivityWhenRuleTriggersTooOftenAndResultCountIsIncorrect() {
-        Path schemaPath = Paths.get("test", "behaviour", "resolution", "framework", "test", "cases", "transitivity", "schema.gql").toAbsolutePath();
-        Path dataPath = Paths.get("test", "behaviour", "resolution", "framework", "test", "cases", "transitivity", "data.gql").toAbsolutePath();
         GraqlGet inferenceQuery = Graql.parse("" +
                 "match $lh ($continent, " +
                 "$area) isa location-hierarchy; " +
@@ -195,10 +171,10 @@ public class TestResolution {
 
 
         Session completionSession = graknTestServer.sessionWithNewKeyspace();
-        initialiseKeyspace(completionSession, schemaPath, dataPath);
+        loadTestStub(completionSession, "transitivity");
 
         Session testSession = graknTestServer.sessionWithNewKeyspace();
-        initialiseKeyspace(testSession, schemaPath, dataPath);
+        loadTestStub(testSession, "transitivity");
 
         // Undefine a rule in the keyspace under test such that the expected facts will not be inferred
         Transaction tx = testSession.transaction(Transaction.Type.WRITE);
@@ -241,42 +217,30 @@ public class TestResolution {
 
     @Test
     public void testResolutionPassesForTwoRecursiveRules() {
-        Path schemaPath = Paths.get("test", "behaviour", "resolution", "framework", "test", "cases", "complex_recursion", "schema.gql").toAbsolutePath();
-        Path dataPath = Paths.get("test", "behaviour", "resolution", "framework", "test", "cases", "complex_recursion", "data.gql").toAbsolutePath();
         GraqlGet inferenceQuery = Graql.parse("match $transaction has currency $currency; get;").asGet();
-
-        resolutionHappyPathTest(schemaPath, dataPath, inferenceQuery);
+        resolutionHappyPathTest("complex_recursion", inferenceQuery);
     }
 
     @Test
     public void testTransitivityHappyPath() {
-        Path schemaPath = Paths.get("test", "behaviour", "resolution", "framework", "test", "cases", "transitivity", "schema.gql").toAbsolutePath();
-        Path dataPath = Paths.get("test", "behaviour", "resolution", "framework", "test", "cases", "transitivity", "data.gql").toAbsolutePath();
         GraqlGet inferenceQuery = Graql.parse("" +
                 "match $lh (location-hierarchy_superior: $continent, " +
                 "location-hierarchy_subordinate: $area) isa location-hierarchy; " +
                 "$continent isa continent; " +
                 "$area isa area; get;").asGet();
-
-        resolutionHappyPathTest(schemaPath, dataPath, inferenceQuery);
+        resolutionHappyPathTest("transitivity", inferenceQuery);
     }
 
     @Test
     public void testComplexRecursionHappyPath() {
-        Path schemaPath = Paths.get("test", "behaviour", "resolution", "framework", "test", "cases", "complex_recursion", "schema.gql").toAbsolutePath();
-        Path dataPath = Paths.get("test", "behaviour", "resolution", "framework", "test", "cases", "complex_recursion", "data.gql").toAbsolutePath();
         GraqlGet inferenceQuery = Graql.parse("match $transaction has currency $currency; get;").asGet();
-
-        resolutionHappyPathTest(schemaPath, dataPath, inferenceQuery);
+        resolutionHappyPathTest("complex_recursion", inferenceQuery);
     }
 
     @Test
     public void testbasic_recursionHappyPath() {
-        Path schemaPath = Paths.get("test", "behaviour", "resolution", "framework", "test", "cases", "basic_recursion", "schema.gql").toAbsolutePath();
-        Path dataPath = Paths.get("test", "behaviour", "resolution", "framework", "test", "cases", "basic_recursion", "data.gql").toAbsolutePath();
         GraqlGet inferenceQuery = Graql.parse("match $com isa company, has is-liable $lia; get;").asGet();
-
-        resolutionHappyPathTest(schemaPath, dataPath, inferenceQuery);
+        resolutionHappyPathTest("basic_recursion", inferenceQuery);
     }
 }
 

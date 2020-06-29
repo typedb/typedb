@@ -20,17 +20,22 @@ load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 java_library(
     name = "load-test",
     srcs = ["LoadTest.java"],
+    visibility = ["//visibility:public"],
     deps = [
-        "//test/behaviour/resolution/framework/common:common",
-        "//kb/server:server",
+        "//test/common:graql-test-util",
+        "//kb/server",
     ],
-    visibility = ["//visibility:public"]
 )
 
 java_test(
     name = "query-builder-it",
+    size = "medium",
     srcs = [
         "QueryBuilderIT.java",
+    ],
+    classpath_resources = ["//test/resources:logback-test"],
+    resources = [
+        "//test/behaviour/resolution/framework/test/stubs/complex_recursion:complex_recursion",
     ],
     test_class = "grakn.core.test.behaviour.resolution.framework.test.QueryBuilderIT",
     deps = [
@@ -38,68 +43,66 @@ java_test(
         "//test/behaviour/resolution/framework/resolve",
         "//test/behaviour/resolution/framework/test:load-test",
         "//test/rule:grakn-test-server",
-        "//concept/answer:answer",
-        "//kb/server:server",
+        "//concept/answer",
+        "//kb/server",
 
         # External dependencies from @graknlabs
         "@graknlabs_graql//java:graql",
     ],
-    data = [
-        "//test/behaviour/resolution/framework/test/cases/complex_recursion:schema.gql",
-        "//test/behaviour/resolution/framework/test/cases/complex_recursion:data.gql",
-    ],
-    classpath_resources = ["//test/resources:logback-test"],
-    size="medium"
 )
 
 java_test(
     name = "test-query-builder",
+    size = "small",
     srcs = [
         "TestQueryBuilder.java",
     ],
+    classpath_resources = ["//test/resources:logback-test"],
     test_class = "grakn.core.test.behaviour.resolution.framework.test.TestQueryBuilder",
     deps = [
         "//test/behaviour/resolution/framework/common",
         "//test/behaviour/resolution/framework/resolve",
         "//dependencies/maven/artifacts/com/google/guava",
-        "//kb/server:server",
-        "//kb/concept/api:api",
 
         # External dependencies from @graknlabs
         "@graknlabs_graql//java:graql",
     ],
-    classpath_resources = ["//test/resources:logback-test"],
-    size="small"
 )
 
 java_test(
     name = "test-schema-manager",
+    size = "medium",
     srcs = [
         "TestSchemaManager.java",
     ],
+    classpath_resources = ["//test/resources:logback-test"],
+    resources = [
+        "//test/behaviour/resolution/framework/test/stubs/complex_recursion:complex_recursion",
+    ],
     test_class = "grakn.core.test.behaviour.resolution.framework.test.TestSchemaManager",
     deps = [
-        "//test/behaviour/resolution/framework/common",
+        "//test/behaviour/resolution/framework/test:load-test",
         "//test/behaviour/resolution/framework/complete",
         "//test/rule:grakn-test-server",
-        "//kb/server:server",
-        "//kb/concept/api:api",
+        "//kb/server",
+        "//kb/concept/api",
+
 
         # External dependencies from @graknlabs
         "@graknlabs_graql//java:graql",
     ],
-    data = [
-            "//test/behaviour/resolution/framework/test/cases/complex_recursion:schema.gql",
-            "//test/behaviour/resolution/framework/test/cases/complex_recursion:data.gql",
-        ],
-    classpath_resources = ["//test/resources:logback-test"],
-    size="medium"
 )
 
 java_test(
     name = "test-completer",
+    size = "medium",
     srcs = [
         "TestCompleter.java",
+    ],
+    classpath_resources = ["//test/resources:logback-test"],
+    resources = [
+        "//test/behaviour/resolution/framework/test/stubs/basic_recursion:basic_recursion",
+        "//test/behaviour/resolution/framework/test/stubs/transitivity:transitivity",
     ],
     test_class = "grakn.core.test.behaviour.resolution.framework.test.TestCompleter",
     deps = [
@@ -107,47 +110,36 @@ java_test(
         "//test/behaviour/resolution/framework/complete",
         "//test/rule:grakn-test-server",
         "//test/behaviour/resolution/framework/test:load-test",
-        "//concept/answer:answer",
-        "//kb/server:server",
+        "//concept/answer",
+        "//kb/server",
 
         # External dependencies from @graknlabs
         "@graknlabs_graql//java:graql",
     ],
-    data = [
-        "//test/behaviour/resolution/framework/test/cases/transitivity:schema.gql",
-        "//test/behaviour/resolution/framework/test/cases/transitivity:data.gql",
-        "//test/behaviour/resolution/framework/test/cases/basic_recursion:schema.gql",
-        "//test/behaviour/resolution/framework/test/cases/basic_recursion:data.gql",
-    ],
-    classpath_resources = ["//test/resources:logback-test"],
-    size="medium"
 )
 
 java_test(
     name = "test-resolution",
+    size = "large",
     srcs = [
         "TestResolution.java",
     ],
+    classpath_resources = ["//test/resources:logback-test"],
+    resources = [
+        "//test/behaviour/resolution/framework/test/stubs/basic_recursion:basic_recursion",
+        "//test/behaviour/resolution/framework/test/stubs/complex_recursion:complex_recursion",
+        "//test/behaviour/resolution/framework/test/stubs/transitivity:transitivity",
+    ],
     test_class = "grakn.core.test.behaviour.resolution.framework.test.TestResolution",
     deps = [
-        "//test/behaviour/resolution/framework/common:common",
+        "//test/behaviour/resolution/framework/test:load-test",
         "//test/behaviour/resolution/framework:resolution-lib",
         "//test/rule:grakn-test-server",
-        "//kb/server:server",
+        "//kb/server",
 
         # External dependencies from @graknlabs
         "@graknlabs_graql//java:graql",
     ],
-    data = [
-        "//test/behaviour/resolution/framework/test/cases/transitivity:schema.gql",
-        "//test/behaviour/resolution/framework/test/cases/transitivity:data.gql",
-        "//test/behaviour/resolution/framework/test/cases/complex_recursion:schema.gql",
-        "//test/behaviour/resolution/framework/test/cases/complex_recursion:data.gql",
-        "//test/behaviour/resolution/framework/test/cases/basic_recursion:schema.gql",
-        "//test/behaviour/resolution/framework/test/cases/basic_recursion:data.gql",
-    ],
-    classpath_resources = ["//test/resources:logback-test"],
-    size="large"
 )
 
 checkstyle_test(
