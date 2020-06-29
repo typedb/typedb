@@ -48,6 +48,7 @@ java_test(
         "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//graql/reasoner",
+        "//kb/concept/api",
         "//kb/graql/exception",
         "//kb/graql/reasoner",
         "//kb/server",
