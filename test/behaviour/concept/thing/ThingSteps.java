@@ -26,6 +26,7 @@ import hypergraph.test.behaviour.config.Parameters.ScopedLabel;
 import io.cucumber.java.After;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
+import org.junit.Assert;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -76,6 +77,16 @@ public class ThingSteps {
     @When("entity/attribute/relation {var} set has: {var}")
     public void thing_set_has(String var1, String var2) {
         get(var1).has(get(var2).asAttribute());
+    }
+
+    @Then("entity/attribute/relation {var} fails at setting has: {var}")
+    public void thing_fails_at_setting_has(String var1, String var2) {
+        try {
+            get(var1).has(get(var2).asAttribute());
+            Assert.fail();
+        } catch (Exception ignore) {
+            assertTrue(true);
+        }
     }
 
     @When("entity/attribute/relation {var} remove has: {var}")

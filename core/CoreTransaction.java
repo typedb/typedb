@@ -149,6 +149,7 @@ class CoreTransaction implements Hypergraph.Transaction {
 
                 rocksTransaction.commit();
             } catch (RocksDBException e) {
+                rollback();
                 throw new HypergraphException(e);
             } finally {
                 closeResources();
