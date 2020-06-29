@@ -21,7 +21,6 @@ package grakn.core.graql.executor.property;
 import com.google.common.collect.ImmutableSet;
 import grakn.core.graql.planning.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.kb.concept.api.Concept;
-import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.concept.api.Type;
@@ -32,6 +31,7 @@ import grakn.core.kb.graql.planning.gremlin.EquivalentFragmentSet;
 import graql.lang.Graql;
 import graql.lang.property.IsaProperty;
 import graql.lang.property.VarProperty;
+import graql.lang.statement.Label;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 import org.slf4j.Logger;
@@ -159,7 +159,7 @@ public class IsaExecutor implements PropertyExecutor.Insertable, PropertyExecuto
             Label expectedType;
             Statement expectedTypeStatement = property.type();
             if (expectedTypeStatement.getType().isPresent()) {
-                expectedType = Label.of(expectedTypeStatement.getType().get());
+                expectedType = expectedTypeStatement.getType().get();
             } else {
                 Variable typeVar = expectedTypeStatement.var();
                 expectedType = executor.getConcept(typeVar).asType().label();

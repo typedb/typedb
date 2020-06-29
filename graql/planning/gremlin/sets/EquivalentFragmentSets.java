@@ -22,10 +22,10 @@ import com.google.common.collect.ImmutableSet;
 import grakn.core.graql.planning.gremlin.value.ValueOperation;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.ConceptId;
-import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.planning.gremlin.EquivalentFragmentSet;
 import graql.lang.property.VarProperty;
+import graql.lang.statement.Label;
 import graql.lang.statement.Variable;
 
 import javax.annotation.Nullable;
@@ -40,12 +40,10 @@ public class EquivalentFragmentSets {
 
     private static final ImmutableCollection<FragmentSetOptimisation> OPTIMISATIONS = ImmutableSet.of(
             RolePlayerFragmentSet.ROLE_OPTIMISATION,
-//            RolePlayerFragmentSet.IMPLICIT_RELATION_OPTIMISATION,
             AttributeIndexFragmentSet.ATTRIBUTE_INDEX_OPTIMISATION,
             RolePlayerFragmentSet.RELATION_TYPE_OPTIMISATION,
             LabelFragmentSet.REDUNDANT_LABEL_ELIMINATION_OPTIMISATION,
             SubFragmentSet.SUB_TRAVERSAL_ELIMINATION_OPTIMISATION
-//            IsaFragmentSet.SKIP_EDGE_INSTANCE_CHECK_OPTIMISATION
     );
 
     /**

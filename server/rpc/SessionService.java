@@ -28,7 +28,6 @@ import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.EntityType;
-import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Rule;
@@ -42,6 +41,7 @@ import grakn.protocol.session.SessionServiceGrpc;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlQuery;
+import graql.lang.statement.Label;
 import io.grpc.Status;
 import io.grpc.StatusException;
 import io.grpc.stub.StreamObserver;
@@ -404,6 +404,8 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
         }
 
         private void getSchemaConcept(Transaction.GetSchemaConcept.Req request) {
+            // TODO this is a bit of a hack - the client should be sending `Name, Scope` separately so we can
+            // TODO correct construct it locally, instead of passing the scoped name into the `Label.of()`
             Concept concept = tx().getSchemaConcept(Label.of(request.getLabel()));
             Transaction.Res response = ResponseBuilder.Transaction.getSchemaConcept(concept);
             onNextResponse(response);

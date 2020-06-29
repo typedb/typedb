@@ -29,6 +29,7 @@ import javax.annotation.CheckReturnValue;
  * or an Thing (Entity, Relation , Attribute).
  */
 public interface Concept {
+
     //------------------------------------- Accessors ----------------------------------
 
     /**

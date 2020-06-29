@@ -26,7 +26,6 @@ import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.Entity;
 import grakn.core.kb.concept.api.EntityType;
-import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Relation;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
@@ -41,6 +40,7 @@ import grakn.core.kb.graql.reasoner.cache.RuleCache;
 import grakn.core.kb.keyspace.AttributeManager;
 import grakn.core.kb.keyspace.StatisticsDelta;
 import grakn.core.kb.server.cache.TransactionCache;
+import graql.lang.statement.Label;
 
 import java.util.List;
 import java.util.function.Supplier;

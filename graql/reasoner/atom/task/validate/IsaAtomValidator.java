@@ -23,9 +23,9 @@ import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.binary.AttributeAtom;
 import grakn.core.graql.reasoner.atom.binary.IsaAtom;
 import grakn.core.kb.concept.api.AttributeType;
-import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.SchemaConcept;
+import graql.lang.statement.Label;
 import graql.lang.statement.Variable;
 
 import java.util.HashSet;

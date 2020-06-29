@@ -24,7 +24,6 @@ import grakn.core.common.exception.ErrorMessage;
 import grakn.core.graql.reasoner.ReasoningContext;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.rule.InferenceRule;
-import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
@@ -34,6 +33,7 @@ import graql.lang.property.PlaysProperty;
 import graql.lang.property.RelatesProperty;
 import graql.lang.property.SubProperty;
 import graql.lang.property.VarProperty;
+import graql.lang.statement.Label;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 import java.util.Collection;
@@ -54,7 +54,7 @@ import static graql.lang.Graql.var;
 public class OntologicalAtom extends TypeAtom {
 
     public enum OntologicalAtomType{
-        HasAtom(HasAttributeTypeProperty.class, (v, label) -> var(v.first()).has(type(label.getValue()))),
+        HasAtom(HasAttributeTypeProperty.class, (v, label) -> var(v.first()).has(type(label))),
         PlaysAtom(PlaysProperty.class, (v, label) -> var(v.first()).plays(var(v.second()))),
         SubAtom(SubProperty.class, (v, label) -> var(v.first()).sub(var(v.second()))),
         SubDirectAtom(SubProperty.class, (v, label) -> var(v.first()).subX(var(v.second()))),

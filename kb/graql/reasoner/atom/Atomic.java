@@ -18,11 +18,11 @@
 
 package grakn.core.kb.graql.reasoner.atom;
 
-import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import graql.lang.pattern.Pattern;
+import graql.lang.statement.Label;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 import java.util.Set;

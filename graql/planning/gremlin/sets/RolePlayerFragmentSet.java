@@ -22,12 +22,12 @@ import com.google.common.collect.ImmutableSet;
 import grakn.core.core.Schema;
 import grakn.core.graql.planning.gremlin.fragment.Fragments;
 import grakn.core.kb.concept.api.Concept;
-import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.graql.planning.gremlin.Fragment;
 import graql.lang.property.VarProperty;
+import graql.lang.statement.Label;
 import graql.lang.statement.Variable;
 
 import javax.annotation.Nullable;
@@ -170,7 +170,7 @@ public class RolePlayerFragmentSet extends EquivalentFragmentSetImpl {
             if (relationLabel == null) continue;
 
             Stream<SchemaConcept> concepts =
-                    relationLabel.labels().stream().map(conceptManager::<SchemaConcept>getSchemaConcept);
+                    relationLabel.labels().stream().map(conceptManager::getSchemaConcept);
 
             if (concepts.allMatch(schemaConcept -> schemaConcept != null && schemaConcept.isRelationType())) {
                 fragmentSets.remove(rolePlayer);

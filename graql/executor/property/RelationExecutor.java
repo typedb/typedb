@@ -21,7 +21,6 @@ package grakn.core.graql.executor.property;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import grakn.core.graql.planning.gremlin.sets.EquivalentFragmentSets;
-import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Relation;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Thing;
@@ -240,7 +239,7 @@ public class RelationExecutor implements PropertyExecutor.Insertable, PropertyEx
                 Statement roleStatement = relationPlayer.getRole().get();
                 Variable roleVar = roleStatement.var();
                 if (roleStatement.getType().isPresent()) {
-                    executor.getBuilder(roleVar).label(Label.of(roleStatement.getType().get()));
+                    executor.getBuilder(roleVar).label(roleStatement.getType().get());
                 }
                 return executor.getConcept(roleVar).asRole();
             }

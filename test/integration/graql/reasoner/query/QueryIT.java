@@ -86,7 +86,7 @@ public class QueryIT {
         try (Session session = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig)) {
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
 
-            Role someRole = tx.putRole("someRole");
+            Role someRole = tx.putRole("someRole", "someRelation");
             EntityType genericEntity = tx.putEntityType("genericEntity")
                     .plays(someRole);
 

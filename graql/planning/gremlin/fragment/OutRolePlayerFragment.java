@@ -18,9 +18,9 @@
 package grakn.core.graql.planning.gremlin.fragment;
 
 import com.google.common.collect.ImmutableSet;
-import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.manager.ConceptManager;
 import graql.lang.property.VarProperty;
+import graql.lang.statement.Label;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;

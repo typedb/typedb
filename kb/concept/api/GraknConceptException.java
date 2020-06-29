@@ -20,6 +20,7 @@ package grakn.core.kb.concept.api;
 
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
+import graql.lang.statement.Label;
 
 import java.util.stream.Collectors;
 
@@ -59,6 +60,10 @@ public class GraknConceptException extends GraknException {
      */
     public static GraknConceptException invalidCasting(Object concept, Class type) {
         return GraknConceptException.create(ErrorMessage.INVALID_OBJECT_TYPE.getMessage(concept, type));
+    }
+
+    public static GraknConceptException nullRoleScope(Label label) {
+        return GraknConceptException.create(ErrorMessage.NULL_ROLE_SCOPE.getMessage(label.name()));
     }
 
     public static GraknConceptException variableDoesNotExist(String var) {

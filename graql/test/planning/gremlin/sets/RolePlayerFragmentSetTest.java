@@ -19,11 +19,11 @@ package grakn.core.graql.planning.gremlin.sets;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
-import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.planning.gremlin.EquivalentFragmentSet;
+import graql.lang.statement.Label;
 import graql.lang.statement.Variable;
 import org.junit.Before;
 import org.junit.Test;
@@ -53,8 +53,8 @@ public class RolePlayerFragmentSetTest {
 
     @Test
     public void whenApplyingRoleOptimisation_ExpandRoleToAllSubs() {
-        Label author = Label.of("author");
-        Label director = Label.of("director");
+        Label author = Label.of("author", "authorship");
+        Label director = Label.of("director", "directing");
 
         Role authorConcept = mock(Role.class);
         Role directorConcept = mock(Role.class);
@@ -94,7 +94,7 @@ public class RolePlayerFragmentSetTest {
 
     @Test
     public void whenRoleIsNotInGraph_DoNotApplyRoleOptimisation() {
-        Label magician = Label.of("magician");
+        Label magician = Label.of("magician", "magic-show");
 
         Collection<EquivalentFragmentSet> fragmentSets = Sets.newHashSet(
                 EquivalentFragmentSets.rolePlayer(null, a, b, c, d),
@@ -129,7 +129,7 @@ public class RolePlayerFragmentSetTest {
 
     @Test
     public void whenApplyingRoleOptimisationToMetaRole_DoNotExpandRoleToAllSubs() {
-        Label role = Label.of("role");
+        Label role = Label.of("role", "relation");
         SchemaConcept metaRole = mock(SchemaConcept.class);
         when(metaRole.label()).thenReturn(role);
         when(conceptManager.getSchemaConcept(role)).thenReturn(metaRole);
@@ -154,7 +154,7 @@ public class RolePlayerFragmentSetTest {
 
     @Test
     public void whenRelationTypeIsNotInGraph_DoNotApplyRelationTypeOptimisation() {
-        Label magician = Label.of("magician");
+        Label magician = Label.of("magician"); // relation?
 
         Collection<EquivalentFragmentSet> fragmentSets = Sets.newHashSet(
                 EquivalentFragmentSets.rolePlayer(null, a, b, c, null),

@@ -29,7 +29,6 @@ import grakn.core.graql.planning.gremlin.fragment.InSubFragment;
 import grakn.core.graql.planning.gremlin.fragment.LabelFragment;
 import grakn.core.graql.planning.gremlin.fragment.OutRolePlayerFragment;
 import grakn.core.graql.planning.gremlin.sets.EquivalentFragmentSets;
-import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.SchemaConcept;
@@ -39,6 +38,7 @@ import grakn.core.kb.graql.planning.gremlin.EquivalentFragmentSet;
 import grakn.core.kb.graql.planning.gremlin.Fragment;
 import graql.lang.property.IsaProperty;
 import graql.lang.property.TypeProperty;
+import graql.lang.statement.Label;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 
@@ -91,7 +91,7 @@ public class RelationTypeInference {
                 if (!inferredLabels.containsKey(label)) {
                     Statement labelVar = var();
                     inferredLabels.put(label, labelVar);
-                    Fragment labelFragment = Fragments.label(new TypeProperty(label.getValue()), labelVar.var(), ImmutableSet.of(label));
+                    Fragment labelFragment = Fragments.label(new TypeProperty(label), labelVar.var(), ImmutableSet.of(label));
                     inferredFragments.add(labelFragment);
                 }
 

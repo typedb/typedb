@@ -21,11 +21,11 @@ package grakn.core.kb.graql.executor;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
-import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.graql.exception.GraqlSemanticException;
 import graql.lang.pattern.Pattern;
+import graql.lang.statement.Label;
 
 public interface ConceptBuilder {
 

@@ -19,11 +19,9 @@
 package grakn.core.graql.reasoner.cache;
 
 import com.google.common.annotations.VisibleForTesting;
-import grakn.core.core.Schema;
 import grakn.core.graql.reasoner.query.ReasonerQueryFactory;
 import grakn.core.graql.reasoner.rule.InferenceRule;
 import grakn.core.kb.concept.api.Concept;
-import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Type;
@@ -89,7 +87,7 @@ public class RuleCacheImpl implements RuleCache {
         //NB: this will cache also non-committed rules
         thenPattern.statements().stream()
                 .flatMap(v -> v.getTypes().stream())
-                .map(type -> conceptManager.<SchemaConcept>getSchemaConcept(Label.of(type)))
+                .map(type -> conceptManager.<SchemaConcept>getSchemaConcept(type))
                 .filter(Objects::nonNull)
                 .filter(Concept::isType)
                 .map(Concept::asType)

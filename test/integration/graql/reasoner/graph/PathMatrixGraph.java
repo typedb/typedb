@@ -18,11 +18,11 @@
 package grakn.core.graql.reasoner.graph;
 
 import grakn.core.kb.concept.api.EntityType;
-import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
+import graql.lang.statement.Label;
 
 import static grakn.core.util.GraqlTestUtil.getInstance;
 import static grakn.core.util.GraqlTestUtil.loadFromFile;
@@ -53,8 +53,8 @@ public class PathMatrixGraph {
     protected void buildExtensionalDB(int n, int m, Transaction tx) {
         EntityType vertex = tx.getEntityType("vertex");
         EntityType startVertex = tx.getEntityType("start-vertex");
-        Role arcFrom = tx.getRole("arc-from");
-        Role arcTo = tx.getRole("arc-to");
+        Role arcFrom = tx.getRole("arc-from", "arc");
+        Role arcTo = tx.getRole("arc-to", "arc");
 
         RelationType arc = tx.getRelationType("arc");
         putEntityWithResource(tx, "a0", startVertex, key);

@@ -20,7 +20,6 @@ package grakn.core.graql.executor.property;
 
 import com.google.common.collect.ImmutableSet;
 import grakn.core.graql.planning.gremlin.sets.EquivalentFragmentSets;
-import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.graql.executor.WriteExecutor;
 import grakn.core.kb.graql.executor.property.PropertyExecutor;
 import grakn.core.kb.graql.planning.gremlin.EquivalentFragmentSet;
@@ -42,7 +41,7 @@ public class TypeExecutor  implements PropertyExecutor.Referrable {
 
     @Override
     public Set<EquivalentFragmentSet> matchFragments() {
-        return ImmutableSet.of(EquivalentFragmentSets.label(property, var, ImmutableSet.of(Label.of(property.name()))));
+        return ImmutableSet.of(EquivalentFragmentSets.label(property, var, ImmutableSet.of(property.label())));
     }
 
     @Override
@@ -64,7 +63,7 @@ public class TypeExecutor  implements PropertyExecutor.Referrable {
 
         @Override
         public void execute(WriteExecutor executor) {
-            executor.getBuilder(var).label(Label.of(property.name()));
+            executor.getBuilder(var).label(property.label());
         }
     }
 }

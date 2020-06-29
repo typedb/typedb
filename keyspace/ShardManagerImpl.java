@@ -20,8 +20,8 @@ package grakn.core.keyspace;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.keyspace.ShardManager;
+import graql.lang.statement.Label;
 
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;

@@ -21,12 +21,12 @@ package grakn.core.graql.planning;
 import grakn.core.graql.executor.property.PropertyExecutorFactoryImpl;
 import grakn.core.graql.planning.gremlin.fragment.Fragments;
 import grakn.core.kb.concept.api.AttributeType;
-import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.planning.gremlin.Fragment;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
+import graql.lang.statement.Label;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 import org.hamcrest.Matcher;
@@ -52,8 +52,8 @@ import static org.mockito.Mockito.when;
 public class ConjunctionQueryTest {
     private Label resourceTypeWithoutSubTypesLabel = Label.of("name");
     private Label resourceTypeWithSubTypesLabel = Label.of("resource");
-    private Statement resourceTypeWithoutSubTypes = Graql.type(resourceTypeWithoutSubTypesLabel.getValue());
-    private Statement resourceTypeWithSubTypes = Graql.type(resourceTypeWithSubTypesLabel.getValue());
+    private Statement resourceTypeWithoutSubTypes = Graql.type(resourceTypeWithoutSubTypesLabel);
+    private Statement resourceTypeWithSubTypes = Graql.type(resourceTypeWithSubTypesLabel);
     private String literalValue = "Bob";
     private ConceptManager conceptManager;
     private Statement x = Graql.var("x");
@@ -75,9 +75,9 @@ public class ConjunctionQueryTest {
         when(resourceTypeWithSubTypesMock.label()).thenReturn(resourceTypeWithSubTypesLabel);
         when(resourceTypeWithSubTypesMock.valueType()).thenReturn(AttributeType.ValueType.STRING);
 
-        when(conceptManager.getAttributeType(resourceTypeWithoutSubTypesLabel.getValue())).thenReturn(resourceTypeWithoutSubTypesMock);
+        when(conceptManager.getAttributeType(resourceTypeWithoutSubTypesLabel)).thenReturn(resourceTypeWithoutSubTypesMock);
         when(conceptManager.getSchemaConcept(resourceTypeWithoutSubTypesLabel)).thenReturn(resourceTypeWithoutSubTypesMock);
-        when(conceptManager.getAttributeType(resourceTypeWithSubTypesLabel.getValue())).thenReturn(resourceTypeWithSubTypesMock);
+        when(conceptManager.getAttributeType(resourceTypeWithSubTypesLabel)).thenReturn(resourceTypeWithSubTypesMock);
         when(conceptManager.getSchemaConcept(resourceTypeWithSubTypesLabel)).thenReturn(resourceTypeWithSubTypesMock);
     }
 
@@ -98,13 +98,13 @@ public class ConjunctionQueryTest {
 
     @Test
     public void whenVarRefersToATypeWithAnExplicitVarName_UseResourceIndex() {
-        assertThat(x.isa(y.type(resourceTypeWithoutSubTypesLabel.getValue())).val(literalValue), usesResourceIndex());
+        assertThat(x.isa(y.type(resourceTypeWithoutSubTypesLabel)).val(literalValue), usesResourceIndex());
     }
 
     @Test
     public void whenQueryUsesHasSyntax_UseResourceIndex() {
         assertThat(
-                x.has(resourceTypeWithoutSubTypesLabel.getValue(), y.val(literalValue)),
+                x.has(resourceTypeWithoutSubTypesLabel.name(), y.val(literalValue)),
                 usesResourceIndex(y.var(), literalValue)
         );
     }

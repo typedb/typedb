@@ -22,8 +22,6 @@ import grakn.core.core.AttributeSerialiser;
 import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
-import grakn.core.kb.concept.api.Label;
-import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.concept.manager.ConceptNotificationChannel;

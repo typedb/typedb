@@ -23,7 +23,6 @@ import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.Concept;
-import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Relation;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Thing;

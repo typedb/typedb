@@ -20,11 +20,11 @@ package grakn.core.graql.planning.gremlin.sets;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import grakn.core.graql.planning.gremlin.fragment.Fragments;
-import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.planning.gremlin.Fragment;
 import graql.lang.property.VarProperty;
+import graql.lang.statement.Label;
 import graql.lang.statement.Variable;
 
 import javax.annotation.Nullable;

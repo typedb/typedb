@@ -21,10 +21,10 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import grakn.core.graql.planning.gremlin.fragment.Fragments;
 import grakn.core.kb.concept.api.AttributeType;
-import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.planning.gremlin.EquivalentFragmentSet;
 import grakn.core.kb.graql.planning.gremlin.Fragment;
+import graql.lang.statement.Label;
 import graql.lang.statement.Variable;
 
 import java.util.Collection;
@@ -111,7 +111,7 @@ public class AttributeIndexFragmentSet extends EquivalentFragmentSetImpl {
 
         Object value = valueSet.operation().value();
 
-        AttributeType.ValueType<?> valueType = conceptManager.getAttributeType(label.getValue()).valueType();
+        AttributeType.ValueType<?> valueType = conceptManager.getAttributeType(label).valueType();
         if (Number.class.isAssignableFrom(valueType.valueClass())) {
             if (valueType.valueClass() == Long.class && value instanceof Double && ((Double) value % 1 == 0)) {
                 value = ((Double) value).longValue();

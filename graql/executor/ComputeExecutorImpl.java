@@ -51,7 +51,6 @@ import grakn.core.graql.analytics.Utility;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
-import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.LabelId;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Thing;
@@ -66,6 +65,7 @@ import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlCompute;
 import graql.lang.query.builder.Computable;
+import graql.lang.statement.Label;
 import org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
@@ -81,6 +81,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Deque;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -442,8 +443,7 @@ public class ComputeExecutorImpl implements ComputeExecutor {
             targetTypeLabels = scopeTypeLabels(query);
         } else {
             targetTypeLabels = query.of().stream()
-                    .flatMap(t -> {
-                        Label typeLabel = Label.of(t);
+                    .flatMap(typeLabel -> {
                         Type type = conceptManager.getSchemaConcept(typeLabel);
                         if (type == null) throw GraqlSemanticException.labelNotFound(typeLabel);
                         return type.subs();
@@ -488,8 +488,7 @@ public class ComputeExecutorImpl implements ComputeExecutor {
             targetTypeLabels = scopeTypeLabels(query);
         } else {
             targetTypeLabels = query.of().stream()
-                    .flatMap(t -> {
-                        Label typeLabel = Label.of(t);
+                    .flatMap(typeLabel -> {
                         Type type = conceptManager.getSchemaConcept(typeLabel);
                         if (type == null) throw GraqlSemanticException.labelNotFound(typeLabel);
                         if (type.isRelationType()) throw GraqlSemanticException.kCoreOnRelationType(typeLabel);
@@ -708,8 +707,7 @@ public class ComputeExecutorImpl implements ComputeExecutor {
         }
 
         return query.of().stream()
-                .map(t -> {
-                    Label label = Label.of(t);
+                .map(label -> {
                     Type type = conceptManager.getSchemaConcept(label);
                     if (type == null) throw GraqlSemanticException.labelNotFound(label);
                     if (!type.isAttributeType()) throw GraqlSemanticException.mustBeAttributeType(type.label());
@@ -739,8 +737,8 @@ public class ComputeExecutorImpl implements ComputeExecutor {
         Set<Label> targetLabels = targetTypeLabels(query);
         ImmutableSet<Label> scopeLabels = scopeTypeLabels(query);
         BiFunction<Label, Label, Pattern> patternFunction = (attributeType, type) -> Graql.and(
-                Graql.var("x").has(attributeType.getValue(), Graql.var()),
-                Graql.var("x").isa(Graql.type(type.getValue()))
+                Graql.var("x").has(attributeType.name(), Graql.var()),
+                Graql.var("x").isa(Graql.type(type.name()))
         );
         return targetLabels.stream()
                 .flatMap(attributeType ->
@@ -760,7 +758,7 @@ public class ComputeExecutorImpl implements ComputeExecutor {
     private Set<Label> extendedScopeTypeLabels(GraqlCompute.Statistics.Value query) {
         Set<Label> extendedTypeLabels = targetTypes(query).stream().map(SchemaConcept::label).collect(toSet());
         extendedTypeLabels.addAll(scopeTypeLabels(query));
-        extendedTypeLabels.addAll(query.of().stream().map(Label::of).collect(toSet()));
+        extendedTypeLabels.addAll(new HashSet<>(query.of()));
         return extendedTypeLabels;
     }
 
@@ -786,8 +784,7 @@ public class ComputeExecutorImpl implements ComputeExecutor {
 
             return typeBuilder.build().stream();
         } else {
-            Stream<Type> subTypes = query.in().stream().map(t -> {
-                Label label = Label.of(t);
+            Stream<Type> subTypes = query.in().stream().map(label -> {
                 Type type = conceptManager.getType(label);
                 if (type == null) throw GraqlSemanticException.labelNotFound(label);
                 return type;
@@ -816,7 +813,7 @@ public class ComputeExecutorImpl implements ComputeExecutor {
         if (labels.isEmpty()) return false;
 
         return labels.stream()
-                .map(type -> Graql.var("x").isa(Graql.type(type.getValue())))
+                .map(type -> Graql.var("x").isa(Graql.type(type.name())))
                 .map(Pattern.class::cast)
                 .map(pattern -> Graql.and(Collections.singleton(pattern)))
                 .flatMap(pattern -> traversalExecutor.traverse(pattern))
@@ -853,8 +850,7 @@ public class ComputeExecutorImpl implements ComputeExecutor {
      */
     private boolean scopeIncludesAttributeTypes(GraqlCompute query) {
         if (query.in().isEmpty()) return false;
-        return query.in().stream().anyMatch(t -> {
-            Label label = Label.of(t);
+        return query.in().stream().anyMatch(label -> {
             SchemaConcept type = conceptManager.getSchemaConcept(label);
             return (type != null && (type.isAttributeType()));
         });

@@ -34,7 +34,6 @@ import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.state.AnswerPropagatorState;
 import grakn.core.graql.reasoner.state.CompositeState;
 import grakn.core.graql.reasoner.state.ResolutionState;
-import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.graql.exception.GraqlSemanticException;
@@ -47,6 +46,7 @@ import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Negation;
 import graql.lang.pattern.Pattern;
+import graql.lang.statement.Label;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 

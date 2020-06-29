@@ -19,7 +19,6 @@ package grakn.core.util;
 
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.EntityType;
-import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
@@ -27,6 +26,7 @@ import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlInsert;
 import graql.lang.query.MatchClause;
+import graql.lang.statement.Label;
 import graql.lang.statement.Statement;
 import org.apache.commons.collections.CollectionUtils;
 
@@ -109,7 +109,7 @@ public class GraqlTestUtil {
 
     public static Thing putEntityWithResource(Transaction tx, String id, EntityType type, Label key) {
         Thing inst = type.create();
-        Attribute attributeInstance = tx.getAttributeType(key.getValue()).create(id);
+        Attribute attributeInstance = tx.getAttributeType(key.name()).create(id);
         inst.has(attributeInstance);
         return inst;
     }

@@ -46,7 +46,6 @@ import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.EntityType;
 import grakn.core.kb.concept.api.GraknConceptException;
-import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Rule;
@@ -77,6 +76,7 @@ import graql.lang.query.GraqlInsert;
 import graql.lang.query.GraqlQuery;
 import graql.lang.query.GraqlUndefine;
 import graql.lang.query.MatchClause;
+import graql.lang.statement.Label;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
@@ -828,28 +828,25 @@ public class TransactionImpl implements Transaction {
         return putRelationType(Label.of(label));
     }
 
-    /**
-     * @param label A unique label for the Role
-     * @return new or existing Role with the provided Id.
-     * @throws TransactionException       if the graph is closed
-     * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-Role.
-     */
-    @Override
-    public Role putRole(Label label) {
-        checkGraphIsOpen();
-        SchemaConceptImpl schemaConcept = conceptManager.getSchemaConcept(label);
-        if (schemaConcept == null) {
-            return conceptManager.createRole(label, getMetaRole());
-        }
-
-        ConceptUtils.validateBaseType(schemaConcept, Schema.BaseType.ROLE);
-
-        return (Role) schemaConcept;
-    }
+//    /**
+//     * @param label A unique label for the Role
+//     * @return new or existing Role with the provided Id.
+//     * @throws TransactionException       if the graph is closed
+//     * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-Role.
+//     */
+//    @Override
+//    public Role putRole(Label label) {
+//        checkGraphIsOpen();
+//        Role role = conceptManager.putRole(label.name(), label.scope(), getMetaRole());
+//
+//        ConceptUtils.validateBaseType(role, Schema.BaseType.ROLE);
+//
+//        return role;
+//    }
 
     @Override
-    public Role putRole(String label) {
-        return putRole(Label.of(label));
+    public Role putRole(String name, String scope) {
+        return putRole(Label.of(name, scope));
     }
 
 
@@ -1094,17 +1091,27 @@ public class TransactionImpl implements Transaction {
     @Override
     public <V> AttributeType<V> getAttributeType(String label) {
         checkGraphIsOpen();
-        return conceptManager.getAttributeType(label);
+        return conceptManager.getAttributeType(Label.of(label));
     }
 
     /**
-     * @param label A unique label which identifies the Role Type in the graph.
+     * @param name The name of the role non-unique
+     * @param scope the relation that scopes the role
      * @return The Role Type  with the provided label or null if no such Role Type exists.
      * @throws TransactionException if the graph is closed
      */
     @Override
-    public Role getRole(String label) {
+    public Role getRole(String name, String scope) {
         checkGraphIsOpen();
+        return conceptManager.getRole(Label.of(name, scope));
+    }
+
+    @Override
+    public Role getRole(Label label) {
+        checkGraphIsOpen();
+        if (label.scope() == null) {
+            throw GraknConceptException.nullRoleScope(label);
+        }
         return conceptManager.getRole(label);
     }
 
@@ -1230,7 +1237,7 @@ public class TransactionImpl implements Transaction {
             Vertex janusVertex = ConceptVertex.from(schemaConcept).vertex().element();
             janusVertex.property(Schema.VertexProperty.TYPE_SHARD_CHECKPOINT.name(), checkpoint);
         } else {
-            throw new RuntimeException("Label '" + label.getValue() + "' does not exist");
+            throw new RuntimeException("Label '" + label.scopedName() + "' does not exist");
         }
     }
 

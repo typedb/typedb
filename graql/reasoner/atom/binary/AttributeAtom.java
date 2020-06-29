@@ -42,7 +42,6 @@ import grakn.core.graql.reasoner.cache.SemanticDifference;
 import grakn.core.graql.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.kb.concept.api.AttributeType;
-import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.SchemaConcept;
@@ -56,6 +55,7 @@ import graql.lang.pattern.Pattern;
 import graql.lang.property.HasAttributeProperty;
 import graql.lang.property.ValueProperty;
 import graql.lang.property.VarProperty;
+import graql.lang.statement.Label;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 

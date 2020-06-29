@@ -19,11 +19,11 @@ package grakn.core.graql.reasoner.graph;
 
 import com.google.common.math.IntMath;
 import grakn.core.kb.concept.api.EntityType;
-import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
+import graql.lang.statement.Label;
 
 import static grakn.core.util.GraqlTestUtil.getInstance;
 import static grakn.core.util.GraqlTestUtil.loadFromFile;
@@ -58,10 +58,10 @@ public class PathTreeGraph{
     }
 
     protected void buildExtensionalDB(int n, int children, Transaction tx) {
-        buildTree("arc-from", "arc-to", n , children, tx);
+        buildTree(Label.of("arc-from", "arc"), Label.of( "arc-to", "arc"), n , children, tx);
     }
 
-    void buildTree(String fromRoleValue, String toRoleValue, int n, int children, Transaction tx) {
+    void buildTree(Label fromRoleValue, Label toRoleValue, int n, int children, Transaction tx) {
         Role fromRole = tx.getRole(fromRoleValue);
         Role toRole = tx.getRole(toRoleValue);
 

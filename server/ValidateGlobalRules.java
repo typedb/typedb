@@ -33,7 +33,6 @@ import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Casting;
 import grakn.core.kb.concept.api.GraknConceptException;
-import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Relation;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
@@ -47,6 +46,7 @@ import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
+import graql.lang.statement.Label;
 import graql.lang.statement.Statement;
 
 import java.util.Collection;
@@ -403,7 +403,7 @@ public class ValidateGlobalRules {
                         .flatMap(statement -> statement.innerStatements().stream())
                         .flatMap(statement -> statement.getTypes().stream())
                         .forEach(type -> {
-                            SchemaConcept schemaConcept = conceptManager.getSchemaConcept(Label.of(type));
+                            SchemaConcept schemaConcept = conceptManager.getSchemaConcept(type);
                             if (schemaConcept == null) {
                                 errors.add(ErrorMessage.VALIDATION_RULE_MISSING_ELEMENTS.getMessage(side, rule.label(), type));
                             } else {

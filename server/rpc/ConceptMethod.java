@@ -22,11 +22,11 @@ import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.Entity;
 import grakn.core.kb.concept.api.GraknConceptException;
-import grakn.core.kb.concept.api.Label;
 import grakn.protocol.session.ConceptProto;
 import grakn.protocol.session.SessionProto;
 import grakn.protocol.session.SessionProto.Transaction;
 import graql.lang.pattern.Pattern;
+import graql.lang.statement.Label;
 
 import java.util.List;
 import java.util.Map;
@@ -330,7 +330,7 @@ public class ConceptMethod {
 
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
                         .setSchemaConceptGetLabelRes(ConceptProto.SchemaConcept.GetLabel.Res.newBuilder()
-                                                             .setLabel(label.getValue())).build();
+                                                             .setLabel(label.scopedName())).build();
 
                 responseSender.accept(transactionRes(response));
             }

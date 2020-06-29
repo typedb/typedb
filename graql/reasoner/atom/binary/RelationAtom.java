@@ -48,7 +48,6 @@ import grakn.core.graql.reasoner.atom.task.validate.RelationAtomValidator;
 import grakn.core.graql.reasoner.cache.SemanticDifference;
 import grakn.core.graql.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierType;
-import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.SchemaConcept;
@@ -63,6 +62,7 @@ import graql.lang.pattern.Pattern;
 import graql.lang.property.IsaProperty;
 import graql.lang.property.RelationProperty;
 import graql.lang.property.VarProperty;
+import graql.lang.statement.Label;
 import graql.lang.statement.Statement;
 import graql.lang.statement.StatementInstance;
 import graql.lang.statement.StatementThing;
@@ -138,7 +138,7 @@ public class RelationAtom extends Atom {
                         .flatMap(Streams::optionalToStream)
                         .map(Statement::getType)
                         .flatMap(Streams::optionalToStream)
-                        .map(Label::of).iterator()
+                        .iterator()
         ).build();
         return new RelationAtom(pattern.var(), pattern, parent, label, predicateVar, relationPlayers, roleLabels, ctx);
     }
@@ -208,7 +208,7 @@ public class RelationAtom extends Atom {
 
     @Override
     public String toString() {
-        String typeString = getTypeLabel() != null ? getTypeLabel().getValue() : "{*}";
+        String typeString = getTypeLabel() != null ? getTypeLabel().scopedName() : "{*}";
         String relationString = (isUserDefined() ? getVarName() + " " : "") +
                 typeString +
                 (getPredicateVariable().isReturned() ? "(" + getPredicateVariable() + ")" : "") +
@@ -369,8 +369,8 @@ public class RelationAtom extends Atom {
         return typeLabel == null ?
                 relationPattern() :
                 isDirect() ?
-                        relationPattern().isaX(typeLabel.getValue()) :
-                        relationPattern().isa(typeLabel.getValue());
+                        relationPattern().isaX(typeLabel.name()) :
+                        relationPattern().isa(typeLabel.name());
     }
 
     private Statement relationPattern() {
@@ -469,7 +469,7 @@ public class RelationAtom extends Atom {
                 .filter(var -> var.var().isReturned())
                 .filter(vp -> vp.getType().isPresent())
                 .map(vp -> {
-                    String label = vp.getType().orElse(null);
+                    Label label = vp.getType().orElse(null);
                     return IdPredicate.create(vp.var(), conceptManager.getRole(label).id(), getParentQuery());
                 });
     }
@@ -587,7 +587,7 @@ public class RelationAtom extends Atom {
                         .filter(vp -> vp.var().isReturned())
                         .map(vp -> new Pair<>(vp.var(), vp.getType().orElse(null)))
                         .filter(p -> Objects.nonNull(p.second()))
-                        .map(p -> new Pair<Variable, SchemaConcept>(p.first(), conceptManager.getSchemaConcept(Label.of(p.second()))))
+                        .map(p -> new Pair<Variable, SchemaConcept>(p.first(), conceptManager.getSchemaConcept(p.second())))
                         .filter(p -> Objects.nonNull(p.second()))
                         .map(p -> IdPredicate.create(p.first(), p.second().id(), getParentQuery()))
         );
@@ -612,7 +612,7 @@ public class RelationAtom extends Atom {
             Statement rolePattern = c.getRole().orElse(null);
             if (rolePattern != null) {
                 //try directly
-                String typeLabel = rolePattern.getType().orElse(null);
+                Label typeLabel = rolePattern.getType().orElse(null);
                 Role role = typeLabel != null ? conceptManager.getRole(typeLabel) : null;
                 //try indirectly
                 if (role == null && rolePattern.var().isReturned()) {
@@ -667,7 +667,7 @@ public class RelationAtom extends Atom {
             Statement rolePattern = rp.getRole().orElse(null);
             if (rolePattern != null) {
                 Variable roleVar = rolePattern.var();
-                String roleLabel = rolePattern.getType().orElse(null);
+                Label roleLabel = rolePattern.getType().orElse(null);
                 relVar = relVar.rel(new Statement(roleVar.asReturnedVar()).type(roleLabel), rp.getPlayer());
             } else {
                 relVar = relVar.rel(rp.getPlayer());

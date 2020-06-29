@@ -78,6 +78,8 @@ public enum ErrorMessage {
     FILE_WRITE_EXCEPTION("Failed to write to file: %s"),
     UNKNOWN_META_TYPE("Type [%s] has unknown meta type class [%s]"),
 
+    NULL_ROLE_SCOPE("Label for role [%s] has a null scope."),
+
     //--------------------------------------------- Validation Errors
     VALIDATION("A structural validation error has occurred. Please correct the [`%s`] errors found. \n"),
     VALIDATION_RELATION_CASTING_LOOP_FAIL("The relation [%s] has a role player playing the role [%s] " +

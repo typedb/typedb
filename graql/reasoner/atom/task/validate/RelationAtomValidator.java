@@ -27,7 +27,6 @@ import grakn.core.core.Schema;
 import grakn.core.graql.reasoner.ReasoningContext;
 import grakn.core.graql.reasoner.atom.binary.IsaAtom;
 import grakn.core.graql.reasoner.atom.binary.RelationAtom;
-import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.SchemaConcept;
@@ -35,6 +34,7 @@ import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.exception.GraqlSemanticException;
 import graql.lang.property.RelationProperty;
+import graql.lang.statement.Label;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 
@@ -107,7 +107,6 @@ public class RelationAtomValidator implements AtomValidator<RelationAtom> {
                 .flatMap(p -> p.relationPlayers().stream())
                 .map(RelationProperty.RolePlayer::getRole).flatMap(Streams::optionalToStream)
                 .map(Statement::getType).flatMap(Streams::optionalToStream)
-                .map(Label::of)
                 .forEach(roleId -> {
                     SchemaConcept schemaConcept = conceptManager.getSchemaConcept(roleId);
                     if (schemaConcept == null || !schemaConcept.isRole()) {
@@ -126,13 +125,12 @@ public class RelationAtomValidator implements AtomValidator<RelationAtom> {
             if (role == null) {
                 errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_RELATION_WITH_AMBIGUOUS_ROLE.getMessage(rule.then(), rule.label()));
             } else {
-
-                String roleLabel = role.getType().orElse(null);
+                Label roleLabel = role.getType().orElse(null);
                 if (roleLabel == null) {
                     errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_RELATION_WITH_AMBIGUOUS_ROLE.getMessage(rule.then(), rule.label()));
                 } else {
 
-                    if (Schema.MetaSchema.isMetaLabel(Label.of(roleLabel))) {
+                    if (Schema.MetaSchema.isMetaLabel(roleLabel)) {
                         errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_RELATION_WITH_AMBIGUOUS_ROLE.getMessage(rule.then(), rule.label()));
                     }
                     Role roleType = conceptManager.getRole(roleLabel);

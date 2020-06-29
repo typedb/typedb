@@ -20,8 +20,9 @@ package grakn.core.graql.reasoner.atom.task.validate;
 
 import grakn.core.graql.reasoner.ReasoningContext;
 import grakn.core.graql.reasoner.atom.Atom;
-import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Rule;
+import graql.lang.statement.Label;
+
 import java.util.Set;
 import javax.annotation.CheckReturnValue;
 

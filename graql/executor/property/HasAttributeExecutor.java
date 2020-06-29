@@ -22,7 +22,6 @@ import com.google.common.collect.ImmutableSet;
 import grakn.core.graql.planning.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.Concept;
-import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.graql.exception.GraqlSemanticException;
 import grakn.core.kb.graql.executor.WriteExecutor;
@@ -30,6 +29,7 @@ import grakn.core.kb.graql.executor.property.PropertyExecutor;
 import grakn.core.kb.graql.planning.gremlin.EquivalentFragmentSet;
 import graql.lang.property.HasAttributeProperty;
 import graql.lang.property.VarProperty;
+import graql.lang.statement.Label;
 import graql.lang.statement.Variable;
 
 import java.util.Collections;

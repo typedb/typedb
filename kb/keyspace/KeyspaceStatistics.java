@@ -18,8 +18,8 @@
 
 package grakn.core.kb.keyspace;
 
-import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.manager.ConceptManager;
+import graql.lang.statement.Label;
 
 /**
  * Store a shared map of statistics attached to each type

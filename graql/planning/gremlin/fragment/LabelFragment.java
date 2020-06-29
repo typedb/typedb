@@ -19,13 +19,13 @@ package grakn.core.graql.planning.gremlin.fragment;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
-import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.planning.spanningtree.graph.Node;
 import grakn.core.kb.graql.planning.spanningtree.graph.NodeId;
 import grakn.core.kb.graql.planning.spanningtree.graph.SchemaNode;
 import grakn.core.kb.keyspace.KeyspaceStatistics;
 import graql.lang.property.VarProperty;
+import graql.lang.statement.Label;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -76,7 +76,7 @@ public class LabelFragment extends FragmentImpl {
 
     @Override
     public String name() {
-        return "[label:" + labels().stream().map(Label::getValue).collect(joining(",")) + "]";
+        return "[label:" + labels().stream().map(Label::scopedName).collect(joining(",")) + "]";
     }
 
     @Override

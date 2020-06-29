@@ -23,9 +23,9 @@ import grakn.core.core.Schema;
 import grakn.core.graql.planning.gremlin.value.ValueOperation;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.ConceptId;
-import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.graql.planning.gremlin.Fragment;
 import graql.lang.property.VarProperty;
+import graql.lang.statement.Label;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -243,7 +243,7 @@ public class Fragments {
 
     static String displayOptionalTypeLabels(String name, @Nullable Set<Label> typeLabels) {
         if (typeLabels != null) {
-            return " " + name + ":" + typeLabels.stream().map(Label::getValue).collect(joining(","));
+            return " " + name + ":" + typeLabels.stream().map(Label::scopedName).collect(joining(","));
         } else {
             return "";
         }

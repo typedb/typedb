@@ -32,7 +32,6 @@ import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.EntityType;
-import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Rule;
@@ -51,6 +50,7 @@ import graql.lang.query.GraqlInsert;
 import graql.lang.query.GraqlQuery;
 import graql.lang.query.GraqlUndefine;
 import graql.lang.query.MatchClause;
+import graql.lang.statement.Label;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Collection;
@@ -155,9 +155,8 @@ public interface Transaction extends AutoCloseable {
      * @throws TransactionException       if the graph is closed
      * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-Role.
      */
-    Role putRole(Label label);
-
-    Role putRole(String label);
+//    Role putRole(Label label);
+//    Role putRole(String name, String scope);
 
     /**
      * @param label    A unique label for the AttributeType
@@ -292,11 +291,13 @@ public interface Transaction extends AutoCloseable {
     <V> AttributeType<V> getAttributeType(String label);
 
     /**
-     * @param label A unique label which identifies the Role Type in the graph.
+     * @param name The name of the role non-unique
+     * @param scope the relation that scopes the role
      * @return The Role Type  with the provided label or null if no such Role Type exists.
      * @throws TransactionException if the graph is closed
      */
-    Role getRole(String label);
+    Role getRole(String name, String scope);
+    Role getRole(Label label);
 
     /**
      * @param label A unique label which identifies the Rule in the graph.

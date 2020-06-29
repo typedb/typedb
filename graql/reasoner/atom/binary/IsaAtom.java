@@ -30,7 +30,6 @@ import grakn.core.graql.reasoner.atom.task.validate.IsaAtomValidator;
 import grakn.core.graql.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierType;
-import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
@@ -40,6 +39,7 @@ import grakn.core.kb.graql.reasoner.unifier.Unifier;
 import graql.lang.pattern.Pattern;
 import graql.lang.property.IsaProperty;
 import graql.lang.property.VarProperty;
+import graql.lang.statement.Label;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 import java.util.Collection;
@@ -127,8 +127,8 @@ public class IsaAtom extends TypeAtom {
         return getTypeLabel() == null?
                 new Statement(getVarName()).isa(new Statement(getPredicateVariable())) :
                 isDirect()?
-                        new Statement(getVarName()).isaX(getTypeLabel().getValue()) :
-                        new Statement(getVarName()).isa(getTypeLabel().getValue()) ;
+                        new Statement(getVarName()).isaX(getTypeLabel().name()) :
+                        new Statement(getVarName()).isa(getTypeLabel().name()) ;
     }
 
     @Override

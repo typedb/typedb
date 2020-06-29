@@ -18,11 +18,11 @@
 package grakn.core.graql.reasoner.graph;
 
 import grakn.core.kb.concept.api.EntityType;
-import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
+import graql.lang.statement.Label;
 
 import static grakn.core.util.GraqlTestUtil.getInstance;
 import static grakn.core.util.GraqlTestUtil.loadFromFile;
@@ -48,8 +48,8 @@ public class TailRecursionGraph{
     }
 
     protected void buildExtensionalDB(int n, int m, Transaction tx) {
-        Role qfrom = tx.getRole("Q-from");
-        Role qto = tx.getRole("Q-to");
+        Role qfrom = tx.getRole("Q-from", "Q");
+        Role qto = tx.getRole("Q-to", "Q");
 
         EntityType aEntity = tx.getEntityType("a-entity");
         EntityType bEntity = tx.getEntityType("b-entity");

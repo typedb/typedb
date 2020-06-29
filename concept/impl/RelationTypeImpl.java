@@ -27,6 +27,7 @@ import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.concept.manager.ConceptNotificationChannel;
 import grakn.core.kb.concept.api.Casting;
 import grakn.core.kb.concept.structure.VertexElement;
+import graql.lang.statement.Label;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.List;
@@ -70,8 +71,15 @@ public class RelationTypeImpl extends TypeImpl<RelationType, Relation> implement
     }
 
     @Override
-    public RelationType relates(Role role) {
+    public Role role(String roleLabel) {
+        Label label = Label.of(roleLabel, label().name());
+        return conceptManager.getRole(label);
+    }
+
+    @Override
+    public RelationType relates(String roleLabel) {
         checkSchemaMutationAllowed();
+        conceptManager
         putEdge(ConceptVertex.from(role), Schema.EdgeLabel.RELATES);
 
         //TODO: the following lines below this comment should only be executed if the edge is added
@@ -90,7 +98,7 @@ public class RelationTypeImpl extends TypeImpl<RelationType, Relation> implement
      * @return The Relation Type itself.
      */
     @Override
-    public RelationType unrelate(Role role) {
+    public RelationType unrelate(String roleLabel) {
         checkSchemaMutationAllowed();
         deleteEdge(Direction.OUT, Schema.EdgeLabel.RELATES, role);
 

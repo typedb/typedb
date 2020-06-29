@@ -19,7 +19,7 @@
 package grakn.core.kb.keyspace;
 
 import com.google.common.annotations.VisibleForTesting;
-import grakn.core.kb.concept.api.Label;
+import graql.lang.statement.Label;
 
 import java.util.Set;
 

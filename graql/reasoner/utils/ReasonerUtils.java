@@ -33,7 +33,6 @@ import grakn.core.graql.reasoner.utils.conversion.SchemaConceptConverter;
 import grakn.core.graql.reasoner.utils.conversion.TypeConverter;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
-import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.SchemaConcept;
@@ -45,6 +44,7 @@ import grakn.core.kb.graql.reasoner.unifier.Unifier;
 import graql.lang.property.IdProperty;
 import graql.lang.property.TypeProperty;
 import graql.lang.property.ValueProperty;
+import graql.lang.statement.Label;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 import java.util.ArrayList;
@@ -90,7 +90,7 @@ public class ReasonerUtils {
                 .filter(v -> v.var().equals(typeVariable))
                 .flatMap(v -> {
                     if (v.hasProperty(TypeProperty.class)){
-                        return v.getProperties(TypeProperty.class).map(np -> Label.of(np.name()));
+                        return v.getProperties(TypeProperty.class).map(TypeProperty::label);
                     }
                     return v.getProperties(IdProperty.class)
                             .map(np -> ConceptId.of(np.id()))
@@ -119,7 +119,7 @@ public class ReasonerUtils {
             TypeProperty nameProp = typeVar.getProperty(TypeProperty.class).orElse(null);
             if (nameProp != null){
                 //NB: we do label conversion to make sure label is valid
-                label = typeFromLabel(Label.of(nameProp.name()), conceptManager).label();
+                label = typeFromLabel(nameProp.label(), conceptManager).label();
             }
         }
         return label;

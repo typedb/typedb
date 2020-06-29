@@ -22,9 +22,9 @@ import com.google.common.annotations.VisibleForTesting;
 import grakn.common.util.Pair;
 import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.Attribute;
+import grakn.core.kb.concept.api.Casting;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
-import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.LabelId;
 import grakn.core.kb.concept.api.Relation;
 import grakn.core.kb.concept.api.RelationType;
@@ -33,8 +33,8 @@ import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.concept.api.Type;
-import grakn.core.kb.concept.api.Casting;
 import grakn.core.kb.keyspace.KeyspaceSchemaCache;
+import graql.lang.statement.Label;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -42,7 +42,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * Caches TransactionOLTP specific data this includes:

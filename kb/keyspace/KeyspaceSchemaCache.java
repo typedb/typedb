@@ -19,8 +19,8 @@
 package grakn.core.kb.keyspace;
 
 import com.google.common.collect.ImmutableMap;
-import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.LabelId;
+import graql.lang.statement.Label;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;

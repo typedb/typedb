@@ -19,9 +19,9 @@
 package grakn.core.kb.graql.planning.spanningtree.graph;
 
 import grakn.core.core.Schema;
-import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.keyspace.KeyspaceStatistics;
+import graql.lang.statement.Label;
 
 public class InstanceNode extends Node {
 

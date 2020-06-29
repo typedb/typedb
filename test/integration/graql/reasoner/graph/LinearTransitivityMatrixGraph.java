@@ -19,12 +19,12 @@ package grakn.core.graql.reasoner.graph;
 
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.EntityType;
-import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
+import graql.lang.statement.Label;
 
 import static grakn.core.util.GraqlTestUtil.loadFromFile;
 import static grakn.core.util.GraqlTestUtil.putEntityWithResource;
@@ -49,8 +49,8 @@ public class LinearTransitivityMatrixGraph{
     }
 
     protected void buildExtensionalDB(int n, int m, Transaction tx){
-        Role Qfrom = tx.getRole("Q-from");
-        Role Qto = tx.getRole("Q-to");
+        Role Qfrom = tx.getRole("Q-from", "Q");
+        Role Qto = tx.getRole("Q-to", "Q");
 
         EntityType aEntity = tx.getEntityType("a-entity");
         RelationType Q = tx.getRelationType("Q");

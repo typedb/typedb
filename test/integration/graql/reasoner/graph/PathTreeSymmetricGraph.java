@@ -19,6 +19,7 @@ package grakn.core.graql.reasoner.graph;
 
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
+import graql.lang.statement.Label;
 
 @SuppressWarnings("CheckReturnValue")
 public class PathTreeSymmetricGraph extends PathTreeGraph {
@@ -29,6 +30,6 @@ public class PathTreeSymmetricGraph extends PathTreeGraph {
 
     @Override
     protected void buildExtensionalDB(int n, int children, Transaction tx) {
-        buildTree("coordinate", "coordinate", n , children, tx);
+        buildTree(Label.of("coordinate", "path"), Label.of("coordinate", "path"), n , children, tx);
     }
 }

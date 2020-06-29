@@ -25,7 +25,6 @@ import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.EntityType;
 import grakn.core.kb.concept.api.GraknConceptException;
-import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Rule;
@@ -39,6 +38,7 @@ import grakn.core.kb.graql.executor.ConceptBuilder;
 import grakn.core.kb.graql.executor.WriteExecutor;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
+import graql.lang.statement.Label;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 

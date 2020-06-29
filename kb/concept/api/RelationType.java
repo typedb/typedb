@@ -18,6 +18,8 @@
 
 package grakn.core.kb.concept.api;
 
+import graql.lang.statement.Label;
+
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
 import java.util.stream.Stream;
@@ -84,27 +86,32 @@ public interface RelationType extends Type {
     @CheckReturnValue
     Stream<Role> roles();
 
+    /**
+     * Retrieve a role that is scoped within this relation
+     */
+    Role role(String roleLabel);
+
     //------------------------------------- Edge Handling ----------------------------------
 
     /**
      * Sets a new Role for this RelationType.
      *
-     * @param role A new role which is part of this relation.
+     * @param roleLabel new role which is will be scoped in this relation type.
      * @return The RelationType itself.
      * see Role
      */
-    RelationType relates(Role role);
+    RelationType relates(String roleLabel);
 
     //------------------------------------- Other ----------------------------------
 
     /**
      * Unrelates a Role from this RelationType
      *
-     * @param role The Role to unrelate from the RelationType.
+     * @param roleLabel role to remove from the RelationType.
      * @return The RelationType itself.
      * see Role
      */
-    RelationType unrelate(Role role);
+    RelationType unrelate(String roleLabel);
 
     //---- Inherited Methods
 

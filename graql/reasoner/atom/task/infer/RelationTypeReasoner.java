@@ -36,7 +36,6 @@ import grakn.core.graql.reasoner.utils.ReasonerUtils;
 import grakn.core.graql.reasoner.utils.conversion.RoleConverter;
 import grakn.core.graql.reasoner.utils.conversion.TypeConverter;
 import grakn.core.kb.concept.api.Concept;
-import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.SchemaConcept;
@@ -44,6 +43,7 @@ import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.keyspace.KeyspaceStatistics;
 import graql.lang.property.RelationProperty;
+import graql.lang.statement.Label;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 import java.util.ArrayList;
@@ -237,9 +237,9 @@ public class RelationTypeReasoner implements TypeReasoner<RelationAtom> {
             Variable varName = rp.getPlayer().var();
             Statement rolePattern = rp.getRole().orElse(null);
             if (rolePattern != null) {
-                String roleLabel = rolePattern.getType().orElse(null);
+                Label roleLabel = rolePattern.getType().orElse(null);
                 //allocate if variable role or if label non meta
-                if (roleLabel == null || !Schema.MetaSchema.isMetaLabel(Label.of(roleLabel))) {
+                if (roleLabel == null || !Schema.MetaSchema.isMetaLabel(roleLabel)) {
                     inferredRelationPlayers.add(new RelationProperty.RolePlayer(rolePattern, new Statement(varName)));
                     allocatedRelationPlayers.add(rp);
                 }
@@ -274,7 +274,7 @@ public class RelationTypeReasoner implements TypeReasoner<RelationAtom> {
                     RelationProperty.RolePlayer rp = entry.getKey();
                     Variable varName = rp.getPlayer().var();
                     Role role = Iterables.getOnlyElement(entry.getValue());
-                    Statement rolePattern = var().type(role.label().getValue());
+                    Statement rolePattern = var().type(role.label());
                     inferredRelationPlayers.add(new RelationProperty.RolePlayer(rolePattern, new Statement(varName)));
                     allocatedRelationPlayers.add(rp);
                 });
@@ -287,8 +287,8 @@ public class RelationTypeReasoner implements TypeReasoner<RelationAtom> {
                     Statement rolePattern = rp.getRole().orElse(null);
 
                     rolePattern = rolePattern != null ?
-                            rolePattern.type(metaRole.label().getValue()) :
-                            var().type(metaRole.label().getValue());
+                            rolePattern.type(metaRole.label()) :
+                            var().type(metaRole.label());
                     inferredRelationPlayers.add(new RelationProperty.RolePlayer(rolePattern, new Statement(varName)));
                 });
 

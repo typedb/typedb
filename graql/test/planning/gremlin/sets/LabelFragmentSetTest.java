@@ -19,10 +19,10 @@ package grakn.core.graql.planning.gremlin.sets;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
-import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.planning.gremlin.EquivalentFragmentSet;
+import graql.lang.statement.Label;
 import graql.lang.statement.Variable;
 import org.junit.Before;
 import org.junit.Test;
@@ -37,6 +37,10 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+
+/**
+ * TODO test scoped labels
+ */
 public class LabelFragmentSetTest {
 
     private static final Variable generatedVar = new Variable();

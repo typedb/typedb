@@ -20,11 +20,11 @@ package grakn.core.graql.planning;
 
 import com.google.common.collect.ImmutableSet;
 import grakn.core.graql.planning.gremlin.fragment.Fragments;
-import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.graql.planning.gremlin.Fragment;
 import grakn.core.kb.graql.planning.spanningtree.graph.EdgeNode;
 import grakn.core.kb.graql.planning.spanningtree.graph.InstanceNode;
 import grakn.core.kb.graql.planning.spanningtree.graph.Node;
+import graql.lang.statement.Label;
 import graql.lang.statement.Variable;
 import org.junit.Test;
 

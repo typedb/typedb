@@ -39,7 +39,6 @@ import grakn.core.graql.reasoner.query.ReasonerQueryEquivalence;
 import grakn.core.graql.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierType;
-import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.concept.manager.ConceptManager;
@@ -49,6 +48,7 @@ import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
 import graql.lang.property.RelationProperty;
+import graql.lang.statement.Label;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 
@@ -147,7 +147,7 @@ public class RelationSemanticProcessor implements SemanticProcessor<RelationAtom
                     Statement parentRolePattern = prp.getRole().orElse(null);
                     if (parentRolePattern == null) throw ReasonerException.rolePatternAbsent(parentAtom);
 
-                    String parentRoleLabel = parentRolePattern.getType().isPresent() ? parentRolePattern.getType().get() : null;
+                    Label parentRoleLabel = parentRolePattern.getType().isPresent() ? parentRolePattern.getType().get() : null;
                     Role parentRole = parentRoleLabel != null ? conceptManager.getRole(parentRoleLabel) : null;
                     Variable parentRolePlayer = prp.getPlayer().var();
                     Set<Type> parentTypes = parentVarTypeMap.get(parentRolePlayer);
@@ -159,7 +159,7 @@ public class RelationSemanticProcessor implements SemanticProcessor<RelationAtom
                                 Statement childRolePattern = crp.getRole().orElse(null);
                                 if (childRolePattern == null) throw ReasonerException.rolePatternAbsent(childAtom);
 
-                                String childRoleLabel = childRolePattern.getType().isPresent() ? childRolePattern.getType().get() : null;
+                                Label childRoleLabel = childRolePattern.getType().isPresent() ? childRolePattern.getType().get() : null;
                                 Role childRole = childRoleLabel != null ? conceptManager.getRole(childRoleLabel) : null;
 
                                 boolean varCompatibility = unifierType.equivalence() == null
@@ -272,10 +272,9 @@ public class RelationSemanticProcessor implements SemanticProcessor<RelationAtom
                         .filter(roleStatement -> roleStatement.var().equals(childVar))
                         .map(Statement::getType)
                         .flatMap(Streams::optionalToStream)
-                        .map(Label::of)
                         .collect(Collectors.toSet());
                 if (!roleLabels.isEmpty()) {
-                    requiredRole = conceptManager.getRole(Iterables.getOnlyElement(roleLabels).getValue());
+                    requiredRole = conceptManager.getRole(Iterables.getOnlyElement(roleLabels));
                 }
             }
             List<Role> childRoles = childVarRoleMap.get(childVar);

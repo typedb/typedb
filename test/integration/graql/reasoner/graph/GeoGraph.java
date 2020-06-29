@@ -20,7 +20,6 @@ package grakn.core.graql.reasoner.graph;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.EntityType;
-import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Thing;
@@ -28,6 +27,7 @@ import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
+import graql.lang.statement.Label;
 
 public class GeoGraph {
 
@@ -62,8 +62,8 @@ public class GeoGraph {
     private void buildSchema() {
         key = tx.putAttributeType("name", AttributeType.ValueType.STRING);
 
-        geoEntity = tx.putRole("geo-entity");
-        entityLocation = tx.putRole("entity-location");
+        geoEntity = tx.putRole("geo-entity", "is-located-in");
+        entityLocation = tx.putRole("entity-location", "is-located-in");
         isLocatedIn = tx.putRelationType("is-located-in")
                 .relates(geoEntity).relates(entityLocation);
 

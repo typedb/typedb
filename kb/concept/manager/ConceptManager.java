@@ -25,7 +25,6 @@ import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.Entity;
 import grakn.core.kb.concept.api.EntityType;
-import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.LabelId;
 import grakn.core.kb.concept.api.Relation;
 import grakn.core.kb.concept.api.RelationType;
@@ -34,11 +33,10 @@ import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.concept.api.Type;
-import grakn.core.kb.concept.structure.EdgeElement;
 import grakn.core.kb.concept.structure.Shard;
 import grakn.core.kb.concept.structure.VertexElement;
 import graql.lang.pattern.Pattern;
-import org.apache.tinkerpop.gremlin.structure.Edge;
+import graql.lang.statement.Label;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Set;
@@ -53,8 +51,8 @@ public interface ConceptManager {
     <T extends SchemaConcept> T getSchemaConcept(LabelId labelId);
     EntityType getEntityType(String label);
     RelationType getRelationType(String label);
-    <V> AttributeType<V> getAttributeType(String attributeTypeLabel);
-    Role getRole(String label);
+    <V> AttributeType<V> getAttributeType(Label attributeTypeLabel);
+    Role getRole(Label label);
     Rule getRule(String label);
     <D> Attribute<D> getCachedAttribute(String index);
     <D> Attribute<D> getAttribute(String index);
@@ -79,6 +77,8 @@ public interface ConceptManager {
     <V> AttributeType<V> createAttributeType(Label label, AttributeType<V> superType, AttributeType.ValueType<V> valueType);
     Rule createRule(Label label, Pattern when, Pattern then, Rule superType);
     Role createRole(Label label, Role superType);
+
+    Role putRole(String name, String scope, Role superType);
 
     Set<Concept> getConcepts(Schema.VertexProperty key, Object value);
 

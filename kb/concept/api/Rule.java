@@ -19,6 +19,7 @@
 package grakn.core.kb.concept.api;
 
 import graql.lang.pattern.Pattern;
+import graql.lang.statement.Label;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;

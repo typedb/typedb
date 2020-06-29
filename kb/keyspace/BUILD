@@ -28,6 +28,7 @@ java_library(
     deps = [
         "//kb/concept/api",
         "//kb/concept/manager",
+        "@graknlabs_graql//java:graql",
 
         # External dependencies from Maven
         "//dependencies/maven/artifacts/com/google/code/findbugs:jsr305",

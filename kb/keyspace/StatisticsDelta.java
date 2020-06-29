@@ -19,8 +19,8 @@
 package grakn.core.kb.keyspace;
 
 import grakn.core.kb.concept.api.AttributeType;
-import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Type;
+import graql.lang.statement.Label;
 
 import java.util.HashMap;
 

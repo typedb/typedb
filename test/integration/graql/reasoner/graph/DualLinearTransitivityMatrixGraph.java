@@ -19,11 +19,11 @@ package grakn.core.graql.reasoner.graph;
 
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.EntityType;
-import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
+import graql.lang.statement.Label;
 
 import static grakn.core.util.GraqlTestUtil.loadFromFile;
 import static grakn.core.util.GraqlTestUtil.putEntityWithResource;
@@ -47,10 +47,10 @@ public class DualLinearTransitivityMatrixGraph{
     }
 
     protected void buildExtensionalDB(int n, int m, Transaction tx) {
-        Role R1from = tx.getRole("R1-from");
-        Role R1to = tx.getRole("R1-to");
-        Role R2from = tx.getRole("R2-from");
-        Role R2to = tx.getRole("R2-to");
+        Role R1from = tx.getRole("R1-from", "R1");
+        Role R1to = tx.getRole("R1-to", "R1");
+        Role R2from = tx.getRole("R2-from", "R2");
+        Role R2to = tx.getRole("R2-to", "R2");
 
         EntityType aEntity = tx.getEntityType("a-entity");
         EntityType bEntity = tx.getEntityType("b-entity");

@@ -23,12 +23,12 @@ import grakn.core.common.exception.GraknException;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Concept;
-import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Relation;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.concept.api.Type;
 import graql.lang.pattern.Pattern;
+import graql.lang.statement.Label;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 
@@ -95,7 +95,7 @@ public class GraqlSemanticException extends GraknException {
     }
 
     public static GraqlSemanticException kCoreOnRelationType(Label label) {
-        return create("cannot compute coreness of relation type %s.", label.getValue());
+        return create("cannot compute coreness of relation type %s.", label.name());
     }
 
     public static GraqlSemanticException deleteSchemaConcept(SchemaConcept schemaConcept) {
@@ -231,7 +231,7 @@ public class GraqlSemanticException extends GraknException {
         return new GraqlSemanticException(attributeType + " must have value type of `long` or `double`, but was " + valueType.name());
     }
 
-    public static GraqlSemanticException attributesWithDifferentValueTypes(Collection<String> attributeTypes) {
+    public static GraqlSemanticException attributesWithDifferentValueTypes(Collection<Label> attributeTypes) {
         return new GraqlSemanticException("resource types " + attributeTypes + " have different value types");
     }
 

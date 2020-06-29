@@ -26,8 +26,10 @@ import grakn.core.concept.impl.RelationImpl;
 import grakn.core.concept.impl.RelationTypeImpl;
 import grakn.core.concept.impl.RoleImpl;
 import grakn.core.concept.impl.RuleImpl;
+import grakn.core.concept.impl.SchemaConceptImpl;
 import grakn.core.concept.impl.TypeImpl;
 import grakn.core.concept.structure.ElementFactory;
+import grakn.core.concept.util.ConceptUtils;
 import grakn.core.core.AttributeSerialiser;
 import grakn.core.core.AttributeValueConverter;
 import grakn.core.core.Schema;
@@ -37,7 +39,6 @@ import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.EntityType;
 import grakn.core.kb.concept.api.GraknConceptException;
-import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.LabelId;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
@@ -54,6 +55,7 @@ import grakn.core.kb.keyspace.AttributeManager;
 import grakn.core.kb.server.cache.TransactionCache;
 import grakn.core.kb.server.exception.TemporaryWriteException;
 import graql.lang.pattern.Pattern;
+import graql.lang.statement.Label;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
@@ -143,6 +145,14 @@ public class ConceptManagerImpl implements ConceptManager {
         return createRole(vertexElement, superType);
     }
 
+    public Role putRole(String name, String scope, Role superType) {
+        Label scopedLabel = Label.of(name, scope);
+        Role role = getRole(scopedLabel);
+        if (role == null) {
+            return createRole(scopedLabel, superType);
+        }
+        return role;
+    }
 
     public Rule createRule(Label label, Pattern when, Pattern then, Rule superType) {
         VertexElement vertexElement = createSchemaVertex(label, RULE);
@@ -186,7 +196,7 @@ public class ConceptManagerImpl implements ConceptManager {
      */
     public VertexElement addTypeVertex(LabelId id, Label label, Schema.BaseType baseType) {
         VertexElement vertexElement = elementFactory.addVertexElement(baseType);
-        vertexElement.property(Schema.VertexProperty.SCHEMA_LABEL, label.getValue());
+        vertexElement.property(Schema.VertexProperty.SCHEMA_LABEL, label.scopedName());
         vertexElement.property(Schema.VertexProperty.LABEL_ID, id.getValue());
         return vertexElement;
     }
@@ -463,13 +473,13 @@ public class ConceptManagerImpl implements ConceptManager {
     }
 
     @Override
-    public <V> AttributeType<V> getAttributeType(String label) {
-        return getSchemaConcept(Label.of(label), Schema.BaseType.ATTRIBUTE_TYPE);
+    public <V> AttributeType<V> getAttributeType(Label label) {
+        return getSchemaConcept(label, Schema.BaseType.ATTRIBUTE_TYPE);
     }
 
     @Override
-    public Role getRole(String label) {
-        return getSchemaConcept(Label.of(label), Schema.BaseType.ROLE);
+    public Role getRole(Label label) {
+        return getSchemaConcept(label, Schema.BaseType.ROLE);
     }
 
     /**

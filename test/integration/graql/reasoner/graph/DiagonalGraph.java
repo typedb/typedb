@@ -19,11 +19,11 @@ package grakn.core.graql.reasoner.graph;
 
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.EntityType;
-import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
+import graql.lang.statement.Label;
 
 import static grakn.core.util.GraqlTestUtil.loadFromFile;
 import static grakn.core.util.GraqlTestUtil.putEntityWithResource;
@@ -48,8 +48,10 @@ public class DiagonalGraph{
     }
 
     protected void buildExtensionalDB(int n, int m, Transaction tx) {
-        Role relFrom = tx.getRole("rel-from");
-        Role relTo = tx.getRole("rel-to");
+        Role horizontalRelFrom = tx.getRole("rel-from", "horizontal");
+        Role horizontalRelTo = tx.getRole("rel-to", "horizontal");
+        Role verticalRelFrom = tx.getRole("rel-from", "vertical");
+        Role verticalRelTo = tx.getRole("rel-to", "vertical");
 
         EntityType entity1 = tx.getEntityType("entity1");
         RelationType horizontal = tx.getRelationType("horizontal");
@@ -69,14 +71,14 @@ public class DiagonalGraph{
             for (int j = 0; j < m; j++) {
                 if (i < n - 1) {
                     vertical.create()
-                            .assign(relFrom, tx.getConcept(instanceIds[i][j]))
-                            .assign(relTo, tx.getConcept(instanceIds[i + 1][j]));
+                            .assign(verticalRelFrom, tx.getConcept(instanceIds[i][j]))
+                            .assign(verticalRelTo, tx.getConcept(instanceIds[i + 1][j]));
                     inserts++;
                 }
                 if (j < m - 1) {
                     horizontal.create()
-                            .assign(relFrom, tx.getConcept(instanceIds[i][j]))
-                            .assign(relTo, tx.getConcept(instanceIds[i][j + 1]));
+                            .assign(horizontalRelFrom, tx.getConcept(instanceIds[i][j]))
+                            .assign(horizontalRelTo, tx.getConcept(instanceIds[i][j + 1]));
                     inserts++;
                 }
                 if (inserts % 100 == 0) System.out.println("rel inserts: " + inserts);

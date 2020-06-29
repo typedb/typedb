@@ -30,7 +30,6 @@ import grakn.core.graql.reasoner.state.AnswerPropagatorState;
 import grakn.core.graql.reasoner.state.DisjunctiveState;
 import grakn.core.graql.reasoner.state.ResolutionState;
 import grakn.core.kb.concept.api.Concept;
-import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.graql.executor.TraversalExecutor;
 import grakn.core.kb.graql.reasoner.ReasonerException;
@@ -42,6 +41,7 @@ import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Disjunction;
 import graql.lang.pattern.Pattern;
+import graql.lang.statement.Label;
 import graql.lang.statement.Variable;
 
 import java.util.HashMap;

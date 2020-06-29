@@ -22,11 +22,11 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import grakn.common.util.Pair;
 import grakn.core.kb.concept.api.ConceptId;
-import grakn.core.kb.concept.api.Label;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
 import graql.lang.property.RelationProperty;
+import graql.lang.statement.Label;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 
@@ -111,7 +111,7 @@ public abstract class RelationPattern extends QueryPattern {
 
             List<Pattern> rpPattern = Lists.newArrayList(rolePlayer);
             List<Pattern> typePattern = Lists.newArrayList(rolePlayer);
-            if(type != null) typePattern.add(rolePlayer.isa(type.getValue()));
+            if(type != null) typePattern.add(rolePlayer.isa(type.name()));
 
             ids.forEach(id -> {
                 Statement idPattern = rolePlayer.id(id.getValue());

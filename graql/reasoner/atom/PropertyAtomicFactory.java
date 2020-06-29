@@ -35,7 +35,6 @@ import grakn.core.graql.reasoner.query.ReasonerQueryFactory;
 import grakn.core.graql.reasoner.utils.ReasonerUtils;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.ConceptId;
-import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
@@ -62,6 +61,7 @@ import graql.lang.property.TypeProperty;
 import graql.lang.property.ValueProperty;
 import graql.lang.property.VarProperty;
 import graql.lang.property.WhenProperty;
+import graql.lang.statement.Label;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 import java.util.Objects;
@@ -144,7 +144,7 @@ public class PropertyAtomicFactory {
     }
 
     private Atomic type(Variable var, TypeProperty property, ReasonerQuery parent) {
-        Label typeLabel = Label.of(property.name());
+        Label typeLabel = property.label();
         SchemaConcept type = typeFromLabel(typeLabel, ctx.conceptManager());
         return IdPredicate.create(var.asReturnedVar(), type.id(), parent);
     }
@@ -186,7 +186,7 @@ public class PropertyAtomicFactory {
                 //look for indirect role definitions
                 Label roleLabel = getLabelFromUserDefinedVar(roleVar, otherStatements, conceptManager);
                 if (roleLabel != null) {
-                    rolePattern = new Statement(roleVar).type(roleLabel.getValue());
+                    rolePattern = new Statement(roleVar).type(roleLabel.scopedName());
                 }
                 relVar = relVar.rel(rolePattern, rolePlayer);
             } else {
@@ -204,9 +204,10 @@ public class PropertyAtomicFactory {
         //Isa present
         if (isaProp != null) {
             Statement isaVar = isaProp.type();
-            String label = isaVar.getType().orElse(null);
+            Label label = isaVar.getType().orElse(null);
             if (label != null) {
-                typeLabel = typeFromLabel(Label.of(label), ctx.conceptManager()).label();
+                // TODO this looks redudant, can clear up
+                typeLabel = typeFromLabel(label, ctx.conceptManager()).label();
             } else {
                 typeVariable = isaVar.var();
                 typeLabel = getLabelFromUserDefinedVar(typeVariable, otherStatements, conceptManager);
@@ -241,10 +242,10 @@ public class PropertyAtomicFactory {
 
     private Atomic hasAttributeType(Variable var, HasAttributeTypeProperty property, ReasonerQuery parent, Set<Statement> otherStatements) {
         //NB: HasResourceType is a special case and it doesn't allow variables as resource types
-        String label = property.attributeType().getType().orElse(null);
+        Label label = property.attributeType().getType().orElse(null);
 
         Variable predicateVar = new Variable();
-        SchemaConcept attributeType = ctx.conceptManager().getSchemaConcept(Label.of(label));
+        SchemaConcept attributeType = ctx.conceptManager().getSchemaConcept(label);
         Label typeLabel = attributeType != null ? attributeType.label() : null;
         return OntologicalAtom.create(var, predicateVar, typeLabel, parent, OntologicalAtom.OntologicalAtomType.HasAtom, ctx);
     }

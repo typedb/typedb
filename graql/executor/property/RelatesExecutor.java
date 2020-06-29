@@ -105,7 +105,7 @@ public class RelatesExecutor  implements PropertyExecutor.Definable {
         @Override
         public void execute(WriteExecutor executor) {
             Role role = executor.getConcept(property.role().var()).asRole();
-            executor.getConcept(var).asRelationType().relates(role);
+            executor.getConcept(var).asRelationType().relates(role.label().name());
         }
     }
 

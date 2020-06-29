@@ -19,7 +19,7 @@
 package grakn.core.kb.concept.api;
 
 
-import com.sun.xml.internal.bind.v2.TODO;
+import graql.lang.statement.Label;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;

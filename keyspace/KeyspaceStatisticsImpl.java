@@ -20,11 +20,11 @@ package grakn.core.keyspace;
 
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Concept;
-import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.keyspace.KeyspaceStatistics;
 import grakn.core.kb.keyspace.StatisticsDelta;
+import graql.lang.statement.Label;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -130,7 +130,7 @@ public class KeyspaceStatisticsImpl implements KeyspaceStatistics {
         for (Label label : ownershipLabelsToPersist) {
             // don't change the value, just use `.compute()` for atomic and locking vertex write
             ownershipCountsCache.compute(label, (lab, count) -> {
-                AttributeType<?> attributeType = conceptManager.getAttributeType(lab.toString());
+                AttributeType<?> attributeType = conceptManager.getAttributeType(lab);
                 if (attributeType != null) {
                     attributeType.writeOwnershipCount(count);
                 }
@@ -161,7 +161,7 @@ public class KeyspaceStatisticsImpl implements KeyspaceStatistics {
      * Note that the count property doesn't exist on a label until a commit places a non-zero count on the vertex
      */
     private long retrieveOwnershipCount(ConceptManager conceptManager, Label attribute) {
-        AttributeType<?> attributeType = conceptManager.getAttributeType(attribute.toString());
+        AttributeType<?> attributeType = conceptManager.getAttributeType(attribute);
         return attributeType.ownershipCount();
     }
 }

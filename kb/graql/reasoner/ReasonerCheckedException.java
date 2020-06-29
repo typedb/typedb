@@ -20,8 +20,8 @@ package grakn.core.kb.graql.reasoner;
 
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.kb.concept.api.ConceptId;
-import grakn.core.kb.concept.api.Label;
 import graql.lang.exception.GraqlException;
+import graql.lang.statement.Label;
 
 public class ReasonerCheckedException extends GraqlException {
 

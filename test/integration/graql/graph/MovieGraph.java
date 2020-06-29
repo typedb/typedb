@@ -84,9 +84,9 @@ public class MovieGraph {
         name = tx.putAttributeType("name", AttributeType.ValueType.STRING);
         provenance = tx.putAttributeType("provenance", AttributeType.ValueType.STRING);
 
-        work = tx.putRole("work");
-        author = tx.putRole("author");
-        authoredBy = tx.putRelationType("authored-by").relates(work).relates(author);
+//        work = tx.putRole("work");
+//        author = tx.putRole("author", "authored-by");
+        authoredBy = tx.putRelationType("authored-by").relates("work").relates(author);
 
         Role provenancedNameOwner = tx.putRole("provenanced-name-owner");
         Role provenancedNameValue = tx.putRole("provenanced-name-value");
