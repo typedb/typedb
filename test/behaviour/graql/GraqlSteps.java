@@ -275,7 +275,9 @@ public class GraqlSteps {
 
     @Then("answer size is: {number}")
     public void answer_quantity_assertion(int expectedAnswers) {
-        assertEquals(expectedAnswers, answers.size());
+        assertEquals(
+                String.format("Expected [%d] answers, but got [%d]", expectedAnswers, answers.size()),
+                expectedAnswers, answers.size());
     }
 
 
