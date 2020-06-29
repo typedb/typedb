@@ -70,7 +70,7 @@ def graknlabs_verification():
     git_repository(
         name = "graknlabs_verification",
         remote = "https://github.com/jmsfltchr/verification",
-        commit = "dc8dd042eb70ac4cbd65ebb7837f7b8bcbe40104",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_verification
+        commit = "96f3375099ab25098f63ef0a5d7b2cace9e81102",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_verification
     )
 
 def graknlabs_grabl_tracing():

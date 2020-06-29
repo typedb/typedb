@@ -53,7 +53,7 @@ public class TestSchemaManager {
     public static void beforeClass() {
         try (Session session = graknTestServer.session(KEYSPACE)) {
             try {
-                Path schemaPath = Paths.get("test", "behaviour", "resolution", "framework", "test", "cases", "case2", "schema.gql").toAbsolutePath();
+                Path schemaPath = Paths.get("test", "behaviour", "resolution", "framework", "test", "cases", "complex_recursion", "schema.gql").toAbsolutePath();
                 loadGqlFile(session, schemaPath);
             } catch (IOException e) {
                 e.printStackTrace();

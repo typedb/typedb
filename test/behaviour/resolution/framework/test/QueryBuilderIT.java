@@ -24,13 +24,11 @@ import grakn.core.kb.server.Transaction;
 import grakn.core.test.behaviour.resolution.framework.resolve.QueryBuilder;
 import grakn.core.test.rule.GraknTestServer;
 import graql.lang.Graql;
-import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlGet;
 import graql.lang.statement.Statement;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import java.util.List;
 import java.util.Set;
 
 import static grakn.core.test.behaviour.resolution.framework.common.Utils.getStatements;
@@ -50,7 +48,7 @@ public class QueryBuilderIT {
 
         try (Session session = graknTestServer.sessionWithNewKeyspace()) {
 
-            loadTestCase(session, "case2");
+            loadTestCase(session, "complex_recursion");
 
             try (Transaction tx = session.transaction(Transaction.Type.READ)) {
                 ConceptMap answer = tx.execute(inferenceQuery).get(0);

@@ -69,8 +69,8 @@ public class TestResolution {
 
     @Test
     public void testResolutionPassesForTransitivity() {
-        Path schemaPath = Paths.get("test", "behaviour", "resolution", "framework", "test", "cases", "case1", "schema.gql").toAbsolutePath();
-        Path dataPath = Paths.get("test", "behaviour", "resolution", "framework", "test", "cases", "case1", "data.gql").toAbsolutePath();
+        Path schemaPath = Paths.get("test", "behaviour", "resolution", "framework", "test", "cases", "transitivity", "schema.gql").toAbsolutePath();
+        Path dataPath = Paths.get("test", "behaviour", "resolution", "framework", "test", "cases", "transitivity", "data.gql").toAbsolutePath();
         GraqlGet inferenceQuery = Graql.parse("" +
                 "match $lh (location-hierarchy_superior: $continent, " +
                 "location-hierarchy_subordinate: $area) isa location-hierarchy; " +
@@ -82,8 +82,8 @@ public class TestResolution {
 
     @Test
     public void testResolutionThrowsForTransitivityWhenRuleIsNotTriggered() {
-        Path schemaPath = Paths.get("test", "behaviour", "resolution", "framework", "test", "cases", "case1", "schema.gql").toAbsolutePath();
-        Path dataPath = Paths.get("test", "behaviour", "resolution", "framework", "test", "cases", "case1", "data.gql").toAbsolutePath();
+        Path schemaPath = Paths.get("test", "behaviour", "resolution", "framework", "test", "cases", "transitivity", "schema.gql").toAbsolutePath();
+        Path dataPath = Paths.get("test", "behaviour", "resolution", "framework", "test", "cases", "transitivity", "data.gql").toAbsolutePath();
         GraqlGet inferenceQuery = Graql.parse("" +
                 "match $lh (location-hierarchy_superior: $continent, " +
                 "location-hierarchy_subordinate: $area) isa location-hierarchy; " +
@@ -136,8 +136,8 @@ public class TestResolution {
 
     @Test
     public void testResolutionThrowsForTransitivityWhenRuleTriggersTooOften() {
-        Path schemaPath = Paths.get("test", "behaviour", "resolution", "framework", "test", "cases", "case1", "schema.gql").toAbsolutePath();
-        Path dataPath = Paths.get("test", "behaviour", "resolution", "framework", "test", "cases", "case1", "data.gql").toAbsolutePath();
+        Path schemaPath = Paths.get("test", "behaviour", "resolution", "framework", "test", "cases", "transitivity", "schema.gql").toAbsolutePath();
+        Path dataPath = Paths.get("test", "behaviour", "resolution", "framework", "test", "cases", "transitivity", "data.gql").toAbsolutePath();
         GraqlGet inferenceQuery = Graql.parse("" +
                 "match $lh (location-hierarchy_superior: $continent, " +
                 "location-hierarchy_subordinate: $area) isa location-hierarchy; " +
@@ -185,8 +185,8 @@ public class TestResolution {
 
     @Test
     public void testResolutionThrowsForTransitivityWhenRuleTriggersTooOftenAndResultCountIsIncorrect() {
-        Path schemaPath = Paths.get("test", "behaviour", "resolution", "framework", "test", "cases", "case1", "schema.gql").toAbsolutePath();
-        Path dataPath = Paths.get("test", "behaviour", "resolution", "framework", "test", "cases", "case1", "data.gql").toAbsolutePath();
+        Path schemaPath = Paths.get("test", "behaviour", "resolution", "framework", "test", "cases", "transitivity", "schema.gql").toAbsolutePath();
+        Path dataPath = Paths.get("test", "behaviour", "resolution", "framework", "test", "cases", "transitivity", "data.gql").toAbsolutePath();
         GraqlGet inferenceQuery = Graql.parse("" +
                 "match $lh ($continent, " +
                 "$area) isa location-hierarchy; " +
@@ -241,27 +241,17 @@ public class TestResolution {
 
     @Test
     public void testResolutionPassesForTwoRecursiveRules() {
-        Path schemaPath = Paths.get("test", "behaviour", "resolution", "framework", "test", "cases", "case2", "schema.gql").toAbsolutePath();
-        Path dataPath = Paths.get("test", "behaviour", "resolution", "framework", "test", "cases", "case2", "data.gql").toAbsolutePath();
+        Path schemaPath = Paths.get("test", "behaviour", "resolution", "framework", "test", "cases", "complex_recursion", "schema.gql").toAbsolutePath();
+        Path dataPath = Paths.get("test", "behaviour", "resolution", "framework", "test", "cases", "complex_recursion", "data.gql").toAbsolutePath();
         GraqlGet inferenceQuery = Graql.parse("match $transaction has currency $currency; get;").asGet();
 
         resolutionHappyPathTest(schemaPath, dataPath, inferenceQuery);
     }
 
     @Test
-    public void testResolutionPassesForABasicRule() {
-        Path schemaPath = Paths.get("test", "behaviour", "resolution", "framework", "test", "cases", "basic", "schema.gql").toAbsolutePath();
-        Path dataPath = Paths.get("test", "behaviour", "resolution", "framework", "test", "cases", "basic", "data.gql").toAbsolutePath();
-        GraqlGet inferenceQuery = Graql.parse("match $transaction has currency $currency; get;").asGet();
-
-        resolutionHappyPathTest(schemaPath, dataPath, inferenceQuery);
-    }
-
-
-    @Test
-    public void testCase1HappyPath() {
-        Path schemaPath = Paths.get("test", "behaviour", "resolution", "framework", "test", "cases", "case1", "schema.gql").toAbsolutePath();
-        Path dataPath = Paths.get("test", "behaviour", "resolution", "framework", "test", "cases", "case1", "data.gql").toAbsolutePath();
+    public void testTransitivityHappyPath() {
+        Path schemaPath = Paths.get("test", "behaviour", "resolution", "framework", "test", "cases", "transitivity", "schema.gql").toAbsolutePath();
+        Path dataPath = Paths.get("test", "behaviour", "resolution", "framework", "test", "cases", "transitivity", "data.gql").toAbsolutePath();
         GraqlGet inferenceQuery = Graql.parse("" +
                 "match $lh (location-hierarchy_superior: $continent, " +
                 "location-hierarchy_subordinate: $area) isa location-hierarchy; " +
@@ -272,60 +262,19 @@ public class TestResolution {
     }
 
     @Test
-    public void testCase2HappyPath() {
-        Path schemaPath = Paths.get("test", "behaviour", "resolution", "framework", "test", "cases", "case2", "schema.gql").toAbsolutePath();
-        Path dataPath = Paths.get("test", "behaviour", "resolution", "framework", "test", "cases", "case2", "data.gql").toAbsolutePath();
+    public void testComplexRecursionHappyPath() {
+        Path schemaPath = Paths.get("test", "behaviour", "resolution", "framework", "test", "cases", "complex_recursion", "schema.gql").toAbsolutePath();
+        Path dataPath = Paths.get("test", "behaviour", "resolution", "framework", "test", "cases", "complex_recursion", "data.gql").toAbsolutePath();
         GraqlGet inferenceQuery = Graql.parse("match $transaction has currency $currency; get;").asGet();
 
         resolutionHappyPathTest(schemaPath, dataPath, inferenceQuery);
     }
 
     @Test
-    public void testCase3HappyPath() {
-        Path schemaPath = Paths.get("test", "behaviour", "resolution", "framework", "test", "cases", "case3", "schema.gql").toAbsolutePath();
-        Path dataPath = Paths.get("test", "behaviour", "resolution", "framework", "test", "cases", "case3", "data.gql").toAbsolutePath();
-        GraqlGet inferenceQuery = Graql.parse("match (sibling: $p, sibling: $p1) isa siblingship; $p != $p1; get;").asGet();
-
-        resolutionHappyPathTest(schemaPath, dataPath, inferenceQuery);
-    }
-
-    @Test
-    public void testCase4HappyPath() {
-        Path schemaPath = Paths.get("test", "behaviour", "resolution", "framework", "test", "cases", "case4", "schema.gql").toAbsolutePath();
-        Path dataPath = Paths.get("test", "behaviour", "resolution", "framework", "test", "cases", "case4", "data.gql").toAbsolutePath();
+    public void testbasic_recursionHappyPath() {
+        Path schemaPath = Paths.get("test", "behaviour", "resolution", "framework", "test", "cases", "basic_recursion", "schema.gql").toAbsolutePath();
+        Path dataPath = Paths.get("test", "behaviour", "resolution", "framework", "test", "cases", "basic_recursion", "data.gql").toAbsolutePath();
         GraqlGet inferenceQuery = Graql.parse("match $com isa company, has is-liable $lia; get;").asGet();
-
-        resolutionHappyPathTest(schemaPath, dataPath, inferenceQuery);
-    }
-
-    @Test
-    public void testCase5HappyPath() {
-        Path schemaPath = Paths.get("test", "behaviour", "resolution", "framework", "test", "cases", "case5", "schema.gql").toAbsolutePath();
-        Path dataPath = Paths.get("test", "behaviour", "resolution", "framework", "test", "cases", "case5", "data.gql").toAbsolutePath();
-        GraqlGet inferenceQuery = Graql.parse("match $c isa company, has name $n; get;").asGet();
-
-        resolutionHappyPathTest(schemaPath, dataPath, inferenceQuery);
-    }
-
-    @Test
-    public void testCase6HappyPath() {
-        Path schemaPath = Paths.get("test", "behaviour", "resolution", "framework", "test", "cases", "case6", "schema.gql").toAbsolutePath();
-        Path dataPath = Paths.get("test", "behaviour", "resolution", "framework", "test", "cases", "case6", "data.gql").toAbsolutePath();
-        GraqlGet inferenceQuery = Graql.parse("" +
-                "match $com isa company; " +
-                "{$com has name \"the-company\";} or {$com has name \"another-company\";}; " +
-                "not {$com has is-liable $liability;}; " +
-                "get;").asGet();
-
-        resolutionHappyPathTest(schemaPath, dataPath, inferenceQuery);
-    }
-
-    @Test
-    public void testCase7HappyPath() {
-        Path schemaPath = Paths.get("test", "behaviour", "resolution", "framework", "test", "cases", "case7", "schema.gql").toAbsolutePath();
-        Path dataPath = Paths.get("test", "behaviour", "resolution", "framework", "test", "cases", "case7", "data.gql").toAbsolutePath();
-        GraqlGet inferenceQuery = Graql.parse("" +
-                "match $com isa company, has is-liable $lia; $lia true; get;").asGet();
 
         resolutionHappyPathTest(schemaPath, dataPath, inferenceQuery);
     }

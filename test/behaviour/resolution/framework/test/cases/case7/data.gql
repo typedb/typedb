@@ -1,5 +1,0 @@
-insert
-$c1 isa company, has company-id 0;
-$c1 has name $n1; $n1 "the-company";
-$c2 isa company, has company-id 1;
-$c2 has name $n2; $n2 "another-company";

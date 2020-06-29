@@ -72,7 +72,7 @@ public class TestCompleter {
 
         try (Session session = graknTestServer.sessionWithNewKeyspace()) {
 
-            loadTestCase(session, "case4");
+            loadTestCase(session, "basic_recursion");
 
             Completer completer = new Completer(session);
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
@@ -96,7 +96,7 @@ public class TestCompleter {
     public void testDeduplicationOfInferredConcepts() {
         try (Session session = graknTestServer.sessionWithNewKeyspace()) {
 
-            loadTestCase(session, "case1");
+            loadTestCase(session, "transitivity");
 
             Completer completer = new Completer(session);
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {

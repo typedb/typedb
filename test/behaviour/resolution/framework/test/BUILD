@@ -45,18 +45,8 @@ java_test(
         "@graknlabs_graql//java:graql",
     ],
     data = [
-        "//test/behaviour/resolution/framework/test/cases/case1:schema.gql",
-        "//test/behaviour/resolution/framework/test/cases/case1:data.gql",
-        "//test/behaviour/resolution/framework/test/cases/case2:schema.gql",
-        "//test/behaviour/resolution/framework/test/cases/case2:data.gql",
-        "//test/behaviour/resolution/framework/test/cases/case3:schema.gql",
-        "//test/behaviour/resolution/framework/test/cases/case3:data.gql",
-        "//test/behaviour/resolution/framework/test/cases/case4:schema.gql",
-        "//test/behaviour/resolution/framework/test/cases/case4:data.gql",
-        "//test/behaviour/resolution/framework/test/cases/case5:schema.gql",
-        "//test/behaviour/resolution/framework/test/cases/case5:data.gql",
-        "//test/behaviour/resolution/framework/test/cases/case8:schema.gql",
-        "//test/behaviour/resolution/framework/test/cases/case8:data.gql",
+        "//test/behaviour/resolution/framework/test/cases/complex_recursion:schema.gql",
+        "//test/behaviour/resolution/framework/test/cases/complex_recursion:data.gql",
     ],
     classpath_resources = ["//test/resources:logback-test"],
     size="medium"
@@ -99,8 +89,8 @@ java_test(
         "@graknlabs_graql//java:graql",
     ],
     data = [
-            "//test/behaviour/resolution/framework/test/cases/case2:schema.gql",
-            "//test/behaviour/resolution/framework/test/cases/case2:data.gql",
+            "//test/behaviour/resolution/framework/test/cases/complex_recursion:schema.gql",
+            "//test/behaviour/resolution/framework/test/cases/complex_recursion:data.gql",
         ],
     classpath_resources = ["//test/resources:logback-test"],
     size="medium"
@@ -124,10 +114,10 @@ java_test(
         "@graknlabs_graql//java:graql",
     ],
     data = [
-        "//test/behaviour/resolution/framework/test/cases/case1:schema.gql",
-        "//test/behaviour/resolution/framework/test/cases/case1:data.gql",
-        "//test/behaviour/resolution/framework/test/cases/case4:schema.gql",
-        "//test/behaviour/resolution/framework/test/cases/case4:data.gql",
+        "//test/behaviour/resolution/framework/test/cases/transitivity:schema.gql",
+        "//test/behaviour/resolution/framework/test/cases/transitivity:data.gql",
+        "//test/behaviour/resolution/framework/test/cases/basic_recursion:schema.gql",
+        "//test/behaviour/resolution/framework/test/cases/basic_recursion:data.gql",
     ],
     classpath_resources = ["//test/resources:logback-test"],
     size="medium"
@@ -149,25 +139,15 @@ java_test(
         "@graknlabs_graql//java:graql",
     ],
     data = [
-        "//test/behaviour/resolution/framework/test/cases/case1:schema.gql",
-        "//test/behaviour/resolution/framework/test/cases/case1:data.gql",
-        "//test/behaviour/resolution/framework/test/cases/case2:schema.gql",
-        "//test/behaviour/resolution/framework/test/cases/case2:data.gql",
-        "//test/behaviour/resolution/framework/test/cases/case3:schema.gql",
-        "//test/behaviour/resolution/framework/test/cases/case3:data.gql",
-        "//test/behaviour/resolution/framework/test/cases/case4:schema.gql",
-        "//test/behaviour/resolution/framework/test/cases/case4:data.gql",
-        "//test/behaviour/resolution/framework/test/cases/case5:schema.gql",
-        "//test/behaviour/resolution/framework/test/cases/case5:data.gql",
-        "//test/behaviour/resolution/framework/test/cases/case6:schema.gql",
-        "//test/behaviour/resolution/framework/test/cases/case6:data.gql",
-        "//test/behaviour/resolution/framework/test/cases/case7:schema.gql",
-        "//test/behaviour/resolution/framework/test/cases/case7:data.gql",
-        "//test/behaviour/resolution/framework/test/cases/basic:schema.gql",
-        "//test/behaviour/resolution/framework/test/cases/basic:data.gql",
+        "//test/behaviour/resolution/framework/test/cases/transitivity:schema.gql",
+        "//test/behaviour/resolution/framework/test/cases/transitivity:data.gql",
+        "//test/behaviour/resolution/framework/test/cases/complex_recursion:schema.gql",
+        "//test/behaviour/resolution/framework/test/cases/complex_recursion:data.gql",
+        "//test/behaviour/resolution/framework/test/cases/basic_recursion:schema.gql",
+        "//test/behaviour/resolution/framework/test/cases/basic_recursion:data.gql",
     ],
     classpath_resources = ["//test/resources:logback-test"],
-    size="medium"
+    size="large"
 )
 
 checkstyle_test(
