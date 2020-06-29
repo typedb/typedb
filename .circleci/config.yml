@@ -37,7 +37,9 @@ commands:
       command:
           type: string
     steps:
-      - run: bazel run @graknlabs_dependencies//tool/bazelrun:rbe -- << parameters.command >>
+      - run:
+          command: bazel run @graknlabs_dependencies//tool/bazelrun:rbe -- << parameters.command >>
+          no_output_timeout: 30m
 
 jobs:
   build:
@@ -136,8 +138,6 @@ jobs:
       - checkout
       - run-bazel:
           command: bazel test //test/behaviour/graql/language/define:test --test_output=errors
-      - run:
-          no_output_timeout: 30m
 
   test-behaviour-graql-delete:
     machine:
@@ -148,8 +148,6 @@ jobs:
       - checkout
       - run-bazel:
           command: bazel test //test/behaviour/graql/language/delete:test --test_output=errors
-      - run:
-          no_output_timeout: 30m
 
   test-behaviour-graql-get:
     machine: true
@@ -159,8 +157,6 @@ jobs:
       - checkout
       - run-bazel:
           command: bazel test //test/behaviour/graql/language/get:test --test_output=errors
-      - run:
-          no_output_timeout: 30m
 
   test-behaviour-graql-insert:
     machine:
@@ -171,8 +167,6 @@ jobs:
       - checkout
       - run-bazel:
           command: bazel test //test/behaviour/graql/language/insert:test --test_output=errors
-      - run:
-          no_output_timeout: 30m
 
   test-behaviour-graql-match:
     machine:
@@ -183,8 +177,6 @@ jobs:
       - checkout
       - run-bazel:
           command: bazel test //test/behaviour/graql/language/match:test --test_output=errors
-      - run:
-          no_output_timeout: 30m
 
   test-behaviour-graql-undefine:
     machine:
@@ -195,8 +187,6 @@ jobs:
       - checkout
       - run-bazel:
           command: bazel test //test/behaviour/graql/language/undefine:test --test_output=errors
-      - run:
-          no_output_timeout: 30m
 
   test-behaviour-graql-explanation:
     machine:
