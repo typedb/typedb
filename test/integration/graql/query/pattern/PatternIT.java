@@ -42,7 +42,7 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-import static grakn.core.util.GraqlTestUtil.assertExists;
+import static grakn.core.test.common.GraqlTestUtil.assertExists;
 import static graql.lang.Graql.and;
 import static graql.lang.Graql.not;
 import static graql.lang.Graql.or;

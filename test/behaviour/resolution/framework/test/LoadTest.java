@@ -20,7 +20,7 @@ package grakn.core.test.behaviour.resolution.framework.test;
 
 import grakn.core.kb.server.Session;
 
-import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
+import static grakn.core.test.common.GraqlTestUtil.loadFromFileAndCommit;
 
 
 public class LoadTest {

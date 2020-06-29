@@ -30,7 +30,7 @@ java_test(
         "//kb/server",
         "//test/integration/graql/reasoner/query:query-test-util",
         "//test/rule:grakn-test-server",
-        "//test/integration/util:graql-test-util",
+        "//test/common:graql-test-util",
         "@graknlabs_graql//java:graql",
     ],
 )
@@ -52,7 +52,7 @@ java_test(
         "//kb/graql/reasoner",
         "//kb/server",
         "//test/rule:grakn-test-server",
-        "//test/integration/util:graql-test-util",
+        "//test/common:graql-test-util",
         "@graknlabs_graql//java:graql",
     ],
 )
@@ -75,7 +75,7 @@ java_test(
         "//kb/server",
         "//test/integration/graql/reasoner/graph:geo-graph",
         "//test/rule:grakn-test-server",
-        "//test/integration/util:graql-test-util",
+        "//test/common:graql-test-util",
         "@graknlabs_graql//java:graql",
         "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/commons-collections",
@@ -102,7 +102,7 @@ java_test(
         "//core",
         "//kb/concept/structure",
         "//test/rule:grakn-test-server",
-        "//test/integration/util:graql-test-util",
+        "//test/common:graql-test-util",
         "@graknlabs_graql//java:graql",
         "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core"
     ],
@@ -133,7 +133,7 @@ java_test(
         "//kb/server",
         "//test/integration/graql/reasoner/graph:reachability-graph",
         "//test/rule:grakn-test-server",
-        "//test/integration/util:graql-test-util",
+        "//test/common:graql-test-util",
         "@graknlabs_graql//java:graql",
     ],
 )
@@ -164,7 +164,7 @@ java_test(
         "//test/integration/graql/reasoner/graph:generic-schema-graph",
         "//test/integration/graql/reasoner/query:query-test-util",
         "//test/rule:grakn-test-server",
-        "//test/integration/util:graql-test-util",
+        "//test/common:graql-test-util",
         "@graknlabs_graql//java:graql",
     ],
 )
@@ -205,7 +205,7 @@ java_test(
         "//kb/concept/api",
         "//kb/server",
         "//test/rule:grakn-test-server",
-        "//test/integration/util:graql-test-util",
+        "//test/common:graql-test-util",
         "@graknlabs_graql//java:graql",
     ],
 )
@@ -230,7 +230,7 @@ java_test(
         "//kb/server",
         "//keyspace",
         "//test/rule:grakn-test-server",
-        "//test/integration/util:graql-test-util",
+        "//test/common:graql-test-util",
         "@graknlabs_graql//java:graql",
     ],
 )
@@ -258,7 +258,7 @@ java_test(
         "//kb/server",
         "//test/integration/graql/reasoner/query:query-test-util",
         "//test/rule:grakn-test-server",
-        "//test/integration/util:graql-test-util",
+        "//test/common:graql-test-util",
         "@graknlabs_common//:common",
         "@graknlabs_graql//java:graql",
         "@graknlabs_verification//tools/operator:operator",
