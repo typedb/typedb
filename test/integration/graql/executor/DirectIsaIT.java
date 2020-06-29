@@ -90,14 +90,14 @@ public class DirectIsaIT {
         entityType0.sup(superType1);
         entityType1.sup(superType1);
 
-        Role role1 = tx.putRole("role1");
-        Role role2 = tx.putRole("role2");
-        Role role3 = tx.putRole("role3");
+        RelationType relationType = tx.putRelationType("related")
+                .relates("role1").relates("role2").relates("role3");
+        Role role1 = relationType.role("role1");
+        Role role2 = relationType.role("role2");
+        Role role3 = relationType.role("role3");
         superType1.plays(role1).plays(role2).plays(role3);
         entityType2.plays(role1).plays(role2).plays(role3);
         entityType3.plays(role1).plays(role2).plays(role3);
-        RelationType relationType = tx.putRelationType("related")
-                .relates(role1).relates(role2).relates(role3);
 
         Entity entity1 = entityType1.create();
         Entity entity2 = entityType2.create();

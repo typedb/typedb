@@ -84,37 +84,37 @@ public class MovieGraph {
         name = tx.putAttributeType("name", AttributeType.ValueType.STRING);
         provenance = tx.putAttributeType("provenance", AttributeType.ValueType.STRING);
 
-//        work = tx.putRole("work");
-//        author = tx.putRole("author", "authored-by");
-        authoredBy = tx.putRelationType("authored-by").relates("work").relates(author);
+        authoredBy = tx.putRelationType("authored-by").relates("work").relates("author");
+        work = authoredBy.role("work");
+        author = authoredBy.role("author");
 
-        Role provenancedNameOwner = tx.putRole("provenanced-name-owner");
-        Role provenancedNameValue = tx.putRole("provenanced-name-value");
-        hasNameWithProvenance = tx.putRelationType("has-name-with-provenance").relates(provenancedNameOwner).relates(provenancedNameValue);
+        hasNameWithProvenance = tx.putRelationType("has-name-with-provenance").relates("provenanced-name-owner").relates("provenanced-name-value");
+        Role provenancedNameOwner = hasNameWithProvenance.role("provenanced-name-owner");
+        Role provenancedNameValue = hasNameWithProvenance.role("provenanced-name-value");
         name.plays(provenancedNameValue);
 
         hasNameWithProvenance.has(provenance); // the provenance
 
-        productionBeingDirected = tx.putRole("production-being-directed").sup(work);
-        director = tx.putRole("director").sup(author);
         directedBy = tx.putRelationType("directed-by").sup(authoredBy)
-                .relates(productionBeingDirected).relates(director);
+                .relates("production-being-directed", work.label()).relates("director", author.label());
+        productionBeingDirected = directedBy.role("production-being-directed");
+        director = directedBy.role("director");
 
-        productionWithCast = tx.putRole("production-with-cast");
-        actor = tx.putRole("actor");
-        characterBeingPlayed = tx.putRole("character-being-played");
         hasCast = tx.putRelationType("has-cast")
-                .relates(productionWithCast).relates(actor).relates(characterBeingPlayed);
+                .relates("production-with-cast").relates("actor").relates("character-being-played");
+        productionWithCast = hasCast.role("production-with-cast");
+        actor = hasCast.role("actor");
+        characterBeingPlayed = hasCast.role("character-being-played");
 
-        genreOfProduction = tx.putRole("genre-of-production");
-        productionWithGenre = tx.putRole("production-with-genre");
         hasGenre = tx.putRelationType("has-genre")
-                .relates(genreOfProduction).relates(productionWithGenre);
+                .relates("genre-of-production").relates("production-with-genre");
+        genreOfProduction = hasGenre.role("genre-of-production");
+        productionWithGenre = hasGenre.role("production-with-genre");
 
-        clusterOfProduction = tx.putRole("cluster-of-production");
-        productionWithCluster = tx.putRole("production-with-cluster");
         hasCluster = tx.putRelationType("has-cluster")
-                .relates(clusterOfProduction).relates(productionWithCluster);
+                .relates("cluster-of-production").relates("production-with-cluster");
+        clusterOfProduction = hasCluster.role("cluster-of-production");
+        productionWithCluster = hasCluster.role("production-with-cluster");
 
         title = tx.putAttributeType("title", AttributeType.ValueType.STRING);
         title.has(title);

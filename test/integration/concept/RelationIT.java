@@ -92,12 +92,12 @@ public class RelationIT {
         Config mockServerConfig = storage.createCompatibleServerConfig();
         session = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig);
         tx = session.transaction(Transaction.Type.WRITE);
-        role1 = tx.putRole("Role 1");
-        role2 = tx.putRole("Role 2");
-        role3 = tx.putRole("Role 3");
 
+        relationType = tx.putRelationType("Main relation type").relates("Role 1").relates("Role 2").relates("Role 3");
+        role1 = relationType.role("Role 1");
+        role2 = relationType.role("Role 2");
+        role3 = relationType.role("Role 3");
         type = tx.putEntityType("Main concept Type").plays(role1).plays(role2).plays(role3);
-        relationType = tx.putRelationType("Main relation type").relates(role1).relates(role2).relates(role3);
 
         rolePlayer1 = type.create();
         rolePlayer2 = type.create();
@@ -117,12 +117,11 @@ public class RelationIT {
     @Test
     public void whenAddingRolePlayerToRelation_RelationIsExpanded(){
         Relation relation = relationType.create();
-        Role role = tx.putRole("A role");
         Entity entity1 = type.create();
+        relation.assign(role1, entity1);
 
-        relation.assign(role, entity1);
-        assertThat(relation.rolePlayersMap().keySet(), containsInAnyOrder(role1, role2, role3, role));
-        assertThat(relation.rolePlayersMap().get(role), containsInAnyOrder(entity1));
+        assertThat(relation.rolePlayersMap().keySet(), containsInAnyOrder(role1, role2, role3));
+        assertThat(relation.rolePlayersMap().get(role1), containsInAnyOrder(entity1));
     }
 
     @Test
@@ -140,10 +139,10 @@ public class RelationIT {
         TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction) tx);
 
         //Create the Schema
-        Role role1 = testTx.putRole("Role 1");
-        Role role2 = testTx.putRole("Role 2");
-        Role role3 = testTx.putRole("Role 3");
-        testTx.putRelationType("Rel Type").relates(role1).relates(role2).relates(role3);
+        RelationType rel = testTx.putRelationType("Rel Type").relates("Role 1").relates("Role 2").relates("Role 3");
+        Role role1 = rel.role("Role 1");
+        Role role2 = rel.role("Role 2");
+        Role role3 = rel.role("Role 3");
         EntityType entType = testTx.putEntityType("Entity Type").plays(role1).plays(role2).plays(role3);
 
         //Data
@@ -202,9 +201,9 @@ public class RelationIT {
 
     @Test
     public void ensureRelationToStringContainsRolePlayerInformation(){
-        Role role1 = tx.putRole("role type 1");
-        Role role2 = tx.putRole("role type 2");
-        RelationType relationType = tx.putRelationType("A relation Type").relates(role1).relates(role2);
+        RelationType relationType = tx.putRelationType("A relation Type").relates("role type 1").relates("role type 2");
+        Role role1 = relationType.role("role type 1");
+        Role role2 = relationType.role("role type 2");
         EntityType type = tx.putEntityType("concept type").plays(role1).plays(role2);
         Thing thing1 = type.create();
         Thing thing2 = type.create();
@@ -222,12 +221,11 @@ public class RelationIT {
 
     @Test
     public void whenDeletingRelations_EnsureCastingsRemain(){
-        Role entityRole = tx.putRole("Entity Role");
-        Role degreeRole = tx.putRole("Degree Role");
+        RelationType hasDegree = tx.putRelationType("Has Degree").relates("Entity Role").relates("Degree Role");
+        Role entityRole = hasDegree.role("Entity Role");
+        Role degreeRole = hasDegree.role("Degree Role");
         EntityType entityType = tx.putEntityType("Entity Type").plays(entityRole);
         AttributeType<Long> degreeType = tx.putAttributeType("Attribute Type", AttributeType.ValueType.LONG).plays(degreeRole);
-
-        RelationType hasDegree = tx.putRelationType("Has Degree").relates(entityRole).relates(degreeRole);
 
         Entity entity = entityType.create();
         Attribute<Long> degree1 = degreeType.create(100L);
@@ -246,17 +244,16 @@ public class RelationIT {
 
     @Test
     public void whenDeletingFinalInstanceOfRelation_RelationIsDeleted(){
-        Role roleA = tx.putRole("RoleA");
-        Role roleB = tx.putRole("RoleB");
-        Role roleC = tx.putRole("RoleC");
-
-        RelationType relation = tx.putRelationType("relation type").relates(roleA).relates(roleB).relates(roleC);
+        RelationType rel = tx.putRelationType("relation type").relates("RoleA").relates("RoleB").relates("RoleC");
+        Role roleA = rel.role("RoleA");
+        Role roleB = rel.role("RoleB");
+        Role roleC = rel.role("RoleC");
         EntityType type = tx.putEntityType("concept type").plays(roleA).plays(roleB).plays(roleC);
         Entity a = type.create();
         Entity b = type.create();
         Entity c = type.create();
 
-        ConceptId relationId = relation.create().assign(roleA, a).assign(roleB, b).assign(roleC, c).id();
+        ConceptId relationId = rel.create().assign(roleA, a).assign(roleB, b).assign(roleC, c).id();
 
         a.delete();
         assertNotNull(tx.getConcept(relationId));
@@ -274,10 +271,10 @@ public class RelationIT {
 
     @Test
     public void whenAddingDuplicateRelationsWithDifferentKeys_EnsureTheyCanBeCommitted(){
-        Role role1 = tx.putRole("dark");
-        Role role2 = tx.putRole("souls");
         AttributeType<Long> attributeType = tx.putAttributeType("Death Number", AttributeType.ValueType.LONG);
-        RelationType relationType = tx.putRelationType("Dark Souls").relates(role1).relates(role2).key(attributeType);
+        RelationType relationType = tx.putRelationType("Dark Souls").relates("dark").relates("souls").key(attributeType);
+        Role role1 = relationType.role("dark");
+        Role role2 = relationType.role("souls");
         EntityType entityType = tx.putEntityType("Dead Guys").plays(role1).plays(role2);
 
         Entity e1 = entityType.create();
@@ -302,9 +299,9 @@ public class RelationIT {
 
     @Test
     public void whenRemovingRolePlayerFromRelation_EnsureRolePlayerIsRemoved(){
-        Role role1 = tx.putRole("dark");
-        Role role2 = tx.putRole("souls");
-        RelationType relationType = tx.putRelationType("Dark Souls").relates(role1).relates(role2);
+        RelationType relationType = tx.putRelationType("Dark Souls").relates("dark").relates("souls");
+        Role role1 = relationType.role("dark");
+        Role role2 = relationType.role("souls");
         EntityType entityType = tx.putEntityType("Dead Guys").plays(role1).plays(role2);
 
         Entity e1 = entityType.create();
@@ -341,9 +338,9 @@ public class RelationIT {
 
     @Test
     public void whenAddingRelationWithNoRolePlayers_Throw(){
-        Role role1 = tx.putRole("r1");
-        Role role2 = tx.putRole("r2");
-        RelationType relationType = tx.putRelationType("A thing of sorts").relates(role1).relates(role2);
+        RelationType relationType = tx.putRelationType("A thing of sorts").relates("r1").relates("r2");
+        Role role1 = relationType.role("r1");
+        Role role2 = relationType.role("r2");
         Relation relation = relationType.create();
 
         expectedException.expect(InvalidKBException.class);
@@ -354,14 +351,13 @@ public class RelationIT {
 
     @Test
     public void whenUnattachingAttributeFromRelation_operationSucceeds(){
-
-        Role member = tx.putRole("member");
-        Role member_of = tx.putRole("member_of");
         AttributeType<String> name = tx.putAttributeType("name", AttributeType.ValueType.STRING);
         RelationType membership = tx.putRelationType("membership")
-                .relates(member)
-                .relates(member_of)
+                .relates("member")
+                .relates("member-of")
                 .has(name);
+        Role member = membership.role("member");
+        Role member_of = membership.role("member-of");
         EntityType group = tx.putEntityType("group").plays(member_of);
         EntityType person = tx.putEntityType("person").plays(member);
 

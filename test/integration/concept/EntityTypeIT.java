@@ -25,6 +25,8 @@ import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.Entity;
 import grakn.core.kb.concept.api.EntityType;
 import grakn.core.kb.concept.api.GraknConceptException;
+import grakn.core.kb.concept.api.Relation;
+import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.concept.structure.PropertyNotUniqueException;
@@ -94,7 +96,7 @@ public class EntityTypeIT {
 
     @Test
     public void whenCreatingEntityTypeUsingLabelTakenByAnotherType_Throw(){
-        Role original = tx.putRole("Role Type");
+        AttributeType<?> original = tx.putAttributeType("Role Type", AttributeType.ValueType.STRING);
         expectedException.expect(GraknConceptException.class);
         expectedException.expectMessage(PropertyNotUniqueException.cannotCreateProperty(original.toString(), Schema.VertexProperty.SCHEMA_LABEL, original.label()).getMessage());
         tx.putEntityType(original.label());
@@ -120,9 +122,10 @@ public class EntityTypeIT {
 
     @Test
     public void whenGettingTheRolesPlayedByType_ReturnTheRoles() throws Exception{
-        Role monster = tx.putRole("monster");
-        Role animal = tx.putRole("animal");
-        Role monsterEvil = tx.putRole("evil monster").sup(monster);
+        RelationType rel = tx.putRelationType("someRelation").relates("monster").relates("animal").relates("evil monster");
+        Role monster = rel.role("monster");
+        Role animal = rel.role("animal");
+        Role monsterEvil = rel.role("evil monster").sup(monster);
 
         EntityType creature = tx.putEntityType("creature").plays(monster).plays(animal);
         EntityType creatureMysterious = tx.putEntityType("mysterious creature").sup(creature).plays(monsterEvil);

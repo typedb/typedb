@@ -79,7 +79,8 @@ public class RelationTypeImpl extends TypeImpl<RelationType, Relation> implement
     @Override
     public RelationType relates(String roleLabel) {
         checkSchemaMutationAllowed();
-        conceptManager
+        Role role = conceptManager.putRole(roleLabel, label().name(), conceptManager.getMetaRole());
+
         putEdge(ConceptVertex.from(role), Schema.EdgeLabel.RELATES);
 
         //TODO: the following lines below this comment should only be executed if the edge is added
@@ -94,12 +95,39 @@ public class RelationTypeImpl extends TypeImpl<RelationType, Relation> implement
     }
 
     /**
-     * @param role The Role to delete from this RelationType.
+     * For use with AS
+     *
+     * @param roleLabel
+     * @param superRole
+     * @return
+     */
+    @Override
+    public RelationType relates(String roleLabel, Label superRole) {
+        checkSchemaMutationAllowed();
+
+        Role role = conceptManager.putRole(roleLabel, label().name(), conceptManager.getRole(superRole));
+
+        putEdge(ConceptVertex.from(role), Schema.EdgeLabel.RELATES);
+
+        //TODO: the following lines below this comment should only be executed if the edge is added
+
+        //Cache the Role internally
+        cachedRelates.ifCached(set -> set.add(role));
+
+        //Cache the relation type in the role
+        ((RoleImpl) role).addCachedRelationType(this);
+
+        return this;
+    }
+
+    /**
+     * @param roleLabel The Role to delete from this RelationType.
      * @return The Relation Type itself.
      */
     @Override
     public RelationType unrelate(String roleLabel) {
         checkSchemaMutationAllowed();
+        Role role = conceptManager.getRole(Label.of(roleLabel, label().name()));
         deleteEdge(Direction.OUT, Schema.EdgeLabel.RELATES, role);
 
         RoleImpl roleTypeImpl = (RoleImpl) role;

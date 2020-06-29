@@ -62,10 +62,10 @@ public class GeoGraph {
     private void buildSchema() {
         key = tx.putAttributeType("name", AttributeType.ValueType.STRING);
 
-        geoEntity = tx.putRole("geo-entity", "is-located-in");
-        entityLocation = tx.putRole("entity-location", "is-located-in");
         isLocatedIn = tx.putRelationType("is-located-in")
-                .relates(geoEntity).relates(entityLocation);
+                .relates("geo-entity").relates("entity-location");
+        geoEntity = isLocatedIn.role("geo-entity");
+        entityLocation = isLocatedIn.role("entity-location");
 
         geographicalObject = tx.putEntityType("geoObject")
                 .plays(geoEntity)

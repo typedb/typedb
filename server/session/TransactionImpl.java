@@ -843,11 +843,11 @@ public class TransactionImpl implements Transaction {
 //
 //        return role;
 //    }
-
-    @Override
-    public Role putRole(String name, String scope) {
-        return putRole(Label.of(name, scope));
-    }
+//
+//    @Override
+//    public Role putRole(String name, String scope) {
+//        return putRole(Label.of(name, scope));
+//    }
 
 
     /**

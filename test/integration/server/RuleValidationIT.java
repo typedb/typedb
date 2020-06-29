@@ -28,7 +28,7 @@ import grakn.core.graql.reasoner.rule.RuleUtils;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.EntityType;
-import grakn.core.kb.concept.api.Label;
+import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.Type;
@@ -40,6 +40,7 @@ import grakn.core.test.rule.SessionUtil;
 import grakn.core.test.rule.TestTransactionProvider;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
+import graql.lang.statement.Label;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -884,7 +885,7 @@ public class RuleValidationIT {
             initTx(tx);
             Rule rule = tx.putRule(UUID.randomUUID().toString(), when, then);
 
-            String[] ruleParam = {rule.label().getValue()};
+            String[] ruleParam = {rule.label().name()};
             Object[] params = concat(ruleParam, outputParams);
             expectedException.expect(InvalidKBException.class);
             expectedException.expectMessage(message.getMessage(params));
@@ -927,9 +928,20 @@ public class RuleValidationIT {
         AttributeType<Integer> someAttribute = tx.putAttributeType("someAttribute", AttributeType.ValueType.INTEGER);
         AttributeType<Integer> anotherAttribute = tx.putAttributeType("anotherAttribute", AttributeType.ValueType.INTEGER);
         AttributeType<String> stringAttribute = tx.putAttributeType("stringAttribute", AttributeType.ValueType.STRING);
-        Role someRole = tx.putRole("someRole");
-        Role anotherRole = tx.putRole("anotherRole");
-        Role singleRole = tx.putRole("singleRole");
+
+
+        RelationType someRelation = tx.putRelationType("someRelation")
+                .relates("someRole")
+                .relates("anotherRole")
+                .relates("singleRole");
+
+        Role someRole = someRelation.role("someRole");
+        Role anotherRole = someRelation.role("anotherRole");
+        Role somRelSingleRole = someRelation.role("singleRole");
+        someRelation.plays(someRole).plays(anotherRole);
+
+        tx.putRelationType("anotherRelation")
+                .relates("singleRole");
 
         tx.putEntityType("someEntity")
                 .has(someAttribute)
@@ -937,14 +949,5 @@ public class RuleValidationIT {
                 .has(stringAttribute)
                 .plays(someRole)
                 .plays(anotherRole);
-
-        tx.putRelationType("someRelation")
-                .relates(someRole)
-                .relates(anotherRole)
-                .relates(singleRole)
-                .plays(someRole)
-                .plays(anotherRole);
-        tx.putRelationType("anotherRelation")
-                .relates(singleRole);
     }
 }

@@ -24,7 +24,6 @@ import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Entity;
 import grakn.core.kb.concept.api.EntityType;
-import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.keyspace.KeyspaceStatistics;
@@ -34,6 +33,7 @@ import grakn.core.test.rule.GraknTestServer;
 import grakn.core.test.rule.SessionUtil;
 import grakn.core.test.rule.TestTransactionProvider;
 import graql.lang.Graql;
+import graql.lang.statement.Label;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -97,9 +97,9 @@ public class KeyspaceStatisticsIT {
     public void keyspaceStatisticsUpdatedOnCommit() {
         Transaction tx = localSession.transaction(Transaction.Type.WRITE);
         AttributeType ageType = tx.putAttributeType("age", AttributeType.ValueType.LONG);
-        Role friend = tx.putRole("friend");
+        RelationType friendshipType = tx.putRelationType("friendship").relates("friend");
+        Role friend = friendshipType.role("friend");
         EntityType personType = tx.putEntityType("person").plays(friend).has(ageType);
-        RelationType friendshipType = tx.putRelationType("friendship").relates(friend);
         tx.commit();
 
         tx = localSession.transaction(Transaction.Type.WRITE);
@@ -109,7 +109,7 @@ public class KeyspaceStatisticsIT {
         Entity person1 = personType.create().has(age).has(age);
         Entity person2 = personType.create().has(age);
         friendshipType = tx.getRelationType("friendship");
-        friend = tx.getRole("friend");
+        friend = tx.getRole(friend.label());
         friendshipType.create().assign(friend, person1).assign(friend, person2);
         tx.commit();
 
@@ -185,9 +185,9 @@ public class KeyspaceStatisticsIT {
     public void keyspaceStatisticsNotUpdatedIfNotCommitted() {
         Transaction tx = localSession.transaction(Transaction.Type.WRITE);
         AttributeType ageType = tx.putAttributeType("age", AttributeType.ValueType.LONG);
-        Role friend = tx.putRole("friend");
+        RelationType friendshipType = tx.putRelationType("friendship").relates("friend");
+        Role friend = friendshipType.role("friend");
         EntityType personType = tx.putEntityType("person").plays(friend).has(ageType);
-        RelationType friendshipType = tx.putRelationType("friendship").relates(friend);
         tx.commit();
 
         tx = localSession.transaction(Transaction.Type.WRITE);
@@ -197,7 +197,7 @@ public class KeyspaceStatisticsIT {
         Entity person1 = personType.create().has(age).has(age);
         Entity person2 = personType.create().has(age);
         friendshipType = tx.getRelationType("friendship");
-        friend = tx.getRole("friend");
+        friend = tx.getRole(friend.label());
         friendshipType.create().assign(friend, person1).assign(friend, person2);
         tx.close();
 
@@ -227,9 +227,9 @@ public class KeyspaceStatisticsIT {
     public void reopeningSessionRetrievesStatistics() {
         Transaction tx = localSession.transaction(Transaction.Type.WRITE);
         AttributeType ageType = tx.putAttributeType("age", AttributeType.ValueType.LONG);
-        Role friend = tx.putRole("friend");
+        RelationType friendshipType = tx.putRelationType("friendship").relates("friend");
+        Role friend = friendshipType.role("friend");
         EntityType personType = tx.putEntityType("person").plays(friend).has(ageType);
-        RelationType friendshipType = tx.putRelationType("friendship").relates(friend);
 
         ageType = tx.getAttributeType("age");
         Attribute age = ageType.create(1);
@@ -237,7 +237,7 @@ public class KeyspaceStatisticsIT {
         Entity person1 = personType.create().has(age).has(age);
         Entity person2 = personType.create().has(age);
         friendshipType = tx.getRelationType("friendship");
-        friend = tx.getRole("friend");
+        friend = tx.getRole(friend.label());
         friendshipType.create().assign(friend, person1).assign(friend, person2);
         tx.commit();
 
@@ -293,9 +293,9 @@ public class KeyspaceStatisticsIT {
     public void concurrentTransactionsUpdateStatisticsCorrectly() throws InterruptedException, ExecutionException {
         TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction) localSession.transaction(Transaction.Type.WRITE);
         AttributeType ageType = testTx.putAttributeType("age", AttributeType.ValueType.LONG);
-        Role friend = testTx.putRole("friend");
+        RelationType friendshipType = testTx.putRelationType("friendship").relates("friend");
+        Role friend = friendshipType.role("friend");
         EntityType personType = testTx.putEntityType("person").plays(friend).has(ageType);
-        RelationType friendshipType = testTx.putRelationType("friendship").relates(friend);
         testTx.commit();
 
         // TODO fix the schema label cache to be a read-through, meanwhile close and reopen session

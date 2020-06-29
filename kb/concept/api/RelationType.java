@@ -101,6 +101,7 @@ public interface RelationType extends Type {
      * see Role
      */
     RelationType relates(String roleLabel);
+    RelationType relates(String roleLabel, Label parentRoleLabel);
 
     //------------------------------------- Other ----------------------------------
 

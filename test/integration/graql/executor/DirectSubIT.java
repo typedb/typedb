@@ -19,11 +19,11 @@
 package grakn.core.graql.executor;
 
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import grakn.core.test.rule.GraknTestServer;
 import graql.lang.Graql;
+import graql.lang.statement.Label;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;

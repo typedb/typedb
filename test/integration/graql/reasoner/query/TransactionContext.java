@@ -21,11 +21,11 @@ package grakn.core.graql.reasoner.query;
 import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
-import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.server.Transaction;
 import grakn.verification.tools.operator.TypeContext;
+import graql.lang.statement.Label;
 
 import java.util.List;
 import java.util.Random;
@@ -56,21 +56,21 @@ class TransactionContext implements TypeContext {
         if (type == null) return null;
         SchemaConcept sup = type.sup();
         if (sup == null) return null;
-        return sup.label().getValue();
+        return sup.label().scopedName();
     }
 
     @Override
     public Stream<String> sups(String label) {
         SchemaConcept type = tx.getSchemaConcept(Label.of(label));
         if (type == null) return Stream.empty();
-        return tx.sups(type).map(t -> t.label().getValue());
+        return tx.sups(type).map(t -> t.label().scopedName());
     }
 
     @Override
     public Stream<String> subs(String label) {
         SchemaConcept type = tx.getSchemaConcept(Label.of(label));
         if (type == null) return Stream.empty();
-        return type.subs().map(t -> t.label().getValue());
+        return type.subs().map(t -> t.label().scopedName());
     }
 
     @Override
