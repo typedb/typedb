@@ -28,6 +28,8 @@ java_library(
         "//test/behaviour/resolution/framework/common:common",
         "//concept/answer:answer",
         "//graql/reasoner:reasoner",
+        "//kb/concept/api:api",
+        "//kb/server:server",
         "@graknlabs_graql//java:graql",
     ],
 )
