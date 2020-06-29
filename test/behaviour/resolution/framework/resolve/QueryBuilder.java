@@ -7,6 +7,7 @@ import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.server.Transaction;
 import grakn.core.test.behaviour.resolution.framework.common.ConjunctionFlatteningVisitor;
 import grakn.core.test.behaviour.resolution.framework.common.NegationRemovalVisitor;
+import grakn.core.test.behaviour.resolution.framework.common.ResolutionConstraintException;
 import grakn.core.test.behaviour.resolution.framework.common.StatementVisitor;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
@@ -349,7 +350,7 @@ public class QueryBuilder {
                 });
 
             } else {
-                throw new RuntimeException("Presently we only handle queries concerning Things, not Types");
+                throw new ResolutionConstraintException("Presently we only handle queries concerning Things, not Types");
             }
         }
         return statements;

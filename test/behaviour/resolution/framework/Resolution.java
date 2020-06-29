@@ -6,11 +6,12 @@ import grakn.core.kb.server.Transaction;
 import grakn.core.test.behaviour.resolution.framework.complete.Completer;
 import grakn.core.test.behaviour.resolution.framework.complete.SchemaManager;
 import grakn.core.test.behaviour.resolution.framework.resolve.QueryBuilder;
+import graql.lang.Graql;
 import graql.lang.query.GraqlGet;
 
 import java.util.List;
 
-import static grakn.core.test.behaviour.resolution.framework.common.Utils.thingCount;
+import static com.google.common.collect.Iterables.getOnlyElement;
 
 public class Resolution {
 
@@ -39,6 +40,17 @@ public class Resolution {
         completedInferredThingCount = completer.complete();
     }
 
+    /**
+     * Get a count of the number of instances in the KB
+     * @param session Grakn Session
+     * @return number of instances
+     */
+    private static int thingCount(Session session) {
+        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
+            return getOnlyElement(tx.execute(Graql.match(Graql.var("x").isa("thing")).get().count())).number().intValue();
+        }
+    }
+
     public void close() {
         completionSession.close();
         testSession.close();
@@ -60,7 +72,7 @@ public class Resolution {
         if (completionResultsCount < testResultsCount) {
             String msg = String.format("Query had too many answers. Expected %d answers or less, actual was %d, " +
                             "for query :\n %s", completionResultsCount, testResultsCount, inferenceQuery);
-            throw new RuntimeException(msg);
+            throw new CorrectnessException(msg);
         }
     }
 
@@ -79,7 +91,7 @@ public class Resolution {
 
         if (queries.size() == 0) {
             String msg = String.format("No resolution queries were constructed for query %s", inferenceQuery);
-            throw new RuntimeException(msg);
+            throw new CorrectnessException(msg);
         }
 
         try (Transaction tx = completionSession.transaction(Transaction.Type.READ)) {
@@ -87,7 +99,7 @@ public class Resolution {
                 List<ConceptMap> answers = tx.execute(query);
                 if (answers.size() != 1) {
                     String msg = String.format("Resolution query had %d answers, it should have had 1. The query is:\n %s", answers.size(), query);
-                    throw new RuntimeException(msg);
+                    throw new CorrectnessException(msg);
                 }
             }
         }
@@ -101,7 +113,19 @@ public class Resolution {
         int testInferredCount = thingCount(testSession) - initialThingCount;
         if (testInferredCount != completedInferredThingCount) {
             String msg = String.format("The complete KB contains %d inferred concepts, whereas the test KB contains %d inferred concepts.", completedInferredThingCount, testInferredCount);
-            throw new RuntimeException(msg);
+            throw new CompletenessException(msg);
         }
     }
+
+    public static class CorrectnessException extends RuntimeException {
+        CorrectnessException(String message) {
+            super(message);
+        }
+    }
+
+    public static class CompletenessException extends RuntimeException {
+        CompletenessException(String message) {
+            super(message);
+        }
+    };
 }

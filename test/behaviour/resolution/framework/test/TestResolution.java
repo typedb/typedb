@@ -90,7 +90,7 @@ public class TestResolution {
             testQueryThrows = e;
         }
         assertNotNull(testQueryThrows);
-        assertThat(testQueryThrows, instanceOf(RuntimeException.class));
+        assertThat(testQueryThrows, instanceOf(Resolution.CorrectnessException.class));
 
         Exception testResolutionThrows = null;
         try {
@@ -99,7 +99,7 @@ public class TestResolution {
             testResolutionThrows = e;
         }
         assertNotNull(testResolutionThrows);
-        assertThat(testResolutionThrows, instanceOf(RuntimeException.class));
+        assertThat(testResolutionThrows, instanceOf(Resolution.CorrectnessException.class));
 
         Exception testCompletenessThrows = null;
         try {
@@ -108,7 +108,7 @@ public class TestResolution {
             testCompletenessThrows = e;
         }
         assertNotNull(testCompletenessThrows);
-        assertThat(testCompletenessThrows, instanceOf(RuntimeException.class));
+        assertThat(testCompletenessThrows, instanceOf(Resolution.CompletenessException.class));
 
         resolution_test.close();
     }
@@ -146,10 +146,9 @@ public class TestResolution {
         Resolution resolution_test = new Resolution(completionSession, testSession);
 
         resolution_test.testQuery(inferenceQuery);
-        // In this case `testResolution()` could be correct or incorrect, since it could pick a correct path, or one
-        // that has the location-hierarchy backwards
 
-        // resolution_test.testResolution(inferenceQuery);
+        // In this case we ignore `testResolution()` as it could be correct or incorrect, since it could pick a correct
+        // path, or one that has the location-hierarchy backwards
 
         Exception testCompletenessThrows = null;
         try {
@@ -158,7 +157,7 @@ public class TestResolution {
             testCompletenessThrows = e;
         }
         assertNotNull(testCompletenessThrows);
-        assertThat(testCompletenessThrows, instanceOf(RuntimeException.class));
+        assertThat(testCompletenessThrows, instanceOf(Resolution.CompletenessException.class));
 
         resolution_test.close();
     }
@@ -202,12 +201,10 @@ public class TestResolution {
             testQueryThrows = e;
         }
         assertNotNull(testQueryThrows);
-        assertThat(testQueryThrows, instanceOf(RuntimeException.class));
+        assertThat(testQueryThrows, instanceOf(Resolution.CorrectnessException.class));
 
-        // In this case `testResolution()` could be correct or incorrect, since it could pick a correct path, or one
-        // that has the location-hierarchy backwards
-
-        // resolution_test.testResolution(inferenceQuery);
+        // In this case we ignore `testResolution()` as it could be correct or incorrect, since it could pick a correct
+        // path, or one that has the location-hierarchy backwards
 
         Exception testCompletenessThrows = null;
         try {
@@ -216,7 +213,7 @@ public class TestResolution {
             testCompletenessThrows = e;
         }
         assertNotNull(testCompletenessThrows);
-        assertThat(testCompletenessThrows, instanceOf(RuntimeException.class));
+        assertThat(testCompletenessThrows, instanceOf(Resolution.CompletenessException.class));
 
         resolution_test.close();
     }

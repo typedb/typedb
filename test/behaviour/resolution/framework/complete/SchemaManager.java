@@ -1,13 +1,14 @@
 package grakn.core.test.behaviour.resolution.framework.complete;
 
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Rule;
+import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
+import grakn.core.test.behaviour.resolution.framework.common.ResolutionConstraintException;
 import graql.lang.Graql;
 import graql.lang.query.GraqlGet;
 
@@ -131,7 +132,7 @@ public class SchemaManager {
         answers.forEach(ans -> {
             Type type = ans.get("x").asType();
             if (!type.isAbstract() && type.keys().collect(Collectors.toSet()).isEmpty()) {
-                throw new RuntimeException(String.format("Type \"%s\" doesn't have any keys declared. Keys are required " +
+                throw new ResolutionConstraintException(String.format("Type \"%s\" doesn't have any keys declared. Keys are required " +
                         "for all entity types and relation types for resolution testing", type.label().toString()));
             }
         });

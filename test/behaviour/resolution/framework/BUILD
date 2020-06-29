@@ -7,6 +7,7 @@ java_library(
         ],
     visibility = ["//visibility:public"],
     deps = [
+        "//dependencies/maven/artifacts/com/google/guava",
         "//test/behaviour/resolution/framework/complete",
         "//test/behaviour/resolution/framework/resolve",
         "//test/behaviour/resolution/framework/common",

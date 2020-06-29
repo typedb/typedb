@@ -7,7 +7,8 @@ java_library(
         "NegationRemovalVisitor.java",
         "PatternVisitor.java",
         "StatementVisitor.java",
-        "Utils.java"
+        "Utils.java",
+        "ResolutionConstraintException.java",
     ],
     visibility = ["//visibility:public"],
     deps = [
