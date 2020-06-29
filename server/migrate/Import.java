@@ -225,6 +225,7 @@ public class Import implements AutoCloseable {
         write();
     }
 
+    // TODO fix massive issue with relations playing roles in relations but needing at least one role player
     private void insertRelation(MigrateProto.Item.Relation relationMessage) {
         Relation relation = relationTypeCache.computeIfAbsent(
                         relationMessage.getLabel(),
@@ -253,17 +254,6 @@ public class Import implements AutoCloseable {
         relationCount++;
         write();
     }
-
-//    private void insertOwnership(MigrateProto.Item.Ownership ownership) {
-//        ConceptId localOwnerId = ConceptId.of(idMap.get(ownership.getOwnerId()));
-//        ConceptId localAttributeId = ConceptId.of(idMap.get(ownership.getAttributeId()));
-//        Thing thing = currentTransaction.getConcept(localOwnerId);
-//        Attribute<?> attribute = currentTransaction.getConcept(localAttributeId);
-//        thing.has(attribute);
-//
-//        ownershipCount++;
-//        write();
-//    }
 
     private <T> T valueFrom(MigrateProto.ValueObject valueObject) {
         switch (valueObject.getValueCase()) {
