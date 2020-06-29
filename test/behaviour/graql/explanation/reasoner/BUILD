@@ -16,29 +16,39 @@
 #
 
 
-package(default_visibility = ["//test/behaviour:__subpackages__"])
+package(default_visibility = ["//visibility:__subpackages__"])
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 
-java_library(
-    name = "steps",
+java_test(
+    name = "test",
     srcs = [
-        "ConnectionSteps.java",
+        "ReasonerTest.java",
     ],
+    test_class = "grakn.core.test.behaviour.graql.explanation.reasoner.ReasonerTest",
     deps = [
         # Package dependencies
-        "//kb/server",
         "//test/behaviour/server:server",
 
         # External dependencies from Maven
-        "//dependencies/maven/artifacts/junit:junit",
-        "//dependencies/maven/artifacts/io/cucumber:cucumber-java",
+        "//dependencies/maven/artifacts/io/cucumber:cucumber-junit",
     ],
+    runtime_deps = [
+        "//test/behaviour/graql:steps",
+        "//test/behaviour/connection:steps",
+        "//test/behaviour/connection/session:steps",
+        "//test/behaviour/config:parameters",
+    ],
+    data = [
+        "@graknlabs_verification//behaviour/graql/explanation:reasoner.feature",
+    ],
+    classpath_resources = ["//test/resources:logback-test"],
+    size = "medium",
     visibility = ["//visibility:public"]
 )
 
 checkstyle_test(
     name = "checkstyle",
     targets = [
-        ":steps",
+        ":test",
     ],
 )

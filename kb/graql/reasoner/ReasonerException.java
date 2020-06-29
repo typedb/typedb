@@ -70,6 +70,10 @@ public class ReasonerException extends GraknException {
         return new ReasonerException(ErrorMessage.ILLEGAL_ATOM_CONVERSION.getMessage(atom, targetType));
     }
 
+    public static ReasonerException illegalQueryConversion(Class<?> castedQuery, Class<?> targetType) {
+        return new ReasonerException(ErrorMessage.ILLEGAL_QUERY_CONVERSION.getMessage(castedQuery, targetType));
+    }
+
     public static ReasonerException valuePredicateAtomWithMultiplePredicates() {
         return new ReasonerException("Attempting creation of ValuePredicate atom with more than single predicate");
     }

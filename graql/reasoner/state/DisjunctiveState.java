@@ -19,28 +19,22 @@
 package grakn.core.graql.reasoner.state;
 
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.graql.reasoner.explanation.DisjunctiveExplanation;
+import grakn.core.graql.reasoner.query.DisjunctiveQuery;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
-import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
+import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
+import graql.lang.statement.Variable;
 
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Set;
 
-/**
- * Query state corresponding to a conjunctive query (ReasonerQueryImpl) in the resolution tree.
- */
-public class ConjunctiveState extends AnswerPropagatorState<ReasonerQueryImpl> {
+public class DisjunctiveState extends AnswerPropagatorState<DisjunctiveQuery> {
 
-    public ConjunctiveState(ReasonerQueryImpl q,
-                            ConceptMap sub,
-                            Unifier u,
-                            AnswerPropagatorState parent,
-                            Set<ReasonerAtomicQuery> visitedSubGoals) {
-        super(q.withSubstitution(sub), sub, u, parent, visitedSubGoals);
+    public DisjunctiveState(DisjunctiveQuery query, ConceptMap sub, Unifier u, AnswerPropagatorState parent, Set<ReasonerAtomicQuery> subGoals) {
+        super(query, sub, u, parent, subGoals);
     }
-
-    @Override
-    public String toString(){ return super.toString() + "\n" + getQuery() + "\n"; }
 
     @Override
     Iterator<ResolutionState> generateChildStateIterator() {
@@ -48,19 +42,23 @@ public class ConjunctiveState extends AnswerPropagatorState<ReasonerQueryImpl> {
     }
 
     @Override
-    ResolutionState propagateAnswer(AnswerState state) {
-        ConceptMap answer = consumeAnswer(state);
-        return !answer.isEmpty() ?
-                new AnswerState(
-                        new ConceptMap(answer.map(), answer.explanation(), getQuery().getPattern(answer.map())),
-                        getUnifier(),
-                        getParentState())
-                : null;
+    ConceptMap consumeAnswer(AnswerState state) {
+        ConceptMap sub = state.getSubstitution();
+        return new ConceptMap(sub.map(), new DisjunctiveExplanation(sub), getQuery().withSubstitution(sub).getPattern());
     }
 
     @Override
-    ConceptMap consumeAnswer(AnswerState state) {
-        ConceptMap sub = state.getSubstitution();
-        return new ConceptMap(sub.map(), sub.explanation(), getQuery().withSubstitution(sub).getPattern());
+    ResolutionState propagateAnswer(AnswerState state) {
+        ConceptMap answer = consumeAnswer(state);
+
+        HashMap<Variable, Concept> outerScopeVarsSub = getQuery().filterBindingVars(answer.map());
+
+        return !answer.isEmpty() ?
+                new AnswerState(
+                        new ConceptMap(outerScopeVarsSub, answer.explanation(), getQuery().getPattern(outerScopeVarsSub)),
+                        getUnifier(),
+                        getParentState()
+                )
+                : null;
     }
 }

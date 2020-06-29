@@ -15,16 +15,16 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
+load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 
 java_test(
     name = "lazy-merging-stream-test",
     srcs = ["LazyMergingStreamTest.java"],
     deps = [
-        "//graql/executor",
+        "//common",
         "//dependencies/maven/artifacts/org/mockito:mockito-core"
     ],
-    test_class = "grakn.core.graql.executor.util.LazyMergingStreamTest",
+    test_class = "grakn.core.common.util.test.LazyMergingStreamTest",
     size = "small"
 )
 
@@ -34,4 +34,3 @@ checkstyle_test(
         ":lazy-merging-stream-test"
     ],
 )
-

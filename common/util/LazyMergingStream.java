@@ -16,7 +16,7 @@
  *
  */
 
-package grakn.core.graql.executor.util;
+package grakn.core.common.util;
 
 import java.util.Collections;
 import java.util.Iterator;

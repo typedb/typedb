@@ -17,7 +17,7 @@
 
 
 package(default_visibility = ["//test/behaviour:__subpackages__"])
-load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
+load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 
 java_library(
     name = "parameters",

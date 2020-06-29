@@ -213,6 +213,7 @@ public enum ErrorMessage {
     INVALID_RESOLUTION_PROFILER_ANSWER("Resolution node for query [%s] contains an invalid answer: [%s]."),
     NON_EXISTENT_UNIFIER("Could not proceed with the unification as the unifier doesn't exist."),
     ILLEGAL_ATOM_CONVERSION("Attempted illegal atom conversion of atom [%s] to type [%s]."),
+    ILLEGAL_QUERY_CONVERSION("Attempted illegal query conversion of query type [%s] to type [%s]."),
     CONCEPT_NOT_THING("Attempted concept conversion from concept [%s] that is not a thing."),
     AMBIGUOUS_TYPE("Sought variable [%s] has ambiguous types [%s]"),
     INVALID_CAST("Cannot cast from class [%s] to target class [%s]"),

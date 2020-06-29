@@ -15,12 +15,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
+load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 
 java_test(
     name = "pattern-it",
     size = "medium",
     srcs = ["PatternIT.java"],
+    classpath_resources = ["//test/resources:logback-test"],
     test_class = "grakn.core.graql.query.pattern.PatternIT",
     deps = [
         "//concept/answer",
