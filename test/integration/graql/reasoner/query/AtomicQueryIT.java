@@ -22,7 +22,6 @@ import grakn.core.common.config.Config;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.unifier.UnifierType;
-import grakn.core.kb.concept.api.GraknConceptException;
 import grakn.core.kb.graql.exception.GraqlSemanticException;
 import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.kb.server.Session;
@@ -81,7 +80,7 @@ public class AtomicQueryIT {
         }
     }
 
-    @Test(expected = GraknConceptException.class)
+    @Test(expected = GraqlSemanticException.class)
     public void whenCreatingAttributeQueryWithInvalidValueType_ExceptionIsThrown() {
         try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
