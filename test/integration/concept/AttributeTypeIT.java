@@ -101,7 +101,7 @@ public class AttributeTypeIT {
         attributeType.regex("[abc]");
         attributeType.create("a");
         expectedException.expect(GraknConceptException.class);
-        expectedException.expectMessage(CoreMatchers.allOf(containsString("[abc]"), containsString("1"), containsString(attributeType.label().getValue())));
+        expectedException.expectMessage(CoreMatchers.allOf(containsString("[abc]"), containsString("1"), containsString(attributeType.label().name())));
         attributeType.create("1");
     }
 
@@ -138,7 +138,7 @@ public class AttributeTypeIT {
 
         //Invalid Attribute
         expectedException.expect(GraknConceptException.class);
-        expectedException.expectMessage(CoreMatchers.allOf(containsString("[b]"), containsString("b"), containsString(attribute.type().label().getValue())));
+        expectedException.expectMessage(CoreMatchers.allOf(containsString("[b]"), containsString("b"), containsString(attribute.type().label().name())));
         t2.create("a");
     }
 

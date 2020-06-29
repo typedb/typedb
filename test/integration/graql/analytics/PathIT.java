@@ -192,10 +192,10 @@ public class PathIT {
         try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             EntityType entityType = tx.putEntityType(thing);
 
-            Role role1 = tx.putRole("role1");
-            Role role2 = tx.putRole("role2");
+            RelationType relationType = tx.putRelationType(related).relates("role1").relates("role2");
+            Role role1 = relationType.role("role1");
+            Role role2 = relationType.role("role2");
             entityType.plays(role1).plays(role2);
-            RelationType relationType = tx.putRelationType(related).relates(role1).relates(role2);
 
             Entity start = entityType.create();
             Entity end = entityType.create();
@@ -247,15 +247,15 @@ public class PathIT {
         try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             EntityType entityType = tx.putEntityType(thing);
 
-            Role role1 = tx.putRole("role1");
-            Role role2 = tx.putRole("role2");
+            RelationType relationType1 = tx.putRelationType(related).relates("role1").relates("role2");
+            Role role1 = relationType1.role("role1");
+            Role role2 = relationType1.role("role2");
             entityType.plays(role1).plays(role2);
-            RelationType relationType1 = tx.putRelationType(related).relates(role1).relates(role2);
 
-            Role role3 = tx.putRole("role3");
-            Role role4 = tx.putRole("role4");
+            RelationType relationType2 = tx.putRelationType(veryRelated).relates("role3").relates("role4");
+            Role role3 = relationType2.role("role3");
+            Role role4 = relationType2.role("role4");
             entityType.plays(role3).plays(role4);
-            RelationType relationType2 = tx.putRelationType(veryRelated).relates(role3).relates(role4);
 
             Entity start = entityType.create();
             Entity end = entityType.create();
@@ -308,17 +308,17 @@ public class PathIT {
         try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             EntityType entityType = tx.putEntityType(thing);
 
-            Role role1 = tx.putRole("role1");
-            Role role2 = tx.putRole("role2");
+            RelationType relationType1 = tx.putRelationType(related).relates("role1").relates("role2");
+            Role role1 = relationType1.role("role1");
+            Role role2 = relationType1.role("role2");
             entityType.plays(role1).plays(role2);
-            RelationType relationType1 = tx.putRelationType(related).relates(role1).relates(role2);
 
-            Role role3 = tx.putRole("role3");
-            Role role4 = tx.putRole("role4");
-            Role role5 = tx.putRole("role5");
-            entityType.plays(role3).plays(role4).plays(role5);
             RelationType relationType2 = tx.putRelationType(veryRelated)
-                    .relates(role3).relates(role4).relates(role5);
+                    .relates("role3").relates("role4").relates("role5");
+            Role role3 = relationType2.role("role3");
+            Role role4 = relationType2.role("role4");
+            Role role5 = relationType2.role("role5");
+            entityType.plays(role3).plays(role4).plays(role5);
 
             Entity start = entityType.create();
             Entity end = entityType.create();
@@ -433,10 +433,10 @@ public class PathIT {
             person3.has(power3);
 
             // finally add a relation between persons to make it more interesting
-            Role role1 = tx.putRole("role1");
-            Role role2 = tx.putRole("role2");
+            RelationType relationTypePerson = tx.putRelationType(related).relates("role1").relates("role2");
+            Role role1 = relationTypePerson.role("role1");
+            Role role2 = relationTypePerson.role("role2");
             person.plays(role1).plays(role2);
-            RelationType relationTypePerson = tx.putRelationType(related).relates(role1).relates(role2);
             idRelationPerson1Person3 = relationTypePerson.create()
                     .assign(role1, person1)
                     .assign(role2, person3).id();
@@ -508,11 +508,11 @@ public class PathIT {
             entityId4 = entity4.id();
             entityId5 = entity5.id();
 
-            Role role1 = tx.putRole("role1");
-            Role role2 = tx.putRole("role2");
+            RelationType relationType = tx.putRelationType(related).relates("role1").relates("role2");
+            Role role1 = relationType.role("role1");
+            Role role2 = relationType.role("role2");
             entityType1.plays(role1).plays(role2);
             entityType2.plays(role1).plays(role2);
-            RelationType relationType = tx.putRelationType(related).relates(role1).relates(role2);
 
             relationId12 = relationType.create()
                     .assign(role1, entity1)

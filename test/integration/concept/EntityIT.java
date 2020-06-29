@@ -86,19 +86,15 @@ public class EntityIT {
     public void whenDeletingInstanceInRelation_TheInstanceAndCastingsAreDeletedAndTheRelationRemains() throws GraknConceptException {
         //Schema
         EntityType type = tx.putEntityType("Concept Type");
-        RelationType relationType = tx.putRelationType("relationTypes");
-        Role role1 = tx.putRole("role1");
-        Role role2 = tx.putRole("role2");
-        Role role3 = tx.putRole("role3");
+        RelationType relationType = tx.putRelationType("relationTypes").relates("role1").relates("role2").relates("role3");
+        Role role1 = relationType.role("role1");
+        Role role2 = relationType.role("role2");
+        Role role3 = relationType.role("role3");
 
         //Data
         Thing rolePlayer1 = type.create();
         Thing rolePlayer2 = type.create();
         Thing rolePlayer3 = type.create();
-
-        relationType.relates(role1);
-        relationType.relates(role2);
-        relationType.relates(role3);
 
         //Check Structure is in order
         Relation relation = relationType.create().
@@ -123,8 +119,8 @@ public class EntityIT {
     @Test
     public void whenDeletingLastRolePlayerInRelation_TheRelationIsDeleted() throws GraknConceptException {
         EntityType type = tx.putEntityType("Concept Type");
-        RelationType relationType = tx.putRelationType("relationTypes");
-        Role role1 = tx.putRole("role1");
+        RelationType relationType = tx.putRelationType("relationTypes").relates("role1");
+        Role role1 = relationType.role("role1");
         Thing rolePlayer1 = type.create();
 
         Relation relation = relationType.create().

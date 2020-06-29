@@ -23,7 +23,6 @@ import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.Entity;
 import grakn.core.kb.concept.api.EntityType;
-import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Relation;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
@@ -34,6 +33,7 @@ import grakn.core.test.rule.GraknTestStorage;
 import grakn.core.test.rule.SessionUtil;
 import grakn.core.test.rule.TestTransactionProvider;
 import graql.lang.Graql;
+import graql.lang.statement.Label;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -53,9 +53,9 @@ public class StatisticsDeltaIT {
         session = SessionUtil.serverlessSessionWithNewKeyspace(storage.createCompatibleServerConfig());
         tx = session.transaction(Transaction.Type.WRITE);
         AttributeType age = tx.putAttributeType("age", AttributeType.ValueType.LONG);
-        Role friend = tx.putRole("friend");
+        RelationType friendshipType = tx.putRelationType("friendship").relates("friend");
+        Role friend = friendshipType.role("friend");
         EntityType personType = tx.putEntityType("person").plays(friend).has(age);
-        RelationType friendshipType = tx.putRelationType("friendship").relates(friend);
         tx.commit();
         tx = session.transaction(Transaction.Type.WRITE);
     }
@@ -109,7 +109,7 @@ public class StatisticsDeltaIT {
 
         // test concept API insertion
         RelationType friendship = tx.getRelationType("friendship");
-        Role friend = tx.getRole("friend");
+        Role friend = friendship.role("friend");
         friendship.create().assign(friend, person1).assign(friend, person2);
 
         // test Graql insertion

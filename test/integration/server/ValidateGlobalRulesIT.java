@@ -64,9 +64,9 @@ public class ValidateGlobalRulesIT {
         EntityType wolf = tx.putEntityType("wolf");
         EntityType creature = tx.putEntityType("creature");
         EntityType hunter = tx.putEntityType("hunter");
-        RelationType hunts = tx.putRelationType("hunts");
-        Role witcher = tx.putRole("witcher");
-        Role monster = tx.putRole("monster");
+        RelationType hunts = tx.putRelationType("hunts").relates("witcher").relates("monster");
+        Role witcher = hunts.role("witcher");
+        Role monster = hunts.role("monster");
         Thing geralt = hunter.create();
         Thing werewolf = wolf.create();
 
@@ -96,9 +96,9 @@ public class ValidateGlobalRulesIT {
 
     @Test
     public void testValidatePlaysStructureUnique() {
-        Role role1 = tx.putRole("role1");
-        Role role2 = tx.putRole("role2");
-        RelationType relationType = tx.putRelationType("rt").relates(role1).relates(role2);
+        RelationType relationType = tx.putRelationType("rt").relates("role1").relates("role2");
+        Role role1 = relationType.role("role1");
+        Role role2 = relationType.role("role2");
 
         EntityType entityType = tx.putEntityType("et");
 
@@ -135,19 +135,18 @@ public class ValidateGlobalRulesIT {
 
     @Test
     public void testValidateRelationTypeRelates() {
-        Role hunter = tx.putRole("hunter");
         RelationType kills = tx.putRelationType("kills");
-
         assertTrue(ValidateGlobalRules.validateHasMinimumRoles(kills).isPresent());
-        kills.relates(hunter);
+        kills.relates("hunter");
+        Role hunter = kills.role("hunter");
         assertFalse(ValidateGlobalRules.validateHasMinimumRoles(kills).isPresent());
     }
 
 
     @Test
     public void testAbstractConceptValidation(){
-        Role role = tx.putRole("relates");
-        RelationType relationType = tx.putRelationType("relationTypes");
+        RelationType relationType = tx.putRelationType("relationTypes").relates("relates");
+        Role role = relationType.role("relates");
 
         assertTrue(ValidateGlobalRules.validateHasSingleIncomingRelatesEdge(role).isPresent());
         assertTrue(ValidateGlobalRules.validateHasMinimumRoles(relationType).isPresent());

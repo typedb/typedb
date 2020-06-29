@@ -22,13 +22,13 @@ import grakn.common.util.Collections;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.ConceptId;
-import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import grakn.core.kb.server.exception.InvalidKBException;
 import grakn.core.test.rule.GraknTestServer;
 import graql.lang.Graql;
 import graql.lang.query.GraqlInsert;
+import graql.lang.statement.Label;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -130,7 +130,7 @@ public class AttributeUniquenessIT {
                     type("name").sub("attribute").value(Graql.Token.ValueType.STRING),
                     type("parent").sub("role"),
                     type("child").sub("role"),
-                    type("person").sub("entity").has("name").plays("parent").plays("child"),
+                    type("person").sub("entity").has("name").plays("parent", "parentchild").plays("child", "parentchild"),
                     type("parentchild").sub("relation").relates("parent").relates("child")));
             tx.commit();
         }
@@ -350,8 +350,8 @@ public class AttributeUniquenessIT {
         try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             tx.execute(Graql.define(
                     type("owner").sub("relation").relates("entity-role-player").relates("attribute-role-player"),
-                    type("owned-entity").sub("entity").plays("entity-role-player"),
-                    type(ownedAttributeLabel).sub("attribute").plays("attribute-role-player").value(Graql.Token.ValueType.STRING)
+                    type("owned-entity").sub("entity").plays("entity-role-player", "owner"),
+                    type(ownedAttributeLabel).sub("attribute").plays("attribute-role-player", "owner").value(Graql.Token.ValueType.STRING)
             ));
             tx.commit();
         }

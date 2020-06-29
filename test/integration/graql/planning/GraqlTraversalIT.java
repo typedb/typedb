@@ -118,9 +118,9 @@ public class GraqlTraversalIT {
     @Before
     public void setUp() {
         tx = session.transaction(Transaction.Type.WRITE);
-        Role wife = tx.putRole("wife");
+        RelationType marriageType = tx.putRelationType("marriage").relates("wife");
+        Role wife = marriageType.role("wife");
         EntityType personType = tx.putEntityType("person").plays(wife);
-        RelationType marriageType = tx.putRelationType("marriage").relates(wife);
         tx.commit();
         tx = session.transaction(Transaction.Type.WRITE);
     }

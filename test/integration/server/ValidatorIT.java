@@ -80,46 +80,39 @@ public class ValidatorIT {
 
     @Test
     public void whenCreatingAbstractRelationWithSubType_EnsureValidationRuleForMatchingSubRolesIsSkipped(){
-        Role role1 = tx.putRole("my role");
-        Role role2 = tx.putRole("my role 2");
 
         RelationType abstractRelationType = tx.putRelationType("my abstract relation type").
-                relates(role1).
+                relates("my role").
                 isAbstract(true);
-        tx.putRelationType("my relation type").
-                sup(abstractRelationType).
-                relates(role2);
+        RelationType subRelation = tx.putRelationType("my relation type")
+                .sup(abstractRelationType)
+                .relates("my role 2");
+        Role role1 = abstractRelationType.role("my role");
+        Role role2 = subRelation.role("my role 2");
 
         tx.commit();
     }
 
     @Test
     public void whenCommittingGraphWhichFollowsValidationRules_Commit(){
-        RelationType cast = tx.putRelationType("Cast");
-        Role feature = tx.putRole("Feature");
-        Role actor = tx.putRole("Actor");
+        RelationType cast = tx.putRelationType("Cast").relates("feature").relates("actor");
+        Role feature = cast.role("feature");
+        Role actor = cast.role("actor");
         EntityType movie = tx.putEntityType("Movie");
         EntityType person = tx.putEntityType("Person");
         Thing pacino = person.create();
         Thing godfather = movie.create();
         EntityType genre = tx.putEntityType("Genre");
-        Role movieOfGenre = tx.putRole("Movie of Genre");
-        Role movieGenre = tx.putRole("Movie Genre");
         Thing crime = genre.create();
-        RelationType movieHasGenre = tx.putRelationType("Movie Has Genre");
-
-        //Construction
-        cast.relates(feature);
-        cast.relates(actor);
+        RelationType movieHasGenre = tx.putRelationType("Movie Has Genre").relates("Movie of Genre").relates("Movie Genre";
+        Role movieOfGenre = movieHasGenre.role("Movie of Genre");
+        Role movieGenre = movieHasGenre.role("Movie Genre");
 
         cast.create().
                 assign(feature, godfather).assign(actor, pacino);
 
         movieHasGenre.create().
                 assign(movieOfGenre, godfather).assign(movieGenre, crime);
-
-        movieHasGenre.relates(movieOfGenre);
-        movieHasGenre.relates(movieGenre);
 
         movie.plays(movieOfGenre);
         person.plays(actor);
@@ -132,9 +125,9 @@ public class ValidatorIT {
     @Test
     public void whenCommittingRelationWithoutSpecifyingSchema_ThrowOnCommit(){
         EntityType fakeType = tx.putEntityType("Fake Concept");
-        RelationType relationType = tx.putRelationType("kicks");
-        Role kicker = tx.putRole("kicker");
-        Role kickee = tx.putRole("kickee");
+        RelationType relationType = tx.putRelationType("kicks").relates("kicker").relates("kickee");
+        Role kicker = relationType.role("kicker");
+        Role kickee = relationType.role("kickee");
         Thing kyle = fakeType.create();
         Thing icke = fakeType.create();
 
@@ -150,16 +143,6 @@ public class ValidatorIT {
     }
 
     @Test
-    public void whenCommittingNonAbstractRoleTypeNotLinkedToAnyRelationType_Throw(){
-        Role alone = tx.putRole("alone");
-
-        exception.expect(InvalidKBException.class);
-        exception.expectMessage(containsString(ErrorMessage.VALIDATION_ROLE_TYPE_MISSING_RELATION_TYPE.getMessage(alone.label())));
-
-        tx.commit();
-    }
-
-    @Test
     public void whenCommittingNonAbstractRelationTypeNotLinkedToAnyRoleType_Throw(){
         RelationType alone = tx.putRelationType("alone");
 
@@ -170,32 +153,13 @@ public class ValidatorIT {
     }
 
     @Test
-    public void whenCreatingRelationWithoutLinkingRelates_Throw(){
-        Role hunter = tx.putRole("hunter");
-        Role monster = tx.putRole("monster");
-        EntityType stuff = tx.putEntityType("Stuff").plays(hunter).plays(monster);
-        RelationType kills = tx.putRelationType("kills").relates(hunter);
-
-        Entity myHunter = stuff.create();
-        Entity myMonster = stuff.create();
-
-        Relation relation = kills.create().assign(hunter, myHunter).assign(monster, myMonster);
-
-        exception.expect(InvalidKBException.class);
-        exception.expectMessage(containsString(ErrorMessage.VALIDATION_RELATION_CASTING_LOOP_FAIL.getMessage(relation.id(), monster.label(), kills.label())));
-
-        tx.commit();
-    }
-
-    @Test
     public void whenDeletingRelations_EnsureGraphRemainsValid() throws InvalidKBException {
         // schema
         EntityType person = tx.putEntityType("person");
         EntityType movie = tx.putEntityType("movie");
-        RelationType cast = tx.putRelationType("cast");
-        Role feature = tx.putRole("feature");
-        Role actor = tx.putRole("actor");
-        cast.relates(feature).relates(actor);
+        RelationType cast = tx.putRelationType("cast").relates("feature").relates("actor)");
+        Role feature = cast.role("feature");
+        Role actor = cast.role("actor");
         person.plays(actor);
         movie.plays(feature);
 
@@ -235,9 +199,9 @@ public class ValidatorIT {
 
     @Test
     public void whenManuallyCreatingCorrectBinaryRelation_Commit() throws InvalidKBException {
-        Role characterBeingPlayed = tx.putRole("Character being played");
-        Role personPlayingCharacter = tx.putRole("Person Playing Char");
-        RelationType playsChar = tx.putRelationType("Plays Char").relates(characterBeingPlayed).relates(personPlayingCharacter);
+        RelationType playsChar = tx.putRelationType("Plays Char").relates("Character being played").relates("Person Playing Char");
+        Role characterBeingPlayed = playsChar.role("Character being played");
+        Role personPlayingCharacter = playsChar.role("Person Playing Char");
 
         EntityType person = tx.putEntityType("person").plays(characterBeingPlayed).plays(personPlayingCharacter);
         EntityType character = tx.putEntityType("character").plays(characterBeingPlayed);
@@ -255,6 +219,8 @@ public class ValidatorIT {
     /*------------------------------- Entity Type to Role Type Validation (Schema) -----------------------------------*/
     @Test
     public void whenCommittingWithRoleTypeHierarchy_EnsureEntityTypesPlayAllRolesExplicitly1() throws InvalidKBException {
+        tx.putRelationType("filler").relates("parent").relates("child").relates("father").relates("relative").relates("mother");
+
         Role relative = tx.putRole("relative");
         Role parent = tx.putRole("parent").sup(relative);
         Role father = tx.putRole("father").sup(parent);
@@ -266,8 +232,6 @@ public class ValidatorIT {
 
         Role child = tx.putRole("child");
 
-        //Padding to make it valid
-        tx.putRelationType("filler").relates(parent).relates(child).relates(father).relates(relative).relates(mother);
 
         tx.commit();
     }

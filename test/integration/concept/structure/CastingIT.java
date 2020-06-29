@@ -59,11 +59,11 @@ public class CastingIT {
     public void setUp(){
         session = server.sessionWithNewKeyspace();
         tx = session.transaction(Transaction.Type.WRITE);
-        role1 = tx.putRole("role1");
-        role2 = tx.putRole("role2");
-        role3 = tx.putRole("role3");
+        relationType = tx.putRelationType("Relation Type").relates("role1").relates("role2").relates("role3");
+        role1 = relationType.role("role1");
+        role2 = relationType.role("role2");
+        role3 = relationType.role("role3");
         entityType = tx.putEntityType("Entity Type").plays(role1).plays(role2).plays(role3);
-        relationType = tx.putRelationType("Relation Type").relates(role1).relates(role2).relates(role3);
     }
 
     @After

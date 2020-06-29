@@ -31,6 +31,7 @@ import grakn.core.kb.server.Transaction;
 import grakn.core.kb.server.exception.InvalidKBException;
 import grakn.core.test.rule.GraknTestServer;
 import graql.lang.Graql;
+import graql.lang.statement.Label;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -194,7 +195,8 @@ public class ConnectedComponentIT {
             // test on subtypes. This will change existing cluster labels.
             Set<String> subTypes = Sets.newHashSet(thing, anotherThing, resourceType1, resourceType2,
                     resourceType3, resourceType4, resourceType5, resourceType6);
-            clusterList = tx.execute(Graql.compute().cluster().using(CONNECTED_COMPONENT).in(subTypes));
+            Set<Label> subLabels = subTypes.stream().map(type -> Label.of(type)).collect(Collectors.toSet());
+            clusterList = tx.execute(Graql.compute().cluster().using(CONNECTED_COMPONENT).in(subLabels));
             assertEquals(7, clusterList.size()); // the number of clusters
             assertTrue(clusterList.stream().anyMatch(cluster -> cluster.set().size() == 10)); // largest cluster has 10 items, connected via attrs
         }
@@ -237,11 +239,11 @@ public class ConnectedComponentIT {
             entityId3 = entity3.id();
             entityId4 = entity4.id();
 
-            Role role1 = tx.putRole("role1");
-            Role role2 = tx.putRole("role2");
+            RelationType relationType = tx.putRelationType(related).relates("role1").relates("role2");
+            Role role1 = relationType.role("role1");
+            Role role2 = relationType.role("role2");
             entityType1.plays(role1).plays(role2);
             entityType2.plays(role1).plays(role2);
-            RelationType relationType = tx.putRelationType(related).relates(role1).relates(role2);
 
             relationType.create()
                     .assign(role1, entity1)

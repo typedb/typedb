@@ -115,6 +115,11 @@ public class ValidateGlobalRules {
         return errors;
     }
 
+
+    /**
+     * TODO this can probably be removed
+     */
+
     /**
      * Checks if the Role of the Casting has been linked to the RelationType of
      * the Relation which the Casting connects to.

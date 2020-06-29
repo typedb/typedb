@@ -100,7 +100,7 @@ public class SemanticDifferenceIT {
                     var().rel("baseRole1", var("z")).rel("baseRole2", var("w")).isa("binary");
             Pattern childPattern = and(
                     var().rel("baseRole1", var("x")).rel("baseRole2", var("y")).isa("binary"),
-                    var("x").isa(subRoleEntity.label().getValue())
+                    var("x").isa(subRoleEntity.label().name())
             );
             ReasonerAtomicQuery parent = reasonerQueryFactory.atomic(conjunction(parentPattern));
             ReasonerAtomicQuery child = reasonerQueryFactory.atomic(conjunction(childPattern));
@@ -129,10 +129,10 @@ public class SemanticDifferenceIT {
 
             Pattern parentPattern = and(
                     var().rel("baseRole1", var("z")).rel("baseRole2", var("w")).isa("binary"),
-                    var("z").isa(baseRoleEntity.label().getValue()));
+                    var("z").isa(baseRoleEntity.label().name()));
             Pattern childPattern = and(
                     var().rel("baseRole1", var("x")).rel("baseRole2", var("y")).isa("binary"),
-                    var("x").isa(subRoleEntity.label().getValue()));
+                    var("x").isa(subRoleEntity.label().name()));
 
             ReasonerAtomicQuery parent = reasonerQueryFactory.atomic(conjunction(parentPattern));
             ReasonerAtomicQuery child = reasonerQueryFactory.atomic(conjunction(childPattern));
@@ -161,10 +161,10 @@ public class SemanticDifferenceIT {
 
             Pattern parentPattern = and(
                     var().rel("baseRole1", var("z")).rel("baseRole2", var("w")).isa("binary"),
-                    var("z").isa(baseRoleEntity.label().getValue()));
+                    var("z").isa(baseRoleEntity.label().name()));
             Pattern childPattern = and(
                     var().rel("baseRole1", var("x")).rel("baseRole2", var("y")).isa("binary"),
-                    var("x").isa(metaEntityType.label().getValue()));
+                    var("x").isa(metaEntityType.label().name()));
 
             ReasonerAtomicQuery parent = reasonerQueryFactory.atomic(conjunction(parentPattern));
             ReasonerAtomicQuery child = reasonerQueryFactory.atomic(conjunction(childPattern));
@@ -185,7 +185,7 @@ public class SemanticDifferenceIT {
                     var().rel(var("role"), var("z")).rel("baseRole2", var("w")).isa("binary");
             Pattern childPattern = and(
                     var().rel(var("role"), var("x")).rel("baseRole2", var("y")).isa("binary"),
-                    var("role").type(role.label().getValue()));
+                    var("role").type(role.label().name()));
 
             ReasonerAtomicQuery parent = reasonerQueryFactory.atomic(conjunction(parentPattern));
             ReasonerAtomicQuery child = reasonerQueryFactory.atomic(conjunction(childPattern));
@@ -215,10 +215,10 @@ public class SemanticDifferenceIT {
 
             Pattern parentPattern = and(
                     var().rel(var("role"), var("z")).rel("baseRole2", var("w")).isa("binary"),
-                    var("role").type(baseRole.label().getValue()));
+                    var("role").type(baseRole.label().name()));
             Pattern childPattern = and(
                     var().rel(var("role"), var("x")).rel("baseRole2", var("y")).isa("binary"),
-                    var("role").type(subRole.label().getValue()));
+                    var("role").type(subRole.label().name()));
             ReasonerAtomicQuery parent = reasonerQueryFactory.atomic(conjunction(parentPattern));
             ReasonerAtomicQuery child = reasonerQueryFactory.atomic(conjunction(childPattern));
 
@@ -248,12 +248,12 @@ public class SemanticDifferenceIT {
 
             Pattern parentPattern = and(
                     var().rel(var("role"), var("z")).rel(var("role2"), var("z")).isa("binary"),
-                    var("role").type(baseRole1.label().getValue()),
-                    var("role2").type(baseRole2.label().getValue()));
+                    var("role").type(baseRole1.label().name()),
+                    var("role2").type(baseRole2.label().name()));
             Pattern childPattern = and(
                     var().rel(var("role"), var("x")).rel(var("role2"), var("x")).isa("binary"),
-                    var("role").type(subRole1.label().getValue()),
-                    var("role2").type(subRole2.label().getValue()));
+                    var("role").type(subRole1.label().name()),
+                    var("role2").type(subRole2.label().name()));
             ReasonerAtomicQuery parent = reasonerQueryFactory.atomic(conjunction(parentPattern));
             ReasonerAtomicQuery child = reasonerQueryFactory.atomic(conjunction(childPattern));
 
@@ -300,7 +300,7 @@ public class SemanticDifferenceIT {
             Role subRole1 = tx.getRole("subRole1");
             Role subRole2 = tx.getRole("subSubRole2");
             Pattern parentPattern = var().rel("baseRole1", var("z")).rel("baseRole2", var("w")).isa("binary");
-            Pattern childPattern = var().rel(subRole1.label().getValue(), var("x")).rel(subRole2.label().getValue(), var("y")).isa("binary");
+            Pattern childPattern = var().rel(subRole1.label().name(), var("x")).rel(subRole2.label().name(), var("y")).isa("binary");
             ReasonerAtomicQuery parent = reasonerQueryFactory.atomic(conjunction(parentPattern));
             ReasonerAtomicQuery child = reasonerQueryFactory.atomic(conjunction(childPattern));
 
@@ -326,7 +326,7 @@ public class SemanticDifferenceIT {
             ReasonerQueryFactory reasonerQueryFactory = tx.reasonerQueryFactory();
             Role metaRole = tx.getMetaRole();
             Pattern parentPattern = var().rel("baseRole1", var("z")).rel("baseRole2", var("w")).isa("binary");
-            Pattern childPattern = var().rel(metaRole.label().getValue(), var("x")).rel(metaRole.label().getValue(), var("y")).isa("binary");
+            Pattern childPattern = var().rel(metaRole.label().name(), var("x")).rel(metaRole.label().name(), var("y")).isa("binary");
 
             ReasonerAtomicQuery parent = reasonerQueryFactory.atomic(conjunction(parentPattern));
             ReasonerAtomicQuery child = reasonerQueryFactory.atomic(conjunction(childPattern));

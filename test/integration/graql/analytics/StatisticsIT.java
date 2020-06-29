@@ -34,6 +34,7 @@ import grakn.core.test.rule.GraknTestServer;
 import graql.lang.Graql;
 import graql.lang.exception.GraqlException;
 import graql.lang.query.GraqlCompute;
+import graql.lang.statement.Label;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -130,7 +131,7 @@ public class StatisticsIT {
             assertExceptionThrown(tx, Graql.compute().median().of(resourceType4));
 
             // attribute-types have different value types
-            Set<String> resourceTypes = Sets.newHashSet(resourceType1, resourceType2);
+            Set<Label> resourceTypes = Sets.newHashSet(Label.of(resourceType1), Label.of(resourceType2));
             assertExceptionThrown(tx, Graql.compute().max().of(resourceTypes));
             assertExceptionThrown(tx, Graql.compute().min().of(resourceTypes));
             assertExceptionThrown(tx, Graql.compute().mean().of(resourceTypes));
@@ -568,11 +569,11 @@ public class StatisticsIT {
             entityId3 = entity3.id();
             entityId4 = entity4.id();
 
-            Role relation1 = tx.putRole("relation1");
-            Role relation2 = tx.putRole("relation2");
+            RelationType related = tx.putRelationType("related").relates("relation1").relates("relation2");
+            Role relation1 = related.role("relation1");
+            Role relation2 = related.role("relation2");
             entityType1.plays(relation1).plays(relation2);
             entityType2.plays(relation1).plays(relation2);
-            RelationType related = tx.putRelationType("related").relates(relation1).relates(relation2);
 
             related.create()
                     .assign(relation1, entity1)
