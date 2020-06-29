@@ -28,8 +28,10 @@ import graql.lang.Graql;
 import graql.lang.query.GraqlGet;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static com.google.common.collect.Iterables.getOnlyElement;
+import static grakn.core.test.behaviour.resolution.framework.complete.SchemaManager.filterCompletionSchema;
 
 public class Resolution {
 
@@ -85,11 +87,11 @@ public class Resolution {
         testTx.close();
 
         Transaction completionTx = completionSession.transaction(Transaction.Type.READ);
-        int completionResultsCount = completionTx.execute(inferenceQuery).size();
+        int completionResultsCount = filterCompletionSchema(completionTx.stream(inferenceQuery)).collect(Collectors.toSet()).size();
         completionTx.close();
-        if (completionResultsCount < testResultsCount) {
-            String msg = String.format("Query had too many answers. Expected %d answers or less, actual was %d, " +
-                            "for query :\n %s", completionResultsCount, testResultsCount, inferenceQuery);
+        if (completionResultsCount != testResultsCount) {
+            String msg = String.format("Query had an incorrect number of answers. Expected %d answers, but found %d " +
+                    "answers, for query :\n %s", completionResultsCount, testResultsCount, inferenceQuery);
             throw new CorrectnessException(msg);
         }
     }

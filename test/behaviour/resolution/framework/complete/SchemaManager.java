@@ -136,6 +136,30 @@ public class SchemaManager {
         }
     }
 
+    private static boolean typeIsMemberOfCompletionSchema(Type type) {
+        if (type.isAttributeType()) {
+            return EXCLUDED_ATTRIBUTE_TYPES.contains(type.label().toString());
+
+        } else if (type.isEntityType()) {
+            return EXCLUDED_ENTITY_TYPES.contains(type.label().toString());
+
+        } else if (type.isRelationType()) {
+            return EXCLUDED_RELATION_TYPES.contains(type.label().toString());
+        } else {
+            throw new UnsupportedOperationException("Type not recognised");
+        }
+    }
+
+    /**
+     * Filters out answers that contain any Thing instance that is derived from the completion schema.
+     * @param answerStream stream of answers to filter
+     * @return filtered stream of answers
+     */
+    public static Stream<ConceptMap> filterCompletionSchema(Stream<ConceptMap> answerStream) {
+        return answerStream.filter(a -> a.map().values().stream().noneMatch(concept -> typeIsMemberOfCompletionSchema(concept.asThing().type())));
+    }
+
+
     public static void enforceAllTypesHaveKeys(Session session) {
         Transaction tx = session.transaction(Transaction.Type.READ);
 
