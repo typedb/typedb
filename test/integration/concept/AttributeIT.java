@@ -166,7 +166,7 @@ public class AttributeIT {
         String invalidThing = "Invalid Thing";
         AttributeType longAttributeType = tx.putAttributeType("long", AttributeType.ValueType.LONG);
         expectedException.expect(GraknConceptException.class);
-        expectedException.expectMessage(GraknConceptException.invalidAttributeValue(longAttributeType, invalidThing, AttributeType.ValueType.LONG).getMessage());
+        expectedException.expectMessage(GraknConceptException.invalidAttributeValue(longAttributeType, invalidThing).getMessage());
         longAttributeType.create(invalidThing);
     }
 
@@ -177,7 +177,7 @@ public class AttributeIT {
         String invalidThing = "Invalid Thing";
         AttributeType dateAttributeType = tx.putAttributeType("date", AttributeType.ValueType.DATETIME);
         expectedException.expect(GraknConceptException.class);
-        expectedException.expectMessage(GraknConceptException.invalidAttributeValue(dateAttributeType, invalidThing, AttributeType.ValueType.DATETIME).getMessage());
+        expectedException.expectMessage(GraknConceptException.invalidAttributeValue(dateAttributeType, invalidThing).getMessage());
         dateAttributeType.create(invalidThing);
     }
 
