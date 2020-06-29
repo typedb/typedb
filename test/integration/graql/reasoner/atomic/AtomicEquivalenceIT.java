@@ -170,7 +170,7 @@ public class AtomicEquivalenceIT {
     @Test
     public void testEquivalence_AttributesWithEquivalentValues() {
         AttributeType<?> metaAttributeType = tx.getMetaAttributeType();
-        Set<AttributeType> attributeTypes = metaAttributeType.subs().collect(toSet());
+        Set<AttributeType<?>> attributeTypes = metaAttributeType.subs().collect(toSet());
 
         ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
@@ -184,8 +184,7 @@ public class AtomicEquivalenceIT {
 
                         Pattern basePattern = Graql.parsePattern("$x has " + attributeType.label().getValue() + " " + value + ";");
                         valueType.comparableValueTypes().forEach(comparableValueType -> {
-                            AttributeValueConverter<Object, ?> converter = AttributeValueConverter.of(comparableValueType);
-                            Pattern convertedPattern = Graql.parsePattern("$x has " + attributeType.label().getValue() + " " + converter.convert(value) + ";");
+                            Pattern convertedPattern = Graql.parsePattern("$x has " + attributeType.label().getValue() + " " + AttributeValueConverter.tryConvert(attributeType, value) + ";");
                             atomicEquivalence(basePattern.toString(), convertedPattern.toString(), true, AtomicEquivalence.AlphaEquivalence, reasonerQueryFactory);
                             atomicEquivalence(basePattern.toString(), convertedPattern.toString(), true, AtomicEquivalence.StructuralEquivalence, reasonerQueryFactory);
                         });

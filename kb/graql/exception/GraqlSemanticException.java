@@ -223,10 +223,6 @@ public class GraqlSemanticException extends GraknException {
         return new GraqlSemanticException(ErrorMessage.K_SMALLER_THAN_TWO.getMessage());
     }
 
-    public static GraqlSemanticException incompatibleAttributeValue(AttributeType.ValueType valueType, Object value) {
-        return new GraqlSemanticException("Value " + value + " is not compatible with attribute value type: " + valueType.name());
-    }
-
     public static GraqlSemanticException attributeMustBeANumber(AttributeType.ValueType valueType, Label attributeType) {
         return new GraqlSemanticException(attributeType + " must have value type of `long` or `double`, but was " + valueType.name());
     }

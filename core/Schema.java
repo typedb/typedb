@@ -263,7 +263,7 @@ public final class Schema {
 
     /**
      * @param label The AttributeType label
-     * @param value The value of the Attribute
+     * @param value The computed value of the Attribute
      * @return A unique id for the Attribute
      */
     @CheckReturnValue

@@ -20,6 +20,7 @@ package grakn.core.core;
 
 import com.google.common.collect.ImmutableMap;
 import grakn.core.kb.concept.api.AttributeType;
+import grakn.core.kb.concept.api.GraknConceptException;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -41,15 +42,28 @@ public abstract class AttributeValueConverter<SOURCE, TARGET>{
             .put(AttributeType.ValueType.STRING, new IdentityConverter<String, String>())
             .build();
 
-    public static <SOURCE, TARGET> AttributeValueConverter<SOURCE, TARGET> of(AttributeType.ValueType<TARGET> valueType) {
-        AttributeValueConverter<?, ?> converter = converters.get(valueType);
-        if (converter == null){
-            throw new UnsupportedOperationException("Unsupported ValueType: " + valueType.toString());
+    /**
+     * Try to convert an attribute value to a desired target type, throwing an exception if the conversion fails.
+     * @param type The attribute type
+     * @param value The attribute value
+     * @param <S> The source type
+     * @param <T> The target type
+     * @return The converted value
+     */
+    public static <S, T> T tryConvert(AttributeType<T> type, S value) {
+        try {
+            final AttributeType.ValueType<T> valueType = type.valueType();
+            AttributeValueConverter<S, T> converter = (AttributeValueConverter<S, T>) converters.get(valueType);
+            if (converter == null) {
+                throw new UnsupportedOperationException("Unsupported ValueType: " + valueType.toString());
+            }
+            return converter.convert(value);
+        } catch (ClassCastException e) {
+            throw GraknConceptException.invalidAttributeValue(type, value);
         }
-        return (AttributeValueConverter<SOURCE, TARGET>) converter;
     }
 
-    public abstract TARGET convert(SOURCE value);
+    abstract TARGET convert(SOURCE value);
 
     public static class IdentityConverter<SOURCE, TARGET> extends AttributeValueConverter<SOURCE, TARGET> {
         @Override
