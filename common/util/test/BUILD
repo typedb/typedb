@@ -15,40 +15,22 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-
-package(default_visibility = ["//visibility:__subpackages__"])
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 
 java_test(
-    name = "test",
-    srcs = [
-        "UndefineTest.java",
-    ],
-    test_class = "grakn.core.test.behaviour.graql.language.undefine.UndefineTest",
+    name = "lazy-merging-stream-test",
+    srcs = ["LazyMergingStreamTest.java"],
     deps = [
-        # Package dependencies
-        "//test/behaviour/server:server",
-
-        # External dependencies from Maven
-        "//dependencies/maven/artifacts/io/cucumber:cucumber-junit",
+        "//common",
+        "//dependencies/maven/artifacts/org/mockito:mockito-core"
     ],
-    runtime_deps = [
-        "//test/behaviour/graql:steps",
-        "//test/behaviour/connection:steps",
-        "//test/behaviour/connection/session:steps",
-        "//test/behaviour/config:parameters",
-    ],
-    data = [
-        "@graknlabs_verification//behaviour/graql/language:undefine.feature",
-    ],
-    classpath_resources = ["//test/resources:logback-test"],
-    size = "large",
-    visibility = ["//visibility:public"]
+    test_class = "grakn.core.common.util.test.LazyMergingStreamTest",
+    size = "small"
 )
 
 checkstyle_test(
     name = "checkstyle",
     targets = [
-        ":test",
+        ":lazy-merging-stream-test"
     ],
 )

@@ -108,7 +108,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
     @Override
     public ReasonerAtomicQuery withSubstitution(ConceptMap sub){
-        Set<Atomic> union = Sets.union(getAtoms(), AtomicUtil.answerToPredicates(sub, this));
+        Set<Atomic> union = Sets.union(getAtoms(), AtomicUtil.answerToPredicates(sub.map(), this));
         return new ReasonerAtomicQuery(union,  traversalPlanFactory, traversalExecutor, context());
     }
 

@@ -50,7 +50,7 @@ console_version = get_dep_version("graknlabs_console")
 
 command = [
     'sudo',
-    'aptitude',
+    'apt',
     'install',
     '-y',
     'grakn-core-all={}'.format(core_version),

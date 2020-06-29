@@ -16,8 +16,9 @@
  *
  */
 
-package grakn.core.graql.executor.util;
+package grakn.core.common.util.test;
 
+import grakn.core.common.util.LazyMergingStream;
 import org.junit.Test;
 
 import java.util.Arrays;
