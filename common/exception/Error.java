@@ -73,6 +73,8 @@ public abstract class Error<TYPE extends Error<TYPE>> {
 
     public static class Internal extends Error<Internal> {
 
+        public static final Internal ILLEGAL_STATE =
+                new Internal(0, "Illegal internal state!");
         public static final Internal UNRECOGNISED_VALUE =
                 new Internal(1, "Unrecognised schema value!");
 

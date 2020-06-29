@@ -98,7 +98,7 @@ public class Parameters {
         }
     }
 
-    @ParameterType("\\$([a-z]+)")
+    @ParameterType("\\$([a-zA-Z0-9]+)")
     public String var(String variable) {
         return variable;
     }

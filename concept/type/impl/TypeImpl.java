@@ -35,11 +35,9 @@ import java.util.stream.Stream;
 
 import static hypergraph.common.exception.Error.ThingWrite.ILLEGAL_ABSTRACT_WRITE;
 import static hypergraph.common.iterator.Iterators.apply;
-import static hypergraph.common.iterator.Iterators.link;
 import static hypergraph.common.iterator.Iterators.loop;
 import static hypergraph.common.iterator.Iterators.stream;
 import static hypergraph.common.iterator.Iterators.tree;
-import static java.util.stream.Collectors.toList;
 
 public abstract class TypeImpl implements Type {
 
@@ -138,9 +136,7 @@ public abstract class TypeImpl implements Type {
     }
 
     <THING> Stream<THING> instances(Function<ThingVertex, THING> thingConstructor) {
-        return stream(apply(link(
-                subs().map(t -> ((TypeImpl) t).vertex.instances()).collect(toList())
-        ), thingConstructor::apply));
+        return subs().flatMap(t -> stream(((TypeImpl) t).vertex.instances())).distinct().map(thingConstructor);
     }
 
     @Override

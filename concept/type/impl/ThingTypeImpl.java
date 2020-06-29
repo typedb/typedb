@@ -18,8 +18,12 @@
 
 package hypergraph.concept.type.impl;
 
+import hypergraph.common.exception.Error;
 import hypergraph.common.exception.HypergraphException;
 import hypergraph.concept.thing.Thing;
+import hypergraph.concept.thing.impl.AttributeImpl;
+import hypergraph.concept.thing.impl.EntityImpl;
+import hypergraph.concept.thing.impl.RelationImpl;
 import hypergraph.concept.type.AttributeType;
 import hypergraph.concept.type.RoleType;
 import hypergraph.concept.type.ThingType;
@@ -281,7 +285,19 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
         @Override
         public Stream<? extends Thing> instances() {
-            return subs().filter(t -> !t.isAbstract()).flatMap(ThingType::instances);
+            return super.instances(v ->{
+                switch (v.schema()) {
+                    case ENTITY:
+                        return EntityImpl.of(v);
+                    case ATTRIBUTE:
+                        return AttributeImpl.of(v);
+                    case RELATION:
+                        return RelationImpl.of(v);
+                    default:
+                        assert false;
+                        throw new HypergraphException(Error.Internal.UNRECOGNISED_VALUE);
+                }
+            });
         }
 
         /**

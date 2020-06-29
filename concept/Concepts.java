@@ -18,6 +18,7 @@
 
 package hypergraph.concept;
 
+import hypergraph.common.exception.Error;
 import hypergraph.common.exception.HypergraphException;
 import hypergraph.concept.thing.impl.ThingImpl;
 import hypergraph.concept.type.AttributeType;
@@ -47,25 +48,25 @@ public final class Concepts {
     public ThingType getRootType() {
         TypeVertex vertex = graph.type().get(Schema.Vertex.Type.Root.THING.label());
         if (vertex != null) return new ThingTypeImpl.Root(vertex);
-        else return null;
+        else throw new HypergraphException(Error.Internal.ILLEGAL_STATE);
     }
 
     public EntityType getRootEntityType() {
         TypeVertex vertex = graph.type().get(Schema.Vertex.Type.Root.ENTITY.label());
         if (vertex != null) return EntityTypeImpl.of(vertex);
-        else return null;
+        else throw new HypergraphException(Error.Internal.ILLEGAL_STATE);
     }
 
     public RelationType getRootRelationType() {
         TypeVertex vertex = graph.type().get(Schema.Vertex.Type.Root.RELATION.label());
         if (vertex != null) return RelationTypeImpl.of(vertex);
-        else return null;
+        else throw new HypergraphException(Error.Internal.ILLEGAL_STATE);
     }
 
     public AttributeType getRootAttributeType() {
         TypeVertex vertex = graph.type().get(Schema.Vertex.Type.Root.ATTRIBUTE.label());
         if (vertex != null) return AttributeTypeImpl.of(vertex);
-        else return null;
+        else throw new HypergraphException(Error.Internal.ILLEGAL_STATE);
     }
 
     public EntityType putEntityType(String label) {

@@ -52,6 +52,9 @@ java_test(
     runtime_deps = [
         ":steps",
         "//test/behaviour/config:parameters",
+        "//test/behaviour/concept/thing/entity:steps",
+        "//test/behaviour/concept/thing/attribute:steps",
+        "//test/behaviour/concept/thing/relation:steps",
         "//test/behaviour/concept/type/attributetype:steps",
         "//test/behaviour/concept/type/relationtype:steps",
         "//test/behaviour/connection/keyspace:steps",
