@@ -113,27 +113,17 @@ public class TestQueryBuilder {
         );
 
         Pattern expected = Graql.parsePattern("" +
-                "{ $x0 (instance: $country) isa isa-property, has type-label \"country\";" +
-                "$x1 (instance: $transaction) isa isa-property, has type-label \"transaction\";" + //TODO When inserted, the supertype labels should be owned too
+                "{ $x0 (owner: $country) isa has-attribute-property, has currency $currency; " +
                 // TODO Should we also have an isa-property for $currency?
-                "$x2 (owner: $country) isa has-attribute-property, has currency $currency;" +
+                "$x1 (instance: $country) isa isa-property, has type-label \"country\"; " +
+                "$x2 (rel: $locates, roleplayer: $transaction) isa relation-property, has role-label \"locates_located\"; " +
+                "$x3 (rel: $locates, roleplayer: $country) isa relation-property, has role-label \"locates_location\"; " +
+                "$x4 (instance: $locates) isa isa-property, has type-label \"locates\"; " +
+                "$x5 (instance: $transaction) isa isa-property, has type-label \"transaction\"; " + //TODO When inserted, the supertype labels should be owned too
+                "$x6 (owner: $transaction) isa has-attribute-property, has currency $currency; " +
+                "$_ (body: $x0, body: $x1, body: $x2, body: $x3, body: $x4, body: $x5, head: $x6) isa resolution, " +
+                "has rule-label \"transaction-currency-is-that-of-the-country\"; };");
 
-                "$x3 (rel: $locates, roleplayer: $transaction) isa relation-property, has role-label \"locates_located\";" + //TODO When inserted, the role supertype labels should be owned too, solved if this is done as a role rather than attribute ownership
-                "$x4 (rel: $locates, roleplayer: $country) isa relation-property, has role-label \"locates_location\";" +
-                "$x5 (instance: $locates) isa isa-property, has type-label \"locates\";" +
-
-                "$x6 (owner: $transaction) isa has-attribute-property, has currency $currency;" +
-
-                "$_ (\n" +
-                "    body: $x0,\n" +
-                "    body: $x1,\n" +
-                "    body: $x2,\n" +
-                "    body: $x3,\n" +
-                "    body: $x4,\n" +
-                "    body: $x5,\n" +
-                "    head: $x6\n" +
-                ") isa resolution, \n" +
-                "has rule-label \"transaction-currency-is-that-of-the-country\"; };");  //TODO can be split into conjunction
 
         Pattern resolution = new QueryBuilder().ruleResolutionConjunction(when, then, "transaction-currency-is-that-of-the-country");
         assertEquals(expected, resolution);
