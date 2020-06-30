@@ -624,13 +624,21 @@ public class ConceptMethod {
 
             private void relates(ConceptProto.Concept protoRole) {
                 grakn.core.kb.concept.api.Role role = convert(protoRole).asRole();
-                concept.asRelationType().relates(role);
+
+                // TODO this is a short term hack
+                String unscopedName = role.label().scopedName().split(":")[0];
+
+                concept.asRelationType().relates(unscopedName);
                 responseSender.accept(null);
             }
 
             private void unrelate(ConceptProto.Concept protoRole) {
                 grakn.core.kb.concept.api.Role role = convert(protoRole).asRole();
-                concept.asRelationType().unrelate(role);
+
+                // TODO this is a short term hack
+                String unscopedName = role.label().scopedName().split(":")[0];
+
+                concept.asRelationType().unrelate(unscopedName);
                 responseSender.accept(null);
             }
         }

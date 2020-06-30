@@ -447,9 +447,13 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
         }
 
         private void putRole(Transaction.PutRole.Req request) {
-            Role role = tx().putRole(Label.of(request.getLabel()));
-            Transaction.Res response = ResponseBuilder.Transaction.putRole(role);
-            onNextResponse(response);
+
+            throw new UnsupportedOperationException("putRole is no longer available -- use relationType.relates(...) then retrieve it");
+
+            // TODO remove from protocol
+//            Role role = tx().putRole(Label.of(request.getLabel()));
+//            Transaction.Res response = ResponseBuilder.Transaction.putRole(role);
+//            onNextResponse(response);
         }
 
         private void putRule(Transaction.PutRule.Req request) {
