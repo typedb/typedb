@@ -78,7 +78,6 @@ java_test(
     test_class = "grakn.core.test.behaviour.resolution.framework.test.TestRuleResolutionBuilder",
     deps = [
         "//test/behaviour/resolution/framework/common",
-        "//test/behaviour/resolution/framework/resolve",
         "//dependencies/maven/artifacts/com/google/guava",
 
         # External dependencies from @graknlabs
