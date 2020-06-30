@@ -22,8 +22,8 @@ java_library(
     srcs = ["LoadTest.java"],
     visibility = ["//visibility:public"],
     deps = [
-        "//test/common:graql-test-util",
         "//kb/server",
+        "//test/common:graql-test-util",
     ],
 )
 
@@ -35,12 +35,11 @@ java_test(
     ],
     classpath_resources = ["//test/resources:logback-test"],
     resources = [
-        "//test/behaviour/resolution/framework/test/stubs/complex_recursion:complex_recursion",
+        "//test/behaviour/resolution/framework/test/stubs/complex_recursion",
     ],
     test_class = "grakn.core.test.behaviour.resolution.framework.test.QueryBuilderIT",
     deps = [
         "//test/behaviour/resolution/framework/common",
-        "//test/behaviour/resolution/framework/resolve",
         "//test/behaviour/resolution/framework/test:load-test",
         "//test/rule:grakn-test-server",
         "//concept/answer",
@@ -95,7 +94,7 @@ java_test(
     ],
     classpath_resources = ["//test/resources:logback-test"],
     resources = [
-        "//test/behaviour/resolution/framework/test/stubs/complex_recursion:complex_recursion",
+        "//test/behaviour/resolution/framework/test/stubs/complex_recursion",
     ],
     test_class = "grakn.core.test.behaviour.resolution.framework.test.TestSchemaManager",
     deps = [
@@ -104,7 +103,6 @@ java_test(
         "//test/rule:grakn-test-server",
         "//kb/server",
         "//kb/concept/api",
-
 
         # External dependencies from @graknlabs
         "@graknlabs_graql//java:graql",
@@ -119,8 +117,8 @@ java_test(
     ],
     classpath_resources = ["//test/resources:logback-test"],
     resources = [
-        "//test/behaviour/resolution/framework/test/stubs/basic_recursion:basic_recursion",
-        "//test/behaviour/resolution/framework/test/stubs/transitivity:transitivity",
+        "//test/behaviour/resolution/framework/test/stubs/basic_recursion",
+        "//test/behaviour/resolution/framework/test/stubs/transitivity",
     ],
     test_class = "grakn.core.test.behaviour.resolution.framework.test.TestCompleter",
     deps = [
@@ -144,9 +142,9 @@ java_test(
     ],
     classpath_resources = ["//test/resources:logback-test"],
     resources = [
-        "//test/behaviour/resolution/framework/test/stubs/basic_recursion:basic_recursion",
-        "//test/behaviour/resolution/framework/test/stubs/complex_recursion:complex_recursion",
-        "//test/behaviour/resolution/framework/test/stubs/transitivity:transitivity",
+        "//test/behaviour/resolution/framework/test/stubs/basic_recursion",
+        "//test/behaviour/resolution/framework/test/stubs/complex_recursion",
+        "//test/behaviour/resolution/framework/test/stubs/transitivity",
     ],
     test_class = "grakn.core.test.behaviour.resolution.framework.test.TestResolution",
     deps = [

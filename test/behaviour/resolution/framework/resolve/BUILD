@@ -24,12 +24,11 @@ java_library(
     ],
     visibility = ["//visibility:public"],
     deps = [
+        "//concept/answer",
         "//dependencies/maven/artifacts/com/google/guava",
-        "//test/behaviour/resolution/framework/common:common",
-        "//concept/answer:answer",
-        "//graql/reasoner:reasoner",
-        "//kb/concept/api:api",
-        "//kb/server:server",
+        "//graql/reasoner",
+        "//kb/server",
+        "//test/behaviour/resolution/framework/common",
         "@graknlabs_graql//java:graql",
     ],
 )

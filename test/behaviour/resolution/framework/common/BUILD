@@ -20,22 +20,20 @@ load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 java_library(
     name = "common",
     srcs = [
-        "Utils.java",
-        "ResolutionConstraintException.java",
-        "KeyStatementsGenerator.java",
-        "RuleResolutionBuilder.java",
         "ConjunctionFlatteningVisitor.java",
+        "KeyStatementsGenerator.java",
         "NegationRemovalVisitor.java",
         "PatternVisitor.java",
+        "ResolutionConstraintException.java",
+        "RuleResolutionBuilder.java",
         "StatementVisitor.java",
+        "Utils.java",
     ],
     visibility = ["//visibility:public"],
     deps = [
         "//dependencies/maven/artifacts/com/google/guava",
-        "//concept/answer:answer",
-        "//graql/reasoner:reasoner",
-        "//kb/concept/api:api",
-        "//kb/server:server",
+        "//kb/concept/api",
+        "//kb/server",
         "@graknlabs_graql//java:graql",
     ],
 )
