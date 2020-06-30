@@ -31,21 +31,21 @@ java_library(
         # External dependencies from @graknlabs
 
         # External dependencies from Maven
-        "@maven//:org_slf4j_slf4j-api",
+        "@maven//:org_slf4j_slf4j_api",
         "@maven//:com_google_guava_guava",
-        "@maven//:org_apache_hadoop_hadoop-mapreduce-client-core",
-        "@maven//:org_apache_hadoop_hadoop-common",
-        "@maven//:org_apache_hadoop_hadoop-annotations",
-        "@maven//:org_apache_tinkerpop_hadoop-gremlin",
-        "@maven//:org_apache_tinkerpop_gremlin-core",
-        "@maven//:org_apache_tinkerpop_tinkergraph-gremlin",
+        "@maven//:org_apache_hadoop_hadoop_mapreduce_client_core",
+        "@maven//:org_apache_hadoop_hadoop_common",
+        "@maven//:org_apache_hadoop_hadoop_annotations",
+        "@maven//:org_apache_tinkerpop_hadoop_gremlin",
+        "@maven//:org_apache_tinkerpop_gremlin_core",
+        "@maven//:org_apache_tinkerpop_tinkergraph_gremlin",
         "@maven//:commons_configuration_commons_configuration",
-        "@maven//:org_apache_commons_commons-lang3",
-        "@maven//:org_apache_cassandra_cassandra-all",
-        "@maven//:com_datastax_oss_java-driver-core",
+        "@maven//:org_apache_commons_commons_lang3",
+        "@maven//:org_apache_cassandra_cassandra_all",
+        "@maven//:com_datastax_oss_java_driver_core",
 
 #        The following 2 dependencies should be removed once GraknInputFormat and InputFormatCQL stop depending on old Thrift trickery
-        "@maven//:org_apache_cassandra_cassandra-thrift",
+        "@maven//:org_apache_cassandra_cassandra_thrift",
         "@maven//:org_apache_thrift_libthrift"
     ],
     tags = ["maven_coordinates=io.grakn.core:grakn-graph-hadoop:{pom_version}"],

@@ -24,8 +24,8 @@ java_test(
     test_class = "grakn.core.graql.planning.gremlin.sets.LabelFragmentSetTest",
     deps = [
         "@maven//:com_google_guava_guava",
-        "@maven//:org_apache_tinkerpop_gremlin-core",
-        "@maven//:org_mockito_mockito-core",
+        "@maven//:org_apache_tinkerpop_gremlin_core",
+        "@maven//:org_mockito_mockito_core",
         "//graql/planning",
         "//kb/concept/api",
         "//kb/concept/manager",
@@ -41,8 +41,8 @@ java_test(
     test_class = "grakn.core.graql.planning.gremlin.sets.RolePlayerFragmentSetTest",
     deps = [
         "@maven//:com_google_guava_guava",
-        "@maven//:org_hamcrest_hamcrest-library",
-        "@maven//:org_mockito_mockito-core",
+        "@maven//:org_hamcrest_hamcrest_library",
+        "@maven//:org_mockito_mockito_core",
         "//graql/planning",
         "//kb/concept/api",
         "//kb/concept/manager",

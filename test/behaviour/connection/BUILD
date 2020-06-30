@@ -31,7 +31,7 @@ java_library(
 
         # External dependencies from Maven
         "@maven//:junit_junit",
-        "@maven//:io_cucumber_cucumber-java",
+        "@maven//:io_cucumber_cucumber_java",
     ],
     visibility = ["//visibility:public"]
 )

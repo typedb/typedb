@@ -40,8 +40,8 @@ java_test(
         "@graknlabs_graql//java:graql",
 
         # External depencncies from Maven
-        "@maven//:org_hamcrest_hamcrest-library",
-        "@maven//:org_slf4j_slf4j-api",
+        "@maven//:org_hamcrest_hamcrest_library",
+        "@maven//:org_slf4j_slf4j_api",
         "@maven//:com_google_guava_guava",
     ],
 )
@@ -56,7 +56,7 @@ java_test(
     test_class = "grakn.core.server.ValidatorIT",
     deps = [
         "//common:common",
-        "@maven//:org_hamcrest_hamcrest-library",
+        "@maven//:org_hamcrest_hamcrest_library",
         "//kb/server",
         "//kb/concept/api",
         "//test/rule:grakn-test-server",
@@ -90,7 +90,7 @@ java_test(
         "//common:common",
         "//core",
         "@maven//:com_google_guava_guava",
-        "@maven//:org_hamcrest_hamcrest-library",
+        "@maven//:org_hamcrest_hamcrest_library",
         "//kb/server",
         "//kb/concept/api",
         "//graql/reasoner",

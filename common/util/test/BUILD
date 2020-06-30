@@ -22,7 +22,7 @@ java_test(
     srcs = ["LazyMergingStreamTest.java"],
     deps = [
         "//common",
-        "@maven//:org_mockito_mockito-core"
+        "@maven//:org_mockito_mockito_core"
     ],
     test_class = "grakn.core.common.util.test.LazyMergingStreamTest",
     size = "small"

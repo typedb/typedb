@@ -33,8 +33,8 @@ java_test(
         # e.g. "//test/behaviour/connection/steps:connection-keyspace",
 
         # External dependencies from Maven
-        "@maven//:io_cucumber_cucumber-java",
-        "@maven//:io_cucumber_cucumber-junit",
+        "@maven//:io_cucumber_cucumber_java",
+        "@maven//:io_cucumber_cucumber_junit",
     ],
     runtime_deps = [
 #        "//test/behaviour/graql:steps",

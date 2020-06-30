@@ -31,7 +31,7 @@ java_test(
     deps = [
         "@graknlabs_graql//java:graql",
         "//graql/planning",
-        "@maven//:org_apache_tinkerpop_gremlin-core",
+        "@maven//:org_apache_tinkerpop_gremlin_core",
     ],
     size = "small"
 )

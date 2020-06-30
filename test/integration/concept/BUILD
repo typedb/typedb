@@ -9,7 +9,7 @@ java_test(
     deps = [
         "//concept/impl:impl",
         "@maven//:com_google_guava_guava",
-        "@maven//:org_hamcrest_hamcrest-library",
+        "@maven//:org_hamcrest_hamcrest_library",
         "//kb/server",
         "//kb/concept/api",
         "//test/rule:grakn-test-server",
@@ -23,7 +23,7 @@ java_test(
     classpath_resources = ["//test/resources:logback-test"],
     test_class = "grakn.core.concept.AttributeTypeIT",
     deps = [
-        "@maven//:org_hamcrest_hamcrest-library",
+        "@maven//:org_hamcrest_hamcrest_library",
         "//kb/server",
         "//kb/concept/api",
         "//test/rule:grakn-test-server",
@@ -39,8 +39,8 @@ java_test(
     test_class = "grakn.core.concept.ConceptIT",
     deps = [
         "//core",
-        "@maven//:org_apache_tinkerpop_gremlin-core",
-        "@maven//:org_hamcrest_hamcrest-library",
+        "@maven//:org_apache_tinkerpop_gremlin_core",
+        "@maven//:org_hamcrest_hamcrest_library",
         "//kb/server",
         "//kb/concept/api",
         "//kb/concept/structure",
@@ -56,7 +56,7 @@ java_test(
     classpath_resources = ["//test/resources:logback-test"],
     test_class = "grakn.core.concept.EntityIT",
     deps = [
-        "@maven//:org_hamcrest_hamcrest-library",
+        "@maven//:org_hamcrest_hamcrest_library",
         "//kb/server",
         "//kb/concept/api",
         "//test/rule:grakn-test-server",
@@ -84,8 +84,8 @@ java_test(
         "@graknlabs_graql//java:graql",
 
         # External dependencies from Maven
-        "@maven//:org_hamcrest_hamcrest-library",
-        "@maven//:org_apache_tinkerpop_gremlin-core",
+        "@maven//:org_hamcrest_hamcrest_library",
+        "@maven//:org_apache_tinkerpop_gremlin_core",
     ],
 )
 
@@ -105,8 +105,8 @@ java_test(
         "//kb/concept/manager",
         "//test/rule:grakn-test-server",
         "@maven//:com_google_guava_guava",
-        "@maven//:org_apache_tinkerpop_gremlin-core",
-        "@maven//:org_hamcrest_hamcrest-library",
+        "@maven//:org_apache_tinkerpop_gremlin_core",
+        "@maven//:org_hamcrest_hamcrest_library",
         "@graknlabs_graql//java:graql",
     ],
 )
@@ -119,7 +119,7 @@ java_test(
     test_class = "grakn.core.concept.RelationTypeIT",
     deps = [
         "//core",
-        "@maven//:org_hamcrest_hamcrest-library",
+        "@maven//:org_hamcrest_hamcrest_library",
         "//kb/server",
         "//kb/concept/api",
         "//test/rule:grakn-test-server",
@@ -133,7 +133,7 @@ java_test(
     classpath_resources = ["//test/resources:logback-test"],
     test_class = "grakn.core.concept.RoleIT",
     deps = [
-        "@maven//:org_hamcrest_hamcrest-library",
+        "@maven//:org_hamcrest_hamcrest_library",
         "//kb/server",
         "//kb/concept/api",
         "//test/rule:grakn-test-server",
@@ -150,8 +150,8 @@ java_test(
         "//common:common",
         "//concept/impl:impl",
         "//core",
-        "@maven//:org_apache_tinkerpop_gremlin-core",
-        "@maven//:org_hamcrest_hamcrest-library",
+        "@maven//:org_apache_tinkerpop_gremlin_core",
+        "@maven//:org_hamcrest_hamcrest_library",
         "//kb/server",
         "//kb/concept/api",
         "//kb/concept/structure",
@@ -168,7 +168,7 @@ java_test(
     deps = [
         "//common:common",
         "@maven//:com_google_guava_guava",
-        "@maven//:org_hamcrest_hamcrest-library",
+        "@maven//:org_hamcrest_hamcrest_library",
         "//kb/server",
         "//kb/concept/api",
         "//test/rule:grakn-test-server",

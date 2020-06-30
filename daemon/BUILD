@@ -29,17 +29,17 @@ java_library(
         "//server:server",
 
         # External dependencies
-        "@maven//:org_slf4j_slf4j-api",
-        "@maven//:com_fasterxml_jackson_core_jackson-core", # NEEDS TO GO
-        "@maven//:com_fasterxml_jackson_core_jackson-databind", # NEEDS TO GO
-        "@maven//:com_fasterxml_jackson_dataformat_jackson-dataformat-yaml", # NEEDS TO GO
+        "@maven//:org_slf4j_slf4j_api",
+        "@maven//:com_fasterxml_jackson_core_jackson_core", # NEEDS TO GO
+        "@maven//:com_fasterxml_jackson_core_jackson_databind", # NEEDS TO GO
+        "@maven//:com_fasterxml_jackson_dataformat_jackson_dataformat_yaml", # NEEDS TO GO
         "@maven//:commons_io_commons_io",
-        "@maven//:org_apache_cassandra_cassandra-all",
-        "@maven//:org_zeroturnaround_zt-exec",
+        "@maven//:org_apache_cassandra_cassandra_all",
+        "@maven//:org_zeroturnaround_zt_exec",
     ],
     runtime_deps = [
-        "@maven//:ch_qos_logback_logback-classic",
-        "@maven//:ch_qos_logback_logback-core",
+        "@maven//:ch_qos_logback_logback_classic",
+        "@maven//:ch_qos_logback_logback_core",
     ],
     resources = ["LICENSE"],
     resource_strip_prefix = "daemon",

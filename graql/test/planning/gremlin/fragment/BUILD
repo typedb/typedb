@@ -25,7 +25,7 @@ java_test(
     deps = [
         "//core",
         "@maven//:com_google_guava_guava",
-        "@maven//:org_apache_tinkerpop_gremlin-core",
+        "@maven//:org_apache_tinkerpop_gremlin_core",
         "//graql/planning",
         "@graknlabs_graql//java:graql",
     ],
@@ -47,7 +47,7 @@ java_test(
     deps = [
         "//core",
         "@maven//:com_google_guava_guava",
-        "@maven//:org_apache_tinkerpop_gremlin-core",
+        "@maven//:org_apache_tinkerpop_gremlin_core",
 
         "//graql/planning",
         "@graknlabs_graql//java:graql",

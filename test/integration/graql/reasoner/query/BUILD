@@ -25,7 +25,7 @@ java_test(
     deps = [
         "//common",
         "@maven//:com_google_guava_guava",
-        "@maven//:org_hamcrest_hamcrest-library",
+        "@maven//:org_hamcrest_hamcrest_library",
         "//graql/reasoner",
         "//kb/server",
         "//test/integration/graql/reasoner/query:query-test-util",
@@ -46,7 +46,7 @@ java_test(
         "//common",
         "//concept/answer",
         "@maven//:com_google_guava_guava",
-        "@maven//:org_hamcrest_hamcrest-library",
+        "@maven//:org_hamcrest_hamcrest_library",
         "//graql/reasoner",
         "//kb/graql/exception",
         "//kb/graql/reasoner",
@@ -79,7 +79,7 @@ java_test(
         "@graknlabs_graql//java:graql",
         "@maven//:com_google_guava_guava",
         "@maven//:commons_collections_commons_collections",
-        "@maven//:org_hamcrest_hamcrest-library",
+        "@maven//:org_hamcrest_hamcrest_library",
     ],
 )
 
@@ -94,7 +94,7 @@ java_test(
         "//common",
         "//concept/answer",
         "@maven//:com_google_guava_guava",
-        "@maven//:org_hamcrest_hamcrest-library",
+        "@maven//:org_hamcrest_hamcrest_library",
         "//graql/reasoner",
         "//kb/concept/api",
         "//kb/server",
@@ -104,7 +104,7 @@ java_test(
         "//test/rule:grakn-test-server",
         "//test/integration/util:graql-test-util",
         "@graknlabs_graql//java:graql",
-        "@maven//:org_apache_tinkerpop_gremlin-core"
+        "@maven//:org_apache_tinkerpop_gremlin_core"
     ],
 )
 
@@ -125,7 +125,7 @@ java_test(
         "//concept/answer",
         "@maven//:com_google_guava_guava",
         "@maven//:commons_collections_commons_collections",
-        "@maven//:org_hamcrest_hamcrest-library",
+        "@maven//:org_hamcrest_hamcrest_library",
         "//graql/reasoner",
         "//kb/concept/api",
         "//kb/graql/exception",
@@ -155,7 +155,7 @@ java_test(
         "//concept/answer",
         "@maven//:com_google_guava_guava",
         "@maven//:commons_collections_commons_collections",
-        "@maven//:org_hamcrest_hamcrest-library",
+        "@maven//:org_hamcrest_hamcrest_library",
         "//graql/reasoner",
         "//kb/concept/api",
         "//kb/graql/reasoner",
@@ -201,7 +201,7 @@ java_test(
     deps = [
         "//concept/answer",
         "@maven//:com_google_guava_guava",
-        "@maven//:org_hamcrest_hamcrest-library",
+        "@maven//:org_hamcrest_hamcrest_library",
         "//kb/concept/api",
         "//kb/server",
         "//test/rule:grakn-test-server",
@@ -220,7 +220,7 @@ java_test(
     deps = [
         "//common",
         "@maven//:com_google_guava_guava",
-        "@maven//:org_hamcrest_hamcrest-library",
+        "@maven//:org_hamcrest_hamcrest_library",
         "//graql/planning",
         "//graql/reasoner",
         "//kb/concept/api",
@@ -252,7 +252,7 @@ java_test(
         "//core",
         "@maven//:com_google_guava_guava",
         "@maven//:commons_collections_commons_collections",
-        "@maven//:org_hamcrest_hamcrest-library",
+        "@maven//:org_hamcrest_hamcrest_library",
         "//graql/reasoner",
         "//kb/concept/api",
         "//kb/server",
@@ -278,7 +278,7 @@ java_test(
         "//common",
         "@maven//:com_google_guava_guava",
         "@maven//:commons_collections_commons_collections",
-        "@maven//:org_hamcrest_hamcrest-library",
+        "@maven//:org_hamcrest_hamcrest_library",
         "//graql/reasoner",
         "//kb/graql/reasoner",
         "//kb/server",

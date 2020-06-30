@@ -29,7 +29,7 @@ java_test(
         "//test/behaviour/server:server",
 
         # External dependencies from Maven
-        "@maven//:io_cucumber_cucumber-junit",
+        "@maven//:io_cucumber_cucumber_junit",
     ],
     runtime_deps = [
         "//test/behaviour/graql:steps",

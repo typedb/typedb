@@ -53,7 +53,7 @@ java_test(
     deps = [
         "//concept/answer",
         "@maven//:com_google_guava_guava",
-        "@maven//:org_hamcrest_hamcrest-library",
+        "@maven//:org_hamcrest_hamcrest_library",
         "//kb/server",
         "//test/integration/graql/reasoner/graph:dual-linear-transitivity-graph",
         "//test/integration/graql/reasoner/graph:linear-transitivity-matrix-graph",
@@ -79,7 +79,7 @@ java_test(
     deps = [
         "//concept/answer",
         "@maven//:com_google_guava_guava",
-        "@maven//:org_hamcrest_hamcrest-library",
+        "@maven//:org_hamcrest_hamcrest_library",
         "//kb/server",
         "//test/rule:grakn-test-server",
         "//test/integration/util:graql-test-util",
@@ -112,7 +112,7 @@ java_test(
     test_class = "grakn.core.graql.reasoner.reasoning.TypeHierarchiesIT",
     deps = [
         "//concept/answer",
-        "@maven//:org_hamcrest_hamcrest-library",
+        "@maven//:org_hamcrest_hamcrest_library",
         "//kb/server",
         "//test/rule:grakn-test-server",
         "//test/integration/util:graql-test-util",
@@ -130,7 +130,7 @@ java_test(
     deps = [
         "//concept/answer",
         "@maven//:commons_collections_commons_collections",
-        "@maven//:org_apache_commons_commons-math3",
+        "@maven//:org_apache_commons_commons_math3",
         "//kb/server",
         "//test/rule:grakn-test-server",
         "//test/integration/util:graql-test-util",

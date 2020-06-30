@@ -25,7 +25,7 @@ java_library(
     deps = [
         "//kb/server",
         "@maven//:junit_junit",
-        "@maven//:io_cucumber_cucumber-java"
+        "@maven//:io_cucumber_cucumber_java"
     ]
 )
 

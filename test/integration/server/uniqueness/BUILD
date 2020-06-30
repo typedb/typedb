@@ -31,8 +31,8 @@ java_test(
         "//test/rule:grakn-test-server",
         "@graknlabs_graql//java:graql",
         "@graknlabs_common//:common",
-        "@maven//:org_slf4j_slf4j-api",
-        "@maven//:org_hamcrest_hamcrest-library"
+        "@maven//:org_slf4j_slf4j_api",
+        "@maven//:org_hamcrest_hamcrest_library"
     ],
 )
 

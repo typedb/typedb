@@ -25,7 +25,7 @@ java_test(
     deps = [
         "//concept/answer",
         "@maven//:com_google_guava_guava",
-        "@maven//:org_mockito_mockito-core",
+        "@maven//:org_mockito_mockito_core",
         "//kb/concept/api",
         "//graql/reasoner",
         "@graknlabs_graql//java:graql",

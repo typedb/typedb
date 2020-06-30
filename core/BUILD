@@ -39,7 +39,7 @@ java_library(
         # External dependencies from Maven
         "@maven//:com_google_code_findbugs_jsr305",
         "@maven//:com_google_guava_guava",
-        "@maven//:org_apache_tinkerpop_gremlin-core"
+        "@maven//:org_apache_tinkerpop_gremlin_core"
     ],
     tags = ["maven_coordinates=io.grakn.core:grakn-core:{pom_version}"],
 )

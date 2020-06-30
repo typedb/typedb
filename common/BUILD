@@ -25,7 +25,7 @@ java_library(
     deps = [
         "@maven//:com_google_code_findbugs_jsr305",
         "@maven//:com_google_guava_guava",
-        "@maven//:org_slf4j_slf4j-api",
+        "@maven//:org_slf4j_slf4j_api",
     ],
     visibility = ["//visibility:public"],
     tags = ["maven_coordinates=io.grakn.core:grakn-common:{pom_version}"],

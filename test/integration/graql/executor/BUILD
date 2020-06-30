@@ -30,7 +30,7 @@ java_test(
         "//test/rule:grakn-test-server",
         "@graknlabs_graql//java:graql",
         "@maven//:com_google_guava_guava",
-        "@maven//:org_hamcrest_hamcrest-library",
+        "@maven//:org_hamcrest_hamcrest_library",
     ],
 )
 
@@ -43,7 +43,7 @@ java_test(
     deps = [
         "//common",
         "@maven//:com_google_guava_guava",
-        "@maven//:org_hamcrest_hamcrest-library",
+        "@maven//:org_hamcrest_hamcrest_library",
         "//graql/planning",
         "//kb/concept/api",
         "//kb/graql/planning",

@@ -30,8 +30,8 @@ java_test(
         "//common",
         "//server",
         "@maven//:commons_io_commons_io",
-        "@maven//:org_hamcrest_hamcrest-library",
-        "@maven//:org_zeroturnaround_zt-exec",
+        "@maven//:org_hamcrest_hamcrest_library",
+        "@maven//:org_zeroturnaround_zt_exec",
         "@graknlabs_client_java//:client-java",
     ],
 )
@@ -48,8 +48,8 @@ java_test(
     deps = [
         "//common",
         "@maven//:commons_io_commons_io",
-        "@maven//:org_hamcrest_hamcrest-library",
-        "@maven//:org_zeroturnaround_zt-exec",
+        "@maven//:org_hamcrest_hamcrest_library",
+        "@maven//:org_zeroturnaround_zt_exec",
     ],
 )
 

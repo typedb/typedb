@@ -9,8 +9,8 @@ java_test(
     deps = [
         "//concept/answer",
         "@maven//:com_google_guava_guava",
-        "@maven//:org_hamcrest_hamcrest-library",
-        "@maven//:org_slf4j_slf4j-api",
+        "@maven//:org_hamcrest_hamcrest_library",
+        "@maven//:org_slf4j_slf4j_api",
         "//kb/server",
         "//test/rule:grakn-test-server",
         "@graknlabs_graql//java:graql",
@@ -29,8 +29,8 @@ java_test(
     test_class = "grakn.core.graql.reasoner.benchmark.BenchmarkBigIT",
     deps = [
         "@maven//:com_google_guava_guava",
-        "@maven//:org_hamcrest_hamcrest-library",
-        "@maven//:org_slf4j_slf4j-api",
+        "@maven//:org_hamcrest_hamcrest_library",
+        "@maven//:org_slf4j_slf4j_api",
         "//test/rule:grakn-test-server",
         "@graknlabs_client_java//:client-java",
         "@graknlabs_graql//java:graql",
