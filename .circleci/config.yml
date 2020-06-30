@@ -566,7 +566,7 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - remove-bazel-deps # TODO: revert
                 - rewrite
       - test-common:
           filters:
@@ -636,7 +636,7 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - remove-bazel-deps # TODO: revert
                 - rewrite
           requires:
             - build
@@ -662,7 +662,7 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - remove-bazel-deps # TODO: revert
                 - rewrite
           requires:
             - build
@@ -688,7 +688,7 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - remove-bazel-deps # TODO: revert
                 - rewrite
           requires:
             - build
@@ -714,7 +714,7 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - remove-bazel-deps # TODO: revert
                 - rewrite
           requires:
             - build
@@ -740,7 +740,7 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - remove-bazel-deps # TODO: revert
                 - rewrite
           requires:
             - build
@@ -766,7 +766,7 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - remove-bazel-deps # TODO: revert
                 - rewrite
           requires:
             - test-assembly-mac-zip
@@ -778,7 +778,7 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - remove-bazel-deps # TODO: revert
                 - rewrite
           requires:
             - test-assembly-mac-zip
@@ -790,7 +790,7 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - remove-bazel-deps # TODO: revert
                 - rewrite
           requires:
             - deploy-apt-snapshot
@@ -798,7 +798,7 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - remove-bazel-deps # TODO: revert
                 - rewrite
           requires:
             - deploy-rpm-snapshot
@@ -806,7 +806,7 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - remove-bazel-deps # TODO: revert
           requires:
             - test-deployment-linux-apt
             - test-deployment-linux-rpm
@@ -814,7 +814,7 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - remove-bazel-deps # TODO: revert
           requires:
             - sync-dependencies-snapshot
 
