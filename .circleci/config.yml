@@ -37,7 +37,9 @@ commands:
       command:
           type: string
     steps:
-      - run: bazel run @graknlabs_dependencies//tool/bazelrun:rbe -- << parameters.command >>
+      - run:
+          command: bazel run @graknlabs_dependencies//tool/bazelrun:rbe -- << parameters.command >>
+          no_output_timeout: 30m
 
 jobs:
   build:
