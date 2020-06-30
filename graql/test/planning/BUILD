@@ -23,7 +23,7 @@ java_test(
     srcs = ["NodesUtilTest.java"],
     test_class = "grakn.core.graql.planning.NodesUtilTest",
     deps = [
-        "//dependencies/maven/artifacts/com/google/guava",
+        "@maven//:com_google_guava_guava",
         "//graql/planning",
         "//kb/concept/api",
         "//kb/graql/planning",
