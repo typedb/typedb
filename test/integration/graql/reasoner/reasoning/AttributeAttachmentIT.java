@@ -75,6 +75,7 @@ public class AttributeAttachmentIT {
         }
     }
 
+    // TODO: this test is identical to the previous one, except for the method name?!
     @Test
     //Expected result: When the head of a rule contains attribute assertions, the respective unique attributes should be generated or reused.
     public void reusingAttribute_reattachingAttributeToEntity() {
