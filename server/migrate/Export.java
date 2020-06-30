@@ -115,7 +115,7 @@ public class Export implements AutoCloseable {
 
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
             attributeLabels = ((Stream<AttributeType<?>>) tx.getMetaAttributeType().subs())
-                    .filter(at -> !at.isAbstract())
+                    .filter(at -> !at.isAbstract() && !at.isImplicit())
                     .map(at -> at.label().toString())
                     .collect(Collectors.toList());
         }
@@ -170,8 +170,8 @@ public class Export implements AutoCloseable {
 
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
             entityLabels = tx.getMetaEntityType().subs()
-                    .filter(at -> !at.isAbstract())
-                    .map(at -> at.label().toString())
+                    .filter(et -> !et.isAbstract() && !et.isImplicit())
+                    .map(et -> et.label().toString())
                     .collect(Collectors.toList());
         }
 
@@ -225,9 +225,8 @@ public class Export implements AutoCloseable {
 
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
             relationLabels = tx.getMetaRelationType().subs()
-                    .filter(at -> !at.isAbstract())
-                    .map(at -> at.label().toString())
-                    .filter(label -> !label.startsWith("@"))
+                    .filter(rt -> !rt.isAbstract() && !rt.isImplicit())
+                    .map(rt -> rt.label().toString())
                     .collect(Collectors.toList());
         }
 
@@ -259,9 +258,13 @@ public class Export implements AutoCloseable {
 
                 Map<Role, List<Thing>> roleMap = relation.rolePlayersMap();
                 for (Map.Entry<Role, List<Thing>> roleEntry : roleMap.entrySet()) {
+                    Role role = roleEntry.getKey();
+                    if (role.isImplicit()) {
+                        continue;
+                    }
 
                     MigrateProto.Item.Relation.Role.Builder roleBuilder = MigrateProto.Item.Relation.Role.newBuilder()
-                            .setLabel(roleEntry.getKey().label().toString());
+                            .setLabel(role.label().toString());
 
                     for (Thing player : roleEntry.getValue()) {
                         roleBuilder.addPlayer(MigrateProto.Item.Relation.Role.Player.newBuilder()
