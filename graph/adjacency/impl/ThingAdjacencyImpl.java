@@ -26,9 +26,7 @@ import hypergraph.graph.edge.impl.ThingEdgeImpl;
 import hypergraph.graph.iid.EdgeIID;
 import hypergraph.graph.iid.IID;
 import hypergraph.graph.iid.InfixIID;
-import hypergraph.graph.iid.PrefixIID;
 import hypergraph.graph.iid.SuffixIID;
-import hypergraph.graph.iid.VertexIID;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.vertex.ThingVertex;
 
@@ -72,17 +70,13 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
     IID[] infixTails(ThingEdge edge) {
         if (edge.schema().isOptimisation()) {
             if (direction.isOut()) {
-                return new IID[]{edge.outIID().infix().asRolePlayer().tail(),
-                        PrefixIID.of(edge.to().schema().prefix()),
-                        edge.to().type().iid()};
+                return new IID[]{edge.outIID().infix().asRolePlayer().tail(), edge.to().iid().prefix(), edge.to().iid().type()};
             } else {
-                return new IID[]{edge.inIID().infix().asRolePlayer().tail(),
-                        PrefixIID.of(edge.from().schema().prefix()),
-                        edge.from().type().iid()};
+                return new IID[]{edge.inIID().infix().asRolePlayer().tail(), edge.from().iid().prefix(), edge.from().iid().type()};
             }
         } else {
-            if (direction.isOut()) return new IID[]{PrefixIID.of(edge.to().schema().prefix()), edge.to().type().iid()};
-            else return new IID[]{PrefixIID.of(edge.from().schema().prefix()), edge.from().type().iid()};
+            if (direction.isOut()) return new IID[]{edge.to().iid().prefix(), edge.to().iid().type()};
+            else return new IID[]{edge.from().iid().prefix(), edge.from().iid().type()};
         }
     }
 
@@ -117,7 +111,7 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
                 ? e -> e.to().equals(adjacent) && e.outIID().suffix().equals(SuffixIID.of(optimised.iid().key()))
                 : e -> e.from().equals(adjacent) && e.inIID().suffix().equals(SuffixIID.of(optimised.iid().key()));
         Iterator<ThingEdge> iterator = bufferedEdgeIterator(
-                schema, new IID[]{optimised.type().iid(), PrefixIID.of(adjacent.schema().prefix()), adjacent.type().iid()}
+                schema, new IID[]{optimised.iid().type(), adjacent.iid().prefix(), adjacent.iid().type()}
         );
         ThingEdge edge = null;
         while (iterator.hasNext()) {
@@ -131,9 +125,7 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
     public ThingEdge edge(Schema.Edge.Thing schema, ThingVertex adjacent) {
         assert !schema.isOptimisation();
         Predicate<ThingEdge> predicate = direction.isOut() ? e -> e.to().equals(adjacent) : e -> e.from().equals(adjacent);
-        Iterator<ThingEdge> iterator = bufferedEdgeIterator(
-                schema, new IID[]{PrefixIID.of(adjacent.schema().prefix()), adjacent.type().iid()}
-        );
+        Iterator<ThingEdge> iterator = bufferedEdgeIterator(schema, new IID[]{adjacent.iid().prefix(), adjacent.iid().type()});
         ThingEdge edge = null;
         while (iterator.hasNext()) {
             if (predicate.test(edge = iterator.next())) break;
@@ -162,7 +154,7 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
         ThingEdge edge = direction.isOut()
                 ? new ThingEdgeImpl.Buffered(schema, owner, adjacent)
                 : new ThingEdgeImpl.Buffered(schema, adjacent, owner);
-        IID[] infixes = new IID[]{PrefixIID.of(adjacent.schema().prefix()), adjacent.type().iid()};
+        IID[] infixes = new IID[]{adjacent.iid().prefix(), adjacent.iid().type()};
         put(schema, edge, infixes, true, true);
     }
 
@@ -171,7 +163,7 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
         ThingEdge edge = direction.isOut()
                 ? new ThingEdgeImpl.Buffered(schema, owner, adjacent, optimised)
                 : new ThingEdgeImpl.Buffered(schema, adjacent, owner, optimised);
-        IID[] infixes = new IID[]{optimised.type().iid(), PrefixIID.of(adjacent.schema().prefix()), adjacent.type().iid()};
+        IID[] infixes = new IID[]{optimised.iid().type(), adjacent.iid().prefix(), adjacent.iid().type()};
         put(schema, edge, infixes, true, true);
     }
 
@@ -294,7 +286,7 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
             ThingEdge edge = super.edge(schema, adjacent, optimised);
             if (edge != null) return edge;
 
-            EdgeIID.Thing edgeIID = EdgeIID.Thing.of(owner.iid(), infixIID(schema, optimised.type().iid()),
+            EdgeIID.Thing edgeIID = EdgeIID.Thing.of(owner.iid(), infixIID(schema, optimised.iid().type()),
                                                      adjacent.iid(), SuffixIID.of(optimised.iid().key()));
             if (owner.graph().storage().get(edgeIID.bytes()) == null) return null;
             else return new ThingEdgeImpl.Persisted(owner.graph(), edgeIID);

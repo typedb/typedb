@@ -158,7 +158,8 @@ public abstract class EdgeIID<
         public String toString() {
             if (readableString == null) {
                 readableString = super.toString();
-                if (!suffix().isEmpty()) readableString += "[" + suffix().bytes.length + ": " + suffix().toString() + "]";
+                if (!suffix().isEmpty())
+                    readableString += "[" + suffix().bytes.length + ": " + suffix().toString() + "]";
             }
             return readableString;
         }

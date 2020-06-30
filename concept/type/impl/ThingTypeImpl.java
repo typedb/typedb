@@ -285,7 +285,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
         @Override
         public Stream<? extends Thing> instances() {
-            return super.instances(v ->{
+            return super.instances(v -> {
                 switch (v.schema()) {
                     case ENTITY:
                         return EntityImpl.of(v);

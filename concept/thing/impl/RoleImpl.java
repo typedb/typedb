@@ -19,7 +19,6 @@
 package hypergraph.concept.thing.impl;
 
 import hypergraph.concept.thing.Role;
-import hypergraph.graph.iid.SuffixIID;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.vertex.ThingVertex;
 

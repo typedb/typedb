@@ -20,7 +20,6 @@ package hypergraph.test.behaviour.concept.thing;
 
 import hypergraph.concept.thing.Thing;
 import hypergraph.concept.type.ThingType;
-import hypergraph.test.behaviour.config.Parameters;
 import hypergraph.test.behaviour.config.Parameters.RootLabel;
 import hypergraph.test.behaviour.config.Parameters.ScopedLabel;
 import io.cucumber.java.After;

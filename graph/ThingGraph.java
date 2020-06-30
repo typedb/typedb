@@ -90,8 +90,7 @@ public class ThingGraph implements Graph<VertexIID.Thing, ThingVertex> {
                     assert false;
                     return null;
             }
-        }
-        else {
+        } else {
             return thingsByIID.computeIfAbsent(iid, i -> ThingVertexImpl.of(this, i));
         }
     }

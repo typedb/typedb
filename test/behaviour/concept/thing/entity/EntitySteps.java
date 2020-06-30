@@ -19,7 +19,6 @@
 package hypergraph.test.behaviour.concept.thing.entity;
 
 import hypergraph.concept.thing.Attribute;
-import hypergraph.concept.type.EntityType;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 
