@@ -342,7 +342,7 @@ jobs:
       image: ubuntu-1604:201903-01
     working_directory: ~/grakn
     steps:
-      - install-bazel-linux-rbe
+      - install-bazel-linux
       - checkout
       - run: |
           export DEPLOY_DISTRIBUTION_USERNAME=$REPO_GRAKN_USERNAME
