@@ -33,8 +33,8 @@ java_library(
         "@graknlabs_common//:common",
 
         # External Maven Dependencies
-        "//dependencies/maven/artifacts/junit:junit",
-        "//dependencies/maven/artifacts/io/cucumber:cucumber-java",
+        "@maven//:junit_junit",
+        "@maven//:io_cucumber_cucumber-java",
     ]
 )
 
@@ -49,7 +49,7 @@ java_test(
         "//test/behaviour/server:server",
 
         # External dependencies from Maven
-        "//dependencies/maven/artifacts/io/cucumber:cucumber-junit",
+        "@maven//:io_cucumber_cucumber-junit",
     ],
     runtime_deps = [
         ":steps",

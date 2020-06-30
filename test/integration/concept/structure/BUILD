@@ -8,7 +8,7 @@ java_test(
     test_class = "grakn.core.concept.structure.CastingIT",
     deps = [
         "//concept/impl",
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+        "@maven//:org_hamcrest_hamcrest-library",
         "//kb/server",
         "//kb/concept/api",
         "//test/rule:grakn-test-server",
@@ -25,9 +25,9 @@ java_test(
     deps = [
         "//concept/structure",
         "//core",
-        "//dependencies/maven/artifacts/com/google/guava",
-        "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
-        "//dependencies/maven/artifacts/org/mockito:mockito-core",
+        "@maven//:com_google_guava_guava",
+        "@maven//:org_apache_tinkerpop_gremlin-core",
+        "@maven//:org_mockito_mockito-core",
         "//kb/server",
         "//kb/concept/api",
         "//kb/concept/structure",

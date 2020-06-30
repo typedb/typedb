@@ -24,8 +24,8 @@ java_test(
     test_class = "grakn.core.graql.reasoner.ConceptMapTest",
     deps = [
         "//concept/answer",
-        "//dependencies/maven/artifacts/com/google/guava",
-        "//dependencies/maven/artifacts/org/mockito:mockito-core",
+        "@maven//:com_google_guava_guava",
+        "@maven//:org_mockito_mockito-core",
         "//kb/concept/api",
         "//graql/reasoner",
         "@graknlabs_graql//java:graql",
