@@ -217,6 +217,8 @@ public abstract class Error<TYPE extends Error<TYPE>> {
                 new TypeWrite(5, "The type '%s' is abstract, but has a supertype '%s' which is not abstract.");
         public static final TypeWrite INVALID_RELATION_NO_ROLE =
                 new TypeWrite(6, "RelationType '%s' does not relate any role type");
+        public static final TypeWrite ILLEGAL_SUBTYPING_SELF =
+                new TypeWrite(7, "The type '%s' cannot be a subtype of itself.");
 
         private static final String codePrefix = "TYW";
         private static final String descriptionPrefix = "Invalid Type Definition";
