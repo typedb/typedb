@@ -20,7 +20,7 @@ load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 java_library(
     name = "resolve",
     srcs = [
-        "QueryBuilder.java",
+        "ResolutionQueryBuilder.java",
     ],
     visibility = ["//visibility:public"],
     deps = [

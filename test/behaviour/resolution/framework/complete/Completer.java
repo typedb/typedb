@@ -24,8 +24,9 @@ import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import grakn.core.test.behaviour.resolution.framework.common.NegationRemovalVisitor;
+import grakn.core.test.behaviour.resolution.framework.common.RuleResolutionBuilder;
 import grakn.core.test.behaviour.resolution.framework.common.StatementVisitor;
-import grakn.core.test.behaviour.resolution.framework.resolve.QueryBuilder;
+import grakn.core.test.behaviour.resolution.framework.resolve.ResolutionQueryBuilder;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
@@ -45,7 +46,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static grakn.core.test.behaviour.resolution.framework.resolve.QueryBuilder.generateKeyStatements;
+import static grakn.core.test.behaviour.resolution.framework.common.KeyStatementsGenerator.generateKeyStatements;
 
 
 public class Completer {
@@ -53,6 +54,7 @@ public class Completer {
     private int numInferredConcepts;
     private final Session session;
     private Set<Rule> rules;
+    private RuleResolutionBuilder ruleResolutionBuilder = new RuleResolutionBuilder();
 
     public Completer(Session session) {
         this.session = session;
@@ -88,7 +90,7 @@ public class Completer {
         // TODO When making match queries be careful that user-provided rules could trigger due to elements of the
         //  completion schema. These results should be filtered out.
 
-        QueryBuilder qb = new QueryBuilder();
+        ResolutionQueryBuilder qb = new ResolutionQueryBuilder();
 
         // Use the DNF so that we can know each `when` if free of disjunctions. Disjunctions in the `when` will otherwise complicate things significantly
         Set<Conjunction<Pattern>> disjunctiveWhens = rule.when.getNegationDNF().getPatterns();
@@ -116,7 +118,7 @@ public class Completer {
                 // We already know that the rule doesn't contain any disjunctions as we previously used negationDNF,
                 // now we make sure negation blocks are removed, so that we know it must be a conjunct set of statements
                 NegationRemovalVisitor negationRemover = new NegationRemovalVisitor();
-                Pattern ruleResolutionConjunction = negationRemover.visitPattern(qb.ruleResolutionConjunction(rule.when, rule.then, rule.label));
+                Pattern ruleResolutionConjunction = negationRemover.visitPattern(ruleResolutionBuilder.ruleResolutionConjunction(rule.when, rule.then, rule.label));
 
                 if (thenAnswers.size() == 0) {
                     // We've found somewhere the rule can be applied
@@ -219,7 +221,7 @@ public class Completer {
         private String label;
 
         Rule(Pattern when, Pattern then, String label) {
-            StatementVisitor visitor = new StatementVisitor(QueryBuilder::makeAnonVarsExplicit);
+            StatementVisitor visitor = new StatementVisitor(ResolutionQueryBuilder::makeAnonVarsExplicit);
             this.when = visitor.visitPattern(when);
             this.then = visitor.visitPattern(then);
             this.label = label;

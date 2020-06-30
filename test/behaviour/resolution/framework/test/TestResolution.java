@@ -238,7 +238,7 @@ public class TestResolution {
     }
 
     @Test
-    public void testbasic_recursionHappyPath() {
+    public void testBasicRecursionHappyPath() {
         GraqlGet inferenceQuery = Graql.parse("match $com isa company, has is-liable $lia; get;").asGet();
         resolutionHappyPathTest("basic_recursion", inferenceQuery);
     }

@@ -23,7 +23,7 @@ import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import grakn.core.test.behaviour.resolution.framework.complete.Completer;
 import grakn.core.test.behaviour.resolution.framework.complete.SchemaManager;
-import grakn.core.test.behaviour.resolution.framework.resolve.QueryBuilder;
+import grakn.core.test.behaviour.resolution.framework.resolve.ResolutionQueryBuilder;
 import graql.lang.Graql;
 import graql.lang.query.GraqlGet;
 
@@ -40,6 +40,13 @@ public class Resolution {
     private int completedInferredThingCount;
     private int initialThingCount;
 
+    /**
+     * Resolution Testing Framework's entry point. Takes in sessions each for a `Completion` and `Test` keyspace. Each
+     * keyspace loaded with the same schema and data. This should be true unless testing this code, in which case a
+     * disparity between the two keyspaces is introduced to check that the framework throws an error when it should.
+     * @param completionSession a session for the `Completion` keyspace with base data included
+     * @param testSession a session for the `test` keyspace with base data included
+     */
     public Resolution(Session completionSession, Session testSession) {
         this.completionSession = completionSession;
         this.testSession = testSession;
@@ -61,7 +68,7 @@ public class Resolution {
     }
 
     /**
-     * Get a count of the number of instances in the KB
+     * Get a count of the number of instances in the KB, including inferred instances
      * @param session Grakn Session
      * @return number of instances
      */
@@ -102,11 +109,11 @@ public class Resolution {
      * @param inferenceQuery The reference query to make against both keyspaces
      */
     public void testResolution(GraqlGet inferenceQuery) {
-        QueryBuilder rb = new QueryBuilder();
+        ResolutionQueryBuilder resolutionQueryBuilder = new ResolutionQueryBuilder();
         List<GraqlGet> queries;
 
         try (Transaction tx = testSession.transaction(Transaction.Type.READ)) {
-            queries = rb.buildMatchGet(tx, inferenceQuery);
+            queries = resolutionQueryBuilder.buildMatchGet(tx, inferenceQuery);
         }
 
         if (queries.size() == 0) {

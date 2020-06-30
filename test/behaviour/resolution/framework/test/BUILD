@@ -31,7 +31,7 @@ java_test(
     name = "query-builder-it",
     size = "medium",
     srcs = [
-        "QueryBuilderIT.java",
+        "ResolutionQueryBuilderIT.java",
     ],
     classpath_resources = ["//test/resources:logback-test"],
     resources = [
@@ -55,10 +55,28 @@ java_test(
     name = "test-query-builder",
     size = "small",
     srcs = [
-        "TestQueryBuilder.java",
+        "TestResolutionQueryBuilder.java",
     ],
     classpath_resources = ["//test/resources:logback-test"],
     test_class = "grakn.core.test.behaviour.resolution.framework.test.TestQueryBuilder",
+    deps = [
+        "//test/behaviour/resolution/framework/common",
+        "//test/behaviour/resolution/framework/resolve",
+        "//dependencies/maven/artifacts/com/google/guava",
+
+        # External dependencies from @graknlabs
+        "@graknlabs_graql//java:graql",
+    ],
+)
+
+java_test(
+    name = "test-rule-resolution-builder",
+    size = "small",
+    srcs = [
+        "TestRuleResolutionBuilder.java",
+    ],
+    classpath_resources = ["//test/resources:logback-test"],
+    test_class = "grakn.core.test.behaviour.resolution.framework.test.TestRuleResolutionBuilder",
     deps = [
         "//test/behaviour/resolution/framework/common",
         "//test/behaviour/resolution/framework/resolve",

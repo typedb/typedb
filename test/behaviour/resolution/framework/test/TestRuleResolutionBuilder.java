@@ -1,24 +1,7 @@
-/*
- * Copyright (C) 2020 Grakn Labs
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
- *
- */
-
 package grakn.core.test.behaviour.resolution.framework.test;
 
-import grakn.core.test.behaviour.resolution.framework.resolve.QueryBuilder;
+import grakn.core.test.behaviour.resolution.framework.common.RuleResolutionBuilder;
+import grakn.core.test.behaviour.resolution.framework.resolve.ResolutionQueryBuilder;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;
@@ -26,41 +9,19 @@ import org.junit.Test;
 
 import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import static com.google.common.collect.Iterables.getOnlyElement;
 import static grakn.core.test.behaviour.resolution.framework.common.Utils.getStatements;
 import static org.junit.Assert.assertEquals;
 
-public class TestQueryBuilder {
-
-    @Test
-    public void testIdStatementsAreRemovedCorrectly() {
-        Set<Statement> statementsWithIds = getStatements(Graql.parsePatternList(
-                "$transaction has currency $currency;\n" +
-                "$transaction id V86232;\n" +
-                "$currency id V36912;\n" +
-                "$transaction isa transaction;\n"
-        ));
-
-        Set<Statement> expectedStatements = getStatements(Graql.parsePatternList(
-                "$transaction has currency $currency;\n" +
-                "$transaction isa transaction;\n"
-        ));
-        expectedStatements.add(null);
-
-        Set<Statement> statementsWithoutIds = statementsWithIds.stream().map(QueryBuilder::removeIdProperties).collect(Collectors.toSet());
-
-        assertEquals(expectedStatements, statementsWithoutIds);
-    }
-
+public class TestRuleResolutionBuilder {
     @Test
     public void testStatementToResolutionPropertiesForVariableAttributeOwnership() {
         Statement statement = getOnlyElement(Graql.parsePattern("$transaction has currency $currency;").statements());
 
         Statement expectedPropsStatement = getOnlyElement(Graql.parsePattern("$x0 (owner: $transaction) isa has-attribute-property, has currency $currency;").statements());
 
-        Statement propsStatement = getOnlyElement(new QueryBuilder().statementToResolutionProperties(statement).values());
+        Statement propsStatement = getOnlyElement(new RuleResolutionBuilder().statementToResolutionProperties(statement).values());
 
         assertEquals(expectedPropsStatement, propsStatement);
     }
@@ -71,7 +32,7 @@ public class TestQueryBuilder {
 
         Statement expectedPropsStatement = getOnlyElement(Graql.parsePattern("$x0 (owner: $transaction) isa has-attribute-property, has currency \"GBP\";").statements());
 
-        Statement propsStatement = getOnlyElement(new QueryBuilder().statementToResolutionProperties(statement).values());
+        Statement propsStatement = getOnlyElement(new RuleResolutionBuilder().statementToResolutionProperties(statement).values());
 
         assertEquals(expectedPropsStatement, propsStatement);
     }
@@ -85,7 +46,7 @@ public class TestQueryBuilder {
                 "$x1 (rel: $locates, roleplayer: $country) isa relation-property, has role-label \"locates_location\";"
         ));
 
-        Set<Statement> propsStatements = new HashSet<>(new QueryBuilder().statementToResolutionProperties(statement).values());
+        Set<Statement> propsStatements = new HashSet<>(new RuleResolutionBuilder().statementToResolutionProperties(statement).values());
 
         assertEquals(expectedPropsStatements, propsStatements);
     }
@@ -93,7 +54,7 @@ public class TestQueryBuilder {
     @Test
     public void testStatementToResolutionPropertiesForIsa() {
         Statement statement = getOnlyElement(Graql.parsePattern("$transaction isa transaction;").statements());
-        Statement propStatement = getOnlyElement(new QueryBuilder().statementToResolutionProperties(statement).values());
+        Statement propStatement = getOnlyElement(new RuleResolutionBuilder().statementToResolutionProperties(statement).values());
         Statement expectedPropStatement = getOnlyElement(Graql.parsePattern("$x0 (instance: $transaction) isa isa-property, has type-label \"transaction\";").statements());
         assertEquals(expectedPropStatement, propStatement);
     }
@@ -125,7 +86,7 @@ public class TestQueryBuilder {
                 "has rule-label \"transaction-currency-is-that-of-the-country\"; };");
 
 
-        Pattern resolution = new QueryBuilder().ruleResolutionConjunction(when, then, "transaction-currency-is-that-of-the-country");
+        Pattern resolution = new RuleResolutionBuilder().ruleResolutionConjunction(when, then, "transaction-currency-is-that-of-the-country");
         assertEquals(expected, resolution);
     }
 }
