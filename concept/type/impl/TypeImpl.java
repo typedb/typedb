@@ -136,7 +136,7 @@ public abstract class TypeImpl implements Type {
     }
 
     <THING> Stream<THING> instances(Function<ThingVertex, THING> thingConstructor) {
-        return subs().flatMap(t -> stream(((TypeImpl) t).vertex.instances())).distinct().map(thingConstructor);
+        return subs().flatMap(t -> stream(((TypeImpl) t).vertex.instances())).map(thingConstructor);
     }
 
     @Override
