@@ -55,7 +55,7 @@ deploy_distribution(
     name = "deploy-linux-targz",
     target = ":assemble-linux-targz",
     artifact_group = "graknlabs_core",
-    deployment_properties = "@graknlabs_build_tools//:deployment.properties",
+    deployment_properties = "@graknlabs_dependecies//:deployment.properties",
     visibility = ["//visibility:public"],
 )
 
