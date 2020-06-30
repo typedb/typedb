@@ -28,7 +28,7 @@ java_library(
 )
 
 java_test(
-    name = "query-builder-it",
+    name = "resolution-query-builder-it",
     size = "medium",
     srcs = [
         "ResolutionQueryBuilderIT.java",
@@ -37,7 +37,7 @@ java_test(
     resources = [
         "//test/behaviour/resolution/framework/test/stubs/complex_recursion",
     ],
-    test_class = "grakn.core.test.behaviour.resolution.framework.test.QueryBuilderIT",
+    test_class = "grakn.core.test.behaviour.resolution.framework.test.ResolutionQueryBuilderIT",
     deps = [
         "//test/behaviour/resolution/framework/common",
         "//test/behaviour/resolution/framework/test:load-test",
@@ -51,13 +51,13 @@ java_test(
 )
 
 java_test(
-    name = "test-query-builder",
+    name = "test-resolution-query-builder",
     size = "small",
     srcs = [
         "TestResolutionQueryBuilder.java",
     ],
     classpath_resources = ["//test/resources:logback-test"],
-    test_class = "grakn.core.test.behaviour.resolution.framework.test.TestQueryBuilder",
+    test_class = "grakn.core.test.behaviour.resolution.framework.test.TestResolutionQueryBuilder",
     deps = [
         "//test/behaviour/resolution/framework/common",
         "//test/behaviour/resolution/framework/resolve",
@@ -162,8 +162,9 @@ checkstyle_test(
     name = "checkstyle",
     targets = [
         ":load-test",
-        ":query-builder-it",
-        ":test-query-builder",
+        ":resolution-query-builder-it",
+        ":test-resolution-query-builder",
+        ":test-rule-resolution-builder",
         ":test-schema-manager",
         ":test-completer",
         ":test-resolution",
