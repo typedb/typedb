@@ -19,40 +19,22 @@
 package grakn.core.concept;
 
 import grakn.core.common.exception.ErrorMessage;
-import grakn.core.concept.impl.AttributeTypeImpl;
-import grakn.core.concept.impl.EntityTypeImpl;
-import grakn.core.core.Schema;
-import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.EntityType;
 import grakn.core.kb.concept.api.GraknConceptException;
-import grakn.core.kb.concept.api.RelationType;
-import grakn.core.kb.concept.api.SchemaConcept;
-import grakn.core.kb.concept.structure.EdgeElement;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
-import grakn.core.kb.server.exception.TransactionException;
 import grakn.core.test.rule.GraknTestServer;
 import graql.lang.statement.Label;
-import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import java.util.Set;
-
-import static java.util.stream.Collectors.toSet;
 import static junit.framework.TestCase.assertEquals;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
 
 public class SchemaConceptIT {
 
@@ -80,7 +62,7 @@ public class SchemaConceptIT {
     public void whenChangingSchemaConceptLabel_EnsureLabelIsChangedAndOldLabelIsDead(){
         Label originalLabel = Label.of("my original label");
         Label newLabel = Label.of("my new label");
-        EntityType entityType = tx.putEntityType(originalLabel.getValue());
+        EntityType entityType = tx.putEntityType(originalLabel.name());
 
         //Original label works
         assertEquals(entityType, tx.getType(originalLabel));

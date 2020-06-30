@@ -41,8 +41,6 @@ import org.junit.rules.ExpectedException;
 
 import static grakn.core.common.exception.ErrorMessage.IS_ABSTRACT;
 import static grakn.core.common.exception.ErrorMessage.VALIDATION_CASTING;
-import static org.hamcrest.CoreMatchers.hasItem;
-import static org.junit.Assert.assertThat;
 
 @SuppressWarnings("Duplicates")
 public class SchemaMutationIT {

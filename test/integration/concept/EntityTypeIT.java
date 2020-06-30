@@ -25,7 +25,6 @@ import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.Entity;
 import grakn.core.kb.concept.api.EntityType;
 import grakn.core.kb.concept.api.GraknConceptException;
-import grakn.core.kb.concept.api.Relation;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Type;
@@ -207,8 +206,9 @@ public class EntityTypeIT {
 
     @Test
     public void whenRemovingRoleFromEntityType_TheRoleCanNoLongerBePlayed(){
-        Role role1 = tx.putRole("A Role 1");
-        Role role2 = tx.putRole("A Role 2");
+        RelationType aRelation = tx.putRelationType("aRelation").relates("a-role-1").relates("a-role-2");
+        Role role1 = aRelation.role("a-role-1");
+        Role role2 = aRelation.role("a-role-2");
         EntityType type = tx.putEntityType("A Concept Type").plays(role1).plays(role2);
 
         assertThat(type.playing().collect(toSet()), containsInAnyOrder(role1, role2));
@@ -268,8 +268,9 @@ public class EntityTypeIT {
 
     @Test
     public void whenAddingRoleToMetaType_Throw(){
+        RelationType aRelation = tx.putRelationType("aRelation").relates("a-role");
         Type meta = tx.getMetaEntityType();
-        Role role = tx.putRole("A Role");
+        Role role = aRelation.role("a-role");
 
         expectedException.expect(GraknConceptException.class);
         expectedException.expectMessage(GraknConceptException.metaTypeImmutable(meta.label()).getMessage());
@@ -478,7 +479,7 @@ public class EntityTypeIT {
 
         expectedException.expect(GraknConceptException.class);
         expectedException.expectMessage(GraknConceptException.illegalUnhasNotExist(
-                person.label().getValue(), id.label().getValue(), false).getMessage());
+                person.label().scopedName(), id.label().scopedName(), false).getMessage());
         person.unhas(id);
     }
 }

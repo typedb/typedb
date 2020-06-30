@@ -26,7 +26,6 @@ import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.Entity;
 import grakn.core.kb.concept.api.EntityType;
-import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Relation;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
@@ -39,6 +38,7 @@ import grakn.core.test.rule.GraknTestServer;
 import grakn.core.test.rule.SessionUtil;
 import grakn.core.test.rule.TestTransactionProvider.TestTransaction;
 import graql.lang.Graql;
+import graql.lang.statement.Label;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.After;
 import org.junit.Before;
@@ -251,12 +251,12 @@ public class TransactionCacheIT {
         4. re-read the original vertex and confirm the edges and properties are still there
         */
 
-        Role work = tx.putRole("work");
-        Role author = tx.putRole("author");
         AttributeType<String> provenance = tx.putAttributeType("provenance", AttributeType.ValueType.STRING);
+        RelationType authoredBy = tx.putRelationType("authored-by").relates("work").relates("author").has(provenance);
+        Role work = authoredBy.role("work");
+        Role author = authoredBy.role("author");
         EntityType somework = tx.putEntityType("somework").plays(work);
         EntityType person = tx.putEntityType("person").plays(author);
-        RelationType authoredBy = tx.putRelationType("authored-by").relates(work).relates(author).has(provenance);
 
         Entity aPerson = person.create();
         Relation aRelation = authoredBy.create();
@@ -306,12 +306,12 @@ public class TransactionCacheIT {
         4. re-read the original vertex and confirm edges and properties are still there
         */
 
-        Role work = tx.putRole("work");
-        Role author = tx.putRole("author");
         AttributeType<String> provenance = tx.putAttributeType("provenance", AttributeType.ValueType.STRING);
+        RelationType authoredBy = tx.putRelationType("authored-by").relates("work").relates("author").has(provenance);
+        Role work = authoredBy.role("work");
+        Role author = authoredBy.role("author");
         EntityType somework = tx.putEntityType("somework").plays(work);
         EntityType person = tx.putEntityType("person").plays(author);
-        RelationType authoredBy = tx.putRelationType("authored-by").relates(work).relates(author).has(provenance);
 
         Entity aPerson = person.create();
         Relation aRelation = authoredBy.create();
@@ -361,8 +361,8 @@ public class TransactionCacheIT {
 
     @Test
     public void whenInsertingAndDeletingInferredRelation_instanceIsTracked(){
-        Role someRole = tx.putRole("someRole");
-        RelationType someRelation = tx.putRelationType("someRelation").relates(someRole);
+        RelationType someRelation = tx.putRelationType("someRelation").relates("someRole");
+        Role someRole = someRelation.role("someRole");
         Relation relation = someRelation.addRelationInferred();
         assertTrue(tx.cache().getInferredInstances().contains(relation));
         relation.delete();
