@@ -52,7 +52,7 @@ jobs:
       - run-bazel:
           command: bazel build //...
       - run:
-          name: Verify that any updated artifacts.bzl are reflected in snapshot.json
+          name: Verify dependencies/maven/snapshot.json
           command: |
             dependencies/maven/update.sh
             git diff --exit-code dependencies/maven/snapshot.json
