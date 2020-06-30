@@ -18,7 +18,6 @@
 
 package hypergraph.test.behaviour.concept.type.relationtype;
 
-import hypergraph.common.exception.HypergraphException;
 import hypergraph.concept.type.RoleType;
 import hypergraph.test.behaviour.config.Parameters;
 import io.cucumber.java.en.Then;
@@ -28,12 +27,12 @@ import java.util.List;
 import java.util.Set;
 
 import static hypergraph.test.behaviour.connection.ConnectionSteps.tx;
+import static hypergraph.test.behaviour.util.Util.assertThrows;
 import static java.util.Objects.isNull;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 /**
  * Behaviour Steps specific to RelationTypes
@@ -45,14 +44,9 @@ public class RelationTypeSteps {
         tx().concepts().getRelationType(relationLabel).relates(roleLabel);
     }
 
-    @When("relation\\( ?{type_label} ?) fails at setting relates role: {type_label}")
-    public void thing_fails_at_setting_relates_role(String relationLabel, String roleLabel) {
-        try {
-            tx().concepts().getRelationType(relationLabel).relates(roleLabel);
-            fail();
-        } catch (HypergraphException ignore) {
-            assertTrue(true);
-        }
+    @When("relation\\( ?{type_label} ?) set relates role: {type_label}; throws exception")
+    public void thing_set_relates_role_throws_exception(String relationLabel, String roleLabel) {
+        assertThrows(() -> tx().concepts().getRelationType(relationLabel).relates(roleLabel));
     }
 
     @When("relation\\( ?{type_label} ?) set relates role: {type_label} as {type_label}")
@@ -60,14 +54,9 @@ public class RelationTypeSteps {
         tx().concepts().getRelationType(relationLabel).relates(roleLabel, superRole);
     }
 
-    @When("relation\\( ?{type_label} ?) fails at setting relates role: {type_label} as {type_label}")
-    public void thing_fails_at_setting_relates_role_type_as(String relationLabel, String roleLabel, String superRole) {
-        try {
-            tx().concepts().getRelationType(relationLabel).relates(roleLabel, superRole);
-            fail();
-        } catch (HypergraphException ignore) {
-            assertTrue(true);
-        }
+    @When("relation\\( ?{type_label} ?) set relates role: {type_label} as {type_label}; throws exception")
+    public void thing_set_relates_role_type_as_throws_exception(String relationLabel, String roleLabel, String superRole) {
+        assertThrows(() -> tx().concepts().getRelationType(relationLabel).relates(roleLabel, superRole));
     }
 
     @When("relation\\( ?{type_label} ?) remove related role: {type_label}")
@@ -159,16 +148,6 @@ public class RelationTypeSteps {
         System.out.println(actuals);
         for (Parameters.ScopedLabel subLabel : subLabels) {
             assertFalse(actuals.contains(subLabel));
-        }
-    }
-
-    @Then("relation\\( ?{type_label} ?) fails at creating an instance")
-    public void relation_type_fails_at_creating_an_instance(String typeLabel) {
-        try {
-            tx().concepts().getRelationType(typeLabel).create();
-            fail();
-        } catch (Exception ignore) {
-            assertTrue(true);
         }
     }
 }

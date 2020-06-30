@@ -16,9 +16,21 @@
  *
  */
 
-package hypergraph.test.behaviour.concept.type.entitytype;
+package hypergraph.test.behaviour.util;
 
-/**
- * Behaviour Steps specific to EntityTypes
- */
-public class EntityTypeSteps {}
+import hypergraph.common.exception.HypergraphException;
+
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+public class Util {
+
+    public static void assertThrows(Runnable function) {
+        try {
+            function.run();
+            fail();
+        } catch (HypergraphException e) {
+            assertTrue(true);
+        }
+    }
+}

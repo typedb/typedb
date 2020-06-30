@@ -36,9 +36,9 @@ import static hypergraph.test.behaviour.connection.ConnectionSteps.sessionsParal
 import static hypergraph.test.behaviour.connection.ConnectionSteps.sessionsToTransactions;
 import static hypergraph.test.behaviour.connection.ConnectionSteps.sessionsToTransactionsParallel;
 import static hypergraph.test.behaviour.connection.ConnectionSteps.threadPool;
+import static hypergraph.test.behaviour.util.Util.assertThrows;
 import static java.util.Objects.isNull;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class TransactionSteps {
@@ -79,14 +79,9 @@ public class TransactionSteps {
         sessionsToTransactions.get(sessions.get(0)).get(0).commit();
     }
 
-    @Then("transaction commits successfully: {bool}")
-    public void transaction_commits_successfully(boolean successfully) {
-        try {
-            sessionsToTransactions.get(sessions.get(0)).get(0).commit();
-            assertTrue(successfully);
-        } catch (RuntimeException ignore) {
-            assertFalse(successfully);
-        }
+    @Then("transaction commits; throws exception")
+    public void transaction_commits_throws_exception() {
+        assertThrows(() -> sessionsToTransactions.get(sessions.get(0)).get(0).commit());
     }
 
     @Then("for each session, transaction(s) commit(s)")
@@ -98,22 +93,17 @@ public class TransactionSteps {
         }
     }
 
-    @Then("for each session, transaction(s) commit(s) successfully: {bool}")
-    public void for_each_session_transactions_commits_successfully(boolean successfully) {
+    @Then("for each session, transaction(s) commit(s); throws exception")
+    public void for_each_session_transactions_commits_throws_exception() {
         for (Hypergraph.Session session : sessions) {
             for (Hypergraph.Transaction transaction : sessionsToTransactions.get(session)) {
-                try {
-                    transaction.commit();
-                    assertTrue(successfully);
-                } catch (RuntimeException ignore) {
-                    assertFalse(successfully);
-                }
+                assertThrows(transaction::commit);
             }
         }
     }
 
-    @Then("for each session, transaction close")
-    public void for_each_session_transaction_close() {
+    @Then("for each session, transaction close(s)")
+    public void for_each_session_transaction_closes() {
         for (Hypergraph.Session session : sessions) {
             for (Hypergraph.Transaction transaction : sessionsToTransactions.get(session)) {
                 transaction.close();

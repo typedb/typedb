@@ -26,6 +26,7 @@ import java.time.LocalDateTime;
 import static hypergraph.test.behaviour.concept.thing.ThingSteps.get;
 import static hypergraph.test.behaviour.concept.thing.ThingSteps.put;
 import static hypergraph.test.behaviour.connection.ConnectionSteps.tx;
+import static hypergraph.test.behaviour.util.Util.assertThrows;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -56,9 +57,19 @@ public class AttributeSteps {
         put(var, tx().concepts().getAttributeType(typeLabel).asBoolean().put(value));
     }
 
+    @Then("attribute\\( ?{type_label} ?) as\\( ?boolean ?) put: {bool}; throws exception")
+    public void attribute_type_as_boolean_put_throws_exception(String typeLabel, boolean value) {
+        assertThrows(() -> tx().concepts().getAttributeType(typeLabel).asBoolean().put(value));
+    }
+
     @When("{var} = attribute\\( ?{type_label} ?) as\\( ?long ?) put: {int}")
     public void attribute_type_as_long_put(String var, String typeLabel, long value) {
         put(var, tx().concepts().getAttributeType(typeLabel).asLong().put(value));
+    }
+
+    @Then("attribute\\( ?{type_label} ?) as\\( ?long ?) put: {int}; throws exception")
+    public void attribute_type_as_long_put_throws_exception(String typeLabel, long value) {
+        assertThrows(() -> tx().concepts().getAttributeType(typeLabel).asLong().put(value));
     }
 
     @When("{var} = attribute\\( ?{type_label} ?) as\\( ?double ?) put: {double}")
@@ -66,14 +77,29 @@ public class AttributeSteps {
         put(var, tx().concepts().getAttributeType(typeLabel).asDouble().put(value));
     }
 
+    @Then("attribute\\( ?{type_label} ?) as\\( ?double ?) put: {double}; throws exception")
+    public void attribute_type_as_double_put_throws_exception(String typeLabel, double value) {
+        assertThrows(() -> tx().concepts().getAttributeType(typeLabel).asDouble().put(value));
+    }
+
     @When("{var} = attribute\\( ?{type_label} ?) as\\( ?string ?) put: {word}")
     public void attribute_type_as_string_put(String var, String typeLabel, String value) {
         put(var, tx().concepts().getAttributeType(typeLabel).asString().put(value));
     }
 
+    @Then("attribute\\( ?{type_label} ?) as\\( ?string ?) put: {word}; throws exception")
+    public void attribute_type_as_string_put_throws_exception(String typeLabel, String value) {
+        assertThrows(() -> tx().concepts().getAttributeType(typeLabel).asString().put(value));
+    }
+
     @When("{var} = attribute\\( ?{type_label} ?) as\\( ?datetime ?) put: {datetime}")
     public void attribute_type_as_datetime_put(String var, String typeLabel, LocalDateTime value) {
         put(var, tx().concepts().getAttributeType(typeLabel).asDateTime().put(value));
+    }
+
+    @Then("attribute\\( ?{type_label} ?) as\\( ?datetime ?) put: {datetime}; throws exception")
+    public void attribute_type_as_datetime_put_throws_exception(String typeLabel, LocalDateTime value) {
+        assertThrows(() -> tx().concepts().getAttributeType(typeLabel).asDateTime().put(value));
     }
 
     @When("{var} = attribute\\( ?{type_label} ?) as\\( ?boolean ?) get: {bool}")

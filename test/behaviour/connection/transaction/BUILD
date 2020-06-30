@@ -27,6 +27,7 @@ java_library(
         # Internal Package Dependencies
         "//:hypergraph",
         "//test/behaviour/connection:steps",
+        "//test/behaviour/util:util",
 
         # Internal Repository Dependencies
         "@graknlabs_common//:common",

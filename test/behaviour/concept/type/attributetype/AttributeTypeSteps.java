@@ -33,7 +33,6 @@ import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 /**
  * Behaviour Steps specific to AttributeSteps
@@ -54,17 +53,6 @@ public class AttributeTypeSteps {
     public void attribute_type_get_supertype_value_type(String typeLabel, Class<?> valueType) {
         AttributeType supertype = tx().concepts().getAttributeType(typeLabel).sup();
         assertEquals(valueType, supertype.valueType());
-    }
-
-    @Then("attribute\\( ?{type_label} ?) fails at setting supertype: {type_label}")
-    public void attribute_type_fails_at_setting_supertype(String typeLabel, String superLabel) {
-        AttributeType superType = tx().concepts().getAttributeType(superLabel);
-        try {
-            tx().concepts().getAttributeType(typeLabel).sup(superType);
-            fail();
-        } catch (HypergraphException ignored) {
-            assertTrue(true);
-        }
     }
 
     private AttributeType attribute_type_as_value_type(String typeLabel, Class<?> valueType) {
@@ -100,29 +88,6 @@ public class AttributeTypeSteps {
         Set<String> actuals = attributeType.subs().map(ThingType::label).collect(toSet());
         for (String subLabel : subLabels) {
             assertFalse(actuals.contains(subLabel));
-        }
-    }
-
-    @Then("attribute\\( ?{type_label} ?) as\\( ?{value_type} ?) fails at putting an instance")
-    public void attribute_type_as_value_type_fails_at_creating_an_instance(String typeLabel, Class<?> valueType) {
-        try {
-            if (valueType.equals(Boolean.class)) {
-                tx().concepts().getAttributeType(typeLabel).asBoolean().put(true);
-            } else if (valueType.equals(Long.class)) {
-                tx().concepts().getAttributeType(typeLabel).asLong().put(21);
-            } else if (valueType.equals(Double.class)) {
-                tx().concepts().getAttributeType(typeLabel).asDouble().put(21.0);
-            } else if (valueType.equals(String.class)) {
-                tx().concepts().getAttributeType(typeLabel).asString().put("alice");
-            } else if (valueType.equals(LocalDateTime.class)) {
-                tx().concepts().getAttributeType(typeLabel).asDateTime().put(LocalDateTime.of(1991, 2, 3, 4, 5));
-            } else {
-                throw new HypergraphException("unreachable");
-            }
-
-            fail();
-        } catch (Exception ignore) {
-            assertTrue(true);
         }
     }
 }

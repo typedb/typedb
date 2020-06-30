@@ -25,13 +25,13 @@ import hypergraph.test.behaviour.config.Parameters.ScopedLabel;
 import io.cucumber.java.After;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
-import org.junit.Assert;
 
 import java.util.HashMap;
 import java.util.Map;
 
 import static hypergraph.test.behaviour.concept.type.thingtype.ThingTypeSteps.get_thing_type;
 import static hypergraph.test.behaviour.connection.ConnectionSteps.tx;
+import static hypergraph.test.behaviour.util.Util.assertThrows;
 import static java.util.Objects.isNull;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -78,14 +78,9 @@ public class ThingSteps {
         get(var1).has(get(var2).asAttribute());
     }
 
-    @Then("entity/attribute/relation {var} fails at setting has: {var}")
-    public void thing_fails_at_setting_has(String var1, String var2) {
-        try {
-            get(var1).has(get(var2).asAttribute());
-            Assert.fail();
-        } catch (Exception ignore) {
-            assertTrue(true);
-        }
+    @Then("entity/attribute/relation {var} set has: {var}; throws exception")
+    public void thing_set_has_throws_exception(String var1, String var2) {
+        assertThrows(() -> get(var1).has(get(var2).asAttribute()));
     }
 
     @When("entity/attribute/relation {var} remove has: {var}")

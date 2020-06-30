@@ -28,6 +28,7 @@ java_library(
         "//concept",
         "//test/behaviour/concept/thing:steps",
         "//test/behaviour/connection:steps",
+        "//test/behaviour/util:util",
 
         # Internal Repository Dependencies
         # "@graknlabs_common//:common",

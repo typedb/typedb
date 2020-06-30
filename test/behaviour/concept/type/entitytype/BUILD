@@ -25,14 +25,14 @@ java_library(
     ],
     deps = [
         # Internal Package Dependencies
-        "//test/behaviour/connection:steps",
+        # "//test/behaviour/connection:steps",
 
         # Internal Repository Dependencies
         # "@graknlabs_common//:common",
 
         # External Maven Dependencies
-        "//dependencies/maven/artifacts/junit:junit",
-        "//dependencies/maven/artifacts/io/cucumber:cucumber-java",
+        # "//dependencies/maven/artifacts/junit:junit",
+        # "//dependencies/maven/artifacts/io/cucumber:cucumber-java",
     ]
 )
 
@@ -49,6 +49,7 @@ java_test(
     runtime_deps = [
         ":steps",
         "//test/behaviour/config:parameters",
+        "//test/behaviour/concept/thing/entity:steps",
         "//test/behaviour/concept/type/attributetype:steps",
         "//test/behaviour/concept/type/relationtype:steps",
         "//test/behaviour/concept/type/thingtype:steps",

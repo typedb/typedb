@@ -27,6 +27,7 @@ import java.time.LocalDateTime;
 import static hypergraph.test.behaviour.concept.thing.ThingSteps.get;
 import static hypergraph.test.behaviour.concept.thing.ThingSteps.put;
 import static hypergraph.test.behaviour.connection.ConnectionSteps.tx;
+import static hypergraph.test.behaviour.util.Util.assertThrows;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -35,6 +36,11 @@ public class RelationSteps {
     @When("{var} = relation\\( ?{type_label} ?) create new instance")
     public void relation_type_create_new_instance(String var, String typeLabel) {
         put(var, tx().concepts().getRelationType(typeLabel).create());
+    }
+
+    @Then("relation\\( ?{type_label} ?) create new instance; throws exception")
+    public void relation_type_create_new_instance_throws_exception(String typeLabel) {
+        assertThrows(() -> tx().concepts().getRelationType(typeLabel).create());
     }
 
     @When("{var} = relation\\( ?{type_label} ?) create new instance with key\\( ?{type_label} ?): {bool}")

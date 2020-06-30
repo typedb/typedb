@@ -29,6 +29,7 @@ java_library(
         "//common:common",
         "//test/behaviour/config:parameters",
         "//test/behaviour/connection:steps",
+        "//test/behaviour/util:util",
 
         # Internal Repository Dependencies
         # "@graknlabs_common//:common",
@@ -52,6 +53,7 @@ java_test(
     runtime_deps = [
         ":steps",
         "//test/behaviour/config:parameters",
+        "//test/behaviour/concept/thing/relation:steps",
         "//test/behaviour/concept/type/attributetype:steps",
         "//test/behaviour/concept/type/thingtype:steps",
         "//test/behaviour/connection/keyspace:steps",

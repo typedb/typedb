@@ -34,12 +34,12 @@ import java.util.Set;
 
 import static hypergraph.test.behaviour.config.Parameters.RootLabel;
 import static hypergraph.test.behaviour.connection.ConnectionSteps.tx;
+import static hypergraph.test.behaviour.util.Util.assertThrows;
 import static java.util.Objects.isNull;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 /**
  * Behaviour Steps generic to all ThingTypes
@@ -149,6 +149,24 @@ public class ThingTypeSteps {
         }
     }
 
+    @Then("{root_label}\\( ?{type_label} ?) set supertype: {type_label}; throws exception")
+    public void thing_type_set_supertype_throws_exception(RootLabel rootLabel, String typeLabel, String superLabel) {
+        switch (rootLabel) {
+            case ENTITY:
+                EntityType entitySuperType = tx().concepts().getEntityType(superLabel);
+                assertThrows(() -> tx().concepts().getEntityType(typeLabel).sup(entitySuperType));
+                break;
+            case ATTRIBUTE:
+                AttributeType attributeSuperType = tx().concepts().getAttributeType(superLabel);
+                assertThrows(() -> tx().concepts().getAttributeType(typeLabel).sup(attributeSuperType));
+                break;
+            case RELATION:
+                RelationType relationSuperType = tx().concepts().getRelationType(superLabel);
+                assertThrows(() -> tx().concepts().getRelationType(typeLabel).sup(relationSuperType));
+                break;
+        }
+    }
+
     @Then("{root_label}\\( ?{type_label} ?) get supertype: {type_label}")
     public void thing_type_get_supertype(RootLabel rootLabel, String typeLabel, String superLabel) {
         ThingType supertype = get_thing_type(rootLabel, superLabel);
@@ -196,27 +214,17 @@ public class ThingTypeSteps {
         get_thing_type(rootLabel, typeLabel).key(attributeType, overriddenType);
     }
 
-    @Then("{root_label}\\( ?{type_label} ?) fails at setting key attribute type: {type_label}")
-    public void thing_type_fails_at_setting_key_attribute_type(RootLabel rootLabel, String typeLabel, String attributeLabel) {
+    @Then("{root_label}\\( ?{type_label} ?) set key attribute type: {type_label}; throws exception")
+    public void thing_type_set_key_attribute_type_throws_exception(RootLabel rootLabel, String typeLabel, String attributeLabel) {
         AttributeType attributeType = tx().concepts().getAttributeType(attributeLabel);
-        try {
-            get_thing_type(rootLabel, typeLabel).key(attributeType);
-            fail();
-        } catch (HypergraphException ignored) {
-            assertTrue(true);
-        }
+        assertThrows(() -> get_thing_type(rootLabel, typeLabel).key(attributeType));
     }
 
-    @Then("{root_label}\\( ?{type_label} ?) fails at setting key attribute type: {type_label} as {type_label}")
-    public void thing_type_fails_at_setting_key_attribute_type_as(RootLabel rootLabel, String typeLabel, String attributeLabel, String overriddenLabel) {
+    @Then("{root_label}\\( ?{type_label} ?) set key attribute type: {type_label} as {type_label}; throws exception")
+    public void thing_type_set_key_attribute_type_as_throws_exception(RootLabel rootLabel, String typeLabel, String attributeLabel, String overriddenLabel) {
         AttributeType attributeType = tx().concepts().getAttributeType(attributeLabel);
         AttributeType overriddenType = tx().concepts().getAttributeType(overriddenLabel);
-        try {
-            get_thing_type(rootLabel, typeLabel).key(attributeType, overriddenType);
-            fail();
-        } catch (HypergraphException ignored) {
-            assertTrue(true);
-        }
+        assertThrows(() -> get_thing_type(rootLabel, typeLabel).key(attributeType, overriddenType));
     }
 
     @When("{root_label}\\( ?{type_label} ?) remove key attribute type: {type_label}")
@@ -245,15 +253,10 @@ public class ThingTypeSteps {
         get_thing_type(rootLabel, typeLabel).has(attributeType);
     }
 
-    @Then("{root_label}\\( ?{type_label} ?) fails at setting has attribute type: {type_label}")
-    public void thing_type_fails_at_setting_has_attribute(RootLabel rootLabel, String typeLabel, String attributeLabel) {
+    @Then("{root_label}\\( ?{type_label} ?) set has attribute type: {type_label}; throws exception")
+    public void thing_type_set_has_attribute_throws_exception(RootLabel rootLabel, String typeLabel, String attributeLabel) {
         AttributeType attributeType = tx().concepts().getAttributeType(attributeLabel);
-        try {
-            get_thing_type(rootLabel, typeLabel).has(attributeType);
-            fail();
-        } catch (HypergraphException ignored) {
-            assertTrue(true);
-        }
+        assertThrows(() -> get_thing_type(rootLabel, typeLabel).has(attributeType));
     }
 
     @When("{root_label}\\( ?{type_label} ?) set has attribute type: {type_label} as {type_label}")
@@ -263,16 +266,11 @@ public class ThingTypeSteps {
         get_thing_type(rootLabel, typeLabel).has(attributeType, overriddenType);
     }
 
-    @Then("{root_label}\\( ?{type_label} ?) fails at setting has attribute type: {type_label} as {type_label}")
-    public void thing_type_fails_at_setting_has_attribute_as(RootLabel rootLabel, String typeLabel, String attributeLabel, String overriddenLabel) {
+    @Then("{root_label}\\( ?{type_label} ?) set has attribute type: {type_label} as {type_label}; throws exception")
+    public void thing_type_set_has_attribute_as_throws_exception(RootLabel rootLabel, String typeLabel, String attributeLabel, String overriddenLabel) {
         AttributeType attributeType = tx().concepts().getAttributeType(attributeLabel);
         AttributeType overriddenType = tx().concepts().getAttributeType(overriddenLabel);
-        try {
-            get_thing_type(rootLabel, typeLabel).has(attributeType, overriddenType);
-            fail();
-        } catch (HypergraphException ignore) {
-            assertTrue(true);
-        }
+        assertThrows(() -> get_thing_type(rootLabel, typeLabel).has(attributeType, overriddenType));
     }
 
     @When("{root_label}\\( ?{type_label} ?) remove has attribute type: {type_label}")
@@ -301,15 +299,10 @@ public class ThingTypeSteps {
         get_thing_type(rootLabel, typeLabel).plays(roleType);
     }
 
-    @When("{root_label}\\( ?{type_label} ?) fails at setting plays role: {scoped_label}")
-    public void thing_type_fails_at_setting_plays_role(RootLabel rootLabel, String typeLabel, Parameters.ScopedLabel roleLabel) {
+    @When("{root_label}\\( ?{type_label} ?) set plays role: {scoped_label}; throws exception")
+    public void thing_type_set_plays_role_throws_exception(RootLabel rootLabel, String typeLabel, Parameters.ScopedLabel roleLabel) {
         RoleType roleType = tx().concepts().getRelationType(roleLabel.scope()).role(roleLabel.role());
-        try {
-            get_thing_type(rootLabel, typeLabel).plays(roleType);
-            fail();
-        } catch (HypergraphException ignore) {
-            assertTrue(true);
-        }
+        assertThrows(() -> get_thing_type(rootLabel, typeLabel).plays(roleType));
     }
 
     @When("{root_label}\\( ?{type_label} ?) set plays role: {scoped_label} as {type_label}")
@@ -320,16 +313,11 @@ public class ThingTypeSteps {
         get_thing_type(rootLabel, typeLabel).plays(roleType, overriddenType);
     }
 
-    @When("{root_label}\\( ?{type_label} ?) fails at setting plays role: {scoped_label} as {scoped_label}")
-    public void thing_type_fails_at_setting_plays_role_as(RootLabel rootLabel, String typeLabel, Parameters.ScopedLabel roleLabel, Parameters.ScopedLabel overriddenLabel) {
+    @When("{root_label}\\( ?{type_label} ?) set plays role: {scoped_label} as {scoped_label}; throws exception")
+    public void thing_type_set_plays_role_as_throws_exception(RootLabel rootLabel, String typeLabel, Parameters.ScopedLabel roleLabel, Parameters.ScopedLabel overriddenLabel) {
         RoleType roleType = tx().concepts().getRelationType(roleLabel.scope()).role(roleLabel.role());
         RoleType overriddenType = tx().concepts().getRelationType(overriddenLabel.scope()).role(overriddenLabel.role());
-        try {
-            get_thing_type(rootLabel, typeLabel).plays(roleType, overriddenType);
-            fail();
-        } catch (HypergraphException ignore) {
-            assertTrue(true);
-        }
+        assertThrows(() -> get_thing_type(rootLabel, typeLabel).plays(roleType, overriddenType));
     }
 
     @When("{root_label}\\( ?{type_label} ?) remove plays role: {scoped_label}")
