@@ -266,10 +266,10 @@ public class Export implements AutoCloseable {
                     for (Thing player : roleEntry.getValue()) {
                         roleBuilder.addPlayer(MigrateProto.Item.Relation.Role.Player.newBuilder()
                                 .setId(player.id().toString()));
+                        localRoleCount++;
                     }
 
                     relationBuilder.addRole(roleBuilder);
-                    localRoleCount++;
                 }
 
                 localOwnershipCount += relation.attributes(ownedTypes)

@@ -254,7 +254,9 @@ public class Import implements AutoCloseable {
             }
         }
 
-        this.missingRolePlayers.add(new Pair<>(importedId, missingRolePlayers));
+        if (!missingRolePlayers.isEmpty()) {
+            this.missingRolePlayers.add(new Pair<>(importedId, missingRolePlayers));
+        }
 
         insertOwnedAttributesThatExist(relation, relationMessage.getAttributeList());
 
