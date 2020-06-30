@@ -519,7 +519,7 @@ public class ReasoningIT {
                 answers.forEach(answer -> {
                     Relation baseRelation = answer.get("r").asRelation();
                     Thing player = answer.get("x").asThing();
-                    List<Thing> identicalRolePlayers = baseRelation.rolePlayers(tx.getRole("anotherRole"))
+                    List<Thing> identicalRolePlayers = baseRelation.rolePlayers(tx.getRole("anotherRole", "baseRelation"))
                             .filter(thing -> thing.equals(player))
                             .collect(Collectors.toList());
                     assertTrue(identicalRolePlayers.size() == 2);

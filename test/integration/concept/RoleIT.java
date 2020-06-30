@@ -58,8 +58,8 @@ public class RoleIT {
     public void setUp(){
         session = server.sessionWithNewKeyspace();
         tx = session.transaction(Transaction.Type.WRITE);
-        role = tx.putRole("My Role");
-        relationType = tx.putRelationType("RelationType");
+        relationType = tx.putRelationType("RelationType").relates("My Role");
+        role = relationType.role("My Role");
     }
 
     @After
@@ -70,8 +70,6 @@ public class RoleIT {
 
     @Test
     public void whenGettingTheRelationTypesARoleIsInvolvedIn_ReturnTheRelationTypes() {
-        assertThat(role.relations().collect(toSet()), empty());
-        relationType.relates(role);
         assertThat(role.relations().collect(toSet()), containsInAnyOrder(relationType));
     }
 
@@ -86,24 +84,24 @@ public class RoleIT {
 
     @Test
     public void whenDeletingRoleTypeWithTypesWhichCanPlayIt_Throw(){
-        Role foundType = tx.getRole("My Role");
-        assertNotNull(foundType);
-        foundType.delete();
-        assertNull(tx.getRole("My Role"));
+        // TODO this should really throw too, if the following test throws?
+        relationType.relates("new-role");
+        Role newRole = relationType.role("new-role");
+        assertNotNull(newRole);
+        newRole.delete();
+        assertNull(tx.getRole("new-role", "RelationType"));
 
-        Role role = tx.putRole("New Role Type");
-        tx.putEntityType("Entity Type").plays(role);
-
+        Role role = tx.getRole("My Role", "RelationType");
+        EntityType player = tx.putEntityType("player").plays(role);
         expectedException.expect(GraknConceptException.class);
         expectedException.expectMessage(GraknConceptException.cannotBeDeleted(role).getMessage());
-
         role.delete();
     }
 
     @Test
     public void whenDeletingRoleTypeWithRelationTypes_Throw(){
-        Role role2 = tx.putRole("New Role Type");
-        tx.putRelationType("Thing").relates(role2).relates(role);
+        RelationType relation = tx.putRelationType("Thing").relates("New Role Type");
+        Role role2 = relation.role("New Role Type");
 
         expectedException.expect(GraknConceptException.class);
         expectedException.expectMessage(GraknConceptException.cannotBeDeleted(role2).getMessage());
@@ -113,9 +111,9 @@ public class RoleIT {
 
     @Test
     public void whenDeletingRoleTypeWithRolePlayers_Throw(){
-        Role roleA = tx.putRole("roleA");
-        Role roleB = tx.putRole("roleB");
-        RelationType relationType = tx.putRelationType("relationTypes").relates(roleA).relates(roleB);
+        RelationType relationType = tx.putRelationType("relationTypes").relates("roleA").relates("roleB");
+        Role roleA = relationType.role("roleA");
+        Role roleB = relationType.role("roleB");
         EntityType entityType = tx.putEntityType("entityType").plays(roleA).plays(roleB);
 
         Entity a = entityType.create();
@@ -129,12 +127,17 @@ public class RoleIT {
         roleA.delete();
     }
 
+
+    /**
+     * TODO put a test for role inheritance
+     */
+
     @Test
     public void whenAddingRoleTypeToMultipleRelationTypes_EnsureItLinkedToBothRelationTypes() throws InvalidKBException {
-        Role roleA = tx.putRole("roleA");
-        Role roleB = tx.putRole("roleB");
-        relationType.relates(roleA).relates(role);
-        RelationType relationType2 = tx.putRelationType("relationType2").relates(roleB).relates(role);
+        relationType.relates("roleA");
+        Role roleA = relationType.role("roleA");
+        RelationType relationType2 = tx.putRelationType("relationType2").relates("roleB");
+        Role roleB = relationType2.role("roleB");
         tx.commit();
 
         assertThat(roleA.relations().collect(toSet()), containsInAnyOrder(relationType));

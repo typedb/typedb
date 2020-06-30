@@ -182,10 +182,10 @@ public class AtomicEquivalenceIT {
                             .filter(t -> Objects.nonNull(t.valueType()))
                             .filter(t -> t.valueType().equals(valueType)).forEach(attributeType -> {
 
-                        Pattern basePattern = Graql.parsePattern("$x has " + attributeType.label().getValue() + " " + value + ";");
+                        Pattern basePattern = Graql.parsePattern("$x has " + attributeType.label().name() + " " + value + ";");
                         valueType.comparableValueTypes().forEach(comparableValueType -> {
                             AttributeValueConverter<Object, ?> converter = AttributeValueConverter.of(comparableValueType);
-                            Pattern convertedPattern = Graql.parsePattern("$x has " + attributeType.label().getValue() + " " + converter.convert(value) + ";");
+                            Pattern convertedPattern = Graql.parsePattern("$x has " + attributeType.label().name() + " " + converter.convert(value) + ";");
                             atomicEquivalence(basePattern.toString(), convertedPattern.toString(), true, AtomicEquivalence.AlphaEquivalence, reasonerQueryFactory);
                             atomicEquivalence(basePattern.toString(), convertedPattern.toString(), true, AtomicEquivalence.StructuralEquivalence, reasonerQueryFactory);
                         });

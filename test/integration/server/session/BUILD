@@ -27,6 +27,7 @@ java_test(
         "//kb/concept/api",
         "//server",
         "//test/rule:grakn-test-server",
+        "@graknlabs_graql//java:graql",
     ],
 )
 

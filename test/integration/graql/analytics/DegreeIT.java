@@ -32,6 +32,7 @@ import grakn.core.kb.server.Transaction;
 import grakn.core.kb.server.exception.InvalidKBException;
 import grakn.core.test.rule.GraknTestServer;
 import graql.lang.Graql;
+import graql.lang.statement.Label;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -79,11 +80,11 @@ public class DegreeIT {
         ConceptId entity3 = thingy.create().id();
         ConceptId entity4 = anotherThing.create().id();
 
-        Role role1 = tx.putRole("role1");
-        Role role2 = tx.putRole("role2");
+        RelationType related = tx.putRelationType("related").relates("role1").relates("role2");
+        Role role1 = related.role("role1");
+        Role role2 = related.role("role2");
         thingy.plays(role1).plays(role2);
         anotherThing.plays(role1).plays(role2);
-        RelationType related = tx.putRelationType("related").relates(role1).relates(role2);
 
         // relate them
         related.create()
@@ -163,16 +164,17 @@ public class DegreeIT {
 
     @Test
     public void testSubIsAccountedForInSubgraph() {
-        Role pet = tx.putRole("pet");
-        Role owner = tx.putRole("owner");
+        RelationType mansBestFriend = tx.putRelationType("mans-best-friend").relates("pet").relates("owner");
+        Role pet = mansBestFriend.role("pet");
+        Role owner = mansBestFriend.role("owner");
 
-        Entity person = tx.putEntityType("person").plays(owner).create();
-
+        EntityType personType = tx.putEntityType("prson");
+        Entity person = personType.plays(owner).create();
         EntityType animal = tx.putEntityType("animal").plays(pet);
         Entity dog = tx.putEntityType("dog").sup(animal).create();
 
-        tx.putRelationType("mans-best-friend").relates(pet).relates(owner)
-                .create().assign(pet, dog).assign(owner, person);
+        mansBestFriend.create().assign(pet, dog).assign(owner, person);
+
 
         List<ConceptSetMeasure> correctDegrees = new ArrayList<>();
         correctDegrees.add(new ConceptSetMeasure(Sets.newHashSet(person.id(), dog.id()), 1));
@@ -181,7 +183,7 @@ public class DegreeIT {
 
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
             // set subgraph, use animal instead of dog
-            Set<String> ct = Sets.newHashSet("person", "animal", "mans-best-friend");
+            Set<Label> ct = Sets.newHashSet(personType.label(), animal.label(), mansBestFriend.label());
             List<ConceptSetMeasure> degrees = tx.execute(Graql.compute().centrality().using(DEGREE).in(ct));
             // check that dog has a degree to confirm sub has been inferred
             assertTrue(correctDegrees.containsAll(degrees));
@@ -191,9 +193,9 @@ public class DegreeIT {
     @Test
     public void testDegreeTwoAttributes() throws InvalidKBException {
         // create a simple tx
-        Role pet = tx.putRole("pet");
-        Role owner = tx.putRole("owner");
-        RelationType mansBestFriend = tx.putRelationType("mans-best-friend").relates(pet).relates(owner);
+        RelationType mansBestFriend = tx.putRelationType("mans-best-friend").relates("pet").relates("owner");
+        Role pet = mansBestFriend.role("pet");
+        Role owner = mansBestFriend.role("owner");
 
         EntityType person = tx.putEntityType("person").plays(owner);
         EntityType animal = tx.putEntityType("animal").plays(pet);
@@ -230,13 +232,13 @@ public class DegreeIT {
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
 
             // create a subgraph excluding attributes and their relation
-            HashSet<String> subGraphTypes = Sets.newHashSet("animal", "person", "mans-best-friend");
+            HashSet<Label> subGraphTypes = Sets.newHashSet(animal.label(), person.label(), mansBestFriend.label());
             List<ConceptSetMeasure> degrees = tx.execute(Graql.compute().centrality().using(DEGREE)
                     .in(subGraphTypes));
             assertTrue(subgraphReferenceDegrees.containsAll(degrees));
 
             // create a subgraph excluding one attribute type only
-            HashSet<String> almostFullTypes = Sets.newHashSet("animal", "person", "mans-best-friend", "name");
+            HashSet<Label> almostFullTypes = Sets.newHashSet(animal.label(), person.label(),  mansBestFriend.label(), name.label());
             degrees = tx.execute(Graql.compute().centrality().using(DEGREE).in(almostFullTypes));
             assertTrue(almostFullReferenceDegrees.containsAll(degrees));
 
@@ -248,11 +250,11 @@ public class DegreeIT {
 
     @Test
     public void testDegreeMissingRolePlayer() {
-        Role pet = tx.putRole("pet");
-        Role owner = tx.putRole("owner");
-        Role breeder = tx.putRole("breeder");
         RelationType mansBestFriend = tx.putRelationType("mans-best-friend")
-                .relates(pet).relates(owner).relates(breeder);
+                .relates("pet").relates("owner").relates("breeder");
+        Role pet = mansBestFriend.role("pet");
+        Role owner = mansBestFriend.role("owner");
+        Role breeder = mansBestFriend.role("breeder");
         EntityType person = tx.putEntityType("person").plays(owner).plays(breeder);
         EntityType animal = tx.putEntityType("animal").plays(pet);
 
@@ -276,17 +278,17 @@ public class DegreeIT {
     @Test
     public void testRelationPlaysARole() throws InvalidKBException {
 
-        Role pet = tx.putRole("pet");
-        Role owner = tx.putRole("owner");
-        RelationType mansBestFriend = tx.putRelationType("mans-best-friend").relates(pet).relates(owner);
+        RelationType mansBestFriend = tx.putRelationType("mans-best-friend").relates("pet").relates("owner");
+        Role pet = mansBestFriend.role("pet");
+        Role owner = mansBestFriend.role("owner");
 
         EntityType person = tx.putEntityType("person").plays(owner);
         EntityType animal = tx.putEntityType("animal").plays(pet);
 
-        Role ownership = tx.putRole("ownership");
-        Role ownershipResource = tx.putRole("ownership-resource");
         RelationType hasOwnershipResource = tx.putRelationType("has-ownership-resource")
-                .relates(ownership).relates(ownershipResource);
+                .relates("ownership").relates("ownershipResource");
+        Role ownership = hasOwnershipResource.role("ownership");
+        Role ownershipResource = hasOwnershipResource.role("ownership-resource");
 
         AttributeType<String> startDate = tx.putAttributeType("start-date", AttributeType.ValueType.STRING);
         startDate.plays(ownershipResource);
@@ -315,13 +317,13 @@ public class DegreeIT {
     @Test
     public void testDegreeTernaryRelations() throws InvalidKBException {
         // make relation
-        Role productionWithCast = tx.putRole("production-with-cast");
-        Role actor = tx.putRole("actor");
-        Role characterBeingPlayed = tx.putRole("character-being-played");
         RelationType hasCast = tx.putRelationType("has-cast")
-                .relates(productionWithCast)
-                .relates(actor)
-                .relates(characterBeingPlayed);
+                .relates("productionWithCast")
+                .relates("actor")
+                .relates("characterBeingPlayed");
+        Role productionWithCast = hasCast.role("production-with-cast");
+        Role actor = hasCast.role("actor");
+        Role characterBeingPlayed = hasCast.role("character-being-played");
 
         EntityType movie = tx.putEntityType("movie").plays(productionWithCast);
         EntityType person = tx.putEntityType("person").plays(actor);
@@ -350,11 +352,11 @@ public class DegreeIT {
     @Test
     public void testOneRolePlayerMultipleRoles() throws InvalidKBException {
 
-        Role pet = tx.putRole("pet");
-        Role owner = tx.putRole("owner");
-        Role breeder = tx.putRole("breeder");
         RelationType mansBestFriend = tx.putRelationType("mans-best-friend")
-                .relates(pet).relates(owner).relates(breeder);
+                .relates("pet").relates("owner").relates("breeder");
+        Role pet = mansBestFriend.role("pet");
+        Role owner = mansBestFriend.role("owner");
+        Role breeder = mansBestFriend.role("breeder");
         EntityType person = tx.putEntityType("person").plays(owner).plays(breeder);
         EntityType animal = tx.putEntityType("animal").plays(pet);
 

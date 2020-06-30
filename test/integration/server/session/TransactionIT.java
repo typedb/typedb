@@ -31,7 +31,6 @@ import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.Entity;
 import grakn.core.kb.concept.api.EntityType;
-import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.SchemaConcept;
@@ -50,6 +49,7 @@ import graql.lang.Graql;
 import graql.lang.query.GraqlDefine;
 import graql.lang.query.GraqlGet;
 import graql.lang.query.GraqlInsert;
+import graql.lang.statement.Label;
 import graql.lang.statement.Statement;
 import junit.framework.TestCase;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.VerificationException;
@@ -156,18 +156,18 @@ public class TransactionIT {
 
         assertNull(tx.getEntityType(entityTypeLabel));
         assertNull(tx.getRelationType(relationTypeLabel));
-        assertNull(tx.getRole(roleTypeLabel));
+        assertNull(tx.getRole(roleTypeLabel, relationTypeLabel));
         assertNull(tx.getAttributeType(resourceTypeLabel));
         assertNull(tx.getRule(ruleTypeLabel));
 
         EntityType entityType = tx.putEntityType(entityTypeLabel);
-        RelationType relationType = tx.putRelationType(relationTypeLabel);
-        Role role = tx.putRole(roleTypeLabel);
+        RelationType relationType = tx.putRelationType(relationTypeLabel).relates(roleTypeLabel);
+        Role role = relationType.role(roleTypeLabel);
         AttributeType attributeType = tx.putAttributeType(resourceTypeLabel, AttributeType.ValueType.STRING);
 
         assertEquals(entityType, tx.getEntityType(entityTypeLabel));
         assertEquals(relationType, tx.getRelationType(relationTypeLabel));
-        assertEquals(role, tx.getRole(roleTypeLabel));
+        assertEquals(role, tx.getRole(roleTypeLabel, relationTypeLabel));
         assertEquals(attributeType, tx.getAttributeType(resourceTypeLabel));
     }
 
@@ -258,7 +258,7 @@ public class TransactionIT {
     public void whenAttemptingToMutateSchemaWithReadOnlyTransaction_ThrowOnCommit() {
         tx.close();
         String entityType = "My Entity Type";
-        String roleType1 = "My Role Type 1";
+        String attrType = "my-attr";
         String relationType1 = "My Relation Type 1";
 
         //Fail Some Mutations
@@ -268,7 +268,7 @@ public class TransactionIT {
         tx.commit();
 
         tx = session.transaction(Transaction.Type.READ);
-        tx.putRole(roleType1);
+        tx.putAttributeType(attrType, AttributeType.ValueType.STRING);
         expectedException.expectMessage(ErrorMessage.TRANSACTION_READ_ONLY.getMessage(tx.keyspace()));
         tx.commit();
 

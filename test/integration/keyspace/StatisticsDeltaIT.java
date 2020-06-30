@@ -194,7 +194,7 @@ public class StatisticsDeltaIT {
         Entity person2 = personType.create();
         Entity person3 = personType.create();
         RelationType friendship = tx.getRelationType("friendship");
-        Role friend = tx.getRole("friend");
+        Role friend = friendship.role("friend");
         ConceptId id1 = friendship.create().assign(friend, person1).assign(friend, person2).id();
         ConceptId id2 = friendship.create().assign(friend, person1).assign(friend, person3).id();
         ConceptId id3 = friendship.create().assign(friend, person2).assign(friend, person3).id();
@@ -314,11 +314,11 @@ public class StatisticsDeltaIT {
         StatisticsDelta statisticsDelta = testTx.uncomittedStatisticsDelta();
 
         // test concept API insertion
-        Role someRole = tx.putRole("someRole");
-        Role anotherRole = tx.putRole("anotherRole");
         RelationType relationType = tx.putRelationType("someRelation")
-                .relates(someRole)
-                .relates(anotherRole);
+                .relates("someRole")
+                .relates("anotherRole");
+        Role someRole = relationType.role("someRole");
+        Role anotherRole = relationType.role("anotherRole");
         EntityType personType = tx.getEntityType("person")
                 .plays(someRole)
                 .plays(anotherRole);

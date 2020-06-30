@@ -21,7 +21,6 @@ import grakn.core.common.exception.ErrorMessage;
 import grakn.core.graql.graph.MovieGraph;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.GraknConceptException;
-import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.graql.exception.GraqlSemanticException;
@@ -33,6 +32,7 @@ import graql.lang.Graql;
 import graql.lang.exception.GraqlException;
 import graql.lang.property.ValueProperty;
 import graql.lang.query.MatchClause;
+import graql.lang.statement.Label;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 import org.junit.After;
@@ -243,6 +243,6 @@ public class QueryErrorIT {
         exception.expect(GraqlSemanticException.class);
         exception.expectMessage(containsString("person"));
 
-        tx.execute(Graql.match(var("x").id(movie.id().getValue())).insert(var("x").isa(type(person.label().getValue()))));
+        tx.execute(Graql.match(var("x").id(movie.id().getValue())).insert(var("x").isa(type(person.label().name()))));
     }
 }

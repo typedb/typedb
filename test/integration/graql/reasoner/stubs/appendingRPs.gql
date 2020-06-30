@@ -10,12 +10,6 @@ baseRelation sub relation,
 derivedRelation sub relation,
     relates inferredRole;
 
-someRole sub role;
-anotherRole sub role;
-yetAnotherRole sub role;
-andYetAnotherRole sub role;
-inferredRole sub role;
-
 baseEntity sub entity,
     plays someRole,
     plays anotherRole,

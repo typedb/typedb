@@ -147,7 +147,6 @@ java_test(
     classpath_resources = ["//test/resources:logback-test"],
     test_class = "grakn.core.concept.SchemaConceptIT",
     deps = [
-        "@graknlabs_graql//graql:java",
         "//common:common",
         "//concept/impl:impl",
         "//core",
@@ -157,6 +156,7 @@ java_test(
         "//kb/concept/api",
         "//kb/concept/structure",
         "//test/rule:grakn-test-server",
+        "@graknlabs_graql//java:graql",
     ],
 )
 

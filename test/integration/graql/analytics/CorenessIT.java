@@ -103,21 +103,22 @@ public class CorenessIT {
             Entity entity1 = entityType.create();
             Entity entity2 = entityType.create();
 
-            Role role1 = tx.putRole("role1");
-            Role role2 = tx.putRole("role2");
+            RelationType relatedRelation = tx.putRelationType(related)
+                    .relates("role1").relates("role2");
+            Role role1 = relatedRelation.role("role1");
+            Role role2 = relatedRelation.role("role2");
             entityType.plays(role1).plays(role2);
-            tx.putRelationType(related)
-                    .relates(role1).relates(role2)
-                    .create()
+
+            relatedRelation.create()
                     .assign(role1, entity1)
                     .assign(role2, entity2);
 
-            Role role3 = tx.putRole("role3");
-            Role role4 = tx.putRole("role4");
+            RelationType veryRelatedRelation = tx.putRelationType(veryRelated)
+                    .relates("role3").relates("role4");
+            Role role3 = veryRelatedRelation.role("role3");
+            Role role4 = veryRelatedRelation.role("role4");
             entityType.plays(role3).plays(role4);
-            tx.putRelationType(veryRelated)
-                    .relates(role3).relates(role4)
-                    .create()
+            veryRelatedRelation.create()
                     .assign(role3, entity1)
                     .assign(role4, entity2);
 
@@ -198,15 +199,15 @@ public class CorenessIT {
             EntityType entityType1 = tx.putEntityType(thing);
             EntityType entityType2 = tx.putEntityType(anotherThing);
 
-            Role role1 = tx.putRole("role1");
-            Role role2 = tx.putRole("role2");
             RelationType relationType1 = tx.putRelationType(related)
-                    .relates(role1).relates(role2);
+                    .relates("role1").relates("role2");
+            Role role1 = relationType1.role("role1");
+            Role role2 = relationType1.role("role2");
 
-            Role role3 = tx.putRole("role3");
-            Role role4 = tx.putRole("role4");
             RelationType relationType2 = tx.putRelationType(veryRelated)
-                    .relates(role3).relates(role4);
+                    .relates("role3").relates("role4");
+            Role role3 = relationType2.role("role3");
+            Role role4 = relationType2.role("role4");
 
             entityType1.plays(role1).plays(role2).plays(role3).plays(role4);
             entityType2.plays(role1).plays(role2).plays(role3).plays(role4);
@@ -315,15 +316,15 @@ public class CorenessIT {
             EntityType entityType1 = tx.putEntityType(thing);
             EntityType entityType2 = tx.putEntityType(anotherThing);
 
-            Role role1 = tx.putRole("role1");
-            Role role2 = tx.putRole("role2");
             RelationType relationType1 = tx.putRelationType(related)
-                    .relates(role1).relates(role2);
+                    .relates("role1").relates("role2");
+            Role role1 = relationType1.role("role1");
+            Role role2 = relationType1.role("role2");
 
-            Role role3 = tx.putRole("role3");
-            Role role4 = tx.putRole("role4");
             RelationType relationType2 = tx.putRelationType(veryRelated)
-                    .relates(role3).relates(role4);
+                    .relates("role3").relates("role4");
+            Role role3 = relationType2.role("role3");
+            Role role4 = relationType2.role("role4");
 
             entityType1.plays(role1).plays(role2).plays(role3).plays(role4);
             entityType2.plays(role1).plays(role2).plays(role3).plays(role4);
