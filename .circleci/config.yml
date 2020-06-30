@@ -51,9 +51,11 @@ jobs:
       - checkout
       - run-bazel:
           command: bazel build //...
-      - run: |
-          dependencies/maven/update.sh
-          git diff --exit-code dependencies/maven/snapshot.json
+      - run:
+          name: Verify that any updated artifacts.bzl are reflected in snapshot.json
+          command: |
+            dependencies/maven/update.sh
+            git diff --exit-code dependencies/maven/snapshot.json
       - run:
           command: bazel run @graknlabs_dependencies//tool/unuseddeps:unused-deps -- list
           no_output_timeout: 30m
