@@ -554,110 +554,110 @@ jobs:
 workflows:
   grakn-core:
     jobs:
-      - build:
-          filters:
-            branches:
-              ignore: grakn-release-branch
-      - build-checkstyle:
-          filters:
-            branches:
-              ignore: grakn-release-branch
-      - build-analysis:
-          filters:
-            branches:
-              only:
-                - remove-bazel-deps # TODO: revert
-                - rewrite
-      - test-common:
-          filters:
-            branches:
-              ignore: grakn-release-branch
-      - test-server:
-          filters:
-            branches:
-              ignore: grakn-release-branch
-      - test-graql:
-          filters:
-            branches:
-              ignore: grakn-release-branch
-      - test-behaviour-connection:
-          filters:
-            branches:
-              ignore: grakn-release-branch
-      - test-behaviour-graql-define:
-          filters:
-            branches:
-              ignore: grakn-release-branch
-      - test-behaviour-graql-delete:
-          filters:
-            branches:
-              ignore: grakn-release-branch
-      - test-behaviour-graql-get:
-          filters:
-            branches:
-              ignore: grakn-release-branch
-      - test-behaviour-graql-insert:
-          filters:
-            branches:
-              ignore: grakn-release-branch
-      - test-behaviour-graql-match:
-          filters:
-            branches:
-              ignore: grakn-release-branch
-      - test-behaviour-graql-undefine:
-          filters:
-            branches:
-              ignore: grakn-release-branch
-      - test-behaviour-graql-explanation:
-          filters:
-            branches:
-              ignore: grakn-release-branch
-      - test-integration:
-          filters:
-            branches:
-              ignore: grakn-release-branch
-      - test-integration-concept:
-          filters:
-            branches:
-              ignore: grakn-release-branch
-      - test-integration-keyspace:
-          filters:
-            branches:
-              ignore: grakn-release-branch
-      - test-integration-reasoner:
-          filters:
-            branches:
-              ignore: grakn-release-branch
-      - test-integration-analytics:
-          filters:
-            branches:
-              ignore: grakn-release-branch
+      # - build:
+      #     filters:
+      #       branches:
+      #         ignore: grakn-release-branch
+      # - build-checkstyle:
+      #     filters:
+      #       branches:
+      #         ignore: grakn-release-branch
+      # - build-analysis:
+      #     filters:
+      #       branches:
+      #         only:
+      #           - remove-bazel-deps # TODO: revert
+      #           - rewrite
+      # - test-common:
+      #     filters:
+      #       branches:
+      #         ignore: grakn-release-branch
+      # - test-server:
+      #     filters:
+      #       branches:
+      #         ignore: grakn-release-branch
+      # - test-graql:
+      #     filters:
+      #       branches:
+      #         ignore: grakn-release-branch
+      # - test-behaviour-connection:
+      #     filters:
+      #       branches:
+      #         ignore: grakn-release-branch
+      # - test-behaviour-graql-define:
+      #     filters:
+      #       branches:
+      #         ignore: grakn-release-branch
+      # - test-behaviour-graql-delete:
+      #     filters:
+      #       branches:
+      #         ignore: grakn-release-branch
+      # - test-behaviour-graql-get:
+      #     filters:
+      #       branches:
+      #         ignore: grakn-release-branch
+      # - test-behaviour-graql-insert:
+      #     filters:
+      #       branches:
+      #         ignore: grakn-release-branch
+      # - test-behaviour-graql-match:
+      #     filters:
+      #       branches:
+      #         ignore: grakn-release-branch
+      # - test-behaviour-graql-undefine:
+      #     filters:
+      #       branches:
+      #         ignore: grakn-release-branch
+      # - test-behaviour-graql-explanation:
+      #     filters:
+      #       branches:
+      #         ignore: grakn-release-branch
+      # - test-integration:
+      #     filters:
+      #       branches:
+      #         ignore: grakn-release-branch
+      # - test-integration-concept:
+      #     filters:
+      #       branches:
+      #         ignore: grakn-release-branch
+      # - test-integration-keyspace:
+      #     filters:
+      #       branches:
+      #         ignore: grakn-release-branch
+      # - test-integration-reasoner:
+      #     filters:
+      #       branches:
+      #         ignore: grakn-release-branch
+      # - test-integration-analytics:
+      #     filters:
+      #       branches:
+      #         ignore: grakn-release-branch
       - test-assembly:
           filters:
             branches:
               only:
                 - remove-bazel-deps # TODO: revert
                 - rewrite
-          requires:
-            - build
-            - build-checkstyle
-            - build-analysis
-            - test-common
-            - test-server
-            - test-graql
-            - test-behaviour-connection
-            - test-behaviour-graql-define
-            - test-behaviour-graql-delete
-            - test-behaviour-graql-get
-            - test-behaviour-graql-insert
-            - test-behaviour-graql-match
-            - test-behaviour-graql-undefine
-            - test-behaviour-graql-explanation
-            - test-integration
-            - test-integration-reasoner
-            - test-integration-analytics
-            - test-integration-concept
-            - test-integration-keyspace
+          # requires:
+          #   - build
+          #   - build-checkstyle
+          #   - build-analysis
+          #   - test-common
+          #   - test-server
+          #   - test-graql
+          #   - test-behaviour-connection
+          #   - test-behaviour-graql-define
+          #   - test-behaviour-graql-delete
+          #   - test-behaviour-graql-get
+          #   - test-behaviour-graql-insert
+          #   - test-behaviour-graql-match
+          #   - test-behaviour-graql-undefine
+          #   - test-behaviour-graql-explanation
+          #   - test-integration
+          #   - test-integration-reasoner
+          #   - test-integration-analytics
+          #   - test-integration-concept
+          #   - test-integration-keyspace
       - test-assembly-mac-zip:
           filters:
             branches:
