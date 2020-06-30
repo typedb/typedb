@@ -155,7 +155,7 @@ public class TransactionCache {
             Attribute<?> attr = concept.asAttribute();
             // this is probably slower than reading index from vertex but we don't have access to AttributeImpl here (cyclic dep)
             Label attrLabel = attr.type().label();
-            String attrIndex = Schema.generateAttributeIndex(attrLabel, AttributeValueConverter.tryConvert(attr.type(), attr.value()).toString());
+            String attrIndex = Schema.generateAttributeIndex(attrLabel, attr.value().toString());
             newAttributes.remove(new Pair<>(attrLabel, attrIndex));
             attributeCache.remove(attrIndex);
             removedAttributes.add(attrIndex);
