@@ -189,6 +189,9 @@ public class GraknDaemon {
             case "import":
                 import_(mainArgs.subList(1, mainArgs.size()));
                 break;
+            case "schema":
+                exportSchema(mainArgs.subList(1, mainArgs.size()));
+                break;
             default:
                 serverHelp();
         }
@@ -283,6 +286,14 @@ public class GraknDaemon {
         String path = Paths.get(args.get(1)).toAbsolutePath().toString();
         MigrateServiceGrpc.MigrateServiceBlockingStub stub = connectLocal();
         MigrateProto.ImportFile.Res res = stub.importFile(MigrateProto.ImportFile.Req.newBuilder().setName(keyspace).setPath(path).build());
+    }
+
+    private void exportSchema(List<String> args) {
+        String keyspace = args.get(0);
+        MigrateServiceGrpc.MigrateServiceBlockingStub stub = connectLocal();
+        MigrateProto.ExportSchema.Res res = stub.exportSchema(MigrateProto.ExportSchema.Req.newBuilder().setName(keyspace).build());
+        String schema = res.getSchema();
+        System.out.print(schema);
     }
 
     private MigrateServiceGrpc.MigrateServiceBlockingStub connectLocal() {

@@ -25,6 +25,7 @@ package migrate;
 service MigrateService {
     rpc exportFile (ExportFile.Req) returns (ExportFile.Res);
     rpc importFile (ImportFile.Req) returns (ImportFile.Res);
+    rpc exportSchema (ExportSchema.Req) returns (ExportSchema.Res);
 }
 
 message ExportFile {
@@ -43,6 +44,16 @@ message ImportFile {
     }
 
     message Res {}
+}
+
+message ExportSchema {
+    message Req {
+        string name = 1;
+    }
+
+    message Res {
+        string schema = 1;
+    }
 }
 
 message Item {

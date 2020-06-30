@@ -4,6 +4,7 @@ import grakn.core.kb.server.Session;
 import grakn.core.server.keyspace.KeyspaceImpl;
 import grakn.core.server.migrate.Export;
 import grakn.core.server.migrate.Import;
+import grakn.core.server.migrate.Schema;
 import grakn.core.server.migrate.proto.MigrateProto;
 import grakn.core.server.migrate.proto.MigrateServiceGrpc;
 import grakn.core.server.session.SessionFactory;
@@ -14,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.io.StringWriter;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -51,6 +53,23 @@ public class MigrateService extends MigrateServiceGrpc.MigrateServiceImplBase {
              Import anImport = new Import(session, input)) {
             anImport.execute();
             responseObserver.onNext(MigrateProto.ImportFile.Res.getDefaultInstance());
+            responseObserver.onCompleted();
+        } catch (Exception e) {
+            LOG.error("An error occurred during export testing.", e);
+            responseObserver.onError(new StatusRuntimeException(Status.ABORTED));
+        }
+    }
+
+    @Override
+    public void exportSchema(MigrateProto.ExportSchema.Req request,
+                                 StreamObserver<MigrateProto.ExportSchema.Res> responseObserver) {
+
+        try (Session session = sessionFactory.session(new KeyspaceImpl(request.getName()))) {
+            StringWriter writer = new StringWriter();
+            Schema schema = new Schema(session);
+            schema.printSchema(writer);
+
+            responseObserver.onNext(MigrateProto.ExportSchema.Res.newBuilder().setSchema(writer.toString()).build());
             responseObserver.onCompleted();
         } catch (Exception e) {
             LOG.error("An error occurred during export testing.", e);
