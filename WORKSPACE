@@ -221,7 +221,6 @@ maven(
     graknlabs_graql_artifacts +
     graknlabs_protocol_artifacts +
     graknlabs_client_java_artifacts +
-    graknlabs_console_artifacts +
     graknlabs_grakn_core_artifacts
 )
 
