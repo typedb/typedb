@@ -29,8 +29,8 @@ java_test(
         "//concept/answer",
         "//test/rule:grakn-test-server",
         "@graknlabs_graql//java:graql",
-        "//dependencies/maven/artifacts/com/google/guava",
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+        "@maven//:com_google_guava_guava",
+        "@maven//:org_hamcrest_hamcrest_library",
     ],
 )
 
@@ -42,8 +42,8 @@ java_test(
     test_class = "grakn.core.graql.executor.DirectIsaIT",
     deps = [
         "//common",
-        "//dependencies/maven/artifacts/com/google/guava",
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+        "@maven//:com_google_guava_guava",
+        "@maven//:org_hamcrest_hamcrest_library",
         "//graql/planning",
         "//kb/concept/api",
         "//kb/graql/planning",

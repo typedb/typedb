@@ -31,9 +31,9 @@ java_library(
         "//core",
 
         # External dependencies from Maven
-        "//dependencies/maven/artifacts/com/google/code/findbugs:jsr305",
-        "//dependencies/maven/artifacts/com/google/guava",
-        "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
+        "@maven//:com_google_code_findbugs_jsr305",
+        "@maven//:com_google_guava_guava",
+        "@maven//:org_apache_tinkerpop_gremlin_core",
     ],
 )
 
