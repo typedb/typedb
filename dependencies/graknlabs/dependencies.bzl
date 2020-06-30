@@ -37,5 +37,5 @@ def graknlabs_verification():
     git_repository(
         name = "graknlabs_verification",
         remote = "https://github.com/graknlabs/verification",
-        commit = "e1cce9175641d864be0306c21fc6c495b87c24e4"
+        commit = "dcd9a49c8bb4640caa403ead1a76a2825ddec439"
     )

@@ -106,6 +106,11 @@ public class ThingTypeSteps {
         get_thing_type(rootLabel, typeLabel).delete();
     }
 
+    @Then("delete {root_label} type: {type_label}; throws exception")
+    public void delete_thing_type_throws_exception(RootLabel rootLabel, String typeLabel) {
+        assertThrows(() -> get_thing_type(rootLabel, typeLabel).delete());
+    }
+
     @Then("{root_label}\\( ?{type_label} ?) is null: {bool}")
     public void thing_type_is_null(RootLabel rootLabel, String typeLabel, boolean isNull) {
         assertEquals(isNull, isNull(get_thing_type(rootLabel, typeLabel)));
