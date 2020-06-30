@@ -452,7 +452,7 @@ jobs:
       - checkout
       - run: |
           bazel run @graknlabs_dependencies//tool/release:validate-deps -- \
-            graknlabs_common graknlabs_graql graknlabs_protocol graknlabs_console
+            graknlabs_common graknlabs_graql graknlabs_protocol graknlabs_console_distribution
 
   deploy-distribution:
     machine:
