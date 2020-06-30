@@ -690,78 +690,78 @@ workflows:
               only:
                 - remove-bazel-deps # TODO: revert
                 - rewrite
-          # requires:
-          #   - build
-          #   - build-checkstyle
-          #   - build-analysis
-          #   - test-common
-          #   - test-server
-          #   - test-graql
-          #   - test-behaviour-connection
-          #   - test-behaviour-graql-define
-          #   - test-behaviour-graql-delete
-          #   - test-behaviour-graql-get
-          #   - test-behaviour-graql-insert
-          #   - test-behaviour-graql-match
-          #   - test-behaviour-graql-undefine
-          #   - test-behaviour-graql-explanation
-          #   - test-integration
-          #   - test-integration-reasoner
-          #   - test-integration-analytics
-          #   - test-integration-concept
-          #   - test-integration-keyspace
+          requires:
+            - build
+            - build-checkstyle
+            - build-analysis
+            - test-common
+            - test-server
+            - test-graql
+            - test-behaviour-connection
+            - test-behaviour-graql-define
+            - test-behaviour-graql-delete
+            - test-behaviour-graql-get
+            - test-behaviour-graql-insert
+            - test-behaviour-graql-match
+            - test-behaviour-graql-undefine
+            - test-behaviour-graql-explanation
+            - test-integration
+            - test-integration-reasoner
+            - test-integration-analytics
+            - test-integration-concept
+            - test-integration-keyspace
       - test-assembly-linux-targz:
           filters:
             branches:
               only:
                 - remove-bazel-deps # TODO: revert
                 - rewrite
-          # requires:
-          #   - build
-          #   - build-checkstyle
-          #   - build-analysis
-          #   - test-common
-          #   - test-server
-          #   - test-graql
-          #   - test-behaviour-connection
-          #   - test-behaviour-graql-define
-          #   - test-behaviour-graql-delete
-          #   - test-behaviour-graql-get
-          #   - test-behaviour-graql-insert
-          #   - test-behaviour-graql-match
-          #   - test-behaviour-graql-undefine
-          #   - test-behaviour-graql-explanation
-          #   - test-integration
-          #   - test-integration-reasoner
-          #   - test-integration-analytics
-          #   - test-integration-concept
-          #   - test-integration-keyspace
+          requires:
+            - build
+            - build-checkstyle
+            - build-analysis
+            - test-common
+            - test-server
+            - test-graql
+            - test-behaviour-connection
+            - test-behaviour-graql-define
+            - test-behaviour-graql-delete
+            - test-behaviour-graql-get
+            - test-behaviour-graql-insert
+            - test-behaviour-graql-match
+            - test-behaviour-graql-undefine
+            - test-behaviour-graql-explanation
+            - test-integration
+            - test-integration-reasoner
+            - test-integration-analytics
+            - test-integration-concept
+            - test-integration-keyspace
       - test-assembly-docker:
           filters:
             branches:
               only:
                 - remove-bazel-deps # TODO: revert
                 - rewrite
-          # requires:
-          #   - build
-          #   - build-checkstyle
-          #   - build-analysis
-          #   - test-common
-          #   - test-server
-          #   - test-graql
-          #   - test-behaviour-connection
-          #   - test-behaviour-graql-define
-          #   - test-behaviour-graql-delete
-          #   - test-behaviour-graql-get
-          #   - test-behaviour-graql-insert
-          #   - test-behaviour-graql-match
-          #   - test-behaviour-graql-undefine
-          #   - test-behaviour-graql-explanation
-          #   - test-integration
-          #   - test-integration-reasoner
-          #   - test-integration-analytics
-          #   - test-integration-concept
-          #   - test-integration-keyspace
+          requires:
+            - build
+            - build-checkstyle
+            - build-analysis
+            - test-common
+            - test-server
+            - test-graql
+            - test-behaviour-connection
+            - test-behaviour-graql-define
+            - test-behaviour-graql-delete
+            - test-behaviour-graql-get
+            - test-behaviour-graql-insert
+            - test-behaviour-graql-match
+            - test-behaviour-graql-undefine
+            - test-behaviour-graql-explanation
+            - test-integration
+            - test-integration-reasoner
+            - test-integration-analytics
+            - test-integration-concept
+            - test-integration-keyspace
       - deploy-apt-snapshot:
           filters:
             branches:
