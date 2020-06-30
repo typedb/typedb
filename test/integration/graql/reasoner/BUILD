@@ -1,11 +1,11 @@
-load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
+load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 
 java_library(
     name = "pattern",
     srcs = glob(["pattern/*.java"]),
     visibility = ["//visibility:public"],
     deps = [
-        "//dependencies/maven/artifacts/com/google/guava",
+        "@maven//:com_google_guava_guava",
         "//kb/concept/api",
         "@graknlabs_common//:common",
         "@graknlabs_graql//java:graql",
@@ -21,10 +21,10 @@ java_test(
     test_class = "grakn.core.graql.reasoner.ReasoningIT",
     deps = [
         "//concept/answer",
-        "//dependencies/maven/artifacts/com/google/guava",
-        "//dependencies/maven/artifacts/commons-collections",
-        "//dependencies/maven/artifacts/org/apache/commons:commons-math3",
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+        "@maven//:com_google_guava_guava",
+        "@maven//:commons_collections_commons_collections",
+        "@maven//:org_apache_commons_commons_math3",
+        "@maven//:org_hamcrest_hamcrest_library",
         "//kb/concept/api",
         "//kb/server",
         "//test/rule:grakn-test-server",
@@ -41,9 +41,9 @@ java_test(
     test_class = "grakn.core.graql.reasoner.GeoInferenceIT",
     deps = [
         "//concept/answer",
-        "//dependencies/maven/artifacts/com/google/guava",
-        "//dependencies/maven/artifacts/commons-collections",
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+        "@maven//:com_google_guava_guava",
+        "@maven//:commons_collections_commons_collections",
+        "@maven//:org_hamcrest_hamcrest_library",
         "//kb/concept/api",
         "//kb/server",
         "//test/integration/graql/reasoner/graph:geo-graph",

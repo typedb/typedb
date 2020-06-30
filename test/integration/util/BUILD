@@ -1,12 +1,12 @@
-load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
+load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 
 java_library(
     name = "graql-test-util",
     srcs = ["GraqlTestUtil.java"],
     visibility = ["//test/integration:__subpackages__"],
     deps = [
-        "//dependencies/maven/artifacts/commons-collections",
-        "//dependencies/maven/artifacts/junit",
+        "@maven//:commons_collections_commons_collections",
+        "@maven//:junit_junit",
         "//kb/server",
         "//kb/concept/api",
         "@graknlabs_graql//java:graql",

@@ -17,7 +17,7 @@
 
 
 package(default_visibility = ["//visibility:__subpackages__"])
-load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
+load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 
 java_test(
     name = "test",
@@ -30,7 +30,7 @@ java_test(
         "//test/behaviour/server:server",
 
         # External dependencies from Maven
-        "//dependencies/maven/artifacts/io/cucumber:cucumber-junit",
+        "@maven//:io_cucumber_cucumber_junit",
     ],
     runtime_deps = [
         "//test/behaviour/graql:steps",
@@ -42,7 +42,7 @@ java_test(
         "@graknlabs_verification//behaviour/graql/language:undefine.feature",
     ],
     classpath_resources = ["//test/resources:logback-test"],
-    size = "medium",
+    size = "large",
     visibility = ["//visibility:public"]
 )
 

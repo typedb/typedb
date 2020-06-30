@@ -18,18 +18,19 @@
 
 package grakn.core.graql.reasoner.atom;
 
-import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.reasoner.atom.predicate.ValuePredicate;
 import grakn.core.graql.reasoner.unifier.UnifierType;
+import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
 import graql.lang.statement.Variable;
 
-import java.util.Objects;
 import javax.annotation.CheckReturnValue;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -42,9 +43,9 @@ public class AtomicUtil {
      * @return (partial) set of predicates corresponding to this answer
      */
     @CheckReturnValue
-    public static Set<Atomic> answerToPredicates(ConceptMap answer, ReasonerQuery parent) {
+    public static Set<Atomic> answerToPredicates(Map<Variable, Concept> answerMap, ReasonerQuery parent) {
         Set<Variable> varNames = parent.getVarNames();
-        return answer.map().entrySet().stream()
+        return answerMap.entrySet().stream()
                 .filter(e -> varNames.contains(e.getKey()))
                 .map(e -> IdPredicate.create(e.getKey(), e.getValue().id(), parent))
                 .collect(Collectors.toSet());

@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
+load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 
 java_test(
     name = "attribute-uniqueness-it",
@@ -31,8 +31,8 @@ java_test(
         "//test/rule:grakn-test-server",
         "@graknlabs_graql//java:graql",
         "@graknlabs_common//:common",
-        "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library"
+        "@maven//:org_slf4j_slf4j_api",
+        "@maven//:org_hamcrest_hamcrest_library"
     ],
 )
 
@@ -56,9 +56,9 @@ java_test(
         "@graknlabs_client_java//:client-java",
         "@graknlabs_common//:common",
         "@graknlabs_graql//java:graql",
-        "//dependencies/maven/artifacts/commons-io",
-        "//dependencies/maven/artifacts/commons-lang",
-        "@com-google-guava-guava//jar",
+        "@maven//:commons_io_commons_io",
+        "@maven//:commons_lang_commons_lang",
+        "@maven//:com_google_guava_guava",
     ],
 )
 

@@ -58,6 +58,10 @@ public abstract class AnswerPropagatorState<Q extends ResolvableQuery> extends R
         this.subGoalIterator = generateChildStateIterator();
     }
 
+    public String toString(){
+        return getClass().getSimpleName() + "@" + Integer.toHexString(hashCode()) + "\n" + getQuery().toString();
+    }
+
     @Override
     public ResolutionState generateChildState() {
         return subGoalIterator.hasNext()? subGoalIterator.next() : null;

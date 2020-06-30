@@ -17,7 +17,7 @@
 #
 package(default_visibility = ["//visibility:public"])
 
-load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
+load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 
 java_library(
     name = "manager",
@@ -31,8 +31,8 @@ java_library(
         "@graknlabs_graql//java:graql",
 
         # External dependencies from Maven
-        "//dependencies/maven/artifacts/com/google/code/findbugs:jsr305",
-        "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
+        "@maven//:com_google_code_findbugs_jsr305",
+        "@maven//:org_apache_tinkerpop_gremlin_core",
     ],
     tags = ["maven_coordinates=io.grakn.core:grakn-concept-manager-api:{pom_version}"],
 

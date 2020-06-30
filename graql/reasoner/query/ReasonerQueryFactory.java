@@ -19,6 +19,7 @@
 package grakn.core.graql.reasoner.query;
 
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Iterators;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.kb.graql.executor.TraversalExecutor;
 import grakn.core.graql.reasoner.ReasoningContext;
@@ -32,8 +33,10 @@ import grakn.core.kb.graql.reasoner.cache.QueryCache;
 import grakn.core.kb.graql.reasoner.cache.RuleCache;
 import grakn.core.kb.keyspace.KeyspaceStatistics;
 import graql.lang.pattern.Conjunction;
+import graql.lang.pattern.Disjunction;
 import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;
+import graql.lang.statement.Variable;
 
 import java.util.List;
 import java.util.Set;
@@ -86,12 +89,16 @@ public class ReasonerQueryFactory {
     }
 
     /**
-     * @param q   base query for substitution to be attached
-     * @param sub (partial) substitution
-     * @return resolvable query with the substitution contained in the query
+     * @param pattern disjunctive pattern defining the query
+     * @param bindingVars the set of variables in the outer scope of the disjunction
+     * @return a resolvable reasoner query constructed from provided disjunctive pattern
      */
-    public ResolvableQuery resolvable(ResolvableQuery q, ConceptMap sub) {
-        return q.withSubstitution(sub).inferTypes();
+    public ResolvableQuery resolvable(Disjunction<Conjunction<Pattern>> pattern, Set<Variable> bindingVars) {
+        if (pattern.getPatterns().size() == 1) {
+            return resolvable(Iterators.getOnlyElement(pattern.getPatterns().iterator()));
+        } else {
+            return new DisjunctiveQuery(pattern, bindingVars,  traversalExecutor, ctx).inferTypes();
+        }
     }
 
     /**

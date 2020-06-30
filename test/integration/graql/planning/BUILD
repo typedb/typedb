@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
-load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
+load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 
 java_test(
     name = "conjunction-query-test",
@@ -25,8 +25,8 @@ java_test(
     ],
     test_class = "grakn.core.graql.planning.ConjunctionQueryTest",
     deps = [
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
-        "//dependencies/maven/artifacts/org/mockito:mockito-core",
+        "@maven//:org_hamcrest_hamcrest_library",
+        "@maven//:org_mockito_mockito_core",
         "//graql/executor",
         "//graql/planning",
         "//kb/concept/api",
@@ -47,9 +47,9 @@ java_test(
     deps = [
         "//common",
         "//core",
-        "//dependencies/maven/artifacts/com/google/guava",
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
-        "//dependencies/maven/artifacts/org/mockito:mockito-core",
+        "@maven//:com_google_guava_guava",
+        "@maven//:org_hamcrest_hamcrest_library",
+        "@maven//:org_mockito_mockito_core",
         "//graql/executor",
         "//graql/planning",
         "//kb/concept/api",

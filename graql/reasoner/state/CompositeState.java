@@ -19,6 +19,7 @@
 package grakn.core.graql.reasoner.state;
 
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.graql.reasoner.explanation.CompositeExplanation;
 import grakn.core.graql.reasoner.query.CompositeQuery;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.reasoner.query.ResolvableQuery;
@@ -62,13 +63,8 @@ public class CompositeState extends AnswerPropagatorState<CompositeQuery> {
     private final Set<ResolvableQuery> complements;
 
     public CompositeState(CompositeQuery query, ConceptMap sub, Unifier u, AnswerPropagatorState parent, Set<ReasonerAtomicQuery> subGoals) {
-        super(query.withSubstitution(sub), sub, u, parent, subGoals);
+        super(query, sub, u, parent, subGoals);
         this.complements = getQuery().getComplementQueries();
-    }
-
-    @Override
-    public String toString(){
-        return getClass().getSimpleName() + "@" + Integer.toHexString(hashCode()) + "\n" + getQuery().toString();
     }
 
     @Override
@@ -77,7 +73,10 @@ public class CompositeState extends AnswerPropagatorState<CompositeQuery> {
     }
 
     @Override
-    ConceptMap consumeAnswer(AnswerState state) { return state.getSubstitution(); }
+    ConceptMap consumeAnswer(AnswerState state) {
+        ConceptMap sub = state.getSubstitution();
+        return new ConceptMap(sub.map(), new CompositeExplanation(sub), getQuery().withSubstitution(sub).getPattern());
+    }
 
     @Override
     public ResolutionState propagateAnswer(AnswerState state) {
@@ -94,7 +93,10 @@ public class CompositeState extends AnswerPropagatorState<CompositeQuery> {
                 .noneMatch(q -> q.resolve(subGoals, true).findFirst().isPresent());
 
         return isNegationSatisfied?
-                new AnswerState(answer, getUnifier(), getParentState()) :
-                null;
+                new AnswerState(
+                        new ConceptMap(answer.map(), answer.explanation(), getQuery().getPattern(answer.map())),
+                        getUnifier(),
+                        getParentState())
+                : null;
     }
 }

@@ -1,4 +1,4 @@
-load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
+load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 
 java_test(
     name = "graql-compute-it",
@@ -9,7 +9,7 @@ java_test(
     deps = [
         "//concept/answer",
         "//core",
-        "//dependencies/maven/artifacts/com/google/guava",
+        "@maven//:com_google_guava_guava",
         "//kb/concept/api",
         "//kb/graql/exception",
         "//kb/server",
@@ -26,7 +26,7 @@ java_test(
     test_class = "grakn.core.graql.analytics.ConnectedComponentIT",
     deps = [
         "//concept/answer",
-        "//dependencies/maven/artifacts/com/google/guava",
+        "@maven//:com_google_guava_guava",
         "//kb/concept/api",
         "//kb/graql/exception",
         "//kb/server",
@@ -73,7 +73,7 @@ java_test(
     test_class = "grakn.core.graql.analytics.DegreeIT",
     deps = [
         "//concept/answer",
-        "//dependencies/maven/artifacts/com/google/guava",
+        "@maven//:com_google_guava_guava",
         "//kb/concept/api",
         "//kb/server",
         "//test/rule:grakn-test-server",
@@ -106,7 +106,7 @@ java_test(
     deps = [
         "//common",
         "//concept/answer",
-        "//dependencies/maven/artifacts/com/google/guava",
+        "@maven//:com_google_guava_guava",
         "//graql/reasoner",
         "//kb/concept/api",
         "//kb/concept/manager",
@@ -127,7 +127,7 @@ java_test(
     test_class = "grakn.core.graql.analytics.StatisticsIT",
     deps = [
         "//concept/answer",
-        "//dependencies/maven/artifacts/com/google/guava",
+        "@maven//:com_google_guava_guava",
         "//kb/concept/api",
         "//kb/graql/exception",
         "//kb/server",
