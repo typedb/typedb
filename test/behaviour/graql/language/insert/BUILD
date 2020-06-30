@@ -42,7 +42,7 @@ java_test(
         "@graknlabs_verification//behaviour/graql/language:insert.feature",
     ],
     classpath_resources = ["//test/resources:logback-test"],
-    size = "large",
+    size = "enormous",
     visibility = ["//visibility:public"]
 )
 
