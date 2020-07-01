@@ -56,7 +56,8 @@ def graknlabs_client_java():
 def graknlabs_console_distribution():
     http_file(
         name = "graknlabs_console_distribution",
-        urls = ["https://repo.grakn.ai/repository/distribution-snapshot/graknlabs_console/console-distribution/48b1abdece294fc0640702a0a467024c313e3e47/console-distribution.tgz"],
+        urls = ["https://repo.grakn.ai/repository/distribution-snapshot/graknlabs_console/console-distribution/5f2cf933ab8167135f3abda97ec20d764cef079a/console-distribution.tgz"],
+        downloaded_file_path = "console-distribution.tgz",
     )
 
 def graknlabs_simulation():
