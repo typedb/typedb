@@ -261,32 +261,6 @@ public class PatternIT {
     }
 
     @Test
-    public void whenMatchingWithValueInequality_resultsAreFilteredCorrectly() {
-        assertExists(tx, var("x").isa("movie").has("title", "Godfather"));
-        Set<Concept> allMoviesWithoutGodfatherMovies = tx.stream(Graql.match(
-                var("x").isa("movie").has("title", var("y")),
-                var("y").neq("Godfather")).get("x"))
-                .map(ans -> ans.get("x"))
-                .collect(Collectors.toSet());
-        assertFalse(allMoviesWithoutGodfatherMovies.isEmpty());
-
-        Set<Concept> allMovies = tx.stream(Graql.match(
-                var("x").isa("movie").has("title", var("y"))).get("x"))
-                .map(ans -> ans.get("x"))
-                .collect(Collectors.toSet());
-        assertFalse(allMovies.isEmpty());
-
-        Set<Concept> godfatherMovies = tx.stream(Graql.match(
-                var("x").isa("movie").has("title", "Godfather")).get("x"))
-                .map(ans -> ans.get("x"))
-                .collect(Collectors.toSet());
-        assertFalse(godfatherMovies.isEmpty());
-
-        assertEquals(Sets.difference(allMovies, godfatherMovies), allMoviesWithoutGodfatherMovies);
-    }
-
-
-    @Test
     public void whenStatementDoesntHaveProperties_weThrow() {
         // empty `match $x; get;` not allowed
         exception.expect(GraqlSemanticException.class);
@@ -298,19 +272,6 @@ public class PatternIT {
     public void whenComputingValueComparisons_weDontGetShardErrors() {
         // this case can throw [SHARD] errors if not handled correctly - unbound variable may cause issues
         tx.execute(Graql.match(var("x").neq(100)).get());
-    }
-
-    @Test
-    public void whenValueComparisonIsUnbound_weThrow() {
-        // value comparison
-        exception.expect(GraqlSemanticException.class);
-        exception.expectMessage("Variables used in comparisons cannot be unbound");
-        List<ConceptMap> answers = tx.execute(Graql.match(var("x").neq(var("y"))).get());
-
-        // concept comparison
-        exception.expect(GraqlSemanticException.class);
-        exception.expectMessage("Variables used in comparisons cannot be unbound");
-        answers = tx.execute(Graql.match( var("y").not("x")).get());
     }
 
     private void assertExceptionThrown(Consumer<String> consumer, String varName) {
