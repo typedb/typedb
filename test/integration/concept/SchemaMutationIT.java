@@ -57,13 +57,13 @@ public class SchemaMutationIT {
     public void setUp() {
         session = server.sessionWithNewKeyspace();
         tx = session.transaction(Transaction.Type.WRITE);
-        Role husband = tx.putRole("husband");
-        Role wife = tx.putRole("wife");
-        Role driver = tx.putRole("driver");
-        Role driven = tx.putRole("driven");
 
-        RelationType marriage = tx.putRelationType("marriage").relates(husband).relates(wife);
-        RelationType drives = tx.putRelationType("drives").relates(driven).relates(driver);
+        RelationType marriage = tx.putRelationType("marriage").relates("husband").relates("wife");
+        Role husband = marriage.role("husband");
+        Role wife = marriage.role("wife");
+        RelationType drives = tx.putRelationType("drives").relates("driven").relates("driver");
+        Role driver = drives.role("driver");
+        Role driven = drives.role("driven");
 
         EntityType person = tx.putEntityType("person").plays(husband).plays(wife).plays(driver);
         EntityType man = tx.putEntityType("man").sup(person);
@@ -89,7 +89,7 @@ public class SchemaMutationIT {
 
     @Test
     public void whenDeletingPlaysUsedByExistingCasting_Throw() throws InvalidKBException {
-        Role wife = tx.getRole("wife");
+        Role wife = tx.getRole("wife", "marriage");
         tx.getEntityType("person").unplay(wife);
         EntityType woman = tx.getEntityType("woman");
         Entity alice = woman.instances().findFirst().get();
@@ -102,9 +102,7 @@ public class SchemaMutationIT {
     @Test
     public void whenDeletingRelatesUsedByExistingRelation_Throw() throws InvalidKBException {
         RelationType marriage = tx.getRelationType("marriage");
-        Role husband = tx.getRole("husband");
-
-        marriage.unrelate(husband);
+        marriage.unrelate("husband");
         expectedException.expect(InvalidKBException.class);
         tx.commit();
     }
@@ -113,7 +111,7 @@ public class SchemaMutationIT {
     public void whenChangingSuperTypeAndInstancesNoLongerAllowedToPlayRoles_Throw() throws InvalidKBException {
         EntityType vehicle = tx.getEntityType("vehicle");
         EntityType person = tx.getEntityType("person");
-        Role driven = tx.getRole("driven");
+        Role driven = tx.getRole("driven", "drives");
         EntityType car = tx.getEntityType("car");
 
 
@@ -154,9 +152,8 @@ public class SchemaMutationIT {
 
     @Test
     public void whenDeletingRelationTypeAndLeavingRoleByItself_Throw() {
-        Role role = tx.putRole("my wonderful role");
-        RelationType relation = tx.putRelationType("my wonderful relation").relates(role);
-        relation.relates(role);
+        RelationType relation = tx.putRelationType("my wonderful relation").relates("my wonderful role");
+        Role role = relation.role("my wonderful role");
         tx.commit();
 
         //Now delete the relation
@@ -172,9 +169,8 @@ public class SchemaMutationIT {
 
     @Test
     public void whenChangingTheSuperTypeOfAnEntityTypeWhichHasAResource_EnsureTheResourceIsStillAccessibleViaTheRelationTypeInstances_ByPreventingChange() {
-        RelationType friendship = tx.putRelationType("friendship");
-        Role friend = tx.putRole("friend");
-        friendship.relates(friend);
+        RelationType friendship = tx.putRelationType("friendship").relates("friend");
+        Role friend = friendship.role("friend");
 
         //Create a animal and allow animal to have a name
         EntityType animal = tx.putEntityType("animal").plays(friend);

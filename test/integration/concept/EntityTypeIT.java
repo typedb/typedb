@@ -97,7 +97,7 @@ public class EntityTypeIT {
     public void whenCreatingEntityTypeUsingLabelTakenByAnotherType_Throw(){
         AttributeType<?> original = tx.putAttributeType("Role Type", AttributeType.ValueType.STRING);
         expectedException.expect(GraknConceptException.class);
-        expectedException.expectMessage(PropertyNotUniqueException.cannotCreateProperty(original.toString(), Schema.VertexProperty.SCHEMA_LABEL, original.label()).getMessage());
+        expectedException.expectMessage(PropertyNotUniqueException.cannotCreateProperty(original.toString(), Schema.VertexProperty.LABEL_NAME, original.label()).getMessage());
         tx.putEntityType(original.label());
     }
 
@@ -436,7 +436,7 @@ public class EntityTypeIT {
         String reservedWord = Graql.Token.Type.THING.toString();
 
         expectedException.expect(GraknConceptException.class);
-        expectedException.expectMessage(UNIQUE_PROPERTY_TAKEN.getMessage(Schema.VertexProperty.SCHEMA_LABEL, "thing", thing));
+        expectedException.expectMessage(UNIQUE_PROPERTY_TAKEN.getMessage(Schema.VertexProperty.LABEL_NAME, "thing", thing));
 
         tx.putEntityType(reservedWord);
     }

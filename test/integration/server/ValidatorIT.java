@@ -104,7 +104,7 @@ public class ValidatorIT {
         Thing godfather = movie.create();
         EntityType genre = tx.putEntityType("Genre");
         Thing crime = genre.create();
-        RelationType movieHasGenre = tx.putRelationType("Movie Has Genre").relates("Movie of Genre").relates("Movie Genre";
+        RelationType movieHasGenre = tx.putRelationType("Movie Has Genre").relates("Movie of Genre").relates("Movie Genre");
         Role movieOfGenre = movieHasGenre.role("Movie of Genre");
         Role movieGenre = movieHasGenre.role("Movie Genre");
 

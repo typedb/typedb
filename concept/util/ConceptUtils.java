@@ -19,20 +19,15 @@
 package grakn.core.concept.util;
 
 import com.google.common.collect.Sets;
-import grakn.core.common.util.ListsUtil;
 import grakn.core.concept.impl.SchemaConceptImpl;
 import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.SchemaConcept;
-import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.concept.structure.PropertyNotUniqueException;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.Stack;
-import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
@@ -146,7 +141,7 @@ public class ConceptUtils {
     public static void validateBaseType(SchemaConceptImpl schemaConcept, Schema.BaseType expectedBaseType) {
         // throws if label is already taken for a different type
         if (!expectedBaseType.equals(schemaConcept.baseType())) {
-            throw PropertyNotUniqueException.cannotCreateProperty(schemaConcept.toString(), Schema.VertexProperty.SCHEMA_LABEL, schemaConcept.label());
+            throw PropertyNotUniqueException.cannotCreateProperty(schemaConcept.toString(), Schema.VertexProperty.LABEL_NAME, schemaConcept.label());
         }
     }
 }

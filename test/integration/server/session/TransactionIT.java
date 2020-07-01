@@ -376,7 +376,7 @@ public class TransactionIT {
         Set<Vertex> typeShards;
         try (JanusGraph janusGraph = janusGraphFactory.openGraph(newKeyspaceName)) {
             JanusGraphTransaction tx = janusGraph.newTransaction();
-            typeShards = tx.traversal().V().has(Schema.VertexProperty.SCHEMA_LABEL.name(), "person").in().hasLabel("SHARD").toSet();
+            typeShards = tx.traversal().V().has(Schema.VertexProperty.LABEL_NAME.name(), "person").in().hasLabel("SHARD").toSet();
             assertEquals(1, typeShards.size());
             tx.close();
         }
@@ -392,7 +392,7 @@ public class TransactionIT {
             JanusGraphTransaction tx = janusGraph.newTransaction();
             typeShardForP1 = tx.traversal().V(p1.getValue().substring(1)).out(Schema.EdgeLabel.ISA.getLabel()).toList().get(0);
             assertEquals(typeShards.iterator().next(), typeShardForP1);
-            typeShards = tx.traversal().V().has(Schema.VertexProperty.SCHEMA_LABEL.name(), "person").in().hasLabel("SHARD").toSet();
+            typeShards = tx.traversal().V().has(Schema.VertexProperty.LABEL_NAME.name(), "person").in().hasLabel("SHARD").toSet();
             assertEquals(2, typeShards.size());
             tx.close();
         }
@@ -407,7 +407,7 @@ public class TransactionIT {
             JanusGraphTransaction tx = janusGraph.newTransaction();
             Vertex typeShardForP2 = tx.traversal().V(p2.getValue().substring(1)).out(Schema.EdgeLabel.ISA.getLabel()).toSet().iterator().next();
             assertEquals(Sets.difference(typeShards, Sets.newHashSet(typeShardForP1)).iterator().next(), typeShardForP2);
-            typeShards = tx.traversal().V().has(Schema.VertexProperty.SCHEMA_LABEL.name(), "person").in().hasLabel("SHARD").toSet();
+            typeShards = tx.traversal().V().has(Schema.VertexProperty.LABEL_NAME.name(), "person").in().hasLabel("SHARD").toSet();
             assertEquals(3, typeShards.size());
             tx.close();
         }
@@ -445,9 +445,9 @@ public class TransactionIT {
         }
         try (JanusGraph janusGraph = janusGraphFactory.openGraph(newKeyspaceName)) {
             JanusGraphTransaction tx = janusGraph.newTransaction();
-            Set<Vertex> personTypeShards = tx.traversal().V().has(Schema.VertexProperty.SCHEMA_LABEL.name(), "person").in().hasLabel("SHARD").toSet();
+            Set<Vertex> personTypeShards = tx.traversal().V().has(Schema.VertexProperty.LABEL_NAME.name(), "person").in().hasLabel("SHARD").toSet();
             assertEquals(3, personTypeShards.size());
-            Set<Vertex> companyTypeShards = tx.traversal().V().has(Schema.VertexProperty.SCHEMA_LABEL.name(), "company").in().hasLabel("SHARD").toSet();
+            Set<Vertex> companyTypeShards = tx.traversal().V().has(Schema.VertexProperty.LABEL_NAME.name(), "company").in().hasLabel("SHARD").toSet();
             assertEquals(2, companyTypeShards.size());
             tx.close();
         }

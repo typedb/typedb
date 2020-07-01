@@ -194,7 +194,8 @@ public class ConceptManagerImpl implements ConceptManager {
      */
     public VertexElement addTypeVertex(LabelId id, Label label, Schema.BaseType baseType) {
         VertexElement vertexElement = elementFactory.addVertexElement(baseType);
-        vertexElement.property(Schema.VertexProperty.SCHEMA_LABEL, label.scopedName());
+        vertexElement.property(Schema.VertexProperty.LABEL_NAME, label.name());
+        vertexElement.property(Schema.VertexProperty.LABEL_SCOPE, label.scope());
         vertexElement.property(Schema.VertexProperty.LABEL_ID, id.getValue());
         return vertexElement;
     }

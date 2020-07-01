@@ -19,22 +19,14 @@ package grakn.core.graql.query;
 
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.graql.graph.MovieGraph;
-import grakn.core.kb.concept.api.Concept;
-import grakn.core.kb.concept.api.GraknConceptException;
-import grakn.core.kb.concept.api.Thing;
-import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.graql.exception.GraqlSemanticException;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
-import grakn.core.kb.server.exception.InvalidKBException;
 import grakn.core.test.rule.GraknTestServer;
 import graql.lang.Graql;
 import graql.lang.exception.GraqlException;
 import graql.lang.property.ValueProperty;
-import graql.lang.query.MatchClause;
-import graql.lang.statement.Label;
 import graql.lang.statement.Statement;
-import graql.lang.statement.Variable;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -44,8 +36,6 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-
-import java.util.stream.Stream;
 
 import static graql.lang.Graql.type;
 import static graql.lang.Graql.var;
@@ -142,27 +132,4 @@ public class QueryErrorIT {
                         "category sub entity, plays tag-group; plays product-type;"
         ).asDefine());
     }
-<<<<<<< HEAD
-
-    @Test
-    public void testGetNonExistentVariable() {
-        exception.expect(GraqlException.class);
-        exception.expectMessage(graql.lang.exception.ErrorMessage.VARIABLE_OUT_OF_SCOPE.getMessage(new Variable("y")));
-
-        MatchClause match = Graql.match(var("x").isa("movie"));
-        Stream<Concept> concepts = tx.stream(match.get("y")).map(ans -> ans.get("y"));
-    }
-
-    @Test
-    public void whenTryingToSetExistingInstanceType_Throw() {
-        Thing movie = tx.getEntityType("movie").instances().iterator().next();
-        Type person = tx.getEntityType("person");
-
-        exception.expect(GraqlSemanticException.class);
-        exception.expectMessage(containsString("person"));
-
-        tx.execute(Graql.match(var("x").id(movie.id().getValue())).insert(var("x").isa(type(person.label().name()))));
-    }
-=======
->>>>>>> 0462b20143e5909027c159374ba048ae6fcff51e
 }

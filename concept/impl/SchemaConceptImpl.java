@@ -47,7 +47,7 @@ import java.util.stream.Stream;
  *            For example an EntityType or RelationType or Role
  */
 public abstract class SchemaConceptImpl<T extends SchemaConcept> extends ConceptImpl implements SchemaConcept {
-    private final ConceptCache<Label> cachedLabel = new ConceptCache<>(() -> Label.of(vertex().property(Schema.VertexProperty.SCHEMA_LABEL)));
+    private final ConceptCache<Label> cachedLabel = new ConceptCache<>(() -> Label.of(vertex().property(Schema.VertexProperty.LABEL_NAME), vertex().property(Schema.VertexProperty.LABEL_SCOPE)));
     private final ConceptCache<LabelId> cachedLabelId = new ConceptCache<>(() -> LabelId.of(vertex().property(Schema.VertexProperty.LABEL_ID)));
     private final ConceptCache<T> cachedSuperType = new ConceptCache<>(() -> this.<T>neighbours(Direction.OUT, Schema.EdgeLabel.SUB).findFirst().orElse(null));
     private final ConceptCache<Set<T>> cachedDirectSubTypes = new ConceptCache<>(() -> this.<T>directSubs().collect(Collectors.toSet()));
@@ -65,7 +65,8 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
         // TODO combine with labelAdded if possible
         conceptNotificationChannel.labelRemoved(this);
         try {
-            vertex().propertyUnique(Schema.VertexProperty.SCHEMA_LABEL, label.scopedName());
+            vertex().propertyUnique(Schema.VertexProperty.LABEL_NAME, label.name());
+            vertex().propertyUnique(Schema.VertexProperty.LABEL_SCOPE, label.scope());
             cachedLabel.set(label);
             return getThis();
         } catch (PropertyNotUniqueException exception) {
