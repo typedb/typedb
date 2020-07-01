@@ -36,6 +36,7 @@ import static grakn.core.test.behaviour.connection.ConnectionSteps.sessionsParal
 import static grakn.core.test.behaviour.connection.ConnectionSteps.sessionsParallelToTransactionsParallel;
 import static grakn.core.test.behaviour.connection.ConnectionSteps.sessionsToTransactions;
 import static grakn.core.test.behaviour.connection.ConnectionSteps.sessionsToTransactionsParallel;
+import static grakn.core.test.behaviour.util.Util.assertThrows;
 import static java.util.Objects.isNull;
 import static org.junit.Assert.assertEquals;
 
@@ -81,6 +82,11 @@ public class TransactionSteps {
         sessionsToTransactions.get(sessions.get(0)).get(0).commit();
     }
 
+    @Then("transaction commits; throws exception")
+    public void transaction_commits_throws_exception() {
+        assertThrows(() -> sessionsToTransactions.get(sessions.get(0)).get(0).commit());
+    }
+
     @Then("for each session, transaction(s) commit(s)")
     public void for_each_session_transactions_commit() {
         for (Session session : sessions) {
@@ -90,23 +96,17 @@ public class TransactionSteps {
         }
     }
 
-    @Then("for each session, transaction(s) commit(s) successfully: {bool}")
-    public void for_each_session_transactions_commit(boolean successfully) {
+    @Then("for each session, transaction(s) commit(s); throws exception")
+    public void for_each_session_transactions_commit_throws_exception() {
         for (Session session : sessions) {
             for (Transaction transaction : sessionsToTransactions.get(session)) {
-                boolean hasException = false;
-                try {
-                    transaction.commit();
-                } catch (RuntimeException commitException) {
-                    hasException = true;
-                }
-                assertEquals(successfully, !hasException);
+                assertThrows(transaction::commit);
             }
         }
     }
 
-    @Then("for each session, transaction close")
-    public void for_each_session_transaction_close() {
+    @Then("for each session, transaction close(s)")
+    public void for_each_session_transaction_closes() {
         for (Session session : sessions) {
             for (Transaction transaction : sessionsToTransactions.get(session)) {
                 transaction.close();
