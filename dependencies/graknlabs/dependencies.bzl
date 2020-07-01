@@ -22,7 +22,7 @@ def graknlabs_dependencies():
     git_repository(
         name = "graknlabs_dependencies",
         remote = "https://github.com/graknlabs/dependencies",
-        commit = "d7b53dd93298933361b5a30e40d2a2dc1e2306b7",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_dependencies
+        commit = "5f2cf933ab8167135f3abda97ec20d764cef079a",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_dependencies
     )
 
 def graknlabs_common():
@@ -56,7 +56,7 @@ def graknlabs_client_java():
 def graknlabs_console_distribution():
     http_file(
         name = "graknlabs_console_distribution",
-        urls = ["https://repo.grakn.ai/repository/distribution-snapshot/graknlabs_console/console-distribution/5f2cf933ab8167135f3abda97ec20d764cef079a/console-distribution.tgz"],
+        urls = ["https://repo.grakn.ai/repository/distribution-snapshot/graknlabs_console/console-distribution/48b1abdece294fc0640702a0a467024c313e3e47/console-distribution.tgz"],
         downloaded_file_path = "console-distribution.tgz",
     )
 
