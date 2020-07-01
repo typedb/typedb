@@ -35,9 +35,9 @@ java_library(
         "@graknlabs_graql//java:graql",
 
         # External dependencies from Maven
-        "//dependencies/maven/artifacts/junit:junit",
-        "//dependencies/maven/artifacts/io/cucumber:cucumber-java",
-        "//dependencies/maven/artifacts/com/google/guava:guava",
+        "@maven//:junit_junit",
+        "@maven//:io_cucumber_cucumber_java",
+        "@maven//:com_google_guava_guava",
     ],
     visibility = ["//visibility:public"],
 )

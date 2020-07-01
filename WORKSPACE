@@ -196,6 +196,7 @@ load("@graknlabs_client_java//dependencies/maven:artifacts.bzl", graknlabs_clien
 ###########################
 load("//dependencies/graknlabs:dependencies.bzl", "graknlabs_console")
 graknlabs_console()
+load("@graknlabs_console//dependencies/maven:artifacts.bzl", graknlabs_console_artifacts = "artifacts")
 
 ##############################
 # Load @graknlabs_simulation #
@@ -206,20 +207,23 @@ graknlabs_console()
 ################################
 load("//dependencies/graknlabs:dependencies.bzl", "graknlabs_verification")
 graknlabs_verification()
+load("@graknlabs_verification//dependencies/maven:artifacts.bzl", graknlabs_verification_artifacts = "artifacts")
 
 ##############################
 # Load @graknlabs_grakn_core #
 ##############################
-load("//dependencies/maven:dependencies.bzl", "maven_dependencies")
+load("@graknlabs_grakn_core//dependencies/maven:artifacts.bzl", graknlabs_grakn_core_artifacts = "artifacts")
 
 ###############
 # Load @maven #
 ###############
-maven_dependencies()
 maven(
     graknlabs_graql_artifacts +
     graknlabs_protocol_artifacts +
-    graknlabs_client_java_artifacts
+    graknlabs_client_java_artifacts +
+    graknlabs_console_artifacts +
+    graknlabs_verification_artifacts +
+    graknlabs_grakn_core_artifacts
 )
 
 ###############################################

@@ -10,7 +10,7 @@ java_test(
     deps = [
         "//common",
         "//concept/answer",
-        "//dependencies/maven/artifacts/com/google/guava",
+        "@maven//:com_google_guava_guava",
         "//graql/reasoner",
         "//kb/concept/api",
         "//kb/graql/reasoner",
@@ -29,7 +29,7 @@ java_test(
     resources = ["//test/integration/graql/reasoner/resources:rule-applicability"],
     test_class = "grakn.core.graql.reasoner.cache.RuleCacheIT",
     deps = [
-        "//dependencies/maven/artifacts/com/google/guava",
+        "@maven//:com_google_guava_guava",
         "//graql/reasoner",
         "//kb/concept/api",
         "//kb/server",
@@ -51,7 +51,7 @@ java_test(
     deps = [
         "//common",
         "//concept/answer",
-        "//dependencies/maven/artifacts/com/google/guava",
+        "@maven//:com_google_guava_guava",
         "//graql/reasoner",
         "//kb/concept/api",
         "//kb/graql/reasoner",

@@ -25,7 +25,7 @@ java_test(
     test_class = "grakn.core.graql.query.pattern.PatternIT",
     deps = [
         "//concept/answer",
-        "//dependencies/maven/artifacts/com/google/guava",
+        "@maven//:com_google_guava_guava",
         "//kb/server",
         "//kb/graql/exception",
         "//kb/concept/api",
