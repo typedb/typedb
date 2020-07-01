@@ -18,10 +18,6 @@
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 
 def graknlabs_dependencies():
-#     native.local_repository(
-#         name = "graknlabs_dependencies",
-#         path = "/Users/lolski/grakn.ai/graknlabs/dependencies"
-#     )
     git_repository(
         name = "graknlabs_dependencies",
         remote = "https://github.com/graknlabs/dependencies",

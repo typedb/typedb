@@ -52,5 +52,4 @@ artifacts = [
   "com.datastax.oss:java-driver-query-builder",
   "io.vavr:vavr",
   "org.javatuples:javatuples",
-  "org.rocksdb:rocksdbjni",
 ]
