@@ -51,6 +51,13 @@ load("@graknlabs_dependencies//builder/java:deps.bzl", java_deps = "deps")
 java_deps()
 load("@graknlabs_dependencies//library/maven:rules.bzl", "maven")
 
+# Load Kotlin
+load("@graknlabs_dependencies//builder/kotlin:deps.bzl", kotlin_deps = "deps")
+kotlin_deps()
+load("@io_bazel_rules_kotlin//kotlin:kotlin.bzl", "kotlin_repositories", "kt_register_toolchains")
+kotlin_repositories()
+kt_register_toolchains()
+
 # Load NodeJS
 load("@graknlabs_dependencies//builder/nodejs:deps.bzl", nodejs_deps = "deps")
 nodejs_deps()

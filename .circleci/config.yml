@@ -52,6 +52,11 @@ jobs:
       - run-bazel:
           command: bazel build //...
       - run:
+          name: Verify dependencies/maven/snapshot.json
+          command: |
+            dependencies/maven/update.sh
+            git diff --exit-code dependencies/maven/artifacts.snapshot
+      - run:
           command: bazel run @graknlabs_dependencies//tool/unuseddeps:unused-deps -- list
           no_output_timeout: 30m
 
