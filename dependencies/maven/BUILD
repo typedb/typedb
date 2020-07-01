@@ -14,11 +14,3 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
-
-load("@io_bazel_rules_kotlin//kotlin:kotlin.bzl", "kt_jvm_binary")
-
-kt_jvm_binary(
-    name = "update",
-    main_class = "grakn.core.dependencies.maven.UpdateKt",
-    srcs = ["update.kt"],
-)

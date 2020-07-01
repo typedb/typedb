@@ -54,11 +54,8 @@ jobs:
       - run:
           name: Verify dependencies/maven/snapshot.json
           command: |
-            sudo apt install jq
-            mv dependencies/maven/snapshot.json committed.json
             dependencies/maven/update.sh
-            mv dependencies/maven/snapshot.json new.json
-            cmp <(jq -cS . committed.json) <(jq -cS . new.json)
+            git diff --exit-code dependencies/maven/artifacts.snapshot
       - run:
           command: bazel run @graknlabs_dependencies//tool/unuseddeps:unused-deps -- list
           no_output_timeout: 30m
