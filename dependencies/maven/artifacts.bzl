@@ -23,7 +23,7 @@ artifacts = [
   "io.netty:netty-codec-http2",
   "javax.servlet:javax.servlet-api",
   "junit:junit",
-  # "org.apache.cassandra:cassandra-all",
+  "org.apache.cassandra:cassandra-all",
   "org.apache.cassandra:cassandra-thrift",
   "org.apache.commons:commons-lang3",
   "org.apache.commons:commons-math3",
