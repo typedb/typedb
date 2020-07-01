@@ -109,18 +109,18 @@ public final class Schema {
      * The concepts which represent our internal schema
      */
     public enum MetaSchema {
-        THING(Graql.Token.Type.THING.toString(), 1),
-        ENTITY(Graql.Token.Type.ENTITY.toString(), 2),
-        ROLE(Graql.Token.Type.ROLE.toString(), 3),
-        ATTRIBUTE(Graql.Token.Type.ATTRIBUTE.toString(), 4),
-        RELATION(Graql.Token.Type.RELATION.toString(), 5),
-        RULE(Graql.Token.Type.RULE.toString(), 6);
+        THING(Graql.Token.Type.THING.toString(), null, 1),
+        ENTITY(Graql.Token.Type.ENTITY.toString(), null, 2),
+        ROLE(Graql.Token.Type.ROLE.toString(), Graql.Token.Type.RELATION.toString(), 3),
+        ATTRIBUTE(Graql.Token.Type.ATTRIBUTE.toString(), null, 4),
+        RELATION(Graql.Token.Type.RELATION.toString(), null, 5),
+        RULE(Graql.Token.Type.RULE.toString(),null, 6);
 
         private final Label label;
         private final LabelId id;
 
-        MetaSchema(String s, int i) {
-            label = Label.of(s);
+        MetaSchema(String name, String scope, int i) {
+            label = Label.of(name, scope);
             id = LabelId.of(i);
         }
 
