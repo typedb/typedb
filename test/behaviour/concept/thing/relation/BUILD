@@ -16,7 +16,7 @@
 #
 
 package(default_visibility = ["//test/behaviour:__subpackages__"])
-load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
+load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 
 java_library(
     name = "steps",
@@ -34,8 +34,8 @@ java_library(
         # "@graknlabs_common//:common",
 
         # External Maven Dependencies
-        "//dependencies/maven/artifacts/junit:junit",
-        "//dependencies/maven/artifacts/io/cucumber:cucumber-java",
+        "@maven//:junit_junit",
+        "@maven//:io_cucumber_cucumber_java",
     ]
 )
 
@@ -47,7 +47,7 @@ java_test(
     test_class = "hypergraph.test.behaviour.concept.thing.relation.RelationTest",
     deps = [
         # External Maven Dependencies
-        "//dependencies/maven/artifacts/io/cucumber:cucumber-junit",
+        "@maven//:io_cucumber_cucumber_junit",
     ],
     runtime_deps = [
         ":steps",

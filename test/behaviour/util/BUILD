@@ -16,7 +16,7 @@
 #
 
 package(default_visibility = ["//test/behaviour:__subpackages__"])
-load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
+load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 
 java_library(
     name = "util",
@@ -29,7 +29,7 @@ java_library(
         # "@graknlabs_common//:common",
 
         # External Maven Dependencies
-        "//dependencies/maven/artifacts/junit:junit",
+        "@maven//:junit_junit",
     ]
 )
 

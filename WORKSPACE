@@ -18,56 +18,66 @@
 workspace(name = "graknlabs_hypergraph")
 
 
-load("//dependencies/graknlabs:dependencies.bzl", "graknlabs_build_tools", "graknlabs_common", "graknlabs_verification")
-graknlabs_build_tools()
-graknlabs_common()
-graknlabs_verification()
+################################
+# Load @graknlabs_dependencies #
+################################
+load("//dependencies/graknlabs:dependencies.bzl", "graknlabs_dependencies")
+graknlabs_dependencies()
 
-load("@graknlabs_build_tools//distribution:dependencies.bzl", "graknlabs_bazel_distribution")
-graknlabs_bazel_distribution()
-
-load("@graknlabs_build_tools//unused_deps:dependencies.bzl", "unused_deps_dependencies")
-unused_deps_dependencies()
-
-
-###########################
-# Load Bazel dependencies #
-###########################
-
-load("@graknlabs_build_tools//bazel:dependencies.bzl", "bazel_common", "bazel_deps", "bazel_toolchain")
+# Load Bazel
+load("@graknlabs_dependencies//builder/bazel:deps.bzl","bazel_common", "bazel_deps", "bazel_toolchain")
 bazel_common()
 bazel_deps()
 bazel_toolchain()
 
+# Load Java
+load("@graknlabs_dependencies//builder/java:deps.bzl", java_deps = "deps")
+java_deps()
+load("@graknlabs_dependencies//library/maven:rules.bzl", "maven")
 
-#################################
-# Load Build Tools dependencies #
-#################################
+# Load Kotlin
+load("@graknlabs_dependencies//builder/kotlin:deps.bzl", kotlin_deps = "deps")
+kotlin_deps()
+load("@io_bazel_rules_kotlin//kotlin:kotlin.bzl", "kotlin_repositories", "kt_register_toolchains")
+kotlin_repositories()
+kt_register_toolchains()
 
-load("@graknlabs_build_tools//checkstyle:dependencies.bzl", "checkstyle_dependencies")
-checkstyle_dependencies()
+# Load Checkstyle
+load("@graknlabs_dependencies//tool/checkstyle:deps.bzl", checkstyle_deps = "deps")
+checkstyle_deps()
 
-load("@graknlabs_build_tools//sonarcloud:dependencies.bzl", "sonarcloud_dependencies")
+# Load Sonarcloud
+load("@graknlabs_dependencies//tool/sonarcloud:deps.bzl", "sonarcloud_dependencies")
 sonarcloud_dependencies()
 
-load("@graknlabs_build_tools//bazel:dependencies.bzl", "bazel_rules_python")
-bazel_rules_python()
+# Load Unused Deps
+load("@graknlabs_dependencies//tool/unuseddeps:deps.bzl", unuseddeps_deps = "deps")
+unuseddeps_deps()
 
-load("@io_bazel_rules_python//python:pip.bzl", "pip_repositories", "pip_import")
-pip_repositories()
+#####################################################################
+# Load @graknlabs_bazel_distribution from (@graknlabs_dependencies) #
+#####################################################################
+load("@graknlabs_dependencies//distribution:deps.bzl", distribution_deps = "deps")
+distribution_deps()
 
-pip_import(
-    name = "graknlabs_build_tools_ci_pip",
-    requirements = "@graknlabs_build_tools//ci:requirements.txt",
-)
-load("@graknlabs_build_tools_ci_pip//:requirements.bzl",
-graknlabs_build_tools_ci_pip_install = "pip_install")
-graknlabs_build_tools_ci_pip_install()
+##########################
+# Load @graknlabs_common #
+##########################
+load("//dependencies/graknlabs:dependencies.bzl", "graknlabs_common")
+graknlabs_common()
 
+##############################
+# Load @graknlabs_hypergraph #
+##############################
+load("//dependencies/graknlabs:dependencies.bzl", "graknlabs_verification")
+graknlabs_verification()
 
-#####################################
-# Load Java dependencies from Maven #
-#####################################
+##############################
+# Load @graknlabs_hypergraph #
+##############################
+load("//dependencies/maven:artifacts.bzl", "artifacts")
 
-load("//dependencies/maven:dependencies.bzl", "maven_dependencies")
-maven_dependencies()
+###############
+# Load @maven #
+###############
+maven(artifacts)

@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
+load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 package(
     default_visibility = [
         "//:__pkg__",
@@ -40,7 +40,7 @@ java_library(
         # "@graknlabs_common//:common",
 
         # External Maven Dependencies
-        "//dependencies/maven/artifacts/com/google/code/findbugs:jsr305",
+        "@maven//:com_google_code_findbugs_jsr305",
     ],
 )
 
