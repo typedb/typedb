@@ -50,8 +50,8 @@ import java.util.AbstractCollection;
 import java.util.List;
 import java.util.Set;
 
-import static grakn.core.util.GraqlTestUtil.assertCollectionsNonTriviallyEqual;
-import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
+import static grakn.core.test.common.GraqlTestUtil.assertCollectionsNonTriviallyEqual;
+import static grakn.core.test.common.GraqlTestUtil.loadFromFileAndCommit;
 import static java.util.stream.Collectors.toSet;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;

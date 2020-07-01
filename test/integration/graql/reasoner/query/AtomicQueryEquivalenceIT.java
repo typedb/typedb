@@ -42,7 +42,7 @@ import java.util.List;
 import static grakn.core.graql.reasoner.query.QueryTestUtil.atomicEquivalence;
 import static grakn.core.graql.reasoner.query.QueryTestUtil.conjunction;
 import static grakn.core.graql.reasoner.query.QueryTestUtil.queryEquivalence;
-import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
+import static grakn.core.test.common.GraqlTestUtil.loadFromFileAndCommit;
 
 @SuppressWarnings("CheckReturnValue")
 public class AtomicQueryEquivalenceIT {

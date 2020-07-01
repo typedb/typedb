@@ -50,7 +50,7 @@ import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
+import static grakn.core.test.common.GraqlTestUtil.loadFromFileAndCommit;
 import static graql.lang.Graql.and;
 import static graql.lang.Graql.var;
 

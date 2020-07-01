@@ -59,7 +59,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
+import static grakn.core.test.common.GraqlTestUtil.loadFromFileAndCommit;
 import static graql.lang.Graql.var;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.empty;
