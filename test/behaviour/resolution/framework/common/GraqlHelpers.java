@@ -30,7 +30,7 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
-public class KeyStatementsGenerator {
+public class GraqlHelpers {
     /**
      * Create a set of statements that will query for the keys of the concepts given in the map. Attributes given in
      * the map are simply queried for by their own type and value.
@@ -92,5 +92,13 @@ public class KeyStatementsGenerator {
             }
         }
         return statements;
+    }
+
+    public static Statement makeAnonVarsExplicit(Statement statement) {
+        if (statement.var().isReturned()) {
+            return statement;
+        } else {
+            return Statement.create(statement.var().asReturnedVar(), statement.properties());
+        }
     }
 }

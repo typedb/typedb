@@ -23,10 +23,10 @@ import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
+import grakn.core.test.behaviour.resolution.framework.common.GraqlHelpers;
 import grakn.core.test.behaviour.resolution.framework.common.NegationRemovalVisitor;
 import grakn.core.test.behaviour.resolution.framework.common.RuleResolutionBuilder;
 import grakn.core.test.behaviour.resolution.framework.common.StatementVisitor;
-import grakn.core.test.behaviour.resolution.framework.resolve.ResolutionQueryBuilder;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
@@ -46,7 +46,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static grakn.core.test.behaviour.resolution.framework.common.KeyStatementsGenerator.generateKeyStatements;
+import static grakn.core.test.behaviour.resolution.framework.common.GraqlHelpers.generateKeyStatements;
 
 
 public class Completer {
@@ -89,8 +89,6 @@ public class Completer {
         AtomicBoolean foundResult = new AtomicBoolean(false);
         // TODO When making match queries be careful that user-provided rules could trigger due to elements of the
         //  completion schema. These results should be filtered out.
-
-        ResolutionQueryBuilder qb = new ResolutionQueryBuilder();
 
         // Use the DNF so that we can know each `when` if free of disjunctions. Disjunctions in the `when` will otherwise complicate things significantly
         Set<Conjunction<Pattern>> disjunctiveWhens = rule.when.getNegationDNF().getPatterns();
@@ -221,7 +219,7 @@ public class Completer {
         private String label;
 
         Rule(Pattern when, Pattern then, String label) {
-            StatementVisitor visitor = new StatementVisitor(ResolutionQueryBuilder::makeAnonVarsExplicit);
+            StatementVisitor visitor = new StatementVisitor(GraqlHelpers::makeAnonVarsExplicit);
             this.when = visitor.visitPattern(when);
             this.then = visitor.visitPattern(then);
             this.label = label;

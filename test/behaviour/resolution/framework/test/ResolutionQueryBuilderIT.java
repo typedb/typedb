@@ -21,7 +21,7 @@ package grakn.core.test.behaviour.resolution.framework.test;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
-import grakn.core.test.behaviour.resolution.framework.common.KeyStatementsGenerator;
+import grakn.core.test.behaviour.resolution.framework.common.GraqlHelpers;
 import grakn.core.test.rule.GraknTestServer;
 import graql.lang.Graql;
 import graql.lang.query.GraqlGet;
@@ -52,7 +52,7 @@ public class ResolutionQueryBuilderIT {
 
             try (Transaction tx = session.transaction(Transaction.Type.READ)) {
                 ConceptMap answer = tx.execute(inferenceQuery).get(0);
-                keyStatements = KeyStatementsGenerator.generateKeyStatements(answer.map());
+                keyStatements = GraqlHelpers.generateKeyStatements(answer.map());
             }
         }
 

@@ -24,17 +24,16 @@ java_library(
         "Completer.java",
         "SchemaManager.java",
     ],
-    visibility = ["//visibility:public"],
-    deps = [
-        "//test/behaviour/resolution/framework/common:common",
-        "//test/behaviour/resolution/framework/resolve:resolve",
-        "//kb/server:server",
-        "//kb/concept/api:api",
-        "//concept/answer:answer",
-        "@graknlabs_graql//java:graql",
-    ],
     data = [
         "//test/behaviour/resolution/framework/complete:completion_schema.gql",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//concept/answer",
+        "//kb/concept/api",
+        "//kb/server",
+        "//test/behaviour/resolution/framework/common",
+        "@graknlabs_graql//java:graql",
     ],
 )
 

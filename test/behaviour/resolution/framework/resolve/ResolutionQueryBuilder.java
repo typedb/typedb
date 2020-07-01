@@ -23,7 +23,7 @@ import grakn.core.concept.answer.Explanation;
 import grakn.core.graql.reasoner.explanation.RuleExplanation;
 import grakn.core.kb.server.Transaction;
 import grakn.core.test.behaviour.resolution.framework.common.ConjunctionFlatteningVisitor;
-import grakn.core.test.behaviour.resolution.framework.common.KeyStatementsGenerator;
+import grakn.core.test.behaviour.resolution.framework.common.GraqlHelpers;
 import grakn.core.test.behaviour.resolution.framework.common.RuleResolutionBuilder;
 import grakn.core.test.behaviour.resolution.framework.common.StatementVisitor;
 import graql.lang.Graql;
@@ -72,13 +72,13 @@ public class ResolutionQueryBuilder {
         Integer finalRuleResolutionIndex1 = ruleResolutionIndex;
 
         StatementVisitor statementVisitor = new StatementVisitor(p -> {
-            Statement withoutIds = removeIdProperties(makeAnonVarsExplicit(p));
+            Statement withoutIds = removeIdProperties(GraqlHelpers.makeAnonVarsExplicit(p));
             return withoutIds == null ? null : prefixVars(withoutIds, finalRuleResolutionIndex1);
         });
 
         resolutionPatterns.add(statementVisitor.visitPattern(answerPattern));
 
-        KeyStatementsGenerator.generateKeyStatements(answer.map()).forEach(statement -> resolutionPatterns.add(prefixVars(statement, finalRuleResolutionIndex1)));
+        GraqlHelpers.generateKeyStatements(answer.map()).forEach(statement -> resolutionPatterns.add(prefixVars(statement, finalRuleResolutionIndex1)));
 
         if (answer.explanation() != null) {
 
@@ -91,7 +91,7 @@ public class ResolutionQueryBuilder {
                 ruleResolutionIndex += 1;
                 Integer finalRuleResolutionIndex0 = ruleResolutionIndex;
 
-                StatementVisitor ruleStatementVisitor = new StatementVisitor(p -> prefixVars(makeAnonVarsExplicit(p), finalRuleResolutionIndex0));
+                StatementVisitor ruleStatementVisitor = new StatementVisitor(p -> prefixVars(GraqlHelpers.makeAnonVarsExplicit(p), finalRuleResolutionIndex0));
 
                 Pattern whenPattern = Objects.requireNonNull(((RuleExplanation) explanation).getRule().when());
                 whenPattern = ruleStatementVisitor.visitPattern(whenPattern);
@@ -111,14 +111,6 @@ public class ResolutionQueryBuilder {
             }
         }
         return Graql.and(resolutionPatterns);
-    }
-
-    public static Statement makeAnonVarsExplicit(Statement statement) {
-        if (statement.var().isReturned()) {
-            return statement;
-        } else {
-            return Statement.create(statement.var().asReturnedVar(), statement.properties());
-        }
     }
 
     private Statement prefixVars(Statement statement, Integer ruleResolutionIndex) {

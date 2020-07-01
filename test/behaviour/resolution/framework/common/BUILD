@@ -21,7 +21,7 @@ java_library(
     name = "common",
     srcs = [
         "ConjunctionFlatteningVisitor.java",
-        "KeyStatementsGenerator.java",
+        "GraqlHelpers.java",
         "NegationRemovalVisitor.java",
         "PatternVisitor.java",
         "ResolutionConstraintException.java",
