@@ -18,6 +18,7 @@
 
 package grakn.core.concept.impl;
 
+import grakn.core.core.AttributeValueConverter;
 import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
@@ -167,7 +168,7 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
     @Override
     @Nullable
     public Attribute<D> attribute(D value) {
-        String index = Schema.generateAttributeIndex(label(), value.toString());
+        String index = Schema.generateAttributeIndex(label(), AttributeValueConverter.tryConvert(this, value).toString());
         Attribute<D> concept = conceptManager.getCachedAttribute(index);
         if (concept != null) return concept;
         return conceptManager.getConcept(Schema.VertexProperty.INDEX, index);
@@ -177,7 +178,7 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
      * This is only used when checking if attribute exists before trying to create a new one.
      */
     private Attribute<D> getAttribute(D value) {
-        String index = Schema.generateAttributeIndex(label(), value.toString());
+        String index = Schema.generateAttributeIndex(label(), AttributeValueConverter.tryConvert(this, value).toString());
         return conceptManager.getAttribute(index);
     }
 

@@ -45,6 +45,7 @@ java_test(
         "//common",
         "//concept/answer",
         "//graql/reasoner",
+        "//kb/concept/api",
         "//kb/graql/exception",
         "//kb/graql/reasoner",
         "//kb/server",

@@ -20,6 +20,7 @@ package grakn.core.kb.server.cache;
 
 import com.google.common.annotations.VisibleForTesting;
 import grakn.common.util.Pair;
+import grakn.core.core.AttributeValueConverter;
 import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.Concept;
@@ -195,7 +196,7 @@ public class TransactionCache {
         }
         if (concept.isAttribute()){
             Attribute<Object> attribute = concept.asAttribute();
-            String index = Schema.generateAttributeIndex(attribute.type().label(), attribute.value().toString());
+            String index = Schema.generateAttributeIndex(attribute.type().label(), AttributeValueConverter.tryConvert(attribute.type(), attribute.value()).toString());
             attributeCache.put(index, attribute);
         }
     }

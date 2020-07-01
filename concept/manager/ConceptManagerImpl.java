@@ -235,12 +235,7 @@ public class ConceptManagerImpl implements ConceptManager {
 
         AttributeType.ValueType<V> valueType = type.valueType();
 
-        V convertedValue;
-        try {
-            convertedValue = AttributeValueConverter.of(type.valueType()).convert(value);
-        } catch (ClassCastException e){
-            throw GraknConceptException.invalidAttributeValue(type, value, valueType);
-        }
+        V convertedValue = AttributeValueConverter.tryConvert(type, value);
 
         // set persisted value
         Object valueToPersist = AttributeSerialiser.of(valueType).serialise(convertedValue);
@@ -248,13 +243,13 @@ public class ConceptManagerImpl implements ConceptManager {
         vertex.propertyImmutable(property, valueToPersist, null);
 
         // set unique index - combination of type and value to an indexed Janus property, used for lookups
-        String index = Schema.generateAttributeIndex(type.label(), convertedValue.toString());
-        vertex.property(Schema.VertexProperty.INDEX, index);
+        String uniqueIndex = Schema.generateAttributeIndex(type.label(), convertedValue.toString());
+        vertex.property(Schema.VertexProperty.INDEX, uniqueIndex);
 
         AttributeImpl<V> newAttribute = new AttributeImpl<>(vertex, this, conceptNotificationChannel);
         newAttribute.type(TypeImpl.from(type));
 
-        conceptNotificationChannel.attributeCreated(newAttribute, value, isInferred);
+        conceptNotificationChannel.attributeCreated(newAttribute, uniqueIndex, isInferred);
         return newAttribute;
     }
 

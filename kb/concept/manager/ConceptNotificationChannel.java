@@ -57,7 +57,7 @@ public interface ConceptNotificationChannel {
     void roleUndefined(Role role);
     void relationRoleUnrelated(RelationType relationType, Role role, List<Casting> conceptsPlayingRole);
 
-    <D> void attributeCreated(Attribute<D> attribute, D value, boolean isInferred);
+    <D> void attributeCreated(Attribute<D> attribute, String uniqueIndex, boolean isInferred);
     void relationCreated(Relation relation, boolean isInferred);
     void entityCreated(Entity entity, boolean isInferred);
     void hasAttributeCreated(Thing owner, Attribute attribute, boolean isInferred);
