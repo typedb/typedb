@@ -51,7 +51,7 @@ public class Import implements AutoCloseable {
     List<Pair<String, List<String>>> missingAttributeOwnerships = new ArrayList<>();
 
     // Pair of IMPORTED relation ids to map of role LABEL to lists of ORIGINAL player ids
-    List<Pair<String, Map<String, List<String>>>> missingRolePlayers = new ArrayList<>();
+    List<Pair<String, List<Pair<String, List<String>>>>> missingRolePlayers = new ArrayList<>();
 
     Map<String, AttributeType<?>> attributeTypeCache = new HashMap<>();
     Map<String, EntityType> entityTypeCache = new HashMap<>();
@@ -221,7 +221,7 @@ public class Import implements AutoCloseable {
         idMap.put(originalId, importedId);
         thingCache.put(originalId, relation);
 
-        Map<String, List<String>> missingRolePlayers = new HashMap<>();
+        List<Pair<String, List<String>>> missingRolePlayers = new ArrayList<>();
 
         for (MigrateProto.Item.Relation.Role roleMessage : relationMessage.getRoleList()) {
             List<String> missingPlayers = new ArrayList<>();
@@ -250,7 +250,7 @@ public class Import implements AutoCloseable {
             }
 
             if (!missingPlayers.isEmpty()) {
-                missingRolePlayers.put(roleMessage.getLabel(), missingPlayers);
+                missingRolePlayers.add(new Pair<>(roleMessage.getLabel(), missingPlayers));
             }
         }
 
@@ -310,13 +310,13 @@ public class Import implements AutoCloseable {
     }
 
     private void insertMissingRolePlayersAtEnd() {
-        for (Pair<String, Map<String, List<String>>> missingRolePlayers : this.missingRolePlayers) {
+        for (Pair<String, List<Pair<String, List<String>>>> missingRolePlayers : this.missingRolePlayers) {
             Relation relation = currentTransaction.getConcept(ConceptId.of(missingRolePlayers.first()));
 
-            missingRolePlayers.second().forEach((roleLabel, missingPlayers) -> {
-                Role role = roleCache.computeIfAbsent(roleLabel, l -> currentTransaction.getRole(l));
+            missingRolePlayers.second().forEach(pair -> {
+                Role role = roleCache.computeIfAbsent(pair.first(), l -> currentTransaction.getRole(l));
 
-                for (String playerOriginalId : missingPlayers) {
+                for (String playerOriginalId : pair.second()) {
                     Thing player = thingCache.computeIfAbsent(playerOriginalId,
                             poi -> currentTransaction.getConcept(ConceptId.of(idMap.get(poi))));
                     relation.assign(role, player);

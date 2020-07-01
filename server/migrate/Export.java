@@ -136,7 +136,7 @@ public class Export implements AutoCloseable {
         long localAttributeCount = 0;
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
             AttributeType<D> attributeType = tx.getAttributeType(label);
-            AttributeType<?>[] ownedTypes = attributeType.attributes().toArray(AttributeType[]::new);
+            AttributeType<?>[] ownedTypes = attributeType.attributes().filter(at -> !at.isImplicit()).toArray(AttributeType[]::new);
             Iterator<Attribute<D>> attributes = attributeType.instancesDirect().iterator();
             while (attributes.hasNext()) {
                 Attribute<D> attribute = attributes.next();
@@ -191,7 +191,7 @@ public class Export implements AutoCloseable {
         long localEntityCount = 0;
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
             EntityType entityType = tx.getEntityType(label);
-            AttributeType<?>[] ownedTypes = entityType.attributes().toArray(AttributeType[]::new);
+            AttributeType<?>[] ownedTypes = entityType.attributes().filter(at -> !at.isImplicit()).toArray(AttributeType[]::new);
             Iterator<Entity> entities = entityType.instancesDirect().iterator();
             while (entities.hasNext()) {
                 Entity entity = entities.next();
@@ -247,7 +247,7 @@ public class Export implements AutoCloseable {
         long localRoleCount = 0;
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
             RelationType relationType = tx.getRelationType(label);
-            AttributeType<?>[] ownedTypes = relationType.attributes().toArray(AttributeType[]::new);
+            AttributeType<?>[] ownedTypes = relationType.attributes().filter(at -> !at.isImplicit()).toArray(AttributeType[]::new);
             Iterator<Relation> relations = relationType.instancesDirect().iterator();
             while (relations.hasNext()) {
                 Relation relation = relations.next();
