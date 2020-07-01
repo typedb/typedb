@@ -9,8 +9,6 @@ has index;
 vertex sub entity,
 has index;
 
-coordinate sub role;
-arc sub relation, relates coordinate;
 vertex plays coordinate;
 start-vertex plays coordinate;
 

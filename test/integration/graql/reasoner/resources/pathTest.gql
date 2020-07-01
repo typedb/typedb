@@ -9,8 +9,6 @@ vertex sub entity,
 start-vertex sub entity,
    has index;
 
-arc-from sub role;
-arc-to sub role;
 arc sub relation, relates arc-from, relates arc-to;
 vertex plays arc-from, plays arc-to;
 start-vertex plays arc-from;

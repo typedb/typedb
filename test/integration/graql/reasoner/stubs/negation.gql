@@ -14,9 +14,6 @@ someType sub baseType;
 anotherType sub baseType;
 derived-type sub baseType;
 
-someRole sub role;
-anotherRole sub role;
-otherRole sub role;
 
 binary sub relation,
     relates someRole,
