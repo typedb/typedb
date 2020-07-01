@@ -26,7 +26,7 @@ java_test(
         "//kb/server",
         "//kb/concept/api",
         "//test/rule:grakn-test-server",
-        "@graknlabs_graql//graql:java",
+        "@graknlabs_graql//java:graql",
         "@graknlabs_client_java//:client-java",
     ],
 )
@@ -37,8 +37,8 @@ java_test(
     classpath_resources = ["//test/resources:logback-test"],
     test_class = "grakn.core.keyspace.AttributeManagerIT",
     deps = [
-        "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+        "@maven//:org_apache_tinkerpop_gremlin_core",
+        "@maven//:org_hamcrest_hamcrest_library",
         "//kb/server",
         "//kb/concept/api",
         "//server",
@@ -54,8 +54,8 @@ java_test(
     test_class = "grakn.core.keyspace.ShardManagerIT",
     deps = [
         "//common",
-        "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+        "@maven//:org_apache_tinkerpop_gremlin_core",
+        "@maven//:org_hamcrest_hamcrest_library",
         "//kb/server",
         "//server",
         "//test/rule:grakn-test-server",

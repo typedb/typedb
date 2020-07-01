@@ -65,17 +65,17 @@ public class BenchmarkSmallIT {
 
         //NB: loading data here as defining it as KB and using graql api leads to circular dependencies
         try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-            Role fromRole = tx.putRole("fromRole");
-            Role toRole = tx.putRole("toRole");
 
             RelationType relation0 = tx.putRelationType("relation0")
-                    .relates(fromRole)
-                    .relates(toRole);
+                    .relates("fromRole")
+                    .relates("toRole");
+            Role fromRole = relation0.role("fromRole");
+            Role toRole = relation0.role("toRole");
 
             for (int i = 1; i <= N; i++) {
                 tx.putRelationType("relation" + i)
-                        .relates(fromRole)
-                        .relates(toRole);
+                        .relates("fromRole")
+                        .relates("toRole");
             }
             EntityType genericEntity = tx.putEntityType("genericEntity")
                     .plays(fromRole)
@@ -96,16 +96,16 @@ public class BenchmarkSmallIT {
                         .when(
                                 Graql.and(
                                         Graql.var()
-                                                .rel(Graql.type(fromRole.label().getValue()), fromVar)
-                                                .rel(Graql.type(toRole.label().getValue()), toVar)
+                                                .rel(Graql.type(fromRole.label()), fromVar)
+                                                .rel(Graql.type(toRole.label()), toVar)
                                                 .isa("relation" + (i - 1))
                                 )
                         )
                         .then(
                                 Graql.and(
                                         Graql.var()
-                                                .rel(Graql.type(fromRole.label().getValue()), fromVar)
-                                                .rel(Graql.type(toRole.label().getValue()), toVar)
+                                                .rel(Graql.type(fromRole.label()), fromVar)
+                                                .rel(Graql.type(toRole.label()), toVar)
                                                 .isa("relation" + i)
                                 )
                         );

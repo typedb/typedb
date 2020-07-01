@@ -49,7 +49,7 @@ java_library(
     data = ["//test/integration/graql/reasoner/resources:generic-schema"],
     visibility = ["//test/integration:__subpackages__"],
     deps = [
-        "//dependencies/maven/artifacts/com/google/guava",
+        "@maven//:com_google_guava_guava",
         "//kb/concept/api",
         "//kb/server",
         "//test/integration/graql/reasoner:pattern",
@@ -89,7 +89,7 @@ java_library(
     visibility = ["//test/integration:__subpackages__"],
     deps = [
         "@graknlabs_graql//java:graql",
-        "//dependencies/maven/artifacts/com/google/guava",
+        "@maven//:com_google_guava_guava",
         "//kb/concept/api",
         "//kb/server",
         "//test/integration/util:graql-test-util",
@@ -103,7 +103,7 @@ java_library(
     visibility = ["//test/integration:__subpackages__"],
     deps = [
         "@graknlabs_graql//java:graql",
-        "//dependencies/maven/artifacts/com/google/guava",
+        "@maven//:com_google_guava_guava",
         "//kb/concept/api",
         "//kb/server",
         "//test/integration/util:graql-test-util",
@@ -117,7 +117,7 @@ java_library(
     visibility = ["//test/integration:__subpackages__"],
     deps = [
         "@graknlabs_graql//java:graql",
-        "//dependencies/maven/artifacts/com/google/guava",
+        "@maven//:com_google_guava_guava",
         "//kb/concept/api",
         "//kb/server",
         "//test/integration/util:graql-test-util",
@@ -134,7 +134,7 @@ java_library(
     visibility = ["//test/integration:__subpackages__"],
     deps = [
         "@graknlabs_graql//java:graql",
-        "//dependencies/maven/artifacts/com/google/guava",
+        "@maven//:com_google_guava_guava",
         "//kb/concept/api",
         "//kb/server",
         "//test/integration/util:graql-test-util",
@@ -150,7 +150,7 @@ java_library(
     visibility = ["//test/integration:__subpackages__"],
     deps = [
         "@graknlabs_graql//java:graql",
-        "//dependencies/maven/artifacts/com/google/guava",
+        "@maven//:com_google_guava_guava",
         "//kb/concept/api",
         "//kb/server",
         "//test/integration/util:graql-test-util",
@@ -164,7 +164,7 @@ java_library(
     visibility = ["//test/integration:__subpackages__"],
     deps = [
         "@graknlabs_graql//java:graql",
-        "//dependencies/maven/artifacts/com/google/guava",
+        "@maven//:com_google_guava_guava",
         "//kb/concept/api",
         "//kb/server",
         "//test/integration/util:graql-test-util",

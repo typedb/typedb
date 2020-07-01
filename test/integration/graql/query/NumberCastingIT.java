@@ -107,13 +107,6 @@ public class NumberCastingIT {
         cleanup(session, pattern);
     }
 
-    @Test // TODO: This test is not needed as the method `.val(...)` will cast to either Long or Double
-    public void whenAddressingDoubleAsFloat_ConversionHappens() {
-        Pattern pattern = Graql.var("x").val(10f).isa("attr-double");
-        verifyWrite(session, pattern);
-        verifyRead(session, pattern);
-    }
-
     @Test
     public void whenAddressingLongAsInt_ConversionHappens() {
         Pattern pattern = Graql.var("x").val(10).isa("attr-long");
@@ -143,7 +136,7 @@ public class NumberCastingIT {
     }
 
     @Test
-    public void whenAddressingLongAsConvertibleDouble_exceptionIsThrown() throws TransactionException {
+    public void whenAddressingLongAsConvertibleDouble_ConversionHappens() {
         double value = 10.0;
         Pattern pattern = Graql.var("x").val(value).isa("attr-long");
         verifyWrite(session, pattern);
@@ -179,58 +172,5 @@ public class NumberCastingIT {
         expectedException.expect(GraknConceptException.class);
         expectedException.expectMessage("The value [" + value + "] of type [Double] must be of value type [java.lang.Long]");
         verifyWrite(session, pattern);
-    }
-
-    @Test
-    public void compareDoubleAndLong() {
-        int one_int = 1, two_int = 2;
-        double one_double = 1.0, two_double = 2.0;
-
-        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-            tx.execute(Graql.insert(Graql.val(one_int).isa("attr-long")));
-            tx.execute(Graql.insert(Graql.val(two_double).isa("attr-double")));
-            tx.commit();
-        }
-
-        List<ConceptMap> answers;
-        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-            answers = tx.execute(Graql.match(Graql.var("x").eq(one_int).isa("attr-long")).get());
-            assertEquals(1, answers.size());
-
-            answers = tx.execute(Graql.match(Graql.var("x").eq(one_double).isa("attr-long")).get());
-            assertEquals(1, answers.size());
-        }
-
-        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-            answers = tx.execute(Graql.match(Graql.var("x").eq(two_int).isa("attr-double")).get());
-            assertEquals(1, answers.size());
-
-            answers = tx.execute(Graql.match(Graql.var("x").eq(two_double).isa("attr-double")).get());
-            assertEquals(1, answers.size());
-        }
-
-        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-            answers = tx.execute(Graql.match(Graql.var("x").val(one_double).isa("attr-long")).get());
-            assertEquals(1, answers.size());
-
-            answers = tx.execute(Graql.match(Graql.var("x").val(two_int).isa("attr-double")).get());
-            assertEquals(1, answers.size());
-        }
-
-        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-            answers = tx.execute(Graql.match(Graql.var("x").gte(one_int).isa("attribute")).get());
-            assertEquals(2, answers.size());
-
-            answers = tx.execute(Graql.match(Graql.var("x").gte(one_double).isa("attribute")).get());
-            assertEquals(2, answers.size());
-        }
-
-        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-            answers = tx.execute(Graql.match(Graql.var("x").lt(two_int).isa("attribute")).get());
-            assertEquals(1, answers.size());
-
-            answers = tx.execute(Graql.match(Graql.var("x").lt(two_double).isa("attribute")).get());
-            assertEquals(1, answers.size());
-        }
     }
 }
