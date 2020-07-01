@@ -2,16 +2,17 @@ package grakn.core.dependencies.maven
 
 import java.nio.file.Files
 import java.nio.file.Paths
+import java.util.stream.Collectors
 
 fun main() {
-    val BASE_DIR=System.getenv("BUILD_WORKSPACE_DIRECTORY")
-    val jsonSrc = Paths.get(BASE_DIR, "maven_install.json")
-    val jsonTarget = Paths.get(BASE_DIR, "dependencies", "maven", "snapshot.json")
-    ProcessBuilder()
-            .directory(Paths.get(BASE_DIR).toFile())
-            .command("bazel", "run", "@maven//:pin")
+    val BASE_DIR=Paths.get(System.getenv("BUILD_WORKSPACE_DIRECTORY"))
+    val target = BASE_DIR.resolve("dependencies").resolve("maven").resolve("snapshot")
+    val process = ProcessBuilder()
+            .directory(BASE_DIR.toFile())
+            .command("bazel", "query", "@maven//...")
             .start()
-            .waitFor()
-
-    Files.move(jsonSrc, jsonTarget)
+    val output = process.inputStream
+            .use { output -> output.reader().readLines() }
+            .stream().sorted().collect(Collectors.joining(System.lineSeparator()))
+    Files.write(target, output.toByteArray())
 }
