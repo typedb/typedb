@@ -194,7 +194,7 @@ load("@graknlabs_client_java//dependencies/maven:artifacts.bzl", graknlabs_clien
 ########################################
 # Load @graknlabs_console_distribution #
 ########################################
-load("//dependencies/graknlabs:dependencies.bzl", "graknlabs_console_distribution")
+load("//dependencies/graknlabs:distribution.bzl", "graknlabs_console_distribution")
 graknlabs_console_distribution()
 
 ##############################
