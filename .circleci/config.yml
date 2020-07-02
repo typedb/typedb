@@ -39,7 +39,7 @@ commands:
     steps:
       - run:
           command: bazel run @graknlabs_dependencies//tool/bazelrun:rbe -- << parameters.command >>
-          no_output_timeout: 60m
+          no_output_timeout: 120m
 
 jobs:
   build:
