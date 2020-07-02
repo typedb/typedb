@@ -24,7 +24,6 @@ build:rbe --crosstool_top=@bazel_toolchains//configs/ubuntu16_04_clang/11.0.0/ba
 build:rbe --jobs=50
 build:rbe --remote_timeout=3600
 build:rbe --bes_timeout=60s
-build:rbe --tls_enabled=true
 build:rbe --spawn_strategy=remote
 build:rbe --strategy=Javac=remote
 build:rbe --strategy=Closure=remote
