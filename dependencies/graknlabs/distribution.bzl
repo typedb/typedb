@@ -14,3 +14,15 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
+
+load("@graknlabs_bazel_distribution//distribution:rules.bzl", "distribution_file")
+
+def graknlabs_console_distribution():
+    distribution_file(
+        name = "graknlabs_console_distribution",
+        repository_url = "https://repo.grakn.ai/repository",
+        group_name = "graknlabs_console",
+        artifact_name = "console-distribution",
+        extension = "tgz",
+        commit = "48b1abdece294fc0640702a0a467024c313e3e47",
+    )

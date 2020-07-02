@@ -198,12 +198,11 @@ load("//dependencies/graknlabs:dependencies.bzl", "graknlabs_client_java")
 graknlabs_client_java()
 load("@graknlabs_client_java//dependencies/maven:artifacts.bzl", graknlabs_client_java_artifacts = "artifacts")
 
-###########################
-# Load @graknlabs_console #
-###########################
-load("//dependencies/graknlabs:dependencies.bzl", "graknlabs_console")
-graknlabs_console()
-load("@graknlabs_console//dependencies/maven:artifacts.bzl", graknlabs_console_artifacts = "artifacts")
+########################################
+# Load @graknlabs_console_distribution #
+########################################
+load("//dependencies/graknlabs:distribution.bzl", "graknlabs_console_distribution")
+graknlabs_console_distribution()
 
 ##############################
 # Load @graknlabs_simulation #
@@ -228,7 +227,6 @@ maven(
     graknlabs_graql_artifacts +
     graknlabs_protocol_artifacts +
     graknlabs_client_java_artifacts +
-    graknlabs_console_artifacts +
     graknlabs_verification_artifacts +
     graknlabs_grakn_core_artifacts
 )
