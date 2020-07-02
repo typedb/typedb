@@ -11,7 +11,7 @@ java_test(
         "//concept/answer",
         "//kb/server",
         "//test/rule:grakn-test-server",
-        "//test/integration/util:graql-test-util",
+        "//test/common:graql-test-util",
         "@graknlabs_graql//java:graql",
     ],
 )
@@ -25,13 +25,13 @@ java_test(
     test_class = "grakn.core.graql.reasoner.reasoning.ValuePredicateIT",
     deps = [
         "//concept/answer",
-        "//dependencies/maven/artifacts/com/google/guava",
+        "@maven//:com_google_guava_guava",
         "//graql/reasoner",
         "//kb/server",
         "//kb/concept/api",
         "//common",
         "//test/rule:grakn-test-server",
-        "//test/integration/util:graql-test-util",
+        "//test/common:graql-test-util",
         "@graknlabs_graql//java:graql",
         "@graknlabs_common//:common",
     ],
@@ -52,8 +52,8 @@ java_test(
     test_class = "grakn.core.graql.reasoner.reasoning.RecursionIT",
     deps = [
         "//concept/answer",
-        "//dependencies/maven/artifacts/com/google/guava",
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+        "@maven//:com_google_guava_guava",
+        "@maven//:org_hamcrest_hamcrest_library",
         "//kb/server",
         "//test/integration/graql/reasoner/graph:dual-linear-transitivity-graph",
         "//test/integration/graql/reasoner/graph:linear-transitivity-matrix-graph",
@@ -64,7 +64,7 @@ java_test(
         "//test/integration/graql/reasoner/graph:reachability-graph",
         "//test/integration/graql/reasoner/graph:tail-recursion-graph",
         "//test/rule:grakn-test-server",
-        "//test/integration/util:graql-test-util",
+        "//test/common:graql-test-util",
         "@graknlabs_graql//java:graql",
     ],
 )
@@ -78,11 +78,11 @@ java_test(
     test_class = "grakn.core.graql.reasoner.reasoning.AttributeAttachmentIT",
     deps = [
         "//concept/answer",
-        "//dependencies/maven/artifacts/com/google/guava",
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+        "@maven//:com_google_guava_guava",
+        "@maven//:org_hamcrest_hamcrest_library",
         "//kb/server",
         "//test/rule:grakn-test-server",
-        "//test/integration/util:graql-test-util",
+        "//test/common:graql-test-util",
         "@graknlabs_graql//java:graql",
     ],
 )
@@ -98,7 +98,7 @@ java_test(
         "//concept/answer",
         "//kb/server",
         "//test/rule:grakn-test-server",
-        "//test/integration/util:graql-test-util",
+        "//test/common:graql-test-util",
         "@graknlabs_graql//java:graql",
     ],
 )
@@ -112,10 +112,10 @@ java_test(
     test_class = "grakn.core.graql.reasoner.reasoning.TypeHierarchiesIT",
     deps = [
         "//concept/answer",
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+        "@maven//:org_hamcrest_hamcrest_library",
         "//kb/server",
         "//test/rule:grakn-test-server",
-        "//test/integration/util:graql-test-util",
+        "//test/common:graql-test-util",
         "@graknlabs_graql//java:graql",
     ],
 )
@@ -129,11 +129,11 @@ java_test(
     test_class = "grakn.core.graql.reasoner.reasoning.VariableRolesIT",
     deps = [
         "//concept/answer",
-        "//dependencies/maven/artifacts/commons-collections",
-        "//dependencies/maven/artifacts/org/apache/commons:commons-math3",
+        "@maven//:commons_collections_commons_collections",
+        "@maven//:org_apache_commons_commons_math3",
         "//kb/server",
         "//test/rule:grakn-test-server",
-        "//test/integration/util:graql-test-util",
+        "//test/common:graql-test-util",
         "@graknlabs_graql//java:graql",
     ],
 )

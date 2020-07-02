@@ -18,23 +18,6 @@
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 
 java_test(
-    name = "direct-sub-it",
-    size = "small",
-    srcs = ["DirectSubIT.java"],
-    classpath_resources = ["//test/resources:logback-test"],
-    test_class = "grakn.core.graql.executor.DirectSubIT",
-    deps = [
-        "//kb/server",
-        "//kb/concept/api",
-        "//concept/answer",
-        "//test/rule:grakn-test-server",
-        "@graknlabs_graql//java:graql",
-        "//dependencies/maven/artifacts/com/google/guava",
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
-    ],
-)
-
-java_test(
     name = "direct-isa-it",
     size = "medium",
     srcs = ["DirectIsaIT.java"],
@@ -42,8 +25,8 @@ java_test(
     test_class = "grakn.core.graql.executor.DirectIsaIT",
     deps = [
         "//common",
-        "//dependencies/maven/artifacts/com/google/guava",
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+        "@maven//:com_google_guava_guava",
+        "@maven//:org_hamcrest_hamcrest_library",
         "//graql/planning",
         "//kb/concept/api",
         "//kb/graql/planning",
@@ -56,7 +39,6 @@ java_test(
 checkstyle_test(
     name = "checkstyle",
     targets = [
-        ":direct-isa-it",
-        ":direct-sub-it"
+        ":direct-isa-it"
     ],
 )

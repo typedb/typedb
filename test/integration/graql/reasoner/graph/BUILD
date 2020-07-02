@@ -25,7 +25,7 @@ java_library(
     deps = [
         "//kb/concept/api",
         "//kb/server",
-        "//test/integration/util:graql-test-util",
+        "//test/common:graql-test-util",
     ],
 )
 
@@ -37,7 +37,7 @@ java_library(
     deps = [
         "//kb/concept/api",
         "//kb/server",
-        "//test/integration/util:graql-test-util",
+        "//test/common:graql-test-util",
     ],
 )
 
@@ -47,11 +47,11 @@ java_library(
     data = ["//test/integration/graql/reasoner/resources:generic-schema"],
     visibility = ["//test/integration:__subpackages__"],
     deps = [
-        "//dependencies/maven/artifacts/com/google/guava",
+        "@maven//:com_google_guava_guava",
         "//kb/concept/api",
         "//kb/server",
         "//test/integration/graql/reasoner:pattern",
-        "//test/integration/util:graql-test-util",
+        "//test/common:graql-test-util",
         "@graknlabs_graql//java:graql",
     ],
 )
@@ -75,7 +75,7 @@ java_library(
     deps = [
         "//kb/concept/api",
         "//kb/server",
-        "//test/integration/util:graql-test-util",
+        "//test/common:graql-test-util",
     ],
 )
 
@@ -85,10 +85,10 @@ java_library(
     resources = ["//test/integration/graql/reasoner/resources/recursion:nguyen"],
     visibility = ["//test/integration:__subpackages__"],
     deps = [
-        "//dependencies/maven/artifacts/com/google/guava",
+        "@maven//:com_google_guava_guava",
         "//kb/concept/api",
         "//kb/server",
-        "//test/integration/util:graql-test-util",
+        "//test/common:graql-test-util",
     ],
 )
 
@@ -98,10 +98,10 @@ java_library(
     resources = ["//test/integration/graql/reasoner/resources:path-test"],
     visibility = ["//test/integration:__subpackages__"],
     deps = [
-        "//dependencies/maven/artifacts/com/google/guava",
+        "@maven//:com_google_guava_guava",
         "//kb/concept/api",
         "//kb/server",
-        "//test/integration/util:graql-test-util",
+        "//test/common:graql-test-util",
     ],
 )
 
@@ -111,10 +111,10 @@ java_library(
     resources = ["//test/integration/graql/reasoner/resources:path-test"],
     visibility = ["//test/integration:__subpackages__"],
     deps = [
-        "//dependencies/maven/artifacts/com/google/guava",
+        "@maven//:com_google_guava_guava",
         "//kb/concept/api",
         "//kb/server",
-        "//test/integration/util:graql-test-util",
+        "//test/common:graql-test-util",
     ],
 )
 
@@ -127,10 +127,10 @@ java_library(
     resources = ["//test/integration/graql/reasoner/resources:path-test-symmetric"],
     visibility = ["//test/integration:__subpackages__"],
     deps = [
-        "//dependencies/maven/artifacts/com/google/guava",
+        "@maven//:com_google_guava_guava",
         "//kb/concept/api",
         "//kb/server",
-        "//test/integration/util:graql-test-util",
+        "//test/common:graql-test-util",
     ],
 )
 
@@ -142,10 +142,10 @@ java_library(
     resources = ["//test/integration/graql/reasoner/stubs:reasoning-stubs"],
     visibility = ["//test/integration:__subpackages__"],
     deps = [
-        "//dependencies/maven/artifacts/com/google/guava",
+        "@maven//:com_google_guava_guava",
         "//kb/concept/api",
         "//kb/server",
-        "//test/integration/util:graql-test-util",
+        "//test/common:graql-test-util",
     ],
 )
 
@@ -155,10 +155,10 @@ java_library(
     resources = ["//test/integration/graql/reasoner/resources/recursion:tail-recursion"],
     visibility = ["//test/integration:__subpackages__"],
     deps = [
-        "//dependencies/maven/artifacts/com/google/guava",
+        "@maven//:com_google_guava_guava",
         "//kb/concept/api",
         "//kb/server",
-        "//test/integration/util:graql-test-util",
+        "//test/common:graql-test-util",
     ],
 )
 
@@ -170,7 +170,7 @@ java_library(
     deps = [
         "//kb/concept/api",
         "//kb/server",
-        "//test/integration/util:graql-test-util",
+        "//test/common:graql-test-util",
     ],
 )
 
@@ -182,7 +182,7 @@ java_library(
     deps = [
         "//kb/concept/api",
         "//kb/server",
-        "//test/integration/util:graql-test-util",
+        "//test/common:graql-test-util",
     ],
 )
 

@@ -30,8 +30,8 @@ java_library(
         "@graknlabs_common//:common",
 
         # External dependencies from Maven
-        "//dependencies/maven/artifacts/com/google/code/findbugs:jsr305",
-        "//dependencies/maven/artifacts/com/google/guava:guava"
+        "@maven//:com_google_code_findbugs_jsr305",
+        "@maven//:com_google_guava_guava"
     ],
     tags = ["maven_coordinates=io.grakn.core:grakn-concept-api:{pom_version}"],
 )

@@ -62,7 +62,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
-import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
+import static grakn.core.test.common.GraqlTestUtil.loadFromFileAndCommit;
 import static graql.lang.Graql.var;
 import static java.lang.annotation.ElementType.METHOD;
 import static java.util.stream.Collectors.toSet;

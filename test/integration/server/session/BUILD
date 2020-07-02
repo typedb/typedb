@@ -48,11 +48,11 @@ java_test(
         "//server",
         "//test/rule:grakn-test-server",
         "//test/integration/util:concept-downcasting",
-        "//test/integration/util:graql-test-util",
+        "//test/common:graql-test-util",
         "@graknlabs_graql//java:graql",
-        "//dependencies/maven/artifacts/com/google/guava",
-        "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+        "@maven//:com_google_guava_guava",
+        "@maven//:org_apache_tinkerpop_gremlin_core",
+        "@maven//:org_hamcrest_hamcrest_library",
     ],
 )
 
@@ -69,8 +69,8 @@ java_test(
         "//test/rule:grakn-test-server",
         "@graknlabs_common//:common",
         "@graknlabs_graql//java:graql",
-        "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+        "@maven//:org_apache_tinkerpop_gremlin_core",
+        "@maven//:org_hamcrest_hamcrest_library",
     ],
 )
 

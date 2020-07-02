@@ -18,68 +18,40 @@
 package grakn.core.graql.query;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Sets;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concept.answer.Numeric;
 import grakn.core.graql.graph.MovieGraph;
-import grakn.core.kb.concept.api.Attribute;
-import grakn.core.kb.concept.api.Concept;
-import grakn.core.kb.concept.api.ConceptId;
-import grakn.core.kb.concept.api.Entity;
 import grakn.core.kb.concept.api.EntityType;
-import grakn.core.kb.concept.api.Label;
-import grakn.core.kb.concept.api.Relation;
-import grakn.core.kb.concept.api.Role;
-import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.graql.exception.GraqlSemanticException;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
-import grakn.core.kb.server.exception.InvalidKBException;
 import grakn.core.test.rule.GraknTestServer;
 import graql.lang.Graql;
 import graql.lang.exception.GraqlException;
-import graql.lang.pattern.Pattern;
 import graql.lang.property.IsaProperty;
 import graql.lang.query.GraqlInsert;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
-import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
 
-import static grakn.core.util.GraqlTestUtil.assertCollectionsNonTriviallyEqual;
-import static grakn.core.util.GraqlTestUtil.assertExists;
-import static grakn.core.util.GraqlTestUtil.assertNotExists;
+import static grakn.core.test.common.GraqlTestUtil.assertCollectionsNonTriviallyEqual;
+import static grakn.core.test.common.GraqlTestUtil.assertExists;
+import static grakn.core.test.common.GraqlTestUtil.assertNotExists;
 import static graql.lang.Graql.type;
 import static graql.lang.Graql.var;
 import static graql.lang.exception.ErrorMessage.NO_PATTERNS;
-import static java.util.stream.Collectors.toSet;
-import static junit.framework.TestCase.assertTrue;
-import static org.hamcrest.CoreMatchers.allOf;
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.Matchers.arrayContaining;
-import static org.hamcrest.Matchers.arrayContainingInAnyOrder;
-import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.isOneOf;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
 
 @SuppressWarnings({"OptionalGetWithoutIsPresent", "Duplicates"})
 public class GraqlInsertIT {

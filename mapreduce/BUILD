@@ -31,22 +31,22 @@ java_library(
         # External dependencies from @graknlabs
 
         # External dependencies from Maven
-        "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
-        "//dependencies/maven/artifacts/com/google/guava:guava",
-        "//dependencies/maven/artifacts/org/apache/hadoop:hadoop-mapreduce-client-core",
-        "//dependencies/maven/artifacts/org/apache/hadoop:hadoop-common",
-        "//dependencies/maven/artifacts/org/apache/hadoop:hadoop-annotations",
-        "//dependencies/maven/artifacts/org/apache/tinkerpop:hadoop-gremlin",
-        "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
-        "//dependencies/maven/artifacts/org/apache/tinkerpop:tinkergraph-gremlin",
-        "//dependencies/maven/artifacts/commons-configuration:commons-configuration",
-        "//dependencies/maven/artifacts/org/apache/commons:commons-lang3",
-        "//dependencies/maven/artifacts/org/apache/cassandra:cassandra-all",
-        "//dependencies/maven/artifacts/com/datastax/oss:java-driver-core",
+        "@maven//:org_slf4j_slf4j_api",
+        "@maven//:com_google_guava_guava",
+        "@maven//:org_apache_hadoop_hadoop_mapreduce_client_core",
+        "@maven//:org_apache_hadoop_hadoop_common",
+        "@maven//:org_apache_hadoop_hadoop_annotations",
+        "@maven//:org_apache_tinkerpop_hadoop_gremlin",
+        "@maven//:org_apache_tinkerpop_gremlin_core",
+        "@maven//:org_apache_tinkerpop_tinkergraph_gremlin",
+        "@maven//:commons_configuration_commons_configuration",
+        "@maven//:org_apache_commons_commons_lang3",
+        "@maven//:org_apache_cassandra_cassandra_all",
+        "@maven//:com_datastax_oss_java_driver_core",
 
 #        The following 2 dependencies should be removed once GraknInputFormat and InputFormatCQL stop depending on old Thrift trickery
-        "//dependencies/maven/artifacts/org/apache/cassandra:cassandra-thrift",
-        "//dependencies/maven/artifacts/org/apache/thrift:libthrift"
+        "@maven//:org_apache_cassandra_cassandra_thrift",
+        "@maven//:org_apache_thrift_libthrift"
     ],
     tags = ["maven_coordinates=io.grakn.core:grakn-graph-hadoop:{pom_version}"],
 
