@@ -57,9 +57,9 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static grakn.core.util.GraqlTestUtil.assertCollectionsEqual;
-import static grakn.core.util.GraqlTestUtil.assertCollectionsNonTriviallyEqual;
-import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
+import static grakn.core.test.common.GraqlTestUtil.assertCollectionsEqual;
+import static grakn.core.test.common.GraqlTestUtil.assertCollectionsNonTriviallyEqual;
+import static grakn.core.test.common.GraqlTestUtil.loadFromFileAndCommit;
 import static graql.lang.Graql.and;
 import static graql.lang.Graql.neq;
 import static graql.lang.Graql.val;

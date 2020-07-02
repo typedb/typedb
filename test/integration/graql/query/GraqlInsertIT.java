@@ -45,9 +45,9 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 
-import static grakn.core.util.GraqlTestUtil.assertCollectionsNonTriviallyEqual;
-import static grakn.core.util.GraqlTestUtil.assertExists;
-import static grakn.core.util.GraqlTestUtil.assertNotExists;
+import static grakn.core.test.common.GraqlTestUtil.assertCollectionsNonTriviallyEqual;
+import static grakn.core.test.common.GraqlTestUtil.assertExists;
+import static grakn.core.test.common.GraqlTestUtil.assertNotExists;
 import static graql.lang.Graql.type;
 import static graql.lang.Graql.var;
 import static graql.lang.exception.ErrorMessage.NO_PATTERNS;

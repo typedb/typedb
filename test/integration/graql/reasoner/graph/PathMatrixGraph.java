@@ -24,9 +24,9 @@ import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import graql.lang.statement.Label;
 
-import static grakn.core.util.GraqlTestUtil.getInstance;
-import static grakn.core.util.GraqlTestUtil.loadFromFile;
-import static grakn.core.util.GraqlTestUtil.putEntityWithResource;
+import static grakn.core.test.common.GraqlTestUtil.getInstance;
+import static grakn.core.test.common.GraqlTestUtil.loadFromFile;
+import static grakn.core.test.common.GraqlTestUtil.putEntityWithResource;
 
 /**
  * Defines a KB based on test 6.10 from Cao p. 82, but arranged in a matrix instead of a tree.

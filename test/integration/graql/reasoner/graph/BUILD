@@ -26,7 +26,7 @@ java_library(
         "@graknlabs_graql//java:graql",
         "//kb/concept/api",
         "//kb/server",
-        "//test/integration/util:graql-test-util",
+        "//test/common:graql-test-util",
     ],
 )
 
@@ -39,7 +39,7 @@ java_library(
         "@graknlabs_graql//java:graql",
         "//kb/concept/api",
         "//kb/server",
-        "//test/integration/util:graql-test-util",
+        "//test/common:graql-test-util",
     ],
 )
 
@@ -53,7 +53,7 @@ java_library(
         "//kb/concept/api",
         "//kb/server",
         "//test/integration/graql/reasoner:pattern",
-        "//test/integration/util:graql-test-util",
+        "//test/common:graql-test-util",
         "@graknlabs_graql//java:graql",
     ],
 )
@@ -78,7 +78,7 @@ java_library(
         "@graknlabs_graql//java:graql",
         "//kb/concept/api",
         "//kb/server",
-        "//test/integration/util:graql-test-util",
+        "//test/common:graql-test-util",
     ],
 )
 
@@ -92,7 +92,7 @@ java_library(
         "@maven//:com_google_guava_guava",
         "//kb/concept/api",
         "//kb/server",
-        "//test/integration/util:graql-test-util",
+        "//test/common:graql-test-util",
     ],
 )
 
@@ -106,7 +106,7 @@ java_library(
         "@maven//:com_google_guava_guava",
         "//kb/concept/api",
         "//kb/server",
-        "//test/integration/util:graql-test-util",
+        "//test/common:graql-test-util",
     ],
 )
 
@@ -120,7 +120,7 @@ java_library(
         "@maven//:com_google_guava_guava",
         "//kb/concept/api",
         "//kb/server",
-        "//test/integration/util:graql-test-util",
+        "//test/common:graql-test-util",
     ],
 )
 
@@ -137,7 +137,7 @@ java_library(
         "@maven//:com_google_guava_guava",
         "//kb/concept/api",
         "//kb/server",
-        "//test/integration/util:graql-test-util",
+        "//test/common:graql-test-util",
     ],
 )
 
@@ -153,7 +153,7 @@ java_library(
         "@maven//:com_google_guava_guava",
         "//kb/concept/api",
         "//kb/server",
-        "//test/integration/util:graql-test-util",
+        "//test/common:graql-test-util",
     ],
 )
 
@@ -167,7 +167,7 @@ java_library(
         "@maven//:com_google_guava_guava",
         "//kb/concept/api",
         "//kb/server",
-        "//test/integration/util:graql-test-util",
+        "//test/common:graql-test-util",
     ],
 )
 
@@ -180,7 +180,7 @@ java_library(
         "@graknlabs_graql//java:graql",
         "//kb/concept/api",
         "//kb/server",
-        "//test/integration/util:graql-test-util",
+        "//test/common:graql-test-util",
     ],
 )
 
@@ -193,7 +193,7 @@ java_library(
         "@graknlabs_graql//java:graql",
         "//kb/concept/api",
         "//kb/server",
-        "//test/integration/util:graql-test-util",
+        "//test/common:graql-test-util",
     ],
 )
 

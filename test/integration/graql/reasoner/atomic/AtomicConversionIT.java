@@ -20,11 +20,9 @@ package grakn.core.graql.reasoner.atomic;
 import com.google.common.collect.Sets;
 import grakn.core.common.config.Config;
 import grakn.core.graql.reasoner.atom.Atom;
-import grakn.core.graql.reasoner.atom.binary.AttributeAtom;
 import grakn.core.graql.reasoner.atom.binary.IsaAtom;
 import grakn.core.graql.reasoner.atom.predicate.Predicate;
 import grakn.core.graql.reasoner.query.ReasonerQueryFactory;
-import grakn.core.kb.graql.reasoner.ReasonerException;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import grakn.core.test.rule.GraknTestStorage;
@@ -40,7 +38,7 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
+import static grakn.core.test.common.GraqlTestUtil.loadFromFileAndCommit;
 import static java.util.stream.Collectors.toSet;
 import static junit.framework.TestCase.assertEquals;
 

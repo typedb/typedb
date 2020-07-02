@@ -38,8 +38,8 @@ import org.junit.rules.ExpectedException;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static grakn.core.util.GraqlTestUtil.assertCollectionsNonTriviallyEqual;
-import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
+import static grakn.core.test.common.GraqlTestUtil.assertCollectionsNonTriviallyEqual;
+import static grakn.core.test.common.GraqlTestUtil.loadFromFileAndCommit;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 

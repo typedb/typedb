@@ -18,14 +18,10 @@
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 
 def graknlabs_dependencies():
-    # native.local_repository(
-    #     name = "graknlabs_dependencies",
-    #     path = "/Users/lolski/grakn.ai/graknlabs/dependencies"
-    # )
     git_repository(
         name = "graknlabs_dependencies",
         remote = "https://github.com/graknlabs/dependencies",
-        commit = "d7b53dd93298933361b5a30e40d2a2dc1e2306b7",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_dependencies
+        commit = "61fe8156b640196b4673fdf4f84075655bc0bc61",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_dependencies
     )
 
 def graknlabs_common():
@@ -74,7 +70,7 @@ def graknlabs_verification():
     git_repository(
         name = "graknlabs_verification",
         remote = "https://github.com/graknlabs/verification",
-        commit = "8ceda20d70bb5f1eab8d8d9daf94bbff6e8cc128",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_verification
+        commit = "34b5c64efe57919d170b212d1e231e11cf0e84e8",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_verification
     )
 
 def graknlabs_grabl_tracing():

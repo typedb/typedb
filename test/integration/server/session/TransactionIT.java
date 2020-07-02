@@ -44,7 +44,7 @@ import grakn.core.test.rule.GraknTestStorage;
 import grakn.core.test.rule.SessionUtil;
 import grakn.core.test.rule.TestTransactionProvider;
 import grakn.core.util.ConceptDowncasting;
-import grakn.core.util.GraqlTestUtil;
+import grakn.core.test.common.GraqlTestUtil;
 import graql.lang.Graql;
 import graql.lang.query.GraqlDefine;
 import graql.lang.query.GraqlGet;
@@ -74,7 +74,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import static grakn.core.util.GraqlTestUtil.assertCollectionsNonTriviallyEqual;
+import static grakn.core.test.common.GraqlTestUtil.assertCollectionsNonTriviallyEqual;
 import static graql.lang.Graql.define;
 import static graql.lang.Graql.insert;
 import static graql.lang.Graql.type;

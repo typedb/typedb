@@ -184,7 +184,7 @@ public class DisjunctiveQuery extends ResolvableQuery {
 
     @Override
     public Set<Variable> getVarNames() {
-        return bindingVars;
+        return new HashSet<>(bindingVars);
     }
 
     @Override

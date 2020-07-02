@@ -26,8 +26,8 @@ import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import graql.lang.statement.Label;
 
-import static grakn.core.util.GraqlTestUtil.loadFromFile;
-import static grakn.core.util.GraqlTestUtil.putEntityWithResource;
+import static grakn.core.test.common.GraqlTestUtil.loadFromFile;
+import static grakn.core.test.common.GraqlTestUtil.putEntityWithResource;
 
 @SuppressWarnings("CheckReturnValue")
 public class TransitivityChainGraph {

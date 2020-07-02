@@ -39,7 +39,7 @@ commands:
     steps:
       - run:
           command: bazel run @graknlabs_dependencies//tool/bazelrun:rbe -- << parameters.command >>
-          no_output_timeout: 60m
+          no_output_timeout: 120m
 
 jobs:
   build:
@@ -51,6 +51,11 @@ jobs:
       - checkout
       - run-bazel:
           command: bazel build //...
+      - run:
+          name: Verify dependencies/maven/snapshot.json
+          command: |
+            dependencies/maven/update.sh
+            git diff --exit-code dependencies/maven/artifacts.snapshot
       - run:
           command: bazel run @graknlabs_dependencies//tool/unuseddeps:unused-deps -- list
           no_output_timeout: 30m
@@ -199,6 +204,26 @@ jobs:
           command: bazel test //test/behaviour/graql/explanation/language:test --test_output=errors
       - run-bazel:
           command: bazel test //test/behaviour/graql/explanation/reasoner:test --test_output=errors
+
+  test-behaviour-resolution-reasoner:
+    machine:
+      image: ubuntu-1604:201903-01
+    working_directory: ~/grakn
+    steps:
+      - install-bazel-linux
+      - checkout
+      - run-bazel:
+          command: bazel test //test/behaviour/resolution/reasoner:test --test_output=errors
+
+  test-resolution-framework:
+    machine:
+      image: ubuntu-1604:201903-01
+    working_directory: ~/grakn
+    steps:
+      - install-bazel-linux
+      - checkout
+      - run-bazel:
+          command: bazel test //test/behaviour/resolution/framework/... --test_output=errors
 
   # integration tests
   test-integration:
@@ -612,6 +637,14 @@ workflows:
           filters:
             branches:
               ignore: grakn-release-branch
+      - test-behaviour-resolution-reasoner:
+          filters:
+            branches:
+              ignore: grakn-release-branch
+      - test-resolution-framework:
+          filters:
+            branches:
+              ignore: grakn-release-branch
       - test-integration:
           filters:
             branches:
@@ -653,6 +686,8 @@ workflows:
             - test-behaviour-graql-match
             - test-behaviour-graql-undefine
             - test-behaviour-graql-explanation
+            - test-behaviour-resolution-reasoner
+            - test-resolution-framework
             - test-integration
             - test-integration-reasoner
             - test-integration-analytics
@@ -679,6 +714,8 @@ workflows:
             - test-behaviour-graql-match
             - test-behaviour-graql-undefine
             - test-behaviour-graql-explanation
+            - test-behaviour-resolution-reasoner
+            - test-resolution-framework
             - test-integration
             - test-integration-reasoner
             - test-integration-analytics
@@ -705,6 +742,8 @@ workflows:
             - test-behaviour-graql-match
             - test-behaviour-graql-undefine
             - test-behaviour-graql-explanation
+            - test-behaviour-resolution-reasoner
+            - test-resolution-framework
             - test-integration
             - test-integration-reasoner
             - test-integration-analytics
@@ -731,6 +770,8 @@ workflows:
             - test-behaviour-graql-match
             - test-behaviour-graql-undefine
             - test-behaviour-graql-explanation
+            - test-behaviour-resolution-reasoner
+            - test-resolution-framework
             - test-integration
             - test-integration-reasoner
             - test-integration-analytics
@@ -757,6 +798,8 @@ workflows:
             - test-behaviour-graql-match
             - test-behaviour-graql-undefine
             - test-behaviour-graql-explanation
+            - test-behaviour-resolution-reasoner
+            - test-resolution-framework
             - test-integration
             - test-integration-reasoner
             - test-integration-analytics

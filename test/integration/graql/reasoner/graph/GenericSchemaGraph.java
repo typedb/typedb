@@ -39,7 +39,7 @@ import graql.lang.statement.Variable;
 import java.util.ArrayList;
 import java.util.Iterator;
 
-import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
+import static grakn.core.test.common.GraqlTestUtil.loadFromFileAndCommit;
 import static java.util.stream.Collectors.toSet;
 
 public class GenericSchemaGraph {

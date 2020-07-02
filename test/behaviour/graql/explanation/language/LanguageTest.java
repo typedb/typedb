@@ -42,7 +42,7 @@ public class LanguageTest {
     //
     // 1) Go to 'Run'
     // 2) Select 'Edit Configurations...'
-    // 3) Select 'Bazel test ReasonerTest'
+    // 3) Select 'Bazel test LanguageTest'
     //
     // 4) Ensure 'Target Expression' is set correctly:
     //    a) Use '//<this>/<package>/<name>:test' to test against

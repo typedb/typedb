@@ -49,7 +49,7 @@ java_test(
         "//server",
         "//test/rule:grakn-test-server",
         "//test/integration/util:concept-downcasting",
-        "//test/integration/util:graql-test-util",
+        "//test/common:graql-test-util",
         "@graknlabs_graql//java:graql",
         "@maven//:com_google_guava_guava",
         "@maven//:org_apache_tinkerpop_gremlin_core",

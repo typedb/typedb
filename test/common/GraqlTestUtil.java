@@ -15,7 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.util;
+package grakn.core.test.common;
 
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.EntityType;

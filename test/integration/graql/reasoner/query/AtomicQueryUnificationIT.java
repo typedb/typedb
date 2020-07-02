@@ -51,8 +51,8 @@ import java.util.stream.Collectors;
 
 import static grakn.core.graql.reasoner.pattern.QueryPattern.subListExcludingElements;
 import static grakn.core.graql.reasoner.query.QueryTestUtil.conjunction;
-import static grakn.core.util.GraqlTestUtil.assertCollectionsNonTriviallyEqual;
-import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
+import static grakn.core.test.common.GraqlTestUtil.assertCollectionsNonTriviallyEqual;
+import static grakn.core.test.common.GraqlTestUtil.loadFromFileAndCommit;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
