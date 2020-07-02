@@ -318,9 +318,7 @@ public class CompositeQuery extends ResolvableQuery {
 
     @Override
     public Set<Variable> getVarNames() {
-        Set<Variable> varNames = getConjunctiveQuery().getVarNames();
-        getComplementQueries().stream().flatMap(q -> q.getVarNames().stream()).forEach(varNames::add);
-        return varNames;
+        return getConjunctiveQuery().getVarNames();
     }
 
     @Override

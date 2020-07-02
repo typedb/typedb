@@ -24,9 +24,7 @@ java_test(
     classpath_resources = ["//test/resources:logback-test"],
     test_class = "grakn.core.graql.query.GraqlGetIT",
     deps = [
-        "//concept/answer",
         "@maven//:org_hamcrest_hamcrest_library",
-        "//kb/concept/api",
         "//kb/graql/exception",
         "//kb/server",
         "//test/integration/graql/graph:movie-graph",
@@ -42,15 +40,11 @@ java_test(
     classpath_resources = ["//test/resources:logback-test"],
     test_class = "grakn.core.graql.query.GraqlDefineIT",
     deps = [
-        "//common",
-        "//concept/answer",
         "@maven//:org_hamcrest_hamcrest_library",
-        "//kb/concept/api",
         "//kb/graql/exception",
         "//kb/server",
         "//test/integration/graql/graph:movie-graph",
         "//test/rule:grakn-test-server",
-        "//test/integration/util:graql-test-util",
         "@graknlabs_graql//java:graql",
     ],
 )
@@ -64,13 +58,9 @@ java_test(
     ],
     test_class = "grakn.core.graql.query.GraqlDeleteIT",
     deps = [
-        "//concept/answer",
-        "//kb/concept/api",
-        "//kb/graql/exception",
         "//kb/server",
         "//test/integration/graql/graph:movie-graph",
         "//test/rule:grakn-test-server",
-        "//test/integration/util:graql-test-util",
         "@graknlabs_graql//java:graql",
     ],
 )
@@ -88,9 +78,9 @@ java_test(
         "//kb/concept/api",
         "//kb/graql/exception",
         "//kb/server",
+        "//test/common:graql-test-util",
         "//test/integration/graql/graph:movie-graph",
         "//test/rule:grakn-test-server",
-        "//test/integration/util:graql-test-util",
         "@graknlabs_graql//java:graql",
     ],
 )
@@ -107,10 +97,8 @@ java_test(
         "//kb/concept/api",
         "//kb/graql/exception",
         "//kb/server",
-        "//common",
         "//test/integration/graql/graph:movie-graph",
         "//test/rule:grakn-test-server",
-        "//test/integration/util:graql-test-util",
         "@graknlabs_graql//java:graql",
     ],
 )
@@ -140,9 +128,9 @@ java_test(
     deps = [
         "//kb/graql/exception",
         "//kb/server",
+        "//test/common:graql-test-util",
         "//test/integration/graql/graph:movie-graph",
         "//test/rule:grakn-test-server",
-        "//test/integration/util:graql-test-util",
         "@graknlabs_graql//java:graql",
     ],
 )
