@@ -20,11 +20,13 @@ package grakn.core.graql.executor.property;
 
 import com.google.common.collect.ImmutableSet;
 import grakn.core.graql.planning.gremlin.sets.EquivalentFragmentSets;
+import grakn.core.kb.graql.executor.ConceptBuilder;
 import grakn.core.kb.graql.executor.WriteExecutor;
 import grakn.core.kb.graql.executor.property.PropertyExecutor;
 import grakn.core.kb.graql.planning.gremlin.EquivalentFragmentSet;
 import graql.lang.property.TypeProperty;
 import graql.lang.property.VarProperty;
+import graql.lang.statement.Label;
 import graql.lang.statement.Variable;
 
 import java.util.Set;
@@ -63,7 +65,10 @@ public class TypeExecutor  implements PropertyExecutor.Referrable {
 
         @Override
         public void execute(WriteExecutor executor) {
-            executor.getBuilder(var).label(property.label());
+            ConceptBuilder builder = executor.getBuilder(var);
+            Label label = property.label();
+            builder.label(label.name());
+            builder.scope(label.scope());
         }
     }
 }

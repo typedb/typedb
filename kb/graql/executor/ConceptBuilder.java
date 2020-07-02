@@ -38,7 +38,9 @@ public interface ConceptBuilder {
 
     ConceptBuilder isRule();
 
-    ConceptBuilder label(Label label);
+    ConceptBuilder label(String label);
+
+    ConceptBuilder scope(String scope);
 
     ConceptBuilder id(ConceptId id);
 

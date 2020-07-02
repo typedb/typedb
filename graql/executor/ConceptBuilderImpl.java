@@ -133,8 +133,17 @@ public class ConceptBuilderImpl implements ConceptBuilder {
     }
 
     @Override
-    public ConceptBuilder label(Label label) {
+    public ConceptBuilder label(String label) {
         return set(LABEL, label);
+    }
+
+    @Override
+    public ConceptBuilder scope(String scope) {
+        if (scope == null) {
+            // it is valid to set a null scope, in this case we do a noop
+            return this;
+        }
+        return set(SCOPE, scope);
     }
 
     @Override
@@ -191,10 +200,12 @@ public class ConceptBuilderImpl implements ConceptBuilder {
             concept = conceptManager.getConcept(use(ID));
 
             if (has(LABEL)) {
-                concept.asSchemaConcept().label(use(LABEL));
+                Label label = Label.of(use(LABEL), useOrNull(SCOPE));
+                concept.asSchemaConcept().label(label);
             }
         } else if (has(LABEL)) {
-            concept = conceptManager.getSchemaConcept(use(LABEL));
+            Label label = Label.of(use(LABEL), useOrNull(SCOPE));
+            concept = conceptManager.getSchemaConcept(label);
         }
 
         if (concept != null) {
@@ -218,7 +229,7 @@ public class ConceptBuilderImpl implements ConceptBuilder {
         if (has(IS_ROLE)) {
             use(IS_ROLE);
 
-            Label label = use(LABEL);
+            Label label = Label.of(use(LABEL), useOrNull(SCOPE));
             SchemaConcept schemaConcept = conceptManager.getSchemaConcept(label);
             Role role;
             if (schemaConcept != null && !schemaConcept.isRole()) {
@@ -240,7 +251,7 @@ public class ConceptBuilderImpl implements ConceptBuilder {
             use(IS_RULE);
 
             // PUT behavior on rule
-            Label label = use(LABEL);
+            Label label = Label.of(use(LABEL), useOrNull(SCOPE));
             Pattern when = use(WHEN);
             Pattern then = use(THEN);
             Rule rule = putSchemaConcept(label, () -> conceptManager.createRule(label, when, then, conceptManager.getMetaRule()), Rule.class);
@@ -272,7 +283,8 @@ public class ConceptBuilderImpl implements ConceptBuilder {
 
     private static final BuilderParam<Type> TYPE = BuilderParam.of(Graql.Token.Property.ISA);
     private static final BuilderParam<SchemaConcept> SUPER_CONCEPT = BuilderParam.of(Graql.Token.Property.SUB);
-    private static final BuilderParam<Label> LABEL = BuilderParam.of(Graql.Token.Property.TYPE);
+    private static final BuilderParam<String> LABEL = BuilderParam.of(Graql.Token.Property.TYPE);
+    private static final BuilderParam<String> SCOPE = BuilderParam.of("scope");
     private static final BuilderParam<ConceptId> ID = BuilderParam.of(Graql.Token.Property.ID);
     private static final BuilderParam<Object> VALUE = BuilderParam.of(Graql.Token.Property.VALUE);
     private static final BuilderParam<AttributeType.ValueType<?>> VALUE_TYPE = BuilderParam.of(Graql.Token.Property.VALUE_TYPE);
@@ -281,27 +293,11 @@ public class ConceptBuilderImpl implements ConceptBuilder {
     private static final BuilderParam<Unit> IS_ROLE = BuilderParam.of("role"); // TODO: replace this with a value registered in an enum
     private static final BuilderParam<Unit> IS_RULE = BuilderParam.of("rule"); // TODO: replace this with a value registered in an enum
 
+
     private ConceptBuilderImpl(ConceptManager conceptManager, WriteExecutor writeExecutor, Variable var) {
         this.conceptManager = conceptManager;
         this.writeExecutor = writeExecutor;
         this.var = var;
-    }
-
-    private <T> T useOrDefault(BuilderParam<T> param, @Nullable T defaultValue) {
-        usedParams.add(param);
-
-        // This is safe, assuming we only add to the map with the `set` method
-        //noinspection unchecked
-        T value = (T) preProvidedParams.get(param);
-
-        if (value == null) value = defaultValue;
-
-        if (value == null) {
-            Statement owner = writeExecutor.printableRepresentation(var);
-            throw GraqlSemanticException.insertNoExpectedProperty(param.name(), owner);
-        }
-
-        return value;
     }
 
     /**
@@ -312,7 +308,44 @@ public class ConceptBuilderImpl implements ConceptBuilder {
      * @throws GraqlSemanticException if the parameter is not present
      */
     private <T> T use(BuilderParam<T> param) {
-        return useOrDefault(param, null);
+        usedParams.add(param);
+
+        // This is safe, assuming we only add to the map with the `set` method
+        //noinspection unchecked
+        T value = (T) preProvidedParams.get(param);
+
+        if (value == null) {
+            Statement owner = writeExecutor.printableRepresentation(var);
+            throw GraqlSemanticException.insertNoExpectedProperty(param.name(), owner);
+        }
+
+        return value;
+    }
+
+    private <T> T useOrNull(BuilderParam<T> param) {
+        usedParams.add(param);
+        // This is safe, assuming we only add to the map with the `set` method
+        //noinspection unchecked
+        T value = (T) preProvidedParams.get(param);
+        return value;
+    }
+
+    private <T> T useOrDefault(BuilderParam<T> param, T defaultValue) {
+        usedParams.add(param);
+
+        // This is safe, assuming we only add to the map with the `set` method
+        //noinspection unchecked
+        T value = (T) preProvidedParams.get(param);
+
+        if (value == null) value = defaultValue;
+
+        // we allow the value to be null if the default allows it to be
+        if (value == null) {
+            Statement owner = writeExecutor.printableRepresentation(var);
+            throw GraqlSemanticException.insertNoExpectedProperty(param.name(), owner);
+        }
+
+        return value;
     }
 
     private boolean has(BuilderParam<?> param) {
@@ -337,7 +370,8 @@ public class ConceptBuilderImpl implements ConceptBuilder {
     private void validate(Concept concept) {
         validateParam(concept, TYPE, Thing.class, Thing::type);
         validateParam(concept, SUPER_CONCEPT, SchemaConcept.class, SchemaConcept::sup);
-        validateParam(concept, LABEL, SchemaConcept.class, SchemaConcept::label);
+        validateParam(concept, LABEL, SchemaConcept.class, (sc) -> sc.label().name());
+        validateParam(concept, SCOPE, SchemaConcept.class, (sc) -> sc.label().scope());
         validateParam(concept, ID, Concept.class, Concept::id);
         validateParam(concept, VALUE, Attribute.class, Attribute::value);
         validateParam(concept, VALUE_TYPE, AttributeType.class, AttributeType::valueType);
@@ -382,7 +416,7 @@ public class ConceptBuilderImpl implements ConceptBuilder {
 
     private SchemaConcept putSchemaConcept() {
         SchemaConcept superConcept = use(SUPER_CONCEPT);
-        Label label = use(LABEL);
+        Label label = Label.of(use(LABEL), useOrNull(SCOPE));
 
         SchemaConcept concept;
 

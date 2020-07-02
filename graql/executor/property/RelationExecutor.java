@@ -25,6 +25,7 @@ import grakn.core.kb.concept.api.Relation;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.graql.exception.GraqlSemanticException;
+import grakn.core.kb.graql.executor.ConceptBuilder;
 import grakn.core.kb.graql.executor.WriteExecutor;
 import grakn.core.kb.graql.executor.property.PropertyExecutor;
 import grakn.core.kb.graql.planning.gremlin.EquivalentFragmentSet;
@@ -131,6 +132,14 @@ public class RelationExecutor implements PropertyExecutor.Insertable, PropertyEx
         @Override
         public void execute(WriteExecutor executor) {
             Relation relation = executor.getConcept(var).asRelation();
+            // build concepts using properties
+            property.relationPlayers().forEach(relationPlayer -> {
+                Variable roleVar = getRoleVar(relationPlayer);
+                ConceptBuilder roleBuilder = executor.getBuilder(roleVar);
+                roleBuilder.scope(relation.type().label().name());
+                relationPlayer.getRole().ifPresent((stmt) -> stmt.getType().ifPresent( (label) -> roleBuilder.label(label.name())));
+            });
+            // assign the new facts
             property.relationPlayers().forEach(relationPlayer -> {
                 Variable roleVar = getRoleVar(relationPlayer);
                 Role role = executor.getConcept(roleVar).asRole();
@@ -239,7 +248,8 @@ public class RelationExecutor implements PropertyExecutor.Insertable, PropertyEx
                 Statement roleStatement = relationPlayer.getRole().get();
                 Variable roleVar = roleStatement.var();
                 if (roleStatement.getType().isPresent()) {
-                    executor.getBuilder(roleVar).label(roleStatement.getType().get());
+                    executor.getBuilder(roleVar).label(roleStatement.getType().get().name());
+                    executor.getBuilder(roleVar).scope(roleStatement.getType().get().scope());
                 }
                 return executor.getConcept(roleVar).asRole();
             }
