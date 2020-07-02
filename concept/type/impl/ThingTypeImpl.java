@@ -34,12 +34,11 @@ import hypergraph.graph.vertex.TypeVertex;
 
 import javax.annotation.Nullable;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static hypergraph.common.exception.Error.TypeWrite.INVALID_KEY_ATTRIBUTE;
+import static hypergraph.common.exception.Error.TypeWrite.INVALID_KEY_VALUE_TYPE;
 import static hypergraph.common.exception.Error.TypeWrite.INVALID_ROOT_TYPE_MUTATION;
 import static hypergraph.common.iterator.Iterators.apply;
 import static hypergraph.common.iterator.Iterators.filter;
@@ -67,10 +66,10 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
     private <T extends Type> void override(Schema.Edge.Type schema, T type, T overriddenType,
                                            Stream<? extends Type> overridable, Stream<? extends Type> notOverridable) {
-        if (notOverridable.anyMatch(t -> t.equals(overriddenType)) || overridable.noneMatch(t -> t.equals(overriddenType))) {
-            throw new HypergraphException("Invalid Type Overriding: " + overriddenType.label() + " cannot be overridden");
-        } else if (type.sups().noneMatch(t -> t.equals(overriddenType))) {
-            throw new HypergraphException("Invalid Type Overriding: " + overriddenType.label() + " is not a supertype");
+        if (type.sups().noneMatch(t -> t.equals(overriddenType))) {
+            throw new HypergraphException(Error.TypeWrite.INVALID_OVERRIDE_NOT_SUPERTYPE.format(type.label(), overriddenType.label()));
+        } else if (notOverridable.anyMatch(t -> t.equals(overriddenType)) || overridable.noneMatch(t -> t.equals(overriddenType))) {
+            throw new HypergraphException(Error.TypeWrite.INVALID_OVERRIDE_NOT_AVAILABLE.format(type.label(), overriddenType.label()));
         }
 
         vertex.outs().edge(schema, ((TypeImpl) type).vertex).overridden(((TypeImpl) overriddenType).vertex);
@@ -80,8 +79,8 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     public void key(AttributeType attributeType) {
         AttributeTypeImpl attributeTypeImpl = (AttributeTypeImpl) attributeType;
         if (!attributeType.isKeyable()) {
-            throw new HypergraphException(INVALID_KEY_ATTRIBUTE.format(attributeTypeImpl.label(), attributeTypeImpl.valueType().getSimpleName()));
-        } else if (filter(vertex.outs().edge(Schema.Edge.Type.HAS).to(), v -> v.equals(attributeTypeImpl.vertex)).hasNext()) {
+            throw new HypergraphException(INVALID_KEY_VALUE_TYPE.format(attributeTypeImpl.label(), attributeTypeImpl.valueType().getSimpleName()));
+        } else if (vertex.outs().edge(Schema.Edge.Type.HAS, attributeTypeImpl.vertex) != null) {
             throw new HypergraphException("Invalid Key Assignment: " + attributeTypeImpl.label() + " is already used as an attribute");
         } else if (sups().filter(s -> !s.equals(this)).flatMap(ThingType::attributes).anyMatch(a -> a.equals(attributeTypeImpl))) {
             // TODO: should this be relaxed to just .flatMap(ThingType::keys) ?
@@ -94,9 +93,9 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     @Override
     public void key(AttributeType attributeType, AttributeType overriddenType) {
         this.key(attributeType);
-        Stream<AttributeTypeImpl> overridable = sup().attributes();
-        Stream<AttributeTypeImpl> notOverridable = declaredAttributes();
-        override(Schema.Edge.Type.KEY, attributeType, overriddenType, overridable, notOverridable);
+        override(Schema.Edge.Type.KEY, attributeType, overriddenType,
+                 sup().attributes(attributeType.valueType()),
+                 declaredAttributes());
     }
 
     @Override
@@ -111,16 +110,13 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
     @Override
     public Stream<AttributeTypeImpl> keys() {
-        Iterator<AttributeTypeImpl> keys = apply(vertex.outs().edge(Schema.Edge.Type.KEY).to(), AttributeTypeImpl::of);
+        Stream<AttributeTypeImpl> keys = stream(apply(vertex.outs().edge(Schema.Edge.Type.KEY).to(), AttributeTypeImpl::of));
         if (isRoot()) {
-            return stream(keys);
+            return keys;
         } else {
-            Set<AttributeTypeImpl> direct = new HashSet<>(), overridden = new HashSet<>();
-            keys.forEachRemaining(direct::add);
-            filter(vertex.outs().edge(Schema.Edge.Type.KEY).overridden(), Objects::nonNull)
-                    .apply(AttributeTypeImpl::of)
-                    .forEachRemaining(overridden::add);
-            return concat(direct.stream(), sup().keys().filter(key -> !overridden.contains(key)));
+            Set<TypeVertex> overridden = new HashSet<>();
+            filter(vertex.outs().edge(Schema.Edge.Type.KEY).overridden(), Objects::nonNull).forEachRemaining(overridden::add);
+            return concat(keys, sup().keys().filter(key -> !overridden.contains(key.vertex)));
         }
     }
 
@@ -139,9 +135,9 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     @Override
     public void has(AttributeType attributeType, AttributeType overriddenType) {
         this.has(attributeType);
-        Stream<AttributeTypeImpl> overridable = ThingTypeImpl.this.sup().attributes(attributeType.valueType());
-        Stream<AttributeTypeImpl> notOverridable = concat(ThingTypeImpl.this.sup().keys(), ThingTypeImpl.this.declaredAttributes());
-        override(Schema.Edge.Type.HAS, attributeType, overriddenType, overridable, notOverridable);
+        override(Schema.Edge.Type.HAS, attributeType, overriddenType,
+                 sup().attributes(attributeType.valueType()),
+                 concat(sup().keys(), declaredAttributes()));
     }
 
     @Override
@@ -163,20 +159,14 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
     @Override
     public Stream<AttributeTypeImpl> attributes() {
-        Iterator<AttributeTypeImpl> attributes = link(
-                vertex.outs().edge(Schema.Edge.Type.KEY).to(),
-                vertex.outs().edge(Schema.Edge.Type.HAS).to()
-        ).apply(AttributeTypeImpl::of);
-
         if (isRoot()) {
-            return stream(attributes);
+            return declaredAttributes();
         } else {
-            Set<AttributeTypeImpl> direct = new HashSet<>(), overridden = new HashSet<>();
-            attributes.forEachRemaining(direct::add);
+            Set<TypeVertex> overridden = new HashSet<>();
             link(vertex.outs().edge(Schema.Edge.Type.KEY).overridden(),
                  vertex.outs().edge(Schema.Edge.Type.HAS).overridden()
-            ).filter(Objects::nonNull).apply(AttributeTypeImpl::of).forEachRemaining(overridden::add);
-            return concat(direct.stream(), sup().attributes().filter(att -> !overridden.contains(att)));
+            ).filter(Objects::nonNull).forEachRemaining(overridden::add);
+            return concat(declaredAttributes(), sup().attributes().filter(att -> !overridden.contains(att.vertex)));
         }
     }
 
@@ -191,18 +181,13 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
     @Override
     public void plays(RoleType roleType, RoleType overriddenType) {
-        RoleTypeImpl roleTypeImpl = (RoleTypeImpl) roleType;
-        RoleTypeImpl overriddenTypeImpl = (RoleTypeImpl) overriddenType;
-        this.plays(roleTypeImpl);
-        Stream<RoleTypeImpl> overridable = this.sup().plays();
-        Stream<RoleTypeImpl> notOverridable = this.declaredPlays();
-        override(Schema.Edge.Type.PLAYS, roleTypeImpl, overriddenTypeImpl, overridable, notOverridable);
+        plays(roleType);
+        override(Schema.Edge.Type.PLAYS, roleType, overriddenType, sup().plays(), declaredPlays());
     }
 
     @Override
     public void unplay(RoleType roleType) {
-        RoleTypeImpl roleTypeImpl = (RoleTypeImpl) roleType;
-        vertex.outs().edge(Schema.Edge.Type.PLAYS, roleTypeImpl.vertex).delete();
+        vertex.outs().edge(Schema.Edge.Type.PLAYS, ((RoleTypeImpl) roleType).vertex).delete();
     }
 
     private Stream<RoleTypeImpl> declaredPlays() {
@@ -211,15 +196,13 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
     @Override
     public Stream<RoleTypeImpl> plays() {
-        Iterator<RoleTypeImpl> roles = apply(vertex.outs().edge(Schema.Edge.Type.PLAYS).to(), RoleTypeImpl::of);
+        Stream<RoleTypeImpl> declared = stream(apply(vertex.outs().edge(Schema.Edge.Type.PLAYS).to(), RoleTypeImpl::of));
         if (isRoot()) {
-            return stream(roles);
+            return declared;
         } else {
-            Set<RoleTypeImpl> direct = new HashSet<>(), overridden = new HashSet<>();
-            roles.forEachRemaining(direct::add);
-            filter(vertex.outs().edge(Schema.Edge.Type.PLAYS).overridden(), Objects::nonNull)
-                    .apply(RoleTypeImpl::of).forEachRemaining(overridden::add);
-            return concat(direct.stream(), sup().plays().filter(att -> !overridden.contains(att)));
+            Set<TypeVertex> overridden = new HashSet<>();
+            filter(vertex.outs().edge(Schema.Edge.Type.PLAYS).overridden(), Objects::nonNull).forEachRemaining(overridden::add);
+            return concat(declared, sup().plays().filter(att -> !overridden.contains(att.vertex)));
         }
     }
 

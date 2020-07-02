@@ -211,7 +211,7 @@ public abstract class Error<TYPE extends Error<TYPE>> {
                 new TypeWrite(2, "The Java class '%s' is not a supported value type.");
         public static final TypeWrite INVALID_ATTRIBUTE_SUPERTYPE_VALUE_TYPE =
                 new TypeWrite(3, "AttributeType '%s' has value type '%s', and cannot have supertype '%s' with value type '%s'.");
-        public static final TypeWrite INVALID_KEY_ATTRIBUTE =
+        public static final TypeWrite INVALID_KEY_VALUE_TYPE =
                 new TypeWrite(4, "AttributeType '%s' has value type '%s', and cannot and cannot be used as a type key.");
         public static final TypeWrite INVALID_NON_ABSTRACT_SUPERTYPE =
                 new TypeWrite(5, "The type '%s' is abstract, but has a supertype '%s' which is not abstract.");
@@ -219,6 +219,10 @@ public abstract class Error<TYPE extends Error<TYPE>> {
                 new TypeWrite(6, "RelationType '%s' does not relate any role type");
         public static final TypeWrite ILLEGAL_SUBTYPING_SELF =
                 new TypeWrite(7, "The type '%s' cannot be a subtype of itself.");
+        public static final TypeWrite INVALID_OVERRIDE_NOT_SUPERTYPE =
+                new TypeWrite(8, "The type '%s' cannot override '%s' as it is not a supertype");
+        public static final TypeWrite INVALID_OVERRIDE_NOT_AVAILABLE =
+                new TypeWrite(9, "The Type '%s' cannot override '%s' as it is either already declared, or not inherited");
 
         private static final String codePrefix = "TYW";
         private static final String descriptionPrefix = "Invalid Type Definition";
