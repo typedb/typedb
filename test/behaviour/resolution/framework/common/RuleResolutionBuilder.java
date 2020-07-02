@@ -139,7 +139,7 @@ public class RuleResolutionBuilder {
 
                     StatementInstance propStatement = Graql.var(nextVar).isa("relation-property").rel("rel", statementVar).rel("roleplayer", Graql.var(rolePlayer.getPlayer().var()));
                     if(role.isPresent()) {
-                        String roleLabel = ((TypeProperty) getOnlyElement(role.get().properties())).name();
+                        String roleLabel = ((TypeProperty) getOnlyElement(role.get().properties())).label().scopedName();
                         propStatement = propStatement.has("role-label", roleLabel);
                     }
                     props.put(nextVar, propStatement);
