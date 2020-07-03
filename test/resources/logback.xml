@@ -44,13 +44,5 @@
         <appender-ref ref="STDOUT"/>
     </logger>
 
-<!--    <logger name="org.eclipse.jetty" level="ERROR">-->
-<!--        <appender-ref ref="MAIN"/>-->
-<!--    </logger>-->
-
-<!--    &lt;!&ndash;Only show ERROR logs from apache classes&ndash;&gt;-->
-<!--    <logger name="org.apache" level="ERROR">-->
-<!--        <appender-ref ref="MAIN"/>-->
-<!--    </logger>-->
 
 </configuration>
