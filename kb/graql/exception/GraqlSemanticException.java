@@ -54,11 +54,11 @@ public class GraqlSemanticException extends GraknException {
     private final String NAME = "GraqlSemanticException";
 
     private GraqlSemanticException(String error) {
-        super(error, null, false, false);
+        super(error, null, false);
     }
 
     private GraqlSemanticException(String error, Exception cause) {
-        super(error, cause, false, false);
+        super(error, cause, false);
     }
 
     @Override
