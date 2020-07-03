@@ -23,7 +23,9 @@ import hypergraph.common.exception.Error;
 import hypergraph.common.exception.HypergraphException;
 import hypergraph.concept.thing.Relation;
 import hypergraph.concept.thing.impl.RelationImpl;
+import hypergraph.concept.type.AttributeType;
 import hypergraph.concept.type.RelationType;
+import hypergraph.concept.type.RoleType;
 import hypergraph.graph.TypeGraph;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.vertex.ThingVertex;
@@ -229,12 +231,43 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
         public boolean isRoot() { return true; }
 
         @Override
-        public void label(String label) { throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION); }
+        public void label(String label) {
+            throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
+        }
 
         @Override
-        public void isAbstract(boolean isAbstract) { throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION); }
+        public void isAbstract(boolean isAbstract) {
+            throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
+        }
 
         @Override
-        public void sup(RelationType superType) { throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION); }
+        public void sup(RelationType superType) {
+            throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
+        }
+
+        @Override
+        public void has(AttributeType attributeType, boolean isKey) {
+            throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
+        }
+
+        @Override
+        public void has(AttributeType attributeType, AttributeType overriddenType, boolean isKey) {
+            throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
+        }
+
+        @Override
+        public void plays(RoleType roleType) {
+            throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
+        }
+
+        @Override
+        public void plays(RoleType roleType, RoleType overriddenType) {
+            throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
+        }
+
+        @Override
+        public void unplay(RoleType roleType) {
+            throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
+        }
     }
 }

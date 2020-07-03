@@ -101,8 +101,10 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     @Override
     public void unhas(AttributeType attributeType) {
         TypeEdge edge;
-        if ((edge = vertex.outs().edge(Schema.Edge.Type.HAS, ((AttributeTypeImpl) attributeType).vertex)) != null) edge.delete();
-        if ((edge = vertex.outs().edge(Schema.Edge.Type.KEY, ((AttributeTypeImpl) attributeType).vertex)) != null) edge.delete();
+        if ((edge = vertex.outs().edge(Schema.Edge.Type.HAS, ((AttributeTypeImpl) attributeType).vertex)) != null)
+            edge.delete();
+        if ((edge = vertex.outs().edge(Schema.Edge.Type.KEY, ((AttributeTypeImpl) attributeType).vertex)) != null)
+            edge.delete();
     }
 
     private void hasKey(AttributeType attributeType) {
@@ -293,6 +295,31 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
                         throw new HypergraphException(Error.Internal.UNRECOGNISED_VALUE);
                 }
             });
+        }
+
+        @Override
+        public void has(AttributeType attributeType, boolean isKey) {
+            throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
+        }
+
+        @Override
+        public void has(AttributeType attributeType, AttributeType overriddenType, boolean isKey) {
+            throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
+        }
+
+        @Override
+        public void plays(RoleType roleType) {
+            throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
+        }
+
+        @Override
+        public void plays(RoleType roleType, RoleType overriddenType) {
+            throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
+        }
+
+        @Override
+        public void unplay(RoleType roleType) {
+            throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
         }
 
         /**
