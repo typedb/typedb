@@ -15,14 +15,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-load("@graknlabs_bazel_distribution//distribution:rules.bzl", "distribution_file")
+load("@graknlabs_dependencies//distribution/artifact:rules.bzl", "artifact_file")
 
-def graknlabs_console_distribution():
-    distribution_file(
-        name = "graknlabs_console_distribution",
-        repository_url = "https://repo.grakn.ai/repository",
+def graknlabs_console_artifact():
+    artifact_file(
+        name = "graknlabs_console_artifact",
         group_name = "graknlabs_console",
-        artifact_name = "console-distribution",
-        extension = "tgz",
-        commit = "48b1abdece294fc0640702a0a467024c313e3e47",
+        artifact_name = "console-artifact.tgz",
+        commit = "64e4f999ef26b8695498ccedcbd0cccca45ed474",
     )

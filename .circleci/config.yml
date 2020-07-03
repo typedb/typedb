@@ -371,8 +371,8 @@ jobs:
       - install-bazel-linux
       - checkout
       - run: |
-          export DEPLOY_DISTRIBUTION_USERNAME=$REPO_GRAKN_USERNAME
-          export DEPLOY_DISTRIBUTION_PASSWORD=$REPO_GRAKN_PASSWORD
+          export DEPLOY_ARTIFACT_USERNAME=$REPO_GRAKN_USERNAME
+          export DEPLOY_ARTIFACT_PASSWORD=$REPO_GRAKN_PASSWORD
           bazel run --define version=$(git rev-parse HEAD) //:deploy-linux-targz -- snapshot
 
   deploy-apt-snapshot:
@@ -478,9 +478,9 @@ jobs:
       - checkout
       - run: |
           bazel run @graknlabs_dependencies//tool/release:validate-deps -- \
-            graknlabs_common graknlabs_graql graknlabs_protocol graknlabs_console_distribution
+            graknlabs_common graknlabs_graql graknlabs_protocol graknlabs_console_artifact
 
-  deploy-distribution:
+  deploy-artifact:
     machine:
       image: ubuntu-1604:201903-01
     working_directory: ~/grakn
@@ -488,8 +488,8 @@ jobs:
       - install-bazel-linux
       - checkout
       - run: |
-          export DEPLOY_DISTRIBUTION_USERNAME=$REPO_GRAKN_USERNAME
-          export DEPLOY_DISTRIBUTION_PASSWORD=$REPO_GRAKN_PASSWORD
+          export DEPLOY_ARTIFACT_USERNAME=$REPO_GRAKN_USERNAME
+          export DEPLOY_ARTIFACT_PASSWORD=$REPO_GRAKN_PASSWORD
           bazel run --define version=$(cat VERSION) //:deploy-linux-targz -- release
 
   deploy-github:
@@ -830,7 +830,7 @@ workflows:
             - test-integration-analytics
             - test-integration-concept
             - test-integration-keyspace
-      - deploy-distribution-snapshot:
+      - deploy-artifact-snapshot:
           filters:
             branches:
               only:
@@ -888,7 +888,7 @@ workflows:
               only:
                 - master
           requires:
-            - deploy-distribution-snapshot
+            - deploy-artifact-snapshot
             - test-deployment-linux-apt
             - test-deployment-linux-rpm
       - release-approval:
@@ -918,7 +918,7 @@ workflows:
           filters:
             branches:
               only: grakn-release-branch
-      - deploy-distribution:
+      - deploy-artifact:
           filters:
             branches:
               only: grakn-release-branch
