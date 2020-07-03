@@ -35,6 +35,7 @@ import hypergraph.graph.vertex.TypeVertex;
 
 import javax.annotation.Nullable;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -42,6 +43,7 @@ import java.util.stream.Stream;
 import static hypergraph.common.exception.Error.TypeWrite.INVALID_KEY_VALUE_TYPE;
 import static hypergraph.common.exception.Error.TypeWrite.INVALID_ROOT_TYPE_MUTATION;
 import static hypergraph.common.iterator.Iterators.apply;
+import static hypergraph.common.iterator.Iterators.distinct;
 import static hypergraph.common.iterator.Iterators.filter;
 import static hypergraph.common.iterator.Iterators.link;
 import static hypergraph.common.iterator.Iterators.stream;
@@ -107,17 +109,32 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
             edge.delete();
     }
 
+    private Stream<AttributeType> overriddenAttributes() {
+        if (isRoot()) return Stream.empty();
+
+        Iterator<TypeVertex> overriddenAttributes = distinct(link(
+                vertex.outs().edge(Schema.Edge.Type.KEY).overridden(),
+                vertex.outs().edge(Schema.Edge.Type.HAS).overridden()
+        ));
+
+        return concat(stream(link(overriddenAttributes).apply(AttributeTypeImpl::of)), sup().overriddenAttributes());
+    }
+
     private void hasKey(AttributeType attributeType) {
         if (!attributeType.isKeyable()) {
             throw new HypergraphException(INVALID_KEY_VALUE_TYPE.format(attributeType.label(), attributeType.valueType().getSimpleName()));
         } else if (vertex.outs().edge(Schema.Edge.Type.HAS, ((AttributeTypeImpl) attributeType).vertex) != null) {
             throw new HypergraphException("Invalid Key Assignment: " + attributeType.label() + " is already used as an attribute");
-        } else if (sups().filter(s -> !s.equals(this)).flatMap(ThingType::attributes).anyMatch(a -> a.equals(attributeType))) {
-            // TODO: should this be relaxed to just .flatMap(ThingType::keys) ?
+        } else if (concat(sup().keys(attributeType.valueType()), sup().overriddenAttributes()).anyMatch(a -> a.equals(attributeType))) {
             throw new HypergraphException("Invalid Attribute Assignment: " + attributeType.label() + " is already inherited and/or overridden ");
         }
 
-        vertex.outs().put(Schema.Edge.Type.KEY, ((AttributeTypeImpl) attributeType).vertex);
+        TypeVertex attVertex = ((AttributeTypeImpl) attributeType).vertex;
+        vertex.outs().put(Schema.Edge.Type.KEY, attVertex);
+
+        if (sup().declaredAttributes().anyMatch(a -> a.equals(attributeType))) {
+            vertex.outs().edge(Schema.Edge.Type.KEY, attVertex).overridden(attVertex);
+        }
     }
 
     private void hasKey(AttributeType attributeType, AttributeType overriddenType) {
