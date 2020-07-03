@@ -40,21 +40,19 @@ public interface ThingType extends Type {
 
     void isAbstract(boolean isAbstract);
 
-    void key(AttributeType attributeType);
+    void has(AttributeType attributeType);
 
-    void key(AttributeType attributeType, AttributeType overriddenType);
+    void has(AttributeType attributeType, boolean isKey);
 
-    void unkey(AttributeType attributeType);
+    void has(AttributeType attributeType, AttributeType overriddenType);
+
+    void has(AttributeType attributeType, AttributeType overriddenType, boolean isKey);
+
+    void unhas(AttributeType attributeType);
 
     Stream<? extends AttributeType> keys(Class<?> valueType);
 
     Stream<? extends AttributeType> keys();
-
-    void has(AttributeType attributeType);
-
-    void has(AttributeType attributeType, AttributeType overriddenType);
-
-    void unhas(AttributeType attributeType);
 
     Stream<? extends AttributeType> attributes(Class<?> valueType);
 

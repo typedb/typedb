@@ -29,6 +29,7 @@ import hypergraph.concept.type.RoleType;
 import hypergraph.concept.type.ThingType;
 import hypergraph.concept.type.Type;
 import hypergraph.graph.TypeGraph;
+import hypergraph.graph.edge.TypeEdge;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.vertex.TypeVertex;
 
@@ -76,31 +77,77 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     }
 
     @Override
-    public void key(AttributeType attributeType) {
-        AttributeTypeImpl attributeTypeImpl = (AttributeTypeImpl) attributeType;
-        if (!attributeType.isKeyable()) {
-            throw new HypergraphException(INVALID_KEY_VALUE_TYPE.format(attributeTypeImpl.label(), attributeTypeImpl.valueType().getSimpleName()));
-        } else if (vertex.outs().edge(Schema.Edge.Type.HAS, attributeTypeImpl.vertex) != null) {
-            throw new HypergraphException("Invalid Key Assignment: " + attributeTypeImpl.label() + " is already used as an attribute");
-        } else if (sups().filter(s -> !s.equals(this)).flatMap(ThingType::attributes).anyMatch(a -> a.equals(attributeTypeImpl))) {
-            // TODO: should this be relaxed to just .flatMap(ThingType::keys) ?
-            throw new HypergraphException("Invalid Attribute Assignment: " + attributeTypeImpl.label() + " is already inherited and/or overridden ");
-        }
-
-        vertex.outs().put(Schema.Edge.Type.KEY, attributeTypeImpl.vertex);
+    public void has(AttributeType attributeType) {
+        has(attributeType, false);
     }
 
     @Override
-    public void key(AttributeType attributeType, AttributeType overriddenType) {
-        this.key(attributeType);
+    public void has(AttributeType attributeType, boolean isKey) {
+        if (isKey) hasKey(attributeType);
+        else hasAttribute(attributeType);
+    }
+
+    @Override
+    public void has(AttributeType attributeType, AttributeType overriddenType) {
+        has(attributeType, overriddenType, false);
+    }
+
+    @Override
+    public void has(AttributeType attributeType, AttributeType overriddenType, boolean isKey) {
+        if (isKey) hasKey(attributeType, overriddenType);
+        else hasAttribute(attributeType, overriddenType);
+    }
+
+    @Override
+    public void unhas(AttributeType attributeType) {
+        TypeEdge edge;
+        if ((edge = vertex.outs().edge(Schema.Edge.Type.HAS, ((AttributeTypeImpl) attributeType).vertex)) != null) edge.delete();
+        if ((edge = vertex.outs().edge(Schema.Edge.Type.KEY, ((AttributeTypeImpl) attributeType).vertex)) != null) edge.delete();
+    }
+
+    private void hasKey(AttributeType attributeType) {
+        if (!attributeType.isKeyable()) {
+            throw new HypergraphException(INVALID_KEY_VALUE_TYPE.format(attributeType.label(), attributeType.valueType().getSimpleName()));
+        } else if (vertex.outs().edge(Schema.Edge.Type.HAS, ((AttributeTypeImpl) attributeType).vertex) != null) {
+            throw new HypergraphException("Invalid Key Assignment: " + attributeType.label() + " is already used as an attribute");
+        } else if (sups().filter(s -> !s.equals(this)).flatMap(ThingType::attributes).anyMatch(a -> a.equals(attributeType))) {
+            // TODO: should this be relaxed to just .flatMap(ThingType::keys) ?
+            throw new HypergraphException("Invalid Attribute Assignment: " + attributeType.label() + " is already inherited and/or overridden ");
+        }
+
+        vertex.outs().put(Schema.Edge.Type.KEY, ((AttributeTypeImpl) attributeType).vertex);
+    }
+
+    private void hasKey(AttributeType attributeType, AttributeType overriddenType) {
+        this.hasKey(attributeType);
         override(Schema.Edge.Type.KEY, attributeType, overriddenType,
                  sup().attributes(attributeType.valueType()),
                  declaredAttributes());
     }
 
-    @Override
-    public void unkey(AttributeType attributeType) {
-        vertex.outs().edge(Schema.Edge.Type.KEY, ((AttributeTypeImpl) attributeType).vertex).delete();
+    private void hasAttribute(AttributeType attributeType) {
+        AttributeTypeImpl attributeTypeImpl = (AttributeTypeImpl) attributeType;
+        if (filter(vertex.outs().edge(Schema.Edge.Type.KEY).to(), v -> v.equals(attributeTypeImpl.vertex)).hasNext()) {
+            throw new HypergraphException("Invalid Attribute Assignment: " + attributeTypeImpl.label() + " is already used as a key");
+        } else if (sups().flatMap(ThingType::attributes).anyMatch(a -> a.equals(attributeTypeImpl))) {
+            throw new HypergraphException("Invalid Attribute Assignment: " + attributeTypeImpl.label() + " is already inherited or overridden ");
+        }
+
+        vertex.outs().put(Schema.Edge.Type.HAS, attributeTypeImpl.vertex);
+    }
+
+    private void hasAttribute(AttributeType attributeType, AttributeType overriddenType) {
+        this.hasAttribute(attributeType);
+        override(Schema.Edge.Type.HAS, attributeType, overriddenType,
+                 sup().attributes(attributeType.valueType()),
+                 concat(sup().keys(), declaredAttributes()));
+    }
+
+    private Stream<AttributeTypeImpl> declaredAttributes() {
+        return stream(link(
+                vertex.outs().edge(Schema.Edge.Type.KEY).to(),
+                vertex.outs().edge(Schema.Edge.Type.HAS).to()
+        ).apply(AttributeTypeImpl::of));
     }
 
     @Override
@@ -118,38 +165,6 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
             filter(vertex.outs().edge(Schema.Edge.Type.KEY).overridden(), Objects::nonNull).forEachRemaining(overridden::add);
             return concat(keys, sup().keys().filter(key -> !overridden.contains(key.vertex)));
         }
-    }
-
-    @Override
-    public void has(AttributeType attributeType) {
-        AttributeTypeImpl attributeTypeImpl = (AttributeTypeImpl) attributeType;
-        if (filter(vertex.outs().edge(Schema.Edge.Type.KEY).to(), v -> v.equals(attributeTypeImpl.vertex)).hasNext()) {
-            throw new HypergraphException("Invalid Attribute Assignment: " + attributeTypeImpl.label() + " is already used as a key");
-        } else if (sups().flatMap(ThingType::attributes).anyMatch(a -> a.equals(attributeTypeImpl))) {
-            throw new HypergraphException("Invalid Attribute Assignment: " + attributeTypeImpl.label() + " is already inherited or overridden ");
-        }
-
-        vertex.outs().put(Schema.Edge.Type.HAS, attributeTypeImpl.vertex);
-    }
-
-    @Override
-    public void has(AttributeType attributeType, AttributeType overriddenType) {
-        this.has(attributeType);
-        override(Schema.Edge.Type.HAS, attributeType, overriddenType,
-                 sup().attributes(attributeType.valueType()),
-                 concat(sup().keys(), declaredAttributes()));
-    }
-
-    @Override
-    public void unhas(AttributeType attributeType) {
-        vertex.outs().edge(Schema.Edge.Type.HAS, ((AttributeTypeImpl) attributeType).vertex).delete();
-    }
-
-    private Stream<AttributeTypeImpl> declaredAttributes() {
-        return stream(link(
-                vertex.outs().edge(Schema.Edge.Type.KEY).to(),
-                vertex.outs().edge(Schema.Edge.Type.HAS).to()
-        ).apply(AttributeTypeImpl::of));
     }
 
     @Override
@@ -182,16 +197,13 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     @Override
     public void plays(RoleType roleType, RoleType overriddenType) {
         plays(roleType);
-        override(Schema.Edge.Type.PLAYS, roleType, overriddenType, sup().plays(), declaredPlays());
+        override(Schema.Edge.Type.PLAYS, roleType, overriddenType, sup().plays(),
+                 stream(apply(vertex.outs().edge(Schema.Edge.Type.PLAYS).to(), RoleTypeImpl::of)));
     }
 
     @Override
     public void unplay(RoleType roleType) {
         vertex.outs().edge(Schema.Edge.Type.PLAYS, ((RoleTypeImpl) roleType).vertex).delete();
-    }
-
-    private Stream<RoleTypeImpl> declaredPlays() {
-        return stream(apply(vertex.outs().edge(Schema.Edge.Type.PLAYS).to(), RoleTypeImpl::of));
     }
 
     @Override

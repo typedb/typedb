@@ -34,8 +34,12 @@ def graknlabs_dependencies():
     )
 
 def graknlabs_verification():
-    git_repository(
+#    git_repository(
+#        name = "graknlabs_verification",
+#        remote = "https://github.com/graknlabs/verification",
+#        commit = "0f74cf4368e7fe62c580a3a726802e1a770a41a7"
+#    )
+    native.local_repository(
         name = "graknlabs_verification",
-        remote = "https://github.com/graknlabs/verification",
-        commit = "434b2376c7bfea1f3dbe96713765c02ac0bbe627"
+        path = "/Users/haikalpribadi/Workspace/repos/graknlabs/verification",
     )
