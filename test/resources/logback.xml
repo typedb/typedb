@@ -26,17 +26,31 @@
         <appender-ref ref="STDOUT"/>
     </root>
 
-    <logger name="grakn.core" level="INFO" additivity="false">
+    <logger name="grakn.core" level="DEBUG" additivity="false">
         <appender-ref ref="STDOUT"/>
     </logger>
 
-    <logger name="server.Server" level="WARN">
+    <!-- Use this to suppress excess JanusGraph logging -->
+    <logger name="grakn.core.graph" level="INFO" additivity="false">
+        <appender-ref ref="STDOUT"/>
+    </logger>
+
+    <logger name="server.Server" level="DEBUG">
         <appender-ref ref="STDOUT"/>
     </logger>
 
     <!-- Increase this if wanting to see more verbose reasoner output -->
-    <logger name="grakn.core.graql.reasoner" level="INFO" additivity="false">
+    <logger name="grakn.core.graql.reasoner" level="DEBUG" additivity="false">
         <appender-ref ref="STDOUT"/>
     </logger>
+
+<!--    <logger name="org.eclipse.jetty" level="ERROR">-->
+<!--        <appender-ref ref="MAIN"/>-->
+<!--    </logger>-->
+
+<!--    &lt;!&ndash;Only show ERROR logs from apache classes&ndash;&gt;-->
+<!--    <logger name="org.apache" level="ERROR">-->
+<!--        <appender-ref ref="MAIN"/>-->
+<!--    </logger>-->
 
 </configuration>
