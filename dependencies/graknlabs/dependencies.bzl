@@ -19,13 +19,6 @@
 
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 
-def graknlabs_common():
-    git_repository(
-        name = "graknlabs_common",
-        remote = "https://github.com/graknlabs/common",
-        commit = "c712b98c1ccb53661701a74b2152b6c1fa8be19e" # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_common
-    )
-
 def graknlabs_dependencies():
     git_repository(
         name = "graknlabs_dependencies",
@@ -33,9 +26,16 @@ def graknlabs_dependencies():
         commit = "9ba7915aae6098ae4c5f75cc7bada53ae64fed52", # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_dependencies
     )
 
+def graknlabs_common():
+    git_repository(
+        name = "graknlabs_common",
+        remote = "https://github.com/graknlabs/common",
+        commit = "c712b98c1ccb53661701a74b2152b6c1fa8be19e" # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_common
+    )
+
 def graknlabs_verification():
     git_repository(
         name = "graknlabs_verification",
         remote = "https://github.com/graknlabs/verification",
-        commit = "58eae744d4a68c49d283e84fcfbf95b83ffa6e24"
+        commit = "6c00aad316dc1817248b013ecf93dee4d7a1d7c3"
     )

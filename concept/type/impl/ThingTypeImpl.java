@@ -103,10 +103,9 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     @Override
     public void unhas(AttributeType attributeType) {
         TypeEdge edge;
-        if ((edge = vertex.outs().edge(Schema.Edge.Type.HAS, ((AttributeTypeImpl) attributeType).vertex)) != null)
-            edge.delete();
-        if ((edge = vertex.outs().edge(Schema.Edge.Type.KEY, ((AttributeTypeImpl) attributeType).vertex)) != null)
-            edge.delete();
+        TypeVertex attVertex = ((AttributeTypeImpl) attributeType).vertex;
+        if ((edge = vertex.outs().edge(Schema.Edge.Type.HAS, attVertex)) != null) edge.delete();
+        if ((edge = vertex.outs().edge(Schema.Edge.Type.KEY, attVertex)) != null) edge.delete();
     }
 
     private Stream<AttributeType> overriddenAttributes() {
