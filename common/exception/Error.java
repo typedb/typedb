@@ -205,28 +205,36 @@ public abstract class Error<TYPE extends Error<TYPE>> {
 
     public static class TypeWrite extends Error {
 
-        public static final TypeWrite INVALID_ROOT_TYPE_MUTATION =
+        public static final TypeWrite ROOT_TYPE_MUTATION =
                 new TypeWrite(1, "Root types are immutable.");
-        public static final TypeWrite ILLEGAL_SUBTYPING_SELF =
-                new TypeWrite(2, "The type '%s' cannot be a subtype of itself.");
-        public static final TypeWrite INVALID_OVERRIDE_NOT_SUPERTYPE =
-                new TypeWrite(3, "The type '%s' cannot override '%s' as it is not a supertype");
-        public static final TypeWrite INVALID_OVERRIDE_NOT_AVAILABLE =
-                new TypeWrite(4, "The Type '%s' cannot override '%s' as it is either already declared, or not inherited");
-        public static final TypeWrite UNSUPPORTED_VALUE_TYPE =
-                new TypeWrite(5, "The Java class '%s' is not a supported value type.");
-        public static final TypeWrite INVALID_ATTRIBUTE_SUPERTYPE_VALUE_TYPE =
-                new TypeWrite(6, "The attribute type '%s' has value type '%s', and cannot have supertype '%s' with value type '%s'.");
-        public static final TypeWrite INVALID_KEY_VALUE_TYPE =
-                new TypeWrite(7, "The attribute type '%s' has value type '%s', and cannot and cannot be used as a type key.");
-        public static final TypeWrite INVALID_NON_ABSTRACT_SUPERTYPE =
-                new TypeWrite(8, "The type '%s' is abstract, but has a supertype '%s' which is not abstract.");
-        public static final TypeWrite PRECONDITION_KEY_OWNERSHIP =
-                new TypeWrite(9, "The instances of type '%s' does not have exactly one attribute of type '%s' to convert to key");
-        public static final TypeWrite PRECONDITION_KEY_UNIQUENESS =
-                new TypeWrite(10, "The attributes of type '%s' are not uniquely owned by instances of type '%s' to convert to key");
-        public static final TypeWrite INVALID_RELATION_NO_ROLE =
-                new TypeWrite(11, "RelationType '%s' does not relate any role type");
+        public static final TypeWrite TYPE_HAS_SUBTYPES =
+                new TypeWrite(2, "The type '%s' has subtypes, and cannot be deleted");
+        public static final TypeWrite TYPE_HAS_INSTANCES =
+                new TypeWrite(3, "The type '%s' has instances, and cannot be deleted");
+        public static final TypeWrite SUPERTYPE_SELF =
+                new TypeWrite(4, "The type '%s' cannot be a subtype of itself.");
+        public static final TypeWrite SUPERTYPE_NON_ABSTRACT =
+                new TypeWrite(5, "The type '%s' is abstract, but has a supertype '%s' which is not abstract.");
+        public static final TypeWrite OVERRIDE_NOT_SUPERTYPE =
+                new TypeWrite(6, "The type '%s' cannot override '%s' as it is not a supertype");
+        public static final TypeWrite OVERRIDE_NOT_AVAILABLE =
+                new TypeWrite(7, "The Type '%s' cannot override '%s' as it is either already declared, or not inherited");
+        public static final TypeWrite ATTRIBUTE_SUPERTYPE_VALUE_TYPE =
+                new TypeWrite(8, "The attribute type '%s' has value type '%s', and cannot have supertype '%s' with value type '%s'.");
+        public static final TypeWrite HAS_KEY_VALUE_TYPE =
+                new TypeWrite(9, "The attribute type '%s' has value type '%s', and cannot and cannot be used as a type key.");
+        public static final TypeWrite HAS_KEY_NOT_AVAILABLE =
+                new TypeWrite(10, "The attribute type '%s' has been inherited or overridden, and cannot be redeclared as a key");
+        public static final TypeWrite HAS_KEY_PRECONDITION_OWNERSHIP =
+                new TypeWrite(11, "The instances of type '%s' does not have exactly one attribute of type '%s' to convert to key");
+        public static final TypeWrite HAS_ATT_NOT_AVAILABLE =
+                new TypeWrite(12, "The attribute type '%s' has been inherited or overridden, and cannot be redeclared as an attribute");
+        public static final TypeWrite HAS_KEY_PRECONDITION_UNIQUENESS =
+                new TypeWrite(13, "The attributes of type '%s' are not uniquely owned by instances of type '%s' to convert to key");
+        public static final TypeWrite PLAYS_ROLE_NOT_AVAILABLE =
+                new TypeWrite(14, "The role type '%s' has been inherited or overridden, and cannot be redeclared");
+        public static final TypeWrite RELATION_NO_ROLE =
+                new TypeWrite(15, "RelationType '%s' does not relate any role type");
 
         private static final String codePrefix = "TYW";
         private static final String descriptionPrefix = "Invalid Type Definition";

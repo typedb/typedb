@@ -33,7 +33,7 @@ import hypergraph.graph.vertex.TypeVertex;
 import javax.annotation.Nullable;
 import java.util.stream.Stream;
 
-import static hypergraph.common.exception.Error.TypeWrite.INVALID_ROOT_TYPE_MUTATION;
+import static hypergraph.common.exception.Error.TypeWrite.ROOT_TYPE_MUTATION;
 
 public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
 
@@ -118,42 +118,42 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
 
         @Override
         public void label(String label) {
-            throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
+            throw new HypergraphException(ROOT_TYPE_MUTATION);
         }
 
         @Override
         public void isAbstract(boolean isAbstract) {
-            throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
+            throw new HypergraphException(ROOT_TYPE_MUTATION);
         }
 
         @Override
         public void sup(EntityType superType) {
-            throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
+            throw new HypergraphException(ROOT_TYPE_MUTATION);
         }
 
         @Override
         public void has(AttributeType attributeType, boolean isKey) {
-            throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
+            throw new HypergraphException(ROOT_TYPE_MUTATION);
         }
 
         @Override
         public void has(AttributeType attributeType, AttributeType overriddenType, boolean isKey) {
-            throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
+            throw new HypergraphException(ROOT_TYPE_MUTATION);
         }
 
         @Override
         public void plays(RoleType roleType) {
-            throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
+            throw new HypergraphException(ROOT_TYPE_MUTATION);
         }
 
         @Override
         public void plays(RoleType roleType, RoleType overriddenType) {
-            throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
+            throw new HypergraphException(ROOT_TYPE_MUTATION);
         }
 
         @Override
         public void unplay(RoleType roleType) {
-            throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
+            throw new HypergraphException(ROOT_TYPE_MUTATION);
         }
     }
 }

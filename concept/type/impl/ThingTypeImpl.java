@@ -18,7 +18,6 @@
 
 package hypergraph.concept.type.impl;
 
-import hypergraph.common.exception.Error;
 import hypergraph.common.exception.HypergraphException;
 import hypergraph.concept.thing.Thing;
 import hypergraph.concept.thing.impl.AttributeImpl;
@@ -41,12 +40,18 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import static hypergraph.common.collection.Streams.compareSize;
-import static hypergraph.common.exception.Error.TypeWrite.INVALID_KEY_VALUE_TYPE;
-import static hypergraph.common.exception.Error.TypeWrite.INVALID_OVERRIDE_NOT_AVAILABLE;
-import static hypergraph.common.exception.Error.TypeWrite.INVALID_OVERRIDE_NOT_SUPERTYPE;
-import static hypergraph.common.exception.Error.TypeWrite.INVALID_ROOT_TYPE_MUTATION;
-import static hypergraph.common.exception.Error.TypeWrite.PRECONDITION_KEY_OWNERSHIP;
-import static hypergraph.common.exception.Error.TypeWrite.PRECONDITION_KEY_UNIQUENESS;
+import static hypergraph.common.exception.Error.Internal.UNRECOGNISED_VALUE;
+import static hypergraph.common.exception.Error.TypeWrite.HAS_ATT_NOT_AVAILABLE;
+import static hypergraph.common.exception.Error.TypeWrite.HAS_KEY_NOT_AVAILABLE;
+import static hypergraph.common.exception.Error.TypeWrite.HAS_KEY_PRECONDITION_OWNERSHIP;
+import static hypergraph.common.exception.Error.TypeWrite.HAS_KEY_PRECONDITION_UNIQUENESS;
+import static hypergraph.common.exception.Error.TypeWrite.HAS_KEY_VALUE_TYPE;
+import static hypergraph.common.exception.Error.TypeWrite.OVERRIDE_NOT_AVAILABLE;
+import static hypergraph.common.exception.Error.TypeWrite.OVERRIDE_NOT_SUPERTYPE;
+import static hypergraph.common.exception.Error.TypeWrite.PLAYS_ROLE_NOT_AVAILABLE;
+import static hypergraph.common.exception.Error.TypeWrite.ROOT_TYPE_MUTATION;
+import static hypergraph.common.exception.Error.TypeWrite.TYPE_HAS_INSTANCES;
+import static hypergraph.common.exception.Error.TypeWrite.TYPE_HAS_SUBTYPES;
 import static hypergraph.common.iterator.Iterators.apply;
 import static hypergraph.common.iterator.Iterators.distinct;
 import static hypergraph.common.iterator.Iterators.filter;
@@ -75,9 +80,9 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     private <T extends Type> void override(Schema.Edge.Type schema, T type, T overriddenType,
                                            Stream<? extends Type> overridable, Stream<? extends Type> notOverridable) {
         if (type.sups().noneMatch(t -> t.equals(overriddenType))) {
-            throw new HypergraphException(INVALID_OVERRIDE_NOT_SUPERTYPE.format(type.label(), overriddenType.label()));
+            throw new HypergraphException(OVERRIDE_NOT_SUPERTYPE.format(type.label(), overriddenType.label()));
         } else if (notOverridable.anyMatch(t -> t.equals(overriddenType)) || overridable.noneMatch(t -> t.equals(overriddenType))) {
-            throw new HypergraphException(INVALID_OVERRIDE_NOT_AVAILABLE.format(type.label(), overriddenType.label()));
+            throw new HypergraphException(OVERRIDE_NOT_AVAILABLE.format(type.label(), overriddenType.label()));
         }
 
         vertex.outs().edge(schema, ((TypeImpl) type).vertex).overridden(((TypeImpl) overriddenType).vertex);
@@ -126,9 +131,9 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
     private void hasKey(AttributeType attributeType) {
         if (!attributeType.isKeyable()) {
-            throw new HypergraphException(INVALID_KEY_VALUE_TYPE.format(attributeType.label(), attributeType.valueType().getSimpleName()));
+            throw new HypergraphException(HAS_KEY_VALUE_TYPE.format(attributeType.label(), attributeType.valueType().getSimpleName()));
         } else if (concat(sup().keys(attributeType.valueType()), sup().overriddenAttributes()).anyMatch(a -> a.equals(attributeType))) {
-            throw new HypergraphException("Invalid Attribute Assignment: " + attributeType.label() + " is already inherited and/or overridden ");
+            throw new HypergraphException(HAS_KEY_NOT_AVAILABLE.format(attributeType.label()));
         }
 
         TypeVertex attVertex = ((AttributeTypeImpl) attributeType).vertex;
@@ -137,9 +142,9 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         if ((hasEdge = vertex.outs().edge(Schema.Edge.Type.HAS, attVertex)) != null) {
             // TODO: These ownership and uniqueness checks should be parallelised to scale better
             if (instances().anyMatch(thing -> compareSize(thing.attributes(attributeType), 1) != 0)) {
-                throw new HypergraphException(PRECONDITION_KEY_OWNERSHIP.format(vertex.label(), attVertex.label()));
+                throw new HypergraphException(HAS_KEY_PRECONDITION_OWNERSHIP.format(vertex.label(), attVertex.label()));
             } else if (attributeType.instances().anyMatch(att -> compareSize(att.owners(this), 1) != 0)) {
-                throw new HypergraphException(PRECONDITION_KEY_UNIQUENESS.format(attVertex.label(), vertex.label()));
+                throw new HypergraphException(HAS_KEY_PRECONDITION_UNIQUENESS.format(attVertex.label(), vertex.label()));
             }
             hasEdge.delete();
         }
@@ -157,7 +162,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     private void hasAttribute(AttributeType attributeType) {
 
         if (sups().filter(t -> !t.equals(this)).flatMap(ThingType::attributes).anyMatch(a -> a.equals(attributeType))) {
-            throw new HypergraphException("Invalid Attribute Assignment: " + attributeType.label() + " is already inherited or overridden ");
+            throw new HypergraphException(HAS_ATT_NOT_AVAILABLE.format(attributeType.label()));
         }
 
         TypeVertex attVertex = ((AttributeTypeImpl) attributeType).vertex;
@@ -217,11 +222,10 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
     @Override
     public void plays(RoleType roleType) {
-        RoleTypeImpl roleTypeImpl = (RoleTypeImpl) roleType;
-        if (sups().flatMap(ThingType::plays).anyMatch(a -> a.equals(roleTypeImpl))) {
-            throw new HypergraphException("Invalid Attribute Assignment: " + roleTypeImpl.label() + " is already inherited or overridden ");
+        if (sups().flatMap(ThingType::plays).anyMatch(a -> a.equals(roleType))) {
+            throw new HypergraphException(PLAYS_ROLE_NOT_AVAILABLE.format(roleType.label()));
         }
-        vertex.outs().put(Schema.Edge.Type.PLAYS, roleTypeImpl.vertex);
+        vertex.outs().put(Schema.Edge.Type.PLAYS, ((RoleTypeImpl) roleType).vertex);
     }
 
     @Override
@@ -251,9 +255,9 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     @Override
     public void delete() {
         if (subs().anyMatch(s -> !s.equals(this))) {
-            throw new HypergraphException("Invalid Type Removal: " + label() + " has subtypes");
+            throw new HypergraphException(TYPE_HAS_SUBTYPES.format(label()));
         } else if (subs().flatMap(ThingType::instances).findAny().isPresent()) {
-            throw new HypergraphException("Invalid Type Removal: " + label() + " has instances");
+            throw new HypergraphException(TYPE_HAS_INSTANCES.format(label()));
         } else {
             vertex.delete();
         }
@@ -276,10 +280,10 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         public boolean isRoot() { return true; }
 
         @Override
-        public void label(String label) { throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION); }
+        public void label(String label) { throw new HypergraphException(ROOT_TYPE_MUTATION); }
 
         @Override
-        public void isAbstract(boolean isAbstract) { throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION); }
+        public void isAbstract(boolean isAbstract) { throw new HypergraphException(ROOT_TYPE_MUTATION); }
 
         @Override
         public ThingTypeImpl sup() { return null; }
@@ -303,7 +307,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
                     case RELATION_TYPE:
                         return RelationTypeImpl.of(v);
                     default:
-                        throw new HypergraphException("Unreachable");
+                        throw new HypergraphException(UNRECOGNISED_VALUE);
                 }
             });
         }
@@ -320,34 +324,34 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
                         return RelationImpl.of(v);
                     default:
                         assert false;
-                        throw new HypergraphException(Error.Internal.UNRECOGNISED_VALUE);
+                        throw new HypergraphException(UNRECOGNISED_VALUE);
                 }
             });
         }
 
         @Override
         public void has(AttributeType attributeType, boolean isKey) {
-            throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
+            throw new HypergraphException(ROOT_TYPE_MUTATION);
         }
 
         @Override
         public void has(AttributeType attributeType, AttributeType overriddenType, boolean isKey) {
-            throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
+            throw new HypergraphException(ROOT_TYPE_MUTATION);
         }
 
         @Override
         public void plays(RoleType roleType) {
-            throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
+            throw new HypergraphException(ROOT_TYPE_MUTATION);
         }
 
         @Override
         public void plays(RoleType roleType, RoleType overriddenType) {
-            throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
+            throw new HypergraphException(ROOT_TYPE_MUTATION);
         }
 
         @Override
         public void unplay(RoleType roleType) {
-            throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
+            throw new HypergraphException(ROOT_TYPE_MUTATION);
         }
 
         /**

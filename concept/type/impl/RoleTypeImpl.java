@@ -32,7 +32,7 @@ import javax.annotation.Nullable;
 import java.util.Iterator;
 import java.util.stream.Stream;
 
-import static hypergraph.common.exception.Error.TypeWrite.INVALID_ROOT_TYPE_MUTATION;
+import static hypergraph.common.exception.Error.TypeWrite.ROOT_TYPE_MUTATION;
 
 public class RoleTypeImpl extends TypeImpl implements RoleType {
 
@@ -131,12 +131,12 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
         public boolean isRoot() { return true; }
 
         @Override
-        public void label(String label) { throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION); }
+        public void label(String label) { throw new HypergraphException(ROOT_TYPE_MUTATION); }
 
         @Override
-        void isAbstract(boolean isAbstract) { throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION); }
+        void isAbstract(boolean isAbstract) { throw new HypergraphException(ROOT_TYPE_MUTATION); }
 
         @Override
-        void sup(RoleType superType) { throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION); }
+        void sup(RoleType superType) { throw new HypergraphException(ROOT_TYPE_MUTATION); }
     }
 }

@@ -39,7 +39,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static hypergraph.common.exception.Error.TypeWrite.INVALID_ROOT_TYPE_MUTATION;
+import static hypergraph.common.exception.Error.TypeWrite.ROOT_TYPE_MUTATION;
 import static hypergraph.common.iterator.Iterators.apply;
 import static hypergraph.common.iterator.Iterators.filter;
 import static hypergraph.common.iterator.Iterators.stream;
@@ -203,7 +203,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     public void validate() {
         super.validate();
         if (Streams.compareSize(this.roles(), 1) < 0) {
-            throw new HypergraphException(Error.TypeWrite.INVALID_RELATION_NO_ROLE.format(this.label()));
+            throw new HypergraphException(Error.TypeWrite.RELATION_NO_ROLE.format(this.label()));
         }
         // TODO: Add any validation that would apply to all RelationTypes here
     }
@@ -232,42 +232,42 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
 
         @Override
         public void label(String label) {
-            throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
+            throw new HypergraphException(ROOT_TYPE_MUTATION);
         }
 
         @Override
         public void isAbstract(boolean isAbstract) {
-            throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
+            throw new HypergraphException(ROOT_TYPE_MUTATION);
         }
 
         @Override
         public void sup(RelationType superType) {
-            throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
+            throw new HypergraphException(ROOT_TYPE_MUTATION);
         }
 
         @Override
         public void has(AttributeType attributeType, boolean isKey) {
-            throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
+            throw new HypergraphException(ROOT_TYPE_MUTATION);
         }
 
         @Override
         public void has(AttributeType attributeType, AttributeType overriddenType, boolean isKey) {
-            throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
+            throw new HypergraphException(ROOT_TYPE_MUTATION);
         }
 
         @Override
         public void plays(RoleType roleType) {
-            throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
+            throw new HypergraphException(ROOT_TYPE_MUTATION);
         }
 
         @Override
         public void plays(RoleType roleType, RoleType overriddenType) {
-            throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
+            throw new HypergraphException(ROOT_TYPE_MUTATION);
         }
 
         @Override
         public void unplay(RoleType roleType) {
-            throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
+            throw new HypergraphException(ROOT_TYPE_MUTATION);
         }
     }
 }

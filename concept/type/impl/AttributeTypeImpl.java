@@ -36,7 +36,7 @@ import java.util.Iterator;
 import java.util.stream.Stream;
 
 import static hypergraph.common.exception.Error.ConceptRead.INVALID_CONCEPT_CASTING;
-import static hypergraph.common.exception.Error.TypeWrite.INVALID_ROOT_TYPE_MUTATION;
+import static hypergraph.common.exception.Error.TypeWrite.ROOT_TYPE_MUTATION;
 import static hypergraph.common.iterator.Iterators.apply;
 import static hypergraph.common.iterator.Iterators.stream;
 
@@ -98,7 +98,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
     @Override
     public void sup(AttributeType superType) {
         if (!superType.isRoot() && !this.valueType().equals(superType.valueType())) {
-            throw new HypergraphException(Error.TypeWrite.INVALID_ATTRIBUTE_SUPERTYPE_VALUE_TYPE.format(
+            throw new HypergraphException(Error.TypeWrite.ATTRIBUTE_SUPERTYPE_VALUE_TYPE.format(
                     this.label(), this.valueType().getSimpleName(),
                     superType.label(), superType.valueType().getSimpleName())
             );
@@ -197,13 +197,13 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         public boolean isRoot() { return true; }
 
         @Override
-        public void label(java.lang.String label) { throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION); }
+        public void label(java.lang.String label) { throw new HypergraphException(ROOT_TYPE_MUTATION); }
 
         @Override
-        public void isAbstract(boolean isAbstract) { throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION); }
+        public void isAbstract(boolean isAbstract) { throw new HypergraphException(ROOT_TYPE_MUTATION); }
 
         @Override
-        public void sup(AttributeType superType) { throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION); }
+        public void sup(AttributeType superType) { throw new HypergraphException(ROOT_TYPE_MUTATION); }
 
         @Nullable
         @Override
@@ -246,27 +246,27 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         @Override
         public void has(AttributeType attributeType, boolean isKey) {
-            throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
+            throw new HypergraphException(ROOT_TYPE_MUTATION);
         }
 
         @Override
         public void has(AttributeType attributeType, AttributeType overriddenType, boolean isKey) {
-            throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
+            throw new HypergraphException(ROOT_TYPE_MUTATION);
         }
 
         @Override
         public void plays(RoleType roleType) {
-            throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
+            throw new HypergraphException(ROOT_TYPE_MUTATION);
         }
 
         @Override
         public void plays(RoleType roleType, RoleType overriddenType) {
-            throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
+            throw new HypergraphException(ROOT_TYPE_MUTATION);
         }
 
         @Override
         public void unplay(RoleType roleType) {
-            throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
+            throw new HypergraphException(ROOT_TYPE_MUTATION);
         }
     }
 
@@ -360,42 +360,42 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
             @Override
             public void label(java.lang.String label) {
-                throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
+                throw new HypergraphException(ROOT_TYPE_MUTATION);
             }
 
             @Override
             public void isAbstract(boolean isAbstract) {
-                throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
+                throw new HypergraphException(ROOT_TYPE_MUTATION);
             }
 
             @Override
             public void sup(AttributeType superType) {
-                throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
+                throw new HypergraphException(ROOT_TYPE_MUTATION);
             }
 
             @Override
             public void has(AttributeType attributeType, boolean isKey) {
-                throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
+                throw new HypergraphException(ROOT_TYPE_MUTATION);
             }
 
             @Override
             public void has(AttributeType attributeType, AttributeType overriddenType, boolean isKey) {
-                throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
+                throw new HypergraphException(ROOT_TYPE_MUTATION);
             }
 
             @Override
             public void plays(RoleType roleType) {
-                throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
+                throw new HypergraphException(ROOT_TYPE_MUTATION);
             }
 
             @Override
             public void plays(RoleType roleType, RoleType overriddenType) {
-                throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
+                throw new HypergraphException(ROOT_TYPE_MUTATION);
             }
 
             @Override
             public void unplay(RoleType roleType) {
-                throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
+                throw new HypergraphException(ROOT_TYPE_MUTATION);
             }
         }
     }
@@ -492,42 +492,42 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
             @Override
             public void label(java.lang.String label) {
-                throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
+                throw new HypergraphException(ROOT_TYPE_MUTATION);
             }
 
             @Override
             public void isAbstract(boolean isAbstract) {
-                throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
+                throw new HypergraphException(ROOT_TYPE_MUTATION);
             }
 
             @Override
             public void sup(AttributeType superType) {
-                throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
+                throw new HypergraphException(ROOT_TYPE_MUTATION);
             }
 
             @Override
             public void has(AttributeType attributeType, boolean isKey) {
-                throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
+                throw new HypergraphException(ROOT_TYPE_MUTATION);
             }
 
             @Override
             public void has(AttributeType attributeType, AttributeType overriddenType, boolean isKey) {
-                throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
+                throw new HypergraphException(ROOT_TYPE_MUTATION);
             }
 
             @Override
             public void plays(RoleType roleType) {
-                throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
+                throw new HypergraphException(ROOT_TYPE_MUTATION);
             }
 
             @Override
             public void plays(RoleType roleType, RoleType overriddenType) {
-                throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
+                throw new HypergraphException(ROOT_TYPE_MUTATION);
             }
 
             @Override
             public void unplay(RoleType roleType) {
-                throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
+                throw new HypergraphException(ROOT_TYPE_MUTATION);
             }
         }
     }
@@ -624,42 +624,42 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
             @Override
             public void label(java.lang.String label) {
-                throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
+                throw new HypergraphException(ROOT_TYPE_MUTATION);
             }
 
             @Override
             public void isAbstract(boolean isAbstract) {
-                throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
+                throw new HypergraphException(ROOT_TYPE_MUTATION);
             }
 
             @Override
             public void sup(AttributeType superType) {
-                throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
+                throw new HypergraphException(ROOT_TYPE_MUTATION);
             }
 
             @Override
             public void has(AttributeType attributeType, boolean isKey) {
-                throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
+                throw new HypergraphException(ROOT_TYPE_MUTATION);
             }
 
             @Override
             public void has(AttributeType attributeType, AttributeType overriddenType, boolean isKey) {
-                throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
+                throw new HypergraphException(ROOT_TYPE_MUTATION);
             }
 
             @Override
             public void plays(RoleType roleType) {
-                throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
+                throw new HypergraphException(ROOT_TYPE_MUTATION);
             }
 
             @Override
             public void plays(RoleType roleType, RoleType overriddenType) {
-                throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
+                throw new HypergraphException(ROOT_TYPE_MUTATION);
             }
 
             @Override
             public void unplay(RoleType roleType) {
-                throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
+                throw new HypergraphException(ROOT_TYPE_MUTATION);
             }
         }
     }
@@ -759,42 +759,42 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
             @Override
             public void label(java.lang.String label) {
-                throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
+                throw new HypergraphException(ROOT_TYPE_MUTATION);
             }
 
             @Override
             public void isAbstract(boolean isAbstract) {
-                throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
+                throw new HypergraphException(ROOT_TYPE_MUTATION);
             }
 
             @Override
             public void sup(AttributeType superType) {
-                throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
+                throw new HypergraphException(ROOT_TYPE_MUTATION);
             }
 
             @Override
             public void has(AttributeType attributeType, boolean isKey) {
-                throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
+                throw new HypergraphException(ROOT_TYPE_MUTATION);
             }
 
             @Override
             public void has(AttributeType attributeType, AttributeType overriddenType, boolean isKey) {
-                throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
+                throw new HypergraphException(ROOT_TYPE_MUTATION);
             }
 
             @Override
             public void plays(RoleType roleType) {
-                throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
+                throw new HypergraphException(ROOT_TYPE_MUTATION);
             }
 
             @Override
             public void plays(RoleType roleType, RoleType overriddenType) {
-                throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
+                throw new HypergraphException(ROOT_TYPE_MUTATION);
             }
 
             @Override
             public void unplay(RoleType roleType) {
-                throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
+                throw new HypergraphException(ROOT_TYPE_MUTATION);
             }
         }
     }
@@ -892,42 +892,42 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
             @Override
             public void label(java.lang.String label) {
-                throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
+                throw new HypergraphException(ROOT_TYPE_MUTATION);
             }
 
             @Override
             public void isAbstract(boolean isAbstract) {
-                throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
+                throw new HypergraphException(ROOT_TYPE_MUTATION);
             }
 
             @Override
             public void sup(AttributeType superType) {
-                throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
+                throw new HypergraphException(ROOT_TYPE_MUTATION);
             }
 
             @Override
             public void has(AttributeType attributeType, boolean isKey) {
-                throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
+                throw new HypergraphException(ROOT_TYPE_MUTATION);
             }
 
             @Override
             public void has(AttributeType attributeType, AttributeType overriddenType, boolean isKey) {
-                throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
+                throw new HypergraphException(ROOT_TYPE_MUTATION);
             }
 
             @Override
             public void plays(RoleType roleType) {
-                throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
+                throw new HypergraphException(ROOT_TYPE_MUTATION);
             }
 
             @Override
             public void plays(RoleType roleType, RoleType overriddenType) {
-                throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
+                throw new HypergraphException(ROOT_TYPE_MUTATION);
             }
 
             @Override
             public void unplay(RoleType roleType) {
-                throw new HypergraphException(INVALID_ROOT_TYPE_MUTATION);
+                throw new HypergraphException(ROOT_TYPE_MUTATION);
             }
         }
     }

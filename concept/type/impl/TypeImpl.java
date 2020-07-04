@@ -109,7 +109,7 @@ public abstract class TypeImpl implements Type {
 
     void superTypeVertex(TypeVertex superTypeVertex) {
         if (vertex.equals(superTypeVertex)) {
-            throw new HypergraphException(Error.TypeWrite.ILLEGAL_SUBTYPING_SELF.format(vertex.label()));
+            throw new HypergraphException(Error.TypeWrite.SUPERTYPE_SELF.format(vertex.label()));
         }
         vertex.outs().edge(Schema.Edge.Type.SUB, ((TypeImpl) sup()).vertex).delete();
         vertex.outs().put(Schema.Edge.Type.SUB, superTypeVertex);
