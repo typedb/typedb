@@ -155,14 +155,15 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     }
 
     private void hasAttribute(AttributeType attributeType) {
-        AttributeTypeImpl attributeTypeImpl = (AttributeTypeImpl) attributeType;
-        if (filter(vertex.outs().edge(Schema.Edge.Type.KEY).to(), v -> v.equals(attributeTypeImpl.vertex)).hasNext()) {
-            throw new HypergraphException("Invalid Attribute Assignment: " + attributeTypeImpl.label() + " is already used as a key");
-        } else if (sups().flatMap(ThingType::attributes).anyMatch(a -> a.equals(attributeTypeImpl))) {
-            throw new HypergraphException("Invalid Attribute Assignment: " + attributeTypeImpl.label() + " is already inherited or overridden ");
+
+        if (sups().filter(t -> !t.equals(this)).flatMap(ThingType::attributes).anyMatch(a -> a.equals(attributeType))) {
+            throw new HypergraphException("Invalid Attribute Assignment: " + attributeType.label() + " is already inherited or overridden ");
         }
 
-        vertex.outs().put(Schema.Edge.Type.HAS, attributeTypeImpl.vertex);
+        TypeVertex attVertex = ((AttributeTypeImpl) attributeType).vertex;
+        TypeEdge keyEdge;
+        if ((keyEdge = vertex.outs().edge(Schema.Edge.Type.KEY, attVertex)) != null) keyEdge.delete();
+        vertex.outs().put(Schema.Edge.Type.HAS, attVertex);
     }
 
     private void hasAttribute(AttributeType attributeType, AttributeType overriddenType) {
