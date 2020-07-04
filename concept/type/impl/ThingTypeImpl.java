@@ -135,7 +135,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         TypeEdge hasEdge, keyEdge;
 
         if ((hasEdge = vertex.outs().edge(Schema.Edge.Type.HAS, attVertex)) != null) {
-            // TODO: These ownership and uniqueness checks should be parall
+            // TODO: These ownership and uniqueness checks should be parallelised to scale better
             if (instances().anyMatch(thing -> compareSize(thing.attributes(attributeType), 1) != 0)) {
                 throw new HypergraphException(PRECONDITION_KEY_OWNERSHIP.format(vertex.label(), attVertex.label()));
             } else if (attributeType.instances().anyMatch(att -> compareSize(att.owners(this), 1) != 0)) {
