@@ -60,14 +60,15 @@ public abstract class TypeAdjacencyImpl implements TypeAdjacency {
     }
 
     @Override
-    public void put(Schema.Edge.Type schema, TypeVertex adjacent) {
+    public TypeEdgeImpl put(Schema.Edge.Type schema, TypeVertex adjacent) {
         TypeVertex from = direction.isOut() ? owner : adjacent;
         TypeVertex to = direction.isOut() ? adjacent : owner;
-        TypeEdge edge = new TypeEdgeImpl.Buffered(schema, from, to);
+        TypeEdgeImpl edge = new TypeEdgeImpl.Buffered(schema, from, to);
         edges.computeIfAbsent(schema, e -> ConcurrentHashMap.newKeySet()).add(edge);
         if (direction.isOut()) ((TypeAdjacencyImpl) to.ins()).putNonRecursive(edge);
         else ((TypeAdjacencyImpl) from.outs()).putNonRecursive(edge);
         owner.setModified();
+        return edge;
     }
 
     @Override

@@ -88,9 +88,9 @@ public abstract class ThingImpl implements Thing {
             throw new HypergraphException(Error.ThingWrite.THING_ATTRIBUTE_UNDEFINED.format(vertex.type().label()));
         } else if (type().keys().anyMatch(t -> t.equals(attribute.type()))) {
             if (keys(attribute.type()).findAny().isPresent()) {
-                throw new HypergraphException(Error.ThingWrite.THING_KEY_OVER.format(attribute.type().label(), vertex.type().label()));
-            } else if (attribute.owners().findAny().isPresent()) {
-                throw new HypergraphException(Error.ThingWrite.THING_KEY_TAKEN.format(attribute.type().label(), vertex.type().label()));
+                throw new HypergraphException(Error.ThingWrite.THING_KEY_OVER.format(attribute.type().label(), type().label()));
+            } else if (attribute.owners(type()).findAny().isPresent()) {
+                throw new HypergraphException(Error.ThingWrite.THING_KEY_TAKEN.format(attribute.type().label(), type().label()));
             }
         }
 

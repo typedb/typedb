@@ -40,8 +40,13 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import static hypergraph.common.collection.Streams.compareSize;
 import static hypergraph.common.exception.Error.TypeWrite.INVALID_KEY_VALUE_TYPE;
+import static hypergraph.common.exception.Error.TypeWrite.INVALID_OVERRIDE_NOT_AVAILABLE;
+import static hypergraph.common.exception.Error.TypeWrite.INVALID_OVERRIDE_NOT_SUPERTYPE;
 import static hypergraph.common.exception.Error.TypeWrite.INVALID_ROOT_TYPE_MUTATION;
+import static hypergraph.common.exception.Error.TypeWrite.PRECONDITION_KEY_OWNERSHIP;
+import static hypergraph.common.exception.Error.TypeWrite.PRECONDITION_KEY_UNIQUENESS;
 import static hypergraph.common.iterator.Iterators.apply;
 import static hypergraph.common.iterator.Iterators.distinct;
 import static hypergraph.common.iterator.Iterators.filter;
@@ -70,9 +75,9 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     private <T extends Type> void override(Schema.Edge.Type schema, T type, T overriddenType,
                                            Stream<? extends Type> overridable, Stream<? extends Type> notOverridable) {
         if (type.sups().noneMatch(t -> t.equals(overriddenType))) {
-            throw new HypergraphException(Error.TypeWrite.INVALID_OVERRIDE_NOT_SUPERTYPE.format(type.label(), overriddenType.label()));
+            throw new HypergraphException(INVALID_OVERRIDE_NOT_SUPERTYPE.format(type.label(), overriddenType.label()));
         } else if (notOverridable.anyMatch(t -> t.equals(overriddenType)) || overridable.noneMatch(t -> t.equals(overriddenType))) {
-            throw new HypergraphException(Error.TypeWrite.INVALID_OVERRIDE_NOT_AVAILABLE.format(type.label(), overriddenType.label()));
+            throw new HypergraphException(INVALID_OVERRIDE_NOT_AVAILABLE.format(type.label(), overriddenType.label()));
         }
 
         vertex.outs().edge(schema, ((TypeImpl) type).vertex).overridden(((TypeImpl) overriddenType).vertex);
@@ -122,18 +127,24 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     private void hasKey(AttributeType attributeType) {
         if (!attributeType.isKeyable()) {
             throw new HypergraphException(INVALID_KEY_VALUE_TYPE.format(attributeType.label(), attributeType.valueType().getSimpleName()));
-        } else if (vertex.outs().edge(Schema.Edge.Type.HAS, ((AttributeTypeImpl) attributeType).vertex) != null) {
-            throw new HypergraphException("Invalid Key Assignment: " + attributeType.label() + " is already used as an attribute");
         } else if (concat(sup().keys(attributeType.valueType()), sup().overriddenAttributes()).anyMatch(a -> a.equals(attributeType))) {
             throw new HypergraphException("Invalid Attribute Assignment: " + attributeType.label() + " is already inherited and/or overridden ");
         }
 
         TypeVertex attVertex = ((AttributeTypeImpl) attributeType).vertex;
-        vertex.outs().put(Schema.Edge.Type.KEY, attVertex);
+        TypeEdge hasEdge, keyEdge;
 
-        if (sup().declaredAttributes().anyMatch(a -> a.equals(attributeType))) {
-            vertex.outs().edge(Schema.Edge.Type.KEY, attVertex).overridden(attVertex);
+        if ((hasEdge = vertex.outs().edge(Schema.Edge.Type.HAS, attVertex)) != null) {
+            // TODO: These ownership and uniqueness checks should be parall
+            if (instances().anyMatch(thing -> compareSize(thing.attributes(attributeType), 1) != 0)) {
+                throw new HypergraphException(PRECONDITION_KEY_OWNERSHIP.format(vertex.label(), attVertex.label()));
+            } else if (attributeType.instances().anyMatch(att -> compareSize(att.owners(this), 1) != 0)) {
+                throw new HypergraphException(PRECONDITION_KEY_UNIQUENESS.format(attVertex.label(), vertex.label()));
+            }
+            hasEdge.delete();
         }
+        keyEdge = vertex.outs().put(Schema.Edge.Type.KEY, attVertex);
+        if (sup().declaredAttributes().anyMatch(a -> a.equals(attributeType))) keyEdge.overridden(attVertex);
     }
 
     private void hasKey(AttributeType attributeType, AttributeType overriddenType) {

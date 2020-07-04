@@ -149,13 +149,14 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
     }
 
     @Override
-    public void put(Schema.Edge.Thing schema, ThingVertex adjacent) {
+    public ThingEdgeImpl put(Schema.Edge.Thing schema, ThingVertex adjacent) {
         assert !schema.isOptimisation();
-        ThingEdge edge = direction.isOut()
+        ThingEdgeImpl edge = direction.isOut()
                 ? new ThingEdgeImpl.Buffered(schema, owner, adjacent)
                 : new ThingEdgeImpl.Buffered(schema, adjacent, owner);
         IID[] infixes = new IID[]{adjacent.iid().prefix(), adjacent.iid().type()};
         put(schema, edge, infixes, true, true);
+        return edge;
     }
 
     public void put(Schema.Edge.Thing schema, ThingVertex adjacent, ThingVertex optimised) {

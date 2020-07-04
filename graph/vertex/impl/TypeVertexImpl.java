@@ -301,12 +301,12 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
 
         @Override
         public Iterator<ThingVertex> instances() {
-            return distinct(link(instances.iterator(), graph.storage().iterate(
+            Iterator<ThingVertex> storageIterator = graph.storage().iterate(
                     join(iid.bytes(), Schema.Edge.ISA.in().bytes()),
                     (key, value) -> graph.thing().convert(EdgeIID.InwardsISA.of(key).end())
-            )));
-            // TODO: Can we figure out how to do a "distinct iterator" that is more efficient?
-            //       The one above still has to construct a full ThingVertexImpl and then check against a set
+            );
+            if (instances.isEmpty()) return storageIterator;
+            else return distinct(link(instances.iterator(), storageIterator));
         }
 
         @Override

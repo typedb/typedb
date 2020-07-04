@@ -62,7 +62,7 @@ public interface Adjacency<
      * @param schema   of the edge that will connect the owner to the adjacent vertex
      * @param adjacent the adjacent vertex
      */
-    void put(EDGE_SCHEMA schema, VERTEX adjacent);
+    EDGE put(EDGE_SCHEMA schema, VERTEX adjacent);
 
     /**
      * Deletes all edges with a given schema from the {@code Adjacency} map.

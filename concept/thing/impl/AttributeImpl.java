@@ -20,11 +20,18 @@ package hypergraph.concept.thing.impl;
 
 import hypergraph.common.exception.HypergraphException;
 import hypergraph.concept.thing.Attribute;
+import hypergraph.concept.type.ThingType;
 import hypergraph.concept.type.impl.AttributeTypeImpl;
+import hypergraph.concept.type.impl.ThingTypeImpl;
+import hypergraph.graph.iid.PrefixIID;
 import hypergraph.graph.util.Schema;
 import hypergraph.graph.vertex.AttributeVertex;
+import hypergraph.graph.vertex.ThingVertex;
+import hypergraph.graph.vertex.TypeVertex;
+import hypergraph.graph.vertex.impl.TypeVertexImpl;
 
 import java.time.LocalDateTime;
+import java.util.Iterator;
 import java.util.stream.Stream;
 
 import static hypergraph.common.exception.Error.ConceptRead.INVALID_CONCEPT_CASTING;
@@ -72,7 +79,19 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
 
     @Override
     public Stream<? extends ThingImpl> owners() {
-        return stream(apply(vertex.ins().edge(Schema.Edge.Thing.HAS).from(), v -> {
+        return owners(vertex.ins().edge(Schema.Edge.Thing.HAS).from());
+    }
+
+    @Override
+    public Stream<? extends ThingImpl> owners(ThingType ownerType) {
+        TypeVertex ownerVertex = ((ThingTypeImpl) ownerType).vertex;
+        return owners(vertex.ins().edge(Schema.Edge.Thing.HAS,
+                                        PrefixIID.of(Schema.Vertex.Thing.of(ownerVertex.schema()).prefix()),
+                                        ownerVertex.iid()).from());
+    }
+
+    private Stream<? extends ThingImpl> owners(Iterator<ThingVertex> owners) {
+        return stream(apply(owners, v -> {
             switch (v.schema()) {
                 case ENTITY:
                     return EntityImpl.of(v);
