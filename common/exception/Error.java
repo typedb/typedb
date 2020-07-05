@@ -188,7 +188,7 @@ public abstract class Error<TYPE extends Error<TYPE>> {
     public static class TypeRead extends Error {
 
         public static final TypeRead TYPE_ROOT_MISMATCH =
-                new TypeRead(1, "Attempted to retrieve '%s' as '%s', while it is actually a '%s'.");
+                new TypeRead(1, "Attempted to retrieve '%s' as '%s', while it is actually a(n) '%s'.");
         public static final TypeRead VALUE_TYPE_MISMATCH =
                 new TypeRead(2, "Attempted to retrieve '%s' as AttributeType of ValueType '%s', while it actually has ValueType '%s'.");
         private static final String codePrefix = "TYR";
@@ -221,20 +221,22 @@ public abstract class Error<TYPE extends Error<TYPE>> {
                 new TypeWrite(7, "The Type '%s' cannot override '%s' as it is either already declared, or not inherited");
         public static final TypeWrite ATTRIBUTE_SUPERTYPE_VALUE_TYPE =
                 new TypeWrite(8, "The attribute type '%s' has value type '%s', and cannot have supertype '%s' with value type '%s'.");
+        public static final TypeWrite ATTRIBUTE_SUPERTYPE_NOT_ABSTRACT =
+                new TypeWrite(9, "The attribute type '%s' cannot be a subtyped as it is not abstract");
         public static final TypeWrite HAS_KEY_VALUE_TYPE =
-                new TypeWrite(9, "The attribute type '%s' has value type '%s', and cannot and cannot be used as a type key.");
+                new TypeWrite(10, "The attribute type '%s' has value type '%s', and cannot and cannot be used as a type key.");
         public static final TypeWrite HAS_KEY_NOT_AVAILABLE =
-                new TypeWrite(10, "The attribute type '%s' has been inherited or overridden, and cannot be redeclared as a key");
+                new TypeWrite(11, "The attribute type '%s' has been inherited or overridden, and cannot be redeclared as a key");
         public static final TypeWrite HAS_KEY_PRECONDITION_OWNERSHIP =
-                new TypeWrite(11, "The instances of type '%s' does not have exactly one attribute of type '%s' to convert to key");
+                new TypeWrite(12, "The instances of type '%s' does not have exactly one attribute of type '%s' to convert to key");
         public static final TypeWrite HAS_ATT_NOT_AVAILABLE =
-                new TypeWrite(12, "The attribute type '%s' has been inherited or overridden, and cannot be redeclared as an attribute");
+                new TypeWrite(13, "The attribute type '%s' has been inherited or overridden, and cannot be redeclared as an attribute");
         public static final TypeWrite HAS_KEY_PRECONDITION_UNIQUENESS =
-                new TypeWrite(13, "The attributes of type '%s' are not uniquely owned by instances of type '%s' to convert to key");
+                new TypeWrite(14, "The attributes of type '%s' are not uniquely owned by instances of type '%s' to convert to key");
         public static final TypeWrite PLAYS_ROLE_NOT_AVAILABLE =
-                new TypeWrite(14, "The role type '%s' has been inherited or overridden, and cannot be redeclared");
+                new TypeWrite(15, "The role type '%s' has been inherited or overridden, and cannot be redeclared");
         public static final TypeWrite RELATION_NO_ROLE =
-                new TypeWrite(15, "RelationType '%s' does not relate any role type");
+                new TypeWrite(16, "RelationType '%s' does not relate any role type");
 
         private static final String codePrefix = "TYW";
         private static final String descriptionPrefix = "Invalid Type Definition";

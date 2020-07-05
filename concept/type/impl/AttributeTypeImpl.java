@@ -36,7 +36,10 @@ import java.util.Iterator;
 import java.util.stream.Stream;
 
 import static hypergraph.common.exception.Error.ConceptRead.INVALID_CONCEPT_CASTING;
+import static hypergraph.common.exception.Error.TypeWrite.ATTRIBUTE_SUPERTYPE_NOT_ABSTRACT;
+import static hypergraph.common.exception.Error.TypeWrite.ATTRIBUTE_SUPERTYPE_VALUE_TYPE;
 import static hypergraph.common.exception.Error.TypeWrite.ROOT_TYPE_MUTATION;
+import static hypergraph.common.exception.Error.TypeWrite.SUPERTYPE_SELF;
 import static hypergraph.common.iterator.Iterators.apply;
 import static hypergraph.common.iterator.Iterators.stream;
 
@@ -98,12 +101,16 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
     @Override
     public void sup(AttributeType superType) {
         if (!superType.isRoot() && !this.valueType().equals(superType.valueType())) {
-            throw new HypergraphException(Error.TypeWrite.ATTRIBUTE_SUPERTYPE_VALUE_TYPE.format(
-                    this.label(), this.valueType().getSimpleName(),
-                    superType.label(), superType.valueType().getSimpleName())
-            );
+            throw new HypergraphException(ATTRIBUTE_SUPERTYPE_VALUE_TYPE.format(
+                    label(), valueType().getSimpleName(), superType.label(), superType.valueType().getSimpleName()
+            ));
+        } else if (this.equals(superType)) {
+            throw new HypergraphException(SUPERTYPE_SELF.format(label()));
+        } else if (!superType.isAbstract()) {
+            throw new HypergraphException(ATTRIBUTE_SUPERTYPE_NOT_ABSTRACT.format(superType.label()));
         }
-        super.superTypeVertex(((AttributeTypeImpl) superType).vertex);
+        vertex.outs().edge(Schema.Edge.Type.SUB, sup().vertex).delete();
+        vertex.outs().put(Schema.Edge.Type.SUB, ((AttributeTypeImpl) superType).vertex);
     }
 
     @Override

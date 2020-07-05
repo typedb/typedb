@@ -34,6 +34,7 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static hypergraph.common.exception.Error.ThingWrite.ILLEGAL_ABSTRACT_WRITE;
+import static hypergraph.common.exception.Error.TypeWrite.SUPERTYPE_SELF;
 import static hypergraph.common.iterator.Iterators.apply;
 import static hypergraph.common.iterator.Iterators.loop;
 import static hypergraph.common.iterator.Iterators.stream;
@@ -108,9 +109,7 @@ public abstract class TypeImpl implements Type {
     }
 
     void superTypeVertex(TypeVertex superTypeVertex) {
-        if (vertex.equals(superTypeVertex)) {
-            throw new HypergraphException(Error.TypeWrite.SUPERTYPE_SELF.format(vertex.label()));
-        }
+        if (vertex.equals(superTypeVertex)) throw new HypergraphException(SUPERTYPE_SELF.format(vertex.label()));
         vertex.outs().edge(Schema.Edge.Type.SUB, ((TypeImpl) sup()).vertex).delete();
         vertex.outs().put(Schema.Edge.Type.SUB, superTypeVertex);
     }
