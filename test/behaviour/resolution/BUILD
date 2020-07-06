@@ -28,6 +28,7 @@ java_library(
         "//test/behaviour/resolution/framework:resolution-lib",
         "//kb/server",
         "//test/behaviour/connection:steps",
+        "//test/behaviour/graql:steps",
 
         # Grakn Labs dependencies
         "@graknlabs_graql//java:graql",

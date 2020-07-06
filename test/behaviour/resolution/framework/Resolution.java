@@ -21,6 +21,7 @@ package grakn.core.test.behaviour.resolution.framework;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
+import grakn.core.test.behaviour.connection.session.SessionManager;
 import grakn.core.test.behaviour.resolution.framework.complete.Completer;
 import grakn.core.test.behaviour.resolution.framework.complete.SchemaManager;
 import grakn.core.test.behaviour.resolution.framework.resolve.ResolutionQueryBuilder;
@@ -33,10 +34,9 @@ import java.util.stream.Collectors;
 import static com.google.common.collect.Iterables.getOnlyElement;
 import static grakn.core.test.behaviour.resolution.framework.complete.SchemaManager.filterCompletionSchema;
 
-public class Resolution {
+public class Resolution implements AutoCloseable {
 
-    private Session completionSession;
-    private Session testSession;
+    private SessionManager sessionManager;
     private int completedInferredThingCount;
     private int initialThingCount;
 
@@ -44,27 +44,25 @@ public class Resolution {
      * Resolution Testing Framework's entry point. Takes in sessions each for a `Completion` and `Test` keyspace. Each
      * keyspace loaded with the same schema and data. This should be true unless testing this code, in which case a
      * disparity between the two keyspaces is introduced to check that the framework throws an error when it should.
-     * @param completionSession a session for the `Completion` keyspace with base data included
-     * @param testSession a session for the `test` keyspace with base data included
      */
-    public Resolution(Session completionSession, Session testSession) {
-        this.completionSession = completionSession;
-        this.testSession = testSession;
+    public Resolution(final SessionManager sessionManager) {
+        this.sessionManager = sessionManager;
+        final Session completionSession = sessionManager.getSession("completion");
 
         // TODO Check that nothing in the given schema conflicts with the resolution schema
 
         // Complete the KB-complete
-        Completer completer = new Completer(this.completionSession);
-        try (Transaction tx = this.completionSession.transaction(Transaction.Type.WRITE)) {
+        Completer completer = new Completer();
+        sessionManager.execute(completionSession, tx -> {
             completer.loadRules(SchemaManager.getAllRules(tx));
-        }
+        });
+        sessionManager.execute(completionSession, SchemaManager::undefineAllRules);
+        sessionManager.execute(completionSession, SchemaManager::enforceAllTypesHaveKeys);
+        SchemaManager.addResolutionSchema(completionSession);
+        sessionManager.execute(completionSession, SchemaManager::connectResolutionSchema);
 
-        SchemaManager.undefineAllRules(this.completionSession);
-        SchemaManager.enforceAllTypesHaveKeys(this.completionSession);
-        SchemaManager.addResolutionSchema(this.completionSession);
-        SchemaManager.connectResolutionSchema(this.completionSession);
-        initialThingCount = thingCount(this.completionSession);
-        completedInferredThingCount = completer.complete();
+        initialThingCount = thingCount(completionSession);
+        completedInferredThingCount = completer.complete(getOpenTransaction(completionSession));
     }
 
     /**
@@ -72,15 +70,14 @@ public class Resolution {
      * @param session Grakn Session
      * @return number of instances
      */
-    private static int thingCount(Session session) {
-        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
+    private int thingCount(Session session) {
+        return sessionManager.execute(session, tx -> {
             return getOnlyElement(tx.execute(Graql.match(Graql.var("x").isa("thing")).get().count())).number().intValue();
-        }
+        });
     }
 
     public void close() {
-        completionSession.close();
-        testSession.close();
+        this.sessionManager.close();
     }
 
     /**
@@ -89,16 +86,30 @@ public class Resolution {
      * @param inferenceQuery The reference query to make against both keyspaces
      */
     public void testQuery(GraqlGet inferenceQuery) {
-        Transaction testTx = testSession.transaction(Transaction.Type.READ);
-        int testResultsCount = testTx.execute(inferenceQuery).size();
-        testTx.close();
-
-        Transaction completionTx = completionSession.transaction(Transaction.Type.READ);
-        int completionResultsCount = filterCompletionSchema(completionTx.stream(inferenceQuery)).collect(Collectors.toSet()).size();
-        completionTx.close();
+        final int testResultsCount = sessionManager.execute(getTestSession(), tx -> {
+            return tx.execute(inferenceQuery).size();
+        });
+        final int completionResultsCount = sessionManager.execute(getCompletionSession(), tx -> {
+            return filterCompletionSchema(tx.stream(inferenceQuery)).collect(Collectors.toSet()).size();
+        });
         if (completionResultsCount != testResultsCount) {
             String msg = String.format("Query had an incorrect number of answers. Expected %d answers, but found %d " +
                     "answers, for query :\n %s", completionResultsCount, testResultsCount, inferenceQuery);
+            throw new CorrectnessException(msg);
+        }
+    }
+
+    /**
+     * Run a query against just the test keyspace and manually assert that the number of answers is correct.
+     * @param inferenceQuery The reference query to make against the test keyspace
+     */
+    public void manuallyTestQuery(final GraqlGet inferenceQuery, final int expectedCount) {
+        final int testResultsCount = sessionManager.execute(getTestSession(), tx -> {
+            return tx.execute(inferenceQuery).size();
+        });
+        if (expectedCount != testResultsCount) {
+            String msg = String.format("Query had an incorrect number of answers. Expected [%d] answers (manually defined), " +
+                    "but found [%d] answers, for query :\n %s", expectedCount, testResultsCount, inferenceQuery);
             throw new CorrectnessException(msg);
         }
     }
@@ -112,24 +123,24 @@ public class Resolution {
         ResolutionQueryBuilder resolutionQueryBuilder = new ResolutionQueryBuilder();
         List<GraqlGet> queries;
 
-        try (Transaction tx = testSession.transaction(Transaction.Type.READ)) {
-            queries = resolutionQueryBuilder.buildMatchGet(tx, inferenceQuery);
-        }
+        queries = sessionManager.execute(getTestSession(), tx -> {
+            return resolutionQueryBuilder.buildMatchGet(tx, inferenceQuery);
+        });
 
         if (queries.size() == 0) {
             String msg = String.format("No resolution queries were constructed for query %s", inferenceQuery);
             throw new CorrectnessException(msg);
         }
 
-        try (Transaction tx = completionSession.transaction(Transaction.Type.READ)) {
-            for (GraqlGet query: queries) {
+        sessionManager.execute(getCompletionSession(), tx -> {
+            for (GraqlGet query : queries) {
                 List<ConceptMap> answers = tx.execute(query);
                 if (answers.size() != 1) {
                     String msg = String.format("Resolution query had %d answers, it should have had 1. The query is:\n %s", answers.size(), query);
                     throw new CorrectnessException(msg);
                 }
             }
-        }
+        });
     }
 
     /**
@@ -137,11 +148,23 @@ public class Resolution {
      * inferred facts in the completion keyspace against the total number that are inferred in the test keyspace
      */
     public void testCompleteness() {
-        int testInferredCount = thingCount(testSession) - initialThingCount;
+        int testInferredCount = thingCount(getTestSession()) - initialThingCount;
         if (testInferredCount != completedInferredThingCount) {
             String msg = String.format("The complete KB contains %d inferred concepts, whereas the test KB contains %d inferred concepts.", completedInferredThingCount, testInferredCount);
             throw new CompletenessException(msg);
         }
+    }
+
+    private Session getCompletionSession() {
+        return sessionManager.getSession("completion");
+    }
+
+    private Session getTestSession() {
+        return sessionManager.getPrimarySession();
+    }
+
+    private Transaction getOpenTransaction(final Session session) {
+        return sessionManager.getOpenTransaction(session);
     }
 
     public static class CorrectnessException extends RuntimeException {

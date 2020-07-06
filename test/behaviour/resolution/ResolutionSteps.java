@@ -18,54 +18,58 @@
 
 package grakn.core.test.behaviour.resolution;
 
-import grakn.core.kb.server.Transaction;
+import grakn.core.kb.server.Session;
+import grakn.core.test.behaviour.connection.session.SessionManager;
 import grakn.core.test.behaviour.resolution.framework.Resolution;
 import graql.lang.Graql;
-import graql.lang.query.GraqlDefine;
 import graql.lang.query.GraqlGet;
-import graql.lang.query.GraqlQuery;
-import io.cucumber.java.en.Given;
+import io.cucumber.java.After;
+import io.cucumber.java.Before;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
+
+import java.util.Arrays;
 
 import static grakn.core.test.behaviour.connection.ConnectionSteps.sessions;
 
 public class ResolutionSteps {
 
+    private SessionManager sessionManager;
     private static GraqlGet query;
     private static Resolution resolution;
 
-    @Given("graql define")
-    public void graql_define(String defineQueryStatements) {
-        sessions.forEach(session -> {
-            Transaction tx = session.transaction(Transaction.Type.WRITE);
-            GraqlDefine graqlQuery = Graql.parse(String.join("\n", defineQueryStatements)).asDefine();
-            tx.execute(graqlQuery);
-            tx.commit();
-        });
+    @Before
+    public void testSetup() {
+        sessionManager = new SessionManager();
     }
 
-    @Given("graql insert")
-    public void graql_insert(String insertQueryStatements) {
-        sessions.forEach(session -> {
-            Transaction tx = session.transaction(Transaction.Type.WRITE);
-            GraqlQuery graqlQuery = Graql.parse(String.join("\n", insertQueryStatements));
-            tx.execute(graqlQuery, true, true); // always use inference and have explanations
-            tx.commit();
-        });
+    @After
+    public void cleanup() {
+        resolution.close();
     }
 
     @When("reference kb is completed")
     public void reference_kb_is_completed() {
-        if (sessions.size() < 2) {
-            throw new RuntimeException("Two sessions must be defined, each with a separate keyspace");
-        }
-        resolution = new Resolution(sessions.get(0), sessions.get(1));
+        final Session completionSession = sessions.stream()
+                .filter(s -> s.keyspace().name().equalsIgnoreCase("completion"))
+                .findAny()
+                .orElse(null);
+        final Session testSession = sessions.stream()
+                .filter(s -> s.keyspace().name().equalsIgnoreCase("test"))
+                .findAny()
+                .orElse(null);
+        sessionManager.createSessions(Arrays.asList(completionSession, testSession));
+        resolution = new Resolution(sessionManager);
     }
 
     @Then("for graql query")
     public void for_graql_query(String graqlQuery) {
         query = Graql.parse(graqlQuery);
+    }
+
+    @Then("answer count is: {number}")
+    public void answer_count_is(final int expectedCount) {
+        resolution.manuallyTestQuery(query, expectedCount);
     }
 
     @Then("answer count is correct")
