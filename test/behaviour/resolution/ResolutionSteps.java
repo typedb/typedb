@@ -22,12 +22,13 @@ import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import grakn.core.test.behaviour.resolution.framework.Resolution;
 import graql.lang.Graql;
-import graql.lang.query.GraqlDefine;
 import graql.lang.query.GraqlGet;
 import graql.lang.query.GraqlQuery;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
+
+import java.util.function.Function;
 
 import static grakn.core.test.behaviour.connection.ConnectionSteps.sessions;
 
@@ -35,27 +36,17 @@ public class ResolutionSteps {
 
     private Session reasonedSession;
     private Session materialisedSession;
-    private GraqlGet query;
+    private GraqlGet queryToTest;
     private Resolution resolution;
 
-    @Given("graql define")
+    @Given("for each session, graql define")
     public void graql_define(String defineQueryStatements) {
-        sessions.forEach(session -> {
-            Transaction tx = session.transaction(Transaction.Type.WRITE);
-            GraqlDefine graqlQuery = Graql.parse(String.join("\n", defineQueryStatements)).asDefine();
-            tx.execute(graqlQuery);
-            tx.commit();
-        });
+        graql_query(defineQueryStatements, GraqlQuery::asDefine);
     }
 
-    @Given("graql insert")
+    @Given("for each session, graql insert")
     public void graql_insert(String insertQueryStatements) {
-        sessions.forEach(session -> {
-            Transaction tx = session.transaction(Transaction.Type.WRITE);
-            GraqlQuery graqlQuery = Graql.parse(String.join("\n", insertQueryStatements));
-            tx.execute(graqlQuery, true, true); // always use inference and have explanations
-            tx.commit();
-        });
+        graql_query(insertQueryStatements, GraqlQuery::asInsert);
     }
 
     @Given("materialised keyspace is named: {string}")
@@ -83,27 +74,36 @@ public class ResolutionSteps {
 
     @Then("for graql query")
     public void for_graql_query(String graqlQuery) {
-        query = Graql.parse(graqlQuery);
+        queryToTest = Graql.parse(graqlQuery).asGet();
     }
 
     @Then("for reasoned keyspace, answer size is: {number}")
     public void answer_count_is(final int expectedCount) {
-        resolution.manuallyValidateAnswerSize(query, expectedCount);
+        resolution.manuallyValidateAnswerSize(queryToTest, expectedCount);
     }
 
     @Then("answer count is correct")
     public void answer_count_is_correct() {
-        resolution.testQuery(query);
+        resolution.testQuery(queryToTest);
     }
 
     @Then("answers resolution is correct")
     public void answers_resolution_is_correct() {
-        resolution.testResolution(query);
+        resolution.testResolution(queryToTest);
     }
 
     @Then("test keyspace is complete")
     public void test_keyspace_is_complete() {
         resolution.testCompleteness();
+    }
+
+    private <TQuery extends GraqlQuery> void graql_query(final String queryStatements, final Function<GraqlQuery, TQuery> queryTypeFn) {
+        sessions.forEach(session -> {
+            final Transaction tx = session.transaction(Transaction.Type.WRITE);
+            final TQuery graqlQuery = queryTypeFn.apply(Graql.parse(String.join("\n", queryStatements)));
+            tx.execute(graqlQuery, true, true); // always use inference and have explanations
+            tx.commit();
+        });
     }
 
     private Session getReasonedSession() {
