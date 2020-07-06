@@ -51,6 +51,14 @@ assemble_targz(
     visibility = ["//visibility:public"]
 )
 
+deploy_artifact(
+    name = "deploy-linux-targz",
+    target = ":assemble-linux-targz",
+    artifact_group = "graknlabs_grakn_core",
+    artifact_name = "grakn-core-all-linux-{version}.tar.gz",
+    visibility = ["//visibility:public"],
+)
+
 assemble_zip(
     name = "assemble-mac-zip",
     targets = ["//server:server-deps",
@@ -133,18 +141,6 @@ assemble_versioned(
         "//server:assemble-mac-zip",
         "//server:assemble-windows-zip",
     ],
-)
-
-assemble_versioned(
-    name = "assemble-versioned-linux",
-    targets = [":assemble-linux-targz"],
-)
-
-deploy_artifact(
-    name = "deploy-versioned-linux",
-    target = ":assemble-versioned-linux",
-    artifact_group = "graknlabs_grakn_core",
-    visibility = ["//visibility:public"],
 )
 
 assemble_versioned(
