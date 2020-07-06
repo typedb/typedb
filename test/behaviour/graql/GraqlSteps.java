@@ -560,6 +560,9 @@ public class GraqlSteps {
             executeGraqlQuery(queryStatements, queryTypeFn);
         } catch (RuntimeException e) {
             threw = true;
+        } finally {
+            tx.close();
+            tx = session.transaction(Transaction.Type.WRITE);
         }
         assertTrue(threw);
     }
