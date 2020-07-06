@@ -18,6 +18,7 @@
 
 package grakn.core.test.behaviour.resolution;
 
+import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import grakn.core.test.behaviour.resolution.framework.Resolution;
 import graql.lang.Graql;
@@ -32,8 +33,10 @@ import static grakn.core.test.behaviour.connection.ConnectionSteps.sessions;
 
 public class ResolutionSteps {
 
-    private static GraqlGet query;
-    private static Resolution resolution;
+    private Session reasonedSession;
+    private Session materialisedSession;
+    private GraqlGet query;
+    private Resolution resolution;
 
     @Given("graql define")
     public void graql_define(String defineQueryStatements) {
@@ -55,17 +58,37 @@ public class ResolutionSteps {
         });
     }
 
+    @Given("materialised keyspace is named: {string}")
+    public void materialised_keyspace_is_named(final String keyspaceName) {
+        final Session materialisedSession = sessions.stream()
+                .filter(s -> s.keyspace().name().equals(keyspaceName))
+                .findAny()
+                .orElse(null);
+        setMaterialisedSession(materialisedSession);
+    }
+
+    @Given("reasoned keyspace is named: {string}")
+    public void reasoned_keyspace_is_named(final String keyspaceName) {
+        final Session reasonedSession = sessions.stream()
+                .filter(s -> s.keyspace().name().equals(keyspaceName))
+                .findAny()
+                .orElse(null);
+        setReasonedSession(reasonedSession);
+    }
+
     @When("reference kb is completed")
     public void reference_kb_is_completed() {
-        if (sessions.size() < 2) {
-            throw new RuntimeException("Two sessions must be defined, each with a separate keyspace");
-        }
-        resolution = new Resolution(sessions.get(0), sessions.get(1));
+        resolution = new Resolution(getMaterialisedSession(), getReasonedSession());
     }
 
     @Then("for graql query")
     public void for_graql_query(String graqlQuery) {
         query = Graql.parse(graqlQuery);
+    }
+
+    @Then("for reasoned keyspace, answer size is: {number}")
+    public void answer_count_is(final int expectedCount) {
+        resolution.manuallyValidateAnswerSize(query, expectedCount);
     }
 
     @Then("answer count is correct")
@@ -81,5 +104,21 @@ public class ResolutionSteps {
     @Then("test keyspace is complete")
     public void test_keyspace_is_complete() {
         resolution.testCompleteness();
+    }
+
+    private Session getReasonedSession() {
+        return reasonedSession;
+    }
+
+    private Session getMaterialisedSession() {
+        return materialisedSession;
+    }
+
+    private void setReasonedSession(Session value) {
+        reasonedSession = value;
+    }
+
+    private void setMaterialisedSession(Session value) {
+        materialisedSession = value;
     }
 }
