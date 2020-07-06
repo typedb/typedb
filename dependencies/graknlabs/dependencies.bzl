@@ -35,8 +35,12 @@ def graknlabs_graql():
     git_repository(
         name = "graknlabs_graql",
         remote = "https://github.com/graknlabs/graql",
-        commit = "6392c48b8e8cb990c4078747ad0312f9c4b4ce0f" # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_graql
+        commit = "08654214fa52434244606157e4c36ddb5796ba10" # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_graql
     )
+#    native.local_repository(
+#        name = "graknlabs_graql",
+#        path = "../graql",
+#    )
 
 def graknlabs_protocol():
     git_repository(
@@ -69,9 +73,13 @@ def graknlabs_simulation():
 def graknlabs_verification():
     git_repository(
         name = "graknlabs_verification",
-        remote = "https://github.com/graknlabs/verification",
-        commit = "34b5c64efe57919d170b212d1e231e11cf0e84e8",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_verification
+        remote = "https://github.com/flyingsilverfin/verification",
+        commit = "ab8557d0dc94b1569b0917384d7a7667a2d22fbf",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_verification
     )
+#    native.local_repository(
+#        name = "graknlabs_verification",
+#        path = "../verification",
+#    )
 
 def graknlabs_grabl_tracing():
     git_repository(
