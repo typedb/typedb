@@ -13,10 +13,15 @@ import graql.lang.pattern.Pattern;
 
 import java.io.Writer;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class Schema {
 
@@ -27,6 +32,12 @@ public class Schema {
         this.session = session;
     }
 
+    private final HashMap<String, List<TypeDeclaration>> superMap = new HashMap<>();
+    private final HashMap<String, TypeDeclaration> labelMap = new HashMap<>();
+
+    private List<String> attributeOrder = new ArrayList<>();
+    private List<String> relationOrder = new ArrayList<>();
+
     public void printSchema(Writer out) {
         tx = session.transaction(Transaction.Type.READ);
 
@@ -36,42 +47,57 @@ public class Schema {
         writer.println();
 
         AttributeType<?> metaAttribute = (AttributeType<?>) tx.getMetaAttributeType();
-        metaAttribute.subs().forEach(at -> {
-            if (!metaAttribute.equals(at) && !at.isImplicit()) {
-                TypeDeclaration td = new TypeDeclaration(at);
-                td.print(writer);
-                writer.println();
-            }
-        });
+        metaAttribute.subs()
+                .filter(at -> !metaAttribute.equals(at) && !at.isImplicit())
+                .forEach(TypeDeclaration::new);
 
         EntityType metaEntity = tx.getMetaEntityType();
-        metaEntity.subs().forEach(et -> {
-            if (!metaEntity.equals(et) && !et.isImplicit()) {
-                TypeDeclaration td = new TypeDeclaration(et);
-                td.print(writer);
-                writer.println();
-            }
-        });
+        metaEntity.subs()
+                .filter(et -> !metaEntity.equals(et) && !et.isImplicit())
+                .forEach(TypeDeclaration::new);
 
         RelationType metaRelationType = tx.getMetaRelationType();
-        metaRelationType.subs().forEach(rt -> {
-            if (!metaRelationType.equals(rt) && !rt.isImplicit()) {
-                TypeDeclaration td = new TypeDeclaration(rt);
-                td.print(writer);
-                writer.println();
-            }
-        });
+        metaRelationType.subs()
+                .filter(rt -> !metaRelationType.equals(rt) && !rt.isImplicit())
+                .forEach(TypeDeclaration::new);
 
         Rule metaRule = tx.getMetaRule();
-        metaRule.subs().forEach(r -> {
-            if (!metaRule.equals(r) && !r.isImplicit()) {
-                TypeDeclaration td = new TypeDeclaration(r);
-                td.print(writer);
-                writer.println();
-            }
-        });
+        metaRule.subs()
+                .filter(r -> !metaRule.equals(r))
+                .forEach(TypeDeclaration::new);
+
+        orderLabelsHierarchically(attributeOrder, "attribute");
+        orderLabelsHierarchically(relationOrder, "relation");
+
+        printTypesHierarchically(writer, "attribute");
+        printTypesHierarchically(writer, "entity");
+        printTypesHierarchically(writer, "relation");
 
         tx.close();
+    }
+
+    private void orderLabelsHierarchically(List<String> ordering, String startingLabel) {
+        ordering.add(startingLabel);
+        List<TypeDeclaration> children = superMap.get(startingLabel);
+        if (children == null) return;
+
+        children.sort(Comparator.comparing(td -> td.label));
+        for (TypeDeclaration child : children) {
+            orderLabelsHierarchically(ordering, child.label);
+        }
+    }
+
+    private void printTypesHierarchically(IndentPrintWriter writer, String startingLabel) {
+        List<TypeDeclaration> children = superMap.get(startingLabel);
+        if (children == null) return;
+
+        for (TypeDeclaration child : children) {
+            child.print(writer);
+            writer.println();
+            writer.indent();
+            printTypesHierarchically(writer, child.label);
+            writer.unindent();
+        }
     }
 
     private class RelatesDeclaration {
@@ -95,6 +121,30 @@ public class Schema {
                 writer.print(as);
             }
         }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (!(o instanceof RelatesDeclaration)) return false;
+            RelatesDeclaration that = (RelatesDeclaration) o;
+            return Objects.equals(label, that.label) &&
+                    Objects.equals(as, that.as);
+        }
+
+        @Override
+        public int hashCode() {
+            return com.google.common.base.Objects.hashCode(label, as);
+        }
+    }
+
+    List<String> order(Set<String> toOrder, List<String> master) {
+        List<String> results = new ArrayList<>(toOrder.size());
+        for (String s : master) {
+            if (toOrder.contains(s)) {
+                results.add(s);
+            }
+        }
+        return results;
     }
 
     private class TypeDeclaration {
@@ -111,8 +161,10 @@ public class Schema {
 
         TypeDeclaration(SchemaConcept sc) {
             label = sc.label().toString();
+            labelMap.put(label, this);
 
             superType = Objects.requireNonNull(sc.sup()).label().toString();
+            superMap.computeIfAbsent(superType, st -> new ArrayList<>()).add(this);
 
             if (sc.isAttributeType()) {
                 AttributeType.DataType<?> dataType = sc.asAttributeType().dataType();
@@ -141,6 +193,19 @@ public class Schema {
                         .filter(r -> !r.isImplicit())
                         .map(t -> t.label().toString())
                         .collect(Collectors.toSet());
+
+                TypeDeclaration parent = labelMap.get(superType);
+                if (parent != null) {
+                    for (String parentKey : parent.key) {
+                        key.remove(parentKey);
+                    }
+                    for (String parentHas : parent.has) {
+                        has.remove(parentHas);
+                    }
+                    for (String parentPlays : parent.plays) {
+                        plays.remove(parentPlays);
+                    }
+                }
             } else {
                 isAbstract = false;
                 key = Collections.emptySet();
@@ -154,6 +219,13 @@ public class Schema {
                         .filter(r -> !r.isImplicit())
                         .map(RelatesDeclaration::new)
                         .collect(Collectors.toSet());
+
+                TypeDeclaration parent = labelMap.get(superType);
+                if (parent != null) {
+                    for (RelatesDeclaration parentRelates : parent.relates) {
+                        relates.remove(parentRelates);
+                    }
+                }
             } else {
                 relates = Collections.emptySet();
             }
@@ -182,22 +254,24 @@ public class Schema {
                 writer.print("datatype ");
                 writer.print(dataType);
             }
-            for (String key : this.key) {
+            for (String key : order(this.key, attributeOrder)) {
                 writer.println(",");
                 writer.print("key ");
                 writer.print(key);
             }
-            for (String has : this.has) {
+            for (String has : order(this.has, attributeOrder)) {
                 writer.println(",");
                 writer.print("has ");
                 writer.print(has);
             }
-            for (String plays : this.plays) {
+            for (String plays : this.plays.stream().sorted().collect(Collectors.toList())) {
                 writer.println(",");
                 writer.print("plays ");
                 writer.print(plays);
             }
-            for (RelatesDeclaration relates : this.relates) {
+            for (RelatesDeclaration relates : this.relates.stream()
+                    .sorted(Comparator.comparing(r -> r.label))
+                    .collect(Collectors.toList())) {
                 writer.println(",");
                 writer.print("relates ");
                 relates.print(writer);
