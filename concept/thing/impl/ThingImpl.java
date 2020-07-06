@@ -39,6 +39,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import static hypergraph.common.exception.Error.ThingWrite.THING_KEY_MISSING;
 import static hypergraph.common.iterator.Iterators.apply;
 import static hypergraph.common.iterator.Iterators.filter;
 import static hypergraph.common.iterator.Iterators.link;
@@ -154,7 +155,7 @@ public abstract class ThingImpl implements Thing {
         if (keys().map(Attribute::type).count() < type().keys().count()) {
             Set<AttributeType> missing = type().keys().collect(toSet());
             missing.removeAll(keys().map(Attribute::type).collect(toSet()));
-            throw new HypergraphException(Error.ThingWrite.THING_KEY_MISSING.format(this.vertex.type().label(), printTypeSet(missing)));
+            throw new HypergraphException(THING_KEY_MISSING.format(type().label(), printTypeSet(missing)));
         }
     }
 

@@ -29,7 +29,9 @@ import hypergraph.graph.vertex.ThingVertex;
 import hypergraph.graph.vertex.TypeVertex;
 
 import javax.annotation.Nullable;
+import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
 import java.util.stream.Stream;
 
 import static hypergraph.common.exception.Error.TypeWrite.ROOT_TYPE_MUTATION;
@@ -106,7 +108,8 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
     }
 
     @Override
-    public void validate() {
+    public List<HypergraphException> validate() {
+        return super.validate();
         // TODO: Add any validation that would apply to all RoleTypes here
     }
 

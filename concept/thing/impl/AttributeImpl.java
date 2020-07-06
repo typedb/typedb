@@ -28,7 +28,6 @@ import hypergraph.graph.util.Schema;
 import hypergraph.graph.vertex.AttributeVertex;
 import hypergraph.graph.vertex.ThingVertex;
 import hypergraph.graph.vertex.TypeVertex;
-import hypergraph.graph.vertex.impl.TypeVertexImpl;
 
 import java.time.LocalDateTime;
 import java.util.Iterator;

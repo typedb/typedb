@@ -31,6 +31,7 @@ import hypergraph.graph.vertex.ThingVertex;
 import hypergraph.graph.vertex.TypeVertex;
 
 import javax.annotation.Nullable;
+import java.util.List;
 import java.util.stream.Stream;
 
 import static hypergraph.common.exception.Error.TypeWrite.ROOT_TYPE_MUTATION;
@@ -89,8 +90,8 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
     }
 
     @Override
-    public void validate() {
-        super.validate();
+    public List<HypergraphException> validate() {
+        return super.validate();
         // TODO: Add any validation that would apply to all EntityTypes here
     }
 

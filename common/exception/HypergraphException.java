@@ -18,6 +18,8 @@
 
 package hypergraph.common.exception;
 
+import java.util.List;
+
 public class HypergraphException extends RuntimeException {
 
     public HypergraphException(String error) {
@@ -33,4 +35,26 @@ public class HypergraphException extends RuntimeException {
         super(e);
     }
 
+    public static class List extends HypergraphException {
+
+        java.util.List<HypergraphException> exceptions;
+
+        public List(java.util.List<HypergraphException> exceptions) {
+            super(getMessages(exceptions));
+            this.exceptions = exceptions;
+        }
+
+        private static String getMessages(java.util.List<HypergraphException> exceptions) {
+            StringBuilder messages = new StringBuilder();
+            for (HypergraphException exception : exceptions) {
+                messages.append(exception.getMessage()).append("\n");
+            }
+            return messages.toString();
+        }
+
+        @Override
+        public void printStackTrace() {
+            for (HypergraphException exception : exceptions) exception.printStackTrace();
+        }
+    }
 }

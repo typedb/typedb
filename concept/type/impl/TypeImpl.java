@@ -28,7 +28,9 @@ import hypergraph.graph.vertex.ThingVertex;
 import hypergraph.graph.vertex.TypeVertex;
 
 import javax.annotation.Nullable;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -142,8 +144,9 @@ public abstract class TypeImpl implements Type {
     }
 
     @Override
-    public void validate() {
+    public List<HypergraphException> validate() {
         // TODO: Add any validation that would apply to all Types here
+        return new ArrayList<>();
     }
 
     void validateIsCommitedAndNotAbstract(Class<?> instanceClass) {

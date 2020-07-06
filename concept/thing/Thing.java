@@ -197,4 +197,9 @@ public interface Thing extends Concept {
      * @return true if this {@code Thing} has been deleted
      */
     boolean isDeleted();
+
+    /**
+     * Validates and throws an exception if there is any violation.
+     */
+    void validate();
 }

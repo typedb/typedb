@@ -35,6 +35,12 @@ import hypergraph.graph.util.Schema;
 import hypergraph.graph.vertex.TypeVertex;
 import hypergraph.graph.vertex.Vertex;
 
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.stream.Collectors;
+
 import static hypergraph.common.exception.Error.Transaction.UNSUPPORTED_OPERATION;
 
 public final class Concepts {
@@ -124,9 +130,11 @@ public final class Concepts {
     }
 
     public void validateTypes() {
-        graph.type().vertices().parallel()
+        List<HypergraphException> exceptions = graph.type().vertices().parallel()
                 .filter(Vertex::isModified)
-                .forEach(v -> TypeImpl.of(v).validate());
+                .map(v -> TypeImpl.of(v).validate())
+                .collect(ArrayList::new, ArrayList::addAll, ArrayList::addAll);
+        if (!exceptions.isEmpty()) throw new HypergraphException.List(exceptions);
     }
 
     public void validateThings() {

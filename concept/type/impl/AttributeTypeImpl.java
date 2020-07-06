@@ -33,6 +33,7 @@ import hypergraph.graph.vertex.TypeVertex;
 import javax.annotation.Nullable;
 import java.time.LocalDateTime;
 import java.util.Iterator;
+import java.util.List;
 import java.util.stream.Stream;
 
 import static hypergraph.common.exception.Error.ConceptRead.INVALID_CONCEPT_CASTING;
@@ -124,8 +125,8 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
     }
 
     @Override
-    public void validate() {
-        super.validate();
+    public List<HypergraphException> validate() {
+        return super.validate();
         // TODO: Add any validation that would apply to all AttributeTypes here
     }
 

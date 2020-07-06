@@ -34,6 +34,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Stream;
 
+import static hypergraph.common.exception.Error.ThingWrite.RELATION_NO_PLAYER;
 import static hypergraph.common.iterator.Iterators.filter;
 import static hypergraph.common.iterator.Iterators.stream;
 
@@ -106,7 +107,7 @@ public class RelationImpl extends ThingImpl implements Relation {
     public void validate() {
         super.validate();
         if (!vertex.outs().edge(Schema.Edge.Thing.RELATES).to().hasNext()) {
-            throw new HypergraphException(Error.ThingWrite.RELATION_NO_PLAYER.format(type().label()));
+            throw new HypergraphException(RELATION_NO_PLAYER.format(type().label()));
         }
     }
 }

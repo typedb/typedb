@@ -33,14 +33,18 @@ import hypergraph.graph.util.Schema;
 import hypergraph.graph.vertex.TypeVertex;
 
 import javax.annotation.Nullable;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
 import static hypergraph.common.collection.Streams.compareSize;
 import static hypergraph.common.exception.Error.Internal.UNRECOGNISED_VALUE;
+import static hypergraph.common.exception.Error.TypeWrite.HAS_ABSTRACT_ATT_TYPE;
 import static hypergraph.common.exception.Error.TypeWrite.HAS_ATT_NOT_AVAILABLE;
 import static hypergraph.common.exception.Error.TypeWrite.HAS_KEY_NOT_AVAILABLE;
 import static hypergraph.common.exception.Error.TypeWrite.HAS_KEY_PRECONDITION_OWNERSHIP;
@@ -48,6 +52,7 @@ import static hypergraph.common.exception.Error.TypeWrite.HAS_KEY_PRECONDITION_U
 import static hypergraph.common.exception.Error.TypeWrite.HAS_KEY_VALUE_TYPE;
 import static hypergraph.common.exception.Error.TypeWrite.OVERRIDE_NOT_AVAILABLE;
 import static hypergraph.common.exception.Error.TypeWrite.OVERRIDE_NOT_SUPERTYPE;
+import static hypergraph.common.exception.Error.TypeWrite.PLAYS_ABSTRACT_ROLE_TYPE;
 import static hypergraph.common.exception.Error.TypeWrite.PLAYS_ROLE_NOT_AVAILABLE;
 import static hypergraph.common.exception.Error.TypeWrite.ROOT_TYPE_MUTATION;
 import static hypergraph.common.exception.Error.TypeWrite.TYPE_HAS_INSTANCES;
@@ -222,7 +227,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
     @Override
     public void plays(RoleType roleType) {
-        if (sups().flatMap(ThingType::plays).anyMatch(a -> a.equals(roleType))) {
+        if (sups().filter(t -> !t.equals(this)).flatMap(ThingType::plays).anyMatch(a -> a.equals(roleType))) {
             throw new HypergraphException(PLAYS_ROLE_NOT_AVAILABLE.format(roleType.label()));
         }
         vertex.outs().put(Schema.Edge.Type.PLAYS, ((RoleTypeImpl) roleType).vertex);
@@ -264,9 +269,17 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     }
 
     @Override
-    public void validate() {
-        super.validate();
-        // TODO: Add any validation that would apply to all ThingTypes here
+    public List<HypergraphException> validate() {
+        List<HypergraphException> exceptions = super.validate();
+        if (!this.isAbstract()) {
+            Optional<? extends Type> abstractType;
+            if ((abstractType = attributes().filter(TypeImpl::isAbstract).findFirst()).isPresent()) {
+                exceptions.add(new HypergraphException(HAS_ABSTRACT_ATT_TYPE.format(label(), abstractType.get().label())));
+            } else if ((abstractType = plays().filter(TypeImpl::isAbstract).findFirst()).isPresent()) {
+                exceptions.add(new HypergraphException(PLAYS_ABSTRACT_ROLE_TYPE.format(label(), abstractType.get().label())));
+            }
+        }
+        return exceptions;
     }
 
     public static class Root extends ThingTypeImpl {
@@ -360,6 +373,8 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
          * There's nothing to validate for the root type 'thing'.
          */
         @Override
-        public void validate() {}
+        public List<HypergraphException> validate() {
+            return Collections.emptyList();
+        }
     }
 }

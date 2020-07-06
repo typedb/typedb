@@ -18,8 +18,10 @@
 
 package hypergraph.concept.type;
 
+import hypergraph.common.exception.HypergraphException;
 import hypergraph.concept.Concept;
 
+import java.util.List;
 import java.util.stream.Stream;
 
 public interface Type extends Concept {
@@ -45,4 +47,6 @@ public interface Type extends Concept {
     Stream<? extends Type> sups();
 
     Stream<? extends Type> subs();
+
+    List<HypergraphException> validate();
 }

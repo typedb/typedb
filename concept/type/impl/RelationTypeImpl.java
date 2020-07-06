@@ -34,6 +34,7 @@ import hypergraph.graph.vertex.TypeVertex;
 import javax.annotation.Nullable;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -116,6 +117,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
                 throw new HypergraphException("Invalid RoleType Assignment: role type already exists in a supertype relation");
             } else {
                 RoleTypeImpl roleType = RoleTypeImpl.of(vertex.graph(), roleLabel, vertex.label());
+                roleType.isAbstract(this.isAbstract());
                 vertex.outs().put(Schema.Edge.Type.RELATES, roleType.vertex);
                 vertex.outs().edge(Schema.Edge.Type.RELATES, roleType.vertex).overridden(roleType.sup().vertex);
             }
@@ -200,12 +202,13 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     }
 
     @Override
-    public void validate() {
-        super.validate();
+    public List<HypergraphException> validate() {
+        List<HypergraphException> exceptions = super.validate();
         if (Streams.compareSize(this.roles(), 1) < 0) {
-            throw new HypergraphException(Error.TypeWrite.RELATION_NO_ROLE.format(this.label()));
+            exceptions.add(new HypergraphException(Error.TypeWrite.RELATION_NO_ROLE.format(this.label())));
         }
         // TODO: Add any validation that would apply to all RelationTypes here
+        return exceptions;
     }
 
     @Override
