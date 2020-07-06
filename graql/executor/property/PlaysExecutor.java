@@ -33,7 +33,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-public class PlaysExecutor  implements PropertyExecutor.Definable {
+public class PlaysExecutor implements PropertyExecutor.Definable {
 
     private final Variable var;
     private final PlaysProperty property;

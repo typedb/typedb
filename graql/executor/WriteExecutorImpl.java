@@ -37,6 +37,7 @@ import grakn.core.kb.graql.exception.GraqlSemanticException;
 import grakn.core.kb.graql.executor.ConceptBuilder;
 import grakn.core.kb.graql.executor.WriteExecutor;
 import grakn.core.kb.graql.executor.property.PropertyExecutor.Writer;
+import graql.lang.property.PlaysProperty;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
@@ -288,15 +289,23 @@ public class WriteExecutorImpl implements WriteExecutor {
 
         Set<Writer> writersWithoutDependencies = Sets.filter(writers, property -> dependencies.get(property).isEmpty());
         Set<Writer> writersWithoutDependants = Sets.filter(writers, property -> invertedDependencies.get(property).isEmpty());
-        Set<Writer> unorderedWriters = Sets.intersection(writersWithoutDependencies, writersWithoutDependants).immutableCopy();
+        Set<Writer> disconnectedWriters = Sets.intersection(writersWithoutDependencies, writersWithoutDependants).immutableCopy();
 
         Queue<Writer> connectedWritersWithoutDependencies =
-                new ArrayDeque<>(Sets.filter(writers, property -> !unorderedWriters.contains(property) && dependencies.get(property).isEmpty()));
+                new ArrayDeque<>(Sets.filter(writers, property -> !disconnectedWriters.contains(property) && dependencies.get(property).isEmpty()));
 
         Writer property;
 
+        // until we architect this better, we force the plays properties to be executed last
+        Set<Writer> playsProperties = new HashSet<>();
+
         // Retrieve the next property without any dependencies
         while ((property = connectedWritersWithoutDependencies.poll()) != null) {
+            if (property.property() instanceof PlaysProperty) {
+                playsProperties.add(property);
+                continue;
+            }
+
             sorted.add(property);
 
             // We copy this into a new list because the underlying collection gets modified during iteration
@@ -326,9 +335,11 @@ public class WriteExecutorImpl implements WriteExecutor {
 
         // these writers are completely independent in their ordering
         // we use a tie breaker based on the type of concept represented
-        unorderedWriters.stream()
+        disconnectedWriters.stream()
                 .sorted(Comparator.comparing((w) -> w.ordering(this)))
                 .forEach(sorted::add);
+
+        sorted.addAll(playsProperties);
 
         if (!dependencies.isEmpty()) {
             // This means there must have been a loop. Pick an arbitrary remaining var to display

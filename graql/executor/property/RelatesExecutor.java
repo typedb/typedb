@@ -113,7 +113,7 @@ public class RelatesExecutor  implements PropertyExecutor.Definable {
 
         @Override
         public Set<Variable> requiredVars() {
-            return ImmutableSet.of();
+            return ImmutableSet.of(var);
         }
 
         @Override
@@ -123,7 +123,9 @@ public class RelatesExecutor  implements PropertyExecutor.Definable {
 
         @Override
         public void execute(WriteExecutor executor) {
-            executor.getBuilder(property.role().var()).isRole();
+            RelationType relation = executor.getConcept(var).asRelationType();
+            String scope = relation.label().name();
+            executor.getBuilder(property.role().var()).isRole().scope(scope);
         }
     }
 
