@@ -28,33 +28,22 @@ public class HypergraphException extends RuntimeException {
 
     public HypergraphException(Error error) {
         super(error.toString());
-        assert !error.description().contains("%s");
+        assert !getMessage().contains("%s");
     }
 
     public HypergraphException(Exception e) {
         super(e);
     }
 
-    public static class List extends HypergraphException {
+    public HypergraphException(List<HypergraphException> exceptions) {
+        super(getMessages(exceptions));
+    }
 
-        java.util.List<HypergraphException> exceptions;
-
-        public List(java.util.List<HypergraphException> exceptions) {
-            super(getMessages(exceptions));
-            this.exceptions = exceptions;
+    private static String getMessages(List<HypergraphException> exceptions) {
+        StringBuilder messages = new StringBuilder();
+        for (HypergraphException exception : exceptions) {
+            messages.append(exception.getMessage()).append("\n");
         }
-
-        private static String getMessages(java.util.List<HypergraphException> exceptions) {
-            StringBuilder messages = new StringBuilder();
-            for (HypergraphException exception : exceptions) {
-                messages.append(exception.getMessage()).append("\n");
-            }
-            return messages.toString();
-        }
-
-        @Override
-        public void printStackTrace() {
-            for (HypergraphException exception : exceptions) exception.printStackTrace();
-        }
+        return messages.toString();
     }
 }

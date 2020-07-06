@@ -134,7 +134,7 @@ public final class Concepts {
                 .filter(Vertex::isModified)
                 .map(v -> TypeImpl.of(v).validate())
                 .collect(ArrayList::new, ArrayList::addAll, ArrayList::addAll);
-        if (!exceptions.isEmpty()) throw new HypergraphException.List(exceptions);
+        if (!exceptions.isEmpty()) throw new HypergraphException(exceptions);
     }
 
     public void validateThings() {

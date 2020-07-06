@@ -165,7 +165,6 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     }
 
     private void hasAttribute(AttributeType attributeType) {
-
         if (sups().filter(t -> !t.equals(this)).flatMap(ThingType::attributes).anyMatch(a -> a.equals(attributeType))) {
             throw new HypergraphException(HAS_ATT_NOT_AVAILABLE.format(attributeType.label()));
         }
@@ -271,13 +270,13 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     @Override
     public List<HypergraphException> validate() {
         List<HypergraphException> exceptions = super.validate();
-        if (!this.isAbstract()) {
-            Optional<? extends Type> abstractType;
-            if ((abstractType = attributes().filter(TypeImpl::isAbstract).findFirst()).isPresent()) {
-                exceptions.add(new HypergraphException(HAS_ABSTRACT_ATT_TYPE.format(label(), abstractType.get().label())));
-            } else if ((abstractType = plays().filter(TypeImpl::isAbstract).findFirst()).isPresent()) {
-                exceptions.add(new HypergraphException(PLAYS_ABSTRACT_ROLE_TYPE.format(label(), abstractType.get().label())));
-            }
+        if (!isAbstract()) {
+            attributes().filter(TypeImpl::isAbstract).forEach(
+                    attType -> exceptions.add(new HypergraphException(
+                            HAS_ABSTRACT_ATT_TYPE.format(label(), attType.label()))));
+            plays().filter(TypeImpl::isAbstract).forEach(
+                    roleType -> exceptions.add(new HypergraphException(
+                            PLAYS_ABSTRACT_ROLE_TYPE.format(label(), roleType.label()))));
         }
         return exceptions;
     }

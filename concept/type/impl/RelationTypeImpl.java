@@ -40,10 +40,13 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import static hypergraph.common.exception.Error.TypeWrite.RELATION_ABSTRACT_ROLE;
+import static hypergraph.common.exception.Error.TypeWrite.RELATION_NO_ROLE;
 import static hypergraph.common.exception.Error.TypeWrite.ROOT_TYPE_MUTATION;
 import static hypergraph.common.iterator.Iterators.apply;
 import static hypergraph.common.iterator.Iterators.filter;
 import static hypergraph.common.iterator.Iterators.stream;
+import static hypergraph.graph.util.Schema.Vertex.Type.Root.ROLE;
 
 public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
 
@@ -204,8 +207,12 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     @Override
     public List<HypergraphException> validate() {
         List<HypergraphException> exceptions = super.validate();
-        if (Streams.compareSize(this.roles(), 1) < 0) {
-            exceptions.add(new HypergraphException(Error.TypeWrite.RELATION_NO_ROLE.format(this.label())));
+        if (!isRoot() && Streams.compareSize(roles().filter(r -> !r.label().equals(ROLE.label())), 1) < 0) {
+            exceptions.add(new HypergraphException(RELATION_NO_ROLE.format(this.label())));
+        } else if (!isAbstract()) {
+            roles().filter(TypeImpl::isAbstract).forEach(roleType -> {
+                exceptions.add(new HypergraphException(RELATION_ABSTRACT_ROLE.format(label(), roleType.label())));
+            });
         }
         // TODO: Add any validation that would apply to all RelationTypes here
         return exceptions;

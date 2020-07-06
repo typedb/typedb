@@ -27,10 +27,10 @@ public abstract class Error<TYPE extends Error<TYPE>> {
     private static int maxCodeNumber = 0;
     private static int maxCodeDigits = 0;
 
-    private final String codePrefix;
-    private final int codeNumber;
+    final int codeNumber;
     private String code = null;
-    private String description;
+    private final String codePrefix;
+    private final String description;
 
     Error(String codePrefix, int codeNumber, String descriptionPrefix, String descriptionBody) {
         this.codePrefix = codePrefix;
@@ -42,8 +42,6 @@ public abstract class Error<TYPE extends Error<TYPE>> {
         maxCodeNumber = Math.max(codeNumber, maxCodeNumber);
         maxCodeDigits = (int) Math.ceil(Math.log10(maxCodeNumber));
     }
-
-    protected abstract TYPE getThis();
 
     public String code() {
         if (code != null) return code;
@@ -61,9 +59,8 @@ public abstract class Error<TYPE extends Error<TYPE>> {
         return description;
     }
 
-    public TYPE format(Object... parameters) {
-        description = String.format(description, parameters);
-        return getThis();
+    public String format(Object... parameters) {
+        return String.format(toString(), parameters);
     }
 
     @Override
@@ -84,11 +81,6 @@ public abstract class Error<TYPE extends Error<TYPE>> {
         Internal(int number, String description) {
             super(codePrefix, number, descriptionPrefix, description);
         }
-
-        protected Internal getThis() {
-            return this;
-        }
-
     }
 
     public static class Transaction extends Error<Error.Transaction> {
@@ -112,10 +104,6 @@ public abstract class Error<TYPE extends Error<TYPE>> {
         Transaction(int number, String description) {
             super(codePrefix, number, descriptionPrefix, description);
         }
-
-        protected Error.Transaction getThis() {
-            return this;
-        }
     }
 
     public static class ConceptRead extends Error {
@@ -127,10 +115,6 @@ public abstract class Error<TYPE extends Error<TYPE>> {
 
         ConceptRead(int number, String description) {
             super(codePrefix, number, descriptionPrefix, description);
-        }
-
-        protected ConceptRead getThis() {
-            return this;
         }
     }
 
@@ -146,10 +130,6 @@ public abstract class Error<TYPE extends Error<TYPE>> {
 
         ThingRead(int number, String description) {
             super(codePrefix, number, descriptionPrefix, description);
-        }
-
-        protected ThingRead getThis() {
-            return this;
         }
     }
 
@@ -197,10 +177,6 @@ public abstract class Error<TYPE extends Error<TYPE>> {
         TypeRead(int number, String description) {
             super(codePrefix, number, descriptionPrefix, description);
         }
-
-        protected TypeRead getThis() {
-            return this;
-        }
     }
 
     public static class TypeWrite extends Error {
@@ -238,17 +214,15 @@ public abstract class Error<TYPE extends Error<TYPE>> {
         public static final TypeWrite PLAYS_ABSTRACT_ROLE_TYPE =
                 new TypeWrite(16, "The type '%s' is not abstract, and thus cannot play an abstract role type '%s'.");
         public static final TypeWrite RELATION_NO_ROLE =
-                new TypeWrite(17, "RelationType '%s' does not relate any role type.");
+                new TypeWrite(17, "The relation type '%s' does not relate any role type.");
+        public static final TypeWrite RELATION_ABSTRACT_ROLE =
+                new TypeWrite(18, "The relation type '%s' is not abstract, and thus cannot relate an abstract role type '%s'.");
 
         private static final String codePrefix = "TYW";
         private static final String descriptionPrefix = "Invalid Type Definition";
 
         TypeWrite(int number, String description) {
             super(codePrefix, number, descriptionPrefix, description);
-        }
-
-        protected TypeWrite getThis() {
-            return this;
         }
     }
 }
