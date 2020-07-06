@@ -78,64 +78,6 @@ public class ValuePredicateIT {
     }
 
     @Test
-    public void whenResolvingInferrableAttributesWithBounds_answersAreCalculatedCorrectly(){
-        Config mockServerConfig = storage.createCompatibleServerConfig();
-        Session session = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig);
-        try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-            tx.execute(Graql.parse("define " +
-                    "someEntity sub entity," +
-                    "has derivedResource;" +
-                    "derivedResource sub attribute, value long;" +
-                    "rule1 sub rule, when{ $x isa someEntity;}, then { $x has derivedResource 1337;};" +
-                    "rule2 sub rule, when{ $x isa someEntity;}, then { $x has derivedResource 1667;};" +
-                    "rule3 sub rule, when{ $x isa someEntity;}, then { $x has derivedResource 1997;};"
-
-            ).asDefine());
-            tx.execute(Graql.parse("insert " +
-                    "$x isa someEntity;" +
-                    "$y isa someEntity;"
-            ).asInsert());
-            tx.commit();
-        }
-
-        final long bound = 1667L;
-        Statement value = Graql.var("value");
-        Pattern basePattern = Graql.var("x").has("derivedResource", value);
-
-        try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-            List<ConceptMap> answers = tx.execute(Graql.match(Graql.and(basePattern, value.gt(bound))).get());
-            assertFalse(answers.isEmpty());
-            answers.forEach(ans -> assertTrue((long) ans.get(value.var()).asAttribute().value() > bound));
-        }
-        try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-            List<ConceptMap> answers = tx.execute(Graql.match(Graql.and(basePattern, value.gte(bound))).get());
-            assertFalse(answers.isEmpty());
-            answers.forEach(ans -> assertTrue((long) ans.get(value.var()).asAttribute().value() >= bound));
-        }
-        try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-            List<ConceptMap> answers = tx.execute(Graql.match(Graql.and(basePattern, value.lt(bound))).get());
-            assertFalse(answers.isEmpty());
-            answers.forEach(ans -> assertTrue((long) ans.get(value.var()).asAttribute().value() < bound));
-        }
-        try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-            List<ConceptMap> answers = tx.execute(Graql.match(Graql.and(basePattern, value.lte(bound))).get());
-            assertFalse(answers.isEmpty());
-            answers.forEach(ans -> assertTrue((long) ans.get(value.var()).asAttribute().value() <= bound));
-        }
-        try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-            List<ConceptMap> answers = tx.execute(Graql.match(Graql.and(basePattern, value.eq(bound))).get());
-            assertFalse(answers.isEmpty());
-            answers.forEach(ans -> assertTrue((long) ans.get(value.var()).asAttribute().value() == bound));
-        }
-        try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-            List<ConceptMap> answers = tx.execute(Graql.match(Graql.and(basePattern, value.neq(bound))).get());
-            assertFalse(answers.isEmpty());
-            answers.forEach(ans -> assertTrue((long) ans.get(value.var()).asAttribute().value() != bound));
-        }
-        session.close();
-    }
-
-    @Test
     public void whenResolvableAttributesHaveVariableComparisons_answersAreCalculatedCorrectly(){
         Config mockServerConfig = storage.createCompatibleServerConfig();
         Session session = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig);
