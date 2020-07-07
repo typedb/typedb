@@ -69,14 +69,42 @@ public class Import implements AutoCloseable {
     public Import(Session session, Path inputFile) throws IOException {
         this.session = session;
 
+        try (InputStream inputStream = new BufferedInputStream(Files.newInputStream(inputFile))) {
+            Parser<MigrateProto.Item> itemParser = MigrateProto.Item.parser();
+
+            Map<String, Integer> relationCountByType = new HashMap<>();
+            Map<String, Integer> rolePlayerCountByRole = new HashMap<>();
+
+            MigrateProto.Item item;
+            while((item = itemParser.parseDelimitedFrom(inputStream)) != null) {
+                switch (item.getItemCase()) {
+                    case RELATION:
+                        MigrateProto.Item.Relation relation = item.getRelation();
+                        relationCountByType.merge(relation.getLabel(), 1, Integer::sum);
+                        for (MigrateProto.Item.Relation.Role role : relation.getRoleList()) {
+                            rolePlayerCountByRole.merge(
+                                    role.getLabel(),
+                                    role.getPlayerCount(),
+                                    Integer::sum
+                            );
+                        }
+                        break;
+                }
+            }
+
+            LOG.info("Relation counts");
+            relationCountByType.forEach((relation, count) -> LOG.info("{}: {}", relation, count));
+            LOG.info("Role player counts");
+            rolePlayerCountByRole.forEach((role, count) -> LOG.info("{}: {}", role, count));
+        }
+
         this.inputStream = new BufferedInputStream(Files.newInputStream(inputFile));
         this.itemParser = MigrateProto.Item.parser();
-        // TODO read header here
     }
 
     @Override
     public void close() throws IOException {
-        currentTransaction.close();
+        if (currentTransaction != null) currentTransaction.close();
         inputStream.close();
     }
 
@@ -118,6 +146,7 @@ public class Import implements AutoCloseable {
         newTransaction();
 
         MigrateProto.Item item;
+        MigrateProto.Item.Checksums checksums = null;
         while ((item = read()) != null) {
             switch (item.getItemCase()) {
                 case HEADER:
@@ -138,7 +167,7 @@ public class Import implements AutoCloseable {
                     insertRelation(item.getRelation());
                     break;
                 case CHECKSUMS:
-                    checkChecksums(item.getChecksums());
+                    checksums = item.getChecksums();
                     break;
             }
         }
@@ -147,6 +176,10 @@ public class Import implements AutoCloseable {
         insertMissingAttributeOwnershipsAtEnd();
 
         flush();
+
+        if (checksums != null) {
+            checkChecksums(checksums);
+        }
 
         LOG.info("Imported {} entities, {} attributes, {} relations ({} roles), {} ownerships",
                 entityCount,
@@ -209,7 +242,6 @@ public class Import implements AutoCloseable {
         write();
     }
 
-    // TODO fix massive issue with relations playing roles in relations but needing at least one role player
     private void insertRelation(MigrateProto.Item.Relation relationMessage) {
         Relation relation = relationTypeCache.computeIfAbsent(
                         relationMessage.getLabel(),
@@ -310,10 +342,10 @@ public class Import implements AutoCloseable {
     }
 
     private void insertMissingRolePlayersAtEnd() {
-        for (Pair<String, List<Pair<String, List<String>>>> missingRolePlayers : this.missingRolePlayers) {
+        for (Pair<String, List<Pair<String, List<String>>>> missingRolePlayers : missingRolePlayers) {
             Relation relation = currentTransaction.getConcept(ConceptId.of(missingRolePlayers.first()));
 
-            missingRolePlayers.second().forEach(pair -> {
+            for (Pair<String, List<String>> pair : missingRolePlayers.second()) {
                 Role role = roleCache.computeIfAbsent(pair.first(), l -> currentTransaction.getRole(l));
 
                 for (String playerOriginalId : pair.second()) {
@@ -322,7 +354,7 @@ public class Import implements AutoCloseable {
                     relation.assign(role, player);
                     roleCount++;
                 }
-            });
+            }
 
             write();
         }

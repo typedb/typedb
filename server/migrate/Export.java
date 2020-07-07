@@ -92,9 +92,7 @@ public class Export implements AutoCloseable {
                         .setOwnershipCount(ownershipCount.get()))
                 .build());
 
-        synchronized (outputStream) {
-            outputStream.flush();
-        }
+        outputStream.flush();
 
         LOG.info("Exported {} entities, {} attributes, {} relations ({} roles), {} ownerships",
                 entityCount,
