@@ -67,8 +67,8 @@ public class ResolutionSteps {
         setReasonedSession(reasonedSession);
     }
 
-    @When("reference kb is completed")
-    public void reference_kb_is_completed() {
+    @When("materialised keyspace is completed")
+    public void reference_graph_is_materialised() {
         resolution = new Resolution(getMaterialisedSession(), getReasonedSession());
     }
 
@@ -77,23 +77,20 @@ public class ResolutionSteps {
         queryToTest = Graql.parse(graqlQuery).asGet();
     }
 
-    @Then("for reasoned keyspace, answer size is: {number}")
+    @Then("in reasoned keyspace, answer size is: {number}")
     public void answer_count_is(final int expectedCount) {
         resolution.manuallyValidateAnswerSize(queryToTest, expectedCount);
     }
 
-    @Then("answer count is correct")
-    public void answer_count_is_correct() {
+    @Then("in reasoned keyspace, all answers are correct")
+    public void all_answers_are_correct() {
+        // TODO: refactor these into a single method that compares the set of expected answers to the actual answers
         resolution.testQuery(queryToTest);
-    }
-
-    @Then("answers resolution is correct")
-    public void answers_resolution_is_correct() {
         resolution.testResolution(queryToTest);
     }
 
-    @Then("test keyspace is complete")
-    public void test_keyspace_is_complete() {
+    @Then("in reasoned keyspace, no answers are missing")
+    public void no_answers_are_missing() {
         resolution.testCompleteness();
     }
 
