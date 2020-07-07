@@ -96,10 +96,10 @@ public class Import implements AutoCloseable {
     }
 
     private void commit() {
-        LOG.info("Commit start, inserted {} things", count);
+        LOG.debug("Commit start, inserted {} things", count);
         long time = System.nanoTime();
         currentTransaction.commit();
-        LOG.info("Commit end, took {}s", (double)(System.nanoTime() - time) / 1_000_000_000.0);
+        LOG.debug("Commit end, took {}s", (double)(System.nanoTime() - time) / 1_000_000_000.0);
         newTransaction();
         count = 0;
         attributeTypeCache.clear();

@@ -72,6 +72,7 @@ public class Export implements AutoCloseable {
     }
 
     public void export() throws IOException {
+        LOG.info("Exporting {} from Grakn {}", session.keyspace().name(), Version.VERSION);
 
         write(MigrateProto.Item.newBuilder()
                 .setHeader(MigrateProto.Item.Header.newBuilder()
@@ -128,7 +129,7 @@ public class Export implements AutoCloseable {
     }
 
     private <D> void writeAttributeInstancesOfType(String label) throws IOException {
-        LOG.info("Writing attribute type: {}", label);
+        LOG.debug("Writing attribute type: {}", label);
 
         long localOwnershipCount = 0;
         long localAttributeCount = 0;
@@ -153,12 +154,12 @@ public class Export implements AutoCloseable {
                 write(MigrateProto.Item.newBuilder().setAttribute(attributeBuilder).build());
                 localAttributeCount++;
                 if (localAttributeCount % 1_000 == 0) {
-                    LOG.info("Exported {}: count: {}, ownerships: {}", label, localAttributeCount, localOwnershipCount);
+                    LOG.debug("Exported {}: count: {}, ownerships: {}", label, localAttributeCount, localOwnershipCount);
                 }
             }
         }
 
-        LOG.info("Exported {}: count: {}, ownerships: {}", label, localAttributeCount, localOwnershipCount);
+        LOG.debug("Exported {}: count: {}, ownerships: {}", label, localAttributeCount, localOwnershipCount);
         ownershipCount.addAndGet(localOwnershipCount);
         attributeCount.addAndGet(localAttributeCount);
     }
@@ -183,7 +184,7 @@ public class Export implements AutoCloseable {
     }
 
     private void writeEntityInstancesOfType(String label) throws IOException {
-        LOG.info("Writing entity type: {}", label);
+        LOG.debug("Writing entity type: {}", label);
 
         long localOwnershipCount = 0;
         long localEntityCount = 0;
@@ -207,12 +208,12 @@ public class Export implements AutoCloseable {
                 write(MigrateProto.Item.newBuilder().setEntity(entityBuilder).build());
                 localEntityCount++;
                 if (localEntityCount % 1_000 == 0) {
-                    LOG.info("Exported {}: count: {}, ownerships: {}", label, localEntityCount, localOwnershipCount);
+                    LOG.debug("Exported {}: count: {}, ownerships: {}", label, localEntityCount, localOwnershipCount);
                 }
             }
         }
 
-        LOG.info("Exported {}: count: {}, ownerships: {}", label, localEntityCount, localOwnershipCount);
+        LOG.debug("Exported {}: count: {}, ownerships: {}", label, localEntityCount, localOwnershipCount);
 
         ownershipCount.addAndGet(localOwnershipCount);
         entityCount.addAndGet(localEntityCount);
@@ -238,7 +239,7 @@ public class Export implements AutoCloseable {
     }
 
     private void writeRelationInstancesOfType(String label) throws IOException {
-        LOG.info("Writing relation type: {}", label);
+        LOG.debug("Writing relation type: {}", label);
 
         long localOwnershipCount = 0;
         long localRelationCount = 0;
@@ -286,12 +287,12 @@ public class Export implements AutoCloseable {
                 write(item);
                 localRelationCount++;
                 if (localRelationCount % 1_000 == 0) {
-                    LOG.info("Exported {}: count: {}, ownerships: {}, roles: {}", label, localRelationCount, localOwnershipCount, localRoleCount);
+                    LOG.debug("Exported {}: count: {}, ownerships: {}, roles: {}", label, localRelationCount, localOwnershipCount, localRoleCount);
                 }
             }
         }
 
-        LOG.info("Exported {}: count: {}, ownerships: {}, roles: {}", label, localRelationCount, localOwnershipCount, localRoleCount);
+        LOG.debug("Exported {}: count: {}, ownerships: {}, roles: {}", label, localRelationCount, localOwnershipCount, localRoleCount);
         roleCount.addAndGet(localRoleCount);
         ownershipCount.addAndGet(localOwnershipCount);
         relationCount.addAndGet(localRelationCount);
