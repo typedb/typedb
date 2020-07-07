@@ -191,7 +191,7 @@ public abstract class Error<TYPE extends Error<TYPE>> {
                 new TypeWrite(4, "The type '%s' cannot be a subtype of itself.");
         public static final TypeWrite HAS_ABSTRACT_ATT_TYPE =
                 new TypeWrite(5, "The type '%s' is not abstract, and thus cannot own an abstract attribute type '%s'.");
-        public static final TypeWrite OVERRIDE_NOT_SUPERTYPE =
+        public static final TypeWrite OVERRIDDEN_NOT_SUPERTYPE =
                 new TypeWrite(6, "The type '%s' cannot override '%s' as it is not a supertype.");
         public static final TypeWrite OVERRIDE_NOT_AVAILABLE =
                 new TypeWrite(7, "The Type '%s' cannot override '%s' as it is either already declared, or not inherited.");

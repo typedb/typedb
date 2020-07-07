@@ -38,8 +38,8 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static hypergraph.common.collection.Streams.compareSize;
@@ -51,7 +51,7 @@ import static hypergraph.common.exception.Error.TypeWrite.HAS_KEY_PRECONDITION_O
 import static hypergraph.common.exception.Error.TypeWrite.HAS_KEY_PRECONDITION_UNIQUENESS;
 import static hypergraph.common.exception.Error.TypeWrite.HAS_KEY_VALUE_TYPE;
 import static hypergraph.common.exception.Error.TypeWrite.OVERRIDE_NOT_AVAILABLE;
-import static hypergraph.common.exception.Error.TypeWrite.OVERRIDE_NOT_SUPERTYPE;
+import static hypergraph.common.exception.Error.TypeWrite.OVERRIDDEN_NOT_SUPERTYPE;
 import static hypergraph.common.exception.Error.TypeWrite.PLAYS_ABSTRACT_ROLE_TYPE;
 import static hypergraph.common.exception.Error.TypeWrite.PLAYS_ROLE_NOT_AVAILABLE;
 import static hypergraph.common.exception.Error.TypeWrite.ROOT_TYPE_MUTATION;
@@ -85,7 +85,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     private <T extends Type> void override(Schema.Edge.Type schema, T type, T overriddenType,
                                            Stream<? extends Type> overridable, Stream<? extends Type> notOverridable) {
         if (type.sups().noneMatch(t -> t.equals(overriddenType))) {
-            throw new HypergraphException(OVERRIDE_NOT_SUPERTYPE.format(type.label(), overriddenType.label()));
+            throw new HypergraphException(OVERRIDDEN_NOT_SUPERTYPE.format(type.label(), overriddenType.label()));
         } else if (notOverridable.anyMatch(t -> t.equals(overriddenType)) || overridable.noneMatch(t -> t.equals(overriddenType))) {
             throw new HypergraphException(OVERRIDE_NOT_AVAILABLE.format(type.label(), overriddenType.label()));
         }
@@ -271,14 +271,22 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     public List<HypergraphException> validate() {
         List<HypergraphException> exceptions = super.validate();
         if (!isAbstract()) {
-            attributes().filter(TypeImpl::isAbstract).forEach(
-                    attType -> exceptions.add(new HypergraphException(
-                            HAS_ABSTRACT_ATT_TYPE.format(label(), attType.label()))));
-            plays().filter(TypeImpl::isAbstract).forEach(
-                    roleType -> exceptions.add(new HypergraphException(
-                            PLAYS_ABSTRACT_ROLE_TYPE.format(label(), roleType.label()))));
+            exceptions.addAll(exceptions_hasAbstractAttType());
+            exceptions.addAll(exceptions_playsAbstractRoleType());
         }
         return exceptions;
+    }
+
+    private List<HypergraphException> exceptions_hasAbstractAttType() {
+        return attributes().filter(TypeImpl::isAbstract)
+                .map(attType -> new HypergraphException(HAS_ABSTRACT_ATT_TYPE.format(label(), attType.label())))
+                .collect(Collectors.toList());
+    }
+
+    private List<HypergraphException> exceptions_playsAbstractRoleType() {
+        return plays().filter(TypeImpl::isAbstract)
+                .map(roleType -> new HypergraphException(PLAYS_ABSTRACT_ROLE_TYPE.format(label(), roleType.label())))
+                .collect(Collectors.toList());
     }
 
     public static class Root extends ThingTypeImpl {
