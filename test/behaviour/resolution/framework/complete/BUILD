@@ -33,7 +33,6 @@ java_library(
         "//kb/concept/api",
         "//kb/server",
         "//test/behaviour/resolution/framework/common",
-        "//test/behaviour/graql:steps",
         "@graknlabs_graql//java:graql",
     ],
 )

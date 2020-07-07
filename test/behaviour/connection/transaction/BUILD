@@ -69,6 +69,6 @@ checkstyle_test(
     name = "checkstyle",
     targets = [
         ":steps",
-        ":test"
+        ":test",
     ],
 )

@@ -23,7 +23,7 @@ java_test(
     srcs = [
         "ReasonerTest.java",
     ],
-    test_class = "grakn.core.test.behaviour.graql.reasoner.resolution.ReasonerTest",
+    test_class = "grakn.core.test.behaviour.resolution.reasoner.ReasonerTest",
     deps = [
         # Package dependencies
         "//test/behaviour/server:server",
@@ -38,7 +38,7 @@ java_test(
         "//test/behaviour/resolution:steps",
     ],
     data = [
-        "@graknlabs_verification//behaviour/graql/reasoner/resolution:attribute-attachment.feature",
+        "@graknlabs_verification//behaviour/resolution/reasoner:reasoner.feature",
     ],
     classpath_resources = ["//test/resources:logback-test"],
     size = "medium",

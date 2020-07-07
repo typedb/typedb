@@ -22,9 +22,10 @@ import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import grakn.core.test.behaviour.resolution.framework.Resolution;
 import graql.lang.Graql;
+import graql.lang.query.GraqlDefine;
 import graql.lang.query.GraqlGet;
-import io.cucumber.java.After;
-import io.cucumber.java.Before;
+import graql.lang.query.GraqlQuery;
+import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 

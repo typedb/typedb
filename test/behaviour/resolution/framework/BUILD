@@ -27,7 +27,6 @@ java_library(
         "@maven//:com_google_guava_guava",
         "//test/behaviour/resolution/framework/complete",
         "//test/behaviour/resolution/framework/resolve",
-        "//test/behaviour/graql:steps",
         "//kb/server:server",
         "//concept/answer:answer",
         "@graknlabs_graql//java:graql",

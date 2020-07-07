@@ -21,6 +21,7 @@ package grakn.core.test.behaviour.resolution.framework.complete;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Concept;
+import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import grakn.core.test.behaviour.resolution.framework.common.GraqlHelpers;
 import grakn.core.test.behaviour.resolution.framework.common.NegationRemovalVisitor;
@@ -51,10 +52,12 @@ import static grakn.core.test.behaviour.resolution.framework.common.GraqlHelpers
 public class Completer {
 
     private int numInferredConcepts;
+    private final Session session;
     private Set<Rule> rules;
     private RuleResolutionBuilder ruleResolutionBuilder = new RuleResolutionBuilder();
 
-    public Completer() {
+    public Completer(Session session) {
+        this.session = session;
     }
 
     public void loadRules(Set<grakn.core.kb.concept.api.Rule> graknRules) {
@@ -65,13 +68,17 @@ public class Completer {
         this.rules = rules;
     }
 
-    public int complete(final Transaction tx) {
+    public int complete() {
         boolean allRulesRerun = true;
 
         while (allRulesRerun) {
             allRulesRerun = false;
-            for (Rule rule : rules) {
-                allRulesRerun = allRulesRerun | completeRule(tx, rule);
+            try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+
+                for (Rule rule : rules) {
+                    allRulesRerun = allRulesRerun | completeRule(tx, rule);
+                }
+                tx.commit();
             }
         }
         return numInferredConcepts;
