@@ -110,7 +110,6 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
     @Override
     public List<HypergraphException> validate() {
         return super.validate();
-        // TODO: Add any validation that would apply to all RoleTypes here
     }
 
     public RoleImpl create() {

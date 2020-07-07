@@ -145,7 +145,6 @@ public abstract class TypeImpl implements Type {
 
     @Override
     public List<HypergraphException> validate() {
-        // TODO: Add any validation that would apply to all Types here
         return new ArrayList<>();
     }
 

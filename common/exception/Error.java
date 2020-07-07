@@ -193,8 +193,8 @@ public abstract class Error<TYPE extends Error<TYPE>> {
                 new TypeWrite(5, "The type '%s' is not abstract, and thus cannot own an abstract attribute type '%s'.");
         public static final TypeWrite OVERRIDDEN_NOT_SUPERTYPE =
                 new TypeWrite(6, "The type '%s' cannot override '%s' as it is not a supertype.");
-        public static final TypeWrite OVERRIDE_NOT_AVAILABLE =
-                new TypeWrite(7, "The Type '%s' cannot override '%s' as it is either already declared, or not inherited.");
+        public static final TypeWrite OVERRIDE_NOT_AVAILABLE = // TODO: this can be split between 'has', 'key' and 'plays' once pushed to commit
+                new TypeWrite(7, "The type '%s' cannot override '%s' as it is either directly declared or not inherited.");
         public static final TypeWrite ATTRIBUTE_SUPERTYPE_VALUE_TYPE =
                 new TypeWrite(8, "The attribute type '%s' has value type '%s', and cannot have supertype '%s' with value type '%s'.");
         public static final TypeWrite ATTRIBUTE_SUPERTYPE_NOT_ABSTRACT =
@@ -217,7 +217,10 @@ public abstract class Error<TYPE extends Error<TYPE>> {
                 new TypeWrite(17, "The relation type '%s' does not relate any role type.");
         public static final TypeWrite RELATION_ABSTRACT_ROLE =
                 new TypeWrite(18, "The relation type '%s' is not abstract, and thus cannot relate an abstract role type '%s'.");
-
+        public static final TypeWrite RELATION_RELATES_ROLE_FROM_SUPERTYPE =
+                new TypeWrite(19, "The role type '%s' is already declared by a supertype.");
+        public static final TypeWrite RELATION_RELATES_ROLE_NOT_AVAILABLE =
+                new TypeWrite(20, "The role type '%s' cannot override '%s' as it is either directly related or not inherited.");
         private static final String codePrefix = "TYW";
         private static final String descriptionPrefix = "Invalid Type Definition";
 

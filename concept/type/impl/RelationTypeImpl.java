@@ -42,7 +42,11 @@ import java.util.stream.Stream;
 
 import static hypergraph.common.exception.Error.TypeWrite.RELATION_ABSTRACT_ROLE;
 import static hypergraph.common.exception.Error.TypeWrite.RELATION_NO_ROLE;
+import static hypergraph.common.exception.Error.TypeWrite.RELATION_RELATES_ROLE_FROM_SUPERTYPE;
+import static hypergraph.common.exception.Error.TypeWrite.RELATION_RELATES_ROLE_NOT_AVAILABLE;
 import static hypergraph.common.exception.Error.TypeWrite.ROOT_TYPE_MUTATION;
+import static hypergraph.common.exception.Error.TypeWrite.TYPE_HAS_INSTANCES;
+import static hypergraph.common.exception.Error.TypeWrite.TYPE_HAS_SUBTYPES;
 import static hypergraph.common.iterator.Iterators.apply;
 import static hypergraph.common.iterator.Iterators.filter;
 import static hypergraph.common.iterator.Iterators.stream;
@@ -116,8 +120,8 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     public void relates(String roleLabel) {
         TypeVertex roleTypeVertex = vertex.graph().get(roleLabel, vertex.label());
         if (roleTypeVertex == null) {
-            if (sups().flatMap(RelationType::roles).anyMatch(role -> role.label().equals(roleLabel))) {
-                throw new HypergraphException("Invalid RoleType Assignment: role type already exists in a supertype relation");
+            if (sups().filter(t -> !t.equals(this)).flatMap(RelationType::roles).anyMatch(role -> role.label().equals(roleLabel))) {
+                throw new HypergraphException(RELATION_RELATES_ROLE_FROM_SUPERTYPE.format(roleLabel));
             } else {
                 RoleTypeImpl roleType = RoleTypeImpl.of(vertex.graph(), roleLabel, vertex.label());
                 roleType.isAbstract(this.isAbstract());
@@ -134,8 +138,8 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
 
         Optional<RoleTypeImpl> inherited;
         if (declaredRoles().anyMatch(r -> r.label().equals(overriddenLabel)) ||
-                !(inherited = sup().roles().filter(role -> role.label().equals(overriddenLabel)).findAny()).isPresent()) {
-            throw new HypergraphException("Invalid Role Type Overriding: " + overriddenLabel + " cannot be overridden");
+                !(inherited = sup().roles().filter(role -> role.label().equals(overriddenLabel)).findFirst()).isPresent()) {
+            throw new HypergraphException(RELATION_RELATES_ROLE_NOT_AVAILABLE.format(roleLabel, overriddenLabel));
         }
 
         roleType.sup(inherited.get());
@@ -145,11 +149,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     @Override
     public void unrelate(String roleLabel) {
         TypeVertex roleTypeVertex = vertex.graph().get(roleLabel, vertex.label());
-        if (roleTypeVertex != null) {
-            RoleTypeImpl.of(roleTypeVertex).delete();
-        } else {
-            throw new HypergraphException("Invalid RoleType Removal: " + roleLabel + " does not exist in " + vertex.label());
-        }
+        if (roleTypeVertex != null) RoleTypeImpl.of(roleTypeVertex).delete();
     }
 
     @Override
@@ -187,7 +187,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
         TypeVertex roleTypeVertex = vertex.graph().get(roleLabel, vertex.label());
         if (roleTypeVertex != null) {
             return RoleTypeImpl.of(roleTypeVertex);
-        } else if ((roleType = roles().filter(role -> role.label().equals(roleLabel)).findAny()).isPresent()) {
+        } else if ((roleType = roles().filter(role -> role.label().equals(roleLabel)).findFirst()).isPresent()) {
             return roleType.get();
         } else return null;
     }
@@ -195,9 +195,9 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     @Override
     public void delete() {
         if (subs().anyMatch(s -> !s.equals(this))) {
-            throw new HypergraphException("Invalid Type Removal: " + label() + " has subtypes");
-        } else if (subs().flatMap(RelationTypeImpl::instances).findAny().isPresent()) {
-            throw new HypergraphException("Invalid Type Removal: " + label() + " has instances");
+            throw new HypergraphException(TYPE_HAS_SUBTYPES.format(label()));
+        } else if (subs().flatMap(RelationTypeImpl::instances).findFirst().isPresent()) {
+            throw new HypergraphException(TYPE_HAS_INSTANCES.format(label()));
         } else {
             declaredRoles().forEach(RoleTypeImpl::delete);
             vertex.delete();
@@ -214,7 +214,6 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
                 exceptions.add(new HypergraphException(RELATION_ABSTRACT_ROLE.format(label(), roleType.label())));
             });
         }
-        // TODO: Add any validation that would apply to all RelationTypes here
         return exceptions;
     }
 

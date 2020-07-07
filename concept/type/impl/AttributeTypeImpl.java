@@ -129,7 +129,6 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
     @Override
     public List<HypergraphException> validate() {
         return super.validate();
-        // TODO: Add any validation that would apply to all AttributeTypes here
     }
 
     @Override

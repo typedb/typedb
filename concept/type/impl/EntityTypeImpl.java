@@ -92,7 +92,6 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
     @Override
     public List<HypergraphException> validate() {
         return super.validate();
-        // TODO: Add any validation that would apply to all EntityTypes here
     }
 
     @Override

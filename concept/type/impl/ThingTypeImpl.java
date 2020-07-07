@@ -260,7 +260,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     public void delete() {
         if (subs().anyMatch(s -> !s.equals(this))) {
             throw new HypergraphException(TYPE_HAS_SUBTYPES.format(label()));
-        } else if (subs().flatMap(ThingType::instances).findAny().isPresent()) {
+        } else if (subs().flatMap(ThingType::instances).findFirst().isPresent()) {
             throw new HypergraphException(TYPE_HAS_INSTANCES.format(label()));
         } else {
             vertex.delete();
