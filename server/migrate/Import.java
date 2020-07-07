@@ -69,35 +69,6 @@ public class Import implements AutoCloseable {
     public Import(Session session, Path inputFile) throws IOException {
         this.session = session;
 
-        try (InputStream inputStream = new BufferedInputStream(Files.newInputStream(inputFile))) {
-            Parser<MigrateProto.Item> itemParser = MigrateProto.Item.parser();
-
-            Map<String, Integer> relationCountByType = new HashMap<>();
-            Map<String, Integer> rolePlayerCountByRole = new HashMap<>();
-
-            MigrateProto.Item item;
-            while((item = itemParser.parseDelimitedFrom(inputStream)) != null) {
-                switch (item.getItemCase()) {
-                    case RELATION:
-                        MigrateProto.Item.Relation relation = item.getRelation();
-                        relationCountByType.merge(relation.getLabel(), 1, Integer::sum);
-                        for (MigrateProto.Item.Relation.Role role : relation.getRoleList()) {
-                            rolePlayerCountByRole.merge(
-                                    role.getLabel(),
-                                    role.getPlayerCount(),
-                                    Integer::sum
-                            );
-                        }
-                        break;
-                }
-            }
-
-            LOG.info("Relation counts");
-            relationCountByType.forEach((relation, count) -> LOG.info("{}: {}", relation, count));
-            LOG.info("Role player counts");
-            rolePlayerCountByRole.forEach((role, count) -> LOG.info("{}: {}", role, count));
-        }
-
         this.inputStream = new BufferedInputStream(Files.newInputStream(inputFile));
         this.itemParser = MigrateProto.Item.parser();
     }
