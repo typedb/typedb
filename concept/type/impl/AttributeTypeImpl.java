@@ -37,6 +37,8 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import static hypergraph.common.exception.Error.ConceptRead.INVALID_CONCEPT_CASTING;
+import static hypergraph.common.exception.Error.Internal.UNRECOGNISED_VALUE;
+import static hypergraph.common.exception.Error.TypeRead.TYPE_ROOT_MISMATCH;
 import static hypergraph.common.exception.Error.TypeWrite.ATTRIBUTE_SUPERTYPE_NOT_ABSTRACT;
 import static hypergraph.common.exception.Error.TypeWrite.ATTRIBUTE_SUPERTYPE_VALUE_TYPE;
 import static hypergraph.common.exception.Error.TypeWrite.ROOT_TYPE_MUTATION;
@@ -49,7 +51,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
     private AttributeTypeImpl(TypeVertex vertex) {
         super(vertex);
         if (vertex.schema() != Schema.Vertex.Type.ATTRIBUTE_TYPE) {
-            throw new HypergraphException(Error.TypeRead.TYPE_ROOT_MISMATCH.format(
+            throw new HypergraphException(TYPE_ROOT_MISMATCH.format(
                     vertex.label(),
                     Schema.Vertex.Type.ATTRIBUTE_TYPE.root().label(),
                     vertex.schema().root().label()
@@ -77,7 +79,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             case DATETIME:
                 return AttributeTypeImpl.DateTime.of(vertex);
             default:
-                throw new HypergraphException("Unreachable"); // unreachable
+                throw new HypergraphException(UNRECOGNISED_VALUE);
         }
     }
 
@@ -242,7 +244,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
                     case DATETIME:
                         return AttributeTypeImpl.DateTime.of(v);
                     default:
-                        throw new HypergraphException("Unreachable");
+                        throw new HypergraphException(UNRECOGNISED_VALUE);
                 }
             });
         }
