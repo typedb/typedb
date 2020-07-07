@@ -38,6 +38,21 @@ java_library(
     ],
 )
 
+
+java_library(
+    name = "manager",
+    srcs = [
+        "SessionManager.java",
+    ],
+    deps = [
+        # Internal Package Dependencies
+        "//kb/server",
+
+        # Internal Repository Dependencies
+        "@graknlabs_common//:common",
+    ],
+)
+
 java_test(
     name = "test",
     srcs = [
@@ -68,5 +83,6 @@ checkstyle_test(
     targets = [
         ":steps",
         ":test",
+        ":manager",
     ],
 )

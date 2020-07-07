@@ -71,13 +71,10 @@ public class SchemaManager {
         }
     };
 
-    public static void undefineAllRules(Session session) {
-        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-            Set<String> ruleLabels = getAllRules(tx).stream().map(rule -> rule.label().toString()).collect(Collectors.toSet());
-            for (String ruleLabel : ruleLabels) {
-                tx.execute(Graql.undefine(Graql.type(ruleLabel).sub("rule")));
-            }
-            tx.commit();
+    public static void undefineAllRules(final Transaction tx) {
+        Set<String> ruleLabels = getAllRules(tx).stream().map(rule -> rule.label().toString()).collect(Collectors.toSet());
+        for (String ruleLabel : ruleLabels) {
+            tx.execute(Graql.undefine(Graql.type(ruleLabel).sub("rule")));
         }
     }
 
@@ -99,41 +96,38 @@ public class SchemaManager {
         return tx.execute(roleQuery).get(0).get("x").asRole();
     }
 
-    public static void connectResolutionSchema(Session session) {
-        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-            Role instanceRole = getRole(tx, "instance");
-            Role ownerRole = getRole(tx, "owner");
-            Role roleplayerRole = getRole(tx, "roleplayer");
-            Role relRole = getRole(tx, "rel");
+    public static void connectResolutionSchema(final Transaction tx) {
+        Role instanceRole = getRole(tx, "instance");
+        Role ownerRole = getRole(tx, "owner");
+        Role roleplayerRole = getRole(tx, "roleplayer");
+        Role relRole = getRole(tx, "rel");
 
-            RelationType attrPropRel = tx.execute(Graql.match(Graql.var("x").sub("has-attribute-property")).get()).get(0).get("x").asRelationType();
-            
-            GraqlGet typesToConnectQuery = Graql.match(
-                    Graql.var("x").sub("thing")
-            ).get();
-            tx.stream(typesToConnectQuery).map(ans -> ans.get("x").asType()).forEach(type -> {
-                if (type.isAttributeType()) {
-                    if (!EXCLUDED_ATTRIBUTE_TYPES.contains(type.label().toString())) {
-                        attrPropRel.has((AttributeType) type);
-                    }
-                } else if (type.isEntityType()) {
-                    if (!EXCLUDED_ENTITY_TYPES.contains(type.label().toString())) {
-                        type.plays(instanceRole);
-                        type.plays(ownerRole);
-                        type.plays(roleplayerRole);
-                    }
+        RelationType attrPropRel = tx.execute(Graql.match(Graql.var("x").sub("has-attribute-property")).get()).get(0).get("x").asRelationType();
 
-                } else if (type.isRelationType()) {
-                    if (!EXCLUDED_RELATION_TYPES.contains(type.label().toString())) {
-                        type.plays(instanceRole);
-                        type.plays(ownerRole);
-                        type.plays(roleplayerRole);
-                        type.plays(relRole);
-                    }
+        GraqlGet typesToConnectQuery = Graql.match(
+                Graql.var("x").sub("thing")
+        ).get();
+        tx.stream(typesToConnectQuery).map(ans -> ans.get("x").asType()).forEach(type -> {
+            if (type.isAttributeType()) {
+                if (!EXCLUDED_ATTRIBUTE_TYPES.contains(type.label().toString())) {
+                    attrPropRel.has((AttributeType) type);
                 }
-            });
-            tx.commit();
-        }
+            } else if (type.isEntityType()) {
+                if (!EXCLUDED_ENTITY_TYPES.contains(type.label().toString())) {
+                    type.plays(instanceRole);
+                    type.plays(ownerRole);
+                    type.plays(roleplayerRole);
+                }
+
+            } else if (type.isRelationType()) {
+                if (!EXCLUDED_RELATION_TYPES.contains(type.label().toString())) {
+                    type.plays(instanceRole);
+                    type.plays(ownerRole);
+                    type.plays(roleplayerRole);
+                    type.plays(relRole);
+                }
+            }
+        });
     }
 
     private static boolean typeIsMemberOfCompletionSchema(Type type) {
@@ -160,9 +154,7 @@ public class SchemaManager {
     }
 
 
-    public static void enforceAllTypesHaveKeys(Session session) {
-        Transaction tx = session.transaction(Transaction.Type.READ);
-
+    public static void enforceAllTypesHaveKeys(final Transaction tx) {
         GraqlGet instancesQuery = Graql.match(Graql.var("x").sub("thing"),
                 Graql.not(Graql.var("x").sub("attribute")),
                 Graql.not(Graql.var("x").type("entity")),
@@ -178,6 +170,5 @@ public class SchemaManager {
                         "for all entity types and relation types for resolution testing", type.label().toString()));
             }
         });
-        tx.close();
     }
 }

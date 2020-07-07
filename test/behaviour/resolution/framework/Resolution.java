@@ -21,6 +21,7 @@ package grakn.core.test.behaviour.resolution.framework;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
+import grakn.core.test.behaviour.connection.session.SessionManager;
 import grakn.core.test.behaviour.resolution.framework.complete.Completer;
 import grakn.core.test.behaviour.resolution.framework.complete.SchemaManager;
 import grakn.core.test.behaviour.resolution.framework.resolve.ResolutionQueryBuilder;
@@ -33,7 +34,7 @@ import java.util.stream.Collectors;
 import static com.google.common.collect.Iterables.getOnlyElement;
 import static grakn.core.test.behaviour.resolution.framework.complete.SchemaManager.filterCompletionSchema;
 
-public class Resolution {
+public class Resolution implements AutoCloseable {
 
     private Session materialisedSession;
     private Session reasonedSession;
@@ -72,10 +73,10 @@ public class Resolution {
      * @param session Grakn Session
      * @return number of instances
      */
-    private static int thingCount(Session session) {
-        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
+    private int thingCount(Session session) {
+        return sessionManager.execute(session, tx -> {
             return getOnlyElement(tx.execute(Graql.match(Graql.var("x").isa("thing")).get().count())).number().intValue();
-        }
+        });
     }
 
     public void close() {
@@ -144,7 +145,7 @@ public class Resolution {
                     throw new CorrectnessException(msg);
                 }
             }
-        }
+        });
     }
 
     /**
@@ -157,6 +158,18 @@ public class Resolution {
             String msg = String.format("The complete KB contains %d inferred concepts, whereas the test KB contains %d inferred concepts.", completedInferredThingCount, testInferredCount);
             throw new CompletenessException(msg);
         }
+    }
+
+    private Session getCompletionSession() {
+        return sessionManager.getSession("completion");
+    }
+
+    private Session getTestSession() {
+        return sessionManager.getPrimarySession();
+    }
+
+    private Transaction getOpenTransaction(final Session session) {
+        return sessionManager.getOpenTransaction(session);
     }
 
     public static class CorrectnessException extends RuntimeException {
