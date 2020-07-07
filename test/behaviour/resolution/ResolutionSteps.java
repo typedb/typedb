@@ -68,7 +68,7 @@ public class ResolutionSteps {
     }
 
     @When("materialised keyspace is completed")
-    public void reference_graph_is_materialised() {
+    public void materialised_keyspace_is_completed() {
         resolution = new Resolution(getMaterialisedSession(), getReasonedSession());
     }
 
@@ -78,19 +78,19 @@ public class ResolutionSteps {
     }
 
     @Then("in reasoned keyspace, answer size is: {number}")
-    public void answer_count_is(final int expectedCount) {
+    public void reasoned_keyspace_answer_size_is(final int expectedCount) {
         resolution.manuallyValidateAnswerSize(queryToTest, expectedCount);
     }
 
     @Then("in reasoned keyspace, all answers are correct")
-    public void all_answers_are_correct() {
+    public void reasoned_keyspace_all_answers_are_correct() {
         // TODO: refactor these into a single method that compares the set of expected answers to the actual answers
         resolution.testQuery(queryToTest);
         resolution.testResolution(queryToTest);
     }
 
     @Then("in reasoned keyspace, no answers are missing")
-    public void no_answers_are_missing() {
+    public void reasoned_keyspace_no_answers_are_missing() {
         resolution.testCompleteness();
     }
 
