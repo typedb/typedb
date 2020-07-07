@@ -239,7 +239,7 @@
 @maven//:javax_xml_stream_stax_api
 @maven//:javax_xml_stream_stax_api_1_0_2
 @maven//:jline_jline
-@maven//:jline_jline_2_12
+@maven//:jline_jline_2_14_6
 @maven//:joda_time_joda_time
 @maven//:joda_time_joda_time_2_4
 @maven//:junit_junit

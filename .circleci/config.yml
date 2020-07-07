@@ -155,7 +155,8 @@ jobs:
           command: bazel test //test/behaviour/graql/language/delete:test --test_output=errors
 
   test-behaviour-graql-get:
-    machine: true
+    machine:
+      image: ubuntu-1604:201903-01
     working_directory: ~/grakn
     steps:
       - install-bazel-linux
@@ -362,6 +363,18 @@ jobs:
           path: ./cassandra.log
           destination: logs/cassandra.log
 
+  deploy-artifact-snapshot:
+    machine:
+      image: ubuntu-1604:201903-01
+    working_directory: ~/grakn
+    steps:
+      - install-bazel-linux
+      - checkout
+      - run: |
+          export DEPLOY_ARTIFACT_USERNAME=$REPO_GRAKN_USERNAME
+          export DEPLOY_ARTIFACT_PASSWORD=$REPO_GRAKN_PASSWORD
+          bazel run --define version=$(git rev-parse HEAD) //:deploy-linux-targz -- snapshot
+
   deploy-apt-snapshot:
     machine:
       image: ubuntu-1604:201903-01
@@ -465,7 +478,19 @@ jobs:
       - checkout
       - run: |
           bazel run @graknlabs_dependencies//tool/release:validate-deps -- \
-            graknlabs_common graknlabs_graql graknlabs_protocol graknlabs_console
+            graknlabs_common graknlabs_graql graknlabs_protocol graknlabs_console_artifact
+
+  deploy-artifact:
+    machine:
+      image: ubuntu-1604:201903-01
+    working_directory: ~/grakn
+    steps:
+      - install-bazel-linux
+      - checkout
+      - run: |
+          export DEPLOY_ARTIFACT_USERNAME=$REPO_GRAKN_USERNAME
+          export DEPLOY_ARTIFACT_PASSWORD=$REPO_GRAKN_PASSWORD
+          bazel run --define version=$(cat VERSION) //:deploy-linux-targz -- release
 
   deploy-github:
     machine:
@@ -805,6 +830,18 @@ workflows:
             - test-integration-analytics
             - test-integration-concept
             - test-integration-keyspace
+      - deploy-artifact-snapshot:
+          filters:
+            branches:
+              only:
+                - master
+                - rewrite
+          requires:
+            - test-assembly-mac-zip
+            - test-assembly-windows-zip
+            - test-assembly-linux-targz
+            - test-assembly-docker
+            - test-assembly
       - deploy-apt-snapshot:
           filters:
             branches:
@@ -851,6 +888,7 @@ workflows:
               only:
                 - master
           requires:
+            - deploy-artifact-snapshot
             - test-deployment-linux-apt
             - test-deployment-linux-rpm
       - release-approval:
@@ -880,6 +918,12 @@ workflows:
           filters:
             branches:
               only: grakn-release-branch
+      - deploy-artifact:
+          filters:
+            branches:
+              only: grakn-release-branch
+          requires:
+            - deploy-approval
       - deploy-apt:
           filters:
             branches:

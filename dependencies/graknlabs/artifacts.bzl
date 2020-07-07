@@ -14,3 +14,13 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
+
+load("@graknlabs_dependencies//distribution/artifact:rules.bzl", "artifact_file")
+
+def graknlabs_console_artifact():
+    artifact_file(
+        name = "graknlabs_console_artifact",
+        group_name = "graknlabs_console",
+        artifact_name = "console-artifact.tgz",
+        commit = "752b85f29997c0864e90505729bc7224e4759110",
+    )
