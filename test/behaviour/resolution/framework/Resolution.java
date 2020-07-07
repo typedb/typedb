@@ -35,8 +35,8 @@ import static grakn.core.test.behaviour.resolution.framework.complete.SchemaMana
 
 public class Resolution {
 
-    private Session completionSession;
-    private Session testSession;
+    private Session materialisedSession;
+    private Session reasonedSession;
     private int completedInferredThingCount;
     private int initialThingCount;
 
@@ -44,26 +44,26 @@ public class Resolution {
      * Resolution Testing Framework's entry point. Takes in sessions each for a `Completion` and `Test` keyspace. Each
      * keyspace loaded with the same schema and data. This should be true unless testing this code, in which case a
      * disparity between the two keyspaces is introduced to check that the framework throws an error when it should.
-     * @param completionSession a session for the `Completion` keyspace with base data included
-     * @param testSession a session for the `test` keyspace with base data included
+     * @param materialisedSession a session for the `materialised` keyspace with base data included
+     * @param reasonedSession a session for the `reasoned` keyspace with base data included
      */
-    public Resolution(Session completionSession, Session testSession) {
-        this.completionSession = completionSession;
-        this.testSession = testSession;
+    public Resolution(Session materialisedSession, Session reasonedSession) {
+        this.materialisedSession = materialisedSession;
+        this.reasonedSession = reasonedSession;
 
         // TODO Check that nothing in the given schema conflicts with the resolution schema
 
         // Complete the KB-complete
-        Completer completer = new Completer(this.completionSession);
-        try (Transaction tx = this.completionSession.transaction(Transaction.Type.WRITE)) {
+        Completer completer = new Completer(this.materialisedSession);
+        try (Transaction tx = this.materialisedSession.transaction(Transaction.Type.WRITE)) {
             completer.loadRules(SchemaManager.getAllRules(tx));
         }
 
-        SchemaManager.undefineAllRules(this.completionSession);
-        SchemaManager.enforceAllTypesHaveKeys(this.completionSession);
-        SchemaManager.addResolutionSchema(this.completionSession);
-        SchemaManager.connectResolutionSchema(this.completionSession);
-        initialThingCount = thingCount(this.completionSession);
+        SchemaManager.undefineAllRules(this.materialisedSession);
+        SchemaManager.enforceAllTypesHaveKeys(this.materialisedSession);
+        SchemaManager.addResolutionSchema(this.materialisedSession);
+        SchemaManager.connectResolutionSchema(this.materialisedSession);
+        initialThingCount = thingCount(this.materialisedSession);
         completedInferredThingCount = completer.complete();
     }
 
@@ -79,8 +79,8 @@ public class Resolution {
     }
 
     public void close() {
-        completionSession.close();
-        testSession.close();
+        materialisedSession.close();
+        reasonedSession.close();
     }
 
     /**
@@ -89,16 +89,31 @@ public class Resolution {
      * @param inferenceQuery The reference query to make against both keyspaces
      */
     public void testQuery(GraqlGet inferenceQuery) {
-        Transaction testTx = testSession.transaction(Transaction.Type.READ);
+        Transaction testTx = reasonedSession.transaction(Transaction.Type.READ);
         int testResultsCount = testTx.execute(inferenceQuery).size();
         testTx.close();
 
-        Transaction completionTx = completionSession.transaction(Transaction.Type.READ);
+        Transaction completionTx = materialisedSession.transaction(Transaction.Type.READ);
         int completionResultsCount = filterCompletionSchema(completionTx.stream(inferenceQuery)).collect(Collectors.toSet()).size();
         completionTx.close();
         if (completionResultsCount != testResultsCount) {
             String msg = String.format("Query had an incorrect number of answers. Expected %d answers, but found %d " +
                     "answers, for query :\n %s", completionResultsCount, testResultsCount, inferenceQuery);
+            throw new CorrectnessException(msg);
+        }
+    }
+
+    /**
+     * Run a query against just the test keyspace and manually assert that the number of answers is correct.
+     * @param inferenceQuery The reference query to make against the test keyspace
+     */
+    public void manuallyValidateAnswerSize(final GraqlGet inferenceQuery, final int expectedCount) {
+        Transaction testTx = reasonedSession.transaction(Transaction.Type.READ);
+        final int testResultsCount = testTx.execute(inferenceQuery).size();
+        testTx.close();
+        if (expectedCount != testResultsCount) {
+            String msg = String.format("Query had an incorrect number of answers. Expected [%d] answers (manually defined), " +
+                    "but found [%d] answers, for query :\n %s", expectedCount, testResultsCount, inferenceQuery);
             throw new CorrectnessException(msg);
         }
     }
@@ -112,7 +127,7 @@ public class Resolution {
         ResolutionQueryBuilder resolutionQueryBuilder = new ResolutionQueryBuilder();
         List<GraqlGet> queries;
 
-        try (Transaction tx = testSession.transaction(Transaction.Type.READ)) {
+        try (Transaction tx = reasonedSession.transaction(Transaction.Type.READ)) {
             queries = resolutionQueryBuilder.buildMatchGet(tx, inferenceQuery);
         }
 
@@ -121,7 +136,7 @@ public class Resolution {
             throw new CorrectnessException(msg);
         }
 
-        try (Transaction tx = completionSession.transaction(Transaction.Type.READ)) {
+        try (Transaction tx = materialisedSession.transaction(Transaction.Type.READ)) {
             for (GraqlGet query: queries) {
                 List<ConceptMap> answers = tx.execute(query);
                 if (answers.size() != 1) {
@@ -137,7 +152,7 @@ public class Resolution {
      * inferred facts in the completion keyspace against the total number that are inferred in the test keyspace
      */
     public void testCompleteness() {
-        int testInferredCount = thingCount(testSession) - initialThingCount;
+        int testInferredCount = thingCount(reasonedSession) - initialThingCount;
         if (testInferredCount != completedInferredThingCount) {
             String msg = String.format("The complete KB contains %d inferred concepts, whereas the test KB contains %d inferred concepts.", completedInferredThingCount, testInferredCount);
             throw new CompletenessException(msg);

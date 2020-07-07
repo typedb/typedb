@@ -18,68 +18,104 @@
 
 package grakn.core.test.behaviour.resolution;
 
+import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import grakn.core.test.behaviour.resolution.framework.Resolution;
 import graql.lang.Graql;
-import graql.lang.query.GraqlDefine;
 import graql.lang.query.GraqlGet;
 import graql.lang.query.GraqlQuery;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 
+import java.util.function.Function;
+
 import static grakn.core.test.behaviour.connection.ConnectionSteps.sessions;
 
 public class ResolutionSteps {
 
-    private static GraqlGet query;
-    private static Resolution resolution;
+    private Session reasonedSession;
+    private Session materialisedSession;
+    private GraqlGet queryToTest;
+    private Resolution resolution;
 
-    @Given("graql define")
+    @Given("for each session, graql define")
     public void graql_define(String defineQueryStatements) {
-        sessions.forEach(session -> {
-            Transaction tx = session.transaction(Transaction.Type.WRITE);
-            GraqlDefine graqlQuery = Graql.parse(String.join("\n", defineQueryStatements)).asDefine();
-            tx.execute(graqlQuery);
-            tx.commit();
-        });
+        graql_query(defineQueryStatements, GraqlQuery::asDefine);
     }
 
-    @Given("graql insert")
+    @Given("for each session, graql insert")
     public void graql_insert(String insertQueryStatements) {
+        graql_query(insertQueryStatements, GraqlQuery::asInsert);
+    }
+
+    @Given("materialised keyspace is named: {string}")
+    public void materialised_keyspace_is_named(final String keyspaceName) {
+        final Session materialisedSession = sessions.stream()
+                .filter(s -> s.keyspace().name().equals(keyspaceName))
+                .findAny()
+                .orElse(null);
+        setMaterialisedSession(materialisedSession);
+    }
+
+    @Given("reasoned keyspace is named: {string}")
+    public void reasoned_keyspace_is_named(final String keyspaceName) {
+        final Session reasonedSession = sessions.stream()
+                .filter(s -> s.keyspace().name().equals(keyspaceName))
+                .findAny()
+                .orElse(null);
+        setReasonedSession(reasonedSession);
+    }
+
+    @When("materialised keyspace is completed")
+    public void materialised_keyspace_is_completed() {
+        resolution = new Resolution(getMaterialisedSession(), getReasonedSession());
+    }
+
+    @Then("for graql query")
+    public void for_graql_query(String graqlQuery) {
+        queryToTest = Graql.parse(graqlQuery).asGet();
+    }
+
+    @Then("in reasoned keyspace, answer size is: {number}")
+    public void reasoned_keyspace_answer_size_is(final int expectedCount) {
+        resolution.manuallyValidateAnswerSize(queryToTest, expectedCount);
+    }
+
+    @Then("in reasoned keyspace, all answers are correct")
+    public void reasoned_keyspace_all_answers_are_correct() {
+        // TODO: refactor these into a single method that compares the set of expected answers to the actual answers
+        resolution.testQuery(queryToTest);
+        resolution.testResolution(queryToTest);
+    }
+
+    @Then("materialised and reasoned keyspaces are the same size")
+    public void keyspaces_are_the_same_size() {
+        resolution.testCompleteness();
+    }
+
+    private <TQuery extends GraqlQuery> void graql_query(final String queryStatements, final Function<GraqlQuery, TQuery> queryTypeFn) {
         sessions.forEach(session -> {
-            Transaction tx = session.transaction(Transaction.Type.WRITE);
-            GraqlQuery graqlQuery = Graql.parse(String.join("\n", insertQueryStatements));
+            final Transaction tx = session.transaction(Transaction.Type.WRITE);
+            final TQuery graqlQuery = queryTypeFn.apply(Graql.parse(String.join("\n", queryStatements)));
             tx.execute(graqlQuery, true, true); // always use inference and have explanations
             tx.commit();
         });
     }
 
-    @When("reference kb is completed")
-    public void reference_kb_is_completed() {
-        if (sessions.size() < 2) {
-            throw new RuntimeException("Two sessions must be defined, each with a separate keyspace");
-        }
-        resolution = new Resolution(sessions.get(0), sessions.get(1));
+    private Session getReasonedSession() {
+        return reasonedSession;
     }
 
-    @Then("for graql query")
-    public void for_graql_query(String graqlQuery) {
-        query = Graql.parse(graqlQuery);
+    private Session getMaterialisedSession() {
+        return materialisedSession;
     }
 
-    @Then("answer count is correct")
-    public void answer_count_is_correct() {
-        resolution.testQuery(query);
+    private void setReasonedSession(Session value) {
+        reasonedSession = value;
     }
 
-    @Then("answers resolution is correct")
-    public void answers_resolution_is_correct() {
-        resolution.testResolution(query);
-    }
-
-    @Then("test keyspace is complete")
-    public void test_keyspace_is_complete() {
-        resolution.testCompleteness();
+    private void setMaterialisedSession(Session value) {
+        materialisedSession = value;
     }
 }
