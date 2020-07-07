@@ -80,7 +80,14 @@ public class ResolutionSteps {
 
     @Then("in reasoned keyspace, answer size is: {number}")
     public void reasoned_keyspace_answer_size_is(final int expectedCount) {
-        resolution.manuallyValidateAnswerSize(queryToTest, expectedCount);
+        final Transaction testTx = reasonedSession.transaction(Transaction.Type.READ);
+        final int testResultsCount = testTx.execute(queryToTest).size();
+        testTx.close();
+        if (expectedCount != testResultsCount) {
+            String msg = String.format("Query had an incorrect number of answers. Expected [%d] answers, " +
+                    "but found [%d] answers, for query :\n %s", expectedCount, testResultsCount, queryToTest);
+            throw new Resolution.CorrectnessException(msg);
+        }
     }
 
     @Then("in reasoned keyspace, all answers are correct")

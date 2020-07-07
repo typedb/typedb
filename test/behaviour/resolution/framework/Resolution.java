@@ -104,21 +104,6 @@ public class Resolution {
     }
 
     /**
-     * Run a query against just the test keyspace and manually assert that the number of answers is correct.
-     * @param inferenceQuery The reference query to make against the test keyspace
-     */
-    public void manuallyValidateAnswerSize(final GraqlGet inferenceQuery, final int expectedCount) {
-        Transaction testTx = reasonedSession.transaction(Transaction.Type.READ);
-        final int testResultsCount = testTx.execute(inferenceQuery).size();
-        testTx.close();
-        if (expectedCount != testResultsCount) {
-            String msg = String.format("Query had an incorrect number of answers. Expected [%d] answers (manually defined), " +
-                    "but found [%d] answers, for query :\n %s", expectedCount, testResultsCount, inferenceQuery);
-            throw new CorrectnessException(msg);
-        }
-    }
-
-    /**
      * For each answer to a query, fully explore its explanation to construct a query that will check it was resolved
      * as expected. Run this query on the completion keyspace to verify.
      * @param inferenceQuery The reference query to make against both keyspaces
@@ -160,7 +145,7 @@ public class Resolution {
     }
 
     public static class CorrectnessException extends RuntimeException {
-        CorrectnessException(String message) {
+        public CorrectnessException(String message) {
             super(message);
         }
     }
