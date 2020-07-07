@@ -78,142 +78,6 @@ public class ValuePredicateIT {
     }
 
     @Test
-    public void whenResolvableAttributesHaveVariableComparisons_answersAreCalculatedCorrectly(){
-        Config mockServerConfig = storage.createCompatibleServerConfig();
-        Session session = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig);
-        try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-            tx.execute(Graql.parse("define " +
-                    "someEntity sub entity," +
-                    "has derivedResource;" +
-                    "derivedResource sub attribute, value long;" +
-                    "rule1 sub rule, when{ $x isa someEntity;}, then { $x has derivedResource 1337;};" +
-                    "rule2 sub rule, when{ $x isa someEntity;}, then { $x has derivedResource 1667;};"
-
-            ).asDefine());
-            tx.execute(Graql.parse("insert " +
-                    "$x isa someEntity;" +
-                    "$y isa someEntity;"
-            ).asInsert());
-            tx.commit();
-        }
-
-        Statement value = Graql.var("value");
-        Statement anotherValue = Graql.var("anotherValue");
-        Pattern basePattern = Graql.and(
-                Graql.var("x").has("derivedResource", value),
-                Graql.var("y").has("derivedResource", anotherValue)
-        );
-
-        try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-            List<ConceptMap> answers = tx.execute(Graql.match(Graql.and(basePattern, value.gt(anotherValue))).get());
-            assertFalse(answers.isEmpty());
-            answers.forEach(ans -> {
-                assertTrue((long) ans.get(value.var()).asAttribute().value() > (long) ans.get(anotherValue.var()).asAttribute().value());
-            });
-        }
-        try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-            List<ConceptMap> answers = tx.execute(Graql.match(Graql.and(basePattern, value.gte(anotherValue))).get());
-            assertFalse(answers.isEmpty());
-            answers.forEach(ans -> {
-                assertTrue((long) ans.get(value.var()).asAttribute().value() >= (long) ans.get(anotherValue.var()).asAttribute().value());
-            });
-        }
-        try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-            List<ConceptMap> answers = tx.execute(Graql.match(Graql.and(basePattern, value.lt(anotherValue))).get());
-            assertFalse(answers.isEmpty());
-            answers.forEach(ans -> {
-                assertTrue((long) ans.get(value.var()).asAttribute().value() < (long) ans.get(anotherValue.var()).asAttribute().value());
-            });
-        }
-        try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-            List<ConceptMap> answers = tx.execute(Graql.match(Graql.and(basePattern, value.lte(anotherValue))).get());
-            assertFalse(answers.isEmpty());
-            answers.forEach(ans -> {
-                assertTrue((long) ans.get(value.var()).asAttribute().value() <= (long) ans.get(anotherValue.var()).asAttribute().value());
-            });
-        }
-        try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-            List<ConceptMap> answers = tx.execute(Graql.match(Graql.and(basePattern, value.eq(anotherValue))).get());
-            assertFalse(answers.isEmpty());
-            answers.forEach(ans -> {
-                assertEquals((long) ans.get(value.var()).asAttribute().value(), (long) ans.get(anotherValue.var()).asAttribute().value());
-            });
-        }
-        try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-            List<ConceptMap> answers = tx.execute(Graql.match(Graql.and(basePattern, value.neq(anotherValue))).get());
-            assertFalse(answers.isEmpty());
-            answers.forEach(ans -> {
-                assertTrue((long) ans.get(value.var()).asAttribute().value() != (long) ans.get(anotherValue.var()).asAttribute().value());
-            });
-        }
-
-        session.close();
-    }
-
-    @Test
-    public void whenResolvableAttributesHaveVariableComparisonsWithAoBound_answersAreCalculatedCorrectly(){
-        Config mockServerConfig = storage.createCompatibleServerConfig();
-        Session session = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig);
-        try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-            tx.execute(Graql.parse("define " +
-                    "someEntity sub entity," +
-                    "has derivedResource;" +
-                    "derivedResource sub attribute, value long;" +
-                    "rule1 sub rule, when{ $x isa someEntity;}, then { $x has derivedResource 1337;};" +
-                    "rule2 sub rule, when{ $x isa someEntity;}, then { $x has derivedResource 1667;};" +
-                    "rule3 sub rule, when{ $x isa someEntity;}, then { $x has derivedResource 1997;};"
-
-            ).asDefine());
-            tx.execute(Graql.parse("insert " +
-                    "$x isa someEntity;" +
-                    "$y isa someEntity;"
-            ).asInsert());
-            tx.commit();
-        }
-
-        final long bound = 1667L;
-        Statement value = Graql.var("value");
-        Statement anotherValue = Graql.var("anotherValue");
-        Pattern basePattern = Graql.and(
-                Graql.var("x").has("derivedResource", value),
-                Graql.var("y").has("derivedResource", anotherValue),
-                value.eq(anotherValue)
-        );
-
-        try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-            List<ConceptMap> answers = tx.execute(Graql.match(Graql.and(basePattern, anotherValue.gt(bound))).get());
-            assertFalse(answers.isEmpty());
-            answers.forEach(ans -> assertTrue((long) ans.get(value.var()).asAttribute().value() > bound));
-        }
-        try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-            List<ConceptMap> answers = tx.execute(Graql.match(Graql.and(basePattern, anotherValue.gte(bound))).get());
-            assertFalse(answers.isEmpty());
-            answers.forEach(ans -> assertTrue((long) ans.get(value.var()).asAttribute().value() >= bound));
-        }
-        try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-            List<ConceptMap> answers = tx.execute(Graql.match(Graql.and(basePattern, anotherValue.lt(bound))).get());
-            assertFalse(answers.isEmpty());
-            answers.forEach(ans -> assertTrue((long) ans.get(value.var()).asAttribute().value() < bound));
-        }
-        try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-            List<ConceptMap> answers = tx.execute(Graql.match(Graql.and(basePattern, anotherValue.lte(bound))).get());
-            assertFalse(answers.isEmpty());
-            answers.forEach(ans -> assertTrue((long) ans.get(value.var()).asAttribute().value() <= bound));
-        }
-        try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-            List<ConceptMap> answers = tx.execute(Graql.match(Graql.and(basePattern, anotherValue.eq(bound))).get());
-            assertFalse(answers.isEmpty());
-            answers.forEach(ans -> assertTrue((long) ans.get(value.var()).asAttribute().value() == bound));
-        }
-        try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-            List<ConceptMap> answers = tx.execute(Graql.match(Graql.and(basePattern, anotherValue.neq(bound))).get());
-            assertFalse(answers.isEmpty());
-            answers.forEach(ans -> assertTrue((long) ans.get(value.var()).asAttribute().value() != bound));
-        }
-        session.close();
-    }
-
-    @Test
     public void whenParsingNeqValueVPs_ensureTheyAreParsedIntoAtomsCorrectly() {
         try(Transaction tx = attributeAttachmentSession.transaction(Transaction.Type.WRITE)) {
             Conjunction<Pattern> neqWithoutBound = Iterables.getOnlyElement(
@@ -335,77 +199,8 @@ public class ValuePredicateIT {
     }
 
     @Test
-    //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
-    public void derivingResources_requireInequalityBetweenResources() {
-        try(Transaction tx = attributeAttachmentSession.transaction(Transaction.Type.WRITE)) {
-            String neqVariant = "{ " +
-                    "$x has derived-resource-string $value;" +
-                    "$y has derived-resource-string $anotherValue;" +
-                    "$value !== $anotherValue;" +
-                    "};";
-
-            String neqVariantWithExtraCondition = "{ " +
-                    "$x has derived-resource-string $value;" +
-                    "$y has derived-resource-string $anotherValue;" +
-                    "$value !== $anotherValue;" +
-                    "$anotherValue contains 'value';" +
-                    "};";
-
-            String eqVariant = "{ " +
-                    "$x has derived-resource-string $value;" +
-                    "$y has derived-resource-string $anotherValue;" +
-                    "$value == $anotherValue;" +
-                    "};";
-
-            String eqVariantWithExtraCondition = "{ " +
-                    "$x has derived-resource-string $value;" +
-                    "$y has derived-resource-string $anotherValue;" +
-                    "$value == $anotherValue;" +
-                    "$anotherValue contains 'value';" +
-                    "};";
-
-            ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
-
-            ReasonerQueryImpl query = reasonerQueryFactory.create(conjunction(neqVariant));
-            ReasonerQueryImpl query2 = reasonerQueryFactory.create(conjunction(neqVariantWithExtraCondition));
-            ReasonerQueryImpl query3 = reasonerQueryFactory.create(conjunction(eqVariant));
-            ReasonerQueryImpl query4 = reasonerQueryFactory.create(conjunction(eqVariantWithExtraCondition));
-            List<ConceptMap> neqAnswers = tx.execute(Graql.match(Graql.parsePattern(neqVariant)).get());
-            List<ConceptMap> neqAnswersWithCondition = tx.execute(Graql.match(Graql.parsePattern(neqVariantWithExtraCondition)).get());
-            List<ConceptMap> eqAnswers = tx.execute(Graql.match(Graql.parsePattern(eqVariant)).get());
-            List<ConceptMap> eqAnswersWithCondition = tx.execute(Graql.match(Graql.parsePattern(eqVariantWithExtraCondition)).get());
-
-            neqAnswers.forEach(ans -> {
-                Object value = ans.get("value").asAttribute().value();
-                Object anotherValue = ans.get("anotherValue").asAttribute().value();
-                assertNotEquals(value, anotherValue);
-            });
-
-            neqAnswersWithCondition.forEach(ans -> {
-                Object value = ans.get("value").asAttribute().value();
-                Object anotherValue = ans.get("anotherValue").asAttribute().value();
-                assertNotEquals(value, anotherValue);
-                assertTrue(anotherValue.toString().contains("value"));
-            });
-
-            eqAnswers.forEach(ans -> {
-                Object value = ans.get("value").asAttribute().value();
-                Object anotherValue = ans.get("anotherValue").asAttribute().value();
-                assertEquals(value, anotherValue);
-            });
-
-            eqAnswersWithCondition.forEach(ans -> {
-                Object value = ans.get("value").asAttribute().value();
-                Object anotherValue = ans.get("anotherValue").asAttribute().value();
-                assertEquals(value, anotherValue);
-                assertTrue(anotherValue.toString().contains("value"));
-            });
-        }
-    }
-
-    @Test
-    //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
-    public void derivingResources_requireNotHavingSpecificValue() {
+    // Expected result: Negation of !== should be considered equivalent to ==, and vice versa
+    public void derivingResources_assertEquivalenceOfNegations() {
         try(Transaction tx = attributeAttachmentSession.transaction(Transaction.Type.WRITE)) {
             String neqHardBound = "{ " +
                     "$x has derived-resource-string $val;$val !== 'unattached';" +
@@ -423,10 +218,6 @@ public class ValuePredicateIT {
                     "$x has derived-resource-string $val;" +
                     "not {$val == $unwanted;$unwanted == 'unattached';};" +
                     "};";
-            String negatedNeqVpHardBound = "{ " +
-                    "$x has derived-resource-string $val;" +
-                    "not {$val !== 'unattached';};" +
-                    "};";
 
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
@@ -434,82 +225,14 @@ public class ValuePredicateIT {
             ReasonerAtomicQuery neqHardBoundQuery2 = reasonerQueryFactory.atomic(conjunction(neqHardBound2));
             ResolvableQuery negatedVpHardBoundQuery = reasonerQueryFactory.resolvable(conjunctionWithNegation(negatedVpHardBound));
             ResolvableQuery negatedVpHardBoundQuery2 = reasonerQueryFactory.resolvable(conjunctionWithNegation(negatedVpHardBound2));
-            ResolvableQuery negatedNeqVpHardBoundQuery = reasonerQueryFactory.resolvable(conjunctionWithNegation(negatedNeqVpHardBound));
 
             assertTrue(ReasonerQueryEquivalence.AlphaEquivalence.equivalent(neqHardBoundQuery, neqHardBoundQuery2));
             assertTrue(ReasonerQueryEquivalence.AlphaEquivalence.equivalent(negatedVpHardBoundQuery, negatedVpHardBoundQuery2));
-
-            String complementQueryPattern = "{$x has derived-resource-string $val; $val == 'unattached';};";
-            String completeQueryPattern = "{$x has derived-resource-string $val;};";
-
-            ReasonerAtomicQuery complementQuery = reasonerQueryFactory.atomic(conjunction(complementQueryPattern));
-
-            List<ConceptMap> answers = tx.execute(Graql.match(Graql.parsePattern(neqHardBound)).get());
-
-            List<ConceptMap> answersBis = tx.execute(Graql.match(Graql.parsePattern(neqHardBound2)).get());
-            List<ConceptMap> negationAnswers = tx.execute(Graql.match(Graql.parsePattern(negatedVpHardBound)).get());
-            List<ConceptMap> negationAnswersBis = tx.execute(Graql.match(Graql.parsePattern(negatedVpHardBound2)).get());
-            List<ConceptMap> negationComplement = tx.execute(Graql.match(Graql.parsePattern(negatedNeqVpHardBound)).get());
-
-            List<ConceptMap> complement = tx.execute(Graql.match(Graql.parsePattern(complementQueryPattern)).get());
-            List<ConceptMap> complete = tx.execute(Graql.match(Graql.parsePattern(completeQueryPattern)).get());
-            List<ConceptMap> expectedAnswers = ListsUtil.listDifference(complete, complement);
-
-            assertCollectionsNonTriviallyEqual(expectedAnswers, answers);
-
-            assertCollectionsNonTriviallyEqual(answers, negationAnswers);
-            assertCollectionsNonTriviallyEqual(complement, negationComplement);
-            assertCollectionsNonTriviallyEqual(expectedAnswers, answersBis);
-            assertCollectionsNonTriviallyEqual(answersBis, negationAnswersBis);
         }
     }
 
-    @Test //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
-    public void derivingResources_requireResourceValuesToBeDifferent() {
-        try(Transaction tx = attributeAttachmentSession.transaction(Transaction.Type.WRITE)) {
-            String neqVersion = "match " +
-                    "$x has derived-resource-string $val;" +
-                    "$y has reattachable-resource-string $anotherVal;" +
-                    "$val !== $anotherVal;" +
-                    "get;";
-            String negationVersion = "match " +
-                    "$x has derived-resource-string $val;" +
-                    "$y has reattachable-resource-string $anotherVal;" +
-                    "not {$val == $anotherVal;};" +
-                    "get;";
-            List<ConceptMap> answers = tx.execute(Graql.parse(neqVersion).asGet());
-            answers.stream()
-                    .map(ans -> new Pair<>(ans.get("val").asAttribute().value(), ans.get("anotherVal").asAttribute().value()))
-                    .forEach(p -> assertNotEquals(p.first(), p.second()));
-            List<ConceptMap> negationAnswers = tx.execute(Graql.parse(negationVersion).asGet());
-            assertCollectionsNonTriviallyEqual(answers, negationAnswers);
-
-        }
-    }
-
-    @Test //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
-    public void derivingResources_requireInstanceValuesToBeDifferent() {
-        try(Transaction tx = attributeAttachmentSession.transaction(Transaction.Type.WRITE)) {
-            String neqVersion = "match " +
-                    "$val isa derived-resource-string;" +
-                    "$anotherVal isa reattachable-resource-string;" +
-                    "$val !== $anotherVal;" +
-                    "get;";
-            String negationVersion = "match " +
-                    "$val isa derived-resource-string;" +
-                    "$anotherVal isa reattachable-resource-string;" +
-                    "not {$val == $anotherVal;};" +
-                    "get;";
-
-            List<ConceptMap> answers = tx.execute(Graql.parse(neqVersion).asGet());
-            answers.stream()
-                    .map(ans -> new Pair<>(ans.get("val").asAttribute().value(), ans.get("anotherVal").asAttribute().value()))
-                    .forEach(p -> assertNotEquals(p.first(), p.second()));
-            List<ConceptMap> negationAnswers = tx.execute(Graql.parse(negationVersion).asGet());
-            assertCollectionsNonTriviallyEqual(answers, negationAnswers);
-        }
-    }
-
+    // TODO: The "restricting inferred concepts simultaneously by type and value" bit is migrated;
+    // the "filtering inferred concepts by an abstract type does nothing" part should be migrated somewhere else.
     @Test
     public void derivingResources_requireAnEntityToHaveTwoDistinctResourcesOfNotAbstractType() {
         try(Transaction tx = attributeAttachmentSession.transaction(Transaction.Type.WRITE)) {
