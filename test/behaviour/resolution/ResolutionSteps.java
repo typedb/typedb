@@ -50,8 +50,8 @@ public class ResolutionSteps {
         graql_query(insertQueryStatements, GraqlQuery::asInsert);
     }
 
-    @Given("materialised keyspace is named: {string}")
-    public void materialised_keyspace_is_named(final String keyspaceName) {
+    @Given("materialised keyspace is named: {word}")
+    public void materialised_keyspace_is_named(String keyspaceName) {
         final Session materialisedSession = sessions.stream()
                 .filter(s -> s.keyspace().name().equals(keyspaceName))
                 .findAny()
@@ -59,7 +59,7 @@ public class ResolutionSteps {
         setMaterialisedSession(materialisedSession);
     }
 
-    @Given("reasoned keyspace is named: {string}")
+    @Given("reasoned keyspace is named: {word}")
     public void reasoned_keyspace_is_named(final String keyspaceName) {
         final Session reasonedSession = sessions.stream()
                 .filter(s -> s.keyspace().name().equals(keyspaceName))
