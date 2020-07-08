@@ -84,14 +84,14 @@ public class Resolution {
     }
 
     /**
-     * Run a query against the completion keyspace and the test keyspace and assert that they have the same number of
-     * answers.
+     * Run a query against the materialised keyspace and the reasoned keyspace and assert that they have the same number
+     * of answers.
      * @param inferenceQuery The reference query to make against both keyspaces
      */
     public void testQuery(GraqlGet inferenceQuery) {
-        Transaction testTx = reasonedSession.transaction(Transaction.Type.READ);
-        int testResultsCount = testTx.execute(inferenceQuery).size();
-        testTx.close();
+        Transaction reasonedTx = reasonedSession.transaction(Transaction.Type.READ);
+        int testResultsCount = reasonedTx.execute(inferenceQuery).size();
+        reasonedTx.close();
 
         Transaction completionTx = materialisedSession.transaction(Transaction.Type.READ);
         int completionResultsCount = filterCompletionSchema(completionTx.stream(inferenceQuery)).collect(Collectors.toSet()).size();
