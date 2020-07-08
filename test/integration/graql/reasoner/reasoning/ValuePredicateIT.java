@@ -231,31 +231,6 @@ public class ValuePredicateIT {
         }
     }
 
-    // TODO: The "restricting inferred concepts simultaneously by type and value" bit is migrated;
-    // the "filtering inferred concepts by an abstract type does nothing" part should be migrated somewhere else.
-    @Test
-    public void derivingResources_requireAnEntityToHaveTwoDistinctResourcesOfNotAbstractType() {
-        try(Transaction tx = attributeAttachmentSession.transaction(Transaction.Type.WRITE)) {
-            String queryString = "match " +
-                    "$x has derivable-resource-string $value;" +
-                    "$x has derivable-resource-string $unwantedValue;" +
-                    "$value !== $unwantedValue;$unwantedValue 'unattached';" +
-                    "$value isa $type;" +
-                    "$unwantedValue isa $type;" +
-                    "$type != $unwantedType;$unwantedType type derivable-resource-string;" +
-                    "get;";
-            GraqlGet query = Graql.parse(queryString).asGet();
-            List<ConceptMap> answers = tx.execute(query);
-            Type unwantedType = tx.getType(Label.of("derivable-resource-string"));
-            answers.forEach(ans -> {
-                Type type = ans.get("type").asType();
-                Object value = ans.get("value").asAttribute().value();
-                assertNotEquals("unattached", value);
-                assertNotEquals(unwantedType, type);
-            });
-        }
-    }
-
     private Conjunction<Statement> conjunction(String patternString){
         Set<Statement> vars = Graql.parsePattern(patternString)
                 .getDisjunctiveNormalForm().getPatterns()
