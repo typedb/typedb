@@ -864,7 +864,7 @@ public class ComputeExecutorImpl implements ComputeExecutor {
      */
     private Set<LabelId> convertLabelsToIds(Set<Label> labelSet) {
         return labelSet.stream()
-                .map(conceptManager::convertToId)
+                .map(conceptManager::labelToId)
                 .filter(LabelId::isValid)
                 .collect(toSet());
     }

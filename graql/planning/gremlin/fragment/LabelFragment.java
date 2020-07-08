@@ -63,8 +63,12 @@ public class LabelFragment extends FragmentImpl {
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
             GraphTraversal<Vertex, ? extends Element> traversal, ConceptManager conceptManager, Collection<Variable> vars) {
 
+        // we always treat labels as ambiguous at the fragment level - retrieve all possible scopes
         Set<Integer> labelIds =
-                labels().stream().map(label -> conceptManager.convertToId(label).getValue()).collect(toSet());
+                labels().stream()
+                        .flatMap(label -> conceptManager.ambiguousLabelToId(label))
+                        .map(labelId -> labelId.getValue())
+                        .collect(toSet());
 
         if (labelIds.size() == 1) {
             int labelId = Iterables.getOnlyElement(labelIds);

@@ -34,6 +34,8 @@ import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.keyspace.KeyspaceSchemaCache;
+import grakn.core.kb.keyspace.LabelCache;
+import grakn.core.kb.keyspace.LabelCacheReader;
 import graql.lang.statement.Label;
 
 import java.util.HashMap;
@@ -58,7 +60,7 @@ public class TransactionCache {
     private final Map<ConceptId, Concept> conceptCache = new HashMap<>();
     private final Map<String, Attribute> attributeCache = new HashMap<>();
     private final Map<Label, SchemaConcept> schemaConceptCache = new HashMap<>();
-    private final Map<Label, LabelId> labelCache = new HashMap<>();
+    private final LabelCache labelCache = new LabelCache();
 
     //Elements Tracked For Validation
     private final Set<Relation> newRelations = new HashSet<>();
@@ -105,8 +107,8 @@ public class TransactionCache {
         ReentrantReadWriteLock schemaCacheLock = keyspaceSchemaCache.concurrentUpdateLock();
         try {
             schemaCacheLock.writeLock().lock();
-            Map<Label, LabelId> cachedLabelsSnapshot = keyspaceSchemaCache.labelCacheCopy();
-            cachedLabelsSnapshot.forEach(this::cacheLabel);
+            LabelCache cachedLabelsSnapshot = keyspaceSchemaCache.labelCacheCopy();
+            this.labelCache.absorb(cachedLabelsSnapshot);
         } finally {
             schemaCacheLock.writeLock().unlock();
         }
@@ -172,7 +174,7 @@ public class TransactionCache {
         if (concept.isSchemaConcept()) {
             Label label = concept.asSchemaConcept().label();
             schemaConceptCache.remove(label);
-            labelCache.remove(label);
+            labelCache.removeCompleteLabel(label);
         }
     }
 
@@ -190,7 +192,7 @@ public class TransactionCache {
         if (concept.isSchemaConcept()) {
             SchemaConcept schemaConcept = concept.asSchemaConcept();
             schemaConceptCache.put(schemaConcept.label(), schemaConcept);
-            labelCache.put(schemaConcept.label(), schemaConcept.labelId());
+            labelCache.cacheCompleteLabel(schemaConcept.label(), schemaConcept.labelId());
         }
         if (concept.isAttribute()){
             Attribute<Object> attribute = concept.asAttribute();
@@ -206,7 +208,7 @@ public class TransactionCache {
      * @param id    Its equivalent id which can be looked up quickly in the graph
      */
     public void cacheLabel(Label label, LabelId id) {
-        labelCache.put(label, id);
+
     }
 
     /**
@@ -225,14 +227,6 @@ public class TransactionCache {
      */
     public boolean isTypeCached(Label label) {
         return schemaConceptCache.containsKey(label);
-    }
-
-    /**
-     * @param label the type label which may be in the cache
-     * @return true if the label is cached and has a valid mapping to a id
-     */
-    public boolean isLabelCached(Label label) {
-        return labelCache.containsKey(label);
     }
 
     /**
@@ -321,8 +315,8 @@ public class TransactionCache {
         return (X) schemaConceptCache.get(label);
     }
 
-    public LabelId convertLabelToId(Label label) {
-        return labelCache.get(label);
+    public LabelCacheReader labelCache() {
+        return labelCache;
     }
 
     public void addNewAttribute(Label label, String index, ConceptId conceptId) {

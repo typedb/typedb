@@ -102,7 +102,7 @@ abstract class AbstractRolePlayerFragment extends EdgeFragment {
 
         if (typeLabels != null) {
             Set<Integer> typeIds =
-                    typeLabels.stream().map(label -> conceptManager.convertToId(label).getValue()).collect(toSet());
+                    typeLabels.stream().map(label -> conceptManager.unscopedLabelToId(label).getValue()).collect(toSet());
             traversal.has(property.name(), P.within(typeIds));
         }
     }

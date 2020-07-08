@@ -48,8 +48,6 @@ import javax.annotation.Nullable;
 
 /**
  *
- * <p>
- *
  * Atom implementation defining type atoms of the general form:
  *
  * {isa|sub|plays|relates|has}($varName, $predicateVariable), type($predicateVariable)
@@ -60,8 +58,6 @@ import javax.annotation.Nullable;
  * PlaysProperty
  * RelatesProperty
  * HasAttributeTypeProperty
- * </p>
- *
  *
  */
 public abstract class TypeAtom extends Atom {

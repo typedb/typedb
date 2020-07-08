@@ -95,7 +95,7 @@ public class OutAttributeFragment extends EdgeFragment {
     private void applyLabelsToTraversal(GraphTraversal<?, Edge> traversal, Schema.EdgeProperty property,
                                         Set<Label> typeLabels, ConceptManager conceptManager) {
         Set<Integer> typeIds =
-                typeLabels.stream().map(label -> conceptManager.convertToId(label).getValue()).collect(toSet());
+                typeLabels.stream().map(label -> conceptManager.unscopedLabelToId(label).getValue()).collect(toSet());
         traversal.has(property.name(), P.within(typeIds));
     }
 

@@ -50,6 +50,7 @@ import grakn.core.kb.concept.structure.EdgeElement;
 import grakn.core.kb.concept.structure.Shard;
 import grakn.core.kb.concept.structure.VertexElement;
 import grakn.core.kb.keyspace.AttributeManager;
+import grakn.core.kb.keyspace.LabelCacheReader;
 import grakn.core.kb.server.cache.TransactionCache;
 import grakn.core.kb.server.exception.TemporaryWriteException;
 import graql.lang.pattern.Pattern;
@@ -417,7 +418,7 @@ public class ConceptManagerImpl implements ConceptManager {
         if (transactionCache.isTypeCached(label)) {
             schemaConcept = transactionCache.getCachedSchemaConcept(label);
         } else {
-            schemaConcept = getSchemaConcept(convertToId(label));
+            schemaConcept = getSchemaConcept(labelToId(label));
         }
         return validateSchemaConcept(schemaConcept, baseType, () -> null);
     }
@@ -510,12 +511,20 @@ public class ConceptManagerImpl implements ConceptManager {
      * @param label The label to be converted to the id
      * @return The matching type id
      */
+
     @Override
-    public LabelId convertToId(Label label) {
-        if (transactionCache.isLabelCached(label)) {
-            return transactionCache.convertLabelToId(label);
+    public LabelId labelToId(Label label) {
+        LabelCacheReader labelCache = transactionCache.labelCache();
+        if (labelCache.isCompleteLabelCached(label)) {
+            return labelCache.completeLabelToId(label);
         }
         return LabelId.invalid();
+
+    }
+
+    @Override
+    public Stream<LabelId> ambiguousLabelToId(Label label) {
+        return transactionCache.labelCache().ambiguousLabelToId(label);
     }
 
 

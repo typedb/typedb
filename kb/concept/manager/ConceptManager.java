@@ -40,6 +40,7 @@ import graql.lang.statement.Label;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Set;
+import java.util.stream.Stream;
 
 public interface ConceptManager {
 
@@ -83,7 +84,8 @@ public interface ConceptManager {
     Set<Concept> getConcepts(Schema.VertexProperty key, Object value);
 
     // TODO these should not be here, overexposed interface or incorrect location
-    LabelId convertToId(Label label);
+    LabelId labelToId(Label label);
+    Stream<LabelId> ambiguousLabelToId(Label label);
     VertexElement addTypeVertex(LabelId id, Label label, Schema.BaseType baseType);
 
     Shard getShardWithLock(String toString);

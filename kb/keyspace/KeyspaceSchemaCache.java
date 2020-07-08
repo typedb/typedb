@@ -18,12 +18,9 @@
 
 package grakn.core.kb.keyspace;
 
-import com.google.common.collect.ImmutableMap;
 import grakn.core.kb.concept.api.LabelId;
 import graql.lang.statement.Label;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
@@ -35,10 +32,10 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  */
 public class KeyspaceSchemaCache {
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
-    private final Map<Label, LabelId> cachedLabels;
+    private final LabelCache labelCache;
 
     public KeyspaceSchemaCache() {
-        cachedLabels = new ConcurrentHashMap<>();
+        labelCache = new LabelCache();
     }
 
     public ReentrantReadWriteLock concurrentUpdateLock() {
@@ -53,7 +50,7 @@ public class KeyspaceSchemaCache {
      * @param id    The id of the type to cache
      */
     public void cacheLabel(Label label, LabelId id) {
-        cachedLabels.put(label, id);
+        labelCache.cacheCompleteLabel(label, id);
     }
 
 
@@ -62,11 +59,11 @@ public class KeyspaceSchemaCache {
      * into the keyspace cache. This happens when a commit occurs and allows us to track schema
      * mutations without having to read the graph.
      */
-    public void overwriteCache(Map<Label, LabelId> modifiedLabelCache) {
+    public void overwriteCache(LabelCache modifiedLabelCache) {
         try {
             lock.writeLock().lock();
-            cachedLabels.clear();
-            cachedLabels.putAll(modifiedLabelCache);
+            labelCache.clear();
+            labelCache.absorb(modifiedLabelCache);
         } finally {
             lock.writeLock().unlock();
         }
@@ -77,16 +74,16 @@ public class KeyspaceSchemaCache {
      *
      * @return an immutable copy of the cached labels.
      */
-    public Map<Label, LabelId> labelCacheCopy() {
-        return ImmutableMap.copyOf(cachedLabels);
+    public LabelCache labelCacheCopy() {
+        return new LabelCache(labelCache);
     }
 
 
     public boolean isEmpty(){
-        return cachedLabels.isEmpty();
+        return labelCache.isEmpty();
     }
 
-    public boolean cacheMatches(Map<Label, LabelId> cache) {
-        return cachedLabels.equals(cache);
+    public boolean cacheMatches(LabelCache cache) {
+        return labelCache.equals(cache);
     }
 }
