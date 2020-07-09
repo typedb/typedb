@@ -78,7 +78,7 @@ public class ResolutionSteps {
         queryToTest = Graql.parse(graqlQuery).asGet();
     }
 
-    @Then("in reasoned keyspace, answer size is: {number}")
+    @Then("answer size in reasoned keyspace is: {number}")
     public void reasoned_keyspace_answer_size_is(final int expectedCount) {
         final Transaction reasonedTx = reasonedSession.transaction(Transaction.Type.READ);
         final int testResultsCount = reasonedTx.execute(queryToTest).size();
@@ -90,7 +90,7 @@ public class ResolutionSteps {
         }
     }
 
-    @Then("in reasoned keyspace, all answers are correct")
+    @Then("all answers are correct in reasoned keyspace")
     public void reasoned_keyspace_all_answers_are_correct() {
         // TODO: refactor these into a single method that compares the set of expected answers to the actual answers
         resolution.testQuery(queryToTest);
