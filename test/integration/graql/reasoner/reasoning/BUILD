@@ -70,24 +70,6 @@ java_test(
 )
 
 java_test(
-    name = "attribute-attachment-it",
-    size = "medium",
-    srcs = ["AttributeAttachmentIT.java"],
-    classpath_resources = ["//test/resources:logback-test"],
-    resources = ["//test/integration/graql/reasoner/stubs:reasoning-stubs"],
-    test_class = "grakn.core.graql.reasoner.reasoning.AttributeAttachmentIT",
-    deps = [
-        "//concept/answer",
-        "@maven//:com_google_guava_guava",
-        "@maven//:org_hamcrest_hamcrest_library",
-        "//kb/server",
-        "//test/rule:grakn-test-server",
-        "//test/common:graql-test-util",
-        "@graknlabs_graql//java:graql",
-    ],
-)
-
-java_test(
     name = "type-generation-it",
     size = "medium",
     srcs = ["TypeGenerationIT.java"],
@@ -141,7 +123,6 @@ java_test(
 checkstyle_test(
     name = "checkstyle",
     targets = [
-        ":attribute-attachment-it",
         ":neq-idpredicate-it",
         ":valuepredicate-it",
         ":recursion-it",

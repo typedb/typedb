@@ -84,14 +84,14 @@ public class Resolution {
     }
 
     /**
-     * Run a query against the completion keyspace and the test keyspace and assert that they have the same number of
-     * answers.
+     * Run a query against the materialised keyspace and the reasoned keyspace and assert that they have the same number
+     * of answers.
      * @param inferenceQuery The reference query to make against both keyspaces
      */
     public void testQuery(GraqlGet inferenceQuery) {
-        Transaction testTx = reasonedSession.transaction(Transaction.Type.READ);
-        int testResultsCount = testTx.execute(inferenceQuery).size();
-        testTx.close();
+        Transaction reasonedTx = reasonedSession.transaction(Transaction.Type.READ);
+        int testResultsCount = reasonedTx.execute(inferenceQuery).size();
+        reasonedTx.close();
 
         Transaction completionTx = materialisedSession.transaction(Transaction.Type.READ);
         int completionResultsCount = filterCompletionSchema(completionTx.stream(inferenceQuery)).collect(Collectors.toSet()).size();
@@ -99,21 +99,6 @@ public class Resolution {
         if (completionResultsCount != testResultsCount) {
             String msg = String.format("Query had an incorrect number of answers. Expected %d answers, but found %d " +
                     "answers, for query :\n %s", completionResultsCount, testResultsCount, inferenceQuery);
-            throw new CorrectnessException(msg);
-        }
-    }
-
-    /**
-     * Run a query against just the test keyspace and manually assert that the number of answers is correct.
-     * @param inferenceQuery The reference query to make against the test keyspace
-     */
-    public void manuallyValidateAnswerSize(final GraqlGet inferenceQuery, final int expectedCount) {
-        Transaction testTx = reasonedSession.transaction(Transaction.Type.READ);
-        final int testResultsCount = testTx.execute(inferenceQuery).size();
-        testTx.close();
-        if (expectedCount != testResultsCount) {
-            String msg = String.format("Query had an incorrect number of answers. Expected [%d] answers (manually defined), " +
-                    "but found [%d] answers, for query :\n %s", expectedCount, testResultsCount, inferenceQuery);
             throw new CorrectnessException(msg);
         }
     }
@@ -160,7 +145,7 @@ public class Resolution {
     }
 
     public static class CorrectnessException extends RuntimeException {
-        CorrectnessException(String message) {
+        public CorrectnessException(String message) {
             super(message);
         }
     }

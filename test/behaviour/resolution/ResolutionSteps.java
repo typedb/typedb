@@ -22,6 +22,7 @@ import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import grakn.core.test.behaviour.resolution.framework.Resolution;
 import graql.lang.Graql;
+import graql.lang.query.GraqlDefine;
 import graql.lang.query.GraqlGet;
 import graql.lang.query.GraqlQuery;
 import io.cucumber.java.en.Given;
@@ -77,12 +78,19 @@ public class ResolutionSteps {
         queryToTest = Graql.parse(graqlQuery).asGet();
     }
 
-    @Then("in reasoned keyspace, answer size is: {number}")
+    @Then("answer size in reasoned keyspace is: {number}")
     public void reasoned_keyspace_answer_size_is(final int expectedCount) {
-        resolution.manuallyValidateAnswerSize(queryToTest, expectedCount);
+        final Transaction reasonedTx = reasonedSession.transaction(Transaction.Type.READ);
+        final int testResultsCount = reasonedTx.execute(queryToTest).size();
+        reasonedTx.close();
+        if (expectedCount != testResultsCount) {
+            String msg = String.format("Query had an incorrect number of answers. Expected [%d] answers, " +
+                    "but found [%d] answers, for query :\n %s", expectedCount, testResultsCount, queryToTest);
+            throw new Resolution.CorrectnessException(msg);
+        }
     }
 
-    @Then("in reasoned keyspace, all answers are correct")
+    @Then("all answers are correct in reasoned keyspace")
     public void reasoned_keyspace_all_answers_are_correct() {
         // TODO: refactor these into a single method that compares the set of expected answers to the actual answers
         resolution.testQuery(queryToTest);

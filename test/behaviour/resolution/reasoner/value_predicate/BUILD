@@ -21,9 +21,9 @@ load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 java_test(
     name = "test",
     srcs = [
-        "ReasonerTest.java",
+        "ValuePredicateTest.java",
     ],
-    test_class = "grakn.core.test.behaviour.resolution.reasoner.ReasonerTest",
+    test_class = "grakn.core.test.behaviour.resolution.reasoner.value_predicate.ValuePredicateTest",
     deps = [
         # Package dependencies
         "//test/behaviour/server:server",
@@ -38,10 +38,10 @@ java_test(
         "//test/behaviour/resolution:steps",
     ],
     data = [
-        "@graknlabs_verification//behaviour/graql/reasoner:reasoner.feature",
+        "@graknlabs_verification//behaviour/graql/reasoner/resolution:value-predicate.feature",
     ],
     classpath_resources = ["//test/resources:logback-test"],
-    size = "medium",
+    size = "large",
     visibility = ["//visibility:public"]
 )
 
