@@ -23,11 +23,14 @@ syntax = "proto3";
 option java_package = "grakn.core.server.migrate.proto";
 option java_outer_classname = "MigrateProto";
 
+import "server/migrate/proto/data.proto";
+
 package migrate;
 
 service MigrateService {
     rpc exportFile (ExportFile.Req) returns (stream Job.Res);
     rpc importFile (ImportFile.Req) returns (stream Job.Res);
+    rpc exportStream (ExportStream.Req) returns (stream data.Item);
     rpc exportSchema (ExportSchema.Req) returns (ExportSchema.Res);
 }
 
@@ -60,6 +63,12 @@ message ImportFile {
     message Req {
         string name = 1;
         string path = 2;
+    }
+}
+
+message ExportStream {
+    message Req {
+        string name = 1;
     }
 }
 

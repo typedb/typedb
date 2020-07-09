@@ -41,9 +41,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.BufferedOutputStream;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
@@ -52,10 +49,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -64,20 +57,19 @@ public class Export extends AbstractJob {
     private static final Logger LOG = LoggerFactory.getLogger(Export.class);
 
     private final SessionFactory sessionFactory;
-    private final Path outputPath;
     private final String keyspace;
+    private final Output output;
 
     private Session session;
-    private BufferedOutputStream outputStream;
 
     private final Counter counter = new Counter();
 
     private long approximateThingCount;
 
-    public Export(SessionFactory sessionFactory, Path outputPath, String keyspace) {
+    public Export(SessionFactory sessionFactory, Output output, String keyspace) {
         super("export");
         this.sessionFactory = sessionFactory;
-        this.outputPath = outputPath;
+        this.output = output;
         this.keyspace = keyspace;
     }
 
@@ -112,10 +104,6 @@ public class Export extends AbstractJob {
 
             computeApproximateCount();
 
-            Files.createDirectories(outputPath.getParent());
-
-            this.outputStream = new BufferedOutputStream(Files.newOutputStream(outputPath));
-
             write(DataProto.Item.newBuilder()
                     .setHeader(DataProto.Item.Header.newBuilder()
                             .setGraknVersion(Version.VERSION)
@@ -132,8 +120,6 @@ public class Export extends AbstractJob {
             write(DataProto.Item.newBuilder()
                     .setChecksums(counter.getChecksums())
                     .build());
-
-            outputStream.flush();
 
             counter.logExported();
         }
@@ -157,8 +143,8 @@ public class Export extends AbstractJob {
         }
     }
 
-    private synchronized void write(DataProto.Item item) throws IOException {
-        item.writeDelimitedTo(outputStream);
+    private void write(DataProto.Item item) throws Exception {
+        output.write(item);
     }
 
     private List<AttributeExportWorker<?>> createAttributeWorkers() {
@@ -262,7 +248,7 @@ public class Export extends AbstractJob {
 
                     write(read(label, iterator.next(), ownedTypes));
                 }
-            } catch (IOException e) {
+            } catch (Exception e) {
                 throw new RuntimeException(e);
             }
 

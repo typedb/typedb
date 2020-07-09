@@ -6,15 +6,20 @@ import grakn.core.server.keyspace.KeyspaceImpl;
 import grakn.core.server.migrate.AbstractJob;
 import grakn.core.server.migrate.Export;
 import grakn.core.server.migrate.Import;
+import grakn.core.server.migrate.Output;
+import grakn.core.server.migrate.OutputFile;
 import grakn.core.server.migrate.Schema;
+import grakn.core.server.migrate.proto.DataProto;
 import grakn.core.server.migrate.proto.MigrateProto;
 import grakn.core.server.migrate.proto.MigrateServiceGrpc;
 import grakn.core.server.session.SessionFactory;
 import io.grpc.Status;
+import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.io.StringWriter;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -39,17 +44,43 @@ public class MigrateService extends MigrateServiceGrpc.MigrateServiceImplBase {
     @Override
     public void exportFile(MigrateProto.ExportFile.Req request,
                            StreamObserver<MigrateProto.Job.Res> responseObserver) {
-        Path output = Paths.get(request.getPath());
+        Path outputPath = Paths.get(request.getPath());
 
-        runJob(new Export(sessionFactory, output, request.getName()), responseObserver);
+        try (OutputFile output = new OutputFile(outputPath)){
+            runJob(new Export(sessionFactory, output, request.getName()), responseObserver);
+        } catch (IOException e) {
+            handleError(responseObserver, e);
+        }
+    }
+
+    @Override
+    public void exportStream(MigrateProto.ExportStream.Req request,
+                           StreamObserver<DataProto.Item> responseObserver) {
+
+        Export export = new Export(sessionFactory, new Output() {
+            @Override
+            public synchronized void write(DataProto.Item item) {
+                responseObserver.onNext(item);
+            }
+        }, request.getName());
+
+        ServerCallStreamObserver<DataProto.Item> serverCallStreamObserver = (ServerCallStreamObserver<DataProto.Item>) responseObserver;
+
+        serverCallStreamObserver.setOnCancelHandler(export::cancel);
+
+        try {
+            export.execute();
+        } catch (Exception e) {
+            handleError(responseObserver, e);
+        }
     }
 
     @Override
     public void importFile(MigrateProto.ImportFile.Req request,
                            StreamObserver<MigrateProto.Job.Res> responseObserver) {
-        Path input = Paths.get(request.getPath());
+        Path inputPath = Paths.get(request.getPath());
 
-        runJob(new Import(sessionFactory, input, request.getName()), responseObserver);
+        runJob(new Import(sessionFactory, inputPath, request.getName()), responseObserver);
     }
 
     @Override
