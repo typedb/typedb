@@ -52,7 +52,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
 
     protected String label;
     protected String scope;
-    protected Boolean isAbstract;
+    protected Boolean isAbstract; // needs to be declared as the Boolean class
     protected Schema.ValueType valueType;
     protected String regex;
 
@@ -264,10 +264,12 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
     public static class Persisted extends TypeVertexImpl {
 
         private final Set<ThingVertex> instances;
+        private boolean regexLookedUp;
 
         public Persisted(TypeGraph graph, VertexIID.Type iid, String label, @Nullable String scope) {
             super(graph, iid, label, scope);
             instances = ConcurrentHashMap.newKeySet();
+            regexLookedUp = false;
         }
 
         public Persisted(TypeGraph graph, VertexIID.Type iid) {
@@ -374,7 +376,8 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
 
         @Override
         public String regex() {
-            if (regex != null) return regex;
+            if (regexLookedUp) return regex;
+            regexLookedUp = true;
             byte[] val = graph.storage().get(join(iid.bytes(), Schema.Property.REGEX.infix().bytes()));
             if (val != null) regex = new String(val);
             return regex;

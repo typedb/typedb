@@ -33,6 +33,7 @@ import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /**
  * Behaviour Steps specific to AttributeSteps
@@ -89,5 +90,19 @@ public class AttributeTypeSteps {
         for (String subLabel : subLabels) {
             assertFalse(actuals.contains(subLabel));
         }
+    }
+
+    @Then("attribute\\( ?{type_label} ?) as\\( ?{value_type} ?) set regex: {}")
+    public void attribute_type_as_value_type_set_regex(String typeLabel, Class<?> valueType, String regex) {
+        if (!valueType.equals(String.class)) fail();
+        AttributeType attributeType = attribute_type_as_value_type(typeLabel, valueType);
+        attributeType.asString().regex(regex);
+    }
+
+    @Then("attribute\\( ?{type_label} ?) as\\( ?{value_type} ?) get regex: {}")
+    public void attribute_type_as_value_type_get_regex(String typeLabel, Class<?> valueType, String regex) {
+        if (!valueType.equals(String.class)) fail();
+        AttributeType attributeType = attribute_type_as_value_type(typeLabel, valueType);
+        assertEquals(regex, attributeType.asString().regex());
     }
 }

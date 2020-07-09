@@ -21,7 +21,7 @@ package hypergraph.common.exception;
 import java.util.HashMap;
 import java.util.Map;
 
-public abstract class Error<TYPE extends Error<TYPE>> {
+public abstract class Error {
 
     private static Map<String, Map<Integer, Error>> errors = new HashMap<>();
     private static int maxCodeNumber = 0;
@@ -55,10 +55,6 @@ public abstract class Error<TYPE extends Error<TYPE>> {
         return code;
     }
 
-    public String description() {
-        return description;
-    }
-
     public String format(Object... parameters) {
         return String.format(toString(), parameters);
     }
@@ -68,7 +64,7 @@ public abstract class Error<TYPE extends Error<TYPE>> {
         return String.format("[%s] %s", code(), description);
     }
 
-    public static class Internal extends Error<Internal> {
+    public static class Internal extends Error {
 
         public static final Internal ILLEGAL_STATE =
                 new Internal(0, "Illegal internal state!");
@@ -83,7 +79,7 @@ public abstract class Error<TYPE extends Error<TYPE>> {
         }
     }
 
-    public static class Transaction extends Error<Error.Transaction> {
+    public static class Transaction extends Error {
 
         public static final Transaction UNSUPPORTED_OPERATION =
                 new Transaction(1, "Unsupported operation: calling '%s' for '%s' is not supported.");
@@ -153,6 +149,8 @@ public abstract class Error<TYPE extends Error<TYPE>> {
                 new ThingWrite(8, "Relation type '%s' does not relate role type '%s'.");
         public static final ThingWrite RELATION_NO_PLAYER =
                 new ThingWrite(9, "Relation instance of type '%s' does not have any role player");
+        public static final ThingWrite ATTRIBUTE_VALUE_UNSATISFIES_REGEX =
+                new ThingWrite(10, "Attempted to put an instance of '%s' with value '%s' that does not satisfy the regular expression '%s'.");
         private static final String codePrefix = "THW";
         private static final String descriptionPrefix = "Invalid Thing Write";
 
@@ -199,30 +197,32 @@ public abstract class Error<TYPE extends Error<TYPE>> {
                 new TypeWrite(8, "The attribute type '%s' has value type '%s', and cannot have supertype '%s' with value type '%s'.");
         public static final TypeWrite ATTRIBUTE_SUPERTYPE_NOT_ABSTRACT =
                 new TypeWrite(9, "The attribute type '%s' cannot be a subtyped as it is not abstract.");
+        public static final TypeWrite ATTRIBUTE_REGEX_UNSATISFIES_INSTANCES =
+                new TypeWrite(10, "The attribute type '%s' cannot have regex '%s' as as it has an instance of value '%s'.");
         public static final TypeWrite HAS_KEY_VALUE_TYPE =
-                new TypeWrite(10, "The attribute type '%s' has value type '%s', and cannot and cannot be used as a type key.");
+                new TypeWrite(11, "The attribute type '%s' has value type '%s', and cannot and cannot be used as a type key.");
         public static final TypeWrite HAS_KEY_NOT_AVAILABLE =
-                new TypeWrite(11, "The attribute type '%s' has been inherited or overridden, and cannot be redeclared as a key.");
+                new TypeWrite(12, "The attribute type '%s' has been inherited or overridden, and cannot be redeclared as a key.");
         public static final TypeWrite HAS_KEY_PRECONDITION_OWNERSHIP =
-                new TypeWrite(12, "The instances of type '%s' does not have exactly one attribute of type '%s' to convert to key.");
+                new TypeWrite(13, "The instances of type '%s' does not have exactly one attribute of type '%s' to convert to key.");
         public static final TypeWrite HAS_ATT_NOT_AVAILABLE =
-                new TypeWrite(13, "The attribute type '%s' has been inherited or overridden, and cannot be redeclared as an attribute.");
+                new TypeWrite(14, "The attribute type '%s' has been inherited or overridden, and cannot be redeclared as an attribute.");
         public static final TypeWrite HAS_KEY_PRECONDITION_UNIQUENESS =
-                new TypeWrite(14, "The attributes of type '%s' are not uniquely owned by instances of type '%s' to convert to key.");
+                new TypeWrite(15, "The attributes of type '%s' are not uniquely owned by instances of type '%s' to convert to key.");
         public static final TypeWrite PLAYS_ROLE_NOT_AVAILABLE =
-                new TypeWrite(15, "The role type '%s' has been inherited or overridden, and cannot be redeclared.");
+                new TypeWrite(16, "The role type '%s' has been inherited or overridden, and cannot be redeclared.");
         public static final TypeWrite PLAYS_ABSTRACT_ROLE_TYPE =
-                new TypeWrite(16, "The type '%s' is not abstract, and thus cannot play an abstract role type '%s'.");
+                new TypeWrite(17, "The type '%s' is not abstract, and thus cannot play an abstract role type '%s'.");
         public static final TypeWrite RELATION_NO_ROLE =
-                new TypeWrite(17, "The relation type '%s' does not relate any role type.");
+                new TypeWrite(18, "The relation type '%s' does not relate any role type.");
         public static final TypeWrite RELATION_ABSTRACT_ROLE =
-                new TypeWrite(18, "The relation type '%s' is not abstract, and thus cannot relate an abstract role type '%s'.");
+                new TypeWrite(19, "The relation type '%s' is not abstract, and thus cannot relate an abstract role type '%s'.");
         public static final TypeWrite RELATION_RELATES_ROLE_FROM_SUPERTYPE =
-                new TypeWrite(19, "The role type '%s' is already declared by a supertype.");
+                new TypeWrite(20, "The role type '%s' is already declared by a supertype.");
         public static final TypeWrite RELATION_RELATES_ROLE_NOT_AVAILABLE =
-                new TypeWrite(20, "The role type '%s' cannot override '%s' as it is either directly related or not inherited.");
+                new TypeWrite(21, "The role type '%s' cannot override '%s' as it is either directly related or not inherited.");
         private static final String codePrefix = "TYW";
-        private static final String descriptionPrefix = "Invalid Type Definition";
+        private static final String descriptionPrefix = "Invalid Type Write";
 
         TypeWrite(int number, String description) {
             super(codePrefix, number, descriptionPrefix, description);

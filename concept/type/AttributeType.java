@@ -135,6 +135,10 @@ public interface AttributeType extends ThingType {
         @Override
         Stream<? extends Attribute.String> instances();
 
+        void regex(java.lang.String regex);
+
+        java.lang.String regex();
+
         Attribute.String put(java.lang.String value);
 
         Attribute.String put(java.lang.String value, boolean isInferred);

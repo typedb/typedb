@@ -34,11 +34,16 @@ import javax.annotation.Nullable;
 import java.time.LocalDateTime;
 import java.util.Iterator;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import static hypergraph.common.exception.Error.ConceptRead.INVALID_CONCEPT_CASTING;
 import static hypergraph.common.exception.Error.Internal.UNRECOGNISED_VALUE;
+import static hypergraph.common.exception.Error.ThingWrite.ATTRIBUTE_VALUE_UNSATISFIES_REGEX;
+import static hypergraph.common.exception.Error.ThingWrite.ILLEGAL_STRING_SIZE;
 import static hypergraph.common.exception.Error.TypeRead.TYPE_ROOT_MISMATCH;
+import static hypergraph.common.exception.Error.TypeWrite.ATTRIBUTE_REGEX_UNSATISFIES_INSTANCES;
 import static hypergraph.common.exception.Error.TypeWrite.ATTRIBUTE_SUPERTYPE_NOT_ABSTRACT;
 import static hypergraph.common.exception.Error.TypeWrite.ATTRIBUTE_SUPERTYPE_VALUE_TYPE;
 import static hypergraph.common.exception.Error.TypeWrite.ROOT_TYPE_MUTATION;
@@ -675,6 +680,8 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
     public static class String extends AttributeTypeImpl implements AttributeType.String {
 
+        private Pattern regexPattern;
+
         public String(TypeGraph graph, java.lang.String label) {
             super(graph, label, java.lang.String.class);
         }
@@ -722,6 +729,30 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         public AttributeTypeImpl.String asString() { return this; }
 
         @Override
+        public void regex(java.lang.String regex) {
+            if (regex != null) {
+                Pattern pattern = Pattern.compile(regex);
+                instances().parallel().forEach(attribute -> {
+                    Matcher matcher = pattern.matcher(attribute.value());
+                    if (!matcher.matches()) {
+                        throw new HypergraphException(ATTRIBUTE_REGEX_UNSATISFIES_INSTANCES.format(label(), regex, attribute.value()));
+                    }
+                });
+            }
+            vertex.regex(regex);
+        }
+
+        @Override
+        public java.lang.String regex() {
+            return vertex.regex();
+        }
+
+        private Pattern regexPattern() {
+            if (vertex.regex() == null || regexPattern != null) return regexPattern;
+            return (regexPattern = Pattern.compile(vertex.regex()));
+        }
+
+        @Override
         public Attribute.String put(java.lang.String value) {
             return put(value, false);
         }
@@ -729,8 +760,11 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         @Override
         public Attribute.String put(java.lang.String value, boolean isInferred) {
             validateIsCommitedAndNotAbstract(Attribute.class);
+            if (vertex.regex() != null && !regexPattern().matcher(value).matches()) {
+                throw new HypergraphException(ATTRIBUTE_VALUE_UNSATISFIES_REGEX.format(label(), value, regex()));
+            }
             if (value.length() > Schema.STRING_MAX_LENGTH) {
-                throw new HypergraphException(Error.ThingWrite.ILLEGAL_STRING_SIZE);
+                throw new HypergraphException(ILLEGAL_STRING_SIZE);
             }
             AttributeVertex<java.lang.String> attVertex = vertex.graph().thing().put(vertex, value, isInferred);
             return new AttributeImpl.String(attVertex);
@@ -803,6 +837,11 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
             @Override
             public void unplay(RoleType roleType) {
+                throw new HypergraphException(ROOT_TYPE_MUTATION);
+            }
+
+            @Override
+            public void regex(java.lang.String regex) {
                 throw new HypergraphException(ROOT_TYPE_MUTATION);
             }
         }
