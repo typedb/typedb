@@ -15,6 +15,9 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //
 
+// A migration service protocol to activate and monitor migrations remotely.
+// Backwards compatibility is currently not enforced on this protocol
+
 syntax = "proto3";
 
 option java_package = "grakn.core.server.migrate.proto";
@@ -23,8 +26,8 @@ option java_outer_classname = "MigrateProto";
 package migrate;
 
 service MigrateService {
-    rpc exportFile (ExportFile.Req) returns (ExportFile.Res);
-    rpc importFile (ImportFile.Req) returns (ImportFile.Res);
+    rpc exportFile (ExportFile.Req) returns (stream ExportFile.Res);
+    rpc importFile (ImportFile.Req) returns (stream ImportFile.Res);
     rpc exportSchema (ExportSchema.Req) returns (ExportSchema.Res);
 }
 
@@ -34,7 +37,11 @@ message ExportFile {
         string path = 2;
     }
 
-    message Res {}
+    message Res {
+        oneof res {
+            Progress progress = 1;
+        }
+    }
 }
 
 message ImportFile {
@@ -43,7 +50,16 @@ message ImportFile {
         string path = 2;
     }
 
-    message Res {}
+    message Res {
+        oneof res {
+            Progress progress = 1;
+        }
+    }
+}
+
+message Progress {
+    uint64 total_count = 1;
+    uint64 current_progress = 2;
 }
 
 message ExportSchema {
@@ -53,76 +69,5 @@ message ExportSchema {
 
     message Res {
         string schema = 1;
-    }
-}
-
-message Item {
-    oneof item {
-        Attribute attribute = 1;
-        Entity entity = 2;
-        Relation relation = 3;
-
-        Header header = 15;
-        Checksums checksums = 16;
-    }
-
-    message Entity {
-        string id = 1;
-        string label = 2;
-        repeated OwnedAttribute attribute = 3;
-    }
-
-    message Attribute {
-        string id = 1;
-        string label = 2;
-        repeated OwnedAttribute attribute = 3;
-        ValueObject value = 4;
-    }
-
-    message Key {
-        string id = 1;
-    }
-
-    message Relation {
-        string id = 1;
-        string label = 2;
-        repeated OwnedAttribute attribute = 3;
-        repeated Role role = 4;
-        message Role {
-            string label = 1;
-            repeated Player player = 2;
-            message Player {
-                string id = 1;
-            }
-        }
-    }
-
-    message OwnedAttribute {
-        string id = 1;
-    }
-
-    message Header {
-        string grakn_version = 1;
-        string original_keyspace = 2;
-    }
-
-    message Checksums {
-        int64 entity_count = 1;
-        int64 attribute_count = 2;
-        int64 relation_count = 3;
-        int64 role_count = 4;
-        int64 ownership_count = 5;
-        int64 key_ownership_count = 6;
-    }
-}
-
-// Attribute Value object
-message ValueObject {
-    oneof value {
-        string string = 1;
-        bool boolean = 2;
-        int64 long = 3;
-        double double = 4;
-        int64 datetime = 5; // time since epoch in milliseconds
     }
 }

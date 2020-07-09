@@ -17,20 +17,13 @@
 
 package grakn.core.daemon;
 
-import grakn.core.common.config.Config;
-import grakn.core.common.config.ConfigKey;
 import grakn.core.common.config.SystemProperty;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.daemon.executor.Executor;
 import grakn.core.daemon.executor.Server;
 import grakn.core.daemon.executor.Storage;
+import grakn.core.daemon.migrate.MigrationClient;
 import grakn.core.server.Version;
-import grakn.core.server.migrate.proto.MigrateProto;
-import grakn.core.server.migrate.proto.MigrateServiceGrpc;
-import grakn.core.server.rpc.MigrateService;
-import io.grpc.Channel;
-import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,7 +32,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -143,12 +135,6 @@ public class GraknDaemon {
      * @param args arrays of arguments, eg., { 'server', 'start' }
      */
     public void run(String[] args) {
-//        String action = args.length > 1 ? args[1] : "";
-//        String option = args.length > 2 ? args[2] : "";
-
-//        List<String> mainArgs = new ArrayList<>();
-//        List<String> otherArgs = Collections.emptyList();
-
         // Ignore command name arg by starting at one
 
         int splitPoint = 1;
@@ -275,35 +261,41 @@ public class GraknDaemon {
     }
 
     private void export(List<String> args) {
-        String keyspace = args.get(0);
-        String path = Paths.get(args.get(1)).toAbsolutePath().toString();
-        MigrateServiceGrpc.MigrateServiceBlockingStub stub = connectLocal();
-        MigrateProto.ExportFile.Res res = stub.exportFile(MigrateProto.ExportFile.Req.newBuilder().setName(keyspace).setPath(path).build());
+        System.out.println("Starting export.");
+        try (MigrationClient client = new MigrationClient()) {
+            client.export(args.get(0), args.get(1), this::printProgress);
+        } catch (Exception exception) {
+            throw new RuntimeException(exception);
+        }
+        System.out.println("Completed export.");
     }
 
     private void import_(List<String> args) {
-        String keyspace = args.get(0);
-        String path = Paths.get(args.get(1)).toAbsolutePath().toString();
-        MigrateServiceGrpc.MigrateServiceBlockingStub stub = connectLocal();
-        MigrateProto.ImportFile.Res res = stub.importFile(MigrateProto.ImportFile.Req.newBuilder().setName(keyspace).setPath(path).build());
+        System.out.println("Starting import.");
+        try (MigrationClient client = new MigrationClient()) {
+            client.import_(args.get(0), args.get(1), this::printProgress);
+        } catch (Exception exception) {
+            throw new RuntimeException(exception);
+        }
+        System.out.println("Completed import.");
     }
 
     private void exportSchema(List<String> args) {
-        String keyspace = args.get(0);
-        MigrateServiceGrpc.MigrateServiceBlockingStub stub = connectLocal();
-        MigrateProto.ExportSchema.Res res = stub.exportSchema(MigrateProto.ExportSchema.Req.newBuilder().setName(keyspace).build());
-        String schema = res.getSchema();
-        System.out.print(schema);
+        try (MigrationClient client = new MigrationClient()) {
+            System.out.println(client.exportSchema(args.get(0)));
+        } catch (Exception exception) {
+            throw new RuntimeException(exception);
+        }
     }
 
-    private MigrateServiceGrpc.MigrateServiceBlockingStub connectLocal() {
-        ManagedChannel channel = ManagedChannelBuilder.forTarget("localhost:" + readPort())
-                .usePlaintext().build();
-        return MigrateServiceGrpc.newBlockingStub(channel);
+    private void printProgress(long current, long total) {
+        String totalString = Long.toUnsignedString(total);
+
+        System.out.println(overwritePreviousLine(String.format("Progress: %d / %s", current, totalString)));
     }
 
-    private int readPort() {
-        return Config.read(Paths.get(Objects.requireNonNull(SystemProperty.CONFIGURATION_FILE.value()))).getProperty(ConfigKey.GRPC_PORT);
+    private String overwritePreviousLine(String string) {
+        return "\033[F\033[K" + string;
     }
 }
 

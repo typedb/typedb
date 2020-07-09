@@ -15,7 +15,7 @@ import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import grakn.core.server.Version;
-import grakn.core.server.migrate.proto.MigrateProto;
+import grakn.core.server.migrate.proto.DataProto;
 import grakn.core.server.session.TransactionImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,7 +40,7 @@ public class Import implements AutoCloseable {
 
     private final Session session;
     private final InputStream inputStream;
-    private final Parser<MigrateProto.Item> itemParser;
+    private final Parser<DataProto.Item> itemParser;
 
     private Transaction currentTransaction;
     private int count = 0;
@@ -70,7 +70,7 @@ public class Import implements AutoCloseable {
         this.session = session;
 
         this.inputStream = new BufferedInputStream(Files.newInputStream(inputFile));
-        this.itemParser = MigrateProto.Item.parser();
+        this.itemParser = DataProto.Item.parser();
     }
 
     @Override
@@ -79,7 +79,7 @@ public class Import implements AutoCloseable {
         inputStream.close();
     }
 
-    private MigrateProto.Item read() throws InvalidProtocolBufferException {
+    private DataProto.Item read() throws InvalidProtocolBufferException {
         return itemParser.parseDelimitedFrom(inputStream);
     }
 
@@ -116,12 +116,12 @@ public class Import implements AutoCloseable {
     public void execute() throws InvalidProtocolBufferException {
         newTransaction();
 
-        MigrateProto.Item item;
-        MigrateProto.Item.Checksums checksums = null;
+        DataProto.Item item;
+        DataProto.Item.Checksums checksums = null;
         while ((item = read()) != null) {
             switch (item.getItemCase()) {
                 case HEADER:
-                    MigrateProto.Item.Header header = item.getHeader();
+                    DataProto.Item.Header header = item.getHeader();
                     LOG.info("Importing {} from Grakn {} to {} in Grakn {}",
                             header.getOriginalKeyspace(),
                             header.getGraknVersion(),
@@ -166,7 +166,7 @@ public class Import implements AutoCloseable {
         }
     }
 
-    private void checkChecksums(MigrateProto.Item.Checksums checksums) {
+    private void checkChecksums(DataProto.Item.Checksums checksums) {
         List<String> errors = new ArrayList<>();
 
         check(errors, "Attribute", checksums.getAttributeCount(), attributeCount);
@@ -180,7 +180,7 @@ public class Import implements AutoCloseable {
         }
     }
 
-    private void insertAttribute(MigrateProto.Item.Attribute attributeMessage) {
+    private void insertAttribute(DataProto.Item.Attribute attributeMessage) {
         Attribute<?> attribute = attributeTypeCache.computeIfAbsent(
                         attributeMessage.getLabel(),
                         l -> currentTransaction.getAttributeType(l))
@@ -197,7 +197,7 @@ public class Import implements AutoCloseable {
         write();
     }
 
-    private void insertEntity(MigrateProto.Item.Entity entityMessage) {
+    private void insertEntity(DataProto.Item.Entity entityMessage) {
         Entity entity = entityTypeCache.computeIfAbsent(
                         entityMessage.getLabel(),
                         l -> currentTransaction.getEntityType(l))
@@ -213,7 +213,7 @@ public class Import implements AutoCloseable {
         write();
     }
 
-    private void insertRelation(MigrateProto.Item.Relation relationMessage) {
+    private void insertRelation(DataProto.Item.Relation relationMessage) {
         Relation relation = relationTypeCache.computeIfAbsent(
                         relationMessage.getLabel(),
                         l -> currentTransaction.getRelationType(l))
@@ -226,11 +226,11 @@ public class Import implements AutoCloseable {
 
         List<Pair<String, List<String>>> missingRolePlayers = new ArrayList<>();
 
-        for (MigrateProto.Item.Relation.Role roleMessage : relationMessage.getRoleList()) {
+        for (DataProto.Item.Relation.Role roleMessage : relationMessage.getRoleList()) {
             List<String> missingPlayers = new ArrayList<>();
             Role role = null;
 
-            for (MigrateProto.Item.Relation.Role.Player playerMessage : roleMessage.getPlayerList()) {
+            for (DataProto.Item.Relation.Role.Player playerMessage : roleMessage.getPlayerList()) {
                 String originalPlayerId = playerMessage.getId();
                 Thing player = thingCache.get(originalPlayerId);
                 if (player == null) {
@@ -267,10 +267,10 @@ public class Import implements AutoCloseable {
         write();
     }
 
-    private void insertOwnedAttributesThatExist(Thing thing, List<MigrateProto.Item.OwnedAttribute> owned) {
+    private void insertOwnedAttributesThatExist(Thing thing, List<DataProto.Item.OwnedAttribute> owned) {
         List<String> missingOwnerships = new ArrayList<>();
 
-        for (MigrateProto.Item.OwnedAttribute ownedMessage : owned) {
+        for (DataProto.Item.OwnedAttribute ownedMessage : owned) {
             String ownedOriginalId = ownedMessage.getId();
             Attribute<?> ownedAttribute = (Attribute<?>) thingCache.get(ownedOriginalId);
             if (ownedAttribute == null) {
@@ -333,7 +333,7 @@ public class Import implements AutoCloseable {
         missingRolePlayers.clear();
     }
 
-    private <T> T valueFrom(MigrateProto.ValueObject valueObject) {
+    private <T> T valueFrom(DataProto.ValueObject valueObject) {
         switch (valueObject.getValueCase()) {
             case STRING:
                 return (T) valueObject.getString();

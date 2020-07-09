@@ -42,7 +42,10 @@ genrule(
 
 proto_library(
     name = "migrate-proto",
-    srcs = ["migrate/proto/migrate.proto"],
+    srcs = [
+        "migrate/proto/data.proto",
+        "migrate/proto/migrate.proto",
+    ],
 )
 
 java_grpc_compile(

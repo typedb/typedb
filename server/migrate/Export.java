@@ -20,18 +20,22 @@ package grakn.core.server.migrate;
 
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
-import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.Entity;
 import grakn.core.kb.concept.api.EntityType;
+import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Relation;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
+import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import grakn.core.server.Version;
+import grakn.core.server.keyspace.KeyspaceImpl;
+import grakn.core.server.migrate.proto.DataProto;
 import grakn.core.server.migrate.proto.MigrateProto;
+import grakn.core.server.session.SessionFactory;
 import graql.lang.Graql;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,73 +47,43 @@ import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class Export implements AutoCloseable {
+public class Export {
     private static final Logger LOG = LoggerFactory.getLogger(Export.class);
 
     private final AtomicBoolean started = new AtomicBoolean(false);
 
-    private final Session session;
-    private final BufferedOutputStream outputStream;
+    private final CountDownLatch finishedLatch = new CountDownLatch(1);
+    private volatile Exception error;
+    private volatile boolean cancelled;
+
+    private final SessionFactory sessionFactory;
+    private final Path outputPath;
+    private final String keyspace;
+
+    private Session session;
+    private BufferedOutputStream outputStream;
 
     private final Counter counter = new Counter();
 
-    private final long approximateThingCount;
+    private long approximateThingCount;
 
-    public Export(Session session, Path output) throws IOException {
-        this.session = session;
-
-        Files.createDirectories(output.getParent());
-
-        this.outputStream = new BufferedOutputStream(Files.newOutputStream(output));
-
-        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-            long thingCount = tx.execute(Graql.compute().count().in("thing"))
-                    .stream().findFirst().map(n -> n.number().longValue()).orElse(0L);
-            long implicitRelationCount = tx.execute(Graql.compute().count().in("@has-attribute"))
-                    .stream().findFirst().map(n -> n.number().longValue()).orElse(0L);
-            long tempApproximateThingCount = thingCount - implicitRelationCount;
-
-            // Ensure we don't report a negative count due to bad compute, as that is confusing UX
-            approximateThingCount = tempApproximateThingCount > 0 ? tempApproximateThingCount : 0;
-        }
-
-        LOG.info("Approximate thing count {}", approximateThingCount);
-    }
-
-    @Override
-    public void close() throws IOException {
-        outputStream.close();
-    }
-
-    public class Progress {
-        private final long estimatedTotal;
-        private final long currentProgress;
-
-        private Progress(long currentProgress) {
-            this.currentProgress = currentProgress;
-            estimatedTotal = Math.max(currentProgress, approximateThingCount);
-        }
-
-        public long getCurrentProgress() {
-            return currentProgress;
-        }
-
-        public long getEstimatedTotal() {
-            return estimatedTotal;
-        }
-
-        public double percentCompletion() {
-            return (double) currentProgress / (double) estimatedTotal;
-        }
+    public Export(SessionFactory sessionFactory, Path outputPath, String keyspace) {
+        this.sessionFactory = sessionFactory;
+        this.outputPath = outputPath;
+        this.keyspace = keyspace;
     }
 
     /**
@@ -117,47 +91,102 @@ public class Export implements AutoCloseable {
      *
      * @return Current progress
      */
-    public Progress getCurrentProgress() {
-        return new Progress(counter.getThingCount());
+    public MigrateProto.Progress getCurrentProgress() {
+        long current = counter.getThingCount();
+        return MigrateProto.Progress.newBuilder()
+                .setTotalCount(Math.max(current, approximateThingCount))
+                .setCurrentProgress(current)
+                .build();
+    }
+
+    public boolean awaitCompletion(long timeout, TimeUnit timeUnit) throws Exception {
+        try {
+            if (finishedLatch.await(timeout, timeUnit)) {
+                if (error != null) {
+                    throw new ExecutionException(error);
+                } else {
+                    return true;
+                }
+            } else {
+                return false;
+            }
+        } catch (InterruptedException e) {
+            cancel();
+            Thread.currentThread().interrupt();
+            throw e;
+        }
+    }
+
+    public void cancel() {
+        cancelled = true;
     }
 
     /**
      * Called by the main worker thread and blocks until export completion.
-     * @throws IOException
      */
-    public void export() throws IOException {
+    public void execute() {
         if (!started.compareAndSet(false, true)) {
             throw new IllegalStateException("Cannot invoke same export twice");
         }
 
-        LOG.info("Exporting {} from Grakn {}", session.keyspace().name(), Version.VERSION);
+        LOG.info("Exporting {} from Grakn {}", keyspace, Version.VERSION);
 
-        write(MigrateProto.Item.newBuilder()
-                .setHeader(MigrateProto.Item.Header.newBuilder()
-                        .setGraknVersion(Version.VERSION)
-                        .setOriginalKeyspace(session.keyspace().name()))
-                .build());
+        try (Session session = sessionFactory.session(new KeyspaceImpl(keyspace))) {
+            this.session = session;
 
-        List<ExportWorker<?, ?>> exportWorkers = new ArrayList<>();
-        exportWorkers.addAll(createAttributeWorkers());
-        exportWorkers.addAll(createEntityWorkers());
-        exportWorkers.addAll(createRelationWorkers());
+            computeApproximateCount();
 
-        exportWorkers.parallelStream().forEach(ExportWorker::export);
+            Files.createDirectories(outputPath.getParent());
 
-        write(MigrateProto.Item.newBuilder()
-                .setChecksums(counter.getChecksums())
-                .build());
+            this.outputStream = new BufferedOutputStream(Files.newOutputStream(outputPath));
 
-        outputStream.flush();
+            write(DataProto.Item.newBuilder()
+                    .setHeader(DataProto.Item.Header.newBuilder()
+                            .setGraknVersion(Version.VERSION)
+                            .setOriginalKeyspace(session.keyspace().name()))
+                    .build());
 
-        counter.logExported();
+            List<ExportWorker<?, ?>> exportWorkers = new ArrayList<>();
+            exportWorkers.addAll(createAttributeWorkers());
+            exportWorkers.addAll(createEntityWorkers());
+            exportWorkers.addAll(createRelationWorkers());
+
+            exportWorkers.parallelStream().forEach(ExportWorker::export);
+
+            write(DataProto.Item.newBuilder()
+                    .setChecksums(counter.getChecksums())
+                    .build());
+
+            outputStream.flush();
+
+            counter.logExported();
+        } catch (Exception e) {
+            error = e;
+        } finally {
+            finishedLatch.countDown();
+        }
     }
 
-    private void write(MigrateProto.Item item) throws IOException {
-        synchronized (outputStream) {
-            item.writeDelimitedTo(outputStream);
+    private void computeApproximateCount() {
+        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
+            // Compute is broken, we must manually prune implicit relations from the types to count as their counts are
+            // completely wrong. We must also ensure that we only add supertypes, so we check that included relation
+            // types are definitely direct subtypes of "relation".
+            RelationType metaRelationType = tx.getMetaRelationType();
+            List<String> nonImplicitTypes = Stream.concat(metaRelationType.subs()
+                            .filter(rt -> !rt.equals(metaRelationType) && Objects.equals(rt.sup(), metaRelationType) && !rt.isImplicit())
+                            .map(SchemaConcept::label)
+                            .map(Label::toString),
+                    Stream.of("attribute", "entity"))
+                    .collect(Collectors.toList());
+
+            approximateThingCount = tx.execute(Graql.compute().count().in(nonImplicitTypes))
+                    .stream().findFirst().map(n -> n.number().longValue()).orElse(0L);
         }
+    }
+
+    private synchronized void write(DataProto.Item item) throws IOException {
+        item.writeDelimitedTo(outputStream);
     }
 
     private List<AttributeExportWorker<?>> createAttributeWorkers() {
@@ -190,12 +219,12 @@ public class Export implements AutoCloseable {
         }
     }
 
-    private class Counter {
-        private AtomicLong attributeCount = new AtomicLong(0);
-        private AtomicLong entityCount = new AtomicLong(0);
-        private AtomicLong relationCount = new AtomicLong(0);
-        private AtomicLong ownershipCount = new AtomicLong(0);
-        private AtomicLong roleCount = new AtomicLong(0);
+    private static class Counter {
+        private final AtomicLong attributeCount = new AtomicLong(0);
+        private final AtomicLong entityCount = new AtomicLong(0);
+        private final AtomicLong relationCount = new AtomicLong(0);
+        private final AtomicLong ownershipCount = new AtomicLong(0);
+        private final AtomicLong roleCount = new AtomicLong(0);
 
         void addAttribute() {
             attributeCount.incrementAndGet();
@@ -221,8 +250,8 @@ public class Export implements AutoCloseable {
             return attributeCount.get() + entityCount.get() + relationCount.get();
         }
 
-        MigrateProto.Item.Checksums.Builder getChecksums() {
-            return MigrateProto.Item.Checksums.newBuilder()
+        DataProto.Item.Checksums.Builder getChecksums() {
+            return DataProto.Item.Checksums.newBuilder()
                     .setEntityCount(entityCount.get())
                     .setAttributeCount(attributeCount.get())
                     .setRelationCount(relationCount.get())
@@ -251,10 +280,14 @@ public class Export implements AutoCloseable {
             LOG.debug(">>>>> Exporting: {}", label);
 
             try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-                T type = tx.getConcept(ConceptId.of(label));
+                T type = tx.getSchemaConcept(Label.of(label));
                 AttributeType<?>[] ownedTypes = type.attributes().filter(at -> !at.isImplicit()).toArray(AttributeType[]::new);
                 Iterator<U> iterator = (Iterator<U>) type.instancesDirect().iterator();
                 while (iterator.hasNext()) {
+                    if (cancelled) {
+                        throw new CancellationException();
+                    }
+
                     write(read(label, iterator.next(), ownedTypes));
                 }
             } catch (IOException e) {
@@ -264,7 +297,7 @@ public class Export implements AutoCloseable {
             LOG.debug("||||| Finished: {}", label);
         }
 
-        abstract protected MigrateProto.Item read(String label, U instance, AttributeType<?>[] ownedTypes);
+        abstract protected DataProto.Item read(String label, U instance, AttributeType<?>[] ownedTypes);
     }
 
     private class AttributeExportWorker<D> extends ExportWorker<AttributeType<D>, Attribute<D>> {
@@ -273,8 +306,8 @@ public class Export implements AutoCloseable {
         }
 
         @Override
-        protected MigrateProto.Item read(String label, Attribute<D> attribute, AttributeType<?>[] ownedTypes) {
-            MigrateProto.Item.Attribute.Builder attributeBuilder = MigrateProto.Item.Attribute.newBuilder()
+        protected DataProto.Item read(String label, Attribute<D> attribute, AttributeType<?>[] ownedTypes) {
+            DataProto.Item.Attribute.Builder attributeBuilder = DataProto.Item.Attribute.newBuilder()
                     .setId(attribute.id().toString())
                     .setLabel(label)
                     .setValue(valueOf(attribute.value()));
@@ -282,12 +315,12 @@ public class Export implements AutoCloseable {
             attribute.attributes(ownedTypes).forEach(a -> {
                 counter.addOwnership();
                 attributeBuilder.addAttribute(
-                        MigrateProto.Item.OwnedAttribute.newBuilder()
+                        DataProto.Item.OwnedAttribute.newBuilder()
                                 .setId(a.id().toString()));
             });
 
             counter.addAttribute();
-            return MigrateProto.Item.newBuilder().setAttribute(attributeBuilder).build();
+            return DataProto.Item.newBuilder().setAttribute(attributeBuilder).build();
         }
     }
 
@@ -297,15 +330,15 @@ public class Export implements AutoCloseable {
         }
 
         @Override
-        protected MigrateProto.Item read(String label, Entity entity, AttributeType<?>[] ownedTypes) {
-            MigrateProto.Item.Entity.Builder entityBuilder = MigrateProto.Item.Entity.newBuilder()
+        protected DataProto.Item read(String label, Entity entity, AttributeType<?>[] ownedTypes) {
+            DataProto.Item.Entity.Builder entityBuilder = DataProto.Item.Entity.newBuilder()
                     .setId(entity.id().toString())
                     .setLabel(label);
 
             readOwnerships(entity, ownedTypes).forEach(entityBuilder::addAttribute);
 
             counter.addEntity();
-            return MigrateProto.Item.newBuilder().setEntity(entityBuilder).build();
+            return DataProto.Item.newBuilder().setEntity(entityBuilder).build();
         }
     }
 
@@ -315,8 +348,8 @@ public class Export implements AutoCloseable {
         }
 
         @Override
-        protected MigrateProto.Item read(String label, Relation relation, AttributeType<?>[] ownedTypes) {
-            MigrateProto.Item.Relation.Builder relationBuilder = MigrateProto.Item.Relation.newBuilder()
+        protected DataProto.Item read(String label, Relation relation, AttributeType<?>[] ownedTypes) {
+            DataProto.Item.Relation.Builder relationBuilder = DataProto.Item.Relation.newBuilder()
                     .setId(relation.id().toString())
                     .setLabel(label);
 
@@ -327,11 +360,11 @@ public class Export implements AutoCloseable {
                     continue;
                 }
 
-                MigrateProto.Item.Relation.Role.Builder roleBuilder = MigrateProto.Item.Relation.Role.newBuilder()
+                DataProto.Item.Relation.Role.Builder roleBuilder = DataProto.Item.Relation.Role.newBuilder()
                         .setLabel(role.label().toString());
 
                 for (Thing player : roleEntry.getValue()) {
-                    roleBuilder.addPlayer(MigrateProto.Item.Relation.Role.Player.newBuilder()
+                    roleBuilder.addPlayer(DataProto.Item.Relation.Role.Player.newBuilder()
                             .setId(player.id().toString()));
                     counter.addRole();
                 }
@@ -343,22 +376,22 @@ public class Export implements AutoCloseable {
 
             counter.addRelation();
 
-            return MigrateProto.Item.newBuilder()
+            return DataProto.Item.newBuilder()
                     .setRelation(relationBuilder)
                     .build();
         }
     }
 
-    private Stream<MigrateProto.Item.OwnedAttribute.Builder> readOwnerships(Thing thing, AttributeType<?>[] ownedTypes) {
+    private Stream<DataProto.Item.OwnedAttribute.Builder> readOwnerships(Thing thing, AttributeType<?>[] ownedTypes) {
         return thing.attributes(ownedTypes).map(a -> {
             counter.addOwnership();
-            return MigrateProto.Item.OwnedAttribute.newBuilder()
+            return DataProto.Item.OwnedAttribute.newBuilder()
                     .setId(a.id().toString());
         });
     }
 
-    private static MigrateProto.ValueObject.Builder valueOf(Object value) {
-        MigrateProto.ValueObject.Builder valueObject = MigrateProto.ValueObject.newBuilder();
+    private static DataProto.ValueObject.Builder valueOf(Object value) {
+        DataProto.ValueObject.Builder valueObject = DataProto.ValueObject.newBuilder();
         if (value instanceof String) {
             valueObject.setString((String) value);
         } else if (value instanceof Boolean) {

@@ -37,6 +37,7 @@ java_library(
         "//dependencies/maven/artifacts/org/apache/cassandra:cassandra-all",
         "//dependencies/maven/artifacts/org/zeroturnaround:zt-exec",
         "//dependencies/maven/artifacts/io/grpc:grpc-api",
+        "//dependencies/maven/artifacts/io/grpc:grpc-stub",
     ],
     runtime_deps = [
         "//dependencies/maven/artifacts/ch/qos/logback:logback-classic",
