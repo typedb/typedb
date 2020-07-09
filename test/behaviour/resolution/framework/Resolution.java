@@ -26,6 +26,7 @@ import grakn.core.test.behaviour.resolution.framework.complete.SchemaManager;
 import grakn.core.test.behaviour.resolution.framework.resolve.ResolutionQueryBuilder;
 import graql.lang.Graql;
 import graql.lang.query.GraqlGet;
+import graql.lang.query.GraqlQuery;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -97,9 +98,7 @@ public class Resolution {
         int completionResultsCount = filterCompletionSchema(completionTx.stream(inferenceQuery)).collect(Collectors.toSet()).size();
         completionTx.close();
         if (completionResultsCount != testResultsCount) {
-            String msg = String.format("Query had an incorrect number of answers. Expected %d answers, but found %d " +
-                    "answers, for query :\n %s", completionResultsCount, testResultsCount, inferenceQuery);
-            throw new CorrectnessException(msg);
+            throw new WrongAnswerSizeException(completionResultsCount, testResultsCount, inferenceQuery);
         }
     }
 
@@ -137,9 +136,13 @@ public class Resolution {
      * inferred facts in the completion keyspace against the total number that are inferred in the test keyspace
      */
     public void testCompleteness() {
-        int testInferredCount = thingCount(reasonedSession) - initialThingCount;
-        if (testInferredCount != completedInferredThingCount) {
-            String msg = String.format("The complete KB contains %d inferred concepts, whereas the test KB contains %d inferred concepts.", completedInferredThingCount, testInferredCount);
+        try {
+            testQuery(Graql.parse("match $x isa thing; get;").asGet());
+            testQuery(Graql.parse("match $r ($x) isa relation; get;").asGet());
+            testQuery(Graql.parse("match $x has attribute $y; get;").asGet());
+        } catch (WrongAnswerSizeException ex) {
+            String msg = String.format("The complete KB contains %d inferred concepts, whereas the test KB contains %d inferred concepts.",
+                    ex.getExpectedAnswers(), ex.getActualAnswers());
             throw new CompletenessException(msg);
         }
     }
@@ -154,5 +157,25 @@ public class Resolution {
         CompletenessException(String message) {
             super(message);
         }
-    };
+    }
+
+    public static class WrongAnswerSizeException extends RuntimeException {
+        public WrongAnswerSizeException(final int expectedAnswers, final int actualAnswers, final GraqlQuery inferenceQuery) {
+            super(String.format("Query had an incorrect number of answers. Expected %d answers, but found %d " +
+                    "answers, for query :\n %s", expectedAnswers, actualAnswers, inferenceQuery));
+            this.actualAnswers = actualAnswers;
+            this.expectedAnswers = expectedAnswers;
+        }
+
+        public int getActualAnswers() {
+            return actualAnswers;
+        }
+
+        public int getExpectedAnswers() {
+            return expectedAnswers;
+        }
+
+        private final int expectedAnswers;
+        private final int actualAnswers;
+    }
 }

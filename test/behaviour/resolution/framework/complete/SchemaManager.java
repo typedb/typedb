@@ -115,6 +115,9 @@ public class SchemaManager {
                 if (type.isAttributeType()) {
                     if (!EXCLUDED_ATTRIBUTE_TYPES.contains(type.label().toString())) {
                         attrPropRel.has((AttributeType) type);
+                        type.plays(instanceRole);
+                        type.plays(ownerRole);
+                        type.plays(roleplayerRole);
                     }
                 } else if (type.isEntityType()) {
                     if (!EXCLUDED_ENTITY_TYPES.contains(type.label().toString())) {
