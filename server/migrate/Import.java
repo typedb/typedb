@@ -15,7 +15,10 @@ import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import grakn.core.server.Version;
+import grakn.core.server.keyspace.KeyspaceImpl;
 import grakn.core.server.migrate.proto.DataProto;
+import grakn.core.server.migrate.proto.MigrateProto;
+import grakn.core.server.session.SessionFactory;
 import grakn.core.server.session.TransactionImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,15 +35,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class Import implements AutoCloseable {
+public class Import extends AbstractJob {
 
     private static final Logger LOG = LoggerFactory.getLogger(Import.class);
 
     private static final int BATCH_SIZE = 10_000;
 
-    private final Session session;
-    private final InputStream inputStream;
-    private final Parser<DataProto.Item> itemParser;
+    private Session session;
+    private InputStream inputStream;
+    private static final Parser<DataProto.Item> PARSER = DataProto.Item.parser();
 
     private Transaction currentTransaction;
     private int count = 0;
@@ -66,21 +69,45 @@ public class Import implements AutoCloseable {
     private long ownershipCount = 0;
     private long roleCount = 0;
 
-    public Import(Session session, Path inputFile) throws IOException {
-        this.session = session;
+    private long totalThingCount = 0;
 
-        this.inputStream = new BufferedInputStream(Files.newInputStream(inputFile));
-        this.itemParser = DataProto.Item.parser();
+    private final SessionFactory sessionFactory;
+    private final Path inputPath;
+    private final String keyspace;
+
+    public Import(SessionFactory sessionFactory, Path inputPath, String keyspace) {
+        super("import");
+        this.sessionFactory = sessionFactory;
+        this.inputPath = inputPath;
+        this.keyspace = keyspace;
+    }
+
+    /**
+     * Thread-safe way of retrieving current progress.
+     *
+     * @return Current progress
+     */
+    @Override
+    public MigrateProto.Job.Progress getCurrentProgress() {
+        long current = attributeCount + relationCount + entityCount;
+        return MigrateProto.Job.Progress.newBuilder()
+                .setTotalCount(Math.max(current, totalThingCount))
+                .setCurrentProgress(current)
+                .build();
     }
 
     @Override
-    public void close() throws IOException {
+    public MigrateProto.Job.Completion getCompletion() {
+        return MigrateProto.Job.Completion.newBuilder().setTotalCount(totalThingCount).build();
+    }
+
+    private void close() throws IOException {
         if (currentTransaction != null) currentTransaction.close();
         inputStream.close();
     }
 
     private DataProto.Item read() throws InvalidProtocolBufferException {
-        return itemParser.parseDelimitedFrom(inputStream);
+        return PARSER.parseDelimitedFrom(inputStream);
     }
 
     private void write() {
@@ -113,51 +140,74 @@ public class Import implements AutoCloseable {
         commit();
     }
 
-    public void execute() throws InvalidProtocolBufferException {
-        newTransaction();
+    @Override
+    protected void executeInternal() throws Exception {
 
-        DataProto.Item item;
-        DataProto.Item.Checksums checksums = null;
-        while ((item = read()) != null) {
-            switch (item.getItemCase()) {
-                case HEADER:
-                    DataProto.Item.Header header = item.getHeader();
-                    LOG.info("Importing {} from Grakn {} to {} in Grakn {}",
-                            header.getOriginalKeyspace(),
-                            header.getGraknVersion(),
-                            session.keyspace().name(),
-                            Version.VERSION);
-                    break;
-                case ATTRIBUTE:
-                    insertAttribute(item.getAttribute());
-                    break;
-                case ENTITY:
-                    insertEntity(item.getEntity());
-                    break;
-                case RELATION:
-                    insertRelation(item.getRelation());
-                    break;
-                case CHECKSUMS:
-                    checksums = item.getChecksums();
-                    break;
+        // We scan the file to find the checksum. This is probably not a good idea for files larger than several
+        // gigabytes but that case is rare and the actual import would take so long that even if this took a few
+        // seconds it would still be cheap.
+        try (InputStream inputStream = new BufferedInputStream(Files.newInputStream(inputPath))) {
+            this.inputStream = inputStream;
+            DataProto.Item item;
+            while ((item = read()) != null) {
+                if (item.getItemCase() == DataProto.Item.ItemCase.CHECKSUMS) {
+                    DataProto.Item.Checksums checksums = item.getChecksums();
+                    totalThingCount = checksums.getAttributeCount() + checksums.getEntityCount() + checksums.getRelationCount();
+                }
             }
         }
 
-        insertMissingRolePlayersAtEnd();
-        insertMissingAttributeOwnershipsAtEnd();
+        try (Session session = sessionFactory.session(new KeyspaceImpl(keyspace));
+             InputStream inputStream = new BufferedInputStream(Files.newInputStream(inputPath))) {
+            this.session = session;
+            this.inputStream = inputStream;
+            newTransaction();
 
-        flush();
+            DataProto.Item item;
+            DataProto.Item.Checksums checksums = null;
+            while (!isCancelled() && (item = read()) != null) {
+                switch (item.getItemCase()) {
+                    case HEADER:
+                        DataProto.Item.Header header = item.getHeader();
+                        LOG.info("Importing {} from Grakn {} to {} in Grakn {}",
+                                header.getOriginalKeyspace(),
+                                header.getGraknVersion(),
+                                session.keyspace().name(),
+                                Version.VERSION);
+                        break;
+                    case ATTRIBUTE:
+                        insertAttribute(item.getAttribute());
+                        break;
+                    case ENTITY:
+                        insertEntity(item.getEntity());
+                        break;
+                    case RELATION:
+                        insertRelation(item.getRelation());
+                        break;
+                    case CHECKSUMS:
+                        checksums = item.getChecksums();
+                        break;
+                }
+            }
 
-        if (checksums != null) {
-            checkChecksums(checksums);
+            insertMissingRolePlayersAtEnd();
+            insertMissingAttributeOwnershipsAtEnd();
+
+            flush();
+
+            if (checksums != null) {
+                checkChecksums(checksums);
+            }
+
+            LOG.info("Imported {} entities, {} attributes, {} relations ({} roles), {} ownerships",
+                    entityCount,
+                    attributeCount,
+                    relationCount,
+                    roleCount,
+                    ownershipCount);
+
+            close();
         }
-
-        LOG.info("Imported {} entities, {} attributes, {} relations ({} roles), {} ownerships",
-                entityCount,
-                attributeCount,
-                relationCount,
-                roleCount,
-                ownershipCount);
     }
 
     private void check(List<String> errors, String name, long expected, long actual) {

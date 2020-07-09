@@ -59,14 +59,14 @@ public class ProgressPrinter implements MigrationClient.ProgressListener, AutoCl
         }
 
         String output = builder.toString();
-        System.out.println("\033[" + lines + "F\033[J" + output);
+        System.out.println((lines > 0 ? "\033[" + lines + "F\033[J" : "") + output);
 
         lines = output.split("\n").length;
         builder = new StringBuilder();
     }
 
     @Override
-    public void close() throws Exception {
+    public synchronized void close() throws Exception {
         step();
         timer.cancel();
     }

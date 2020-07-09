@@ -262,25 +262,21 @@ public class GraknDaemon {
     }
 
     private void export(List<String> args) {
-        System.out.println("Starting export.");
         try (MigrationClient client = new MigrationClient();
              ProgressPrinter printer = new ProgressPrinter("export")) {
             client.export(args.get(0), args.get(1), printer);
         } catch (Exception exception) {
             throw new RuntimeException(exception);
         }
-        System.out.println("Completed export.");
     }
 
     private void import_(List<String> args) {
-        System.out.println("Starting import.");
         try (MigrationClient client = new MigrationClient();
              ProgressPrinter printer = new ProgressPrinter("import")) {
             client.import_(args.get(0), args.get(1), printer);
         } catch (Exception exception) {
             throw new RuntimeException(exception);
         }
-        System.out.println("Completed import.");
     }
 
     private void exportSchema(List<String> args) {
@@ -289,16 +285,6 @@ public class GraknDaemon {
         } catch (Exception exception) {
             throw new RuntimeException(exception);
         }
-    }
-
-    private void printProgress(long current, long total) {
-        String totalString = Long.toUnsignedString(total);
-
-        System.out.println(overwritePreviousLine(String.format("Progress  |  %," + totalString.length() + "d / %s  |  %d", current, totalString)));
-    }
-
-    private String overwritePreviousLine(String string) {
-        return "\033[F\033[K" + string;
     }
 }
 

@@ -60,14 +60,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class Export {
+public class Export extends AbstractJob {
     private static final Logger LOG = LoggerFactory.getLogger(Export.class);
-
-    private final AtomicBoolean started = new AtomicBoolean(false);
-
-    private final CountDownLatch finishedLatch = new CountDownLatch(1);
-    private volatile Exception error;
-    private volatile boolean cancelled;
 
     private final SessionFactory sessionFactory;
     private final Path outputPath;
@@ -81,6 +75,7 @@ public class Export {
     private long approximateThingCount;
 
     public Export(SessionFactory sessionFactory, Path outputPath, String keyspace) {
+        super("export");
         this.sessionFactory = sessionFactory;
         this.outputPath = outputPath;
         this.keyspace = keyspace;
@@ -91,6 +86,7 @@ public class Export {
      *
      * @return Current progress
      */
+    @Override
     public MigrateProto.Job.Progress getCurrentProgress() {
         long current = counter.getThingCount();
         return MigrateProto.Job.Progress.newBuilder()
@@ -99,36 +95,16 @@ public class Export {
                 .build();
     }
 
-    public boolean awaitCompletion(long timeout, TimeUnit timeUnit) throws Exception {
-        try {
-            if (finishedLatch.await(timeout, timeUnit)) {
-                if (error != null) {
-                    throw new ExecutionException(error);
-                } else {
-                    return true;
-                }
-            } else {
-                return false;
-            }
-        } catch (InterruptedException e) {
-            cancel();
-            Thread.currentThread().interrupt();
-            throw e;
-        }
-    }
-
-    public void cancel() {
-        cancelled = true;
+    @Override
+    public MigrateProto.Job.Completion getCompletion() {
+        return MigrateProto.Job.Completion.newBuilder().setTotalCount(approximateThingCount).build();
     }
 
     /**
      * Called by the main worker thread and blocks until export completion.
      */
-    public void execute() {
-        if (!started.compareAndSet(false, true)) {
-            throw new IllegalStateException("Cannot invoke same export twice");
-        }
-
+    @Override
+    protected void executeInternal() throws Exception {
         LOG.info("Exporting {} from Grakn {}", keyspace, Version.VERSION);
 
         try (Session session = sessionFactory.session(new KeyspaceImpl(keyspace))) {
@@ -160,10 +136,6 @@ public class Export {
             outputStream.flush();
 
             counter.logExported();
-        } catch (Exception e) {
-            error = e;
-        } finally {
-            finishedLatch.countDown();
         }
     }
 
@@ -284,7 +256,7 @@ public class Export {
                 AttributeType<?>[] ownedTypes = type.attributes().filter(at -> !at.isImplicit()).toArray(AttributeType[]::new);
                 Iterator<U> iterator = (Iterator<U>) type.instancesDirect().iterator();
                 while (iterator.hasNext()) {
-                    if (cancelled) {
+                    if (isCancelled()) {
                         throw new CancellationException();
                     }
 
