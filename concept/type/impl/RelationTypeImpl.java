@@ -86,6 +86,9 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
 
     @Override
     public void isAbstract(boolean isAbstract) {
+        if (isAbstract && instances().findFirst().isPresent()) {
+            throw new HypergraphException(TYPE_HAS_INSTANCES.format(label()));
+        }
         vertex.isAbstract(isAbstract);
         declaredRoles().forEach(role -> role.isAbstract(isAbstract));
     }
