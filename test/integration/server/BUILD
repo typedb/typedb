@@ -50,7 +50,7 @@ java_test(
 
 java_test(
     name = "validator-it",
-    size = "medium",
+    size = "large",
     srcs = ["ValidatorIT.java"],
     classpath_resources = ["//test/resources:logback-test"],
     test_class = "grakn.core.server.ValidatorIT",
