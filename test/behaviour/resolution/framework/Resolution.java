@@ -141,8 +141,8 @@ public class Resolution {
             testQuery(Graql.parse("match $r ($x) isa relation; get;").asGet());
             testQuery(Graql.parse("match $x has attribute $y; get;").asGet());
         } catch (WrongAnswerSizeException ex) {
-            String msg = String.format("The complete KB contains %d inferred concepts, whereas the test KB contains %d inferred concepts.",
-                    ex.getExpectedAnswers(), ex.getActualAnswers());
+            String msg = String.format("Failed completeness test: [%s]. The complete KB contains %d inferred concepts, whereas the test KB contains %d inferred concepts.",
+                    ex.getInferenceQuery(), ex.getExpectedAnswers(), ex.getActualAnswers());
             throw new CompletenessException(msg);
         }
     }
@@ -165,6 +165,8 @@ public class Resolution {
                     "answers, for query :\n %s", expectedAnswers, actualAnswers, inferenceQuery));
             this.actualAnswers = actualAnswers;
             this.expectedAnswers = expectedAnswers;
+            this.inferenceQuery = inferenceQuery;
+
         }
 
         public int getActualAnswers() {
@@ -175,7 +177,12 @@ public class Resolution {
             return expectedAnswers;
         }
 
+        public GraqlQuery getInferenceQuery() {
+            return inferenceQuery;
+        }
+
         private final int expectedAnswers;
         private final int actualAnswers;
+        private final GraqlQuery inferenceQuery;
     }
 }
