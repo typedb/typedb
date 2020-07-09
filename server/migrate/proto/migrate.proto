@@ -26,8 +26,8 @@ option java_outer_classname = "MigrateProto";
 package migrate;
 
 service MigrateService {
-    rpc exportFile (ExportFile.Req) returns (stream ExportFile.Res);
-    rpc importFile (ImportFile.Req) returns (stream ImportFile.Res);
+    rpc exportFile (ExportFile.Req) returns (stream Job.Res);
+    rpc importFile (ImportFile.Req) returns (stream Job.Res);
     rpc exportSchema (ExportSchema.Req) returns (ExportSchema.Res);
 }
 
@@ -36,11 +36,23 @@ message ExportFile {
         string name = 1;
         string path = 2;
     }
+}
 
+message Job {
     message Res {
         oneof res {
             Progress progress = 1;
+            Completion completion = 2;
         }
+    }
+
+    message Progress {
+        uint64 total_count = 1;
+        uint64 current_progress = 2;
+    }
+
+    message Completion {
+        uint64 total_count = 1;
     }
 }
 
@@ -49,17 +61,6 @@ message ImportFile {
         string name = 1;
         string path = 2;
     }
-
-    message Res {
-        oneof res {
-            Progress progress = 1;
-        }
-    }
-}
-
-message Progress {
-    uint64 total_count = 1;
-    uint64 current_progress = 2;
 }
 
 message ExportSchema {

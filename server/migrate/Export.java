@@ -91,9 +91,9 @@ public class Export {
      *
      * @return Current progress
      */
-    public MigrateProto.Progress getCurrentProgress() {
+    public MigrateProto.Job.Progress getCurrentProgress() {
         long current = counter.getThingCount();
-        return MigrateProto.Progress.newBuilder()
+        return MigrateProto.Job.Progress.newBuilder()
                 .setTotalCount(Math.max(current, approximateThingCount))
                 .setCurrentProgress(current)
                 .build();

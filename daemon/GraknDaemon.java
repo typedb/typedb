@@ -23,6 +23,7 @@ import grakn.core.daemon.executor.Executor;
 import grakn.core.daemon.executor.Server;
 import grakn.core.daemon.executor.Storage;
 import grakn.core.daemon.migrate.MigrationClient;
+import grakn.core.daemon.migrate.ProgressPrinter;
 import grakn.core.server.Version;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -262,8 +263,9 @@ public class GraknDaemon {
 
     private void export(List<String> args) {
         System.out.println("Starting export.");
-        try (MigrationClient client = new MigrationClient()) {
-            client.export(args.get(0), args.get(1), this::printProgress);
+        try (MigrationClient client = new MigrationClient();
+             ProgressPrinter printer = new ProgressPrinter("export")) {
+            client.export(args.get(0), args.get(1), printer);
         } catch (Exception exception) {
             throw new RuntimeException(exception);
         }
@@ -272,8 +274,9 @@ public class GraknDaemon {
 
     private void import_(List<String> args) {
         System.out.println("Starting import.");
-        try (MigrationClient client = new MigrationClient()) {
-            client.import_(args.get(0), args.get(1), this::printProgress);
+        try (MigrationClient client = new MigrationClient();
+             ProgressPrinter printer = new ProgressPrinter("import")) {
+            client.import_(args.get(0), args.get(1), printer);
         } catch (Exception exception) {
             throw new RuntimeException(exception);
         }
@@ -291,7 +294,7 @@ public class GraknDaemon {
     private void printProgress(long current, long total) {
         String totalString = Long.toUnsignedString(total);
 
-        System.out.println(overwritePreviousLine(String.format("Progress: %d / %s", current, totalString)));
+        System.out.println(overwritePreviousLine(String.format("Progress  |  %," + totalString.length() + "d / %s  |  %d", current, totalString)));
     }
 
     private String overwritePreviousLine(String string) {

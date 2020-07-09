@@ -61,6 +61,19 @@ public class MigrationClient implements AutoCloseable {
         }
     }
 
+    private void reportProgress(ProgressListener progressListener, MigrateProto.Job.Res res) {
+        switch (res.getResCase()) {
+            case PROGRESS:
+                progressListener.onProgress(res.getProgress().getCurrentProgress(), res.getProgress().getTotalCount());
+                break;
+            case COMPLETION:
+                progressListener.onCompletion(res.getCompletion().getTotalCount());
+            case RES_NOT_SET:
+            default:
+                // Ignore unknown message
+        }
+    }
+
     public void export(String keyspace, String path, ProgressListener progressListener) throws Exception {
         String resolvedPath = resolvePath(path);
 
@@ -70,12 +83,7 @@ public class MigrationClient implements AutoCloseable {
                         .setName(keyspace)
                         .setPath(resolvedPath)
                         .build(),
-                res -> {
-                    // Ignore unknown response types
-                    if (res.getResCase() == MigrateProto.ExportFile.Res.ResCase.PROGRESS) {
-                        progressListener.onProgress(res.getProgress().getCurrentProgress(), res.getProgress().getTotalCount());
-                    }
-                }
+                res -> reportProgress(progressListener, res)
         );
     }
 
@@ -88,12 +96,7 @@ public class MigrationClient implements AutoCloseable {
                         .setName(keyspace)
                         .setPath(resolvedPath)
                         .build(),
-                res -> {
-                    // Ignore unknown response types
-                    if (res.getResCase() == MigrateProto.ImportFile.Res.ResCase.PROGRESS) {
-                        progressListener.onProgress(res.getProgress().getCurrentProgress(), res.getProgress().getTotalCount());
-                    }
-                }
+                res -> reportProgress(progressListener, res)
         );
     }
 
@@ -130,6 +133,7 @@ public class MigrationClient implements AutoCloseable {
 
     public interface ProgressListener {
         void onProgress(long current, long total);
+        void onCompletion(long total);
     }
 
     private static class CancellableGrpcConsumer<T, U> implements ClientResponseObserver<T, U> {
@@ -184,6 +188,7 @@ public class MigrationClient implements AutoCloseable {
 
         @Override
         public void onCompleted() {
+
             finished.countDown();
         }
     }

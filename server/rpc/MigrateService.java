@@ -38,7 +38,7 @@ public class MigrateService extends MigrateServiceGrpc.MigrateServiceImplBase {
 
     @Override
     public void exportFile(MigrateProto.ExportFile.Req request,
-                           StreamObserver<MigrateProto.ExportFile.Res> responseObserver) {
+                           StreamObserver<MigrateProto.Job.Res> responseObserver) {
         Path output = Paths.get(request.getPath());
 
         Export export = new Export(sessionFactory, output, request.getName());
@@ -46,7 +46,7 @@ public class MigrateService extends MigrateServiceGrpc.MigrateServiceImplBase {
             migrationExecutor.execute(export::execute);
 
             while (!export.awaitCompletion(1, TimeUnit.SECONDS)) {
-                responseObserver.onNext(MigrateProto.ExportFile.Res.newBuilder()
+                responseObserver.onNext(MigrateProto.Job.Res.newBuilder()
                         .setProgress(export.getCurrentProgress())
                         .build());
             }
@@ -61,13 +61,12 @@ public class MigrateService extends MigrateServiceGrpc.MigrateServiceImplBase {
 
     @Override
     public void importFile(MigrateProto.ImportFile.Req request,
-                           StreamObserver<MigrateProto.ImportFile.Res> responseObserver) {
+                           StreamObserver<MigrateProto.Job.Res> responseObserver) {
         Path input = Paths.get(request.getPath());
 
         try (Session session = sessionFactory.session(new KeyspaceImpl(request.getName()));
              Import anImport = new Import(session, input)) {
             anImport.execute();
-            responseObserver.onNext(MigrateProto.ImportFile.Res.getDefaultInstance());
             responseObserver.onCompleted();
         } catch (Exception e) {
             LOG.error("An error occurred during export testing.", e);
