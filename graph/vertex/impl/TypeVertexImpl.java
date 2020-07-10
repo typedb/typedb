@@ -119,6 +119,20 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         return isDeleted.get();
     }
 
+    void deleteEdges() {
+        ins.deleteAll();
+        outs.deleteAll();
+    }
+
+    void deleteVertexFromGraph() {
+        graph.delete(this);
+    }
+
+    void commitEdges() {
+        outs.forEach(TypeEdge::commit);
+        ins.forEach(TypeEdge::commit);
+    }
+
     public static class Buffered extends TypeVertexImpl {
 
         private final AtomicBoolean isCommitted;
@@ -207,27 +221,26 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         @Override
         public void delete() {
             if (isDeleted.compareAndSet(false, true)) {
-                ins.deleteAll();
-                outs.deleteAll();
-                graph.delete(this);
+                deleteEdges();
+                deleteVertexFromGraph();
             }
         }
 
         @Override
         public void commit() {
             if (isCommitted.compareAndSet(false, true)) {
-                graph.storage().put(iid.bytes());
-                commitIndex();
+                commitVertex();
                 commitProperties();
                 commitEdges();
             }
         }
 
-        void commitIndex() {
+        private void commitVertex() {
+            graph.storage().put(iid.bytes());
             graph.storage().put(IndexIID.Type.of(label, scope).bytes(), iid.bytes());
         }
 
-        void commitProperties() {
+        private void commitProperties() {
             commitPropertyLabel();
             if (scope != null) commitPropertyScope();
             if (isAbstract != null && isAbstract) commitPropertyAbstract();
@@ -253,11 +266,6 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
 
         private void commitPropertyRegex() {
             graph.storage().put(join(iid.bytes(), Schema.Property.REGEX.infix().bytes()), regex.getBytes());
-        }
-
-        private void commitEdges() {
-            outs.forEach(TypeEdge::commit);
-            ins.forEach(TypeEdge::commit);
         }
     }
 
@@ -392,21 +400,23 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         }
 
         @Override
-        public void delete() {
-            if (isDeleted.compareAndSet(false, true)) {
-                ins.deleteAll();
-                outs.deleteAll();
-                graph.delete(this);
-                graph.storage().delete(IndexIID.Type.of(label, scope).bytes());
-                Iterator<byte[]> keys = graph.storage().iterate(iid.bytes(), (iid, value) -> iid);
-                while (keys.hasNext()) graph.storage().delete(keys.next());
-            }
+        public void commit() {
+            commitEdges();
         }
 
         @Override
-        public void commit() {
-            outs.forEach(TypeEdge::commit);
-            ins.forEach(TypeEdge::commit);
+        public void delete() {
+            if (isDeleted.compareAndSet(false, true)) {
+                deleteEdges();
+                deleteVertexFromGraph();
+                deleteVertexFromStorage();
+            }
+        }
+
+        private void deleteVertexFromStorage() {
+            graph.storage().delete(IndexIID.Type.of(label, scope).bytes());
+            Iterator<byte[]> keys = graph.storage().iterate(iid.bytes(), (iid, value) -> iid);
+            while (keys.hasNext()) graph.storage().delete(keys.next());
         }
     }
 }
