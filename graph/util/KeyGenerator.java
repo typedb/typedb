@@ -16,10 +16,10 @@
  *
  */
 
-package grakn.graph.util;
+package grakn.core.graph.util;
 
-import grakn.graph.iid.PrefixIID;
-import grakn.graph.iid.VertexIID;
+import grakn.core.graph.iid.PrefixIID;
+import grakn.core.graph.iid.VertexIID;
 
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
@@ -27,10 +27,10 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static grakn.common.collection.Bytes.join;
-import static grakn.common.collection.Bytes.longToBytes;
-import static grakn.common.collection.Bytes.shortToBytes;
-import static grakn.common.iterator.Iterators.filter;
+import static grakn.core.common.collection.Bytes.join;
+import static grakn.core.common.collection.Bytes.longToBytes;
+import static grakn.core.common.collection.Bytes.shortToBytes;
+import static grakn.core.common.iterator.Iterators.filter;
 import static java.nio.ByteBuffer.wrap;
 import static java.util.Arrays.copyOfRange;
 

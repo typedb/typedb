@@ -16,10 +16,10 @@
  *
  */
 
-package grakn.concept.thing;
+package grakn.core.concept.thing;
 
-import grakn.concept.type.RelationType;
-import grakn.concept.type.RoleType;
+import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.RoleType;
 
 import java.util.List;
 import java.util.stream.Stream;

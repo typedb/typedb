@@ -16,26 +16,26 @@
  *
  */
 
-package grakn.concept.thing.impl;
+package grakn.core.concept.thing.impl;
 
-import grakn.common.exception.GraknException;
-import grakn.concept.thing.Attribute;
-import grakn.concept.type.ThingType;
-import grakn.concept.type.impl.AttributeTypeImpl;
-import grakn.concept.type.impl.ThingTypeImpl;
-import grakn.graph.iid.PrefixIID;
-import grakn.graph.util.Schema;
-import grakn.graph.vertex.AttributeVertex;
-import grakn.graph.vertex.ThingVertex;
-import grakn.graph.vertex.TypeVertex;
+import grakn.core.common.exception.GraknException;
+import grakn.core.concept.thing.Attribute;
+import grakn.core.concept.type.ThingType;
+import grakn.core.concept.type.impl.AttributeTypeImpl;
+import grakn.core.concept.type.impl.ThingTypeImpl;
+import grakn.core.graph.iid.PrefixIID;
+import grakn.core.graph.util.Schema;
+import grakn.core.graph.vertex.AttributeVertex;
+import grakn.core.graph.vertex.ThingVertex;
+import grakn.core.graph.vertex.TypeVertex;
 
 import java.time.LocalDateTime;
 import java.util.Iterator;
 import java.util.stream.Stream;
 
-import static grakn.common.exception.Error.ConceptRead.INVALID_CONCEPT_CASTING;
-import static grakn.common.iterator.Iterators.apply;
-import static grakn.common.iterator.Iterators.stream;
+import static grakn.core.common.exception.Error.ConceptRead.INVALID_CONCEPT_CASTING;
+import static grakn.core.common.iterator.Iterators.apply;
+import static grakn.core.common.iterator.Iterators.stream;
 
 public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribute {
 

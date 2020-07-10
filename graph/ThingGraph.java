@@ -16,17 +16,17 @@
  *
  */
 
-package grakn.graph;
+package grakn.core.graph;
 
-import grakn.graph.iid.VertexIID;
-import grakn.graph.util.Schema;
-import grakn.graph.util.Storage;
-import grakn.graph.vertex.AttributeVertex;
-import grakn.graph.vertex.ThingVertex;
-import grakn.graph.vertex.TypeVertex;
-import grakn.graph.vertex.Vertex;
-import grakn.graph.vertex.impl.AttributeVertexImpl;
-import grakn.graph.vertex.impl.ThingVertexImpl;
+import grakn.core.graph.iid.VertexIID;
+import grakn.core.graph.util.Schema;
+import grakn.core.graph.util.Storage;
+import grakn.core.graph.vertex.AttributeVertex;
+import grakn.core.graph.vertex.ThingVertex;
+import grakn.core.graph.vertex.TypeVertex;
+import grakn.core.graph.vertex.Vertex;
+import grakn.core.graph.vertex.impl.AttributeVertexImpl;
+import grakn.core.graph.vertex.impl.ThingVertexImpl;
 
 import java.time.LocalDateTime;
 import java.util.Map;
@@ -35,7 +35,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import static grakn.graph.iid.VertexIID.Thing.generate;
+import static grakn.core.graph.iid.VertexIID.Thing.generate;
 import static java.util.stream.Stream.concat;
 
 public class ThingGraph implements Graph<VertexIID.Thing, ThingVertex> {

@@ -16,28 +16,28 @@
  *
  */
 
-package grakn.graph.iid;
+package grakn.core.graph.iid;
 
-import grakn.graph.util.Schema;
+import grakn.core.graph.util.Schema;
 
 import javax.annotation.Nullable;
 import java.time.LocalDateTime;
 
-import static grakn.common.collection.Bytes.DOUBLE_SIZE;
-import static grakn.common.collection.Bytes.LONG_SIZE;
-import static grakn.common.collection.Bytes.booleanToByte;
-import static grakn.common.collection.Bytes.byteToBoolean;
-import static grakn.common.collection.Bytes.bytesToDateTime;
-import static grakn.common.collection.Bytes.bytesToDouble;
-import static grakn.common.collection.Bytes.bytesToLong;
-import static grakn.common.collection.Bytes.bytesToString;
-import static grakn.common.collection.Bytes.dateTimeToBytes;
-import static grakn.common.collection.Bytes.doubleToBytes;
-import static grakn.common.collection.Bytes.join;
-import static grakn.common.collection.Bytes.longToBytes;
-import static grakn.common.collection.Bytes.stringToBytes;
-import static grakn.graph.util.Schema.STRING_ENCODING;
-import static grakn.graph.util.Schema.TIME_ZONE_ID;
+import static grakn.core.common.collection.Bytes.DOUBLE_SIZE;
+import static grakn.core.common.collection.Bytes.LONG_SIZE;
+import static grakn.core.common.collection.Bytes.booleanToByte;
+import static grakn.core.common.collection.Bytes.byteToBoolean;
+import static grakn.core.common.collection.Bytes.bytesToDateTime;
+import static grakn.core.common.collection.Bytes.bytesToDouble;
+import static grakn.core.common.collection.Bytes.bytesToLong;
+import static grakn.core.common.collection.Bytes.bytesToString;
+import static grakn.core.common.collection.Bytes.dateTimeToBytes;
+import static grakn.core.common.collection.Bytes.doubleToBytes;
+import static grakn.core.common.collection.Bytes.join;
+import static grakn.core.common.collection.Bytes.longToBytes;
+import static grakn.core.common.collection.Bytes.stringToBytes;
+import static grakn.core.graph.util.Schema.STRING_ENCODING;
+import static grakn.core.graph.util.Schema.TIME_ZONE_ID;
 import static java.util.Arrays.copyOfRange;
 
 public abstract class IndexIID extends IID {

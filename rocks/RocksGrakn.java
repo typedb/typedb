@@ -16,10 +16,10 @@
  *
  */
 
-package grakn.rocks;
+package grakn.core.rocks;
 
-import grakn.Grakn;
-import grakn.common.exception.GraknException;
+import grakn.core.Grakn;
+import grakn.core.common.exception.GraknException;
 import org.rocksdb.Options;
 import org.rocksdb.RocksDB;
 import org.rocksdb.UInt64AddOperator;

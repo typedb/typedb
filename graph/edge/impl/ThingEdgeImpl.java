@@ -16,21 +16,21 @@
  *
  */
 
-package grakn.graph.edge.impl;
+package grakn.core.graph.edge.impl;
 
-import grakn.graph.ThingGraph;
-import grakn.graph.edge.ThingEdge;
-import grakn.graph.iid.EdgeIID;
-import grakn.graph.iid.InfixIID;
-import grakn.graph.iid.SuffixIID;
-import grakn.graph.iid.VertexIID;
-import grakn.graph.util.Schema;
-import grakn.graph.vertex.ThingVertex;
+import grakn.core.graph.ThingGraph;
+import grakn.core.graph.edge.ThingEdge;
+import grakn.core.graph.iid.EdgeIID;
+import grakn.core.graph.iid.InfixIID;
+import grakn.core.graph.iid.SuffixIID;
+import grakn.core.graph.iid.VertexIID;
+import grakn.core.graph.util.Schema;
+import grakn.core.graph.vertex.ThingVertex;
 
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static grakn.graph.util.Schema.Status.BUFFERED;
+import static grakn.core.graph.util.Schema.Status.BUFFERED;
 import static java.util.Objects.hash;
 
 public abstract class ThingEdgeImpl implements ThingEdge {

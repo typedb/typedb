@@ -16,13 +16,13 @@
  *
  */
 
-package grakn.concept.thing.impl;
+package grakn.core.concept.thing.impl;
 
-import grakn.concept.thing.Attribute;
-import grakn.concept.thing.Entity;
-import grakn.concept.type.impl.EntityTypeImpl;
-import grakn.graph.util.Schema;
-import grakn.graph.vertex.ThingVertex;
+import grakn.core.concept.thing.Attribute;
+import grakn.core.concept.thing.Entity;
+import grakn.core.concept.type.impl.EntityTypeImpl;
+import grakn.core.graph.util.Schema;
+import grakn.core.graph.vertex.ThingVertex;
 
 public class EntityImpl extends ThingImpl implements Entity {
 

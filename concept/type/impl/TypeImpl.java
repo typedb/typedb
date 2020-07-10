@@ -16,16 +16,16 @@
  *
  */
 
-package grakn.concept.type.impl;
+package grakn.core.concept.type.impl;
 
-import grakn.common.exception.Error;
-import grakn.common.exception.GraknException;
-import grakn.common.iterator.Iterators;
-import grakn.concept.type.Type;
-import grakn.graph.TypeGraph;
-import grakn.graph.util.Schema;
-import grakn.graph.vertex.ThingVertex;
-import grakn.graph.vertex.TypeVertex;
+import grakn.core.common.exception.Error;
+import grakn.core.common.exception.GraknException;
+import grakn.core.common.iterator.Iterators;
+import grakn.core.concept.type.Type;
+import grakn.core.graph.TypeGraph;
+import grakn.core.graph.util.Schema;
+import grakn.core.graph.vertex.ThingVertex;
+import grakn.core.graph.vertex.TypeVertex;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -35,12 +35,12 @@ import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import static grakn.common.exception.Error.ThingWrite.ILLEGAL_ABSTRACT_WRITE;
-import static grakn.common.exception.Error.TypeWrite.SUPERTYPE_SELF;
-import static grakn.common.iterator.Iterators.apply;
-import static grakn.common.iterator.Iterators.loop;
-import static grakn.common.iterator.Iterators.stream;
-import static grakn.common.iterator.Iterators.tree;
+import static grakn.core.common.exception.Error.ThingWrite.ILLEGAL_ABSTRACT_WRITE;
+import static grakn.core.common.exception.Error.TypeWrite.SUPERTYPE_SELF;
+import static grakn.core.common.iterator.Iterators.apply;
+import static grakn.core.common.iterator.Iterators.loop;
+import static grakn.core.common.iterator.Iterators.stream;
+import static grakn.core.common.iterator.Iterators.tree;
 
 public abstract class TypeImpl implements Type {
 

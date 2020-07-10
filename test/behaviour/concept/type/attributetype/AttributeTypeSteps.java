@@ -16,11 +16,11 @@
  *
  */
 
-package grakn.test.behaviour.concept.type.attributetype;
+package grakn.core.test.behaviour.concept.type.attributetype;
 
-import grakn.common.exception.GraknException;
-import grakn.concept.type.AttributeType;
-import grakn.concept.type.ThingType;
+import grakn.core.common.exception.GraknException;
+import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.type.ThingType;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 
@@ -28,7 +28,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 
-import static grakn.test.behaviour.connection.ConnectionSteps.tx;
+import static grakn.core.test.behaviour.connection.ConnectionSteps.tx;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;

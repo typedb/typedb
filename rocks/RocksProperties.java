@@ -16,7 +16,7 @@
  *
  */
 
-package grakn.rocks;
+package grakn.core.rocks;
 
 import java.util.Properties;
 

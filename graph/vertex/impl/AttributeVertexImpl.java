@@ -16,24 +16,23 @@
  *
  */
 
-package grakn.graph.vertex.impl;
+package grakn.core.graph.vertex.impl;
 
-import grakn.common.exception.Error;
-import grakn.common.exception.GraknException;
-import grakn.graph.ThingGraph;
-import grakn.graph.adjacency.Adjacency;
-import grakn.graph.adjacency.ThingAdjacency;
-import grakn.graph.adjacency.impl.ThingAdjacencyImpl;
-import grakn.graph.iid.EdgeIID;
-import grakn.graph.iid.IndexIID;
-import grakn.graph.iid.VertexIID;
-import grakn.graph.util.Schema;
-import grakn.graph.vertex.AttributeVertex;
+import grakn.core.common.exception.GraknException;
+import grakn.core.graph.ThingGraph;
+import grakn.core.graph.adjacency.Adjacency;
+import grakn.core.graph.adjacency.ThingAdjacency;
+import grakn.core.graph.adjacency.impl.ThingAdjacencyImpl;
+import grakn.core.graph.iid.EdgeIID;
+import grakn.core.graph.iid.IndexIID;
+import grakn.core.graph.iid.VertexIID;
+import grakn.core.graph.util.Schema;
+import grakn.core.graph.vertex.AttributeVertex;
 
 import java.time.LocalDateTime;
 
-import static grakn.common.exception.Error.ThingRead.INVALID_VERTEX_CASTING;
-import static grakn.common.exception.Error.Transaction.ILLEGAL_OPERATION;
+import static grakn.core.common.exception.Error.ThingRead.INVALID_VERTEX_CASTING;
+import static grakn.core.common.exception.Error.Transaction.ILLEGAL_OPERATION;
 
 public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl implements AttributeVertex<VALUE> {
 

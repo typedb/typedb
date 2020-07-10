@@ -16,7 +16,7 @@
  *
  */
 
-package grakn.common.iterator;
+package grakn.core.common.iterator;
 
 import java.util.HashSet;
 import java.util.Iterator;

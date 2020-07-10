@@ -16,14 +16,14 @@
  *
  */
 
-package grakn.rocks;
+package grakn.core.rocks;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
 
-import static grakn.common.collection.Bytes.bytesHavePrefix;
+import static grakn.core.common.collection.Bytes.bytesHavePrefix;
 
 public class RocksIterator<T> implements Iterator<T> {
 

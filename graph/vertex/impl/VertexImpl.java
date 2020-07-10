@@ -16,9 +16,9 @@
  *
  */
 
-package grakn.graph.vertex.impl;
+package grakn.core.graph.vertex.impl;
 
-import grakn.graph.iid.VertexIID;
+import grakn.core.graph.iid.VertexIID;
 
 public abstract class VertexImpl<VERTEX_IID extends VertexIID> {
 

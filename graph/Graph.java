@@ -16,11 +16,11 @@
  *
  */
 
-package grakn.graph;
+package grakn.core.graph;
 
-import grakn.graph.iid.VertexIID;
-import grakn.graph.util.Storage;
-import grakn.graph.vertex.Vertex;
+import grakn.core.graph.iid.VertexIID;
+import grakn.core.graph.util.Storage;
+import grakn.core.graph.vertex.Vertex;
 
 import java.util.stream.Stream;
 

@@ -16,10 +16,10 @@
  *
  */
 
-package grakn.graph.util;
+package grakn.core.graph.util;
 
-import grakn.common.exception.Error;
-import grakn.common.exception.GraknException;
+import grakn.core.common.exception.Error;
+import grakn.core.common.exception.GraknException;
 
 import javax.annotation.Nullable;
 import java.nio.charset.Charset;

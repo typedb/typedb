@@ -16,10 +16,10 @@
  *
  */
 
-package grakn.rocks;
+package grakn.core.rocks;
 
-import grakn.Grakn;
-import grakn.common.exception.GraknException;
+import grakn.core.Grakn;
+import grakn.core.common.exception.GraknException;
 
 import java.io.File;
 import java.util.Arrays;

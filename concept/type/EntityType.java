@@ -16,9 +16,9 @@
  *
  */
 
-package grakn.concept.type;
+package grakn.core.concept.type;
 
-import grakn.concept.thing.Entity;
+import grakn.core.concept.thing.Entity;
 
 import java.util.stream.Stream;
 

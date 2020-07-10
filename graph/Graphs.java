@@ -16,14 +16,10 @@
  *
  */
 
-package grakn.graph;
+package grakn.core.graph;
 
-import grakn.common.exception.Error;
-import grakn.common.exception.GraknException;
-import grakn.graph.util.KeyGenerator;
-import grakn.graph.util.Storage;
-
-import static grakn.common.exception.Error.Transaction.CLOSED_TRANSACTION;
+import grakn.core.graph.util.KeyGenerator;
+import grakn.core.graph.util.Storage;
 
 public class Graphs {
 

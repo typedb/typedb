@@ -24,7 +24,7 @@ commands:
       - run: curl -OL https://raw.githubusercontent.com/graknlabs/dependencies/master/tool/bazelinstall/linux.sh
       - run: bash ./linux.sh && rm ./linux.sh
       - run: curl -OL https://raw.githubusercontent.com/graknlabs/dependencies/master/tool/bazelinstall/rbe.sh
-      - run: bash ./rbe.sh && rm ./rbe.sh          
+      - run: bash ./rbe.sh && rm ./rbe.sh
 
   run-bazel:
     parameters:

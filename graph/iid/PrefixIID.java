@@ -16,9 +16,9 @@
  *
  */
 
-package grakn.graph.iid;
+package grakn.core.graph.iid;
 
-import grakn.graph.util.Schema;
+import grakn.core.graph.util.Schema;
 
 public class PrefixIID extends IID {
 

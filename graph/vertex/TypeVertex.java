@@ -16,13 +16,13 @@
  *
  */
 
-package grakn.graph.vertex;
+package grakn.core.graph.vertex;
 
-import grakn.graph.TypeGraph;
-import grakn.graph.adjacency.TypeAdjacency;
-import grakn.graph.edge.TypeEdge;
-import grakn.graph.iid.VertexIID;
-import grakn.graph.util.Schema;
+import grakn.core.graph.TypeGraph;
+import grakn.core.graph.adjacency.TypeAdjacency;
+import grakn.core.graph.edge.TypeEdge;
+import grakn.core.graph.iid.VertexIID;
+import grakn.core.graph.util.Schema;
 
 import java.util.Iterator;
 

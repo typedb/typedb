@@ -16,10 +16,10 @@
  *
  */
 
-package grakn.concept.type;
+package grakn.core.concept.type;
 
-import grakn.common.exception.GraknException;
-import grakn.concept.Concept;
+import grakn.core.common.exception.GraknException;
+import grakn.core.concept.Concept;
 
 import java.util.List;
 import java.util.stream.Stream;

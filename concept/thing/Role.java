@@ -16,7 +16,7 @@
  *
  */
 
-package grakn.concept.thing;
+package grakn.core.concept.thing;
 
 public interface Role {
 

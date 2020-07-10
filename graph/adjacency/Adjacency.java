@@ -16,11 +16,11 @@
  *
  */
 
-package grakn.graph.adjacency;
+package grakn.core.graph.adjacency;
 
-import grakn.graph.edge.Edge;
-import grakn.graph.util.Schema;
-import grakn.graph.vertex.Vertex;
+import grakn.core.graph.edge.Edge;
+import grakn.core.graph.util.Schema;
+import grakn.core.graph.vertex.Vertex;
 
 import java.util.Iterator;
 import java.util.function.Consumer;

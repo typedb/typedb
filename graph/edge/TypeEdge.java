@@ -16,11 +16,11 @@
  *
  */
 
-package grakn.graph.edge;
+package grakn.core.graph.edge;
 
-import grakn.graph.iid.EdgeIID;
-import grakn.graph.util.Schema;
-import grakn.graph.vertex.TypeVertex;
+import grakn.core.graph.iid.EdgeIID;
+import grakn.core.graph.util.Schema;
+import grakn.core.graph.vertex.TypeVertex;
 
 /**
  * An edge between two {@code TypeVertex}.

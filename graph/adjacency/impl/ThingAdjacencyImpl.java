@@ -16,19 +16,19 @@
  *
  */
 
-package grakn.graph.adjacency.impl;
+package grakn.core.graph.adjacency.impl;
 
-import grakn.graph.adjacency.Adjacency;
-import grakn.graph.adjacency.ThingAdjacency;
-import grakn.graph.edge.Edge;
-import grakn.graph.edge.ThingEdge;
-import grakn.graph.edge.impl.ThingEdgeImpl;
-import grakn.graph.iid.EdgeIID;
-import grakn.graph.iid.IID;
-import grakn.graph.iid.InfixIID;
-import grakn.graph.iid.SuffixIID;
-import grakn.graph.util.Schema;
-import grakn.graph.vertex.ThingVertex;
+import grakn.core.graph.adjacency.Adjacency;
+import grakn.core.graph.adjacency.ThingAdjacency;
+import grakn.core.graph.edge.Edge;
+import grakn.core.graph.edge.ThingEdge;
+import grakn.core.graph.edge.impl.ThingEdgeImpl;
+import grakn.core.graph.iid.EdgeIID;
+import grakn.core.graph.iid.IID;
+import grakn.core.graph.iid.InfixIID;
+import grakn.core.graph.iid.SuffixIID;
+import grakn.core.graph.util.Schema;
+import grakn.core.graph.vertex.ThingVertex;
 
 import java.util.HashSet;
 import java.util.Iterator;
@@ -40,10 +40,10 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
-import static grakn.common.collection.Bytes.join;
-import static grakn.common.iterator.Iterators.apply;
-import static grakn.common.iterator.Iterators.distinct;
-import static grakn.common.iterator.Iterators.link;
+import static grakn.core.common.collection.Bytes.join;
+import static grakn.core.common.iterator.Iterators.apply;
+import static grakn.core.common.iterator.Iterators.distinct;
+import static grakn.core.common.iterator.Iterators.link;
 import static java.util.Arrays.copyOfRange;
 import static java.util.Collections.emptyIterator;
 import static java.util.concurrent.ConcurrentHashMap.newKeySet;

@@ -16,16 +16,16 @@
  *
  */
 
-package grakn.test.integration;
+package grakn.core.test.integration;
 
-import grakn.Grakn;
-import grakn.concept.thing.Attribute;
-import grakn.concept.type.AttributeType;
-import grakn.concept.type.EntityType;
-import grakn.concept.type.RelationType;
-import grakn.concept.type.RoleType;
-import grakn.concept.type.ThingType;
-import grakn.rocks.RocksGrakn;
+import grakn.core.Grakn;
+import grakn.core.concept.thing.Attribute;
+import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.type.EntityType;
+import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.RoleType;
+import grakn.core.concept.type.ThingType;
+import grakn.core.rocks.RocksGrakn;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -35,7 +35,7 @@ import java.time.LocalDateTime;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
-import static grakn.test.integration.Util.assertNotNulls;
+import static grakn.core.test.integration.Util.assertNotNulls;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;

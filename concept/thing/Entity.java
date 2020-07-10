@@ -16,9 +16,9 @@
  *
  */
 
-package grakn.concept.thing;
+package grakn.core.concept.thing;
 
-import grakn.concept.type.EntityType;
+import grakn.core.concept.type.EntityType;
 
 public interface Entity extends Thing {
 

@@ -16,24 +16,24 @@
  *
  */
 
-package grakn.graph;
+package grakn.core.graph;
 
-import grakn.common.concurrent.ManagedReadWriteLock;
-import grakn.common.exception.GraknException;
-import grakn.graph.iid.IndexIID;
-import grakn.graph.iid.VertexIID;
-import grakn.graph.util.Schema;
-import grakn.graph.util.Storage;
-import grakn.graph.vertex.TypeVertex;
-import grakn.graph.vertex.impl.TypeVertexImpl;
+import grakn.core.common.concurrent.ManagedReadWriteLock;
+import grakn.core.common.exception.GraknException;
+import grakn.core.graph.iid.IndexIID;
+import grakn.core.graph.iid.VertexIID;
+import grakn.core.graph.util.Schema;
+import grakn.core.graph.util.Storage;
+import grakn.core.graph.vertex.TypeVertex;
+import grakn.core.graph.vertex.impl.TypeVertexImpl;
 
 import javax.annotation.Nullable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Stream;
 
-import static grakn.graph.iid.VertexIID.Type.generate;
-import static grakn.graph.util.Schema.Vertex.Type.scopedLabel;
+import static grakn.core.graph.iid.VertexIID.Type.generate;
+import static grakn.core.graph.util.Schema.Vertex.Type.scopedLabel;
 
 public class TypeGraph implements Graph<VertexIID.Type, TypeVertex> {
 

@@ -16,9 +16,9 @@
  *
  */
 
-package grakn.test.behaviour.connection.session;
+package grakn.core.test.behaviour.connection.session;
 
-import grakn.Grakn;
+import grakn.core.Grakn;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 
@@ -28,11 +28,11 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 
 import static grakn.common.util.Collections.list;
-import static grakn.test.behaviour.connection.ConnectionSteps.THREAD_POOL_SIZE;
-import static grakn.test.behaviour.connection.ConnectionSteps.grakn;
-import static grakn.test.behaviour.connection.ConnectionSteps.sessions;
-import static grakn.test.behaviour.connection.ConnectionSteps.sessionsParallel;
-import static grakn.test.behaviour.connection.ConnectionSteps.threadPool;
+import static grakn.core.test.behaviour.connection.ConnectionSteps.THREAD_POOL_SIZE;
+import static grakn.core.test.behaviour.connection.ConnectionSteps.grakn;
+import static grakn.core.test.behaviour.connection.ConnectionSteps.sessions;
+import static grakn.core.test.behaviour.connection.ConnectionSteps.sessionsParallel;
+import static grakn.core.test.behaviour.connection.ConnectionSteps.threadPool;
 import static java.util.Objects.isNull;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;

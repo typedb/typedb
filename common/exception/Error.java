@@ -16,7 +16,7 @@
  *
  */
 
-package grakn.common.exception;
+package grakn.core.common.exception;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -28,9 +28,9 @@ public abstract class Error {
     private static int maxCodeDigits = 0;
 
     final int codeNumber;
-    private String code = null;
     private final String codePrefix;
     private final String description;
+    private String code = null;
 
     Error(String codePrefix, int codeNumber, String descriptionPrefix, String descriptionBody) {
         this.codePrefix = codePrefix;

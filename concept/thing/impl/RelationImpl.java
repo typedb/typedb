@@ -16,27 +16,27 @@
  *
  */
 
-package grakn.concept.thing.impl;
+package grakn.core.concept.thing.impl;
 
-import grakn.common.exception.Error;
-import grakn.common.exception.GraknException;
-import grakn.concept.thing.Attribute;
-import grakn.concept.thing.Relation;
-import grakn.concept.thing.Thing;
-import grakn.concept.type.RoleType;
-import grakn.concept.type.impl.RelationTypeImpl;
-import grakn.concept.type.impl.RoleTypeImpl;
-import grakn.graph.iid.PrefixIID;
-import grakn.graph.util.Schema;
-import grakn.graph.vertex.ThingVertex;
+import grakn.core.common.exception.Error;
+import grakn.core.common.exception.GraknException;
+import grakn.core.concept.thing.Attribute;
+import grakn.core.concept.thing.Relation;
+import grakn.core.concept.thing.Thing;
+import grakn.core.concept.type.RoleType;
+import grakn.core.concept.type.impl.RelationTypeImpl;
+import grakn.core.concept.type.impl.RoleTypeImpl;
+import grakn.core.graph.iid.PrefixIID;
+import grakn.core.graph.util.Schema;
+import grakn.core.graph.vertex.ThingVertex;
 
 import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Stream;
 
-import static grakn.common.exception.Error.ThingWrite.RELATION_NO_PLAYER;
-import static grakn.common.iterator.Iterators.filter;
-import static grakn.common.iterator.Iterators.stream;
+import static grakn.core.common.exception.Error.ThingWrite.RELATION_NO_PLAYER;
+import static grakn.core.common.iterator.Iterators.filter;
+import static grakn.core.common.iterator.Iterators.stream;
 
 public class RelationImpl extends ThingImpl implements Relation {
 

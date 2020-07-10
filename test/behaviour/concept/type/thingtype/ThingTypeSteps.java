@@ -16,25 +16,25 @@
  *
  */
 
-package grakn.test.behaviour.concept.type.thingtype;
+package grakn.core.test.behaviour.concept.type.thingtype;
 
-import grakn.common.exception.GraknException;
-import grakn.concept.type.AttributeType;
-import grakn.concept.type.EntityType;
-import grakn.concept.type.RelationType;
-import grakn.concept.type.RoleType;
-import grakn.concept.type.ThingType;
-import grakn.concept.type.Type;
-import grakn.test.behaviour.config.Parameters;
+import grakn.core.common.exception.GraknException;
+import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.type.EntityType;
+import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.RoleType;
+import grakn.core.concept.type.ThingType;
+import grakn.core.concept.type.Type;
+import grakn.core.test.behaviour.config.Parameters;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 
 import java.util.List;
 import java.util.Set;
 
-import static grakn.test.behaviour.config.Parameters.RootLabel;
-import static grakn.test.behaviour.connection.ConnectionSteps.tx;
-import static grakn.test.behaviour.util.Util.assertThrows;
+import static grakn.core.test.behaviour.config.Parameters.RootLabel;
+import static grakn.core.test.behaviour.connection.ConnectionSteps.tx;
+import static grakn.core.test.behaviour.util.Util.assertThrows;
 import static java.util.Objects.isNull;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;

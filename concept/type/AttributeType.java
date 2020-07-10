@@ -16,9 +16,9 @@
  *
  */
 
-package grakn.concept.type;
+package grakn.core.concept.type;
 
-import grakn.concept.thing.Attribute;
+import grakn.core.concept.thing.Attribute;
 
 import java.time.LocalDateTime;
 import java.util.stream.Stream;

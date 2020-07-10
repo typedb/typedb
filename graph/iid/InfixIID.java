@@ -16,13 +16,13 @@
  *
  */
 
-package grakn.graph.iid;
+package grakn.core.graph.iid;
 
-import grakn.graph.util.Schema;
+import grakn.core.graph.util.Schema;
 
 import java.util.Arrays;
 
-import static grakn.common.collection.Bytes.join;
+import static grakn.core.common.collection.Bytes.join;
 import static java.util.Arrays.copyOfRange;
 
 public abstract class InfixIID<EDGE_SCHEMA extends Schema.Edge> extends IID {

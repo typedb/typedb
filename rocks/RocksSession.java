@@ -16,10 +16,10 @@
  *
  */
 
-package grakn.rocks;
+package grakn.core.rocks;
 
-import grakn.Grakn;
-import grakn.graph.util.KeyGenerator;
+import grakn.core.Grakn;
+import grakn.core.graph.util.KeyGenerator;
 import org.rocksdb.OptimisticTransactionDB;
 
 import java.util.concurrent.ConcurrentHashMap;

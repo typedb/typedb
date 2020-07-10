@@ -16,21 +16,21 @@
  *
  */
 
-package grakn.concept.type.impl;
+package grakn.core.concept.type.impl;
 
-import grakn.common.exception.GraknException;
-import grakn.concept.thing.Thing;
-import grakn.concept.thing.impl.AttributeImpl;
-import grakn.concept.thing.impl.EntityImpl;
-import grakn.concept.thing.impl.RelationImpl;
-import grakn.concept.type.AttributeType;
-import grakn.concept.type.RoleType;
-import grakn.concept.type.ThingType;
-import grakn.concept.type.Type;
-import grakn.graph.TypeGraph;
-import grakn.graph.edge.TypeEdge;
-import grakn.graph.util.Schema;
-import grakn.graph.vertex.TypeVertex;
+import grakn.core.common.exception.GraknException;
+import grakn.core.concept.thing.Thing;
+import grakn.core.concept.thing.impl.AttributeImpl;
+import grakn.core.concept.thing.impl.EntityImpl;
+import grakn.core.concept.thing.impl.RelationImpl;
+import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.type.RoleType;
+import grakn.core.concept.type.ThingType;
+import grakn.core.concept.type.Type;
+import grakn.core.graph.TypeGraph;
+import grakn.core.graph.edge.TypeEdge;
+import grakn.core.graph.util.Schema;
+import grakn.core.graph.vertex.TypeVertex;
 
 import javax.annotation.Nullable;
 import java.util.Collections;
@@ -42,26 +42,26 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static grakn.common.collection.Streams.compareSize;
-import static grakn.common.exception.Error.Internal.UNRECOGNISED_VALUE;
-import static grakn.common.exception.Error.TypeWrite.HAS_ABSTRACT_ATT_TYPE;
-import static grakn.common.exception.Error.TypeWrite.HAS_ATT_NOT_AVAILABLE;
-import static grakn.common.exception.Error.TypeWrite.HAS_KEY_NOT_AVAILABLE;
-import static grakn.common.exception.Error.TypeWrite.HAS_KEY_PRECONDITION_OWNERSHIP;
-import static grakn.common.exception.Error.TypeWrite.HAS_KEY_PRECONDITION_UNIQUENESS;
-import static grakn.common.exception.Error.TypeWrite.HAS_KEY_VALUE_TYPE;
-import static grakn.common.exception.Error.TypeWrite.OVERRIDE_NOT_AVAILABLE;
-import static grakn.common.exception.Error.TypeWrite.OVERRIDDEN_NOT_SUPERTYPE;
-import static grakn.common.exception.Error.TypeWrite.PLAYS_ABSTRACT_ROLE_TYPE;
-import static grakn.common.exception.Error.TypeWrite.PLAYS_ROLE_NOT_AVAILABLE;
-import static grakn.common.exception.Error.TypeWrite.ROOT_TYPE_MUTATION;
-import static grakn.common.exception.Error.TypeWrite.TYPE_HAS_INSTANCES;
-import static grakn.common.exception.Error.TypeWrite.TYPE_HAS_SUBTYPES;
-import static grakn.common.iterator.Iterators.apply;
-import static grakn.common.iterator.Iterators.distinct;
-import static grakn.common.iterator.Iterators.filter;
-import static grakn.common.iterator.Iterators.link;
-import static grakn.common.iterator.Iterators.stream;
+import static grakn.core.common.collection.Streams.compareSize;
+import static grakn.core.common.exception.Error.Internal.UNRECOGNISED_VALUE;
+import static grakn.core.common.exception.Error.TypeWrite.HAS_ABSTRACT_ATT_TYPE;
+import static grakn.core.common.exception.Error.TypeWrite.HAS_ATT_NOT_AVAILABLE;
+import static grakn.core.common.exception.Error.TypeWrite.HAS_KEY_NOT_AVAILABLE;
+import static grakn.core.common.exception.Error.TypeWrite.HAS_KEY_PRECONDITION_OWNERSHIP;
+import static grakn.core.common.exception.Error.TypeWrite.HAS_KEY_PRECONDITION_UNIQUENESS;
+import static grakn.core.common.exception.Error.TypeWrite.HAS_KEY_VALUE_TYPE;
+import static grakn.core.common.exception.Error.TypeWrite.OVERRIDDEN_NOT_SUPERTYPE;
+import static grakn.core.common.exception.Error.TypeWrite.OVERRIDE_NOT_AVAILABLE;
+import static grakn.core.common.exception.Error.TypeWrite.PLAYS_ABSTRACT_ROLE_TYPE;
+import static grakn.core.common.exception.Error.TypeWrite.PLAYS_ROLE_NOT_AVAILABLE;
+import static grakn.core.common.exception.Error.TypeWrite.ROOT_TYPE_MUTATION;
+import static grakn.core.common.exception.Error.TypeWrite.TYPE_HAS_INSTANCES;
+import static grakn.core.common.exception.Error.TypeWrite.TYPE_HAS_SUBTYPES;
+import static grakn.core.common.iterator.Iterators.apply;
+import static grakn.core.common.iterator.Iterators.distinct;
+import static grakn.core.common.iterator.Iterators.filter;
+import static grakn.core.common.iterator.Iterators.link;
+import static grakn.core.common.iterator.Iterators.stream;
 import static java.util.stream.Stream.concat;
 
 public abstract class ThingTypeImpl extends TypeImpl implements ThingType {

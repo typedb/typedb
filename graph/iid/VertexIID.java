@@ -16,31 +16,31 @@
  *
  */
 
-package grakn.graph.iid;
+package grakn.core.graph.iid;
 
-import grakn.common.exception.Error;
-import grakn.common.exception.GraknException;
-import grakn.graph.util.KeyGenerator;
-import grakn.graph.util.Schema;
+import grakn.core.common.exception.Error;
+import grakn.core.common.exception.GraknException;
+import grakn.core.graph.util.KeyGenerator;
+import grakn.core.graph.util.Schema;
 
-import static grakn.common.collection.Bytes.DATETIME_SIZE;
-import static grakn.common.collection.Bytes.DOUBLE_SIZE;
-import static grakn.common.collection.Bytes.LONG_SIZE;
-import static grakn.common.collection.Bytes.booleanToByte;
-import static grakn.common.collection.Bytes.byteToBoolean;
-import static grakn.common.collection.Bytes.bytesToDateTime;
-import static grakn.common.collection.Bytes.bytesToDouble;
-import static grakn.common.collection.Bytes.bytesToLong;
-import static grakn.common.collection.Bytes.bytesToShort;
-import static grakn.common.collection.Bytes.bytesToString;
-import static grakn.common.collection.Bytes.dateTimeToBytes;
-import static grakn.common.collection.Bytes.doubleToBytes;
-import static grakn.common.collection.Bytes.join;
-import static grakn.common.collection.Bytes.longToBytes;
-import static grakn.common.collection.Bytes.stringToBytes;
-import static grakn.graph.util.Schema.STRING_ENCODING;
-import static grakn.graph.util.Schema.STRING_MAX_LENGTH;
-import static grakn.graph.util.Schema.TIME_ZONE_ID;
+import static grakn.core.common.collection.Bytes.DATETIME_SIZE;
+import static grakn.core.common.collection.Bytes.DOUBLE_SIZE;
+import static grakn.core.common.collection.Bytes.LONG_SIZE;
+import static grakn.core.common.collection.Bytes.booleanToByte;
+import static grakn.core.common.collection.Bytes.byteToBoolean;
+import static grakn.core.common.collection.Bytes.bytesToDateTime;
+import static grakn.core.common.collection.Bytes.bytesToDouble;
+import static grakn.core.common.collection.Bytes.bytesToLong;
+import static grakn.core.common.collection.Bytes.bytesToShort;
+import static grakn.core.common.collection.Bytes.bytesToString;
+import static grakn.core.common.collection.Bytes.dateTimeToBytes;
+import static grakn.core.common.collection.Bytes.doubleToBytes;
+import static grakn.core.common.collection.Bytes.join;
+import static grakn.core.common.collection.Bytes.longToBytes;
+import static grakn.core.common.collection.Bytes.stringToBytes;
+import static grakn.core.graph.util.Schema.STRING_ENCODING;
+import static grakn.core.graph.util.Schema.STRING_MAX_LENGTH;
+import static grakn.core.graph.util.Schema.TIME_ZONE_ID;
 import static java.util.Arrays.copyOfRange;
 
 public abstract class VertexIID extends IID {

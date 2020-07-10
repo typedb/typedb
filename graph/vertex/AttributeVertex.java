@@ -16,10 +16,10 @@
  *
  */
 
-package grakn.graph.vertex;
+package grakn.core.graph.vertex;
 
-import grakn.graph.iid.VertexIID;
-import grakn.graph.util.Schema;
+import grakn.core.graph.iid.VertexIID;
+import grakn.core.graph.util.Schema;
 
 import java.time.LocalDateTime;
 

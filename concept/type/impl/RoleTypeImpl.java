@@ -16,25 +16,24 @@
  *
  */
 
-package grakn.concept.type.impl;
+package grakn.core.concept.type.impl;
 
-import grakn.common.exception.Error;
-import grakn.common.exception.GraknException;
-import grakn.concept.thing.Entity;
-import grakn.concept.thing.impl.RoleImpl;
-import grakn.concept.type.RoleType;
-import grakn.graph.TypeGraph;
-import grakn.graph.util.Schema;
-import grakn.graph.vertex.ThingVertex;
-import grakn.graph.vertex.TypeVertex;
+import grakn.core.common.exception.Error;
+import grakn.core.common.exception.GraknException;
+import grakn.core.concept.thing.Entity;
+import grakn.core.concept.thing.impl.RoleImpl;
+import grakn.core.concept.type.RoleType;
+import grakn.core.graph.TypeGraph;
+import grakn.core.graph.util.Schema;
+import grakn.core.graph.vertex.ThingVertex;
+import grakn.core.graph.vertex.TypeVertex;
 
 import javax.annotation.Nullable;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Stream;
 
-import static grakn.common.exception.Error.TypeWrite.ROOT_TYPE_MUTATION;
+import static grakn.core.common.exception.Error.TypeWrite.ROOT_TYPE_MUTATION;
 
 public class RoleTypeImpl extends TypeImpl implements RoleType {
 

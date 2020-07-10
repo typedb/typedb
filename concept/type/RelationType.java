@@ -16,9 +16,9 @@
  *
  */
 
-package grakn.concept.type;
+package grakn.core.concept.type;
 
-import grakn.concept.thing.Relation;
+import grakn.core.concept.thing.Relation;
 
 import java.util.stream.Stream;
 

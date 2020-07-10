@@ -16,13 +16,13 @@
  *
  */
 
-package grakn.graph.vertex;
+package grakn.core.graph.vertex;
 
-import grakn.graph.Graph;
-import grakn.graph.adjacency.Adjacency;
-import grakn.graph.edge.Edge;
-import grakn.graph.iid.VertexIID;
-import grakn.graph.util.Schema;
+import grakn.core.graph.Graph;
+import grakn.core.graph.adjacency.Adjacency;
+import grakn.core.graph.edge.Edge;
+import grakn.core.graph.iid.VertexIID;
+import grakn.core.graph.util.Schema;
 
 public interface Vertex<
         VERTEX_IID extends VertexIID,

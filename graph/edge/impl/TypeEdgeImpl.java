@@ -16,14 +16,14 @@
  *
  */
 
-package grakn.graph.edge.impl;
+package grakn.core.graph.edge.impl;
 
-import grakn.graph.TypeGraph;
-import grakn.graph.edge.TypeEdge;
-import grakn.graph.iid.EdgeIID;
-import grakn.graph.iid.VertexIID;
-import grakn.graph.util.Schema;
-import grakn.graph.vertex.TypeVertex;
+import grakn.core.graph.TypeGraph;
+import grakn.core.graph.edge.TypeEdge;
+import grakn.core.graph.iid.EdgeIID;
+import grakn.core.graph.iid.VertexIID;
+import grakn.core.graph.util.Schema;
+import grakn.core.graph.vertex.TypeVertex;
 
 import javax.annotation.Nullable;
 import java.util.concurrent.atomic.AtomicBoolean;

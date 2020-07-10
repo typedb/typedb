@@ -16,7 +16,7 @@
  *
  */
 
-package grakn.graph.util;
+package grakn.core.graph.util;
 
 import java.util.Iterator;
 import java.util.function.BiFunction;

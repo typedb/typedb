@@ -16,10 +16,10 @@
  *
  */
 
-package grakn;
+package grakn.core;
 
-import grakn.concept.Concepts;
-import grakn.traversal.Traversal;
+import grakn.core.concept.Concepts;
+import grakn.core.traversal.Traversal;
 
 import java.util.Set;
 

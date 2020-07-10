@@ -16,20 +16,20 @@
  *
  */
 
-package grakn.concept.thing.impl;
+package grakn.core.concept.thing.impl;
 
-import grakn.common.exception.Error;
-import grakn.common.exception.GraknException;
-import grakn.concept.thing.Attribute;
-import grakn.concept.thing.Thing;
-import grakn.concept.type.AttributeType;
-import grakn.concept.type.RoleType;
-import grakn.concept.type.Type;
-import grakn.concept.type.impl.RoleTypeImpl;
-import grakn.concept.type.impl.TypeImpl;
-import grakn.graph.util.Schema;
-import grakn.graph.vertex.ThingVertex;
-import grakn.graph.vertex.TypeVertex;
+import grakn.core.common.exception.Error;
+import grakn.core.common.exception.GraknException;
+import grakn.core.concept.thing.Attribute;
+import grakn.core.concept.thing.Thing;
+import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.type.RoleType;
+import grakn.core.concept.type.Type;
+import grakn.core.concept.type.impl.RoleTypeImpl;
+import grakn.core.concept.type.impl.TypeImpl;
+import grakn.core.graph.util.Schema;
+import grakn.core.graph.vertex.ThingVertex;
+import grakn.core.graph.vertex.TypeVertex;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -39,11 +39,11 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static grakn.common.exception.Error.ThingWrite.THING_KEY_MISSING;
-import static grakn.common.iterator.Iterators.apply;
-import static grakn.common.iterator.Iterators.filter;
-import static grakn.common.iterator.Iterators.link;
-import static grakn.common.iterator.Iterators.stream;
+import static grakn.core.common.exception.Error.ThingWrite.THING_KEY_MISSING;
+import static grakn.core.common.iterator.Iterators.apply;
+import static grakn.core.common.iterator.Iterators.filter;
+import static grakn.core.common.iterator.Iterators.link;
+import static grakn.core.common.iterator.Iterators.stream;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 

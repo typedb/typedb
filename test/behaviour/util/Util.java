@@ -16,9 +16,9 @@
  *
  */
 
-package grakn.test.behaviour.util;
+package grakn.core.test.behaviour.util;
 
-import grakn.common.exception.GraknException;
+import grakn.core.common.exception.GraknException;
 
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;

@@ -16,18 +16,18 @@
  *
  */
 
-package grakn.test.behaviour.concept.type.relationtype;
+package grakn.core.test.behaviour.concept.type.relationtype;
 
-import grakn.concept.type.RoleType;
-import grakn.test.behaviour.config.Parameters;
+import grakn.core.concept.type.RoleType;
+import grakn.core.test.behaviour.config.Parameters;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 
 import java.util.List;
 import java.util.Set;
 
-import static grakn.test.behaviour.connection.ConnectionSteps.tx;
-import static grakn.test.behaviour.util.Util.assertThrows;
+import static grakn.core.test.behaviour.connection.ConnectionSteps.tx;
+import static grakn.core.test.behaviour.util.Util.assertThrows;
 import static java.util.Objects.isNull;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;

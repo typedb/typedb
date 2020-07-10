@@ -16,7 +16,7 @@
  *
  */
 
-package grakn.common.concurrent;
+package grakn.core.common.concurrent;
 
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.locks.ReentrantReadWriteLock;

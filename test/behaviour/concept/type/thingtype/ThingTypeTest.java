@@ -16,7 +16,7 @@
  *
  */
 
-package grakn.test.behaviour.concept.type.thingtype;
+package grakn.core.test.behaviour.concept.type.thingtype;
 
 import io.cucumber.junit.Cucumber;
 import io.cucumber.junit.CucumberOptions;
@@ -26,7 +26,7 @@ import org.junit.runner.RunWith;
 @CucumberOptions(
         strict = true,
         plugin = "pretty",
-        glue = "grakn.test.behaviour",
+        glue = "grakn.core.test.behaviour",
         features = "external/graknlabs_verification/behaviour/concept/type/thingtype.feature",
         tags = "not @ignore and not @ignore-grakn"
 )
@@ -42,7 +42,7 @@ public class ThingTypeTest {
     // 4) Ensure 'Target Expression' is set correctly: '//<this>/<package>/<name>:test'
     //
     // 5) Update 'Bazel Flags':
-    //    a) Remove the line that says: '--test_filter=grakn.*'
+    //    a) Remove the line that says: '--test_filter=grakn.core.*'
     //    b) Use the following Bazel flags:
     //       --cache_test_results=no : to make sure you're not using cache
     //       --test_output=streamed : to make sure all output is printed

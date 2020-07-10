@@ -16,32 +16,29 @@
  *
  */
 
-package grakn.concept;
+package grakn.core.concept;
 
-import grakn.common.exception.Error;
-import grakn.common.exception.GraknException;
-import grakn.concept.thing.impl.ThingImpl;
-import grakn.concept.type.AttributeType;
-import grakn.concept.type.EntityType;
-import grakn.concept.type.RelationType;
-import grakn.concept.type.ThingType;
-import grakn.concept.type.impl.AttributeTypeImpl;
-import grakn.concept.type.impl.EntityTypeImpl;
-import grakn.concept.type.impl.RelationTypeImpl;
-import grakn.concept.type.impl.ThingTypeImpl;
-import grakn.concept.type.impl.TypeImpl;
-import grakn.graph.Graphs;
-import grakn.graph.util.Schema;
-import grakn.graph.vertex.TypeVertex;
-import grakn.graph.vertex.Vertex;
+import grakn.core.common.exception.Error;
+import grakn.core.common.exception.GraknException;
+import grakn.core.concept.thing.impl.ThingImpl;
+import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.type.EntityType;
+import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.ThingType;
+import grakn.core.concept.type.impl.AttributeTypeImpl;
+import grakn.core.concept.type.impl.EntityTypeImpl;
+import grakn.core.concept.type.impl.RelationTypeImpl;
+import grakn.core.concept.type.impl.ThingTypeImpl;
+import grakn.core.concept.type.impl.TypeImpl;
+import grakn.core.graph.Graphs;
+import grakn.core.graph.util.Schema;
+import grakn.core.graph.vertex.TypeVertex;
+import grakn.core.graph.vertex.Vertex;
 
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.stream.Collectors;
 
-import static grakn.common.exception.Error.Transaction.UNSUPPORTED_OPERATION;
+import static grakn.core.common.exception.Error.Transaction.UNSUPPORTED_OPERATION;
 
 public final class Concepts {
 

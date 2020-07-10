@@ -16,7 +16,7 @@
  *
  */
 
-package grakn.test.behaviour.connection.database;
+package grakn.core.test.behaviour.connection.database;
 
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
@@ -27,9 +27,9 @@ import java.util.stream.Collectors;
 
 import static grakn.common.util.Collections.list;
 import static grakn.common.util.Collections.set;
-import static grakn.test.behaviour.connection.ConnectionSteps.THREAD_POOL_SIZE;
-import static grakn.test.behaviour.connection.ConnectionSteps.grakn;
-import static grakn.test.behaviour.connection.ConnectionSteps.threadPool;
+import static grakn.core.test.behaviour.connection.ConnectionSteps.THREAD_POOL_SIZE;
+import static grakn.core.test.behaviour.connection.ConnectionSteps.grakn;
+import static grakn.core.test.behaviour.connection.ConnectionSteps.threadPool;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;

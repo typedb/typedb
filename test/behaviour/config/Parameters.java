@@ -16,9 +16,9 @@
  *
  */
 
-package grakn.test.behaviour.config;
+package grakn.core.test.behaviour.config;
 
-import grakn.Grakn;
+import grakn.core.Grakn;
 import io.cucumber.java.DataTableType;
 import io.cucumber.java.ParameterType;
 

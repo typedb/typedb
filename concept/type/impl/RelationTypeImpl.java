@@ -16,20 +16,20 @@
  *
  */
 
-package grakn.concept.type.impl;
+package grakn.core.concept.type.impl;
 
-import grakn.common.collection.Streams;
-import grakn.common.exception.Error;
-import grakn.common.exception.GraknException;
-import grakn.concept.thing.Relation;
-import grakn.concept.thing.impl.RelationImpl;
-import grakn.concept.type.AttributeType;
-import grakn.concept.type.RelationType;
-import grakn.concept.type.RoleType;
-import grakn.graph.TypeGraph;
-import grakn.graph.util.Schema;
-import grakn.graph.vertex.ThingVertex;
-import grakn.graph.vertex.TypeVertex;
+import grakn.core.common.collection.Streams;
+import grakn.core.common.exception.Error;
+import grakn.core.common.exception.GraknException;
+import grakn.core.concept.thing.Relation;
+import grakn.core.concept.thing.impl.RelationImpl;
+import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.RoleType;
+import grakn.core.graph.TypeGraph;
+import grakn.core.graph.util.Schema;
+import grakn.core.graph.vertex.ThingVertex;
+import grakn.core.graph.vertex.TypeVertex;
 
 import javax.annotation.Nullable;
 import java.util.HashSet;
@@ -40,17 +40,17 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static grakn.common.exception.Error.TypeWrite.RELATION_ABSTRACT_ROLE;
-import static grakn.common.exception.Error.TypeWrite.RELATION_NO_ROLE;
-import static grakn.common.exception.Error.TypeWrite.RELATION_RELATES_ROLE_FROM_SUPERTYPE;
-import static grakn.common.exception.Error.TypeWrite.RELATION_RELATES_ROLE_NOT_AVAILABLE;
-import static grakn.common.exception.Error.TypeWrite.ROOT_TYPE_MUTATION;
-import static grakn.common.exception.Error.TypeWrite.TYPE_HAS_INSTANCES;
-import static grakn.common.exception.Error.TypeWrite.TYPE_HAS_SUBTYPES;
-import static grakn.common.iterator.Iterators.apply;
-import static grakn.common.iterator.Iterators.filter;
-import static grakn.common.iterator.Iterators.stream;
-import static grakn.graph.util.Schema.Vertex.Type.Root.ROLE;
+import static grakn.core.common.exception.Error.TypeWrite.RELATION_ABSTRACT_ROLE;
+import static grakn.core.common.exception.Error.TypeWrite.RELATION_NO_ROLE;
+import static grakn.core.common.exception.Error.TypeWrite.RELATION_RELATES_ROLE_FROM_SUPERTYPE;
+import static grakn.core.common.exception.Error.TypeWrite.RELATION_RELATES_ROLE_NOT_AVAILABLE;
+import static grakn.core.common.exception.Error.TypeWrite.ROOT_TYPE_MUTATION;
+import static grakn.core.common.exception.Error.TypeWrite.TYPE_HAS_INSTANCES;
+import static grakn.core.common.exception.Error.TypeWrite.TYPE_HAS_SUBTYPES;
+import static grakn.core.common.iterator.Iterators.apply;
+import static grakn.core.common.iterator.Iterators.filter;
+import static grakn.core.common.iterator.Iterators.stream;
+import static grakn.core.graph.util.Schema.Vertex.Type.Root.ROLE;
 
 public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
 

@@ -16,11 +16,11 @@
  *
  */
 
-package grakn.test.behaviour.connection;
+package grakn.core.test.behaviour.connection;
 
-import grakn.Grakn;
-import grakn.rocks.RocksGrakn;
-import grakn.rocks.RocksDatabase;
+import grakn.core.Grakn;
+import grakn.core.rocks.RocksDatabase;
+import grakn.core.rocks.RocksGrakn;
 import io.cucumber.java.After;
 import io.cucumber.java.en.Given;
 

@@ -16,7 +16,7 @@
  *
  */
 
-package grakn.common.collection;
+package grakn.core.common.collection;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;

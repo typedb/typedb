@@ -16,11 +16,11 @@
  *
  */
 
-package grakn.rocks;
+package grakn.core.rocks;
 
-import grakn.Grakn;
-import grakn.common.exception.GraknException;
-import grakn.graph.util.KeyGenerator;
+import grakn.core.Grakn;
+import grakn.core.common.exception.GraknException;
+import grakn.core.graph.util.KeyGenerator;
 import org.rocksdb.OptimisticTransactionDB;
 import org.rocksdb.RocksDBException;
 

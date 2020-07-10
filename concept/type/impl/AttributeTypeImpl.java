@@ -16,19 +16,19 @@
  *
  */
 
-package grakn.concept.type.impl;
+package grakn.core.concept.type.impl;
 
-import grakn.common.exception.Error;
-import grakn.common.exception.GraknException;
-import grakn.common.iterator.Iterators;
-import grakn.concept.thing.Attribute;
-import grakn.concept.thing.impl.AttributeImpl;
-import grakn.concept.type.AttributeType;
-import grakn.concept.type.RoleType;
-import grakn.graph.TypeGraph;
-import grakn.graph.util.Schema;
-import grakn.graph.vertex.AttributeVertex;
-import grakn.graph.vertex.TypeVertex;
+import grakn.core.common.exception.Error;
+import grakn.core.common.exception.GraknException;
+import grakn.core.common.iterator.Iterators;
+import grakn.core.concept.thing.Attribute;
+import grakn.core.concept.thing.impl.AttributeImpl;
+import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.type.RoleType;
+import grakn.core.graph.TypeGraph;
+import grakn.core.graph.util.Schema;
+import grakn.core.graph.vertex.AttributeVertex;
+import grakn.core.graph.vertex.TypeVertex;
 
 import javax.annotation.Nullable;
 import java.time.LocalDateTime;
@@ -38,18 +38,18 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
-import static grakn.common.exception.Error.ConceptRead.INVALID_CONCEPT_CASTING;
-import static grakn.common.exception.Error.Internal.UNRECOGNISED_VALUE;
-import static grakn.common.exception.Error.ThingWrite.ATTRIBUTE_VALUE_UNSATISFIES_REGEX;
-import static grakn.common.exception.Error.ThingWrite.ILLEGAL_STRING_SIZE;
-import static grakn.common.exception.Error.TypeRead.TYPE_ROOT_MISMATCH;
-import static grakn.common.exception.Error.TypeWrite.ATTRIBUTE_REGEX_UNSATISFIES_INSTANCES;
-import static grakn.common.exception.Error.TypeWrite.ATTRIBUTE_SUPERTYPE_NOT_ABSTRACT;
-import static grakn.common.exception.Error.TypeWrite.ATTRIBUTE_SUPERTYPE_VALUE_TYPE;
-import static grakn.common.exception.Error.TypeWrite.ROOT_TYPE_MUTATION;
-import static grakn.common.exception.Error.TypeWrite.SUPERTYPE_SELF;
-import static grakn.common.iterator.Iterators.apply;
-import static grakn.common.iterator.Iterators.stream;
+import static grakn.core.common.exception.Error.ConceptRead.INVALID_CONCEPT_CASTING;
+import static grakn.core.common.exception.Error.Internal.UNRECOGNISED_VALUE;
+import static grakn.core.common.exception.Error.ThingWrite.ATTRIBUTE_VALUE_UNSATISFIES_REGEX;
+import static grakn.core.common.exception.Error.ThingWrite.ILLEGAL_STRING_SIZE;
+import static grakn.core.common.exception.Error.TypeRead.TYPE_ROOT_MISMATCH;
+import static grakn.core.common.exception.Error.TypeWrite.ATTRIBUTE_REGEX_UNSATISFIES_INSTANCES;
+import static grakn.core.common.exception.Error.TypeWrite.ATTRIBUTE_SUPERTYPE_NOT_ABSTRACT;
+import static grakn.core.common.exception.Error.TypeWrite.ATTRIBUTE_SUPERTYPE_VALUE_TYPE;
+import static grakn.core.common.exception.Error.TypeWrite.ROOT_TYPE_MUTATION;
+import static grakn.core.common.exception.Error.TypeWrite.SUPERTYPE_SELF;
+import static grakn.core.common.iterator.Iterators.apply;
+import static grakn.core.common.iterator.Iterators.stream;
 
 public abstract class AttributeTypeImpl extends ThingTypeImpl implements AttributeType {
 

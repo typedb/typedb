@@ -16,11 +16,11 @@
  *
  */
 
-package grakn.concept.thing.impl;
+package grakn.core.concept.thing.impl;
 
-import grakn.concept.thing.Role;
-import grakn.graph.util.Schema;
-import grakn.graph.vertex.ThingVertex;
+import grakn.core.concept.thing.Role;
+import grakn.core.graph.util.Schema;
+import grakn.core.graph.vertex.ThingVertex;
 
 import static java.util.Objects.requireNonNull;
 

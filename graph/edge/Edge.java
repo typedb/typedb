@@ -16,11 +16,11 @@
  *
  */
 
-package grakn.graph.edge;
+package grakn.core.graph.edge;
 
-import grakn.graph.iid.EdgeIID;
-import grakn.graph.util.Schema;
-import grakn.graph.vertex.Vertex;
+import grakn.core.graph.iid.EdgeIID;
+import grakn.core.graph.util.Schema;
+import grakn.core.graph.vertex.Vertex;
 
 public interface Edge<
         EDGE_SCHEMA extends Schema.Edge,

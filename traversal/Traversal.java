@@ -16,9 +16,9 @@
  *
  */
 
-package grakn.traversal;
+package grakn.core.traversal;
 
-import grakn.concept.Concepts;
+import grakn.core.concept.Concepts;
 
 public class Traversal {
 

@@ -16,17 +16,17 @@
  *
  */
 
-package grakn.rocks;
+package grakn.core.rocks;
 
-import grakn.Grakn;
-import grakn.common.concurrent.ManagedReadWriteLock;
-import grakn.common.exception.Error;
-import grakn.common.exception.GraknException;
-import grakn.concept.Concepts;
-import grakn.graph.Graphs;
-import grakn.graph.util.KeyGenerator;
-import grakn.graph.util.Storage;
-import grakn.traversal.Traversal;
+import grakn.core.Grakn;
+import grakn.core.common.concurrent.ManagedReadWriteLock;
+import grakn.core.common.exception.Error;
+import grakn.core.common.exception.GraknException;
+import grakn.core.concept.Concepts;
+import grakn.core.graph.Graphs;
+import grakn.core.graph.util.KeyGenerator;
+import grakn.core.graph.util.Storage;
+import grakn.core.traversal.Traversal;
 import org.rocksdb.OptimisticTransactionOptions;
 import org.rocksdb.ReadOptions;
 import org.rocksdb.RocksDBException;
@@ -40,8 +40,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
 
-import static grakn.common.collection.Bytes.bytesHavePrefix;
-import static grakn.common.collection.Bytes.longToBytes;
+import static grakn.core.common.collection.Bytes.bytesHavePrefix;
+import static grakn.core.common.collection.Bytes.longToBytes;
 
 class RocksTransaction implements Grakn.Transaction {
 

@@ -16,23 +16,21 @@
  *
  */
 
-package grakn.concept;
+package grakn.core.concept;
 
-import grakn.common.exception.GraknException;
-import grakn.concept.thing.Attribute;
-import grakn.concept.thing.Entity;
-import grakn.concept.thing.Relation;
-import grakn.concept.thing.Thing;
-import grakn.concept.type.AttributeType;
-import grakn.concept.type.EntityType;
-import grakn.concept.type.RelationType;
-import grakn.concept.type.RoleType;
-import grakn.concept.type.ThingType;
-import grakn.concept.type.Type;
+import grakn.core.common.exception.GraknException;
+import grakn.core.concept.thing.Attribute;
+import grakn.core.concept.thing.Entity;
+import grakn.core.concept.thing.Relation;
+import grakn.core.concept.thing.Thing;
+import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.type.EntityType;
+import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.RoleType;
+import grakn.core.concept.type.ThingType;
+import grakn.core.concept.type.Type;
 
-import java.util.List;
-
-import static grakn.common.exception.Error.ConceptRead.INVALID_CONCEPT_CASTING;
+import static grakn.core.common.exception.Error.ConceptRead.INVALID_CONCEPT_CASTING;
 
 public interface Concept {
 

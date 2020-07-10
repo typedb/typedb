@@ -16,7 +16,7 @@
  *
  */
 
-package grakn.graph.iid;
+package grakn.core.graph.iid;
 
 import java.util.Arrays;
 

@@ -16,7 +16,7 @@
  *
  */
 
-package grakn.graph.vertex;
+package grakn.core.graph.vertex;
 
 //public interface ValueVertex extends Vertex<Schema.Vertex.Value, ValueVertex, Schema.Edge.Thing, ThingEdge> {
 //

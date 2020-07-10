@@ -16,7 +16,7 @@
  *
  */
 
-package grakn.graph.vertex;
+package grakn.core.graph.vertex;
 
 //public abstract class RuleVertex extends Vertex<Schema.Vertex.Rule, Schema.Edge.Type, TypeEdge> {
 //

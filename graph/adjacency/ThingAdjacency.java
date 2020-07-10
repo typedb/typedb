@@ -16,12 +16,12 @@
  *
  */
 
-package grakn.graph.adjacency;
+package grakn.core.graph.adjacency;
 
-import grakn.graph.edge.ThingEdge;
-import grakn.graph.iid.IID;
-import grakn.graph.util.Schema;
-import grakn.graph.vertex.ThingVertex;
+import grakn.core.graph.edge.ThingEdge;
+import grakn.core.graph.iid.IID;
+import grakn.core.graph.util.Schema;
+import grakn.core.graph.vertex.ThingVertex;
 
 public interface ThingAdjacency extends Adjacency<Schema.Edge.Thing, ThingEdge, ThingVertex> {
 

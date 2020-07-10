@@ -16,7 +16,7 @@
  *
  */
 
-package grakn.common.exception;
+package grakn.core.common.exception;
 
 import java.util.List;
 

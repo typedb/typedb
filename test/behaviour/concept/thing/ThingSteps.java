@@ -16,12 +16,12 @@
  *
  */
 
-package grakn.test.behaviour.concept.thing;
+package grakn.core.test.behaviour.concept.thing;
 
-import grakn.concept.thing.Thing;
-import grakn.concept.type.ThingType;
-import grakn.test.behaviour.config.Parameters.RootLabel;
-import grakn.test.behaviour.config.Parameters.ScopedLabel;
+import grakn.core.concept.thing.Thing;
+import grakn.core.concept.type.ThingType;
+import grakn.core.test.behaviour.config.Parameters.RootLabel;
+import grakn.core.test.behaviour.config.Parameters.ScopedLabel;
 import io.cucumber.java.After;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
@@ -29,9 +29,9 @@ import io.cucumber.java.en.When;
 import java.util.HashMap;
 import java.util.Map;
 
-import static grakn.test.behaviour.concept.type.thingtype.ThingTypeSteps.get_thing_type;
-import static grakn.test.behaviour.connection.ConnectionSteps.tx;
-import static grakn.test.behaviour.util.Util.assertThrows;
+import static grakn.core.test.behaviour.concept.type.thingtype.ThingTypeSteps.get_thing_type;
+import static grakn.core.test.behaviour.connection.ConnectionSteps.tx;
+import static grakn.core.test.behaviour.util.Util.assertThrows;
 import static java.util.Objects.isNull;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;

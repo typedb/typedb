@@ -16,21 +16,21 @@
  *
  */
 
-package grakn.graph.vertex.impl;
+package grakn.core.graph.vertex.impl;
 
-import grakn.common.exception.Error;
-import grakn.common.exception.GraknException;
-import grakn.graph.TypeGraph;
-import grakn.graph.adjacency.Adjacency;
-import grakn.graph.adjacency.TypeAdjacency;
-import grakn.graph.adjacency.impl.TypeAdjacencyImpl;
-import grakn.graph.edge.TypeEdge;
-import grakn.graph.iid.EdgeIID;
-import grakn.graph.iid.IndexIID;
-import grakn.graph.iid.VertexIID;
-import grakn.graph.util.Schema;
-import grakn.graph.vertex.ThingVertex;
-import grakn.graph.vertex.TypeVertex;
+import grakn.core.common.exception.Error;
+import grakn.core.common.exception.GraknException;
+import grakn.core.graph.TypeGraph;
+import grakn.core.graph.adjacency.Adjacency;
+import grakn.core.graph.adjacency.TypeAdjacency;
+import grakn.core.graph.adjacency.impl.TypeAdjacencyImpl;
+import grakn.core.graph.edge.TypeEdge;
+import grakn.core.graph.iid.EdgeIID;
+import grakn.core.graph.iid.IndexIID;
+import grakn.core.graph.iid.VertexIID;
+import grakn.core.graph.util.Schema;
+import grakn.core.graph.vertex.ThingVertex;
+import grakn.core.graph.vertex.TypeVertex;
 
 import javax.annotation.Nullable;
 import java.util.Collections;
@@ -39,9 +39,9 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static grakn.common.collection.Bytes.join;
-import static grakn.common.iterator.Iterators.distinct;
-import static grakn.common.iterator.Iterators.link;
+import static grakn.core.common.collection.Bytes.join;
+import static grakn.core.common.iterator.Iterators.distinct;
+import static grakn.core.common.iterator.Iterators.link;
 
 public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implements TypeVertex {
 

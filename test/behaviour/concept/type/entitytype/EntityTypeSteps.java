@@ -16,7 +16,7 @@
  *
  */
 
-package grakn.test.behaviour.concept.type.entitytype;
+package grakn.core.test.behaviour.concept.type.entitytype;
 
 /**
  * Behaviour Steps specific to EntityTypes

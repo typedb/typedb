@@ -16,7 +16,7 @@
  *
  */
 
-package grakn.test.integration;
+package grakn.core.test.integration;
 
 import java.io.File;
 import java.io.IOException;
