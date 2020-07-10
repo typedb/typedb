@@ -25,7 +25,7 @@ import hypergraph.concept.type.EntityType;
 import hypergraph.concept.type.RelationType;
 import hypergraph.concept.type.RoleType;
 import hypergraph.concept.type.ThingType;
-import hypergraph.rocks.CoreHypergraph;
+import hypergraph.rocks.RocksHypergraph;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -49,7 +49,7 @@ public class BasicTest {
 
     private static void assert_transaction_read(Hypergraph.Transaction transaction) {
         assertTrue(transaction.isOpen());
-        assertEquals(CoreHypergraph.Transaction.Type.READ, transaction.type());
+        assertEquals(RocksHypergraph.Transaction.Type.READ, transaction.type());
 
         ThingType rootType = transaction.concepts().getRootType();
         EntityType rootEntityType = transaction.concepts().getRootEntityType();
@@ -125,7 +125,7 @@ public class BasicTest {
     public void write_types_concurrently() throws IOException {
         Util.resetDirectory(directory);
 
-        try (Hypergraph graph = CoreHypergraph.open(directory.toString())) {
+        try (Hypergraph graph = RocksHypergraph.open(directory.toString())) {
             graph.keyspaces().create("my_data_keyspace");
 
             assertTrue(graph.isOpen());
@@ -139,7 +139,7 @@ public class BasicTest {
 
                 try (Hypergraph.Transaction transaction = session.transaction(Hypergraph.Transaction.Type.READ)) {
                     assertTrue(transaction.isOpen());
-                    assertEquals(CoreHypergraph.Transaction.Type.READ, transaction.type());
+                    assertEquals(RocksHypergraph.Transaction.Type.READ, transaction.type());
 
                     Stream<Consumer<Hypergraph.Transaction>> rootTypeAssertions = Stream.of(
                             tx -> {
@@ -168,7 +168,7 @@ public class BasicTest {
 
                 try (Hypergraph.Transaction transaction = session.transaction(Hypergraph.Transaction.Type.WRITE)) {
                     assertTrue(transaction.isOpen());
-                    assertEquals(CoreHypergraph.Transaction.Type.WRITE, transaction.type());
+                    assertEquals(RocksHypergraph.Transaction.Type.WRITE, transaction.type());
 
                     ThingType rootType = transaction.concepts().getRootType();
                     EntityType rootEntityType = transaction.concepts().getRootEntityType();
@@ -240,7 +240,7 @@ public class BasicTest {
         }
 
 
-        try (Hypergraph graph = CoreHypergraph.open(directory.toString())) {
+        try (Hypergraph graph = RocksHypergraph.open(directory.toString())) {
 
             assertTrue(graph.isOpen());
             assertEquals(1, graph.keyspaces().getAll().size());
@@ -283,7 +283,7 @@ public class BasicTest {
     private void reset_directory_and_create_attribute_types() throws IOException {
         Util.resetDirectory(directory);
 
-        try (Hypergraph graph = CoreHypergraph.open(directory.toString())) {
+        try (Hypergraph graph = RocksHypergraph.open(directory.toString())) {
             graph.keyspaces().create(keyspace);
             try (Hypergraph.Session session = graph.session(keyspace, Hypergraph.Session.Type.SCHEMA)) {
                 try (Hypergraph.Transaction txn = session.transaction(Hypergraph.Transaction.Type.WRITE)) {
@@ -331,7 +331,7 @@ public class BasicTest {
         LocalDateTime date_1991_1_1_0_0 = LocalDateTime.of(1991, 1, 1, 0, 0);
         reset_directory_and_create_attribute_types();
 
-        try (Hypergraph graph = CoreHypergraph.open(directory.toString())) {
+        try (Hypergraph graph = RocksHypergraph.open(directory.toString())) {
             try (Hypergraph.Session session = graph.session(keyspace)) {
                 try (Hypergraph.Transaction txn = session.transaction(Hypergraph.Transaction.Type.WRITE)) {
                     isAlive(txn).put(true);
@@ -409,7 +409,7 @@ public class BasicTest {
 
         reset_directory_and_create_attribute_types();
 
-        try (Hypergraph graph = CoreHypergraph.open(directory.toString())) {
+        try (Hypergraph graph = RocksHypergraph.open(directory.toString())) {
             try (Hypergraph.Session session = graph.session(keyspace)) {
                 Hypergraph.Transaction txn1 = session.transaction(Hypergraph.Transaction.Type.WRITE);
                 Hypergraph.Transaction txn2 = session.transaction(Hypergraph.Transaction.Type.WRITE);
@@ -528,7 +528,7 @@ public class BasicTest {
 
         LocalDateTime date_1992_2_3_4_5 = LocalDateTime.of(1991, 2, 3, 4, 5);
 
-        try (Hypergraph graph = CoreHypergraph.open(directory.toString())) {
+        try (Hypergraph graph = RocksHypergraph.open(directory.toString())) {
             try (Hypergraph.Session session = graph.session(keyspace)) {
                 Hypergraph.Transaction txn1 = session.transaction(Hypergraph.Transaction.Type.WRITE);
                 Hypergraph.Transaction txn2 = session.transaction(Hypergraph.Transaction.Type.WRITE);
@@ -627,7 +627,7 @@ public class BasicTest {
     public void write_and_delete_attributes_concurrently() throws IOException {
         reset_directory_and_create_attribute_types();
 
-        try (Hypergraph graph = CoreHypergraph.open(directory.toString())) {
+        try (Hypergraph graph = RocksHypergraph.open(directory.toString())) {
             try (Hypergraph.Session session = graph.session(keyspace)) {
                 Hypergraph.Transaction txn1 = session.transaction(Hypergraph.Transaction.Type.WRITE);
                 Hypergraph.Transaction txn2 = session.transaction(Hypergraph.Transaction.Type.WRITE);

@@ -26,14 +26,14 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class CoreSession implements Hypergraph.Session {
+public class RocksSession implements Hypergraph.Session {
 
-    private final CoreKeyspace keyspace;
+    private final RocksKeyspace keyspace;
     private final Type type;
-    private final ConcurrentMap<CoreTransaction, Long> transactions;
+    private final ConcurrentMap<RocksTransaction, Long> transactions;
     private final AtomicBoolean isOpen;
 
-    CoreSession(CoreKeyspace keyspace, Type type) {
+    RocksSession(RocksKeyspace keyspace, Type type) {
         this.keyspace = keyspace;
         this.type = type;
 
@@ -50,7 +50,7 @@ public class CoreSession implements Hypergraph.Session {
         return keyspace.keyGenerator();
     }
 
-    void remove(CoreTransaction transaction) {
+    void remove(RocksTransaction transaction) {
         long schemaReadLockStamp = transactions.remove(transaction);
         if (this.type.equals(Type.DATA) && transaction.type().equals(Hypergraph.Transaction.Type.WRITE)) {
             keyspace.releaseSchemaReadLock(schemaReadLockStamp);
@@ -63,17 +63,17 @@ public class CoreSession implements Hypergraph.Session {
     }
 
     @Override
-    public CoreKeyspace keyspace() {
+    public RocksKeyspace keyspace() {
         return keyspace;
     }
 
     @Override
-    public CoreTransaction transaction(Hypergraph.Transaction.Type type) {
+    public RocksTransaction transaction(Hypergraph.Transaction.Type type) {
         long schemaReadLockStamp = 0;
         if (this.type.equals(Type.DATA) && type.equals(Hypergraph.Transaction.Type.WRITE)) {
             schemaReadLockStamp = keyspace.acquireSchemaReadLock();
         }
-        CoreTransaction transaction = new CoreTransaction(this, type);
+        RocksTransaction transaction = new RocksTransaction(this, type);
         transactions.put(transaction, schemaReadLockStamp);
         return transaction;
     }
@@ -86,7 +86,7 @@ public class CoreSession implements Hypergraph.Session {
     @Override
     public void close() {
         if (isOpen.compareAndSet(true, false)) {
-            transactions.keySet().parallelStream().forEach(CoreTransaction::close);
+            transactions.keySet().parallelStream().forEach(RocksTransaction::close);
             keyspace.remove(this);
         }
     }

@@ -34,17 +34,17 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.StampedLock;
 
-public class CoreKeyspace implements Hypergraph.Keyspace {
+public class RocksKeyspace implements Hypergraph.Keyspace {
 
     private final String name;
-    private final CoreHypergraph core;
+    private final RocksHypergraph core;
     private final OptimisticTransactionDB rocksDB;
     private final KeyGenerator.Persisted keyGenerator;
-    private final ConcurrentMap<CoreSession, Long> sessions;
+    private final ConcurrentMap<RocksSession, Long> sessions;
     private final StampedLock schemaLock;
     private final AtomicBoolean isOpen;
 
-    private CoreKeyspace(CoreHypergraph core, String name) {
+    private RocksKeyspace(RocksHypergraph core, String name) {
         this.name = name;
         this.core = core;
         keyGenerator = new KeyGenerator.Persisted();
@@ -59,17 +59,17 @@ public class CoreKeyspace implements Hypergraph.Keyspace {
         }
     }
 
-    static CoreKeyspace createNewAndOpen(CoreHypergraph core, String name) {
-        return new CoreKeyspace(core, name).initialiseAndOpen();
+    static RocksKeyspace createNewAndOpen(RocksHypergraph core, String name) {
+        return new RocksKeyspace(core, name).initialiseAndOpen();
     }
 
-    static CoreKeyspace loadExistingAndOpen(CoreHypergraph core, String name) {
-        return new CoreKeyspace(core, name).loadAndOpen();
+    static RocksKeyspace loadExistingAndOpen(RocksHypergraph core, String name) {
+        return new RocksKeyspace(core, name).loadAndOpen();
     }
 
-    private CoreKeyspace initialiseAndOpen() {
-        try (CoreSession session = createAndOpenSession(Hypergraph.Session.Type.SCHEMA)) {
-            try (CoreTransaction txn = session.transaction(Hypergraph.Transaction.Type.WRITE)) {
+    private RocksKeyspace initialiseAndOpen() {
+        try (RocksSession session = createAndOpenSession(Hypergraph.Session.Type.SCHEMA)) {
+            try (RocksTransaction txn = session.transaction(Hypergraph.Transaction.Type.WRITE)) {
                 if (txn.graph().isInitialised()) {
                     throw new HypergraphException("Invalid Keyspace Initialisation");
                 }
@@ -81,9 +81,9 @@ public class CoreKeyspace implements Hypergraph.Keyspace {
         return this;
     }
 
-    private CoreKeyspace loadAndOpen() {
-        try (CoreSession session = createAndOpenSession(Hypergraph.Session.Type.DATA)) {
-            try (CoreTransaction txn = session.transaction(Hypergraph.Transaction.Type.READ)) {
+    private RocksKeyspace loadAndOpen() {
+        try (RocksSession session = createAndOpenSession(Hypergraph.Session.Type.DATA)) {
+            try (RocksTransaction txn = session.transaction(Hypergraph.Transaction.Type.READ)) {
                 keyGenerator.sync(txn.storage());
             }
         }
@@ -91,12 +91,12 @@ public class CoreKeyspace implements Hypergraph.Keyspace {
         return this;
     }
 
-    CoreSession createAndOpenSession(Hypergraph.Session.Type type) {
+    RocksSession createAndOpenSession(Hypergraph.Session.Type type) {
         long schemaWriteLockStamp = 0;
         if (type.equals(Hypergraph.Session.Type.SCHEMA)) {
             schemaWriteLockStamp = schemaLock.writeLock();
         }
-        CoreSession session = new CoreSession(this, type);
+        RocksSession session = new RocksSession(this, type);
         sessions.put(session, schemaWriteLockStamp);
         return session;
     }
@@ -121,7 +121,7 @@ public class CoreKeyspace implements Hypergraph.Keyspace {
         schemaLock.unlockRead(stamp);
     }
 
-    void remove(CoreSession session) {
+    void remove(RocksSession session) {
         long schemaWriteLockStamp = sessions.remove(session);
         if (session.type().equals(Hypergraph.Session.Type.SCHEMA)) {
             schemaLock.unlockWrite(schemaWriteLockStamp);
@@ -130,7 +130,7 @@ public class CoreKeyspace implements Hypergraph.Keyspace {
 
     void close() {
         if (isOpen.compareAndSet(true, false)) {
-            sessions.keySet().forEach(CoreSession::close);
+            sessions.keySet().forEach(RocksSession::close);
             rocksDB.close();
         }
     }

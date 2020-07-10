@@ -18,8 +18,6 @@
 
 package hypergraph.rocks;
 
-import org.rocksdb.RocksIterator;
-
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -27,17 +25,17 @@ import java.util.function.BiFunction;
 
 import static hypergraph.common.collection.Bytes.bytesHavePrefix;
 
-public class CoreIterator<T> implements Iterator<T> {
+public class RocksIterator<T> implements Iterator<T> {
 
     private final byte[] prefix;
-    private final CoreTransaction.CoreStorage storage;
+    private final RocksTransaction.CoreStorage storage;
     private final AtomicBoolean isOpen;
     private final BiFunction<byte[], byte[], T> constructor;
-    private RocksIterator rocksIterator;
+    private org.rocksdb.RocksIterator rocksIterator;
     private State state;
     private T next;
 
-    CoreIterator(CoreTransaction.CoreStorage storage, byte[] prefix, BiFunction<byte[], byte[], T> constructor) {
+    RocksIterator(RocksTransaction.CoreStorage storage, byte[] prefix, BiFunction<byte[], byte[], T> constructor) {
         this.storage = storage;
         this.prefix = prefix;
         this.constructor = constructor;

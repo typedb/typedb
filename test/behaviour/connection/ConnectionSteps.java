@@ -19,8 +19,8 @@
 package hypergraph.test.behaviour.connection;
 
 import hypergraph.Hypergraph;
-import hypergraph.rocks.CoreHypergraph;
-import hypergraph.rocks.CoreKeyspace;
+import hypergraph.rocks.RocksHypergraph;
+import hypergraph.rocks.RocksKeyspace;
 import io.cucumber.java.After;
 import io.cucumber.java.en.Given;
 
@@ -47,7 +47,7 @@ public class ConnectionSteps {
     public static int THREAD_POOL_SIZE = 32;
     public static ExecutorService threadPool = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
 
-    public static CoreHypergraph hypergraph;
+    public static RocksHypergraph hypergraph;
     public static Path directory = Paths.get(System.getProperty("user.dir")).resolve("grakn");
     public static List<Hypergraph.Session> sessions = new ArrayList<>();
     public static List<CompletableFuture<Hypergraph.Session>> sessionsParallel = new ArrayList<>();
@@ -71,7 +71,7 @@ public class ConnectionSteps {
 
         resetDirectory();
         System.out.println("Connecting to Hypergraph ...");
-        hypergraph = CoreHypergraph.open(directory.toString());
+        hypergraph = RocksHypergraph.open(directory.toString());
         assertNotNull(hypergraph);
     }
 
@@ -91,7 +91,7 @@ public class ConnectionSteps {
 
     @Given("connection delete all keyspaces")
     public void connection_delete_all_keyspaces() {
-        hypergraph.keyspaces().getAll().forEach(CoreKeyspace::delete);
+        hypergraph.keyspaces().getAll().forEach(RocksKeyspace::delete);
     }
 
     @Given("connection does not have any keyspace")

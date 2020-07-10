@@ -30,7 +30,6 @@ import hypergraph.traversal.Traversal;
 import org.rocksdb.OptimisticTransactionOptions;
 import org.rocksdb.ReadOptions;
 import org.rocksdb.RocksDBException;
-import org.rocksdb.RocksIterator;
 import org.rocksdb.Transaction;
 import org.rocksdb.WriteOptions;
 
@@ -44,10 +43,10 @@ import java.util.function.BiFunction;
 import static hypergraph.common.collection.Bytes.bytesHavePrefix;
 import static hypergraph.common.collection.Bytes.longToBytes;
 
-class CoreTransaction implements Hypergraph.Transaction {
+class RocksTransaction implements Hypergraph.Transaction {
 
     private static final byte[] EMPTY_ARRAY = new byte[]{};
-    private final CoreSession session;
+    private final RocksSession session;
     private final OptimisticTransactionOptions optOptions;
     private final WriteOptions writeOptions;
     private final ReadOptions readOptions;
@@ -59,7 +58,7 @@ class CoreTransaction implements Hypergraph.Transaction {
     private final Traversal traversal;
     private final AtomicBoolean isOpen;
 
-    CoreTransaction(CoreSession session, Type type) {
+    RocksTransaction(RocksSession session, Type type) {
         this.type = type;
         this.session = session;
 
@@ -190,7 +189,7 @@ class CoreTransaction implements Hypergraph.Transaction {
     class CoreStorage implements Storage {
 
         private final ManagedReadWriteLock readWriteLock;
-        private final Set<CoreIterator<?>> iterators;
+        private final Set<RocksIterator<?>> iterators;
 
         CoreStorage() {
             readWriteLock = new ManagedReadWriteLock();
@@ -225,7 +224,7 @@ class CoreTransaction implements Hypergraph.Transaction {
             upperBound[upperBound.length - 1] = (byte) (upperBound[upperBound.length - 1] + 1);
             assert upperBound[upperBound.length - 1] != Byte.MIN_VALUE;
 
-            try (RocksIterator iterator = newRocksIterator()) {
+            try (org.rocksdb.RocksIterator iterator = newRocksIterator()) {
                 iterator.seekForPrev(upperBound);
                 if (bytesHavePrefix(iterator.key(), prefix)) return iterator.key();
                 else return null;
@@ -292,21 +291,21 @@ class CoreTransaction implements Hypergraph.Transaction {
 
         @Override
         public <G> Iterator<G> iterate(byte[] key, BiFunction<byte[], byte[], G> constructor) {
-            CoreIterator<G> iterator = new CoreIterator<>(this, key, constructor);
+            RocksIterator<G> iterator = new RocksIterator<>(this, key, constructor);
             iterators.add(iterator);
             return iterator;
         }
 
-        RocksIterator newRocksIterator() {
+        org.rocksdb.RocksIterator newRocksIterator() {
             return rocksTransaction.getIterator(readOptions);
         }
 
-        void remove(CoreIterator<?> iterator) {
+        void remove(RocksIterator<?> iterator) {
             iterators.remove(iterator);
         }
 
         void close() {
-            iterators.parallelStream().forEach(CoreIterator::close);
+            iterators.parallelStream().forEach(RocksIterator::close);
         }
     }
 }

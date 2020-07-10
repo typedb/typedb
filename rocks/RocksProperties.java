@@ -20,7 +20,7 @@ package hypergraph.rocks;
 
 import java.util.Properties;
 
-public class CoreProperties {
+public class RocksProperties {
 
     public final int MEMORY_MINIMUM_RESERVE;
     public final int ATTRIBUTE_SYNC_EXPIRE_DURATION;
@@ -28,7 +28,7 @@ public class CoreProperties {
 
     private final Properties properties;
 
-    CoreProperties(Properties properties) {
+    RocksProperties(Properties properties) {
         this.properties = properties;
         ATTRIBUTE_SYNC_EXPIRE_DURATION = getOrDefault("attribute-sync.expire-duration", 600);
         ATTRIBUTE_SYNC_EVICTION_DURATION = getOrDefault("attribute-sync.cleanup-duration", 60);

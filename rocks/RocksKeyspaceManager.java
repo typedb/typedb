@@ -28,12 +28,12 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-public class CoreKeyspaceManager implements Hypergraph.KeyspaceManager {
+public class RocksKeyspaceManager implements Hypergraph.KeyspaceManager {
 
-    private final CoreHypergraph core;
-    private final ConcurrentMap<String, CoreKeyspace> keyspaces;
+    private final RocksHypergraph core;
+    private final ConcurrentMap<String, RocksKeyspace> keyspaces;
 
-    CoreKeyspaceManager(CoreHypergraph core) {
+    RocksKeyspaceManager(RocksHypergraph core) {
         this.core = core;
         keyspaces = new ConcurrentHashMap<>();
     }
@@ -43,7 +43,7 @@ public class CoreKeyspaceManager implements Hypergraph.KeyspaceManager {
         if (keyspaceDirectories != null && keyspaceDirectories.length > 0) {
             Arrays.stream(keyspaceDirectories).parallel().forEach(directory -> {
                 String name = directory.getName();
-                CoreKeyspace keyspace = CoreKeyspace.loadExistingAndOpen(core, name);
+                RocksKeyspace keyspace = RocksKeyspace.loadExistingAndOpen(core, name);
                 keyspaces.put(name, keyspace);
             });
         }
@@ -55,25 +55,25 @@ public class CoreKeyspaceManager implements Hypergraph.KeyspaceManager {
     }
 
     @Override
-    public CoreKeyspace create(String name) {
+    public RocksKeyspace create(String name) {
         if (keyspaces.containsKey(name)) throw new HypergraphException("Keyspace Already Exist: " + name);
 
-        CoreKeyspace keyspace = CoreKeyspace.createNewAndOpen(core, name);
+        RocksKeyspace keyspace = RocksKeyspace.createNewAndOpen(core, name);
         keyspaces.put(name, keyspace);
         return keyspace;
     }
 
     @Override
-    public CoreKeyspace get(String keyspace) {
+    public RocksKeyspace get(String keyspace) {
         return keyspaces.get(keyspace);
     }
 
     @Override
-    public Set<CoreKeyspace> getAll() {
+    public Set<RocksKeyspace> getAll() {
         return new HashSet<>(keyspaces.values());
     }
 
-    void remove(CoreKeyspace keyspace) {
+    void remove(RocksKeyspace keyspace) {
         keyspaces.remove(keyspace.name());
     }
 }

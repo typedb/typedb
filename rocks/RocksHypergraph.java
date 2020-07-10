@@ -32,7 +32,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /**
  * A Hypergraph implementation with RocksDB
  */
-public class CoreHypergraph implements Hypergraph {
+public class RocksHypergraph implements Hypergraph {
 
     static {
         RocksDB.loadLibrary();
@@ -41,31 +41,31 @@ public class CoreHypergraph implements Hypergraph {
     private final Path directory;
     private final Options rocksOptions;
     private final AtomicBoolean isOpen;
-    private final CoreProperties properties;
-    private final CoreKeyspaceManager keyspaceMgr;
+    private final RocksProperties properties;
+    private final RocksKeyspaceManager keyspaceMgr;
 
-    private CoreHypergraph(String directory, Properties properties) {
+    private RocksHypergraph(String directory, Properties properties) {
         this.directory = Paths.get(directory);
-        this.properties = new CoreProperties(properties);
+        this.properties = new RocksProperties(properties);
 
         rocksOptions = new Options();
         rocksOptions.setCreateIfMissing(true);
         rocksOptions.setMergeOperator(new UInt64AddOperator());
         setOptionsFromProperties();
 
-        keyspaceMgr = new CoreKeyspaceManager(this);
+        keyspaceMgr = new RocksKeyspaceManager(this);
         keyspaceMgr.loadAll();
 
         isOpen = new AtomicBoolean();
         isOpen.set(true);
     }
 
-    public static CoreHypergraph open(String directory) {
+    public static RocksHypergraph open(String directory) {
         return open(directory, new Properties());
     }
 
-    public static CoreHypergraph open(String directory, Properties properties) {
-        return new CoreHypergraph(directory, properties);
+    public static RocksHypergraph open(String directory, Properties properties) {
+        return new RocksHypergraph(directory, properties);
     }
 
     private void setOptionsFromProperties() {
@@ -76,7 +76,7 @@ public class CoreHypergraph implements Hypergraph {
         return directory;
     }
 
-    CoreProperties properties() {
+    RocksProperties properties() {
         return properties;
     }
 
@@ -85,7 +85,7 @@ public class CoreHypergraph implements Hypergraph {
     }
 
     @Override
-    public CoreSession session(String keyspace, Hypergraph.Session.Type type) {
+    public RocksSession session(String keyspace, Hypergraph.Session.Type type) {
         if (keyspaceMgr.contains(keyspace)) {
             return keyspaceMgr.get(keyspace).createAndOpenSession(type);
         } else {
@@ -94,7 +94,7 @@ public class CoreHypergraph implements Hypergraph {
     }
 
     @Override
-    public CoreKeyspaceManager keyspaces() {
+    public RocksKeyspaceManager keyspaces() {
         return keyspaceMgr;
     }
 
@@ -106,7 +106,7 @@ public class CoreHypergraph implements Hypergraph {
     @Override
     public void close() {
         if (isOpen.compareAndSet(true, false)) {
-            keyspaceMgr.getAll().parallelStream().forEach(CoreKeyspace::close);
+            keyspaceMgr.getAll().parallelStream().forEach(RocksKeyspace::close);
             rocksOptions.close();
         }
     }
