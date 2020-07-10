@@ -36,19 +36,19 @@ import static org.junit.Assert.assertTrue;
 
 public class DatabaseSteps {
 
-    @When("connection create database: {word}")
+    @When("connection create keyspace: {word}")
     public void connection_create_database(String name) {
         connection_create_databases(list(name));
     }
 
-    @When("connection create database(s):")
+    @When("connection create keyspace(s):")
     public void connection_create_databases(List<String> names) {
         for (String name : names) {
             grakn.databases().create(name);
         }
     }
 
-    @When("connection create databases in parallel:")
+    @When("connection create keyspaces in parallel:")
     public void connection_create_databases_in_parallel(List<String> names) {
         assertTrue(THREAD_POOL_SIZE >= names.size());
 
@@ -61,14 +61,14 @@ public class DatabaseSteps {
         CompletableFuture.allOf(creations).join();
     }
 
-    @When("connection delete database(s):")
+    @When("connection delete keyspace(s):")
     public void connection_delete_databases(List<String> names) {
         for (String databaseName : names) {
             grakn.databases().get(databaseName).delete();
         }
     }
 
-    @When("connection delete databases in parallel:")
+    @When("connection delete keyspaces in parallel:")
     public void connection_delete_databases_in_parallel(List<String> names) {
         assertTrue(THREAD_POOL_SIZE >= names.size());
 
@@ -87,7 +87,7 @@ public class DatabaseSteps {
         CompletableFuture.allOf(deletions).join();
     }
 
-    @Then("connection has database(s):")
+    @Then("connection has keyspace(s):")
     public void connection_has_databases(List<String> names) {
         assertEquals(set(names),
                      grakn.databases().getAll().stream()
@@ -95,7 +95,7 @@ public class DatabaseSteps {
                              .collect(Collectors.toSet()));
     }
 
-    @Then("connection does not have database(s):")
+    @Then("connection does not have keyspace(s):")
     public void connection_does_not_have_databases(List<String> names) {
         for (String name : names) {
             assertNull(grakn.databases().get(name));
