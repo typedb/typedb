@@ -30,20 +30,20 @@ import java.util.concurrent.ConcurrentMap;
 
 public class RocksDatabaseManager implements Grakn.DatabaseManager {
 
-    private final RocksGrakn core;
+    private final RocksGrakn rocksGrakn;
     private final ConcurrentMap<String, RocksDatabase> databases;
 
-    RocksDatabaseManager(RocksGrakn core) {
-        this.core = core;
+    RocksDatabaseManager(RocksGrakn rocksGrakn) {
+        this.rocksGrakn = rocksGrakn;
         databases = new ConcurrentHashMap<>();
     }
 
     void loadAll() {
-        File[] databaseDirectories = core.directory().toFile().listFiles(File::isDirectory);
+        File[] databaseDirectories = rocksGrakn.directory().toFile().listFiles(File::isDirectory);
         if (databaseDirectories != null && databaseDirectories.length > 0) {
             Arrays.stream(databaseDirectories).parallel().forEach(directory -> {
                 String name = directory.getName();
-                RocksDatabase database = RocksDatabase.loadExistingAndOpen(core, name);
+                RocksDatabase database = RocksDatabase.loadExistingAndOpen(rocksGrakn, name);
                 databases.put(name, database);
             });
         }
@@ -58,7 +58,7 @@ public class RocksDatabaseManager implements Grakn.DatabaseManager {
     public RocksDatabase create(String name) {
         if (databases.containsKey(name)) throw new GraknException("Database Already Exist: " + name);
 
-        RocksDatabase database = RocksDatabase.createNewAndOpen(core, name);
+        RocksDatabase database = RocksDatabase.createNewAndOpen(rocksGrakn, name);
         databases.put(name, database);
         return database;
     }

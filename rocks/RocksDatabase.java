@@ -37,34 +37,34 @@ import java.util.concurrent.locks.StampedLock;
 public class RocksDatabase implements Grakn.Database {
 
     private final String name;
-    private final RocksGrakn core;
+    private final RocksGrakn rocksGrakn;
     private final OptimisticTransactionDB rocksDB;
     private final KeyGenerator.Persisted keyGenerator;
     private final ConcurrentMap<RocksSession, Long> sessions;
     private final StampedLock schemaLock;
     private final AtomicBoolean isOpen;
 
-    private RocksDatabase(RocksGrakn core, String name) {
+    private RocksDatabase(RocksGrakn rocksGrakn, String name) {
         this.name = name;
-        this.core = core;
+        this.rocksGrakn = rocksGrakn;
         keyGenerator = new KeyGenerator.Persisted();
         sessions = new ConcurrentHashMap<>();
         isOpen = new AtomicBoolean(false);
         schemaLock = new StampedLock();
 
         try {
-            rocksDB = OptimisticTransactionDB.open(this.core.rocksOptions(), directory().toString());
+            rocksDB = OptimisticTransactionDB.open(this.rocksGrakn.rocksOptions(), directory().toString());
         } catch (RocksDBException e) {
             throw new GraknException(e);
         }
     }
 
-    static RocksDatabase createNewAndOpen(RocksGrakn core, String name) {
-        return new RocksDatabase(core, name).initialiseAndOpen();
+    static RocksDatabase createNewAndOpen(RocksGrakn rocksGrakn, String name) {
+        return new RocksDatabase(rocksGrakn, name).initialiseAndOpen();
     }
 
-    static RocksDatabase loadExistingAndOpen(RocksGrakn core, String name) {
-        return new RocksDatabase(core, name).loadAndOpen();
+    static RocksDatabase loadExistingAndOpen(RocksGrakn rocksGrakn, String name) {
+        return new RocksDatabase(rocksGrakn, name).loadAndOpen();
     }
 
     private RocksDatabase initialiseAndOpen() {
@@ -102,7 +102,7 @@ public class RocksDatabase implements Grakn.Database {
     }
 
     private Path directory() {
-        return core.directory().resolve(name);
+        return rocksGrakn.directory().resolve(name);
     }
 
     OptimisticTransactionDB rocks() {
@@ -143,7 +143,7 @@ public class RocksDatabase implements Grakn.Database {
     @Override
     public void delete() {
         close();
-        core.databases().remove(this);
+        rocksGrakn.databases().remove(this);
         try {
             Files.walk(directory()).sorted(Comparator.reverseOrder())
                     .map(Path::toFile).forEach(File::delete);
