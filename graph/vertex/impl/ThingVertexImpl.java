@@ -123,6 +123,29 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
         throw new HypergraphException(Error.ThingRead.INVALID_VERTEX_CASTING.format(AttributeVertex.class.getCanonicalName()));
     }
 
+    void deleteEdges() {
+        outs.deleteAll();
+        ins.deleteAll();
+    }
+
+    void deleteVertexFromType() {
+        type().unbuffer(this);
+    }
+
+    void deleteVertexFromGraph() {
+        graph.delete(this);
+    }
+
+    void deleteVertexFromStorage() {
+        graph.storage().delete(iid.bytes());
+        graph.storage().delete(EdgeIID.InwardsISA.of(type().iid(), iid).bytes());
+    }
+
+    void commitEdges() {
+        outs.forEach(Edge::commit);
+        ins.forEach(Edge::commit);
+    }
+
     public static class Buffered extends ThingVertexImpl {
 
         public Buffered(ThingGraph graph, VertexIID.Thing iid, boolean isInferred) {
@@ -144,8 +167,13 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
         @Override
         public void commit() {
             if (isInferred) throw new HypergraphException(Error.Transaction.ILLEGAL_OPERATION);
-            commitVertexToStorage();
+            commitVertex();
             commitEdges();
+        }
+
+        private void commitVertex() {
+            graph.storage().put(iid.bytes());
+            graph.storage().put(EdgeIID.InwardsISA.of(type().iid(), iid).bytes());
         }
 
         @Override
@@ -155,29 +183,6 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
                 deleteVertexFromType();
                 deleteVertexFromGraph();
             }
-        }
-
-        private void commitVertexToStorage() {
-            graph.storage().put(iid.bytes());
-            graph.storage().put(EdgeIID.InwardsISA.of(type().iid(), iid).bytes());
-        }
-
-        private void commitEdges() {
-            outs.forEach(Edge::commit);
-            ins.forEach(Edge::commit);
-        }
-
-        private void deleteEdges() {
-            outs.deleteAll();
-            ins.deleteAll();
-        }
-
-        private void deleteVertexFromType() {
-            type().unbuffer(this);
-        }
-
-        private void deleteVertexFromGraph() {
-            graph.delete(this);
         }
     }
 
@@ -214,25 +219,6 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
                 deleteVertexFromStorage();
                 deleteVertexFromGraph();
             }
-        }
-
-        private void commitEdges() {
-            outs.forEach(Edge::commit);
-            ins.forEach(Edge::commit);
-        }
-
-        private void deleteEdges() {
-            outs.forEach(Edge::delete);
-            ins.forEach(Edge::delete);
-        }
-
-        private void deleteVertexFromStorage() {
-            graph.storage().delete(iid.bytes());
-            graph.storage().delete(EdgeIID.InwardsISA.of(type().iid(), iid).bytes());
-        }
-
-        private void deleteVertexFromGraph() {
-            graph.delete(this);
         }
     }
 }

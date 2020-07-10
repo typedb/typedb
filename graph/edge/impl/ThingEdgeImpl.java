@@ -30,6 +30,7 @@ import hypergraph.graph.vertex.ThingVertex;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static hypergraph.graph.util.Schema.Status.BUFFERED;
 import static java.util.Objects.hash;
 
 public abstract class ThingEdgeImpl implements ThingEdge {
@@ -127,7 +128,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
             if (deleted.compareAndSet(false, true)) {
                 from.outs().removeFromBuffer(this);
                 to.ins().removeFromBuffer(this);
-                if (!(from instanceof Buffered) && !(to instanceof Buffered)) {
+                if (!(from.status().equals(BUFFERED)) && !(to.status().equals(BUFFERED))) {
                     graph.storage().delete(outIID().bytes());
                     graph.storage().delete(inIID().bytes());
                 }

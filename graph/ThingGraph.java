@@ -247,7 +247,7 @@ public class ThingGraph implements Graph<VertexIID.Thing, ThingVertex> {
         return isModified;
     }
 
-    public void delete(AttributeVertex<?> vertex) {
+    public void deleteAttribute(AttributeVertex<?> vertex) {
         assert storage().isOpen();
         attributesByIID.remove(vertex.iid());
     }

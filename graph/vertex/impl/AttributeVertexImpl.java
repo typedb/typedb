@@ -24,7 +24,6 @@ import hypergraph.graph.ThingGraph;
 import hypergraph.graph.adjacency.Adjacency;
 import hypergraph.graph.adjacency.ThingAdjacency;
 import hypergraph.graph.adjacency.impl.ThingAdjacencyImpl;
-import hypergraph.graph.edge.Edge;
 import hypergraph.graph.iid.EdgeIID;
 import hypergraph.graph.iid.IndexIID;
 import hypergraph.graph.iid.VertexIID;
@@ -96,15 +95,11 @@ public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl impleme
     @Override
     public void delete() {
         if (isDeleted.compareAndSet(false, true)) {
-            outs.forEach(Edge::delete);
-            ins.forEach(Edge::delete);
-
-            type().unbuffer(this);
-
-            graph.storage().delete(attributeIID.bytes());
-            graph.storage().delete(EdgeIID.InwardsISA.of(type().iid(), iid).bytes());
+            deleteEdges();
+            deleteVertexFromType();
+            deleteVertexFromStorage();
             graph.storage().delete(index().bytes());
-            graph.delete(this);
+            graph.deleteAttribute(this);
         }
     }
 
@@ -117,11 +112,14 @@ public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl impleme
     @Override
     public void commit() {
         if (isInferred) throw new HypergraphException(Error.Transaction.ILLEGAL_OPERATION);
+        commitVertex();
+        commitEdges();
+    }
+
+    private void commitVertex() {
         graph.storage().putUntracked(attributeIID.bytes());
         graph.storage().putUntracked(EdgeIID.InwardsISA.of(type().iid(), iid).bytes());
         graph.storage().putUntracked(index().bytes(), attributeIID.bytes());
-        outs.forEach(Edge::commit);
-        ins.forEach(Edge::commit);
     }
 
     @Override
