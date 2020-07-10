@@ -16,10 +16,9 @@
  *
  */
 
-package hypergraph.core;
+package hypergraph.rocks;
 
 import hypergraph.Hypergraph;
-import hypergraph.common.collection.Bytes;
 import hypergraph.common.concurrent.ManagedReadWriteLock;
 import hypergraph.common.exception.Error;
 import hypergraph.common.exception.HypergraphException;

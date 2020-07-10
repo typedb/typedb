@@ -27,7 +27,7 @@ java_test(
     deps = [
         "//:hypergraph",
         "//concept:concept",
-        "//core:hypergraph",
+        "//rocks:hypergraph",
     ],
     size = "large",
 )

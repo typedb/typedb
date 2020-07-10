@@ -16,7 +16,7 @@
  *
  */
 
-package hypergraph.core;
+package hypergraph.rocks;
 
 import hypergraph.Hypergraph;
 import hypergraph.graph.util.KeyGenerator;

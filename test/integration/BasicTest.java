@@ -25,7 +25,7 @@ import hypergraph.concept.type.EntityType;
 import hypergraph.concept.type.RelationType;
 import hypergraph.concept.type.RoleType;
 import hypergraph.concept.type.ThingType;
-import hypergraph.core.CoreHypergraph;
+import hypergraph.rocks.CoreHypergraph;
 import org.junit.Test;
 
 import java.io.IOException;

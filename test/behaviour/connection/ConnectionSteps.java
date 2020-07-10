@@ -19,8 +19,8 @@
 package hypergraph.test.behaviour.connection;
 
 import hypergraph.Hypergraph;
-import hypergraph.core.CoreHypergraph;
-import hypergraph.core.CoreKeyspace;
+import hypergraph.rocks.CoreHypergraph;
+import hypergraph.rocks.CoreKeyspace;
 import io.cucumber.java.After;
 import io.cucumber.java.en.Given;
 

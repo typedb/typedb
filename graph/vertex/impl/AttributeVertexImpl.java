@@ -32,6 +32,9 @@ import hypergraph.graph.vertex.AttributeVertex;
 
 import java.time.LocalDateTime;
 
+import static hypergraph.common.exception.Error.ThingRead.INVALID_VERTEX_CASTING;
+import static hypergraph.common.exception.Error.Transaction.ILLEGAL_OPERATION;
+
 public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl implements AttributeVertex<VALUE> {
 
     private final VertexIID.Attribute<VALUE> attributeIID;
@@ -111,7 +114,7 @@ public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl impleme
      */
     @Override
     public void commit() {
-        if (isInferred) throw new HypergraphException(Error.Transaction.ILLEGAL_OPERATION);
+        if (isInferred) throw new HypergraphException(ILLEGAL_OPERATION);
         commitVertex();
         commitEdges();
     }
@@ -129,27 +132,27 @@ public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl impleme
 
     @Override
     public AttributeVertexImpl.Boolean asBoolean() {
-        throw new HypergraphException(Error.ThingRead.INVALID_VERTEX_CASTING.format(Boolean.class.getCanonicalName()));
+        throw new HypergraphException(INVALID_VERTEX_CASTING.format(Boolean.class.getCanonicalName()));
     }
 
     @Override
     public AttributeVertexImpl.Long asLong() {
-        throw new HypergraphException(Error.ThingRead.INVALID_VERTEX_CASTING.format(Long.class.getCanonicalName()));
+        throw new HypergraphException(INVALID_VERTEX_CASTING.format(Long.class.getCanonicalName()));
     }
 
     @Override
     public AttributeVertexImpl.Double asDouble() {
-        throw new HypergraphException(Error.ThingRead.INVALID_VERTEX_CASTING.format(Double.class.getCanonicalName()));
+        throw new HypergraphException(INVALID_VERTEX_CASTING.format(Double.class.getCanonicalName()));
     }
 
     @Override
     public AttributeVertexImpl.String asString() {
-        throw new HypergraphException(Error.ThingRead.INVALID_VERTEX_CASTING.format(String.class.getCanonicalName()));
+        throw new HypergraphException(INVALID_VERTEX_CASTING.format(String.class.getCanonicalName()));
     }
 
     @Override
     public AttributeVertexImpl.DateTime asDateTime() {
-        throw new HypergraphException(Error.ThingRead.INVALID_VERTEX_CASTING.format(DateTime.class.getCanonicalName()));
+        throw new HypergraphException(INVALID_VERTEX_CASTING.format(DateTime.class.getCanonicalName()));
     }
 
     public static class Boolean extends AttributeVertexImpl<java.lang.Boolean> {
