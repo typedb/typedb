@@ -48,6 +48,5 @@ public class EntityImpl extends ThingImpl implements Entity {
     @Override
     public void validate() {
         super.validate();
-        // TODO: validate entity
     }
 }

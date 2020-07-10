@@ -19,6 +19,7 @@
 package hypergraph.core;
 
 import hypergraph.Hypergraph;
+import hypergraph.common.collection.Bytes;
 import hypergraph.common.concurrent.ManagedReadWriteLock;
 import hypergraph.common.exception.Error;
 import hypergraph.common.exception.HypergraphException;
@@ -42,6 +43,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
 
 import static hypergraph.common.collection.Bytes.bytesHavePrefix;
+import static hypergraph.common.collection.Bytes.longToBytes;
 
 class CoreTransaction implements Hypergraph.Transaction {
 
@@ -152,6 +154,7 @@ class CoreTransaction implements Hypergraph.Transaction {
                 rollback();
                 throw new HypergraphException(e);
             } finally {
+                graph.clear();
                 closeResources();
             }
         } else {
@@ -193,6 +196,11 @@ class CoreTransaction implements Hypergraph.Transaction {
         CoreStorage() {
             readWriteLock = new ManagedReadWriteLock();
             iterators = ConcurrentHashMap.newKeySet();
+        }
+
+        @Override
+        public boolean isOpen() {
+            return isOpen.get();
         }
 
         @Override
@@ -264,6 +272,18 @@ class CoreTransaction implements Hypergraph.Transaction {
             try {
                 readWriteLock.lockWrite();
                 rocksTransaction.putUntracked(key, value);
+            } catch (RocksDBException | InterruptedException e) {
+                throw new HypergraphException(e);
+            } finally {
+                readWriteLock.unlockWrite();
+            }
+        }
+
+        @Override
+        public void mergeUntracked(byte[] key, long increment) {
+            try {
+                readWriteLock.lockWrite();
+                rocksTransaction.mergeUntracked(key, longToBytes(increment));
             } catch (RocksDBException | InterruptedException e) {
                 throw new HypergraphException(e);
             } finally {

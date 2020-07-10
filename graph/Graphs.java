@@ -18,8 +18,12 @@
 
 package hypergraph.graph;
 
+import hypergraph.common.exception.Error;
+import hypergraph.common.exception.HypergraphException;
 import hypergraph.graph.util.KeyGenerator;
 import hypergraph.graph.util.Storage;
+
+import static hypergraph.common.exception.Error.Transaction.CLOSED_TRANSACTION;
 
 public class Graphs {
 

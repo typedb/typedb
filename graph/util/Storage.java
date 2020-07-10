@@ -23,6 +23,8 @@ import java.util.function.BiFunction;
 
 public interface Storage {
 
+    boolean isOpen();
+
     KeyGenerator keyGenerator();
 
     byte[] get(byte[] key);
@@ -38,6 +40,8 @@ public interface Storage {
     void putUntracked(byte[] key);
 
     void putUntracked(byte[] key, byte[] value);
+
+    void mergeUntracked(byte[] key, long increment);
 
     <G> Iterator<G> iterate(byte[] key, BiFunction<byte[], byte[], G> constructor);
 }

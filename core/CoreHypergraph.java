@@ -22,6 +22,7 @@ import hypergraph.Hypergraph;
 import hypergraph.common.exception.HypergraphException;
 import org.rocksdb.Options;
 import org.rocksdb.RocksDB;
+import org.rocksdb.UInt64AddOperator;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -47,7 +48,9 @@ public class CoreHypergraph implements Hypergraph {
         this.directory = Paths.get(directory);
         this.properties = new CoreProperties(properties);
 
-        rocksOptions = new Options().setCreateIfMissing(true);
+        rocksOptions = new Options();
+        rocksOptions.setCreateIfMissing(true);
+        rocksOptions.setMergeOperator(new UInt64AddOperator());
         setOptionsFromProperties();
 
         keyspaceMgr = new CoreKeyspaceManager(this);

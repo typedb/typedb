@@ -67,6 +67,7 @@ public class ThingGraph implements Graph<VertexIID.Thing, ThingVertex> {
 
     @Override
     public ThingVertex convert(VertexIID.Thing iid) {
+        assert storage().isOpen();
 //        return thingsByIID.computeIfAbsent(iid, i -> ThingVertexImpl.of(this, i));
         if (iid.schema().equals(Schema.Vertex.Thing.ATTRIBUTE)) {
             VertexIID.Attribute attIID = iid.asAttribute();
@@ -96,6 +97,7 @@ public class ThingGraph implements Graph<VertexIID.Thing, ThingVertex> {
     }
 
     public ThingVertex create(VertexIID.Type typeIID, boolean isInferred) {
+        assert storage().isOpen();
         assert !typeIID.schema().equals(Schema.Vertex.Type.ATTRIBUTE_TYPE);
         VertexIID.Thing iid = generate(graphManager.keyGenerator(), typeIID);
         ThingVertex vertex = new ThingVertexImpl.Buffered(this, iid, isInferred);
@@ -113,6 +115,7 @@ public class ThingGraph implements Graph<VertexIID.Thing, ThingVertex> {
     }
 
     public AttributeVertex<Boolean> get(TypeVertex type, boolean value) {
+        assert storage().isOpen();
         assert type.schema().equals(Schema.Vertex.Type.ATTRIBUTE_TYPE);
         assert type.valueType().valueClass().equals(Boolean.class);
 
@@ -124,6 +127,7 @@ public class ThingGraph implements Graph<VertexIID.Thing, ThingVertex> {
     }
 
     public AttributeVertex<Long> get(TypeVertex type, long value) {
+        assert storage().isOpen();
         assert type.schema().equals(Schema.Vertex.Type.ATTRIBUTE_TYPE);
         assert type.valueType().valueClass().equals(Long.class);
 
@@ -135,6 +139,7 @@ public class ThingGraph implements Graph<VertexIID.Thing, ThingVertex> {
     }
 
     public AttributeVertex<Double> get(TypeVertex type, double value) {
+        assert storage().isOpen();
         assert type.schema().equals(Schema.Vertex.Type.ATTRIBUTE_TYPE);
         assert type.valueType().valueClass().equals(Double.class);
 
@@ -146,6 +151,7 @@ public class ThingGraph implements Graph<VertexIID.Thing, ThingVertex> {
     }
 
     public AttributeVertex<String> get(TypeVertex type, String value) {
+        assert storage().isOpen();
         assert type.schema().equals(Schema.Vertex.Type.ATTRIBUTE_TYPE);
         assert type.valueType().valueClass().equals(String.class);
 
@@ -157,6 +163,7 @@ public class ThingGraph implements Graph<VertexIID.Thing, ThingVertex> {
     }
 
     public AttributeVertex<LocalDateTime> get(TypeVertex type, LocalDateTime value) {
+        assert storage().isOpen();
         assert type.schema().equals(Schema.Vertex.Type.ATTRIBUTE_TYPE);
         assert type.valueType().valueClass().equals(LocalDateTime.class);
 
@@ -168,6 +175,7 @@ public class ThingGraph implements Graph<VertexIID.Thing, ThingVertex> {
     }
 
     public AttributeVertex<Boolean> put(TypeVertex type, boolean value, boolean isInferred) {
+        assert storage().isOpen();
         assert type.schema().equals(Schema.Vertex.Type.ATTRIBUTE_TYPE);
         assert type.valueType().valueClass().equals(Boolean.class);
 
@@ -178,6 +186,7 @@ public class ThingGraph implements Graph<VertexIID.Thing, ThingVertex> {
     }
 
     public AttributeVertex<Long> put(TypeVertex type, long value, boolean isInferred) {
+        assert storage().isOpen();
         assert type.schema().equals(Schema.Vertex.Type.ATTRIBUTE_TYPE);
         assert type.valueType().valueClass().equals(Long.class);
 
@@ -188,6 +197,7 @@ public class ThingGraph implements Graph<VertexIID.Thing, ThingVertex> {
     }
 
     public AttributeVertex<Double> put(TypeVertex type, double value, boolean isInferred) {
+        assert storage().isOpen();
         assert type.schema().equals(Schema.Vertex.Type.ATTRIBUTE_TYPE);
         assert type.valueType().valueClass().equals(Double.class);
 
@@ -198,6 +208,7 @@ public class ThingGraph implements Graph<VertexIID.Thing, ThingVertex> {
     }
 
     public AttributeVertex<String> put(TypeVertex type, String value, boolean isInferred) {
+        assert storage().isOpen();
         assert type.schema().equals(Schema.Vertex.Type.ATTRIBUTE_TYPE);
         assert type.valueType().valueClass().equals(String.class);
         assert value.length() <= Schema.STRING_MAX_LENGTH;
@@ -209,6 +220,7 @@ public class ThingGraph implements Graph<VertexIID.Thing, ThingVertex> {
     }
 
     public AttributeVertex<LocalDateTime> put(TypeVertex type, LocalDateTime value, boolean isInferred) {
+        assert storage().isOpen();
         assert type.schema().equals(Schema.Vertex.Type.ATTRIBUTE_TYPE);
         assert type.valueType().valueClass().equals(LocalDateTime.class);
 
@@ -220,11 +232,13 @@ public class ThingGraph implements Graph<VertexIID.Thing, ThingVertex> {
 
     @Override
     public void delete(ThingVertex vertex) {
+        assert storage().isOpen();
         thingsByIID.remove(vertex.iid());
     }
 
     @Override
     public void setModified() {
+        assert storage().isOpen();
         if (!isModified) isModified = true;
     }
 
@@ -234,6 +248,7 @@ public class ThingGraph implements Graph<VertexIID.Thing, ThingVertex> {
     }
 
     public void delete(AttributeVertex<?> vertex) {
+        assert storage().isOpen();
         attributesByIID.remove(vertex.iid());
     }
 

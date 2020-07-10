@@ -86,7 +86,7 @@ public abstract class Error {
         public static final Transaction ILLEGAL_OPERATION =
                 new Transaction(2, "Attempted an illegal operation!");
         public static final Transaction CLOSED_TRANSACTION =
-                new Transaction(3, "The transaction has been closed and cannot perform any operation.");
+                new Transaction(3, "The transaction has been closed and no further operation is allowed.");
         public static final Transaction ILLEGAL_COMMIT =
                 new Transaction(4, "Only write transactions can be committed.");
         public static final Transaction DIRTY_SCHEMA_WRITES =

@@ -108,6 +108,7 @@ public class TypeGraph implements Graph<VertexIID.Type, TypeVertex> {
     }
 
     public TypeVertex get(String label, @Nullable String scope) {
+        assert storage().isOpen();
         String scopedLabel = scopedLabel(label, scope);
         try {
             multiLabelLock.lockRead();
@@ -139,6 +140,7 @@ public class TypeGraph implements Graph<VertexIID.Type, TypeVertex> {
     }
 
     public TypeVertex create(Schema.Vertex.Type type, String label, @Nullable String scope) {
+        assert storage().isOpen();
         String scopedLabel = scopedLabel(label, scope);
         try { // we intentionally use READ on multiLabelLock, as put() only concerns one label
             multiLabelLock.lockRead();
@@ -158,6 +160,7 @@ public class TypeGraph implements Graph<VertexIID.Type, TypeVertex> {
     }
 
     public TypeVertex update(TypeVertex vertex, String oldLabel, @Nullable String oldScope, String newLabel, @Nullable String newScope) {
+        assert storage().isOpen();
         String oldScopedLabel = scopedLabel(oldLabel, oldScope);
         String newScopedLabel = scopedLabel(newLabel, newScope);
         try {
@@ -176,6 +179,7 @@ public class TypeGraph implements Graph<VertexIID.Type, TypeVertex> {
 
     @Override
     public void delete(TypeVertex vertex) {
+        assert storage().isOpen();
         try { // we intentionally use READ on multiLabelLock, as delete() only concerns one label
             multiLabelLock.lockRead();
             singleLabelLocks.computeIfAbsent(vertex.scopedLabel(), x -> new ManagedReadWriteLock()).lockWrite();
