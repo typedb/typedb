@@ -16,7 +16,7 @@
  *
  */
 
-package hypergraph.concept.type;
+package grakn.concept.type;
 
 import java.util.stream.Stream;
 

@@ -16,12 +16,12 @@
  *
  */
 
-package hypergraph.graph.adjacency;
+package grakn.graph.adjacency;
 
-import hypergraph.graph.edge.ThingEdge;
-import hypergraph.graph.iid.IID;
-import hypergraph.graph.util.Schema;
-import hypergraph.graph.vertex.ThingVertex;
+import grakn.graph.edge.ThingEdge;
+import grakn.graph.iid.IID;
+import grakn.graph.util.Schema;
+import grakn.graph.vertex.ThingVertex;
 
 public interface ThingAdjacency extends Adjacency<Schema.Edge.Thing, ThingEdge, ThingVertex> {
 

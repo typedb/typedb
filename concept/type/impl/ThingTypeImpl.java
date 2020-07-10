@@ -16,21 +16,21 @@
  *
  */
 
-package hypergraph.concept.type.impl;
+package grakn.concept.type.impl;
 
-import hypergraph.common.exception.HypergraphException;
-import hypergraph.concept.thing.Thing;
-import hypergraph.concept.thing.impl.AttributeImpl;
-import hypergraph.concept.thing.impl.EntityImpl;
-import hypergraph.concept.thing.impl.RelationImpl;
-import hypergraph.concept.type.AttributeType;
-import hypergraph.concept.type.RoleType;
-import hypergraph.concept.type.ThingType;
-import hypergraph.concept.type.Type;
-import hypergraph.graph.TypeGraph;
-import hypergraph.graph.edge.TypeEdge;
-import hypergraph.graph.util.Schema;
-import hypergraph.graph.vertex.TypeVertex;
+import grakn.common.exception.GraknException;
+import grakn.concept.thing.Thing;
+import grakn.concept.thing.impl.AttributeImpl;
+import grakn.concept.thing.impl.EntityImpl;
+import grakn.concept.thing.impl.RelationImpl;
+import grakn.concept.type.AttributeType;
+import grakn.concept.type.RoleType;
+import grakn.concept.type.ThingType;
+import grakn.concept.type.Type;
+import grakn.graph.TypeGraph;
+import grakn.graph.edge.TypeEdge;
+import grakn.graph.util.Schema;
+import grakn.graph.vertex.TypeVertex;
 
 import javax.annotation.Nullable;
 import java.util.Collections;
@@ -42,26 +42,26 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static hypergraph.common.collection.Streams.compareSize;
-import static hypergraph.common.exception.Error.Internal.UNRECOGNISED_VALUE;
-import static hypergraph.common.exception.Error.TypeWrite.HAS_ABSTRACT_ATT_TYPE;
-import static hypergraph.common.exception.Error.TypeWrite.HAS_ATT_NOT_AVAILABLE;
-import static hypergraph.common.exception.Error.TypeWrite.HAS_KEY_NOT_AVAILABLE;
-import static hypergraph.common.exception.Error.TypeWrite.HAS_KEY_PRECONDITION_OWNERSHIP;
-import static hypergraph.common.exception.Error.TypeWrite.HAS_KEY_PRECONDITION_UNIQUENESS;
-import static hypergraph.common.exception.Error.TypeWrite.HAS_KEY_VALUE_TYPE;
-import static hypergraph.common.exception.Error.TypeWrite.OVERRIDE_NOT_AVAILABLE;
-import static hypergraph.common.exception.Error.TypeWrite.OVERRIDDEN_NOT_SUPERTYPE;
-import static hypergraph.common.exception.Error.TypeWrite.PLAYS_ABSTRACT_ROLE_TYPE;
-import static hypergraph.common.exception.Error.TypeWrite.PLAYS_ROLE_NOT_AVAILABLE;
-import static hypergraph.common.exception.Error.TypeWrite.ROOT_TYPE_MUTATION;
-import static hypergraph.common.exception.Error.TypeWrite.TYPE_HAS_INSTANCES;
-import static hypergraph.common.exception.Error.TypeWrite.TYPE_HAS_SUBTYPES;
-import static hypergraph.common.iterator.Iterators.apply;
-import static hypergraph.common.iterator.Iterators.distinct;
-import static hypergraph.common.iterator.Iterators.filter;
-import static hypergraph.common.iterator.Iterators.link;
-import static hypergraph.common.iterator.Iterators.stream;
+import static grakn.common.collection.Streams.compareSize;
+import static grakn.common.exception.Error.Internal.UNRECOGNISED_VALUE;
+import static grakn.common.exception.Error.TypeWrite.HAS_ABSTRACT_ATT_TYPE;
+import static grakn.common.exception.Error.TypeWrite.HAS_ATT_NOT_AVAILABLE;
+import static grakn.common.exception.Error.TypeWrite.HAS_KEY_NOT_AVAILABLE;
+import static grakn.common.exception.Error.TypeWrite.HAS_KEY_PRECONDITION_OWNERSHIP;
+import static grakn.common.exception.Error.TypeWrite.HAS_KEY_PRECONDITION_UNIQUENESS;
+import static grakn.common.exception.Error.TypeWrite.HAS_KEY_VALUE_TYPE;
+import static grakn.common.exception.Error.TypeWrite.OVERRIDE_NOT_AVAILABLE;
+import static grakn.common.exception.Error.TypeWrite.OVERRIDDEN_NOT_SUPERTYPE;
+import static grakn.common.exception.Error.TypeWrite.PLAYS_ABSTRACT_ROLE_TYPE;
+import static grakn.common.exception.Error.TypeWrite.PLAYS_ROLE_NOT_AVAILABLE;
+import static grakn.common.exception.Error.TypeWrite.ROOT_TYPE_MUTATION;
+import static grakn.common.exception.Error.TypeWrite.TYPE_HAS_INSTANCES;
+import static grakn.common.exception.Error.TypeWrite.TYPE_HAS_SUBTYPES;
+import static grakn.common.iterator.Iterators.apply;
+import static grakn.common.iterator.Iterators.distinct;
+import static grakn.common.iterator.Iterators.filter;
+import static grakn.common.iterator.Iterators.link;
+import static grakn.common.iterator.Iterators.stream;
 import static java.util.stream.Stream.concat;
 
 public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
@@ -77,7 +77,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     @Override
     public void isAbstract(boolean isAbstract) {
         if (isAbstract && instances().findFirst().isPresent()) {
-            throw new HypergraphException(TYPE_HAS_INSTANCES.format(label()));
+            throw new GraknException(TYPE_HAS_INSTANCES.format(label()));
         }
         vertex.isAbstract(isAbstract);
     }
@@ -88,9 +88,9 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     private <T extends Type> void override(Schema.Edge.Type schema, T type, T overriddenType,
                                            Stream<? extends Type> overridable, Stream<? extends Type> notOverridable) {
         if (type.sups().noneMatch(t -> t.equals(overriddenType))) {
-            throw new HypergraphException(OVERRIDDEN_NOT_SUPERTYPE.format(type.label(), overriddenType.label()));
+            throw new GraknException(OVERRIDDEN_NOT_SUPERTYPE.format(type.label(), overriddenType.label()));
         } else if (notOverridable.anyMatch(t -> t.equals(overriddenType)) || overridable.noneMatch(t -> t.equals(overriddenType))) {
-            throw new HypergraphException(OVERRIDE_NOT_AVAILABLE.format(type.label(), overriddenType.label()));
+            throw new GraknException(OVERRIDE_NOT_AVAILABLE.format(type.label(), overriddenType.label()));
         }
 
         vertex.outs().edge(schema, ((TypeImpl) type).vertex).overridden(((TypeImpl) overriddenType).vertex);
@@ -139,9 +139,9 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
     private void hasKey(AttributeType attributeType) {
         if (!attributeType.isKeyable()) {
-            throw new HypergraphException(HAS_KEY_VALUE_TYPE.format(attributeType.label(), attributeType.valueType().getSimpleName()));
+            throw new GraknException(HAS_KEY_VALUE_TYPE.format(attributeType.label(), attributeType.valueType().getSimpleName()));
         } else if (concat(sup().keys(attributeType.valueType()), sup().overriddenAttributes()).anyMatch(a -> a.equals(attributeType))) {
-            throw new HypergraphException(HAS_KEY_NOT_AVAILABLE.format(attributeType.label()));
+            throw new GraknException(HAS_KEY_NOT_AVAILABLE.format(attributeType.label()));
         }
 
         TypeVertex attVertex = ((AttributeTypeImpl) attributeType).vertex;
@@ -150,9 +150,9 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         if ((hasEdge = vertex.outs().edge(Schema.Edge.Type.HAS, attVertex)) != null) {
             // TODO: These ownership and uniqueness checks should be parallelised to scale better
             if (instances().anyMatch(thing -> compareSize(thing.attributes(attributeType), 1) != 0)) {
-                throw new HypergraphException(HAS_KEY_PRECONDITION_OWNERSHIP.format(vertex.label(), attVertex.label()));
+                throw new GraknException(HAS_KEY_PRECONDITION_OWNERSHIP.format(vertex.label(), attVertex.label()));
             } else if (attributeType.instances().anyMatch(att -> compareSize(att.owners(this), 1) != 0)) {
-                throw new HypergraphException(HAS_KEY_PRECONDITION_UNIQUENESS.format(attVertex.label(), vertex.label()));
+                throw new GraknException(HAS_KEY_PRECONDITION_UNIQUENESS.format(attVertex.label(), vertex.label()));
             }
             hasEdge.delete();
         }
@@ -169,7 +169,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
     private void hasAttribute(AttributeType attributeType) {
         if (sups().filter(t -> !t.equals(this)).flatMap(ThingType::attributes).anyMatch(a -> a.equals(attributeType))) {
-            throw new HypergraphException(HAS_ATT_NOT_AVAILABLE.format(attributeType.label()));
+            throw new GraknException(HAS_ATT_NOT_AVAILABLE.format(attributeType.label()));
         }
 
         TypeVertex attVertex = ((AttributeTypeImpl) attributeType).vertex;
@@ -230,7 +230,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     @Override
     public void plays(RoleType roleType) {
         if (sups().filter(t -> !t.equals(this)).flatMap(ThingType::plays).anyMatch(a -> a.equals(roleType))) {
-            throw new HypergraphException(PLAYS_ROLE_NOT_AVAILABLE.format(roleType.label()));
+            throw new GraknException(PLAYS_ROLE_NOT_AVAILABLE.format(roleType.label()));
         }
         vertex.outs().put(Schema.Edge.Type.PLAYS, ((RoleTypeImpl) roleType).vertex);
     }
@@ -262,17 +262,17 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     @Override
     public void delete() {
         if (subs().anyMatch(s -> !s.equals(this))) {
-            throw new HypergraphException(TYPE_HAS_SUBTYPES.format(label()));
+            throw new GraknException(TYPE_HAS_SUBTYPES.format(label()));
         } else if (subs().flatMap(ThingType::instances).findFirst().isPresent()) {
-            throw new HypergraphException(TYPE_HAS_INSTANCES.format(label()));
+            throw new GraknException(TYPE_HAS_INSTANCES.format(label()));
         } else {
             vertex.delete();
         }
     }
 
     @Override
-    public List<HypergraphException> validate() {
-        List<HypergraphException> exceptions = super.validate();
+    public List<GraknException> validate() {
+        List<GraknException> exceptions = super.validate();
         if (!isAbstract()) {
             exceptions.addAll(exceptions_hasAbstractAttType());
             exceptions.addAll(exceptions_playsAbstractRoleType());
@@ -280,15 +280,15 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         return exceptions;
     }
 
-    private List<HypergraphException> exceptions_hasAbstractAttType() {
+    private List<GraknException> exceptions_hasAbstractAttType() {
         return attributes().filter(TypeImpl::isAbstract)
-                .map(attType -> new HypergraphException(HAS_ABSTRACT_ATT_TYPE.format(label(), attType.label())))
+                .map(attType -> new GraknException(HAS_ABSTRACT_ATT_TYPE.format(label(), attType.label())))
                 .collect(Collectors.toList());
     }
 
-    private List<HypergraphException> exceptions_playsAbstractRoleType() {
+    private List<GraknException> exceptions_playsAbstractRoleType() {
         return plays().filter(TypeImpl::isAbstract)
-                .map(roleType -> new HypergraphException(PLAYS_ABSTRACT_ROLE_TYPE.format(label(), roleType.label())))
+                .map(roleType -> new GraknException(PLAYS_ABSTRACT_ROLE_TYPE.format(label(), roleType.label())))
                 .collect(Collectors.toList());
     }
 
@@ -303,10 +303,10 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         public boolean isRoot() { return true; }
 
         @Override
-        public void label(String label) { throw new HypergraphException(ROOT_TYPE_MUTATION); }
+        public void label(String label) { throw new GraknException(ROOT_TYPE_MUTATION); }
 
         @Override
-        public void isAbstract(boolean isAbstract) { throw new HypergraphException(ROOT_TYPE_MUTATION); }
+        public void isAbstract(boolean isAbstract) { throw new GraknException(ROOT_TYPE_MUTATION); }
 
         @Override
         public ThingTypeImpl sup() { return null; }
@@ -330,7 +330,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
                     case RELATION_TYPE:
                         return RelationTypeImpl.of(v);
                     default:
-                        throw new HypergraphException(UNRECOGNISED_VALUE);
+                        throw new GraknException(UNRECOGNISED_VALUE);
                 }
             });
         }
@@ -347,34 +347,34 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
                         return RelationImpl.of(v);
                     default:
                         assert false;
-                        throw new HypergraphException(UNRECOGNISED_VALUE);
+                        throw new GraknException(UNRECOGNISED_VALUE);
                 }
             });
         }
 
         @Override
         public void has(AttributeType attributeType, boolean isKey) {
-            throw new HypergraphException(ROOT_TYPE_MUTATION);
+            throw new GraknException(ROOT_TYPE_MUTATION);
         }
 
         @Override
         public void has(AttributeType attributeType, AttributeType overriddenType, boolean isKey) {
-            throw new HypergraphException(ROOT_TYPE_MUTATION);
+            throw new GraknException(ROOT_TYPE_MUTATION);
         }
 
         @Override
         public void plays(RoleType roleType) {
-            throw new HypergraphException(ROOT_TYPE_MUTATION);
+            throw new GraknException(ROOT_TYPE_MUTATION);
         }
 
         @Override
         public void plays(RoleType roleType, RoleType overriddenType) {
-            throw new HypergraphException(ROOT_TYPE_MUTATION);
+            throw new GraknException(ROOT_TYPE_MUTATION);
         }
 
         @Override
         public void unplay(RoleType roleType) {
-            throw new HypergraphException(ROOT_TYPE_MUTATION);
+            throw new GraknException(ROOT_TYPE_MUTATION);
         }
 
         /**
@@ -383,7 +383,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
          * There's nothing to validate for the root type 'thing'.
          */
         @Override
-        public List<HypergraphException> validate() {
+        public List<GraknException> validate() {
             return Collections.emptyList();
         }
     }

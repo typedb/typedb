@@ -16,7 +16,7 @@
  *
  */
 
-package hypergraph.graph.vertex;
+package grakn.graph.vertex;
 
 //public abstract class RuleVertex extends Vertex<Schema.Vertex.Rule, Schema.Edge.Type, TypeEdge> {
 //

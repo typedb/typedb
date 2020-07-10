@@ -16,14 +16,14 @@
  *
  */
 
-package hypergraph.graph;
+package grakn.graph;
 
-import hypergraph.common.exception.Error;
-import hypergraph.common.exception.HypergraphException;
-import hypergraph.graph.util.KeyGenerator;
-import hypergraph.graph.util.Storage;
+import grakn.common.exception.Error;
+import grakn.common.exception.GraknException;
+import grakn.graph.util.KeyGenerator;
+import grakn.graph.util.Storage;
 
-import static hypergraph.common.exception.Error.Transaction.CLOSED_TRANSACTION;
+import static grakn.common.exception.Error.Transaction.CLOSED_TRANSACTION;
 
 public class Graphs {
 

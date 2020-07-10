@@ -16,20 +16,20 @@
  *
  */
 
-package hypergraph.concept.thing.impl;
+package grakn.concept.thing.impl;
 
-import hypergraph.common.exception.Error;
-import hypergraph.common.exception.HypergraphException;
-import hypergraph.concept.thing.Attribute;
-import hypergraph.concept.thing.Thing;
-import hypergraph.concept.type.AttributeType;
-import hypergraph.concept.type.RoleType;
-import hypergraph.concept.type.Type;
-import hypergraph.concept.type.impl.RoleTypeImpl;
-import hypergraph.concept.type.impl.TypeImpl;
-import hypergraph.graph.util.Schema;
-import hypergraph.graph.vertex.ThingVertex;
-import hypergraph.graph.vertex.TypeVertex;
+import grakn.common.exception.Error;
+import grakn.common.exception.GraknException;
+import grakn.concept.thing.Attribute;
+import grakn.concept.thing.Thing;
+import grakn.concept.type.AttributeType;
+import grakn.concept.type.RoleType;
+import grakn.concept.type.Type;
+import grakn.concept.type.impl.RoleTypeImpl;
+import grakn.concept.type.impl.TypeImpl;
+import grakn.graph.util.Schema;
+import grakn.graph.vertex.ThingVertex;
+import grakn.graph.vertex.TypeVertex;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -39,11 +39,11 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static hypergraph.common.exception.Error.ThingWrite.THING_KEY_MISSING;
-import static hypergraph.common.iterator.Iterators.apply;
-import static hypergraph.common.iterator.Iterators.filter;
-import static hypergraph.common.iterator.Iterators.link;
-import static hypergraph.common.iterator.Iterators.stream;
+import static grakn.common.exception.Error.ThingWrite.THING_KEY_MISSING;
+import static grakn.common.iterator.Iterators.apply;
+import static grakn.common.iterator.Iterators.filter;
+import static grakn.common.iterator.Iterators.link;
+import static grakn.common.iterator.Iterators.stream;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
@@ -64,7 +64,7 @@ public abstract class ThingImpl implements Thing {
             case RELATION:
                 return RelationImpl.of(vertex);
             default:
-                throw new HypergraphException(Error.Internal.UNRECOGNISED_VALUE);
+                throw new GraknException(Error.Internal.UNRECOGNISED_VALUE);
         }
     }
 
@@ -86,12 +86,12 @@ public abstract class ThingImpl implements Thing {
     @Override
     public Thing has(Attribute attribute) {
         if (type().attributes().noneMatch(t -> t.equals(attribute.type()))) {
-            throw new HypergraphException(Error.ThingWrite.THING_ATTRIBUTE_UNDEFINED.format(vertex.type().label()));
+            throw new GraknException(Error.ThingWrite.THING_ATTRIBUTE_UNDEFINED.format(vertex.type().label()));
         } else if (type().keys().anyMatch(t -> t.equals(attribute.type()))) {
             if (keys(attribute.type()).findAny().isPresent()) {
-                throw new HypergraphException(Error.ThingWrite.THING_KEY_OVER.format(attribute.type().label(), type().label()));
+                throw new GraknException(Error.ThingWrite.THING_KEY_OVER.format(attribute.type().label(), type().label()));
             } else if (attribute.owners(type()).findAny().isPresent()) {
-                throw new HypergraphException(Error.ThingWrite.THING_KEY_TAKEN.format(attribute.type().label(), type().label()));
+                throw new GraknException(Error.ThingWrite.THING_KEY_TAKEN.format(attribute.type().label(), type().label()));
             }
         }
 
@@ -155,7 +155,7 @@ public abstract class ThingImpl implements Thing {
         if (keys().map(Attribute::type).count() < type().keys().count()) {
             Set<AttributeType> missing = type().keys().collect(toSet());
             missing.removeAll(keys().map(Attribute::type).collect(toSet()));
-            throw new HypergraphException(THING_KEY_MISSING.format(type().label(), printTypeSet(missing)));
+            throw new GraknException(THING_KEY_MISSING.format(type().label(), printTypeSet(missing)));
         }
     }
 

@@ -16,23 +16,23 @@
  *
  */
 
-package hypergraph.concept;
+package grakn.concept;
 
-import hypergraph.common.exception.HypergraphException;
-import hypergraph.concept.thing.Attribute;
-import hypergraph.concept.thing.Entity;
-import hypergraph.concept.thing.Relation;
-import hypergraph.concept.thing.Thing;
-import hypergraph.concept.type.AttributeType;
-import hypergraph.concept.type.EntityType;
-import hypergraph.concept.type.RelationType;
-import hypergraph.concept.type.RoleType;
-import hypergraph.concept.type.ThingType;
-import hypergraph.concept.type.Type;
+import grakn.common.exception.GraknException;
+import grakn.concept.thing.Attribute;
+import grakn.concept.thing.Entity;
+import grakn.concept.thing.Relation;
+import grakn.concept.thing.Thing;
+import grakn.concept.type.AttributeType;
+import grakn.concept.type.EntityType;
+import grakn.concept.type.RelationType;
+import grakn.concept.type.RoleType;
+import grakn.concept.type.ThingType;
+import grakn.concept.type.Type;
 
 import java.util.List;
 
-import static hypergraph.common.exception.Error.ConceptRead.INVALID_CONCEPT_CASTING;
+import static grakn.common.exception.Error.ConceptRead.INVALID_CONCEPT_CASTING;
 
 public interface Concept {
 
@@ -41,42 +41,42 @@ public interface Concept {
     boolean isDeleted();
 
     default Type asType() {
-        throw new HypergraphException(INVALID_CONCEPT_CASTING.format(Type.class.getCanonicalName()));
+        throw new GraknException(INVALID_CONCEPT_CASTING.format(Type.class.getCanonicalName()));
     }
 
     default ThingType asThingType() {
-        throw new HypergraphException(INVALID_CONCEPT_CASTING.format(ThingType.class.getCanonicalName()));
+        throw new GraknException(INVALID_CONCEPT_CASTING.format(ThingType.class.getCanonicalName()));
     }
 
     default EntityType asEntityType() {
-        throw new HypergraphException(INVALID_CONCEPT_CASTING.format(EntityType.class.getCanonicalName()));
+        throw new GraknException(INVALID_CONCEPT_CASTING.format(EntityType.class.getCanonicalName()));
     }
 
     default AttributeType asAttributeType() {
-        throw new HypergraphException(INVALID_CONCEPT_CASTING.format(AttributeType.class.getCanonicalName()));
+        throw new GraknException(INVALID_CONCEPT_CASTING.format(AttributeType.class.getCanonicalName()));
     }
 
     default RelationType asRelationType() {
-        throw new HypergraphException(INVALID_CONCEPT_CASTING.format(RelationType.class.getCanonicalName()));
+        throw new GraknException(INVALID_CONCEPT_CASTING.format(RelationType.class.getCanonicalName()));
     }
 
     default RoleType asRoleType() {
-        throw new HypergraphException(INVALID_CONCEPT_CASTING.format(RoleType.class.getCanonicalName()));
+        throw new GraknException(INVALID_CONCEPT_CASTING.format(RoleType.class.getCanonicalName()));
     }
 
     default Thing asThing() {
-        throw new HypergraphException(INVALID_CONCEPT_CASTING.format(Thing.class.getCanonicalName()));
+        throw new GraknException(INVALID_CONCEPT_CASTING.format(Thing.class.getCanonicalName()));
     }
 
     default Entity asEntity() {
-        throw new HypergraphException(INVALID_CONCEPT_CASTING.format(Entity.class.getCanonicalName()));
+        throw new GraknException(INVALID_CONCEPT_CASTING.format(Entity.class.getCanonicalName()));
     }
 
     default Attribute asAttribute() {
-        throw new HypergraphException(INVALID_CONCEPT_CASTING.format(Attribute.class.getCanonicalName()));
+        throw new GraknException(INVALID_CONCEPT_CASTING.format(Attribute.class.getCanonicalName()));
     }
 
     default Relation asRelation() {
-        throw new HypergraphException(INVALID_CONCEPT_CASTING.format(Relation.class.getCanonicalName()));
+        throw new GraknException(INVALID_CONCEPT_CASTING.format(Relation.class.getCanonicalName()));
     }
 }

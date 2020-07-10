@@ -16,17 +16,17 @@
  *
  */
 
-package hypergraph.rocks;
+package grakn.rocks;
 
-import hypergraph.Hypergraph;
-import hypergraph.graph.util.KeyGenerator;
+import grakn.Grakn;
+import grakn.graph.util.KeyGenerator;
 import org.rocksdb.OptimisticTransactionDB;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class RocksSession implements Hypergraph.Session {
+public class RocksSession implements Grakn.Session {
 
     private final RocksKeyspace keyspace;
     private final Type type;
@@ -52,7 +52,7 @@ public class RocksSession implements Hypergraph.Session {
 
     void remove(RocksTransaction transaction) {
         long schemaReadLockStamp = transactions.remove(transaction);
-        if (this.type.equals(Type.DATA) && transaction.type().equals(Hypergraph.Transaction.Type.WRITE)) {
+        if (this.type.equals(Type.DATA) && transaction.type().equals(Grakn.Transaction.Type.WRITE)) {
             keyspace.releaseSchemaReadLock(schemaReadLockStamp);
         }
     }
@@ -68,9 +68,9 @@ public class RocksSession implements Hypergraph.Session {
     }
 
     @Override
-    public RocksTransaction transaction(Hypergraph.Transaction.Type type) {
+    public RocksTransaction transaction(Grakn.Transaction.Type type) {
         long schemaReadLockStamp = 0;
-        if (this.type.equals(Type.DATA) && type.equals(Hypergraph.Transaction.Type.WRITE)) {
+        if (this.type.equals(Type.DATA) && type.equals(Grakn.Transaction.Type.WRITE)) {
             schemaReadLockStamp = keyspace.acquireSchemaReadLock();
         }
         RocksTransaction transaction = new RocksTransaction(this, type);

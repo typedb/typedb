@@ -16,9 +16,9 @@
  *
  */
 
-package hypergraph.test.behaviour.config;
+package grakn.test.behaviour.config;
 
-import hypergraph.Hypergraph;
+import grakn.Grakn;
 import io.cucumber.java.DataTableType;
 import io.cucumber.java.ParameterType;
 
@@ -104,20 +104,20 @@ public class Parameters {
     }
 
     @ParameterType("read|write")
-    public Hypergraph.Transaction.Type transaction_type(String type) {
+    public Grakn.Transaction.Type transaction_type(String type) {
         if (type.equals("read")) {
-            return Hypergraph.Transaction.Type.READ;
+            return Grakn.Transaction.Type.READ;
         } else if (type.equals("write")) {
-            return Hypergraph.Transaction.Type.WRITE;
+            return Grakn.Transaction.Type.WRITE;
         }
         return null;
     }
 
     @DataTableType
-    public List<Hypergraph.Transaction.Type> transaction_types(List<String> values) {
-        List<Hypergraph.Transaction.Type> typeList = new ArrayList<>();
+    public List<Grakn.Transaction.Type> transaction_types(List<String> values) {
+        List<Grakn.Transaction.Type> typeList = new ArrayList<>();
         for (String value : values) {
-            Hypergraph.Transaction.Type type = transaction_type(value);
+            Grakn.Transaction.Type type = transaction_type(value);
             assertNotNull(type);
             typeList.add(type);
         }

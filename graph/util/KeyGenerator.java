@@ -16,10 +16,10 @@
  *
  */
 
-package hypergraph.graph.util;
+package grakn.graph.util;
 
-import hypergraph.graph.iid.PrefixIID;
-import hypergraph.graph.iid.VertexIID;
+import grakn.graph.iid.PrefixIID;
+import grakn.graph.iid.VertexIID;
 
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
@@ -27,10 +27,10 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static hypergraph.common.collection.Bytes.join;
-import static hypergraph.common.collection.Bytes.longToBytes;
-import static hypergraph.common.collection.Bytes.shortToBytes;
-import static hypergraph.common.iterator.Iterators.filter;
+import static grakn.common.collection.Bytes.join;
+import static grakn.common.collection.Bytes.longToBytes;
+import static grakn.common.collection.Bytes.shortToBytes;
+import static grakn.common.iterator.Iterators.filter;
 import static java.nio.ByteBuffer.wrap;
 import static java.util.Arrays.copyOfRange;
 

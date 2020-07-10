@@ -16,7 +16,7 @@
  *
  */
 
-package hypergraph.test.integration;
+package grakn.test.integration;
 
 import org.junit.Test;
 

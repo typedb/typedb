@@ -23,7 +23,7 @@ java_test(
     srcs = [
         "DebugTest.java",
     ],
-    test_class = "hypergraph.test.behaviour.debug.DebugTest",
+    test_class = "grakn.test.behaviour.debug.DebugTest",
     deps = [
         # Internal Package Dependencies
 

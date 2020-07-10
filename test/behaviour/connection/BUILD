@@ -25,8 +25,8 @@ java_library(
     ],
     deps = [
         # Internal Package Dependencies
-        "//:hypergraph",
-        "//rocks:hypergraph",
+        "//:grakn",
+        "//rocks:grakn",
 
         # External Maven Dependencies
         "@maven//:junit_junit",

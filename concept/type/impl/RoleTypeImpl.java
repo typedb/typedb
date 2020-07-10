@@ -16,17 +16,17 @@
  *
  */
 
-package hypergraph.concept.type.impl;
+package grakn.concept.type.impl;
 
-import hypergraph.common.exception.Error;
-import hypergraph.common.exception.HypergraphException;
-import hypergraph.concept.thing.Entity;
-import hypergraph.concept.thing.impl.RoleImpl;
-import hypergraph.concept.type.RoleType;
-import hypergraph.graph.TypeGraph;
-import hypergraph.graph.util.Schema;
-import hypergraph.graph.vertex.ThingVertex;
-import hypergraph.graph.vertex.TypeVertex;
+import grakn.common.exception.Error;
+import grakn.common.exception.GraknException;
+import grakn.concept.thing.Entity;
+import grakn.concept.thing.impl.RoleImpl;
+import grakn.concept.type.RoleType;
+import grakn.graph.TypeGraph;
+import grakn.graph.util.Schema;
+import grakn.graph.vertex.ThingVertex;
+import grakn.graph.vertex.TypeVertex;
 
 import javax.annotation.Nullable;
 import java.util.Collections;
@@ -34,7 +34,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Stream;
 
-import static hypergraph.common.exception.Error.TypeWrite.ROOT_TYPE_MUTATION;
+import static grakn.common.exception.Error.TypeWrite.ROOT_TYPE_MUTATION;
 
 public class RoleTypeImpl extends TypeImpl implements RoleType {
 
@@ -42,7 +42,7 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
         super(vertex);
         assert vertex.schema() == Schema.Vertex.Type.ROLE_TYPE;
         if (vertex.schema() != Schema.Vertex.Type.ROLE_TYPE) {
-            throw new HypergraphException(Error.TypeRead.TYPE_ROOT_MISMATCH.format(
+            throw new GraknException(Error.TypeRead.TYPE_ROOT_MISMATCH.format(
                     vertex.label(),
                     Schema.Vertex.Type.ROLE_TYPE.root().label(),
                     vertex.schema().root().label()
@@ -108,7 +108,7 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
     }
 
     @Override
-    public List<HypergraphException> validate() {
+    public List<GraknException> validate() {
         return super.validate();
     }
 
@@ -133,12 +133,12 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
         public boolean isRoot() { return true; }
 
         @Override
-        public void label(String label) { throw new HypergraphException(ROOT_TYPE_MUTATION); }
+        public void label(String label) { throw new GraknException(ROOT_TYPE_MUTATION); }
 
         @Override
-        void isAbstract(boolean isAbstract) { throw new HypergraphException(ROOT_TYPE_MUTATION); }
+        void isAbstract(boolean isAbstract) { throw new GraknException(ROOT_TYPE_MUTATION); }
 
         @Override
-        void sup(RoleType superType) { throw new HypergraphException(ROOT_TYPE_MUTATION); }
+        void sup(RoleType superType) { throw new GraknException(ROOT_TYPE_MUTATION); }
     }
 }

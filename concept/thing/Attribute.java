@@ -16,10 +16,10 @@
  *
  */
 
-package hypergraph.concept.thing;
+package grakn.concept.thing;
 
-import hypergraph.concept.type.AttributeType;
-import hypergraph.concept.type.ThingType;
+import grakn.concept.type.AttributeType;
+import grakn.concept.type.ThingType;
 
 import java.util.stream.Stream;
 

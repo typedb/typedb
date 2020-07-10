@@ -36,7 +36,7 @@ commands:
 jobs:
   build:
     machine: true
-    working_directory: ~/hypergraph
+    working_directory: ~/grakn
     steps:
       - install-bazel
       - checkout
@@ -51,7 +51,7 @@ jobs:
 
   build-checkstyle:
     machine: true
-    working_directory: ~/hypergraph
+    working_directory: ~/grakn
     steps:
       - install-bazel
       - checkout
@@ -61,7 +61,7 @@ jobs:
 
   build-analysis:
     machine: true
-    working_directory: ~/hypergraph
+    working_directory: ~/grakn
     steps:
       - install-bazel
       - checkout
@@ -75,7 +75,7 @@ jobs:
 
   test-basic:
     machine: true
-    working_directory: ~/hypergraph
+    working_directory: ~/grakn
     steps:
       - install-bazel
       - checkout
@@ -84,7 +84,7 @@ jobs:
 
   test-connection:
     machine: true
-    working_directory: ~/hypergraph
+    working_directory: ~/grakn
     steps:
       - install-bazel
       - checkout
@@ -97,7 +97,7 @@ jobs:
 
   test-concept:
     machine: true
-    working_directory: ~/hypergraph
+    working_directory: ~/grakn
     steps:
       - install-bazel
       - checkout
@@ -116,7 +116,7 @@ jobs:
 
   test-traversal:
     machine: true
-    working_directory: ~/hypergraph
+    working_directory: ~/grakn
     steps:
       - install-bazel
       - checkout
@@ -124,7 +124,7 @@ jobs:
           command: bazel test //test/integration:test-traversal --test_output=errors
 
 workflows:
-  hypergraph:
+  grakn:
     jobs:
       - build
       - build-checkstyle

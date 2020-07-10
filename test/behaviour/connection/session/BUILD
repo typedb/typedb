@@ -25,7 +25,7 @@ java_library(
     ],
     deps = [
         # Internal Package Dependencies
-        "//:hypergraph",
+        "//:grakn",
         "//test/behaviour/connection:steps",
 
         # Internal Repository Dependencies
@@ -42,7 +42,7 @@ java_test(
     srcs = [
         "SessionTest.java"
     ],
-    test_class = "hypergraph.test.behaviour.connection.session.SessionTest",
+    test_class = "grakn.test.behaviour.connection.session.SessionTest",
     deps = [
         # External Maven Dependencies
         "@maven//:io_cucumber_cucumber_junit",

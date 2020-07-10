@@ -16,11 +16,11 @@
  *
  */
 
-package hypergraph.graph.adjacency;
+package grakn.graph.adjacency;
 
-import hypergraph.graph.edge.Edge;
-import hypergraph.graph.util.Schema;
-import hypergraph.graph.vertex.Vertex;
+import grakn.graph.edge.Edge;
+import grakn.graph.util.Schema;
+import grakn.graph.vertex.Vertex;
 
 import java.util.Iterator;
 import java.util.function.Consumer;

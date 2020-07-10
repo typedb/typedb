@@ -16,10 +16,10 @@
  *
  */
 
-package hypergraph.graph.util;
+package grakn.graph.util;
 
-import hypergraph.common.exception.Error;
-import hypergraph.common.exception.HypergraphException;
+import grakn.common.exception.Error;
+import grakn.common.exception.GraknException;
 
 import javax.annotation.Nullable;
 import java.nio.charset.Charset;
@@ -87,7 +87,7 @@ public class Schema {
             for (Prefix i : Prefix.values()) {
                 if (i.key == key) return i;
             }
-            throw new HypergraphException(Error.Internal.UNRECOGNISED_VALUE);
+            throw new GraknException(Error.Internal.UNRECOGNISED_VALUE);
         }
 
         public byte key() {
@@ -145,7 +145,7 @@ public class Schema {
             for (Infix i : Infix.values()) {
                 if (i.key == key) return i;
             }
-            throw new HypergraphException(Error.Internal.UNRECOGNISED_VALUE);
+            throw new GraknException(Error.Internal.UNRECOGNISED_VALUE);
         }
 
         public byte key() {
@@ -241,7 +241,7 @@ public class Schema {
                     return t;
                 }
             }
-            throw new HypergraphException(Error.Internal.UNRECOGNISED_VALUE);
+            throw new GraknException(Error.Internal.UNRECOGNISED_VALUE);
         }
 
         public static ValueType of(Class<?> valueClass) {
@@ -250,7 +250,7 @@ public class Schema {
                     return t;
                 }
             }
-            throw new HypergraphException(Error.Internal.UNRECOGNISED_VALUE);
+            throw new GraknException(Error.Internal.UNRECOGNISED_VALUE);
         }
 
         public byte[] bytes() {
@@ -323,7 +323,7 @@ public class Schema {
                 for (Type t : Type.values()) {
                     if (t.prefix.key == prefix) return t;
                 }
-                throw new HypergraphException(Error.Internal.UNRECOGNISED_VALUE);
+                throw new GraknException(Error.Internal.UNRECOGNISED_VALUE);
             }
 
             /**
@@ -394,14 +394,14 @@ public class Schema {
                 for (Thing t : Thing.values()) {
                     if (t.prefix.key == prefix) return t;
                 }
-                throw new HypergraphException(Error.Internal.UNRECOGNISED_VALUE);
+                throw new GraknException(Error.Internal.UNRECOGNISED_VALUE);
             }
 
             public static Thing of(Type type) {
                 for (Thing t : Thing.values()) {
                     if (t.type().equals(type)) return t;
                 }
-                throw new HypergraphException(Error.Internal.UNRECOGNISED_VALUE);
+                throw new GraknException(Error.Internal.UNRECOGNISED_VALUE);
             }
 
             @Override
@@ -461,7 +461,7 @@ public class Schema {
                         return t;
                     }
                 }
-                throw new HypergraphException(Error.Internal.UNRECOGNISED_VALUE);
+                throw new GraknException(Error.Internal.UNRECOGNISED_VALUE);
             }
 
             @Override
@@ -514,7 +514,7 @@ public class Schema {
                         return t;
                     }
                 }
-                throw new HypergraphException(Error.Internal.UNRECOGNISED_VALUE);
+                throw new GraknException(Error.Internal.UNRECOGNISED_VALUE);
             }
 
             @Override

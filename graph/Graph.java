@@ -16,11 +16,11 @@
  *
  */
 
-package hypergraph.graph;
+package grakn.graph;
 
-import hypergraph.graph.iid.VertexIID;
-import hypergraph.graph.util.Storage;
-import hypergraph.graph.vertex.Vertex;
+import grakn.graph.iid.VertexIID;
+import grakn.graph.util.Storage;
+import grakn.graph.vertex.Vertex;
 
 import java.util.stream.Stream;
 

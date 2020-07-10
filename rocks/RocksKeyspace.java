@@ -16,11 +16,11 @@
  *
  */
 
-package hypergraph.rocks;
+package grakn.rocks;
 
-import hypergraph.Hypergraph;
-import hypergraph.common.exception.HypergraphException;
-import hypergraph.graph.util.KeyGenerator;
+import grakn.Grakn;
+import grakn.common.exception.GraknException;
+import grakn.graph.util.KeyGenerator;
 import org.rocksdb.OptimisticTransactionDB;
 import org.rocksdb.RocksDBException;
 
@@ -34,17 +34,17 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.StampedLock;
 
-public class RocksKeyspace implements Hypergraph.Keyspace {
+public class RocksKeyspace implements Grakn.Keyspace {
 
     private final String name;
-    private final RocksHypergraph core;
+    private final RocksGrakn core;
     private final OptimisticTransactionDB rocksDB;
     private final KeyGenerator.Persisted keyGenerator;
     private final ConcurrentMap<RocksSession, Long> sessions;
     private final StampedLock schemaLock;
     private final AtomicBoolean isOpen;
 
-    private RocksKeyspace(RocksHypergraph core, String name) {
+    private RocksKeyspace(RocksGrakn core, String name) {
         this.name = name;
         this.core = core;
         keyGenerator = new KeyGenerator.Persisted();
@@ -55,23 +55,23 @@ public class RocksKeyspace implements Hypergraph.Keyspace {
         try {
             rocksDB = OptimisticTransactionDB.open(this.core.rocksOptions(), directory().toString());
         } catch (RocksDBException e) {
-            throw new HypergraphException(e);
+            throw new GraknException(e);
         }
     }
 
-    static RocksKeyspace createNewAndOpen(RocksHypergraph core, String name) {
+    static RocksKeyspace createNewAndOpen(RocksGrakn core, String name) {
         return new RocksKeyspace(core, name).initialiseAndOpen();
     }
 
-    static RocksKeyspace loadExistingAndOpen(RocksHypergraph core, String name) {
+    static RocksKeyspace loadExistingAndOpen(RocksGrakn core, String name) {
         return new RocksKeyspace(core, name).loadAndOpen();
     }
 
     private RocksKeyspace initialiseAndOpen() {
-        try (RocksSession session = createAndOpenSession(Hypergraph.Session.Type.SCHEMA)) {
-            try (RocksTransaction txn = session.transaction(Hypergraph.Transaction.Type.WRITE)) {
+        try (RocksSession session = createAndOpenSession(Grakn.Session.Type.SCHEMA)) {
+            try (RocksTransaction txn = session.transaction(Grakn.Transaction.Type.WRITE)) {
                 if (txn.graph().isInitialised()) {
-                    throw new HypergraphException("Invalid Keyspace Initialisation");
+                    throw new GraknException("Invalid Keyspace Initialisation");
                 }
                 txn.graph().initialise();
                 txn.commit();
@@ -82,8 +82,8 @@ public class RocksKeyspace implements Hypergraph.Keyspace {
     }
 
     private RocksKeyspace loadAndOpen() {
-        try (RocksSession session = createAndOpenSession(Hypergraph.Session.Type.DATA)) {
-            try (RocksTransaction txn = session.transaction(Hypergraph.Transaction.Type.READ)) {
+        try (RocksSession session = createAndOpenSession(Grakn.Session.Type.DATA)) {
+            try (RocksTransaction txn = session.transaction(Grakn.Transaction.Type.READ)) {
                 keyGenerator.sync(txn.storage());
             }
         }
@@ -91,9 +91,9 @@ public class RocksKeyspace implements Hypergraph.Keyspace {
         return this;
     }
 
-    RocksSession createAndOpenSession(Hypergraph.Session.Type type) {
+    RocksSession createAndOpenSession(Grakn.Session.Type type) {
         long schemaWriteLockStamp = 0;
-        if (type.equals(Hypergraph.Session.Type.SCHEMA)) {
+        if (type.equals(Grakn.Session.Type.SCHEMA)) {
             schemaWriteLockStamp = schemaLock.writeLock();
         }
         RocksSession session = new RocksSession(this, type);
@@ -123,7 +123,7 @@ public class RocksKeyspace implements Hypergraph.Keyspace {
 
     void remove(RocksSession session) {
         long schemaWriteLockStamp = sessions.remove(session);
-        if (session.type().equals(Hypergraph.Session.Type.SCHEMA)) {
+        if (session.type().equals(Grakn.Session.Type.SCHEMA)) {
             schemaLock.unlockWrite(schemaWriteLockStamp);
         }
     }
@@ -148,7 +148,7 @@ public class RocksKeyspace implements Hypergraph.Keyspace {
             Files.walk(directory()).sorted(Comparator.reverseOrder())
                     .map(Path::toFile).forEach(File::delete);
         } catch (IOException e) {
-            throw new HypergraphException(e);
+            throw new GraknException(e);
         }
     }
 }

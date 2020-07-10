@@ -41,7 +41,7 @@ java_test(
     srcs = [
         "KeyspaceTest.java"
     ],
-    test_class = "hypergraph.test.behaviour.connection.keyspace.KeyspaceTest",
+    test_class = "grakn.test.behaviour.connection.keyspace.KeyspaceTest",
     deps = [
         # External Maven Dependencies
         "@maven//:io_cucumber_cucumber_junit",

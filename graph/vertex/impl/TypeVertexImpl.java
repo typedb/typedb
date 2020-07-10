@@ -16,21 +16,21 @@
  *
  */
 
-package hypergraph.graph.vertex.impl;
+package grakn.graph.vertex.impl;
 
-import hypergraph.common.exception.Error;
-import hypergraph.common.exception.HypergraphException;
-import hypergraph.graph.TypeGraph;
-import hypergraph.graph.adjacency.Adjacency;
-import hypergraph.graph.adjacency.TypeAdjacency;
-import hypergraph.graph.adjacency.impl.TypeAdjacencyImpl;
-import hypergraph.graph.edge.TypeEdge;
-import hypergraph.graph.iid.EdgeIID;
-import hypergraph.graph.iid.IndexIID;
-import hypergraph.graph.iid.VertexIID;
-import hypergraph.graph.util.Schema;
-import hypergraph.graph.vertex.ThingVertex;
-import hypergraph.graph.vertex.TypeVertex;
+import grakn.common.exception.Error;
+import grakn.common.exception.GraknException;
+import grakn.graph.TypeGraph;
+import grakn.graph.adjacency.Adjacency;
+import grakn.graph.adjacency.TypeAdjacency;
+import grakn.graph.adjacency.impl.TypeAdjacencyImpl;
+import grakn.graph.edge.TypeEdge;
+import grakn.graph.iid.EdgeIID;
+import grakn.graph.iid.IndexIID;
+import grakn.graph.iid.VertexIID;
+import grakn.graph.util.Schema;
+import grakn.graph.vertex.ThingVertex;
+import grakn.graph.vertex.TypeVertex;
 
 import javax.annotation.Nullable;
 import java.util.Collections;
@@ -39,9 +39,9 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static hypergraph.common.collection.Bytes.join;
-import static hypergraph.common.iterator.Iterators.distinct;
-import static hypergraph.common.iterator.Iterators.link;
+import static grakn.common.collection.Bytes.join;
+import static grakn.common.iterator.Iterators.distinct;
+import static grakn.common.iterator.Iterators.link;
 
 public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implements TypeVertex {
 
@@ -150,12 +150,12 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
 
         @Override
         public void buffer(ThingVertex thingVertex) {
-            throw new HypergraphException(Error.Transaction.ILLEGAL_OPERATION);
+            throw new GraknException(Error.Transaction.ILLEGAL_OPERATION);
         }
 
         @Override
         public void unbuffer(ThingVertex thingVertex) {
-            throw new HypergraphException(Error.Transaction.ILLEGAL_OPERATION);
+            throw new GraknException(Error.Transaction.ILLEGAL_OPERATION);
         }
 
         @Override
@@ -321,7 +321,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
 
         @Override
         public void iid(VertexIID.Type iid) {
-            throw new HypergraphException(Error.Transaction.ILLEGAL_OPERATION);
+            throw new GraknException(Error.Transaction.ILLEGAL_OPERATION);
         }
 
         @Override

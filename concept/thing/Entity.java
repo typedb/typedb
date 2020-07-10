@@ -16,9 +16,9 @@
  *
  */
 
-package hypergraph.concept.thing;
+package grakn.concept.thing;
 
-import hypergraph.concept.type.EntityType;
+import grakn.concept.type.EntityType;
 
 public interface Entity extends Thing {
 

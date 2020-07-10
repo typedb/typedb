@@ -16,10 +16,10 @@
  *
  */
 
-package hypergraph.graph.vertex;
+package grakn.graph.vertex;
 
-import hypergraph.graph.iid.VertexIID;
-import hypergraph.graph.util.Schema;
+import grakn.graph.iid.VertexIID;
+import grakn.graph.util.Schema;
 
 import java.time.LocalDateTime;
 

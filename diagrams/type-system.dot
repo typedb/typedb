@@ -1,4 +1,4 @@
-digraph hypergraph {
+digraph grakn {
     graph [splines = true]
 
     {

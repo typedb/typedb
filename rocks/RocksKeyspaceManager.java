@@ -16,10 +16,10 @@
  *
  */
 
-package hypergraph.rocks;
+package grakn.rocks;
 
-import hypergraph.Hypergraph;
-import hypergraph.common.exception.HypergraphException;
+import grakn.Grakn;
+import grakn.common.exception.GraknException;
 
 import java.io.File;
 import java.util.Arrays;
@@ -28,12 +28,12 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-public class RocksKeyspaceManager implements Hypergraph.KeyspaceManager {
+public class RocksKeyspaceManager implements Grakn.KeyspaceManager {
 
-    private final RocksHypergraph core;
+    private final RocksGrakn core;
     private final ConcurrentMap<String, RocksKeyspace> keyspaces;
 
-    RocksKeyspaceManager(RocksHypergraph core) {
+    RocksKeyspaceManager(RocksGrakn core) {
         this.core = core;
         keyspaces = new ConcurrentHashMap<>();
     }
@@ -56,7 +56,7 @@ public class RocksKeyspaceManager implements Hypergraph.KeyspaceManager {
 
     @Override
     public RocksKeyspace create(String name) {
-        if (keyspaces.containsKey(name)) throw new HypergraphException("Keyspace Already Exist: " + name);
+        if (keyspaces.containsKey(name)) throw new GraknException("Keyspace Already Exist: " + name);
 
         RocksKeyspace keyspace = RocksKeyspace.createNewAndOpen(core, name);
         keyspaces.put(name, keyspace);

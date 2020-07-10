@@ -16,32 +16,32 @@
  *
  */
 
-package hypergraph.common.exception;
+package grakn.common.exception;
 
 import java.util.List;
 
-public class HypergraphException extends RuntimeException {
+public class GraknException extends RuntimeException {
 
-    public HypergraphException(String error) {
+    public GraknException(String error) {
         super(error);
     }
 
-    public HypergraphException(Error error) {
+    public GraknException(Error error) {
         super(error.toString());
         assert !getMessage().contains("%s");
     }
 
-    public HypergraphException(Exception e) {
+    public GraknException(Exception e) {
         super(e);
     }
 
-    public HypergraphException(List<HypergraphException> exceptions) {
+    public GraknException(List<GraknException> exceptions) {
         super(getMessages(exceptions));
     }
 
-    private static String getMessages(List<HypergraphException> exceptions) {
+    private static String getMessages(List<GraknException> exceptions) {
         StringBuilder messages = new StringBuilder();
-        for (HypergraphException exception : exceptions) {
+        for (GraknException exception : exceptions) {
             messages.append(exception.getMessage()).append("\n");
         }
         return messages.toString();

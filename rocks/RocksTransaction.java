@@ -16,17 +16,17 @@
  *
  */
 
-package hypergraph.rocks;
+package grakn.rocks;
 
-import hypergraph.Hypergraph;
-import hypergraph.common.concurrent.ManagedReadWriteLock;
-import hypergraph.common.exception.Error;
-import hypergraph.common.exception.HypergraphException;
-import hypergraph.concept.Concepts;
-import hypergraph.graph.Graphs;
-import hypergraph.graph.util.KeyGenerator;
-import hypergraph.graph.util.Storage;
-import hypergraph.traversal.Traversal;
+import grakn.Grakn;
+import grakn.common.concurrent.ManagedReadWriteLock;
+import grakn.common.exception.Error;
+import grakn.common.exception.GraknException;
+import grakn.concept.Concepts;
+import grakn.graph.Graphs;
+import grakn.graph.util.KeyGenerator;
+import grakn.graph.util.Storage;
+import grakn.traversal.Traversal;
 import org.rocksdb.OptimisticTransactionOptions;
 import org.rocksdb.ReadOptions;
 import org.rocksdb.RocksDBException;
@@ -40,10 +40,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
 
-import static hypergraph.common.collection.Bytes.bytesHavePrefix;
-import static hypergraph.common.collection.Bytes.longToBytes;
+import static grakn.common.collection.Bytes.bytesHavePrefix;
+import static grakn.common.collection.Bytes.longToBytes;
 
-class RocksTransaction implements Hypergraph.Transaction {
+class RocksTransaction implements Grakn.Transaction {
 
     private static final byte[] EMPTY_ARRAY = new byte[]{};
     private final RocksSession session;
@@ -82,7 +82,7 @@ class RocksTransaction implements Hypergraph.Transaction {
     }
 
     public CoreStorage storage() {
-        if (!isOpen.get()) throw new HypergraphException(Error.Transaction.CLOSED_TRANSACTION);
+        if (!isOpen.get()) throw new GraknException(Error.Transaction.CLOSED_TRANSACTION);
         return storage;
     }
 
@@ -98,13 +98,13 @@ class RocksTransaction implements Hypergraph.Transaction {
 
     @Override
     public Traversal traversal() {
-        if (!isOpen.get()) throw new HypergraphException(Error.Transaction.CLOSED_TRANSACTION);
+        if (!isOpen.get()) throw new GraknException(Error.Transaction.CLOSED_TRANSACTION);
         return traversal;
     }
 
     @Override
     public Concepts concepts() {
-        if (!isOpen.get()) throw new HypergraphException(Error.Transaction.CLOSED_TRANSACTION);
+        if (!isOpen.get()) throw new GraknException(Error.Transaction.CLOSED_TRANSACTION);
         return concepts;
     }
 
@@ -130,17 +130,17 @@ class RocksTransaction implements Hypergraph.Transaction {
         if (isOpen.compareAndSet(true, false)) {
             try {
                 if (type.equals(Type.READ)) {
-                    throw new HypergraphException(Error.Transaction.ILLEGAL_COMMIT);
-                } else if (session.type().equals(Hypergraph.Session.Type.DATA) && graph.type().isModified()) {
-                    throw new HypergraphException(Error.Transaction.DIRTY_SCHEMA_WRITES);
-                } else if (session.type().equals(Hypergraph.Session.Type.SCHEMA) && graph.thing().isModified()) {
-                    throw new HypergraphException(Error.Transaction.DIRTY_DATA_WRITES);
+                    throw new GraknException(Error.Transaction.ILLEGAL_COMMIT);
+                } else if (session.type().equals(Grakn.Session.Type.DATA) && graph.type().isModified()) {
+                    throw new GraknException(Error.Transaction.DIRTY_SCHEMA_WRITES);
+                } else if (session.type().equals(Grakn.Session.Type.SCHEMA) && graph.thing().isModified()) {
+                    throw new GraknException(Error.Transaction.DIRTY_DATA_WRITES);
                 }
 
-                if (session.type().equals(Hypergraph.Session.Type.SCHEMA)) {
+                if (session.type().equals(Grakn.Session.Type.SCHEMA)) {
                     concepts.validateTypes();
                     graph.type().commit();
-                } else if (session.type().equals(Hypergraph.Session.Type.DATA)) {
+                } else if (session.type().equals(Grakn.Session.Type.DATA)) {
                     concepts.validateThings();
                     graph.thing().commit();
                 } else {
@@ -150,13 +150,13 @@ class RocksTransaction implements Hypergraph.Transaction {
                 rocksTransaction.commit();
             } catch (RocksDBException e) {
                 rollback();
-                throw new HypergraphException(e);
+                throw new GraknException(e);
             } finally {
                 graph.clear();
                 closeResources();
             }
         } else {
-            throw new HypergraphException(Error.Transaction.CLOSED_TRANSACTION);
+            throw new GraknException(Error.Transaction.CLOSED_TRANSACTION);
         }
     }
 
@@ -166,7 +166,7 @@ class RocksTransaction implements Hypergraph.Transaction {
             graph.clear();
             rocksTransaction.rollback();
         } catch (RocksDBException e) {
-            throw new HypergraphException(e);
+            throw new GraknException(e);
         }
     }
 
@@ -212,7 +212,7 @@ class RocksTransaction implements Hypergraph.Transaction {
                 if (type.isWrite()) readWriteLock.lockRead();
                 return rocksTransaction.get(readOptions, key);
             } catch (RocksDBException | InterruptedException e) {
-                throw new HypergraphException(e);
+                throw new GraknException(e);
             } finally {
                 if (type.isWrite()) readWriteLock.unlockRead();
             }
@@ -237,7 +237,7 @@ class RocksTransaction implements Hypergraph.Transaction {
                 readWriteLock.lockWrite();
                 rocksTransaction.delete(key);
             } catch (RocksDBException | InterruptedException e) {
-                throw new HypergraphException(e);
+                throw new GraknException(e);
             } finally {
                 readWriteLock.unlockWrite();
             }
@@ -254,7 +254,7 @@ class RocksTransaction implements Hypergraph.Transaction {
                 readWriteLock.lockWrite();
                 rocksTransaction.put(key, value);
             } catch (RocksDBException | InterruptedException e) {
-                throw new HypergraphException(e);
+                throw new GraknException(e);
             } finally {
                 readWriteLock.unlockWrite();
             }
@@ -271,7 +271,7 @@ class RocksTransaction implements Hypergraph.Transaction {
                 readWriteLock.lockWrite();
                 rocksTransaction.putUntracked(key, value);
             } catch (RocksDBException | InterruptedException e) {
-                throw new HypergraphException(e);
+                throw new GraknException(e);
             } finally {
                 readWriteLock.unlockWrite();
             }
@@ -283,7 +283,7 @@ class RocksTransaction implements Hypergraph.Transaction {
                 readWriteLock.lockWrite();
                 rocksTransaction.mergeUntracked(key, longToBytes(increment));
             } catch (RocksDBException | InterruptedException e) {
-                throw new HypergraphException(e);
+                throw new GraknException(e);
             } finally {
                 readWriteLock.unlockWrite();
             }

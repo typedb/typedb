@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-workspace(name = "graknlabs_hypergraph")
+workspace(name = "graknlabs_grakn_core")
 
 
 ################################
@@ -67,17 +67,13 @@ load("//dependencies/graknlabs:dependencies.bzl", "graknlabs_common")
 graknlabs_common()
 
 ##############################
-# Load @graknlabs_hypergraph #
+# Load @graknlabs_verification #
 ##############################
 load("//dependencies/graknlabs:dependencies.bzl", "graknlabs_verification")
 graknlabs_verification()
 
-##############################
-# Load @graknlabs_hypergraph #
-##############################
+###########################
+# Load Maven dependencies #
+###########################
 load("//dependencies/maven:artifacts.bzl", "artifacts")
-
-###############
-# Load @maven #
-###############
 maven(artifacts)

@@ -16,11 +16,11 @@
  *
  */
 
-package hypergraph.test.behaviour.concept.type.attributetype;
+package grakn.test.behaviour.concept.type.attributetype;
 
-import hypergraph.common.exception.HypergraphException;
-import hypergraph.concept.type.AttributeType;
-import hypergraph.concept.type.ThingType;
+import grakn.common.exception.GraknException;
+import grakn.concept.type.AttributeType;
+import grakn.concept.type.ThingType;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 
@@ -28,7 +28,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 
-import static hypergraph.test.behaviour.connection.ConnectionSteps.tx;
+import static grakn.test.behaviour.connection.ConnectionSteps.tx;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -72,7 +72,7 @@ public class AttributeTypeSteps {
         } else if (valueType.equals(LocalDateTime.class)) {
             return attributeType.asDateTime();
         } else {
-            throw new HypergraphException("unreachable");
+            throw new GraknException("unreachable");
         }
     }
 

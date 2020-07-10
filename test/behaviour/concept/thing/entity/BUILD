@@ -44,7 +44,7 @@ java_test(
     srcs = [
         "EntityTest.java"
     ],
-    test_class = "hypergraph.test.behaviour.concept.thing.entity.EntityTest",
+    test_class = "grakn.test.behaviour.concept.thing.entity.EntityTest",
     deps = [
         # External Maven Dependencies
         "@maven//:io_cucumber_cucumber_junit",

@@ -16,9 +16,9 @@
  *
  */
 
-package hypergraph.test.behaviour.connection.session;
+package grakn.test.behaviour.connection.session;
 
-import hypergraph.Hypergraph;
+import grakn.Grakn;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 
@@ -28,11 +28,11 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 
 import static grakn.common.util.Collections.list;
-import static hypergraph.test.behaviour.connection.ConnectionSteps.THREAD_POOL_SIZE;
-import static hypergraph.test.behaviour.connection.ConnectionSteps.hypergraph;
-import static hypergraph.test.behaviour.connection.ConnectionSteps.sessions;
-import static hypergraph.test.behaviour.connection.ConnectionSteps.sessionsParallel;
-import static hypergraph.test.behaviour.connection.ConnectionSteps.threadPool;
+import static grakn.test.behaviour.connection.ConnectionSteps.THREAD_POOL_SIZE;
+import static grakn.test.behaviour.connection.ConnectionSteps.grakn;
+import static grakn.test.behaviour.connection.ConnectionSteps.sessions;
+import static grakn.test.behaviour.connection.ConnectionSteps.sessionsParallel;
+import static grakn.test.behaviour.connection.ConnectionSteps.threadPool;
 import static java.util.Objects.isNull;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -52,14 +52,14 @@ public class SessionSteps {
     @When("connection open schema session(s) for keyspace(s):")
     public void connection_open_schema_sessions_for_keyspaces(List<String> names) {
         for (String name : names) {
-            sessions.add(hypergraph.session(name, Hypergraph.Session.Type.SCHEMA));
+            sessions.add(grakn.session(name, Grakn.Session.Type.SCHEMA));
         }
     }
 
     @When("connection open (data )session(s) for keyspace(s):")
     public void connection_open_data_sessions_for_keyspaces(List<String> names) {
         for (String name : names) {
-            sessions.add(hypergraph.session(name, Hypergraph.Session.Type.DATA));
+            sessions.add(grakn.session(name, Grakn.Session.Type.DATA));
         }
     }
 
@@ -69,14 +69,14 @@ public class SessionSteps {
 
         for (String name : names) {
             sessionsParallel.add(CompletableFuture.supplyAsync(
-                    () -> hypergraph.session(name, Hypergraph.Session.Type.DATA), threadPool)
+                    () -> grakn.session(name, Grakn.Session.Type.DATA), threadPool)
             );
         }
     }
 
     @When("connection close all sessions")
     public void connection_close_all_sessions() {
-        for (Hypergraph.Session session : sessions) {
+        for (Grakn.Session session : sessions) {
             session.close();
         }
         sessions.clear();
@@ -84,14 +84,14 @@ public class SessionSteps {
 
     @Then("session(s) is/are null: {bool}")
     public void sessions_are_null(Boolean isNull) {
-        for (Hypergraph.Session session : sessions) {
+        for (Grakn.Session session : sessions) {
             assertEquals(isNull, isNull(session));
         }
     }
 
     @Then("session(s) is/are open: {bool}")
     public void sessions_are_open(Boolean isOpen) {
-        for (Hypergraph.Session session : sessions) {
+        for (Grakn.Session session : sessions) {
             assertEquals(isOpen, session.isOpen());
         }
     }
@@ -121,7 +121,7 @@ public class SessionSteps {
     @Then("session(s) has/have keyspace(s):")
     public void sessions_have_keyspaces(List<String> names) {
         assertEquals(names.size(), sessions.size());
-        Iterator<Hypergraph.Session> sessionIter = sessions.iterator();
+        Iterator<Grakn.Session> sessionIter = sessions.iterator();
 
         for (String name : names) {
             assertEquals(name, sessionIter.next().keyspace().name());
@@ -131,7 +131,7 @@ public class SessionSteps {
     @Then("sessions in parallel have keyspaces:")
     public void sessions_in_parallel_have_keyspaces(List<String> names) {
         assertEquals(names.size(), sessionsParallel.size());
-        Iterator<CompletableFuture<Hypergraph.Session>> futureSessionIter = sessionsParallel.iterator();
+        Iterator<CompletableFuture<Grakn.Session>> futureSessionIter = sessionsParallel.iterator();
         CompletableFuture[] assertions = new CompletableFuture[names.size()];
 
         int i = 0;

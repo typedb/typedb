@@ -16,20 +16,20 @@
  *
  */
 
-package hypergraph;
+package grakn;
 
-import hypergraph.concept.Concepts;
-import hypergraph.traversal.Traversal;
+import grakn.concept.Concepts;
+import grakn.traversal.Traversal;
 
 import java.util.Set;
 
 /**
- * A Hypergraph Database API
+ * A Grakn Database API
  *
- * This interface allows you to open a 'Session' to connect to the Hypergraph
+ * This interface allows you to open a 'Session' to connect to the Grakn
  * database, and open a 'Transaction' from that session.
  */
-public interface Hypergraph extends AutoCloseable {
+public interface Grakn extends AutoCloseable {
 
     default Session session(String keyspace) { return session(keyspace, Session.Type.DATA); }
 
@@ -42,7 +42,7 @@ public interface Hypergraph extends AutoCloseable {
     void close();
 
     /**
-     * Hypergraph Keyspace Manager
+     * Grakn Keyspace Manager
      */
     interface KeyspaceManager {
 
@@ -56,7 +56,7 @@ public interface Hypergraph extends AutoCloseable {
     }
 
     /**
-     * A Hypergraph Keyspace
+     * A Grakn Keyspace
      *
      * A keyspace is an isolated scope of data in the storage engine.
      */
@@ -68,7 +68,7 @@ public interface Hypergraph extends AutoCloseable {
     }
 
     /**
-     * A Hypergraph Database Session
+     * A Grakn Database Session
      *
      * This interface allows you to create transactions to perform READs or
      * WRITEs onto the database.
@@ -111,7 +111,7 @@ public interface Hypergraph extends AutoCloseable {
     }
 
     /**
-     * A Hypergraph Database Transaction
+     * A Grakn Database Transaction
      */
     interface Transaction extends AutoCloseable {
 

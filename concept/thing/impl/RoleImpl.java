@@ -16,11 +16,11 @@
  *
  */
 
-package hypergraph.concept.thing.impl;
+package grakn.concept.thing.impl;
 
-import hypergraph.concept.thing.Role;
-import hypergraph.graph.util.Schema;
-import hypergraph.graph.vertex.ThingVertex;
+import grakn.concept.thing.Role;
+import grakn.graph.util.Schema;
+import grakn.graph.vertex.ThingVertex;
 
 import static java.util.Objects.requireNonNull;
 

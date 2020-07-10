@@ -16,20 +16,20 @@
  *
  */
 
-package hypergraph.concept.type.impl;
+package grakn.concept.type.impl;
 
-import hypergraph.common.collection.Streams;
-import hypergraph.common.exception.Error;
-import hypergraph.common.exception.HypergraphException;
-import hypergraph.concept.thing.Relation;
-import hypergraph.concept.thing.impl.RelationImpl;
-import hypergraph.concept.type.AttributeType;
-import hypergraph.concept.type.RelationType;
-import hypergraph.concept.type.RoleType;
-import hypergraph.graph.TypeGraph;
-import hypergraph.graph.util.Schema;
-import hypergraph.graph.vertex.ThingVertex;
-import hypergraph.graph.vertex.TypeVertex;
+import grakn.common.collection.Streams;
+import grakn.common.exception.Error;
+import grakn.common.exception.GraknException;
+import grakn.concept.thing.Relation;
+import grakn.concept.thing.impl.RelationImpl;
+import grakn.concept.type.AttributeType;
+import grakn.concept.type.RelationType;
+import grakn.concept.type.RoleType;
+import grakn.graph.TypeGraph;
+import grakn.graph.util.Schema;
+import grakn.graph.vertex.ThingVertex;
+import grakn.graph.vertex.TypeVertex;
 
 import javax.annotation.Nullable;
 import java.util.HashSet;
@@ -40,24 +40,24 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static hypergraph.common.exception.Error.TypeWrite.RELATION_ABSTRACT_ROLE;
-import static hypergraph.common.exception.Error.TypeWrite.RELATION_NO_ROLE;
-import static hypergraph.common.exception.Error.TypeWrite.RELATION_RELATES_ROLE_FROM_SUPERTYPE;
-import static hypergraph.common.exception.Error.TypeWrite.RELATION_RELATES_ROLE_NOT_AVAILABLE;
-import static hypergraph.common.exception.Error.TypeWrite.ROOT_TYPE_MUTATION;
-import static hypergraph.common.exception.Error.TypeWrite.TYPE_HAS_INSTANCES;
-import static hypergraph.common.exception.Error.TypeWrite.TYPE_HAS_SUBTYPES;
-import static hypergraph.common.iterator.Iterators.apply;
-import static hypergraph.common.iterator.Iterators.filter;
-import static hypergraph.common.iterator.Iterators.stream;
-import static hypergraph.graph.util.Schema.Vertex.Type.Root.ROLE;
+import static grakn.common.exception.Error.TypeWrite.RELATION_ABSTRACT_ROLE;
+import static grakn.common.exception.Error.TypeWrite.RELATION_NO_ROLE;
+import static grakn.common.exception.Error.TypeWrite.RELATION_RELATES_ROLE_FROM_SUPERTYPE;
+import static grakn.common.exception.Error.TypeWrite.RELATION_RELATES_ROLE_NOT_AVAILABLE;
+import static grakn.common.exception.Error.TypeWrite.ROOT_TYPE_MUTATION;
+import static grakn.common.exception.Error.TypeWrite.TYPE_HAS_INSTANCES;
+import static grakn.common.exception.Error.TypeWrite.TYPE_HAS_SUBTYPES;
+import static grakn.common.iterator.Iterators.apply;
+import static grakn.common.iterator.Iterators.filter;
+import static grakn.common.iterator.Iterators.stream;
+import static grakn.graph.util.Schema.Vertex.Type.Root.ROLE;
 
 public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
 
     private RelationTypeImpl(TypeVertex vertex) {
         super(vertex);
         if (vertex.schema() != Schema.Vertex.Type.RELATION_TYPE) {
-            throw new HypergraphException(Error.TypeRead.TYPE_ROOT_MISMATCH.format(
+            throw new GraknException(Error.TypeRead.TYPE_ROOT_MISMATCH.format(
                     vertex.label(),
                     Schema.Vertex.Type.RELATION_TYPE.root().label(),
                     vertex.schema().root().label()
@@ -87,7 +87,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     @Override
     public void isAbstract(boolean isAbstract) {
         if (isAbstract && instances().findFirst().isPresent()) {
-            throw new HypergraphException(TYPE_HAS_INSTANCES.format(label()));
+            throw new GraknException(TYPE_HAS_INSTANCES.format(label()));
         }
         vertex.isAbstract(isAbstract);
         declaredRoles().forEach(role -> role.isAbstract(isAbstract));
@@ -124,7 +124,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
         TypeVertex roleTypeVertex = vertex.graph().get(roleLabel, vertex.label());
         if (roleTypeVertex == null) {
             if (sups().filter(t -> !t.equals(this)).flatMap(RelationType::roles).anyMatch(role -> role.label().equals(roleLabel))) {
-                throw new HypergraphException(RELATION_RELATES_ROLE_FROM_SUPERTYPE.format(roleLabel));
+                throw new GraknException(RELATION_RELATES_ROLE_FROM_SUPERTYPE.format(roleLabel));
             } else {
                 RoleTypeImpl roleType = RoleTypeImpl.of(vertex.graph(), roleLabel, vertex.label());
                 roleType.isAbstract(this.isAbstract());
@@ -142,7 +142,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
         Optional<RoleTypeImpl> inherited;
         if (declaredRoles().anyMatch(r -> r.label().equals(overriddenLabel)) ||
                 !(inherited = sup().roles().filter(role -> role.label().equals(overriddenLabel)).findFirst()).isPresent()) {
-            throw new HypergraphException(RELATION_RELATES_ROLE_NOT_AVAILABLE.format(roleLabel, overriddenLabel));
+            throw new GraknException(RELATION_RELATES_ROLE_NOT_AVAILABLE.format(roleLabel, overriddenLabel));
         }
 
         roleType.sup(inherited.get());
@@ -198,9 +198,9 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     @Override
     public void delete() {
         if (subs().anyMatch(s -> !s.equals(this))) {
-            throw new HypergraphException(TYPE_HAS_SUBTYPES.format(label()));
+            throw new GraknException(TYPE_HAS_SUBTYPES.format(label()));
         } else if (subs().flatMap(RelationTypeImpl::instances).findFirst().isPresent()) {
-            throw new HypergraphException(TYPE_HAS_INSTANCES.format(label()));
+            throw new GraknException(TYPE_HAS_INSTANCES.format(label()));
         } else {
             declaredRoles().forEach(RoleTypeImpl::delete);
             vertex.delete();
@@ -208,13 +208,13 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     }
 
     @Override
-    public List<HypergraphException> validate() {
-        List<HypergraphException> exceptions = super.validate();
+    public List<GraknException> validate() {
+        List<GraknException> exceptions = super.validate();
         if (!isRoot() && Streams.compareSize(roles().filter(r -> !r.label().equals(ROLE.label())), 1) < 0) {
-            exceptions.add(new HypergraphException(RELATION_NO_ROLE.format(this.label())));
+            exceptions.add(new GraknException(RELATION_NO_ROLE.format(this.label())));
         } else if (!isAbstract()) {
             roles().filter(TypeImpl::isAbstract).forEach(roleType -> {
-                exceptions.add(new HypergraphException(RELATION_ABSTRACT_ROLE.format(label(), roleType.label())));
+                exceptions.add(new GraknException(RELATION_ABSTRACT_ROLE.format(label(), roleType.label())));
             });
         }
         return exceptions;
@@ -244,42 +244,42 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
 
         @Override
         public void label(String label) {
-            throw new HypergraphException(ROOT_TYPE_MUTATION);
+            throw new GraknException(ROOT_TYPE_MUTATION);
         }
 
         @Override
         public void isAbstract(boolean isAbstract) {
-            throw new HypergraphException(ROOT_TYPE_MUTATION);
+            throw new GraknException(ROOT_TYPE_MUTATION);
         }
 
         @Override
         public void sup(RelationType superType) {
-            throw new HypergraphException(ROOT_TYPE_MUTATION);
+            throw new GraknException(ROOT_TYPE_MUTATION);
         }
 
         @Override
         public void has(AttributeType attributeType, boolean isKey) {
-            throw new HypergraphException(ROOT_TYPE_MUTATION);
+            throw new GraknException(ROOT_TYPE_MUTATION);
         }
 
         @Override
         public void has(AttributeType attributeType, AttributeType overriddenType, boolean isKey) {
-            throw new HypergraphException(ROOT_TYPE_MUTATION);
+            throw new GraknException(ROOT_TYPE_MUTATION);
         }
 
         @Override
         public void plays(RoleType roleType) {
-            throw new HypergraphException(ROOT_TYPE_MUTATION);
+            throw new GraknException(ROOT_TYPE_MUTATION);
         }
 
         @Override
         public void plays(RoleType roleType, RoleType overriddenType) {
-            throw new HypergraphException(ROOT_TYPE_MUTATION);
+            throw new GraknException(ROOT_TYPE_MUTATION);
         }
 
         @Override
         public void unplay(RoleType roleType) {
-            throw new HypergraphException(ROOT_TYPE_MUTATION);
+            throw new GraknException(ROOT_TYPE_MUTATION);
         }
     }
 }

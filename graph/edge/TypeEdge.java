@@ -16,11 +16,11 @@
  *
  */
 
-package hypergraph.graph.edge;
+package grakn.graph.edge;
 
-import hypergraph.graph.iid.EdgeIID;
-import hypergraph.graph.util.Schema;
-import hypergraph.graph.vertex.TypeVertex;
+import grakn.graph.iid.EdgeIID;
+import grakn.graph.util.Schema;
+import grakn.graph.vertex.TypeVertex;
 
 /**
  * An edge between two {@code TypeVertex}.

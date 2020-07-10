@@ -16,9 +16,9 @@
  *
  */
 
-package hypergraph.concept.type;
+package grakn.concept.type;
 
-import hypergraph.concept.thing.Attribute;
+import grakn.concept.thing.Attribute;
 
 import java.time.LocalDateTime;
 import java.util.stream.Stream;

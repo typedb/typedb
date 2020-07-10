@@ -16,7 +16,7 @@
  *
  */
 
-package hypergraph.concept.thing;
+package grakn.concept.thing;
 
 public interface Role {
 

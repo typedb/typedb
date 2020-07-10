@@ -16,7 +16,7 @@
  *
  */
 
-package hypergraph.common.iterator;
+package grakn.common.iterator;
 
 import java.util.HashSet;
 import java.util.Iterator;

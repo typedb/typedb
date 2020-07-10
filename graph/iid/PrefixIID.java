@@ -16,9 +16,9 @@
  *
  */
 
-package hypergraph.graph.iid;
+package grakn.graph.iid;
 
-import hypergraph.graph.util.Schema;
+import grakn.graph.util.Schema;
 
 public class PrefixIID extends IID {
 

@@ -16,7 +16,7 @@
  *
  */
 
-package hypergraph.common.iterator;
+package grakn.common.iterator;
 
 import java.util.NoSuchElementException;
 import java.util.function.Predicate;

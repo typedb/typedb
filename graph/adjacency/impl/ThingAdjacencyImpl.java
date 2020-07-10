@@ -16,19 +16,19 @@
  *
  */
 
-package hypergraph.graph.adjacency.impl;
+package grakn.graph.adjacency.impl;
 
-import hypergraph.graph.adjacency.Adjacency;
-import hypergraph.graph.adjacency.ThingAdjacency;
-import hypergraph.graph.edge.Edge;
-import hypergraph.graph.edge.ThingEdge;
-import hypergraph.graph.edge.impl.ThingEdgeImpl;
-import hypergraph.graph.iid.EdgeIID;
-import hypergraph.graph.iid.IID;
-import hypergraph.graph.iid.InfixIID;
-import hypergraph.graph.iid.SuffixIID;
-import hypergraph.graph.util.Schema;
-import hypergraph.graph.vertex.ThingVertex;
+import grakn.graph.adjacency.Adjacency;
+import grakn.graph.adjacency.ThingAdjacency;
+import grakn.graph.edge.Edge;
+import grakn.graph.edge.ThingEdge;
+import grakn.graph.edge.impl.ThingEdgeImpl;
+import grakn.graph.iid.EdgeIID;
+import grakn.graph.iid.IID;
+import grakn.graph.iid.InfixIID;
+import grakn.graph.iid.SuffixIID;
+import grakn.graph.util.Schema;
+import grakn.graph.vertex.ThingVertex;
 
 import java.util.HashSet;
 import java.util.Iterator;
@@ -40,10 +40,10 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
-import static hypergraph.common.collection.Bytes.join;
-import static hypergraph.common.iterator.Iterators.apply;
-import static hypergraph.common.iterator.Iterators.distinct;
-import static hypergraph.common.iterator.Iterators.link;
+import static grakn.common.collection.Bytes.join;
+import static grakn.common.iterator.Iterators.apply;
+import static grakn.common.iterator.Iterators.distinct;
+import static grakn.common.iterator.Iterators.link;
 import static java.util.Arrays.copyOfRange;
 import static java.util.Collections.emptyIterator;
 import static java.util.concurrent.ConcurrentHashMap.newKeySet;

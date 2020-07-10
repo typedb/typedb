@@ -16,11 +16,11 @@
  *
  */
 
-package hypergraph.graph.iid;
+package grakn.graph.iid;
 
-import hypergraph.graph.util.Schema;
+import grakn.graph.util.Schema;
 
-import static hypergraph.common.collection.Bytes.join;
+import static grakn.common.collection.Bytes.join;
 import static java.util.Arrays.copyOfRange;
 
 public abstract class EdgeIID<

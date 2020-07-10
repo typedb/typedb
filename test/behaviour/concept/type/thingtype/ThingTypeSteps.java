@@ -16,25 +16,25 @@
  *
  */
 
-package hypergraph.test.behaviour.concept.type.thingtype;
+package grakn.test.behaviour.concept.type.thingtype;
 
-import hypergraph.common.exception.HypergraphException;
-import hypergraph.concept.type.AttributeType;
-import hypergraph.concept.type.EntityType;
-import hypergraph.concept.type.RelationType;
-import hypergraph.concept.type.RoleType;
-import hypergraph.concept.type.ThingType;
-import hypergraph.concept.type.Type;
-import hypergraph.test.behaviour.config.Parameters;
+import grakn.common.exception.GraknException;
+import grakn.concept.type.AttributeType;
+import grakn.concept.type.EntityType;
+import grakn.concept.type.RelationType;
+import grakn.concept.type.RoleType;
+import grakn.concept.type.ThingType;
+import grakn.concept.type.Type;
+import grakn.test.behaviour.config.Parameters;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 
 import java.util.List;
 import java.util.Set;
 
-import static hypergraph.test.behaviour.config.Parameters.RootLabel;
-import static hypergraph.test.behaviour.connection.ConnectionSteps.tx;
-import static hypergraph.test.behaviour.util.Util.assertThrows;
+import static grakn.test.behaviour.config.Parameters.RootLabel;
+import static grakn.test.behaviour.connection.ConnectionSteps.tx;
+import static grakn.test.behaviour.util.Util.assertThrows;
 import static java.util.Objects.isNull;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
@@ -55,7 +55,7 @@ public class ThingTypeSteps {
             case RELATION:
                 return tx().concepts().getRelationType(typeLabel);
             default:
-                throw new HypergraphException("Invalid ThingType");
+                throw new GraknException("Invalid ThingType");
         }
     }
 
@@ -97,7 +97,7 @@ public class ThingTypeSteps {
                 tx().concepts().putRelationType(typeLabel);
                 break;
             default:
-                throw new HypergraphException("Invalid ThingType");
+                throw new GraknException("Invalid ThingType");
         }
     }
 

@@ -16,27 +16,27 @@
  *
  */
 
-package hypergraph.concept.thing.impl;
+package grakn.concept.thing.impl;
 
-import hypergraph.common.exception.Error;
-import hypergraph.common.exception.HypergraphException;
-import hypergraph.concept.thing.Attribute;
-import hypergraph.concept.thing.Relation;
-import hypergraph.concept.thing.Thing;
-import hypergraph.concept.type.RoleType;
-import hypergraph.concept.type.impl.RelationTypeImpl;
-import hypergraph.concept.type.impl.RoleTypeImpl;
-import hypergraph.graph.iid.PrefixIID;
-import hypergraph.graph.util.Schema;
-import hypergraph.graph.vertex.ThingVertex;
+import grakn.common.exception.Error;
+import grakn.common.exception.GraknException;
+import grakn.concept.thing.Attribute;
+import grakn.concept.thing.Relation;
+import grakn.concept.thing.Thing;
+import grakn.concept.type.RoleType;
+import grakn.concept.type.impl.RelationTypeImpl;
+import grakn.concept.type.impl.RoleTypeImpl;
+import grakn.graph.iid.PrefixIID;
+import grakn.graph.util.Schema;
+import grakn.graph.vertex.ThingVertex;
 
 import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Stream;
 
-import static hypergraph.common.exception.Error.ThingWrite.RELATION_NO_PLAYER;
-import static hypergraph.common.iterator.Iterators.filter;
-import static hypergraph.common.iterator.Iterators.stream;
+import static grakn.common.exception.Error.ThingWrite.RELATION_NO_PLAYER;
+import static grakn.common.iterator.Iterators.filter;
+import static grakn.common.iterator.Iterators.stream;
 
 public class RelationImpl extends ThingImpl implements Relation {
 
@@ -61,7 +61,7 @@ public class RelationImpl extends ThingImpl implements Relation {
     @Override
     public RelationImpl relate(RoleType roleType, Thing player) {
         if (this.type().roles().noneMatch(t -> t.equals(roleType))) {
-            throw new HypergraphException(
+            throw new GraknException(
                     Error.ThingWrite.RELATION_UNRELATED_ROLE.format(this.type().label(), roleType.label())
             );
         }
@@ -107,7 +107,7 @@ public class RelationImpl extends ThingImpl implements Relation {
     public void validate() {
         super.validate();
         if (!vertex.outs().edge(Schema.Edge.Thing.RELATES).to().hasNext()) {
-            throw new HypergraphException(RELATION_NO_PLAYER.format(type().label()));
+            throw new GraknException(RELATION_NO_PLAYER.format(type().label()));
         }
     }
 }

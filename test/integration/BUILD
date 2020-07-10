@@ -23,11 +23,11 @@ java_test(
         "BasicTest.java",
         "Util.java",
     ],
-    test_class = "hypergraph.test.integration.BasicTest",
+    test_class = "grakn.test.integration.BasicTest",
     deps = [
-        "//:hypergraph",
+        "//:grakn",
         "//concept:concept",
-        "//rocks:hypergraph",
+        "//rocks:grakn",
     ],
     size = "large",
 )
@@ -35,7 +35,7 @@ java_test(
 java_test(
     name = "test-traversal",
     srcs = ["TraversalTest.java"],
-    test_class = "hypergraph.test.integration.TraversalTest",
+    test_class = "grakn.test.integration.TraversalTest",
 )
 
 checkstyle_test(

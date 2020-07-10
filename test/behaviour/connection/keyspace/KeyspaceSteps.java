@@ -16,7 +16,7 @@
  *
  */
 
-package hypergraph.test.behaviour.connection.keyspace;
+package grakn.test.behaviour.connection.keyspace;
 
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
@@ -27,9 +27,9 @@ import java.util.stream.Collectors;
 
 import static grakn.common.util.Collections.list;
 import static grakn.common.util.Collections.set;
-import static hypergraph.test.behaviour.connection.ConnectionSteps.THREAD_POOL_SIZE;
-import static hypergraph.test.behaviour.connection.ConnectionSteps.hypergraph;
-import static hypergraph.test.behaviour.connection.ConnectionSteps.threadPool;
+import static grakn.test.behaviour.connection.ConnectionSteps.THREAD_POOL_SIZE;
+import static grakn.test.behaviour.connection.ConnectionSteps.grakn;
+import static grakn.test.behaviour.connection.ConnectionSteps.threadPool;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -44,7 +44,7 @@ public class KeyspaceSteps {
     @When("connection create keyspace(s):")
     public void connection_create_keyspaces(List<String> names) {
         for (String name : names) {
-            hypergraph.keyspaces().create(name);
+            grakn.keyspaces().create(name);
         }
     }
 
@@ -55,7 +55,7 @@ public class KeyspaceSteps {
         CompletableFuture[] creations = new CompletableFuture[names.size()];
         int i = 0;
         for (String name : names) {
-            creations[i++] = CompletableFuture.supplyAsync(() -> hypergraph.keyspaces().create(name), threadPool);
+            creations[i++] = CompletableFuture.supplyAsync(() -> grakn.keyspaces().create(name), threadPool);
         }
 
         CompletableFuture.allOf(creations).join();
@@ -64,7 +64,7 @@ public class KeyspaceSteps {
     @When("connection delete keyspace(s):")
     public void connection_delete_keyspaces(List<String> names) {
         for (String keyspaceName : names) {
-            hypergraph.keyspaces().get(keyspaceName).delete();
+            grakn.keyspaces().get(keyspaceName).delete();
         }
     }
 
@@ -77,7 +77,7 @@ public class KeyspaceSteps {
         for (String name : names) {
             deletions[i++] = CompletableFuture.supplyAsync(
                     () -> {
-                        hypergraph.keyspaces().get(name).delete();
+                        grakn.keyspaces().get(name).delete();
                         return null;
                     },
                     threadPool
@@ -90,7 +90,7 @@ public class KeyspaceSteps {
     @Then("connection has keyspace(s):")
     public void connection_has_keyspaces(List<String> names) {
         assertEquals(set(names),
-                     hypergraph.keyspaces().getAll().stream()
+                     grakn.keyspaces().getAll().stream()
                              .map(keyspace -> keyspace.name())
                              .collect(Collectors.toSet()));
     }
@@ -98,7 +98,7 @@ public class KeyspaceSteps {
     @Then("connection does not have keyspace(s):")
     public void connection_does_not_have_keyspaces(List<String> names) {
         for (String name : names) {
-            assertNull(hypergraph.keyspaces().get(name));
+            assertNull(grakn.keyspaces().get(name));
         }
     }
 }

@@ -16,9 +16,9 @@
  *
  */
 
-package hypergraph.graph.vertex.impl;
+package grakn.graph.vertex.impl;
 
-import hypergraph.graph.iid.VertexIID;
+import grakn.graph.iid.VertexIID;
 
 public abstract class VertexImpl<VERTEX_IID extends VertexIID> {
 

@@ -16,7 +16,7 @@
  *
  */
 
-package hypergraph.test.behaviour.debug;
+package grakn.test.behaviour.debug;
 
 import io.cucumber.junit.Cucumber;
 import io.cucumber.junit.CucumberOptions;
@@ -26,7 +26,7 @@ import org.junit.runner.RunWith;
 @CucumberOptions(
         strict = true,
         plugin = "pretty",
-        glue = "hypergraph.test.behaviour",
+        glue = "grakn.test.behaviour",
         features = "test/behaviour/debug/debug.feature"
 )
 public class DebugTest {
@@ -41,7 +41,7 @@ public class DebugTest {
     // 4) Ensure 'Target Expression' is set correctly: '//<this>/<package>/<name>:test'
     //
     // 5) Update 'Bazel Flags':
-    //    a) Remove the line that says: '--test_filter=hypergraph.*'
+    //    a) Remove the line that says: '--test_filter=grakn.*'
     //    b) Use the following Bazel flags:
     //       --cache_test_results=no : to make sure you're not using cache
     //       --test_output=streamed : to make sure all output is printed

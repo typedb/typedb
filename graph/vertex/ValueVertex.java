@@ -16,7 +16,7 @@
  *
  */
 
-package hypergraph.graph.vertex;
+package grakn.graph.vertex;
 
 //public interface ValueVertex extends Vertex<Schema.Vertex.Value, ValueVertex, Schema.Edge.Thing, ThingEdge> {
 //

@@ -16,17 +16,17 @@
  *
  */
 
-package hypergraph.graph.adjacency.impl;
+package grakn.graph.adjacency.impl;
 
-import hypergraph.graph.adjacency.Adjacency;
-import hypergraph.graph.adjacency.TypeAdjacency;
-import hypergraph.graph.edge.Edge;
-import hypergraph.graph.edge.TypeEdge;
-import hypergraph.graph.edge.impl.TypeEdgeImpl;
-import hypergraph.graph.iid.EdgeIID;
-import hypergraph.graph.iid.VertexIID;
-import hypergraph.graph.util.Schema;
-import hypergraph.graph.vertex.TypeVertex;
+import grakn.graph.adjacency.Adjacency;
+import grakn.graph.adjacency.TypeAdjacency;
+import grakn.graph.edge.Edge;
+import grakn.graph.edge.TypeEdge;
+import grakn.graph.edge.impl.TypeEdgeImpl;
+import grakn.graph.iid.EdgeIID;
+import grakn.graph.iid.VertexIID;
+import grakn.graph.util.Schema;
+import grakn.graph.vertex.TypeVertex;
 
 import java.util.Collections;
 import java.util.Iterator;
@@ -37,10 +37,10 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
-import static hypergraph.common.collection.Bytes.join;
-import static hypergraph.common.iterator.Iterators.apply;
-import static hypergraph.common.iterator.Iterators.distinct;
-import static hypergraph.common.iterator.Iterators.link;
+import static grakn.common.collection.Bytes.join;
+import static grakn.common.iterator.Iterators.apply;
+import static grakn.common.iterator.Iterators.distinct;
+import static grakn.common.iterator.Iterators.link;
 
 public abstract class TypeAdjacencyImpl implements TypeAdjacency {
 

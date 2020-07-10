@@ -16,21 +16,21 @@
  *
  */
 
-package hypergraph.graph.vertex.impl;
+package grakn.graph.vertex.impl;
 
-import hypergraph.common.exception.Error;
-import hypergraph.common.exception.HypergraphException;
-import hypergraph.graph.ThingGraph;
-import hypergraph.graph.adjacency.Adjacency;
-import hypergraph.graph.adjacency.ThingAdjacency;
-import hypergraph.graph.adjacency.impl.ThingAdjacencyImpl;
-import hypergraph.graph.edge.Edge;
-import hypergraph.graph.iid.EdgeIID;
-import hypergraph.graph.iid.VertexIID;
-import hypergraph.graph.util.Schema;
-import hypergraph.graph.vertex.AttributeVertex;
-import hypergraph.graph.vertex.ThingVertex;
-import hypergraph.graph.vertex.TypeVertex;
+import grakn.common.exception.Error;
+import grakn.common.exception.GraknException;
+import grakn.graph.ThingGraph;
+import grakn.graph.adjacency.Adjacency;
+import grakn.graph.adjacency.ThingAdjacency;
+import grakn.graph.adjacency.impl.ThingAdjacencyImpl;
+import grakn.graph.edge.Edge;
+import grakn.graph.iid.EdgeIID;
+import grakn.graph.iid.VertexIID;
+import grakn.graph.util.Schema;
+import grakn.graph.vertex.AttributeVertex;
+import grakn.graph.vertex.ThingVertex;
+import grakn.graph.vertex.TypeVertex;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -120,7 +120,7 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
 
     @Override
     public AttributeVertexImpl asAttribute() {
-        throw new HypergraphException(Error.ThingRead.INVALID_VERTEX_CASTING.format(AttributeVertex.class.getCanonicalName()));
+        throw new GraknException(Error.ThingRead.INVALID_VERTEX_CASTING.format(AttributeVertex.class.getCanonicalName()));
     }
 
     void deleteEdges() {
@@ -166,7 +166,7 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
 
         @Override
         public void commit() {
-            if (isInferred) throw new HypergraphException(Error.Transaction.ILLEGAL_OPERATION);
+            if (isInferred) throw new GraknException(Error.Transaction.ILLEGAL_OPERATION);
             commitVertex();
             commitEdges();
         }
@@ -199,7 +199,7 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
 
         @Override
         public void isInferred(boolean isInferred) {
-            throw new HypergraphException(Error.Transaction.ILLEGAL_OPERATION);
+            throw new GraknException(Error.Transaction.ILLEGAL_OPERATION);
         }
 
         @Override

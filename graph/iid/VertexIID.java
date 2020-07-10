@@ -16,31 +16,31 @@
  *
  */
 
-package hypergraph.graph.iid;
+package grakn.graph.iid;
 
-import hypergraph.common.exception.Error;
-import hypergraph.common.exception.HypergraphException;
-import hypergraph.graph.util.KeyGenerator;
-import hypergraph.graph.util.Schema;
+import grakn.common.exception.Error;
+import grakn.common.exception.GraknException;
+import grakn.graph.util.KeyGenerator;
+import grakn.graph.util.Schema;
 
-import static hypergraph.common.collection.Bytes.DATETIME_SIZE;
-import static hypergraph.common.collection.Bytes.DOUBLE_SIZE;
-import static hypergraph.common.collection.Bytes.LONG_SIZE;
-import static hypergraph.common.collection.Bytes.booleanToByte;
-import static hypergraph.common.collection.Bytes.byteToBoolean;
-import static hypergraph.common.collection.Bytes.bytesToDateTime;
-import static hypergraph.common.collection.Bytes.bytesToDouble;
-import static hypergraph.common.collection.Bytes.bytesToLong;
-import static hypergraph.common.collection.Bytes.bytesToShort;
-import static hypergraph.common.collection.Bytes.bytesToString;
-import static hypergraph.common.collection.Bytes.dateTimeToBytes;
-import static hypergraph.common.collection.Bytes.doubleToBytes;
-import static hypergraph.common.collection.Bytes.join;
-import static hypergraph.common.collection.Bytes.longToBytes;
-import static hypergraph.common.collection.Bytes.stringToBytes;
-import static hypergraph.graph.util.Schema.STRING_ENCODING;
-import static hypergraph.graph.util.Schema.STRING_MAX_LENGTH;
-import static hypergraph.graph.util.Schema.TIME_ZONE_ID;
+import static grakn.common.collection.Bytes.DATETIME_SIZE;
+import static grakn.common.collection.Bytes.DOUBLE_SIZE;
+import static grakn.common.collection.Bytes.LONG_SIZE;
+import static grakn.common.collection.Bytes.booleanToByte;
+import static grakn.common.collection.Bytes.byteToBoolean;
+import static grakn.common.collection.Bytes.bytesToDateTime;
+import static grakn.common.collection.Bytes.bytesToDouble;
+import static grakn.common.collection.Bytes.bytesToLong;
+import static grakn.common.collection.Bytes.bytesToShort;
+import static grakn.common.collection.Bytes.bytesToString;
+import static grakn.common.collection.Bytes.dateTimeToBytes;
+import static grakn.common.collection.Bytes.doubleToBytes;
+import static grakn.common.collection.Bytes.join;
+import static grakn.common.collection.Bytes.longToBytes;
+import static grakn.common.collection.Bytes.stringToBytes;
+import static grakn.graph.util.Schema.STRING_ENCODING;
+import static grakn.graph.util.Schema.STRING_MAX_LENGTH;
+import static grakn.graph.util.Schema.TIME_ZONE_ID;
 import static java.util.Arrays.copyOfRange;
 
 public abstract class VertexIID extends IID {
@@ -149,7 +149,7 @@ public abstract class VertexIID extends IID {
 
         public VertexIID.Attribute asAttribute() {
             if (!schema().equals(Schema.Vertex.Thing.ATTRIBUTE)) {
-                throw new HypergraphException(Error.ThingRead.INVALID_IID_CASTING.format(VertexIID.Attribute.class.getCanonicalName()));
+                throw new GraknException(Error.ThingRead.INVALID_IID_CASTING.format(VertexIID.Attribute.class.getCanonicalName()));
             }
 
             return VertexIID.Attribute.of(bytes);
@@ -231,23 +231,23 @@ public abstract class VertexIID extends IID {
         }
 
         public VertexIID.Attribute.Boolean asBoolean() {
-            throw new HypergraphException(Error.ThingRead.INVALID_IID_CASTING.format(Boolean.class.getCanonicalName()));
+            throw new GraknException(Error.ThingRead.INVALID_IID_CASTING.format(Boolean.class.getCanonicalName()));
         }
 
         public VertexIID.Attribute.Long asLong() {
-            throw new HypergraphException(Error.ThingRead.INVALID_IID_CASTING.format(Long.class.getCanonicalName()));
+            throw new GraknException(Error.ThingRead.INVALID_IID_CASTING.format(Long.class.getCanonicalName()));
         }
 
         public VertexIID.Attribute.Double asDouble() {
-            throw new HypergraphException(Error.ThingRead.INVALID_IID_CASTING.format(Double.class.getCanonicalName()));
+            throw new GraknException(Error.ThingRead.INVALID_IID_CASTING.format(Double.class.getCanonicalName()));
         }
 
         public VertexIID.Attribute.String asString() {
-            throw new HypergraphException(Error.ThingRead.INVALID_IID_CASTING.format(String.class.getCanonicalName()));
+            throw new GraknException(Error.ThingRead.INVALID_IID_CASTING.format(String.class.getCanonicalName()));
         }
 
         public VertexIID.Attribute.DateTime asDateTime() {
-            throw new HypergraphException(Error.ThingRead.INVALID_IID_CASTING.format(DateTime.class.getCanonicalName()));
+            throw new GraknException(Error.ThingRead.INVALID_IID_CASTING.format(DateTime.class.getCanonicalName()));
         }
 
         @Override

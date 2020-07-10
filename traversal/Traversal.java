@@ -16,9 +16,9 @@
  *
  */
 
-package hypergraph.traversal;
+package grakn.traversal;
 
-import hypergraph.concept.Concepts;
+import grakn.concept.Concepts;
 
 public class Traversal {
 

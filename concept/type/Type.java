@@ -16,10 +16,10 @@
  *
  */
 
-package hypergraph.concept.type;
+package grakn.concept.type;
 
-import hypergraph.common.exception.HypergraphException;
-import hypergraph.concept.Concept;
+import grakn.common.exception.GraknException;
+import grakn.concept.Concept;
 
 import java.util.List;
 import java.util.stream.Stream;
@@ -48,5 +48,5 @@ public interface Type extends Concept {
 
     Stream<? extends Type> subs();
 
-    List<HypergraphException> validate();
+    List<GraknException> validate();
 }

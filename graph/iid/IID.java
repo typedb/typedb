@@ -16,7 +16,7 @@
  *
  */
 
-package hypergraph.graph.iid;
+package grakn.graph.iid;
 
 import java.util.Arrays;
 

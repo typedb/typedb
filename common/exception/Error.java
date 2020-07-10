@@ -16,7 +16,7 @@
  *
  */
 
-package hypergraph.common.exception;
+package grakn.common.exception;
 
 import java.util.HashMap;
 import java.util.Map;

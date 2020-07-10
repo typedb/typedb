@@ -16,10 +16,10 @@
  *
  */
 
-package hypergraph.rocks;
+package grakn.rocks;
 
-import hypergraph.Hypergraph;
-import hypergraph.common.exception.HypergraphException;
+import grakn.Grakn;
+import grakn.common.exception.GraknException;
 import org.rocksdb.Options;
 import org.rocksdb.RocksDB;
 import org.rocksdb.UInt64AddOperator;
@@ -30,9 +30,9 @@ import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * A Hypergraph implementation with RocksDB
+ * A Grakn implementation with RocksDB
  */
-public class RocksHypergraph implements Hypergraph {
+public class RocksGrakn implements Grakn {
 
     static {
         RocksDB.loadLibrary();
@@ -44,7 +44,7 @@ public class RocksHypergraph implements Hypergraph {
     private final RocksProperties properties;
     private final RocksKeyspaceManager keyspaceMgr;
 
-    private RocksHypergraph(String directory, Properties properties) {
+    private RocksGrakn(String directory, Properties properties) {
         this.directory = Paths.get(directory);
         this.properties = new RocksProperties(properties);
 
@@ -60,12 +60,12 @@ public class RocksHypergraph implements Hypergraph {
         isOpen.set(true);
     }
 
-    public static RocksHypergraph open(String directory) {
+    public static RocksGrakn open(String directory) {
         return open(directory, new Properties());
     }
 
-    public static RocksHypergraph open(String directory, Properties properties) {
-        return new RocksHypergraph(directory, properties);
+    public static RocksGrakn open(String directory, Properties properties) {
+        return new RocksGrakn(directory, properties);
     }
 
     private void setOptionsFromProperties() {
@@ -85,11 +85,11 @@ public class RocksHypergraph implements Hypergraph {
     }
 
     @Override
-    public RocksSession session(String keyspace, Hypergraph.Session.Type type) {
+    public RocksSession session(String keyspace, Grakn.Session.Type type) {
         if (keyspaceMgr.contains(keyspace)) {
             return keyspaceMgr.get(keyspace).createAndOpenSession(type);
         } else {
-            throw new HypergraphException("There does not exists a keyspace with the name: " + keyspace);
+            throw new GraknException("There does not exists a keyspace with the name: " + keyspace);
         }
     }
 

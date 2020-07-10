@@ -20,9 +20,9 @@ package(default_visibility = ["//visibility:public"])
 
 
 java_library(
-    name = "hypergraph",
+    name = "grakn",
     srcs = [
-        "Hypergraph.java"
+        "Grakn.java"
     ],
     deps = [
         "//traversal:traversal",
@@ -33,6 +33,6 @@ java_library(
 checkstyle_test(
     name = "checkstyle",
     targets = [
-        ":hypergraph",
+        ":grakn",
     ]
 )

@@ -16,7 +16,7 @@
  *
  */
 
-package hypergraph.test.behaviour.concept.type.entitytype;
+package grakn.test.behaviour.concept.type.entitytype;
 
 /**
  * Behaviour Steps specific to EntityTypes

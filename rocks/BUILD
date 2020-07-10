@@ -24,11 +24,11 @@ package(
 )
 
 java_library(
-    name = "hypergraph",
+    name = "grakn",
     srcs = glob(["**/*.java"]),
     deps = [
         # Internal package dependencies
-        "//:hypergraph",
+        "//:grakn",
         "//common:common",
         "//concept:concept",
         "//graph:graph",
@@ -43,6 +43,6 @@ java_library(
 checkstyle_test(
     name = "checkstyle",
     targets = [
-        ":hypergraph",
+        ":grakn",
     ]
 )

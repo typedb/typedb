@@ -43,7 +43,7 @@ java_test(
     srcs = [
         "AttributeTest.java"
     ],
-    test_class = "hypergraph.test.behaviour.concept.thing.attribute.AttributeTest",
+    test_class = "grakn.test.behaviour.concept.thing.attribute.AttributeTest",
     deps = [
         # External Maven Dependencies
         "@maven//:io_cucumber_cucumber_junit",

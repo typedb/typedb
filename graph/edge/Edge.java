@@ -16,11 +16,11 @@
  *
  */
 
-package hypergraph.graph.edge;
+package grakn.graph.edge;
 
-import hypergraph.graph.iid.EdgeIID;
-import hypergraph.graph.util.Schema;
-import hypergraph.graph.vertex.Vertex;
+import grakn.graph.iid.EdgeIID;
+import grakn.graph.util.Schema;
+import grakn.graph.vertex.Vertex;
 
 public interface Edge<
         EDGE_SCHEMA extends Schema.Edge,

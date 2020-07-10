@@ -1,4 +1,4 @@
-digraph hypergraph {
+digraph grakn {
     graph [splines = true]
 
     TYPE [shape = hexagon, label = "TYPE", pos = "6,12!"]

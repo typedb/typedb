@@ -16,17 +16,17 @@
  *
  */
 
-package hypergraph.test.behaviour.concept.thing.attribute;
+package grakn.test.behaviour.concept.thing.attribute;
 
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 
 import java.time.LocalDateTime;
 
-import static hypergraph.test.behaviour.concept.thing.ThingSteps.get;
-import static hypergraph.test.behaviour.concept.thing.ThingSteps.put;
-import static hypergraph.test.behaviour.connection.ConnectionSteps.tx;
-import static hypergraph.test.behaviour.util.Util.assertThrows;
+import static grakn.test.behaviour.concept.thing.ThingSteps.get;
+import static grakn.test.behaviour.concept.thing.ThingSteps.put;
+import static grakn.test.behaviour.connection.ConnectionSteps.tx;
+import static grakn.test.behaviour.util.Util.assertThrows;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 

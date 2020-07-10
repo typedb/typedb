@@ -16,13 +16,13 @@
  *
  */
 
-package hypergraph.graph.vertex;
+package grakn.graph.vertex;
 
-import hypergraph.graph.Graph;
-import hypergraph.graph.adjacency.Adjacency;
-import hypergraph.graph.edge.Edge;
-import hypergraph.graph.iid.VertexIID;
-import hypergraph.graph.util.Schema;
+import grakn.graph.Graph;
+import grakn.graph.adjacency.Adjacency;
+import grakn.graph.edge.Edge;
+import grakn.graph.iid.VertexIID;
+import grakn.graph.util.Schema;
 
 public interface Vertex<
         VERTEX_IID extends VertexIID,

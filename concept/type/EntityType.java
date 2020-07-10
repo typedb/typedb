@@ -16,9 +16,9 @@
  *
  */
 
-package hypergraph.concept.type;
+package grakn.concept.type;
 
-import hypergraph.concept.thing.Entity;
+import grakn.concept.thing.Entity;
 
 import java.util.stream.Stream;
 

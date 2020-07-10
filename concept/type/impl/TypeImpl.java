@@ -16,16 +16,16 @@
  *
  */
 
-package hypergraph.concept.type.impl;
+package grakn.concept.type.impl;
 
-import hypergraph.common.exception.Error;
-import hypergraph.common.exception.HypergraphException;
-import hypergraph.common.iterator.Iterators;
-import hypergraph.concept.type.Type;
-import hypergraph.graph.TypeGraph;
-import hypergraph.graph.util.Schema;
-import hypergraph.graph.vertex.ThingVertex;
-import hypergraph.graph.vertex.TypeVertex;
+import grakn.common.exception.Error;
+import grakn.common.exception.GraknException;
+import grakn.common.iterator.Iterators;
+import grakn.concept.type.Type;
+import grakn.graph.TypeGraph;
+import grakn.graph.util.Schema;
+import grakn.graph.vertex.ThingVertex;
+import grakn.graph.vertex.TypeVertex;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -35,12 +35,12 @@ import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import static hypergraph.common.exception.Error.ThingWrite.ILLEGAL_ABSTRACT_WRITE;
-import static hypergraph.common.exception.Error.TypeWrite.SUPERTYPE_SELF;
-import static hypergraph.common.iterator.Iterators.apply;
-import static hypergraph.common.iterator.Iterators.loop;
-import static hypergraph.common.iterator.Iterators.stream;
-import static hypergraph.common.iterator.Iterators.tree;
+import static grakn.common.exception.Error.ThingWrite.ILLEGAL_ABSTRACT_WRITE;
+import static grakn.common.exception.Error.TypeWrite.SUPERTYPE_SELF;
+import static grakn.common.iterator.Iterators.apply;
+import static grakn.common.iterator.Iterators.loop;
+import static grakn.common.iterator.Iterators.stream;
+import static grakn.common.iterator.Iterators.tree;
 
 public abstract class TypeImpl implements Type {
 
@@ -73,7 +73,7 @@ public abstract class TypeImpl implements Type {
             case THING_TYPE:
                 return new ThingTypeImpl.Root(vertex);
             default:
-                throw new HypergraphException(Error.Internal.UNRECOGNISED_VALUE);
+                throw new GraknException(Error.Internal.UNRECOGNISED_VALUE);
         }
     }
 
@@ -111,7 +111,7 @@ public abstract class TypeImpl implements Type {
     }
 
     void superTypeVertex(TypeVertex superTypeVertex) {
-        if (vertex.equals(superTypeVertex)) throw new HypergraphException(SUPERTYPE_SELF.format(vertex.label()));
+        if (vertex.equals(superTypeVertex)) throw new GraknException(SUPERTYPE_SELF.format(vertex.label()));
         vertex.outs().edge(Schema.Edge.Type.SUB, ((TypeImpl) sup()).vertex).delete();
         vertex.outs().put(Schema.Edge.Type.SUB, superTypeVertex);
     }
@@ -144,15 +144,15 @@ public abstract class TypeImpl implements Type {
     }
 
     @Override
-    public List<HypergraphException> validate() {
+    public List<GraknException> validate() {
         return new ArrayList<>();
     }
 
     void validateIsCommitedAndNotAbstract(Class<?> instanceClass) {
         if (vertex.status().equals(Schema.Status.BUFFERED)) {
-            throw new HypergraphException(Error.Transaction.DIRTY_DATA_WRITES);
+            throw new GraknException(Error.Transaction.DIRTY_DATA_WRITES);
         } else if (isAbstract()) {
-            throw new HypergraphException(ILLEGAL_ABSTRACT_WRITE.format(instanceClass.getSimpleName(), label()));
+            throw new GraknException(ILLEGAL_ABSTRACT_WRITE.format(instanceClass.getSimpleName(), label()));
         }
     }
 

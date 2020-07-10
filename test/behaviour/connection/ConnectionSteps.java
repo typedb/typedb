@@ -16,11 +16,11 @@
  *
  */
 
-package hypergraph.test.behaviour.connection;
+package grakn.test.behaviour.connection;
 
-import hypergraph.Hypergraph;
-import hypergraph.rocks.RocksHypergraph;
-import hypergraph.rocks.RocksKeyspace;
+import grakn.Grakn;
+import grakn.rocks.RocksGrakn;
+import grakn.rocks.RocksKeyspace;
 import io.cucumber.java.After;
 import io.cucumber.java.en.Given;
 
@@ -47,13 +47,13 @@ public class ConnectionSteps {
     public static int THREAD_POOL_SIZE = 32;
     public static ExecutorService threadPool = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
 
-    public static RocksHypergraph hypergraph;
+    public static RocksGrakn grakn;
     public static Path directory = Paths.get(System.getProperty("user.dir")).resolve("grakn");
-    public static List<Hypergraph.Session> sessions = new ArrayList<>();
-    public static List<CompletableFuture<Hypergraph.Session>> sessionsParallel = new ArrayList<>();
-    public static Map<Hypergraph.Session, List<Hypergraph.Transaction>> sessionsToTransactions = new HashMap<>();
-    public static Map<Hypergraph.Session, List<CompletableFuture<Hypergraph.Transaction>>> sessionsToTransactionsParallel = new HashMap<>();
-    public static Map<CompletableFuture<Hypergraph.Session>, List<CompletableFuture<Hypergraph.Transaction>>> sessionsParallelToTransactionsParallel = new HashMap<>();
+    public static List<Grakn.Session> sessions = new ArrayList<>();
+    public static List<CompletableFuture<Grakn.Session>> sessionsParallel = new ArrayList<>();
+    public static Map<Grakn.Session, List<Grakn.Transaction>> sessionsToTransactions = new HashMap<>();
+    public static Map<Grakn.Session, List<CompletableFuture<Grakn.Transaction>>> sessionsToTransactionsParallel = new HashMap<>();
+    public static Map<CompletableFuture<Grakn.Session>, List<CompletableFuture<Grakn.Transaction>>> sessionsParallelToTransactionsParallel = new HashMap<>();
 
     private static void resetDirectory() throws IOException {
         if (Files.exists(directory)) {
@@ -67,42 +67,42 @@ public class ConnectionSteps {
     }
 
     private static synchronized void connect_to_grakn() throws IOException {
-        if (!isNull(hypergraph)) return;
+        if (!isNull(grakn)) return;
 
         resetDirectory();
-        System.out.println("Connecting to Hypergraph ...");
-        hypergraph = RocksHypergraph.open(directory.toString());
-        assertNotNull(hypergraph);
+        System.out.println("Connecting to Grakn ...");
+        grakn = RocksGrakn.open(directory.toString());
+        assertNotNull(grakn);
     }
 
-    public static Hypergraph.Transaction tx() {
+    public static Grakn.Transaction tx() {
         return sessionsToTransactions.get(sessions.get(0)).get(0);
     }
 
     @Given("connection has been opened")
     public void connection_has_been_opened() throws IOException {
-        if (isNull(hypergraph)) {
+        if (isNull(grakn)) {
             connect_to_grakn();
         }
 
-        assertNotNull(hypergraph);
-        assertTrue(hypergraph.isOpen());
+        assertNotNull(grakn);
+        assertTrue(grakn.isOpen());
     }
 
     @Given("connection delete all keyspaces")
     public void connection_delete_all_keyspaces() {
-        hypergraph.keyspaces().getAll().forEach(RocksKeyspace::delete);
+        grakn.keyspaces().getAll().forEach(RocksKeyspace::delete);
     }
 
     @Given("connection does not have any keyspace")
     public void connection_does_not_have_any_keyspace() {
-        assertTrue(hypergraph.keyspaces().getAll().isEmpty());
+        assertTrue(grakn.keyspaces().getAll().isEmpty());
     }
 
     @After
     public void connection_close() {
-        hypergraph.close();
-        hypergraph = null;
+        grakn.close();
+        grakn = null;
         sessions.clear();
         sessionsParallel.clear();
         sessionsToTransactions.clear();

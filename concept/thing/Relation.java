@@ -16,10 +16,10 @@
  *
  */
 
-package hypergraph.concept.thing;
+package grakn.concept.thing;
 
-import hypergraph.concept.type.RelationType;
-import hypergraph.concept.type.RoleType;
+import grakn.concept.type.RelationType;
+import grakn.concept.type.RoleType;
 
 import java.util.List;
 import java.util.stream.Stream;

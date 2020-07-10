@@ -16,12 +16,12 @@
  *
  */
 
-package hypergraph.concept.thing;
+package grakn.concept.thing;
 
-import hypergraph.concept.Concept;
-import hypergraph.concept.type.AttributeType;
-import hypergraph.concept.type.RoleType;
-import hypergraph.concept.type.ThingType;
+import grakn.concept.Concept;
+import grakn.concept.type.AttributeType;
+import grakn.concept.type.RoleType;
+import grakn.concept.type.ThingType;
 
 import java.util.Collections;
 import java.util.List;

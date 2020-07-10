@@ -16,17 +16,17 @@
  *
  */
 
-package hypergraph.graph;
+package grakn.graph;
 
-import hypergraph.graph.iid.VertexIID;
-import hypergraph.graph.util.Schema;
-import hypergraph.graph.util.Storage;
-import hypergraph.graph.vertex.AttributeVertex;
-import hypergraph.graph.vertex.ThingVertex;
-import hypergraph.graph.vertex.TypeVertex;
-import hypergraph.graph.vertex.Vertex;
-import hypergraph.graph.vertex.impl.AttributeVertexImpl;
-import hypergraph.graph.vertex.impl.ThingVertexImpl;
+import grakn.graph.iid.VertexIID;
+import grakn.graph.util.Schema;
+import grakn.graph.util.Storage;
+import grakn.graph.vertex.AttributeVertex;
+import grakn.graph.vertex.ThingVertex;
+import grakn.graph.vertex.TypeVertex;
+import grakn.graph.vertex.Vertex;
+import grakn.graph.vertex.impl.AttributeVertexImpl;
+import grakn.graph.vertex.impl.ThingVertexImpl;
 
 import java.time.LocalDateTime;
 import java.util.Map;
@@ -35,7 +35,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import static hypergraph.graph.iid.VertexIID.Thing.generate;
+import static grakn.graph.iid.VertexIID.Thing.generate;
 import static java.util.stream.Stream.concat;
 
 public class ThingGraph implements Graph<VertexIID.Thing, ThingVertex> {

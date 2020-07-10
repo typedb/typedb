@@ -23,7 +23,7 @@ java_library(
     srcs = ["Parameters.java"],
     deps = [
         # Internal Package Dependencies
-        "//:hypergraph",
+        "//:grakn",
 
         # External Maven Dependencies
         "@maven//:junit_junit",

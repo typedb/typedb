@@ -16,19 +16,19 @@
  *
  */
 
-package hypergraph.concept.type.impl;
+package grakn.concept.type.impl;
 
-import hypergraph.common.exception.Error;
-import hypergraph.common.exception.HypergraphException;
-import hypergraph.common.iterator.Iterators;
-import hypergraph.concept.thing.Attribute;
-import hypergraph.concept.thing.impl.AttributeImpl;
-import hypergraph.concept.type.AttributeType;
-import hypergraph.concept.type.RoleType;
-import hypergraph.graph.TypeGraph;
-import hypergraph.graph.util.Schema;
-import hypergraph.graph.vertex.AttributeVertex;
-import hypergraph.graph.vertex.TypeVertex;
+import grakn.common.exception.Error;
+import grakn.common.exception.GraknException;
+import grakn.common.iterator.Iterators;
+import grakn.concept.thing.Attribute;
+import grakn.concept.thing.impl.AttributeImpl;
+import grakn.concept.type.AttributeType;
+import grakn.concept.type.RoleType;
+import grakn.graph.TypeGraph;
+import grakn.graph.util.Schema;
+import grakn.graph.vertex.AttributeVertex;
+import grakn.graph.vertex.TypeVertex;
 
 import javax.annotation.Nullable;
 import java.time.LocalDateTime;
@@ -38,25 +38,25 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
-import static hypergraph.common.exception.Error.ConceptRead.INVALID_CONCEPT_CASTING;
-import static hypergraph.common.exception.Error.Internal.UNRECOGNISED_VALUE;
-import static hypergraph.common.exception.Error.ThingWrite.ATTRIBUTE_VALUE_UNSATISFIES_REGEX;
-import static hypergraph.common.exception.Error.ThingWrite.ILLEGAL_STRING_SIZE;
-import static hypergraph.common.exception.Error.TypeRead.TYPE_ROOT_MISMATCH;
-import static hypergraph.common.exception.Error.TypeWrite.ATTRIBUTE_REGEX_UNSATISFIES_INSTANCES;
-import static hypergraph.common.exception.Error.TypeWrite.ATTRIBUTE_SUPERTYPE_NOT_ABSTRACT;
-import static hypergraph.common.exception.Error.TypeWrite.ATTRIBUTE_SUPERTYPE_VALUE_TYPE;
-import static hypergraph.common.exception.Error.TypeWrite.ROOT_TYPE_MUTATION;
-import static hypergraph.common.exception.Error.TypeWrite.SUPERTYPE_SELF;
-import static hypergraph.common.iterator.Iterators.apply;
-import static hypergraph.common.iterator.Iterators.stream;
+import static grakn.common.exception.Error.ConceptRead.INVALID_CONCEPT_CASTING;
+import static grakn.common.exception.Error.Internal.UNRECOGNISED_VALUE;
+import static grakn.common.exception.Error.ThingWrite.ATTRIBUTE_VALUE_UNSATISFIES_REGEX;
+import static grakn.common.exception.Error.ThingWrite.ILLEGAL_STRING_SIZE;
+import static grakn.common.exception.Error.TypeRead.TYPE_ROOT_MISMATCH;
+import static grakn.common.exception.Error.TypeWrite.ATTRIBUTE_REGEX_UNSATISFIES_INSTANCES;
+import static grakn.common.exception.Error.TypeWrite.ATTRIBUTE_SUPERTYPE_NOT_ABSTRACT;
+import static grakn.common.exception.Error.TypeWrite.ATTRIBUTE_SUPERTYPE_VALUE_TYPE;
+import static grakn.common.exception.Error.TypeWrite.ROOT_TYPE_MUTATION;
+import static grakn.common.exception.Error.TypeWrite.SUPERTYPE_SELF;
+import static grakn.common.iterator.Iterators.apply;
+import static grakn.common.iterator.Iterators.stream;
 
 public abstract class AttributeTypeImpl extends ThingTypeImpl implements AttributeType {
 
     private AttributeTypeImpl(TypeVertex vertex) {
         super(vertex);
         if (vertex.schema() != Schema.Vertex.Type.ATTRIBUTE_TYPE) {
-            throw new HypergraphException(TYPE_ROOT_MISMATCH.format(
+            throw new GraknException(TYPE_ROOT_MISMATCH.format(
                     vertex.label(),
                     Schema.Vertex.Type.ATTRIBUTE_TYPE.root().label(),
                     vertex.schema().root().label()
@@ -84,7 +84,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             case DATETIME:
                 return AttributeTypeImpl.DateTime.of(vertex);
             default:
-                throw new HypergraphException(UNRECOGNISED_VALUE);
+                throw new GraknException(UNRECOGNISED_VALUE);
         }
     }
 
@@ -109,13 +109,13 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
     @Override
     public void sup(AttributeType superType) {
         if (!superType.isRoot() && !this.valueType().equals(superType.valueType())) {
-            throw new HypergraphException(ATTRIBUTE_SUPERTYPE_VALUE_TYPE.format(
+            throw new GraknException(ATTRIBUTE_SUPERTYPE_VALUE_TYPE.format(
                     label(), valueType().getSimpleName(), superType.label(), superType.valueType().getSimpleName()
             ));
         } else if (this.equals(superType)) {
-            throw new HypergraphException(SUPERTYPE_SELF.format(label()));
+            throw new GraknException(SUPERTYPE_SELF.format(label()));
         } else if (!superType.isAbstract()) {
-            throw new HypergraphException(ATTRIBUTE_SUPERTYPE_NOT_ABSTRACT.format(superType.label()));
+            throw new GraknException(ATTRIBUTE_SUPERTYPE_NOT_ABSTRACT.format(superType.label()));
         }
         vertex.outs().edge(Schema.Edge.Type.SUB, sup().vertex).delete();
         vertex.outs().put(Schema.Edge.Type.SUB, ((AttributeTypeImpl) superType).vertex);
@@ -132,39 +132,39 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
     }
 
     @Override
-    public List<HypergraphException> validate() {
+    public List<GraknException> validate() {
         return super.validate();
     }
 
     @Override
     public AttributeTypeImpl.Root asObject() {
         if (this.valueType().equals(java.lang.Object.class)) return new AttributeTypeImpl.Root(this.vertex);
-        else throw new HypergraphException(INVALID_CONCEPT_CASTING.format(AttributeType.class.getCanonicalName()));
+        else throw new GraknException(INVALID_CONCEPT_CASTING.format(AttributeType.class.getCanonicalName()));
     }
 
     @Override
     public AttributeTypeImpl.Boolean asBoolean() {
-        throw new HypergraphException(INVALID_CONCEPT_CASTING.format(AttributeType.Boolean.class.getCanonicalName()));
+        throw new GraknException(INVALID_CONCEPT_CASTING.format(AttributeType.Boolean.class.getCanonicalName()));
     }
 
     @Override
     public AttributeTypeImpl.Long asLong() {
-        throw new HypergraphException(INVALID_CONCEPT_CASTING.format(AttributeType.Long.class.getCanonicalName()));
+        throw new GraknException(INVALID_CONCEPT_CASTING.format(AttributeType.Long.class.getCanonicalName()));
     }
 
     @Override
     public AttributeTypeImpl.Double asDouble() {
-        throw new HypergraphException(INVALID_CONCEPT_CASTING.format(AttributeType.Double.class.getCanonicalName()));
+        throw new GraknException(INVALID_CONCEPT_CASTING.format(AttributeType.Double.class.getCanonicalName()));
     }
 
     @Override
     public AttributeTypeImpl.String asString() {
-        throw new HypergraphException(INVALID_CONCEPT_CASTING.format(AttributeType.String.class.getCanonicalName()));
+        throw new GraknException(INVALID_CONCEPT_CASTING.format(AttributeType.String.class.getCanonicalName()));
     }
 
     @Override
     public AttributeTypeImpl.DateTime asDateTime() {
-        throw new HypergraphException(INVALID_CONCEPT_CASTING.format(AttributeType.DateTime.class.getCanonicalName()));
+        throw new GraknException(INVALID_CONCEPT_CASTING.format(AttributeType.DateTime.class.getCanonicalName()));
     }
 
     @Override
@@ -211,13 +211,13 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         public boolean isRoot() { return true; }
 
         @Override
-        public void label(java.lang.String label) { throw new HypergraphException(ROOT_TYPE_MUTATION); }
+        public void label(java.lang.String label) { throw new GraknException(ROOT_TYPE_MUTATION); }
 
         @Override
-        public void isAbstract(boolean isAbstract) { throw new HypergraphException(ROOT_TYPE_MUTATION); }
+        public void isAbstract(boolean isAbstract) { throw new GraknException(ROOT_TYPE_MUTATION); }
 
         @Override
-        public void sup(AttributeType superType) { throw new HypergraphException(ROOT_TYPE_MUTATION); }
+        public void sup(AttributeType superType) { throw new GraknException(ROOT_TYPE_MUTATION); }
 
         @Nullable
         @Override
@@ -248,7 +248,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
                     case DATETIME:
                         return AttributeTypeImpl.DateTime.of(v);
                     default:
-                        throw new HypergraphException(UNRECOGNISED_VALUE);
+                        throw new GraknException(UNRECOGNISED_VALUE);
                 }
             });
         }
@@ -260,27 +260,27 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         @Override
         public void has(AttributeType attributeType, boolean isKey) {
-            throw new HypergraphException(ROOT_TYPE_MUTATION);
+            throw new GraknException(ROOT_TYPE_MUTATION);
         }
 
         @Override
         public void has(AttributeType attributeType, AttributeType overriddenType, boolean isKey) {
-            throw new HypergraphException(ROOT_TYPE_MUTATION);
+            throw new GraknException(ROOT_TYPE_MUTATION);
         }
 
         @Override
         public void plays(RoleType roleType) {
-            throw new HypergraphException(ROOT_TYPE_MUTATION);
+            throw new GraknException(ROOT_TYPE_MUTATION);
         }
 
         @Override
         public void plays(RoleType roleType, RoleType overriddenType) {
-            throw new HypergraphException(ROOT_TYPE_MUTATION);
+            throw new GraknException(ROOT_TYPE_MUTATION);
         }
 
         @Override
         public void unplay(RoleType roleType) {
-            throw new HypergraphException(ROOT_TYPE_MUTATION);
+            throw new GraknException(ROOT_TYPE_MUTATION);
         }
     }
 
@@ -294,7 +294,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             super(vertex);
             if (!vertex.label().equals(Schema.Vertex.Type.Root.ATTRIBUTE.label()) &&
                     !vertex.valueType().equals(Schema.ValueType.BOOLEAN)) {
-                throw new HypergraphException(Error.TypeRead.VALUE_TYPE_MISMATCH.format(
+                throw new GraknException(Error.TypeRead.VALUE_TYPE_MISMATCH.format(
                         vertex.label(),
                         Schema.ValueType.BOOLEAN.name(),
                         vertex.valueType().name()
@@ -374,42 +374,42 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
             @Override
             public void label(java.lang.String label) {
-                throw new HypergraphException(ROOT_TYPE_MUTATION);
+                throw new GraknException(ROOT_TYPE_MUTATION);
             }
 
             @Override
             public void isAbstract(boolean isAbstract) {
-                throw new HypergraphException(ROOT_TYPE_MUTATION);
+                throw new GraknException(ROOT_TYPE_MUTATION);
             }
 
             @Override
             public void sup(AttributeType superType) {
-                throw new HypergraphException(ROOT_TYPE_MUTATION);
+                throw new GraknException(ROOT_TYPE_MUTATION);
             }
 
             @Override
             public void has(AttributeType attributeType, boolean isKey) {
-                throw new HypergraphException(ROOT_TYPE_MUTATION);
+                throw new GraknException(ROOT_TYPE_MUTATION);
             }
 
             @Override
             public void has(AttributeType attributeType, AttributeType overriddenType, boolean isKey) {
-                throw new HypergraphException(ROOT_TYPE_MUTATION);
+                throw new GraknException(ROOT_TYPE_MUTATION);
             }
 
             @Override
             public void plays(RoleType roleType) {
-                throw new HypergraphException(ROOT_TYPE_MUTATION);
+                throw new GraknException(ROOT_TYPE_MUTATION);
             }
 
             @Override
             public void plays(RoleType roleType, RoleType overriddenType) {
-                throw new HypergraphException(ROOT_TYPE_MUTATION);
+                throw new GraknException(ROOT_TYPE_MUTATION);
             }
 
             @Override
             public void unplay(RoleType roleType) {
-                throw new HypergraphException(ROOT_TYPE_MUTATION);
+                throw new GraknException(ROOT_TYPE_MUTATION);
             }
         }
     }
@@ -424,7 +424,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             super(vertex);
             if (!vertex.label().equals(Schema.Vertex.Type.Root.ATTRIBUTE.label()) &&
                     !vertex.valueType().equals(Schema.ValueType.LONG)) {
-                throw new HypergraphException(Error.TypeRead.VALUE_TYPE_MISMATCH.format(
+                throw new GraknException(Error.TypeRead.VALUE_TYPE_MISMATCH.format(
                         vertex.label(),
                         Schema.ValueType.LONG.name(),
                         vertex.valueType().name()
@@ -506,42 +506,42 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
             @Override
             public void label(java.lang.String label) {
-                throw new HypergraphException(ROOT_TYPE_MUTATION);
+                throw new GraknException(ROOT_TYPE_MUTATION);
             }
 
             @Override
             public void isAbstract(boolean isAbstract) {
-                throw new HypergraphException(ROOT_TYPE_MUTATION);
+                throw new GraknException(ROOT_TYPE_MUTATION);
             }
 
             @Override
             public void sup(AttributeType superType) {
-                throw new HypergraphException(ROOT_TYPE_MUTATION);
+                throw new GraknException(ROOT_TYPE_MUTATION);
             }
 
             @Override
             public void has(AttributeType attributeType, boolean isKey) {
-                throw new HypergraphException(ROOT_TYPE_MUTATION);
+                throw new GraknException(ROOT_TYPE_MUTATION);
             }
 
             @Override
             public void has(AttributeType attributeType, AttributeType overriddenType, boolean isKey) {
-                throw new HypergraphException(ROOT_TYPE_MUTATION);
+                throw new GraknException(ROOT_TYPE_MUTATION);
             }
 
             @Override
             public void plays(RoleType roleType) {
-                throw new HypergraphException(ROOT_TYPE_MUTATION);
+                throw new GraknException(ROOT_TYPE_MUTATION);
             }
 
             @Override
             public void plays(RoleType roleType, RoleType overriddenType) {
-                throw new HypergraphException(ROOT_TYPE_MUTATION);
+                throw new GraknException(ROOT_TYPE_MUTATION);
             }
 
             @Override
             public void unplay(RoleType roleType) {
-                throw new HypergraphException(ROOT_TYPE_MUTATION);
+                throw new GraknException(ROOT_TYPE_MUTATION);
             }
         }
     }
@@ -556,7 +556,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             super(vertex);
             if (!vertex.label().equals(Schema.Vertex.Type.Root.ATTRIBUTE.label()) &&
                     !vertex.valueType().equals(Schema.ValueType.DOUBLE)) {
-                throw new HypergraphException(Error.TypeRead.VALUE_TYPE_MISMATCH.format(
+                throw new GraknException(Error.TypeRead.VALUE_TYPE_MISMATCH.format(
                         vertex.label(),
                         Schema.ValueType.DOUBLE.name(),
                         vertex.valueType().name()
@@ -638,42 +638,42 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
             @Override
             public void label(java.lang.String label) {
-                throw new HypergraphException(ROOT_TYPE_MUTATION);
+                throw new GraknException(ROOT_TYPE_MUTATION);
             }
 
             @Override
             public void isAbstract(boolean isAbstract) {
-                throw new HypergraphException(ROOT_TYPE_MUTATION);
+                throw new GraknException(ROOT_TYPE_MUTATION);
             }
 
             @Override
             public void sup(AttributeType superType) {
-                throw new HypergraphException(ROOT_TYPE_MUTATION);
+                throw new GraknException(ROOT_TYPE_MUTATION);
             }
 
             @Override
             public void has(AttributeType attributeType, boolean isKey) {
-                throw new HypergraphException(ROOT_TYPE_MUTATION);
+                throw new GraknException(ROOT_TYPE_MUTATION);
             }
 
             @Override
             public void has(AttributeType attributeType, AttributeType overriddenType, boolean isKey) {
-                throw new HypergraphException(ROOT_TYPE_MUTATION);
+                throw new GraknException(ROOT_TYPE_MUTATION);
             }
 
             @Override
             public void plays(RoleType roleType) {
-                throw new HypergraphException(ROOT_TYPE_MUTATION);
+                throw new GraknException(ROOT_TYPE_MUTATION);
             }
 
             @Override
             public void plays(RoleType roleType, RoleType overriddenType) {
-                throw new HypergraphException(ROOT_TYPE_MUTATION);
+                throw new GraknException(ROOT_TYPE_MUTATION);
             }
 
             @Override
             public void unplay(RoleType roleType) {
-                throw new HypergraphException(ROOT_TYPE_MUTATION);
+                throw new GraknException(ROOT_TYPE_MUTATION);
             }
         }
     }
@@ -690,7 +690,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             super(vertex);
             if (!vertex.label().equals(Schema.Vertex.Type.Root.ATTRIBUTE.label()) &&
                     !vertex.valueType().equals(Schema.ValueType.STRING)) {
-                throw new HypergraphException(Error.TypeRead.VALUE_TYPE_MISMATCH.format(
+                throw new GraknException(Error.TypeRead.VALUE_TYPE_MISMATCH.format(
                         vertex.label(),
                         Schema.ValueType.STRING.name(),
                         vertex.valueType().name()
@@ -735,7 +735,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
                 instances().parallel().forEach(attribute -> {
                     Matcher matcher = pattern.matcher(attribute.value());
                     if (!matcher.matches()) {
-                        throw new HypergraphException(ATTRIBUTE_REGEX_UNSATISFIES_INSTANCES.format(label(), regex, attribute.value()));
+                        throw new GraknException(ATTRIBUTE_REGEX_UNSATISFIES_INSTANCES.format(label(), regex, attribute.value()));
                     }
                 });
             }
@@ -761,10 +761,10 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         public Attribute.String put(java.lang.String value, boolean isInferred) {
             validateIsCommitedAndNotAbstract(Attribute.class);
             if (vertex.regex() != null && !regexPattern().matcher(value).matches()) {
-                throw new HypergraphException(ATTRIBUTE_VALUE_UNSATISFIES_REGEX.format(label(), value, regex()));
+                throw new GraknException(ATTRIBUTE_VALUE_UNSATISFIES_REGEX.format(label(), value, regex()));
             }
             if (value.length() > Schema.STRING_MAX_LENGTH) {
-                throw new HypergraphException(ILLEGAL_STRING_SIZE);
+                throw new GraknException(ILLEGAL_STRING_SIZE);
             }
             AttributeVertex<java.lang.String> attVertex = vertex.graph().thing().put(vertex, value, isInferred);
             return new AttributeImpl.String(attVertex);
@@ -802,47 +802,47 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
             @Override
             public void label(java.lang.String label) {
-                throw new HypergraphException(ROOT_TYPE_MUTATION);
+                throw new GraknException(ROOT_TYPE_MUTATION);
             }
 
             @Override
             public void isAbstract(boolean isAbstract) {
-                throw new HypergraphException(ROOT_TYPE_MUTATION);
+                throw new GraknException(ROOT_TYPE_MUTATION);
             }
 
             @Override
             public void sup(AttributeType superType) {
-                throw new HypergraphException(ROOT_TYPE_MUTATION);
+                throw new GraknException(ROOT_TYPE_MUTATION);
             }
 
             @Override
             public void has(AttributeType attributeType, boolean isKey) {
-                throw new HypergraphException(ROOT_TYPE_MUTATION);
+                throw new GraknException(ROOT_TYPE_MUTATION);
             }
 
             @Override
             public void has(AttributeType attributeType, AttributeType overriddenType, boolean isKey) {
-                throw new HypergraphException(ROOT_TYPE_MUTATION);
+                throw new GraknException(ROOT_TYPE_MUTATION);
             }
 
             @Override
             public void plays(RoleType roleType) {
-                throw new HypergraphException(ROOT_TYPE_MUTATION);
+                throw new GraknException(ROOT_TYPE_MUTATION);
             }
 
             @Override
             public void plays(RoleType roleType, RoleType overriddenType) {
-                throw new HypergraphException(ROOT_TYPE_MUTATION);
+                throw new GraknException(ROOT_TYPE_MUTATION);
             }
 
             @Override
             public void unplay(RoleType roleType) {
-                throw new HypergraphException(ROOT_TYPE_MUTATION);
+                throw new GraknException(ROOT_TYPE_MUTATION);
             }
 
             @Override
             public void regex(java.lang.String regex) {
-                throw new HypergraphException(ROOT_TYPE_MUTATION);
+                throw new GraknException(ROOT_TYPE_MUTATION);
             }
         }
     }
@@ -857,7 +857,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             super(vertex);
             if (!vertex.label().equals(Schema.Vertex.Type.Root.ATTRIBUTE.label()) &&
                     !vertex.valueType().equals(Schema.ValueType.DATETIME)) {
-                throw new HypergraphException(Error.TypeRead.VALUE_TYPE_MISMATCH.format(
+                throw new GraknException(Error.TypeRead.VALUE_TYPE_MISMATCH.format(
                         vertex.label(),
                         Schema.ValueType.DATETIME.name(),
                         vertex.valueType().name()
@@ -940,42 +940,42 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
             @Override
             public void label(java.lang.String label) {
-                throw new HypergraphException(ROOT_TYPE_MUTATION);
+                throw new GraknException(ROOT_TYPE_MUTATION);
             }
 
             @Override
             public void isAbstract(boolean isAbstract) {
-                throw new HypergraphException(ROOT_TYPE_MUTATION);
+                throw new GraknException(ROOT_TYPE_MUTATION);
             }
 
             @Override
             public void sup(AttributeType superType) {
-                throw new HypergraphException(ROOT_TYPE_MUTATION);
+                throw new GraknException(ROOT_TYPE_MUTATION);
             }
 
             @Override
             public void has(AttributeType attributeType, boolean isKey) {
-                throw new HypergraphException(ROOT_TYPE_MUTATION);
+                throw new GraknException(ROOT_TYPE_MUTATION);
             }
 
             @Override
             public void has(AttributeType attributeType, AttributeType overriddenType, boolean isKey) {
-                throw new HypergraphException(ROOT_TYPE_MUTATION);
+                throw new GraknException(ROOT_TYPE_MUTATION);
             }
 
             @Override
             public void plays(RoleType roleType) {
-                throw new HypergraphException(ROOT_TYPE_MUTATION);
+                throw new GraknException(ROOT_TYPE_MUTATION);
             }
 
             @Override
             public void plays(RoleType roleType, RoleType overriddenType) {
-                throw new HypergraphException(ROOT_TYPE_MUTATION);
+                throw new GraknException(ROOT_TYPE_MUTATION);
             }
 
             @Override
             public void unplay(RoleType roleType) {
-                throw new HypergraphException(ROOT_TYPE_MUTATION);
+                throw new GraknException(ROOT_TYPE_MUTATION);
             }
         }
     }

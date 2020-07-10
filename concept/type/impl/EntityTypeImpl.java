@@ -16,32 +16,32 @@
  *
  */
 
-package hypergraph.concept.type.impl;
+package grakn.concept.type.impl;
 
-import hypergraph.common.exception.Error;
-import hypergraph.common.exception.HypergraphException;
-import hypergraph.concept.thing.Entity;
-import hypergraph.concept.thing.impl.EntityImpl;
-import hypergraph.concept.type.AttributeType;
-import hypergraph.concept.type.EntityType;
-import hypergraph.concept.type.RoleType;
-import hypergraph.graph.TypeGraph;
-import hypergraph.graph.util.Schema;
-import hypergraph.graph.vertex.ThingVertex;
-import hypergraph.graph.vertex.TypeVertex;
+import grakn.common.exception.Error;
+import grakn.common.exception.GraknException;
+import grakn.concept.thing.Entity;
+import grakn.concept.thing.impl.EntityImpl;
+import grakn.concept.type.AttributeType;
+import grakn.concept.type.EntityType;
+import grakn.concept.type.RoleType;
+import grakn.graph.TypeGraph;
+import grakn.graph.util.Schema;
+import grakn.graph.vertex.ThingVertex;
+import grakn.graph.vertex.TypeVertex;
 
 import javax.annotation.Nullable;
 import java.util.List;
 import java.util.stream.Stream;
 
-import static hypergraph.common.exception.Error.TypeWrite.ROOT_TYPE_MUTATION;
+import static grakn.common.exception.Error.TypeWrite.ROOT_TYPE_MUTATION;
 
 public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
 
     private EntityTypeImpl(TypeVertex vertex) {
         super(vertex);
         if (vertex.schema() != Schema.Vertex.Type.ENTITY_TYPE) {
-            throw new HypergraphException(Error.TypeRead.TYPE_ROOT_MISMATCH.format(
+            throw new GraknException(Error.TypeRead.TYPE_ROOT_MISMATCH.format(
                     vertex.label(),
                     Schema.Vertex.Type.ENTITY_TYPE.root().label(),
                     vertex.schema().root().label()
@@ -90,7 +90,7 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
     }
 
     @Override
-    public List<HypergraphException> validate() {
+    public List<GraknException> validate() {
         return super.validate();
     }
 
@@ -118,42 +118,42 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
 
         @Override
         public void label(String label) {
-            throw new HypergraphException(ROOT_TYPE_MUTATION);
+            throw new GraknException(ROOT_TYPE_MUTATION);
         }
 
         @Override
         public void isAbstract(boolean isAbstract) {
-            throw new HypergraphException(ROOT_TYPE_MUTATION);
+            throw new GraknException(ROOT_TYPE_MUTATION);
         }
 
         @Override
         public void sup(EntityType superType) {
-            throw new HypergraphException(ROOT_TYPE_MUTATION);
+            throw new GraknException(ROOT_TYPE_MUTATION);
         }
 
         @Override
         public void has(AttributeType attributeType, boolean isKey) {
-            throw new HypergraphException(ROOT_TYPE_MUTATION);
+            throw new GraknException(ROOT_TYPE_MUTATION);
         }
 
         @Override
         public void has(AttributeType attributeType, AttributeType overriddenType, boolean isKey) {
-            throw new HypergraphException(ROOT_TYPE_MUTATION);
+            throw new GraknException(ROOT_TYPE_MUTATION);
         }
 
         @Override
         public void plays(RoleType roleType) {
-            throw new HypergraphException(ROOT_TYPE_MUTATION);
+            throw new GraknException(ROOT_TYPE_MUTATION);
         }
 
         @Override
         public void plays(RoleType roleType, RoleType overriddenType) {
-            throw new HypergraphException(ROOT_TYPE_MUTATION);
+            throw new GraknException(ROOT_TYPE_MUTATION);
         }
 
         @Override
         public void unplay(RoleType roleType) {
-            throw new HypergraphException(ROOT_TYPE_MUTATION);
+            throw new GraknException(ROOT_TYPE_MUTATION);
         }
     }
 }

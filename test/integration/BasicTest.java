@@ -16,16 +16,16 @@
  *
  */
 
-package hypergraph.test.integration;
+package grakn.test.integration;
 
-import hypergraph.Hypergraph;
-import hypergraph.concept.thing.Attribute;
-import hypergraph.concept.type.AttributeType;
-import hypergraph.concept.type.EntityType;
-import hypergraph.concept.type.RelationType;
-import hypergraph.concept.type.RoleType;
-import hypergraph.concept.type.ThingType;
-import hypergraph.rocks.RocksHypergraph;
+import grakn.Grakn;
+import grakn.concept.thing.Attribute;
+import grakn.concept.type.AttributeType;
+import grakn.concept.type.EntityType;
+import grakn.concept.type.RelationType;
+import grakn.concept.type.RoleType;
+import grakn.concept.type.ThingType;
+import grakn.rocks.RocksGrakn;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -35,7 +35,7 @@ import java.time.LocalDateTime;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
-import static hypergraph.test.integration.Util.assertNotNulls;
+import static grakn.test.integration.Util.assertNotNulls;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -47,9 +47,9 @@ public class BasicTest {
     private static Path directory = Paths.get(System.getProperty("user.dir")).resolve("basic-test");
     private static String keyspace = "basic-test";
 
-    private static void assert_transaction_read(Hypergraph.Transaction transaction) {
+    private static void assert_transaction_read(Grakn.Transaction transaction) {
         assertTrue(transaction.isOpen());
-        assertEquals(RocksHypergraph.Transaction.Type.READ, transaction.type());
+        assertEquals(RocksGrakn.Transaction.Type.READ, transaction.type());
 
         ThingType rootType = transaction.concepts().getRootType();
         EntityType rootEntityType = transaction.concepts().getRootEntityType();
@@ -57,7 +57,7 @@ public class BasicTest {
         AttributeType rootAttributeType = transaction.concepts().getRootAttributeType();
         Util.assertNotNulls(rootType, rootEntityType, rootRelationType, rootAttributeType);
 
-        Stream<Consumer<Hypergraph.Transaction>> typeAssertions = Stream.of(
+        Stream<Consumer<Grakn.Transaction>> typeAssertions = Stream.of(
                 tx -> {
                     AttributeType.String name = tx.concepts().getAttributeType("name").asString();
                     Util.assertNotNulls(name);
@@ -89,7 +89,7 @@ public class BasicTest {
                     Util.assertNotNulls(person);
                     assertEquals(rootEntityType, person.sup());
 
-                    Stream<Consumer<Hypergraph.Transaction>> subPersonAssertions = Stream.of(
+                    Stream<Consumer<Grakn.Transaction>> subPersonAssertions = Stream.of(
                             tx2 -> {
                                 EntityType man = tx2.concepts().getEntityType("man");
                                 Util.assertNotNulls(man);
@@ -125,23 +125,23 @@ public class BasicTest {
     public void write_types_concurrently() throws IOException {
         Util.resetDirectory(directory);
 
-        try (Hypergraph graph = RocksHypergraph.open(directory.toString())) {
+        try (Grakn graph = RocksGrakn.open(directory.toString())) {
             graph.keyspaces().create("my_data_keyspace");
 
             assertTrue(graph.isOpen());
             assertEquals(1, graph.keyspaces().getAll().size());
             assertEquals("my_data_keyspace", graph.keyspaces().getAll().iterator().next().name());
 
-            try (Hypergraph.Session session = graph.session("my_data_keyspace", Hypergraph.Session.Type.SCHEMA)) {
+            try (Grakn.Session session = graph.session("my_data_keyspace", Grakn.Session.Type.SCHEMA)) {
 
                 assertTrue(session.isOpen());
                 assertEquals("my_data_keyspace", session.keyspace().name());
 
-                try (Hypergraph.Transaction transaction = session.transaction(Hypergraph.Transaction.Type.READ)) {
+                try (Grakn.Transaction transaction = session.transaction(Grakn.Transaction.Type.READ)) {
                     assertTrue(transaction.isOpen());
-                    assertEquals(RocksHypergraph.Transaction.Type.READ, transaction.type());
+                    assertEquals(RocksGrakn.Transaction.Type.READ, transaction.type());
 
-                    Stream<Consumer<Hypergraph.Transaction>> rootTypeAssertions = Stream.of(
+                    Stream<Consumer<Grakn.Transaction>> rootTypeAssertions = Stream.of(
                             tx -> {
                                 ThingType rootType = tx.concepts().getRootType();
                                 assertNotNull(rootType);
@@ -166,9 +166,9 @@ public class BasicTest {
                     rootTypeAssertions.parallel().forEach(assertion -> assertion.accept(transaction));
                 }
 
-                try (Hypergraph.Transaction transaction = session.transaction(Hypergraph.Transaction.Type.WRITE)) {
+                try (Grakn.Transaction transaction = session.transaction(Grakn.Transaction.Type.WRITE)) {
                     assertTrue(transaction.isOpen());
-                    assertEquals(RocksHypergraph.Transaction.Type.WRITE, transaction.type());
+                    assertEquals(RocksGrakn.Transaction.Type.WRITE, transaction.type());
 
                     ThingType rootType = transaction.concepts().getRootType();
                     EntityType rootEntityType = transaction.concepts().getRootEntityType();
@@ -176,7 +176,7 @@ public class BasicTest {
                     AttributeType rootAttributeType = transaction.concepts().getRootAttributeType();
                     Util.assertNotNulls(rootType, rootEntityType, rootRelationType, rootAttributeType);
 
-                    Stream<Consumer<Hypergraph.Transaction>> typeAssertions = Stream.of(
+                    Stream<Consumer<Grakn.Transaction>> typeAssertions = Stream.of(
                             tx -> {
                                 AttributeType name = tx.concepts().putAttributeType("name", String.class).asString();
                                 Util.assertNotNulls(name);
@@ -206,7 +206,7 @@ public class BasicTest {
                                 Util.assertNotNulls(person);
                                 assertEquals(rootEntityType, person.sup());
 
-                                Stream<Consumer<Hypergraph.Transaction>> subPersonAssertions = Stream.of(
+                                Stream<Consumer<Grakn.Transaction>> subPersonAssertions = Stream.of(
                                         tx2 -> {
                                             EntityType man = tx2.concepts().putEntityType("man");
                                             man.sup(person);
@@ -233,29 +233,29 @@ public class BasicTest {
                     transaction.commit();
                 }
 
-                try (Hypergraph.Transaction transaction = session.transaction(Hypergraph.Transaction.Type.READ)) {
+                try (Grakn.Transaction transaction = session.transaction(Grakn.Transaction.Type.READ)) {
                     assert_transaction_read(transaction);
                 }
             }
         }
 
 
-        try (Hypergraph graph = RocksHypergraph.open(directory.toString())) {
+        try (Grakn graph = RocksGrakn.open(directory.toString())) {
 
             assertTrue(graph.isOpen());
             assertEquals(1, graph.keyspaces().getAll().size());
             assertEquals("my_data_keyspace", graph.keyspaces().getAll().iterator().next().name());
 
-            try (Hypergraph.Session session = graph.session("my_data_keyspace", Hypergraph.Session.Type.SCHEMA)) {
+            try (Grakn.Session session = graph.session("my_data_keyspace", Grakn.Session.Type.SCHEMA)) {
 
                 assertTrue(session.isOpen());
                 assertEquals("my_data_keyspace", session.keyspace().name());
 
-                try (Hypergraph.Transaction transaction = session.transaction(Hypergraph.Transaction.Type.READ)) {
+                try (Grakn.Transaction transaction = session.transaction(Grakn.Transaction.Type.READ)) {
                     assert_transaction_read(transaction);
                 }
 
-                try (Hypergraph.Transaction transaction = session.transaction(Hypergraph.Transaction.Type.WRITE)) {
+                try (Grakn.Transaction transaction = session.transaction(Grakn.Transaction.Type.WRITE)) {
                     AttributeType.String gender = transaction.concepts().putAttributeType("gender", String.class).asString();
                     EntityType school = transaction.concepts().putEntityType("school");
                     RelationType teaching = transaction.concepts().putRelationType("teaching");
@@ -267,7 +267,7 @@ public class BasicTest {
                     transaction.commit();
                 }
 
-                try (Hypergraph.Transaction transaction = session.transaction(Hypergraph.Transaction.Type.READ)) {
+                try (Grakn.Transaction transaction = session.transaction(Grakn.Transaction.Type.READ)) {
                     assert_transaction_read(transaction);
                     AttributeType.String gender = transaction.concepts().getAttributeType("gender").asString();
                     EntityType school = transaction.concepts().getEntityType("school");
@@ -283,10 +283,10 @@ public class BasicTest {
     private void reset_directory_and_create_attribute_types() throws IOException {
         Util.resetDirectory(directory);
 
-        try (Hypergraph graph = RocksHypergraph.open(directory.toString())) {
+        try (Grakn graph = RocksGrakn.open(directory.toString())) {
             graph.keyspaces().create(keyspace);
-            try (Hypergraph.Session session = graph.session(keyspace, Hypergraph.Session.Type.SCHEMA)) {
-                try (Hypergraph.Transaction txn = session.transaction(Hypergraph.Transaction.Type.WRITE)) {
+            try (Grakn.Session session = graph.session(keyspace, Grakn.Session.Type.SCHEMA)) {
+                try (Grakn.Transaction txn = session.transaction(Grakn.Transaction.Type.WRITE)) {
                     txn.concepts().putAttributeType("is-alive", Boolean.class);
                     txn.concepts().putAttributeType("age", Long.class);
                     txn.concepts().putAttributeType("score", Double.class);
@@ -299,23 +299,23 @@ public class BasicTest {
         }
     }
 
-    private AttributeType.Boolean isAlive(Hypergraph.Transaction txn) {
+    private AttributeType.Boolean isAlive(Grakn.Transaction txn) {
         return txn.concepts().getAttributeType("is-alive").asBoolean();
     }
 
-    private AttributeType.Long age(Hypergraph.Transaction txn) {
+    private AttributeType.Long age(Grakn.Transaction txn) {
         return txn.concepts().getAttributeType("age").asLong();
     }
 
-    private AttributeType.Double score(Hypergraph.Transaction txn) {
+    private AttributeType.Double score(Grakn.Transaction txn) {
         return txn.concepts().getAttributeType("score").asDouble();
     }
 
-    private AttributeType.String name(Hypergraph.Transaction txn) {
+    private AttributeType.String name(Grakn.Transaction txn) {
         return txn.concepts().getAttributeType("name").asString();
     }
 
-    private AttributeType.DateTime dob(Hypergraph.Transaction txn) {
+    private AttributeType.DateTime dob(Grakn.Transaction txn) {
         return txn.concepts().getAttributeType("birth-date").asDateTime();
     }
 
@@ -331,9 +331,9 @@ public class BasicTest {
         LocalDateTime date_1991_1_1_0_0 = LocalDateTime.of(1991, 1, 1, 0, 0);
         reset_directory_and_create_attribute_types();
 
-        try (Hypergraph graph = RocksHypergraph.open(directory.toString())) {
-            try (Hypergraph.Session session = graph.session(keyspace)) {
-                try (Hypergraph.Transaction txn = session.transaction(Hypergraph.Transaction.Type.WRITE)) {
+        try (Grakn graph = RocksGrakn.open(directory.toString())) {
+            try (Grakn.Session session = graph.session(keyspace)) {
+                try (Grakn.Transaction txn = session.transaction(Grakn.Transaction.Type.WRITE)) {
                     isAlive(txn).put(true);
                     age(txn).put(18);
                     score(txn).put(90.5);
@@ -358,7 +358,7 @@ public class BasicTest {
                     txn.commit();
                 }
 
-                try (Hypergraph.Transaction txn = session.transaction(Hypergraph.Transaction.Type.READ)) {
+                try (Grakn.Transaction txn = session.transaction(Grakn.Transaction.Type.READ)) {
                     LocalDateTime dateTime = LocalDateTime.of(1991, 1, 1, 0, 0);
 
                     Attribute.Boolean isAlive = isAlive(txn).get(true);
@@ -409,11 +409,11 @@ public class BasicTest {
 
         reset_directory_and_create_attribute_types();
 
-        try (Hypergraph graph = RocksHypergraph.open(directory.toString())) {
-            try (Hypergraph.Session session = graph.session(keyspace)) {
-                Hypergraph.Transaction txn1 = session.transaction(Hypergraph.Transaction.Type.WRITE);
-                Hypergraph.Transaction txn2 = session.transaction(Hypergraph.Transaction.Type.WRITE);
-                Hypergraph.Transaction txn3 = session.transaction(Hypergraph.Transaction.Type.WRITE);
+        try (Grakn graph = RocksGrakn.open(directory.toString())) {
+            try (Grakn.Session session = graph.session(keyspace)) {
+                Grakn.Transaction txn1 = session.transaction(Grakn.Transaction.Type.WRITE);
+                Grakn.Transaction txn2 = session.transaction(Grakn.Transaction.Type.WRITE);
+                Grakn.Transaction txn3 = session.transaction(Grakn.Transaction.Type.WRITE);
 
                 isAlive(txn1).put(true);
                 isAlive(txn2).put(false);
@@ -467,7 +467,7 @@ public class BasicTest {
                 txn2.commit();
                 txn3.commit();
 
-                try (Hypergraph.Transaction txn = session.transaction(Hypergraph.Transaction.Type.READ)) {
+                try (Grakn.Transaction txn = session.transaction(Grakn.Transaction.Type.READ)) {
                     LocalDateTime d1 = LocalDateTime.of(1991, 2, 3, 4, 5);
                     LocalDateTime d2 = LocalDateTime.of(1992, 3, 4, 5, 6);
                     LocalDateTime d3 = LocalDateTime.of(1993, 4, 5, 6, 7);
@@ -528,11 +528,11 @@ public class BasicTest {
 
         LocalDateTime date_1992_2_3_4_5 = LocalDateTime.of(1991, 2, 3, 4, 5);
 
-        try (Hypergraph graph = RocksHypergraph.open(directory.toString())) {
-            try (Hypergraph.Session session = graph.session(keyspace)) {
-                Hypergraph.Transaction txn1 = session.transaction(Hypergraph.Transaction.Type.WRITE);
-                Hypergraph.Transaction txn2 = session.transaction(Hypergraph.Transaction.Type.WRITE);
-                Hypergraph.Transaction txn3 = session.transaction(Hypergraph.Transaction.Type.WRITE);
+        try (Grakn graph = RocksGrakn.open(directory.toString())) {
+            try (Grakn.Session session = graph.session(keyspace)) {
+                Grakn.Transaction txn1 = session.transaction(Grakn.Transaction.Type.WRITE);
+                Grakn.Transaction txn2 = session.transaction(Grakn.Transaction.Type.WRITE);
+                Grakn.Transaction txn3 = session.transaction(Grakn.Transaction.Type.WRITE);
 
                 isAlive(txn1).put(true);
                 isAlive(txn2).put(true);
@@ -589,7 +589,7 @@ public class BasicTest {
                 txn2.commit();
                 txn3.commit();
 
-                try (Hypergraph.Transaction txn = session.transaction(Hypergraph.Transaction.Type.READ)) {
+                try (Grakn.Transaction txn = session.transaction(Grakn.Transaction.Type.READ)) {
 
                     assertEquals(true, isAlive(txn).get(true).value());
                     assertEquals(17, age(txn).get(17).value().longValue());
@@ -627,10 +627,10 @@ public class BasicTest {
     public void write_and_delete_attributes_concurrently() throws IOException {
         reset_directory_and_create_attribute_types();
 
-        try (Hypergraph graph = RocksHypergraph.open(directory.toString())) {
-            try (Hypergraph.Session session = graph.session(keyspace)) {
-                Hypergraph.Transaction txn1 = session.transaction(Hypergraph.Transaction.Type.WRITE);
-                Hypergraph.Transaction txn2 = session.transaction(Hypergraph.Transaction.Type.WRITE);
+        try (Grakn graph = RocksGrakn.open(directory.toString())) {
+            try (Grakn.Session session = graph.session(keyspace)) {
+                Grakn.Transaction txn1 = session.transaction(Grakn.Transaction.Type.WRITE);
+                Grakn.Transaction txn2 = session.transaction(Grakn.Transaction.Type.WRITE);
 
                 name(txn1).put("alice");
                 name(txn2).put("alice");
@@ -638,14 +638,14 @@ public class BasicTest {
                 txn1.commit();
                 txn2.commit();
 
-                try (Hypergraph.Transaction txn = session.transaction(Hypergraph.Transaction.Type.READ)) {
+                try (Grakn.Transaction txn = session.transaction(Grakn.Transaction.Type.READ)) {
                     assertEquals("alice", name(txn).get("alice").value());
                     assertEquals(1, name(txn).instances().count());
                     assertTrue(name(txn).instances().anyMatch(att -> att.value().equals("alice")));
                 }
 
-                txn1 = session.transaction(Hypergraph.Transaction.Type.WRITE);
-                txn2 = session.transaction(Hypergraph.Transaction.Type.WRITE);
+                txn1 = session.transaction(Grakn.Transaction.Type.WRITE);
+                txn2 = session.transaction(Grakn.Transaction.Type.WRITE);
 
                 name(txn1).put("alice");
                 name(txn2).get("alice").delete();
@@ -662,14 +662,14 @@ public class BasicTest {
                     assertTrue(true);
                 }
 
-                try (Hypergraph.Transaction txn = session.transaction(Hypergraph.Transaction.Type.READ)) {
+                try (Grakn.Transaction txn = session.transaction(Grakn.Transaction.Type.READ)) {
                     assertEquals("alice", name(txn).get("alice").value());
                     assertEquals(1, name(txn).instances().count());
                     assertTrue(name(txn).instances().anyMatch(att -> att.value().equals("alice")));
                 }
 
-                txn1 = session.transaction(Hypergraph.Transaction.Type.WRITE);
-                txn2 = session.transaction(Hypergraph.Transaction.Type.WRITE);
+                txn1 = session.transaction(Grakn.Transaction.Type.WRITE);
+                txn2 = session.transaction(Grakn.Transaction.Type.WRITE);
 
                 name(txn1).put("alice");
                 name(txn2).get("alice").delete();
@@ -677,14 +677,14 @@ public class BasicTest {
                 txn2.commit(); // delete before write
                 txn1.commit();
 
-                try (Hypergraph.Transaction txn = session.transaction(Hypergraph.Transaction.Type.READ)) {
+                try (Grakn.Transaction txn = session.transaction(Grakn.Transaction.Type.READ)) {
                     assertEquals("alice", name(txn).get("alice").value());
                     assertEquals(1, name(txn).instances().count());
                     assertTrue(name(txn).instances().anyMatch(att -> att.value().equals("alice")));
                 }
 
-                txn1 = session.transaction(Hypergraph.Transaction.Type.WRITE);
-                txn2 = session.transaction(Hypergraph.Transaction.Type.WRITE);
+                txn1 = session.transaction(Grakn.Transaction.Type.WRITE);
+                txn2 = session.transaction(Grakn.Transaction.Type.WRITE);
 
                 name(txn1).get("alice").delete();
                 name(txn2).get("alice").delete();
@@ -697,7 +697,7 @@ public class BasicTest {
                     assertTrue(true);
                 }
 
-                try (Hypergraph.Transaction txn = session.transaction(Hypergraph.Transaction.Type.READ)) {
+                try (Grakn.Transaction txn = session.transaction(Grakn.Transaction.Type.READ)) {
                     assertNull(name(txn).get("alice"));
                     assertEquals(0, name(txn).instances().count());
                 }

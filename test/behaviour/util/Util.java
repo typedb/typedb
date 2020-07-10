@@ -16,9 +16,9 @@
  *
  */
 
-package hypergraph.test.behaviour.util;
+package grakn.test.behaviour.util;
 
-import hypergraph.common.exception.HypergraphException;
+import grakn.common.exception.GraknException;
 
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -29,7 +29,7 @@ public class Util {
         try {
             function.run();
             fail();
-        } catch (HypergraphException e) {
+        } catch (GraknException e) {
             assertTrue(true);
         }
     }

@@ -16,9 +16,9 @@
  *
  */
 
-package hypergraph.test.behaviour.connection.transaction;
+package grakn.test.behaviour.connection.transaction;
 
-import hypergraph.Hypergraph;
+import grakn.Grakn;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 
@@ -29,14 +29,14 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
 import static grakn.common.util.Collections.list;
-import static hypergraph.test.behaviour.connection.ConnectionSteps.THREAD_POOL_SIZE;
-import static hypergraph.test.behaviour.connection.ConnectionSteps.sessions;
-import static hypergraph.test.behaviour.connection.ConnectionSteps.sessionsParallel;
-import static hypergraph.test.behaviour.connection.ConnectionSteps.sessionsParallelToTransactionsParallel;
-import static hypergraph.test.behaviour.connection.ConnectionSteps.sessionsToTransactions;
-import static hypergraph.test.behaviour.connection.ConnectionSteps.sessionsToTransactionsParallel;
-import static hypergraph.test.behaviour.connection.ConnectionSteps.threadPool;
-import static hypergraph.test.behaviour.util.Util.assertThrows;
+import static grakn.test.behaviour.connection.ConnectionSteps.THREAD_POOL_SIZE;
+import static grakn.test.behaviour.connection.ConnectionSteps.sessions;
+import static grakn.test.behaviour.connection.ConnectionSteps.sessionsParallel;
+import static grakn.test.behaviour.connection.ConnectionSteps.sessionsParallelToTransactionsParallel;
+import static grakn.test.behaviour.connection.ConnectionSteps.sessionsToTransactions;
+import static grakn.test.behaviour.connection.ConnectionSteps.sessionsToTransactionsParallel;
+import static grakn.test.behaviour.connection.ConnectionSteps.threadPool;
+import static grakn.test.behaviour.util.Util.assertThrows;
 import static java.util.Objects.isNull;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -48,16 +48,16 @@ public class TransactionSteps {
     // =============================================//
 
     @When("session opens transaction of type: {transaction_type}")
-    public void session_opens_transaction_of_type(Hypergraph.Transaction.Type type) {
+    public void session_opens_transaction_of_type(Grakn.Transaction.Type type) {
         for_each_session_open_transactions_of_type(list(type));
     }
 
     @When("for each session, open transaction(s) of type:")
-    public void for_each_session_open_transactions_of_type(List<Hypergraph.Transaction.Type> types) {
-        for (Hypergraph.Session session : sessions) {
-            List<Hypergraph.Transaction> transactions = new ArrayList<>();
-            for (Hypergraph.Transaction.Type type : types) {
-                Hypergraph.Transaction transaction = session.transaction(type);
+    public void for_each_session_open_transactions_of_type(List<Grakn.Transaction.Type> types) {
+        for (Grakn.Session session : sessions) {
+            List<Grakn.Transaction> transactions = new ArrayList<>();
+            for (Grakn.Transaction.Type type : types) {
+                Grakn.Transaction transaction = session.transaction(type);
                 transactions.add(transaction);
             }
             sessionsToTransactions.put(session, transactions);
@@ -86,8 +86,8 @@ public class TransactionSteps {
 
     @Then("for each session, transaction(s) commit(s)")
     public void for_each_session_transactions_commit() {
-        for (Hypergraph.Session session : sessions) {
-            for (Hypergraph.Transaction transaction : sessionsToTransactions.get(session)) {
+        for (Grakn.Session session : sessions) {
+            for (Grakn.Transaction transaction : sessionsToTransactions.get(session)) {
                 transaction.commit();
             }
         }
@@ -95,8 +95,8 @@ public class TransactionSteps {
 
     @Then("for each session, transaction(s) commit(s); throws exception")
     public void for_each_session_transactions_commits_throws_exception() {
-        for (Hypergraph.Session session : sessions) {
-            for (Hypergraph.Transaction transaction : sessionsToTransactions.get(session)) {
+        for (Grakn.Session session : sessions) {
+            for (Grakn.Transaction transaction : sessionsToTransactions.get(session)) {
                 assertThrows(transaction::commit);
             }
         }
@@ -104,29 +104,29 @@ public class TransactionSteps {
 
     @Then("for each session, transaction close(s)")
     public void for_each_session_transaction_closes() {
-        for (Hypergraph.Session session : sessions) {
-            for (Hypergraph.Transaction transaction : sessionsToTransactions.get(session)) {
+        for (Grakn.Session session : sessions) {
+            for (Grakn.Transaction transaction : sessionsToTransactions.get(session)) {
                 transaction.close();
             }
         }
     }
 
-    private void for_each_session_transactions_are(Consumer<Hypergraph.Transaction> assertion) {
-        for (Hypergraph.Session session : sessions) {
-            for (Hypergraph.Transaction transaction : sessionsToTransactions.get(session)) {
+    private void for_each_session_transactions_are(Consumer<Grakn.Transaction> assertion) {
+        for (Grakn.Session session : sessions) {
+            for (Grakn.Transaction transaction : sessionsToTransactions.get(session)) {
                 assertion.accept(transaction);
             }
         }
     }
 
     @Then("for each session, transaction(s) has/have type:")
-    public void for_each_session_transactions_have_type(List<Hypergraph.Transaction.Type> types) {
-        for (Hypergraph.Session session : sessions) {
-            List<Hypergraph.Transaction> transactions = sessionsToTransactions.get(session);
+    public void for_each_session_transactions_have_type(List<Grakn.Transaction.Type> types) {
+        for (Grakn.Session session : sessions) {
+            List<Grakn.Transaction> transactions = sessionsToTransactions.get(session);
             assertEquals(types.size(), transactions.size());
 
-            Iterator<Hypergraph.Transaction.Type> typesIterator = types.iterator();
-            Iterator<Hypergraph.Transaction> transactionIterator = transactions.iterator();
+            Iterator<Grakn.Transaction.Type> typesIterator = types.iterator();
+            Iterator<Grakn.Transaction> transactionIterator = transactions.iterator();
             while (typesIterator.hasNext()) {
                 assertEquals(typesIterator.next(), transactionIterator.next().type());
             }
@@ -138,11 +138,11 @@ public class TransactionSteps {
     // ===========================================//
 
     @When("for each session, open transaction(s) in parallel of type:")
-    public void for_each_session_open_transactions_in_parallel_of_type(List<Hypergraph.Transaction.Type> types) {
+    public void for_each_session_open_transactions_in_parallel_of_type(List<Grakn.Transaction.Type> types) {
         assertTrue(THREAD_POOL_SIZE >= types.size());
-        for (Hypergraph.Session session : sessions) {
-            List<CompletableFuture<Hypergraph.Transaction>> transactionsParallel = new ArrayList<>();
-            for (Hypergraph.Transaction.Type type : types) {
+        for (Grakn.Session session : sessions) {
+            List<CompletableFuture<Grakn.Transaction>> transactionsParallel = new ArrayList<>();
+            for (Grakn.Transaction.Type type : types) {
                 transactionsParallel.add(CompletableFuture.supplyAsync(() -> session.transaction(type), threadPool));
             }
             sessionsToTransactionsParallel.put(session, transactionsParallel);
@@ -159,10 +159,10 @@ public class TransactionSteps {
         for_each_session_transactions_in_parallel_are(transaction -> assertEquals(isOpen, transaction.isOpen()));
     }
 
-    private void for_each_session_transactions_in_parallel_are(Consumer<Hypergraph.Transaction> assertion) {
+    private void for_each_session_transactions_in_parallel_are(Consumer<Grakn.Transaction> assertion) {
         List<CompletableFuture<Void>> assertions = new ArrayList<>();
-        for (Hypergraph.Session session : sessions) {
-            for (CompletableFuture<Hypergraph.Transaction> futureTransaction :
+        for (Grakn.Session session : sessions) {
+            for (CompletableFuture<Grakn.Transaction> futureTransaction :
                     sessionsToTransactionsParallel.get(session)) {
 
                 assertions.add(futureTransaction.thenApply(transaction -> {
@@ -175,19 +175,19 @@ public class TransactionSteps {
     }
 
     @Then("for each session, transactions in parallel have type:")
-    public void for_each_session_transactions_in_parallel_have_type(List<Hypergraph.Transaction.Type> types) {
+    public void for_each_session_transactions_in_parallel_have_type(List<Grakn.Transaction.Type> types) {
         List<CompletableFuture<Void>> assertions = new ArrayList<>();
-        for (Hypergraph.Session session : sessions) {
-            List<CompletableFuture<Hypergraph.Transaction>> futureTxs =
+        for (Grakn.Session session : sessions) {
+            List<CompletableFuture<Grakn.Transaction>> futureTxs =
                     sessionsToTransactionsParallel.get(session);
 
             assertEquals(types.size(), futureTxs.size());
 
-            Iterator<Hypergraph.Transaction.Type> typesIter = types.iterator();
-            Iterator<CompletableFuture<Hypergraph.Transaction>> futureTxsIter = futureTxs.iterator();
+            Iterator<Grakn.Transaction.Type> typesIter = types.iterator();
+            Iterator<CompletableFuture<Grakn.Transaction>> futureTxsIter = futureTxs.iterator();
 
             while (typesIter.hasNext()) {
-                Hypergraph.Transaction.Type type = typesIter.next();
+                Grakn.Transaction.Type type = typesIter.next();
                 futureTxsIter.next().thenApplyAsync(tx -> {
                     assertEquals(type, tx.type());
                     return null;
@@ -212,10 +212,10 @@ public class TransactionSteps {
         for_each_session_in_parallel_transactions_in_parallel_are(transaction -> assertEquals(isOpen, transaction.isOpen()));
     }
 
-    private void for_each_session_in_parallel_transactions_in_parallel_are(Consumer<Hypergraph.Transaction> assertion) {
+    private void for_each_session_in_parallel_transactions_in_parallel_are(Consumer<Grakn.Transaction> assertion) {
         List<CompletableFuture<Void>> assertions = new ArrayList<>();
-        for (CompletableFuture<Hypergraph.Session> futureSession : sessionsParallel) {
-            for (CompletableFuture<Hypergraph.Transaction> futureTransaction : sessionsParallelToTransactionsParallel.get(futureSession)) {
+        for (CompletableFuture<Grakn.Session> futureSession : sessionsParallel) {
+            for (CompletableFuture<Grakn.Transaction> futureTransaction : sessionsParallelToTransactionsParallel.get(futureSession)) {
                 assertions.add(futureTransaction.thenApply(transaction -> {
                     assertion.accept(transaction);
                     return null;

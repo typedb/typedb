@@ -16,13 +16,13 @@
  *
  */
 
-package hypergraph.graph.vertex;
+package grakn.graph.vertex;
 
-import hypergraph.graph.TypeGraph;
-import hypergraph.graph.adjacency.TypeAdjacency;
-import hypergraph.graph.edge.TypeEdge;
-import hypergraph.graph.iid.VertexIID;
-import hypergraph.graph.util.Schema;
+import grakn.graph.TypeGraph;
+import grakn.graph.adjacency.TypeAdjacency;
+import grakn.graph.edge.TypeEdge;
+import grakn.graph.iid.VertexIID;
+import grakn.graph.util.Schema;
 
 import java.util.Iterator;
 

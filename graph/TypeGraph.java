@@ -16,24 +16,24 @@
  *
  */
 
-package hypergraph.graph;
+package grakn.graph;
 
-import hypergraph.common.concurrent.ManagedReadWriteLock;
-import hypergraph.common.exception.HypergraphException;
-import hypergraph.graph.iid.IndexIID;
-import hypergraph.graph.iid.VertexIID;
-import hypergraph.graph.util.Schema;
-import hypergraph.graph.util.Storage;
-import hypergraph.graph.vertex.TypeVertex;
-import hypergraph.graph.vertex.impl.TypeVertexImpl;
+import grakn.common.concurrent.ManagedReadWriteLock;
+import grakn.common.exception.GraknException;
+import grakn.graph.iid.IndexIID;
+import grakn.graph.iid.VertexIID;
+import grakn.graph.util.Schema;
+import grakn.graph.util.Storage;
+import grakn.graph.vertex.TypeVertex;
+import grakn.graph.vertex.impl.TypeVertexImpl;
 
 import javax.annotation.Nullable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Stream;
 
-import static hypergraph.graph.iid.VertexIID.Type.generate;
-import static hypergraph.graph.util.Schema.Vertex.Type.scopedLabel;
+import static grakn.graph.iid.VertexIID.Type.generate;
+import static grakn.graph.util.Schema.Vertex.Type.scopedLabel;
 
 public class TypeGraph implements Graph<VertexIID.Type, TypeVertex> {
 
@@ -61,11 +61,11 @@ public class TypeGraph implements Graph<VertexIID.Type, TypeVertex> {
         return graphManager.storage();
     }
 
-    public boolean isInitialised() throws HypergraphException {
+    public boolean isInitialised() throws GraknException {
         return get(Schema.Vertex.Type.Root.THING.label()) != null;
     }
 
-    public void initialise() throws HypergraphException {
+    public void initialise() throws GraknException {
         TypeVertex rootThingType = create(
                 Schema.Vertex.Type.THING_TYPE,
                 Schema.Vertex.Type.Root.THING.label()).isAbstract(true);
@@ -128,7 +128,7 @@ public class TypeGraph implements Graph<VertexIID.Type, TypeVertex> {
 
             return vertex;
         } catch (InterruptedException e) {
-            throw new HypergraphException(e);
+            throw new GraknException(e);
         } finally {
             singleLabelLocks.get(scopedLabel).unlockRead();
             multiLabelLock.unlockRead();
@@ -152,7 +152,7 @@ public class TypeGraph implements Graph<VertexIID.Type, TypeVertex> {
             typesByIID.put(typeVertex.iid(), typeVertex);
             return typeVertex;
         } catch (InterruptedException e) {
-            throw new HypergraphException(e);
+            throw new GraknException(e);
         } finally {
             singleLabelLocks.get(scopedLabel).unlockWrite();
             multiLabelLock.unlockRead();
@@ -165,13 +165,13 @@ public class TypeGraph implements Graph<VertexIID.Type, TypeVertex> {
         String newScopedLabel = scopedLabel(newLabel, newScope);
         try {
             multiLabelLock.lockWrite();
-            if (typesByLabel.containsKey(newScopedLabel)) throw new HypergraphException(
+            if (typesByLabel.containsKey(newScopedLabel)) throw new GraknException(
                     String.format("Invalid Write Operation: index '%s' is already in use", newScopedLabel));
             typesByLabel.remove(oldScopedLabel);
             typesByLabel.put(newScopedLabel, vertex);
             return vertex;
         } catch (InterruptedException e) {
-            throw new HypergraphException(e);
+            throw new GraknException(e);
         } finally {
             multiLabelLock.unlockWrite();
         }
@@ -187,7 +187,7 @@ public class TypeGraph implements Graph<VertexIID.Type, TypeVertex> {
             typesByLabel.remove(vertex.scopedLabel());
             typesByIID.remove(vertex.iid());
         } catch (InterruptedException e) {
-            throw new HypergraphException(e);
+            throw new GraknException(e);
         } finally {
             singleLabelLocks.get(vertex.scopedLabel()).unlockWrite();
             multiLabelLock.unlockRead();

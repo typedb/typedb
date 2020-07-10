@@ -16,21 +16,21 @@
  *
  */
 
-package hypergraph.graph.edge.impl;
+package grakn.graph.edge.impl;
 
-import hypergraph.graph.ThingGraph;
-import hypergraph.graph.edge.ThingEdge;
-import hypergraph.graph.iid.EdgeIID;
-import hypergraph.graph.iid.InfixIID;
-import hypergraph.graph.iid.SuffixIID;
-import hypergraph.graph.iid.VertexIID;
-import hypergraph.graph.util.Schema;
-import hypergraph.graph.vertex.ThingVertex;
+import grakn.graph.ThingGraph;
+import grakn.graph.edge.ThingEdge;
+import grakn.graph.iid.EdgeIID;
+import grakn.graph.iid.InfixIID;
+import grakn.graph.iid.SuffixIID;
+import grakn.graph.iid.VertexIID;
+import grakn.graph.util.Schema;
+import grakn.graph.vertex.ThingVertex;
 
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static hypergraph.graph.util.Schema.Status.BUFFERED;
+import static grakn.graph.util.Schema.Status.BUFFERED;
 import static java.util.Objects.hash;
 
 public abstract class ThingEdgeImpl implements ThingEdge {

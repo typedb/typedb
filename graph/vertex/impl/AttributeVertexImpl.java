@@ -16,24 +16,24 @@
  *
  */
 
-package hypergraph.graph.vertex.impl;
+package grakn.graph.vertex.impl;
 
-import hypergraph.common.exception.Error;
-import hypergraph.common.exception.HypergraphException;
-import hypergraph.graph.ThingGraph;
-import hypergraph.graph.adjacency.Adjacency;
-import hypergraph.graph.adjacency.ThingAdjacency;
-import hypergraph.graph.adjacency.impl.ThingAdjacencyImpl;
-import hypergraph.graph.iid.EdgeIID;
-import hypergraph.graph.iid.IndexIID;
-import hypergraph.graph.iid.VertexIID;
-import hypergraph.graph.util.Schema;
-import hypergraph.graph.vertex.AttributeVertex;
+import grakn.common.exception.Error;
+import grakn.common.exception.GraknException;
+import grakn.graph.ThingGraph;
+import grakn.graph.adjacency.Adjacency;
+import grakn.graph.adjacency.ThingAdjacency;
+import grakn.graph.adjacency.impl.ThingAdjacencyImpl;
+import grakn.graph.iid.EdgeIID;
+import grakn.graph.iid.IndexIID;
+import grakn.graph.iid.VertexIID;
+import grakn.graph.util.Schema;
+import grakn.graph.vertex.AttributeVertex;
 
 import java.time.LocalDateTime;
 
-import static hypergraph.common.exception.Error.ThingRead.INVALID_VERTEX_CASTING;
-import static hypergraph.common.exception.Error.Transaction.ILLEGAL_OPERATION;
+import static grakn.common.exception.Error.ThingRead.INVALID_VERTEX_CASTING;
+import static grakn.common.exception.Error.Transaction.ILLEGAL_OPERATION;
 
 public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl implements AttributeVertex<VALUE> {
 
@@ -114,7 +114,7 @@ public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl impleme
      */
     @Override
     public void commit() {
-        if (isInferred) throw new HypergraphException(ILLEGAL_OPERATION);
+        if (isInferred) throw new GraknException(ILLEGAL_OPERATION);
         commitVertex();
         commitEdges();
     }
@@ -132,27 +132,27 @@ public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl impleme
 
     @Override
     public AttributeVertexImpl.Boolean asBoolean() {
-        throw new HypergraphException(INVALID_VERTEX_CASTING.format(Boolean.class.getCanonicalName()));
+        throw new GraknException(INVALID_VERTEX_CASTING.format(Boolean.class.getCanonicalName()));
     }
 
     @Override
     public AttributeVertexImpl.Long asLong() {
-        throw new HypergraphException(INVALID_VERTEX_CASTING.format(Long.class.getCanonicalName()));
+        throw new GraknException(INVALID_VERTEX_CASTING.format(Long.class.getCanonicalName()));
     }
 
     @Override
     public AttributeVertexImpl.Double asDouble() {
-        throw new HypergraphException(INVALID_VERTEX_CASTING.format(Double.class.getCanonicalName()));
+        throw new GraknException(INVALID_VERTEX_CASTING.format(Double.class.getCanonicalName()));
     }
 
     @Override
     public AttributeVertexImpl.String asString() {
-        throw new HypergraphException(INVALID_VERTEX_CASTING.format(String.class.getCanonicalName()));
+        throw new GraknException(INVALID_VERTEX_CASTING.format(String.class.getCanonicalName()));
     }
 
     @Override
     public AttributeVertexImpl.DateTime asDateTime() {
-        throw new HypergraphException(INVALID_VERTEX_CASTING.format(DateTime.class.getCanonicalName()));
+        throw new GraknException(INVALID_VERTEX_CASTING.format(DateTime.class.getCanonicalName()));
     }
 
     public static class Boolean extends AttributeVertexImpl<java.lang.Boolean> {

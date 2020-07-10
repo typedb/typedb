@@ -16,7 +16,7 @@
  *
  */
 
-package hypergraph.test.integration;
+package grakn.test.integration;
 
 import java.io.File;
 import java.io.IOException;

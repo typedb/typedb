@@ -16,12 +16,12 @@
  *
  */
 
-package hypergraph.test.behaviour.concept.thing;
+package grakn.test.behaviour.concept.thing;
 
-import hypergraph.concept.thing.Thing;
-import hypergraph.concept.type.ThingType;
-import hypergraph.test.behaviour.config.Parameters.RootLabel;
-import hypergraph.test.behaviour.config.Parameters.ScopedLabel;
+import grakn.concept.thing.Thing;
+import grakn.concept.type.ThingType;
+import grakn.test.behaviour.config.Parameters.RootLabel;
+import grakn.test.behaviour.config.Parameters.ScopedLabel;
 import io.cucumber.java.After;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
@@ -29,9 +29,9 @@ import io.cucumber.java.en.When;
 import java.util.HashMap;
 import java.util.Map;
 
-import static hypergraph.test.behaviour.concept.type.thingtype.ThingTypeSteps.get_thing_type;
-import static hypergraph.test.behaviour.connection.ConnectionSteps.tx;
-import static hypergraph.test.behaviour.util.Util.assertThrows;
+import static grakn.test.behaviour.concept.type.thingtype.ThingTypeSteps.get_thing_type;
+import static grakn.test.behaviour.connection.ConnectionSteps.tx;
+import static grakn.test.behaviour.util.Util.assertThrows;
 import static java.util.Objects.isNull;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;

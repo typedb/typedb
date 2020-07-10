@@ -16,7 +16,7 @@
  *
  */
 
-package hypergraph.rocks;
+package grakn.rocks;
 
 import java.util.Properties;
 

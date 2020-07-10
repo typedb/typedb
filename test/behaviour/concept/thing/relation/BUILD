@@ -44,7 +44,7 @@ java_test(
     srcs = [
         "RelationTest.java"
     ],
-    test_class = "hypergraph.test.behaviour.concept.thing.relation.RelationTest",
+    test_class = "grakn.test.behaviour.concept.thing.relation.RelationTest",
     deps = [
         # External Maven Dependencies
         "@maven//:io_cucumber_cucumber_junit",

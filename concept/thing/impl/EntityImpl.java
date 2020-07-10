@@ -16,13 +16,13 @@
  *
  */
 
-package hypergraph.concept.thing.impl;
+package grakn.concept.thing.impl;
 
-import hypergraph.concept.thing.Attribute;
-import hypergraph.concept.thing.Entity;
-import hypergraph.concept.type.impl.EntityTypeImpl;
-import hypergraph.graph.util.Schema;
-import hypergraph.graph.vertex.ThingVertex;
+import grakn.concept.thing.Attribute;
+import grakn.concept.thing.Entity;
+import grakn.concept.type.impl.EntityTypeImpl;
+import grakn.graph.util.Schema;
+import grakn.graph.vertex.ThingVertex;
 
 public class EntityImpl extends ThingImpl implements Entity {
 

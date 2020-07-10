@@ -16,14 +16,14 @@
  *
  */
 
-package hypergraph.graph.edge.impl;
+package grakn.graph.edge.impl;
 
-import hypergraph.graph.TypeGraph;
-import hypergraph.graph.edge.TypeEdge;
-import hypergraph.graph.iid.EdgeIID;
-import hypergraph.graph.iid.VertexIID;
-import hypergraph.graph.util.Schema;
-import hypergraph.graph.vertex.TypeVertex;
+import grakn.graph.TypeGraph;
+import grakn.graph.edge.TypeEdge;
+import grakn.graph.iid.EdgeIID;
+import grakn.graph.iid.VertexIID;
+import grakn.graph.util.Schema;
+import grakn.graph.vertex.TypeVertex;
 
 import javax.annotation.Nullable;
 import java.util.concurrent.atomic.AtomicBoolean;
