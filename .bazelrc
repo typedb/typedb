@@ -1,7 +1,7 @@
 # what is defined in this section will be applied at all times
-build --workspace_status_command bin/workspace_status.sh --show_result=0 --show_progress=no --incompatible_strict_action_env
-test --show_result=0 --show_progress=no --incompatible_strict_action_env
-run --show_result=0 --show_progress=no --incompatible_strict_action_env
+build --workspace_status_command bin/workspace_status.sh --incompatible_strict_action_env
+test --show_result=0 --incompatible_strict_action_env
+run --show_result=0 --incompatible_strict_action_env
 
 # what is defined in this section will be applied when bazel is invoked like this: bazel ... --config=rbe ...
 build:rbe --project_id=grakn-dev
