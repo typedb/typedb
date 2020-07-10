@@ -39,7 +39,7 @@ java_test(
         "//test/behaviour/concept/type/attributetype:steps",
         "//test/behaviour/concept/type/relationtype:steps",
         "//test/behaviour/concept/type/thingtype:steps",
-        "//test/behaviour/connection/keyspace:steps",
+        "//test/behaviour/connection/database:steps",
         "//test/behaviour/connection/session:steps",
         "//test/behaviour/connection/transaction:steps",
     ],

@@ -53,7 +53,7 @@ java_test(
         "//test/behaviour/config:parameters",
         "//test/behaviour/concept/thing/attribute:steps",
         "//test/behaviour/concept/type/thingtype:steps",
-        "//test/behaviour/connection/keyspace:steps",
+        "//test/behaviour/connection/database:steps",
         "//test/behaviour/connection/session:steps",
         "//test/behaviour/connection/transaction:steps",
     ],

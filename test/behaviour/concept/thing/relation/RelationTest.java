@@ -37,7 +37,7 @@ public class RelationTest {
     //
     // 1) Go to 'Run'
     // 2) Select 'Edit Configurations...'
-    // 3) Select 'Bazel test KeyspaceTest'
+    // 3) Select 'Bazel test DatabaseTest'
     //
     // 4) Ensure 'Target Expression' is set correctly: '//<this>/<package>/<name>:test'
     //

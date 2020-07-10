@@ -51,7 +51,7 @@ java_test(
     runtime_deps = [
         ":steps",
         "//test/behaviour/config:parameters",
-        "//test/behaviour/connection/keyspace:steps",
+        "//test/behaviour/connection/database:steps",
         "//test/behaviour/connection/session:steps",
     ],
     data = [

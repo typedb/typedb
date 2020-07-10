@@ -45,7 +45,7 @@ import static org.junit.Assert.fail;
 public class BasicTest {
 
     private static Path directory = Paths.get(System.getProperty("user.dir")).resolve("basic-test");
-    private static String keyspace = "basic-test";
+    private static String database = "basic-test";
 
     private static void assert_transaction_read(Grakn.Transaction transaction) {
         assertTrue(transaction.isOpen());
@@ -126,16 +126,16 @@ public class BasicTest {
         Util.resetDirectory(directory);
 
         try (Grakn graph = RocksGrakn.open(directory.toString())) {
-            graph.keyspaces().create("my_data_keyspace");
+            graph.databases().create("my_data_database");
 
             assertTrue(graph.isOpen());
-            assertEquals(1, graph.keyspaces().getAll().size());
-            assertEquals("my_data_keyspace", graph.keyspaces().getAll().iterator().next().name());
+            assertEquals(1, graph.databases().getAll().size());
+            assertEquals("my_data_database", graph.databases().getAll().iterator().next().name());
 
-            try (Grakn.Session session = graph.session("my_data_keyspace", Grakn.Session.Type.SCHEMA)) {
+            try (Grakn.Session session = graph.session("my_data_database", Grakn.Session.Type.SCHEMA)) {
 
                 assertTrue(session.isOpen());
-                assertEquals("my_data_keyspace", session.keyspace().name());
+                assertEquals("my_data_database", session.database().name());
 
                 try (Grakn.Transaction transaction = session.transaction(Grakn.Transaction.Type.READ)) {
                     assertTrue(transaction.isOpen());
@@ -243,13 +243,13 @@ public class BasicTest {
         try (Grakn graph = RocksGrakn.open(directory.toString())) {
 
             assertTrue(graph.isOpen());
-            assertEquals(1, graph.keyspaces().getAll().size());
-            assertEquals("my_data_keyspace", graph.keyspaces().getAll().iterator().next().name());
+            assertEquals(1, graph.databases().getAll().size());
+            assertEquals("my_data_database", graph.databases().getAll().iterator().next().name());
 
-            try (Grakn.Session session = graph.session("my_data_keyspace", Grakn.Session.Type.SCHEMA)) {
+            try (Grakn.Session session = graph.session("my_data_database", Grakn.Session.Type.SCHEMA)) {
 
                 assertTrue(session.isOpen());
-                assertEquals("my_data_keyspace", session.keyspace().name());
+                assertEquals("my_data_database", session.database().name());
 
                 try (Grakn.Transaction transaction = session.transaction(Grakn.Transaction.Type.READ)) {
                     assert_transaction_read(transaction);
@@ -284,8 +284,8 @@ public class BasicTest {
         Util.resetDirectory(directory);
 
         try (Grakn graph = RocksGrakn.open(directory.toString())) {
-            graph.keyspaces().create(keyspace);
-            try (Grakn.Session session = graph.session(keyspace, Grakn.Session.Type.SCHEMA)) {
+            graph.databases().create(database);
+            try (Grakn.Session session = graph.session(database, Grakn.Session.Type.SCHEMA)) {
                 try (Grakn.Transaction txn = session.transaction(Grakn.Transaction.Type.WRITE)) {
                     txn.concepts().putAttributeType("is-alive", Boolean.class);
                     txn.concepts().putAttributeType("age", Long.class);
@@ -332,7 +332,7 @@ public class BasicTest {
         reset_directory_and_create_attribute_types();
 
         try (Grakn graph = RocksGrakn.open(directory.toString())) {
-            try (Grakn.Session session = graph.session(keyspace)) {
+            try (Grakn.Session session = graph.session(database)) {
                 try (Grakn.Transaction txn = session.transaction(Grakn.Transaction.Type.WRITE)) {
                     isAlive(txn).put(true);
                     age(txn).put(18);
@@ -410,7 +410,7 @@ public class BasicTest {
         reset_directory_and_create_attribute_types();
 
         try (Grakn graph = RocksGrakn.open(directory.toString())) {
-            try (Grakn.Session session = graph.session(keyspace)) {
+            try (Grakn.Session session = graph.session(database)) {
                 Grakn.Transaction txn1 = session.transaction(Grakn.Transaction.Type.WRITE);
                 Grakn.Transaction txn2 = session.transaction(Grakn.Transaction.Type.WRITE);
                 Grakn.Transaction txn3 = session.transaction(Grakn.Transaction.Type.WRITE);
@@ -529,7 +529,7 @@ public class BasicTest {
         LocalDateTime date_1992_2_3_4_5 = LocalDateTime.of(1991, 2, 3, 4, 5);
 
         try (Grakn graph = RocksGrakn.open(directory.toString())) {
-            try (Grakn.Session session = graph.session(keyspace)) {
+            try (Grakn.Session session = graph.session(database)) {
                 Grakn.Transaction txn1 = session.transaction(Grakn.Transaction.Type.WRITE);
                 Grakn.Transaction txn2 = session.transaction(Grakn.Transaction.Type.WRITE);
                 Grakn.Transaction txn3 = session.transaction(Grakn.Transaction.Type.WRITE);
@@ -628,7 +628,7 @@ public class BasicTest {
         reset_directory_and_create_attribute_types();
 
         try (Grakn graph = RocksGrakn.open(directory.toString())) {
-            try (Grakn.Session session = graph.session(keyspace)) {
+            try (Grakn.Session session = graph.session(database)) {
                 Grakn.Transaction txn1 = session.transaction(Grakn.Transaction.Type.WRITE);
                 Grakn.Transaction txn2 = session.transaction(Grakn.Transaction.Type.WRITE);
 

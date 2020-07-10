@@ -31,36 +31,36 @@ import java.util.Set;
  */
 public interface Grakn extends AutoCloseable {
 
-    default Session session(String keyspace) { return session(keyspace, Session.Type.DATA); }
+    default Session session(String database) { return session(database, Session.Type.DATA); }
 
-    Session session(String keyspace, Session.Type type);
+    Session session(String database, Session.Type type);
 
-    KeyspaceManager keyspaces();
+    DatabaseManager databases();
 
     boolean isOpen();
 
     void close();
 
     /**
-     * Grakn Keyspace Manager
+     * Grakn Database Manager
      */
-    interface KeyspaceManager {
+    interface DatabaseManager {
 
-        boolean contains(String keyspace);
+        boolean contains(String database);
 
-        Keyspace create(String keyspace);
+        Database create(String database);
 
-        Keyspace get(String keyspace);
+        Database get(String database);
 
-        Set<? extends Keyspace> getAll();
+        Set<? extends Database> getAll();
     }
 
     /**
-     * A Grakn Keyspace
+     * A Grakn Database
      *
-     * A keyspace is an isolated scope of data in the storage engine.
+     * A database is an isolated scope of data in the storage engine.
      */
-    interface Keyspace {
+    interface Database {
 
         String name();
 
@@ -79,7 +79,7 @@ public interface Grakn extends AutoCloseable {
 
         Session.Type type();
 
-        Keyspace keyspace();
+        Database database();
 
         boolean isOpen();
 

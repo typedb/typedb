@@ -89,7 +89,7 @@ jobs:
       - install-bazel
       - checkout
       - run-bazel:
-          command: bazel test //test/behaviour/connection/keyspace:test --test_output=errors
+          command: bazel test //test/behaviour/connection/database:test --test_output=errors
       - run-bazel:
           command: bazel test //test/behaviour/connection/session:test --test_output=errors
       - run-bazel:

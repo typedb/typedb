@@ -28,13 +28,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public class RocksSession implements Grakn.Session {
 
-    private final RocksKeyspace keyspace;
+    private final RocksDatabase database;
     private final Type type;
     private final ConcurrentMap<RocksTransaction, Long> transactions;
     private final AtomicBoolean isOpen;
 
-    RocksSession(RocksKeyspace keyspace, Type type) {
-        this.keyspace = keyspace;
+    RocksSession(RocksDatabase database, Type type) {
+        this.database = database;
         this.type = type;
 
         transactions = new ConcurrentHashMap<>();
@@ -43,17 +43,17 @@ public class RocksSession implements Grakn.Session {
     }
 
     OptimisticTransactionDB rocks() {
-        return keyspace.rocks();
+        return database.rocks();
     }
 
     KeyGenerator keyGenerator() {
-        return keyspace.keyGenerator();
+        return database.keyGenerator();
     }
 
     void remove(RocksTransaction transaction) {
         long schemaReadLockStamp = transactions.remove(transaction);
         if (this.type.equals(Type.DATA) && transaction.type().equals(Grakn.Transaction.Type.WRITE)) {
-            keyspace.releaseSchemaReadLock(schemaReadLockStamp);
+            database.releaseSchemaReadLock(schemaReadLockStamp);
         }
     }
 
@@ -63,15 +63,15 @@ public class RocksSession implements Grakn.Session {
     }
 
     @Override
-    public RocksKeyspace keyspace() {
-        return keyspace;
+    public RocksDatabase database() {
+        return database;
     }
 
     @Override
     public RocksTransaction transaction(Grakn.Transaction.Type type) {
         long schemaReadLockStamp = 0;
         if (this.type.equals(Type.DATA) && type.equals(Grakn.Transaction.Type.WRITE)) {
-            schemaReadLockStamp = keyspace.acquireSchemaReadLock();
+            schemaReadLockStamp = database.acquireSchemaReadLock();
         }
         RocksTransaction transaction = new RocksTransaction(this, type);
         transactions.put(transaction, schemaReadLockStamp);
@@ -87,7 +87,7 @@ public class RocksSession implements Grakn.Session {
     public void close() {
         if (isOpen.compareAndSet(true, false)) {
             transactions.keySet().parallelStream().forEach(RocksTransaction::close);
-            keyspace.remove(this);
+            database.remove(this);
         }
     }
 }

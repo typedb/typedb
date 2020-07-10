@@ -20,7 +20,7 @@ package grakn.test.behaviour.connection;
 
 import grakn.Grakn;
 import grakn.rocks.RocksGrakn;
-import grakn.rocks.RocksKeyspace;
+import grakn.rocks.RocksDatabase;
 import io.cucumber.java.After;
 import io.cucumber.java.en.Given;
 
@@ -89,14 +89,14 @@ public class ConnectionSteps {
         assertTrue(grakn.isOpen());
     }
 
-    @Given("connection delete all keyspaces")
-    public void connection_delete_all_keyspaces() {
-        grakn.keyspaces().getAll().forEach(RocksKeyspace::delete);
+    @Given("connection delete all databases")
+    public void connection_delete_all_databases() {
+        grakn.databases().getAll().forEach(RocksDatabase::delete);
     }
 
-    @Given("connection does not have any keyspace")
-    public void connection_does_not_have_any_keyspace() {
-        assertTrue(grakn.keyspaces().getAll().isEmpty());
+    @Given("connection does not have any database")
+    public void connection_does_not_have_any_database() {
+        assertTrue(grakn.databases().getAll().isEmpty());
     }
 
     @After

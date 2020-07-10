@@ -16,7 +16,7 @@
  *
  */
 
-package grakn.test.behaviour.connection.keyspace;
+package grakn.test.behaviour.connection.database;
 
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
@@ -34,42 +34,42 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-public class KeyspaceSteps {
+public class DatabaseSteps {
 
-    @When("connection create keyspace: {word}")
-    public void connection_create_keyspace(String name) {
-        connection_create_keyspaces(list(name));
+    @When("connection create database: {word}")
+    public void connection_create_database(String name) {
+        connection_create_databases(list(name));
     }
 
-    @When("connection create keyspace(s):")
-    public void connection_create_keyspaces(List<String> names) {
+    @When("connection create database(s):")
+    public void connection_create_databases(List<String> names) {
         for (String name : names) {
-            grakn.keyspaces().create(name);
+            grakn.databases().create(name);
         }
     }
 
-    @When("connection create keyspaces in parallel:")
-    public void connection_create_keyspaces_in_parallel(List<String> names) {
+    @When("connection create databases in parallel:")
+    public void connection_create_databases_in_parallel(List<String> names) {
         assertTrue(THREAD_POOL_SIZE >= names.size());
 
         CompletableFuture[] creations = new CompletableFuture[names.size()];
         int i = 0;
         for (String name : names) {
-            creations[i++] = CompletableFuture.supplyAsync(() -> grakn.keyspaces().create(name), threadPool);
+            creations[i++] = CompletableFuture.supplyAsync(() -> grakn.databases().create(name), threadPool);
         }
 
         CompletableFuture.allOf(creations).join();
     }
 
-    @When("connection delete keyspace(s):")
-    public void connection_delete_keyspaces(List<String> names) {
-        for (String keyspaceName : names) {
-            grakn.keyspaces().get(keyspaceName).delete();
+    @When("connection delete database(s):")
+    public void connection_delete_databases(List<String> names) {
+        for (String databaseName : names) {
+            grakn.databases().get(databaseName).delete();
         }
     }
 
-    @When("connection delete keyspaces in parallel:")
-    public void connection_delete_keyspaces_in_parallel(List<String> names) {
+    @When("connection delete databases in parallel:")
+    public void connection_delete_databases_in_parallel(List<String> names) {
         assertTrue(THREAD_POOL_SIZE >= names.size());
 
         CompletableFuture[] deletions = new CompletableFuture[names.size()];
@@ -77,7 +77,7 @@ public class KeyspaceSteps {
         for (String name : names) {
             deletions[i++] = CompletableFuture.supplyAsync(
                     () -> {
-                        grakn.keyspaces().get(name).delete();
+                        grakn.databases().get(name).delete();
                         return null;
                     },
                     threadPool
@@ -87,18 +87,18 @@ public class KeyspaceSteps {
         CompletableFuture.allOf(deletions).join();
     }
 
-    @Then("connection has keyspace(s):")
-    public void connection_has_keyspaces(List<String> names) {
+    @Then("connection has database(s):")
+    public void connection_has_databases(List<String> names) {
         assertEquals(set(names),
-                     grakn.keyspaces().getAll().stream()
-                             .map(keyspace -> keyspace.name())
+                     grakn.databases().getAll().stream()
+                             .map(database -> database.name())
                              .collect(Collectors.toSet()));
     }
 
-    @Then("connection does not have keyspace(s):")
-    public void connection_does_not_have_keyspaces(List<String> names) {
+    @Then("connection does not have database(s):")
+    public void connection_does_not_have_databases(List<String> names) {
         for (String name : names) {
-            assertNull(grakn.keyspaces().get(name));
+            assertNull(grakn.databases().get(name));
         }
     }
 }

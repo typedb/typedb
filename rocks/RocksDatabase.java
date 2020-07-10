@@ -34,7 +34,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.StampedLock;
 
-public class RocksKeyspace implements Grakn.Keyspace {
+public class RocksDatabase implements Grakn.Database {
 
     private final String name;
     private final RocksGrakn core;
@@ -44,7 +44,7 @@ public class RocksKeyspace implements Grakn.Keyspace {
     private final StampedLock schemaLock;
     private final AtomicBoolean isOpen;
 
-    private RocksKeyspace(RocksGrakn core, String name) {
+    private RocksDatabase(RocksGrakn core, String name) {
         this.name = name;
         this.core = core;
         keyGenerator = new KeyGenerator.Persisted();
@@ -59,19 +59,19 @@ public class RocksKeyspace implements Grakn.Keyspace {
         }
     }
 
-    static RocksKeyspace createNewAndOpen(RocksGrakn core, String name) {
-        return new RocksKeyspace(core, name).initialiseAndOpen();
+    static RocksDatabase createNewAndOpen(RocksGrakn core, String name) {
+        return new RocksDatabase(core, name).initialiseAndOpen();
     }
 
-    static RocksKeyspace loadExistingAndOpen(RocksGrakn core, String name) {
-        return new RocksKeyspace(core, name).loadAndOpen();
+    static RocksDatabase loadExistingAndOpen(RocksGrakn core, String name) {
+        return new RocksDatabase(core, name).loadAndOpen();
     }
 
-    private RocksKeyspace initialiseAndOpen() {
+    private RocksDatabase initialiseAndOpen() {
         try (RocksSession session = createAndOpenSession(Grakn.Session.Type.SCHEMA)) {
             try (RocksTransaction txn = session.transaction(Grakn.Transaction.Type.WRITE)) {
                 if (txn.graph().isInitialised()) {
-                    throw new GraknException("Invalid Keyspace Initialisation");
+                    throw new GraknException("Invalid Database Initialisation");
                 }
                 txn.graph().initialise();
                 txn.commit();
@@ -81,7 +81,7 @@ public class RocksKeyspace implements Grakn.Keyspace {
         return this;
     }
 
-    private RocksKeyspace loadAndOpen() {
+    private RocksDatabase loadAndOpen() {
         try (RocksSession session = createAndOpenSession(Grakn.Session.Type.DATA)) {
             try (RocksTransaction txn = session.transaction(Grakn.Transaction.Type.READ)) {
                 keyGenerator.sync(txn.storage());
@@ -143,7 +143,7 @@ public class RocksKeyspace implements Grakn.Keyspace {
     @Override
     public void delete() {
         close();
-        core.keyspaces().remove(this);
+        core.databases().remove(this);
         try {
             Files.walk(directory()).sorted(Comparator.reverseOrder())
                     .map(Path::toFile).forEach(File::delete);

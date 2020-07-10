@@ -42,7 +42,7 @@ public class RocksGrakn implements Grakn {
     private final Options rocksOptions;
     private final AtomicBoolean isOpen;
     private final RocksProperties properties;
-    private final RocksKeyspaceManager keyspaceMgr;
+    private final RocksDatabaseManager databaseMgr;
 
     private RocksGrakn(String directory, Properties properties) {
         this.directory = Paths.get(directory);
@@ -53,8 +53,8 @@ public class RocksGrakn implements Grakn {
         rocksOptions.setMergeOperator(new UInt64AddOperator());
         setOptionsFromProperties();
 
-        keyspaceMgr = new RocksKeyspaceManager(this);
-        keyspaceMgr.loadAll();
+        databaseMgr = new RocksDatabaseManager(this);
+        databaseMgr.loadAll();
 
         isOpen = new AtomicBoolean();
         isOpen.set(true);
@@ -85,17 +85,17 @@ public class RocksGrakn implements Grakn {
     }
 
     @Override
-    public RocksSession session(String keyspace, Grakn.Session.Type type) {
-        if (keyspaceMgr.contains(keyspace)) {
-            return keyspaceMgr.get(keyspace).createAndOpenSession(type);
+    public RocksSession session(String database, Grakn.Session.Type type) {
+        if (databaseMgr.contains(database)) {
+            return databaseMgr.get(database).createAndOpenSession(type);
         } else {
-            throw new GraknException("There does not exists a keyspace with the name: " + keyspace);
+            throw new GraknException("There does not exists a database with the name: " + database);
         }
     }
 
     @Override
-    public RocksKeyspaceManager keyspaces() {
-        return keyspaceMgr;
+    public RocksDatabaseManager databases() {
+        return databaseMgr;
     }
 
     @Override
@@ -106,7 +106,7 @@ public class RocksGrakn implements Grakn {
     @Override
     public void close() {
         if (isOpen.compareAndSet(true, false)) {
-            keyspaceMgr.getAll().parallelStream().forEach(RocksKeyspace::close);
+            databaseMgr.getAll().parallelStream().forEach(RocksDatabase::close);
             rocksOptions.close();
         }
     }

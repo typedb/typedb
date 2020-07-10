@@ -21,7 +21,7 @@ load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 java_library(
     name = "steps",
     srcs = [
-        "KeyspaceSteps.java"
+        "DatabaseSteps.java"
     ],
     deps = [
         # Internal Package Dependencies
@@ -39,9 +39,9 @@ java_library(
 java_test(
     name = "test",
     srcs = [
-        "KeyspaceTest.java"
+        "DatabaseTest.java"
     ],
-    test_class = "grakn.test.behaviour.connection.keyspace.KeyspaceTest",
+    test_class = "grakn.test.behaviour.connection.database.DatabaseTest",
     deps = [
         # External Maven Dependencies
         "@maven//:io_cucumber_cucumber_junit",
