@@ -41,7 +41,7 @@ java_test(
     srcs = [
         "DatabaseTest.java"
     ],
-    test_class = "grakn.test.behaviour.connection.database.DatabaseTest",
+    test_class = "grakn.core.test.behaviour.connection.database.DatabaseTest",
     deps = [
         # External Maven Dependencies
         "@maven//:io_cucumber_cucumber_junit",

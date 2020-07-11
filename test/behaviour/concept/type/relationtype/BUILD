@@ -44,7 +44,7 @@ java_test(
     srcs = [
         "RelationTypeTest.java"
     ],
-    test_class = "grakn.test.behaviour.concept.type.relationtype.RelationTypeTest",
+    test_class = "grakn.core.test.behaviour.concept.type.relationtype.RelationTypeTest",
     deps = [
         # External Maven Dependencies
         "@maven//:io_cucumber_cucumber_junit",

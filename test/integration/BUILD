@@ -23,7 +23,7 @@ java_test(
         "BasicTest.java",
         "Util.java",
     ],
-    test_class = "grakn.test.integration.BasicTest",
+    test_class = "grakn.core.test.integration.BasicTest",
     deps = [
         "//:grakn",
         "//concept:concept",
@@ -35,7 +35,7 @@ java_test(
 java_test(
     name = "test-traversal",
     srcs = ["TraversalTest.java"],
-    test_class = "grakn.test.integration.TraversalTest",
+    test_class = "grakn.core.test.integration.TraversalTest",
 )
 
 checkstyle_test(

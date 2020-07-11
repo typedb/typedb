@@ -43,7 +43,7 @@ java_test(
     srcs = [
         "AttributeTypeTest.java"
     ],
-    test_class = "grakn.test.behaviour.concept.type.attributetype.AttributeTypeTest",
+    test_class = "grakn.core.test.behaviour.concept.type.attributetype.AttributeTypeTest",
     deps = [
         # External Maven Dependencies
         "@maven//:io_cucumber_cucumber_junit",

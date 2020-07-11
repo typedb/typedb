@@ -42,7 +42,7 @@ java_test(
     srcs = [
         "SessionTest.java"
     ],
-    test_class = "grakn.test.behaviour.connection.session.SessionTest",
+    test_class = "grakn.core.test.behaviour.connection.session.SessionTest",
     deps = [
         # External Maven Dependencies
         "@maven//:io_cucumber_cucumber_junit",

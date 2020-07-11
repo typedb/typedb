@@ -43,7 +43,7 @@ java_test(
     srcs = [
         "TransactionTest.java",
     ],
-    test_class = "grakn.test.behaviour.connection.transaction.TransactionTest",
+    test_class = "grakn.core.test.behaviour.connection.transaction.TransactionTest",
     deps = [
         # External Maven Dependencies
         "@maven//:io_cucumber_cucumber_junit",
