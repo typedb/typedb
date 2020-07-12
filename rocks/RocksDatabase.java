@@ -19,6 +19,7 @@
 package grakn.core.rocks;
 
 import grakn.core.Grakn;
+import grakn.core.common.exception.Error;
 import grakn.core.common.exception.GraknException;
 import grakn.core.graph.util.KeyGenerator;
 import org.rocksdb.OptimisticTransactionDB;
@@ -53,7 +54,7 @@ public class RocksDatabase implements Grakn.Database {
         schemaLock = new StampedLock();
 
         try {
-            rocksDB = OptimisticTransactionDB.open(this.rocksGrakn.rocksOptions(), directory().toString());
+            rocksDB = OptimisticTransactionDB.open(this.rocksGrakn.options(), directory().toString());
         } catch (RocksDBException e) {
             throw new GraknException(e);
         }
@@ -71,7 +72,7 @@ public class RocksDatabase implements Grakn.Database {
         try (RocksSession session = createAndOpenSession(Grakn.Session.Type.SCHEMA)) {
             try (RocksTransaction txn = session.transaction(Grakn.Transaction.Type.WRITE)) {
                 if (txn.graph().isInitialised()) {
-                    throw new GraknException("Invalid Database Initialisation");
+                    throw new GraknException(Error.Internal.DIRTY_INITIALISATION);
                 }
                 txn.graph().initialise();
                 txn.commit();

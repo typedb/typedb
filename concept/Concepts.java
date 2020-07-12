@@ -38,6 +38,7 @@ import grakn.core.graph.vertex.Vertex;
 import java.util.ArrayList;
 import java.util.List;
 
+import static grakn.core.common.exception.Error.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.Error.Transaction.UNSUPPORTED_OPERATION;
 
 public final class Concepts {
@@ -51,25 +52,25 @@ public final class Concepts {
     public ThingType getRootType() {
         TypeVertex vertex = graph.type().get(Schema.Vertex.Type.Root.THING.label());
         if (vertex != null) return new ThingTypeImpl.Root(vertex);
-        else throw new GraknException(Error.Internal.ILLEGAL_STATE);
+        else throw new GraknException(ILLEGAL_STATE);
     }
 
     public EntityType getRootEntityType() {
         TypeVertex vertex = graph.type().get(Schema.Vertex.Type.Root.ENTITY.label());
         if (vertex != null) return EntityTypeImpl.of(vertex);
-        else throw new GraknException(Error.Internal.ILLEGAL_STATE);
+        else throw new GraknException(ILLEGAL_STATE);
     }
 
     public RelationType getRootRelationType() {
         TypeVertex vertex = graph.type().get(Schema.Vertex.Type.Root.RELATION.label());
         if (vertex != null) return RelationTypeImpl.of(vertex);
-        else throw new GraknException(Error.Internal.ILLEGAL_STATE);
+        else throw new GraknException(ILLEGAL_STATE);
     }
 
     public AttributeType getRootAttributeType() {
         TypeVertex vertex = graph.type().get(Schema.Vertex.Type.Root.ATTRIBUTE.label());
         if (vertex != null) return AttributeTypeImpl.of(vertex);
-        else throw new GraknException(Error.Internal.ILLEGAL_STATE);
+        else throw new GraknException(ILLEGAL_STATE);
     }
 
     public EntityType putEntityType(String label) {

@@ -33,7 +33,7 @@ import java.time.LocalDateTime;
 import java.util.Iterator;
 import java.util.stream.Stream;
 
-import static grakn.core.common.exception.Error.ConceptRead.INVALID_CONCEPT_CASTING;
+import static grakn.core.common.exception.Error.ThingRead.INVALID_THING_CASTING;
 import static grakn.core.common.iterator.Iterators.apply;
 import static grakn.core.common.iterator.Iterators.stream;
 
@@ -112,27 +112,27 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
 
     @Override
     public AttributeImpl.Boolean asBoolean() {
-        throw new GraknException(INVALID_CONCEPT_CASTING.format(Attribute.Boolean.class.getCanonicalName()));
+        throw new GraknException(INVALID_THING_CASTING.format(Attribute.Boolean.class.getCanonicalName()));
     }
 
     @Override
     public AttributeImpl.Long asLong() {
-        throw new GraknException(INVALID_CONCEPT_CASTING.format(Attribute.Long.class.getCanonicalName()));
+        throw new GraknException(INVALID_THING_CASTING.format(Attribute.Long.class.getCanonicalName()));
     }
 
     @Override
     public AttributeImpl.Double asDouble() {
-        throw new GraknException(INVALID_CONCEPT_CASTING.format(Attribute.Double.class.getCanonicalName()));
+        throw new GraknException(INVALID_THING_CASTING.format(Attribute.Double.class.getCanonicalName()));
     }
 
     @Override
     public AttributeImpl.String asString() {
-        throw new GraknException(INVALID_CONCEPT_CASTING.format(Attribute.Long.class.getCanonicalName()));
+        throw new GraknException(INVALID_THING_CASTING.format(Attribute.Long.class.getCanonicalName()));
     }
 
     @Override
     public AttributeImpl.DateTime asDateTime() {
-        throw new GraknException(INVALID_CONCEPT_CASTING.format(Attribute.DateTime.class.getCanonicalName()));
+        throw new GraknException(INVALID_THING_CASTING.format(Attribute.DateTime.class.getCanonicalName()));
     }
 
     public static class Boolean extends AttributeImpl<java.lang.Boolean> implements Attribute.Boolean {

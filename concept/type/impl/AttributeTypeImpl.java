@@ -38,10 +38,10 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
-import static grakn.core.common.exception.Error.ConceptRead.INVALID_CONCEPT_CASTING;
 import static grakn.core.common.exception.Error.Internal.UNRECOGNISED_VALUE;
 import static grakn.core.common.exception.Error.ThingWrite.ATTRIBUTE_VALUE_UNSATISFIES_REGEX;
 import static grakn.core.common.exception.Error.ThingWrite.ILLEGAL_STRING_SIZE;
+import static grakn.core.common.exception.Error.TypeRead.INVALID_TYPE_CASTING;
 import static grakn.core.common.exception.Error.TypeRead.TYPE_ROOT_MISMATCH;
 import static grakn.core.common.exception.Error.TypeWrite.ATTRIBUTE_REGEX_UNSATISFIES_INSTANCES;
 import static grakn.core.common.exception.Error.TypeWrite.ATTRIBUTE_SUPERTYPE_NOT_ABSTRACT;
@@ -139,32 +139,32 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
     @Override
     public AttributeTypeImpl.Root asObject() {
         if (this.valueType().equals(java.lang.Object.class)) return new AttributeTypeImpl.Root(this.vertex);
-        else throw new GraknException(INVALID_CONCEPT_CASTING.format(AttributeType.class.getCanonicalName()));
+        else throw new GraknException(INVALID_TYPE_CASTING.format(AttributeType.class.getCanonicalName()));
     }
 
     @Override
     public AttributeTypeImpl.Boolean asBoolean() {
-        throw new GraknException(INVALID_CONCEPT_CASTING.format(AttributeType.Boolean.class.getCanonicalName()));
+        throw new GraknException(INVALID_TYPE_CASTING.format(AttributeType.Boolean.class.getCanonicalName()));
     }
 
     @Override
     public AttributeTypeImpl.Long asLong() {
-        throw new GraknException(INVALID_CONCEPT_CASTING.format(AttributeType.Long.class.getCanonicalName()));
+        throw new GraknException(INVALID_TYPE_CASTING.format(AttributeType.Long.class.getCanonicalName()));
     }
 
     @Override
     public AttributeTypeImpl.Double asDouble() {
-        throw new GraknException(INVALID_CONCEPT_CASTING.format(AttributeType.Double.class.getCanonicalName()));
+        throw new GraknException(INVALID_TYPE_CASTING.format(AttributeType.Double.class.getCanonicalName()));
     }
 
     @Override
     public AttributeTypeImpl.String asString() {
-        throw new GraknException(INVALID_CONCEPT_CASTING.format(AttributeType.String.class.getCanonicalName()));
+        throw new GraknException(INVALID_TYPE_CASTING.format(AttributeType.String.class.getCanonicalName()));
     }
 
     @Override
     public AttributeTypeImpl.DateTime asDateTime() {
-        throw new GraknException(INVALID_CONCEPT_CASTING.format(AttributeType.DateTime.class.getCanonicalName()));
+        throw new GraknException(INVALID_TYPE_CASTING.format(AttributeType.DateTime.class.getCanonicalName()));
     }
 
     @Override

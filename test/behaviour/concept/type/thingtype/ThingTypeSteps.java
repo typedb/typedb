@@ -32,6 +32,7 @@ import io.cucumber.java.en.When;
 import java.util.List;
 import java.util.Set;
 
+import static grakn.core.common.exception.Error.Internal.UNRECOGNISED_VALUE;
 import static grakn.core.test.behaviour.config.Parameters.RootLabel;
 import static grakn.core.test.behaviour.connection.ConnectionSteps.tx;
 import static grakn.core.test.behaviour.util.Util.assertThrows;
@@ -55,7 +56,7 @@ public class ThingTypeSteps {
             case RELATION:
                 return tx().concepts().getRelationType(typeLabel);
             default:
-                throw new GraknException("Invalid ThingType");
+                throw new GraknException(UNRECOGNISED_VALUE);
         }
     }
 
@@ -97,7 +98,7 @@ public class ThingTypeSteps {
                 tx().concepts().putRelationType(typeLabel);
                 break;
             default:
-                throw new GraknException("Invalid ThingType");
+                throw new GraknException(UNRECOGNISED_VALUE);
         }
     }
 

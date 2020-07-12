@@ -65,11 +65,12 @@ public abstract class Error {
     }
 
     public static class Internal extends Error {
-
         public static final Internal ILLEGAL_STATE =
                 new Internal(0, "Illegal internal state!");
         public static final Internal UNRECOGNISED_VALUE =
                 new Internal(1, "Unrecognised schema value!");
+        public static final Internal DIRTY_INITIALISATION =
+                new Internal(2, "Invalid Database Initialisation");
 
         private static final String codePrefix = "INT";
         private static final String descriptionPrefix = "Invalid Internal State";
@@ -79,8 +80,21 @@ public abstract class Error {
         }
     }
 
-    public static class Transaction extends Error {
+    public static class DatabaseSession extends Error {
+        public static final DatabaseSession DATABASE_EXISTS =
+                new DatabaseSession(1, "The database with the name '%s' already exists.");
+        public static final DatabaseSession DATABASE_NOT_EXIST =
+                new DatabaseSession(2, "The database with the name '%s' does not exist.");
 
+        private static final String codePrefix = "DBS";
+        private static final String descriptionPrefix = "Invalid Session Operation";
+
+        DatabaseSession(int number, String description) {
+            super(codePrefix, number, descriptionPrefix, description);
+        }
+    }
+
+    public static class Transaction extends Error {
         public static final Transaction UNSUPPORTED_OPERATION =
                 new Transaction(1, "Unsupported operation: calling '%s' for '%s' is not supported.");
         public static final Transaction ILLEGAL_OPERATION =
@@ -102,24 +116,13 @@ public abstract class Error {
         }
     }
 
-    public static class ConceptRead extends Error {
-
-        public static final ConceptRead INVALID_CONCEPT_CASTING =
-                new ConceptRead(1, "Invalid concept conversion to '%s'.");
-        private static final String codePrefix = "CON";
-        private static final String descriptionPrefix = "Invalid Concept Retrieval";
-
-        ConceptRead(int number, String description) {
-            super(codePrefix, number, descriptionPrefix, description);
-        }
-    }
-
     public static class ThingRead extends Error {
-
         public static final ThingRead INVALID_IID_CASTING =
                 new ThingRead(1, "'Invalid IID casting to '%s'.");
         public static final ThingRead INVALID_VERTEX_CASTING =
                 new ThingRead(2, "Invalid ThingVertex casting to '%s'.");
+        public static final ThingRead INVALID_THING_CASTING =
+                new ThingRead(3, "Invalid concept conversion to '%s'.");
 
         private static final String codePrefix = "THR";
         private static final String descriptionPrefix = "Invalid Thing Read";
@@ -130,7 +133,6 @@ public abstract class Error {
     }
 
     public static class ThingWrite extends Error {
-
         public static final ThingWrite ILLEGAL_ABSTRACT_WRITE =
                 new ThingWrite(1, "Attempted an illegal write of a new '%s' of abstract type '%s'.");
         public static final ThingWrite ILLEGAL_STRING_SIZE =
@@ -157,18 +159,15 @@ public abstract class Error {
         ThingWrite(int number, String description) {
             super(codePrefix, number, descriptionPrefix, description);
         }
-
-        protected ThingWrite getThis() {
-            return this;
-        }
     }
 
     public static class TypeRead extends Error {
-
+        public static final TypeRead INVALID_TYPE_CASTING =
+                new TypeRead(1, "Invalid concept conversion to '%s'.");
         public static final TypeRead TYPE_ROOT_MISMATCH =
-                new TypeRead(1, "Attempted to retrieve '%s' as '%s', while it is actually a(n) '%s'.");
+                new TypeRead(2, "Attempted to retrieve '%s' as '%s', while it is actually a(n) '%s'.");
         public static final TypeRead VALUE_TYPE_MISMATCH =
-                new TypeRead(2, "Attempted to retrieve '%s' as AttributeType of ValueType '%s', while it actually has ValueType '%s'.");
+                new TypeRead(3, "Attempted to retrieve '%s' as AttributeType of ValueType '%s', while it actually has ValueType '%s'.");
         private static final String codePrefix = "TYR";
         private static final String descriptionPrefix = "Invalid Type Read";
 
@@ -178,7 +177,6 @@ public abstract class Error {
     }
 
     public static class TypeWrite extends Error {
-
         public static final TypeWrite ROOT_TYPE_MUTATION =
                 new TypeWrite(1, "Root types are immutable.");
         public static final TypeWrite TYPE_HAS_SUBTYPES =

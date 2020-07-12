@@ -28,6 +28,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 
+import static grakn.core.common.exception.Error.Internal.UNRECOGNISED_VALUE;
 import static grakn.core.test.behaviour.connection.ConnectionSteps.tx;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
@@ -72,7 +73,7 @@ public class AttributeTypeSteps {
         } else if (valueType.equals(LocalDateTime.class)) {
             return attributeType.asDateTime();
         } else {
-            throw new GraknException("unreachable");
+            throw new GraknException(UNRECOGNISED_VALUE);
         }
     }
 

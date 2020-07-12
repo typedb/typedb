@@ -28,6 +28,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import static grakn.core.common.exception.Error.DatabaseSession.DATABASE_EXISTS;
+
 public class RocksDatabaseManager implements Grakn.DatabaseManager {
 
     private final RocksGrakn rocksGrakn;
@@ -56,7 +58,7 @@ public class RocksDatabaseManager implements Grakn.DatabaseManager {
 
     @Override
     public RocksDatabase create(String name) {
-        if (databases.containsKey(name)) throw new GraknException("Database Already Exist: " + name);
+        if (databases.containsKey(name)) throw new GraknException(DATABASE_EXISTS.format(name));
 
         RocksDatabase database = RocksDatabase.createNewAndOpen(rocksGrakn, name);
         databases.put(name, database);

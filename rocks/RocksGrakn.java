@@ -29,6 +29,8 @@ import java.nio.file.Paths;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static grakn.core.common.exception.Error.DatabaseSession.DATABASE_NOT_EXIST;
+
 /**
  * A Grakn implementation with RocksDB
  */
@@ -39,7 +41,7 @@ public class RocksGrakn implements Grakn {
     }
 
     private final Path directory;
-    private final Options rocksOptions;
+    private final Options options;
     private final AtomicBoolean isOpen;
     private final RocksProperties properties;
     private final RocksDatabaseManager databaseMgr;
@@ -48,9 +50,9 @@ public class RocksGrakn implements Grakn {
         this.directory = Paths.get(directory);
         this.properties = new RocksProperties(properties);
 
-        rocksOptions = new Options();
-        rocksOptions.setCreateIfMissing(true);
-        rocksOptions.setMergeOperator(new UInt64AddOperator());
+        options = new Options();
+        options.setCreateIfMissing(true);
+        options.setMergeOperator(new UInt64AddOperator());
         setOptionsFromProperties();
 
         databaseMgr = new RocksDatabaseManager(this);
@@ -80,8 +82,8 @@ public class RocksGrakn implements Grakn {
         return properties;
     }
 
-    Options rocksOptions() {
-        return rocksOptions;
+    Options options() {
+        return options;
     }
 
     @Override
@@ -89,7 +91,7 @@ public class RocksGrakn implements Grakn {
         if (databaseMgr.contains(database)) {
             return databaseMgr.get(database).createAndOpenSession(type);
         } else {
-            throw new GraknException("There does not exists a database with the name: " + database);
+            throw new GraknException(DATABASE_NOT_EXIST.format(database));
         }
     }
 
@@ -107,7 +109,7 @@ public class RocksGrakn implements Grakn {
     public void close() {
         if (isOpen.compareAndSet(true, false)) {
             databaseMgr.getAll().parallelStream().forEach(RocksDatabase::close);
-            rocksOptions.close();
+            options.close();
         }
     }
 }

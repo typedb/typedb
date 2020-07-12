@@ -18,6 +18,7 @@
 
 package grakn.core.concept;
 
+import grakn.core.common.exception.Error;
 import grakn.core.common.exception.GraknException;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.thing.Entity;
@@ -30,7 +31,8 @@ import grakn.core.concept.type.RoleType;
 import grakn.core.concept.type.ThingType;
 import grakn.core.concept.type.Type;
 
-import static grakn.core.common.exception.Error.ConceptRead.INVALID_CONCEPT_CASTING;
+import static grakn.core.common.exception.Error.ThingRead.INVALID_THING_CASTING;
+import static grakn.core.common.exception.Error.TypeRead.INVALID_TYPE_CASTING;
 
 public interface Concept {
 
@@ -39,42 +41,42 @@ public interface Concept {
     boolean isDeleted();
 
     default Type asType() {
-        throw new GraknException(INVALID_CONCEPT_CASTING.format(Type.class.getCanonicalName()));
+        throw new GraknException(INVALID_TYPE_CASTING.format(Type.class.getCanonicalName()));
     }
 
     default ThingType asThingType() {
-        throw new GraknException(INVALID_CONCEPT_CASTING.format(ThingType.class.getCanonicalName()));
+        throw new GraknException(INVALID_TYPE_CASTING.format(ThingType.class.getCanonicalName()));
     }
 
     default EntityType asEntityType() {
-        throw new GraknException(INVALID_CONCEPT_CASTING.format(EntityType.class.getCanonicalName()));
+        throw new GraknException(INVALID_TYPE_CASTING.format(EntityType.class.getCanonicalName()));
     }
 
     default AttributeType asAttributeType() {
-        throw new GraknException(INVALID_CONCEPT_CASTING.format(AttributeType.class.getCanonicalName()));
+        throw new GraknException(INVALID_TYPE_CASTING.format(AttributeType.class.getCanonicalName()));
     }
 
     default RelationType asRelationType() {
-        throw new GraknException(INVALID_CONCEPT_CASTING.format(RelationType.class.getCanonicalName()));
+        throw new GraknException(INVALID_TYPE_CASTING.format(RelationType.class.getCanonicalName()));
     }
 
     default RoleType asRoleType() {
-        throw new GraknException(INVALID_CONCEPT_CASTING.format(RoleType.class.getCanonicalName()));
+        throw new GraknException(INVALID_TYPE_CASTING.format(RoleType.class.getCanonicalName()));
     }
 
     default Thing asThing() {
-        throw new GraknException(INVALID_CONCEPT_CASTING.format(Thing.class.getCanonicalName()));
+        throw new GraknException(INVALID_THING_CASTING.format(Thing.class.getCanonicalName()));
     }
 
     default Entity asEntity() {
-        throw new GraknException(INVALID_CONCEPT_CASTING.format(Entity.class.getCanonicalName()));
+        throw new GraknException(INVALID_THING_CASTING.format(Entity.class.getCanonicalName()));
     }
 
     default Attribute asAttribute() {
-        throw new GraknException(INVALID_CONCEPT_CASTING.format(Attribute.class.getCanonicalName()));
+        throw new GraknException(INVALID_THING_CASTING.format(Attribute.class.getCanonicalName()));
     }
 
     default Relation asRelation() {
-        throw new GraknException(INVALID_CONCEPT_CASTING.format(Relation.class.getCanonicalName()));
+        throw new GraknException(INVALID_THING_CASTING.format(Relation.class.getCanonicalName()));
     }
 }

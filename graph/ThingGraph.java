@@ -313,6 +313,7 @@ public class ThingGraph implements Graph<VertexIID.Thing, ThingVertex> {
 
         void remove(VertexIID.Attribute iid) {
             switch (iid.valueType()) {
+                // We need to manually cast all 'iid', to avoid warning from .remove()
                 case BOOLEAN:
                     booleans.remove((VertexIID.Attribute.Boolean) iid);
                     break;
