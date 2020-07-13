@@ -189,8 +189,7 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
                 String rootId = metadata.get("traceRootId");
                 String parentId = metadata.get("traceParentId");
                 if (rootId != null && parentId != null) {
-                    process(() -> handleRequest(request, GrablTracingThreadStatic.getGrablTracing()
-                            .trace(UUID.fromString(rootId), UUID.fromString(parentId), "received")));
+                    process(() -> handleRequest(request, rootId, parentId));
                     return;
                 }
             }
@@ -218,84 +217,75 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
             close(null);
         }
 
-        private void handleRequest(Transaction.Req request, GrablTracing.Trace queueTrace) {
+        private void handleRequest(Transaction.Req request, String rootId, String parentId) {
             try (ThreadTrace trace = GrablTracingThreadStatic.continueTraceOnThread(
-                    queueTrace.getRootId(), queueTrace.getId(), "handle")
+                    UUID.fromString(rootId), UUID.fromString(parentId), "handle")
             ) {
-                queueTrace.end();
                 handleRequest(request);
             }
         }
 
         private void handleRequest(Transaction.Req request) {
-            try {
-                switch (request.getReqCase()) {
-                    case OPEN_REQ:
-                        open(request.getOpenReq());
-                        break;
-                    case COMMIT_REQ:
-                        commit();
-                        break;
-                    case ITER_REQ:
-                        handleIterRequest(request.getIterReq());
-                        break;
-                    case GETSCHEMACONCEPT_REQ:
-                        getSchemaConcept(request.getGetSchemaConceptReq());
-                        break;
-                    case GETCONCEPT_REQ:
-                        getConcept(request.getGetConceptReq());
-                        break;
-                    case PUTENTITYTYPE_REQ:
-                        putEntityType(request.getPutEntityTypeReq());
-                        break;
-                    case PUTATTRIBUTETYPE_REQ:
-                        putAttributeType(request.getPutAttributeTypeReq());
-                        break;
-                    case PUTRELATIONTYPE_REQ:
-                        putRelationType(request.getPutRelationTypeReq());
-                        break;
-                    case PUTROLE_REQ:
-                        putRole(request.getPutRoleReq());
-                        break;
-                    case PUTRULE_REQ:
-                        putRule(request.getPutRuleReq());
-                        break;
-                    case CONCEPTMETHOD_REQ:
-                        conceptMethod(request.getConceptMethodReq());
-                        break;
-                    case EXPLANATION_REQ:
-                        explanation(request.getExplanationReq());
-                        break;
-                    default:
-                    case REQ_NOT_SET:
-                        throw ResponseBuilder.exception(Status.INVALID_ARGUMENT);
-                }
-            } catch (Throwable e) {
-                close(e);
+            switch (request.getReqCase()) {
+                case OPEN_REQ:
+                    open(request.getOpenReq());
+                    break;
+                case COMMIT_REQ:
+                    commit();
+                    break;
+                case ITER_REQ:
+                    handleIterRequest(request.getIterReq());
+                    break;
+                case GETSCHEMACONCEPT_REQ:
+                    getSchemaConcept(request.getGetSchemaConceptReq());
+                    break;
+                case GETCONCEPT_REQ:
+                    getConcept(request.getGetConceptReq());
+                    break;
+                case PUTENTITYTYPE_REQ:
+                    putEntityType(request.getPutEntityTypeReq());
+                    break;
+                case PUTATTRIBUTETYPE_REQ:
+                    putAttributeType(request.getPutAttributeTypeReq());
+                    break;
+                case PUTRELATIONTYPE_REQ:
+                    putRelationType(request.getPutRelationTypeReq());
+                    break;
+                case PUTROLE_REQ:
+                    putRole(request.getPutRoleReq());
+                    break;
+                case PUTRULE_REQ:
+                    putRule(request.getPutRuleReq());
+                    break;
+                case CONCEPTMETHOD_REQ:
+                    conceptMethod(request.getConceptMethodReq());
+                    break;
+                case EXPLANATION_REQ:
+                    explanation(request.getExplanationReq());
+                    break;
+                default:
+                case REQ_NOT_SET:
+                    throw ResponseBuilder.exception(Status.INVALID_ARGUMENT);
             }
         }
 
         public void handleIterRequest(Transaction.Iter.Req request) {
-            try {
-                switch (request.getReqCase()) {
-                    case ITERATORID:
-                        iterators.resumeBatchIterating(request.getIteratorId(), request.getOptions());
-                        break;
-                    case QUERY_ITER_REQ:
-                        query(request.getQueryIterReq(), request.getOptions());
-                        break;
-                    case CONCEPTMETHOD_ITER_REQ:
-                        conceptIterMethod(request.getConceptMethodIterReq(), request.getOptions());
-                        break;
-                    case GETATTRIBUTES_ITER_REQ:
-                        getAttributes(request.getGetAttributesIterReq(), request.getOptions());
-                        break;
-                    default:
-                    case REQ_NOT_SET:
-                        throw ResponseBuilder.exception(Status.INVALID_ARGUMENT);
-                }
-            } catch (Throwable e) {
-                close(e);
+            switch (request.getReqCase()) {
+                case ITERATORID:
+                    iterators.resumeBatchIterating(request.getIteratorId(), request.getOptions());
+                    break;
+                case QUERY_ITER_REQ:
+                    query(request.getQueryIterReq(), request.getOptions());
+                    break;
+                case CONCEPTMETHOD_ITER_REQ:
+                    conceptIterMethod(request.getConceptMethodIterReq(), request.getOptions());
+                    break;
+                case GETATTRIBUTES_ITER_REQ:
+                    getAttributes(request.getGetAttributesIterReq(), request.getOptions());
+                    break;
+                default:
+                case REQ_NOT_SET:
+                    throw ResponseBuilder.exception(Status.INVALID_ARGUMENT);
             }
         }
 
@@ -327,8 +317,8 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
         private void process(Runnable runnable) {
             try {
                 threadExecutor.submit(runnable).get();
-            } catch (InterruptedException | ExecutionException ex) {
-                // Exception will have been handled already
+            } catch (Exception e) {
+                close(e);
             }
         }
 
