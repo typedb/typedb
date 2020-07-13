@@ -18,7 +18,6 @@
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 package(
     default_visibility = [
-        "//:__pkg__",
         "//test:__subpackages__",
     ]
 )

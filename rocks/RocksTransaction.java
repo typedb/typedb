@@ -137,6 +137,9 @@ class RocksTransaction implements Grakn.Transaction {
                     throw new GraknException(Error.Transaction.DIRTY_DATA_WRITES);
                 }
 
+                // We disable RocksDB indexing of uncommitted writes, as we're only about to write and never again reading
+                // TODO: We should benchmark this
+                rocksTransaction.disableIndexing();
                 if (session.type().equals(Grakn.Session.Type.SCHEMA)) {
                     concepts.validateTypes();
                     graph.type().commit();
