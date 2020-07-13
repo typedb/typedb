@@ -125,14 +125,14 @@ public class BasicTest {
     public void write_types_concurrently() throws IOException {
         Util.resetDirectory(directory);
 
-        try (Grakn graph = RocksGrakn.open(directory.toString())) {
-            graph.databases().create("my_data_database");
+        try (Grakn grakn = RocksGrakn.open(directory.toString())) {
+            grakn.databases().create("my_data_database");
 
-            assertTrue(graph.isOpen());
-            assertEquals(1, graph.databases().getAll().size());
-            assertEquals("my_data_database", graph.databases().getAll().iterator().next().name());
+            assertTrue(grakn.isOpen());
+            assertEquals(1, grakn.databases().getAll().size());
+            assertEquals("my_data_database", grakn.databases().getAll().iterator().next().name());
 
-            try (Grakn.Session session = graph.session("my_data_database", Grakn.Session.Type.SCHEMA)) {
+            try (Grakn.Session session = grakn.session("my_data_database", Grakn.Session.Type.SCHEMA)) {
 
                 assertTrue(session.isOpen());
                 assertEquals("my_data_database", session.database().name());
@@ -240,13 +240,13 @@ public class BasicTest {
         }
 
 
-        try (Grakn graph = RocksGrakn.open(directory.toString())) {
+        try (Grakn grakn = RocksGrakn.open(directory.toString())) {
 
-            assertTrue(graph.isOpen());
-            assertEquals(1, graph.databases().getAll().size());
-            assertEquals("my_data_database", graph.databases().getAll().iterator().next().name());
+            assertTrue(grakn.isOpen());
+            assertEquals(1, grakn.databases().getAll().size());
+            assertEquals("my_data_database", grakn.databases().getAll().iterator().next().name());
 
-            try (Grakn.Session session = graph.session("my_data_database", Grakn.Session.Type.SCHEMA)) {
+            try (Grakn.Session session = grakn.session("my_data_database", Grakn.Session.Type.SCHEMA)) {
 
                 assertTrue(session.isOpen());
                 assertEquals("my_data_database", session.database().name());
@@ -283,9 +283,9 @@ public class BasicTest {
     private void reset_directory_and_create_attribute_types() throws IOException {
         Util.resetDirectory(directory);
 
-        try (Grakn graph = RocksGrakn.open(directory.toString())) {
-            graph.databases().create(database);
-            try (Grakn.Session session = graph.session(database, Grakn.Session.Type.SCHEMA)) {
+        try (Grakn grakn = RocksGrakn.open(directory.toString())) {
+            grakn.databases().create(database);
+            try (Grakn.Session session = grakn.session(database, Grakn.Session.Type.SCHEMA)) {
                 try (Grakn.Transaction txn = session.transaction(Grakn.Transaction.Type.WRITE)) {
                     txn.concepts().putAttributeType("is-alive", Boolean.class);
                     txn.concepts().putAttributeType("age", Long.class);
@@ -331,8 +331,8 @@ public class BasicTest {
         LocalDateTime date_1991_1_1_0_0 = LocalDateTime.of(1991, 1, 1, 0, 0);
         reset_directory_and_create_attribute_types();
 
-        try (Grakn graph = RocksGrakn.open(directory.toString())) {
-            try (Grakn.Session session = graph.session(database)) {
+        try (Grakn grakn = RocksGrakn.open(directory.toString())) {
+            try (Grakn.Session session = grakn.session(database)) {
                 try (Grakn.Transaction txn = session.transaction(Grakn.Transaction.Type.WRITE)) {
                     isAlive(txn).put(true);
                     age(txn).put(18);
@@ -409,8 +409,8 @@ public class BasicTest {
 
         reset_directory_and_create_attribute_types();
 
-        try (Grakn graph = RocksGrakn.open(directory.toString())) {
-            try (Grakn.Session session = graph.session(database)) {
+        try (Grakn grakn = RocksGrakn.open(directory.toString())) {
+            try (Grakn.Session session = grakn.session(database)) {
                 Grakn.Transaction txn1 = session.transaction(Grakn.Transaction.Type.WRITE);
                 Grakn.Transaction txn2 = session.transaction(Grakn.Transaction.Type.WRITE);
                 Grakn.Transaction txn3 = session.transaction(Grakn.Transaction.Type.WRITE);
@@ -528,8 +528,8 @@ public class BasicTest {
 
         LocalDateTime date_1992_2_3_4_5 = LocalDateTime.of(1991, 2, 3, 4, 5);
 
-        try (Grakn graph = RocksGrakn.open(directory.toString())) {
-            try (Grakn.Session session = graph.session(database)) {
+        try (Grakn grakn = RocksGrakn.open(directory.toString())) {
+            try (Grakn.Session session = grakn.session(database)) {
                 Grakn.Transaction txn1 = session.transaction(Grakn.Transaction.Type.WRITE);
                 Grakn.Transaction txn2 = session.transaction(Grakn.Transaction.Type.WRITE);
                 Grakn.Transaction txn3 = session.transaction(Grakn.Transaction.Type.WRITE);
@@ -627,8 +627,8 @@ public class BasicTest {
     public void write_and_delete_attributes_concurrently() throws IOException {
         reset_directory_and_create_attribute_types();
 
-        try (Grakn graph = RocksGrakn.open(directory.toString())) {
-            try (Grakn.Session session = graph.session(database)) {
+        try (Grakn grakn = RocksGrakn.open(directory.toString())) {
+            try (Grakn.Session session = grakn.session(database)) {
                 Grakn.Transaction txn1 = session.transaction(Grakn.Transaction.Type.WRITE);
                 Grakn.Transaction txn2 = session.transaction(Grakn.Transaction.Type.WRITE);
 
