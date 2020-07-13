@@ -101,32 +101,32 @@ public class RoleInferenceIT {
             // three roles in 'indian-recipe sub recipe' that subtype parent roles
             tx.execute(Graql.parse("define " +
                     "recipe sub relation, " +
-                    "  relates ingredient, " +
-                    "  relates utensil, " +
-                    "  relates cooker;" +
+                    "  relates recipe-ingredient, " +
+                    "  relates recipe-utensil, " +
+                    "  relates recipe-cooker;" +
                     "indian-recipe sub relation, " +
 //                    "  relates ingredient, " +  // TODO remove once inherited
 //                    "  relates utensil, " +     // TODO remove once inherited
 //                    "  relates cooker," +       // TODO remove once inherited
-                    "  relates spice as ingredient, " +
-                    "  relates ladle as utensil, " +
-                    "  relates grill as cooker; " +
+                    "  relates indian-recipe-spice as recipe-ingredient, " +
+                    "  relates indian-recipe-ladle as recipe-utensil, " +
+                    "  relates indian-recipe-grill as recipe-cooker; " +
                     "vegetable sub entity," +
-                    "  plays ingredient;" +
+                    "  plays recipe-ingredient;" +
                     "cutlery sub entity," +
-                    "  plays utensil;" +
+                    "  plays recipe-utensil;" +
                     "heated-element sub entity," +
-                    "  plays cooker;" +
+                    "  plays recipe-cooker;" +
                     "ginger sub vegetable," +
-                    "  plays spice;" +
+                    "  plays indian-recipe-spice;" +
                     "spoon sub cutlery," +
-                    "  plays ladle;" +
+                    "  plays indian-recipe-ladle;" +
                     "oven sub heated-element," +
-                    "  plays grill; " +
+                    "  plays indian-recipe-grill; " +
                     //plays with ambiguity, unrelated to above hierarchies
                     "toaster sub entity," +
-                    "  plays utensil," +
-                    "  plays cooker;").asDefine());
+                    "  plays recipe-utensil," +
+                    "  plays recipe-cooker;").asDefine());
             tx.commit();
         }
     }
@@ -248,9 +248,9 @@ public class RoleInferenceIT {
         String patternString2 = "{ ($x, $y, cooker: $z) isa recipe; $x isa vegetable;$y isa cutlery; };";
 
         ImmutableSetMultimap<Role, Variable> correctRoleMap = ImmutableSetMultimap.of(
-                tx.getRole("ingredient"), new Variable("x"),
-                tx.getRole("utensil"), new Variable("y"),
-                tx.getRole("cooker"), new Variable("z"));
+                tx.getRole("recipe-ingredient"), new Variable("x"),
+                tx.getRole("recipe-utensil"), new Variable("y"),
+                tx.getRole("recipe-cooker"), new Variable("z"));
         roleInference(patternString, correctRoleMap, reasonerQueryFactory);
         roleInference(patternString2, correctRoleMap, reasonerQueryFactory);
     }
@@ -263,8 +263,8 @@ public class RoleInferenceIT {
         String patternString2 = "{ ($x, $y, $z) isa recipe; $x isa vegetable; $y isa cutlery; };";
 
         ImmutableSetMultimap<Role, Variable> correctRoleMap = ImmutableSetMultimap.of(
-                tx.getRole("ingredient"), new Variable("x"),
-                tx.getRole("utensil"), new Variable("y"),
+                tx.getRole("recipe-ingredient"), new Variable("x"),
+                tx.getRole("recipe-utensil"), new Variable("y"),
                 tx.getRole("role"), new Variable("z"));
         roleInference(patternString, correctRoleMap, reasonerQueryFactory);
         roleInference(patternString2, correctRoleMap, reasonerQueryFactory);
@@ -274,12 +274,12 @@ public class RoleInferenceIT {
     public void testRoleInference_TernaryRelationWithRepeatingRolePlayers(){
         ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
-        String patternString = "{ (ingredient: $x, utensil: $y, $y); };";
-        String patternString2 = "{ (ingredient: $x, utensil: $y, $y) isa recipe; };";
+        String patternString = "{ (recipe-ingredient: $x, recipe-utensil: $y, $y); };";
+        String patternString2 = "{ (recipe-ingredient: $x, recipe-utensil: $y, $y) isa recipe; };";
 
         ImmutableSetMultimap<Role, Variable> correctRoleMap = ImmutableSetMultimap.of(
-                tx.getRole("ingredient"), new Variable("x"),
-                tx.getRole("utensil"), new Variable("y"),
+                tx.getRole("recipe-ingredient"), new Variable("x"),
+                tx.getRole("recipe-utensil"), new Variable("y"),
                 tx.getRole("role"), new Variable("y"));
         roleInference(patternString, correctRoleMap, reasonerQueryFactory);
         roleInference(patternString2, correctRoleMap, reasonerQueryFactory);
@@ -292,9 +292,9 @@ public class RoleInferenceIT {
         String patternString2 = "{ (role: $x, role: $y, role: $z) isa indian-recipe; $x isa ginger; $y isa spoon; $z isa oven; };";
 
         ImmutableSetMultimap<Role, Variable> correctRoleMap = ImmutableSetMultimap.of(
-                tx.getRole("spice"), new Variable("x"),
-                tx.getRole("ladle"), new Variable("y"),
-                tx.getRole("grill"), new Variable("z"));
+                tx.getRole("indian-recipe-spice"), new Variable("x"),
+                tx.getRole("indian-recipe-ladle"), new Variable("y"),
+                tx.getRole("indian-recipe-grill"), new Variable("z"));
         roleInference(patternString2, correctRoleMap, reasonerQueryFactory);
     }
 
@@ -306,9 +306,9 @@ public class RoleInferenceIT {
         String patternString2 = "{ (role: $x, role: $y, role: $z) isa recipe; $x isa vegetable; $y isa cutlery; $z isa heated-element; };";
 
         ImmutableSetMultimap<Role, Variable> correctRoleMap = ImmutableSetMultimap.of(
-                tx.getRole("ingredient"), new Variable("x"),
-                tx.getRole("utensil"), new Variable("y"),
-                tx.getRole("cooker"), new Variable("z"));
+                tx.getRole("recipe-ingredient"), new Variable("x"),
+                tx.getRole("recipe-utensil"), new Variable("y"),
+                tx.getRole("recipe-cooker"), new Variable("z"));
         roleInference(patternString, correctRoleMap, reasonerQueryFactory);
         roleInference(patternString2, correctRoleMap, reasonerQueryFactory);
     }
@@ -321,9 +321,9 @@ public class RoleInferenceIT {
         String patternString2 = "{ (role: $x, role: $y, role: $z) isa recipe; $x isa ginger; $y isa spoon; $z isa oven; };";
 
         ImmutableSetMultimap<Role, Variable> correctRoleMap = ImmutableSetMultimap.of(
-                tx.getRole("ingredient"), new Variable("x"),
-                tx.getRole("utensil"), new Variable("y"),
-                tx.getRole("cooker"), new Variable("z"));
+                tx.getRole("recipe-ingredient"), new Variable("x"),
+                tx.getRole("recipe-utensil"), new Variable("y"),
+                tx.getRole("recipe-cooker"), new Variable("z"));
         roleInference(patternString, correctRoleMap, reasonerQueryFactory);
         roleInference(patternString2, correctRoleMap, reasonerQueryFactory);
     }
@@ -336,9 +336,9 @@ public class RoleInferenceIT {
         String patternString2 = "{ ($x, $y, $z) isa recipe; $x isa vegetable; $y isa vegetable; $z isa vegetable; };";
 
         ImmutableSetMultimap<Role, Variable> correctRoleMap = ImmutableSetMultimap.of(
-                tx.getRole("ingredient"), new Variable("x"),
-                tx.getRole("ingredient"), new Variable("y"),
-                tx.getRole("ingredient"), new Variable("z"));
+                tx.getRole("recipe-ingredient"), new Variable("x"),
+                tx.getRole("recipe-ingredient"), new Variable("y"),
+                tx.getRole("recipe-ingredient"), new Variable("z"));
         roleInference(patternString, correctRoleMap, reasonerQueryFactory);
         roleInference(patternString2, correctRoleMap, reasonerQueryFactory);
     }
@@ -350,7 +350,7 @@ public class RoleInferenceIT {
         String relationString = "{ ($x, $y, $z) isa recipe; $x isa vegetable; $y isa toaster; $z isa toaster; };";
         RelationAtom relation = (RelationAtom) reasonerQueryFactory.atomic(conjunction(relationString)).getAtom();
         ImmutableSetMultimap<Role, Variable> roleMap = ImmutableSetMultimap.of(
-                tx.getRole("ingredient"), new Variable("x"),
+                tx.getRole("recipe-ingredient"), new Variable("x"),
                 tx.getRole("role"), new Variable("y"),
                 tx.getRole("role"), new Variable("z"));
         assertEquals(roleMap, roleSetMap(relation.getRoleVarMap()));
@@ -362,7 +362,7 @@ public class RoleInferenceIT {
 
         String relationString = "{ ($x, $y, $z) isa recipe; $x isa vegetable; $y isa toaster; $z isa toaster; };";
         ImmutableSetMultimap<Role, Variable> correctMap = ImmutableSetMultimap.of(
-                tx.getRole("ingredient"), new Variable("x"),
+                tx.getRole("recipe-ingredient"), new Variable("x"),
                 tx.getRole("role"), new Variable("y"),
                 tx.getRole("role"), new Variable("z"));
         roleInference(relationString, correctMap, reasonerQueryFactory);
