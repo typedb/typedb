@@ -19,7 +19,6 @@ package grakn.core.graql.reasoner.atomic;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
@@ -58,7 +57,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static grakn.core.test.common.GraqlTestUtil.assertCollectionsNonTriviallyEqual;
-import static grakn.core.test.common.GraqlTestUtil.loadFromFileAndCommit;
 import static graql.lang.Graql.var;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
@@ -67,12 +65,10 @@ import static org.junit.Assert.assertTrue;
 @SuppressWarnings({"CheckReturnValue", "Duplicates"})
 public class AtomicUnificationIT {
 
-    private static String resourcePath = "test/integration/graql/reasoner/resources/";
-
     @ClassRule
     public static final GraknTestStorage storage = new GraknTestStorage();
 
-    private static Session genericSchemaSession;
+    private static Session session;
 
     private Transaction tx;
     // factories exposed by a test transaction, bound to the lifetime of a tx
@@ -81,18 +77,91 @@ public class AtomicUnificationIT {
     @BeforeClass
     public static void loadContext(){
         Config mockServerConfig = storage.createCompatibleServerConfig();
-        genericSchemaSession = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig);
-        loadFromFileAndCommit(resourcePath,"genericSchema.gql", genericSchemaSession);
+        session = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig);
+
+        // define schema
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            tx.execute(Graql.parse("define " +
+                    "organisation sub entity," +
+                    "  has name, " +
+                    "  plays employer," +
+                    "  plays employee, " + // awkward
+                    "  plays employee-recommender; " +
+                    "part-time-organisation sub organisation, " +
+                    "  plays part-time-employer, " +
+                    "  plays part-time-employee, " +
+                    "  plays part-time-employee-recommender;" +
+                    "part-time-driving-hire sub part-time-organisation, " +
+                    "  plays part-time-taxi, " +
+                    "  plays part-time-driver-recommender, " +
+                    "  plays night-shift-driver, " + // awkward
+                    "  plays day-shift-driver; " + // awkward
+
+                    // define complex role hierarchy that can be easily converted into a relation AND role hierarchy in future
+                    "employment sub relation, " +
+                    "  relates employer," +
+                    "  relates employee," +
+                    "  relates employee-recommender," +
+                    "  relates part-time-employer," + // could come from 'part-time-employment' sub 'employment'
+                    "  relates part-time-employee," +
+                    "  relates part-time-employee-recommender," +
+                    "  relates night-shift-driver," + // could come from 'part-time-driving' sub 'part-time-employment'
+                    "  relates day-shift-driver," + // could come from 'part-time-driving' sub 'part-time-employment'
+                    "  relates part-time-taxi," +
+                    "  relates part-time-driver-recommender;" +
+
+                    // the explicit hierarchy will eventually become overriden roles in sub-relations
+                    "part-time-employer sub employer;" +
+                    "part-time-employee sub employee;" +
+                    "part-time-employee-recommender sub employee-recommender;" +
+                    "part-time-taxi sub part-time-employer;" +
+                    "night-shift-driver sub part-time-employee;" +
+                    "day-shift-driver sub part-time-employee;" +
+                    "part-time-driver-recommender sub part-time-employee-recommender;" +
+                    "name sub attribute, value string;").asDefine());
+
+
+
+            // insert:
+            tx.execute(Graql.parse("insert " +
+                    "(part-time-taxi: $x, night-shift-driver: $y) isa employment; " +
+                    "(part-time-employer: $x, part-time-employee: $y, part-time-driver-recommender: $z) isa employment; " +
+                    // note duplicate RP, needed to satisfy one of the child queries
+                    "(part-time-taxi: $x, part-time-employee: $x, part-time-driver-recommender: $z) isa employment; " +
+                    "$x isa part-time-driving-hire;" +
+                    "$y isa part-time-driving-hire;" +
+                    "$z isa part-time-driving-hire;").asInsert());
+            tx.commit();
+        }
+
+        // insert schema and data for first set of tests to do with ownership
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            tx.execute(Graql.parse("define " +
+                    "car sub entity, " +
+                    "  plays owned," +
+                    "  has name; " +
+                    "ownership sub relation," +
+                    "  relates owner, " +
+                    "  relates owned; " +
+                    "company sub organisation, " +
+                    "  plays owner;").asDefine());
+
+            tx.execute(Graql.parse("insert " +
+                    "$x isa company, has name \"Google\"; " +
+                    "$y isa car, has name \"Betty\"; " +
+                    "(owner: $x, owned: $y) isa ownership;").asInsert());
+            tx.commit();
+        }
     }
 
     @AfterClass
     public static void closeSession(){
-        genericSchemaSession.close();
+        session.close();
     }
 
     @Before
     public void setUp(){
-        tx = genericSchemaSession.transaction(Transaction.Type.WRITE);
+        tx = session.transaction(Transaction.Type.WRITE);
         TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction) tx);
         reasonerQueryFactory = testTx.reasonerQueryFactory();
     }
@@ -104,31 +173,31 @@ public class AtomicUnificationIT {
 
     @Test
     public void testUnification_RelationWithRolesExchanged(){
-        String relation = "{ (baseRole1: $x, baseRole2: $y) isa binary; };";
-        String relation2 = "{ (baseRole1: $y, baseRole2: $x) isa binary; };";
+        String relation = "{ (owner: $x, owned: $y) isa ownership; };";
+        String relation2 = "{ (owner: $y, owned: $x) isa ownership; };";
         unification(relation, relation2, UnifierType.EXACT,true, true, tx);
     }
 
     @Test
     public void testUnification_RelationWithMetaRole(){
-        String relation = "{ (baseRole1: $x, role: $y) isa binary; };";
-        String relation2 = "{ (baseRole1: $y, role: $x) isa binary; };";
+        String relation = "{ (owner: $x, role: $y) isa ownership; };";
+        String relation2 = "{ (owner: $y, role: $x) isa ownership; };";
         unification(relation, relation2, UnifierType.EXACT,true, true, tx);
     }
 
     @Test
     public void testUnification_RelationWithRelationVar(){
-        String relation = "{ $x (baseRole1: $r, baseRole2: $z) isa binary; };";
-        String relation2 = "{ $r (baseRole1: $x, baseRole2: $y) isa binary; };";
+        String relation = "{ $x (owner: $r, owned: $z) isa ownership; };";
+        String relation2 = "{ $r (owner: $x, owned: $y) isa ownership; };";
         unification(relation, relation2,UnifierType.EXACT, true, true, tx);
     }
 
     @Test
     public void testUnification_RelationWithMetaRolesAndIds(){
-        Concept instance = tx.execute(Graql.parse("match $x isa subRoleEntity; get;").asGet()).iterator().next().get("x");
-        String relation = "{ (role: $x, role: $y) isa binary; $y id " + instance.id().getValue() + "; };";
-        String relation2 = "{ (role: $z, role: $v) isa binary; $z id " + instance.id().getValue() + "; };";
-        String relation3 = "{ (role: $z, role: $v) isa binary; $v id " + instance.id().getValue() + "; };";
+        Concept instance = tx.execute(Graql.parse("match $x isa company; get;").asGet()).iterator().next().get("x");
+        String relation = "{ (role: $x, role: $y) isa ownership; $y id " + instance.id().getValue() + "; };";
+        String relation2 = "{ (role: $z, role: $v) isa ownership; $z id " + instance.id().getValue() + "; };";
+        String relation3 = "{ (role: $z, role: $v) isa ownership; $v id " + instance.id().getValue() + "; };";
 
         unification(relation, relation2, UnifierType.EXACT,true, true, tx);
         unification(relation, relation3, UnifierType.EXACT, true, true, tx);
@@ -137,12 +206,13 @@ public class AtomicUnificationIT {
 
     @Test
     public void testUnification_BinaryRelationWithRoleHierarchy_ParentWithBaseRoles(){
-        String parentRelation = "{ (baseRole1: $x, baseRole2: $y); };";
-        String specialisedRelation = "{ (subRole1: $u, anotherSubRole2: $v); };";
-        String specialisedRelation2 = "{ (subRole1: $y, anotherSubRole2: $x); };";
-        String specialisedRelation3 = "{ (subSubRole1: $u, subSubRole2: $v); };";
-        String specialisedRelation4 = "{ (subSubRole1: $y, subSubRole2: $x); };";
-        String specialisedRelation5 = "{ (subRole1: $u, anotherSubRole1: $v); };";
+        String parentRelation = "{ (employer: $x, employee: $y); };";
+        String specialisedRelation = "{ (part-time-employer: $u, part-time-employee: $v); };";
+        String specialisedRelation2 = "{ (part-time-employer: $y, part-time-employee: $x); };";
+        String specialisedRelation3 = "{ (part-time-taxi: $u, night-shift-driver: $v); };";
+        String specialisedRelation4 = "{ (part-time-taxi: $y, night-shift-driver: $x); };";
+        // both roles derive from one parent role, fails
+        String specialisedRelation5 = "{ (part-time-employee: $u, night-shift-driver: $v); };";
 
         unification(parentRelation, specialisedRelation, UnifierType.RULE,false, false, tx);
         unification(parentRelation, specialisedRelation2, UnifierType.RULE,false, false, tx);
@@ -153,13 +223,13 @@ public class AtomicUnificationIT {
 
     @Test
     public void testUnification_BinaryRelationWithRoleHierarchy_ParentWithSubRoles(){
-        String parentRelation = "{ (subRole1: $x, subRole2: $y); };";
-        String specialisedRelation = "{ (subRole1: $u, subSubRole2: $v); };";
-        String specialisedRelation2 = "{ (subRole1: $y, subSubRole2: $x); };";
-        String specialisedRelation3 = "{ (subSubRole1: $u, subSubRole2: $v); };";
-        String specialisedRelation4 = "{ (subSubRole1: $y, subSubRole2: $x); };";
-        String specialisedRelation5 = "{ (subSubRole1: $u, baseRole3: $v); };";
-        String specialisedRelation6 = "{ (baseRole1: $u, baseRole2: $v); };";
+        String parentRelation = "{ (part-time-employer: $x, part-time-employee: $y); };";
+        String specialisedRelation = "{ (part-time-employer: $u, night-shift-driver: $v); };";
+        String specialisedRelation2 = "{ (part-time-employer: $y, night-shift-driver: $x); };";
+        String specialisedRelation3 = "{ (part-time-taxi: $u, night-shift-driver: $v); };";
+        String specialisedRelation4 = "{ (part-time-taxi: $y, night-shift-driver: $x); };";
+        String specialisedRelation5 = "{ (part-time-taxi: $u, employee-recommender: $v); };";
+        String specialisedRelation6 = "{ (employer: $u, employee: $v); };";
 
         unification(parentRelation, specialisedRelation, UnifierType.RULE,false, false, tx);
         unification(parentRelation, specialisedRelation2, UnifierType.RULE,false, false, tx);
@@ -171,12 +241,12 @@ public class AtomicUnificationIT {
 
     @Test
     public void testUnification_TernaryRelationWithRoleHierarchy_ParentWithBaseRoles(){
-        String parentRelation = "{ (baseRole1: $x, baseRole2: $y, baseRole3: $z); };";
-        String specialisedRelation = "{ (baseRole1: $u, subRole2: $v, subSubRole3: $q); };";
-        String specialisedRelation2 = "{ (baseRole1: $z, subRole2: $y, subSubRole3: $x); };";
-        String specialisedRelation3 = "{ (subRole1: $u, subRole2: $v, subSubRole3: $q); };";
-        String specialisedRelation4 = "{ (subRole1: $y, subRole2: $z, subSubRole3: $x); };";
-        String specialisedRelation5 = "{ (subRole1: $u, subRole1: $v, subSubRole3: $q); };";
+        String parentRelation = "{ (employer: $x, employee: $y, employee-recommender: $z); };";
+        String specialisedRelation = "{ (employer: $u, part-time-employee: $v, part-time-driver-recommender: $q); };";
+        String specialisedRelation2 = "{ (employer: $z, part-time-employee: $y, part-time-driver-recommender: $x); };";
+        String specialisedRelation3 = "{ (part-time-employer: $u, part-time-employee: $v, part-time-driver-recommender: $q); };";
+        String specialisedRelation4 = "{ (part-time-employer: $y, part-time-employee: $z, part-time-driver-recommender: $x); };";
+        String specialisedRelation5 = "{ (part-time-employer: $u, part-time-employer: $v, part-time-driver-recommender: $q); };";
 
         unification(parentRelation, specialisedRelation, UnifierType.RULE,false, true, tx);
         unification(parentRelation, specialisedRelation2, UnifierType.RULE,false, true, tx);
@@ -187,13 +257,13 @@ public class AtomicUnificationIT {
 
     @Test
     public void testUnification_TernaryRelationWithRoleHierarchy_ParentWithSubRoles(){
-        String parentRelation = "{ (subRole1: $x, subRole2: $y, subRole3: $z); };";
-        String specialisedRelation = "{ (baseRole1: $u, subRole2: $v, subSubRole3: $q); };";
-        String specialisedRelation2 = "{ (subRole1: $u, subRole2: $v, subSubRole3: $q); };";
-        String specialisedRelation3 = "{ (subRole1: $y, subRole2: $z, subSubRole3: $x); };";
-        String specialisedRelation4 = "{ (subSubRole1: $u, subRole2: $v, subSubRole3: $q); };";
-        String specialisedRelation5 = "{ (subSubRole1: $y, subRole2: $z, subSubRole3: $x); };";
-        String specialisedRelation6 = "{ (subRole1: $u, subRole1: $v, subSubRole3: $q); };";
+        String parentRelation = "{ (part-time-employer: $x, part-time-employee: $y, part-time-employee-recommender: $z); };";
+        String specialisedRelation = "{ (employer: $u, part-time-employee: $v, part-time-driver-recommender: $q); };";
+        String specialisedRelation2 = "{ (part-time-employer: $u, part-time-employee: $v, part-time-driver-recommender: $q); };";
+        String specialisedRelation3 = "{ (part-time-employer: $y, part-time-employee: $z, part-time-driver-recommender: $x); };";
+        String specialisedRelation4 = "{ (part-time-taxi: $u, part-time-employee: $v, part-time-driver-recommender: $q); };";
+        String specialisedRelation5 = "{ (part-time-taxi: $y, part-time-employee: $z, part-time-driver-recommender: $x); };";
+        String specialisedRelation6 = "{ (part-time-employer: $u, part-time-employer: $v, part-time-driver-recommender: $q); };";
 
         nonExistentUnifier(parentRelation, specialisedRelation);
         unification(parentRelation, specialisedRelation2, UnifierType.RULE,false, false, tx);
@@ -205,12 +275,12 @@ public class AtomicUnificationIT {
 
     @Test
     public void testUnification_TernaryRelationWithRoleHierarchy_ParentWithBaseRoles_childrenRepeatRolePlayers(){
-        String parentRelation = "{ (baseRole1: $x, baseRole2: $y, baseRole3: $z); };";
-        String specialisedRelation = "{ (baseRole1: $u, subRole2: $u, subSubRole3: $q); };";
-        String specialisedRelation2 = "{ (baseRole1: $y, subRole2: $y, subSubRole3: $x); };";
-        String specialisedRelation3 = "{ (subRole1: $u, subRole2: $u, subSubRole3: $q); };";
-        String specialisedRelation4 = "{ (subRole1: $y, subRole2: $y, subSubRole3: $x); };";
-        String specialisedRelation5 = "{ (subRole1: $u, subRole1: $u, subSubRole3: $q); };";
+        String parentRelation = "{ (employer: $x, employee: $y, employee-recommender: $z); };";
+        String specialisedRelation = "{ (employer: $u, part-time-employee: $u, part-time-driver-recommender: $q); };";
+        String specialisedRelation2 = "{ (employer: $y, part-time-employee: $y, part-time-driver-recommender: $x); };";
+        String specialisedRelation3 = "{ (part-time-employer: $u, part-time-employee: $u, part-time-driver-recommender: $q); };";
+        String specialisedRelation4 = "{ (part-time-employer: $y, part-time-employee: $y, part-time-driver-recommender: $x); };";
+        String specialisedRelation5 = "{ (part-time-employer: $u, part-time-employer: $u, part-time-driver-recommender: $q); };";
 
         unification(parentRelation, specialisedRelation, UnifierType.RULE,false, false, tx);
         unification(parentRelation, specialisedRelation2, UnifierType.RULE,false, false, tx);
@@ -221,12 +291,12 @@ public class AtomicUnificationIT {
 
     @Test
     public void testUnification_TernaryRelationWithRoleHierarchy_ParentWithBaseRoles_parentRepeatRolePlayers(){
-        String parentRelation = "{ (baseRole1: $x, baseRole2: $x, baseRole3: $y); };";
-        String specialisedRelation = "{ (baseRole1: $u, subRole2: $v, subSubRole3: $q); };";
-        String specialisedRelation2 = "{ (baseRole1: $z, subRole2: $y, subSubRole3: $x); };";
-        String specialisedRelation3 = "{ (subRole1: $u, subRole2: $v, subSubRole3: $q); };";
-        String specialisedRelation4 = "{ (subRole1: $y, subRole2: $y, subSubRole3: $x); };";
-        String specialisedRelation5 = "{ (subRole1: $u, subRole1: $v, subSubRole3: $q); };";
+        String parentRelation = "{ (employer: $x, employee: $x, employee-recommender: $y); };";
+        String specialisedRelation = "{ (employer: $u, part-time-employee: $v, part-time-driver-recommender: $q); };";
+        String specialisedRelation2 = "{ (employer: $z, part-time-employee: $y, part-time-driver-recommender: $x); };";
+        String specialisedRelation3 = "{ (part-time-employer: $u, part-time-employee: $v, part-time-driver-recommender: $q); };";
+        String specialisedRelation4 = "{ (part-time-employer: $y, part-time-employee: $y, part-time-driver-recommender: $x); };";
+        String specialisedRelation5 = "{ (part-time-employer: $u, part-time-employer: $v, part-time-driver-recommender: $q); };";
 
         unification(parentRelation, specialisedRelation, UnifierType.RULE,false, false, tx);
         unification(parentRelation, specialisedRelation2, UnifierType.RULE,false, false, tx);
@@ -236,25 +306,25 @@ public class AtomicUnificationIT {
     }
 
     @Test
-    public void testUnification_VariousResourceAtoms(){
-        String resource = "{ $x has resource $r;$r 'f'; };";
-        String resource2 = "{ $r has resource $x;$x 'f'; };";
-        String resource3 = "{ $r has resource 'f'; };";
-        unification(resource, resource2, UnifierType.RULE,true, true, tx);
-        unification(resource, resource3, UnifierType.RULE,true, true, tx);
-        unification(resource2, resource3, UnifierType.RULE,true, true, tx);
+    public void testUnification_VariousAttributeAtoms(){
+        String attribute = "{ $x has name $r;$r 'Google'; };";
+        String attribute2 = "{ $r has name $x;$x 'Google'; };";
+        String attribute3 = "{ $r has name 'Google'; };";
+        unification(attribute, attribute2, UnifierType.RULE,true, true, tx);
+        unification(attribute, attribute3, UnifierType.RULE,true, true, tx);
+        unification(attribute2, attribute3, UnifierType.RULE,true, true, tx);
 
-        unification(resource, resource2, UnifierType.EXACT,true, true, tx);
-        unification(resource, resource3, UnifierType.EXACT,true, true, tx);
-        unification(resource2, resource3, UnifierType.EXACT,true, true, tx);
+        unification(attribute, attribute2, UnifierType.EXACT,true, true, tx);
+        unification(attribute, attribute3, UnifierType.EXACT,true, true, tx);
+        unification(attribute2, attribute3, UnifierType.EXACT,true, true, tx);
     }
 
     @Test
     public void testUnification_VariousTypeAtoms(){
-        String type = "{ $x isa baseRoleEntity; };";
-        String type2 = "{ $y isa baseRoleEntity; };";
-        String userDefinedType = "{ $y isa $x;$x type baseRoleEntity; };";
-        String userDefinedType2 = "{ $u isa $v;$v type baseRoleEntity; };";
+        String type = "{ $x isa company; };";
+        String type2 = "{ $y isa company; };";
+        String userDefinedType = "{ $y isa $x;$x type company; };";
+        String userDefinedType2 = "{ $u isa $v;$v type company; };";
 
         unification(type, type2, UnifierType.EXACT, true, true, tx);
         unification(userDefinedType, userDefinedType2, UnifierType.EXACT, true, true, tx);
@@ -267,9 +337,9 @@ public class AtomicUnificationIT {
 
     @Test
     public void testUnification_ParentHasFewerRelationPlayers() {
-        String childString = "{ (subRole1: $y, subRole2: $x) isa binary; };";
-        String parentString = "{ (subRole1: $x) isa binary; };";
-        String parentString2 = "{ (subRole2: $y) isa binary; };";
+        String childString = "{ (part-time-employer: $y, part-time-employee: $x) isa employment; };";
+        String parentString = "{ (part-time-employer: $x) isa employment; };";
+        String parentString2 = "{ (part-time-employee: $y) isa employment; };";
 
         ReasonerAtomicQuery childQuery = reasonerQueryFactory.atomic(conjunction(childString));
         ReasonerAtomicQuery parentQuery = reasonerQueryFactory.atomic(conjunction(parentString));
@@ -305,44 +375,44 @@ public class AtomicUnificationIT {
     }
 
     @Test
-    public void testUnification_ResourceWithIndirectValuePredicate(){
-        String resource = "{ $x has resource $r;$r == 'f'; };";
-        String resource2 = "{ $r has resource $x;$x == 'f'; };";
-        String resource3 = "{ $r has resource 'f'; };";
+    public void testUnification_AttributeWithIndirectValuePredicate(){
+        String attribute = "{ $x has name $r; $r == 'Google'; };";
+        String attribute2 = "{ $r has name $x; $x == 'Google'; };";
+        String attribute3 = "{ $r has name 'Google'; };";
 
-        ReasonerAtomicQuery resourceQuery = reasonerQueryFactory.atomic(conjunction(resource));
-        ReasonerAtomicQuery resourceQuery2 = reasonerQueryFactory.atomic(conjunction(resource2));
-        ReasonerAtomicQuery resourceQuery3 = reasonerQueryFactory.atomic(conjunction(resource3));
+        ReasonerAtomicQuery attributeQuery = reasonerQueryFactory.atomic(conjunction(attribute));
+        ReasonerAtomicQuery attributeQuery2 = reasonerQueryFactory.atomic(conjunction(attribute2));
+        ReasonerAtomicQuery attributeQuery3 = reasonerQueryFactory.atomic(conjunction(attribute3));
 
-        String type = "{ $x isa resource;$x id " + tx.execute(resourceQuery.getQuery(), false).iterator().next().get("r").id().getValue()  + "; };";
+        String type = "{ $x isa name;$x id " + tx.execute(attributeQuery.getQuery(), false).iterator().next().get("r").id().getValue()  + "; };";
         ReasonerAtomicQuery typeQuery = reasonerQueryFactory.atomic(conjunction(type));
         Atom typeAtom = typeQuery.getAtom();
 
-        Atom resourceAtom = resourceQuery.getAtom();
-        Atom resourceAtom2 = resourceQuery2.getAtom();
-        Atom resourceAtom3 = resourceQuery3.getAtom();
+        Atom attributeAtom = attributeQuery.getAtom();
+        Atom attributeAtom2 = attributeQuery2.getAtom();
+        Atom attributeAtom3 = attributeQuery3.getAtom();
 
-        Unifier unifier = resourceAtom.getUnifier(typeAtom, UnifierType.RULE);
-        Unifier unifier2 = resourceAtom2.getUnifier(typeAtom, UnifierType.RULE);
-        Unifier unifier3 = resourceAtom3.getUnifier(typeAtom, UnifierType.RULE);
+        Unifier unifier = attributeAtom.getUnifier(typeAtom, UnifierType.RULE);
+        Unifier unifier2 = attributeAtom2.getUnifier(typeAtom, UnifierType.RULE);
+        Unifier unifier3 = attributeAtom3.getUnifier(typeAtom, UnifierType.RULE);
 
         ConceptMap typeAnswer = tx.execute(typeQuery.getQuery(), false).iterator().next();
-        ConceptMap resourceAnswer = tx.execute(resourceQuery.getQuery(), false).iterator().next();
-        ConceptMap resourceAnswer2 = tx.execute(resourceQuery2.getQuery(), false).iterator().next();
-        ConceptMap resourceAnswer3 = tx.execute(resourceQuery3.getQuery(), false).iterator().next();
+        ConceptMap attributeAnswer = tx.execute(attributeQuery.getQuery(), false).iterator().next();
+        ConceptMap attributeAnswer2 = tx.execute(attributeQuery2.getQuery(), false).iterator().next();
+        ConceptMap attributeAnswer3 = tx.execute(attributeQuery3.getQuery(), false).iterator().next();
 
-        assertEquals(typeAnswer.get("x"), unifier.apply(resourceAnswer).get("x"));
-        assertEquals(typeAnswer.get("x"), unifier2.apply(resourceAnswer2).get("x"));
-        assertEquals(typeAnswer.get("x"), unifier3.apply(resourceAnswer3).get("x"));
+        assertEquals(typeAnswer.get("x"), unifier.apply(attributeAnswer).get("x"));
+        assertEquals(typeAnswer.get("x"), unifier2.apply(attributeAnswer2).get("x"));
+        assertEquals(typeAnswer.get("x"), unifier3.apply(attributeAnswer3).get("x"));
     }
 
     @Test
     public void testRewriteAndUnification(){
-        String parentString = "{ $r (subRole1: $x) isa binary; };";
+        String parentString = "{ $r (part-time-employer: $x) isa employment; };";
         Atom parentAtom = reasonerQueryFactory.atomic(conjunction(parentString)).getAtom();
         Variable parentVarName = parentAtom.getVarName();
 
-        String childPatternString = "(subRole1: $x, subRole2: $y) isa binary;";
+        String childPatternString = "(part-time-employer: $x, part-time-employee: $y) isa employment;";
         InferenceRule testRule = new InferenceRule(
                 tx.putRule("Checking Rewrite & Unification",
                            Graql.parsePattern(childPatternString),
@@ -363,7 +433,7 @@ public class AtomicUnificationIT {
         assertTrue(unifier.containsAll(correctUnifier));
 
         Multimap<Role, Variable> roleMap = roleSetMap(headAtom.getRoleVarMap());
-        Collection<Variable> wifeEntry = roleMap.get(tx.getRole("subRole1"));
+        Collection<Variable> wifeEntry = roleMap.get(tx.getRole("part-time-employer"));
         assertEquals(wifeEntry.size(), 1);
         assertEquals(wifeEntry.iterator().next(), new Variable("x"));
     }
@@ -371,7 +441,7 @@ public class AtomicUnificationIT {
     @Test
     public void testUnification_MatchAllParentAtom(){
         String parentString = "{ $r($a, $x); };";
-        String childString = "{ $rel (baseRole1: $z, baseRole2: $b) isa binary; };";
+        String childString = "{ $rel (employer: $z, employee: $b) isa employment; };";
         Atom parent = reasonerQueryFactory.atomic(conjunction(parentString)).getAtom();
         Atom child = reasonerQueryFactory.atomic(conjunction(childString)).getAtom();
 
@@ -395,22 +465,22 @@ public class AtomicUnificationIT {
     @Test
     public void testUnification_IndirectRoles(){
         Statement basePattern = var()
-                .rel(var("baseRole1").type("subRole1"), var("y1"))
-                .rel(var("baseRole2").type("subSubRole2"), var("y2"))
-                .isa("binary");
+                .rel(var("employer").type("part-time-employer"), var("y1"))
+                .rel(var("employee").type("night-shift-driver"), var("y2"))
+                .isa("employment");
 
         ReasonerAtomicQuery baseQuery = reasonerQueryFactory.atomic(Graql.and(Sets.newHashSet(basePattern)));
         ReasonerAtomicQuery childQuery = reasonerQueryFactory
                 .atomic(conjunction(
-                        "{($r1: $x1, $r2: $x2) isa binary;" +
-                                "$r1 type subRole1;" +
-                                "$r2 type subSubRole2; };"
+                        "{($r1: $x1, $r2: $x2) isa employment;" +
+                                "$r1 type part-time-employer;" +
+                                "$r2 type night-shift-driver; };"
                         ));
         ReasonerAtomicQuery parentQuery = reasonerQueryFactory
                 .atomic(conjunction(
-                        "{ ($R1: $x, $R2: $y) isa binary;" +
-                                "$R1 type subRole1;" +
-                                "$R2 type subSubRole2; };"
+                        "{ ($R1: $x, $R2: $y) isa employment;" +
+                                "$R1 type part-time-employer;" +
+                                "$R2 type night-shift-driver; };"
                         ));
         unification(parentQuery, childQuery, UnifierType.EXACT, true, true);
         unification(baseQuery, parentQuery, UnifierType.EXACT, true, true);
@@ -420,32 +490,25 @@ public class AtomicUnificationIT {
     @Test
     public void testUnification_IndirectRoles_NoRelationType(){
         Statement basePattern = var()
-                .rel(var("baseRole1").type("subRole1"), var("y1"))
-                .rel(var("baseRole2").type("subSubRole2"), var("y2"));
+                .rel(var("employer").type("part-time-employer"), var("y1"))
+                .rel(var("employee").type("night-shift-driver"), var("y2"));
 
         ReasonerAtomicQuery baseQuery = reasonerQueryFactory.atomic(Graql.and(Sets.newHashSet(basePattern)));
         ReasonerAtomicQuery childQuery = reasonerQueryFactory
                 .atomic(conjunction(
                         "{ ($r1: $x1, $r2: $x2); " +
-                                "$r1 type subRole1;" +
-                                "$r2 type subSubRole2; };"
+                                "$r1 type part-time-employer;" +
+                                "$r2 type night-shift-driver; };"
                         ));
         ReasonerAtomicQuery parentQuery = reasonerQueryFactory
                 .atomic(conjunction(
                         "{ ($R1: $x, $R2: $y); " +
-                                "$R1 type subRole1;" +
-                                "$R2 type subSubRole2; };"
+                                "$R1 type part-time-employer;" +
+                                "$R2 type night-shift-driver; };"
                         ));
         unification(parentQuery, childQuery, UnifierType.EXACT, true, true);
         unification(baseQuery, parentQuery, UnifierType.EXACT, true, true);
         unification(baseQuery, childQuery, UnifierType.EXACT, true, true);
-    }
-
-    private void roleInference(String patternString, ImmutableSetMultimap<Role, Variable> expectedRoleMAp, Transaction tx){
-        RelationAtom atom = (RelationAtom) reasonerQueryFactory.atomic(conjunction(patternString)).getAtom();
-        Multimap<Role, Variable> roleMap = roleSetMap(atom.getRoleVarMap());
-        assertEquals(expectedRoleMAp, roleMap);
-
     }
 
     /**
