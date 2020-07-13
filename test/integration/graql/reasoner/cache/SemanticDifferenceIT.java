@@ -66,7 +66,6 @@ import static graql.lang.Graql.val;
 import static graql.lang.Graql.var;
 import static java.util.stream.Collectors.toSet;
 import static junit.framework.TestCase.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 @SuppressWarnings("Duplicates")

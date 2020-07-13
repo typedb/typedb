@@ -36,10 +36,10 @@ import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
+import grakn.core.test.common.GraqlTestUtil;
 import grakn.core.test.rule.GraknTestStorage;
 import grakn.core.test.rule.SessionUtil;
 import grakn.core.test.rule.TestTransactionProvider;
-import grakn.core.test.common.GraqlTestUtil;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.query.GraqlGet;
@@ -86,7 +86,6 @@ public class TypeInferenceIT {
     public static void closeSession(){
         testContextSession.close();
     }
-
 
     @Before
     public void setup() {

@@ -14,8 +14,6 @@ role2 sub role;
 role3 sub role;
 role4 sub role;
 
-subRole2 sub role2;
-
 #Entities
 
 # Entity hierarchy
@@ -68,49 +66,9 @@ anotherTwoRoleBinary sub relation,
     relates role3;
 
 threeRoleBinary sub relation,
-    relates subRole2,
+    relates subRole2 as role2,
     relates role3,
     relates role4;
-
-#3 instances
-rule-1 sub rule,
-    when {
-        $x isa yetAnotherSingleRoleEntity;
-        $y isa anotherSingleRoleEntity;
-    },
-    then {
-        (role1: $x, role2: $y) isa twoRoleBinary;
-};
-
-#6 instances
-rule-2 sub rule,
-    when {
-        $x isa anotherSingleRoleEntity;
-        $y isa anotherTwoRoleEntity;
-    },
-    then {
-        (role2: $x, role3: $y) isa anotherTwoRoleBinary;
-};
-
-#2 instances
-rule-3 sub rule,
-    when {
-        $x isa anotherTwoRoleEntity;
-        $y isa threeRoleEntity;
-    },
-    then {
-        (role3: $x, role4: $y) isa threeRoleBinary;
-};
-
-#6 instances
-rule-4 sub rule,
-    when {
-        $x isa anotherSingleRoleEntity;
-        $y isa anotherTwoRoleEntity;
-    },
-    then {
-        (subRole2: $x, role3: $y) isa threeRoleBinary;
-};
 
 insert
 $e isa noRoleEntity;
