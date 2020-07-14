@@ -90,7 +90,7 @@ public class ValueFragment extends FragmentImpl {
 
     @Override
     public double estimatedCostAsStartingPoint(ConceptManager conceptManager, KeyspaceStatistics statistics) {
-        // compute the sum of all @has-attribute implicit relations
+        // compute the sum of all attribute ownerships
         // and the sum of all attribute instances
         // then compute some mean number of owners per attribute
         // this is probably not the highest quality heuristic (plus it is a heavy operation), needs work

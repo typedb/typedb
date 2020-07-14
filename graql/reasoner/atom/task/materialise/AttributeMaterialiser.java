@@ -98,7 +98,6 @@ public class AttributeMaterialiser implements AtomMaterialiser<AttributeAtom> {
      * @param sub       partial substitution
      * @param owner     attribute owner
      * @param attribute attribute concept
-     * @return inserted implicit relation if didn't exist, null otherwise
      */
     private void putAttributeOwmership(AttributeAtom atom, ConceptMap sub, Concept owner, Attribute attribute, ReasoningContext ctx) {
         ConceptMap answer = findAnswer(atom, sub, ctx);

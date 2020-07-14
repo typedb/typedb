@@ -43,44 +43,6 @@ public class HasAttributeTypeExecutor  implements PropertyExecutor.Definable {
     HasAttributeTypeExecutor(Variable var, HasAttributeTypeProperty property) {
         this.var = var;
         this.property = property;
-
-//        // TODO: this may the cause of issue #4664
-//        String type = attributeType.getType().orElseThrow(
-//                () -> GraqlSemanticException.noLabelSpecifiedForHas(attributeType.var())
-//        );
-//
-//        Statement role = Graql.type(Graql.Token.Type.ROLE);
-//
-//         TODO: To fix issue #4664 (querying schema with variable attribute type), it's not enough to just remove the
-//               exception handling above. We need to be able to restrict the direcitonality of the following ownerRole
-//               and valueRole. For example, for keys, we restrict the role names to start with `key-`. However, we
-//               cannot do this because the name of the variable attribute type is unknown. This means that we need to
-//               change the data structure so that we have meta-super-roles for attribute-owners and attribute-values
-//        Statement ownerRole = var().sub(role);
-//        Statement valueRole = var().sub(role);
-//        Statement relationType = var().sub(Graql.type(Graql.Token.Type.RELATION));
-//
-        // If a key, limit only to the implicit key type
-//        if (property.isKey()) {
-//            ownerRole = ownerRole.type(KEY_OWNER.getLabel(type).getValue());
-//            valueRole = valueRole.type(KEY_VALUE.getLabel(type).getValue());
-//            relationType = relationType.type(KEY.getLabel(type).getValue());
-//        }
-
-//        Statement relationOwner = relationType.relates(ownerRole);
-//        Statement relationValue = relationType.relates(valueRole);
-//
-//        this.ownerRole = ownerRole;
-//        this.valueRole = valueRole;
-//        if (relationOwner == null) {
-//            throw new NullPointerException("Null relationOwner");
-//        }
-//        this.relationOwner = relationOwner;
-//        if (relationValue == null) {
-//            throw new NullPointerException("Null relationValue");
-//        }
-//        this.relationValue = relationValue;
-
     }
 
     @Override

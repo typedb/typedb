@@ -130,7 +130,7 @@ public class GraqlComputeIT {
     public void whenComputingTotalCount_countOfThingIsReturned() {
         addSchemaAndEntities();
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-            //this should return all things BUT NOT attributes or implicit relations
+            //this should return all things BUT NOT attributes
             GraqlGet thingQuery = Graql.match(
                     Graql.and(
                             Graql.var("x").isa(tx.getMetaConcept().label().getValue())

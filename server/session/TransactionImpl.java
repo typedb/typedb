@@ -173,7 +173,7 @@ public class TransactionImpl implements Transaction {
      * - use a lock to serialise commits if two given txs try to insert the same attribute
      * - use a lock to serialise commits if two given txs try to insert a shard for the same type that
      * - use a lock if there is a tx that deletes attributes
-     * - use a lock if there is a tx that mutates key implicit relations
+     * - use a lock if there is a tx that mutates "has" key ownerships
      * - otherwise do not lock
      *
      * @return true if graph lock need to be acquired for commit
