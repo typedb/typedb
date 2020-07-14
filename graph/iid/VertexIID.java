@@ -38,6 +38,7 @@ import static grakn.core.common.collection.Bytes.doubleToBytes;
 import static grakn.core.common.collection.Bytes.join;
 import static grakn.core.common.collection.Bytes.longToBytes;
 import static grakn.core.common.collection.Bytes.stringToBytes;
+import static grakn.core.common.exception.Error.ThingRead.INVALID_IID_CASTING;
 import static grakn.core.graph.util.Schema.STRING_ENCODING;
 import static grakn.core.graph.util.Schema.STRING_MAX_LENGTH;
 import static grakn.core.graph.util.Schema.TIME_ZONE_ID;
@@ -149,7 +150,7 @@ public abstract class VertexIID extends IID {
 
         public VertexIID.Attribute asAttribute() {
             if (!schema().equals(Schema.Vertex.Thing.ATTRIBUTE)) {
-                throw new GraknException(Error.ThingRead.INVALID_IID_CASTING.format(VertexIID.Attribute.class.getCanonicalName()));
+                throw new GraknException(INVALID_IID_CASTING.message(VertexIID.Attribute.class.getCanonicalName()));
             }
 
             return VertexIID.Attribute.of(bytes);
@@ -160,7 +161,8 @@ public abstract class VertexIID extends IID {
             if (readableString == null) {
                 readableString = "[" + PrefixIID.LENGTH + ": " + schema().toString() + "]" +
                         "[" + VertexIID.Type.LENGTH + ": " + type().toString() + "]" +
-                        "[" + (DEFAULT_LENGTH - PREFIX_W_TYPE_LENGTH) + ": " + bytesToLong(copyOfRange(bytes, PREFIX_W_TYPE_LENGTH, DEFAULT_LENGTH)) + "]";
+                        "[" + (DEFAULT_LENGTH - PREFIX_W_TYPE_LENGTH) + ": " +
+                        bytesToLong(copyOfRange(bytes, PREFIX_W_TYPE_LENGTH, DEFAULT_LENGTH)) + "]";
             }
             return readableString;
         }
@@ -231,23 +233,23 @@ public abstract class VertexIID extends IID {
         }
 
         public VertexIID.Attribute.Boolean asBoolean() {
-            throw new GraknException(Error.ThingRead.INVALID_IID_CASTING.format(Boolean.class.getCanonicalName()));
+            throw new GraknException(INVALID_IID_CASTING.message(Boolean.class.getCanonicalName()));
         }
 
         public VertexIID.Attribute.Long asLong() {
-            throw new GraknException(Error.ThingRead.INVALID_IID_CASTING.format(Long.class.getCanonicalName()));
+            throw new GraknException(INVALID_IID_CASTING.message(Long.class.getCanonicalName()));
         }
 
         public VertexIID.Attribute.Double asDouble() {
-            throw new GraknException(Error.ThingRead.INVALID_IID_CASTING.format(Double.class.getCanonicalName()));
+            throw new GraknException(INVALID_IID_CASTING.message(Double.class.getCanonicalName()));
         }
 
         public VertexIID.Attribute.String asString() {
-            throw new GraknException(Error.ThingRead.INVALID_IID_CASTING.format(String.class.getCanonicalName()));
+            throw new GraknException(INVALID_IID_CASTING.message(String.class.getCanonicalName()));
         }
 
         public VertexIID.Attribute.DateTime asDateTime() {
-            throw new GraknException(Error.ThingRead.INVALID_IID_CASTING.format(DateTime.class.getCanonicalName()));
+            throw new GraknException(INVALID_IID_CASTING.message(DateTime.class.getCanonicalName()));
         }
 
         @Override

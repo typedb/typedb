@@ -42,6 +42,10 @@ import java.util.function.BiFunction;
 
 import static grakn.core.common.collection.Bytes.bytesHavePrefix;
 import static grakn.core.common.collection.Bytes.longToBytes;
+import static grakn.core.common.exception.Error.Transaction.CLOSED_TRANSACTION;
+import static grakn.core.common.exception.Error.Transaction.DIRTY_DATA_WRITES;
+import static grakn.core.common.exception.Error.Transaction.DIRTY_SCHEMA_WRITES;
+import static grakn.core.common.exception.Error.Transaction.ILLEGAL_COMMIT;
 
 class RocksTransaction implements Grakn.Transaction {
 
@@ -82,7 +86,7 @@ class RocksTransaction implements Grakn.Transaction {
     }
 
     public CoreStorage storage() {
-        if (!isOpen.get()) throw new GraknException(Error.Transaction.CLOSED_TRANSACTION);
+        if (!isOpen.get()) throw new GraknException(CLOSED_TRANSACTION);
         return storage;
     }
 
@@ -98,13 +102,13 @@ class RocksTransaction implements Grakn.Transaction {
 
     @Override
     public Traversal traversal() {
-        if (!isOpen.get()) throw new GraknException(Error.Transaction.CLOSED_TRANSACTION);
+        if (!isOpen.get()) throw new GraknException(CLOSED_TRANSACTION);
         return traversal;
     }
 
     @Override
     public Concepts concepts() {
-        if (!isOpen.get()) throw new GraknException(Error.Transaction.CLOSED_TRANSACTION);
+        if (!isOpen.get()) throw new GraknException(CLOSED_TRANSACTION);
         return concepts;
     }
 
@@ -130,11 +134,11 @@ class RocksTransaction implements Grakn.Transaction {
         if (isOpen.compareAndSet(true, false)) {
             try {
                 if (type.equals(Type.READ)) {
-                    throw new GraknException(Error.Transaction.ILLEGAL_COMMIT);
+                    throw new GraknException(ILLEGAL_COMMIT);
                 } else if (session.type().equals(Grakn.Session.Type.DATA) && graph.type().isModified()) {
-                    throw new GraknException(Error.Transaction.DIRTY_SCHEMA_WRITES);
+                    throw new GraknException(DIRTY_SCHEMA_WRITES);
                 } else if (session.type().equals(Grakn.Session.Type.SCHEMA) && graph.thing().isModified()) {
-                    throw new GraknException(Error.Transaction.DIRTY_DATA_WRITES);
+                    throw new GraknException(DIRTY_DATA_WRITES);
                 }
 
                 // We disable RocksDB indexing of uncommitted writes, as we're only about to write and never again reading
@@ -159,7 +163,7 @@ class RocksTransaction implements Grakn.Transaction {
                 closeResources();
             }
         } else {
-            throw new GraknException(Error.Transaction.CLOSED_TRANSACTION);
+            throw new GraknException(CLOSED_TRANSACTION);
         }
     }
 

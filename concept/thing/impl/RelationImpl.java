@@ -62,7 +62,7 @@ public class RelationImpl extends ThingImpl implements Relation {
     public RelationImpl relate(RoleType roleType, Thing player) {
         if (this.type().roles().noneMatch(t -> t.equals(roleType))) {
             throw new GraknException(
-                    Error.ThingWrite.RELATION_UNRELATED_ROLE.format(this.type().label(), roleType.label())
+                    Error.ThingWrite.RELATION_UNRELATED_ROLE.message(this.type().label(), roleType.label())
             );
         }
 
@@ -107,7 +107,7 @@ public class RelationImpl extends ThingImpl implements Relation {
     public void validate() {
         super.validate();
         if (!vertex.outs().edge(Schema.Edge.Thing.RELATES).to().hasNext()) {
-            throw new GraknException(RELATION_NO_PLAYER.format(type().label()));
+            throw new GraknException(RELATION_NO_PLAYER.message(type().label()));
         }
     }
 }

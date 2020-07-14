@@ -72,7 +72,7 @@ public class GraknServer implements AutoCloseable {
         try {
             properties.load(new FileInputStream(file));
         } catch (IOException e) {
-            LOG.error(PROPERTIES_FILE_NOT_AVAILABLE.format(file.toString()));
+            LOG.error(PROPERTIES_FILE_NOT_AVAILABLE.message(file.toString()));
             error = true;
         }
 
@@ -82,7 +82,7 @@ public class GraknServer implements AutoCloseable {
             if (val.startsWith("$")) {
                 String envVarName = val.substring(1);
                 if (System.getenv(envVarName) == null) {
-                    LOG.error(ENV_VAR_NOT_EXIST.format(val));
+                    LOG.error(ENV_VAR_NOT_EXIST.message(val));
                     error = true;
                 } else {
                     properties.put(key, System.getenv(envVarName));
@@ -106,7 +106,7 @@ public class GraknServer implements AutoCloseable {
             error = true;
         }
 
-        if (status != 0 || error) LOG.error(EXITED_WITH_ERROR.format(status));
+        if (status != 0 || error) LOG.error(EXITED_WITH_ERROR.message(status));
         System.exit(status);
     }
 }

@@ -40,6 +40,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import static grakn.core.common.exception.Error.TypeRead.TYPE_ROOT_MISMATCH;
 import static grakn.core.common.exception.Error.TypeWrite.RELATION_ABSTRACT_ROLE;
 import static grakn.core.common.exception.Error.TypeWrite.RELATION_NO_ROLE;
 import static grakn.core.common.exception.Error.TypeWrite.RELATION_RELATES_ROLE_FROM_SUPERTYPE;
@@ -57,7 +58,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     private RelationTypeImpl(TypeVertex vertex) {
         super(vertex);
         if (vertex.schema() != Schema.Vertex.Type.RELATION_TYPE) {
-            throw new GraknException(Error.TypeRead.TYPE_ROOT_MISMATCH.format(
+            throw new GraknException(TYPE_ROOT_MISMATCH.message(
                     vertex.label(),
                     Schema.Vertex.Type.RELATION_TYPE.root().label(),
                     vertex.schema().root().label()
@@ -87,7 +88,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     @Override
     public void isAbstract(boolean isAbstract) {
         if (isAbstract && instances().findFirst().isPresent()) {
-            throw new GraknException(TYPE_HAS_INSTANCES.format(label()));
+            throw new GraknException(TYPE_HAS_INSTANCES.message(label()));
         }
         vertex.isAbstract(isAbstract);
         declaredRoles().forEach(role -> role.isAbstract(isAbstract));
@@ -124,7 +125,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
         TypeVertex roleTypeVertex = vertex.graph().get(roleLabel, vertex.label());
         if (roleTypeVertex == null) {
             if (sups().filter(t -> !t.equals(this)).flatMap(RelationType::roles).anyMatch(role -> role.label().equals(roleLabel))) {
-                throw new GraknException(RELATION_RELATES_ROLE_FROM_SUPERTYPE.format(roleLabel));
+                throw new GraknException(RELATION_RELATES_ROLE_FROM_SUPERTYPE.message(roleLabel));
             } else {
                 RoleTypeImpl roleType = RoleTypeImpl.of(vertex.graph(), roleLabel, vertex.label());
                 roleType.isAbstract(this.isAbstract());
@@ -142,7 +143,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
         Optional<RoleTypeImpl> inherited;
         if (declaredRoles().anyMatch(r -> r.label().equals(overriddenLabel)) ||
                 !(inherited = sup().roles().filter(role -> role.label().equals(overriddenLabel)).findFirst()).isPresent()) {
-            throw new GraknException(RELATION_RELATES_ROLE_NOT_AVAILABLE.format(roleLabel, overriddenLabel));
+            throw new GraknException(RELATION_RELATES_ROLE_NOT_AVAILABLE.message(roleLabel, overriddenLabel));
         }
 
         roleType.sup(inherited.get());
@@ -198,9 +199,9 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     @Override
     public void delete() {
         if (subs().anyMatch(s -> !s.equals(this))) {
-            throw new GraknException(TYPE_HAS_SUBTYPES.format(label()));
+            throw new GraknException(TYPE_HAS_SUBTYPES.message(label()));
         } else if (subs().flatMap(RelationTypeImpl::instances).findFirst().isPresent()) {
-            throw new GraknException(TYPE_HAS_INSTANCES.format(label()));
+            throw new GraknException(TYPE_HAS_INSTANCES.message(label()));
         } else {
             declaredRoles().forEach(RoleTypeImpl::delete);
             vertex.delete();
@@ -211,10 +212,10 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     public List<GraknException> validate() {
         List<GraknException> exceptions = super.validate();
         if (!isRoot() && Streams.compareSize(roles().filter(r -> !r.label().equals(ROLE.label())), 1) < 0) {
-            exceptions.add(new GraknException(RELATION_NO_ROLE.format(this.label())));
+            exceptions.add(new GraknException(RELATION_NO_ROLE.message(this.label())));
         } else if (!isAbstract()) {
             roles().filter(TypeImpl::isAbstract).forEach(roleType -> {
-                exceptions.add(new GraknException(RELATION_ABSTRACT_ROLE.format(label(), roleType.label())));
+                exceptions.add(new GraknException(RELATION_ABSTRACT_ROLE.message(label(), roleType.label())));
             });
         }
         return exceptions;

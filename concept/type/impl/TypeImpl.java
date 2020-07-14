@@ -35,7 +35,9 @@ import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
+import static grakn.core.common.exception.Error.Internal.UNRECOGNISED_VALUE;
 import static grakn.core.common.exception.Error.ThingWrite.ILLEGAL_ABSTRACT_WRITE;
+import static grakn.core.common.exception.Error.Transaction.DIRTY_DATA_WRITES;
 import static grakn.core.common.exception.Error.TypeWrite.SUPERTYPE_SELF;
 import static grakn.core.common.iterator.Iterators.apply;
 import static grakn.core.common.iterator.Iterators.loop;
@@ -73,7 +75,7 @@ public abstract class TypeImpl implements Type {
             case THING_TYPE:
                 return new ThingTypeImpl.Root(vertex);
             default:
-                throw new GraknException(Error.Internal.UNRECOGNISED_VALUE);
+                throw new GraknException(UNRECOGNISED_VALUE);
         }
     }
 
@@ -111,7 +113,7 @@ public abstract class TypeImpl implements Type {
     }
 
     void superTypeVertex(TypeVertex superTypeVertex) {
-        if (vertex.equals(superTypeVertex)) throw new GraknException(SUPERTYPE_SELF.format(vertex.label()));
+        if (vertex.equals(superTypeVertex)) throw new GraknException(SUPERTYPE_SELF.message(vertex.label()));
         vertex.outs().edge(Schema.Edge.Type.SUB, ((TypeImpl) sup()).vertex).delete();
         vertex.outs().put(Schema.Edge.Type.SUB, superTypeVertex);
     }
@@ -150,9 +152,9 @@ public abstract class TypeImpl implements Type {
 
     void validateIsCommitedAndNotAbstract(Class<?> instanceClass) {
         if (vertex.status().equals(Schema.Status.BUFFERED)) {
-            throw new GraknException(Error.Transaction.DIRTY_DATA_WRITES);
+            throw new GraknException(DIRTY_DATA_WRITES);
         } else if (isAbstract()) {
-            throw new GraknException(ILLEGAL_ABSTRACT_WRITE.format(instanceClass.getSimpleName(), label()));
+            throw new GraknException(ILLEGAL_ABSTRACT_WRITE.message(instanceClass.getSimpleName(), label()));
         }
     }
 

@@ -131,27 +131,27 @@ public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl impleme
 
     @Override
     public AttributeVertexImpl.Boolean asBoolean() {
-        throw new GraknException(INVALID_VERTEX_CASTING.format(Boolean.class.getCanonicalName()));
+        throw new GraknException(INVALID_VERTEX_CASTING.message(Boolean.class.getCanonicalName()));
     }
 
     @Override
     public AttributeVertexImpl.Long asLong() {
-        throw new GraknException(INVALID_VERTEX_CASTING.format(Long.class.getCanonicalName()));
+        throw new GraknException(INVALID_VERTEX_CASTING.message(Long.class.getCanonicalName()));
     }
 
     @Override
     public AttributeVertexImpl.Double asDouble() {
-        throw new GraknException(INVALID_VERTEX_CASTING.format(Double.class.getCanonicalName()));
+        throw new GraknException(INVALID_VERTEX_CASTING.message(Double.class.getCanonicalName()));
     }
 
     @Override
     public AttributeVertexImpl.String asString() {
-        throw new GraknException(INVALID_VERTEX_CASTING.format(String.class.getCanonicalName()));
+        throw new GraknException(INVALID_VERTEX_CASTING.message(String.class.getCanonicalName()));
     }
 
     @Override
     public AttributeVertexImpl.DateTime asDateTime() {
-        throw new GraknException(INVALID_VERTEX_CASTING.format(DateTime.class.getCanonicalName()));
+        throw new GraknException(INVALID_VERTEX_CASTING.message(DateTime.class.getCanonicalName()));
     }
 
     public static class Boolean extends AttributeVertexImpl<java.lang.Boolean> {

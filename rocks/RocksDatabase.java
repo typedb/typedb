@@ -35,6 +35,8 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.StampedLock;
 
+import static grakn.core.common.exception.Error.Internal.DIRTY_INITIALISATION;
+
 public class RocksDatabase implements Grakn.Database {
 
     private final String name;
@@ -72,7 +74,7 @@ public class RocksDatabase implements Grakn.Database {
         try (RocksSession session = createAndOpenSession(Grakn.Session.Type.SCHEMA)) {
             try (RocksTransaction txn = session.transaction(Grakn.Transaction.Type.WRITE)) {
                 if (txn.graph().isInitialised()) {
-                    throw new GraknException(Error.Internal.DIRTY_INITIALISATION);
+                    throw new GraknException(DIRTY_INITIALISATION);
                 }
                 txn.graph().initialise();
                 txn.commit();

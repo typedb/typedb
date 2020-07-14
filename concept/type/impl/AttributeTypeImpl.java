@@ -43,6 +43,7 @@ import static grakn.core.common.exception.Error.ThingWrite.ATTRIBUTE_VALUE_UNSAT
 import static grakn.core.common.exception.Error.ThingWrite.ILLEGAL_STRING_SIZE;
 import static grakn.core.common.exception.Error.TypeRead.INVALID_TYPE_CASTING;
 import static grakn.core.common.exception.Error.TypeRead.TYPE_ROOT_MISMATCH;
+import static grakn.core.common.exception.Error.TypeRead.VALUE_TYPE_MISMATCH;
 import static grakn.core.common.exception.Error.TypeWrite.ATTRIBUTE_REGEX_UNSATISFIES_INSTANCES;
 import static grakn.core.common.exception.Error.TypeWrite.ATTRIBUTE_SUPERTYPE_NOT_ABSTRACT;
 import static grakn.core.common.exception.Error.TypeWrite.ATTRIBUTE_SUPERTYPE_VALUE_TYPE;
@@ -56,7 +57,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
     private AttributeTypeImpl(TypeVertex vertex) {
         super(vertex);
         if (vertex.schema() != Schema.Vertex.Type.ATTRIBUTE_TYPE) {
-            throw new GraknException(TYPE_ROOT_MISMATCH.format(
+            throw new GraknException(TYPE_ROOT_MISMATCH.message(
                     vertex.label(),
                     Schema.Vertex.Type.ATTRIBUTE_TYPE.root().label(),
                     vertex.schema().root().label()
@@ -109,13 +110,13 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
     @Override
     public void sup(AttributeType superType) {
         if (!superType.isRoot() && !this.valueType().equals(superType.valueType())) {
-            throw new GraknException(ATTRIBUTE_SUPERTYPE_VALUE_TYPE.format(
+            throw new GraknException(ATTRIBUTE_SUPERTYPE_VALUE_TYPE.message(
                     label(), valueType().getSimpleName(), superType.label(), superType.valueType().getSimpleName()
             ));
         } else if (this.equals(superType)) {
-            throw new GraknException(SUPERTYPE_SELF.format(label()));
+            throw new GraknException(SUPERTYPE_SELF.message(label()));
         } else if (!superType.isAbstract()) {
-            throw new GraknException(ATTRIBUTE_SUPERTYPE_NOT_ABSTRACT.format(superType.label()));
+            throw new GraknException(ATTRIBUTE_SUPERTYPE_NOT_ABSTRACT.message(superType.label()));
         }
         vertex.outs().edge(Schema.Edge.Type.SUB, sup().vertex).delete();
         vertex.outs().put(Schema.Edge.Type.SUB, ((AttributeTypeImpl) superType).vertex);
@@ -139,32 +140,32 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
     @Override
     public AttributeTypeImpl.Root asObject() {
         if (this.valueType().equals(java.lang.Object.class)) return new AttributeTypeImpl.Root(this.vertex);
-        else throw new GraknException(INVALID_TYPE_CASTING.format(AttributeType.class.getCanonicalName()));
+        else throw new GraknException(INVALID_TYPE_CASTING.message(AttributeType.class.getCanonicalName()));
     }
 
     @Override
     public AttributeTypeImpl.Boolean asBoolean() {
-        throw new GraknException(INVALID_TYPE_CASTING.format(AttributeType.Boolean.class.getCanonicalName()));
+        throw new GraknException(INVALID_TYPE_CASTING.message(AttributeType.Boolean.class.getCanonicalName()));
     }
 
     @Override
     public AttributeTypeImpl.Long asLong() {
-        throw new GraknException(INVALID_TYPE_CASTING.format(AttributeType.Long.class.getCanonicalName()));
+        throw new GraknException(INVALID_TYPE_CASTING.message(AttributeType.Long.class.getCanonicalName()));
     }
 
     @Override
     public AttributeTypeImpl.Double asDouble() {
-        throw new GraknException(INVALID_TYPE_CASTING.format(AttributeType.Double.class.getCanonicalName()));
+        throw new GraknException(INVALID_TYPE_CASTING.message(AttributeType.Double.class.getCanonicalName()));
     }
 
     @Override
     public AttributeTypeImpl.String asString() {
-        throw new GraknException(INVALID_TYPE_CASTING.format(AttributeType.String.class.getCanonicalName()));
+        throw new GraknException(INVALID_TYPE_CASTING.message(AttributeType.String.class.getCanonicalName()));
     }
 
     @Override
     public AttributeTypeImpl.DateTime asDateTime() {
-        throw new GraknException(INVALID_TYPE_CASTING.format(AttributeType.DateTime.class.getCanonicalName()));
+        throw new GraknException(INVALID_TYPE_CASTING.message(AttributeType.DateTime.class.getCanonicalName()));
     }
 
     @Override
@@ -294,7 +295,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             super(vertex);
             if (!vertex.label().equals(Schema.Vertex.Type.Root.ATTRIBUTE.label()) &&
                     !vertex.valueType().equals(Schema.ValueType.BOOLEAN)) {
-                throw new GraknException(Error.TypeRead.VALUE_TYPE_MISMATCH.format(
+                throw new GraknException(VALUE_TYPE_MISMATCH.message(
                         vertex.label(),
                         Schema.ValueType.BOOLEAN.name(),
                         vertex.valueType().name()
@@ -424,7 +425,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             super(vertex);
             if (!vertex.label().equals(Schema.Vertex.Type.Root.ATTRIBUTE.label()) &&
                     !vertex.valueType().equals(Schema.ValueType.LONG)) {
-                throw new GraknException(Error.TypeRead.VALUE_TYPE_MISMATCH.format(
+                throw new GraknException(VALUE_TYPE_MISMATCH.message(
                         vertex.label(),
                         Schema.ValueType.LONG.name(),
                         vertex.valueType().name()
@@ -556,7 +557,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             super(vertex);
             if (!vertex.label().equals(Schema.Vertex.Type.Root.ATTRIBUTE.label()) &&
                     !vertex.valueType().equals(Schema.ValueType.DOUBLE)) {
-                throw new GraknException(Error.TypeRead.VALUE_TYPE_MISMATCH.format(
+                throw new GraknException(VALUE_TYPE_MISMATCH.message(
                         vertex.label(),
                         Schema.ValueType.DOUBLE.name(),
                         vertex.valueType().name()
@@ -690,7 +691,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             super(vertex);
             if (!vertex.label().equals(Schema.Vertex.Type.Root.ATTRIBUTE.label()) &&
                     !vertex.valueType().equals(Schema.ValueType.STRING)) {
-                throw new GraknException(Error.TypeRead.VALUE_TYPE_MISMATCH.format(
+                throw new GraknException(VALUE_TYPE_MISMATCH.message(
                         vertex.label(),
                         Schema.ValueType.STRING.name(),
                         vertex.valueType().name()
@@ -735,7 +736,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
                 instances().parallel().forEach(attribute -> {
                     Matcher matcher = pattern.matcher(attribute.value());
                     if (!matcher.matches()) {
-                        throw new GraknException(ATTRIBUTE_REGEX_UNSATISFIES_INSTANCES.format(label(), regex, attribute.value()));
+                        throw new GraknException(ATTRIBUTE_REGEX_UNSATISFIES_INSTANCES.message(label(), regex, attribute.value()));
                     }
                 });
             }
@@ -761,7 +762,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         public Attribute.String put(java.lang.String value, boolean isInferred) {
             validateIsCommitedAndNotAbstract(Attribute.class);
             if (vertex.regex() != null && !regexPattern().matcher(value).matches()) {
-                throw new GraknException(ATTRIBUTE_VALUE_UNSATISFIES_REGEX.format(label(), value, regex()));
+                throw new GraknException(ATTRIBUTE_VALUE_UNSATISFIES_REGEX.message(label(), value, regex()));
             }
             if (value.length() > Schema.STRING_MAX_LENGTH) {
                 throw new GraknException(ILLEGAL_STRING_SIZE);
@@ -857,7 +858,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             super(vertex);
             if (!vertex.label().equals(Schema.Vertex.Type.Root.ATTRIBUTE.label()) &&
                     !vertex.valueType().equals(Schema.ValueType.DATETIME)) {
-                throw new GraknException(Error.TypeRead.VALUE_TYPE_MISMATCH.format(
+                throw new GraknException(VALUE_TYPE_MISMATCH.message(
                         vertex.label(),
                         Schema.ValueType.DATETIME.name(),
                         vertex.valueType().name()

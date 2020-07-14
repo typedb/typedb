@@ -33,6 +33,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Stream;
 
+import static grakn.core.common.exception.Error.TypeRead.TYPE_ROOT_MISMATCH;
 import static grakn.core.common.exception.Error.TypeWrite.ROOT_TYPE_MUTATION;
 
 public class RoleTypeImpl extends TypeImpl implements RoleType {
@@ -41,7 +42,7 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
         super(vertex);
         assert vertex.schema() == Schema.Vertex.Type.ROLE_TYPE;
         if (vertex.schema() != Schema.Vertex.Type.ROLE_TYPE) {
-            throw new GraknException(Error.TypeRead.TYPE_ROOT_MISMATCH.format(
+            throw new GraknException(TYPE_ROOT_MISMATCH.message(
                     vertex.label(),
                     Schema.Vertex.Type.ROLE_TYPE.root().label(),
                     vertex.schema().root().label()

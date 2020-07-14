@@ -26,6 +26,7 @@ import java.nio.charset.Charset;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 
+import static grakn.core.common.exception.Error.Internal.UNRECOGNISED_VALUE;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class Schema {
@@ -87,7 +88,7 @@ public class Schema {
             for (Prefix i : Prefix.values()) {
                 if (i.key == key) return i;
             }
-            throw new GraknException(Error.Internal.UNRECOGNISED_VALUE);
+            throw new GraknException(UNRECOGNISED_VALUE);
         }
 
         public byte key() {
@@ -145,7 +146,7 @@ public class Schema {
             for (Infix i : Infix.values()) {
                 if (i.key == key) return i;
             }
-            throw new GraknException(Error.Internal.UNRECOGNISED_VALUE);
+            throw new GraknException(UNRECOGNISED_VALUE);
         }
 
         public byte key() {
@@ -241,7 +242,7 @@ public class Schema {
                     return t;
                 }
             }
-            throw new GraknException(Error.Internal.UNRECOGNISED_VALUE);
+            throw new GraknException(UNRECOGNISED_VALUE);
         }
 
         public static ValueType of(Class<?> valueClass) {
@@ -250,7 +251,7 @@ public class Schema {
                     return t;
                 }
             }
-            throw new GraknException(Error.Internal.UNRECOGNISED_VALUE);
+            throw new GraknException(UNRECOGNISED_VALUE);
         }
 
         public byte[] bytes() {
@@ -323,7 +324,7 @@ public class Schema {
                 for (Type t : Type.values()) {
                     if (t.prefix.key == prefix) return t;
                 }
-                throw new GraknException(Error.Internal.UNRECOGNISED_VALUE);
+                throw new GraknException(UNRECOGNISED_VALUE);
             }
 
             /**
@@ -394,14 +395,14 @@ public class Schema {
                 for (Thing t : Thing.values()) {
                     if (t.prefix.key == prefix) return t;
                 }
-                throw new GraknException(Error.Internal.UNRECOGNISED_VALUE);
+                throw new GraknException(UNRECOGNISED_VALUE);
             }
 
             public static Thing of(Type type) {
                 for (Thing t : Thing.values()) {
                     if (t.type().equals(type)) return t;
                 }
-                throw new GraknException(Error.Internal.UNRECOGNISED_VALUE);
+                throw new GraknException(UNRECOGNISED_VALUE);
             }
 
             @Override
@@ -461,7 +462,7 @@ public class Schema {
                         return t;
                     }
                 }
-                throw new GraknException(Error.Internal.UNRECOGNISED_VALUE);
+                throw new GraknException(UNRECOGNISED_VALUE);
             }
 
             @Override
@@ -514,7 +515,7 @@ public class Schema {
                         return t;
                     }
                 }
-                throw new GraknException(Error.Internal.UNRECOGNISED_VALUE);
+                throw new GraknException(UNRECOGNISED_VALUE);
             }
 
             @Override

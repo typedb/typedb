@@ -34,6 +34,9 @@ import grakn.core.graph.vertex.TypeVertex;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static grakn.core.common.exception.Error.ThingRead.INVALID_VERTEX_CASTING;
+import static grakn.core.common.exception.Error.Transaction.ILLEGAL_OPERATION;
+
 public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implements ThingVertex {
 
     protected final ThingGraph graph;
@@ -120,7 +123,7 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
 
     @Override
     public AttributeVertexImpl asAttribute() {
-        throw new GraknException(Error.ThingRead.INVALID_VERTEX_CASTING.format(AttributeVertex.class.getCanonicalName()));
+        throw new GraknException(INVALID_VERTEX_CASTING.message(AttributeVertex.class.getCanonicalName()));
     }
 
     void deleteEdges() {
@@ -166,7 +169,7 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
 
         @Override
         public void commit() {
-            if (isInferred) throw new GraknException(Error.Transaction.ILLEGAL_OPERATION);
+            if (isInferred) throw new GraknException(ILLEGAL_OPERATION);
             commitVertex();
             commitEdges();
         }
@@ -199,7 +202,7 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
 
         @Override
         public void isInferred(boolean isInferred) {
-            throw new GraknException(Error.Transaction.ILLEGAL_OPERATION);
+            throw new GraknException(ILLEGAL_OPERATION);
         }
 
         @Override

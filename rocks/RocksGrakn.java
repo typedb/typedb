@@ -91,7 +91,7 @@ public class RocksGrakn implements Grakn {
         if (databaseMgr.contains(database)) {
             return databaseMgr.get(database).createAndOpenSession(type);
         } else {
-            throw new GraknException(DATABASE_NOT_EXIST.format(database));
+            throw new GraknException(DATABASE_NOT_EXIST.message(database));
         }
     }
 

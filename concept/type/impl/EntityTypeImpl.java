@@ -34,6 +34,7 @@ import javax.annotation.Nullable;
 import java.util.List;
 import java.util.stream.Stream;
 
+import static grakn.core.common.exception.Error.TypeRead.TYPE_ROOT_MISMATCH;
 import static grakn.core.common.exception.Error.TypeWrite.ROOT_TYPE_MUTATION;
 
 public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
@@ -41,7 +42,7 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
     private EntityTypeImpl(TypeVertex vertex) {
         super(vertex);
         if (vertex.schema() != Schema.Vertex.Type.ENTITY_TYPE) {
-            throw new GraknException(Error.TypeRead.TYPE_ROOT_MISMATCH.format(
+            throw new GraknException(TYPE_ROOT_MISMATCH.message(
                     vertex.label(),
                     Schema.Vertex.Type.ENTITY_TYPE.root().label(),
                     vertex.schema().root().label()

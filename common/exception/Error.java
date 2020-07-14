@@ -55,8 +55,7 @@ public abstract class Error {
         return code;
     }
 
-    // TODO: rename to message();
-    public String format(Object... parameters) {
+    public String message(Object... parameters) {
         return String.format(toString(), parameters);
     }
 

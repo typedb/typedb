@@ -40,6 +40,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static grakn.core.common.collection.Bytes.join;
+import static grakn.core.common.exception.Error.Transaction.ILLEGAL_OPERATION;
 import static grakn.core.common.iterator.Iterators.distinct;
 import static grakn.core.common.iterator.Iterators.link;
 
@@ -150,12 +151,12 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
 
         @Override
         public void buffer(ThingVertex thingVertex) {
-            throw new GraknException(Error.Transaction.ILLEGAL_OPERATION);
+            throw new GraknException(ILLEGAL_OPERATION);
         }
 
         @Override
         public void unbuffer(ThingVertex thingVertex) {
-            throw new GraknException(Error.Transaction.ILLEGAL_OPERATION);
+            throw new GraknException(ILLEGAL_OPERATION);
         }
 
         @Override
@@ -321,7 +322,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
 
         @Override
         public void iid(VertexIID.Type iid) {
-            throw new GraknException(Error.Transaction.ILLEGAL_OPERATION);
+            throw new GraknException(ILLEGAL_OPERATION);
         }
 
         @Override

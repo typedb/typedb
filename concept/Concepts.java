@@ -116,7 +116,7 @@ public final class Concepts {
                 if (vertex != null) return AttributeTypeImpl.DateTime.of(vertex);
                 else return new AttributeTypeImpl.DateTime(graph.type(), label);
             default:
-                throw new GraknException(UNSUPPORTED_OPERATION.format("putAttributeType", valueType.getSimpleName()));
+                throw new GraknException(UNSUPPORTED_OPERATION.message("putAttributeType", valueType.getSimpleName()));
         }
     }
 
