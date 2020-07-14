@@ -97,6 +97,11 @@ public class ResolutionSteps {
         resolution.testResolution(queryToTest);
     }
 
+    @Then("no answers are resolved in reasoned keyspace")
+    public void reasoned_keyspace_no_answers_resolved() {
+        resolution.testNoResolutions(queryToTest);
+    }
+
     @Then("materialised and reasoned keyspaces are the same size")
     public void keyspaces_are_the_same_size() {
         resolution.testCompleteness();

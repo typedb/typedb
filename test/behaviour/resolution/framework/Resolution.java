@@ -116,6 +116,23 @@ public class Resolution {
     }
 
     /**
+     * Assert that no inference queries are constructed for the specified query.
+     */
+    public void testNoResolutions(GraqlGet inferenceQuery) {
+        ResolutionQueryBuilder resolutionQueryBuilder = new ResolutionQueryBuilder();
+        List<GraqlGet> queries;
+
+        try (Transaction tx = reasonedSession.transaction(Transaction.Type.READ)) {
+            queries = resolutionQueryBuilder.buildMatchGet(tx, inferenceQuery);
+        }
+
+        if (!queries.isEmpty()) {
+            String msg = String.format("Resolution queries were unexpectedly constructed for query %s", inferenceQuery);
+            throw new CorrectnessException(msg);
+        }
+    }
+
+    /**
      * It is possible that rules could trigger when they should not. Testing for completeness checks the number of
      * inferred facts in the completion keyspace against the total number that are inferred in the test keyspace
      */
