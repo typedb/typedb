@@ -95,7 +95,7 @@ public class RuleResolutionBuilder {
         LinkedHashMap<String, Statement> whenProps = new LinkedHashMap<>();
 
         for (Statement whenStatement : whenStatements) {
-            whenProps.putAll(statementToResolutionProperties(whenStatement));
+            whenProps.putAll(statementToResolutionProperties(whenStatement, null));
         }
 
         for (String whenVar : whenProps.keySet()) {
@@ -105,7 +105,7 @@ public class RuleResolutionBuilder {
         LinkedHashMap<String, Statement> thenProps = new LinkedHashMap<>();
 
         for (Statement thenStatement : thenStatements) {
-            thenProps.putAll(statementToResolutionProperties(thenStatement));
+            thenProps.putAll(statementToResolutionProperties(thenStatement, true));
         }
 
         for (String thenVar : thenProps.keySet()) {
@@ -119,7 +119,7 @@ public class RuleResolutionBuilder {
         return Graql.and(result);
     }
 
-    public LinkedHashMap<String, Statement> statementToResolutionProperties(Statement statement) {
+    public LinkedHashMap<String, Statement> statementToResolutionProperties(Statement statement, final Boolean inferred) {
         LinkedHashMap<String, Statement> props = new LinkedHashMap<>();
 
         String statementVar = statement.var().name();
@@ -128,25 +128,36 @@ public class RuleResolutionBuilder {
 
             if (varProp instanceof HasAttributeProperty) {
                 String nextVar = getNextVar("x");
-                StatementInstance propStatement = Graql.var(nextVar).isa("has-attribute-property").has((HasAttributeProperty) varProp).rel("owner", statementVar);
+                StatementInstance propStatement = Graql.var(nextVar).isa("has-attribute-property")
+                        .rel("owned", ((HasAttributeProperty) varProp).attribute())
+                        .rel("owner", statementVar);
+                if (inferred != null) {
+                    propStatement = propStatement.has("inferred", inferred);
+                }
                 props.put(nextVar, propStatement);
 
-            } else if (varProp instanceof RelationProperty){
+            } else if (varProp instanceof RelationProperty) {
                 for (RelationProperty.RolePlayer rolePlayer : ((RelationProperty)varProp).relationPlayers()) {
                     Optional<Statement> role = rolePlayer.getRole();
 
                     String nextVar = getNextVar("x");
 
                     StatementInstance propStatement = Graql.var(nextVar).isa("relation-property").rel("rel", statementVar).rel("roleplayer", Graql.var(rolePlayer.getPlayer().var()));
-                    if(role.isPresent()) {
+                    if (role.isPresent()) {
                         String roleLabel = ((TypeProperty) getOnlyElement(role.get().properties())).name();
                         propStatement = propStatement.has("role-label", roleLabel);
+                    }
+                    if (inferred != null) {
+                        propStatement = propStatement.has("inferred", inferred);
                     }
                     props.put(nextVar, propStatement);
                 }
             } else if (varProp instanceof IsaProperty){
                 String nextVar = getNextVar("x");
                 StatementInstance propStatement = Graql.var(nextVar).isa("isa-property").rel("instance", statementVar).has("type-label", varProp.property());
+                if (inferred != null) {
+                    propStatement = propStatement.has("inferred", inferred);
+                }
                 props.put(nextVar, propStatement);
             }
         }

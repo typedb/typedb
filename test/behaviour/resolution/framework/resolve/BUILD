@@ -28,6 +28,7 @@ java_library(
         "@maven//:com_google_guava_guava",
         "//graql/reasoner",
         "//kb/server",
+        "//kb/concept/api",
         "//test/behaviour/resolution/framework/common",
         "@graknlabs_graql//java:graql",
     ],

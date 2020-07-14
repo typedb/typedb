@@ -93,30 +93,43 @@ public class Completer {
         // Use the DNF so that we can know each `when` if free of disjunctions. Disjunctions in the `when` will otherwise complicate things significantly
         Set<Conjunction<Pattern>> disjunctiveWhens = rule.when.getNegationDNF().getPatterns();
         for (Conjunction<Pattern> when : disjunctiveWhens) {
-            // Get all the places that the `when` could be applied to
-            Stream<ConceptMap> whenAnswers = tx.stream(Graql.match(when).get());
-            Iterator<ConceptMap> whenIterator = whenAnswers.iterator();
-            while (whenIterator.hasNext()) {
+            // Get all the places where the `when` of the rule is satisfied, but the `then` is not
+            List<ConceptMap> inferredConcepts = tx.execute(Graql.match(when, Graql.not(rule.then)).insert(rule.then.statements()));
+            if (inferredConcepts.isEmpty()) {
+                continue;
+            }
+            //Iterator<ConceptMap> inferredConceptsIterator = inferredConcepts.iterator();
+            // We already know that the rule doesn't contain any disjunctions as we previously used negationDNF,
+            // now we make sure negation blocks are removed, so that we know it must be a conjunct set of statements
+            NegationRemovalVisitor negationRemover = new NegationRemovalVisitor();
+            Pattern ruleResolutionConjunction = negationRemover.visitPattern(ruleResolutionBuilder.ruleResolutionConjunction(rule.when, rule.then, rule.label));
+
+            /*Set<Statement> insertNewThenStatements = new HashSet<>();
+            insertNewThenStatements.addAll(rule.then.statements());
+            insertNewThenStatements.addAll(getThenKeyStatements(tx, rule.then));
+            insertNewThenStatements.addAll(ruleResolutionConjunction.statements());*/
+            /*HashSet<Variable> insertedVars = new HashSet<>(rule.then.variables());
+            insertedVars.removeAll(rule.when.variables());*/
+            numInferredConcepts += inferredConcepts.size();
+
+            // Record how the inference was made
+            List<ConceptMap> inserted = tx.execute(Graql.match(rule.when, rule.then, Graql.not(ruleResolutionConjunction)).insert(ruleResolutionConjunction.statements()));
+            assert inserted.size() == 1;
+            foundResult.set(true);
+
+            /* while (inferredConceptsIterator.hasNext()) {
 
                 // Get the variables of the rule that connect the `when` and the `then`, since this determines whether an inferred `then` should be duplicated
                 Set<Variable> connectingVars = new HashSet<>(rule.when.variables());
                 connectingVars.retainAll(rule.then.variables());
 
-                Map<Variable, Concept> whenMap = whenIterator.next().map();
+                Map<Variable, Concept> whenMap = inferredConceptsIterator.next().map();
 
                 // Get the concept map for those connected variables by filtering the answer we already have for the `when`
                 Map<Variable, Concept> connectingAnswerMap = whenMap.entrySet().stream().filter(entry -> connectingVars.contains(entry.getKey())).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
                 // We now have the answer but with only the connecting variables left
 
-                // Get statements to match for the connecting concepts via their keys/uniqueness
-                Set<Statement> connectingKeyStatements = generateKeyStatements(connectingAnswerMap);
-
                 List<ConceptMap> thenAnswers = tx.execute(Graql.match(rule.then, Graql.and(connectingKeyStatements)).get());
-
-                // We already know that the rule doesn't contain any disjunctions as we previously used negationDNF,
-                // now we make sure negation blocks are removed, so that we know it must be a conjunct set of statements
-                NegationRemovalVisitor negationRemover = new NegationRemovalVisitor();
-                Pattern ruleResolutionConjunction = negationRemover.visitPattern(ruleResolutionBuilder.ruleResolutionConjunction(rule.when, rule.then, rule.label));
 
                 if (thenAnswers.size() == 0) {
                     // We've found somewhere the rule can be applied
@@ -169,7 +182,7 @@ public class Completer {
 //                    }
                     });
                 }
-            }
+            } */
         }
         return foundResult.get();
     }

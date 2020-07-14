@@ -61,7 +61,6 @@ public class Resolution {
         }
 
         SchemaManager.undefineAllRules(this.materialisedSession);
-        SchemaManager.enforceAllTypesHaveKeys(this.materialisedSession);
         SchemaManager.addResolutionSchema(this.materialisedSession);
         SchemaManager.connectResolutionSchema(this.materialisedSession);
         initialThingCount = thingCount(this.materialisedSession);
@@ -123,6 +122,7 @@ public class Resolution {
         try (Transaction tx = materialisedSession.transaction(Transaction.Type.READ)) {
             for (GraqlGet query: queries) {
                 List<ConceptMap> answers = tx.execute(query);
+                System.out.println(query);
                 if (answers.size() != 1) {
                     String msg = String.format("Resolution query had %d answers, it should have had 1. The query is:\n %s", answers.size(), query);
                     throw new CorrectnessException(msg);
