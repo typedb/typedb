@@ -50,9 +50,6 @@
     -->
     <logger name="grakn.core" level="INFO">
         <appender-ref ref="LOGFILE"/>
-    </logger>
-
-    <logger name="grakn.core.server.GraknServer" level="INFO">
         <appender-ref ref="STDOUT"/>
     </logger>
 </configuration>

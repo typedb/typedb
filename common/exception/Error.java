@@ -66,7 +66,7 @@ public abstract class Error {
 
     public static class Server extends Error {
         public static final Server EXITED_WITH_ERROR =
-                new Server(1, "Exited with error. The log file may contain more information.");
+                new Server(1, "Exited with error.");
         public static final Server UNCAUGHT_EXCEPTION =
                 new Server(2, "Uncaught exception thrown at thread '%s'.");
         public static final Server FAILED_AT_STOPPING =

@@ -18,8 +18,11 @@
 
 package grakn.core.server;
 
+import grabl.tracing.client.GrablTracing;
+import grabl.tracing.client.GrablTracingThreadStatic;
 import grakn.core.common.exception.GraknException;
 import grakn.core.server.util.Options;
+import io.grpc.Server;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
@@ -34,6 +37,7 @@ import java.util.Properties;
 
 import static grakn.core.common.exception.Error.Server.ENV_VAR_NOT_EXIST;
 import static grakn.core.common.exception.Error.Server.EXITED_WITH_ERROR;
+import static grakn.core.common.exception.Error.Server.FAILED_AT_STOPPING;
 import static grakn.core.common.exception.Error.Server.FAILED_PARSE_PROPERTIES;
 import static grakn.core.common.exception.Error.Server.PROPERTIES_FILE_NOT_AVAILABLE;
 
@@ -41,6 +45,8 @@ import static grakn.core.common.exception.Error.Server.PROPERTIES_FILE_NOT_AVAIL
 public class GraknServer implements AutoCloseable {
 
     private static final Logger LOG = LoggerFactory.getLogger(GraknServer.class);
+
+    private Server rpcServer;
     private Options options;
 
     GraknServer(Options options) {
@@ -53,7 +59,28 @@ public class GraknServer implements AutoCloseable {
 
     @Override
     public void close() {
+        try {
+            rpcServer.shutdown();
+            rpcServer.awaitTermination();
+        } catch (InterruptedException e) {
+            LOG.error(FAILED_AT_STOPPING.message(), e);
+            Thread.currentThread().interrupt();
+        }
+    }
 
+    private void createAndStart() {
+        if (options.grablTrace()) {
+            GraknServer.LOG.info("Grabl tracing is enabled");
+
+            GrablTracing grablTracingClient;
+            grablTracingClient = GrablTracing.withLogging(GrablTracing.tracing(
+                    options.grablURI().toString(),
+                    options.grablUsername(),
+                    options.grablToken()
+            ));
+            GrablTracingThreadStatic.setGlobalTracingClient(grablTracingClient);
+            GraknServer.LOG.info("Grabl tracing setup has been completed");
+        }
     }
 
     private static Options parseOptions(Properties properties, String[] args) {
@@ -77,7 +104,6 @@ public class GraknServer implements AutoCloseable {
         }
 
         for (Map.Entry<Object, Object> entry : properties.entrySet()) {
-            String key = (String) entry.getKey();
             String val = (String) entry.getValue();
             if (val.startsWith("$")) {
                 String envVarName = val.substring(1);
@@ -85,7 +111,7 @@ public class GraknServer implements AutoCloseable {
                     LOG.error(ENV_VAR_NOT_EXIST.message(val));
                     error = true;
                 } else {
-                    properties.put(key, System.getenv(envVarName));
+                    properties.put(entry.getKey(), System.getenv(envVarName));
                 }
             }
         }
