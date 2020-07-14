@@ -107,8 +107,8 @@ public class Resolution {
         try (Transaction tx = materialisedSession.transaction(Transaction.Type.READ)) {
             for (GraqlGet query: queries) {
                 List<ConceptMap> answers = tx.execute(query);
-                if (answers.size() != 1) {
-                    String msg = String.format("Resolution query had %d answers, it should have had 1. The query is:\n %s", answers.size(), query);
+                if (answers.isEmpty()) {
+                    String msg = String.format("Resolution query had %d answers, it should have had some. The query is:\n %s", answers.size(), query);
                     throw new CorrectnessException(msg);
                 }
             }
