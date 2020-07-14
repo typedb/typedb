@@ -18,6 +18,10 @@
 
 package grakn.core.test.behaviour.resolution.framework.common;
 
+import grakn.core.kb.concept.api.Label;
+import grakn.core.kb.concept.api.Role;
+import grakn.core.kb.concept.api.Type;
+import grakn.core.kb.server.Transaction;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
@@ -34,6 +38,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static com.google.common.collect.Iterables.getOnlyElement;
 
@@ -43,9 +48,10 @@ public class RuleResolutionBuilder {
 
     /**
      * Constructs the Grakn structure that captures how the result of a rule was inferred
+     *
      * @param whenPattern `when` of the rule
      * @param thenPattern `then` of the rule
-     * @param ruleLabel rule label
+     * @param ruleLabel   rule label
      * @return Pattern for the structure that *connects* the variables involved in the rule
      */
     // This implementation for `ruleResolutionConjunction` takes account of disjunctions in rules, however it produces
@@ -81,7 +87,7 @@ public class RuleResolutionBuilder {
 //    }
 
     // This implementation doesn't handle disjunctions in rules.
-    public Conjunction<? extends Pattern> ruleResolutionConjunction(Pattern whenPattern, Pattern thenPattern, String ruleLabel) {
+    public Conjunction<? extends Pattern> ruleResolutionConjunction(Transaction tx, Pattern whenPattern, Pattern thenPattern, String ruleLabel) {
 
         NegationRemovalVisitor negationStripper = new NegationRemovalVisitor();
         Set<Statement> whenStatements = negationStripper.visitPattern(whenPattern).statements();
@@ -95,7 +101,7 @@ public class RuleResolutionBuilder {
         LinkedHashMap<String, Statement> whenProps = new LinkedHashMap<>();
 
         for (Statement whenStatement : whenStatements) {
-            whenProps.putAll(statementToResolutionProperties(whenStatement, null));
+            whenProps.putAll(statementToResolutionProperties(tx, whenStatement, null));
         }
 
         for (String whenVar : whenProps.keySet()) {
@@ -105,7 +111,7 @@ public class RuleResolutionBuilder {
         LinkedHashMap<String, Statement> thenProps = new LinkedHashMap<>();
 
         for (Statement thenStatement : thenStatements) {
-            thenProps.putAll(statementToResolutionProperties(thenStatement, true));
+            thenProps.putAll(statementToResolutionProperties(tx, thenStatement, true));
         }
 
         for (String thenVar : thenProps.keySet()) {
@@ -119,7 +125,7 @@ public class RuleResolutionBuilder {
         return Graql.and(result);
     }
 
-    public LinkedHashMap<String, Statement> statementToResolutionProperties(Statement statement, final Boolean inferred) {
+    public LinkedHashMap<String, Statement> statementToResolutionProperties(final Transaction tx, Statement statement, final Boolean inferred) {
         LinkedHashMap<String, Statement> props = new LinkedHashMap<>();
 
         String statementVar = statement.var().name();
@@ -145,7 +151,10 @@ public class RuleResolutionBuilder {
                     StatementInstance propStatement = Graql.var(nextVar).isa("relation-property").rel("rel", statementVar).rel("roleplayer", Graql.var(rolePlayer.getPlayer().var()));
                     if (role.isPresent()) {
                         String roleLabel = ((TypeProperty) getOnlyElement(role.get().properties())).name();
-                        propStatement = propStatement.has("role-label", roleLabel);
+                        final Set<Role> roles = tx.getRole(roleLabel).sups().collect(Collectors.toSet());
+                        for (Role r : roles) {
+                            propStatement = propStatement.has("role-label", r.label().getValue());
+                        }
                     }
                     if (inferred != null) {
                         propStatement = propStatement.has("inferred", inferred);
@@ -154,7 +163,11 @@ public class RuleResolutionBuilder {
                 }
             } else if (varProp instanceof IsaProperty){
                 String nextVar = getNextVar("x");
-                StatementInstance propStatement = Graql.var(nextVar).isa("isa-property").rel("instance", statementVar).has("type-label", varProp.property());
+                StatementInstance propStatement = Graql.var(nextVar).isa("isa-property").rel("instance", statementVar);
+                final Set<Type> types = tx.getType(new Label(varProp.property())).sups().collect(Collectors.toSet());
+                for (Type type : types) {
+                    propStatement = propStatement.has("type-label", type.label().getValue());
+                }
                 if (inferred != null) {
                     propStatement = propStatement.has("inferred", inferred);
                 }

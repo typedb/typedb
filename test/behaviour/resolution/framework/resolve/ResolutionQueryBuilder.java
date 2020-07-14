@@ -70,7 +70,7 @@ public class ResolutionQueryBuilder {
             varsForIds = new HashMap<>();
             replacementVars = new HashMap<>();
             ConjunctionFlatteningVisitor flattener = new ConjunctionFlatteningVisitor();
-            final LinkedHashSet<Pattern> resolutionPatterns = buildResolutionPattern(answer, 0);
+            final LinkedHashSet<Pattern> resolutionPatterns = buildResolutionPattern(tx, answer, 0);
             final LinkedHashSet<Pattern> replacedResolutionPatterns = new LinkedHashSet<>();
             for (Pattern p : resolutionPatterns) {
                 StatementVisitor sv = new StatementVisitor(this::deduplicateVars);
@@ -83,7 +83,7 @@ public class ResolutionQueryBuilder {
         return resolutionQueries;
     }
 
-    private LinkedHashSet<Pattern> buildResolutionPattern(ConceptMap answer, Integer ruleResolutionIndex) {
+    private LinkedHashSet<Pattern> buildResolutionPattern(Transaction tx, ConceptMap answer, Integer ruleResolutionIndex) {
 
         Pattern answerPattern = answer.getPattern();
         LinkedHashSet<Pattern> resolutionPatterns = new LinkedHashSet<>();
@@ -126,8 +126,8 @@ public class ResolutionQueryBuilder {
                 resolutionPatterns.add(thenPattern);
 
                 String ruleLabel = ((RuleExplanation)explanation).getRule().label().toString();
-                resolutionPatterns.add(ruleResolutionBuilder.ruleResolutionConjunction(whenPattern, thenPattern, ruleLabel));
-                resolutionPatterns.add(Graql.and(buildResolutionPattern(explAns, ruleResolutionIndex)));
+                resolutionPatterns.add(ruleResolutionBuilder.ruleResolutionConjunction(tx, whenPattern, thenPattern, ruleLabel));
+                resolutionPatterns.add(Graql.and(buildResolutionPattern(tx, explAns, ruleResolutionIndex)));
             } else {
                 if (explanation.isLookupExplanation()) {
                     for (final Statement statement : answer.getPattern().statements()) {
@@ -149,7 +149,7 @@ public class ResolutionQueryBuilder {
                     }
                 }
                 for (ConceptMap explAns : explanation.getAnswers()) {
-                    resolutionPatterns.addAll(buildResolutionPattern(explAns, ruleResolutionIndex));
+                    resolutionPatterns.addAll(buildResolutionPattern(tx, explAns, ruleResolutionIndex));
                 }
             }
         }

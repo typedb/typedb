@@ -89,13 +89,13 @@ public class Completer {
             // We already know that the rule doesn't contain any disjunctions as we previously used negationDNF,
             // now we make sure negation blocks are removed, so that we know it must be a conjunct set of statements
             NegationRemovalVisitor negationRemover = new NegationRemovalVisitor();
-            Pattern ruleResolutionConjunction = negationRemover.visitPattern(ruleResolutionBuilder.ruleResolutionConjunction(rule.when, rule.then, rule.label));
+            Pattern ruleResolutionConjunction = negationRemover.visitPattern(ruleResolutionBuilder.ruleResolutionConjunction(tx, rule.when, rule.then, rule.label));
 
             numInferredConcepts += inferredConcepts.size();
 
             // Record how the inference was made
             List<ConceptMap> inserted = tx.execute(Graql.match(rule.when, rule.then, Graql.not(ruleResolutionConjunction)).insert(ruleResolutionConjunction.statements()));
-            assert inserted.size() == 1;
+            assert inserted.size() >= 1;
             foundResult.set(true);
         }
         return foundResult.get();
