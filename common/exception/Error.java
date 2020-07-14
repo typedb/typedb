@@ -47,7 +47,7 @@ public abstract class Error {
         if (code != null) return code;
 
         StringBuilder zeros = new StringBuilder();
-        for (int digits = (int) Math.ceil(Math.log10(codeNumber)); digits < maxCodeDigits; digits++) {
+        for (int digits = (int) Math.floor(Math.log10(codeNumber)) + 1; digits < maxCodeDigits; digits++) {
             zeros.append("0");
         }
 
@@ -55,6 +55,7 @@ public abstract class Error {
         return code;
     }
 
+    // TODO: rename to message();
     public String format(Object... parameters) {
         return String.format(toString(), parameters);
     }
@@ -64,13 +65,35 @@ public abstract class Error {
         return String.format("[%s] %s", code(), description);
     }
 
+    public static class Server extends Error {
+        public static final Server EXITED_WITH_ERROR =
+                new Server(1, "Exited with error. The log file may contain more information.");
+        public static final Server UNCAUGHT_EXCEPTION =
+                new Server(2, "Uncaught exception thrown at thread '%s'.");
+        public static final Server FAILED_AT_STOPPING =
+                new Server(3, "Exception occurred while attempting to stop the server");
+        public static final Server PROPERTIES_FILE_NOT_AVAILABLE =
+                new Server(4, "Could not find/read default properties file '%s'.");
+        public static final Server FAILED_PARSE_PROPERTIES =
+                new Server(5, "Failed at parsing properties file.");
+        public static final Server ENV_VAR_NOT_EXIST =
+                new Server(6, "Environment variable '%s' is not defined.");
+
+        private static final String codePrefix = "SRV";
+        private static final String descriptionPrefix = "Server Error";
+
+        Server(int number, String description) {
+            super(codePrefix, number, descriptionPrefix, description);
+        }
+    }
+
     public static class Internal extends Error {
         public static final Internal ILLEGAL_STATE =
-                new Internal(0, "Illegal internal state!");
+                new Internal(1, "Illegal internal state!");
         public static final Internal UNRECOGNISED_VALUE =
-                new Internal(1, "Unrecognised schema value!");
+                new Internal(2, "Unrecognised schema value!");
         public static final Internal DIRTY_INITIALISATION =
-                new Internal(2, "Invalid Database Initialisation");
+                new Internal(3, "Invalid Database Initialisation.");
 
         private static final String codePrefix = "INT";
         private static final String descriptionPrefix = "Invalid Internal State";
