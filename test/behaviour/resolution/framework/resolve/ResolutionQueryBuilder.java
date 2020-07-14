@@ -40,7 +40,6 @@ import graql.lang.property.VarProperty;
 import graql.lang.query.GraqlGet;
 import graql.lang.statement.Statement;
 import graql.lang.statement.StatementAttribute;
-import graql.lang.statement.StatementInstance;
 import graql.lang.statement.StatementRelation;
 import graql.lang.statement.Variable;
 
@@ -71,7 +70,7 @@ public class ResolutionQueryBuilder {
             varsForIds = new HashMap<>();
             replacementVars = new HashMap<>();
             ConjunctionFlatteningVisitor flattener = new ConjunctionFlatteningVisitor();
-            final LinkedHashSet<Pattern> resolutionPatterns = resolutionPattern(tx, answer, 0);
+            final LinkedHashSet<Pattern> resolutionPatterns = buildResolutionPattern(answer, 0);
             final LinkedHashSet<Pattern> replacedResolutionPatterns = new LinkedHashSet<>();
             for (Pattern p : resolutionPatterns) {
                 StatementVisitor sv = new StatementVisitor(this::deduplicateVars);
@@ -84,7 +83,7 @@ public class ResolutionQueryBuilder {
         return resolutionQueries;
     }
 
-    private LinkedHashSet<Pattern> resolutionPattern(Transaction tx, ConceptMap answer, Integer ruleResolutionIndex) {
+    private LinkedHashSet<Pattern> buildResolutionPattern(ConceptMap answer, Integer ruleResolutionIndex) {
 
         Pattern answerPattern = answer.getPattern();
         LinkedHashSet<Pattern> resolutionPatterns = new LinkedHashSet<>();
@@ -101,9 +100,9 @@ public class ResolutionQueryBuilder {
 
         resolutionPatterns.add(statementVisitor.visitPattern(answerPattern));
 
-        generateIdStatements(answer.map(), ruleResolutionIndex).forEach(s -> resolutionPatterns.add(prefixVars(s, finalRuleResolutionIndex1)));
+        resolutionPatterns.addAll(generateAttrValueStatements(answer.map(), ruleResolutionIndex));
 
-        generateReplacementVars();
+        categoriseVarsByConceptId(answer.map(), ruleResolutionIndex);
 
         if (answer.explanation() != null) {
 
@@ -128,7 +127,7 @@ public class ResolutionQueryBuilder {
 
                 String ruleLabel = ((RuleExplanation)explanation).getRule().label().toString();
                 resolutionPatterns.add(ruleResolutionBuilder.ruleResolutionConjunction(whenPattern, thenPattern, ruleLabel));
-                resolutionPatterns.add(Graql.and(resolutionPattern(tx, explAns, ruleResolutionIndex)));
+                resolutionPatterns.add(Graql.and(buildResolutionPattern(explAns, ruleResolutionIndex)));
             } else {
                 if (explanation.isLookupExplanation()) {
                     for (final Statement statement : answer.getPattern().statements()) {
@@ -145,12 +144,12 @@ public class ResolutionQueryBuilder {
                             Pattern p2 = Graql.not(prefixVars(GraqlHelpers.makeAnonVarsExplicit(s), ruleResolutionIndex));
                             resolutionPatterns.add(p2);
                         } else {
-                            // TODO: support attribute ownerships, roleplayers
+                            // TODO: support attribute ownerships?
                         }
                     }
                 }
                 for (ConceptMap explAns : explanation.getAnswers()) {
-                    resolutionPatterns.addAll(resolutionPattern(tx, explAns, ruleResolutionIndex));
+                    resolutionPatterns.addAll(buildResolutionPattern(explAns, ruleResolutionIndex));
                 }
             }
         }
@@ -158,7 +157,11 @@ public class ResolutionQueryBuilder {
         return resolutionPatterns;
     }
 
-    private Set<Statement> generateIdStatements(Map<Variable, Concept> varMap, int ruleResolutionIndex) {
+    /**
+     * During resolution, attributes can be easily identified by their value. Adding their value to the resolution
+     * query allows us to easily ensure we are querying for the correct attributes.
+     */
+    private Set<Statement> generateAttrValueStatements(Map<Variable, Concept> varMap, int ruleResolutionIndex) {
         LinkedHashSet<Statement> statements = new LinkedHashSet<>();
 
         for (Map.Entry<Variable, Concept> entry : varMap.entrySet()) {
@@ -183,21 +186,32 @@ public class ResolutionQueryBuilder {
                 } else if (attrValue instanceof Boolean) {
                     s = statement.val((Boolean) attrValue);
                 }
-                statements.add(s);
-
-            } else if (concept.isEntity() | concept.isRelation()){
-                varsForIds.putIfAbsent(concept.id(), new ArrayList<>());
-                String prefix = "r" + ruleResolutionIndex + "-";
-                String prefixedVarName = prefix + var.name();
-                varsForIds.get(concept.id()).add(prefixedVarName);
-            } else {
-                throw new ResolutionConstraintException("Presently we only handle queries concerning Things, not Types");
+                statements.add(prefixVars(s, ruleResolutionIndex));
             }
         }
         return statements;
     }
 
-    private void generateReplacementVars() {
+    /**
+     * During resolution we frequently get two variables from distinct statements that actually refer to the same
+     * concept. Here, we identify sets of variables, where variables within each set all refer to the same concept,
+     * and then construct a mapping that, when applied to all variables in a statement, will ensure that any two
+     * distinct variables in that statement refer to distinct concepts.
+     */
+    private void categoriseVarsByConceptId(Map<Variable, Concept> varMap, int ruleResolutionIndex) {
+        for (Map.Entry<Variable, Concept> entry : varMap.entrySet()) {
+            Variable var = entry.getKey();
+            Concept concept = entry.getValue();
+            if (concept.isEntity() | concept.isRelation()) {
+                final String prefixedVarName = prefixVar(var.name(), ruleResolutionIndex);
+                varsForIds.putIfAbsent(concept.id(), new ArrayList<>());
+                varsForIds.get(concept.id()).add(prefixedVarName);
+            } else if (concept.isAttribute()) {
+                // do nothing; handled in generateAttrValueStatements
+            } else {
+                throw new ResolutionConstraintException("Presently we only handle queries concerning Things, not Types");
+            }
+        }
         for (Map.Entry<ConceptId, List<String>> x : varsForIds.entrySet()) {
             for (String y : x.getValue()) {
                 replacementVars.put(y, x.getValue().get(0));
@@ -205,15 +219,25 @@ public class ResolutionQueryBuilder {
         }
     }
 
-    private Statement prefixVars(Statement statement, Integer ruleResolutionIndex) {
-        String prefix = "r" + ruleResolutionIndex + "-";
-        return replaceVars(statement, name -> prefix + name);
+    private String prefixVar(final String varName, final Integer ruleResolutionIndex) {
+        return "r" + ruleResolutionIndex + "-" + varName;
     }
 
+    private Statement prefixVars(Statement statement, Integer ruleResolutionIndex) {
+        return replaceVars(statement, name -> prefixVar(name, ruleResolutionIndex));
+    }
+
+    /**
+     * During resolution we frequently get two variables from distinct statements that actually refer to the same
+     * concept. Here, we "merge" the variables into having the same variable label, to avoid getting extra answers.
+     */
     private Statement deduplicateVars(Statement statement) {
         return replaceVars(statement, name -> replacementVars.getOrDefault(name, name));
     }
 
+    /**
+     * Replaces all variables in the given statement according to the specified string replacement function.
+     */
     private Statement replaceVars(Statement statement, Function<String, String> nameMapper) {
         String newVarName = nameMapper.apply(statement.var().name());
 

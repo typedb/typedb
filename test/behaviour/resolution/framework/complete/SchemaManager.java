@@ -19,8 +19,6 @@
 package grakn.core.test.behaviour.resolution.framework.complete;
 
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.kb.concept.api.AttributeType;
-import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.Type;
@@ -28,7 +26,6 @@ import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import graql.lang.Graql;
 import graql.lang.query.GraqlGet;
-import graql.lang.query.GraqlInsert;
 
 import java.io.IOException;
 import java.nio.file.Path;

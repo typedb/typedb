@@ -31,15 +31,12 @@ import graql.lang.query.GraqlQuery;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static com.google.common.collect.Iterables.getOnlyElement;
 import static grakn.core.test.behaviour.resolution.framework.complete.SchemaManager.filterCompletionSchema;
 
 public class Resolution {
 
     private Session materialisedSession;
     private Session reasonedSession;
-    private int completedInferredThingCount;
-    private int initialThingCount;
 
     /**
      * Resolution Testing Framework's entry point. Takes in sessions each for a `Completion` and `Test` keyspace. Each
@@ -63,19 +60,7 @@ public class Resolution {
         SchemaManager.undefineAllRules(this.materialisedSession);
         SchemaManager.addResolutionSchema(this.materialisedSession);
         SchemaManager.connectResolutionSchema(this.materialisedSession);
-        initialThingCount = thingCount(this.materialisedSession);
-        completedInferredThingCount = completer.complete();
-    }
-
-    /**
-     * Get a count of the number of instances in the KB, including inferred instances
-     * @param session Grakn Session
-     * @return number of instances
-     */
-    private static int thingCount(Session session) {
-        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-            return getOnlyElement(tx.execute(Graql.match(Graql.var("x").isa("thing")).get().count())).number().intValue();
-        }
+        completer.complete();
     }
 
     public void close() {
@@ -122,7 +107,6 @@ public class Resolution {
         try (Transaction tx = materialisedSession.transaction(Transaction.Type.READ)) {
             for (GraqlGet query: queries) {
                 List<ConceptMap> answers = tx.execute(query);
-                System.out.println(query);
                 if (answers.size() != 1) {
                     String msg = String.format("Resolution query had %d answers, it should have had 1. The query is:\n %s", answers.size(), query);
                     throw new CorrectnessException(msg);
