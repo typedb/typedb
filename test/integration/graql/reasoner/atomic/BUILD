@@ -107,6 +107,7 @@ java_test(
         "//kb/server",
         "//test/common:graql-test-util",
         "//test/rule:grakn-test-server",
+        "@graknlabs_graql//java:graql"
     ],
 )
 

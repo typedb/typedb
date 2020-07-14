@@ -104,7 +104,7 @@ public class RoleInferenceIT {
                     "  relates recipe-ingredient, " +
                     "  relates recipe-utensil, " +
                     "  relates recipe-cooker;" +
-                    "indian-recipe sub relation, " +
+                    "indian-recipe sub recipe, " +
 //                    "  relates ingredient, " +  // TODO remove once inherited
 //                    "  relates utensil, " +     // TODO remove once inherited
 //                    "  relates cooker," +       // TODO remove once inherited
@@ -244,8 +244,8 @@ public class RoleInferenceIT {
     public void testRoleInference_TypedTernaryRelationWithKnownRole(){
         ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
-        String patternString = "{  ($x, $y, cooker: $z);$x isa vegetable;$y isa cutlery;  };";
-        String patternString2 = "{ ($x, $y, cooker: $z) isa recipe; $x isa vegetable;$y isa cutlery; };";
+        String patternString = "{  ($x, $y, recipe-cooker: $z);$x isa vegetable;$y isa cutlery;  };";
+        String patternString2 = "{ ($x, $y, recipe-cooker: $z) isa recipe; $x isa vegetable;$y isa cutlery; };";
 
         ImmutableSetMultimap<Role, Variable> correctRoleMap = ImmutableSetMultimap.of(
                 tx.getRole("recipe-ingredient"), new Variable("x"),

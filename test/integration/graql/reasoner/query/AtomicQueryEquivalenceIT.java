@@ -42,7 +42,6 @@ import java.util.List;
 import static grakn.core.graql.reasoner.query.QueryTestUtil.atomicEquivalence;
 import static grakn.core.graql.reasoner.query.QueryTestUtil.conjunction;
 import static grakn.core.graql.reasoner.query.QueryTestUtil.queryEquivalence;
-import static grakn.core.test.common.GraqlTestUtil.loadFromFileAndCommit;
 
 @SuppressWarnings("CheckReturnValue")
 public class AtomicQueryEquivalenceIT {
@@ -52,7 +51,7 @@ public class AtomicQueryEquivalenceIT {
     @ClassRule
     public static final GraknTestStorage storage = new GraknTestStorage();
 
-    private static Session genericSchemaSession;
+    private static Session session;
 
     private Transaction tx;
     // Transaction-bound reasonerQueryFactory
@@ -61,18 +60,46 @@ public class AtomicQueryEquivalenceIT {
     @BeforeClass
     public static void loadContext(){
         Config mockServerConfig = storage.createCompatibleServerConfig();
-        genericSchemaSession = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig);
-        loadFromFileAndCommit(resourcePath, "genericSchema.gql", genericSchemaSession);
+        session = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig);
+
+        // define schema
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            tx.execute(Graql.parse("define " +
+                    "ownership sub relation, " +
+                    "  relates owner," +
+                    "  relates owned;" +
+                    "borrowing sub ownership," +
+                    "  relates owner, " + // TODO remove once inherited
+                    "  relates owned, " + // TODO remove once inherited
+                    "  relates borrower as owner," +
+                    "  relates borrowed as owned;" +
+                    "friendship sub relation," +
+                    "  relates friend;" +
+                    "best-friendship sub relation," +
+                    "  relates friend, " + // "inherited" and overriden in the same hierarchy
+                    "  relates best-friend as friend;" +
+                    "person sub entity," +
+                    "  plays owner," +
+                    "  plays friend, " +
+                    "  plays best-friend;" +
+                    "reader sub person, " +
+                    "  plays borrower;" +
+                    "item sub entity," +
+                    "  plays owned;" +
+                    "book sub item," +
+                    "  plays borrowed;").asDefine());
+            tx.commit();
+        }
     }
 
     @AfterClass
     public static void closeSession(){
-        genericSchemaSession.close();
+        session.close();
     }
 
     @Before
     public void setUp(){
-        tx = genericSchemaSession.transaction(Transaction.Type.WRITE);
+        tx = session.transaction(Transaction.Type.WRITE);
         reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
     }
 

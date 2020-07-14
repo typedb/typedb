@@ -44,6 +44,10 @@ public class RuleScalingIT {
         final int populatedChains = 3;
         Session session = server.sessionWithNewKeyspace();
 
+
+        // note: roles do not have to be shared, specific relation always used to query
+        // can generate new roles with relation
+
         try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             tx.execute(Graql.<GraqlDefine>parse(
                     "define " +

@@ -1,11 +1,5 @@
 define
 
-#Roles
-
-role1 sub role;
-role2 sub role;
-role3 sub role;
-
 #Entities
 
 baseEntity sub entity,
