@@ -33,7 +33,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-// TODO: delete (fully migrated) and delete all schemas
 @SuppressWarnings("Duplicates")
 public class TypeGenerationIT {
     private static String resourcePath = "test/integration/graql/reasoner/stubs/";
@@ -41,7 +40,6 @@ public class TypeGenerationIT {
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
 
-    // TODO: delete (migrated) and delete schema
     @Test //Expected result: The query should return a unique match.
     public void generatingMultipleIsaEdges() {
         try(Session session = server.sessionWithNewKeyspace()) {
@@ -59,7 +57,6 @@ public class TypeGenerationIT {
         }
     }
 
-    // TODO: delete (migrated) and delete schema
     @Test //Expected result: Differentiated behaviour based on directedness of the isa.
     public void generatingIsaEdgesDirectly() {
         try(Session session = server.sessionWithNewKeyspace()) {
@@ -78,7 +75,6 @@ public class TypeGenerationIT {
         }
     }
 
-    // TODO: delete (migrated) and delete schema
     @Test //Expected result: Differentiated behaviour based on directedness of the isa.
     public void generatingIsaEdgesForRelationsDirectly() {
         try(Session session = server.sessionWithNewKeyspace()) {
@@ -97,7 +93,6 @@ public class TypeGenerationIT {
         }
     }
 
-    // TODO: delete (migrated) and delete schema
     @Test //Expected result: The queries should return the same two matches.
     public void generatingIsaEdgeFromRelations() {
         try(Session session = server.sessionWithNewKeyspace()) {
@@ -114,7 +109,6 @@ public class TypeGenerationIT {
         }
     }
 
-    // TODO: delete (migrated) and delete schema
     @Test //Expected result: The queries should return the same two matches.
     public void generatingIsaEdgeFromAttribute() {
         try(Session session = server.sessionWithNewKeyspace()) {
@@ -131,7 +125,6 @@ public class TypeGenerationIT {
         }
     }
 
-    // TODO: delete (migrated) and delete schema
     //TODO: currently disallowed by rule validation
     @Ignore
     @Test //Expected result: The queries should return different matches, unique per query.
@@ -150,7 +143,6 @@ public class TypeGenerationIT {
         }
     }
 
-    // TODO: delete (migrated) and delete schema
     //TODO: currently disallowed by rule validation
     @Ignore
     @Test
@@ -170,7 +162,6 @@ public class TypeGenerationIT {
         }
     }
 
-    // TODO: delete (migrated) and delete schema
     //TODO: currently disallowed by rule validation
     @Ignore
     @Test //Expected result: The query should return three different instances of relation1 with unique ids.

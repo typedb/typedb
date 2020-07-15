@@ -41,7 +41,6 @@ public class TypeHierarchiesIT {
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
 
-    // TODO: delete (migrated) and delete schema
     @Test //Expected result: The query should not return any matches (or possibly return a single match with $x=$y)
     public void roleUnificationWithRoleHierarchiesInvolved() {
         try(Session session = server.sessionWithNewKeyspace()) {
@@ -54,7 +53,6 @@ public class TypeHierarchiesIT {
         }
     }
 
-    // TODO: delete (migrated) and delete schema
     @Test //Expected result: The query should return a unique match
     public void rulesInteractingWithTypeHierarchy() {
         try(Session session = server.sessionWithNewKeyspace()) {
