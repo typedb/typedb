@@ -69,15 +69,23 @@ java_test(
 )
 
 java_test(
-    name = "test-rule-resolution-builder",
-    size = "small",
+    name = "rule-resolution-builder-it",
+    size = "medium",
     srcs = [
-        "TestRuleResolutionBuilder.java",
+        "RuleResolutionBuilderIT.java",
     ],
     classpath_resources = ["//test/resources:logback-test"],
-    test_class = "grakn.core.test.behaviour.resolution.framework.test.TestRuleResolutionBuilder",
+    resources = [
+        "//test/behaviour/resolution/framework/test/stubs/complex_recursion",
+        "//test/behaviour/resolution/framework/test/stubs/basic_recursion",
+    ],
+    test_class = "grakn.core.test.behaviour.resolution.framework.test.RuleResolutionBuilderIT",
     deps = [
         "//test/behaviour/resolution/framework/common",
+        "//test/rule:grakn-test-server",
+        "//test/behaviour/resolution/framework/test:load-test",
+        "//concept/answer",
+        "//kb/server",
         "@maven//:com_google_guava_guava",
 
         # External dependencies from @graknlabs
@@ -163,7 +171,7 @@ checkstyle_test(
         ":load-test",
         ":resolution-query-builder-it",
         ":test-resolution-query-builder",
-        ":test-rule-resolution-builder",
+        ":rule-resolution-builder-it",
         ":test-schema-manager",
         ":test-completer",
         ":test-resolution",
