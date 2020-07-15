@@ -143,9 +143,9 @@ public class ResolutionQueryBuilder {
                             }
                             Pattern p2 = Graql.not(prefixVars(GraqlHelpers.makeAnonVarsExplicit(s), ruleResolutionIndex));
                             resolutionPatterns.add(p2);
-                        } else {
+                        } /* else {
                             // TODO: support attribute ownerships?
-                        }
+                        } */
                     }
                 }
                 for (ConceptMap explAns : explanation.getAnswers()) {
@@ -206,9 +206,7 @@ public class ResolutionQueryBuilder {
                 final String prefixedVarName = prefixVar(var.name(), ruleResolutionIndex);
                 varsForIds.putIfAbsent(concept.id(), new ArrayList<>());
                 varsForIds.get(concept.id()).add(prefixedVarName);
-            } else if (concept.isAttribute()) {
-                // do nothing; handled in generateAttrValueStatements
-            } else {
+            } else if (!concept.isAttribute()) {
                 throw new ResolutionConstraintException("Presently we only handle queries concerning Things, not Types");
             }
         }
