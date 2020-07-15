@@ -116,23 +116,6 @@ public class Resolution {
     }
 
     /**
-     * Assert that no inference queries are constructed for the specified query.
-     */
-    public void testNoResolutions(GraqlGet inferenceQuery) {
-        ResolutionQueryBuilder resolutionQueryBuilder = new ResolutionQueryBuilder();
-        List<GraqlGet> queries;
-
-        try (Transaction tx = reasonedSession.transaction(Transaction.Type.READ)) {
-            queries = resolutionQueryBuilder.buildMatchGet(tx, inferenceQuery);
-        }
-
-        if (!queries.isEmpty()) {
-            String msg = String.format("Resolution queries were unexpectedly constructed for query %s", inferenceQuery);
-            throw new CorrectnessException(msg);
-        }
-    }
-
-    /**
      * It is possible that rules could trigger when they should not. Testing for completeness checks the number of
      * inferred facts in the completion keyspace against the total number that are inferred in the test keyspace
      */
@@ -161,13 +144,16 @@ public class Resolution {
     }
 
     public static class WrongAnswerSizeException extends RuntimeException {
+        private final int expectedAnswers;
+        private final int actualAnswers;
+        private final GraqlQuery inferenceQuery;
+
         public WrongAnswerSizeException(final int expectedAnswers, final int actualAnswers, final GraqlQuery inferenceQuery) {
             super(String.format("Query had an incorrect number of answers. Expected %d answers, but found %d " +
                     "answers, for query :\n %s", expectedAnswers, actualAnswers, inferenceQuery));
             this.actualAnswers = actualAnswers;
             this.expectedAnswers = expectedAnswers;
             this.inferenceQuery = inferenceQuery;
-
         }
 
         public int getActualAnswers() {
@@ -181,9 +167,5 @@ public class Resolution {
         public GraqlQuery getInferenceQuery() {
             return inferenceQuery;
         }
-
-        private final int expectedAnswers;
-        private final int actualAnswers;
-        private final GraqlQuery inferenceQuery;
     }
 }

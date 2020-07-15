@@ -22,7 +22,6 @@ import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import grakn.core.test.behaviour.resolution.framework.Resolution;
 import graql.lang.Graql;
-import graql.lang.query.GraqlDefine;
 import graql.lang.query.GraqlGet;
 import graql.lang.query.GraqlQuery;
 import io.cucumber.java.en.Given;
@@ -95,11 +94,6 @@ public class ResolutionSteps {
         // TODO: refactor these into a single method that compares the set of expected answers to the actual answers
         resolution.testQuery(queryToTest);
         resolution.testResolution(queryToTest);
-    }
-
-    @Then("no answers are resolved in reasoned keyspace")
-    public void reasoned_keyspace_no_answers_resolved() {
-        resolution.testNoResolutions(queryToTest);
     }
 
     @Then("materialised and reasoned keyspaces are the same size")
