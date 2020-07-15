@@ -26,19 +26,17 @@ import grakn.core.test.behaviour.resolution.framework.complete.SchemaManager;
 import grakn.core.test.behaviour.resolution.framework.resolve.ResolutionQueryBuilder;
 import graql.lang.Graql;
 import graql.lang.query.GraqlGet;
+import graql.lang.query.GraqlQuery;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static com.google.common.collect.Iterables.getOnlyElement;
 import static grakn.core.test.behaviour.resolution.framework.complete.SchemaManager.filterCompletionSchema;
 
 public class Resolution {
 
     private Session materialisedSession;
     private Session reasonedSession;
-    private int completedInferredThingCount;
-    private int initialThingCount;
 
     /**
      * Resolution Testing Framework's entry point. Takes in sessions each for a `Completion` and `Test` keyspace. Each
@@ -60,22 +58,9 @@ public class Resolution {
         }
 
         SchemaManager.undefineAllRules(this.materialisedSession);
-        SchemaManager.enforceAllTypesHaveKeys(this.materialisedSession);
         SchemaManager.addResolutionSchema(this.materialisedSession);
         SchemaManager.connectResolutionSchema(this.materialisedSession);
-        initialThingCount = thingCount(this.materialisedSession);
-        completedInferredThingCount = completer.complete();
-    }
-
-    /**
-     * Get a count of the number of instances in the KB, including inferred instances
-     * @param session Grakn Session
-     * @return number of instances
-     */
-    private static int thingCount(Session session) {
-        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-            return getOnlyElement(tx.execute(Graql.match(Graql.var("x").isa("thing")).get().count())).number().intValue();
-        }
+        completer.complete();
     }
 
     public void close() {
@@ -97,9 +82,7 @@ public class Resolution {
         int completionResultsCount = filterCompletionSchema(completionTx.stream(inferenceQuery)).collect(Collectors.toSet()).size();
         completionTx.close();
         if (completionResultsCount != testResultsCount) {
-            String msg = String.format("Query had an incorrect number of answers. Expected %d answers, but found %d " +
-                    "answers, for query :\n %s", completionResultsCount, testResultsCount, inferenceQuery);
-            throw new CorrectnessException(msg);
+            throw new WrongAnswerSizeException(completionResultsCount, testResultsCount, inferenceQuery);
         }
     }
 
@@ -124,8 +107,8 @@ public class Resolution {
         try (Transaction tx = materialisedSession.transaction(Transaction.Type.READ)) {
             for (GraqlGet query: queries) {
                 List<ConceptMap> answers = tx.execute(query);
-                if (answers.size() != 1) {
-                    String msg = String.format("Resolution query had %d answers, it should have had 1. The query is:\n %s", answers.size(), query);
+                if (answers.isEmpty()) {
+                    String msg = String.format("Resolution query had %d answers, it should have had some. The query is:\n %s", answers.size(), query);
                     throw new CorrectnessException(msg);
                 }
             }
@@ -137,9 +120,13 @@ public class Resolution {
      * inferred facts in the completion keyspace against the total number that are inferred in the test keyspace
      */
     public void testCompleteness() {
-        int testInferredCount = thingCount(reasonedSession) - initialThingCount;
-        if (testInferredCount != completedInferredThingCount) {
-            String msg = String.format("The complete KB contains %d inferred concepts, whereas the test KB contains %d inferred concepts.", completedInferredThingCount, testInferredCount);
+        try {
+            testQuery(Graql.parse("match $x isa thing; get;").asGet());
+            testQuery(Graql.parse("match $r ($x) isa relation; get;").asGet());
+            testQuery(Graql.parse("match $x has attribute $y; get;").asGet());
+        } catch (WrongAnswerSizeException ex) {
+            String msg = String.format("Failed completeness test: [%s]. The complete KB contains %d inferred concepts, whereas the test KB contains %d inferred concepts.",
+                    ex.getInferenceQuery(), ex.getExpectedAnswers(), ex.getActualAnswers());
             throw new CompletenessException(msg);
         }
     }
@@ -154,5 +141,31 @@ public class Resolution {
         CompletenessException(String message) {
             super(message);
         }
-    };
+    }
+
+    public static class WrongAnswerSizeException extends RuntimeException {
+        private final int expectedAnswers;
+        private final int actualAnswers;
+        private final GraqlQuery inferenceQuery;
+
+        public WrongAnswerSizeException(final int expectedAnswers, final int actualAnswers, final GraqlQuery inferenceQuery) {
+            super(String.format("Query had an incorrect number of answers. Expected %d answers, but found %d " +
+                    "answers, for query :\n %s", expectedAnswers, actualAnswers, inferenceQuery));
+            this.actualAnswers = actualAnswers;
+            this.expectedAnswers = expectedAnswers;
+            this.inferenceQuery = inferenceQuery;
+        }
+
+        public int getActualAnswers() {
+            return actualAnswers;
+        }
+
+        public int getExpectedAnswers() {
+            return expectedAnswers;
+        }
+
+        public GraqlQuery getInferenceQuery() {
+            return inferenceQuery;
+        }
+    }
 }

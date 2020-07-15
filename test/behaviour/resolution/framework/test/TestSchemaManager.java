@@ -71,6 +71,9 @@ public class TestSchemaManager {
 
                 HashSet<String> expectedRoleplayers = new HashSet<String>() {
                     {
+                        add("currency");
+                        add("country-name");
+                        add("city-name");
                         add("transaction");
                         add("locates");
                         add("location-hierarchy");
@@ -126,20 +129,16 @@ public class TestSchemaManager {
 
                 GraqlGet clauseAttributesQuery = Graql.match(Graql.var("x").sub("has-attribute-property")).get();
 
-                Set<String> attributeTypes = tx.execute(clauseAttributesQuery).get(0).get("x").asRelationType().has().map(a -> a.label().toString()).collect(Collectors.toSet());
+                Set<String> roles = tx.execute(clauseAttributesQuery).get(0).get("x").asRelationType().roles().map(a -> a.label().toString()).collect(Collectors.toSet());
 
-                HashSet<String> expectedAttributeTypes = new HashSet<String>() {
+                HashSet<String> expectedRoles = new HashSet<String>() {
                     {
-                        add("currency");
-                        add("location-id");
-                        add("transaction-id");
-                        add("hierarchy-id");
-                        add("country-name");
-                        add("city-name");
+                        add("owned");
+                        add("owner");
                     }
                 };
 
-                assertEquals(expectedAttributeTypes, attributeTypes);
+                assertEquals(expectedRoles, roles);
             }
         }
     }

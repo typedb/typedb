@@ -206,7 +206,7 @@ jobs:
       - run-bazel:
           command: bazel test //test/behaviour/graql/explanation/reasoner:test --test_output=errors
 
-  test-behaviour-resolution-reasoner:
+  test-behaviour-resolution-test-framework:
     machine:
       image: ubuntu-1604:201903-01
     working_directory: ~/grakn
@@ -214,7 +214,7 @@ jobs:
       - install-bazel-linux
       - checkout
       - run-bazel:
-          command: bazel test //test/behaviour/resolution/reasoner:test --test_output=errors
+          command: bazel test //test/behaviour/resolution/reasoner/test_framework:test --test_output=errors
 
   test-behaviour-resolution-attribute-attachment:
     machine:
@@ -682,7 +682,7 @@ workflows:
           filters:
             branches:
               ignore: grakn-release-branch
-      - test-behaviour-resolution-reasoner:
+      - test-behaviour-resolution-test-framework:
           filters:
             branches:
               ignore: grakn-release-branch
@@ -739,7 +739,7 @@ workflows:
             - test-behaviour-graql-match
             - test-behaviour-graql-undefine
             - test-behaviour-graql-explanation
-            - test-behaviour-resolution-reasoner
+            - test-behaviour-resolution-test-framework
             - test-behaviour-resolution-attribute-attachment
             - test-behaviour-resolution-value-predicate
             - test-resolution-framework
@@ -769,7 +769,7 @@ workflows:
             - test-behaviour-graql-match
             - test-behaviour-graql-undefine
             - test-behaviour-graql-explanation
-            - test-behaviour-resolution-reasoner
+            - test-behaviour-resolution-test-framework
             - test-behaviour-resolution-attribute-attachment
             - test-behaviour-resolution-value-predicate
             - test-resolution-framework
@@ -799,7 +799,7 @@ workflows:
             - test-behaviour-graql-match
             - test-behaviour-graql-undefine
             - test-behaviour-graql-explanation
-            - test-behaviour-resolution-reasoner
+            - test-behaviour-resolution-test-framework
             - test-behaviour-resolution-attribute-attachment
             - test-behaviour-resolution-value-predicate
             - test-resolution-framework
@@ -829,7 +829,7 @@ workflows:
             - test-behaviour-graql-match
             - test-behaviour-graql-undefine
             - test-behaviour-graql-explanation
-            - test-behaviour-resolution-reasoner
+            - test-behaviour-resolution-test-framework
             - test-behaviour-resolution-attribute-attachment
             - test-behaviour-resolution-value-predicate
             - test-resolution-framework
@@ -859,7 +859,7 @@ workflows:
             - test-behaviour-graql-match
             - test-behaviour-graql-undefine
             - test-behaviour-graql-explanation
-            - test-behaviour-resolution-reasoner
+            - test-behaviour-resolution-test-framework
             - test-behaviour-resolution-attribute-attachment
             - test-behaviour-resolution-value-predicate
             - test-resolution-framework
