@@ -206,34 +206,10 @@ public class ValidateGlobalRules {
 
         Set<String> errorMessages = new HashSet<>();
 
-        Collection<Role> superRelates = superRelationType.roles().collect(Collectors.toSet());
-        Collection<Role> relates = relationType.roles().collect(Collectors.toSet());
-        Set<Label> relatesLabels = relates.stream().map(SchemaConcept::label).collect(Collectors.toSet());
 
-        //TODO: Determine if this check is redundant
-        //Check 1) Every role of relationTypes is the sub of a role which is in the relates of it's supers
-        if (!superRelationType.isAbstract()) {
-            Set<Label> allSuperRolesPlayed = new HashSet<>();
-            superRelationType.sups().forEach(rel -> rel.roles().forEach(roleType -> allSuperRolesPlayed.add(roleType.label())));
-
-            for (Role relate : relates) {
-                boolean validRoleTypeFound = SchemaConceptImpl.from(relate).sups().
-                        anyMatch(superRole -> allSuperRolesPlayed.contains(superRole.label()));
-
-                if (!validRoleTypeFound) {
-                    errorMessages.add(VALIDATION_RELATION_TYPES_ROLES_SCHEMA.getMessage(relate.label(), relationType.label(), "super", "super", superRelationType.label()));
-                }
-            }
-        }
-
-        //Check 2) Every role of superRelationType has a sub role which is in the relates of relationTypes
-        for (Role superRelate : superRelates) {
-            boolean subRoleNotFoundInRelates = superRelate.subs().noneMatch(sub -> relatesLabels.contains(sub.label()));
-
-            if (subRoleNotFoundInRelates) {
-                errorMessages.add(VALIDATION_RELATION_TYPES_ROLES_SCHEMA.getMessage(superRelate.label(), superRelationType.label(), "sub", "sub", relationType.label()));
-            }
-        }
+        // TODO implement the new validation behaviours:
+        // newly declared roles may not clash with any other roles that exist
+        // roles overriden with "as" must exist in a parent relation
 
         return errorMessages;
     }
