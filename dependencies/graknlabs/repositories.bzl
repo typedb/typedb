@@ -33,6 +33,13 @@ def graknlabs_common():
         commit = "c712b98c1ccb53661701a74b2152b6c1fa8be19e" # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_common
     )
 
+def graknlabs_protocol():
+    git_repository(
+        name = "graknlabs_protocol",
+        remote = "https://github.com/graknlabs/protocol",
+        commit = "2f85d2e5eba4e198b9fa9c71c7e35341cdad6db2", # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_protocol
+    )
+
 def graknlabs_grabl_tracing():
     git_repository(
         name = "graknlabs_grabl_tracing",

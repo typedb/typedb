@@ -78,6 +78,15 @@ distribution_deps()
 load("//dependencies/graknlabs:repositories.bzl", "graknlabs_common")
 graknlabs_common()
 
+############################
+# Load @graknlabs_protocol #
+############################
+
+load("//dependencies/graknlabs:repositories.bzl", "graknlabs_protocol")
+graknlabs_protocol()
+
+load("@graknlabs_protocol//dependencies/maven:artifacts.bzl", graknlabs_protocol_artifacts = "artifacts")
+
 #################################
 # Load @graknlabs_grabl_tracing #
 #################################

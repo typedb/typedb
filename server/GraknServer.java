@@ -20,13 +20,20 @@ package grakn.core.server;
 
 import grabl.tracing.client.GrablTracing;
 import grabl.tracing.client.GrablTracingThreadStatic;
+import grakn.common.util.Pair;
 import grakn.core.common.exception.GraknException;
+import grakn.core.common.concurrent.NamedThreadFactory;
 import grakn.core.server.util.Options;
 import io.grpc.Server;
+import io.grpc.netty.NettyServerBuilder;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.nio.NioServerSocketChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
+import picocli.CommandLine.ParameterException;
 import picocli.CommandLine.PropertiesDefaultProvider;
+import picocli.CommandLine.UnmatchedArgumentException;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -34,27 +41,53 @@ import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import static grakn.core.common.exception.Error.Server.ENV_VAR_NOT_EXIST;
 import static grakn.core.common.exception.Error.Server.EXITED_WITH_ERROR;
 import static grakn.core.common.exception.Error.Server.FAILED_AT_STOPPING;
 import static grakn.core.common.exception.Error.Server.FAILED_PARSE_PROPERTIES;
 import static grakn.core.common.exception.Error.Server.PROPERTIES_FILE_NOT_AVAILABLE;
+import static grakn.core.common.exception.Error.Server.UNCAUGHT_EXCEPTION;
 
 
 public class GraknServer implements AutoCloseable {
 
     private static final Logger LOG = LoggerFactory.getLogger(GraknServer.class);
+    private static final int MAX_THREADS = Runtime.getRuntime().availableProcessors();
 
     private Server rpcServer;
     private Options options;
 
-    GraknServer(Options options) {
+    private GraknServer(Options options) {
         this.options = options;
+        if (this.options.grablTrace()) enableGrablTracing();
+        rpcServer = createRPCServer();
+        Runtime.getRuntime().addShutdownHook(NamedThreadFactory.create(GraknServer.class, "shutdown").newThread(this::close));
+        Thread.setDefaultUncaughtExceptionHandler((Thread t, Throwable e) -> LOG.error(UNCAUGHT_EXCEPTION.message(t.getName()), e));
     }
 
-    public int run() {
-        return 0;
+    private void enableGrablTracing() {
+        GrablTracing grablTracingClient;
+        grablTracingClient = GrablTracing.withLogging(GrablTracing.tracing(
+                options.grablURI().toString(),
+                options.grablUsername(),
+                options.grablToken()
+        ));
+        GrablTracingThreadStatic.setGlobalTracingClient(grablTracingClient);
+        GraknServer.LOG.info("Grabl tracing is enabled");
+    }
+
+    private Server createRPCServer() {
+        NioEventLoopGroup workerELG = new NioEventLoopGroup(MAX_THREADS, NamedThreadFactory.create(GraknServer.class, "worker"));
+        return NettyServerBuilder.forPort(options.databasePort())
+                .executor(Executors.newFixedThreadPool(MAX_THREADS, NamedThreadFactory.create(GraknServer.class, "executor")))
+                .workerEventLoopGroup(workerELG)
+                .bossEventLoopGroup(workerELG)
+                .maxConnectionIdle(1, TimeUnit.HOURS) // TODO: why 1 hour?
+                .channelType(NioServerSocketChannel.class)
+                .build();
     }
 
     @Override
@@ -68,27 +101,51 @@ public class GraknServer implements AutoCloseable {
         }
     }
 
-    private void createAndStart() {
-        if (options.grablTrace()) {
-            GraknServer.LOG.info("Grabl tracing is enabled");
-
-            GrablTracing grablTracingClient;
-            grablTracingClient = GrablTracing.withLogging(GrablTracing.tracing(
-                    options.grablURI().toString(),
-                    options.grablUsername(),
-                    options.grablToken()
-            ));
-            GrablTracingThreadStatic.setGlobalTracingClient(grablTracingClient);
-            GraknServer.LOG.info("Grabl tracing setup has been completed");
+    private void start() throws IOException {
+        try {
+            rpcServer.start();
+        } catch (Exception e) {
+            LOG.error(e.getMessage(), e);
+            throw e;
         }
     }
 
-    private static Options parseOptions(Properties properties, String[] args) {
+    private void serve() {
+        try {
+            rpcServer.awaitTermination();
+        } catch (InterruptedException e) {
+            // grakn server stop is called
+            close();
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    private static Pair<Boolean, Options> parseCommandLine(Properties properties, String[] args) {
         Options options = new Options();
-        CommandLine cmd = new CommandLine(options);
-        cmd.setDefaultValueProvider(new PropertiesDefaultProvider(properties));
-        cmd.parseArgs(args);
-        return options;
+        boolean proceed;
+        CommandLine command = new CommandLine(options);
+        command.setDefaultValueProvider(new PropertiesDefaultProvider(properties));
+
+        try {
+            command.parseArgs(args);
+            if (command.isUsageHelpRequested()) {
+                command.usage(command.getOut());
+                proceed = false;
+            } else if (command.isVersionHelpRequested()) {
+                command.printVersionHelp(command.getOut());
+                proceed = false;
+            } else {
+                proceed = true;
+            }
+        } catch (ParameterException ex) {
+            command.getErr().println(ex.getMessage());
+            if (!UnmatchedArgumentException.printSuggestions(ex, command.getErr())) {
+                ex.getCommandLine().usage(command.getErr());
+            }
+            proceed = false;
+        }
+
+        return new Pair<>(proceed, options);
     }
 
     private static Properties parseProperties() {
@@ -121,18 +178,24 @@ public class GraknServer implements AutoCloseable {
     }
 
     public static void main(String[] args) {
-        int status = 0;
-        boolean error = false;
-
         try {
-            GraknServer server = new GraknServer(parseOptions(parseProperties(), args));
-            status = server.run();
+            long start = System.nanoTime();
+            Pair<Boolean, Options> result = parseCommandLine(parseProperties(), args);
+            if (!result.first()) System.exit(0);
+
+            GraknServer server = new GraknServer(result.second());
+            server.start();
+
+            long end = System.nanoTime();
+            LOG.info("Grakn Core started in {} ms", String.format("%.3f", (end - start) / 1_000_000.00));
+
+            server.serve();
         } catch (Exception e) {
             LOG.error(e.getMessage());
-            error = true;
+            LOG.error(EXITED_WITH_ERROR.message());
+            System.exit(1);
         }
 
-        if (status != 0 || error) LOG.error(EXITED_WITH_ERROR.message(status));
-        System.exit(status);
+        System.exit(0);
     }
 }

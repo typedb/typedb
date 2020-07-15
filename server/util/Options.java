@@ -27,7 +27,6 @@ import java.nio.file.Paths;
 
 @Command(
         name = "grakn",
-        description = "Server that hosts Grakn as an RPC Server for clients to connect to.",
         mixinStandardHelpOptions = true,
         version = {Version.VERSION}
 )

@@ -56,6 +56,8 @@
 @maven//:io_grpc_grpc_stub_1_24_1
 @maven//:io_grpc_grpc_testing
 @maven//:io_grpc_grpc_testing_1_24_1
+@maven//:io_netty_netty_all
+@maven//:io_netty_netty_all_4_1_38_Final
 @maven//:io_netty_netty_buffer
 @maven//:io_netty_netty_buffer_4_1_38_Final
 @maven//:io_netty_netty_codec

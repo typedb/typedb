@@ -38,16 +38,20 @@ java_library(
     srcs = glob(["**/*.java"], exclude=["templates/**", "test/**"]) + [":version"],
     deps = [
         # Internal package dependencies
-        "//:grakn",
+#        "//:grakn",
         "//common:common",
 
         # External dependencies from @graknlabs
-        "@graknlabs_grabl_tracing//client",
+        "@graknlabs_common//:common",
+        "@graknlabs_grabl_tracing//client:client",
+#        "@graknlabs_protocol//grpc/java:protocol",
 
         # External dependencies
         "@maven//:com_google_code_findbugs_jsr305",
         "@maven//:info_picocli_picocli",
         "@maven//:io_grpc_grpc_api",
+        "@maven//:io_grpc_grpc_netty",
+        "@maven//:io_netty_netty_all",
         "@maven//:org_slf4j_slf4j_api",
     ],
     runtime_deps = [
