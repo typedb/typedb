@@ -431,6 +431,10 @@ public class RuleApplicabilityIT {
         }
     }
 
+    /*
+    SHOULD be triggering a rule that targets a subtypes/overriden role
+    should be triggered using both a super/overriden role and the specific one
+     */
     @Test
     public void genericTypeAsARoleplayer(){
         try(Transaction tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE)) {
@@ -449,6 +453,14 @@ public class RuleApplicabilityIT {
         }
     }
 
+    /*
+    Triggers the rules:
+0 = "alternative-ternary-rule"
+1 = "typed-relation-rule"
+2 = "attributed-relation-long-rule"
+3 = "attributed-relation-string-rule"
+4 = "ternary-rule"
+     */
     @Test //should assign (role : $x, role1: $y, role: $z) which is compatible with 3 ternary rules
     public void relationWithUnspecifiedRoles_someRoleplayersTyped(){
         try(Transaction tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE)) {
