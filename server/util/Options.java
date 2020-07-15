@@ -32,7 +32,8 @@ import java.nio.file.Paths;
 )
 public class Options {
 
-    public static final String DEAFAULT_PROPERTIES_FILE = "server/conf/grakn.properties";
+    public static final String DEFAULT_PROPERTIES_FILE = "server/conf/grakn.properties";
+    public static final String GRAKN_LOGO_FILE = "server/resources/grakn-core-ascii.txt";
     public static final String DEFAULT_DATABASE_DIRECTORY = "server/db";
     public static final int DEFAULT_DATABASE_PORT = 48555;
 

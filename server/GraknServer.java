@@ -21,8 +21,8 @@ package grakn.core.server;
 import grabl.tracing.client.GrablTracing;
 import grabl.tracing.client.GrablTracingThreadStatic;
 import grakn.common.util.Pair;
-import grakn.core.common.exception.GraknException;
 import grakn.core.common.concurrent.NamedThreadFactory;
+import grakn.core.common.exception.GraknException;
 import grakn.core.server.util.Options;
 import io.grpc.Server;
 import io.grpc.netty.NettyServerBuilder;
@@ -38,6 +38,9 @@ import picocli.CommandLine.UnmatchedArgumentException;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
 import java.util.Properties;
@@ -92,9 +95,12 @@ public class GraknServer implements AutoCloseable {
 
     @Override
     public void close() {
+        LOG.info("");
+        LOG.info("Shutting down Grakn Core Server...");
         try {
             rpcServer.shutdown();
             rpcServer.awaitTermination();
+            LOG.info("Grakn Core Server has been shutdown");
         } catch (InterruptedException e) {
             LOG.error(FAILED_AT_STOPPING.message(), e);
             Thread.currentThread().interrupt();
@@ -118,6 +124,42 @@ public class GraknServer implements AutoCloseable {
             close();
             Thread.currentThread().interrupt();
         }
+    }
+
+    private static void printGraknLogo() throws IOException {
+        Path ascii = Paths.get(Options.GRAKN_LOGO_FILE);
+        if (ascii.toFile().exists()) {
+            LOG.info(new String(Files.readAllBytes(ascii), StandardCharsets.UTF_8));
+        }
+    }
+
+    private static Properties parseProperties() {
+        Properties properties = new Properties();
+        boolean error = false;
+        File file = Paths.get(Options.DEFAULT_PROPERTIES_FILE).toFile();
+
+        try {
+            properties.load(new FileInputStream(file));
+        } catch (IOException e) {
+            LOG.error(PROPERTIES_FILE_NOT_AVAILABLE.message(file.toString()));
+            error = true;
+        }
+
+        for (Map.Entry<Object, Object> entry : properties.entrySet()) {
+            String val = (String) entry.getValue();
+            if (val.startsWith("$")) {
+                String envVarName = val.substring(1);
+                if (System.getenv(envVarName) == null) {
+                    LOG.error(ENV_VAR_NOT_EXIST.message(val));
+                    error = true;
+                } else {
+                    properties.put(entry.getKey(), System.getenv(envVarName));
+                }
+            }
+        }
+
+        if (error) throw new GraknException(FAILED_PARSE_PROPERTIES);
+        else return properties;
     }
 
     private static Pair<Boolean, Options> parseCommandLine(Properties properties, String[] args) {
@@ -148,38 +190,11 @@ public class GraknServer implements AutoCloseable {
         return new Pair<>(proceed, options);
     }
 
-    private static Properties parseProperties() {
-        Properties properties = new Properties();
-        boolean error = false;
-        File file = Paths.get(Options.DEAFAULT_PROPERTIES_FILE).toFile();
-
-        try {
-            properties.load(new FileInputStream(file));
-        } catch (IOException e) {
-            LOG.error(PROPERTIES_FILE_NOT_AVAILABLE.message(file.toString()));
-            error = true;
-        }
-
-        for (Map.Entry<Object, Object> entry : properties.entrySet()) {
-            String val = (String) entry.getValue();
-            if (val.startsWith("$")) {
-                String envVarName = val.substring(1);
-                if (System.getenv(envVarName) == null) {
-                    LOG.error(ENV_VAR_NOT_EXIST.message(val));
-                    error = true;
-                } else {
-                    properties.put(entry.getKey(), System.getenv(envVarName));
-                }
-            }
-        }
-
-        if (error) throw new GraknException(FAILED_PARSE_PROPERTIES);
-        else return properties;
-    }
-
     public static void main(String[] args) {
         try {
             long start = System.nanoTime();
+
+            printGraknLogo();
             Pair<Boolean, Options> result = parseCommandLine(parseProperties(), args);
             if (!result.first()) System.exit(0);
 
@@ -187,7 +202,9 @@ public class GraknServer implements AutoCloseable {
             server.start();
 
             long end = System.nanoTime();
-            LOG.info("Grakn Core started in {} ms", String.format("%.3f", (end - start) / 1_000_000.00));
+            LOG.info("Grakn Core version: {}", Version.VERSION);
+            LOG.info("Grakn Core Server has been started (in {} ms)",
+                     String.format("%.3f", (end - start) / 1_000_000.00));
 
             server.serve();
         } catch (Exception e) {

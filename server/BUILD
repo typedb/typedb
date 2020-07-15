@@ -63,7 +63,10 @@ java_binary(
     name = "start",
     main_class = "grakn.core.server.GraknServer",
     runtime_deps = [":server"],
-    data = ["//server/conf:grakn.properties"],
+    data = [
+        "//server/conf:grakn.properties",
+        "//server/resources:logo",
+    ],
     classpath_resources = ["//server/conf:logback"],
 )
 
