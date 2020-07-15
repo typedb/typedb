@@ -33,6 +33,7 @@ import graql.lang.property.VarProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.StatementInstance;
 
+import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -125,7 +126,7 @@ public class RuleResolutionBuilder {
         return Graql.and(result);
     }
 
-    public LinkedHashMap<String, Statement> statementToResolutionProperties(final Transaction tx, Statement statement, final Boolean inferred) {
+    public LinkedHashMap<String, Statement> statementToResolutionProperties(final Transaction tx, Statement statement, @Nullable final Boolean inferred) {
         LinkedHashMap<String, Statement> props = new LinkedHashMap<>();
 
         String statementVarName = statement.var().name();
