@@ -57,8 +57,9 @@ public class ResolutionQueryBuilderIT {
         }
 
         Set<Statement> expectedStatements = getStatements(Graql.parsePatternList(
-                "$transaction has transaction-id 0;\n" +
-                "$currency \"GBP\" isa currency;\n"
+                "$currency \"GBP\" isa currency;\n" +
+                "$transaction has currency \"GBP\";\n"
+
         ));
 
         assertEquals(expectedStatements, keyStatements);
