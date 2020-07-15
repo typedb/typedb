@@ -76,15 +76,14 @@ java_test(
     ],
     classpath_resources = ["//test/resources:logback-test"],
     resources = [
-        "//test/behaviour/resolution/framework/test/stubs/complex_recursion",
         "//test/behaviour/resolution/framework/test/stubs/basic_recursion",
+        "//test/behaviour/resolution/framework/test/stubs/complex_recursion",
     ],
     test_class = "grakn.core.test.behaviour.resolution.framework.test.RuleResolutionBuilderIT",
     deps = [
         "//test/behaviour/resolution/framework/common",
         "//test/rule:grakn-test-server",
         "//test/behaviour/resolution/framework/test:load-test",
-        "//concept/answer",
         "//kb/server",
         "@maven//:com_google_guava_guava",
 
