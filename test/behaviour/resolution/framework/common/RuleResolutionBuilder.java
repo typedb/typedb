@@ -128,15 +128,15 @@ public class RuleResolutionBuilder {
     public LinkedHashMap<String, Statement> statementToResolutionProperties(final Transaction tx, Statement statement, final Boolean inferred) {
         LinkedHashMap<String, Statement> props = new LinkedHashMap<>();
 
-        String statementVar = statement.var().name();
+        String statementVarName = statement.var().name();
 
         for (VarProperty varProp : statement.properties()) {
 
             if (varProp instanceof HasAttributeProperty) {
                 String nextVar = getNextVar("x");
                 StatementInstance propStatement = Graql.var(nextVar).isa("has-attribute-property")
-                        .rel("owned", ((HasAttributeProperty) varProp).attribute())
-                        .rel("owner", statementVar);
+                        .rel("owned", ((HasAttributeProperty) varProp).attribute().var().name())
+                        .rel("owner", statementVarName);
                 if (inferred != null) {
                     propStatement = propStatement.has("inferred", inferred);
                 }
@@ -148,7 +148,7 @@ public class RuleResolutionBuilder {
 
                     String nextVar = getNextVar("x");
 
-                    StatementInstance propStatement = Graql.var(nextVar).isa("relation-property").rel("rel", statementVar).rel("roleplayer", Graql.var(rolePlayer.getPlayer().var()));
+                    StatementInstance propStatement = Graql.var(nextVar).isa("relation-property").rel("rel", statementVarName).rel("roleplayer", Graql.var(rolePlayer.getPlayer().var()));
                     if (role.isPresent()) {
                         String roleLabel = ((TypeProperty) getOnlyElement(role.get().properties())).name();
                         final Set<Role> roles = tx.getRole(roleLabel).sups().collect(Collectors.toSet());
@@ -163,7 +163,7 @@ public class RuleResolutionBuilder {
                 }
             } else if (varProp instanceof IsaProperty){
                 String nextVar = getNextVar("x");
-                StatementInstance propStatement = Graql.var(nextVar).isa("isa-property").rel("instance", statementVar);
+                StatementInstance propStatement = Graql.var(nextVar).isa("isa-property").rel("instance", statementVarName);
                 final Set<Type> types = tx.getType(new Label(varProp.property())).sups().collect(Collectors.toSet());
                 for (Type type : types) {
                     propStatement = propStatement.has("type-label", type.label().getValue());
