@@ -157,6 +157,9 @@ public class RuleApplicabilityIT {
         }
     }
 
+    /*
+    match binary, binary relation subtype, and ternary relation by label
+     */
     @Test
     public void typeRelationMatchesAllRulesWithCorrespondingRelationType(){
         try(Transaction tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE)) {
@@ -210,6 +213,9 @@ public class RuleApplicabilityIT {
         }
     }
 
+    /*
+    find applicable rules using a ternary relation with players specified that constrain the roles a bit
+     */
     @Test
     public void relationWithUnspecifiedRoles_typedRoleplayers_ambiguousRoleMapping(){
         try(Transaction tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE)) {
@@ -226,6 +232,9 @@ public class RuleApplicabilityIT {
         }
     }
 
+    /*
+    ?? wonder why this is different from above
+     */
     @Test
     public void relationWithUnspecifiedRoles_typedRoleplayers_rolePlayerTypeMismatch(){
         try(Transaction tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE)){

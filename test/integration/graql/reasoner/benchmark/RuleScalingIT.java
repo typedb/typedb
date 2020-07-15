@@ -69,8 +69,8 @@ public class RuleScalingIT {
             for (int i = 0; i < N; i++) {
                 tx.execute(Graql.<GraqlDefine>parse(
                         "define " +
-                                "specificRelation" + i + " sub relation, relates someRole, relates anotherRole;" +
-                                "anotherSpecificRelation" + i + " sub relation, relates someRole, relates anotherRole;"
+                                String.format("specificRelation-%d sub relation, relates someRole-%d as someRole, relates anotherRole-%d as anotherRole; ", i, i, i) +
+                                String.format("anotherSpecificRelation-%d sub relation, relates someRole-%d, relates anotherRole-%d;", i, i, i)
                 ));
             }
             tx.commit();
@@ -86,9 +86,9 @@ public class RuleScalingIT {
                 Pattern specificPattern = Graql.parsePattern(
                         "{" +
                                 basePattern +
-                                "(someRole: $link, anotherRole: $index) isa specificRelation" + i + ";" +
-                                "(someRole: $index, anotherRole: $anotherLink) isa anotherSpecificRelation" + i + ";" +
-                                "};"
+                                String.format("(someRole-%d: $link, anotherRole-%d: $index) isa specificRelation-%d; ", i, i, i) +
+                                String.format("(someRole-%d: $index, anotherRole-%d: $anotherLink) isa anotherSpecificRelation-%d;", i, i, i) +
+                        "};"
                 );
                 Statement relationRule = Graql
                         .type("relationRule" + i)
@@ -143,8 +143,8 @@ public class RuleScalingIT {
                                 "$anotherLink isa finalEntity;" +
                                 "(someRole: $x, anotherRole: $y) isa baseRelation;" +
                                 "(someRole: $y, anotherRole: $link) isa anotherBaseRelation;" +
-                                "(someRole: $link, anotherRole: $index) isa specificRelation" + k + ";" +
-                                "(someRole: $index, anotherRole: $anotherLink) isa anotherSpecificRelation" + k + ";"
+                                String.format("(someRole-%d: $link, anotherRole-%d: $index) isa specificRelation-%d;", k, k, k) +
+                                String.format("(someRole-%d: $index, anotherRole-%d: $anotherLink) isa anotherSpecificRelation-%d;", k, k, k)
                 ));
             }
             tx.commit();
