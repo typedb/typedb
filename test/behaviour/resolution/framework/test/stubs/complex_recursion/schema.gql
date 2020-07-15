@@ -3,15 +3,6 @@ define
 currency sub attribute,
     value string;
 
-location-id sub attribute,
-    value long;
-
-transaction-id sub attribute,
-    value long;
-
-hierarchy-id sub attribute,
-    value long;
-
 country-name sub attribute,
     value string;
 
@@ -19,17 +10,14 @@ city-name sub attribute,
     value string;
 
 transaction sub entity,
-    key transaction-id,
     has currency,
     plays locates_located;
 
 locates sub relation,
-    key location-id,
     relates locates_location,
     relates locates_located;
 
 location-hierarchy sub relation,
-    key hierarchy-id,
     relates location-hierarchy_superior,
     relates location-hierarchy_subordinate;
 
