@@ -40,6 +40,7 @@ public class NeqIdPredicateIT {
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
 
+    // TODO: delete (migrated) and delete schema
     @Test //Expected result: 2 relations obtained by correctly finding relations
     public void reasoningWithNeqProperty() {
         try(Session session = server.sessionWithNewKeyspace()) {
@@ -54,6 +55,7 @@ public class NeqIdPredicateIT {
         }
     }
 
+    // TODO: delete (migrated)
     @Test //tests a query containing a neq predicate bound to a recursive relation
     public void recursiveRelationWithNeqPredicate(){
         try(Session session = server.sessionWithNewKeyspace()) {
@@ -83,6 +85,7 @@ public class NeqIdPredicateIT {
         }
     }
 
+    // TODO: delete (migrated)
     /**
      * Tests a scenario in which the neq predicate binds free variables of two recursive equivalent relations.
      * Corresponds to the following pattern:
@@ -128,6 +131,7 @@ public class NeqIdPredicateIT {
         }
     }
 
+    // TODO: delete (migrated)
     /**
      * Tests a scenario in which the neq predicate prevents loops by binding free variables
      * of two recursive non-equivalent relations. Corresponds to the following pattern:
