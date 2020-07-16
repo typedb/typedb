@@ -70,7 +70,7 @@ java_test(
     resources = [
         "//test/integration/graql/reasoner/resources:explicit-ownership-relation-applicability",
         "//test/integration/graql/reasoner/resources:resource-applicability",
-        "//test/integration/graql/reasoner/resources:rule-applicability",
+        "//test/integration/graql/reasoner/resources:rule-applicability-new",
     ],
     test_class = "grakn.core.graql.reasoner.atomic.RuleApplicabilityIT",
     deps = [
@@ -92,11 +92,6 @@ java_test(
     size = "medium",
     srcs = ["RoleInferenceIT.java"],
     classpath_resources = ["//test/resources:logback-test"],
-    resources = [
-        "//test/integration/graql/reasoner/resources:generic-schema",
-        "//test/integration/graql/reasoner/resources:role-inference",
-        "//test/integration/graql/reasoner/resources:rule-applicability",
-    ],
     test_class = "grakn.core.graql.reasoner.atomic.RoleInferenceIT",
     deps = [
         "//common",

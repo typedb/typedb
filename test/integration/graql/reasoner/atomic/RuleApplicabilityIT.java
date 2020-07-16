@@ -97,24 +97,24 @@ public class RuleApplicabilityIT {
         explicitOwnershipRelationSession =  SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig);
         loadFromFileAndCommit(resourcePath,"explicitOwnershipRelationApplicabilityTest.gql", explicitOwnershipRelationSession);
         ruleApplicabilitySession =  SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig);
-        loadFromFileAndCommit(resourcePath,"ruleApplicabilityTest.gql", ruleApplicabilitySession);
+        loadFromFileAndCommit(resourcePath,"ruleApplicabilityTest2.gql", ruleApplicabilitySession);
 
-        //add extra data so that all rules can be possibly triggered
-        try(Transaction tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE)) {
-            EntityType singleRoleEntity = tx.getEntityType("singleRoleEntity");
-            EntityType twoRoleEntity = tx.getEntityType("twoRoleEntity");
-            Thing x = putEntityWithResource(tx, singleRoleEntity, Label.of("resource-string"), "someValue");
-            Thing y = putEntityWithResource(tx, twoRoleEntity, Label.of("resource-long"), 2000L);
-
-            Role someRole = tx.getRole("someRole");
-            Role subRole = tx.getRole("subRole");
-            tx.getRelationType("binary")
-                    .create()
-                    .assign(someRole, x)
-                    .assign(subRole, y)
-                    .has(tx.getAttributeType("description").create("someDescription"));
-            tx.commit();
-        }
+//        //add extra data so that all rules can be possibly triggered
+//        try(Transaction tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE)) {
+//            EntityType singleRoleEntity = tx.getEntityType("singleRoleEntity");
+//            EntityType twoRoleEntity = tx.getEntityType("twoRoleEntity");
+//            Thing x = putEntityWithResource(tx, singleRoleEntity, Label.of("resource-string"), "someValue");
+//            Thing y = putEntityWithResource(tx, twoRoleEntity, Label.of("resource-long"), 2000L);
+//
+//            Role someRole = tx.getRole("upper-connected");
+//            Role subRole = tx.getRole("lower-connected");
+//            tx.getRelationType("ranked-connection")
+//                    .create()
+//                    .assign(someRole, x)
+//                    .assign(subRole, y)
+//                    .has(tx.getAttributeType("description").create("someDescription"));
+//            tx.commit();
+//        }
     }
 
     @AfterClass
@@ -145,9 +145,9 @@ public class RuleApplicabilityIT {
 
             Atom subAtom = reasonerQueryFactory.atomic(conjunction("{ $x sub " + Schema.MetaSchema.RELATION.getLabel() + "; };")).getAtom();
             Atom hasAtom = reasonerQueryFactory.atomic(conjunction("{ $x has description; };")).getAtom();
-            Atom relatesAtom = reasonerQueryFactory.atomic(conjunction("{ reifiable-relation relates $x; };")).getAtom();
-            Atom relatesAtom2 = reasonerQueryFactory.atomic(conjunction("{ $x relates someRole; };")).getAtom();
-            Atom playsAtom = reasonerQueryFactory.atomic(conjunction("{ $x plays someRole; };")).getAtom();
+            Atom relatesAtom = reasonerQueryFactory.atomic(conjunction("{ ranked-connection relates $x; };")).getAtom();
+            Atom relatesAtom2 = reasonerQueryFactory.atomic(conjunction("{ $x relates lower-connected; };")).getAtom();
+            Atom playsAtom = reasonerQueryFactory.atomic(conjunction("{ $x plays connected; };")).getAtom();
 
             assertThat(subAtom.getApplicableRules().collect(toSet()), empty());
             assertThat(hasAtom.getApplicableRules().collect(toSet()), empty());
@@ -157,40 +157,37 @@ public class RuleApplicabilityIT {
         }
     }
 
-    /*
-    match binary, binary relation subtype, and ternary relation by label
-     */
     @Test
     public void typeRelationMatchesAllRulesWithCorrespondingRelationType(){
         try(Transaction tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE)) {
             TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction)tx;
             ReasonerQueryFactory reasonerQueryFactory = testTx.reasonerQueryFactory();
 
-            String typeString = "{ $x isa reifying-relation; };";
-            String typeString2 = "{ $x isa ternary; };";
-            String typeString3 = "{ $x isa binary; };";
-            Atom reifyingAtom = reasonerQueryFactory.atomic(conjunction(typeString)).getAtom();
-            Atom ternaryAtom = reasonerQueryFactory.atomic(conjunction(typeString2)).getAtom();
-            Atom binaryAtom = reasonerQueryFactory.atomic(conjunction(typeString3)).getAtom();
+            String typeString = "{ $x isa connection; };";
+            String typeString2 = "{ $x isa ternary-ranked-connection; };";
+            String typeString3 = "{ $x isa ranked-connection; };";
+            Atom connectionAtom = reasonerQueryFactory.atomic(conjunction(typeString)).getAtom();
+            Atom ternaryRankedConnectionAtom = reasonerQueryFactory.atomic(conjunction(typeString2)).getAtom();
+            Atom rankedConnectionAtom = reasonerQueryFactory.atomic(conjunction(typeString3)).getAtom();
 
-            Type ternaryType = testTx.getRelationType("ternary");
-            Type binaryType = testTx.getRelationType("binary");
-            Type reifyingType = testTx.getRelationType("reifying-relation");
+            Type ternaryRankedConnection = testTx.getRelationType("ternary-ranked-connection");
+            Type rankedConnection = testTx.getRelationType("ranked-connection");
+            Type connection = testTx.getRelationType("connection");
 
             Set<InferenceRule> rules = testTx.ruleCache().getRules().map(r -> new InferenceRule(r, reasonerQueryFactory)).collect(Collectors.toSet());
-            Set<InferenceRule> ternaryRules = rules.stream().filter(rule -> rule.getHead().getAtom().getSchemaConcept().equals(ternaryType)).collect(toSet());
-            Set<InferenceRule> binaryRules = rules.stream().filter(rule -> rule.getHead().getAtom().getSchemaConcept().equals(binaryType)).collect(toSet());
-            Set<InferenceRule> reifyingRules = rules.stream().filter(rule -> rule.getHead().getAtom().getSchemaConcept().equals(reifyingType)).collect(toSet());
+            Set<InferenceRule> ternaryRankedConnectionRules = rules.stream().filter(rule -> rule.getHead().getAtom().getSchemaConcept().equals(ternaryRankedConnection)).collect(toSet());
+            Set<InferenceRule> rankedConnectionRules = rules.stream().filter(rule -> rule.getHead().getAtom().getSchemaConcept().equals(rankedConnection)).collect(toSet());
+            Set<InferenceRule> connectionRules = rules.stream().filter(rule -> rule.getHead().getAtom().getSchemaConcept().equals(connection)).collect(toSet());
 
             assertEquals(
-                    reifyingRules.stream().map(InferenceRule::getRule).collect(toSet()),
-                    reifyingAtom.getApplicableRules().map(InferenceRule::getRule).collect(toSet()));
+                    connectionRules.stream().map(InferenceRule::getRule).collect(toSet()),
+                    connectionAtom.getApplicableRules().map(InferenceRule::getRule).collect(toSet()));
             assertEquals(
-                    ternaryRules.stream().map(InferenceRule::getRule).collect(toSet()),
-                    ternaryAtom.getApplicableRules().map(InferenceRule::getRule).collect(toSet()));
+                    ternaryRankedConnectionRules.stream().map(InferenceRule::getRule).collect(toSet()),
+                    ternaryRankedConnectionAtom.getApplicableRules().map(InferenceRule::getRule).collect(toSet()));
             assertEquals(
-                    binaryRules.stream().map(InferenceRule::getRule).collect(toSet()),
-                    binaryAtom.getApplicableRules().map(InferenceRule::getRule).collect(toSet()));
+                    rankedConnectionRules.stream().map(InferenceRule::getRule).collect(toSet()),
+                    rankedConnectionAtom.getApplicableRules().map(InferenceRule::getRule).collect(toSet()));
         }
     }
 
@@ -201,40 +198,39 @@ public class RuleApplicabilityIT {
             ReasonerQueryFactory reasonerQueryFactory = testTx.reasonerQueryFactory();
 
             String typeString = "{ $x isa resource; };";
-            Atom resourceAtom = reasonerQueryFactory.atomic(conjunction(typeString)).getAtom();
-            Type resourceType = testTx.getAttributeType("resource");
+            Atom descriptionAtom = reasonerQueryFactory.atomic(conjunction(typeString)).getAtom();
+            Type descriptionType = testTx.getAttributeType("resource");
 
             Set<InferenceRule> resourceRules = testTx.ruleCache().getRules()
                     .map(r -> new InferenceRule(r, reasonerQueryFactory))
-                    .filter(rule -> rule.getHead().getAtom().getSchemaConcept().equals(resourceType))
+                    .filter(rule -> rule.getHead().getAtom().getSchemaConcept().equals(descriptionType))
                     .collect(Collectors.toSet());
 
-            assertEquals(resourceRules, resourceAtom.getApplicableRules().collect(toSet()));
+            assertEquals(resourceRules, descriptionAtom.getApplicableRules().collect(toSet()));
         }
     }
 
-    /*
-    find applicable rules using a ternary relation with players specified that constrain the roles a bit
-     */
     @Test
     public void relationWithUnspecifiedRoles_typedRoleplayers_ambiguousRoleMapping(){
         try(Transaction tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE)) {
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
-            String relationString = "{ ($x, $y, $z);$x isa singleRoleEntity; $y isa anotherTwoRoleEntity; $z isa twoRoleEntity; };";
+            String relationString = "{ ($x, $y, attributed:$z); $x isa monument; $y isa discoverer; $z isa ranked-hill-city; };";
             RelationAtom relation = (RelationAtom) reasonerQueryFactory.atomic(conjunction(relationString)).getAtom();
+            // to obtain a partial ambiguity, we have to induce the following:
+            // one type should pin a role to an unambiguous super-relation -- the role will be known
+            // both other role players need to be able to play two _mutually exclusive_ roles from the relation
+            // or its children
+            // we also use a role to restrict
             ImmutableSetMultimap<Role, Variable> roleMap = ImmutableSetMultimap.of(
-                    tx.getRole("someRole"), new Variable("x"),
+                    tx.getRole("role"), new Variable("x"),
                     tx.getRole("role"), new Variable("y"),
-                    tx.getRole("role"), new Variable("z"));
+                    tx.getRole("attributed"), new Variable("z"));
             assertEquals(roleMap, roleSetMap((relation.getRoleVarMap())));
-            assertEquals(5, relation.getApplicableRules().count());
+            assertEquals(2, relation.getApplicableRules().count());
         }
     }
 
-    /*
-    ?? wonder why this is different from above
-     */
     @Test
     public void relationWithUnspecifiedRoles_typedRoleplayers_rolePlayerTypeMismatch(){
         try(Transaction tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE)){
@@ -378,7 +374,7 @@ public class RuleApplicabilityIT {
     }
 
     @Test
-    public void derivedTypes(){
+    public void inferrableTypes(){
         try(Transaction tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE)) {
             TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction)tx;
             ReasonerQueryFactory reasonerQueryFactory = testTx.reasonerQueryFactory();

@@ -1,0 +1,197 @@
+define
+
+## Rules
+
+# Transitive connection and binary to ternary connections
+ranked-connection-transitivity sub rule,
+    when {
+        (lower-connected: $x, upper-connected: $y) isa ranked-connection;
+        (lower-connected: $y, upper-connected: $z) isa ranked-connection;
+    }, then {
+        (lower-connected: $x, upper-connected: $z) isa ranked-connection;
+    };
+
+ternary-ranked-connection-from-ranked-connections sub rule,
+    when {
+        (lower-connected: $x, upper-connected: $y) isa ranked-connection;
+        (lower-connected: $y, upper-connected: $z) isa ranked-connection;
+    }, then {
+        (lower-connected: $x, middle-connected: $y, upper-connected: $z) isa ternary-ranked-connection;
+    };
+
+flat-ternary-ranked-connection sub rule,
+    when {
+        (lower-connected: $x, upper-connected: $y) isa ranked-connection;
+        (lower-connected: $y, upper-connected: $z) isa ranked-connection;
+    }, then {
+        (lower-connected: $x, lower-connected: $y, upper-connected: $z) isa ternary-ranked-connection;
+    };
+
+
+# link ranked connections
+all-linked-rankings sub rule,
+    when {
+        $r1 (lower-connected: $x, upper-connected: $y) isa ranked-connection;
+        $r2 (lower-connected: $y, upper-connected: $z) isa ranked-connection;
+    }, then {
+        (lower-ranked: $r1, upper-ranked: $r2) isa linked-ranking;
+    };
+
+# create links between other linkable entities
+link-cities sub rule,
+    when {
+        $x isa ranked-hill-city;
+        $y isa ranked-hill-city;
+    }, then {
+        (linked-ranked-item: $x, linked-ranked-item: $y) isa linked-ranking;
+    };
+
+# add a text tag to ranking connections
+ranking-description sub rule,
+    when {
+        $rel (lower-connected: $x, upper-connected: $y) isa ranked-connection;
+    }, then {
+        $rel has description 'a ranking cities by elevation';
+    };
+
+# create 'located' relations, with attributes on the relation
+located-in-all-combinations sub rule,
+    when {
+        $x isa city;
+        $y isa monument;
+        $z isa discoverer;
+    }, then {
+        (located-in: $x, located-item: $y, located-by: $z) isa located;
+    };
+
+located-description sub rule,
+    when {
+        $r (located-in: $x, located-item: $y, located-by: $z) isa located;
+    }, then {
+        $r has description 'in a fictional hilly world';
+    };
+
+# collect entities with attributes into relations
+# this checks the ability to look ahead into the 'when' of the rule to ignore rules that contradict the query,
+# even when the 'then' may match
+mixed-attributed-entities-relation sub rule,
+    when {
+        $x isa ranked-hill-city, has numerical-elevation-rank 0;
+        $y isa monument, has name 'Big Rock';
+        $z isa discoverer, has description 'discovery is cool';
+    }, then {
+        (long-attributed: $x, string-attributed: $y, string-attributed: $z) isa entities-with-attributes;
+    };
+
+long-attributed-entities-relation sub rule,
+    when {
+        $x isa ranked-hill-city, has numerical-elevation-rank < -1000;
+        $y isa monument, has numerical-elevation-rank !== 0;
+        $z isa discoverer, has age > 1000;
+    }, then {
+        (long-attributed: $x, long-attributed: $y, long-attributed: $z) isa entities-with-attributes;
+    };
+
+
+
+
+#
+# connection  ------------------ connected
+# |
+# ranked-connection ------------ lower-connected, upper-connected
+# |
+# ternary-ranked-connection ---- lower-connected, upper-connected, middle-connected
+#
+
+connection sub relation,
+    relates connected;
+
+ranked-connection sub connection,
+    relates lower-connected as connected,
+    relates upper-connected as connected,
+    relates other-connected as connected, # we have this because we won't be able to access 'connected' in sub relations
+    plays lower-ranked,
+    plays upper-ranked,
+    has description;
+
+ternary-ranked-connection sub ranked-connection,
+    relates lower-connected,
+    relates upper-connected,
+    relates middle-connected as other-connected;
+
+linked-ranking sub relation,
+    relates lower-ranked,
+    relates upper-ranked,
+    relates linked-ranked-item;
+
+located sub relation,
+    relates located-in,
+    relates located-item,
+    relates located-by,
+    has description;
+
+things-with-attributes sub relation,
+    relates attributed;
+entities-with-attributes sub relation,
+    relates string-attributed as attributed,
+    relates long-attributed as attributed;
+
+
+# entities
+
+city sub entity,
+    plays connected,
+    plays located-in;
+
+hill-city sub city,
+    plays lower-connected,
+    plays upper-connected,
+    plays middle-connected;
+
+ranked-hill-city sub hill-city,
+    plays linked-ranked-item,
+    plays long-attributed,
+    has numerical-elevation-rank;
+
+monument sub entity,
+    plays lower-connected, # nonsense, just to throw off type inference
+    plays located-item,
+    plays string-attributed,
+    plays long-attributed,
+    has numerical-elevation-rank,
+    has name;
+
+discoverer sub entity,
+    plays located-by,
+    plays string-attributed,
+    plays long-attributed,
+    has name,
+    has description,
+    has age;
+
+# a entity that plays just 1 high level role that can be inferred
+with-long sub entity,
+    plays long-attributed,
+    has age;
+
+numerical-elevation-rank sub attribute, value long;
+age sub attribute, value long;
+name sub attribute, value string;
+description sub attribute, value string;
+
+
+insert
+    $x isa hill-city;
+
+    $a isa ranked-hill-city;
+    $b isa ranked-hill-city;
+    $c isa ranked-hill-city, has numerical-elevation-rank 0;
+
+    (lower-connected: $a, upper-connected: $b) isa ranked-connection;
+    (lower-connected: $b, upper-connected: $c) isa ranked-connection;
+
+    $z isa monument, has numerical-elevation-rank 100, has name 'Big Rock';
+    $d isa discoverer, has age 40;
+
+
+    $long-attribuetd isa with-long, has age 10;

@@ -63,12 +63,9 @@ public class RoleInferenceIT {
     @BeforeClass
     public static void loadContext(){
         Config compatibleServerConfig = storage.createCompatibleServerConfig();
-        final String resourcePath = "test/integration/graql/reasoner/resources/";
         session = SessionUtil.serverlessSessionWithNewKeyspace(compatibleServerConfig);
 
-
         // define role inference schema
-
         try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             // binary inference schema
             tx.execute(Graql.parse("define " +

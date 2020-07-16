@@ -46,6 +46,11 @@ filegroup(
 )
 
 filegroup(
+    name = "rule-applicability-new",
+    srcs = ["ruleApplicabilityTest2.gql"],
+)
+
+filegroup(
     name = "type-inference",
     srcs = ["typeInferenceTest.gql"],
 )
