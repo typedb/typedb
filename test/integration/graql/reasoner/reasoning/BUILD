@@ -70,22 +70,6 @@ java_test(
 )
 
 java_test(
-    name = "type-generation-it",
-    size = "medium",
-    srcs = ["TypeGenerationIT.java"],
-    classpath_resources = ["//test/resources:logback-test"],
-    resources = ["//test/integration/graql/reasoner/stubs:reasoning-stubs"],
-    test_class = "grakn.core.graql.reasoner.reasoning.TypeGenerationIT",
-    deps = [
-        "//concept/answer",
-        "//kb/server",
-        "//test/rule:grakn-test-server",
-        "//test/common:graql-test-util",
-        "@graknlabs_graql//java:graql",
-    ],
-)
-
-java_test(
     name = "type-hierarchies-it",
     size = "medium",
     srcs = ["TypeHierarchiesIT.java"],
@@ -126,7 +110,6 @@ checkstyle_test(
         ":neq-idpredicate-it",
         ":valuepredicate-it",
         ":recursion-it",
-        ":type-generation-it",
         ":type-hierarchies-it",
         ":variable-roles-it",
     ],
