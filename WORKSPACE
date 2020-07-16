@@ -226,10 +226,10 @@ GRAKN_CORE_OVERRIDES = {
    "com.fasterxml.jackson.core:jackson-core": "2.9.10",
    "com.fasterxml.jackson.core:jackson-databind": "2.9.10.1",
 
-   "io.netty:netty-all": "4.1.38.Final",
-   "io.netty:netty-codec-http2": "4.1.38.Final",
-   "io.netty:netty-handler": "4.1.38.Final",
-   "io.netty:netty-handler-proxy": "4.1.38.Final",
+#   "io.netty:netty-all": "4.1.38.Final",
+#   "io.netty:netty-codec-http2": "4.1.38.Final",
+#   "io.netty:netty-handler": "4.1.38.Final",
+#   "io.netty:netty-handler-proxy": "4.1.38.Final",
 }
 
 ###############

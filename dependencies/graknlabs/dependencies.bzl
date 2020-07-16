@@ -20,8 +20,8 @@ load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 def graknlabs_dependencies():
     git_repository(
         name = "graknlabs_dependencies",
-        remote = "https://github.com/graknlabs/dependencies",
-        commit = "609c43539c80e8cc621168264e579e59c3325040",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_dependencies
+        remote = "https://github.com/flyingsilverfin/build-tools",
+        commit = "35c245ff6b371adbcdb8ad235cc5295e970ea29a",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_dependencies
     )
 
 def graknlabs_common():
@@ -48,8 +48,8 @@ def graknlabs_protocol():
 def graknlabs_client_java():
     git_repository(
         name = "graknlabs_client_java",
-        remote = "https://github.com/graknlabs/client-java",
-        commit = "4373dd79751432ca613be0e0b357097393844404",
+        remote = "https://github.com/flyingsilverfin/client-java",
+        commit = "fc2581b401de4406ba445d2cd8905c1472b6b893",
     )
 
 def graknlabs_simulation():
