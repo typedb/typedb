@@ -215,12 +215,6 @@ public class RelationSemanticProcessor implements SemanticProcessor<RelationAtom
                                 Set<Atomic> childVP = childAtom.getPredicates(crp.getPlayer().var(), ValuePredicate.class).collect(Collectors.toSet());
                                 return unifierType.valueCompatibility(parentVP, childVP);
                             })
-                            //check linked resources
-                            .filter(crp -> {
-                                Variable parentVar = prp.getPlayer().var();
-                                Variable childVar = crp.getPlayer().var();
-                                return unifierType.attributeCompatibility(parentAtom.getParentQuery(), childAtom.getParentQuery(), parentVar, childVar);
-                            })
                             //TODO check substitution roleplayer connectedness
                             .forEach(compatibleRelationPlayers::add);
 

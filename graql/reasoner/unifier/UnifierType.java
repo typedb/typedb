@@ -218,16 +218,6 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
                             || child.stream().allMatch(cp -> parent.stream().allMatch(pp -> comparison.apply(pp, cp)))
             );
         }
-
-        @Override
-        public boolean attributeCompatibility(ReasonerQuery parent, ReasonerQuery child, Variable parentVar, Variable childVar) {
-            Map<SchemaConcept, AttributeAtom> parentRes = new HashMap<>();
-            parent.getAtoms(AttributeAtom.class).filter(at -> at.getVarName().equals(parentVar)).forEach(r -> parentRes.put(r.getSchemaConcept(), r));
-            Map<SchemaConcept, AttributeAtom> childRes = new HashMap<>();
-            child.getAtoms(AttributeAtom.class).filter(at -> at.getVarName().equals(childVar)).forEach(r -> childRes.put(r.getSchemaConcept(), r));
-            return childRes.values().stream()
-                    .allMatch(r -> !parentRes.containsKey(r.getSchemaConcept()) || r.isUnifiableWith(parentRes.get(r.getSchemaConcept())));
-        }
     },
 
     /**
@@ -311,16 +301,6 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
                     && (parent.isEmpty()
                     || (!child.isEmpty() && parentToChild && childToParent));
         }
-
-        @Override
-        public boolean attributeCompatibility(ReasonerQuery parent, ReasonerQuery child, Variable parentVar, Variable childVar) {
-            Map<SchemaConcept, AttributeAtom> parentRes = new HashMap<>();
-            parent.getAtoms(AttributeAtom.class).filter(at -> at.getVarName().equals(parentVar)).forEach(r -> parentRes.put(r.getSchemaConcept(), r));
-            Map<SchemaConcept, AttributeAtom> childRes = new HashMap<>();
-            child.getAtoms(AttributeAtom.class).filter(at -> at.getVarName().equals(childVar)).forEach(r -> childRes.put(r.getSchemaConcept(), r));
-            return childRes.values().stream()
-                    .allMatch(r -> !parentRes.containsKey(r.getSchemaConcept()) || r.isUnifiableWith(parentRes.get(r.getSchemaConcept())));
-        }
     },
 
     /**
@@ -365,11 +345,6 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
         @Override
         public boolean predicateCompatibility(Set<Atomic> parent, Set<Atomic> child, BiFunction<Atomic, Atomic, Boolean> comparison) {
             return SUBSUMPTIVE.predicateCompatibility(parent, child, comparison);
-        }
-
-        @Override
-        public boolean attributeCompatibility(ReasonerQuery parent, ReasonerQuery child, Variable parentVar, Variable childVar) {
-            return SUBSUMPTIVE.attributeCompatibility(parent, child, parentVar, childVar);
         }
 
         @Override

@@ -211,7 +211,7 @@ public class RuleApplicabilityIT {
     }
 
     @Test
-    public void relationWithUnspecifiedRoles_typedRoleplayers_ambiguousRoleMapping(){
+    public void relationWithUnspecificRoles_typedRoleplayers_ambiguousRoleMapping(){
         try(Transaction tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE)) {
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
@@ -221,7 +221,7 @@ public class RuleApplicabilityIT {
             // one type should pin a role to an unambiguous super-relation -- the role will be known
             // both other role players need to be able to play two _mutually exclusive_ roles from the relation
             // or its children
-            // we also use a role to restrict
+            // we also use a role to restrict possible relations
             ImmutableSetMultimap<Role, Variable> roleMap = ImmutableSetMultimap.of(
                     tx.getRole("role"), new Variable("x"),
                     tx.getRole("role"), new Variable("y"),
@@ -230,31 +230,33 @@ public class RuleApplicabilityIT {
             assertEquals(2, relation.getApplicableRules().count());
         }
     }
-
-    @Test
-    public void relationWithUnspecifiedRoles_typedRoleplayers_rolePlayerTypeMismatch(){
-        try(Transaction tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE)){
-            ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
-            String relationString = "{ ($x, $y, $z);$x isa singleRoleEntity; $y isa twoRoleEntity; $z isa threeRoleEntity; };";
-            RelationAtom relation = (RelationAtom) reasonerQueryFactory.atomic(conjunction(relationString)).getAtom();
-            ImmutableSetMultimap<Role, Variable> roleMap = ImmutableSetMultimap.of(
-                    tx.getRole("someRole"), new Variable("x"),
-                    tx.getRole("role"), new Variable("y"),
-                    tx.getRole("role"), new Variable("z"));
-            assertEquals(roleMap, roleSetMap(relation.getRoleVarMap()));
-            assertEquals(2, relation.getApplicableRules().count());
-        }
-    }
+//
+    // TODO what is this test meant to do?
+//    @Test
+//    public void relationWithUnspecifiedRoles_typedRoleplayers_rolePlayerTypeMismatch(){
+//        try(Transaction tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE)){
+//            ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
+//            String relationString = "{ ($x, $y, $z);$x isa singleRoleEntity; $y isa twoRoleEntity; $z isa threeRoleEntity; };";
+//            RelationAtom relation = (RelationAtom) reasonerQueryFactory.atomic(conjunction(relationString)).getAtom();
+//            ImmutableSetMultimap<Role, Variable> roleMap = ImmutableSetMultimap.of(
+//                    tx.getRole("someRole"), new Variable("x"),
+//                    tx.getRole("role"), new Variable("y"),
+//                    tx.getRole("role"), new Variable("z"));
+//            assertEquals(roleMap, roleSetMap(relation.getRoleVarMap()));
+//            assertEquals(2, relation.getApplicableRules().count());
+//        }
+//    }
 
     @Test //threeRoleEntity subs twoRoleEntity -> (role, role, role)
     public void relationWithUnspecifiedRoles_typedRoleplayers_typeHierarchyEnablesExtraRule(){
         try(Transaction tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE)){
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
-            String relationString = "{ ($x, $y, $z);$x isa twoRoleEntity; $y isa threeRoleEntity; $z isa anotherTwoRoleEntity; };";
+            String relationString = "{ ($x, $y, $z);$x isa monument; $y isa discoverer; $z isa ranked-hill-city; };";
             RelationAtom relation = (RelationAtom) reasonerQueryFactory.atomic(conjunction(relationString)).getAtom();
             relation.getRoleVarMap().entries().forEach(e -> assertTrue(Schema.MetaSchema.isMetaLabel(e.getKey().label())));
-            assertEquals(2, relation.getApplicableRules().count());
+            // long-attributed, mixed-attributed, located-in-all-combinations
+            assertEquals(3, relation.getApplicableRules().count());
         }
     }
 
@@ -265,16 +267,16 @@ public class RuleApplicabilityIT {
             ReasonerQueryFactory reasonerQueryFactory = testTx.reasonerQueryFactory();
 
             //attribute mismatch with the rule
-            String relationString = "{ ($x, $y) isa attributed-relation;$x has resource-string 'valueOne'; $y has resource-string 'someValue'; };";
+            String relationString = "{ ($x, $y) isa entities-with-attributes; $x has description 'nonexistant'; $y has name 'Big Rock'; };";
 
-            //attributes overlap with the ones from rule
-            String relationString2 = "{ ($x, $y) isa attributed-relation;$x has resource-string 'someValue'; $y has resource-string 'yetAnotherValue'; };";
+            //attributes matching with the ones from rule
+            String relationString2 = "{ ($x, $y) isa entities-with-attributes; $x has description 'discovery is cool'; $y has name 'Big Rock'; };";
 
-            //attributes overlap with the ones from rule
-            String relationString3 = "{ ($x, $y) isa attributed-relation;$x has resource-string 'someValue'; $y has resource-string contains 'Value'; };";
+            //attributes matching with the ones from rule using 'contains'
+            String relationString3 = "{ ($x, $y) isa entities-with-attributes; $x has description 'discovery is cool'; $y has name contains 'Rock'; };";
 
             //generic relation with attributes not matching the rule ones
-            String relationString4 = "{ ($x, $y);$x has resource-string 'valueOne'; $y has resource-string 'valueTwo'; };";
+            String relationString4 = "{ ($x, $y); $x has description 'nonexistant'; $y has name 'missing'; };";
 
             Atom relation = reasonerQueryFactory.create(conjunction(relationString)).getAtoms(RelationAtom.class).findFirst().orElse(null);
             Atom relation2 = reasonerQueryFactory.create(conjunction(relationString2)).getAtoms(RelationAtom.class).findFirst().orElse(null);
@@ -282,21 +284,24 @@ public class RuleApplicabilityIT {
             Atom relation4 = reasonerQueryFactory.create(conjunction(relationString4)).getAtoms(RelationAtom.class).findFirst().orElse(null);
             Set<InferenceRule> rules = testTx.ruleCache().getRules().map(r -> new InferenceRule(r, reasonerQueryFactory)).collect(Collectors.toSet());
 
+            // it is possible to match the rule that requires numerical values, when we only specify strings
             assertEquals(
-                    rules.stream().filter(r -> r.getRule().label().equals(Label.of("attributed-relation-long-rule"))).collect(Collectors.toSet()),
+                    rules.stream().filter(r -> r.getRule().label().getValue().contains("attributed-entities-relation")).collect(Collectors.toSet()),
                     relation.getApplicableRules().collect(toSet()));
+            // with strings, we can confirm a rule matches, but also still may match the numerical valued rules
             assertEquals(
-                    rules.stream().filter(r -> r.getRule().label().getValue().contains("attributed-relation")).collect(toSet()),
+                    rules.stream().filter(r -> r.getRule().label().getValue().contains("attributed-entities-relation")).collect(toSet()),
                     relation2.getApplicableRules().collect(toSet()));
             assertEquals(
-                    rules.stream().filter(r -> r.getRule().label().getValue().contains("attributed-relation")).collect(toSet()),
+                    rules.stream().filter(r -> r.getRule().label().getValue().contains("attributed-entities-relation")).collect(toSet()),
                     relation3.getApplicableRules().collect(toSet()));
 
 
-            int rulesInferringAttributes = 3;
+            // we can use the string (mis)matching to exclude the rules that require certain string values
+            int rulesInferringAttributes = 2;
             // exclude rules that infer attributes
             assertEquals(
-                    testTx.ruleCache().getRules().count() - 1 - rulesInferringAttributes,
+                    testTx.ruleCache().getRules().count() - rulesInferringAttributes,
                     relation4.getApplicableRules().count());
         }
     }
