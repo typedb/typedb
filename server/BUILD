@@ -40,13 +40,13 @@ java_library(
         # Internal package dependencies
         "//:grakn",
         "//common:common",
-        "//concept:concept",
+        # "//concept:concept",
         "//rocks:rocks",
 
         # External dependencies from @graknlabs
         "@graknlabs_common//:common",
         "@graknlabs_grabl_tracing//client:client",
-        "@graknlabs_graql//java:graql",
+        # "@graknlabs_graql//java:graql",
         "@graknlabs_protocol//grpc/java:protocol",
 
         # External dependencies

@@ -21,6 +21,7 @@ import grabl.tracing.client.GrablTracingThreadStatic;
 import grabl.tracing.client.GrablTracingThreadStatic.ThreadTrace;
 import grakn.core.Grakn;
 import grakn.core.GraknOptions;
+import grakn.core.server.rpc.util.ResponseBuilder;
 import grakn.protocol.TransactionProto.Transaction;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
@@ -39,28 +40,28 @@ import java.util.function.Function;
 
 import static grabl.tracing.client.GrablTracingThreadStatic.continueTraceOnThread;
 import static grakn.core.common.collection.Bytes.bytesToUUID;
-import static grakn.core.common.exception.Error.Server.SESSION_NOT_FOUND;
-import static grakn.core.common.exception.Error.Server.TRANSACTION_ALREADY_OPENED;
-import static grakn.core.common.exception.Error.Server.UNEXPECTED_NULL;
+import static grakn.core.common.exception.Error.Session.SESSION_NOT_FOUND;
+import static grakn.core.common.exception.Error.Transaction.TRANSACTION_ALREADY_OPENED;
+import static grakn.core.common.exception.Error.Transaction.UNEXPECTED_NULL;
 
 /**
  * A StreamObserver that implements the transaction connection between a client
  * and the server. This class receives a stream of {@code Transaction.Req} and
  * returns a stream of {@code Transaction.Res}.
  */
-class TransactionService implements StreamObserver<Transaction.Req> {
+class TransactionRPC implements StreamObserver<Transaction.Req> {
 
-    private static final Logger LOG = LoggerFactory.getLogger(TransactionService.class);
+    private static final Logger LOG = LoggerFactory.getLogger(TransactionRPC.class);
     private final StreamObserver<Transaction.Res> responseSender;
     private final Iterators iterators;
     private final AtomicBoolean isOpen;
-    private final Function<UUID, SessionService> serviceSupplier;
-    private SessionService sessionService;
+    private final Function<UUID, SessionRPC> serviceSupplier;
+    private SessionRPC sessionService;
 
     @Nullable
     private Grakn.Transaction transaction = null;
 
-    TransactionService(Function<UUID, SessionService> serviceSupplier, StreamObserver<Transaction.Res> responseSender) {
+    TransactionRPC(Function<UUID, SessionRPC> serviceSupplier, StreamObserver<Transaction.Res> responseSender) {
         this.serviceSupplier = serviceSupplier;
         this.responseSender = responseSender;
         this.iterators = new Iterators(responseSender::onNext);

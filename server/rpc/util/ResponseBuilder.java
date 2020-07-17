@@ -15,7 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.server.rpc;
+package grakn.core.server.rpc.util;
 
 import grakn.core.common.exception.GraknException;
 import grakn.protocol.TransactionProto;
@@ -46,7 +46,7 @@ public class ResponseBuilder {
      */
     public static class Transaction {
 
-        static TransactionProto.Transaction.Res open() {
+        public static TransactionProto.Transaction.Res open() {
             return TransactionProto.Transaction.Res.newBuilder()
                     .setOpenRes(TransactionProto.Transaction.Open.Res.getDefaultInstance())
                     .build();
@@ -58,15 +58,18 @@ public class ResponseBuilder {
                     .build();
         }
 
-        static class Iter {
+        /**
+         * An RPC Response Builder class for Transaction iterator responses
+         */
+        public static class Iter {
 
-            static TransactionProto.Transaction.Res done() {
+            public static TransactionProto.Transaction.Res done() {
                 return TransactionProto.Transaction.Res.newBuilder()
                         .setIterRes(TransactionProto.Transaction.Iter.Res.newBuilder()
                                             .setDone(true)).build();
             }
 
-            static TransactionProto.Transaction.Res id(int id) {
+            public static TransactionProto.Transaction.Res id(int id) {
                 return TransactionProto.Transaction.Res.newBuilder()
                         .setIterRes(TransactionProto.Transaction.Iter.Res.newBuilder()
                                             .setIteratorId(id)).build();

@@ -23,12 +23,12 @@ import javax.annotation.Nullable;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class SessionService {
+public class SessionRPC {
 
     private final Grakn.Session session;
-    private final Set<TransactionService> transactionServices;
+    private final Set<TransactionRPC> transactionServices;
 
-    SessionService(Grakn grakn, String database) {
+    SessionRPC(Grakn grakn, String database) {
         this.session = grakn.session(database);
         transactionServices = ConcurrentHashMap.newKeySet();
     }
@@ -37,17 +37,17 @@ public class SessionService {
         return session;
     }
 
-    Grakn.Transaction transaction(TransactionService transactionService, Grakn.Transaction.Type type) {
+    Grakn.Transaction transaction(TransactionRPC transactionService, Grakn.Transaction.Type type) {
         transactionServices.add(transactionService);
         return session.transaction(type);
     }
 
     void onError(Throwable error) {
-        transactionServices.forEach(stream -> stream.close(error));
+        transactionServices.forEach(ts -> ts.close(error));
         session.close();
     }
 
-    void remove(TransactionService transactionService) {
+    void remove(TransactionRPC transactionService) {
         transactionServices.remove(transactionService);
     }
 

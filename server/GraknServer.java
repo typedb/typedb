@@ -25,7 +25,7 @@ import grakn.core.Grakn;
 import grakn.common.concurrent.NamedThreadFactory;
 import grakn.core.common.exception.GraknException;
 import grakn.core.rocks.RocksGrakn;
-import grakn.core.server.rpc.GraknService;
+import grakn.core.server.rpc.GraknRPC;
 import grakn.core.server.util.ServerOptions;
 import io.grpc.Server;
 import io.grpc.netty.NettyServerBuilder;
@@ -65,7 +65,7 @@ public class GraknServer implements AutoCloseable {
     private static final int MAX_THREADS_X_2 = MAX_THREADS * 2;
 
     private Grakn grakn;
-    private GraknService service;
+    private GraknRPC graknRPC;
     private Server server;
     private ServerOptions options;
 
@@ -73,7 +73,7 @@ public class GraknServer implements AutoCloseable {
         this.options = options;
         if (this.options.grablTrace()) enableGrablTracing();
         grakn = RocksGrakn.open(options.databaseDirectory());
-        service = new GraknService(grakn);
+        graknRPC = new GraknRPC(grakn);
         server = rpcServer();
         Runtime.getRuntime().addShutdownHook(NamedThreadFactory.create(GraknServer.class, "shutdown").newThread(this::close));
         Thread.setDefaultUncaughtExceptionHandler((Thread t, Throwable e) -> LOG.error(UNCAUGHT_EXCEPTION.message(t.getName()), e));
@@ -98,7 +98,7 @@ public class GraknServer implements AutoCloseable {
                 .bossEventLoopGroup(workerELG)
                 .maxConnectionIdle(1, TimeUnit.HOURS) // TODO: why 1 hour?
                 .channelType(NioServerSocketChannel.class)
-                .addService(service)
+                .addService(graknRPC)
                 .build();
     }
 
@@ -107,7 +107,7 @@ public class GraknServer implements AutoCloseable {
         LOG.info("");
         LOG.info("Shutting down Grakn Core Server...");
         try {
-            service.close();
+            graknRPC.close();
             server.shutdown();
             server.awaitTermination();
             grakn.close();

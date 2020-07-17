@@ -19,6 +19,7 @@ package grakn.core.server.rpc;
 
 import com.google.protobuf.ByteString;
 import grakn.core.Grakn;
+import grakn.core.server.rpc.util.ResponseBuilder;
 import grakn.protocol.DatabaseProto.Database;
 import grakn.protocol.GraknServiceGrpc;
 import grakn.protocol.TransactionProto.Transaction;
@@ -35,10 +36,11 @@ import java.util.concurrent.ConcurrentMap;
 import static com.google.protobuf.ByteString.copyFrom;
 import static grakn.core.common.collection.Bytes.bytesToUUID;
 import static grakn.core.common.collection.Bytes.uuidToBytes;
-import static grakn.core.common.exception.Error.Server.DATABASE_DELETED;
-import static grakn.core.common.exception.Error.Server.DATABASE_NOT_FOUND;
+import static grakn.core.common.exception.Error.DatabaseManager.DATABASE_EXISTS;
+import static grakn.core.common.exception.Error.DatabaseManager.DATABASE_NOT_FOUND;
+import static grakn.core.common.exception.Error.DatabaseManager.DATABASE_DELETED;
 import static grakn.core.common.exception.Error.Server.SERVER_SHUTDOWN;
-import static grakn.core.common.exception.Error.Server.SESSION_NOT_FOUND;
+import static grakn.core.common.exception.Error.Session.SESSION_NOT_FOUND;
 import static grakn.protocol.SessionProto.Session;
 import static java.util.stream.Collectors.toList;
 
@@ -46,16 +48,43 @@ import static java.util.stream.Collectors.toList;
 /**
  * Grakn RPC Session Service
  */
-public class GraknService extends GraknServiceGrpc.GraknServiceImplBase implements AutoCloseable {
+public class GraknRPC extends GraknServiceGrpc.GraknServiceImplBase implements AutoCloseable {
 
-    private static final Logger LOG = LoggerFactory.getLogger(GraknService.class);
+    private static final Logger LOG = LoggerFactory.getLogger(GraknRPC.class);
 
     private final Grakn grakn;
-    private final ConcurrentMap<UUID, SessionService> sessions;
+    private final ConcurrentMap<UUID, SessionRPC> sessions;
 
-    public GraknService(Grakn grakn) {
+    public GraknRPC(Grakn grakn) {
         this.grakn = grakn;
         sessions = new ConcurrentHashMap<>();
+    }
+
+    @Override
+    public void databaseContains(Database.Contains.Req request, StreamObserver<Database.Contains.Res> response) {
+        try {
+            boolean contains = grakn.databases().contains(request.getName());
+            response.onNext(Database.Contains.Res.newBuilder().setContains(contains).build());
+            response.onCompleted();
+        } catch (RuntimeException e) {
+            LOG.error(e.getMessage(), e);
+            response.onError(ResponseBuilder.exception(e));
+        }
+    }
+
+    @Override
+    public void databaseCreate(Database.Create.Req request, StreamObserver<Database.Create.Res> response) {
+        try {
+            if (grakn.databases().contains(request.getName())) {
+                throw Status.ALREADY_EXISTS.withDescription(DATABASE_EXISTS.message(request.getName())).asRuntimeException();
+            }
+            grakn.databases().create(request.getName());
+            response.onNext(Database.Create.Res.getDefaultInstance());
+            response.onCompleted();
+        } catch (RuntimeException e) {
+            LOG.error(e.getMessage(), e);
+            response.onError(ResponseBuilder.exception(e));
+        }
     }
 
     @Override
@@ -94,7 +123,7 @@ public class GraknService extends GraknServiceGrpc.GraknServiceImplBase implemen
     @Override
     public void sessionOpen(Session.Open.Req request, StreamObserver<Session.Open.Res> responseObserver) {
         try {
-            SessionService sessionService = new SessionService(grakn, request.getDatabase());
+            SessionRPC sessionService = new SessionRPC(grakn, request.getDatabase());
             sessions.put(sessionService.session().uuid(), sessionService);
             ByteString uuid = copyFrom(uuidToBytes(sessionService.session().uuid()));
             responseObserver.onNext(Session.Open.Res.newBuilder().setSessionID(uuid).build());
@@ -125,7 +154,7 @@ public class GraknService extends GraknServiceGrpc.GraknServiceImplBase implemen
 
     @Override
     public StreamObserver<Transaction.Req> transaction(StreamObserver<Transaction.Res> responseSender) {
-        return new TransactionService(sessionID -> sessions.getOrDefault(sessionID, null), responseSender);
+        return new TransactionRPC(sessionID -> sessions.getOrDefault(sessionID, null), responseSender);
     }
 
     @Override

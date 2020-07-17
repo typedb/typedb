@@ -79,16 +79,6 @@ public abstract class Error {
                 new Server(6, "Environment variable '%s' is not defined.");
         public static final Server SERVER_SHUTDOWN =
                 new Server(7, "Grakn Core server has been shutdown.");
-        public static final Server DATABASE_DELETED =
-                new Server(7, "Database with the name '%s' has been deleted.");
-        public static final Server DATABASE_NOT_FOUND =
-                new Server(7, "Database with the name '%s' does not exist.");
-        public static final Server SESSION_NOT_FOUND =
-                new Server(8, "Session with UUID '%s' does not exist.");
-        public static final Server TRANSACTION_ALREADY_OPENED =
-                new Server(9, "Transaction has already been already opened.");
-        public static final Server UNEXPECTED_NULL =
-                new Server(10, "Unexpected NULL object.");
 
         private static final String codePrefix = "SRV";
         private static final String descriptionPrefix = "Server Error";
@@ -117,13 +107,27 @@ public abstract class Error {
     public static class DatabaseManager extends Error {
         public static final DatabaseManager DATABASE_EXISTS =
                 new DatabaseManager(1, "The database with the name '%s' already exists.");
-        public static final DatabaseManager DATABASE_NOT_EXIST =
+        public static final DatabaseManager DATABASE_NOT_FOUND =
                 new DatabaseManager(2, "The database with the name '%s' does not exist.");
+        public static final DatabaseManager DATABASE_DELETED =
+                new DatabaseManager(3, "Database with the name '%s' has been deleted.");
 
         private static final String codePrefix = "DBS";
-        private static final String descriptionPrefix = "Invalid Session Operation";
+        private static final String descriptionPrefix = "Invalid Database Operations";
 
         DatabaseManager(int number, String description) {
+            super(codePrefix, number, descriptionPrefix, description);
+        }
+    }
+
+    public static class Session extends Error {
+        public static final Server SESSION_NOT_FOUND =
+                new Server(1, "Session with UUID '%s' does not exist.");
+
+        private static final String codePrefix = "SSN";
+        private static final String descriptionPrefix = "Invalid Session Operation";
+
+        Session(int number, String description) {
             super(codePrefix, number, descriptionPrefix, description);
         }
     }
@@ -133,14 +137,18 @@ public abstract class Error {
                 new Transaction(1, "Unsupported operation: calling '%s' for '%s' is not supported.");
         public static final Transaction ILLEGAL_OPERATION =
                 new Transaction(2, "Attempted an illegal operation!");
-        public static final Transaction CLOSED_TRANSACTION =
-                new Transaction(3, "The transaction has been closed and no further operation is allowed.");
+        public static final Transaction TRANSACTION_ALREADY_OPENED =
+                new Transaction(3, "Transaction has already been already opened.");
+        public static final Transaction TRANSACTION_CLOSED =
+                new Transaction(4, "The transaction has been closed and no further operation is allowed.");
         public static final Transaction ILLEGAL_COMMIT =
-                new Transaction(4, "Only write transactions can be committed.");
+                new Transaction(5, "Only write transactions can be committed.");
         public static final Transaction DIRTY_SCHEMA_WRITES =
-                new Transaction(5, "Attempted schema writes when session type does not allow.");
+                new Transaction(6, "Attempted schema writes when session type does not allow.");
         public static final Transaction DIRTY_DATA_WRITES =
-                new Transaction(6, "Attempted data writes when session type does not allow.");
+                new Transaction(7, "Attempted data writes when session type does not allow.");
+        public static final Transaction UNEXPECTED_NULL =
+                new Transaction(8, "Unexpected NULL object.");
 
         private static final String codePrefix = "TXN";
         private static final String descriptionPrefix = "Invalid Transaction Operation";

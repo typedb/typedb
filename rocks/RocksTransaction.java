@@ -21,7 +21,6 @@ package grakn.core.rocks;
 import grakn.core.Grakn;
 import grakn.core.GraknOptions;
 import grakn.core.common.concurrent.ManagedReadWriteLock;
-import grakn.core.common.exception.Error;
 import grakn.core.common.exception.GraknException;
 import grakn.core.concept.Concepts;
 import grakn.core.concept.answer.ConceptMap;
@@ -46,7 +45,7 @@ import java.util.stream.Stream;
 
 import static grakn.core.common.collection.Bytes.bytesHavePrefix;
 import static grakn.core.common.collection.Bytes.longToBytes;
-import static grakn.core.common.exception.Error.Transaction.CLOSED_TRANSACTION;
+import static grakn.core.common.exception.Error.Transaction.TRANSACTION_CLOSED;
 import static grakn.core.common.exception.Error.Transaction.DIRTY_DATA_WRITES;
 import static grakn.core.common.exception.Error.Transaction.DIRTY_SCHEMA_WRITES;
 import static grakn.core.common.exception.Error.Transaction.ILLEGAL_COMMIT;
@@ -90,7 +89,7 @@ class RocksTransaction implements Grakn.Transaction {
     }
 
     public CoreStorage storage() {
-        if (!isOpen.get()) throw new GraknException(CLOSED_TRANSACTION);
+        if (!isOpen.get()) throw new GraknException(TRANSACTION_CLOSED);
         return storage;
     }
 
@@ -106,13 +105,13 @@ class RocksTransaction implements Grakn.Transaction {
 
     @Override
     public Traversal traversal() {
-        if (!isOpen.get()) throw new GraknException(CLOSED_TRANSACTION);
+        if (!isOpen.get()) throw new GraknException(TRANSACTION_CLOSED);
         return traversal;
     }
 
     @Override
     public Concepts concepts() {
-        if (!isOpen.get()) throw new GraknException(CLOSED_TRANSACTION);
+        if (!isOpen.get()) throw new GraknException(TRANSACTION_CLOSED);
         return concepts;
     }
 
@@ -172,7 +171,7 @@ class RocksTransaction implements Grakn.Transaction {
                 closeResources();
             }
         } else {
-            throw new GraknException(CLOSED_TRANSACTION);
+            throw new GraknException(TRANSACTION_CLOSED);
         }
     }
 

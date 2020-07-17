@@ -28,7 +28,7 @@ import java.nio.file.Path;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static grakn.core.common.exception.Error.DatabaseManager.DATABASE_NOT_EXIST;
+import static grakn.core.common.exception.Error.DatabaseManager.DATABASE_NOT_FOUND;
 
 /**
  * A Grakn implementation with RocksDB
@@ -89,7 +89,7 @@ public class RocksGrakn implements Grakn {
         if (databaseMgr.contains(database)) {
             return databaseMgr.get(database).createAndOpenSession(type);
         } else {
-            throw new GraknException(DATABASE_NOT_EXIST.message(database));
+            throw new GraknException(DATABASE_NOT_FOUND.message(database));
         }
     }
 
