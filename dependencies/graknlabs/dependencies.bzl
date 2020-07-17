@@ -62,8 +62,8 @@ def graknlabs_simulation():
 def graknlabs_verification():
     git_repository(
         name = "graknlabs_verification",
-        remote = "https://github.com/alexjpwalker/verification",
-        commit = "9ca97983c43ce1fec05785fad4df141eb8c79aaa",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_verification
+        remote = "https://github.com/graknlabs/verification",
+        commit = "939ede6ca105c055949f893c018090940c2fb0b6",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_verification
     )
 
 def graknlabs_grabl_tracing():
