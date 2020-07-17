@@ -68,12 +68,16 @@ located-description sub rule,
     when {
         $r (located-in: $x, located-item: $y, located-by: $z) isa located;
     }, then {
-        $r has description 'in a fictional hilly world';
+        $r has description 'in a fictiondescriptional hilly world';
     };
 
-# collect entities with attributes into relations
-# this checks the ability to look ahead into the 'when' of the rule to ignore rules that contradict the query,
-# even when the 'then' may match
+# In theory, we can try to figure out whether a rule CAN match
+# some query by using the attribute values in the 'when' clause
+# however, this only is useful once we either include cardinaltiy
+# restrictions
+# the best current case would be to ignore rules whose negated attribuet ownerships
+# can be excluded
+# however, we for now do no such pruning
 mixed-attributed-entities-relation sub rule,
     when {
         $x isa ranked-hill-city, has numerical-elevation-rank 0;
@@ -95,6 +99,7 @@ long-attributed-entities-relation sub rule,
 
 
 
+# Relations
 #
 # connection  ------------------ connected
 # |
@@ -139,7 +144,9 @@ entities-with-attributes sub relation,
 
 # entities
 
-city sub entity,
+root sub entity;
+
+city sub root,
     plays connected,
     plays located-in;
 
@@ -153,7 +160,7 @@ ranked-hill-city sub hill-city,
     plays long-attributed,
     has numerical-elevation-rank;
 
-monument sub entity,
+monument sub root,
     plays lower-connected, # nonsense, just to throw off type inference
     plays located-item,
     plays string-attributed,
@@ -161,7 +168,7 @@ monument sub entity,
     has numerical-elevation-rank,
     has name;
 
-discoverer sub entity,
+discoverer sub root,
     plays located-by,
     plays string-attributed,
     plays long-attributed,
@@ -170,7 +177,7 @@ discoverer sub entity,
     has age;
 
 # a entity that plays just 1 high level role that can be inferred
-with-long sub entity,
+with-long sub root,
     plays long-attributed,
     has age;
 
