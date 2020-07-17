@@ -55,14 +55,14 @@ class TransactionRPC implements StreamObserver<Transaction.Req> {
     private final StreamObserver<Transaction.Res> responseSender;
     private final Iterators iterators;
     private final AtomicBoolean isOpen;
-    private final Function<UUID, SessionRPC> serviceSupplier;
-    private SessionRPC sessionService;
+    private final Function<UUID, SessionRPC> sessionRPCSupplier;
+    private SessionRPC sessionRPC;
 
     @Nullable
     private Grakn.Transaction transaction = null;
 
-    TransactionRPC(Function<UUID, SessionRPC> serviceSupplier, StreamObserver<Transaction.Res> responseSender) {
-        this.serviceSupplier = serviceSupplier;
+    TransactionRPC(Function<UUID, SessionRPC> sessionRPCSupplier, StreamObserver<Transaction.Res> responseSender) {
+        this.sessionRPCSupplier = sessionRPCSupplier;
         this.responseSender = responseSender;
         this.iterators = new Iterators(responseSender::onNext);
         isOpen = new AtomicBoolean(false);
@@ -107,7 +107,7 @@ class TransactionRPC implements StreamObserver<Transaction.Req> {
      */
     @Override
     public void onError(Throwable error) {
-        if (sessionService != null) sessionService.onError(error);
+        if (sessionRPC != null) sessionRPC.onError(error);
     }
 
     private <T> T nonNull(@Nullable T item) {
@@ -134,15 +134,15 @@ class TransactionRPC implements StreamObserver<Transaction.Req> {
 
     private void open(Transaction.Open.Req request) {
         UUID sessionID = bytesToUUID(request.getSessionID().toByteArray());
-        sessionService = serviceSupplier.apply(sessionID);
+        sessionRPC = sessionRPCSupplier.apply(sessionID);
 
-        if (sessionService == null) {
+        if (sessionRPC == null) {
             throw Status.NOT_FOUND.withDescription(SESSION_NOT_FOUND.message(sessionID)).asRuntimeException();
         } else if (isOpen.compareAndSet(false, true)) {
             Grakn.Transaction.Type type = Grakn.Transaction.Type.of(request.getType().getNumber());
             if (type == null) throw Status.INVALID_ARGUMENT.asRuntimeException();
 
-            transaction = sessionService.transaction(this, type);
+            transaction = sessionRPC.transaction(this, type);
             responseSender.onNext(ResponseBuilder.Transaction.open());
         } else {
             throw Status.ALREADY_EXISTS.withDescription(TRANSACTION_ALREADY_OPENED.message()).asRuntimeException();
@@ -153,7 +153,7 @@ class TransactionRPC implements StreamObserver<Transaction.Req> {
         if (isOpen.compareAndSet(true, false)) {
             if (transaction != null) {
                 transaction.close();
-                sessionService.remove(this);
+                sessionRPC.remove(this);
             }
 
             if (error != null) {

@@ -26,33 +26,33 @@ import java.util.concurrent.ConcurrentHashMap;
 public class SessionRPC {
 
     private final Grakn.Session session;
-    private final Set<TransactionRPC> transactionServices;
+    private final Set<TransactionRPC> transactionRPCs;
 
     SessionRPC(Grakn grakn, String database) {
         this.session = grakn.session(database);
-        transactionServices = ConcurrentHashMap.newKeySet();
+        transactionRPCs = ConcurrentHashMap.newKeySet();
     }
 
     Grakn.Session session() {
         return session;
     }
 
-    Grakn.Transaction transaction(TransactionRPC transactionService, Grakn.Transaction.Type type) {
-        transactionServices.add(transactionService);
+    Grakn.Transaction transaction(TransactionRPC transactionRPC, Grakn.Transaction.Type type) {
+        transactionRPCs.add(transactionRPC);
         return session.transaction(type);
     }
 
     void onError(Throwable error) {
-        transactionServices.forEach(ts -> ts.close(error));
+        transactionRPCs.forEach(ts -> ts.close(error));
         session.close();
     }
 
-    void remove(TransactionRPC transactionService) {
-        transactionServices.remove(transactionService);
+    void remove(TransactionRPC transactionRPC) {
+        transactionRPCs.remove(transactionRPC);
     }
 
     void close(@Nullable Throwable error) {
-        transactionServices.forEach(ts -> ts.close(error));
+        transactionRPCs.forEach(ts -> ts.close(error));
         session.close();
     }
 }

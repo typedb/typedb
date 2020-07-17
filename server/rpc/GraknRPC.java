@@ -21,7 +21,7 @@ import com.google.protobuf.ByteString;
 import grakn.core.Grakn;
 import grakn.core.server.rpc.util.ResponseBuilder;
 import grakn.protocol.DatabaseProto.Database;
-import grakn.protocol.GraknServiceGrpc;
+import grakn.protocol.GraknGrpc;
 import grakn.protocol.TransactionProto.Transaction;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
@@ -46,9 +46,9 @@ import static java.util.stream.Collectors.toList;
 
 
 /**
- * Grakn RPC Session Service
+ * Grakn RPC Service
  */
-public class GraknRPC extends GraknServiceGrpc.GraknServiceImplBase implements AutoCloseable {
+public class GraknRPC extends GraknGrpc.GraknImplBase implements AutoCloseable {
 
     private static final Logger LOG = LoggerFactory.getLogger(GraknRPC.class);
 
@@ -123,9 +123,9 @@ public class GraknRPC extends GraknServiceGrpc.GraknServiceImplBase implements A
     @Override
     public void sessionOpen(Session.Open.Req request, StreamObserver<Session.Open.Res> responseObserver) {
         try {
-            SessionRPC sessionService = new SessionRPC(grakn, request.getDatabase());
-            sessions.put(sessionService.session().uuid(), sessionService);
-            ByteString uuid = copyFrom(uuidToBytes(sessionService.session().uuid()));
+            SessionRPC sessionRPC = new SessionRPC(grakn, request.getDatabase());
+            sessions.put(sessionRPC.session().uuid(), sessionRPC);
+            ByteString uuid = copyFrom(uuidToBytes(sessionRPC.session().uuid()));
             responseObserver.onNext(Session.Open.Res.newBuilder().setSessionID(uuid).build());
             responseObserver.onCompleted();
         } catch (RuntimeException e) {
@@ -161,7 +161,7 @@ public class GraknRPC extends GraknServiceGrpc.GraknServiceImplBase implements A
     public void close() {
         String message = SERVER_SHUTDOWN.message();
         StatusRuntimeException exception = Status.ABORTED.withDescription(message).asRuntimeException();
-        sessions.values().parallelStream().forEach(service -> service.close(exception));
+        sessions.values().parallelStream().forEach(session -> session.close(exception));
         sessions.clear();
     }
 }
