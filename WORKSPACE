@@ -18,52 +18,41 @@
 workspace(name = "graknlabs_grakn_core")
 
 
-################################
-# Load @graknlabs_dependencies #
-################################
+###########################
+# Load Build Dependencies #
+###########################
 
 load("//dependencies/graknlabs:repositories.bzl", "graknlabs_dependencies")
 graknlabs_dependencies()
 
-# Load Antlr
 load("@graknlabs_dependencies//builder/antlr:deps.bzl", antlr_deps = "deps")
 antlr_deps()
 load("@rules_antlr//antlr:deps.bzl", "antlr_dependencies")
 antlr_dependencies()
 
-# Load Bazel
 load("@graknlabs_dependencies//builder/bazel:deps.bzl","bazel_common", "bazel_deps", "bazel_toolchain")
 bazel_common()
 bazel_deps()
 bazel_toolchain()
 
-# Load Java
 load("@graknlabs_dependencies//builder/java:deps.bzl", java_deps = "deps")
 java_deps()
 load("@graknlabs_dependencies//library/maven:rules.bzl", "maven")
 
-# Load Kotlin
 load("@graknlabs_dependencies//builder/kotlin:deps.bzl", kotlin_deps = "deps")
 kotlin_deps()
 load("@io_bazel_rules_kotlin//kotlin:kotlin.bzl", "kotlin_repositories", "kt_register_toolchains")
 kotlin_repositories()
 kt_register_toolchains()
 
-# Load Checkstyle
 load("@graknlabs_dependencies//tool/checkstyle:deps.bzl", checkstyle_deps = "deps")
 checkstyle_deps()
 
-# Load Sonarcloud
 load("@graknlabs_dependencies//tool/sonarcloud:deps.bzl", "sonarcloud_dependencies")
 sonarcloud_dependencies()
 
-# Load Unused Deps
 load("@graknlabs_dependencies//tool/unuseddeps:deps.bzl", unuseddeps_deps = "deps")
 unuseddeps_deps()
-
-##########################
-# Load GRPC dependencies #
-##########################
 
 load("@graknlabs_dependencies//builder/grpc:deps.bzl", grpc_deps = "deps")
 grpc_deps()
@@ -72,52 +61,34 @@ load("@com_github_grpc_grpc//bazel:grpc_deps.bzl",
 com_github_grpc_grpc_deps = "grpc_deps")
 com_github_grpc_grpc_deps()
 
-#####################################################################
-# Load @graknlabs_bazel_distribution from (@graknlabs_dependencies) #
-#####################################################################
+################################
+# Load Grakn Labs Dependencies #
+################################
+
 load("@graknlabs_dependencies//distribution:deps.bzl", distribution_deps = "deps")
 distribution_deps()
 
-##########################
-# Load @graknlabs_common #
-##########################
 load("//dependencies/graknlabs:repositories.bzl", "graknlabs_common")
 graknlabs_common()
 
-#########################
-# Load @graknlabs_graql #
-#########################
 load("//dependencies/graknlabs:repositories.bzl", "graknlabs_graql")
 graknlabs_graql()
 
 load("@graknlabs_graql//dependencies/maven:artifacts.bzl", graknlabs_graql_artifacts = "artifacts")
-
-############################
-# Load @graknlabs_protocol #
-############################
 
 load("//dependencies/graknlabs:repositories.bzl", "graknlabs_protocol")
 graknlabs_protocol()
 
 load("@graknlabs_protocol//dependencies/maven:artifacts.bzl", graknlabs_protocol_artifacts = "artifacts")
 
-#################################
-# Load @graknlabs_grabl_tracing #
-#################################
 load("//dependencies/graknlabs:repositories.bzl", "graknlabs_grabl_tracing")
 graknlabs_grabl_tracing()
 
 load("@graknlabs_grabl_tracing//dependencies/maven:artifacts.bzl", graknlabs_grabl_tracing_artifacts = "artifacts")
 
-##############################
-# Load @graknlabs_verification #
-##############################
 load("//dependencies/graknlabs:repositories.bzl", "graknlabs_verification")
 graknlabs_verification()
 
-###########################
-# Load Maven dependencies #
-###########################
 load("//dependencies/maven:artifacts.bzl", graknlabs_grakn_core_artifacts = "artifacts")
 maven(
     graknlabs_grakn_core_artifacts +
