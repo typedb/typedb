@@ -182,6 +182,9 @@ GRAKN_CORE_OVERRIDES = {
    "org.scala-lang:scala-library": "2.11.8",
    "com.fasterxml.jackson.core:jackson-core": "2.9.10",
    "com.fasterxml.jackson.core:jackson-databind": "2.9.10.1",
+
+   "io.netty:netty-all": "4.1.38.Final",
+   "io.netty:netty-codec-http2": "4.1.38.Final",
 }
 
 ###############
