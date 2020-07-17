@@ -20,9 +20,9 @@ package(
     default_visibility = [
         "//:__pkg__",
         "//rocks:__pkg__",
-        "//cluster:__pkg__",
+        "//server:__pkg__",
+        "//test:__subpackages__",
         "//traversal:__pkg__",
-        "//test:__subpackages__"
     ]
 )
 

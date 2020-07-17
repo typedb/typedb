@@ -13,65 +13,62 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
  */
 
 package grakn.core.server.util;
 
 import grakn.core.server.Version;
+import picocli.CommandLine;
 import picocli.CommandLine.Command;
-import picocli.CommandLine.Option;
 
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-@Command(
-        name = "grakn",
-        mixinStandardHelpOptions = true,
-        version = {Version.VERSION}
-)
-public class Options {
+@Command(name = "grakn", mixinStandardHelpOptions = true, version = {Version.VERSION})
+public class ServerOptions {
 
     public static final String DEFAULT_PROPERTIES_FILE = "server/conf/grakn.properties";
     public static final String GRAKN_LOGO_FILE = "server/resources/grakn-core-ascii.txt";
     public static final String DEFAULT_DATABASE_DIRECTORY = "server/db";
     public static final int DEFAULT_DATABASE_PORT = 48555;
 
-    @Option(descriptionKey = "database.directory",
+    @CommandLine.Option(descriptionKey = "database.directory",
             names = {"--database-directory"},
             defaultValue = DEFAULT_DATABASE_DIRECTORY,
             description = "Directory to write database files")
     private String databaseDirectory;
 
-    @Option(descriptionKey = "database.port",
+    @CommandLine.Option(descriptionKey = "database.port",
             names = {"--database-port"},
             defaultValue = DEFAULT_DATABASE_PORT + "",
             description = "GRPC port for Grakn clients to connect to the server")
     private int databasePort;
 
-    @Option(descriptionKey = "grabl.trace",
+    @CommandLine.Option(descriptionKey = "grabl.trace",
             names = {"--grabl-trace"},
             negatable = true,
             defaultValue = "false",
             description = "Enable Grabl performance tracing")
     private boolean grablTrace;
 
-    @Option(descriptionKey = "grabl.uri",
+    @CommandLine.Option(descriptionKey = "grabl.uri",
             names = {"--grabl-uri"},
             description = "Grabl tracing server URI")
     private URI grablURI;
 
-    @Option(descriptionKey = "grabl.username",
+    @CommandLine.Option(descriptionKey = "grabl.username",
             names = {"--grabl-username"},
             description = "Grabl username")
     private String grablUsername;
 
-    @Option(descriptionKey = "grabl.token",
+    @CommandLine.Option(descriptionKey = "grabl.token",
             names = {"--grabl-token"},
             description = "Grabl account access token")
     private String grablToken;
 
-    public Options() {}
+    public ServerOptions() {}
 
     public Path databaseDirectory() {
         return Paths.get(databaseDirectory);

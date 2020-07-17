@@ -25,6 +25,12 @@ workspace(name = "graknlabs_grakn_core")
 load("//dependencies/graknlabs:repositories.bzl", "graknlabs_dependencies")
 graknlabs_dependencies()
 
+# Load Antlr
+load("@graknlabs_dependencies//builder/antlr:deps.bzl", antlr_deps = "deps")
+antlr_deps()
+load("@rules_antlr//antlr:deps.bzl", "antlr_dependencies")
+antlr_dependencies()
+
 # Load Bazel
 load("@graknlabs_dependencies//builder/bazel:deps.bzl","bazel_common", "bazel_deps", "bazel_toolchain")
 bazel_common()
@@ -78,6 +84,14 @@ distribution_deps()
 load("//dependencies/graknlabs:repositories.bzl", "graknlabs_common")
 graknlabs_common()
 
+#########################
+# Load @graknlabs_graql #
+#########################
+load("//dependencies/graknlabs:repositories.bzl", "graknlabs_graql")
+graknlabs_graql()
+
+load("@graknlabs_graql//dependencies/maven:artifacts.bzl", graknlabs_graql_artifacts = "artifacts")
+
 ############################
 # Load @graknlabs_protocol #
 ############################
@@ -107,5 +121,6 @@ graknlabs_verification()
 load("//dependencies/maven:artifacts.bzl", graknlabs_grakn_core_artifacts = "artifacts")
 maven(
     graknlabs_grakn_core_artifacts +
+    graknlabs_graql_artifacts +
     graknlabs_grabl_tracing_artifacts
 )

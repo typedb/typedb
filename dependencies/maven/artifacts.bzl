@@ -1,11 +1,13 @@
 artifacts = [
     "ch.qos.logback:logback-classic",
     "com.google.code.findbugs:jsr305",
+    "com.google.protobuf:protobuf-java",
     "info.picocli:picocli",
     "io.cucumber:cucumber-java",
     "io.cucumber:cucumber-junit",
     "io.grpc:grpc-api",
     "io.grpc:grpc-netty",
+    "io.grpc:grpc-stub",
     "io.netty:netty-all",
     "junit:junit",
     "org.rocksdb:rocksdbjni",

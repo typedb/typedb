@@ -92,6 +92,8 @@
 @maven//:net_bytebuddy_byte_buddy_1_6_4
 @maven//:net_bytebuddy_byte_buddy_agent
 @maven//:net_bytebuddy_byte_buddy_agent_1_6_4
+@maven//:org_antlr_antlr4_runtime
+@maven//:org_antlr_antlr4_runtime_4_7_1
 @maven//:org_apiguardian_apiguardian_api
 @maven//:org_apiguardian_apiguardian_api_1_1_0
 @maven//:org_codehaus_mojo_animal_sniffer_annotations
@@ -100,6 +102,8 @@
 @maven//:org_hamcrest_hamcrest_2_2
 @maven//:org_hamcrest_hamcrest_core
 @maven//:org_hamcrest_hamcrest_core_1_3
+@maven//:org_hamcrest_hamcrest_library
+@maven//:org_hamcrest_hamcrest_library_1_3
 @maven//:org_mockito_mockito_core
 @maven//:org_mockito_mockito_core_2_6_4
 @maven//:org_objenesis_objenesis

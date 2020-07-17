@@ -27,7 +27,7 @@ java_test(
     deps = [
         "//:grakn",
         "//concept:concept",
-        "//rocks:grakn",
+        "//rocks:rocks",
     ],
     size = "large",
 )

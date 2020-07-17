@@ -22,6 +22,7 @@ import grakn.core.Grakn;
 import grakn.core.graph.util.KeyGenerator;
 import org.rocksdb.OptimisticTransactionDB;
 
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -32,11 +33,13 @@ public class RocksSession implements Grakn.Session {
     private final Type type;
     private final ConcurrentMap<RocksTransaction, Long> transactions;
     private final AtomicBoolean isOpen;
+    private final UUID uuid;
 
     RocksSession(RocksDatabase database, Type type) {
         this.database = database;
         this.type = type;
 
+        uuid = UUID.randomUUID();
         transactions = new ConcurrentHashMap<>();
         isOpen = new AtomicBoolean();
         isOpen.set(true);
@@ -76,6 +79,11 @@ public class RocksSession implements Grakn.Session {
         RocksTransaction transaction = new RocksTransaction(this, type);
         transactions.put(transaction, schemaReadLockStamp);
         return transaction;
+    }
+
+    @Override
+    public UUID uuid() {
+        return uuid;
     }
 
     @Override

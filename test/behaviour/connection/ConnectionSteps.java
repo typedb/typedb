@@ -71,7 +71,7 @@ public class ConnectionSteps {
 
         resetDirectory();
         System.out.println("Connecting to Grakn ...");
-        grakn = RocksGrakn.open(directory.toString());
+        grakn = RocksGrakn.open(directory);
         assertNotNull(grakn);
     }
 
@@ -91,12 +91,12 @@ public class ConnectionSteps {
 
     @Given("connection delete all keyspaces")
     public void connection_delete_all_databases() {
-        grakn.databases().getAll().forEach(RocksDatabase::delete);
+        grakn.databases().all().forEach(RocksDatabase::delete);
     }
 
     @Given("connection does not have any keyspace")
     public void connection_does_not_have_any_database() {
-        assertTrue(grakn.databases().getAll().isEmpty());
+        assertTrue(grakn.databases().all().isEmpty());
     }
 
     @After

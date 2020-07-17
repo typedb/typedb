@@ -125,12 +125,12 @@ public class BasicTest {
     public void write_types_concurrently() throws IOException {
         Util.resetDirectory(directory);
 
-        try (Grakn grakn = RocksGrakn.open(directory.toString())) {
+        try (Grakn grakn = RocksGrakn.open(directory)) {
             grakn.databases().create("my_data_database");
 
             assertTrue(grakn.isOpen());
-            assertEquals(1, grakn.databases().getAll().size());
-            assertEquals("my_data_database", grakn.databases().getAll().iterator().next().name());
+            assertEquals(1, grakn.databases().all().size());
+            assertEquals("my_data_database", grakn.databases().all().iterator().next().name());
 
             try (Grakn.Session session = grakn.session("my_data_database", Grakn.Session.Type.SCHEMA)) {
 
@@ -240,11 +240,11 @@ public class BasicTest {
         }
 
 
-        try (Grakn grakn = RocksGrakn.open(directory.toString())) {
+        try (Grakn grakn = RocksGrakn.open(directory)) {
 
             assertTrue(grakn.isOpen());
-            assertEquals(1, grakn.databases().getAll().size());
-            assertEquals("my_data_database", grakn.databases().getAll().iterator().next().name());
+            assertEquals(1, grakn.databases().all().size());
+            assertEquals("my_data_database", grakn.databases().all().iterator().next().name());
 
             try (Grakn.Session session = grakn.session("my_data_database", Grakn.Session.Type.SCHEMA)) {
 
@@ -283,7 +283,7 @@ public class BasicTest {
     private void reset_directory_and_create_attribute_types() throws IOException {
         Util.resetDirectory(directory);
 
-        try (Grakn grakn = RocksGrakn.open(directory.toString())) {
+        try (Grakn grakn = RocksGrakn.open(directory)) {
             grakn.databases().create(database);
             try (Grakn.Session session = grakn.session(database, Grakn.Session.Type.SCHEMA)) {
                 try (Grakn.Transaction txn = session.transaction(Grakn.Transaction.Type.WRITE)) {
@@ -331,7 +331,7 @@ public class BasicTest {
         LocalDateTime date_1991_1_1_0_0 = LocalDateTime.of(1991, 1, 1, 0, 0);
         reset_directory_and_create_attribute_types();
 
-        try (Grakn grakn = RocksGrakn.open(directory.toString())) {
+        try (Grakn grakn = RocksGrakn.open(directory)) {
             try (Grakn.Session session = grakn.session(database)) {
                 try (Grakn.Transaction txn = session.transaction(Grakn.Transaction.Type.WRITE)) {
                     isAlive(txn).put(true);
@@ -409,7 +409,7 @@ public class BasicTest {
 
         reset_directory_and_create_attribute_types();
 
-        try (Grakn grakn = RocksGrakn.open(directory.toString())) {
+        try (Grakn grakn = RocksGrakn.open(directory)) {
             try (Grakn.Session session = grakn.session(database)) {
                 Grakn.Transaction txn1 = session.transaction(Grakn.Transaction.Type.WRITE);
                 Grakn.Transaction txn2 = session.transaction(Grakn.Transaction.Type.WRITE);
@@ -528,7 +528,7 @@ public class BasicTest {
 
         LocalDateTime date_1992_2_3_4_5 = LocalDateTime.of(1991, 2, 3, 4, 5);
 
-        try (Grakn grakn = RocksGrakn.open(directory.toString())) {
+        try (Grakn grakn = RocksGrakn.open(directory)) {
             try (Grakn.Session session = grakn.session(database)) {
                 Grakn.Transaction txn1 = session.transaction(Grakn.Transaction.Type.WRITE);
                 Grakn.Transaction txn2 = session.transaction(Grakn.Transaction.Type.WRITE);
@@ -627,7 +627,7 @@ public class BasicTest {
     public void write_and_delete_attributes_concurrently() throws IOException {
         reset_directory_and_create_attribute_types();
 
-        try (Grakn grakn = RocksGrakn.open(directory.toString())) {
+        try (Grakn grakn = RocksGrakn.open(directory)) {
             try (Grakn.Session session = grakn.session(database)) {
                 Grakn.Transaction txn1 = session.transaction(Grakn.Transaction.Type.WRITE);
                 Grakn.Transaction txn2 = session.transaction(Grakn.Transaction.Type.WRITE);

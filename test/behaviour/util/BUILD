@@ -20,7 +20,7 @@ load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 
 java_library(
     name = "util",
-    srcs = glob(["**/*.java"]),
+    srcs = glob(["*.java"]),
     deps = [
         # Internal Package Dependencies
         "//common",

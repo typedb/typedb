@@ -18,8 +18,8 @@
 
 package grakn.core.rocks;
 
+import grakn.common.util.Pair;
 import grakn.core.Grakn;
-import grakn.core.common.exception.Error;
 import grakn.core.common.exception.GraknException;
 import grakn.core.graph.util.KeyGenerator;
 import org.rocksdb.OptimisticTransactionDB;
@@ -30,10 +30,12 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Comparator;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.StampedLock;
+import java.util.stream.Stream;
 
 import static grakn.core.common.exception.Error.Internal.DIRTY_INITIALISATION;
 
@@ -43,7 +45,7 @@ public class RocksDatabase implements Grakn.Database {
     private final RocksGrakn rocksGrakn;
     private final OptimisticTransactionDB rocksDB;
     private final KeyGenerator.Persisted keyGenerator;
-    private final ConcurrentMap<RocksSession, Long> sessions;
+    private final ConcurrentMap<UUID, Pair<RocksSession, Long>> sessions;
     private final StampedLock schemaLock;
     private final AtomicBoolean isOpen;
 
@@ -100,7 +102,7 @@ public class RocksDatabase implements Grakn.Database {
             schemaWriteLockStamp = schemaLock.writeLock();
         }
         RocksSession session = new RocksSession(this, type);
-        sessions.put(session, schemaWriteLockStamp);
+        sessions.put(session.uuid(), new Pair<>(session, schemaWriteLockStamp));
         return session;
     }
 
@@ -125,7 +127,7 @@ public class RocksDatabase implements Grakn.Database {
     }
 
     void remove(RocksSession session) {
-        long schemaWriteLockStamp = sessions.remove(session);
+        long schemaWriteLockStamp = sessions.remove(session.uuid()).second();
         if (session.type().equals(Grakn.Session.Type.SCHEMA)) {
             schemaLock.unlockWrite(schemaWriteLockStamp);
         }
@@ -133,7 +135,7 @@ public class RocksDatabase implements Grakn.Database {
 
     void close() {
         if (isOpen.compareAndSet(true, false)) {
-            sessions.keySet().forEach(RocksSession::close);
+            sessions.values().forEach(p -> p.first().close());
             rocksDB.close();
         }
     }
@@ -141,6 +143,22 @@ public class RocksDatabase implements Grakn.Database {
     @Override
     public String name() {
         return name;
+    }
+
+    @Override
+    public boolean contains(UUID sessionID) {
+        return sessions.containsKey(sessionID);
+    }
+
+    @Override
+    public Grakn.Session get(UUID sessionID) {
+        if (sessions.containsKey(sessionID)) return sessions.get(sessionID).first();
+        else return null;
+    }
+
+    @Override
+    public Stream<Grakn.Session> sessions() {
+        return sessions.values().stream().map(Pair::first);
     }
 
     @Override

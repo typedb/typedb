@@ -24,6 +24,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Arrays;
+import java.util.UUID;
 
 public class Bytes {
 
@@ -139,6 +140,20 @@ public class Bytes {
 
     public static java.time.LocalDateTime bytesToDateTime(byte[] bytes, ZoneId timeZoneID) {
         return LocalDateTime.ofInstant(Instant.ofEpochMilli(bytesToLong(bytes)), timeZoneID);
+    }
+
+    public static byte[] uuidToBytes(UUID uuid) {
+        ByteBuffer buffer = ByteBuffer.wrap(new byte[16]);
+        buffer.putLong(uuid.getMostSignificantBits());
+        buffer.putLong(uuid.getLeastSignificantBits());
+        return buffer.array();
+    }
+
+    public static UUID bytesToUUID(byte[] bytes) {
+        ByteBuffer buffer = ByteBuffer.wrap(bytes);
+        long firstLong = buffer.getLong();
+        long secondLong = buffer.getLong();
+        return new UUID(firstLong, secondLong);
     }
 
     public static boolean arrayContains(byte[] container, int from, byte[] contained) {

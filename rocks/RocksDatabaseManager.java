@@ -28,7 +28,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-import static grakn.core.common.exception.Error.DatabaseSession.DATABASE_EXISTS;
+import static grakn.core.common.exception.Error.DatabaseManager.DATABASE_EXISTS;
 
 public class RocksDatabaseManager implements Grakn.DatabaseManager {
 
@@ -71,7 +71,7 @@ public class RocksDatabaseManager implements Grakn.DatabaseManager {
     }
 
     @Override
-    public Set<RocksDatabase> getAll() {
+    public Set<RocksDatabase> all() {
         return new HashSet<>(databases.values());
     }
 

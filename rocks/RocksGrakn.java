@@ -25,11 +25,10 @@ import org.rocksdb.RocksDB;
 import org.rocksdb.UInt64AddOperator;
 
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static grakn.core.common.exception.Error.DatabaseSession.DATABASE_NOT_EXIST;
+import static grakn.core.common.exception.Error.DatabaseManager.DATABASE_NOT_EXIST;
 
 /**
  * A Grakn implementation with RocksDB
@@ -46,8 +45,8 @@ public class RocksGrakn implements Grakn {
     private final RocksProperties properties;
     private final RocksDatabaseManager databaseMgr;
 
-    private RocksGrakn(String directory, Properties properties) {
-        this.directory = Paths.get(directory);
+    private RocksGrakn(Path directory, Properties properties) {
+        this.directory = directory;
         this.properties = new RocksProperties(properties);
 
         options = new Options();
@@ -58,15 +57,14 @@ public class RocksGrakn implements Grakn {
         databaseMgr = new RocksDatabaseManager(this);
         databaseMgr.loadAll();
 
-        isOpen = new AtomicBoolean();
-        isOpen.set(true);
+        isOpen = new AtomicBoolean(true);
     }
 
-    public static RocksGrakn open(String directory) {
+    public static RocksGrakn open(Path directory) {
         return open(directory, new Properties());
     }
 
-    public static RocksGrakn open(String directory, Properties properties) {
+    public static RocksGrakn open(Path directory, Properties properties) {
         return new RocksGrakn(directory, properties);
     }
 
@@ -108,7 +106,7 @@ public class RocksGrakn implements Grakn {
     @Override
     public void close() {
         if (isOpen.compareAndSet(true, false)) {
-            databaseMgr.getAll().parallelStream().forEach(RocksDatabase::close);
+            databaseMgr.all().parallelStream().forEach(RocksDatabase::close);
             options.close();
         }
     }

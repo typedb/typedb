@@ -21,9 +21,12 @@ package grakn.core.server;
 import grabl.tracing.client.GrablTracing;
 import grabl.tracing.client.GrablTracingThreadStatic;
 import grakn.common.util.Pair;
-import grakn.core.common.concurrent.NamedThreadFactory;
+import grakn.core.Grakn;
+import grakn.common.concurrent.NamedThreadFactory;
 import grakn.core.common.exception.GraknException;
-import grakn.core.server.util.Options;
+import grakn.core.rocks.RocksGrakn;
+import grakn.core.server.rpc.GraknService;
+import grakn.core.server.util.ServerOptions;
 import io.grpc.Server;
 import io.grpc.netty.NettyServerBuilder;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -47,11 +50,11 @@ import java.util.Properties;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import static grakn.core.common.exception.Error.Server.ENV_VAR_NOT_EXIST;
+import static grakn.core.common.exception.Error.Server.ENV_VAR_NOT_FOUND;
 import static grakn.core.common.exception.Error.Server.EXITED_WITH_ERROR;
 import static grakn.core.common.exception.Error.Server.FAILED_AT_STOPPING;
 import static grakn.core.common.exception.Error.Server.FAILED_PARSE_PROPERTIES;
-import static grakn.core.common.exception.Error.Server.PROPERTIES_FILE_NOT_AVAILABLE;
+import static grakn.core.common.exception.Error.Server.PROPERTIES_FILE_NOT_FOUND;
 import static grakn.core.common.exception.Error.Server.UNCAUGHT_EXCEPTION;
 
 
@@ -59,14 +62,19 @@ public class GraknServer implements AutoCloseable {
 
     private static final Logger LOG = LoggerFactory.getLogger(GraknServer.class);
     private static final int MAX_THREADS = Runtime.getRuntime().availableProcessors();
+    private static final int MAX_THREADS_X_2 = MAX_THREADS * 2;
 
-    private Server rpcServer;
-    private Options options;
+    private Grakn grakn;
+    private GraknService service;
+    private Server server;
+    private ServerOptions options;
 
-    private GraknServer(Options options) {
+    private GraknServer(ServerOptions options) {
         this.options = options;
         if (this.options.grablTrace()) enableGrablTracing();
-        rpcServer = createRPCServer();
+        grakn = RocksGrakn.open(options.databaseDirectory());
+        service = new GraknService(grakn);
+        server = rpcServer();
         Runtime.getRuntime().addShutdownHook(NamedThreadFactory.create(GraknServer.class, "shutdown").newThread(this::close));
         Thread.setDefaultUncaughtExceptionHandler((Thread t, Throwable e) -> LOG.error(UNCAUGHT_EXCEPTION.message(t.getName()), e));
     }
@@ -82,14 +90,15 @@ public class GraknServer implements AutoCloseable {
         GraknServer.LOG.info("Grabl tracing is enabled");
     }
 
-    private Server createRPCServer() {
+    private Server rpcServer() {
         NioEventLoopGroup workerELG = new NioEventLoopGroup(MAX_THREADS, NamedThreadFactory.create(GraknServer.class, "worker"));
         return NettyServerBuilder.forPort(options.databasePort())
-                .executor(Executors.newFixedThreadPool(MAX_THREADS, NamedThreadFactory.create(GraknServer.class, "executor")))
+                .executor(Executors.newFixedThreadPool(MAX_THREADS_X_2, NamedThreadFactory.create(GraknServer.class, "executor")))
                 .workerEventLoopGroup(workerELG)
                 .bossEventLoopGroup(workerELG)
                 .maxConnectionIdle(1, TimeUnit.HOURS) // TODO: why 1 hour?
                 .channelType(NioServerSocketChannel.class)
+                .addService(service)
                 .build();
     }
 
@@ -98,8 +107,10 @@ public class GraknServer implements AutoCloseable {
         LOG.info("");
         LOG.info("Shutting down Grakn Core Server...");
         try {
-            rpcServer.shutdown();
-            rpcServer.awaitTermination();
+            service.close();
+            server.shutdown();
+            server.awaitTermination();
+            grakn.close();
             LOG.info("Grakn Core Server has been shutdown");
         } catch (InterruptedException e) {
             LOG.error(FAILED_AT_STOPPING.message(), e);
@@ -109,7 +120,7 @@ public class GraknServer implements AutoCloseable {
 
     private void start() throws IOException {
         try {
-            rpcServer.start();
+            server.start();
         } catch (Exception e) {
             LOG.error(e.getMessage(), e);
             throw e;
@@ -118,7 +129,7 @@ public class GraknServer implements AutoCloseable {
 
     private void serve() {
         try {
-            rpcServer.awaitTermination();
+            server.awaitTermination();
         } catch (InterruptedException e) {
             // grakn server stop is called
             close();
@@ -127,7 +138,7 @@ public class GraknServer implements AutoCloseable {
     }
 
     private static void printGraknLogo() throws IOException {
-        Path ascii = Paths.get(Options.GRAKN_LOGO_FILE);
+        Path ascii = Paths.get(ServerOptions.GRAKN_LOGO_FILE);
         if (ascii.toFile().exists()) {
             LOG.info(new String(Files.readAllBytes(ascii), StandardCharsets.UTF_8));
         }
@@ -136,12 +147,12 @@ public class GraknServer implements AutoCloseable {
     private static Properties parseProperties() {
         Properties properties = new Properties();
         boolean error = false;
-        File file = Paths.get(Options.DEFAULT_PROPERTIES_FILE).toFile();
+        File file = Paths.get(ServerOptions.DEFAULT_PROPERTIES_FILE).toFile();
 
         try {
             properties.load(new FileInputStream(file));
         } catch (IOException e) {
-            LOG.error(PROPERTIES_FILE_NOT_AVAILABLE.message(file.toString()));
+            LOG.error(PROPERTIES_FILE_NOT_FOUND.message(file.toString()));
             error = true;
         }
 
@@ -150,7 +161,7 @@ public class GraknServer implements AutoCloseable {
             if (val.startsWith("$")) {
                 String envVarName = val.substring(1);
                 if (System.getenv(envVarName) == null) {
-                    LOG.error(ENV_VAR_NOT_EXIST.message(val));
+                    LOG.error(ENV_VAR_NOT_FOUND.message(val));
                     error = true;
                 } else {
                     properties.put(entry.getKey(), System.getenv(envVarName));
@@ -162,8 +173,8 @@ public class GraknServer implements AutoCloseable {
         else return properties;
     }
 
-    private static Pair<Boolean, Options> parseCommandLine(Properties properties, String[] args) {
-        Options options = new Options();
+    private static Pair<Boolean, ServerOptions> parseCommandLine(Properties properties, String[] args) {
+        ServerOptions options = new ServerOptions();
         boolean proceed;
         CommandLine command = new CommandLine(options);
         command.setDefaultValueProvider(new PropertiesDefaultProvider(properties));
@@ -195,7 +206,7 @@ public class GraknServer implements AutoCloseable {
             long start = System.nanoTime();
 
             printGraknLogo();
-            Pair<Boolean, Options> result = parseCommandLine(parseProperties(), args);
+            Pair<Boolean, ServerOptions> result = parseCommandLine(parseProperties(), args);
             if (!result.first()) System.exit(0);
 
             GraknServer server = new GraknServer(result.second());
@@ -215,4 +226,5 @@ public class GraknServer implements AutoCloseable {
 
         System.exit(0);
     }
+
 }

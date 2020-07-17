@@ -25,12 +25,13 @@ exports_files(
 
 java_library(
     name = "grakn",
-    srcs = [
-        "Grakn.java"
-    ],
+    srcs = glob(["*.java"]),
     deps = [
         "//traversal:traversal",
         "//concept:concept",
+
+        # External dependencies from @graknlabs
+        "@graknlabs_graql//java:graql",
     ],
 )
 

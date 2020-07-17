@@ -90,7 +90,7 @@ public class DatabaseSteps {
     @Then("connection has keyspace(s):")
     public void connection_has_databases(List<String> names) {
         assertEquals(set(names),
-                     grakn.databases().getAll().stream()
+                     grakn.databases().all().stream()
                              .map(database -> database.name())
                              .collect(Collectors.toSet()));
     }

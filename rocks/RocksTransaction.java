@@ -19,14 +19,17 @@
 package grakn.core.rocks;
 
 import grakn.core.Grakn;
+import grakn.core.GraknOptions;
 import grakn.core.common.concurrent.ManagedReadWriteLock;
 import grakn.core.common.exception.Error;
 import grakn.core.common.exception.GraknException;
 import grakn.core.concept.Concepts;
+import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graph.Graphs;
 import grakn.core.graph.util.KeyGenerator;
 import grakn.core.graph.util.Storage;
 import grakn.core.traversal.Traversal;
+import graql.lang.query.GraqlQuery;
 import org.rocksdb.OptimisticTransactionOptions;
 import org.rocksdb.ReadOptions;
 import org.rocksdb.RocksDBException;
@@ -39,6 +42,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
+import java.util.stream.Stream;
 
 import static grakn.core.common.collection.Bytes.bytesHavePrefix;
 import static grakn.core.common.collection.Bytes.longToBytes;
@@ -110,6 +114,11 @@ class RocksTransaction implements Grakn.Transaction {
     public Concepts concepts() {
         if (!isOpen.get()) throw new GraknException(CLOSED_TRANSACTION);
         return concepts;
+    }
+
+    @Override
+    public Stream<ConceptMap> stream(GraqlQuery query, GraknOptions options) {
+        return null; // TODO
     }
 
     /**

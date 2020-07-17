@@ -71,12 +71,24 @@ public abstract class Error {
                 new Server(2, "Uncaught exception thrown at thread '%s'.");
         public static final Server FAILED_AT_STOPPING =
                 new Server(3, "Exception occurred while attempting to stop the server");
-        public static final Server PROPERTIES_FILE_NOT_AVAILABLE =
+        public static final Server PROPERTIES_FILE_NOT_FOUND =
                 new Server(4, "Could not find/read default properties file '%s'.");
         public static final Server FAILED_PARSE_PROPERTIES =
                 new Server(5, "Failed at parsing properties file.");
-        public static final Server ENV_VAR_NOT_EXIST =
+        public static final Server ENV_VAR_NOT_FOUND =
                 new Server(6, "Environment variable '%s' is not defined.");
+        public static final Server SERVER_SHUTDOWN =
+                new Server(7, "Grakn Core server has been shutdown.");
+        public static final Server DATABASE_DELETED =
+                new Server(7, "Database with the name '%s' has been deleted.");
+        public static final Server DATABASE_NOT_FOUND =
+                new Server(7, "Database with the name '%s' does not exist.");
+        public static final Server SESSION_NOT_FOUND =
+                new Server(8, "Session with UUID '%s' does not exist.");
+        public static final Server TRANSACTION_ALREADY_OPENED =
+                new Server(9, "Transaction has already been already opened.");
+        public static final Server UNEXPECTED_NULL =
+                new Server(10, "Unexpected NULL object.");
 
         private static final String codePrefix = "SRV";
         private static final String descriptionPrefix = "Server Error";
@@ -102,16 +114,16 @@ public abstract class Error {
         }
     }
 
-    public static class DatabaseSession extends Error {
-        public static final DatabaseSession DATABASE_EXISTS =
-                new DatabaseSession(1, "The database with the name '%s' already exists.");
-        public static final DatabaseSession DATABASE_NOT_EXIST =
-                new DatabaseSession(2, "The database with the name '%s' does not exist.");
+    public static class DatabaseManager extends Error {
+        public static final DatabaseManager DATABASE_EXISTS =
+                new DatabaseManager(1, "The database with the name '%s' already exists.");
+        public static final DatabaseManager DATABASE_NOT_EXIST =
+                new DatabaseManager(2, "The database with the name '%s' does not exist.");
 
         private static final String codePrefix = "DBS";
         private static final String descriptionPrefix = "Invalid Session Operation";
 
-        DatabaseSession(int number, String description) {
+        DatabaseManager(int number, String description) {
             super(codePrefix, number, descriptionPrefix, description);
         }
     }

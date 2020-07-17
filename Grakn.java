@@ -19,9 +19,13 @@
 package grakn.core;
 
 import grakn.core.concept.Concepts;
+import grakn.core.concept.answer.ConceptMap;
 import grakn.core.traversal.Traversal;
+import graql.lang.query.GraqlQuery;
 
 import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Stream;
 
 /**
  * A Grakn Database API
@@ -52,7 +56,7 @@ public interface Grakn extends AutoCloseable {
 
         Database get(String database);
 
-        Set<? extends Database> getAll();
+        Set<? extends Database> all();
     }
 
     /**
@@ -63,6 +67,12 @@ public interface Grakn extends AutoCloseable {
     interface Database {
 
         String name();
+
+        boolean contains(UUID sessionID);
+
+        Session get(UUID sessionID);
+
+        Stream<Session> sessions();
 
         void delete();
     }
@@ -76,6 +86,8 @@ public interface Grakn extends AutoCloseable {
     interface Session extends AutoCloseable {
 
         Transaction transaction(Transaction.Type type);
+
+        UUID uuid();
 
         Session.Type type();
 
@@ -122,6 +134,8 @@ public interface Grakn extends AutoCloseable {
         Traversal traversal();
 
         Concepts concepts();
+
+        Stream<ConceptMap> stream(GraqlQuery query, GraknOptions options);
 
         void commit();
 

@@ -26,7 +26,7 @@ package(
 
 java_library(
     name = "graph",
-    srcs = glob(["**/*.java"]),
+    srcs = glob(["*.java", "*/*.java", "*/*/*.java"]),
     deps = [
         # Internal Package Dependencies
         "//common:common",
