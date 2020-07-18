@@ -17,16 +17,20 @@ define
 #Entities
 #simple vertical hierarchy
 
-baseEntity sub entity,
+
+baseRoleEntity sub entity,
     has resource,
     plays symmetricRole,
     plays baseRole1,
     plays baseRole2,
-    plays baseRole3,
-    abstract;
+    plays baseRole3;
 
-baseRoleEntity sub baseEntity;
-anotherBaseRoleEntity sub baseEntity;
+anotherBaseRoleEntity sub entity,
+    has resource,
+    plays symmetricRole,
+    plays baseRole1,
+    plays baseRole2,
+    plays baseRole3;
 
 subRoleEntity sub baseRoleEntity,
     plays subRole1,
