@@ -59,6 +59,7 @@ public class ReasoningIT {
     //The ignored tests reveal some bugs in the reasoning algorithm, as they don't return the expected results,
     //as specified in the respective comments below.
 
+    // TODO: delete (migrated to relation-inference) and delete schema
     @Test
     public void whenMaterialising_duplicatesAreNotCreated() {
         try (Session session = server.sessionWithNewKeyspace()) {
@@ -74,6 +75,7 @@ public class ReasoningIT {
         }
     }
 
+    // TODO: delete (migrated to relation-inference and match) and delete schema
     @Test //Expected result: Both queries should return a non-empty result, with $x/$y mapped to a unique entity.
     public void unificationOfReflexiveRelations() {
         try (Session session = server.sessionWithNewKeyspace()) {
