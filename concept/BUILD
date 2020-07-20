@@ -22,7 +22,7 @@ package(
         "//rocks:__pkg__",
         "//server:__pkg__",
         "//test:__subpackages__",
-        "//traversal:__pkg__",
+        "//query:__pkg__",
     ]
 )
 

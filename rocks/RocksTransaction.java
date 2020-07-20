@@ -19,16 +19,13 @@
 package grakn.core.rocks;
 
 import grakn.core.Grakn;
-import grakn.core.GraknOptions;
 import grakn.core.common.concurrent.ManagedReadWriteLock;
 import grakn.core.common.exception.GraknException;
 import grakn.core.concept.Concepts;
-import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graph.Graphs;
 import grakn.core.graph.util.KeyGenerator;
 import grakn.core.graph.util.Storage;
-import grakn.core.traversal.Traversal;
-import graql.lang.query.GraqlQuery;
+import grakn.core.query.Query;
 import org.rocksdb.OptimisticTransactionOptions;
 import org.rocksdb.ReadOptions;
 import org.rocksdb.RocksDBException;
@@ -41,14 +38,13 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
-import java.util.stream.Stream;
 
 import static grakn.core.common.collection.Bytes.bytesHavePrefix;
 import static grakn.core.common.collection.Bytes.longToBytes;
-import static grakn.core.common.exception.Error.Transaction.TRANSACTION_CLOSED;
 import static grakn.core.common.exception.Error.Transaction.DIRTY_DATA_WRITES;
 import static grakn.core.common.exception.Error.Transaction.DIRTY_SCHEMA_WRITES;
 import static grakn.core.common.exception.Error.Transaction.ILLEGAL_COMMIT;
+import static grakn.core.common.exception.Error.Transaction.TRANSACTION_CLOSED;
 
 class RocksTransaction implements Grakn.Transaction {
 
@@ -62,7 +58,7 @@ class RocksTransaction implements Grakn.Transaction {
     private final CoreStorage storage;
     private final Graphs graph;
     private final Concepts concepts;
-    private final Traversal traversal;
+    private final Query traversal;
     private final AtomicBoolean isOpen;
 
     RocksTransaction(RocksSession session, Type type) {
@@ -78,7 +74,7 @@ class RocksTransaction implements Grakn.Transaction {
         storage = new CoreStorage();
         graph = new Graphs(storage);
         concepts = new Concepts(graph);
-        traversal = new Traversal(concepts);
+        traversal = new Query(graph, concepts);
 
         isOpen = new AtomicBoolean();
         isOpen.set(true);
@@ -104,7 +100,7 @@ class RocksTransaction implements Grakn.Transaction {
     }
 
     @Override
-    public Traversal traversal() {
+    public Query query() {
         if (!isOpen.get()) throw new GraknException(TRANSACTION_CLOSED);
         return traversal;
     }
@@ -113,11 +109,6 @@ class RocksTransaction implements Grakn.Transaction {
     public Concepts concepts() {
         if (!isOpen.get()) throw new GraknException(TRANSACTION_CLOSED);
         return concepts;
-    }
-
-    @Override
-    public Stream<ConceptMap> stream(GraqlQuery query, GraknOptions options) {
-        return null; // TODO
     }
 
     /**

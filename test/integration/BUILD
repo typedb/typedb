@@ -33,15 +33,15 @@ java_test(
 )
 
 java_test(
-    name = "test-traversal",
-    srcs = ["TraversalTest.java"],
-    test_class = "grakn.core.test.integration.TraversalTest",
+    name = "test-query",
+    srcs = ["QueryTest.java"],
+    test_class = "grakn.core.test.integration.QueryTest",
 )
 
 checkstyle_test(
     name = "checkstyle",
     targets = [
         ":test-basic",
-        ":test-traversal",
+        ":test-query",
     ],
 )

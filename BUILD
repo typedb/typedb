@@ -27,11 +27,9 @@ java_library(
     name = "grakn",
     srcs = glob(["*.java"]),
     deps = [
-        "//traversal:traversal",
+        # Internal package dependencies
+        "//query:query",
         "//concept:concept",
-
-        # External dependencies from @graknlabs
-        "@graknlabs_graql//java:graql",
     ],
 )
 

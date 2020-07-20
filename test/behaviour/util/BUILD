@@ -23,7 +23,7 @@ java_library(
     srcs = glob(["*.java"]),
     deps = [
         # Internal Package Dependencies
-        "//common",
+        "//common:common",
 
         # Internal Repository Dependencies
         # "@graknlabs_common//:common",

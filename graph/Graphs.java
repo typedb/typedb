@@ -18,6 +18,7 @@
 
 package grakn.core.graph;
 
+import grakn.core.graph.traversal.Traversal;
 import grakn.core.graph.util.KeyGenerator;
 import grakn.core.graph.util.Storage;
 
@@ -49,6 +50,10 @@ public class Graphs {
 
     public ThingGraph thing() {
         return thingGraph;
+    }
+
+    public Traversal traversal(){
+        return new Traversal(); // TODO
     }
 
     public void clear() {

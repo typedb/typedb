@@ -32,11 +32,10 @@ java_library(
         "//common:common",
         "//concept:concept",
         "//graph:graph",
-        "//traversal:traversal",
+        "//query:query",
 
         # External dependencies from @graknlabs
         "@graknlabs_common//:common",
-        "@graknlabs_graql//java:graql",
 
         # External dependencies
         "@maven//:com_google_code_findbugs_jsr305",

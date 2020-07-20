@@ -27,14 +27,22 @@ package(
 )
 
 java_library(
-    name = "traversal",
+    name = "query",
     srcs = glob(["*.java"]),
-    deps = ["//concept"],
+    deps = [
+        # Internal package dependencies
+        "//common:common",
+        "//concept:concept",
+        "//graph:graph",
+
+        # External dependencies from @graknlabs
+        "@graknlabs_graql//java:graql",
+    ],
 )
 
 checkstyle_test(
     name = "checkstyle",
     targets = [
-        ":traversal",
+        ":query",
     ],
 )

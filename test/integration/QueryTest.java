@@ -20,7 +20,7 @@ package grakn.core.test.integration;
 
 import org.junit.Test;
 
-public class TraversalTest {
+public class QueryTest {
 
     @Test
     public void hello_world() {

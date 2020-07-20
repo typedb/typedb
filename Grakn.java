@@ -19,9 +19,7 @@
 package grakn.core;
 
 import grakn.core.concept.Concepts;
-import grakn.core.concept.answer.ConceptMap;
-import grakn.core.traversal.Traversal;
-import graql.lang.query.GraqlQuery;
+import grakn.core.query.Query;
 
 import java.util.Set;
 import java.util.UUID;
@@ -131,11 +129,9 @@ public interface Grakn extends AutoCloseable {
 
         boolean isOpen();
 
-        Traversal traversal();
-
         Concepts concepts();
 
-        Stream<ConceptMap> stream(GraqlQuery query, GraknOptions options);
+        Query query();
 
         void commit();
 

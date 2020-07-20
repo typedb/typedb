@@ -20,7 +20,7 @@ package grakn.core.server.rpc;
 import grabl.tracing.client.GrablTracingThreadStatic;
 import grabl.tracing.client.GrablTracingThreadStatic.ThreadTrace;
 import grakn.core.Grakn;
-import grakn.core.GraknOptions;
+import grakn.core.common.options.GraknOptions;
 import grakn.core.server.rpc.util.ResponseBuilder;
 import grakn.protocol.TransactionProto.Transaction;
 import io.grpc.Status;
