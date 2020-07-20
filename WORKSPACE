@@ -90,8 +90,23 @@ load("//dependencies/graknlabs:repositories.bzl", "graknlabs_verification")
 graknlabs_verification()
 
 load("//dependencies/maven:artifacts.bzl", graknlabs_grakn_core_artifacts = "artifacts")
+GRAKN_CORE_OVERRIDES = {
+    "io.netty:netty-all": "4.1.38.Final",
+    "io.netty:netty-buffer": "4.1.38.Final",
+    "io.netty:netty-codec": "4.1.38.Final",
+    "io.netty:netty-codec-http2": "4.1.38.Final",
+    "io.netty:netty-codec-http": "4.1.38.Final",
+    "io.netty:netty-codec-socks": "4.1.38.Final",
+    "io.netty:netty-common": "4.1.38.Final",
+    "io.netty:netty-handler": "4.1.38.Final",
+    "io.netty:netty-handler-proxy": "4.1.38.Final",
+    "io.netty:netty-resolver": "4.1.38.Final",
+    "io.netty:netty-transport": "4.1.38.Final",
+}
+
 maven(
     graknlabs_grakn_core_artifacts +
     graknlabs_graql_artifacts +
-    graknlabs_grabl_tracing_artifacts
+    graknlabs_grabl_tracing_artifacts,
+    GRAKN_CORE_OVERRIDES
 )
