@@ -107,7 +107,7 @@ public class TransactionProviderImpl implements TransactionProvider {
 
 
         PropertyAtomicFactory propertyAtomicFactory = new PropertyAtomicFactory(conceptManager, ruleCache, queryCache, keyspaceStatistics);
-        ReasonerQueryFactory reasonerQueryFactory = new ReasonerQueryFactory(conceptManager, queryCache, ruleCache, keyspaceStatistics, executorFactory, propertyAtomicFactory, traversalPlanFactory, traversalExecutor);
+        ReasonerQueryFactory reasonerQueryFactory = new ReasonerQueryFactory(conceptManager, queryCache, ruleCache, keyspaceStatistics, propertyAtomicFactory, traversalPlanFactory, traversalExecutor);
         executorFactory.setReasonerQueryFactory(reasonerQueryFactory);
         propertyAtomicFactory.setReasonerQueryFactory(reasonerQueryFactory);
         ruleCache.setReasonerQueryFactory(reasonerQueryFactory);

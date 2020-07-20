@@ -44,15 +44,13 @@ import java.util.Set;
 public class ReasonerQueryFactory {
 
     private ReasoningContext ctx;
-    private ExecutorFactory executorFactory;
     private PropertyAtomicFactory propertyAtomicFactory;
     private TraversalPlanFactory traversalPlanFactory;
     private TraversalExecutor traversalExecutor;
 
     public ReasonerQueryFactory(ConceptManager conceptManager, QueryCache queryCache, RuleCache ruleCache, KeyspaceStatistics statistics,
-                                ExecutorFactory executorFactory, PropertyAtomicFactory propertyAtomicFactory, TraversalPlanFactory traversalPlanFactory,
+                                PropertyAtomicFactory propertyAtomicFactory, TraversalPlanFactory traversalPlanFactory,
                                 TraversalExecutor traversalExecutor) {
-        this.executorFactory = executorFactory;
         this.propertyAtomicFactory = propertyAtomicFactory;
         this.traversalPlanFactory = traversalPlanFactory;
         this.traversalExecutor = traversalExecutor;

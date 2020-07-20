@@ -55,6 +55,8 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -163,31 +165,31 @@ public class RuleApplicabilityIT {
             TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction)tx;
             ReasonerQueryFactory reasonerQueryFactory = testTx.reasonerQueryFactory();
 
-            String typeString = "{ $x isa path; };";
+            String typeString = "{ $x isa elevation-ranking; };";
             String typeString2 = "{ $x isa ternary-steep-path; };";
-            String typeString3 = "{ $x isa steep-path; };";
-            Atom pathAtom = reasonerQueryFactory.atomic(conjunction(typeString)).getAtom();
+            String typeString3 = "{ $x isa located; };";
+            Atom rankingAtom = reasonerQueryFactory.atomic(conjunction(typeString)).getAtom();
             Atom ternarySteepPathAtom = reasonerQueryFactory.atomic(conjunction(typeString2)).getAtom();
-            Atom steepPathAtom = reasonerQueryFactory.atomic(conjunction(typeString3)).getAtom();
+            Atom locatedAtom = reasonerQueryFactory.atomic(conjunction(typeString3)).getAtom();
 
             Type ternarySteepPath = testTx.getRelationType("ternary-steep-path");
-            Type steepPath = testTx.getRelationType("steep-path");
-            Type path = testTx.getRelationType("path");
+            Type located = testTx.getRelationType("located");
+            Type ranking = testTx.getRelationType("elevation-ranking");
 
             Set<InferenceRule> rules = testTx.ruleCache().getRules().map(r -> new InferenceRule(r, reasonerQueryFactory)).collect(Collectors.toSet());
-            Set<InferenceRule> ternaryRankedConnectionRules = rules.stream().filter(rule -> rule.getHead().getAtom().getSchemaConcept().equals(ternarySteepPath)).collect(toSet());
-            Set<InferenceRule> rankedConnectionRules = rules.stream().filter(rule -> rule.getHead().getAtom().getSchemaConcept().equals(steepPath)).collect(toSet());
-            Set<InferenceRule> connectionRules = rules.stream().filter(rule -> rule.getHead().getAtom().getSchemaConcept().equals(path)).collect(toSet());
+            Set<InferenceRule> ternarySteepPathRules = rules.stream().filter(rule -> rule.getHead().getAtom().getSchemaConcept().equals(ternarySteepPath)).collect(toSet());
+            Set<InferenceRule> locatedRules = rules.stream().filter(rule -> rule.getHead().getAtom().getSchemaConcept().equals(located)).collect(toSet());
+            Set<InferenceRule> rankingRules = rules.stream().filter(rule -> rule.getHead().getAtom().getSchemaConcept().equals(ranking)).collect(toSet());
 
             assertEquals(
-                    connectionRules.stream().map(InferenceRule::getRule).collect(toSet()),
-                    pathAtom.getApplicableRules().map(InferenceRule::getRule).collect(toSet()));
+                    rankingRules.stream().map(InferenceRule::getRule).collect(toSet()),
+                    rankingAtom.getApplicableRules().map(InferenceRule::getRule).collect(toSet()));
             assertEquals(
-                    ternaryRankedConnectionRules.stream().map(InferenceRule::getRule).collect(toSet()),
+                    ternarySteepPathRules.stream().map(InferenceRule::getRule).collect(toSet()),
                     ternarySteepPathAtom.getApplicableRules().map(InferenceRule::getRule).collect(toSet()));
             assertEquals(
-                    rankedConnectionRules.stream().map(InferenceRule::getRule).collect(toSet()),
-                    steepPathAtom.getApplicableRules().map(InferenceRule::getRule).collect(toSet()));
+                    locatedRules.stream().map(InferenceRule::getRule).collect(toSet()),
+                    locatedAtom.getApplicableRules().map(InferenceRule::getRule).collect(toSet()));
         }
     }
 
@@ -425,7 +427,7 @@ public class RuleApplicabilityIT {
         try(Transaction tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE)) {
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
-            String relationString = "{ ($x, $y, attributed:$z); $y isa discoverer; $z isa ranked-hill-city; };";
+            String relationString = "{ ($x, $y, attributed:$z); $y isa monument; $z isa ranked-hill-city; };";
             RelationAtom relation = (RelationAtom) reasonerQueryFactory.atomic(conjunction(relationString)).getAtom();
             ImmutableSetMultimap<Role, Variable> roleMap = ImmutableSetMultimap.of(
                     tx.getRole("role"), new Variable("x"),
@@ -503,49 +505,33 @@ public class RuleApplicabilityIT {
             TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
             ReasonerQueryFactory reasonerQueryFactory = testTx.reasonerQueryFactory();
 
-            //inferred relation (role {subRole, anotherRole} : $x, role {subRole, symmetricRole} : $y)
-            String relationString = "{ ($x, $y);$x isa twoRoleEntity; $y isa ranked-hill-city; };";
+            //inferred relation (role {steep-path_lower-end, located-item, string-attributed, long-attributed} : $x, role {located-by, string-attributed, long-attributed} : $y)
+            String relationString = "{ ($x, $y);$x isa monument; $y isa discoverer; };";
 
-            //inferred relation: (someRole: $x, someRole: $y)
-            //won't match any rules because of IS: singleRoleEntity can't play subRole or anotherRole needed in rule heads
-            String relationString2 = "{ ($x, $y);$x isa singleRoleEntity; $y isa singleRoleEntity; };";
+            //inferred relation: (string-attributed: $x, string-attributed: $y) -- no rules can also satisfy with-string
+            String relationString2 = "{ ($x, $y);$x isa with-string; $y isa with-string; };";
 
-            //inferred relation: (someRole: $x, role {subRole, symmetricRole}: $y)
-            String relationString3 = "{ ($x, $y);$x isa singleRoleEntity; $y isa anotherTwoRoleEntity; };";
+            //inferred relation: (someRole: $x, role {located-by, string-attributed, long-attributed}: $y)
+            String relationString3 = "{ ($x, $y);$x isa with-string; $y isa discoverer; };";
 
-            //inferred relation: (someRole: $x, role {someRole, subRole, anotherRole}: $y)
-            String relationString4 = "{ ($x, $y);$x isa singleRoleEntity; $y isa threeRoleEntity; };";
+            //inferred relation: (role {located-by, string-attributed, long-attributed}: $x, role {located-by, string-attributed, long-attributed}: $y)
+            String relationString4 = "{ ($x, $y);$x isa discoverer; $y isa discoverer; };";
 
-            //inferred relation: (role {subRole, anotherRole}: $x, role {subRole, anotherRole}: $y)
-            String relationString5 = "{ ($x, $y);$x isa twoRoleEntity; $y isa twoRoleEntity; };";
+            //won't match any rules because no rules allow trigger with any combination of the roles monument can play
+            String relationString5 = "{ ($x, $y, $z);$x isa monument; $y isa monument; $z isa monument;};";
 
-            //won't match any rules because of IS: 3 twoRoleEntity roleplayers can't play any combination of roles specified in rule heads
-            String relationString5b = "{ ($x, $y, $z);$x isa twoRoleEntity; $y isa twoRoleEntity; $z isa twoRoleEntity;};";
-
-            //inferred relation: (role {subRole, symmetricRole}: $x, role {subRole, symmetricRole}: $y)
-            String relationString6 = "{ ($x, $y);$x isa anotherTwoRoleEntity; $y isa anotherTwoRoleEntity; };";
 
             Atom relation = reasonerQueryFactory.atomic(conjunction(relationString)).getAtom();
             Atom relation2 = reasonerQueryFactory.atomic(conjunction(relationString2)).getAtom();
             Atom relation3 = reasonerQueryFactory.atomic(conjunction(relationString3)).getAtom();
             Atom relation4 = reasonerQueryFactory.atomic(conjunction(relationString4)).getAtom();
             Atom relation5 = reasonerQueryFactory.atomic(conjunction(relationString5)).getAtom();
-            Atom relation5b = reasonerQueryFactory.atomic(conjunction(relationString5b)).getAtom();
-            Atom relation6 = reasonerQueryFactory.atomic(conjunction(relationString6)).getAtom();
 
-            assertEquals(6, relation.getApplicableRules().count());
-            assertThat(relation2.getApplicableRules().collect(toSet()), empty());
-            assertEquals(6, relation3.getApplicableRules().count());
-            assertEquals(3, relation4.getApplicableRules().count());
-
-            assertEquals(
-                    Sets.newHashSet(
-                            testTx.getRule("ternary-rule"),
-                            testTx.getRule("alternative-ternary-rule")),
-                    relation5.getApplicableRules().map(InferenceRule::getRule).collect(toSet()));
-            assertThat(relation5b.getApplicableRules().collect(toSet()), empty());
-
-            assertEquals(4, relation6.getApplicableRules().count());
+            assertEquals(3, relation.getApplicableRules().count());
+            assertEquals(0, relation2.getApplicableRules().count());
+            assertEquals(1, relation3.getApplicableRules().count());
+            assertEquals(2, relation4.getApplicableRules().count());
+            assertEquals(0, relation5.getApplicableRules().count());
         }
     }
 
@@ -554,27 +540,28 @@ public class RuleApplicabilityIT {
         try(Transaction tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE)) {
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
-            String relationString = "{ $y isa singleRoleEntity;(someRole:$x, role:$y, anotherRole: $z) isa ternary; };";
+            String relationString = "{ $y isa city;(steep-path_lower-end:$x, role:$y, path_end: $z) isa ternary-steep-path; };";
 
-            String relationString2 = "{ $y isa twoRoleEntity;(someRole:$x, subRole:$y, anotherRole: $z) isa ternary; };";
+            String relationString2 = "{ $y isa hill-city;(steep-path_lower-end:$x, ternary-steep-path_middle-end:$y, path_end: $z) isa ternary-steep-path; };";
 
-            String relationString3 = "{ $y isa anotherTwoRoleEntity;(someRole:$x, subRole:$y, anotherRole: $z) isa ternary; };";
+            String relationString3 = "{ $y isa ranked-hill-city;(steep-path_lower-end:$x, ternary-steep-path_middle-end:$y, path_end: $z) isa ternary-steep-path; };";
 
-            String relationString4 = "{ $y isa noRoleEntity;(someRole:$x, subRole:$y, anotherRole: $z) isa ternary; };";
+            String relationString4 = "{ $y isa root;(steep-path_lower-end:$x, ternary-steep-path_middle-end:$y, path_end: $z) isa ternary-steep-path; };";
 
-            String relationString5 = "{ $y isa entity;(someRole:$x, subRole:$y, anotherRole: $z) isa ternary; };";
+            String relationString5 = "{ $y isa entity;(steep-path_lower-end:$x, ternary-steep-path_middle-end:$y, path_end: $z) isa ternary-steep-path; };";
             Atom relation = reasonerQueryFactory.atomic(conjunction(relationString)).getAtom();
             Atom relation2 = reasonerQueryFactory.atomic(conjunction(relationString2)).getAtom();
             Atom relation3 = reasonerQueryFactory.atomic(conjunction(relationString3)).getAtom();
             Atom relation4 = reasonerQueryFactory.atomic(conjunction(relationString4)).getAtom();
             Atom relation5 = reasonerQueryFactory.atomic(conjunction(relationString5)).getAtom();
 
-            Rule ternaryRule = tx.getRule("ternary-rule");
-            assertEquals(ternaryRule, Iterables.getOnlyElement(relation.getApplicableRules().collect(toSet())).getRule());
-            assertEquals(ternaryRule, Iterables.getOnlyElement(relation2.getApplicableRules().collect(toSet())).getRule());
-            assertEquals(ternaryRule, Iterables.getOnlyElement(relation3.getApplicableRules().collect(toSet())).getRule());
-            assertEquals(ternaryRule, Iterables.getOnlyElement(relation4.getApplicableRules().collect(toSet())).getRule());
-            assertEquals(ternaryRule, Iterables.getOnlyElement(relation5.getApplicableRules().collect(toSet())).getRule());
+            Rule ternaryRule1 = tx.getRule("ternary-steep-path-from-steep-paths");
+            Rule ternaryRule2 = tx.getRule("flat-ternary-steep-path");
+            assertEquals(new HashSet<>(Arrays.asList(ternaryRule1, ternaryRule2)), relation.getApplicableRules().map(r -> r.getRule()).collect(toSet()));
+            assertEquals(ternaryRule1, Iterables.getOnlyElement(relation2.getApplicableRules().collect(toSet())).getRule());
+            assertEquals(ternaryRule1, Iterables.getOnlyElement(relation3.getApplicableRules().collect(toSet())).getRule());
+            assertEquals(ternaryRule1, Iterables.getOnlyElement(relation4.getApplicableRules().collect(toSet())).getRule());
+            assertEquals(ternaryRule1, Iterables.getOnlyElement(relation5.getApplicableRules().collect(toSet())).getRule());
         }
     }
 
@@ -624,6 +611,9 @@ public class RuleApplicabilityIT {
         }
     }
 
+    /*
+    when we have a specific instance, we only need to check compatibility of rules based on inheritance
+     */
     @Test
     public void relationWithUnspecifiedRoles_specifyingRolePlayerMakesRuleInapplicable(){
         try(Transaction tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE)) {
@@ -639,6 +629,9 @@ public class RuleApplicabilityIT {
         }
     }
 
+    /*
+    when we have a specific instance, we only need to check compatibility of rules based on inheritance
+    */
     @Test
     public void relationWithUnspecifiedRoles_specifyingRolePlayerMakesRuleInapplicable_noRelationType(){
         try(Transaction tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE)) {
@@ -890,7 +883,7 @@ public class RuleApplicabilityIT {
     public void whenMatchingRulesForGroundAtomRedefinedViaRule_ruleIsMatched(){
         try(Transaction tx = ruleApplicabilitySession.transaction(Transaction.Type.READ)) {
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
-            Relation instance = tx.getRelationType("located").instances().findFirst().orElse(null);
+            Relation instance = tx.stream(Graql.parse("match $r isa located; get;").asGet()).map(ans -> ans.get("r").asRelation()).findFirst().get();
             String queryString = "{ $r has description 'in a fictional hilly world'; $r id " + instance.id().getValue() + "; };";
             Atom atom = reasonerQueryFactory.atomic(conjunction(queryString)).getAtom();
 
@@ -903,21 +896,24 @@ public class RuleApplicabilityIT {
         try(Transaction tx = ruleApplicabilitySession.transaction(Transaction.Type.READ)) {
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
-            Relation instance = tx.getRelationType("binary").instances().findFirst().orElse(null);
-            String queryString = "{ $x isa binary; $x id " + instance.id().getValue() + "; };";
+            Relation instance = tx.getRelationType("steep-path").instances().findFirst().orElse(null);
+            String queryString = "{ $x isa steep-path; $x id " + instance.id().getValue() + "; };";
             Atom atom = reasonerQueryFactory.atomic(conjunction(queryString)).getAtom();
 
             assertThat(atom.getApplicableRules().collect(toSet()), empty());
         }
     }
 
+    /*
+    we cant infer a relation concept that already exists by ID - so we don't need to try to apply any rules to it
+     */
     @Test
     public void whenMatchingRulesForASpecificRelation_noRulesAreMatched(){
         try(Transaction tx = ruleApplicabilitySession.transaction(Transaction.Type.READ)) {
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
-            Relation instance = tx.getRelationType("binary").instances().findFirst().orElse(null);
-            String queryString = "{ $r ($x, $y) isa binary; $r id " + instance.id().getValue() + "; };";
+            Relation instance = tx.getRelationType("steep-path").instances().findFirst().orElse(null);
+            String queryString = "{ $r ($x, $y) isa steep-path; $r id " + instance.id().getValue() + "; };";
             Atom atom = reasonerQueryFactory.atomic(conjunction(queryString)).getAtom();
 
             assertThat(atom.getApplicableRules().collect(toSet()), empty());

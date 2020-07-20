@@ -34,7 +34,7 @@ all-elevation-rankings sub rule,
         $r1 (steep-path_lower-end: $x, steep-path_upper-end: $y) isa steep-path;
         $r2 (steep-path_lower-end: $y, steep-path_upper-end: $z) isa steep-path;
     }, then {
-        (elevation-ranking_lower-path: $r1, elevation-ranking_upper: $r2) isa elevation-ranking;
+        (elevation-ranking_lower-path: $r1, elevation-ranking_upper-path: $r2) isa elevation-ranking;
     };
 
 # create links between other linkable entities
@@ -81,7 +81,7 @@ located-description sub rule,
 mixed-attributed-entities-relation sub rule,
     when {
         $x isa ranked-hill-city, has numerical-elevation-rank 0;
-        $y isa monument, has name 'Big Rock';
+        $y has name 'Big Rock';
         $z isa discoverer, has description 'discovery is cool';
     }, then {
         (long-attributed: $x, string-attributed: $y, string-attributed: $z) isa entities-with-attributes;
@@ -90,7 +90,7 @@ mixed-attributed-entities-relation sub rule,
 long-attributed-entities-relation sub rule,
     when {
         $x isa ranked-hill-city, has numerical-elevation-rank < -1000;
-        $y isa monument, has numerical-elevation-rank !== 0;
+        $y has numerical-elevation-rank !== 0;
         $z isa discoverer, has age > 1000;
     }, then {
         (long-attributed: $x, long-attributed: $y, long-attributed: $z) isa entities-with-attributes;
@@ -116,7 +116,7 @@ steep-path sub path,
     relates steep-path_upper-end as path_end,
     relates steep-path_other-end as path_end, # we have this because we won't be able to access 'connected' in sub relations
     plays elevation-ranking_lower-path,
-    plays elevation-ranking_upper,
+    plays elevation-ranking_upper-path,
     has description;
 
 ternary-steep-path sub steep-path,
@@ -128,8 +128,8 @@ ranking sub relation,
     relates ranked;
 elevation-ranking sub relation,
     relates elevation-ranking_lower-path as ranked,
-    relates elevation-ranking_upper as ranked,
-    relates elevation-ranking_nearby-item;
+    relates elevation-ranking_upper-path as ranked,
+    relates elevation-ranking_nearby-item as ranked;
 
 located sub relation,
     relates located-in,
@@ -178,7 +178,7 @@ discoverer sub root,
     has description,
     has age;
 
-# a entity that plays just 1 high level role that can be inferred
+# entities that plays just 1 high level role that can be inferred
 with-long sub root,
     plays long-attributed,
     has age;
