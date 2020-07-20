@@ -42,5 +42,5 @@ java_library(
         "//dependencies/maven/artifacts/com/google/guava:guava",
         "//dependencies/maven/artifacts/com/google/protobuf:protobuf-java",
     ],
-    tags = ["maven_coordinates=io.grakn.core:grakn-migrate-proto:{pom_version}"],
+    tags = ["maven_coordinates=io.grakn.core:grakn-migrate-proto:{pom_version}", "checkstyle_ignore"],
 )
