@@ -27,6 +27,7 @@ java_library(
         # Grakn Core dependencies
         "//common:common",
         "//server:server",
+        "//server/migrate/proto:migrate-proto-java",
 
         # External dependencies
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api",

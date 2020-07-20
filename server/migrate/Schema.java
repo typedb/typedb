@@ -91,6 +91,7 @@ public class Schema {
         List<TypeDeclaration> children = superMap.get(startingLabel);
         if (children == null) return;
 
+        children.sort(Comparator.comparing(td -> td.label));
         for (TypeDeclaration child : children) {
             child.print(writer);
             writer.println();

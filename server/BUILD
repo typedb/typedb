@@ -28,7 +28,6 @@ exports_files(
     visibility = ["//visibility:public"]
 )
 
-
 genrule(
     name = "version",
     srcs = [
@@ -40,24 +39,9 @@ genrule(
     visibility = ["//common:__subpackages__"],
 )
 
-proto_library(
-    name = "migrate-proto",
-    srcs = [
-        "migrate/proto/data.proto",
-        "migrate/proto/migrate.proto",
-    ],
-)
-
-java_grpc_compile(
-    name = "migrate-protocol-src",
-    deps = [
-        ":migrate-proto",
-    ]
-)
-
 java_library(
     name = "server",
-    srcs = glob(["**/*.java"], exclude=["templates/**", "test/**"]) + [":version", ":migrate-protocol-src"],
+    srcs = glob(["**/*.java"], exclude=["templates/**", "test/**"]) + [":version"],
     deps = [
         # Internal dependencies
         "//common",
@@ -81,7 +65,7 @@ java_library(
         "//graql/planning",
         "//graql/reasoner",
         "//graph",
-
+        "//server/migrate/proto:migrate-proto-java",
 
         # External dependencies from @graknlabs
         "@graknlabs_graql//java:graql",

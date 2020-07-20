@@ -1,0 +1,310 @@
+define
+
+age sub attribute,
+    datatype long;
+
+annual-wage sub attribute,
+    datatype double;
+
+company-number sub attribute,
+    datatype long;
+
+content-language sub attribute,
+    datatype string;
+
+contracted-hours sub attribute,
+    datatype double;
+
+currency sub attribute,
+    datatype string,
+    has currency-code;
+
+currency-code sub attribute,
+    datatype string;
+
+date-of-event sub attribute,
+    abstract,
+    datatype date;
+
+    date-of-birth sub date-of-event,
+        datatype date;
+
+    date-of-incorporation sub date-of-event,
+        datatype date;
+
+    date-of-marriage sub date-of-event,
+        datatype date;
+
+    end-date sub date-of-event,
+        datatype date;
+
+    relocation-date sub date-of-event,
+        datatype date;
+
+    start-date sub date-of-event,
+        datatype date;
+
+date-signed sub attribute,
+    datatype date;
+
+description sub attribute,
+    datatype string;
+
+    product-description sub description,
+        datatype string;
+
+    service-description sub description,
+        datatype string;
+
+email sub attribute,
+    datatype string;
+
+gender sub attribute,
+    datatype string;
+
+identifier sub attribute,
+    datatype long;
+
+    marriage-id sub identifier,
+        datatype long;
+
+identifier-double sub attribute,
+    datatype double;
+
+    product-barcode sub identifier-double,
+        datatype double;
+
+    service-id sub identifier-double,
+        datatype double;
+
+is-current sub attribute,
+    datatype boolean;
+
+is-taxable sub attribute,
+    datatype boolean;
+
+language sub attribute,
+    datatype string;
+
+name sub attribute,
+    datatype string;
+
+    forename sub name,
+        datatype string;
+
+    location-name sub name,
+        datatype string;
+
+    organisation-name sub name,
+        datatype string;
+
+        charity-name sub organisation-name,
+            datatype string;
+
+        company-name sub organisation-name,
+            datatype string;
+
+        university-name sub organisation-name,
+            datatype string;
+
+    product-name sub name,
+        datatype string;
+
+    service-name sub name,
+        datatype string;
+
+    surname sub name,
+        datatype string;
+
+num-characters sub attribute,
+    datatype long;
+
+product-quantity sub attribute,
+    datatype long;
+
+text-content sub attribute,
+    datatype string,
+    has content-language,
+    has num-characters;
+
+    contract-content sub text-content,
+        datatype string;
+
+value sub attribute,
+    datatype double;
+
+legal-document sub entity,
+    has date-signed,
+    has text-content;
+
+    employment-contract sub legal-document,
+        has contracted-hours,
+        has contract-content,
+        plays employment_contract;
+
+location sub entity,
+    abstract,
+    key location-name,
+    plays born-in_place-of-birth,
+    plays locates_location,
+    plays location-hierarchy_subordinate,
+    plays location-hierarchy_superior,
+    plays relocation_new-location,
+    plays relocation_previous-location;
+
+    city sub location,
+        plays residency_location;
+
+    continent sub location,
+        plays produced-in_continent;
+
+    country sub location,
+        has currency,
+        has language,
+        plays incorporation_incorporating;
+
+occupation sub entity,
+    key name,
+    plays employment_profession;
+
+organisation sub entity;
+
+    charity sub organisation,
+        has charity-name,
+        plays transaction_buyer,
+        plays volunteering_cause;
+
+    company sub organisation,
+        key company-number,
+        key company-name,
+        plays employment_employer,
+        plays incorporation_incorporated,
+        plays transaction_buyer,
+        plays transaction_vendor;
+
+    university sub organisation,
+        has university-name,
+        plays employment_employer,
+        plays studentship_school,
+        plays transaction_buyer,
+        plays transaction_vendor;
+
+person sub entity,
+    key email,
+    has age,
+    has date-of-birth,
+    has gender,
+    has forename,
+    has surname,
+    plays born-in_child,
+    plays employment_employee,
+    plays friendship_friend,
+    plays marriage_husband,
+    plays marriage_wife,
+    plays parentship_child,
+    plays parentship_parent,
+    plays relocation_relocated-person,
+    plays residency_resident,
+    plays studentship_student,
+    plays volunteering_volunteer;
+
+    unemployed-person sub person;
+
+product sub entity,
+    key product-barcode,
+    has product-description,
+    has product-name,
+    plays produced-in_product,
+    plays transaction_merchandise;
+
+service sub entity,
+    key service-id,
+    has service-description,
+    has service-name,
+    plays transaction_merchandise;
+
+friendship sub relation,
+    has end-date,
+    has start-date,
+    relates friendship_friend;
+
+incorporation sub relation,
+    has date-of-incorporation,
+    relates incorporation_incorporated,
+    relates incorporation_incorporating;
+
+locates sub relation,
+    relates locates_located,
+    relates locates_location;
+
+    born-in sub locates,
+        relates born-in_child as locates_located,
+        relates born-in_place-of-birth as locates_location;
+
+location-hierarchy sub relation,
+    relates location-hierarchy_subordinate,
+    relates location-hierarchy_superior;
+
+marriage sub relation,
+    key marriage-id,
+    has date-of-marriage,
+    plays locates_located,
+    relates marriage_husband,
+    relates marriage_wife;
+
+membership sub relation,
+    has end-date,
+    has start-date,
+    relates membership_group,
+    relates membership_member;
+
+    employment sub membership,
+        has annual-wage,
+        has contracted-hours,
+        plays locates_located,
+        relates employment_contract,
+        relates employment_employee as membership_member,
+        relates employment_employer as membership_group,
+        relates employment_profession;
+
+    studentship sub membership,
+        relates studentship_school as membership_group,
+        relates studentship_student as membership_member;
+
+    volunteering sub membership,
+        relates volunteering_cause as membership_group,
+        relates volunteering_volunteer as membership_member;
+
+parentship sub relation,
+    relates parentship_child,
+    relates parentship_parent;
+
+produced-in sub relation,
+    relates produced-in_continent,
+    relates produced-in_product;
+
+relocation sub relation,
+    has relocation-date,
+    relates relocation_new-location,
+    relates relocation_previous-location,
+    relates relocation_relocated-person;
+
+residency sub relation,
+    has end-date,
+    has start-date,
+    has is-current,
+    relates residency_location,
+    relates residency_resident;
+
+transaction sub relation,
+    has currency,
+    has is-taxable,
+    has product-quantity,
+    has value,
+    plays locates_located,
+    relates transaction_buyer,
+    relates transaction_merchandise,
+    relates transaction_vendor;
+
+
+
